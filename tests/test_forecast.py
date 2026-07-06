@@ -73,10 +73,13 @@ def test_scenarios_and_targets_are_the_pre_registered_grid(shipped_card):
 
 def test_registration_is_draft_with_nulls(shipped_card):
     reg = shipped_card["registration"]
-    assert reg["status"] == "draft"
-    assert reg["registered_utc"] is None
-    assert reg["code_version_tag"] is None
-    assert reg["zenodo_doi"] is None
+    assert reg["status"] in ("draft", "registered")
+    if reg["status"] == "draft":
+        assert reg["registered_utc"] is None
+        assert reg["code_version_tag"] is None
+        assert reg["zenodo_doi"] is None
+    else:
+        assert reg["registered_utc"] and reg["code_version_tag"] and reg["zenodo_doi"]
     assert re.fullmatch(r"[0-9a-f]{64}", reg["payload_sha256"])
 
 
@@ -213,7 +216,7 @@ def test_no_timestamp_in_payload(shipped_card):
     blob = json.dumps(shipped_card["payload"])
     # no ISO-8601-style datetime anywhere in the hashed payload
     assert not re.search(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}", blob)
-    assert shipped_card["registration"]["registered_utc"] is None
+    # (registered_utc lives in the unhashed registration block, not the payload)
 
 
 # 10 ------------------------------------------------------------------- D6 chain-setting mirror guard

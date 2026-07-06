@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from importlib import metadata as _md
 from pathlib import Path
 
@@ -553,11 +554,21 @@ def _check_prediction(scenario_name, p: dict) -> list:
 
 
 def _check_registration(reg: dict, errors: list) -> None:
-    if reg.get("status") != "draft":
-        errors.append(f"registration.status must be 'draft', found {reg.get('status')!r}")
-    for key in ("registered_utc", "code_version_tag", "zenodo_doi"):
-        if reg.get(key) is not None:
-            errors.append(f"registration.{key} must be null in the draft card, found {reg.get(key)!r}")
+    status = reg.get("status")
+    if status not in ("draft", "registered"):
+        errors.append(f"registration.status must be 'draft' or 'registered', found {status!r}")
+    fields = ("registered_utc", "code_version_tag", "zenodo_doi")
+    if status == "draft":
+        for key in fields:
+            if reg.get(key) is not None:
+                errors.append(f"registration.{key} must be null in a draft card, found {reg.get(key)!r}")
+    elif status == "registered":
+        for key in fields:
+            if not reg.get(key):
+                errors.append(f"registration.{key} must be set in a registered card")
+        utc = reg.get("registered_utc")
+        if utc is not None and not re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$", str(utc)):
+            errors.append("registration.registered_utc must be ISO-8601 UTC (...Z)")
     if not _hex64(reg.get("payload_sha256")):
         errors.append("registration.payload_sha256 must be a 64-char hex digest")
 
