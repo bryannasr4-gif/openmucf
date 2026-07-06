@@ -27,6 +27,6 @@ abstract: >-
   and net-electrical energy-balance auditor with global (Sobol) sensitivity
   analysis and Bayesian calibration. It introduces no new fundamental muCF
   physics -- the cycle is textbook and the reactivation transport follows
-  Stodden (1990) and Rafelski-Mueller (1988/89) -- and instead provides a
+  Stodden (1990) and Rafelski-Müller (1988/89) -- and instead provides a
   neutral shared substrate that turns point-estimate breakeven claims into
   error-barred, falsifiable verdicts.

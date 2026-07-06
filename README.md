@@ -25,7 +25,7 @@ shared substrate:
 
 1. **FAIR rate ledger** (`openmucf/data/`) — every rate with per-row provenance, conditions, uncertainty, an
    established/contested tag, and a validity range (the v1 seed/schema of the ENDF/IMAS-analog ledger the
-   field lacks: 13 evaluated scalar rates today; T/φ/F-dependent tables are the Phase-2 milestone).
+   field lacks: 13 curated scalar rates today; T/φ/F-dependent tables are the Phase-2 milestone).
 2. **Differentiable (JAX/diffrax) cycle-kinetics + net-electrical energy-balance engine** + a global UQ/Sobol
    auditor that turns point-estimate breakeven claims into **error-barred, falsifiable** verdicts.
 3. **A compute-trained effective-sticking/reactivation surrogate** `ω_s^eff(φ,T,c_t)` *(Phase 3)* so the

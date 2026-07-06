@@ -8,7 +8,7 @@ muon-catalyzed fusion (μCF).**
 > gold-standard cross-section source). See `MODEL_SPEC.md` for the model
 > formulation, `LITERATURE.md` for the sourced rate ledger, and `CHANGELOG.md` for release history.
 
-<!-- Author: Bryan Nasr (ORCID: to be added). -->
+<!-- Author: Bryan Nasr (ORCID: 0009-0008-2360-7522). -->
 <!-- Repository: https://github.com/bryannasr4-gif/openmucf -->
 
 ## What OpenMuCF is
