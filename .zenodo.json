@@ -1,0 +1,55 @@
+{
+  "title": "OpenMuCF: Open FAIR rate ledger + differentiable muon-catalyzed-fusion cycle/energy auditor",
+  "upload_type": "software",
+  "description": "OpenMuCF is open, reproducible, differentiable, uncertainty-bearing infrastructure for the muon-catalyzed-fusion (μCF) cycle: a FAIR rate ledger with per-row provenance, conditions, uncertainty, established/contested tags and validity ranges; a JAX/diffrax cycle-kinetics and net-electrical energy-balance engine; and a global Sobol/forward-UQ auditor that turns point-estimate breakeven claims into error-barred, falsifiable verdicts. It introduces no new fundamental μCF physics — the cycle is textbook and the reactivation transport follows Stodden (1990) and Rafelski–Müller (1988/89) — its contribution is the open shared substrate plus honest findings; it complements GEANT4 and does not compete with it.",
+  "license": "Apache-2.0",
+  "version": "1.0.0",
+  "language": "eng",
+  "access_right": "open",
+  "keywords": [
+    "muon-catalyzed fusion",
+    "muon-catalysed fusion",
+    "nuclear fusion",
+    "cycle kinetics",
+    "reactivation",
+    "alpha sticking",
+    "effective sticking surrogate",
+    "differentiable programming",
+    "automatic differentiation",
+    "JAX",
+    "diffrax",
+    "uncertainty quantification",
+    "Sobol sensitivity analysis",
+    "Bayesian calibration",
+    "FAIR data",
+    "reproducibility",
+    "open science infrastructure"
+  ],
+  "creators": [
+    {
+      "name": "Nasr, Bryan",
+      "orcid": "0009-0008-2360-7522"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "arXiv:2606.05333",
+      "relation": "references",
+      "resource_type": "publication",
+      "scheme": "arxiv"
+    },
+    {
+      "identifier": "arXiv:2605.26432",
+      "relation": "references",
+      "resource_type": "publication",
+      "scheme": "arxiv"
+    },
+    {
+      "identifier": "arXiv:2606.07077",
+      "relation": "references",
+      "resource_type": "publication",
+      "scheme": "arxiv"
+    }
+  ],
+  "notes": "TODO: add the Toyama et al., Science Advances (2026) 'Direct observation of muonic molecules...' record here as a 'references' related_identifier once its published DOI (10.1126/sciadv...) is confirmed — it has no arXiv ID and was left out to avoid guessing an identifier. TODO: all three arXiv entries are marked relation 'references' (OpenMuCF is standalone infrastructure, not supplementary material); if this DOI is ever published as supplement to a specific paper, change that paper's relation to 'isSupplementTo'."
+}

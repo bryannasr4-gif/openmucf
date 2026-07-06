@@ -1,0 +1,74 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "identifier": "openmucf",
+  "name": "OpenMuCF: Open FAIR rate ledger + differentiable muon-catalyzed-fusion cycle/energy auditor",
+  "description": "OpenMuCF is open, reproducible, differentiable, uncertainty-bearing infrastructure for the muon-catalyzed-fusion (muCF) cycle: a FAIR rate ledger with per-row provenance, conditions, uncertainty, established/contested tags and validity ranges; a JAX/diffrax cycle-kinetics and net-electrical energy-balance engine; and a global Sobol/forward-UQ auditor that turns point-estimate breakeven claims into error-barred, falsifiable verdicts. It introduces no new fundamental muCF physics (the cycle is textbook; the reactivation transport follows Stodden 1990 and Rafelski-Mueller 1988/89); its contribution is the open shared substrate plus honest findings, and it complements GEANT4 rather than competing with it.",
+  "version": "1.0.0",
+  "softwareVersion": "1.0.0",
+  "license": "https://spdx.org/licenses/Apache-2.0",
+  "programmingLanguage": {
+    "@type": "ComputerLanguage",
+    "name": "Python"
+  },
+  "runtimePlatform": "Python 3.11",
+  "operatingSystem": "OS Independent",
+  "applicationCategory": "Physics",
+  "developmentStatus": "active",
+  "keywords": [
+    "muon-catalyzed fusion",
+    "nuclear fusion",
+    "cycle kinetics",
+    "reactivation",
+    "alpha sticking",
+    "effective sticking surrogate",
+    "differentiable programming",
+    "automatic differentiation",
+    "JAX",
+    "diffrax",
+    "uncertainty quantification",
+    "Sobol sensitivity analysis",
+    "Bayesian calibration",
+    "FAIR data",
+    "reproducibility",
+    "open science infrastructure"
+  ],
+  "codeRepository": "https://github.com/bryannasr4-gif/openmucf",
+  "issueTracker": "https://github.com/bryannasr4-gif/openmucf/issues",
+  "author": [
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0009-0008-2360-7522",
+      "givenName": "Bryan",
+      "familyName": "Nasr",
+      "email": "bryannasr4@gmail.com"
+    }
+  ],
+  "maintainer": {
+    "@type": "Person",
+    "@id": "https://orcid.org/0009-0008-2360-7522",
+    "givenName": "Bryan",
+    "familyName": "Nasr",
+    "email": "bryannasr4@gmail.com"
+  },
+  "referencePublication": [
+    {
+      "@type": "ScholarlyArticle",
+      "name": "The MuFusE Large-Volume Diamond Anvil Cell for Exploring Muon-Catalyzed Fusion at Higher Pressures and Temperatures",
+      "@id": "https://arxiv.org/abs/2606.05333",
+      "identifier": "arXiv:2606.05333"
+    },
+    {
+      "@type": "ScholarlyArticle",
+      "name": "Muon-Catalyzed Nuclear Fusion: Physical Mechanism, Bottleneck Breakthroughs, and an Engineering Pathway",
+      "@id": "https://arxiv.org/abs/2605.26432",
+      "identifier": "arXiv:2605.26432"
+    },
+    {
+      "@type": "ScholarlyArticle",
+      "name": "External-Field-Assisted Muon Reactivation in Muon-Catalyzed Fusion: A Rate-Network Criterion for Reducing Alpha Sticking",
+      "@id": "https://arxiv.org/abs/2606.07077",
+      "identifier": "arXiv:2606.07077"
+    }
+  ]
+}

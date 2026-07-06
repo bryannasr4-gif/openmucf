@@ -1,0 +1,11 @@
+target_id,observable,value,unit,unc,conditions,source_bibkey,source_locator,tolerance,notes
+V_petitjean_omega,omega_s_eff,0.45,percent,0.05,"liquid D-T; phi~1.2; c_t~0.4-0.5",Breunlich1989,"-","+-0.05 band","Measured effective sticking; below theory; weak density/composition dependence in liquid"
+V_petitjean_Xmu,X_mu,113,fusions_per_muon,0.0,"liquid high density",Breunlich1989,"-","[100,150]","Record-class yield; pairs with omega_s_eff and lambda_c_max"
+V_breunlich_lambdac,lambda_c,1.45e8,s^-1,0.0,"liquid; high density",Breunlich1989,"-","+-30%","Max measured cycling rate"
+V_kouchen_base,X_mu,112.6,fusions_per_muon,0.0,"phi=1.25; c_D=c_T=0.5; omega_s_eff=0.557%; collision-only",KouChen2026,"baseline","+-10%","Engine fed Kou-Chen inputs must reproduce this (V4)"
+V_kouchen_best,X_mu,156.5,fusions_per_muon,0.0,"omega_s_eff=0.308%; lambda_dtmu_res=1e10 s^-1; enhanced capture+stopping",KouChen2026,"Table 1","+-10%","Best-case external-field scenario (V4)"
+V_yamashita_lcT,lambda_c_vs_T,monotone_rise,shape,0.0,"gas; phi~0.4; c_t~0.5; 20-800 K",YamashitaKino2022,"-","shape monotone; ratio +-30%","Rising cycle rate with temperature (graphical source -> tolerance band)"
+V_nagamine_trend,cycling_up_loss_down_vs_T,qualitative,trend,0.0,"solid D-T; 5-16 K; c_t 20-70%",Nagamine2003,"PRL90.043401","monotone trend","Cycling up & muon loss down as T decreases; reactivation T-dependence"
+V_faifman_peak,lambda_dtmu_peak,7.1e9,s^-1,1.8e9,"E=0.423 eV; F=1; ortho-D2",Fujiwara2000,"-","+-25%","Resonant-formation anchor (Fujiwara 2000, per Yamashita-Kino 2022)"
+A_acceleron_density,density,2.4,phi,0.0,"933 MPa; 100 K (2024 run)",Kalow2026,"Results","context-only","Acceleron DAC max density reached; regime anchor (not yet a measured rate)"
+A_acceleron_anomaly,omega_s_below_theory,10-50,percent_below,0.0,"high density (cryogenic solid / DAC regime)",Kalow2026,"Introduction","context-only","Measured omega_s 10-50% below standard theory -> the flagship's target; pre-registered as possibly-unconstrained"

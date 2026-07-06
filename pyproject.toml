@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openmucf"
+version = "1.0.0"
+description = "Open FAIR rate ledger + differentiable muon-catalyzed-fusion cycle/energy auditor"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Bryan Nasr", email = "bryannasr4@gmail.com" }]
+keywords = ["muon-catalyzed-fusion", "fusion", "kinetics", "uncertainty-quantification", "jax"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "jax>=0.4",
+    "diffrax>=0.5",
+    "numpyro>=0.13",
+    "SALib>=1.4",
+    "pandas>=2.0",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.5"]
+
+[project.urls]
+# DOI added at first Zenodo release; the repository URLs below are final.
+Homepage = "https://github.com/bryannasr4-gif/openmucf"
+Repository = "https://github.com/bryannasr4-gif/openmucf"
+Documentation = "https://github.com/bryannasr4-gif/openmucf/tree/main/docs"
+Changelog = "https://github.com/bryannasr4-gif/openmucf/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+packages = ["openmucf"]
+
+[tool.setuptools.package-data]
+openmucf = ["data/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "SIM"]
+ignore = ["E741"]  # single-letter names (E, R, F, T, ...) are standard physics notation here
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E501"]  # report generators embed long markdown lines in f-strings
+

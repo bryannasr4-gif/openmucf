@@ -1,0 +1,473 @@
+{
+  "generation": {
+    "env": {
+      "jax": "0.10.2",
+      "jax_enable_x64": true,
+      "jaxlib": "0.10.2",
+      "machine": "AMD64",
+      "numpy": "2.5.0",
+      "numpyro": "0.21.0",
+      "platform": "win32",
+      "python": "3.12.10"
+    }
+  },
+  "payload": {
+    "id": "FC-001",
+    "protocol": "forecasts/FORECAST_PROTOCOL.md",
+    "provenance": {
+      "code_paths": [
+        "openmucf/forecast.py",
+        "openmucf/calibrate.py",
+        "openmucf/analytic.py",
+        "openmucf/data/rates.csv"
+      ],
+      "lambda_tilde_c_definition": "lambda_c_tilde = lambda_c / 1.2, where lambda_c is the calibrated actual liquid-condition cycling rate anchored at the canonical liquid operating point phi = 1.2 (openmucf/validate.py _OP). Actual rate at density phi: lambda_c(phi) = phi * lambda_c_tilde (openmucf.analytic.cycling_rate).",
+      "ledger_sha256": "11e09e0d5342be08b20b25ab77c9d1554e1ffae16d13287e550503ac47ba7e92",
+      "phi_anchor": 1.2,
+      "posterior_spec": {
+        "model": "openmucf.calibrate.model",
+        "num_samples": 4000,
+        "num_warmup": 1000,
+        "omega_s0_prior": [
+          "normal",
+          0.857,
+          0.03
+        ],
+        "priors_note": "As coded in openmucf/calibrate.py: R ~ Uniform(0.10, 0.60); lambda_c ~ Uniform(0.8e8, 1.6e8) (actual liquid cycling rate). Informative omega_s0 prior = Kamimura Normal(0.857, 0.03) %.",
+        "seed": 0
+      },
+      "r_registered_prior": {
+        "kind": "registered prior (assumption)",
+        "motivation": "Registered prior (assumption), NOT a measured spread. [0.15, 0.60] is a slightly floor-trimmed version of the calibration model's OWN R prior Uniform(0.10, 0.60) (openmucf/calibrate.py); its interior covers the Kou-Chen model reactivation R = 0.35 +- 0.05 (rates.csv R_col; arXiv:2606.07077 Eq.33) and the documented liquid-density d-t reactivation spread ~0.25-0.35 (LITERATURE.md; Breunlich 1989; Cohen; Markushin; Stodden 1990). The upper edge deliberately covers the enhanced-reactivation direction implied by the reported high-density sticking anomaly (measured omega_s at high density typically 10-50% below standard theory; arXiv:2606.05333). The Kamimura-prior posterior places ~25% of its mass at R > 0.5, so truncating the interval at 0.5 would be dishonest.",
+        "value": [
+          0.15,
+          0.6
+        ]
+      },
+      "scenario_b_sampling": {
+        "bounds": [
+          0.15,
+          0.6
+        ],
+        "distribution": "uniform",
+        "generator": "numpy.random.default_rng",
+        "n": 4000,
+        "seed": 0
+      },
+      "transport_lineage": "No new physics. Every card number is a pushforward of the existing calibrated posterior (openmucf.calibrate) through the existing analytic map (openmucf.analytic), or a labeled registered prior. Reactivation transport lineage: Stodden 1990 / Rafelski-Muller 1988-89."
+    },
+    "resolution_criteria": {
+      "excluded_points": [
+        "Acceleron's publicly presented preliminary DT cycling datum near 2.2x liquid density at ~50 K is a POSTDICTION (publicly visible before this card) and is OMITTED from scoring entirely to avoid contaminating the registry."
+      ],
+      "not_scoreable_outcome": "If no pre-fixed conversion rule maps a published quantity to a target, the target resolves to 'not scoreable under pre-fixed conversion rules' -- a declared, legitimate outcome, not spun.",
+      "procedure": "Each target resolves when Acceleron/MuFusE publishes the corresponding quantity. Published model-dependent fitted values are converted to targets via the pre-fixed basis-conversion rules in forecasts/FORECAST_PROTOCOL.md; phi(t) drift uses the run-averaged phi as stated. Scoring uses only the pre-registered estimator conventions and metrics."
+    },
+    "scenarios": [
+      {
+        "assumptions": [
+          "R held constant beyond its stated liquid validity range (rates.csv: 'liquid; phi<=1.45').",
+          "lambda_c assumed phi-linear beyond measured liquid support (phi ~ 1.2).",
+          "Joint posterior (omega_s0, R) from the Kamimura-informative chain is held fixed."
+        ],
+        "kind": "calibrated-model forecast",
+        "label": "constant-R (calibrated-model forecast)",
+        "name": "A",
+        "predictions": [
+          {
+            "ci68": [
+              0.4137,
+              0.5094
+            ],
+            "ci95": [
+              0.3729,
+              0.5558
+            ],
+            "median": 0.4617,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "omega_s_eff@phi=1.2",
+            "unit": "percent"
+          },
+          {
+            "ci68": [
+              92180000.0,
+              137700000.0
+            ],
+            "ci95": [
+              82560000.0,
+              155600000.0
+            ],
+            "median": 112700000.0,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "lambda_c@phi=1.2",
+            "unit": "s^-1"
+          },
+          {
+            "ci68": [
+              0.4137,
+              0.5094
+            ],
+            "ci95": [
+              0.3729,
+              0.5558
+            ],
+            "median": 0.4617,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "omega_s_eff@phi=2.0",
+            "unit": "percent"
+          },
+          {
+            "ci68": [
+              153600000.0,
+              229400000.0
+            ],
+            "ci95": [
+              137600000.0,
+              259300000.0
+            ],
+            "median": 187800000.0,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "lambda_c@phi=2.0",
+            "unit": "s^-1"
+          },
+          {
+            "ci68": [
+              0.4137,
+              0.5094
+            ],
+            "ci95": [
+              0.3729,
+              0.5558
+            ],
+            "median": 0.4617,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "omega_s_eff@phi=2.4",
+            "unit": "percent"
+          },
+          {
+            "ci68": [
+              184400000.0,
+              275300000.0
+            ],
+            "ci95": [
+              165100000.0,
+              311100000.0
+            ],
+            "median": 225400000.0,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "lambda_c@phi=2.4",
+            "unit": "s^-1"
+          }
+        ]
+      },
+      {
+        "assumptions": [
+          "R replaced by the registered prior Uniform(0.15, 0.60), keeping the posterior omega_s0 marginal -- this deliberately breaks the calibration's omega_s0-R correlation, so B is a sensitivity cut, not a coherent posterior.",
+          "B's central value is a midpoint-of-ignorance artifact, not a central estimate; at phi=1.2 its omega_s_eff center sits ABOVE Scenario A's (uniform-R midpoint 0.375 < posterior R mean ~0.46).",
+          "lambda_c above the phi<=1.45 model-validity edge is a STRUCTURAL BRACKET (floor = saturation at 1.45*lambda_c_tilde; ceiling = full phi-linearity), not a distribution.",
+          "B covers nothing above R = 0.60; outcomes there resolve outside both scenarios."
+        ],
+        "kind": "ignorance bound",
+        "label": "honest ignorance (R = Uniform(0.15, 0.60); lambda_c bracketed above phi=1.45)",
+        "name": "B",
+        "predictions": [
+          {
+            "ci68": [
+              0.4053,
+              0.6654
+            ],
+            "ci95": [
+              0.3512,
+              0.7257
+            ],
+            "median": 0.5358,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "omega_s_eff@phi=1.2",
+            "unit": "percent"
+          },
+          {
+            "ci68": [
+              92180000.0,
+              137700000.0
+            ],
+            "ci95": [
+              82560000.0,
+              155600000.0
+            ],
+            "median": 112700000.0,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "lambda_c@phi=1.2",
+            "unit": "s^-1"
+          },
+          {
+            "ci68": [
+              0.4053,
+              0.6654
+            ],
+            "ci95": [
+              0.3512,
+              0.7257
+            ],
+            "median": 0.5358,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "omega_s_eff@phi=2.0",
+            "unit": "percent"
+          },
+          {
+            "ci68": [
+              111400000.0,
+              229400000.0
+            ],
+            "ci95": [
+              99760000.0,
+              259300000.0
+            ],
+            "limbs": {
+              "ceiling": {
+                "ci68": [
+                  153600000.0,
+                  229400000.0
+                ],
+                "ci95": [
+                  137600000.0,
+                  259300000.0
+                ],
+                "median": 187800000.0,
+                "n_samples": 4000
+              },
+              "floor": {
+                "ci68": [
+                  111400000.0,
+                  166300000.0
+                ],
+                "ci95": [
+                  99760000.0,
+                  188000000.0
+                ],
+                "median": 136200000.0,
+                "n_samples": 4000
+              }
+            },
+            "median_range": [
+              136200000.0,
+              187800000.0
+            ],
+            "n_samples_per_limb": 4000,
+            "prediction_type": "bracket",
+            "target_id": "lambda_c@phi=2.0",
+            "unit": "s^-1"
+          },
+          {
+            "ci68": [
+              0.4053,
+              0.6654
+            ],
+            "ci95": [
+              0.3512,
+              0.7257
+            ],
+            "median": 0.5358,
+            "n_samples": 4000,
+            "prediction_type": "ensemble",
+            "target_id": "omega_s_eff@phi=2.4",
+            "unit": "percent"
+          },
+          {
+            "ci68": [
+              111400000.0,
+              275300000.0
+            ],
+            "ci95": [
+              99760000.0,
+              311100000.0
+            ],
+            "limbs": {
+              "ceiling": {
+                "ci68": [
+                  184400000.0,
+                  275300000.0
+                ],
+                "ci95": [
+                  165100000.0,
+                  311100000.0
+                ],
+                "median": 225400000.0,
+                "n_samples": 4000
+              },
+              "floor": {
+                "ci68": [
+                  111400000.0,
+                  166300000.0
+                ],
+                "ci95": [
+                  99760000.0,
+                  188000000.0
+                ],
+                "median": 136200000.0,
+                "n_samples": 4000
+              }
+            },
+            "median_range": [
+              136200000.0,
+              225400000.0
+            ],
+            "n_samples_per_limb": 4000,
+            "prediction_type": "bracket",
+            "target_id": "lambda_c@phi=2.4",
+            "unit": "s^-1"
+          }
+        ]
+      }
+    ],
+    "scoring_rules": {
+      "both_scenarios_reported": true,
+      "bracket": {
+        "metrics": [
+          "interval_coverage",
+          "per_limb_CRPS"
+        ],
+        "note": "coverage uses the envelope-union ci68/ci95 of the floor (saturation at the phi<=1.45 validity edge) and ceiling (full phi-linearity) limbs",
+        "per_limb_crps": "reported as a [best, worst] pair over the two structural limbs; NO headline CRPS"
+      },
+      "coverage_caveat": "Scoring targets share the same posterior draws, so coverage counts are descriptive, not independent trials.",
+      "ensemble": {
+        "crps_formula": "CRPS = mean|X - y| - (1/(2 n^2)) sum_{i,j} |x_i - x_j|  (empirical-CDF form)",
+        "intervals": [
+          "ci68",
+          "ci95"
+        ],
+        "metrics": [
+          "CRPS",
+          "interval_coverage"
+        ]
+      },
+      "estimator_conventions": {
+        "ci68": "[16th, 84th] equal-tailed percentiles (numpy.percentile, 'linear')",
+        "ci95": "[2.5th, 97.5th] equal-tailed percentiles (numpy.percentile, 'linear')",
+        "median": "numpy.median"
+      },
+      "no_post_hoc_selection": "Both scenarios are always scored and reported together; A = calibrated-model forecast, B = ignorance bound. No post-hoc selection or reweighting."
+    },
+    "targets": [
+      {
+        "observable": "omega_s_eff",
+        "phi": 1.2,
+        "resolution": "Resolved by mapping Acceleron's published omega_s_eff at the reported run-averaged phi to this target per FORECAST_PROTOCOL.md basis-conversion rules; 'not scoreable under pre-fixed conversion rules' is a legitimate outcome.",
+        "source": "Measured liquid effective sticking omega_s_eff = (0.45 +- 0.05)% (Breunlich-Kammel-Cohen-Leon, Annu. Rev. Nucl. Part. Sci. 39, 311 (1989); validation_targets.csv V_petitjean_omega); high-density behaviour is the MuFusE unknown (arXiv:2606.05333). Scored against Acceleron's published effective sticking at the stated (phi,T).",
+        "stated_conditions": {
+          "T_K": [
+            100,
+            150,
+            300
+          ],
+          "note": "non-simultaneous envelope; forecast is conditional on the (phi,T) Acceleron actually reports (933 MPa @ 100 K ~ 2.4 phi; 385 MPa @ 300 K ~ 1.14 phi -- peak phi and T are not simultaneous). The v1 map has no omega_s_eff T-resolution and only weak lambda_c(T), so targets are scored on phi; see FORECAST_PROTOCOL.md for the T caveat.",
+          "phi": 1.2
+        },
+        "target_id": "omega_s_eff@phi=1.2",
+        "unit": "percent"
+      },
+      {
+        "observable": "lambda_c",
+        "phi": 1.2,
+        "resolution": "Resolved by mapping Acceleron's published lambda_c at the reported run-averaged phi to this target per FORECAST_PROTOCOL.md basis-conversion rules; 'not scoreable under pre-fixed conversion rules' is a legitimate outcome.",
+        "source": "Measured maximum liquid cycling rate lambda_c up to 1.45e8 s^-1 (Breunlich 1989; validation_targets.csv V_breunlich_lambdac); density scaling lambda_c = phi * lambda_c_tilde (openmucf.analytic.cycling_rate). Scored against Acceleron's published/normalized cycling rate at the stated (phi,T).",
+        "stated_conditions": {
+          "T_K": [
+            100,
+            150,
+            300
+          ],
+          "note": "non-simultaneous envelope; forecast is conditional on the (phi,T) Acceleron actually reports (933 MPa @ 100 K ~ 2.4 phi; 385 MPa @ 300 K ~ 1.14 phi -- peak phi and T are not simultaneous). The v1 map has no omega_s_eff T-resolution and only weak lambda_c(T), so targets are scored on phi; see FORECAST_PROTOCOL.md for the T caveat.",
+          "phi": 1.2
+        },
+        "target_id": "lambda_c@phi=1.2",
+        "unit": "s^-1"
+      },
+      {
+        "observable": "omega_s_eff",
+        "phi": 2.0,
+        "resolution": "Resolved by mapping Acceleron's published omega_s_eff at the reported run-averaged phi to this target per FORECAST_PROTOCOL.md basis-conversion rules; 'not scoreable under pre-fixed conversion rules' is a legitimate outcome.",
+        "source": "Measured liquid effective sticking omega_s_eff = (0.45 +- 0.05)% (Breunlich-Kammel-Cohen-Leon, Annu. Rev. Nucl. Part. Sci. 39, 311 (1989); validation_targets.csv V_petitjean_omega); high-density behaviour is the MuFusE unknown (arXiv:2606.05333). Scored against Acceleron's published effective sticking at the stated (phi,T).",
+        "stated_conditions": {
+          "T_K": [
+            100,
+            150,
+            300
+          ],
+          "note": "non-simultaneous envelope; forecast is conditional on the (phi,T) Acceleron actually reports (933 MPa @ 100 K ~ 2.4 phi; 385 MPa @ 300 K ~ 1.14 phi -- peak phi and T are not simultaneous). The v1 map has no omega_s_eff T-resolution and only weak lambda_c(T), so targets are scored on phi; see FORECAST_PROTOCOL.md for the T caveat.",
+          "phi": 2.0
+        },
+        "target_id": "omega_s_eff@phi=2.0",
+        "unit": "percent"
+      },
+      {
+        "observable": "lambda_c",
+        "phi": 2.0,
+        "resolution": "Resolved by mapping Acceleron's published lambda_c at the reported run-averaged phi to this target per FORECAST_PROTOCOL.md basis-conversion rules; 'not scoreable under pre-fixed conversion rules' is a legitimate outcome.",
+        "source": "Measured maximum liquid cycling rate lambda_c up to 1.45e8 s^-1 (Breunlich 1989; validation_targets.csv V_breunlich_lambdac); density scaling lambda_c = phi * lambda_c_tilde (openmucf.analytic.cycling_rate). Scored against Acceleron's published/normalized cycling rate at the stated (phi,T).",
+        "stated_conditions": {
+          "T_K": [
+            100,
+            150,
+            300
+          ],
+          "note": "non-simultaneous envelope; forecast is conditional on the (phi,T) Acceleron actually reports (933 MPa @ 100 K ~ 2.4 phi; 385 MPa @ 300 K ~ 1.14 phi -- peak phi and T are not simultaneous). The v1 map has no omega_s_eff T-resolution and only weak lambda_c(T), so targets are scored on phi; see FORECAST_PROTOCOL.md for the T caveat.",
+          "phi": 2.0
+        },
+        "target_id": "lambda_c@phi=2.0",
+        "unit": "s^-1"
+      },
+      {
+        "observable": "omega_s_eff",
+        "phi": 2.4,
+        "resolution": "Resolved by mapping Acceleron's published omega_s_eff at the reported run-averaged phi to this target per FORECAST_PROTOCOL.md basis-conversion rules; 'not scoreable under pre-fixed conversion rules' is a legitimate outcome.",
+        "source": "Measured liquid effective sticking omega_s_eff = (0.45 +- 0.05)% (Breunlich-Kammel-Cohen-Leon, Annu. Rev. Nucl. Part. Sci. 39, 311 (1989); validation_targets.csv V_petitjean_omega); high-density behaviour is the MuFusE unknown (arXiv:2606.05333). Scored against Acceleron's published effective sticking at the stated (phi,T).",
+        "stated_conditions": {
+          "T_K": [
+            100,
+            150,
+            300
+          ],
+          "note": "non-simultaneous envelope; forecast is conditional on the (phi,T) Acceleron actually reports (933 MPa @ 100 K ~ 2.4 phi; 385 MPa @ 300 K ~ 1.14 phi -- peak phi and T are not simultaneous). The v1 map has no omega_s_eff T-resolution and only weak lambda_c(T), so targets are scored on phi; see FORECAST_PROTOCOL.md for the T caveat.",
+          "phi": 2.4
+        },
+        "target_id": "omega_s_eff@phi=2.4",
+        "unit": "percent"
+      },
+      {
+        "observable": "lambda_c",
+        "phi": 2.4,
+        "resolution": "Resolved by mapping Acceleron's published lambda_c at the reported run-averaged phi to this target per FORECAST_PROTOCOL.md basis-conversion rules; 'not scoreable under pre-fixed conversion rules' is a legitimate outcome.",
+        "source": "Measured maximum liquid cycling rate lambda_c up to 1.45e8 s^-1 (Breunlich 1989; validation_targets.csv V_breunlich_lambdac); density scaling lambda_c = phi * lambda_c_tilde (openmucf.analytic.cycling_rate). Scored against Acceleron's published/normalized cycling rate at the stated (phi,T).",
+        "stated_conditions": {
+          "T_K": [
+            100,
+            150,
+            300
+          ],
+          "note": "non-simultaneous envelope; forecast is conditional on the (phi,T) Acceleron actually reports (933 MPa @ 100 K ~ 2.4 phi; 385 MPa @ 300 K ~ 1.14 phi -- peak phi and T are not simultaneous). The v1 map has no omega_s_eff T-resolution and only weak lambda_c(T), so targets are scored on phi; see FORECAST_PROTOCOL.md for the T caveat.",
+          "phi": 2.4
+        },
+        "target_id": "lambda_c@phi=2.4",
+        "unit": "s^-1"
+      }
+    ],
+    "title": "FC-001 -- pre-registered MuFusE forecast: effective sticking omega_s_eff and cycling rate lambda_c at high density"
+  },
+  "registration": {
+    "code_version_tag": null,
+    "payload_sha256": "19291472309b1fe57c968bffc96ba56c7113b0be068686cf75b19fc6a2f14f59",
+    "registered_utc": null,
+    "status": "draft",
+    "zenodo_doi": null
+  }
+}

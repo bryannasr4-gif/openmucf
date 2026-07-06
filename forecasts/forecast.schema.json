@@ -1,0 +1,269 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenMuCF forecast card",
+  "description": "A pre-registered, hash-stamped probabilistic forecast card. Three top-level sections: 'payload' (hashed, immutable), 'generation' (unhashed environment metadata), 'registration' (unhashed, mutable). payload_sha256 = SHA-256 over canonical_json(payload) with json.dumps(sort_keys=True, separators=(',',':'), ensure_ascii=True). Predictions are discriminated by prediction_type: 'ensemble' (Monte-Carlo draws -> median/ci68/ci95) or 'bracket' (structural limbs -> median_range + envelope-union ci68/ci95). See forecasts/FORECAST_PROTOCOL.md.",
+  "type": "object",
+  "required": ["payload", "generation", "registration"],
+  "additionalProperties": false,
+  "properties": {
+    "payload": {
+      "type": "object",
+      "description": "Everything the payload_sha256 covers. Edits here change the hash; edits to generation/registration do not.",
+      "required": ["id", "title", "protocol", "targets", "scenarios", "resolution_criteria", "scoring_rules", "provenance"],
+      "properties": {
+        "id": {"type": "string", "examples": ["FC-001"]},
+        "title": {"type": "string"},
+        "protocol": {"type": "string", "description": "Repo-relative path to the pre-registration protocol.", "examples": ["forecasts/FORECAST_PROTOCOL.md"]},
+        "targets": {
+          "type": "array",
+          "description": "The pre-registered scoring targets. Exactly the {omega_s_eff, lambda_c} x phi in {1.2, 2.0, 2.4} grid.",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {"$ref": "#/$defs/target"}
+        },
+        "scenarios": {
+          "type": "array",
+          "description": "Exactly two scenarios: A (constant-R, calibrated-model forecast) and B (honest ignorance bound). No hypothesis branches.",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/scenario"}
+        },
+        "resolution_criteria": {"$ref": "#/$defs/resolution_criteria"},
+        "scoring_rules": {"$ref": "#/$defs/scoring_rules"},
+        "provenance": {"$ref": "#/$defs/provenance"}
+      },
+      "additionalProperties": false
+    },
+    "generation": {
+      "type": "object",
+      "description": "Unhashed environment metadata, so the payload hash is environment/platform-portable.",
+      "required": ["env"],
+      "properties": {
+        "env": {
+          "type": "object",
+          "required": ["python", "jax", "jaxlib", "numpyro", "numpy", "platform", "machine", "jax_enable_x64"],
+          "properties": {
+            "python": {"type": "string"},
+            "jax": {"type": "string"},
+            "jaxlib": {"type": "string"},
+            "numpyro": {"type": "string"},
+            "numpy": {"type": "string"},
+            "platform": {"type": "string"},
+            "machine": {"type": "string"},
+            "jax_enable_x64": {"type": "boolean"}
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "registration": {
+      "type": "object",
+      "description": "Unhashed, mutable. Populated at first release (out of scope for the draft card). Ships in 'draft' status.",
+      "required": ["payload_sha256", "registered_utc", "code_version_tag", "zenodo_doi", "status"],
+      "properties": {
+        "payload_sha256": {"type": "string", "description": "SHA-256 hex digest of canonical_json(payload); populated at build time.", "pattern": "^[0-9a-f]{64}$"},
+        "registered_utc": {"type": ["string", "null"], "description": "Null until registration (out of scope here); a timestamp is added only at tag time."},
+        "code_version_tag": {"type": ["string", "null"]},
+        "zenodo_doi": {"type": ["string", "null"]},
+        "status": {"type": "string", "enum": ["draft", "registered", "resolved"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "interval": {
+      "type": "array",
+      "description": "[lower, upper] equal-tailed percentile interval.",
+      "items": {"type": "number"},
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "ensemble_stats": {
+      "type": "object",
+      "required": ["median", "ci68", "ci95", "n_samples"],
+      "properties": {
+        "median": {"type": "number"},
+        "ci68": {"$ref": "#/$defs/interval"},
+        "ci95": {"$ref": "#/$defs/interval"},
+        "n_samples": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": ["target_id", "observable", "unit", "phi", "stated_conditions", "source", "resolution"],
+      "properties": {
+        "target_id": {"type": "string", "examples": ["omega_s_eff@phi=1.2", "lambda_c@phi=2.4"]},
+        "observable": {"type": "string", "enum": ["omega_s_eff", "lambda_c"]},
+        "unit": {"type": "string", "enum": ["percent", "s^-1"]},
+        "phi": {"type": "number", "enum": [1.2, 2.0, 2.4]},
+        "stated_conditions": {
+          "type": "object",
+          "required": ["phi", "T_K", "note"],
+          "properties": {
+            "phi": {"type": "number"},
+            "T_K": {"type": "array", "items": {"type": "number"}, "description": "Non-simultaneous temperature envelope; forecast is conditional on the (phi,T) Acceleron actually reports."},
+            "note": {"type": "string"}
+          },
+          "additionalProperties": false
+        },
+        "source": {"type": "string", "description": "Public literature / repo-data anchor this target is measured/compared against. Never a private planning doc."},
+        "resolution": {"type": "string", "description": "How this target resolves once MuFusE publishes (see FORECAST_PROTOCOL.md basis-conversion rules)."}
+      },
+      "additionalProperties": false
+    },
+    "prediction": {
+      "type": "object",
+      "description": "One scenario's prediction for one target. Discriminated by prediction_type.",
+      "required": ["target_id", "prediction_type", "unit"],
+      "properties": {
+        "target_id": {"type": "string"},
+        "prediction_type": {"type": "string", "enum": ["ensemble", "bracket"]},
+        "unit": {"type": "string"}
+      },
+      "oneOf": [
+        {
+          "description": "Ensemble prediction: Monte-Carlo draws.",
+          "properties": {
+            "prediction_type": {"const": "ensemble"},
+            "median": {"type": "number"},
+            "ci68": {"$ref": "#/$defs/interval"},
+            "ci95": {"$ref": "#/$defs/interval"},
+            "n_samples": {"type": "integer", "minimum": 1}
+          },
+          "required": ["median", "ci68", "ci95", "n_samples"]
+        },
+        {
+          "description": "Bracket prediction: structural limbs (floor=saturation at the model-validity edge; ceiling=full phi-linearity). NO single median, NO headline CRPS. ci68/ci95 are envelope unions of the two limbs.",
+          "properties": {
+            "prediction_type": {"const": "bracket"},
+            "median_range": {"$ref": "#/$defs/interval"},
+            "ci68": {"$ref": "#/$defs/interval"},
+            "ci95": {"$ref": "#/$defs/interval"},
+            "n_samples_per_limb": {"type": "integer", "minimum": 1},
+            "limbs": {
+              "type": "object",
+              "required": ["floor", "ceiling"],
+              "properties": {
+                "floor": {"$ref": "#/$defs/ensemble_stats"},
+                "ceiling": {"$ref": "#/$defs/ensemble_stats"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": ["median_range", "ci68", "ci95", "n_samples_per_limb", "limbs"]
+        }
+      ]
+    },
+    "scenario": {
+      "type": "object",
+      "required": ["name", "label", "kind", "assumptions", "predictions"],
+      "properties": {
+        "name": {"type": "string", "enum": ["A", "B"]},
+        "label": {"type": "string"},
+        "kind": {"type": "string", "enum": ["calibrated-model forecast", "ignorance bound"]},
+        "assumptions": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "predictions": {
+          "type": "array",
+          "description": "One prediction per target (6).",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {"$ref": "#/$defs/prediction"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "resolution_criteria": {
+      "type": "object",
+      "required": ["procedure", "not_scoreable_outcome", "excluded_points"],
+      "properties": {
+        "procedure": {"type": "string"},
+        "not_scoreable_outcome": {"type": "string", "description": "'not scoreable under pre-fixed conversion rules' is a legitimate, declared resolution."},
+        "excluded_points": {"type": "array", "items": {"type": "string"}, "description": "Publicly-visible data points deliberately omitted from scoring (postdiction contamination fence)."}
+      },
+      "additionalProperties": false
+    },
+    "scoring_rules": {
+      "type": "object",
+      "required": ["ensemble", "bracket", "estimator_conventions", "both_scenarios_reported", "no_post_hoc_selection", "coverage_caveat"],
+      "properties": {
+        "ensemble": {
+          "type": "object",
+          "required": ["metrics", "crps_formula", "intervals"],
+          "properties": {
+            "metrics": {"type": "array", "items": {"type": "string"}},
+            "crps_formula": {"type": "string"},
+            "intervals": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "bracket": {
+          "type": "object",
+          "required": ["metrics", "per_limb_crps", "note"],
+          "properties": {
+            "metrics": {"type": "array", "items": {"type": "string"}},
+            "per_limb_crps": {"type": "string", "description": "Reported as a [best, worst] pair; no headline CRPS."},
+            "note": {"type": "string"}
+          }
+        },
+        "estimator_conventions": {
+          "type": "object",
+          "required": ["median", "ci68", "ci95"],
+          "properties": {
+            "median": {"type": "string"},
+            "ci68": {"type": "string"},
+            "ci95": {"type": "string"}
+          }
+        },
+        "both_scenarios_reported": {"type": "boolean", "const": true},
+        "no_post_hoc_selection": {"type": "string"},
+        "coverage_caveat": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["ledger_sha256", "posterior_spec", "scenario_b_sampling", "r_registered_prior", "code_paths", "phi_anchor", "lambda_tilde_c_definition", "transport_lineage"],
+      "properties": {
+        "ledger_sha256": {"type": "string", "description": "SHA-256 of the LF-normalized UTF-8 text of openmucf/data/rates.csv.", "pattern": "^[0-9a-f]{64}$"},
+        "posterior_spec": {
+          "type": "object",
+          "required": ["model", "omega_s0_prior", "priors_note", "seed", "num_warmup", "num_samples"],
+          "properties": {
+            "model": {"type": "string", "const": "openmucf.calibrate.model"},
+            "omega_s0_prior": {"type": "array"},
+            "priors_note": {"type": "string"},
+            "seed": {"type": "integer"},
+            "num_warmup": {"type": "integer"},
+            "num_samples": {"type": "integer"}
+          }
+        },
+        "scenario_b_sampling": {
+          "type": "object",
+          "required": ["distribution", "bounds", "generator", "seed", "n"],
+          "properties": {
+            "distribution": {"type": "string", "const": "uniform"},
+            "bounds": {"$ref": "#/$defs/interval"},
+            "generator": {"type": "string", "const": "numpy.random.default_rng"},
+            "seed": {"type": "integer"},
+            "n": {"type": "integer"}
+          }
+        },
+        "r_registered_prior": {
+          "type": "object",
+          "required": ["value", "kind", "motivation"],
+          "properties": {
+            "value": {"$ref": "#/$defs/interval"},
+            "kind": {"type": "string", "const": "registered prior (assumption)"},
+            "motivation": {"type": "string"}
+          }
+        },
+        "code_paths": {"type": "array", "items": {"type": "string"}},
+        "phi_anchor": {"type": "number", "const": 1.2},
+        "lambda_tilde_c_definition": {"type": "string"},
+        "transport_lineage": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

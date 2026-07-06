@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" ruff
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        run: pytest -q
+
+  locked:
+    # Pinned-environment reproducibility: install the exact validated versions and run the suite.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install (pinned lockfile)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-lock.txt
+          pip install -e . --no-deps
+      - name: Test
+        run: pytest -q
+
+  audit:
+    # Reproducibility gate: regenerated FINDINGS/VALIDATION must match what's committed (no doc-vs-code drift).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Audit (regenerate the deterministic docs and fail on drift)
+        run: make audit
+      - name: Forecast determinism (regenerate the card twice; byte-compare fresh outputs)
+        run: |
+          python scripts/generate_forecast.py
+          cp forecasts/FC-001-mufuse.json /tmp/fc1.json
+          python scripts/generate_forecast.py
+          cmp forecasts/FC-001-mufuse.json /tmp/fc1.json
+          echo "forecast determinism OK: two fresh regenerations are byte-identical"

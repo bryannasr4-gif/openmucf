@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenMuCF rate-ledger row",
+  "description": "One microscopic muCF rate or parameter, with provenance and uncertainty. Each row of data/rates.csv must satisfy this.",
+  "type": "object",
+  "required": ["symbol", "description", "value", "unit", "unc_type", "conditions", "source_bibkey", "status", "validity_range"],
+  "properties": {
+    "symbol": {"type": "string", "description": "Unique machine key, e.g. omega_s0."},
+    "description": {"type": "string"},
+    "value": {"type": "number"},
+    "unit": {"type": "string", "examples": ["s^-1", "percent", "fraction", "MeV", "GeV"]},
+    "unc": {"type": "number", "description": "1-sigma-style uncertainty in the same unit; 0 if not quoted."},
+    "unc_type": {"type": "string", "enum": ["stat", "exp", "theory", "theory-spread", "model", "table", "estimate", "exact"]},
+    "conditions": {"type": "string", "description": "Structured-ish: T, phi, hyperfine F, ortho-para, c_t, field."},
+    "source_bibkey": {"type": "string", "description": "Key(s) resolvable in data/references.bib; ';'-separable."},
+    "source_locator": {"type": "string", "description": "Equation/table/figure/page within the source."},
+    "status": {"type": "string", "enum": ["established", "contested"]},
+    "validity_range": {"type": "string"},
+    "single_source": {"type": "boolean", "description": "True if it traces to one never-independently-rechecked measurement (feeds the Phase-4 cross-source audit)."},
+    "needs_verification": {"type": "boolean", "description": "True if the exact digit/locator is not yet pinned from the primary text."},
+    "notes": {"type": "string"}
+  }
+}
