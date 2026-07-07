@@ -6,7 +6,8 @@
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-63%2F63%20(macOS%20%2B%20Windows)-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-v1%20research--grade-brightgreen.svg)
-<!-- TODO: add real CI and Zenodo-DOI badges once the repo is on GitHub and archived on Zenodo. -->
+[![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
 
 > Status: **v1 spine complete and validated** (Phases 0–2). The high-density effective-sticking surrogate
 > (Phase 3) is the next capability — planned, not yet started (needs HPC + a gold-standard cross-section
@@ -77,7 +78,7 @@ coverage** once the experiment publishes. The first card, **FC-001**, forecasts 
 and cycling rate `λ_c` at high density (`φ ∈ {1.2, 2.0, 2.4}`) under a calibrated-model scenario and an honest
 ignorance bound. The card's `payload_sha256` covers only the scientific payload (environment metadata is
 excluded), so the hash is portable; regenerate with `make forecast`.
-<!-- TODO: the registration DOI / git tag is added at the first tagged release (the card ships in `draft` status). -->
+FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](https://doi.org/10.5281/zenodo.21251512), payload SHA-256 `19291472309b1fe57c968bffc96ba56c7113b0be068686cf75b19fc6a2f14f59`.
 
 > **Scope & intended use.** OpenMuCF is a neutron-economics auditor, not a reactor design. The energy chain
 > includes an optional hybrid-blanket multiplier `M` purely as a transparent accounting term; below breakeven,
@@ -116,8 +117,9 @@ provenance, and the credibility-firewall policy. Release history is in [`CHANGEL
 
 ## How to cite
 If you use OpenMuCF, please cite it via [`CITATION.cff`](CITATION.cff) (GitHub renders a "Cite this
-repository" button from it). A Zenodo archive + DOI will be minted on the first tagged release.
-<!-- TODO: add the Zenodo DOI here once archived. -->
+repository" button from it). Archived on Zenodo — cite the exact release **v1.0.0** via DOI
+[10.5281/zenodo.21251512](https://doi.org/10.5281/zenodo.21251512), or the version-independent concept DOI
+[10.5281/zenodo.21251511](https://doi.org/10.5281/zenodo.21251511) to always resolve to the latest version.
 
 ## License
 Apache-2.0.

@@ -6,19 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Author: Bryan Nasr (ORCID: 0009-0008-2360-7522). -->
-<!-- Repository: https://github.com/bryannasr4-gif/openmucf (Zenodo DOI added at first release). -->
+<!-- Repository: https://github.com/bryannasr4-gif/openmucf | Zenodo concept DOI 10.5281/zenodo.21251511 (v1.0.0 version DOI 10.5281/zenodo.21251512). -->
 
 ## [Unreleased]
-
-### Added
-- **Forecast registry (`forecasts/`, `FORECASTS.md`).** `openmucf/forecast.py` builds pre-registered,
-  hash-stamped probabilistic forecast cards as a pushforward of the existing calibrated posterior through the
-  analytic map (no new physics), with CRPS + interval-coverage scoring. First card: **FC-001** — effective
-  sticking `ω_s^eff` and cycling rate `λ_c` at high density (`φ ∈ {1.2, 2.0, 2.4}`) under a calibrated-model
-  scenario A and an honest ignorance-bound scenario B, with a `payload`/`generation`/`registration` card split
-  (environment-portable `payload_sha256`) and a `forecasts/FORECAST_PROTOCOL.md` pre-registration (basis
-  conversion, T caveat, exclusion fence, determinism). Regenerate with `make forecast`; the card ships in
-  `draft` status (registration DOI/tag added at first release). Adds 20 tests (63 collected).
 
 ### Planned
 - **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant
@@ -28,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   training set + slowing-down Monte Carlo); a gold-standard close-coupling/R-matrix benchmark is the gating
   acquisition.
 
-## [1.0.0] - 2026-06-30
+## [1.0.0] - 2026-07-07
 
 First public release: the minimum-useful, validated **v1 spine** — FAIR rate ledger → analytic closed form →
 differentiable cycle ODE → net-electrical energy balance → global UQ auditor → Bayesian calibration, all
@@ -80,6 +70,12 @@ provenance-clean and reproducible.
   and `ADOPTERS.md`. OpenMuCF introduces **no new fundamental μCF physics**; the cycle is textbook and the
   reactivation transport is Stodden (1990) / Rafelski–Müller (1988/89). The contribution is open, reproducible,
   differentiable, UQ-bearing infrastructure plus honest findings.
+- **Forecast registry (`forecasts/`, `openmucf/forecast.py`, `FORECASTS.md`).** Pre-registered, hash-stamped
+  probabilistic forecast cards as a pushforward of the calibrated posterior through the analytic map (no new
+  physics), scored later by CRPS + interval coverage. First card **FC-001** — effective sticking `ω_s^eff` and
+  cycling rate `λ_c` at high density (`φ ∈ {1.2, 2.0, 2.4}`) under a calibrated-model scenario A and an honest
+  ignorance-bound scenario B — **registered at this tag** (Zenodo DOI 10.5281/zenodo.21251512). Adds 20 forecast
+  tests (**63 total**).
 
 [Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.0.0
