@@ -4,6 +4,6 @@ Hash-stamped, pre-registered probabilistic forecasts. Each card is a pushforward
 
 | id | title | status | targets | payload_sha256 (12) | protocol |
 |---|---|---|---|---|---|
-| FC-001 | FC-001 -- pre-registered MuFusE forecast: effective sticking omega_s_eff and cycling rate lambda_c at high density | draft | 6 targets (lambda_c, omega_s_eff); phi in {1.2, 2.0, 2.4} | `19291472309b` | [forecasts/FORECAST_PROTOCOL.md](forecasts/FORECAST_PROTOCOL.md) |
+| FC-001 | FC-001 -- pre-registered MuFusE forecast: effective sticking omega_s_eff and cycling rate lambda_c at high density | registered | 6 targets (lambda_c, omega_s_eff); phi in {1.2, 2.0, 2.4} | `19291472309b` | [forecasts/FORECAST_PROTOCOL.md](forecasts/FORECAST_PROTOCOL.md) |
 
 Determinism: bit-identical regeneration under the recorded environment (including platform); cross-platform regeneration reproduces to Monte-Carlo error. Regenerate with `python scripts/generate_forecast.py` (or `make forecast`).

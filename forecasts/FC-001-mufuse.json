@@ -464,10 +464,10 @@
     "title": "FC-001 -- pre-registered MuFusE forecast: effective sticking omega_s_eff and cycling rate lambda_c at high density"
   },
   "registration": {
-    "code_version_tag": null,
+    "code_version_tag": "v1.0.0",
     "payload_sha256": "19291472309b1fe57c968bffc96ba56c7113b0be068686cf75b19fc6a2f14f59",
-    "registered_utc": null,
-    "status": "draft",
-    "zenodo_doi": null
+    "registered_utc": "2026-07-07T23:57:27Z",
+    "status": "registered",
+    "zenodo_doi": "10.5281/zenodo.21251512"
   }
 }
