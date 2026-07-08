@@ -59,11 +59,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `jones-1986` (registered PENDING as blocked-acquisition — the record operating point cannot be pinned from
   open sources, so no conditions are guessed). `BENCHMARKS.md` is regenerated and diffed by `make bench` /
   `make audit`.
+- **Counts-level twin: neutron time-spectrum forward model + likelihood (`openmucf/twin.py`,
+  `openmucf/likelihood.py`, `TWIN_AUDIT.md`).** A fuel-component neutron time-spectrum expectation from the
+  v1 cycle (channels-OFF; reduces to the established engine), a Poisson sampler for raw histograms, the
+  idealized two-exponential estimator experimenters fit, and a counts-level numpyro likelihood. `TWIN_AUDIT.md`
+  (generated, in `make audit`) reports the closed-form disappearance gate (recovers λ_n to <1%), the
+  estimator-bias sweep over `t_min × c_t` on synthetic v1 truth, and FC-001 card-interval fuel-component
+  disappearance bands. Identifiability is stated honestly: a delta-pulse histogram constrains the muon
+  disappearance rate λ_n; ω_s^eff and λ_c are separated only through the informative measured-λ_c prior. A
+  200-replica interval-calibration test (`slow`-marked, deselected by default and in CI) checks the λ_n 95%
+  credible interval is calibrated. Fenced v0 — no detector response, no real-data fit, no dataset-specific claim.
 
 ### Changed
-- **Extended reproducibility audit (`make audit`).** Now also verifies the provenance manifest, exact-diffs
-  `FINDINGS_MANIFEST.json` and `VALIDATION_CHANNELS.md`, and re-checks the `CALIBRATION.md` MCMC tables
-  (now including the channels-on re-attribution section, currently blocked) within a documented tolerance.
+- **Extended reproducibility audit (`make audit`).** Now also verifies the provenance manifest (across both
+  `FINDINGS_MANIFEST.json` and `TWIN_MANIFEST.json`), exact-diffs `FINDINGS_MANIFEST.json`,
+  `VALIDATION_CHANNELS.md`, and `TWIN_AUDIT.md`/`TWIN_MANIFEST.json`, and re-checks the `CALIBRATION.md` MCMC
+  tables (now including the channels-on re-attribution section, currently blocked) within a documented tolerance.
+- **`slow` pytest marker.** Long-running tests (the twin coverage run) are marked `slow` and deselected from
+  the default `pytest` (and CI) via `addopts`; run them with `pytest -m slow`.
 - **Formation quadrature grid.** `formation._EGRID` switched from linear to geometric spacing for low-T
   convergence (a grid doubling now moves λ_dtμ(30 K) by <0.5%, previously ~7%); `formation._CALIB` was
   re-anchored so the disclosed 300 K rates are preserved bit-exactly (no 300 K result moved; off-anchor

@@ -51,6 +51,11 @@ openmucf = ["data/*", "data/benchmarks/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "slow: long-running tests (the twin interval-calibration coverage run); deselected by default, run explicitly with `pytest -m slow`",
+]
+# Default collection deselects `slow` (kept out of the fast suite + CI); a command-line `-m slow` overrides this.
+addopts = "-m 'not slow'"
 
 [tool.ruff]
 line-length = 110

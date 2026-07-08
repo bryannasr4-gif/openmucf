@@ -131,6 +131,26 @@ yield (113 ± 12); exposes the ω_s0/R identifiability degeneracy.
 - `summarize(samples) -> dict` — per-parameter mean/sd/2.5%/97.5% for `omega_s0_pct`,
   `R`, `lambda_c`, `omega_s_eff_pct`, `X_mu`, plus `corr_omega_s0_R`.
 
+## `openmucf.twin` / `openmucf.likelihood` — counts-level neutron time-spectrum twin (v0)
+
+The forward model + likelihood an experimenter runs on a raw neutron histogram. Fenced v0: constant φ,
+d-t only, delta beam pulse, flat background, no detector response, no dataset-specific claim. Runs the
+cycle CHANNELS-OFF, so it reduces to the established engine. Identity: `λ_n = λ₀ + ω_s^eff·λ_c`,
+`X_μ = λ_c/λ_n`.
+
+- `twin.fusion_rate_density(t_grid, **cycle_params) -> array` — F(t) = lf1·x_tmu1(t) + lf0·x_tmu0(t)
+  (= dN_fus/dt) on a time grid.
+- `twin.expected_counts(t_edges, cycle_params, n_mu, efficiency, background_rate) -> array` — per-bin
+  expected counts from the exact N_fus accumulator + a flat background.
+- `twin.synthetic_spectrum(t_edges, expected, seed) -> array` — seeded Poisson raw histogram.
+- `twin.fit_two_exponential(t_edges, counts, t_min, lambda_c=None, ...) -> dict` — the idealized estimator
+  (log-count WLS): `{lambda_n, amplitude, omega_s_eff, loss_per_cycle}`.
+- `twin.disappearance_rate(omega_s_eff, lambda_c, lambda_0=LAMBDA_0) -> float` — the closed-form gate target.
+- `likelihood.spectrum_model(t_edges, counts, phi=1.2, ...)` — numpyro model: ω_s^eff ~ Uniform(0.2, 0.8) %,
+  λ_c ~ Uniform over the measured `lambda_c_liquid` band (the informative prior that separates ω_s^eff from
+  λ_c), weak amplitude/background nuisances, Poisson observation. `likelihood.fit_spectrum(...) -> samples`
+  wraps NUTS. Identifiability: the histogram constrains λ_n; ω_s^eff and λ_c lean on the λ_c prior.
+
 ## `openmucf.validate` — reproduce the pre-registered validation targets
 
 The Phase 2.4 trust gate; honest by construction (unhittable v1 targets are marked

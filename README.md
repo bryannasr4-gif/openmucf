@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-112%2F113%20(macOS%20%2B%20Windows)-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-123%2F125%20(macOS%20%2B%20Windows)-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-v1%20research--grade-brightgreen.svg)
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
@@ -36,10 +36,12 @@ shared substrate:
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 113 tests (112 pass, 1 skipped: the blocked tt re-attribution refit)
+pytest                 # 125 tests (123 pass, 1 skipped-blocked, 1 slow deselected by default)
+pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 seeded MCMC fits)
 ```
-Verified platforms: macOS arm64 (py3.13) and Windows x64 (py3.12) — 112/113 tests, `VALIDATION.md` regenerates
+Verified platforms: macOS arm64 (py3.13) and Windows x64 (py3.12) — 123/125 tests, `VALIDATION.md` regenerates
 identically on both. Windows note: enable long-path support (or use a short venv path) for the JAX install.
+The twin coverage test is marked `slow` and deselected from the default run (and CI); run it with `pytest -m slow`.
 
 ## Quickstart
 ```python
