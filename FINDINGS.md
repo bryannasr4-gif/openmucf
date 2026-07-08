@@ -9,8 +9,10 @@
 ## 0. Solver/autodiff cross-check (exact algebraic limit)
 Analytic vs autodiff-through-the-stiff-ODE gradient of X_mu w.r.t. effective sticking, evaluated in the
 single-pool limit where the network equals the closed form by construction:
-analytic = -1.384e+04, ODE = -1.384e+04, relative difference =
-**2.9e-13** -> this verifies the diffrax solver + JAX autodiff machinery (it is not an
+analytic = -1.384e+04, ODE = -1.384e+04, relative difference
+**< 1e-11** (asserted at generation time; the measured value sits at the autodiff machine-noise floor,
+whose leading digit is environment-dependent, so this doc reports the stable bound rather than raw
+noise digits) -> this verifies the diffrax solver + JAX autodiff machinery (it is not an
 independent test of the closed-form reduction; that reduction is the pre-registered V1 gate).
 
 ## 1. Which uncertainty actually controls the yield (global sensitivity)

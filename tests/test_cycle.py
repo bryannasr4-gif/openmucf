@@ -58,11 +58,13 @@ def test_eta_threads_through_params():
 
 
 def test_wsn_norm_excludes_loss_accumulators_bit_exact():
-    """PIN (Fable amendment 2026-07-08, §3.4): step-error is controlled over the 6 v1 states only, so
-    the channels-OFF 8-component network reduces to the v1 reference BIT-FOR-BIT (reduction gate G-N1
-    at PURE atol 1e-9, rtol=0) and the one FINDINGS number computed through the ODE stays byte-identical
-    (uq.cross_check_gradient rel_diff formats to '2.9e-13'). Reverting to diffrax's default 8-component
-    norm regresses N_fus to ~5e-9 (fails atol 1e-9) and the FINDINGS byte to '3.2e-13'."""
+    """PIN (Fable amendment 2026-07-08, §3.4; diagnostic de-pinned same day, hotfix ws-fix-gradient-pin):
+    step-error is controlled over the 6 v1 states only, so the channels-OFF 8-component network reduces
+    to the v1 reference BIT-FOR-BIT (reduction gate G-N1 at PURE atol 1e-9, rtol=0); reverting to
+    diffrax's default 8-component norm regresses N_fus to ~5e-9 and fails that gate. The through-the-ODE
+    diagnostic (uq.cross_check_gradient) is machine noise ~3e-13 whose leading digit drifts across
+    jax/numpy builds (2.9e-13 locked env vs 2.8e-13 on unpinned CI 3.12), so it is BOUNDED (< 1e-11),
+    not byte-pinned; FINDINGS.md emits the same bound (see scripts/generate_findings.py)."""
     import json
     from pathlib import Path
 
@@ -76,5 +78,6 @@ def test_wsn_norm_excludes_loss_accumulators_bit_exact():
     got6 = np.array([np.asarray(cycle.solve_cycle(*args6, t1=float(t)).ys[-1])[:6] for t in ref["ts"]])
     # G-N1 as PURE atol (rtol=0): only the v1-sliced norm makes this pass (default 8-norm -> ~5e-9).
     assert np.max(np.abs(got6 - ref6)) < 1e-9
-    # FINDINGS byte lock: the through-the-ODE diagnostic must still print '2.9e-13'.
-    assert f"{cross_check_gradient()['rel_diff']:.1e}" == "2.9e-13"
+    # Through-the-ODE diagnostic: autodiff-vs-analytic agreement stays at the machine-noise floor
+    # (~3e-13 measured; its leading digit is env-dependent, so bound it ~2 decades above the floor).
+    assert cross_check_gradient()["rel_diff"] < 1e-11
