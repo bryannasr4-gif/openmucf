@@ -55,3 +55,26 @@ def test_eta_threads_through_params():
     p5 = cycle.params_from_conditions(rt, 300.0, 1.2, 0.5, eta=5.0)
     assert p5["lambda_form1"] == pytest.approx(5.0 * p1["lambda_form1"], rel=1e-12)
     assert p5["lambda_form0"] == pytest.approx(5.0 * p1["lambda_form0"], rel=1e-12)
+
+
+def test_wsn_norm_excludes_loss_accumulators_bit_exact():
+    """PIN (Fable amendment 2026-07-08, §3.4): step-error is controlled over the 6 v1 states only, so
+    the channels-OFF 8-component network reduces to the v1 reference BIT-FOR-BIT (reduction gate G-N1
+    at PURE atol 1e-9, rtol=0) and the one FINDINGS number computed through the ODE stays byte-identical
+    (uq.cross_check_gradient rel_diff formats to '2.9e-13'). Reverting to diffrax's default 8-component
+    norm regresses N_fus to ~5e-9 (fails atol 1e-9) and the FINDINGS byte to '3.2e-13'."""
+    import json
+    from pathlib import Path
+
+    import numpy as np
+
+    from openmucf.uq import cross_check_gradient
+
+    ref = json.loads((Path(__file__).parent / "cycle_v1_reference.json").read_text())
+    args6 = ref["args6"]
+    ref6 = np.array(ref["ys"])[:, :6]
+    got6 = np.array([np.asarray(cycle.solve_cycle(*args6, t1=float(t)).ys[-1])[:6] for t in ref["ts"]])
+    # G-N1 as PURE atol (rtol=0): only the v1-sliced norm makes this pass (default 8-norm -> ~5e-9).
+    assert np.max(np.abs(got6 - ref6)) < 1e-9
+    # FINDINGS byte lock: the through-the-ODE diagnostic must still print '2.9e-13'.
+    assert f"{cross_check_gradient()['rel_diff']:.1e}" == "2.9e-13"

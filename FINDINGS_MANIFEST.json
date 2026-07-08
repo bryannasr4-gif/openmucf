@@ -227,7 +227,7 @@
   ],
   "generated_by": "scripts/generate_findings.py",
   "inputs": {
-    "rates_csv_sha256": "e0cde0c60f7ae43201cbcca94b57261877bb7c38bc49ecc1a93447db18d2cd1d",
+    "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784",
     "seeds": {
       "breakeven": 1,
       "forward_uq": 0,
