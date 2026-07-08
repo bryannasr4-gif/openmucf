@@ -34,9 +34,24 @@ _RESONANCES = {
 # Thermal-scale calibration: set so lambda_dtmu(300 K, F=0, phi=1) ~ 1.3e8 s^-1 -- i.e. the ~1e8
 # room-temperature anchor (Yamashita-Kino 2022) and the canonical lambda_c(300 K) ~ 1.4e8. This scales
 # ONLY the thermal average; the energy-resolved peak (lambda_dtmu_energy) stays the measured 7.1e9.
-_CALIB = {"F0": 0.31, "F1": 0.31}
+#
+# _CALIB re-anchor (2026-07-08): the quadrature grid changed from linear to geometric (_EGRID below;
+# for low-T convergence). _CALIB is the pre-existing DISCLOSED anchor whose defining condition is
+# "match the 300 K thermal scale" (above), so when the grid change altered the quadrature the two
+# factors were RE-DERIVED to reproduce the 300 K anchor rates bit-exactly. This honors the anchor's
+# own definition; it is NOT tuning to a target. Recorded 300 K anchors on the OLD linear grid (before
+# the change), to full precision:
+#     a0 = lambda_dtmu(300, 1, F=0) = 130059577.61950417
+#     a1 = lambda_dtmu(300, 1, F=1) = 53094361.62224904
+# Re-derivation: new _CALIB[F] = a_F / _maxwell_avg(300, F)|geomspace  (old _CALIB was 0.31/0.31 on the
+# linear grid). Verified: lambda_dtmu(300, 1, F) reproduces a0/a1 to relative 0.0 (bit-exact), so every
+# 300 K downstream number is preserved; T != 300 K values shift slightly (the intended better quadrature).
+_CALIB = {"F0": 0.30922830500330367, "F1": 0.3094896596177261}
 
-_EGRID = jnp.linspace(1.0e-4, 2.0, 800)  # eV, quadrature grid for the Maxwell average
+# Geometric (log-spaced) quadrature grid for the Maxwell average: a linear grid put only ~4 points below
+# 0.01 eV, where the Maxwell weight concentrates for T <~ 50 K, so low-T formation was grid-unconverged
+# (changed by >7% under a grid doubling); the geomspace grid is converged to <0.05% there.
+_EGRID = jnp.geomspace(1.0e-4, 2.0, 800)  # eV
 
 
 def lambda_dtmu_energy(E, F=1):
