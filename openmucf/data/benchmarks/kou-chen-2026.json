@@ -1,0 +1,30 @@
+{
+  "id": "kou-chen-2026",
+  "type": "reproduction",
+  "title": "Kou-Chen arXiv:2606.07077 collision-only and best-case cycle yields",
+  "engine": "cycle",
+  "inputs": [
+    {
+      "label": "collision-only baseline",
+      "omega_s_eff_pct": 0.557,
+      "conditions": {"T": 300.0, "phi": 1.2, "c_t": 0.5},
+      "published_value": 112.6,
+      "tolerance": "+-10%"
+    },
+    {
+      "label": "best external-field scenario",
+      "omega_s_eff_pct": 0.308,
+      "conditions": {"T": 300.0, "phi": 1.2, "c_t": 0.5},
+      "published_value": 156.5,
+      "tolerance": "+-10%"
+    }
+  ],
+  "provenance": {
+    "source_bibkey": "KouChen2026",
+    "locator": "abstract + Eq.4 cycle estimate; effective sticking values from the collision-only and optimistic scenarios",
+    "input_basis": "The paper's two effective-sticking inputs are stated (omega_s_eff = 0.557% collision-only, 0.308% best external-field) and are fed here into OpenMuCF's cycle engine at T=300 K, phi=1.2, c_t=0.5 (the canonical liquid operating point the paired V_kouchen validation targets already run at). The cycling rate lambda_c is NOT back-solved from their published X_mu (that would be circular) and is not recoverable from the open arXiv text (it appears only as an abstract symbol in Eq.4; their Table 1 omits it), so lambda_c is OpenMuCF's own formation-driven value at these conditions -- verified against the live arXiv full text 2026-07-08. Disclosed difference: the paper quotes phi=1.25, whereas the committed OpenMuCF predictions (114.5, 160.3) and the +1.7%/+2.4% closed-form-vs-network offsets are phi=1.2 numbers. This case therefore tests the same thing the V_kouchen targets do, but as a citable, self-contained reproduction artifact; that duplication is acceptable and disclosed. Tolerance +-10% is pre-registered (matches the V_kouchen validation targets).",
+    "verified_utc": "2026-07-08"
+  },
+  "status": "active",
+  "notes": "Friendly reproduction: PASS means OpenMuCF reproduces Kou and Chen's published collision-only (112.6) and best-case (156.5) fusions-per-muon within +-10%. Every number transcribed here has been public in OpenMuCF's own VALIDATION.md since v1.0.0; this is a reproduction, not a verdict on their claims."
+}

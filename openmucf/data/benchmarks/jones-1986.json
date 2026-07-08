@@ -1,0 +1,15 @@
+{
+  "id": "jones-1986",
+  "type": "reproduction",
+  "title": "Jones et al. (1986) record-class d-t yield X_mu ~ 150",
+  "engine": "cycle",
+  "inputs": [],
+  "published_value": 150,
+  "provenance": {
+    "source_bibkey": "Jones1986",
+    "locator": "Jones et al., Phys. Rev. Lett. 56, 588 (1986)",
+    "input_basis": "BLOCKED: the record ~150 fusions-per-muon comes from a specific operating point within the Jones LAMPF campaign, which spanned density phi ~ 0.12-1.30 and temperature ~ 15-800 K across several tritium fractions. The full text of Phys. Rev. Lett. 56, 588 (1986) is not yet in hand, and the single (T, phi, c_t) that produced the ~150 record cannot be pinned from openly readable sources (the primary is paywalled; open reviews give only the campaign-wide range, not the record point). Per the never-guess rule, conditions are left empty and the case is registered but not run."
+  },
+  "status": "blocked-acquisition",
+  "notes": "Registered as PENDING pending acquisition of the full text of Jones et al., Phys. Rev. Lett. 56, 588 (1986). It runs nothing and fails nothing; once the record operating point (T, phi, c_t) is pinned from the primary source, the inputs can be populated and the case activated."
+}

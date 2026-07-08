@@ -33,6 +33,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=7", "ruff>=0.5"]
 
+[project.scripts]
+openmucf = "openmucf.cli:main"
+
 [project.urls]
 # DOI added at first Zenodo release; the repository URLs below are final.
 Homepage = "https://github.com/bryannasr4-gif/openmucf"
@@ -44,7 +47,7 @@ Changelog = "https://github.com/bryannasr4-gif/openmucf/blob/main/CHANGELOG.md"
 packages = ["openmucf"]
 
 [tool.setuptools.package-data]
-openmucf = ["data/*"]
+openmucf = ["data/*", "data/benchmarks/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
