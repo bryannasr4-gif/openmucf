@@ -77,21 +77,27 @@ def conservation_residual(sol):
     return float(y[0] + y[1] + y[2] + y[4] + y[5] - 1.0)
 
 
-def params_from_conditions(rates, T, phi, c_t, omega_s_eff=None, use_legacy_sticking=False):
+def params_from_conditions(rates, T, phi, c_t, omega_s_eff=None, use_legacy_sticking=False, eta=None):
     """Assemble cycle rates from the ledger + physical conditions (T [K], density phi, tritium fraction c_t).
 
     Documented v1 density scalings: transfer ~ phi*c_t, spin-flip ~ phi, formation ~ phi (inside
     formation.lambda_dtmu). omega_s_eff defaults to omega_s0*(1-R_col) from the ledger.
+
+    ``eta`` is the epithermal formation enhancement (ledger row ``eta_dtmu``); ``None`` reads it from the
+    ledger (= 1.0, so behavior is unchanged), and it is a structural knob (eta=1 bare theory .. ~5 fit),
+    NOT a UQ prior -- the measured lambda_c band already contains eta as it occurred at the anchors (I5).
     """
     from . import formation
     from .analytic import effective_sticking
     from .rates import omega_fraction
 
+    if eta is None:
+        eta = rates.value("eta_dtmu")
     lambda_0 = rates.value("lambda_mu_decay")
     lambda_dt = rates.value("lambda_dt_transfer") * phi * c_t
     lambda_10 = rates.value("lambda_10_spinflip") * phi
-    lf0 = formation.lambda_dtmu(T, phi, 0)
-    lf1 = formation.lambda_dtmu(T, phi, 1)
+    lf0 = formation.lambda_dtmu(T, phi, 0, eta)
+    lf1 = formation.lambda_dtmu(T, phi, 1, eta)
     if omega_s_eff is None:
         os0 = omega_fraction(rates["omega_s0_legacy" if use_legacy_sticking else "omega_s0"])
         omega_s_eff = effective_sticking(os0, rates.value("R_col"))

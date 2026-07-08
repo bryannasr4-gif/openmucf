@@ -18,6 +18,12 @@
     "validity_range": {"type": "string"},
     "single_source": {"type": "boolean", "description": "True if it traces to one never-independently-rechecked measurement (feeds the Phase-4 cross-source audit)."},
     "needs_verification": {"type": "boolean", "description": "True if the exact digit/locator is not yet pinned from the primary text."},
-    "notes": {"type": "string"}
+    "notes": {"type": "string"},
+    "distribution": {"type": "string", "enum": ["normal", "lognormal", "uniform", "asym_interval", ""], "description": "Sampling distribution for UQ; empty = interpret value+-unc per unc_type (backward-compatible default)."},
+    "dist_lo": {"type": "number", "description": "Lower bound; required iff distribution in {uniform, asym_interval}, else empty."},
+    "dist_hi": {"type": "number", "description": "Upper bound; required iff distribution in {uniform, asym_interval}, else empty."},
+    "recommendation": {"type": "string", "enum": ["recommended", "superseded", ""], "description": "Recommended vs superseded within a symbol family; empty = sole value for its family."},
+    "phase": {"type": "string", "enum": ["gas", "liquid", "solid", "any", "intrinsic", ""], "description": "Typed projection of conditions: physical phase (n/a not used here; 'any' = condition-free)."},
+    "target_molecule": {"type": "string", "enum": ["D2", "DT", "HD", "T2", "any", "n/a", ""], "description": "Typed projection of conditions: target molecule; 'n/a' where the concept does not apply."}
   }
 }

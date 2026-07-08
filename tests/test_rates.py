@@ -54,3 +54,38 @@ def test_validation_targets_present_and_well_formed():
     ids = {r["target_id"] for r in rows}
     # the two marquee Kou-Chen reproduction anchors and the Acceleron regime anchor
     assert {"V_kouchen_base", "V_kouchen_best", "A_acceleron_anomaly"} <= ids
+
+
+def test_ledger_new_columns_validate(tmp_path):
+    """The loader accepts the extended ledger; a bad `distribution` enum value raises."""
+    from pathlib import Path
+
+    import pytest
+
+    from openmucf.rates import RATES_CSV
+
+    r = load_rates()
+    assert "lambda_c_liquid" in r
+    assert r["eta_dtmu"].distribution == "asym_interval"
+    assert r.dist_bounds("lambda_c_liquid") == (1.00e8, 1.45e8)
+
+    text = Path(RATES_CSV).read_bytes().decode("utf-8").replace("\r\n", "\n")
+    bad = text.replace(",asym_interval,1.0,5.0,,gas,D2", ",NOTADIST,1.0,5.0,,gas,D2")
+    assert bad != text  # the target substring was actually present
+    p = tmp_path / "bad_rates.csv"
+    p.write_text(bad, encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_rates(csv_path=p)
+
+
+def test_recommended_superseded_pair():
+    """omega_s0 is `recommended`, omega_s0_legacy is `superseded`; exactly one `recommended` in the family."""
+    r = load_rates()
+    assert r["omega_s0"].recommendation == "recommended"
+    assert r["omega_s0_legacy"].recommendation == "superseded"
+    fam_recommended = [
+        s
+        for s in r.symbols()
+        if r[s].recommendation == "recommended" and s.replace("_legacy", "") == "omega_s0"
+    ]
+    assert fam_recommended == ["omega_s0"]

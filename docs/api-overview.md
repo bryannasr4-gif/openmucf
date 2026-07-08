@@ -139,9 +139,9 @@ DEFERRED, not silently passed). Operating point T=300 K, φ=1.2, c_t=0.5.
 - `Result` — dataclass per target (`target_id`, `observed`, `predicted`,
   `tolerance`, `passed` [None == DEFERRED], `note`).
 - `run(rates) -> list[Result]` — evaluate the engine against every target
-  (V_kouchen_base, V_kouchen_best, V_petitjean, V_yamashita_lcT, V_faifman_peak).
+  (V_kouchen_base, V_kouchen_best, V_petitjean, V_yamashita_lcT, V_yamashita_ratio, V_breunlich_lambdac, V_faifman_peak).
 - `report_markdown(results) -> str` — render the results table and pass/deferred/
-  fail summary (the `VALIDATION.md` content: 6 pass / 1 deferred / 0 fail).
+  fail summary (the `VALIDATION.md` content: 7 pass / 1 deferred / 0 fail).
 
 ## `openmucf.forecast` — pre-registered, hash-stamped forecast cards (FC-001)
 

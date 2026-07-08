@@ -33,11 +33,11 @@ published results.
 ## 2. Running the suite
 
 ```bash
-pytest                 # 73 tests; the ledger loader raises on any provenance/schema problem
+pytest                 # 83 tests; the ledger loader raises on any provenance/schema problem
 ruff check .           # lint (must be clean)
 ruff format .          # auto-format
 
-make validate          # reproduce the pre-registered literature targets -> VALIDATION.md (6 pass / 1 deferred / 0 fail)
+make validate          # reproduce the pre-registered literature targets -> VALIDATION.md (7 pass / 1 deferred / 0 fail)
 make findings          # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration       # Bayesian calibration + identifiability -> CALIBRATION.md
 make all               # lint + test + findings + calibration
@@ -156,7 +156,7 @@ Before opening a PR, confirm:
       `needs_verification` where relevant) are all filled per §3.
 - [ ] Nothing violates `CREDIBILITY_FIREWALL.md`.
 - [ ] **VALIDATION is unaffected, or the discrepancy is documented.** Run `make validate` — the gate must stay
-      **6 pass / 1 deferred / 0 fail**. If your change moves a validated target, that is not automatically wrong, but you
+      **7 pass / 1 deferred / 0 fail**. If your change moves a validated target, that is not automatically wrong, but you
       must explain it in the PR (and, if the physics genuinely changed, update `PRE_REGISTRATION.md` and say so
       explicitly — never re-tune inputs to hit a pre-registered target).
 - [ ] If your change affects results, regenerate `FINDINGS.md` / `CALIBRATION.md` (`make findings`,

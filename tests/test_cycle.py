@@ -44,3 +44,14 @@ def test_xmu_rises_with_temperature():
     x300 = float(cycle.fusions_per_muon_from_conditions(rt, 300.0, 1.2, 0.5))
     x700 = float(cycle.fusions_per_muon_from_conditions(rt, 700.0, 1.2, 0.5))
     assert x700 > x300
+
+
+def test_eta_threads_through_params():
+    """params_from_conditions(eta=5.0) scales both formation rates by exactly 5x vs eta=1."""
+    import pytest
+
+    rt = load_rates()
+    p1 = cycle.params_from_conditions(rt, 300.0, 1.2, 0.5, eta=1.0)
+    p5 = cycle.params_from_conditions(rt, 300.0, 1.2, 0.5, eta=5.0)
+    assert p5["lambda_form1"] == pytest.approx(5.0 * p1["lambda_form1"], rel=1e-12)
+    assert p5["lambda_form0"] == pytest.approx(5.0 * p1["lambda_form0"], rel=1e-12)

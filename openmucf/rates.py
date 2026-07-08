@@ -31,6 +31,12 @@ SCHEMA_JSON = DATA / "rates.schema.json"
 REFS_BIB = DATA / "references.bib"
 
 VALID_STATUS = {"established", "contested"}
+VALID_DISTRIBUTION = {"normal", "lognormal", "uniform", "asym_interval", ""}
+VALID_RECOMMENDATION = {"recommended", "superseded", ""}
+VALID_PHASE = {"gas", "liquid", "solid", "any", "intrinsic", ""}
+VALID_TARGET = {"D2", "DT", "HD", "T2", "any", "n/a", ""}
+# distributions that require explicit dist_lo/dist_hi bounds (an interval, not value+-unc):
+DIST_NEEDS_BOUNDS = {"uniform", "asym_interval"}
 
 
 @dataclass(frozen=True)
@@ -49,6 +55,13 @@ class Rate:
     single_source: bool
     needs_verification: bool
     notes: str
+    # WS-L typed condition/recommendation projections (backward-compatible defaults):
+    distribution: str = ""
+    dist_lo: float = float("nan")
+    dist_hi: float = float("nan")
+    recommendation: str = ""
+    phase: str = ""
+    target_molecule: str = ""
 
 
 def _to_bool(s: str) -> bool:
@@ -97,6 +110,11 @@ class RatesTable:
     def needs_verification(self):
         return [r for r in self._rates.values() if r.needs_verification]
 
+    def dist_bounds(self, sym: str) -> tuple[float, float]:
+        """(dist_lo, dist_hi) for ``sym`` (NaNs if the row has no explicit interval)."""
+        r = self._rates[sym]
+        return (r.dist_lo, r.dist_hi)
+
     def nominal_vector(self, symbols: Sequence[str]):
         """jnp float64 vector of nominal values, for autodiff/UQ. Order = ``symbols``."""
         import jax.numpy as jnp
@@ -130,6 +148,30 @@ def load_rates(
             status = (row.get("status") or "").strip()
             if status and status not in VALID_STATUS:
                 errors.append(f"row {i} ({sym}): bad status '{status}'")
+            # WS-L typed columns: enum membership + interval-distribution bounds.
+            dist = (row.get("distribution") or "").strip()
+            if dist not in VALID_DISTRIBUTION:
+                errors.append(f"row {i} ({sym}): bad distribution '{dist}'")
+            if dist in DIST_NEEDS_BOUNDS:
+                lo_s = (row.get("dist_lo") or "").strip()
+                hi_s = (row.get("dist_hi") or "").strip()
+                if not lo_s or not hi_s:
+                    errors.append(f"row {i} ({sym}): distribution '{dist}' requires dist_lo and dist_hi")
+                else:
+                    try:
+                        if float(lo_s) >= float(hi_s):
+                            errors.append(f"row {i} ({sym}): dist_lo >= dist_hi ({lo_s} >= {hi_s})")
+                    except ValueError:
+                        errors.append(f"row {i} ({sym}): non-numeric dist bounds ('{lo_s}','{hi_s}')")
+            rec = (row.get("recommendation") or "").strip()
+            if rec not in VALID_RECOMMENDATION:
+                errors.append(f"row {i} ({sym}): bad recommendation '{rec}'")
+            phase = (row.get("phase") or "").strip()
+            if phase not in VALID_PHASE:
+                errors.append(f"row {i} ({sym}): bad phase '{phase}'")
+            tgt = (row.get("target_molecule") or "").strip()
+            if tgt not in VALID_TARGET:
+                errors.append(f"row {i} ({sym}): bad target_molecule '{tgt}'")
             if check_refs and known_keys is not None:
                 for key in re.split(r"[;,]", row.get("source_bibkey") or ""):
                     key = key.strip()
@@ -151,6 +193,12 @@ def load_rates(
                     single_source=_to_bool(row.get("single_source", "")),
                     needs_verification=_to_bool(row.get("needs_verification", "")),
                     notes=(row.get("notes") or "").strip(),
+                    distribution=dist,
+                    dist_lo=_to_float(row.get("dist_lo", "")),
+                    dist_hi=_to_float(row.get("dist_hi", "")),
+                    recommendation=rec,
+                    phase=phase,
+                    target_molecule=tgt,
                 )
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"row {i} ({sym}): parse error {exc}")
@@ -158,6 +206,16 @@ def load_rates(
             if r.symbol in rates:
                 errors.append(f"duplicate symbol '{r.symbol}'")
             rates[r.symbol] = r
+
+    # At most one 'recommended' per symbol prefix family (e.g. {omega_s0, omega_s0_legacy}).
+    fam_recommended: dict = {}
+    for r in rates.values():
+        if r.recommendation == "recommended":
+            fam = r.symbol.replace("_legacy", "")
+            fam_recommended[fam] = fam_recommended.get(fam, 0) + 1
+    for fam, count in fam_recommended.items():
+        if count > 1:
+            errors.append(f"family '{fam}': {count} rows marked 'recommended' (at most one allowed)")
 
     if errors:
         raise ValueError("rate ledger validation failed:\n  " + "\n  ".join(errors))

@@ -18,10 +18,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Single-sourced physical constants (`openmucf/constants.py`).** `λ₀`, `E_f`, and the muon-cost default
   are read once from the rate ledger and re-exported to the engine modules, so no module forks a literal
   and a broken ledger fails fast at import (zero numeric change to any result).
+- **Registered UQ-priors file (`openmucf/data/uq_priors.csv`).** The uncertainty-box priors are now
+  machine-sourced from a registered-priors file via `uq.params_from_ledger()` (regression-locked to the
+  frozen literals); the box values are unchanged.
+- **Typed ledger columns + the liquid cycling-rate row.** `rates.csv` gains
+  `distribution`/`dist_lo`/`dist_hi`/`recommendation`/`phase`/`target_molecule` (schema + loader
+  validation) and a first-class `lambda_c_liquid` measured-cycling-rate row (closing the long-missing
+  cycling-rate row); the `eta_dtmu` row now carries an asymmetric [1, 5] interval rather than a Gaussian ±4.
+- **η structural bracket (`FINDINGS.md` §1c).** The epithermal enhancement η (`eta_dtmu`) is threaded
+  through the cycle engine and reported as a structural bracket beside the credible interval (X_μ at η=1
+  vs η=5), with provenance-manifest entries — deliberately not folded into the UQ box, since the measured
+  λ_c band already contains η as it occurred at the anchors.
+- **New validation target `V_yamashita_ratio`.** Executes the pre-registered ±30% λ_c(800 K)/λ_c(300 K)
+  ratio clause (engine ratio ~1.31 vs ~1.45 digitized = PASS); the validation scoreboard is now
+  **7 pass / 1 deferred / 0 fail**.
 
 ### Changed
 - **Extended reproducibility audit (`make audit`).** Now also verifies the provenance manifest, exact-diffs
   `FINDINGS_MANIFEST.json`, and re-checks the `CALIBRATION.md` MCMC tables within a documented tolerance.
+- **Formation quadrature grid.** `formation._EGRID` switched from linear to geometric spacing for low-T
+  convergence (a grid doubling now moves λ_dtμ(30 K) by <0.5%, previously ~7%); `formation._CALIB` was
+  re-anchored so the disclosed 300 K rates are preserved bit-exactly (no 300 K result moved; off-anchor
+  temperatures shift slightly, the intended better-quadrature improvement).
 
 ### Planned
 - **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant

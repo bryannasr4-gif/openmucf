@@ -18,11 +18,18 @@ taken from the ledger's contested rows; every choice is documented in :data:`PAR
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
 from .constants import E_F_MEV, LAMBDA_0
+
+# Registered-priors file (provenance type: registered prior; I3). The UQ box VALUES are frozen this
+# wave; this file makes them machine-sourced instead of module literals (regression-locked by
+# tests/test_uq_priors.py::test_params_from_ledger_matches_frozen_literals).
+_PRIORS_CSV = Path(__file__).resolve().parent / "data" / "uq_priors.csv"
 
 
 @dataclass(frozen=True)
@@ -35,14 +42,30 @@ class Param:
     note: str
 
 
-PARAMS = [
-    Param("omega_s0_pct", 0.857, 0.80, 0.95, "%", "initial sticking: Kamimura 0.857 to legacy 0.91-0.93"),
-    Param("R", 0.35, 0.20, 0.45, "-", "collisional reactivation (may rise at high density)"),
-    Param("lambda_c", 1.30e8, 1.00e8, 1.45e8, "s^-1", "measured cycling rate (Breunlich)"),
-    Param("E_mu_GeV", 5.0, 2.0, 10.0, "GeV", "muon production cost"),
-    Param("eta_acc", 0.30, 0.10, 0.50, "-", "electrical->muon-beam wall-plug efficiency"),
-    Param("eta_thermal", 0.40, 0.35, 0.45, "-", "thermal->electric conversion"),
-]
+def params_from_ledger(path=None) -> list[Param]:
+    """Load the UQ priors from ``openmucf/data/uq_priors.csv`` (host-side read) into ``Param`` objects.
+
+    ``Param.note`` is populated from the CSV ``rationale`` column. The file order defines the parameter
+    order used by the Sobol/forward-UQ boxes, so it must match the historical literal order.
+    """
+    src = Path(path) if path is not None else _PRIORS_CSV
+    params: list[Param] = []
+    with open(src, newline="") as f:
+        for row in csv.DictReader(f):
+            params.append(
+                Param(
+                    name=row["name"].strip(),
+                    nominal=float(row["nominal"]),
+                    low=float(row["low"]),
+                    high=float(row["high"]),
+                    unit=row["unit"].strip(),
+                    note=row["rationale"].strip(),
+                )
+            )
+    return params
+
+
+PARAMS = params_from_ledger()
 NAMES = [p.name for p in PARAMS]
 NOMINAL = {p.name: p.nominal for p in PARAMS}
 

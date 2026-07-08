@@ -1,0 +1,7 @@
+name,nominal,low,high,unit,distribution,ledger_symbols,rationale
+omega_s0_pct,0.857,0.80,0.95,%,uniform,omega_s0;omega_s0_legacy,"contested-range box spanning Kamimura 0.857 to legacy 0.91-0.93"
+R,0.35,0.20,0.45,-,uniform,R_col,"collisional reactivation; box widened below/above the 0.35+-0.05 model value (may rise at high density)"
+lambda_c,1.30e8,1.00e8,1.45e8,s^-1,uniform,lambda_c_liquid,"measured actual liquid-condition cycling band; == ledger lambda_c_liquid dist bounds by construction (same actual-rate basis as calibrate.py and V_breunlich)"
+E_mu_GeV,5.0,2.0,10.0,GeV,uniform,E_mu_cost,"design-study floor range 2-10 GeV (row notes); tiered replacement planned with the muon-cost compilation"
+eta_acc,0.30,0.10,0.50,-,uniform,,"electrical->muon-beam wall-plug efficiency; no ledger row (systems assumption; the PSI-measured 0.18 correction lands with the systems/energy-graph work)"
+eta_thermal,0.40,0.35,0.45,-,uniform,,"thermal->electric conversion; no ledger row (systems assumption)"

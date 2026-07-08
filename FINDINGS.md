@@ -62,6 +62,22 @@ The prior-independent statements are therefore the *local elasticity* ranking at
 (|dlnX_mu/dln omega_s0| > |dlnX_mu/dln lambda_c| > |dlnX_mu/dln R|) and the requirement-form result in
 section 3 -- not "R is the dominant driver" as an unconditional claim.
 
+## 1c. The eta=1-vs-5 formation debate (structural bracket, not a prior)
+The epithermal enhancement eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate; the
+literature spans eta=1 (bare Faifman theory) to eta~5 (Yamashita-Kino fit). Recomputing X_mu through the
+full cycle ODE at the canonical operating point (300 K, phi=1.2, c_t=0.5):
+
+| eta | X_mu |
+|---|---|
+| 1 (bare theory) | 114.5 |
+| 5 (Yamashita-Kino fit) | 157.6 |
+
+so the structural bracket is X_mu(eta=5) - X_mu(eta=1) = **43.1**.
+
+eta rescales the FORMATION pathway; the measured lambda_c band in sections 1/2 already contains eta as it
+occurred in the anchor experiments (accounting rule I5), so eta is reported as a structural bracket beside
+the CI, never convolved into it.
+
 ## 2. Propagated uncertainty (what we can actually say today)
 Monte-Carlo propagation of the measured liquid-density ranges (95% intervals; prior propagation, not a
 posterior). Note the propagated interval deliberately reflects LIQUID conditions (phi ~ 1.2, T ~ 300 K):
