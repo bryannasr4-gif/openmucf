@@ -29,6 +29,16 @@ provenance.
   percent to a bare fraction.
 - `bibkeys(bib_path=...) -> set` — all citation keys defined in `references.bib`.
 
+## `openmucf.constants` — cross-module physical constants (single source)
+
+Re-exports, read once from the ledger at import, the three constants that multiple engine modules need
+— so no module carries a forked literal, and a broken ledger fails fast at import. Reached as a
+submodule (`from openmucf import constants`); not in the eager `__all__` surface.
+
+- `LAMBDA_0` — muon decay rate `λ₀` [s⁻¹] (ledger row `lambda_mu_decay`).
+- `E_F_MEV` — d-t fusion energy `E_f` [MeV] (ledger row `E_fusion`).
+- `E_MU_GEV_DEFAULT` — muon-production cost default [GeV] (ledger row `E_mu_cost`).
+
 ## `openmucf.analytic` — closed-form steady-state yield and energy balance
 
 Pure, JAX-differentiable backbone: `ω_s_eff = ω_s0·(1−R)`,
@@ -157,6 +167,23 @@ physics. Two scenarios (A = constant-R calibrated-model forecast; B = honest ign
 - `write_card(path=...)`, `regenerate(path=...)` (refreshes `payload_sha256`, preserves other
   registration fields), `render_forecasts_md(card_paths) -> str` (the `FORECASTS.md` registry table,
   read from on-disk cards only).
+
+## `openmucf.provenance` — machine-checkable provenance for headline numbers
+
+Records, for every headline number in a generated doc, a typed manifest entry (formatted value +
+anchoring regex + source type), so a number cannot silently diverge from its recorded source. Paired
+with `make audit`'s regeneration diff, this closes the doc-drift bug class. Reached as a submodule or
+via `python -m openmucf.provenance --check FINDINGS_MANIFEST.json`.
+
+- `ManifestEntry` — frozen dataclass for one tracked number (`id`, `value`, `pattern`, `source_type`
+  ∈ {`derivation`, `ledger_row`, `registered_prior`}, `source`, `doc`).
+- `file_sha256(path) -> str` — SHA-256 over the LF-normalized UTF-8 text of a file (same recipe as
+  `forecast.ledger_sha256`, so digests are comparable).
+- `write_manifest(path, entries, inputs) -> None` — write `{generated_by, inputs, entries}` JSON with
+  sorted keys + 2-space indent for reviewable diffs.
+- `check_manifest(manifest_path, repo_root=".") -> list[str]` — verify every entry's `value` is present
+  (anchored by its `pattern`) in its doc; returns the list of failures (empty == all pass).
+- `main(argv=None) -> int` — the `--check <manifest.json>` CLI (0 = pass, 1 = failure).
 
 ## `openmucf.interop` — GEANT4 / external-tool interoperability (v1 stub)
 
