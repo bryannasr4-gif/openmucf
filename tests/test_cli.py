@@ -11,7 +11,7 @@ def test_version_prints_and_exits_zero(capsys):
     with pytest.raises(SystemExit) as exc:
         cli.main(["--version"])
     assert exc.value.code == 0
-    assert "openmucf 1.0.0" in capsys.readouterr().out
+    assert "openmucf 1.1.0" in capsys.readouterr().out
 
 
 def test_no_command_prints_help_exits_zero(capsys):

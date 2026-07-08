@@ -3,7 +3,7 @@
   "upload_type": "software",
   "description": "OpenMuCF is open, reproducible, differentiable, uncertainty-bearing infrastructure for the muon-catalyzed-fusion (μCF) cycle: a FAIR rate ledger with per-row provenance, conditions, uncertainty, established/contested tags and validity ranges; a JAX/diffrax cycle-kinetics and net-electrical energy-balance engine; and a global Sobol/forward-UQ auditor that turns point-estimate breakeven claims into error-barred, falsifiable verdicts. It introduces no new fundamental μCF physics — the cycle is textbook and the reactivation transport follows Stodden (1990) and Rafelski–Müller (1988/89) — its contribution is the open shared substrate plus honest findings; it complements GEANT4 and does not compete with it.",
   "license": "Apache-2.0",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "language": "eng",
   "access_right": "open",
   "keywords": [

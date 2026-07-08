@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant
+  rate that every group currently hard-codes, so that the auditor *produces* it instead of importing a
+  contested constant. This is the quantitative motivation surfaced by the v1 calibration finding: experiment
+  pins `ω_s^eff` and `λ_c` but not the `ω_s0`/`R` split (corr +0.84). Requires HPC/multi-GPU (cross-section
+  training set + slowing-down Monte Carlo); a gold-standard close-coupling/R-matrix benchmark is the gating
+  acquisition.
+
+## [1.1.0] - 2026-07-08
+
 ### Added
 - **Machine-checkable provenance (`openmucf/provenance.py` + `FINDINGS_MANIFEST.json`).** Every headline
   number in `FINDINGS.md` carries a typed manifest entry (formatted value + anchoring regex + source
@@ -92,14 +102,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   re-anchored so the disclosed 300 K rates are preserved bit-exactly (no 300 K result moved; off-anchor
   temperatures shift slightly, the intended better-quadrature improvement).
 
-### Planned
-- **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant
-  rate that every group currently hard-codes, so that the auditor *produces* it instead of importing a
-  contested constant. This is the quantitative motivation surfaced by the v1 calibration finding: experiment
-  pins `ω_s^eff` and `λ_c` but not the `ω_s0`/`R` split (corr +0.84). Requires HPC/multi-GPU (cross-section
-  training set + slowing-down Monte Carlo); a gold-standard close-coupling/R-matrix benchmark is the gating
-  acquisition.
-
 ## [1.0.0] - 2026-07-07
 
 First public release: the minimum-useful, validated **v1 spine** — FAIR rate ledger → analytic closed form →
@@ -159,5 +161,6 @@ provenance-clean and reproducible.
   ignorance-bound scenario B — **registered at this tag** (Zenodo DOI 10.5281/zenodo.21251512). Adds 20 forecast
   tests (**63 total**).
 
-[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.1.0
 [1.0.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.0.0

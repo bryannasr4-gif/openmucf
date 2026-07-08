@@ -15,7 +15,7 @@ from . import analytic, cycle, energy, formation, interop, uq  # noqa: E402, F40
 from .energy import EnergyChain  # noqa: E402
 from .rates import Rate, RatesTable, bibkeys, load_rates, omega_fraction  # noqa: E402
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __all__ = [
     "Rate",
     "RatesTable",
