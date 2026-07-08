@@ -121,6 +121,25 @@ def run(rates, targets_csv=None):
         )
     )
 
+    # Pre-registered ratio clause: implied lambda_c(800 K)/lambda_c(300 K) vs the digitized Yamashita-Kino
+    # ratio, +-30%. The 300 K scale is anchor-fixed (formation._CALIB), so this ratio tests the SHAPE of
+    # lambda_c(T) rise, not the absolute scale.
+    x300 = _xmu(rates, 0.00557, T=300.0)
+    x800 = _xmu(rates, 0.00557, T=800.0)
+    ratio = (lam0 / (1.0 / x800 - 0.00557)) / (lam0 / (1.0 / x300 - 0.00557))
+    _yr = tgt["V_yamashita_ratio"]
+    out.append(
+        Result(
+            "V_yamashita_ratio",
+            "1.45 (digitized lambda_c(800 K)/lambda_c(300 K); Yamashita-Kino Fig.3a)",
+            ratio,
+            "+-30%",
+            _within(ratio, float(_yr["value"]), _yr["tolerance"]),
+            "engine ratio of implied lambda_c at 800 K vs 300 K (same inversion as V_breunlich); "
+            "executes the pre-registered ratio clause",
+        )
+    )
+
     import jax.numpy as jnp
 
     from . import formation

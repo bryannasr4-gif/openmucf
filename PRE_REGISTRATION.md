@@ -23,6 +23,9 @@ Formalized in `openmucf/data/validation_targets.csv`; backbone is `MODEL_SPEC.md
 > monotonicity at 200–800 K as a λ_c(T) proxy; the registered 20 K lower bound and ±30% ratio clause
 > are pending (the computed λ_c(800)/λ_c(300) ≈ 1.31 vs ~1.45 digitized would pass), and
 > V_faifman_peak is an anchor-consistency check (the peak amplitude is the inserted measured value).
+> Executed (2026-07-08): the ±30% ratio clause now runs as target V_yamashita_ratio (engine ratio
+> ~1.31 vs ~1.45 digitized = PASS); the 20 K lower bound remains pending (low-T formation is Phase-3
+> condensed-phase scope).
 
 ## Falsification target (the headline)
 Re-create, **inside the same transparent model**, the 2026 projections:

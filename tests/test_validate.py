@@ -55,3 +55,10 @@ def test_verdict_is_csv_driven(tmp_path):
     # control: the unmutated CSV still passes it
     base_res = {r.target_id: r for r in validate.run(load_rates())}
     assert base_res["V_kouchen_base"].passed is True
+
+
+def test_yamashita_ratio_target():
+    """The executed pre-registered ratio clause appears as V_yamashita_ratio and passes."""
+    res = {r.target_id: r for r in validate.run(load_rates())}
+    assert "V_yamashita_ratio" in res
+    assert res["V_yamashita_ratio"].passed is True
