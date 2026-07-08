@@ -1,0 +1,156 @@
+{
+  "entries": [
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "gate_bias_pct",
+      "pattern": "\\*\\*gate bias = 0\\.53%\\*\\*",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "0.53"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "gate_lambda_n",
+      "pattern": "fit lambda_n = \\*\\*1\\.2630\\*\\*",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "1.2630"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "gate_lambda_n_analytic",
+      "pattern": "analytic lambda_n = \\*\\*1\\.2564\\*\\*",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "1.2564"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "bias_ln_ct0.2_tmin2",
+      "pattern": "\\| 2\\.0 \\|[^\\n]*\\+1\\.24",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "+1.24"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "bias_w_ct0.2_tmin2",
+      "pattern": "\\| 2\\.0 \\|[^\\n]*\\+1\\.95",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "+1.95"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "bias_ln_ct0.5_tmin2",
+      "pattern": "\\| 2\\.0 \\|[^\\n]*\\+0\\.53",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "+0.53"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "bias_w_ct0.5_tmin2",
+      "pattern": "\\| 2\\.0 \\|[^\\n]*\\+0\\.82",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "+0.82"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "bias_ln_ct0.8_tmin2",
+      "pattern": "\\| 2\\.0 \\|[^\\n]*\\+0\\.35",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "+0.35"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "bias_w_ct0.8_tmin2",
+      "pattern": "\\| 2\\.0 \\|[^\\n]*\\+0\\.54",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "+0.54"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi1.2_lo",
+      "pattern": "\\| 1.2 \\| 0\\.763 \\| 0\\.976 \\| 1\\.320 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "0.763"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi1.2_med",
+      "pattern": "\\| 1.2 \\| 0\\.763 \\| 0\\.976 \\| 1\\.320 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "0.976"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi1.2_hi",
+      "pattern": "\\| 1.2 \\| 0\\.763 \\| 0\\.976 \\| 1\\.320 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "1.320"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi2.0_lo",
+      "pattern": "\\| 2.0 \\| 0\\.968 \\| 1\\.322 \\| 1\\.896 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "0.968"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi2.0_med",
+      "pattern": "\\| 2.0 \\| 0\\.968 \\| 1\\.322 \\| 1\\.896 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "1.322"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi2.0_hi",
+      "pattern": "\\| 2.0 \\| 0\\.968 \\| 1\\.322 \\| 1\\.896 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "1.896"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi2.4_lo",
+      "pattern": "\\| 2.4 \\| 1\\.071 \\| 1\\.496 \\| 2\\.184 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "1.071"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi2.4_med",
+      "pattern": "\\| 2.4 \\| 1\\.071 \\| 1\\.496 \\| 2\\.184 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "1.496"
+    },
+    {
+      "doc": "TWIN_AUDIT.md",
+      "id": "band_ln_phi2.4_hi",
+      "pattern": "\\| 2.4 \\| 1\\.071 \\| 1\\.496 \\| 2\\.184 \\|",
+      "source": "scripts/generate_twin_audit.py",
+      "source_type": "derivation",
+      "value": "2.184"
+    }
+  ],
+  "generated_by": "scripts/generate_twin_audit.py",
+  "inputs": {
+    "fc001_card_sha256": "2ea54b650eff34ea38e91c0b0915dde707c40ac91382b4419fe6a8052fa1855f",
+    "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784",
+    "seeds": {
+      "gate_synthetic": 0
+    }
+  }
+}
