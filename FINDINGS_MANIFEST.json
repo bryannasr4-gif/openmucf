@@ -1,0 +1,215 @@
+{
+  "entries": [
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_xmu_ST_R",
+      "pattern": "\\| R \\| 0\\.620 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.620"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_xmu_ST_lambda_c",
+      "pattern": "\\| lambda_c \\| 0\\.254 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.254"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_xmu_ST_omega_s0_pct",
+      "pattern": "\\| omega_s0_pct \\| 0\\.131 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.131"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_qnet_ST_E_mu_GeV",
+      "pattern": "\\| E_mu_GeV \\| 0\\.631 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.631"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_qnet_ST_eta_acc",
+      "pattern": "\\| eta_acc \\| 0\\.427 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.427"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "robustness_R_box_i",
+      "pattern": "\\| R \\| 0\\.620 \\| 0\\.170 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.620"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "robustness_R_box_ii",
+      "pattern": "\\| R \\| 0\\.620 \\| 0\\.170 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.170"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "robustness_lambda_c_box_i",
+      "pattern": "\\| lambda_c \\| 0\\.254 \\| 0\\.242 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.254"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "robustness_lambda_c_box_ii",
+      "pattern": "\\| lambda_c \\| 0\\.254 \\| 0\\.242 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.242"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "robustness_omega_s0_pct_box_i",
+      "pattern": "\\| omega_s0_pct \\| 0\\.131 \\| 0\\.591 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.131"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "robustness_omega_s0_pct_box_ii",
+      "pattern": "\\| omega_s0_pct \\| 0\\.131 \\| 0\\.591 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.591"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "xmu_ci_lo",
+      "pattern": "\\| X_mu \\| 89 \\| 104 \\| 122 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "89"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "xmu_ci_med",
+      "pattern": "\\| X_mu \\| 89 \\| 104 \\| 122 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "104"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "xmu_ci_hi",
+      "pattern": "\\| X_mu \\| 89 \\| 104 \\| 122 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "122"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "qsci_ci_lo",
+      "pattern": "\\| Q_sci \\| 0\\.177 \\| 0\\.305 \\| 0\\.839 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.177"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "qsci_ci_med",
+      "pattern": "\\| Q_sci \\| 0\\.177 \\| 0\\.305 \\| 0\\.839 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.305"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "qsci_ci_hi",
+      "pattern": "\\| Q_sci \\| 0\\.177 \\| 0\\.305 \\| 0\\.839 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.839"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "qnet_ci_lo",
+      "pattern": "\\| Q_net \\| 0\\.0107 \\| 0\\.0364 \\| 0\\.1246 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.0107"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "qnet_ci_med",
+      "pattern": "\\| Q_net \\| 0\\.0107 \\| 0\\.0364 \\| 0\\.1246 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.0364"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "qnet_ci_hi",
+      "pattern": "\\| Q_net \\| 0\\.0107 \\| 0\\.0364 \\| 0\\.1246 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.1246"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "P_qsci_gt1",
+      "pattern": "P\\(Q_sci > 1\\) = 0\\.2%",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.2%"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "P_qnet_gt1",
+      "pattern": "P\\(Q_net > 1\\) = 0\\.0%",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.0%"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "P_xmu_gt500",
+      "pattern": "P\\(X_mu > 500\\) = 0\\.0%",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.0%"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "cap_zero_sticking",
+      "pattern": "\\*\\*X_mu = 319\\*\\*",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "319"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_required",
+      "pattern": "\\*\\*R >= 0\\.77\\*\\*",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.77"
+    }
+  ],
+  "generated_by": "scripts/generate_findings.py",
+  "inputs": {
+    "rates_csv_sha256": "11e09e0d5342be08b20b25ab77c9d1554e1ffae16d13287e550503ac47ba7e92",
+    "seeds": {
+      "breakeven": 1,
+      "forward_uq": 0,
+      "sobol": 0
+    },
+    "uq_params_repr_sha256": "917605fb393a6dd47e3f6ea8f1c0dc2f2b4f78aba8a8f1150ddf86d7cd9f86f0",
+    "validation_targets_csv_sha256": "6b77892acc6948e5cee4a9d386e7eb8ffd8673b95a1b1eaf23d79c4d6afeb7ea"
+  }
+}
