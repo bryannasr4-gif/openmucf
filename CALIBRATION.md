@@ -30,3 +30,7 @@ Experiment alone determines **effective sticking and the cycling rate**, not the
 sticking/reactivation split. Separating omega_s0 from R -- and predicting how R changes at high density --
 requires an independent microscopic calculation. **That is exactly the Phase-3 reactivation surrogate,**
 and this degeneracy is the quantitative reason it is needed.
+
+## Channels-on re-attribution (ttmu) -- blocked
+
+The joint ttmu loss RE-ATTRIBUTION refit is NOT run: the ttmu formation rate `lambda_ttmu` is blocked (0.0, needs_verification) -- pending acquisition of the Matsuzaki/Bom tt-fusion tables (*Muon Catal. Fusion*). When it lands, this chain adds the tt channel to BOTH likelihood terms (obs_ose observes the TOTAL per-cycle loss ose_pct + tt_pc*100 = 0.45%, and X_mu carries tt_pc), so the omega_s0(1-R) posterior shifts DOWN by the tt share while X_mu stays ~113 -- a joint refit under the anchor-total constraint, NOT new physics. See `docs/accounting.md` and MODEL_SPEC.md sec.4.1.
