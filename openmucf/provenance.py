@@ -47,15 +47,16 @@ def _canonical_json(obj) -> str:
     return json.dumps(obj, sort_keys=True, indent=2, ensure_ascii=True)
 
 
-def write_manifest(path, entries, inputs: dict) -> None:
+def write_manifest(path, entries, inputs: dict, generated_by="scripts/generate_findings.py") -> None:
     """Write the provenance manifest as ``{generated_by, inputs, entries}`` JSON.
 
     ``inputs`` records the SHA-256 of every deterministic input (ledger CSVs, ``repr(uq.PARAMS)``) plus
     the seeds, so a manifest built from different inputs diffs visibly. ``entries`` is a list of
-    :class:`ManifestEntry`.
+    :class:`ManifestEntry`. ``generated_by`` names the producing script (defaults to the findings
+    generator; the twin audit passes its own).
     """
     payload = {
-        "generated_by": "scripts/generate_findings.py",
+        "generated_by": generated_by,
         "inputs": inputs,
         "entries": [asdict(e) for e in entries],
     }
@@ -97,21 +98,35 @@ def check_manifest(manifest_path, repo_root=".") -> list[str]:
 
 
 def main(argv=None) -> int:
-    """`python -m openmucf.provenance --check <manifest.json>` -> 0 on success, 1 on any failure."""
+    """`python -m openmucf.provenance --check A.json [B.json ...]` -> 0 on success, 1 on any failure.
+
+    Accepts MULTIPLE manifest paths after ``--check`` (each is verified against its docs), so one audit
+    line covers every manifest in the tree (e.g. FINDINGS_MANIFEST.json + TWIN_MANIFEST.json).
+    """
     argv = sys.argv[1:] if argv is None else argv
-    if len(argv) == 2 and argv[0] == "--check":
-        manifest_path = argv[1]
+    if len(argv) >= 2 and argv[0] == "--check":
+        manifest_paths = [a for a in argv[1:] if a != "--check"]  # tolerate repeated --check flags
     else:
-        print("usage: python -m openmucf.provenance --check FINDINGS_MANIFEST.json", file=sys.stderr)
+        print(
+            "usage: python -m openmucf.provenance --check MANIFEST.json [MANIFEST2.json ...]",
+            file=sys.stderr,
+        )
         return 2
-    failures = check_manifest(manifest_path)
-    if failures:
-        print(f"provenance check FAILED ({len(failures)} problem(s)):", file=sys.stderr)
-        for f in failures:
+    all_failures: list[str] = []
+    total_entries = 0
+    for mp in manifest_paths:
+        failures = check_manifest(mp)
+        all_failures += [f"{mp}: {f}" for f in failures]
+        total_entries += len(json.loads(Path(mp).read_text(encoding="utf-8"))["entries"])
+    if all_failures:
+        print(f"provenance check FAILED ({len(all_failures)} problem(s)):", file=sys.stderr)
+        for f in all_failures:
             print(f"  - {f}", file=sys.stderr)
         return 1
-    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
-    print(f"provenance OK: {len(manifest['entries'])} manifest entries verified against their docs")
+    print(
+        f"provenance OK: {total_entries} manifest entries across "
+        f"{len(manifest_paths)} manifest(s) verified against their docs"
+    )
     return 0
 
 
