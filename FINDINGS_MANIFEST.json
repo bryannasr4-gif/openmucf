@@ -199,17 +199,41 @@
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.77"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "eta_bracket_lo",
+      "pattern": "\\| 1 \\(bare theory\\) \\| 114\\.5 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "114.5"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "eta_bracket_hi",
+      "pattern": "\\| 5 \\(Yamashita-Kino fit\\) \\| 157\\.6 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "157.6"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "eta_bracket_width",
+      "pattern": "X_mu\\(eta=5\\) - X_mu\\(eta=1\\) = \\*\\*43\\.1\\*\\*",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "43.1"
     }
   ],
   "generated_by": "scripts/generate_findings.py",
   "inputs": {
-    "rates_csv_sha256": "11e09e0d5342be08b20b25ab77c9d1554e1ffae16d13287e550503ac47ba7e92",
+    "rates_csv_sha256": "e0cde0c60f7ae43201cbcca94b57261877bb7c38bc49ecc1a93447db18d2cd1d",
     "seeds": {
       "breakeven": 1,
       "forward_uq": 0,
       "sobol": 0
     },
-    "uq_params_repr_sha256": "917605fb393a6dd47e3f6ea8f1c0dc2f2b4f78aba8a8f1150ddf86d7cd9f86f0",
-    "validation_targets_csv_sha256": "6b77892acc6948e5cee4a9d386e7eb8ffd8673b95a1b1eaf23d79c4d6afeb7ea"
+    "uq_params_repr_sha256": "2de22958c76d1e537feafeada7b7fddd7f1f614daeeba628a0006dfe9d0db727",
+    "validation_targets_csv_sha256": "e3332ab6bdc51e78bbacda6b08486dd404317280a7979297ca2f121091f900b3"
   }
 }
