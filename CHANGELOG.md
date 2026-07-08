@@ -32,10 +32,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New validation target `V_yamashita_ratio`.** Executes the pre-registered ±30% λ_c(800 K)/λ_c(300 K)
   ratio clause (engine ratio ~1.31 vs ~1.45 digitized = PASS); the validation scoreboard is now
   **7 pass / 1 deferred / 0 fail**.
+- **Two absorbing loss channels in the cycle ODE (`cycle.py`) + the accounting table (`docs/accounting.md`).**
+  The ttμ side-branch and ³He scavenging are added as explicit, opt-in (`include_loss_channels=True`)
+  absorbing channels; the engine default stays channels-OFF and reduces to the v1 network bit-for-bit
+  (reduction gate, pure atol 1e-9). `docs/accounting.md` is the single one-channel-one-home table (I5)
+  recording where each deferred channel lives today and its re-attribution rule. **Framing: loss
+  RE-ATTRIBUTION under the constraint that anchor-condition totals still match the measured effective
+  sticking — a joint refit, not "more physics moved the numbers."**
+- **Three loss-channel ledger rows (`lambda_ttmu`, `omega_tt`, `lambda_dhe3`).** `lambda_dhe3` = 1.92e8 s⁻¹
+  from a live open source (Fotev et al., *Search for muon catalyzed d³He fusion*, arXiv:2001.09927);
+  `omega_tt` = 0.14 (corroborated ω_tt=13.9%); `lambda_ttmu` ships the documented I10 blocked fallback
+  (0.0, `needs_verification`) pending the Matsuzaki/Bom tt-fusion tables (*Muon Catal. Fusion*).
+- **Extended closed form (`analytic.fusions_per_muon_v2`).** Adds the ttμ competing-hazard term
+  `ω_tt·λ_tt/λ_c` (derived in `MODEL_SPEC.md` §4.1, validated to <1% against the ODE); ³He scavenging is
+  intentionally omitted from the closed form (dμ-pool hazard) and documented.
+- **Channels-on scoreboard (`VALIDATION_CHANNELS.md`).** The trust gate re-run with channels ON, in the
+  `make audit` regenerate+diff list. With the tt channel blocked and the anchors He-purged it reproduces
+  the channels-OFF 7/1/0 scoreboard exactly; the channels-OFF `VALIDATION.md` remains the trust gate.
 
 ### Changed
 - **Extended reproducibility audit (`make audit`).** Now also verifies the provenance manifest, exact-diffs
-  `FINDINGS_MANIFEST.json`, and re-checks the `CALIBRATION.md` MCMC tables within a documented tolerance.
+  `FINDINGS_MANIFEST.json` and `VALIDATION_CHANNELS.md`, and re-checks the `CALIBRATION.md` MCMC tables
+  (now including the channels-on re-attribution section, currently blocked) within a documented tolerance.
 - **Formation quadrature grid.** `formation._EGRID` switched from linear to geometric spacing for low-T
   convergence (a grid doubling now moves λ_dtμ(30 K) by <0.5%, previously ~7%); `formation._CALIB` was
   re-anchored so the disclosed 300 K rates are preserved bit-exactly (no 300 K result moved; off-anchor

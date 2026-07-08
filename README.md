@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-83%2F83%20(macOS%20%2B%20Windows)-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-93%2F94%20(macOS%20%2B%20Windows)-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-v1%20research--grade-brightgreen.svg)
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
@@ -36,9 +36,9 @@ shared substrate:
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 83 tests
+pytest                 # 94 tests (93 pass, 1 skipped: the blocked tt re-attribution refit)
 ```
-Verified platforms: macOS arm64 (py3.13) and Windows x64 (py3.12) — 83/83 tests, `VALIDATION.md` regenerates
+Verified platforms: macOS arm64 (py3.13) and Windows x64 (py3.12) — 93/94 tests, `VALIDATION.md` regenerates
 identically on both. Windows note: enable long-path support (or use a short venv path) for the JAX install.
 
 ## Quickstart
