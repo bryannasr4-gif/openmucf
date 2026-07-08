@@ -56,8 +56,41 @@ def _row(name, s):
     return f"| {name} | {v['mean']:.3g} | {v['sd']:.3g} | [{v['lo']:.3g}, {v['hi']:.3g}] |"
 
 
+def _tt_refit_section():
+    """The channels-on re-attribution (3rd chain). SKIPPED-blocked while `lambda_ttmu` is 0.0 (I10, WS-N).
+
+    Deterministic host read of the ledger: if the ttmu formation rate is blocked, emit only the section
+    header (no MCMC, no cells); the generic --audit parser handles a table-less section. When the primary
+    Matsuzaki/Bom tt tables land and `lambda_ttmu` becomes nonzero, the unblocked path (the actual 3rd
+    NUTS chain with the tt channel in BOTH likelihood terms) must be implemented here.
+    """
+    from openmucf import load_rates
+
+    tt = load_rates().get("lambda_ttmu")
+    blocked = tt is None or tt.value == 0.0 or tt.notes.startswith("blocked:")
+    if blocked:
+        return (
+            "\n## Channels-on re-attribution (ttmu) -- blocked\n\n"
+            "The joint ttmu loss RE-ATTRIBUTION refit is NOT run: the ttmu formation rate `lambda_ttmu` "
+            "is blocked (0.0, needs_verification) -- pending acquisition of the Matsuzaki/Bom tt-fusion "
+            "tables (*Muon Catal. Fusion*). When it lands, this chain adds the tt channel to BOTH "
+            "likelihood terms (obs_ose observes the TOTAL per-cycle loss ose_pct + tt_pc*100 = 0.45%, and "
+            "X_mu carries tt_pc), so the omega_s0(1-R) posterior shifts DOWN by the tt share while X_mu "
+            "stays ~113 -- a joint refit under the anchor-total constraint, NOT new physics. See "
+            "`docs/accounting.md` and MODEL_SPEC.md sec.4.1.\n"
+        )
+    raise NotImplementedError(
+        "tt re-attribution chain: the unblocked path lands with the Matsuzaki/Bom tt-table acquisition "
+        "(lambda_ttmu is no longer 0.0) -- implement the 3rd NUTS chain per WAVE1 spec Sec.3.5 before regen."
+    )
+
+
 def build_md(sw, sk):
     """Render the CALIBRATION.md text from the two chain summaries (deterministic given the summaries)."""
+    return _build_md_base(sw, sk) + _tt_refit_section()
+
+
+def _build_md_base(sw, sk):
     return f"""# CALIBRATION.md -- Bayesian calibration to experiment (auto-generated)
 
 Calibrated (omega_s0, R, lambda_c) to Petitjean/Breunlich: omega_s_eff = 0.45+-0.05 %, X_mu = 113+-12,

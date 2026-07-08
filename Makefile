@@ -19,8 +19,9 @@ calibration:
 	python scripts/generate_calibration.py
 
 validate:
-	python -c "from openmucf import validate, load_rates; open('VALIDATION.md','w').write(validate.report_markdown(validate.run(load_rates())))"
-	@echo "wrote VALIDATION.md"
+	python -c "from openmucf import validate, load_rates; r=load_rates(); open('VALIDATION.md','w').write(validate.report_markdown(validate.run(r)))"
+	python -c "from openmucf import validate, load_rates; r=load_rates(); open('VALIDATION_CHANNELS.md','w').write(validate.report_markdown(validate.run(r, channels='on'), channels='on'))"
+	@echo "wrote VALIDATION.md + VALIDATION_CHANNELS.md"
 
 forecast:
 	python scripts/generate_forecast.py
@@ -32,7 +33,7 @@ forecast:
 audit: findings validate
 	python scripts/generate_forecast.py --audit
 	python -m openmucf.provenance --check FINDINGS_MANIFEST.json
-	git diff --exit-code -- FINDINGS.md VALIDATION.md FORECASTS.md FINDINGS_MANIFEST.json
+	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json
 	python scripts/generate_calibration.py --audit
 	@echo "audit OK: docs match committed; manifest verified; FC-001 card hash-consistent"
 

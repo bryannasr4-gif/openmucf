@@ -89,3 +89,20 @@ def test_recommended_superseded_pair():
         if r[s].recommendation == "recommended" and s.replace("_legacy", "") == "omega_s0"
     ]
     assert fam_recommended == ["omega_s0"]
+
+
+def test_wsn_loss_channel_rows_load_and_flagged():
+    """The three WS-N loss-channel rows load, pass the enum/interval loader, and are needs_verification.
+
+    lambda_ttmu ships the I10 blocked fallback (0.0 + `blocked:` note); lambda_dhe3 ships a real value
+    from a live open source (Fotev et al., arXiv:2001.09927 = bibkey Fotev2020)."""
+    r = load_rates()
+    for sym in ("lambda_ttmu", "omega_tt", "lambda_dhe3"):
+        assert sym in r, sym
+        assert r[sym].needs_verification is True, sym
+        assert r[sym].phase and r[sym].target_molecule, sym  # non-empty typed projections (WS-L schema)
+    assert r.value("lambda_ttmu") == 0.0  # blocked fallback -> refit keys on this (SKIP)
+    assert r["lambda_ttmu"].notes.startswith("blocked:")
+    assert r["lambda_ttmu"].source_bibkey == "BomTT2005"
+    assert r.value("lambda_dhe3") > 0.0
+    assert r["lambda_dhe3"].source_bibkey == "Fotev2020"

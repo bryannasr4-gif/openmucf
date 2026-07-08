@@ -53,7 +53,7 @@ for what is deliberately excluded, and `ADOPTERS.md` for who it is for.
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 83 tests
+pytest                 # 94 tests (93 pass, 1 skipped-blocked)
 ```
 
 Reproduce the ledger, findings, and figures:
