@@ -106,11 +106,11 @@ With λ_c = φ·λ̃_c this is exactly the `LITERATURE.md` identity. **This is t
 able to derive live.** `analytic.py` returns it; `cycle.py`'s `N_fus(∞)` must match it to <1 % in the
 single-pool limit (regression gate).
 
-### 4.1 Extended closed form with the ttμ side-branch (v2 — WS-N, 2026-07-08)
+### 4.1 Extended closed form with the ttμ side-branch (v2 — 2026-07-08)
 
 The v1 renewal derivation has **two** competing per-cycle outcomes for the muon in the cycling pool:
-d-t formation-fusion (rate λ_c) and decay (λ₀). WS-N makes the **ttμ side-branch** explicit as a **third
-competing first-order hazard** out of the same pool: a tμ atom can form **ttμ** (rate λ_tt = λ_ttμ·φ·c_t)
+d-t formation-fusion (rate λ_c) and decay (λ₀). The v1.1 network makes the **ttμ side-branch** explicit as
+a **third competing first-order hazard** out of the same pool: a tμ atom can form **ttμ** (rate λ_tt = λ_ttμ·φ·c_t)
 instead of dtμ, and after the tt fusion the muon is lost with probability ω_tt or returned with
 probability (1−ω_tt). (³He scavenging is a *different* hazard — see the asymmetry note below.)
 
@@ -140,7 +140,7 @@ closed form has *already collapsed* the dμ→tμ isotopic structure into the si
 dμ-only hazard has no clean single-pool representative and is **not** included in `fusions_per_muon_v2`.
 ³He scavenging is available only in the full ODE (`cycle.py`, `include_loss_channels=True` with `c_he>0`),
 where the dμ pool is an explicit state. This asymmetry is intentional and is the reason the channels-on
-scoreboard/refit (§WS-N) drive the ttμ re-attribution through the closed form but keep ³He an ODE-only,
+scoreboard/refit drive the ttμ re-attribution through the closed form but keep ³He an ODE-only,
 burn-time-scenario channel.
 
 ---

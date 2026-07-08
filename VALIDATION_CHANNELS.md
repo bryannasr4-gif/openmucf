@@ -2,7 +2,7 @@
 
 **Loss RE-ATTRIBUTION, not new physics.** This is the same trust gate run with `include_loss_channels=True` (ttmu side-branch + He-3 scavenging) at the SAME operating points. The channels-OFF `VALIDATION.md` remains the v1 trust gate; this doc is diagnostic.
 
-**Pre-framed outcome (WS-N):** the ttmu formation rate `lambda_ttmu` is currently BLOCKED (0.0, needs_verification -- pending acquisition of the Matsuzaki/Bom tt-fusion tables, *Muon Catal. Fusion*) and the validation anchors are He-purged (c_He=0), so the two channels are inert here and this scoreboard reproduces the channels-OFF one **exactly**. Once `lambda_ttmu` is pinned, the Kou-Chen +-10% PASSes may convert to documented discrepancies -- that will be a FINDING about the tt channel's share of their effective numbers, NOT a regression (the channels-OFF scoreboard stays the trust gate). See `docs/accounting.md`.
+**Pre-framed outcome:** the ttmu formation rate `lambda_ttmu` is currently BLOCKED (0.0, needs_verification -- pending acquisition of the Matsuzaki/Bom tt-fusion tables, *Muon Catal. Fusion*) and the validation anchors are He-purged (c_He=0), so the two channels are inert here and this scoreboard reproduces the channels-OFF one **exactly**. Once `lambda_ttmu` is pinned, the Kou-Chen +-10% PASSes may convert to documented discrepancies -- that will be a FINDING about the tt channel's share of their effective numbers, NOT a regression (the channels-OFF scoreboard stays the trust gate). See `docs/accounting.md`.
 
 Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** (canonical liquid).
 
