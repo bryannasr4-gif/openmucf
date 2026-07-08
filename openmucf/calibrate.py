@@ -19,7 +19,7 @@ import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 
-LAMBDA_0 = 4.552e5  # s^-1
+from .constants import LAMBDA_0
 
 # observations (Petitjean/Breunlich 1989)
 OBS = dict(omega_s_eff_obs=0.45, omega_s_eff_sd=0.05, xmu_obs=113.0, xmu_sd=12.0)

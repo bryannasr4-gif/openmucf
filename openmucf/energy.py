@@ -19,8 +19,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-E_F_MEV = 17.6  # MeV per d-t fusion
-E_MU_GEV = 5.0  # GeV beam energy per muon produced (2-10 GeV range)
+from .constants import E_F_MEV
+from .constants import E_MU_GEV_DEFAULT as E_MU_GEV
 
 
 @dataclass(frozen=True)
