@@ -34,6 +34,26 @@ def fusions_per_muon(omega_s_eff, lambda_c, lambda_0=LAMBDA_0):
     return 1.0 / (omega_s_eff + lambda_0 / lambda_c)
 
 
+def fusions_per_muon_v2(omega_s_eff, lambda_c, lambda_0=LAMBDA_0, tt_loss_rate=0.0, omega_tt=0.0):
+    """Extended closed form with the ttmu side-branch competing hazard (WS-N v2).
+
+        X_mu = 1 / (omega_s_eff + omega_tt * tt_loss_rate / lambda_c + lambda_0 / lambda_c)
+
+    ``tt_loss_rate`` is the actual ttmu formation rate (= lambda_ttmu * phi * c_t); ``omega_tt`` the
+    tt-branch muon-loss fraction. The extra per-cycle loss ``omega_tt * tt_loss_rate / lambda_c`` is the
+    ``tt_pc`` share of the re-attribution (accounting.md). Derived in ``MODEL_SPEC.md`` sec.4 (dated WS-N
+    subsection) as a renewal sum over tmu episodes with d-t formation, tt formation and decay as three
+    competing first-order hazards; validated against the ODE to <1% (gate G-N2).
+
+    DOCUMENTED ASYMMETRY: the He-3 scavenging channel is OMITTED here. It removes muons from the *dmu*
+    pool, but the single-pool closed form has already collapsed the dmu/tmu structure, so there is no
+    clean single-pool representation of a dmu-only hazard; He-3 scavenging is available in ``cycle.py``
+    (the ODE) only. With ``tt_loss_rate=0`` (or ``omega_tt=0``) this reduces exactly to
+    :func:`fusions_per_muon`.
+    """
+    return 1.0 / (omega_s_eff + omega_tt * tt_loss_rate / lambda_c + lambda_0 / lambda_c)
+
+
 def energy_gain(x_mu, eta_conv, E_f_MeV=E_F_MEV, E_mu_GeV=E_MU_GEV_DEFAULT):
     """Q = X_mu * E_f * eta_conv / E_mu (units reconciled internally)."""
     E_mu_MeV = E_mu_GeV * 1.0e3

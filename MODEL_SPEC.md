@@ -106,6 +106,43 @@ With λ_c = φ·λ̃_c this is exactly the `LITERATURE.md` identity. **This is t
 able to derive live.** `analytic.py` returns it; `cycle.py`'s `N_fus(∞)` must match it to <1 % in the
 single-pool limit (regression gate).
 
+### 4.1 Extended closed form with the ttμ side-branch (v2 — WS-N, 2026-07-08)
+
+The v1 renewal derivation has **two** competing per-cycle outcomes for the muon in the cycling pool:
+d-t formation-fusion (rate λ_c) and decay (λ₀). WS-N makes the **ttμ side-branch** explicit as a **third
+competing first-order hazard** out of the same pool: a tμ atom can form **ttμ** (rate λ_tt = λ_ttμ·φ·c_t)
+instead of dtμ, and after the tt fusion the muon is lost with probability ω_tt or returned with
+probability (1−ω_tt). (³He scavenging is a *different* hazard — see the asymmetry note below.)
+
+Per episode, with total exit rate Λ = λ_c + λ_tt + λ₀, the competing branch probabilities are
+`p_dt = λ_c/Λ`, `p_tt = λ_tt/Λ`, `p_dec = λ₀/Λ`. A d-t fusion is counted iff the episode ends in the
+d-t branch (prob p_dt). The muon **returns to the pool** (renewal) iff it survives whichever reaction
+fired: after a d-t fusion with s = (1−ω_s^eff), after a tt fusion with (1−ω_tt). So the per-episode
+return probability is `r = p_dt·(1−ω_s^eff) + p_tt·(1−ω_tt)`, and
+
+```
+X_μ = Σ_{k≥1} r^{k−1} p_dt = p_dt / (1 − r)
+    = λ_c / ( Λ − λ_c(1−ω_s^eff) − λ_tt(1−ω_tt) )
+    = λ_c / ( λ_c·ω_s^eff + λ_tt·ω_tt + λ₀ )
+    = 1 / ( ω_s^eff + ω_tt·(λ_tt/λ_c) + λ₀/λ_c ).                         (v2)
+```
+
+The extra per-cycle loss term **`ω_tt·(λ_tt/λ_c)`** is exactly the `tt_pc` share used in the
+re-attribution refit (`accounting.md`): introducing it forces the fitted ω_s^eff (= ω_s0(1−R)) down so the
+anchor total still reproduces the measured 0.45 %. With λ_tt→0 this collapses to §4's v1 identity. The
+implementation is `analytic.fusions_per_muon_v2(omega_s_eff, lambda_c, lambda_0, tt_loss_rate, omega_tt)`,
+gated against the ODE (`cycle.py` channels-on, single-pool limit) to **<1 %** (G-N2; measured worst
+0.0 % over the 3-point (λ_tt, ω_tt) grid).
+
+**Documented asymmetry (³He scavenging omitted from the closed form).** The ³He channel removes the muon
+from the **dμ** pool (rate λ_He = λ_d³He·φ·c_He), before it ever reaches the tμ cycling pool. The §4
+closed form has *already collapsed* the dμ→tμ isotopic structure into the single pool `m(t)`, so a
+dμ-only hazard has no clean single-pool representative and is **not** included in `fusions_per_muon_v2`.
+³He scavenging is available only in the full ODE (`cycle.py`, `include_loss_channels=True` with `c_he>0`),
+where the dμ pool is an explicit state. This asymmetry is intentional and is the reason the channels-on
+scoreboard/refit (§WS-N) drive the ttμ re-attribution through the closed form but keep ³He an ODE-only,
+burn-time-scenario channel.
+
 ---
 
 ## 5. Constructing the effective cycle rate λ_c
