@@ -49,6 +49,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Channels-on scoreboard (`VALIDATION_CHANNELS.md`).** The trust gate re-run with channels ON, in the
   `make audit` regenerate+diff list. With the tt channel blocked and the anchors He-purged it reproduces
   the channels-OFF 7/1/0 scoreboard exactly; the channels-OFF `VALIDATION.md` remains the trust gate.
+- **muCF-Bench case registry + `openmucf` CLI (`openmucf/bench.py`, `openmucf/cli.py`, `BENCHMARKS.md`).**
+  One registry exposes both the pre-registered validation trust gate (the 8 result ids `openmucf.validate`
+  emits) and self-contained JSON reproduction cases (`openmucf/data/benchmarks/*.json`, shipped as package
+  data) through a single runner and the `openmucf reproduce <case-id>` / `reproduce --all` / `validate`
+  console script. `validation_targets.csv` remains the single source of validation truth (the runner
+  re-exposes engine results, it does not re-decide any verdict). Two reproduction cases ship: `kou-chen-2026`
+  (a friendly reproduction of Kou–Chen's published 112.6/156.5 fusions-per-muon, PASS within ±10%) and
+  `jones-1986` (registered PENDING as blocked-acquisition — the record operating point cannot be pinned from
+  open sources, so no conditions are guessed). `BENCHMARKS.md` is regenerated and diffed by `make bench` /
+  `make audit`.
 
 ### Changed
 - **Extended reproducibility audit (`make audit`).** Now also verifies the provenance manifest, exact-diffs
