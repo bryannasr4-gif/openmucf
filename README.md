@@ -36,10 +36,10 @@ shared substrate:
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 125 tests (123 pass, 1 skipped-blocked, 1 slow deselected by default)
+pytest                 # 131 tests (129 pass, 1 skipped-blocked, 1 slow deselected by default)
 pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 seeded MCMC fits)
 ```
-Verified platforms: macOS arm64 (py3.13) and Windows x64 (py3.12) — 123/125 tests, `VALIDATION.md` regenerates
+Verified platforms: macOS arm64 (py3.13) and Windows x64 (py3.12) — 129/131 tests, `VALIDATION.md` regenerates
 identically on both. Windows note: enable long-path support (or use a short venv path) for the JAX install.
 The twin coverage test is marked `slow` and deselected from the default run (and CI); run it with `pytest -m slow`.
 
