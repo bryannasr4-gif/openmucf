@@ -1,0 +1,209 @@
+{
+  "entries": [
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_off",
+      "pattern": "OP-A[^\\n]*116\\.164",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "116.164"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_with_c1em04",
+      "pattern": "OP-A[^\\n]*116\\.148",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "116.148"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_bracket_c1em04",
+      "pattern": "OP-A[^\\n]*\\-0\\.016",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.016"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_with_c1em03",
+      "pattern": "OP-A[^\\n]*116\\.005",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "116.005"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_bracket_c1em03",
+      "pattern": "OP-A[^\\n]*\\-0\\.159",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.159"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_off",
+      "pattern": "OP-B[^\\n]*125\\.231",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "125.231"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_with_c1em04",
+      "pattern": "OP-B[^\\n]*125\\.214",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "125.214"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_bracket_c1em04",
+      "pattern": "OP-B[^\\n]*\\-0\\.017",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.017"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_with_c1em03",
+      "pattern": "OP-B[^\\n]*125\\.060",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "125.060"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_bracket_c1em03",
+      "pattern": "OP-B[^\\n]*\\-0\\.171",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.171"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_off",
+      "pattern": "OP-C[^\\n]*128\\.779",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "128.779"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_with_c1em04",
+      "pattern": "OP-C[^\\n]*128\\.761",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "128.761"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_bracket_c1em04",
+      "pattern": "OP-C[^\\n]*\\-0\\.018",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.018"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_with_c1em03",
+      "pattern": "OP-C[^\\n]*128\\.603",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "128.603"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_bracket_c1em03",
+      "pattern": "OP-C[^\\n]*\\-0\\.176",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.176"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_off",
+      "pattern": "OP-D[^\\n]*131\\.643",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "131.643"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_with_c1em04",
+      "pattern": "OP-D[^\\n]*131\\.625",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "131.625"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_bracket_c1em04",
+      "pattern": "OP-D[^\\n]*\\-0\\.018",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.018"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_with_c1em03",
+      "pattern": "OP-D[^\\n]*131\\.463",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "131.463"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_bracket_c1em03",
+      "pattern": "OP-D[^\\n]*\\-0\\.180",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.180"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "ci_lo",
+      "pattern": "spans\\s*\\[89, 122\\]",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "89"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "ci_hi",
+      "pattern": "spans\\s*\\[89, 122\\]",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "122"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "ci_width",
+      "pattern": "width of \\*\\*33\\*\\* X_mu units",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "33"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "ingrowth_pct_month",
+      "pattern": "\\*\\*0\\.47%/month\\*\\*",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "0.47"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "tt_blocked",
+      "pattern": "ttmu side-branch: blocked\\ \\-\\-\\ pending\\ acquisition\\ of\\ the\\ Matsuzaki/Bom\\ tt\\-fusion\\ formation\\-rate\\ tables\\ \\(Muon\\ Catal\\.\\ Fusion\\ /\\ JINR\\)",
+      "source": "openmucf/data/rates.csv:lambda_ttmu",
+      "source_type": "ledger_row",
+      "value": "blocked -- pending acquisition of the Matsuzaki/Bom tt-fusion formation-rate tables (Muon Catal. Fusion / JINR)"
+    }
+  ],
+  "generated_by": "scripts/generate_materiality.py",
+  "inputs": {
+    "findings_manifest_sha256": "7ba02cbf1221b92c40a5dcdea7a65d80a5c99dd62aca2aaa7d03ad252cc42a9b",
+    "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784"
+  }
+}

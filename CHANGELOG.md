@@ -69,12 +69,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disappearance rate λ_n; ω_s^eff and λ_c are separated only through the informative measured-λ_c prior. A
   200-replica interval-calibration test (`slow`-marked, deselected by default and in CI) checks the λ_n 95%
   credible interval is calibrated. Fenced v0 — no detector response, no real-data fit, no dataset-specific claim.
+- **Structural sensitivity brackets (`scripts/generate_materiality.py`, `MATERIALITY.md`).** One-at-a-time
+  absorbing-loss-channel toggles at four fixed operating points (OP-A anchor-adjacent/non-headline, plus
+  high-T / MuFusE-mid / MuFusE-peak), reported as **one-sided brackets** `X_μ^with − X_μ^without` beside the
+  §2 forward-UQ CI width for scale — never convolved into any likelihood or CI (side-by-side combination rule
+  only). The ³He scavenging channel is live (`c_He ∈ {1e-4, 1e-3}`; brackets ≤ ~0.18 X_μ units, under ~0.6%
+  of the parametric CI width); the ttμ side-branch is rendered **"blocked — pending acquisition of the
+  Matsuzaki/Bom tt-fusion tables"** — the generator detects the ledger row's `blocked:` marker and never
+  emits a misleading zero bracket. Deterministic (no MCMC), in the `make audit` regenerate+diff list with
+  `MATERIALITY_MANIFEST.json`.
 
 ### Changed
-- **Extended reproducibility audit (`make audit`).** Now also verifies the provenance manifest (across both
-  `FINDINGS_MANIFEST.json` and `TWIN_MANIFEST.json`), exact-diffs `FINDINGS_MANIFEST.json`,
-  `VALIDATION_CHANNELS.md`, and `TWIN_AUDIT.md`/`TWIN_MANIFEST.json`, and re-checks the `CALIBRATION.md` MCMC
-  tables (now including the channels-on re-attribution section, currently blocked) within a documented tolerance.
+- **Extended reproducibility audit (`make audit`).** Now also verifies the provenance manifest (across
+  `FINDINGS_MANIFEST.json`, `TWIN_MANIFEST.json`, and `MATERIALITY_MANIFEST.json`), exact-diffs
+  `FINDINGS_MANIFEST.json`, `VALIDATION_CHANNELS.md`, `TWIN_AUDIT.md`/`TWIN_MANIFEST.json`, and
+  `MATERIALITY.md`/`MATERIALITY_MANIFEST.json`, and re-checks the `CALIBRATION.md` MCMC tables (now including
+  the channels-on re-attribution section, currently blocked) within a documented tolerance.
 - **`slow` pytest marker.** Long-running tests (the twin coverage run) are marked `slow` and deselected from
   the default `pytest` (and CI) via `addopts`; run them with `pytest -m slow`.
 - **Formation quadrature grid.** `formation._EGRID` switched from linear to geometric spacing for low-T
