@@ -1,4 +1,4 @@
-.PHONY: install test lint format findings calibration validate forecast audit all
+.PHONY: install test lint format findings calibration validate bench forecast audit all
 
 install:
 	pip install -e ".[dev]"
@@ -23,6 +23,10 @@ validate:
 	python -c "from openmucf import validate, load_rates; r=load_rates(); open('VALIDATION_CHANNELS.md','w').write(validate.report_markdown(validate.run(r, channels='on'), channels='on'))"
 	@echo "wrote VALIDATION.md + VALIDATION_CHANNELS.md"
 
+bench:
+	python -c "from openmucf import bench, load_rates; r=load_rates(); open('BENCHMARKS.md','w').write(bench.report_markdown(bench.run_all(r)))"
+	@echo "wrote BENCHMARKS.md"
+
 forecast:
 	python scripts/generate_forecast.py
 
@@ -30,10 +34,10 @@ forecast:
 # CALIBRATION.md and the FC-001 card payload (forecasts/FC-001-mufuse.json) are MCMC-derived and are NOT
 # exact-diffed here; instead the card is checked for hash-consistency and FORECASTS.md (rendered
 # deterministically from the on-disk card, no MCMC) IS exact-diffed. `--audit` runs both without the MCMC.
-audit: findings validate
+audit: findings validate bench
 	python scripts/generate_forecast.py --audit
 	python -m openmucf.provenance --check FINDINGS_MANIFEST.json
-	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json
+	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md
 	python scripts/generate_calibration.py --audit
 	@echo "audit OK: docs match committed; manifest verified; FC-001 card hash-consistent"
 
