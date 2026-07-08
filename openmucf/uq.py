@@ -22,8 +22,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-LAMBDA_0 = 4.552e5  # s^-1
-E_F_MEV = 17.6  # MeV per fusion
+from .constants import E_F_MEV, LAMBDA_0
 
 
 @dataclass(frozen=True)

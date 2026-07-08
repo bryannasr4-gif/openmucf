@@ -31,7 +31,9 @@ forecast:
 # deterministically from the on-disk card, no MCMC) IS exact-diffed. `--audit` runs both without the MCMC.
 audit: findings validate
 	python scripts/generate_forecast.py --audit
-	git diff --exit-code -- FINDINGS.md VALIDATION.md FORECASTS.md
-	@echo "audit OK: FINDINGS.md, VALIDATION.md, FORECASTS.md match committed; FC-001 card hash-consistent"
+	python -m openmucf.provenance --check FINDINGS_MANIFEST.json
+	git diff --exit-code -- FINDINGS.md VALIDATION.md FORECASTS.md FINDINGS_MANIFEST.json
+	python scripts/generate_calibration.py --audit
+	@echo "audit OK: docs match committed; manifest verified; FC-001 card hash-consistent"
 
 all: lint test findings calibration forecast

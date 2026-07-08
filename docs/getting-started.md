@@ -9,7 +9,7 @@ below is reproduced by the shipped code and the auto-generated
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 63 tests
+pytest                 # 73 tests
 ```
 
 ## 1. Load the validated FAIR rate ledger

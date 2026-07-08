@@ -33,7 +33,7 @@ published results.
 ## 2. Running the suite
 
 ```bash
-pytest                 # 63 tests; the ledger loader raises on any provenance/schema problem
+pytest                 # 73 tests; the ledger loader raises on any provenance/schema problem
 ruff check .           # lint (must be clean)
 ruff format .          # auto-format
 
