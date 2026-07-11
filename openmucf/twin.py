@@ -116,6 +116,9 @@ def fit_two_exponential(t_edges, counts, t_min, lambda_c=None, background_rate=0
     rate, which a single histogram cannot supply on its own (it is degenerate with the muon count through
     the amplitude); without ``lambda_c`` they are returned as NaN.
     """
+    if background_rate < 0.0:
+        raise ValueError(f"background_rate must be >= 0 (got {background_rate}); a negative background "
+                         "would let empty bins pass the rate>0 filter with a spurious boost")
     te = np.asarray(t_edges, dtype=float)
     counts = np.asarray(counts, dtype=float)
     centers = 0.5 * (te[:-1] + te[1:])

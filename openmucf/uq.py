@@ -219,7 +219,7 @@ def breakeven_audit(n=400_000, seed=1):
 
     # What-would-have-to-be-true for X_mu = 500 (target).
     target = 500.0
-    os0 = 0.857  # % (nominal)
+    os0 = NOMINAL["omega_s0_pct"]  # % -- single-sourced from the registered priors (= 0.857 nominal)
     # (a) absolute cap set by decay alone (omega_s_eff -> 0): X_mu_max(lambda_c) = lambda_c/lambda_0
     lc_needed_decay_only = LAMBDA_0 * target  # lambda_c s.t. lambda_c/lambda_0 = 500 (sticking=0)
     # (b) with best measured lambda_c = 1.45e8, the maximum achievable X_mu even at zero sticking:
@@ -228,6 +228,10 @@ def breakeven_audit(n=400_000, seed=1):
     lc_opt = 3.0e8
     need_ose = 1.0 / target - LAMBDA_0 / lc_opt  # required omega_s_eff
     R_req = 1.0 - need_ose / (os0 / 100.0) if need_ose > 0 else float("nan")
+    # (d) even at infinite lambda_c: omega_s_eff <= 1/target, i.e. the R floor no density can beat.
+    #     Computed (not transcribed) so the shipped "R >= 0.77" can never silently drift from the
+    #     omega_s0 nominal it derives from (cross-vendor review hardening, 2026-07-08).
+    R_req_inf_lc = 1.0 - (1.0 / target) / (os0 / 100.0)
 
     return {
         "measured_ranges": {p.name: [p.low, p.high] for p in PARAMS},
@@ -237,6 +241,7 @@ def breakeven_audit(n=400_000, seed=1):
         "xmu_cap_at_measured_lambda_c": float(xmu_cap_at_measured_lc),
         "lambda_c_needed_for_500_zero_sticking": float(lc_needed_decay_only),
         "R_required_at_lambda_c_3e8": float(R_req),
+        "R_required_at_infinite_lambda_c": float(R_req_inf_lc),
         "note": (
             "Scope: liquid-scale density (phi <= ~1.45), where lambda_c <= 1.45e8 is the measured max. "
             "To reach X_mu=500 there you need BOTH lambda_c >~ 2.3-3e8 AND reactivation R >~ 0.9 "

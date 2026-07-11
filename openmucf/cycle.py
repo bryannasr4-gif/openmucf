@@ -40,7 +40,21 @@ STATE_LABELS = ("x_dmu", "x_tmu1", "x_tmu0", "N_fus", "stuck", "dec", "loss_tt",
 # no physics input is tuned (I2). Result: channels-OFF reduces to v1 bit-for-bit (G-N1 pure atol 1e-9)
 # and every locked number stays byte-identical. Locked by test_wsn_norm_excludes_loss_accumulators_bit_exact.
 _N_V1_STATES = 6
-_DIFFRAX_DEFAULT_NORM = _inspect.signature(diffrax.PIDController.__init__).parameters["norm"].default
+# Introspection (not a formula copy) is deliberate: it is guaranteed bit-identical to whatever this
+# diffrax version uses, so the locked step sequence cannot drift by a re-implementation ulp. The cost is
+# reliance on PIDController's signature; if a future diffrax renames/moves the `norm` default, fail LOUD
+# at import with instructions rather than with an opaque KeyError (cross-vendor review hardening, 2026-07-08).
+try:
+    _DIFFRAX_DEFAULT_NORM = _inspect.signature(diffrax.PIDController.__init__).parameters["norm"].default
+    if not callable(_DIFFRAX_DEFAULT_NORM):
+        raise TypeError(f"expected a callable norm default, got {_DIFFRAX_DEFAULT_NORM!r}")
+except (KeyError, TypeError) as exc:  # pragma: no cover - trips only on a diffrax API change
+    raise ImportError(
+        "diffrax.PIDController's `norm` default could not be captured for the v1-sliced error norm "
+        "(diffrax API changed?). Update _v1_error_norm in openmucf/cycle.py to the new default norm; "
+        "it MUST match diffrax's own default bit-for-bit or the locked v1 step sequence will drift "
+        "(see test_wsn_norm_excludes_loss_accumulators_bit_exact)."
+    ) from exc
 
 
 def _v1_error_norm(y):

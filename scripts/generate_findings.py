@@ -62,7 +62,7 @@ H["P_qsci_gt1"] = f"{fw['P_Qsci_gt1'] * 100:.1f}%"
 H["P_qnet_gt1"] = f"{fw['P_Qnet_gt1'] * 100:.1f}%"
 H["P_xmu_gt500"] = f"{be['P_xmu_gt500'] * 100:.1f}%"
 H["cap_zero_sticking"] = f"{be['xmu_cap_at_measured_lambda_c']:.0f}"
-H["R_required"] = "0.77"  # infinite-lambda_c requirement: omega_s_eff<=0.2% => R >= 1-0.2/0.857 ~ 0.77
+H["R_required"] = f"{be['R_required_at_infinite_lambda_c']:.2f}"  # computed from the omega_s0 nominal
 H["eta_bracket_lo"] = f"{_xmu_eta1:.1f}"
 H["eta_bracket_hi"] = f"{_xmu_eta5:.1f}"
 H["eta_bracket_width"] = f"{_xmu_eta5 - _xmu_eta1:.1f}"

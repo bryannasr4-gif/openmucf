@@ -54,6 +54,12 @@ Rates (all s⁻¹; density-dependent ones already multiplied by φ and the relev
 On recycle after fusion, the freed muon re-thermalizes and re-forms tμ; v1 returns it to the **statistical**
 tμ hyperfine mix (¾ to F=1, ¼ to F=0). (A returned-muon-via-dμ refinement is a v2 option.)
 
+Isotopic transfer, by contrast, feeds the **F=1 pool only** in v1 (not a ¾/¼ split): with the fast,
+one-directional λ₁₀ relaxation, the steady-state hyperfine split is λ₁₀-dominated rather than
+entry-split-dominated, so this simplification is absorbed by the anchored rates the network is validated
+against. A statistical entry split at transfer is a v2 refinement candidate (it would slightly re-shape
+only the sub-ns transfer transient).
+
 ```
 dx_dμ/dt   = −(λ_dt + λ₀) x_dμ
 dx_tμ1/dt  = +λ_dt x_dμ − (λ₁₀ + λ_f^{1} + λ₀) x_tμ1

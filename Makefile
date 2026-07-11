@@ -33,7 +33,9 @@ forecast:
 twin-audit:
 	python scripts/generate_twin_audit.py
 
-materiality:
+# materiality reads FINDINGS_MANIFEST.json (the forward-UQ CI width), so `findings` is a real
+# prerequisite -- explicit, not just left-to-right list order, so `make -j` cannot race it.
+materiality: findings
 	python scripts/generate_materiality.py
 
 # Reproducibility gate: regenerate the deterministic docs and fail if they drift from what's committed.
