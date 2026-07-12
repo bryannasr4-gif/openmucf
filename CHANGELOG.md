@@ -39,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   figure-3-curve headline, not tuned).
 - `SYSTEMS.md` + `SYSTEMS_MANIFEST.json` join `make audit` (both regenerated + byte-diffed; closed-form
   algebra, cross-arch stable); the provenance manifest check now covers the systems manifest too.
+- **Neutrons-per-joule league table (`NEUTRONOMICS.md` + `scripts/generate_neutronomics.py`).** Places μCF
+  as a 14 MeV neutron source against the established incumbents on one basis: neutrons per joule of primary
+  beam energy. μCF appears as **three tier-separated rows** — one per muon-cost tier (`MUON_COST.md`),
+  never a single blended row — computed as X_μ / (E_μ,tier in J) with the **measured** record yield
+  X_μ = 113 (`calibrate.OBS['xmu_obs']` / ledger target `V_petitjean_Xmu`, not the forward-UQ median). At
+  the design-study muon cost μCF is competitive with a spallation source (~43 MeV of beam per neutron) and
+  ~10³× better than a sealed-tube D-T generator; at the operating-facility muon cost the ~10³ muon-cost gap
+  transfers one-for-one to the neutron economy. A short sourced table of alternative 14 MeV/n sources
+  (Thermo P385 sealed tube, FNG, RTNS-II, ISIS spallation) is included, each n/J derived from published
+  beam parameters. Beam basis only (wall-plug kept separate, I5); neutron-source economics, not breakeven
+  (I9); no new physics (I1). `NEUTRONOMICS.md` + `NEUTRONOMICS_MANIFEST.json` join `make audit`.
 
 ### Planned
 - **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant
