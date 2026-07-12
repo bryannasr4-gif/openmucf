@@ -59,6 +59,7 @@ Reproduce the findings and figures:
 make validate      # reproduce the literature (VALIDATION.md: 7 pass / 1 deferred / 0 fail)
 make findings      # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
+make systems       # Q Rosetta stone + energy-balance graph -> SYSTEMS.md
 ```
 
 ## Headline results (see `FINDINGS.md`, `MUON_COST.md`, `CALIBRATION.md`)
@@ -77,6 +78,12 @@ make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
   Q_net under each cost tier (`FINDINGS.md` §2b) collapses the median Q_net ~10⁵× from design-study to
   facility muons — the 10³ simulation-to-facility gap in energy-return form. *The floor is unvalidated,
   not impossible.*
+- **The Q Rosetta stone (`SYSTEMS.md`):** a differentiable energy-balance graph (`openmucf.systems`, a
+  superset of the frozen `EnergyChain`) that places the several muCF "Q" conventions — scientific gain,
+  net-electrical gain, Kelly–Hart–Rose's electrical gain, an efficiency-free gain — on one comparable
+  basis, so a dimensionless "Q" is never quoted without its accounting. The self-first finding: our v1
+  default η_acc = 0.30 was optimistic; Kelly's PSI-measured 0.18 moves the net-electrical breakeven
+  ~2367 → ~3946 fusions/muon (linear in η_acc).
 
 ## Forecast registry
 OpenMuCF keeps a registry of **pre-registered, hash-stamped probabilistic forecasts** in `forecasts/`

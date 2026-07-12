@@ -24,6 +24,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in §1/§2 is unchanged (the tier panel is an added section, not a replacement).
 - `MUON_COST.md` + `MUON_COST_MANIFEST.json` join `make audit` (regenerated + byte-diffed; the PNG is not
   byte-diffed); the provenance manifest check now covers the muon-cost manifest too.
+- **The Q Rosetta stone + energy-balance graph (`openmucf/systems.py` + `SYSTEMS.md`).** `SystemChain` is a
+  strict superset of the frozen `energy.EnergyChain` — a differentiable `jax.numpy` graph exposing every
+  node (wall-plug → muon → fusion(+breeding) → blanket → thermal → electric → recirculation) as a named
+  knob, plus two explicit, flagged, default-off factors (a tritium-breeding energy credit and a
+  recirculating-power fraction). At the defaults it reproduces the v1 chain to machine precision (the
+  G-legacy anchor: scientific breakeven 284.09, net-electrical 2367.42). `rosetta_table` + the `QBasis`
+  registry convert v1's scientific/net-electrical gains, Kelly–Hart–Rose's electrical gain, and an
+  efficiency-free gain onto one comparable reference basis.
+- **η_acc self-correction finding (`SYSTEMS.md`).** Our v1 default η_acc = 0.30 was optimistic; Kelly's
+  PSI-measured 0.18 moves the net-electrical breakeven ~2367 → ~3946 fusions/muon (linear in η_acc). The v1
+  code default is unchanged this release; the finding carries the correction. The G-Kelly cross-basis check
+  reproduces Kelly's electrical-gain chain (Eq. 2 + Table 1) at 15.7% (a documented result vs their 14%
+  figure-3-curve headline, not tuned).
+- `SYSTEMS.md` + `SYSTEMS_MANIFEST.json` join `make audit` (both regenerated + byte-diffed; closed-form
+  algebra, cross-arch stable); the provenance manifest check now covers the systems manifest too.
 
 ### Planned
 - **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant
