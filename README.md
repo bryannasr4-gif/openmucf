@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-123%2F125%20(macOS%20%2B%20Windows)-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-129%2F131%20(macOS%20%2B%20Windows)-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-v1%20research--grade-brightgreen.svg)
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
