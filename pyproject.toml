@@ -24,6 +24,7 @@ classifiers = [
 dependencies = [
     "jax>=0.4",
     "diffrax>=0.5",
+    "optimistix>=0.1",  # WS-Q frontier.py: Newton root-find for the inverse-design solver (also transitive via diffrax)
     "numpyro>=0.13",
     "SALib>=1.4",
     "pandas>=2.0",
