@@ -1,0 +1,120 @@
+{
+  "entries": [
+    {
+      "doc": "MUON_COST.md",
+      "id": "t1_median",
+      "pattern": "from \\*\\*4\\.85\\s*\\n?GeV\\*\\* \\(design studies\\)",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "4.85"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "t2_median",
+      "pattern": "through \\*\\*178 GeV\\*\\* \\(demonstrated",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "178"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "t3_median",
+      "pattern": "to \\*\\*5497\\.5\\s*\\n?GeV\\*\\* \\(operating",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "5497.5"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "gap_ratio",
+      "pattern": "a \\*\\*1133\\.5x\\*\\* gap",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "1133.5"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "disarmament",
+      "pattern": "Caption: \\*Facilities\\ optimize\\ brightness/purity,\\ not\\ muons\\-per\\-watt\\ \u2014\\ the\\ floor\\ is\\ unvalidated,\\ not\\ impossible\\.\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "Facilities optimize brightness/purity, not muons-per-watt \u2014 the floor is unvalidated, not impossible."
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_kelly_hart_rose_2021",
+      "pattern": "Kelly,\\ Hart\\ \\&\\ Rose\\ \\(2021\\)[^\\n]*\\| 4\\.70 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "4.70"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_bertin_1987",
+      "pattern": "Bertin\\ et\\ al\\.\\ \\(1987\\)[^\\n]*\\| 7\\.80 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "7.80"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_eliezer_henis_1994",
+      "pattern": "Eliezer\\ \\&\\ Henis\\ \\(1994\\)[^\\n]*\\| 5\\.0 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "5.0"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_acceleron_2025",
+      "pattern": "Acceleron\\ \\(2025\\ deck\\)[^\\n]*\\| 3\\.0 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "3.0"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_muon_collider_front_end",
+      "pattern": "muon\\-collider\\ front\\ end[^\\n]*\\| 178 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "178"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_mu2e",
+      "pattern": "mu2e\\ \\(Fermilab\\)[^\\n]*\\| 4993 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "4993"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_comet",
+      "pattern": "COMET\\ \\(J\\-PARC\\)[^\\n]*\\| 2286 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "2286"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_music",
+      "pattern": "MuSIC\\ \\(RCNP\\)[^\\n]*\\| 6002 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "6002"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_psi_himb",
+      "pattern": "PSI\\ HIMB[^\\n]*\\| 890000 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "890000"
+    }
+  ],
+  "generated_by": "scripts/generate_mucost.py",
+  "inputs": {
+    "muon_cost_csv_sha256": "c4d29d56e407a82f267e2edc1feb603a30339403950c389665fbbba4e4d18abf"
+  }
+}
