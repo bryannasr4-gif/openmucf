@@ -1,0 +1,158 @@
+{
+  "entries": [
+    {
+      "doc": "SYSTEMS.md",
+      "id": "breakeven_sci",
+      "pattern": "scientific \\*\\*284\\.09\\*\\*",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "284.09"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "breakeven_net",
+      "pattern": "net-electrical \\*\\*2367\\.42\\*\\*",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "2367.42"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "breakeven_net_018",
+      "pattern": "-> ~3946\\b",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "3946"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "breakeven_net_018_precise",
+      "pattern": "= \\*\\*3945\\.71\\*\\*",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "3945.71"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "eta_acc_kelly",
+      "pattern": "PSI-measured value is 0\\.18\\b",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "0.18"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_q_elec_pct",
+      "pattern": "reproduces \\*\\*Q_elec = 15\\.69%",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "15.69"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_band_lo",
+      "pattern": "\\[12\\.6%,",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "12.6"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_band_hi",
+      "pattern": "15\\.4%\\]",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "15.4"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_F",
+      "pattern": "row A\\) = \\*\\*2991\\*\\* MeV",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "2991"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_H",
+      "pattern": "rows B-E\\) = \\*\\*3743\\*\\* MeV",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "3743"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_B",
+      "pattern": "row G\\) = \\*\\*3606\\*\\* MeV",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "3606"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_q_sci",
+      "pattern": "q_sci = \\*\\*0\\.5617\\*\\*",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "0.5617"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "acc_q_net_150",
+      "pattern": "q_net \\(v1 default efficiencies\\) = \\*\\*0\\.1056\\*\\*",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "0.1056"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "ros_113_q_net",
+      "pattern": "\\| 113 \\| 0\\.3978 \\| 0\\.04773 \\|",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "0.04773"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "ros_150_q_net",
+      "pattern": "\\| 150 \\| 0\\.5280 \\| 0\\.06336 \\|",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "0.06336"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "ros_284_q_net",
+      "pattern": "\\| 284 \\| 0\\.9997 \\| 0\\.11996 \\|",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "0.11996"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "ros_500_q_net",
+      "pattern": "\\| 500 \\| 1\\.7600 \\| 0\\.21120 \\|",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "0.21120"
+    }
+  ],
+  "generated_by": "scripts/generate_systems.py",
+  "inputs": {
+    "E_mu_GeV_default": 5.0,
+    "eta_acc_v1_default": 0.3,
+    "eta_thermal_default": 0.4,
+    "kelly_efficiencies_mu_rec_acc_heat": [
+      0.5,
+      1.0,
+      0.18,
+      0.6
+    ],
+    "kelly_table1_F_H_B_MeV": [
+      2991.0,
+      3743.0,
+      3606.0
+    ],
+    "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784"
+  }
+}
