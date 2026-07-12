@@ -1,0 +1,137 @@
+{
+  "entries": [
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_floor_500",
+      "pattern": "\\*\\*R >= 0\\.77\\*\\*",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.77"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_col",
+      "pattern": "R_col = \\*\\*0\\.35\\*\\*",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.35"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_kamimura",
+      "pattern": "posterior\\s+gives R = \\*\\*0\\.46\\*\\*",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.46"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "x_mu_nominal",
+      "pattern": "X_mu = 110\\.229,",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "110.229"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "q_net_nominal",
+      "pattern": "q_net = 0\\.0465606\\)",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.0465606"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "solver_x_target",
+      "pattern": "X_mu-equivalent 142\\.045\\)",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "142.045"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "solver_E_mu_GeV",
+      "pattern": "\\| E_mu_GeV \\| 3\\.88005 \\|",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "3.88005"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "solver_eta_acc",
+      "pattern": "\\| eta_acc \\| 0\\.386593 \\|",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.386593"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "solver_R",
+      "pattern": "\\| R \\| 0\\.587111 \\|",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.587111"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "solver_lambda_c",
+      "pattern": "\\| lambda_c \\| 3\\.09765e\\+08 \\|",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "3.09765e+08"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_500_2.28e+08",
+      "pattern": "\\| 500 \\|.*0\\.9996",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.9996"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_500_3.00e+08",
+      "pattern": "\\| 500 \\|.*0\\.9437",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.9437"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_500_inf",
+      "pattern": "\\| 500 \\|.*0\\.7666",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.7666"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_150_1.45e+08",
+      "pattern": "\\| 150 \\|.*0\\.5884",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.5884"
+    }
+  ],
+  "generated_by": "scripts/generate_frontier.py",
+  "inputs": {
+    "R_nominal": 0.35,
+    "lambda_0_s^-1": 455200.0,
+    "lambda_c_grid_s^-1": [
+      100000000.0,
+      145000000.0,
+      228000000.0,
+      300000000.0,
+      null
+    ],
+    "lambda_c_nominal_s^-1": 130000000.0,
+    "omega_s0_default_fraction": 0.00857,
+    "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784",
+    "solver_target_q_net": 0.06,
+    "x_mu_targets": [
+      150.0,
+      284.0,
+      500.0
+    ]
+  }
+}
