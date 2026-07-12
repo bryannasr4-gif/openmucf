@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   training set + slowing-down Monte Carlo); a gold-standard close-coupling/R-matrix benchmark is the gating
   acquisition.
 
-## [1.1.0] - 2026-07-08
+## [1.1.0] - 2026-07-11
 
 ### Added
 - **Machine-checkable provenance (`openmucf/provenance.py` + `FINDINGS_MANIFEST.json`).** Every headline
@@ -90,6 +90,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MATERIALITY_MANIFEST.json`.
 
 ### Changed
+- **Cross-model review hardening.** Fail-loud capture of the solver's default error norm, the
+  breakeven R-requirement computed from the registered omega_s0 nominal (never transcribed), a
+  parallel-make-safe audit dependency, and a negative-background guard in the twin estimator — zero
+  numeric change to any shipped result.
 - **Extended reproducibility audit (`make audit`).** Now also verifies the provenance manifest (across
   `FINDINGS_MANIFEST.json`, `TWIN_MANIFEST.json`, and `MATERIALITY_MANIFEST.json`), exact-diffs
   `FINDINGS_MANIFEST.json`, `VALIDATION_CHANNELS.md`, `TWIN_AUDIT.md`/`TWIN_MANIFEST.json`, and
