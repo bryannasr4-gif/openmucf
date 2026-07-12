@@ -37,6 +37,12 @@ _rates = load_rates()
 _xmu_eta1 = float(cycle.fusions_per_muon_from_conditions(_rates, 300.0, 1.2, 0.5, eta=1.0))
 _xmu_eta5 = float(cycle.fusions_per_muon_from_conditions(_rates, 300.0, 1.2, 0.5, eta=5.0))
 
+# section 2b: Q_net under three muon-cost E_mu-tier priors (WS-E, deviation E1). The default flat
+# [2,10] box in sections 1/2 is UNCHANGED; this panel ADDS a per-tier Q_net view (T1 Uniform(3.0,6.0),
+# T2 Uniform(1e2,1e3), T3 Uniform(2.3e3,1e6)). Seeded forward-UQ MC (byte-stable like section 2).
+_TIER_BOXES = {"T1": (3.0, 6.0), "T2": (1.0e2, 1.0e3), "T3": (2.3e3, 1.0e6)}
+_tiers = {k: uq.qnet_tier_panel(lo, hi) for k, (lo, hi) in _TIER_BOXES.items()}
+
 # ----------------------------------------------------------- headline numbers (single source of truth)
 # Every number that appears BOTH in FINDINGS.md and FINDINGS_MANIFEST.json is formatted exactly once
 # here; the document f-string and the manifest entries below consume the SAME strings from H, so a value
@@ -66,6 +72,9 @@ H["R_required"] = f"{be['R_required_at_infinite_lambda_c']:.2f}"  # computed fro
 H["eta_bracket_lo"] = f"{_xmu_eta1:.1f}"
 H["eta_bracket_hi"] = f"{_xmu_eta5:.1f}"
 H["eta_bracket_width"] = f"{_xmu_eta5 - _xmu_eta1:.1f}"
+for _t in ("T1", "T2", "T3"):
+    H[f"tier_qnet_Pgt1_{_t}"] = f"{_tiers[_t]['P_gt1'] * 100:.1f}%"
+    H[f"tier_qnet_median_{_t}"] = f"{_tiers[_t]['median']:.2e}"
 
 
 def _rank(d):
@@ -215,6 +224,32 @@ the Kou-Chen best case -- both correspond to conditions the liquid box excludes.
 
 P(Q_sci > 1) = {H["P_qsci_gt1"]} ; P(Q_net > 1) = {H["P_qnet_gt1"]}.
 
+## 2b. Q_net by muon-cost tier
+Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To make the
+muon-cost gap (`MUON_COST.md`) legible as an energy-return statement, the SAME seeded forward-UQ Q_net is
+re-run under three tier-specific E_mu priors, with every other input (the measured omega_s0 / R / lambda_c /
+eta boxes) held fixed:
+
+| E_mu prior (muon-cost tier) | P(Q_net > 1) | median Q_net |
+|---|---|---|
+| T1 design studies, Uniform(3.0, 6.0) GeV | {H["tier_qnet_Pgt1_T1"]} | {H["tier_qnet_median_T1"]} |
+| T2 demonstrated tech, Uniform(1e2, 1e3) GeV | {H["tier_qnet_Pgt1_T2"]} | {H["tier_qnet_median_T2"]} |
+| T3 operating facilities, Uniform(2.3e3, 1e6) GeV | {H["tier_qnet_Pgt1_T3"]} | {H["tier_qnet_median_T3"]} |
+
+**Finding.** The open-access anchor for the muon cost is Kelly, Hart & Rose (2021) at 4.70 GeV/muon
+(full-text-verified; see `MUON_COST.md`). P(Q_net > 1) is {H["tier_qnet_Pgt1_T1"]} in every tier -- even the
+cheapest design-study muons cap Q_net well below 1 at liquid density -- so the tier signal lives in the
+MEDIAN Q_net, which collapses by ~5 orders of magnitude from T1 ({H["tier_qnet_median_T1"]}) to T3
+({H["tier_qnet_median_T3"]}): the ~10^3 muon-cost gap expressed in energy-return form.
+
+**T1 box-edge provenance.** The T1 box edges are 3.0 GeV (the Acceleron 2025 active-target slide value --
+simulated, unvalidated, company slide) and 6.0 GeV (a design-study upper value). The full-text-pinned
+Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE this edge), with a ~3 GeV
+ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box [3.0, 6.0] spans the low/central
+design-study range, its edges are disclosed alongside the pinned values, and it is left UNCHANGED
+(pre-registered; a discrepant pin is disclosed, never tuned away -- I2). Replacing the flat [2, 10] default
+with a tiered prior is deferred to Phase-4 findings-v2 (deviation E1).
+
 ## 3. Breakeven audit (the marquee result)
 The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\\mu > 500$, $Q > 2$. Under the **measured,
 liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:
@@ -310,12 +345,24 @@ _entries += [
     _entry("eta_bracket_hi", rf"\| 5 \(Yamashita-Kino fit\) \| {re.escape(H['eta_bracket_hi'])} \|"),
     _entry("eta_bracket_width", rf"X_mu\(eta=5\) - X_mu\(eta=1\) = \*\*{re.escape(H['eta_bracket_width'])}\*\*"),
 ]
+# section 2b (WS-E tier panel): anchor each tracked number to its row of the Q_net-by-tier table.
+_tier_rows = {
+    "T1": r"T1 design studies, Uniform\(3\.0, 6\.0\) GeV",
+    "T2": r"T2 demonstrated tech, Uniform\(1e2, 1e3\) GeV",
+    "T3": r"T3 operating facilities, Uniform\(2\.3e3, 1e6\) GeV",
+}
+for _t in ("T1", "T2", "T3"):
+    _p = _tier_rows[_t]
+    _entries.append(_entry(f"tier_qnet_Pgt1_{_t}", rf"{_p} \| {re.escape(H[f'tier_qnet_Pgt1_{_t}'])} \|"))
+    _entries.append(
+        _entry(f"tier_qnet_median_{_t}", rf"{_p}[^\n]*\| {re.escape(H[f'tier_qnet_median_{_t}'])} \|")
+    )
 
 _manifest_inputs = {
     "rates_csv_sha256": provenance.file_sha256(RATES_CSV),
     "validation_targets_csv_sha256": provenance.file_sha256(TARGETS_CSV),
     "uq_params_repr_sha256": hashlib.sha256(repr(uq.PARAMS).encode("utf-8")).hexdigest(),
-    "seeds": {"sobol": 0, "forward_uq": 0, "breakeven": 1},
+    "seeds": {"sobol": 0, "forward_uq": 0, "breakeven": 1, "tier_panel": 0},
 }
 provenance.write_manifest("FINDINGS_MANIFEST.json", _entries, _manifest_inputs)
 
