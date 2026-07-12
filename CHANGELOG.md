@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Author: Bryan Nasr (ORCID: 0009-0008-2360-7522). -->
-<!-- Repository: https://github.com/bryannasr4-gif/openmucf | Zenodo concept DOI 10.5281/zenodo.21251511 (v1.0.0 version DOI 10.5281/zenodo.21251512). -->
+<!-- Repository: https://github.com/bryannasr4-gif/openmucf | Zenodo concept DOI 10.5281/zenodo.21251511 (v1.0.0 version DOI 10.5281/zenodo.21251512; v1.1.0 version DOI 10.5281/zenodo.21316574). -->
 
 ## [Unreleased]
 

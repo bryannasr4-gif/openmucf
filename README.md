@@ -119,8 +119,8 @@ provenance, and the credibility-firewall policy. Release history is in [`CHANGEL
 
 ## How to cite
 If you use OpenMuCF, please cite it via [`CITATION.cff`](CITATION.cff) (GitHub renders a "Cite this
-repository" button from it). Archived on Zenodo — cite the exact release **v1.0.0** via DOI
-[10.5281/zenodo.21251512](https://doi.org/10.5281/zenodo.21251512), or the version-independent concept DOI
+repository" button from it). Archived on Zenodo — cite the exact release **v1.1.0** via DOI
+[10.5281/zenodo.21316574](https://doi.org/10.5281/zenodo.21316574), or the version-independent concept DOI
 [10.5281/zenodo.21251511](https://doi.org/10.5281/zenodo.21251511) to always resolve to the latest version.
 
 ## License

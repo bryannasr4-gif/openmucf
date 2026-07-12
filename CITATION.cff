@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "OpenMuCF: Open FAIR rate ledger and differentiable cycle/energy-balance auditor for muon-catalyzed fusion"
 version: 1.1.0
-doi: "10.5281/zenodo.21251512"
+doi: "10.5281/zenodo.21316574"
 date-released: "2026-07-11"
 license: Apache-2.0
 type: software
