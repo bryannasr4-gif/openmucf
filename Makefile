@@ -1,4 +1,4 @@
-.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics audit all
+.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics design audit all
 
 install:
 	pip install -e ".[dev]"
@@ -67,6 +67,15 @@ frontier:
 neutronomics:
 	python scripts/generate_neutronomics.py
 
+# Bayesian experimental-design ranking (WS-D). Regenerates DESIGN.md + DESIGN_MANIFEST.json. BOTH carry
+# numpyro/NUTS-derived numbers (nested-MC EIG, sd-contraction refits) that are NOT byte-stable cross-arch
+# (the CALIBRATION.md precedent, WAVE2 A1), so NEITHER joins the audit git-diff list below; instead
+# `generate_design.py --audit` re-runs with pinned seeds and tolerance-checks every manifest number (EIG
+# 5% relative; contraction 3 pp absolute). The manifest still joins `provenance --check` (doc<->manifest
+# regenerate together).
+design:
+	python scripts/generate_design.py
+
 # Reproducibility gate: regenerate the deterministic docs and fail if they drift from what's committed.
 # CALIBRATION.md and the FC-001 card payload (forecasts/FC-001-mufuse.json) are MCMC-derived and are NOT
 # exact-diffed here; instead the card is checked for hash-consistency and FORECASTS.md (rendered
@@ -77,9 +86,10 @@ neutronomics:
 # exact-diffed; its forward-UQ CI-width scale reference is read from the byte-stable FINDINGS_MANIFEST.json.
 audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics
 	python scripts/generate_forecast.py --audit
-	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json NEUTRONOMICS_MANIFEST.json
+	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json NEUTRONOMICS_MANIFEST.json DESIGN_MANIFEST.json
 	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json
 	python scripts/generate_calibration.py --audit
-	@echo "audit OK: docs match committed; manifest verified; FC-001 card hash-consistent"
+	python scripts/generate_design.py --audit
+	@echo "audit OK: docs match committed; manifests verified; FC-001 card hash-consistent; NUTS docs tolerance-audited"
 
 all: lint test findings calibration forecast
