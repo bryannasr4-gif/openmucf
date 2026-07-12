@@ -1,4 +1,4 @@
-.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier audit all
+.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics audit all
 
 install:
 	pip install -e ".[dev]"
@@ -60,6 +60,13 @@ systems:
 frontier:
 	python scripts/generate_frontier.py
 
+# Neutrons-per-joule league table (neutronomics Layer 1). Regenerates NEUTRONOMICS.md +
+# NEUTRONOMICS_MANIFEST.json. All committed numbers are pure deterministic arithmetic (X_mu from the
+# ledger + the MUON_COST tier medians + published beam parameters; no MCMC/solver), so BOTH artifacts are
+# byte-stable cross-arch and BOTH join the audit git-diff list below.
+neutronomics:
+	python scripts/generate_neutronomics.py
+
 # Reproducibility gate: regenerate the deterministic docs and fail if they drift from what's committed.
 # CALIBRATION.md and the FC-001 card payload (forecasts/FC-001-mufuse.json) are MCMC-derived and are NOT
 # exact-diffed here; instead the card is checked for hash-consistency and FORECASTS.md (rendered
@@ -68,10 +75,10 @@ frontier:
 # IS exact-diffed; the slow twin coverage MCMC (tests/test_twin_coverage.py) is a `slow` test, never here.
 # MATERIALITY.md is deterministic (one-at-a-time channel toggles through the v1 ODE, no MCMC) and IS
 # exact-diffed; its forward-UQ CI-width scale reference is read from the byte-stable FINDINGS_MANIFEST.json.
-audit: findings validate bench twin-audit materiality mucost systems frontier
+audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics
 	python scripts/generate_forecast.py --audit
-	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json
-	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json
+	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json NEUTRONOMICS_MANIFEST.json
+	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json
 	python scripts/generate_calibration.py --audit
 	@echo "audit OK: docs match committed; manifest verified; FC-001 card hash-consistent"
 
