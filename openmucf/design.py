@@ -206,8 +206,9 @@ def eig_nested_mc(candidate, n_outer: int = 256, n_inner: int = 256, seed: int =
     class-sensitive observables ('constant' or 'inflated'). The inner/outer settings are echoed in the
     output dict.
 
-    NESTED-MC BIAS CAVEAT (mandatory): the nested estimator has an O(1/n_inner) POSITIVE bias in the
-    marginal log-likelihood (Jensen); reported EIG is a slight over-estimate that shrinks with n_inner.
+    NESTED-MC BIAS CAVEAT (mandatory): the log-mean-exp marginal log-likelihood is NEGATIVELY biased by
+    Jensen (a mean-of-logs underestimates the log-of-a-mean), so the reported EIG -- which SUBTRACTS that
+    marginal -- carries an O(1/n_inner) POSITIVE bias: a slight over-estimate that shrinks with n_inner.
     Rankings (the deliverable) are robust to it; absolute bits are indicative. ``n_inner`` is reported so
     the bias scale is visible.
     """
