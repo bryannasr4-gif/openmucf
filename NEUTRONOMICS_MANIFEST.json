@@ -1,0 +1,98 @@
+{
+  "entries": [
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "xmu",
+      "pattern": "\\*\\*X_mu = 113 fusions per muon\\*\\*",
+      "source": "openmucf/data/validation_targets.csv:V_petitjean_Xmu / openmucf.calibrate.OBS['xmu_obs']",
+      "source_type": "ledger_row",
+      "value": "113"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "emu_T1",
+      "pattern": "MUON_COST\\.md T1\\-design\\-study median\\) \\| 4\\.85 \\|",
+      "source": "openmucf/data/muon_cost.csv (mucost.tier_median)",
+      "source_type": "ledger_row",
+      "value": "4.85"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_T1",
+      "pattern": "4\\.85 \\| 7\\.771e\\-10 \\| 1\\.454e\\+11 \\|",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "1.454e+11"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "emu_T2",
+      "pattern": "MUON_COST\\.md T2\\-demonstrated\\-tech median\\) \\| 178 \\|",
+      "source": "openmucf/data/muon_cost.csv (mucost.tier_median)",
+      "source_type": "ledger_row",
+      "value": "178"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_T2",
+      "pattern": "178 \\| 2\\.852e\\-08 \\| 3\\.962e\\+09 \\|",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "3.962e+09"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "emu_T3",
+      "pattern": "MUON_COST\\.md T3\\-operating\\-facility median\\) \\| 5497\\.5 \\|",
+      "source": "openmucf/data/muon_cost.csv (mucost.tier_median)",
+      "source_type": "ledger_row",
+      "value": "5497.5"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_T3",
+      "pattern": "5497\\.5 \\| 8\\.808e\\-07 \\| 1\\.283e\\+08 \\|",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "1.283e+08"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_alt_dt_generator",
+      "pattern": "Sealed\\-tube\\ D\\-T\\ generator\\ \\(Thermo\\ Sci\\.\\ P385\\) \\|[^\\n]*\\| 6\\.508e\\+07 \\|",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "6.508e+07"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_alt_fng",
+      "pattern": "FNG\\ \\(Frascati\\ Neutron\\ Generator,\\ ENEA\\) \\|[^\\n]*\\| 3\\.333e\\+08 \\|",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "3.333e+08"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_alt_rtns2",
+      "pattern": "RTNS\\-II\\ \\(LLNL,\\ beam\\-target\\ 14\\ MeV\\ source\\) \\|[^\\n]*\\| 5\\.250e\\+08 \\|",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "5.250e+08"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_alt_spallation",
+      "pattern": "Spallation\\ source\\ \\(ISIS,\\ W\\ target\\) \\|[^\\n]*\\| 1\\.560e\\+11 \\|",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "1.560e+11"
+    }
+  ],
+  "generated_by": "scripts/generate_neutronomics.py",
+  "inputs": {
+    "gev_to_j": "1.602176634e-10",
+    "muon_cost_csv_sha256": "c4d29d56e407a82f267e2edc1feb603a30339403950c389665fbbba4e4d18abf",
+    "xmu_obs": "113"
+  }
+}
