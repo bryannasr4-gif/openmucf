@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Open muon-cost ledger (`openmucf/data/muon_cost.csv` + `openmucf/mucost.py` + `MUON_COST.md`).** A
+  curated compilation-with-provenance of the muon-production energy cost on one auditable basis (beam GeV
+  per muon; wall-plug and recapture credits kept in separate flagged columns, never folded). Ten rows across
+  three tiers — design studies (anchor: Kelly–Hart–Rose 4.70 GeV/μ, open access; corroborated by
+  full-text-verified Bertin 1987 and Eliezer–Henis 1994), demonstrated technology, and operating facilities
+  (mu2e/COMET/MuSIC/HIMB — original derivations with the arithmetic shown). The 10³ simulation-to-facility
+  gap is proved from the table itself and drawn in `figures/muon_cost_gap.png`.
+- **`FINDINGS.md` §2b — Q_net by muon-cost tier.** The forward-UQ Q_net is re-run under T1/T2/T3 E_μ priors
+  (via `uq.qnet_tier_panel`), holding every measured input fixed; the median Q_net collapses ~10⁵× from
+  design-study to facility muons — the 10³ gap in energy-return form. The default flat [2, 10] GeV E_μ box
+  in §1/§2 is unchanged (the tier panel is an added section, not a replacement).
+- `MUON_COST.md` + `MUON_COST_MANIFEST.json` join `make audit` (regenerated + byte-diffed; the PNG is not
+  byte-diffed); the provenance manifest check now covers the muon-cost manifest too.
+
 ### Planned
 - **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant
   rate that every group currently hard-codes, so that the auditor *produces* it instead of importing a
