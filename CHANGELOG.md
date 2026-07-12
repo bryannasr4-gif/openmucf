@@ -50,6 +50,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (Thermo P385 sealed tube, FNG, RTNS-II, ISIS spallation) is included, each n/J derived from published
   beam parameters. Beam basis only (wall-plug kept separate, I5); neutron-source economics, not breakeven
   (I9); no new physics (I1). `NEUTRONOMICS.md` + `NEUTRONOMICS_MANIFEST.json` join `make audit`.
+- **Inverse-design frontiers (`openmucf/frontier.py` + `FRONTIER.md`).** "What would have to be true"
+  breakeven frontiers over the energy-balance graph: closed-form requirement curves (`r_required`,
+  `lambda_c_required`, `frontier_lambda_c_R`) plus an `optimistix` Newton solver (`solve_inverse`) that
+  agree to ~1e-14. Reports the R ≳ 0.77 reactivation a MuFusE-scale programme would need for scientific
+  breakeven — bit-identical to the existing forward-UQ audit. Framed strictly as requirements, never
+  verdicts (the scenario-verdict registry is deliberately NOT built). `FRONTIER.md` + `FRONTIER_MANIFEST.json`
+  join `make audit`; `optimistix` is promoted to an explicit dependency.
+- **X-ray/neutron-ratio degeneracy-breaker feasibility scan (`docs/xray_feasibility.md`).** An exploratory
+  (not-audited) scan of whether adding an X-ray-per-fusion-neutron observable to the calibration would break
+  the `ω_s0`/`R` degeneracy. Best-cell posterior sd(R) contraction 42.95% in the weak-prior chain (≥ a 15%
+  feasibility threshold), with the ±3 pp Monte-Carlo noise floor documented. Exploratory only; the κ-band
+  likelihood term is specced, not built, pending acquisition of a measured κ.
+- **²²⁵Ac reproduction notebook (`scripts/parisi_ac225.py` + `notebooks/parisi_ac225.ipynb`).** A forward,
+  factor-by-factor reproduction of Parisi & Rutkowski's (arXiv:2511.20951) headline — ~20 mg/yr of ²²⁵Ac from
+  a 10 g ²²⁶Ra feedstock at 10¹² muons/s — from their published factors, each cited to its locator; lands at
+  20.5 mg/yr (+2.6% vs the 20 mg/yr headline, +0.2% vs their Table-I value), with P_fus ≈ 564 W and ~400× the
+  2024 global supply as cross-checks. Explicitly a reproduction of an *external* result — their "viable before
+  energy breakeven" framing is quoted as theirs, not an OpenMuCF claim. CI-tested.
+- **Bayesian experimental-design ranking (`openmucf/design.py` + `DESIGN.md`).** Ranks which next μCF
+  experiment would most sharpen the partly-degenerate `(ω_s^eff, R)` estimand, over the existing calibration
+  posterior, by a primary preposterior sd-contraction metric and a secondary nested-Monte-Carlo EIG. The
+  X-ray/neutron ratio is the decisive, structural-class-robust R-sharpener; R is reported class-conditionally
+  (constant-R vs R(φ)-inflated) because neutron-only observables do not identify R without an assumed
+  structural form (the class-flip finding). An internal planning instrument, not a verdict. `DESIGN.md` +
+  `DESIGN_MANIFEST.json` carry NUTS-derived numbers, so `make audit` tolerance-checks them
+  (`generate_design.py --audit`: EIG bits at 5% relative, sd-contraction at 3 pp absolute) rather than
+  byte-diffing.
 
 ### Planned
 - **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant

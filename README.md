@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-129%2F131%20(macOS%20%2B%20Windows)-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-197%2F200%20(Linux%20CI%20%2B%20Windows)-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-v1%20research--grade-brightgreen.svg)
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
@@ -36,11 +36,13 @@ shared substrate:
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 131 tests (129 pass, 1 skipped-blocked, 1 slow deselected by default)
+pytest                 # 200 tests (197 pass, 1 skipped-blocked, 2 slow deselected by default)
 pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 seeded MCMC fits)
 ```
-Verified platforms: macOS arm64 (py3.13) and Windows x64 (py3.12) — 129/131 tests, `VALIDATION.md` regenerates
-identically on both. Windows note: enable long-path support (or use a short venv path) for the JAX install.
+Verified platforms: Windows x64 (py3.12) and Linux CI (py3.11/3.12/3.13) — 197/200 tests. The audited docs
+regenerate byte-identically cross-architecture (`VALIDATION.md` matches on macOS arm64, Windows, and Linux),
+except the NUTS/MCMC-derived docs (`CALIBRATION.md`, `DESIGN.md`), which reproduce to Monte-Carlo tolerance.
+Windows note: enable long-path support (or use a short venv path) for the JAX install.
 The twin coverage test is marked `slow` and deselected from the default run (and CI); run it with `pytest -m slow`.
 
 ## Quickstart
@@ -60,6 +62,11 @@ make validate      # reproduce the literature (VALIDATION.md: 7 pass / 1 deferre
 make findings      # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 make systems       # Q Rosetta stone + energy-balance graph -> SYSTEMS.md
+make mucost        # open muon-cost ledger + the 10^3 gap figure -> MUON_COST.md
+make frontier      # inverse-design "what would have to be true" frontiers -> FRONTIER.md
+make neutronomics  # neutrons-per-joule league table -> NEUTRONOMICS.md
+make design        # Bayesian experimental-design ranking -> DESIGN.md
+make audit         # regenerate every deterministic doc + tolerance-check the MCMC docs; fail on drift
 ```
 
 ## Headline results (see `FINDINGS.md`, `MUON_COST.md`, `CALIBRATION.md`)
@@ -110,12 +117,17 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `openmucf/formation.py` | resonance-averaged λ_dtμ(T,φ,F) |
 | `openmucf/energy.py` | transparent scientific + net-electrical Q |
 | `openmucf/uq.py` | Sobol / forward-UQ / breakeven falsification |
+| `openmucf/systems.py` | differentiable energy-balance graph + Q Rosetta stone (a superset of `energy.py`) |
+| `openmucf/mucost.py` | open muon-cost ledger loader (tiered, provenance-tagged) |
+| `openmucf/frontier.py` | inverse-design breakeven frontiers (closed-form + `optimistix` solver) |
+| `openmucf/design.py` | Bayesian experimental-design ranking (nested-MC EIG + sd-contraction) |
 | `openmucf/calibrate.py` | numpyro Bayesian calibration |
 | `openmucf/validate.py` | reproduce the pre-registered targets |
 | `openmucf/forecast.py` | pre-registered forecast cards (posterior pushforward, hashing, CRPS/coverage scoring) |
 | `openmucf/interop.py` | GEANT4 interop stub — export rates (CSV/JSON), ingest validation spectra |
 | `openmucf/data/` | `rates.csv`, `validation_targets.csv`, `references.bib`, schema |
 | `forecasts/`, `FORECASTS.md` | pre-registered, hash-stamped forecast cards (FC-001) + protocol + registry table |
+| `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + 10³ gap, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
 | `examples/`, `notebooks/` | runnable `quickstart.py` + `quickstart.ipynb` |
 | `docs/` | getting-started + API overview |
 | `MODEL_SPEC.md`, `LITERATURE.md`, `PRE_REGISTRATION.md` | the physics, numbers, and locked targets |
