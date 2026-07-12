@@ -252,3 +252,24 @@ def breakeven_audit(n=400_000, seed=1):
             "<= 0.2%, i.e. R >= 0.77. The binding requirement is reactivation, at any density."
         ),
     }
+
+
+def qnet_tier_panel(emu_lo, emu_hi, n=400_000, seed=0, blanket_M=1.0):
+    """Forward-UQ Q_net under a REPLACED E_mu prior box -- the muon-cost tier panel (WS-E, deviation E1).
+
+    Draws every uq :data:`PARAMS` input from its default box, then OVERRIDES ``E_mu_GeV`` with
+    ``Uniform(emu_lo, emu_hi)``. This probes the Q_net distribution under a muon-cost *tier's* E_mu prior
+    WITHOUT changing the default box: :func:`forward_uq`, :func:`sobol_indices`, :func:`breakeven_audit`
+    and :data:`PARAMS` are all untouched (the flat [2, 10] GeV default stands; the tier panel is an
+    additional FINDINGS section, not a replacement -- deviation E1). Seeded and deterministic; the seeded
+    numpy-MC median is byte-stable cross-environment (same class as :func:`forward_uq`'s shipped medians).
+
+    Returns ``{"P_gt1": P(Q_net > 1), "median": median Q_net}`` under the tier's E_mu prior.
+    """
+    rng = np.random.default_rng(seed)
+    d = {p.name: rng.uniform(p.low, p.high, n) for p in PARAMS}
+    d["E_mu_GeV"] = rng.uniform(emu_lo, emu_hi, n)
+    qn = q_net(
+        d["omega_s0_pct"], d["R"], d["lambda_c"], d["E_mu_GeV"], d["eta_acc"], d["eta_thermal"], blanket_M
+    )
+    return {"P_gt1": float((qn > 1).mean()), "median": float(np.median(qn))}

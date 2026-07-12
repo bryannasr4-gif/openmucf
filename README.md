@@ -61,7 +61,7 @@ make findings      # sensitivity ranking + breakeven falsification -> FINDINGS.m
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 ```
 
-## Headline results (see `FINDINGS.md`, `CALIBRATION.md`)
+## Headline results (see `FINDINGS.md`, `MUON_COST.md`, `CALIBRATION.md`)
 - **Sensitivity split:** yield X_μ is controlled by reactivation R (Sobol S_T=0.62), λ_c, ω_s0; net-electrical
   Q is controlled by muon cost and accelerator efficiency. Different levers for yield vs energy.
 - **Breakeven audit:** at liquid-scale density (φ ≤ ~1.45), under measured, unpolarized ranges, P(X_μ>500)=0 —
@@ -70,6 +70,13 @@ make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
   (R ≈ 0.94 at λ_c=3e8) vs the model-derived ~0.35. A falsifiable, quantified bet that rides on reactivation.
 - **Identifiability:** experiment pins ω_s^eff (and only loosely bounds λ_c) but not the ω_s0/R split
   (corr +0.84) — the quantitative reason the Phase-3 microscopic calculation is needed.
+- **Muon-cost normalization (`MUON_COST.md`):** a curated, provenance-tagged compilation of the
+  muon-production energy cost on one auditable basis. Design studies sit at a few GeV per muon (anchor:
+  Kelly–Hart–Rose 4.70 GeV/μ, open-access, G4Beamline), while operating facilities are ~10³× worse
+  (mu2e ~5×10³, COMET ~2.3×10³, MuSIC ~6×10³ GeV/μ — original derivations, arithmetic shown). Re-running
+  Q_net under each cost tier (`FINDINGS.md` §2b) collapses the median Q_net ~10⁵× from design-study to
+  facility muons — the 10³ simulation-to-facility gap in energy-return form. *The floor is unvalidated,
+  not impossible.*
 
 ## Forecast registry
 OpenMuCF keeps a registry of **pre-registered, hash-stamped probabilistic forecasts** in `forecasts/`

@@ -94,6 +94,32 @@ the Kou-Chen best case -- both correspond to conditions the liquid box excludes.
 
 P(Q_sci > 1) = 0.2% ; P(Q_net > 1) = 0.0%.
 
+## 2b. Q_net by muon-cost tier
+Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To make the
+muon-cost gap (`MUON_COST.md`) legible as an energy-return statement, the SAME seeded forward-UQ Q_net is
+re-run under three tier-specific E_mu priors, with every other input (the measured omega_s0 / R / lambda_c /
+eta boxes) held fixed:
+
+| E_mu prior (muon-cost tier) | P(Q_net > 1) | median Q_net |
+|---|---|---|
+| T1 design studies, Uniform(3.0, 6.0) GeV | 0.0% | 4.83e-02 |
+| T2 demonstrated tech, Uniform(1e2, 1e3) GeV | 0.0% | 3.99e-04 |
+| T3 operating facilities, Uniform(2.3e3, 1e6) GeV | 0.0% | 4.39e-07 |
+
+**Finding.** The open-access anchor for the muon cost is Kelly, Hart & Rose (2021) at 4.70 GeV/muon
+(full-text-verified; see `MUON_COST.md`). P(Q_net > 1) is 0.0% in every tier -- even the
+cheapest design-study muons cap Q_net well below 1 at liquid density -- so the tier signal lives in the
+MEDIAN Q_net, which collapses by ~5 orders of magnitude from T1 (4.83e-02) to T3
+(4.39e-07): the ~10^3 muon-cost gap expressed in energy-return form.
+
+**T1 box-edge provenance.** The T1 box edges are 3.0 GeV (the Acceleron 2025 active-target slide value --
+simulated, unvalidated, company slide) and 6.0 GeV (a design-study upper value). The full-text-pinned
+Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE this edge), with a ~3 GeV
+ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box [3.0, 6.0] spans the low/central
+design-study range, its edges are disclosed alongside the pinned values, and it is left UNCHANGED
+(pre-registered; a discrepant pin is disclosed, never tuned away -- I2). Replacing the flat [2, 10] default
+with a tiered prior is deferred to Phase-4 findings-v2 (deviation E1).
+
 ## 3. Breakeven audit (the marquee result)
 The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Under the **measured,
 liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:

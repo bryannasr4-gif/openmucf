@@ -223,6 +223,54 @@
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "43.1"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "tier_qnet_Pgt1_T1",
+      "pattern": "T1 design studies, Uniform\\(3\\.0, 6\\.0\\) GeV \\| 0\\.0% \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.0%"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "tier_qnet_median_T1",
+      "pattern": "T1 design studies, Uniform\\(3\\.0, 6\\.0\\) GeV[^\\n]*\\| 4\\.83e\\-02 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "4.83e-02"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "tier_qnet_Pgt1_T2",
+      "pattern": "T2 demonstrated tech, Uniform\\(1e2, 1e3\\) GeV \\| 0\\.0% \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.0%"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "tier_qnet_median_T2",
+      "pattern": "T2 demonstrated tech, Uniform\\(1e2, 1e3\\) GeV[^\\n]*\\| 3\\.99e\\-04 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "3.99e-04"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "tier_qnet_Pgt1_T3",
+      "pattern": "T3 operating facilities, Uniform\\(2\\.3e3, 1e6\\) GeV \\| 0\\.0% \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.0%"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "tier_qnet_median_T3",
+      "pattern": "T3 operating facilities, Uniform\\(2\\.3e3, 1e6\\) GeV[^\\n]*\\| 4\\.39e\\-07 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "4.39e-07"
     }
   ],
   "generated_by": "scripts/generate_findings.py",
@@ -231,7 +279,8 @@
     "seeds": {
       "breakeven": 1,
       "forward_uq": 0,
-      "sobol": 0
+      "sobol": 0,
+      "tier_panel": 0
     },
     "uq_params_repr_sha256": "2de22958c76d1e537feafeada7b7fddd7f1f614daeeba628a0006dfe9d0db727",
     "validation_targets_csv_sha256": "e3332ab6bdc51e78bbacda6b08486dd404317280a7979297ca2f121091f900b3"
