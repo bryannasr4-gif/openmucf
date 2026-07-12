@@ -25,6 +25,7 @@ guarded behind ``main()`` so tests import and assert on the tables without regen
 
 from __future__ import annotations
 
+import zlib
 from pathlib import Path
 
 from openmucf import mucost, provenance
@@ -182,7 +183,9 @@ def build_figure(table: mucost.MuonCostTable, path: str = "figures/muon_cost_gap
     for r in table:
         if not r.has_normalized:
             continue
-        x = xpos[r.tier] + (hash(r.source_id) % 21 - 10) * 0.012  # tiny deterministic jitter
+        # tiny deterministic jitter: crc32 is stable across runs/platforms, unlike the built-in hash()
+        # (PYTHONHASHSEED-randomized per process), so the figure regenerates identically run-to-run.
+        x = xpos[r.tier] + (zlib.crc32(r.source_id.encode()) % 21 - 10) * 0.012
         ax.scatter([x], [r.normalized_GeV_per_stopped_mu], s=70, color=colors[r.tier], edgecolor="k", zorder=3)
         ax.annotate(LABELS[r.source_id].split(" (")[0], (x, r.normalized_GeV_per_stopped_mu),
                     fontsize=7, ha="left", va="bottom", xytext=(4, 2), textcoords="offset points")
