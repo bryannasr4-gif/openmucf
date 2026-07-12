@@ -74,8 +74,9 @@ def test_design_doc_and_manifest_render_deterministically(tmp_path):
     # verbatim scenario-B disclaimer
     assert "the scenario-B MuFusE EIG is large BY CONSTRUCTION (the widest prior wins)" in md1
     assert "this is a property of the prior, not of the experiment." in md1
-    # I6 fence in the header
-    assert "never cold-mailed" in md1 and "Antognini" in md1 and "Acceleron" in md1
+    # I6 fence in the header (generic warm-thread language; no named private outreach targets in a public doc)
+    assert "never cold-mailed" in md1 and "ALREADY-WARM thread" in md1 and "not outreach" in md1
+    assert "Antognini" not in md1 and "NCCR" not in md1  # public-hygiene: no private outreach target names
     # negative-zero normalised, class-flip + C4 conditional surfaced
     assert "yields EIG =\n" in md1 or "yields EIG = " in md1
     assert "-0.000" not in md1
