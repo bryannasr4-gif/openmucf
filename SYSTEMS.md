@@ -27,9 +27,13 @@ The three SystemChain-native columns are evaluated on the v1-default chain (E_mu
 back to the reference q_sci by exact algebra (identity for q_sci_v1 and ykc_efficiency_free at the
 default breeding credit; dividing out `blanket_M*eta_thermal*eta_acc*(1-recirc_fraction)` for q_net_v1).
 **kelly_Q_elec** is Kelly-Hart-Rose's published external convention on THEIR chain (E_mu = 4.70
-GeV), affine in X_mu over their fitted range [100, 600] fusions/muon; it converts to their own scientific
-gain in the G-Kelly section below. The lesson: a single dimensionless "Q" is meaningless without its
-basis -- the Rosetta table makes the basis explicit.
+GeV); it converts to their own scientific gain in the G-Kelly section below. **Only the X_mu=150 cell maps
+to a real Kelly config** (his Table-1 point, verified against the paper). The off-anchor cells
+(X_mu=113/284/500) are an AFFINE MODEL that scales only the fusion-heat term while holding H and B at their
+Table-1 values -- they are NOT Kelly's figure-3 curve (he re-optimises each figure-3 point separately, so
+H and B also vary), and they run ~1.5-2 pp ABOVE his actual curve (which reads ~12% at 100 and ~14% at 150).
+The lesson: a single dimensionless "Q" is meaningless without its basis -- the Rosetta table makes the
+basis explicit.
 
 ## The eta_acc self-correction finding (framed self-first)
 *Our v1 default eta_acc = 0.30 was optimistic: Kelly-Hart-Rose's PSI-measured value is 0.18. Corrected,
@@ -66,8 +70,10 @@ Evaluating Eq. (2) on these cited numbers reproduces **Q_elec = 15.69%**.
 band **[12.6%, 15.4%]** (Kelly's 14% headline +/-10% relative). The
 residual is INTERNAL to Kelly, not a conversion error on our side: Table 1 is his single **highest-Q**
 illustrative config (Q=1.87), whereas his 14% headline is read off his figure-3 Q_elec-vs-fusions/muon
-curve at 150 -- a smoothed value from a relationship the paper itself calls "quite volatile". Our
-transparent basis reproduces his own formula on his own tabulated numbers exactly; per I2 we report the
+curve at 150 -- a curve read, not this single config's arithmetic. Each figure-3 point is a separate
+genetic re-optimization (the paper flags the underlying optimal-beam-energy-vs-fusions relationship, its
+figure 2, as "quite volatile"). Our basis reproduces his own formula on his own tabulated numbers exactly;
+per I2 we report the
 15.69% -- 15.4% gap as a finding about config selection rather than
 adjusting any input to land on 14%. Converted to the reference (efficiency-free scientific) basis,
 Kelly's config sits at q_sci = **0.5617** -- commensurable with our own q_sci at X_mu=150.

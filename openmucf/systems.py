@@ -44,6 +44,11 @@ class SystemChain:
     ``openmucf.constants``; ``eta_acc=0.30`` KEPT -- the Kelly PSI-measured 0.18 is a documented FINDING,
     not a silent default change). ``breeding_credit_MeV`` and ``recirc_fraction`` are the two new flagged
     knobs, both default-off so the extended graph is degenerate-equal to v1.
+
+    Sharp edge (documented): with BOTH ``breeding_credit_MeV>0`` AND ``blanket_M>1``, ``blanket_M``
+    multiplies the breeding credit too -- the graph node is ``(E_fusion_MeV + breeding_credit_MeV) *
+    blanket_M``. At the default-off values both terms vanish/collapse and the chain reproduces v1;
+    combining the two non-default knobs is a modelling choice the caller makes explicitly.
     """
 
     E_mu_GeV: float = E_MU_GEV
@@ -102,9 +107,11 @@ def q_net(chain: SystemChain, x_mu):
         ``q_net = x_mu * E_per_fusion_MeV * blanket_M * eta_thermal * eta_acc * (1 - recirc_fraction)
                   / E_mu_MeV``.
 
-    Supersets ``EnergyChain.Q_net_electrical`` (``breeding_credit_MeV=0``, ``recirc_fraction=0`` -> byte
-    identical). Monotone increasing in ``x_mu``, ``eta_acc``, ``eta_thermal``, ``blanket_M`` and
-    ``breeding_credit_MeV``; decreasing in ``E_mu_GeV`` and ``recirc_fraction`` (checked by ``jax.grad``).
+    Supersets ``EnergyChain.Q_net_electrical`` (``breeding_credit_MeV=0``, ``recirc_fraction=0`` -> equal
+    to relative 1e-12; the breakevens are bit-identical, per-x_mu values can differ at ~1 ulp from the
+    different float64 grouping). Monotone increasing in ``x_mu``, ``eta_acc``, ``eta_thermal``,
+    ``blanket_M`` and ``breeding_credit_MeV``; decreasing in ``E_mu_GeV`` and ``recirc_fraction``
+    (checked by ``jax.grad``).
     """
     x = jnp.asarray(x_mu, dtype=jnp.float64)
     return x * chain.E_per_fusion_MeV * chain._net_efficiency_factor() / chain.E_mu_MeV
@@ -124,8 +131,12 @@ class KellyElectrical:
     2664+23+526+530 = 3743 MeV; ``B`` = beam energy = row (G) = 3606 MeV. Efficiencies (their text):
     ``eta_mu=0.50`` ("arbitrary but reasonable" muon-delivery), ``eta_rec=1.00`` (100 % recoverable-heat
     capture), ``eta_acc=0.18`` (PSI 590 MeV accelerator), ``eta_heat=0.60`` (heat->electricity, ">60%").
-    Fusion heat scales with fusions/muon (H, B fixed) so ``Q_elec`` is AFFINE in ``x_mu`` -- their
-    figure-3 curve. Every number was read from the OA paper this session; nothing is tuned.
+    This class holds ``H`` and ``B`` at their Table-1 values and scales only ``F`` with fusions/muon, so
+    ``q_elec(x_mu)`` is an AFFINE APPROXIMATION of Kelly's electrical gain that is EXACT only at the
+    verified ``x_mu=150`` config. It is NOT Kelly's figure-3 curve: he re-optimises each figure-3 point
+    separately (512 genetic configs; H and B also vary), so that curve is non-affine, and this affine
+    model runs ~1.5-2 pp above it off the 150 anchor. Every number was read from the OA paper this
+    session; nothing is tuned.
     """
 
     F_fusion_MeV_ref: float = 2991.0  # Table 1 (A): fusion heat / beam particle at x_mu_ref fusions/muon
@@ -178,8 +189,10 @@ class QBasis:
     """A published Q convention + how to express it in the common reference basis (``q_sci``).
 
     ``convert_to_reference(value, chain)`` maps a Q reported in THIS basis (at ``chain``) to the
-    reference scientific gain. Each conversion is exact algebra (or, for Kelly, his cited electrical
-    multiplier), so every basis round-trips its own native value back to the reference.
+    reference scientific gain. For the three SystemChain-native bases the conversion is exact algebra, so
+    each round-trips its own native value back to the reference at any ``x_mu``. The external
+    ``kelly_Q_elec`` basis uses Kelly's cited electrical multiplier, taken at his ``x_mu=150`` anchor, so
+    it inverts exactly only at that anchor (Kelly's gain is affine, not proportional, in ``x_mu``).
     """
 
     name: str
