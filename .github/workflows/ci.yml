@@ -89,3 +89,35 @@ jobs:
           pip install -e .
       - name: Run quickstart
         run: python examples/quickstart.py
+
+  types:
+    # Static type check. Non-blocking for now (continue-on-error); promotion to a blocking gate
+    # is deferred to a future release. Runs mypy over the package with missing third-party stubs ignored.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: mypy (non-blocking)
+        run: mypy openmucf --ignore-missing-imports
+
+  paper:
+    # JOSS paper artifact. BLOCKING: paper/paper.md must compile to paper.pdf before merge.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build draft paper PDF
+        uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: joss
+          paper-path: paper/paper.md
+      - name: Upload paper PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper
+          path: paper/paper.pdf

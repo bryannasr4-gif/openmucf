@@ -224,9 +224,12 @@ def test_recirc_fraction_degenerate_at_zero():
 # --------------------------------------------------------------------------------------------------
 # Packaging + doc/manifest determinism
 # --------------------------------------------------------------------------------------------------
-def test_systems_out_of_all():
-    """systems is a submodule, out of the eager-import surface (like calibrate/forecast/mucost)."""
-    assert "systems" not in getattr(openmucf, "__all__", [])
+def test_systems_is_lazy_public_api():
+    """systems is a lazily-loaded public submodule: exported in __all__ but not eager-imported
+    (the PEP 562 __getattr__ resolves it on first access; see tests/test_packaging.py for the
+    deterministic no-eager-load and wall-time guards)."""
+    assert "systems" in getattr(openmucf, "__all__", [])
+    assert openmucf.systems.__name__ == "openmucf.systems"
 
 
 def test_ykc_equals_q_sci_at_default_credit():

@@ -209,5 +209,41 @@ The provenance chain is: `openmucf/data/` + `openmucf/` code → generator → d
 
 ---
 
+## 7. Licensing (two licenses, on purpose)
+
+OpenMuCF is dual-licensed by artifact type:
+
+- **Software** — the `openmucf/` package, `scripts/`, and the tests — is **Apache-2.0** (`LICENSE`).
+- **The rate ledger data** — `openmucf/data/*` and the generated data docs — is **CC-BY-4.0** (`LICENSE-DATA`),
+  so the curated, provenance-tagged compilation can be reused and cited with attribution.
+
+By contributing you agree your contribution is offered under the license that governs the files it touches
+(Apache-2.0 for code, CC-BY-4.0 for data). SPDX identifiers make this machine-readable: where you add a new
+source file, a one-line SPDX tag is welcome — `# SPDX-License-Identifier: Apache-2.0` for code, and for a new
+data/doc artifact `SPDX-License-Identifier: CC-BY-4.0`. New ledger rows inherit CC-BY-4.0 from `openmucf/data/`;
+no per-row header is needed.
+
+## 8. Versioning and API stability (SemVer)
+
+Releases follow [Semantic Versioning](https://semver.org). The **public API is exactly the names exported in
+`openmucf.__all__`** (the top-level functions/classes plus the lazily-loaded submodules `calibrate`, `validate`,
+`forecast`, `systems`, `mucost`, `frontier`, `twin`, `likelihood`, `bench`, `design`); anything not in `__all__`
+is internal and may change without notice. Within a major version:
+
+- **Patch** (`x.y.Z`) — bug fixes, doc/provenance corrections, no API change.
+- **Minor** (`x.Y.z`) — additive, backward-compatible (new rates, new functions, new optional arguments).
+- **Major** (`X.y.z`) — a breaking change to the public API, a ledger schema break, or a scoreboard-tier change.
+
+A public name is **not removed or renamed without a deprecation period of at least one minor version**, during
+which the old name keeps working and emits a `DeprecationWarning` that points to the replacement. The pattern to
+follow is the thermal-export rename in `openmucf/interop.py`: `export_lambda_dtmu_thermal` was renamed to
+`export_lambda_form_eff_thermal` (the exported quantity is an effective formation rate, not bare λ_dtμ), and the
+old name is kept as a working alias that emits a `DeprecationWarning` (scheduled for removal in v2.0.0). Ledger-schema
+changes and validation-scoreboard tier changes are treated as
+API changes for versioning purposes, because downstream users depend on them exactly as they depend on function
+signatures.
+
+---
+
 Questions, disagreements about a number, or a source we should be citing: open an issue. Honest disagreement,
 sourced and uncertainty-bearing, is the contribution.

@@ -1,0 +1,24 @@
+# Unresolved references (no live-verified open DOI or URL as of 2026-07-13)
+#
+# Every entry in openmucf/data/references.bib carries a live-verified `doi` or `url` EXCEPT the
+# bibkeys listed below. Each was searched this session against CrossRef and arXiv; none resolved
+# to an open identifier that could be attached without guessing (never fabricate an
+# identifier; a blocked document is a tracked go/no-go resource, not an estimate).
+#
+# Format:  <bibkey> | <why unresolved> | <acquisition route / candidate to confirm>
+# The rates-provenance test (tests/test_rates.py::test_every_bibkey_has_doi_or_url_or_listed)
+# treats a bibkey listed here as an accepted "unresolved-with-route" state.
+
+Faifman1989 | Legacy theory of lambda_dtmu(T,F) in the barely-digitized Muon Catal. Fusion journal (1989); no open DOI for the 1989 primary. | Muon Catal. Fusion journal (1989) via interlibrary loan; the closest open successor is Faifman & Ponomarev, Phys. Lett. B 265, 201 (1991), doi 10.1016/0370-2693(91)90041-N (triple-mixture resonant formation) -- a successor, NOT the 1989 T/F-dependence primary.
+
+Markushin1988 | Legacy reactivation / initial-sticking (~0.91-0.93%) in the Muon Catal. Fusion journal (1988); no open DOI resolved. | Muon Catal. Fusion journal (1988) via interlibrary loan / JINR archive.
+
+Jandel1989 | Muon-cost / active-target design study; the entry's intended "Muon Catal. Fusion 1989" primary is explicitly NOT in hand and is confusable with other Jandel papers (the note flags Jaendel PLB 200, 565 (1988) as a DIFFERENT document). | Muon Catal. Fusion (1989). STRONG open candidate to confirm before promotion: Jandel, Danos & Rafelski, "Active target production of muons for muon-catalyzed fusion", Phys. Rev. C 37, 403 (1988), doi 10.1103/PhysRevC.37.403 -- needs confirmation it is the ledger's muon-cost source (topic matches exactly; year/venue differ from the entry). A second open candidate with a matching 1989 year is Jandel, "Design principles for efficient muon production in muon-catalyzed fusion reactors", J. Fusion Energy 8, 81 (1989), doi 10.1007/BF01050781 -- confirm before promotion.
+
+Bogdanova1982 | dtmu fusion rate lambda_f ~ 1.1e12 s^-1; the open 1982 Bogdanova paper is the ddmu companion, not dtmu. | Candidates to confirm: Bogdanova, Markushin, Melezhik, Ponomarev, Phys. Lett. B 115, 171 (1982), doi 10.1016/0370-2693(82)90637-2 (ddmu, charge-symmetry -- NOT dtmu); Bogdanova et al., Nucl. Phys. A 454, 653 (1986), doi 10.1016/0375-9474(86)90111-9 (dtmu -> mu-4He + n sticking, 1986 not 1982). The dtmu-rate 1982 locator needs the primary (ZhETF / Muon Catal. Fusion) to pin which work supplies lambda_f(dtmu)=1.1e12.
+
+Standard | Generic textbook/handbook standard nuclear data (d+t -> alpha + n + 17.6 MeV; standard isotopic-transfer tables); no single DOI by design. | Not a single citable work: PDG (doi 10.1103/PhysRevD.110.030001) for kinematics and ENDF/B or IAEA standard evaluations for transfer tables; rows citing it carry needs_verification.
+
+Acceleron2025Deck | Public company slide deck (ARPA-E Fusion Programs Annual Meeting, 8-9 July 2025); slide decks carry no DOI and this one has no stable open URL. Never headlines (note). | ARPA-E Fusion Programs Annual Meeting July 2025 public materials (arpa-e.energy.gov) / direct from Acceleron Fusion.
+
+AdamczakFaifman | Stretch-module S(q,omega) response-function reference (2001); the exact intended paper cannot be pinned with confidence to both named authors. NOT referenced by any shipped CSV. | Candidates: Adamczak, "Muonic Molecule Formation in Condensed Deuterium", Hyperfine Interact. 138, 343 (2001), doi 10.1023/A:1020881002367 (single-author, condensed-phase S(q,omega)); Adamczak & Faifman, Hyperfine Interact. 209, 63 (2012), doi 10.1007/s10751-012-0559-x (joint, epithermal formation, 2012 not 2001).

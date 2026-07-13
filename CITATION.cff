@@ -31,3 +31,19 @@ abstract: >-
   Stodden (1990) and Rafelski-Müller (1988/89) -- and instead provides a
   neutral shared substrate that turns point-estimate breakeven claims into
   error-barred, falsifiable verdicts.
+# The `version` and `doi` above pin this exact release. The `preferred-citation` below is the
+# version-independent software record (Zenodo concept DOI) -- cite it to always resolve to the
+# latest version. The ledger data files (openmucf/data/*) are additionally licensed CC-BY-4.0;
+# see LICENSE-DATA (the software is Apache-2.0).
+preferred-citation:
+  type: software
+  title: "OpenMuCF: Open FAIR rate ledger and differentiable cycle/energy-balance auditor for muon-catalyzed fusion"
+  authors:
+    - given-names: "Bryan"
+      family-names: "Nasr"
+      email: "bryannasr4@gmail.com"
+      orcid: "https://orcid.org/0009-0008-2360-7522"
+  doi: "10.5281/zenodo.21251511"
+  url: "https://doi.org/10.5281/zenodo.21251511"
+  repository-code: "https://github.com/bryannasr4-gif/openmucf"
+  license: Apache-2.0

@@ -146,9 +146,12 @@ def test_anchor_values_pinned(table):
         assert table[sid].needs_verification is False
 
 
-def test_mucost_out_of_all():
-    """mucost is a submodule, out of the eager-import surface (like calibrate/validate/forecast)."""
-    assert "mucost" not in getattr(openmucf, "__all__", [])
+def test_mucost_is_lazy_public_api():
+    """mucost is a lazily-loaded public submodule: exported in __all__ but not eager-imported
+    (the PEP 562 __getattr__ resolves it on first access; see tests/test_packaging.py for the
+    deterministic no-eager-load and wall-time guards)."""
+    assert "mucost" in getattr(openmucf, "__all__", [])
+    assert openmucf.mucost.__name__ == "openmucf.mucost"
 
 
 def test_muon_cost_manifest_verifies():
