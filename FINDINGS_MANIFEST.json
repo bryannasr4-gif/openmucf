@@ -3,7 +3,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_xmu_ST_R",
-      "pattern": "\\| R \\| 0\\.620 \\|",
+      "pattern": "\\|\\ R\\ \\|\\ 0\\.616\\ \\+/\\-\\ 0\\.021\\ \\|\\ 0\\.620\\ \\+/\\-\\ 0\\.018\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.620"
@@ -11,7 +11,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_xmu_ST_lambda_c",
-      "pattern": "\\| lambda_c \\| 0\\.254 \\|",
+      "pattern": "\\|\\ lambda_c\\ \\|\\ 0\\.249\\ \\+/\\-\\ 0\\.015\\ \\|\\ 0\\.254\\ \\+/\\-\\ 0\\.008\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.254"
@@ -19,7 +19,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_xmu_ST_omega_s0_pct",
-      "pattern": "\\| omega_s0_pct \\| 0\\.131 \\|",
+      "pattern": "\\|\\ omega_s0_pct\\ \\|\\ 0\\.130\\ \\+/\\-\\ 0\\.011\\ \\|\\ 0\\.131\\ \\+/\\-\\ 0\\.004\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.131"
@@ -27,7 +27,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_qnet_ST_E_mu_GeV",
-      "pattern": "\\| E_mu_GeV \\| 0\\.631 \\|",
+      "pattern": "\\|\\ E_mu_GeV\\ \\|\\ 0\\.541\\ \\+/\\-\\ 0\\.026\\ \\|\\ 0\\.631\\ \\+/\\-\\ 0\\.023\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.631"
@@ -35,7 +35,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_qnet_ST_eta_acc",
-      "pattern": "\\| eta_acc \\| 0\\.427 \\|",
+      "pattern": "\\|\\ eta_acc\\ \\|\\ 0\\.340\\ \\+/\\-\\ 0\\.021\\ \\|\\ 0\\.427\\ \\+/\\-\\ 0\\.019\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.427"
@@ -199,6 +199,14 @@
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.77"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_required_band",
+      "pattern": "R >= 0\\.75\\-0\\.79 across the",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.75-0.79"
     },
     {
       "doc": "FINDINGS.md",
