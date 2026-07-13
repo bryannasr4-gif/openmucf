@@ -214,11 +214,15 @@ API, ingest external spectra as validation data, and never re-implement transpor
   `to_json(path)` (axes + values + `openmucf_version`).
 - `export_omega_s_eff(rates, T_grid, phi_grid, use_legacy_sticking=False) -> RateTable` — the
   ω_s^eff(φ,T) surface (flat in v1; the (φ,T,c_t) dependence is what Phase 3 fills in).
-- `export_lambda_dtmu_thermal(T_grid, phi_grid, F=1, eta=1.0) -> RateTable` and
-  `export_lambda_dtmu_energy(E_grid, F=1) -> RateTable` — the formation-rate surfaces.
+- `export_lambda_form_eff_thermal(T_grid, phi_grid, F=1, eta=1.0) -> RateTable` (the thermal export,
+  named `lambda_form_eff` because it is an effective cycle-scale rate, **not** the bare Faifman λ_dtμ —
+  see `formation.py`; the old name `export_lambda_dtmu_thermal` remains as a deprecated alias that
+  warns, removed in v2.0.0) and `export_lambda_dtmu_energy(E_grid, F=1) -> RateTable` (energy-resolved;
+  only the F=1 0.423 eV peak is a measured anchor) — the formation-rate surfaces.
 - `export_all(rates, outdir, ...) -> dict` — write the standard CSV/JSON bundle; returns `{name: [paths]}`.
 - `geant4_callables(rates, ...) -> dict` — plain-float callables `omega_s_eff(phi, T)` and
-  `lambda_dtmu(E=None, phi, T, F)` for an in-process GEANT4 embedding.
+  `lambda_form_eff(E=None, phi, T, F)` (legacy alias key `lambda_dtmu`, same callable, deprecated) for
+  an in-process GEANT4 embedding.
 - `ingest_spectrum(path, kind="neutron_tof", ...) -> Spectrum` — parse a two-column validation
   spectrum; `Spectrum.area()` / `.normalized()` for shape comparison.
 

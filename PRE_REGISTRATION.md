@@ -68,3 +68,9 @@ the most credibility per dollar. We commit to reporting it either way.
   GEANT4 muonic-atom run can consume.
 - **Ingest:** GEANT4 / experiment spectra (e.g. μ–He sticking X-rays, neutron-time spectra) as validation data.
 - **Never:** re-implement the particle-transport GEANT4 already does. OpenMuCF is the rate/kinetics/UQ layer.
+
+> **Note (2026-07-12):** the thermal formation export is named `lambda_form_eff` (an effective
+> cycle-scale rate, 300 K-anchored placeholder — see `formation.py` / `MODEL_SPEC.md` §5), **not** the
+> bare Faifman λ_dtμ; the old `export_lambda_dtmu_thermal` function name and the `lambda_dtmu` callable
+> key remain as deprecated aliases (removed in v2.0.0). Once sourced formation tables land, the bare
+> λ_dtμ export resumes under its true name.
