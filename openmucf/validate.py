@@ -18,12 +18,17 @@ from __future__ import annotations
 import csv
 import re
 from dataclasses import dataclass
+from pathlib import Path
 
 from . import cycle
 from .rates import TARGETS_CSV, omega_fraction
 
 # Canonical liquid operating point for sticking-controlled checks.
 _OP = dict(T=300.0, phi=1.2, c_t=0.5)
+
+# Digitized Yamashita-Kino 2022 Fig.3a lambda_c(T) (c_t=0.5 EVM-SPM-FIF band centreline), the sourced
+# temperature-shape comparator for V_yamashita_ratio / V_yamashita_curve.
+_YAMASHITA_CSV = Path(__file__).resolve().parent / "data" / "yamashita_kino_lc_T.csv"
 
 # Validation tiers, weakest-claim to strongest. Only `independent` rows are genuine predictions;
 # the rest test self-consistency, a fed reproduction, an inserted anchor, or a calibrated-model shape.
@@ -65,6 +70,12 @@ def _load_targets(path=TARGETS_CSV):
     """Load pre-registered targets (observed value + tolerance) from validation_targets.csv, keyed by id."""
     with open(path, newline="") as f:
         return {row["target_id"].strip(): row for row in csv.DictReader(f)}
+
+
+def _load_yamashita_curve(path=_YAMASHITA_CSV):
+    """Digitized Yamashita-Kino 2022 Fig.3a lambda_c(T) [s^-1], keyed by T [K] (band centreline)."""
+    with open(path, newline="") as f:
+        return {int(r["T_K"]): float(r["lambda_c_s^-1"]) for r in csv.DictReader(f)}
 
 
 def _within(pred, value, tol):
@@ -139,9 +150,9 @@ def run(rates, targets_csv=None, channels="off"):
             xs[-1],
             "monotone",
             all(b > a for a, b in zip(xs, xs[1:], strict=False)),
-            f"X_mu(200,400,600,800 K)={[round(v, 1) for v in xs]}. V_yamashita_lcT and V_yamashita_ratio "
-            "are one test double-counted (the same X_mu(T) inversion: monotonicity + its 800/300 endpoint); "
-            "counted as a single shape check in the summary.",
+            f"X_mu(200,400,600,800 K)={[round(v, 1) for v in xs]}. The three Yamashita rows "
+            "(lcT monotonicity + ratio/curve vs the digitized full curve) are one test "
+            "(the same lambda_c(T)/X_mu(T) inversion); counted as a single shape check in the summary.",
             "shape (calibrated model)",
             "yamashita_shape",
         )
@@ -164,25 +175,68 @@ def run(rates, targets_csv=None, channels="off"):
         )
     )
 
-    # Pre-registered ratio clause: implied lambda_c(800 K)/lambda_c(300 K) vs the digitized Yamashita-Kino
-    # ratio, +-30%. The 300 K scale is anchor-fixed (formation._CALIB), so this ratio tests the SHAPE of
-    # lambda_c(T) rise, not the absolute scale.
+    # Pre-registered ratio clause: engine-implied lambda_c(800 K)/lambda_c(300 K) vs the digitized
+    # Yamashita-Kino FULL-CURVE centreline ratio, +-30%. Re-anchored 2026-07-13: the comparator is the
+    # sourced full-curve digitized value (2.358; band [2.09, 2.62], solid-line 2.235), NOT the earlier
+    # ~1.45 under-read. The 300 K scale is anchor-fixed (formation._CALIB), so this tests the SHAPE of the
+    # lambda_c(T) rise; the corrected target is strictly harder and the engine (~1.31) FAILs it.
+    def _implied_lc(xval):
+        return lam0 / (1.0 / xval - 0.00557)
+
+    yk = _load_yamashita_curve()
     x300 = _xmu(rates, 0.00557, T=300.0, include_loss_channels=inc)
     x800 = _xmu(rates, 0.00557, T=800.0, include_loss_channels=inc)
-    ratio = (lam0 / (1.0 / x800 - 0.00557)) / (lam0 / (1.0 / x300 - 0.00557))
+    lc300 = _implied_lc(x300)
+    ratio = _implied_lc(x800) / lc300
     _yr = tgt["V_yamashita_ratio"]
     out.append(
         Result(
             "V_yamashita_ratio",
-            "1.45 (digitized lambda_c(800 K)/lambda_c(300 K); Yamashita-Kino Fig.3a)",
+            f"{float(_yr['value']):.3f} (digitized full-curve lambda_c(800 K)/lambda_c(300 K) centreline; "
+            "Yamashita-Kino Fig.3a, data/yamashita_kino_lc_T.csv)",
             ratio,
             "+-30%",
             _within(ratio, float(_yr["value"]), _yr["tolerance"]),
-            "engine ratio of implied lambda_c at 800 K vs 300 K (same inversion as V_breunlich); "
-            "executes the pre-registered ratio clause. V_yamashita_lcT and V_yamashita_ratio are one test "
-            "double-counted (the same X_mu(T) inversion: monotonicity + its 800/300 endpoint); counted as a "
-            "single shape check in the summary.",
-            "shape (calibrated model)",
+            "engine ratio of implied lambda_c at 800 K vs 300 K (same inversion as V_breunlich) vs the "
+            "digitized Yamashita-Kino full-curve centreline ratio 2.358 (band [2.091, 2.625]; solid-line "
+            "2.235). Re-anchored 2026-07-13: the earlier ~1.45 comparator was a digitization under-read, so "
+            "the corrected, strictly-harder target flips this row PASS->FAIL (engine ~1.31 is -44% vs the "
+            "centreline / -41% vs the solid line -- outside +-30% across the whole digitization band). "
+            "Registered expected-FAIL finding: the first sourced quantification of the v1 placeholder's "
+            "temperature-shape deficit (no input tuned; formation.py untouched). The three Yamashita rows "
+            "(lcT, ratio, curve) are one test (the same lambda_c(T)/X_mu(T) inversion), counted once below.",
+            "independent",
+            "yamashita_shape",
+        )
+    )
+
+    # V_yamashita_curve: engine lambda_c(T)/lambda_c(300) vs the digitized centreline ratio at
+    # 200/400/600/800 K, +-30% per point. The 800 K point is a registered expected-FAIL; 200/400/600 K are
+    # either-outcome-acceptable pre-run (PRE_REGISTRATION.md amendment 2026-07-13).
+    yk300 = yk[300]
+    _curve = []
+    for T in (200.0, 400.0, 600.0, 800.0):
+        eng = _implied_lc(_xmu(rates, 0.00557, T=T, include_loss_channels=inc)) / lc300
+        dig = yk[int(T)] / yk300
+        _curve.append((int(T), eng, dig, _within(eng, dig, "+-30%")))
+    curve_passed = all(row[3] for row in _curve)
+    _curve_note = "; ".join(
+        f"{T} K {'PASS' if p else 'FAIL'} (engine {e:.3f} vs digitized {d:.3f}, {(e - d) / d * 100:+.1f}%)"
+        for T, e, d, p in _curve
+    )
+    out.append(
+        Result(
+            "V_yamashita_curve",
+            "digitized lambda_c(T)/lambda_c(300) at 200/400/600/800 K "
+            "(Yamashita-Kino Fig.3a, data/yamashita_kino_lc_T.csv)",
+            _curve[-1][1],  # engine 800/300 ratio -- the headline registered-FAIL point
+            "+-30% per point",
+            curve_passed,
+            "independent per-point shape check vs the digitized full curve -- " + _curve_note + ". "
+            "Registered: the 800 K point is an expected-FAIL (the placeholder T-shape is too flat vs the "
+            "sourced curve); 200/400/600 K were either-outcome-acceptable pre-run (PRE_REGISTRATION.md "
+            "amendment 2026-07-13). One test with V_yamashita_lcT / V_yamashita_ratio (counted once below).",
+            "independent",
             "yamashita_shape",
         )
     )
@@ -337,7 +391,7 @@ def report_markdown(results, channels="off") -> str:
         "",
         f"**Summary: {n_pass} pass ({n_indep_pass} independent), {n_fail} fail "
         f"({n_fail_reg} registered placeholder-distance findings -- see notes), {n_defer} deferred. "
-        f"Distinct tests: {n_distinct} (the two shape rows are one test, disclosed above).**",
+        f"Distinct tests: {n_distinct} (the three Yamashita rows are one test, disclosed above).**",
         "",
         "Gate rule: a target passes only within its pre-registered tolerance; deferred items are documented "
         "limitations of the v1 model, not silent passes. No input was tuned to hit a validation target, with "

@@ -65,10 +65,15 @@ def test_verdict_is_csv_driven(tmp_path):
 
 
 def test_yamashita_ratio_target():
-    """The executed pre-registered ratio clause appears as V_yamashita_ratio and passes."""
+    """The re-anchored ratio clause FAILs by design against the digitized full curve (registered finding).
+
+    Re-anchored 2026-07-13: the comparator moved from the ~1.45 under-read to the sourced digitized
+    centreline (2.358), which is strictly harder; the engine ratio ~1.31 now flips PASS->FAIL.
+    """
     res = {r.target_id: r for r in validate.run(load_rates())}
     assert "V_yamashita_ratio" in res
-    assert res["V_yamashita_ratio"].passed is True
+    assert res["V_yamashita_ratio"].passed is False
+    assert "registered" in res["V_yamashita_ratio"].note.lower()
 
 
 def test_categories_pinned():
@@ -79,7 +84,8 @@ def test_categories_pinned():
         "V_kouchen_best": "reproduction (fed input)",
         "V_petitjean": "reproduction (fed input)",
         "V_yamashita_lcT": "shape (calibrated model)",
-        "V_yamashita_ratio": "shape (calibrated model)",
+        "V_yamashita_ratio": "independent",
+        "V_yamashita_curve": "independent",
         "V_breunlich_lambdac": "anchor-consistency",
         "V_faifman_peak": "anchor-consistency",
         "V_petitjean_omega": "independent",
@@ -104,11 +110,15 @@ def test_categories_are_the_pinned_literals():
 
 
 def test_distinct_test_count_dedups_shape_rows():
-    """The two Yamashita shape rows share a dedup group and are counted once (10 distinct of 11)."""
+    """The three Yamashita rows share a dedup group and are counted once (10 distinct of 12)."""
     results = validate.run(load_rates())
-    assert len(results) == 11
-    groups = [r.dedup_group for r in results if r.target_id in ("V_yamashita_lcT", "V_yamashita_ratio")]
-    assert len(groups) == 2 and groups[0] and groups[0] == groups[1]  # shared, non-empty group
+    assert len(results) == 12
+    groups = [
+        r.dedup_group
+        for r in results
+        if r.target_id in ("V_yamashita_lcT", "V_yamashita_ratio", "V_yamashita_curve")
+    ]
+    assert len(groups) == 3 and all(g and g == groups[0] for g in groups)  # shared, non-empty group
     assert "Distinct tests: 10" in validate.report_markdown(results)
 
 
@@ -128,7 +138,7 @@ def test_summary_counts():
     md = validate.report_markdown(validate.run(load_rates()))
     summary = next(ln for ln in md.splitlines() if ln.startswith("**Summary"))
     assert "(0 independent)" in summary
-    assert "3 fail" in summary
+    assert "5 fail" in summary  # 3 original registered + the re-anchored ratio + the curve
     assert "Distinct tests:" in summary
 
 
@@ -140,6 +150,51 @@ def test_expected_fail_guard():
             f"surprise PASS on a registered expected-FAIL target {tid} -- STOP and root-cause "
             "(these are pre-registered to FAIL; see PRE_REGISTRATION.md)"
         )
+
+
+def test_yamashita_expected_fail_guard():
+    """G-R5 for the two sourced Yamashita expected-FAILs: the re-anchored ratio row and the 800 K
+    curve point are pre-registered to FAIL; a surprise PASS on either is a bug/tolerance error."""
+    res = _by_id()
+    assert res["V_yamashita_ratio"].passed is False, (
+        "surprise PASS on the re-anchored V_yamashita_ratio -- STOP and root-cause (G-R5)"
+    )
+    assert res["V_yamashita_curve"].passed is False, (
+        "surprise PASS on V_yamashita_curve -- STOP and root-cause (G-R5)"
+    )
+    # the 800 K point specifically is the registered expected-FAIL
+    assert "800 K FAIL" in res["V_yamashita_curve"].note
+
+
+def test_yamashita_ratio_band_robustness():
+    """The PASS->FAIL flip is robust to the digitization band: the engine ratio fails +-30% at BOTH
+    edges of the band (centreline +- the digitization half-width propagated from the +-8% per point)."""
+    import csv as _csv
+
+    from openmucf.rates import TARGETS_CSV
+
+    pred = _by_id()["V_yamashita_ratio"].predicted  # engine 800/300 ratio ~1.311
+    with open(TARGETS_CSV, newline="") as f:
+        row = next(r for r in _csv.DictReader(f) if r["target_id"].strip() == "V_yamashita_ratio")
+    centre = float(row["value"])
+    rel = 2**0.5 * 0.08  # per-point 8% digitization uncertainty propagated to the ratio
+    lo, hi = centre * (1.0 - rel), centre * (1.0 + rel)
+    assert not validate._within(pred, lo, "+-30%"), f"ratio unexpectedly PASSes at band-low {lo}"
+    assert not validate._within(pred, hi, "+-30%"), f"ratio unexpectedly PASSes at band-high {hi}"
+
+
+def test_yamashita_ratio_value_matches_digitized_csv():
+    """The committed ratio anchor equals the digitized CSV's own lambda_c(800)/lambda_c(300) -- one
+    source of truth (the digitized data file), no drift between the anchor and the curve."""
+    import csv as _csv
+
+    from openmucf.rates import TARGETS_CSV
+
+    yk = validate._load_yamashita_curve()
+    dig_ratio = yk[800] / yk[300]
+    with open(TARGETS_CSV, newline="") as f:
+        row = next(r for r in _csv.DictReader(f) if r["target_id"].strip() == "V_yamashita_ratio")
+    assert abs(float(row["value"]) - dig_ratio) / dig_ratio < 1e-3
 
 
 def test_physics_mutation_flips_verdicts():
