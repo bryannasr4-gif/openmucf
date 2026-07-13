@@ -2,9 +2,13 @@
 
 import csv
 import math
+import re
 
 from openmucf import load_rates
-from openmucf.rates import TARGETS_CSV, bibkeys
+from openmucf.rates import DATA, RATES_CSV, REFS_BIB, TARGETS_CSV, bibkeys
+
+MUON_COST_CSV = DATA / "muon_cost.csv"
+BIB_UNRESOLVED = DATA / "bib_unresolved.txt"
 
 
 def test_ledger_loads_and_validates():
@@ -106,3 +110,78 @@ def test_wsn_loss_channel_rows_load_and_flagged():
     assert r["lambda_ttmu"].source_bibkey == "BomTT2005"
     assert r.value("lambda_dhe3") > 0.0
     assert r["lambda_dhe3"].source_bibkey == "Fotev2020"
+
+
+# --- FAIR provenance: DOI/URL backfill (RG-4, WAVE3 §5.1) -------------------------------------
+
+def _bib_entries():
+    """(bibkey, entry-body) for every entry in references.bib."""
+    text = REFS_BIB.read_text(encoding="utf-8")
+    blocks = [b for b in re.split(r"(?=^@)", text, flags=re.M) if b.lstrip().startswith("@")]
+    return [(re.match(r"@\w+\{([^,]+),", b).group(1).strip(), b) for b in blocks]
+
+
+def _bib_keys_with_identifier():
+    """Bibkeys carrying a machine-resolvable `doi` or `url` field."""
+    return {k for k, body in _bib_entries() if re.search(r"\n\s*(?:doi|url)\s*=\s*\{", body)}
+
+
+def _unresolved_entries():
+    """Parsed bib_unresolved.txt rows: list of (bibkey, why, route)."""
+    rows = []
+    for line in BIB_UNRESOLVED.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "|" in line:
+            parts = [p.strip() for p in line.split("|")]
+            rows.append(parts)
+    return rows
+
+
+def _referenced_bibkeys():
+    """Every bibkey cited by rates.csv / validation_targets.csv / muon_cost.csv (';'/',' split)."""
+    keys = set()
+    for path in (RATES_CSV, TARGETS_CSV, MUON_COST_CSV):
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                raw = (row.get("source_bibkey") or "").strip()
+                for key in raw.replace(";", ",").split(","):
+                    key = key.strip()
+                    if key:
+                        keys.add(key)
+    return keys
+
+
+def test_every_referenced_bibkey_resolves_or_is_listed_unresolved():
+    """RG-4/I3: every bibkey a shipped CSV cites has a live-verified doi/url in references.bib,
+    or is recorded in bib_unresolved.txt with an acquisition route. No orphan, no fabricated id."""
+    known = bibkeys()
+    resolvable = _bib_keys_with_identifier()
+    unresolved = {r[0] for r in _unresolved_entries()}
+    for key in sorted(_referenced_bibkeys()):
+        assert key in known, f"{key} cited by a data CSV but missing from references.bib"
+        assert key in resolvable or key in unresolved, (
+            f"{key}: no doi/url in references.bib and not listed in bib_unresolved.txt "
+            "(add a live-verified identifier or record the acquisition route -- WAVE3 I3)"
+        )
+
+
+def test_bib_unresolved_entries_are_well_formed_and_known():
+    """Each bib_unresolved.txt line is `bibkey | why | route`, all fields non-empty, key in the bib,
+    and does NOT also carry a doi/url (an entry is resolved xor listed-unresolved, never both)."""
+    resolvable = _bib_keys_with_identifier()
+    rows = _unresolved_entries()
+    assert rows, "bib_unresolved.txt has no entries to review"
+    for parts in rows:
+        assert len(parts) == 3, f"expected 'bibkey | why | route', got {parts!r}"
+        key, why, route = parts
+        assert key and why and route, f"empty field in bib_unresolved row: {parts!r}"
+        assert key in bibkeys(), f"unresolved bibkey {key!r} not defined in references.bib"
+        assert key not in resolvable, f"{key} is both DOI/URL-resolved and listed unresolved"
+
+
+def test_backfilled_dois_are_wellformed():
+    """Every doi field is a bare DOI (starts 10.), never a full URL; arXiv dois use the 10.48550 form."""
+    for key, body in _bib_entries():
+        for doi in re.findall(r"\n\s*doi\s*=\s*\{([^}]*)\}", body):
+            assert doi.startswith("10."), f"{key}: doi {doi!r} is not a bare DOI"
+            assert "doi.org" not in doi and "http" not in doi, f"{key}: doi {doi!r} must not be a URL"
