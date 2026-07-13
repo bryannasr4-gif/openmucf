@@ -21,9 +21,14 @@ def test_case_ids_are_8_validation_plus_2_json():
 
 
 def test_validation_ids_match_validate_emission():
-    """The 8 enumerated validation ids are exactly the RESULT ids validate.run() emits (guards drift)."""
-    emitted = {r.target_id for r in validate.run(_rates())}
-    assert set(bench.VALIDATION_IDS) == emitted
+    """VALIDATION_IDS mirrors the reproduction/consistency-tier results validate.run() emits; the
+    registered independent-prediction FAIL findings are executed in VALIDATION.md but deliberately
+    excluded from this friendly-reproduction registry (guards drift both ways)."""
+    results = validate.run(_rates())
+    emitted = {r.target_id for r in results}
+    registered_fail = {r.target_id for r in results if r.passed is False and r.category == "independent"}
+    assert registered_fail == {"V_petitjean_omega", "V_faifman_900K", "V_faifman_lowT"}
+    assert set(bench.VALIDATION_IDS) == emitted - registered_fail
 
 
 def test_run_case_validation_id_reproduces_validate_verdict():

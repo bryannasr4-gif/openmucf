@@ -5,6 +5,12 @@ Loads each target's observed value and pre-registered tolerance from
 predicted vs observed within tolerance. Mutating a CSV target value/tolerance changes the verdict
 (see ``tests/test_validate.py``). Honest by construction: targets the v1 model cannot yet hit
 (e.g. the solid-phase condensed-matter trend) are marked DEFERRED, not silently passed.
+
+Every result carries a ``category`` tier (see ``CATEGORIES``) so the scoreboard is falsifiable rather
+than flattering: only rows marked ``independent`` are genuine predictions. As of v1 the passing set
+contains no ``independent`` row -- three ``independent`` targets run and FAIL by design (registered,
+pre-framed placeholder-distance findings); a PASS on any of them is a bug or a tolerance error, not a
+success (see ``tests/test_validate.py::test_expected_fail_guard``).
 """
 
 from __future__ import annotations
@@ -14,10 +20,20 @@ import re
 from dataclasses import dataclass
 
 from . import cycle
-from .rates import TARGETS_CSV
+from .rates import TARGETS_CSV, omega_fraction
 
 # Canonical liquid operating point for sticking-controlled checks.
 _OP = dict(T=300.0, phi=1.2, c_t=0.5)
+
+# Validation tiers, weakest-claim to strongest. Only `independent` rows are genuine predictions;
+# the rest test self-consistency, a fed reproduction, an inserted anchor, or a calibrated-model shape.
+CATEGORIES = (
+    "self-consistency",
+    "reproduction (fed input)",
+    "anchor-consistency",
+    "shape (calibrated model)",
+    "independent",
+)
 
 
 @dataclass
@@ -28,6 +44,8 @@ class Result:
     tolerance: str
     passed: bool | None  # None == DEFERRED (honest, not a pass)
     note: str
+    category: str  # one of CATEGORIES (test-pinned per-id map)
+    dedup_group: str = ""  # rows sharing a non-empty group count once in "distinct tests"
 
 
 def _xmu(rates, omega_s_eff, T=_OP["T"], include_loss_channels=False):
@@ -83,6 +101,7 @@ def run(rates, targets_csv=None, channels="off"):
             "+-10%",
             _within(x, float(tgt["V_kouchen_base"]["value"]), tgt["V_kouchen_base"]["tolerance"]),
             "collision-only baseline",
+            "reproduction (fed input)",
         )
     )
 
@@ -95,6 +114,7 @@ def run(rates, targets_csv=None, channels="off"):
             "+-10%",
             _within(x, float(tgt["V_kouchen_best"]["value"]), tgt["V_kouchen_best"]["tolerance"]),
             "best external-field scenario",
+            "reproduction (fed input)",
         )
     )
 
@@ -107,6 +127,7 @@ def run(rates, targets_csv=None, channels="off"):
             "[100,150]",
             _within(x, float(tgt["V_petitjean_Xmu"]["value"]), tgt["V_petitjean_Xmu"]["tolerance"]),
             "measured liquid effective sticking",
+            "reproduction (fed input)",
         )
     )
 
@@ -118,7 +139,11 @@ def run(rates, targets_csv=None, channels="off"):
             xs[-1],
             "monotone",
             all(b > a for a, b in zip(xs, xs[1:], strict=False)),
-            f"X_mu(200,400,600,800 K)={[round(v, 1) for v in xs]}",
+            f"X_mu(200,400,600,800 K)={[round(v, 1) for v in xs]}. V_yamashita_lcT and V_yamashita_ratio "
+            "are one test double-counted (the same X_mu(T) inversion: monotonicity + its 800/300 endpoint); "
+            "counted as a single shape check in the summary.",
+            "shape (calibrated model)",
+            "yamashita_shape",
         )
     )
 
@@ -135,6 +160,7 @@ def run(rates, targets_csv=None, channels="off"):
             _within(implied_lc, float(_bl["value"]), _bl["tolerance"]),
             "engine-implied cycling rate at (300 K, 1.2 phi, c_t=0.5), inverted from the closed form; "
             "inherits the formation-scale anchor (see gate rule)",
+            "anchor-consistency",
         )
     )
 
@@ -153,7 +179,11 @@ def run(rates, targets_csv=None, channels="off"):
             "+-30%",
             _within(ratio, float(_yr["value"]), _yr["tolerance"]),
             "engine ratio of implied lambda_c at 800 K vs 300 K (same inversion as V_breunlich); "
-            "executes the pre-registered ratio clause",
+            "executes the pre-registered ratio clause. V_yamashita_lcT and V_yamashita_ratio are one test "
+            "double-counted (the same X_mu(T) inversion: monotonicity + its 800/300 endpoint); counted as a "
+            "single shape check in the summary.",
+            "shape (calibrated model)",
+            "yamashita_shape",
         )
     )
 
@@ -171,6 +201,62 @@ def run(rates, targets_csv=None, channels="off"):
             _within(peak, float(tgt["V_faifman_peak"]["value"]), tgt["V_faifman_peak"]["tolerance"]),
             "anchor-consistency check: the F=1 peak amplitude IS the inserted measured value "
             "(validates the resonance-model construction, not independent physics)",
+            "anchor-consistency",
+        )
+    )
+
+    # --- Three registered independent-prediction targets (pre-framed to FAIL; see PRE_REGISTRATION.md).
+    # They measure the v1 placeholder's distance from the field's own rates; a PASS is a bug, not a win.
+    omega_pred = omega_fraction(rates["omega_s0"]) * (1.0 - rates.value("R_col")) * 100.0
+    _po = tgt["V_petitjean_omega"]
+    out.append(
+        Result(
+            "V_petitjean_omega",
+            "0.45% measured effective sticking (band [0.40,0.50]; Breunlich/Petitjean)",
+            omega_pred,
+            _po["tolerance"],
+            _within(omega_pred, float(_po["value"]), _po["tolerance"]),
+            "independent prediction of effective sticking from the ledger microphysics "
+            "(omega_s0 x (1-R_col)); FAIL is the registered finding: the ~+24% gap to the "
+            "measured 0.45% is the side-channel share the v1 effective parameters absorb "
+            "(accounting.md re-attribution; pending lambda_ttmu acquisition).",
+            "independent",
+        )
+    )
+
+    faif_900 = 0.75 * float(formation.lambda_dtmu(900.0, 1.0, 1)) + 0.25 * float(
+        formation.lambda_dtmu(900.0, 1.0, 0)
+    )
+    _f9 = tgt["V_faifman_900K"]
+    out.append(
+        Result(
+            "V_faifman_900K",
+            "2.3e9 s^-1 (Faifman1989 Maxwellian, 900 K; ledger lambda_dtmu_900K)",
+            faif_900,
+            _f9["tolerance"],
+            _within(faif_900, float(_f9["value"]), _f9["tolerance"]),
+            "independent thermal-formation check: statistical hyperfine mix 3/4 F=1 + 1/4 F=0 of the v1 "
+            "formation model vs the ledger's own Faifman1989 900 K rate; registered expected-FAIL (~20x low) "
+            "-- the placeholder's thermal scale is anchored near the measured lambda_c(300 K), not the bare "
+            "Faifman lambda_dtmu (needs_verification carried from rates.csv).",
+            "independent",
+        )
+    )
+
+    faif_lowT = float(formation.lambda_dtmu_energy(0.2, F=0))
+    _fl = tgt["V_faifman_lowT"]
+    out.append(
+        Result(
+            "V_faifman_lowT",
+            "2e10 s^-1 (Faifman1989 energy-resolved, E=0.2 eV; ledger lambda_dtmu_lowT)",
+            faif_lowT,
+            _fl["tolerance"],
+            _within(faif_lowT, float(_fl["value"]), _fl["tolerance"]),
+            "independent energy-resolved check: the v1 resonance-model F=0 branch at E=0.2 eV vs the "
+            "ledger's own Faifman1989 lambda_dtmu_lowT; registered expected-FAIL (~17x low) -- the "
+            "placeholder near-threshold F=0 resonances are unsourced geometry, not the bare Faifman rate "
+            "(needs_verification carried).",
+            "independent",
         )
     )
 
@@ -183,6 +269,7 @@ def run(rates, targets_csv=None, channels="off"):
             None,
             "DEFERRED: v1 is a thermalized gas/liquid model; solid-phase condensed-matter "
             "formation is Phase-3 scope (pre-registered in PRE_REGISTRATION.md)",
+            "independent",
         )
     )
     return out
@@ -210,36 +297,60 @@ def report_markdown(results, channels="off") -> str:
             "Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** "
             "(canonical liquid).",
             "",
-            "| target | observed | predicted | tolerance | verdict | note |",
-            "|---|---|---|---|---|---|",
+            "| target | class | observed | predicted | tolerance | verdict | note |",
+            "|---|---|---|---|---|---|---|",
         ]
     else:
         lines = [
             "# VALIDATION.md -- trust gate (auto-generated by `openmucf.validate`)",
             "",
             "Engine reproduction of the pre-registered targets in `openmucf/data/validation_targets.csv` "
-            "(see `PRE_REGISTRATION.md`).",
+            "(see `PRE_REGISTRATION.md`). The `class` column is the claim tier: only `independent` rows are "
+            "genuine predictions -- and as of v1 the passing set contains none (the three `independent` rows "
+            "are registered, pre-framed FAILs, below).",
             "Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** "
             "(canonical liquid).",
             "",
-            "| target | observed | predicted | tolerance | verdict | note |",
-            "|---|---|---|---|---|---|",
+            "| target | class | observed | predicted | tolerance | verdict | note |",
+            "|---|---|---|---|---|---|---|",
         ]
     for r in results:
         verdict = "DEFERRED" if r.passed is None else ("PASS" if r.passed else "**FAIL**")
         pred = "n/a" if r.predicted != r.predicted else f"{r.predicted:.1f}"
-        lines.append(f"| {r.target_id} | {r.observed} | {pred} | {r.tolerance} | {verdict} | {r.note} |")
+        lines.append(
+            f"| {r.target_id} | {r.category} | {r.observed} | {pred} | {r.tolerance} | {verdict} | {r.note} |"
+        )
     n_pass = sum(1 for r in results if r.passed is True)
-    n_defer = sum(1 for r in results if r.passed is None)
+    n_indep_pass = sum(1 for r in results if r.passed is True and r.category == "independent")
     n_fail = sum(1 for r in results if r.passed is False)
+    n_fail_reg = sum(1 for r in results if r.passed is False and r.category == "independent")
+    n_defer = sum(1 for r in results if r.passed is None)
+    _seen: set[str] = set()
+    n_distinct = 0
+    for r in results:
+        if r.dedup_group:
+            if r.dedup_group in _seen:
+                continue
+            _seen.add(r.dedup_group)
+        n_distinct += 1
     lines += [
         "",
-        f"**Summary: {n_pass} pass, {n_defer} deferred (honest placeholder limits), {n_fail} fail.**",
+        f"**Summary: {n_pass} pass ({n_indep_pass} independent), {n_fail} fail "
+        f"({n_fail_reg} registered placeholder-distance findings -- see notes), {n_defer} deferred. "
+        f"Distinct tests: {n_distinct} (the two shape rows are one test, disclosed above).**",
         "",
         "Gate rule: a target passes only within its pre-registered tolerance; deferred items are documented "
         "limitations of the v1 model, not silent passes. No input was tuned to hit a validation target, with "
         "one disclosed anchor: the formation model's overall scale (`formation._CALIB`) is set to the "
         "room-temperature thermal rate (see formation.py), so yield-level targets at 300 K are not fully "
-        "independent of that anchor; the monotone-rise shape and the beam-resonance energy are.",
+        "independent of that anchor.",
+        "",
+        "The T-shape rows are likewise not independent: they test the calibrated resonance-model "
+        "construction (hand-placed, unsourced placeholder resonance positions -- see formation.py), not a "
+        "sourced temperature dependence. The only independent rows are those marked `independent` in the "
+        "class column; as of this version the passing set contains none -- the three FAILING independent "
+        "rows are pre-registered findings that measure the v1 placeholder's distance from the field's own "
+        "rates (PRE_REGISTRATION.md amendment, 2026-07-12), and are the standing, quantified motivation for "
+        "the sourced-formation upgrade and the Phase-3 reactivation module.",
     ]
     return "\n".join(lines) + "\n"
