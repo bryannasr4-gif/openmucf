@@ -1,5 +1,5 @@
-"""The CALIBRATION --audit parser is generic (header-aware, WS-N-ready), and its per-quantity tolerance
-CLASSES are pinned against a *silent* softening (WAVE1 spec 1.5 / WAVE3 never-soften rule).
+"""The CALIBRATION --audit parser is generic (header-aware, extensible), and its per-quantity tolerance
+CLASSES are pinned against a *silent* softening (the never-soften rule).
 """
 
 import importlib.util

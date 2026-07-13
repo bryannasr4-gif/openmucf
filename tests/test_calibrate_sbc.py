@@ -7,8 +7,8 @@ those ranks are uniform; a systematic bias (a coding error in the model or a mis
 them. We test uniformity with a 20-bin chi-square per parameter (p > 0.005).
 
 SLOW (~7 min): marked `slow`, so it is deselected from default CI (`addopts = -m 'not slow'`); run once in
-the RG-2 session and paste the output. No committed artifact -> zero audit surface. G-R2: numpyro chains +
-the already-locked scipy (transitive dep of numpyro/SALib) for the chi-square p-value; no new dependency.
+session and paste the output. No committed artifact -> zero audit surface. No new runtime dependency:
+numpyro chains + the already-locked scipy (transitive dep of numpyro/SALib) for the chi-square p-value.
 """
 
 import numpy as np
@@ -19,7 +19,7 @@ from openmucf.constants import LAMBDA_0
 
 pytestmark = pytest.mark.slow
 
-# default prior boxes (the WIDENED RG-2 defaults; SBC must pass on the SHIPPED priors)
+# default prior boxes (the WIDENED defaults; SBC must pass on the SHIPPED priors)
 _OS0 = calibrate.WEAK_OMEGA_S0_PRIOR[1:]     # (0.50, 1.20)
 _R = calibrate.R_PRIOR_DEFAULT               # (0.00, 0.80)
 _LC = calibrate.LAMBDA_C_PRIOR_DEFAULT       # (0.8e8, 1.6e8)

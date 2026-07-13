@@ -63,7 +63,7 @@ the most credibility per dollar. We commit to reporting it either way.
 - **Global:** Sobol first/total indices (SALib) + PCE over the joint uncertainty ranges of the `contested`
   rows in `openmucf/data/rates.csv` (ω_s0, R_col, λ_dtμ scale, λ_dt, λ_10, E_μ, …). Rank the dominant 2–3.
 
-> **Amendment (2026-07-12, disclosed — Wave-3 research-grade hardening):** PCE was **superseded** by
+> **Amendment (2026-07-12, disclosed — statistical-rigor hardening):** PCE was **superseded** by
 > Sobol-with-bootstrap-CIs + the prior-box robustness panel (equivalent decision content for a 6-input
 > closed-form map, at lower complexity and with reported estimator uncertainty). The Sobol indices now
 > ship with seeded 95% bootstrap confidence intervals (`openmucf.uq.sobol_indices`; `FINDINGS.md §1`) and

@@ -24,7 +24,7 @@ Sampling API
   is unchanged (0.8-1.6e8; a measured-band prior, not railing). See CALIBRATION.md.
 * The FC-001 registered realization is PINNED in ``openmucf.forecast.posterior_samples`` (single chain,
   the OLD R box, the registered seed/warmup/samples) -- never changed while a card is registered against
-  it (WAVE3 G-R4). FC-002+ use the new defaults.
+  it (the FC-001 registered-card freeze). FC-002+ use the new defaults.
 
 Convergence caveat (Kamimura chain): the informative omega_s0 prior is an UNBOUNDED Normal, so on the thin
 degeneracy ridge a chain can occasionally get trapped in a zero-prior-mass artifact basin at negative
@@ -51,7 +51,7 @@ OBS = dict(omega_s_eff_obs=0.45, omega_s_eff_sd=0.05, xmu_obs=113.0, xmu_sd=12.0
 
 # WIDENED default prior boxes (2026-07-12; see the module docstring + CALIBRATION.md). The lambda_c box
 # is unchanged. Parameters (R_prior, lambda_c_prior) are exposed so that (a) the FC-001 realization can be
-# pinned to its registered OLD R box (G-R4) and (b) the prior-sensitivity sweep can vary each box.
+# pinned to its registered OLD R box and (b) the prior-sensitivity sweep can vary each box.
 WEAK_OMEGA_S0_PRIOR = ("uniform", 0.50, 1.20)
 R_PRIOR_DEFAULT = (0.00, 0.80)
 LAMBDA_C_PRIOR_DEFAULT = (0.8e8, 1.6e8)
@@ -78,7 +78,7 @@ def model(
 
     ``R_prior`` / ``lambda_c_prior`` are (lo, hi) uniform boxes. ``obs_corr`` (default 0.0) treats the two
     observations as independent Gaussians -- published as separate summary statistics, primary covariance
-    unobtainable pre-acquisition (cal-2). A nonzero ``obs_corr`` switches to a MultivariateNormal
+    unobtainable pre-acquisition. A nonzero ``obs_corr`` switches to a MultivariateNormal
     likelihood with off-diagonal correlation rho_obs (the covariance-sensitivity cut, CALIBRATION.md); it
     is NEVER used by the default/registered chains, so the obs_corr=0.0 path is byte-identical to the
     original two-independent-Normal likelihood.

@@ -152,7 +152,7 @@ where `X = {x_1,…,x_n}` are the predictive draws and `y` is the resolved truth
 - **Bracket targets** → interval coverage (envelope-union `ci68`/`ci95`) + **per-limb CRPS reported as a
   `[best, worst]` pair**; **no headline CRPS** is defined for a bracket.
 
-> **Amendment (2026-07-12, disclosed — Wave-3 research-grade hardening):** a **strictly-proper interval
+> **Amendment (2026-07-12, disclosed — statistical-rigor hardening):** a **strictly-proper interval
 > score** is added as the **headline bracket metric** (and is also reported for ensemble targets, so
 > Scenario A and Scenario B are comparable on ONE proper score). The (negatively-oriented) **Winkler
 > interval score** of a central `(1−α)` interval `[lo, hi]` vs truth `y` is
@@ -162,7 +162,7 @@ where `X = {x_1,…,x_n}` are the predictive draws and `y` is the resolved truth
 > to **FC-001's resolution-time scoring** (the scoring *code*, `openmucf.forecast.interval_score` /
 > `score_card`) and to all future cards; **the registered FC-001 card file is unchanged on disk** — the
 > `scoring_rules` field of NEW cards records the interval-score headline, but the frozen card is never
-> regenerated (WAVE3 G-R4). Implemented `openmucf/forecast.py`; tests in `tests/test_forecast.py`.
+> regenerated (the registered card is frozen once published). Implemented `openmucf/forecast.py`; tests in `tests/test_forecast.py`.
 
 **Both scenarios are always scored and reported together** — A = calibrated-model forecast, B = ignorance
 bound — with **no post-hoc selection or reweighting**.

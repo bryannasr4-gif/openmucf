@@ -242,8 +242,8 @@ def _write_figure(H: dict[str, str]) -> None:
     from openmucf import calibrate
 
     # Illustrative Kamimura posterior cloud for the (non-byte-diffed) frontier PNG. Pinned to a single
-    # chain and the pre-RG-2 R box so the PNG stays byte-stable and the audit does not run a 4-chain MCMC
-    # just to redraw a scatter cloud (calibrate WIDENED its default R box + defaults to 4 chains in RG-2).
+    # chain and the pre-widening R box so the PNG stays byte-stable and the audit does not run a 4-chain MCMC
+    # just to redraw a scatter cloud (calibrate WIDENED its default R box + defaults to 4 chains after the widening).
     kam = calibrate.run_mcmc(
         num_warmup=1000, num_samples=4000, seed=0, omega_s0_prior=("normal", 0.857, 0.03),
         R_prior=(0.10, 0.60), num_chains=1,

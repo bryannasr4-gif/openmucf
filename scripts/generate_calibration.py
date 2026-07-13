@@ -40,7 +40,7 @@ CALIBRATION_MD = "CALIBRATION.md"
 #                       (see the sweep) so it is bounded, not byte-pinned.
 #   * ess + mcse 20% -- effective sample size (and mcse = sd/sqrt(ess)) vary most across realizations.
 #   * r_hat cells 2% -- split-Gelman-Rubin sits at ~1.00; 2% is ample and still catches non-convergence.
-#   * divergences EXACT == 0 -- a divergence is a correctness signal, never a tolerance question (G-R5 kin).
+#   * divergences EXACT == 0 -- a divergence is a correctness signal, never a tolerance question.
 # Changing any of these requires a deliberate edit to the pin test + a dated RESULTS.md note.
 AUDIT_RTOL_MEAN = 0.02        # mean cells
 AUDIT_RTOL_SD = 0.08          # sd cells
@@ -57,7 +57,7 @@ SWEEP_WARMUP, SWEEP_SAMPLES = 1000, 1000     # 4 chains x 1000 draws per prior-s
 _R_BOXES = [((0.10, 0.60), "legacy"), ((0.05, 0.70), "wide"), ((0.00, 0.80), "widest")]
 _OS0_BOXES = [((0.60, 1.10), "legacy"), ((0.50, 1.20), "wide"), ((0.40, 1.30), "widest")]
 _LC_BOXES = [((0.8e8, 1.6e8), "narrow"), ((0.6e8, 1.8e8), "wide")]
-_OBS_CORR_ROWS = [0.5, -0.5]                 # cal-2 off-diagonal covariance-sensitivity rows
+_OBS_CORR_ROWS = [0.5, -0.5]                 # off-diagonal covariance-sensitivity rows
 
 
 # ============================================================================ chain runs + summaries
@@ -109,7 +109,7 @@ def _sweep_rows():
                     "ose_sd": summ["omega_s_eff_pct"]["sd"],
                     "rails": "yes" if _rails(summ, boxes) else "no",
                 })
-    # cal-2 covariance-sensitivity rows: DEFAULT boxes, off-diagonal rho_obs (MultivariateNormal likelihood)
+    # covariance-sensitivity rows: DEFAULT boxes, off-diagonal rho_obs (MultivariateNormal likelihood)
     for rho in _OBS_CORR_ROWS:
         s = calibrate.run_mcmc(
             num_warmup=SWEEP_WARMUP, num_samples=SWEEP_SAMPLES, seed=0, obs_corr=rho,
@@ -132,7 +132,7 @@ def _sweep_rows():
 
 
 def _pushforward_rows(sw, sk):
-    """Posterior pushforward (G-R3: lives HERE, not FINDINGS): posterior X_mu (weak + Kamimura) and a
+    """Posterior pushforward (lives HERE, not FINDINGS): posterior X_mu (weak + Kamimura) and a
     hybrid Q_net (posterior kinetics x ignorance-box economics). Returns list of {quantity, mean, sd, ci}.
     """
     box = {p.name: (p.low, p.high) for p in uq.PARAMS}
@@ -207,7 +207,7 @@ def _sweep_section(rows, corr_lo, corr_hi):
         f"0.60; omega_s0 lo 0.608 just above 0.60, the old bound falling inside the posterior), removed by "
         f"the widening; the residual support-dependence now shows as growing R-width, not hard railing. The "
         f"last two rows treat the two observations as correlated (MultivariateNormal, rho_obs=+/-0.5) "
-        f"instead of independent Gaussians (cal-2): the product and lambda_c stay pinned; the corr/width "
+        f"instead of independent Gaussians: the product and lambda_c stay pinned; the corr/width "
         f"shift is the covariance sensitivity.\n"
     )
     return head + body + close

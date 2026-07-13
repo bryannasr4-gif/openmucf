@@ -142,8 +142,8 @@ def main():
 
     # --- guard 0: the added model faithfully MIRRORS calibrate.model (use_ratio=False) ----------------
     mirror = r_sd(WEAK_PRIOR, use_ratio=False)
-    # the mirror model (above) hardcodes the pre-RG-2 boxes R~U(0.10,0.60) / weak os0~U(0.60,1.10) and a
-    # single chain; pin calibrate.run_mcmc to the same (its RG-2 defaults widened R + went to 4 chains).
+    # the mirror model (above) hardcodes the pre-widening boxes R~U(0.10,0.60) / weak os0~U(0.60,1.10) and a
+    # single chain; pin calibrate.run_mcmc to the same (its new defaults widened R and went to 4 chains).
     ref = float(np.asarray(
         calibrate.run_mcmc(NUM_WARMUP, NUM_SAMPLES, seed=SEED, omega_s0_prior=WEAK_PRIOR,
                            R_prior=(0.10, 0.60), num_chains=1)["R"]

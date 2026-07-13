@@ -162,7 +162,7 @@ def test_coverage_counts():
     assert cov == {"n": 3, "covered": 2, "fraction": pytest.approx(2 / 3)}
 
 
-# 7b ------------------------------------------------------------------- Winkler interval score (uq-4)
+# 7b ------------------------------------------------------------------- Winkler interval score
 def test_interval_score_penalizes_width():
     """y INSIDE both intervals: the score is just the width, so a 3x wider interval scores strictly higher
     (worse). Rewards sharpness."""
@@ -267,9 +267,9 @@ def test_d6_constants_still_mirror_generate_calibration():
     assert (forecast.NUM_WARMUP, forecast.NUM_SAMPLES, forecast.SEED) == (1000, 4000, 0)
 
 
-# 11 ---------------------------------------------------------- G-R4: FC-001 chain settings are PINNED
+# 11 ----------------------------------------------------- FC-001 chain settings are PINNED
 def test_fc001_chain_settings_pinned():
-    """G-R4: the registered FC-001 realization is pinned to a SINGLE chain and the OLD (pre-widening) R box
+    """The registered FC-001 realization is pinned to a SINGLE chain and the OLD (pre-widening) R box
     Uniform(0.10, 0.60), because calibrate.run_mcmc now defaults to 4 chains and R ~ Uniform(0.00, 0.80).
     Without both overrides the registered card's posterior draws (hence every published prediction) would
     move. Verified by module constants + the explicit override in posterior_samples, and that calibrate's
@@ -287,7 +287,7 @@ def test_fc001_chain_settings_pinned():
 
 
 def test_fc001_pinned_posterior_reproduces_registered_predictions(fresh_card, shipped_card):
-    """G-R4 behavioural proof: a fresh build through the PINNED posterior reproduces every registered card
+    """Behavioural proof: a fresh build through the PINNED posterior reproduces every registered card
     prediction byte-for-byte (the only legitimate payload drift is the evolved-ledger sha256)."""
     def _preds(card):
         return {s["name"]: {p["target_id"]: p for p in s["predictions"]}

@@ -243,7 +243,7 @@ def breakeven_audit(n=400_000, seed=1):
     #     Computed (not transcribed) so the shipped "R >= 0.77" can never silently drift from the
     #     omega_s0 nominal it derives from (cross-vendor review hardening, 2026-07-08).
     R_req_inf_lc = 1.0 - (1.0 / target) / (os0 / 100.0)
-    # (e) uq-6: the same infinite-lambda_c requirement over the FROZEN omega_s0 box edges + nominal, so the
+    # (e) the same infinite-lambda_c requirement over the FROZEN omega_s0 box edges + nominal, so the
     #     "R >= 0.77" point value carries its box-band (higher initial sticking needs MORE reactivation).
     os0_lo = min(NOMINAL["omega_s0_pct"], PARAMS[0].low)
     os0_hi = max(NOMINAL["omega_s0_pct"], PARAMS[0].high)

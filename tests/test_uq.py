@@ -26,7 +26,7 @@ def test_sobol_isolates_the_drivers_of_xmu():
 
 
 def test_sobol_cis_present_and_ranking_stable():
-    """RG-2 uq-1: sobol_indices returns bootstrap CIs, and the top-1 total-order driver is identical across
+    """sobol_indices returns bootstrap CIs, and the top-1 total-order driver is identical across
     N in {4096, 8192} x seed in {0, 1} (the ranking is not a sampling artifact)."""
     tops = set()
     for N in (4096, 8192):
@@ -39,7 +39,7 @@ def test_sobol_cis_present_and_ranking_stable():
 
 
 def test_breakeven_R_required_band():
-    """uq-6: the R>=0.77 requirement carries an omega_s0-box band (rises with initial sticking)."""
+    """The R>=0.77 requirement carries an omega_s0-box band (rises with initial sticking)."""
     r = uq.breakeven_audit(n=50_000)
     assert r["R_required_band_lo"] < r["R_required_at_infinite_lambda_c"] < r["R_required_band_hi"]
     assert 0.70 < r["R_required_band_lo"] < r["R_required_band_hi"] < 0.85

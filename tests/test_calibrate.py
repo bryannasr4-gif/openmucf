@@ -1,4 +1,4 @@
-"""Tests for Bayesian calibration + the identifiability finding (Phase 2 v1 polish, item 2; RG-2 stats)."""
+"""Tests for Bayesian calibration + the identifiability finding (Phase 2 v1 polish, item 2)."""
 
 from openmucf import calibrate
 
@@ -32,7 +32,7 @@ def test_informative_prior_partially_breaks_degeneracy():
 
 
 def test_multichain_diagnostics():
-    """RG-2 convergence gate: the default (4-chain, widened-box) run mixes -- max r_hat < 1.01, min ess >
+    """Convergence gate: the default (4-chain, widened-box) run mixes -- max r_hat < 1.01, min ess >
     400 on every sampled/derived site, and ZERO divergences. summarize(..., mcmc=...) surfaces them."""
     mcmc, s = calibrate.run_mcmc_full(num_warmup=500, num_samples=1000, seed=0)
     summ = calibrate.summarize(s, mcmc=mcmc)
@@ -54,7 +54,7 @@ def test_default_boxes_are_the_widened_ones():
 
 
 def test_obs_correlation_keeps_product_pinned():
-    """cal-2 covariance sensitivity: a MultivariateNormal likelihood with off-diagonal rho_obs (vs the
+    """Covariance sensitivity: a MultivariateNormal likelihood with off-diagonal rho_obs (vs the
     default independent Gaussians) leaves the well-constrained PRODUCT omega_s_eff pinned near 0.45%."""
     base = calibrate.summarize(calibrate.run_mcmc(400, 1000, seed=0))
     corr = calibrate.summarize(calibrate.run_mcmc(400, 1000, seed=0, obs_corr=0.5))

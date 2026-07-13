@@ -164,9 +164,10 @@ def base_posterior(seed: int = 0) -> dict:
     """
     # R box pinned to design's own (_R_LO, _R_HI) = the box every refit uses (line ~60), so the
     # contraction sd_refit/sd_base stays coherent. calibrate WIDENED its default R box to (0.00, 0.80)
-    # in RG-2; without this pin the base and refit posteriors would use different R priors. num_chains is
-    # left at calibrate's new default (4) -- the DESIGN.md realization shift is absorbed by --audit's
-    # 5%-rel / 3pp-abs tolerances (WAVE3 3.7).
+    # when the default R box was widened; without this pin the base and refit posteriors would use
+    # different R priors. num_chains is left at calibrate's new default (4) -- the DESIGN.md shift is
+    # absorbed by --audit's
+    # 5%-rel / 3pp-abs tolerances.
     s = calibrate.run_mcmc(num_warmup=NUM_WARMUP, num_samples=NUM_SAMPLES, seed=seed,
                            omega_s0_prior=BASE_PRIOR, R_prior=(_R_LO, _R_HI))
     return {

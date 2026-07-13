@@ -40,7 +40,8 @@ NUM_SAMPLES = 4000
 SEED = 0
 OMEGA_S0_PRIOR = ("normal", 0.857, 0.03)  # Kamimura 0.857 +- 0.03 %
 # PINNED to the FC-001 registered realization -- never change while a card is registered against it
-# (WAVE3 G-R4). calibrate widened its DEFAULT R box to (0.00, 0.80) and now defaults to 4 chains; the
+# (the FC-001 registered-card freeze). calibrate widened its DEFAULT R box to (0.00, 0.80) and now
+# defaults to 4 chains; the
 # registered card was computed with a SINGLE chain and the OLD R box Uniform(0.10, 0.60), so both are
 # pinned here explicitly. FC-002+ use the new calibrate defaults.
 R_PRIOR = (0.10, 0.60)     # registered-realization R box (calibrate's OLD default)
@@ -99,8 +100,8 @@ def posterior_samples() -> dict:
         num_samples=NUM_SAMPLES,
         seed=SEED,
         omega_s0_prior=OMEGA_S0_PRIOR,
-        R_prior=R_PRIOR,      # G-R4: pinned OLD box (calibrate's default is now widened)
-        num_chains=NUM_CHAINS,  # G-R4: pinned single chain (calibrate's default is now 4)
+        R_prior=R_PRIOR,      # pinned OLD box (the FC-001 freeze; calibrate default now widened)
+        num_chains=NUM_CHAINS,  # pinned single chain (the FC-001 freeze; calibrate default now 4)
     )
     lam_c = np.asarray(s["lambda_c"])
     return {
@@ -332,7 +333,7 @@ def _scoring_rules() -> dict:
             "IS_alpha = (hi - lo) + (2/alpha)*(lo - y)*[y<lo] + (2/alpha)*(y - hi)*[y>hi], reported at "
             "interval_score_68 (alpha=0.32) and interval_score_95 (alpha=0.05); lower is better. One "
             "number scores a bracket, so Scenario A (ensemble) and Scenario B (bracket) are directly "
-            "comparable on a single strictly-proper score. Added WAVE3 RG-2; see FORECAST_PROTOCOL.md sec.5. "
+            "comparable on a single strictly-proper score. See FORECAST_PROTOCOL.md sec.5. "
             "Applies at RESOLUTION-time scoring (scoring code); the frozen FC-001 card is untouched."
         ),
         "ensemble": {
