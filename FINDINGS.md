@@ -22,8 +22,8 @@ includes interactions), each with a 95% bootstrap CI (200 resamples, seeded => b
 **X_mu (fusions per muon):**
 | input | $S_1$ (95% boot CI) | $S_T$ (95% boot CI) |
 |---|---|---|
-| R | 0.616 +/- 0.021 | 0.620 +/- 0.018 |
-| lambda_c | 0.249 +/- 0.015 | 0.254 +/- 0.008 |
+| R | 0.616 +/- 0.020 | 0.620 +/- 0.017 |
+| lambda_c | 0.249 +/- 0.014 | 0.254 +/- 0.008 |
 | omega_s0_pct | 0.130 +/- 0.011 | 0.131 +/- 0.004 |
 | E_mu_GeV | 0.000 +/- 0.000 | 0.000 +/- 0.000 |
 | eta_acc | 0.000 +/- 0.000 | 0.000 +/- 0.000 |
@@ -32,11 +32,11 @@ includes interactions), each with a 95% bootstrap CI (200 resamples, seeded => b
 **Q_net (net-electrical gain):**
 | input | $S_1$ (95% boot CI) | $S_T$ (95% boot CI) |
 |---|---|---|
-| E_mu_GeV | 0.541 +/- 0.026 | 0.631 +/- 0.023 |
-| eta_acc | 0.340 +/- 0.021 | 0.427 +/- 0.019 |
+| E_mu_GeV | 0.541 +/- 0.027 | 0.631 +/- 0.023 |
+| eta_acc | 0.340 +/- 0.018 | 0.427 +/- 0.020 |
 | eta_thermal | 0.011 +/- 0.004 | 0.017 +/- 0.001 |
 | R | 0.009 +/- 0.003 | 0.014 +/- 0.001 |
-| lambda_c | 0.004 +/- 0.002 | 0.006 +/- 0.000 |
+| lambda_c | 0.004 +/- 0.003 | 0.006 +/- 0.000 |
 | omega_s0_pct | 0.002 +/- 0.002 | 0.003 +/- 0.000 |
 
 The $S_T-S_1$ gap is the interaction share. For the top X_mu driver R it is

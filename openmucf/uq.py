@@ -157,6 +157,11 @@ def sobol_indices(N=4096, output="X_mu", seed=0, bounds=None, num_resamples=200)
         Y = xmu(X[:, 0], X[:, 1], X[:, 2])
     else:
         Y = q_net(X[:, 0], X[:, 1], X[:, 2], X[:, 3], X[:, 4], X[:, 5])
+    # This SALib build's bootstrap resamples from numpy's GLOBAL RNG and ignores analyze(seed=...), so the
+    # confidence half-widths are NOT reproducible unless we seed the global RNG here. Seeding it makes the
+    # CIs byte-stable (the S1/ST point estimates are computed from Y directly and are unaffected). No other
+    # code path relies on the global RNG (forward_uq/breakeven use independent default_rng generators).
+    np.random.seed(seed)
     Si = analyze(
         problem, Y, calc_second_order=False, print_to_console=False,
         num_resamples=num_resamples, seed=seed,
