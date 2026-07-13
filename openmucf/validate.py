@@ -399,12 +399,18 @@ def report_markdown(results, channels="off") -> str:
         "room-temperature thermal rate (see formation.py), so yield-level targets at 300 K are not fully "
         "independent of that anchor.",
         "",
-        "The T-shape rows are likewise not independent: they test the calibrated resonance-model "
-        "construction (hand-placed, unsourced placeholder resonance positions -- see formation.py), not a "
-        "sourced temperature dependence. The only independent rows are those marked `independent` in the "
-        "class column; as of this version the passing set contains none -- the three FAILING independent "
-        "rows are pre-registered findings that measure the v1 placeholder's distance from the field's own "
-        "rates (PRE_REGISTRATION.md amendment, 2026-07-12), and are the standing, quantified motivation for "
-        "the sourced-formation upgrade and the Phase-3 reactivation module.",
+        "The T-shape rows are now split by claim tier: V_yamashita_lcT stays a `shape (calibrated model)` "
+        "monotonicity check of the calibrated resonance-model construction (hand-placed, unsourced "
+        "placeholder resonance positions -- see formation.py), NOT a sourced temperature dependence, while "
+        "V_yamashita_ratio and V_yamashita_curve are `independent` comparators against the digitized "
+        "Yamashita-Kino 2022 Fig.3a curve (openmucf/data/yamashita_kino_lc_T.csv). The only independent rows "
+        "are those marked `independent` in the class column; as of this version the passing set contains "
+        "none -- the FIVE FAILING independent rows are pre-registered findings that measure the v1 "
+        "placeholder's distance from the field's own rates (PRE_REGISTRATION.md amendments "
+        "2026-07-12 / 2026-07-13). The sourced-shape finding: the engine's lambda_c(800 K)/lambda_c(300 K) "
+        "~ 1.31 is -41% to -44% below the digitized 2.24-2.36 (outside +-30% across the whole extraction "
+        "band) -- the first sourced quantification of the placeholder's too-flat temperature shape, and the "
+        "standing, quantified motivation for the sourced-formation upgrade and the Phase-3 reactivation "
+        "module.",
     ]
     return "\n".join(lines) + "\n"

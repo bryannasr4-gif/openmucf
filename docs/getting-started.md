@@ -94,7 +94,7 @@ This regenerates `FINDINGS.md`, whose marquee results are:
 Two more reproducible entry points round out the trust story:
 
 ```bash
-make validate      # reproduce the pre-registered targets -> VALIDATION.md (7 pass, 3 registered-FAIL findings, 1 deferred; class-tiered)
+make validate      # reproduce the pre-registered targets -> VALIDATION.md (6 pass, 5 registered-FAIL findings, 1 deferred; class-tiered)
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 ```
 

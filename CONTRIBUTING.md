@@ -38,7 +38,7 @@ pytest -m slow         # the ~9-min twin interval-calibration coverage test (des
 ruff check .           # lint (must be clean)
 ruff format .          # auto-format
 
-make validate          # reproduce the pre-registered targets -> VALIDATION.md (7 pass, 3 registered-FAIL findings, 1 deferred; class-tiered)
+make validate          # reproduce the pre-registered targets -> VALIDATION.md (6 pass, 5 registered-FAIL findings, 1 deferred; class-tiered)
 make findings          # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration       # Bayesian calibration + identifiability -> CALIBRATION.md
 make all               # lint + test + findings + calibration
@@ -157,9 +157,9 @@ Before opening a PR, confirm:
       `needs_verification` where relevant) are all filled per §3.
 - [ ] Nothing violates `CREDIBILITY_FIREWALL.md`.
 - [ ] **VALIDATION is unaffected, or the discrepancy is documented.** Run `make validate` — the committed
-      class-tiered scoreboard must not silently change: **7 pass, 3 registered independent-FAIL findings (fail
-      by design), 1 deferred**. The three `independent` targets are pre-registered to FAIL; a **PASS** on any of
-      them is the thing to investigate (a bug or a tolerance error), not a success. If your change moves a
+      class-tiered scoreboard must not silently change: **6 pass, 5 registered independent-FAIL findings (fail
+      by design), 1 deferred**. The five failing `independent` targets are pre-registered to FAIL; a **PASS** on
+      any of them is the thing to investigate (a bug or a tolerance error), not a success. If your change moves a
       validated target, that is not automatically wrong, but you must explain it in the PR (and, if the physics
       genuinely changed, update `PRE_REGISTRATION.md` and say so explicitly — never re-tune inputs to hit a
       pre-registered target).

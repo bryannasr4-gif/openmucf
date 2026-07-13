@@ -44,7 +44,7 @@ theory–experiment tension). We do NOT try to resolve it; we quantify how much 
 | dtμ formation resonance peak | ~7.1×10⁹ s⁻¹ near **E_cm ≈ 0.423 eV** | atomic-beam (epithermal) | Faifman; used as the Phase-1 sanity anchor |
 | Isotopic transfer λ_dt (dμ→tμ) | ≈ 2.8×10⁸ s⁻¹ (×φ·c_t) **[VERIFY P1]** | drives muon onto tritium | Standard tables |
 | tμ hyperfine spin-flip λ_10 | ~10⁸–10⁹ s⁻¹ scale **[VERIFY P1]** | F=1 → F=0 | Faifman |
-| Cycling rate λ̃_c (density-NORMALIZED; their Fig. 3a caption: "normalized cycle rates calculated at φ=0.4") | ≈ 1.0–1.45×10⁸ s⁻¹ (rises with T to 800 K) | c_t ~ 0.5; the UQ conservatively treats 1.45e8 as the ACTUAL liquid max (Breunlich-attributed; full-text pin = [VERIFY P1]) | **Yamashita–Kino Sci. Rep. 12, 6393 (2022)** |
+| Cycling rate λ̃_c (density-NORMALIZED; Fig. 3a, c_t=0.5 EVM-SPM-FIF panel) | digitized: ≈ 0.84×10⁸ (300 K) → 1.97×10⁸ (800 K) s⁻¹, 800/300 ratio ≈ 2.36 (`openmucf/data/yamashita_kino_lc_T.csv`) | c_t ~ 0.5; a φ-normalized *gas* cycle rate — **NOT** the Breunlich *liquid* λ_c max 1.45×10⁸ s⁻¹ (`V_breunlich_lambdac`). The earlier "≈1.0–1.45×10⁸" reading here was a digitization under-read (corrected 2026-07-13); its numeric coincidence with the separate Breunlich 1.45×10⁸ anchor is a documented hazard (see `forecasts/FORECAST_PROTOCOL.md`). | **Yamashita–Kino Sci. Rep. 12, 6393 (2022)** |
 
 ## 3. Energy balance
 

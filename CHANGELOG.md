@@ -81,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Class-tiered, falsifiable validation scoreboard.** Every `VALIDATION.md` row now carries a claim
   tier (`self-consistency` / `reproduction (fed input)` / `anchor-consistency` /
-  `shape (calibrated model)` / `independent`) in a new `class` column, and the two Yamashita rows count
+  `shape (calibrated model)` / `independent`) in a new `class` column, and the three Yamashita rows count
   as one shape test. Three registered `independent`-tier prediction targets now run and **FAIL by
   design** — `V_petitjean_omega` (derived effective sticking ω_s0·(1−R_col) = 0.557% vs the 0.45% band)
   and `V_faifman_900K` / `V_faifman_lowT` (the placeholder formation model vs the ledger's own
@@ -95,6 +95,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Interop thermal export renamed** to `export_lambda_form_eff_thermal` (an effective cycle-scale rate,
   not the bare Faifman λ_dtμ); the old `export_lambda_dtmu_thermal` name and the `lambda_dtmu`
   `geant4_callables` key remain as deprecated aliases (removed in v2.0.0).
+- **Sourced temperature-shape comparator (Yamashita–Kino 2022 Fig. 3a, digitized).** A deterministic,
+  matplotlib-free digitizer (`scripts/digitize_yamashita_fig3a.py`) extracts λ_c(T) at c_t=0.5
+  (`openmucf/data/yamashita_kino_lc_T.csv`, 14 points, CC-BY-4.0). `V_yamashita_ratio` is **re-anchored**
+  from the earlier ~1.45 under-read to the full-curve digitized ratio λ_c(800 K)/λ_c(300 K) = 2.358
+  (band [2.09, 2.62]; solid-line 2.235); the ±30% tolerance is unchanged, so the strictly-harder target
+  flips the engine ratio ~1.31 **PASS→FAIL** and the row is re-tiered `shape (calibrated model)` →
+  `independent` (a registered finding). A new `V_yamashita_curve` checks the engine against the digitized
+  curve at 200/400/600/800 K (±30% per point; the 800 K point is a registered expected-FAIL). The
+  scoreboard is now **6 pass / 5 registered-FAIL findings / 1 deferred**; the three Yamashita rows count
+  as one test. No model input, prior, or tolerance was changed (`formation.py` untouched); the FAIL is
+  the reported result.
 
 ### Planned
 - **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant

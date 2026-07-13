@@ -59,7 +59,7 @@ pytest                 # 211 tests (208 pass, 1 skipped-blocked, 2 slow deselect
 Reproduce the ledger, findings, and figures:
 
 ```bash
-make validate      # reproduce the pre-registered targets (VALIDATION.md: 7 pass, 3 registered-FAIL findings, 1 deferred; class-tiered)
+make validate      # reproduce the pre-registered targets (VALIDATION.md: 6 pass, 5 registered-FAIL findings, 1 deferred; class-tiered)
 make findings      # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 ```

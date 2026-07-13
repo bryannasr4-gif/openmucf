@@ -161,10 +161,11 @@ DEFERRED, not silently passed). Operating point T=300 K, φ=1.2, c_t=0.5.
   `dedup_group`).
 - `run(rates) -> list[Result]` — evaluate the engine against every target: the passing reproduction-,
   anchor-consistency- and shape-tier rows (V_kouchen_base, V_kouchen_best, V_petitjean, V_yamashita_lcT,
-  V_yamashita_ratio, V_breunlich_lambdac, V_faifman_peak), plus three `independent`-tier predictions that FAIL by design
-  (V_petitjean_omega, V_faifman_900K, V_faifman_lowT) and the deferred V_nagamine_trend.
+  V_breunlich_lambdac, V_faifman_peak), plus five `independent`-tier predictions that FAIL by design
+  (V_petitjean_omega, V_faifman_900K, V_faifman_lowT, and the sourced Yamashita-Kino comparators
+  V_yamashita_ratio, V_yamashita_curve) and the deferred V_nagamine_trend.
 - `report_markdown(results) -> str` — render the class-tiered results table and summary (the
-  `VALIDATION.md` content: 7 pass, 3 registered-FAIL findings, 1 deferred; the two Yamashita rows count
+  `VALIDATION.md` content: 6 pass, 5 registered-FAIL findings, 1 deferred; the three Yamashita rows count
   as one shape test).
 
 ## `openmucf.forecast` — pre-registered, hash-stamped forecast cards (FC-001)
