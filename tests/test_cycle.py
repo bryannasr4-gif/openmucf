@@ -1,18 +1,28 @@
 """Tests for the differentiable cycle ODE network (Phase 2.2), incl. the V1 gate."""
 
+import diffrax
 import jax.numpy as jnp
+import numpy as np
 
 from openmucf import analytic as A
-from openmucf import cycle, formation, load_rates
+from openmucf import cycle, exact, formation, load_rates
 
 
 def test_v1_gate_ode_matches_analytic_under_1pct():
-    """GATE V1: single-pool limit -> ODE N_fus(inf) == analytic X_mu to < 1%."""
+    """GATE V1: single-pool limit -> ODE N_fus(inf) == analytic X_mu to < 1% (registered gate), and the
+    ODE endpoint also matches the exact linear-algebra oracle to <= 1e-8 (a tighter numerical check)."""
     lam0, lam_form, ose = 4.552e5, 1.2e8, 0.005
     y0 = jnp.array([0.0, 0.75, 0.25, 0.0, 0.0, 0.0])  # start in tmu pool, hyperfine-independent
     x_ode = float(cycle.fusions_per_muon_ode(lam0, 0.0, 1e9, lam_form, lam_form, ose, y0=y0))
     x_an = float(A.fusions_per_muon(ose, lam_form, lam0))
-    assert abs(x_ode - x_an) / x_an < 0.01, f"V1 fail: ODE {x_ode} vs analytic {x_an}"
+    rel_an = abs(x_ode - x_an) / x_an
+    assert rel_an < 0.01, f"V1 fail: ODE {x_ode} vs analytic {x_an}"
+    # exact-oracle comparison at 1e-8 (same single-pool setup, tmu-pool start)
+    args = exact.pack_args(lam0, 0.0, 1e9, lam_form, lam_form, ose)
+    x_oracle = exact.finite_totals(args, 3.0e-5, y0=np.array([0.0, 0.75, 0.25]))["X_mu"]
+    rel_oracle = abs(x_ode - x_oracle) / x_oracle
+    assert rel_oracle <= 1e-8, f"V1 oracle fail: ODE {x_ode} vs oracle {x_oracle} (rel {rel_oracle})"
+    print(f"\nV1 gate: ODE-vs-analytic = {rel_an:.3e} (<1%); ODE-vs-exact-oracle = {rel_oracle:.3e} (<=1e-8)")
 
 
 def test_v1_gate_holds_across_conditions():
@@ -23,9 +33,42 @@ def test_v1_gate_holds_across_conditions():
         assert abs(x_ode - x_an) / x_an < 0.01
 
 
-def test_probability_conserved():
+def test_conservation_tightened():
+    """Probability conservation holds to 1e-12 (was 1e-4): the stiff solver at rtol 1e-9 / atol 1e-12
+    conserves the muon to the float64 floor (measured residual ~2.2e-16)."""
     sol = cycle.solve_cycle(4.552e5, 2.8e8, 7e8, 3e8, 1.5e8, 0.005)
-    assert abs(cycle.conservation_residual(sol)) < 1e-4
+    resid = abs(cycle.conservation_residual(sol))
+    assert resid < 1e-12, resid
+    print(f"\nODE conservation residual (channels off) = {resid:.3e} (gate 1e-12)")
+
+
+def test_two_pool_transient_departs_single_exponential():
+    """cyc-1: at the canonical point the fusion-rate density F(t) = dN_fus/dt departs measurably from a
+    single exponential during the dmu->tmu transfer transient -- the observable a digitized neutron
+    time-spectrum will one day test (full data confrontation stays acquisition-gated). Fit log F to a
+    single exponential over the quasi-steady window [3/lambda_c, 30/lambda_c], then measure the max
+    relative residual over the transfer-transient window t < 5/lambda_dt."""
+    rt = load_rates()
+    p = cycle.params_from_conditions(rt, 300.0, 1.2, 0.5)
+    lam_dt = p["lambda_dt"]
+    lam_form_eff = 0.75 * p["lambda_form1"] + 0.25 * p["lambda_form0"]
+    lam_c = 1.0 / (1.0 / lam_dt + 1.0 / lam_form_eff)  # serial-chain effective cycling rate (MODEL_SPEC 5)
+    ts = jnp.geomspace(0.2 / lam_dt, 30.0 / lam_c, 400)
+    sol = cycle.solve_cycle(
+        p["lambda_0"], p["lambda_dt"], p["lambda_10"], p["lambda_form1"], p["lambda_form0"],
+        p["omega_s_eff"], saveat=diffrax.SaveAt(ts=ts), t1=float(ts[-1]),
+    )
+    ys = np.asarray(sol.ys)
+    t = np.asarray(ts)
+    F = p["lambda_form1"] * ys[:, 1] + p["lambda_form0"] * ys[:, 2]  # dN_fus/dt
+    fitw = (t >= 3.0 / lam_c) & (t <= 30.0 / lam_c)
+    A_ls = np.vstack([np.ones(int(fitw.sum())), t[fitw]]).T
+    coef, *_ = np.linalg.lstsq(A_ls, np.log(F[fitw]), rcond=None)
+    F_fit = np.exp(coef[0] + coef[1] * t)
+    tw = t < 5.0 / lam_dt
+    max_resid = float(np.max(np.abs(F[tw] - F_fit[tw]) / F_fit[tw]))
+    assert max_resid > 0.01, max_resid
+    print(f"\ntransient departs single-exp: max rel residual over t<5/lambda_dt = {max_resid:.4f} (>0.01)")
 
 
 def test_formation_monotone_in_T():

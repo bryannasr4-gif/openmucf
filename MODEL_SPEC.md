@@ -77,6 +77,13 @@ split between x_dμ and x_tμ at t=0 is a knob; it barely affects X_μ because t
 `X_μ ≡ N_fus(t→∞)`. This is a **linear** ODE system ⇒ X_μ has a closed form (§4), giving the engine a free
 internal consistency check.
 
+> **Exact oracle (added 2026-07-13).** Because the network is linear with constant coefficients, an exact
+> matrix-exponential solution exists and gates the integrator (`openmucf/exact.py`: the dynamical block
+> obeys `dy_d/dt = M y_d`, so `I∞ = (−M)⁻¹ y_d(0)` and `y_d(t) = expm(M t) y_d(0)`; the ODE endpoint is
+> cross-checked against it to ≤ 1e-8 relative, with conservation closing to 1e-12). The differentiable ODE
+> engine exists for trajectories, `saveat`, and autodiff — **not** because the integration is otherwise
+> impossible.
+
 > **Stiffness:** λ_f ~ 10¹² vs λ₀ ~ 10⁵ spans 7 decades ⇒ stiff. In the fast-fusion limit we do NOT integrate
 > λ_f explicitly; `λ_f^F` already denotes the *formation-limited* rate (formation ≪ fusion), so the stiff
 > ratio is removed and a Kvaerno/implicit solver handles the residual 10⁵–10¹⁰ span. The molecule occupancy
@@ -238,3 +245,13 @@ Each is a clean extension of the §3 linear network. v1's honest claim is bounde
 is a reduced effective cycle whose yield-level numbers carry ~±10–15% structural headroom (one-sided downward
 for the side-cycle/recapture items); the FINDINGS headline results are insulated from all of this because they
 run on the closed form with the measured λ_c band (see FINDINGS.md caveats).
+
+> **Computed (2026-07-13), refining the d-recapture estimate in the table above.** The per-cycle
+> d-recapture leg is now explicit in `cycle.py` as a first-order routing `f_d = (1 − c_t)·q_1s` (the
+> surviving-sticking muon re-enters via the dμ pool with probability the deuterium fraction, ground-state
+> fraction q_1s). Computing the one-sided X_μ bracket at exactly (300 K, 1.2 φ, c_t = 0.5) gives
+> **−5.96 % (q_1s = 0.4), −9.99 % (0.7), −13.68 % (1.0)** — confirming the estimated −6 % … −14 % to
+> rounding; the exact low edge is −5.96 % (marginally less negative than the round −6 %). The brackets at
+> the four structural-sensitivity operating points are tabulated in `MATERIALITY.md` (d-recapture / q_1s
+> section). The `_CALIB` unfolding that would re-attribute this leg against the 300 K anchor stays
+> acquisition-gated (see `docs/accounting.md`).
