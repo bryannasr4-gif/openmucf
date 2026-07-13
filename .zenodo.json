@@ -49,7 +49,13 @@
       "relation": "references",
       "resource_type": "publication",
       "scheme": "arxiv"
+    },
+    {
+      "identifier": "10.1126/sciadv.aed3321",
+      "relation": "references",
+      "resource_type": "publication",
+      "scheme": "doi"
     }
   ],
-  "notes": "TODO: add the Toyama et al., Science Advances (2026) 'Direct observation of muonic molecules...' record here as a 'references' related_identifier once its published DOI (10.1126/sciadv...) is confirmed — it has no arXiv ID and was left out to avoid guessing an identifier. TODO: all three arXiv entries are marked relation 'references' (OpenMuCF is standalone infrastructure, not supplementary material); if this DOI is ever published as supplement to a specific paper, change that paper's relation to 'isSupplementTo'."
+  "notes": "All related identifiers use relation 'references' because OpenMuCF is standalone infrastructure, not supplementary material to any single paper. The Toyama et al. (Science Advances 12, 2026) 'Direct observation of muonic molecules...' record is included by its published DOI 10.1126/sciadv.aed3321 (verified against CrossRef 2026-07-13; it has no arXiv ID). If this software is ever published as a supplement to a specific paper, change that paper's relation to 'isSupplementTo'."
 }

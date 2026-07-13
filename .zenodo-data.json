@@ -1,0 +1,42 @@
+{
+  "title": "OpenMuCF FAIR rate ledger (curated compilation with provenance)",
+  "upload_type": "dataset",
+  "description": "The OpenMuCF rate ledger as a standalone, citable dataset: the microscopic muon-catalyzed-fusion rates, the pre-registered validation targets, the uncertainty-quantification priors, and the muon-production energy-cost compilation. Every row carries its bibliographic source, physical conditions, uncertainty, and an established/contested tag (per-row provenance in references.bib; unresolved-identifier tracking in bib_unresolved.txt). This is a curated compilation with provenance of published values, not an independently evaluated nuclear-data library. Structure and field schemas are described by datapackage.json. The software that generates and audits from this ledger is deposited separately (Apache-2.0); this dataset is CC-BY-4.0.",
+  "license": "CC-BY-4.0",
+  "access_right": "open",
+  "version": "1.1.0",
+  "language": "eng",
+  "keywords": [
+    "muon-catalyzed fusion",
+    "muon-catalysed fusion",
+    "nuclear fusion",
+    "rate ledger",
+    "FAIR data",
+    "provenance",
+    "uncertainty quantification",
+    "data package",
+    "reproducibility",
+    "open science infrastructure"
+  ],
+  "creators": [
+    {
+      "name": "Nasr, Bryan",
+      "orcid": "0009-0008-2360-7522"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.21251511",
+      "relation": "isSupplementTo",
+      "resource_type": "software",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "https://github.com/bryannasr4-gif/openmucf",
+      "relation": "isDerivedFrom",
+      "resource_type": "software",
+      "scheme": "url"
+    }
+  ],
+  "notes": "STAGED, NOT YET MINTED. This is the future dataset-deposit metadata for the ledger, to be minted by the maintainer as a separate Zenodo record once the corresponding software release is tagged. The related_identifier points to the software concept DOI (10.5281/zenodo.21251511, version-independent). Do not publish automatically."
+}

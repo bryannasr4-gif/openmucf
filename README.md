@@ -174,4 +174,5 @@ repository" button from it). Archived on Zenodo — cite the exact release **v1.
 [10.5281/zenodo.21251511](https://doi.org/10.5281/zenodo.21251511) to always resolve to the latest version.
 
 ## License
-Apache-2.0.
+- **Code** — the `openmucf/` package, `scripts/`, tests, and all software: **Apache-2.0** (see [`LICENSE`](LICENSE)).
+- **Data** — the rate ledger `openmucf/data/*` and the generated data docs: **CC-BY-4.0** (see [`LICENSE-DATA`](LICENSE-DATA)), so the compiled, provenance-tagged rates can be reused and cited with attribution.

@@ -1,0 +1,146 @@
+{
+  "name": "openmucf-rate-ledger",
+  "id": "https://doi.org/10.5281/zenodo.21251511",
+  "title": "OpenMuCF FAIR rate ledger (curated compilation with provenance)",
+  "description": "A curated compilation with provenance of the microscopic rates, validation targets, uncertainty-quantification priors, and muon-production energy costs used by OpenMuCF. Every row carries its source, physical conditions, uncertainty, and an established/contested tag. This is a provenance-tagged compilation of published values, NOT an independently evaluated nuclear-data library.",
+  "version": "1.1.0",
+  "homepage": "https://github.com/bryannasr4-gif/openmucf",
+  "keywords": [
+    "muon-catalyzed fusion",
+    "FAIR data",
+    "rate ledger",
+    "provenance",
+    "uncertainty quantification"
+  ],
+  "licenses": [
+    {
+      "name": "CC-BY-4.0",
+      "title": "Creative Commons Attribution 4.0 International",
+      "path": "https://creativecommons.org/licenses/by/4.0/"
+    }
+  ],
+  "sources": [
+    {
+      "title": "Per-row bibliographic provenance",
+      "path": "openmucf/data/references.bib"
+    },
+    {
+      "title": "Unresolved-reference tracking (no open identifier yet)",
+      "path": "openmucf/data/bib_unresolved.txt"
+    }
+  ],
+  "resources": [
+    {
+      "name": "rates",
+      "path": "openmucf/data/rates.csv",
+      "profile": "tabular-data-resource",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "title": "Microscopic muCF rates and parameters",
+      "schema": {
+        "primaryKey": "symbol",
+        "fields": [
+          {"name": "symbol", "type": "string", "description": "Unique machine key for the rate/parameter."},
+          {"name": "description", "type": "string", "description": "One human-readable line."},
+          {"name": "value", "type": "number", "description": "The numeric value in the stated unit."},
+          {"name": "unit", "type": "string", "description": "Physical unit, e.g. s^-1, percent, fraction, MeV."},
+          {"name": "unc", "type": "number", "description": "1-sigma-style uncertainty in the same unit (0 if none quoted).",  "constraints": {"required": false}},
+          {"name": "unc_type", "type": "string", "description": "Provenance of the uncertainty: stat, exp, theory, theory-spread, model, table, estimate, exact."},
+          {"name": "conditions", "type": "string", "description": "Physical state the value holds at (T, phi, F, ortho/para, c_t, field)."},
+          {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib; ';'-separable."},
+          {"name": "source_locator", "type": "string", "description": "Exact equation/table/figure/page inside the source.", "constraints": {"required": false}},
+          {"name": "status", "type": "string", "description": "established or contested.", "constraints": {"enum": ["established", "contested"]}},
+          {"name": "validity_range", "type": "string", "description": "Regime the row is valid over."},
+          {"name": "single_source", "type": "boolean", "description": "True if it traces to a single, never-independently-rechecked measurement.", "constraints": {"required": false}},
+          {"name": "needs_verification", "type": "boolean", "description": "True if the exact digit/locator is not yet pinned from the primary text.", "constraints": {"required": false}},
+          {"name": "notes", "type": "string", "description": "Context, competing values, VERIFY TODOs.", "constraints": {"required": false}},
+          {"name": "distribution", "type": "string", "description": "Sampling distribution shape for UQ, if applicable.", "constraints": {"required": false}},
+          {"name": "dist_lo", "type": "number", "description": "Lower bound for the UQ distribution, if applicable.", "constraints": {"required": false}},
+          {"name": "dist_hi", "type": "number", "description": "Upper bound for the UQ distribution, if applicable.", "constraints": {"required": false}},
+          {"name": "recommendation", "type": "string", "description": "Recommended-use note for the row.", "constraints": {"required": false}},
+          {"name": "phase", "type": "string", "description": "Project phase in which the row is used/added.", "constraints": {"required": false}},
+          {"name": "target_molecule", "type": "string", "description": "Target muonic molecule the row pertains to, if applicable.", "constraints": {"required": false}}
+        ]
+      }
+    },
+    {
+      "name": "validation-targets",
+      "path": "openmucf/data/validation_targets.csv",
+      "profile": "tabular-data-resource",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "title": "Pre-registered validation targets (reproduction / consistency / independent tiers)",
+      "schema": {
+        "primaryKey": "target_id",
+        "fields": [
+          {"name": "target_id", "type": "string", "description": "Unique target identifier, e.g. V_kouchen_base."},
+          {"name": "observable", "type": "string", "description": "The observable being checked."},
+          {"name": "value", "type": "number", "description": "Observed/target value."},
+          {"name": "unit", "type": "string", "description": "Unit of the observable."},
+          {"name": "unc", "type": "number", "description": "Reported uncertainty on the observed value.", "constraints": {"required": false}},
+          {"name": "conditions", "type": "string", "description": "Physical conditions of the observation."},
+          {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib."},
+          {"name": "source_locator", "type": "string", "description": "Exact locator inside the source.", "constraints": {"required": false}},
+          {"name": "tolerance", "type": "string", "description": "Pre-registered pass tolerance: [a,b] absolute interval or +-N% relative."},
+          {"name": "notes", "type": "string", "description": "Class/tier and framing notes.", "constraints": {"required": false}}
+        ]
+      }
+    },
+    {
+      "name": "uq-priors",
+      "path": "openmucf/data/uq_priors.csv",
+      "profile": "tabular-data-resource",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "title": "Frozen Wave-1 uncertainty-quantification priors (Sobol / forward-UQ boxes)",
+      "schema": {
+        "primaryKey": "name",
+        "fields": [
+          {"name": "name", "type": "string", "description": "Prior parameter name."},
+          {"name": "nominal", "type": "number", "description": "Nominal (central) value."},
+          {"name": "low", "type": "number", "description": "Lower bound of the prior box."},
+          {"name": "high", "type": "number", "description": "Upper bound of the prior box."},
+          {"name": "unit", "type": "string", "description": "Unit of the parameter.", "constraints": {"required": false}},
+          {"name": "distribution", "type": "string", "description": "Prior distribution shape (e.g. uniform)."},
+          {"name": "ledger_symbols", "type": "string", "description": "Rate symbol(s) in rates.csv this prior maps to.", "constraints": {"required": false}},
+          {"name": "rationale", "type": "string", "description": "Why this prior/box was chosen.", "constraints": {"required": false}}
+        ]
+      }
+    },
+    {
+      "name": "muon-cost",
+      "path": "openmucf/data/muon_cost.csv",
+      "profile": "tabular-data-resource",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "title": "Muon-production energy-cost compilation, normalized to GeV per stopped muon",
+      "schema": {
+        "primaryKey": "source_id",
+        "fields": [
+          {"name": "source_id", "type": "string", "description": "Unique source identifier."},
+          {"name": "citation", "type": "string", "description": "Human-readable citation."},
+          {"name": "year", "type": "integer", "description": "Publication year."},
+          {"name": "tier", "type": "string", "description": "Design-study vs operating-facility tier."},
+          {"name": "basis_as_published", "type": "string", "description": "The cost basis exactly as the source states it."},
+          {"name": "projectile_target", "type": "string", "description": "Projectile and production target."},
+          {"name": "capture_scheme", "type": "string", "description": "Pion/muon capture scheme.", "constraints": {"required": false}},
+          {"name": "recapture_credit_applied", "type": "boolean", "description": "Whether a recapture/recovery credit was applied by the source.", "constraints": {"required": false}},
+          {"name": "recapture_factor", "type": "number", "description": "Recapture credit factor, if applied.", "constraints": {"required": false}},
+          {"name": "eta_acc_assumption", "type": "number", "description": "Accelerator efficiency assumed by the source, if stated.", "constraints": {"required": false}},
+          {"name": "value_as_published", "type": "number", "description": "The published cost value in its own unit."},
+          {"name": "unit_as_published", "type": "string", "description": "Unit of value_as_published."},
+          {"name": "normalized_GeV_per_stopped_mu", "type": "number", "description": "Value re-expressed on the common GeV-per-stopped-muon basis."},
+          {"name": "derivation", "type": "string", "description": "Arithmetic taking the published value to the normalized basis.", "constraints": {"required": false}},
+          {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib."},
+          {"name": "source_locator", "type": "string", "description": "Exact locator inside the source.", "constraints": {"required": false}},
+          {"name": "needs_verification", "type": "boolean", "description": "True if the exact digit/locator is not yet pinned.", "constraints": {"required": false}},
+          {"name": "notes", "type": "string", "description": "Caveats and context.", "constraints": {"required": false}}
+        ]
+      }
+    }
+  ]
+}

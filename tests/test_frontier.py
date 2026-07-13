@@ -184,7 +184,7 @@ def test_frontier_is_inverse_design_only_no_verdict_surface():
     public = {n for n in dir(frontier) if not n.startswith("_")}
     forbidden = {"verdict", "scenario", "registry", "audit_table", "ykc_table", "Verdict", "Scenario"}
     assert public.isdisjoint(forbidden), public & forbidden
-    assert "frontier" not in getattr(openmucf, "__all__", [])  # submodule, out of the eager surface
+    assert "frontier" in getattr(openmucf, "__all__", [])  # lazily-loaded public submodule (not eager)
 
 
 def test_solve_inverse_rejects_unknown_free_var():
