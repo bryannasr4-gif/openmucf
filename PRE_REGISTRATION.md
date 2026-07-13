@@ -42,6 +42,23 @@ Formalized in `openmucf/data/validation_targets.csv`; backbone is `MODEL_SPEC.md
 > the two Yamashita rows as one test. No input, tolerance, or observation was changed to make any
 > row pass; the three new rows are expected to fail and their failure is the reported result.
 
+> **Amendment (2026-07-13, disclosed — Yamashita–Kino Fig. 3a digitization correction):** the ratio
+> clause's comparator is corrected from the 2026-07-01 registered ~1.45 to the full-curve digitized
+> value. A deterministic committed extraction (c_t=0.5, EVM-SPM-FIF; three agreeing methods;
+> independently re-read) gives λ_c(800 K)/λ_c(300 K) = **2.358** (band [2.091, 2.625]; solid-line 2.235),
+> not ~1.45 — the original was an under-read. The ±30% tolerance (2026-07-01) is **UNCHANGED**. The
+> correction moves the target AWAY from the engine (≈1.31): `V_yamashita_ratio` flips **PASS→FAIL**
+> (−41% to −44% between the solid-line and centreline reads; −37% to −50% across the full digitization
+> band) and is re-registered as an expected-FAIL finding — the first sourced quantification of the v1
+> placeholder's temperature-shape deficit; class becomes `independent`. New `V_yamashita_curve` (class
+> `independent`) at 200/400/600/800 K / ±30%: the 800 K point is a registered expected-FAIL (same
+> comparison as the ratio), and 200/400/600 K are **either-outcome-acceptable pre-run** — both a PASS and
+> a FAIL there are registered as acceptable before running (G-R5's surprise-PASS rule applies only to the
+> 800 K point and the ratio row). The three Yamashita rows (`V_yamashita_lcT`, `V_yamashita_ratio`,
+> `V_yamashita_curve`) count as ONE distinct test. No model parameter, prior, tolerance, or other input
+> was changed; the corrected observation makes the target strictly harder, and the FAILs are the
+> reported result.
+
 ## Falsification target (the headline)
 Re-create, **inside the same transparent model**, the 2026 projections:
 - Yin–Kou–Chen (2605.26432): N_μ "> 500", Q > 2 under four-dimensional synergy.
