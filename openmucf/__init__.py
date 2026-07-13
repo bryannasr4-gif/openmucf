@@ -3,7 +3,9 @@ cycle/energy auditor.
 
 Status: v1 complete (spine: FAIR ledger + analytic + differentiable cycle ODE + net-electrical
 energy + global UQ auditor + Bayesian calibration + validation). See README.md and MODEL_SPEC.md; the
-Phase-3 omega_s^eff(phi,T,c_t) reactivation surrogate is the next capability.
+Phase-3 omega_s^eff(phi,T,c_t) reactivation surrogate is the next capability. Validation is class-tiered
+(see VALIDATION.md; the independent-prediction targets currently fail by design against the placeholder
+formation model).
 """
 
 import jax as _jax

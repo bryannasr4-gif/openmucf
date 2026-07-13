@@ -27,7 +27,7 @@ Formalized in `openmucf/data/validation_targets.csv`; backbone is `MODEL_SPEC.md
 > ~1.31 vs ~1.45 digitized = PASS); the 20 K lower bound remains pending (low-T formation is Phase-3
 > condensed-phase scope).
 
-> **Amendment (2026-07-12, disclosed — research-grade hardening):** three pre-existing
+> **Amendment (2026-07-12, disclosed — validation-surface hardening):** three pre-existing
 > registered quantities are promoted to executed validation targets BEFORE the implementing code
 > lands, with pre-framed expected outcomes. (1) `V_petitjean_omega` now runs as an independent
 > PREDICTION of effective sticking from the ledger microphysics: ω_s0·(1−R_col) = 0.557% against

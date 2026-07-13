@@ -54,3 +54,22 @@ def test_formation_scope_warning():
         warnings.simplefilter("error")
         formation.lambda_dtmu(300.0, 1.2, 0)  # would raise if a warning fired
     formation._SCOPE_WARNED = False  # leave the module flag clean for other tests
+
+
+def test_scope_guard_is_jit_safe():
+    """The off-anchor scope guard is skipped under jit tracing (never breaks a traced computation)."""
+    import warnings
+
+    import jax
+
+    formation._SCOPE_WARNED = False
+    jitted = jax.jit(lambda T, phi: formation.lambda_dtmu(T, phi, 0))
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        val = float(jitted(30.0, 2.0))  # T<100 and phi>1.45: the guard must skip the tracer
+    assert not any("300 K-anchored placeholder" in str(w.message) for w in caught)
+    assert val > 0.0
+    # the guard has no numeric effect: equals the eager value (suppress the eager warning first)
+    formation._SCOPE_WARNED = True
+    assert val == pytest.approx(float(formation.lambda_dtmu(30.0, 2.0, 0)))
+    formation._SCOPE_WARNED = False

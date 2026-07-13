@@ -53,13 +53,13 @@ for what is deliberately excluded, and `ADOPTERS.md` for who it is for.
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 131 tests (129 pass, 1 skipped-blocked, 1 slow deselected; run the slow twin coverage with `pytest -m slow`)
+pytest                 # 211 tests (208 pass, 1 skipped-blocked, 2 slow deselected; run the slow twin coverage with `pytest -m slow`)
 ```
 
 Reproduce the ledger, findings, and figures:
 
 ```bash
-make validate      # reproduce the literature (VALIDATION.md: 7 pass / 1 deferred / 0 fail)
+make validate      # reproduce the pre-registered targets (VALIDATION.md: 7 pass, 3 registered-FAIL findings, 1 deferred; class-tiered)
 make findings      # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 ```

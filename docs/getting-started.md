@@ -9,7 +9,7 @@ below is reproduced by the shipped code and the auto-generated
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 131 tests (129 pass, 1 skipped-blocked, 1 slow deselected; run the slow twin coverage with `pytest -m slow`)
+pytest                 # 211 tests (208 pass, 1 skipped-blocked, 2 slow deselected; run the slow twin coverage with `pytest -m slow`)
 ```
 
 ## 1. Load the validated FAIR rate ledger
@@ -94,7 +94,7 @@ This regenerates `FINDINGS.md`, whose marquee results are:
 Two more reproducible entry points round out the trust story:
 
 ```bash
-make validate      # reproduce the pre-registered targets -> VALIDATION.md (7 pass / 1 deferred / 0 fail)
+make validate      # reproduce the pre-registered targets -> VALIDATION.md (7 pass, 3 registered-FAIL findings, 1 deferred; class-tiered)
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 ```
 

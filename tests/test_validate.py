@@ -92,6 +92,26 @@ def test_categories_pinned():
         assert r.category in validate.CATEGORIES
 
 
+def test_categories_are_the_pinned_literals():
+    """The claim-tier literals are pinned (VALIDATION.md, the README trust map, and docs depend on them)."""
+    assert validate.CATEGORIES == (
+        "self-consistency",
+        "reproduction (fed input)",
+        "anchor-consistency",
+        "shape (calibrated model)",
+        "independent",
+    )
+
+
+def test_distinct_test_count_dedups_shape_rows():
+    """The two Yamashita shape rows share a dedup group and are counted once (10 distinct of 11)."""
+    results = validate.run(load_rates())
+    assert len(results) == 11
+    groups = [r.dedup_group for r in results if r.target_id in ("V_yamashita_lcT", "V_yamashita_ratio")]
+    assert len(groups) == 2 and groups[0] and groups[0] == groups[1]  # shared, non-empty group
+    assert "Distinct tests: 10" in validate.report_markdown(results)
+
+
 def test_registered_fail_targets():
     """The three independent targets FAIL by design and are labelled registered findings."""
     res = _by_id()

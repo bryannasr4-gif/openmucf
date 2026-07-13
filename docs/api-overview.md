@@ -157,11 +157,15 @@ The Phase 2.4 trust gate; honest by construction (unhittable v1 targets are mark
 DEFERRED, not silently passed). Operating point T=300 K, φ=1.2, c_t=0.5.
 
 - `Result` — dataclass per target (`target_id`, `observed`, `predicted`,
-  `tolerance`, `passed` [None == DEFERRED], `note`).
-- `run(rates) -> list[Result]` — evaluate the engine against every target
-  (V_kouchen_base, V_kouchen_best, V_petitjean, V_yamashita_lcT, V_yamashita_ratio, V_breunlich_lambdac, V_faifman_peak).
-- `report_markdown(results) -> str` — render the results table and pass/deferred/
-  fail summary (the `VALIDATION.md` content: 7 pass / 1 deferred / 0 fail).
+  `tolerance`, `passed` [None == DEFERRED], `note`, `category` [claim tier, one of `CATEGORIES`],
+  `dedup_group`).
+- `run(rates) -> list[Result]` — evaluate the engine against every target: the reproduction/consistency
+  rows (V_kouchen_base, V_kouchen_best, V_petitjean, V_yamashita_lcT, V_yamashita_ratio,
+  V_breunlich_lambdac, V_faifman_peak), plus three `independent`-tier predictions that FAIL by design
+  (V_petitjean_omega, V_faifman_900K, V_faifman_lowT) and the deferred V_nagamine_trend.
+- `report_markdown(results) -> str` — render the class-tiered results table and summary (the
+  `VALIDATION.md` content: 7 pass, 3 registered-FAIL findings, 1 deferred; the two Yamashita rows count
+  as one shape test).
 
 ## `openmucf.forecast` — pre-registered, hash-stamped forecast cards (FC-001)
 
