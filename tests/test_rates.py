@@ -112,7 +112,7 @@ def test_wsn_loss_channel_rows_load_and_flagged():
     assert r["lambda_dhe3"].source_bibkey == "Fotev2020"
 
 
-# --- FAIR provenance: DOI/URL backfill (RG-4, WAVE3 §5.1) -------------------------------------
+# --- FAIR provenance: DOI/URL backfill -------------------------------------------------------
 
 def _bib_entries():
     """(bibkey, entry-body) for every entry in references.bib."""
@@ -152,7 +152,7 @@ def _referenced_bibkeys():
 
 
 def test_every_referenced_bibkey_resolves_or_is_listed_unresolved():
-    """RG-4/I3: every bibkey a shipped CSV cites has a live-verified doi/url in references.bib,
+    """Every bibkey a shipped CSV cites has a live-verified doi/url in references.bib,
     or is recorded in bib_unresolved.txt with an acquisition route. No orphan, no fabricated id."""
     known = bibkeys()
     resolvable = _bib_keys_with_identifier()
@@ -161,7 +161,7 @@ def test_every_referenced_bibkey_resolves_or_is_listed_unresolved():
         assert key in known, f"{key} cited by a data CSV but missing from references.bib"
         assert key in resolvable or key in unresolved, (
             f"{key}: no doi/url in references.bib and not listed in bib_unresolved.txt "
-            "(add a live-verified identifier or record the acquisition route -- WAVE3 I3)"
+            "(add a live-verified identifier or record the acquisition route)"
         )
 
 
