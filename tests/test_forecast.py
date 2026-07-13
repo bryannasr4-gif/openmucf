@@ -162,6 +162,39 @@ def test_coverage_counts():
     assert cov == {"n": 3, "covered": 2, "fraction": pytest.approx(2 / 3)}
 
 
+# 7b ------------------------------------------------------------------- Winkler interval score (uq-4)
+def test_interval_score_penalizes_width():
+    """y INSIDE both intervals: the score is just the width, so a 3x wider interval scores strictly higher
+    (worse). Rewards sharpness."""
+    narrow = forecast.interval_score(0.0, 1.0, 0.5, alpha=0.32)
+    wide = forecast.interval_score(-1.0, 2.0, 0.5, alpha=0.32)   # 3x the width, same center, y inside
+    assert narrow == pytest.approx(1.0)
+    assert wide == pytest.approx(3.0)
+    assert wide > narrow
+
+
+def test_interval_score_miss_penalty():
+    """y OUTSIDE the interval: the miss penalty (2/alpha * shortfall) dominates and scales with 1/alpha, so
+    a tight 95% interval that misses scores far worse than its width."""
+    hit = forecast.interval_score(0.0, 1.0, 0.5, alpha=0.05)         # inside -> width only
+    miss = forecast.interval_score(0.0, 1.0, 2.0, alpha=0.05)        # y=2 above hi=1 by 1.0
+    assert hit == pytest.approx(1.0)
+    assert miss == pytest.approx(1.0 + (2.0 / 0.05) * 1.0)           # width + 40*shortfall
+    assert miss > hit
+
+
+def test_score_card_reports_is_for_brackets(fresh_card, samples):
+    """score_card reports interval_score_68 / _95 as the headline for BOTH ensemble and bracket targets."""
+    resolved = {"omega_s_eff@phi=1.2": 0.46, "lambda_c@phi=2.0": 1.9e8}
+    out = forecast.score_card(fresh_card, resolved, samples=samples)
+    ens = out["A"]["omega_s_eff@phi=1.2"]
+    brk = out["B"]["lambda_c@phi=2.0"]
+    for r in (ens, brk):
+        assert "interval_score_68" in r and "interval_score_95" in r
+        assert r["interval_score_68"] >= 0.0 and r["interval_score_95"] >= 0.0
+    assert brk["prediction_type"] == "bracket" and len(brk["crps_per_limb"]) == 2
+
+
 def test_score_card_runs_on_synthetic_resolution(fresh_card, samples):
     resolved = {
         "omega_s_eff@phi=1.2": 0.46,
@@ -226,10 +259,39 @@ def test_d6_constants_still_mirror_generate_calibration():
     src = (Path(forecast.__file__).resolve().parent.parent / "scripts" / "generate_calibration.py").read_text(
         encoding="utf-8"
     )
-    assert "num_warmup=1000" in src
-    assert "num_samples=4000" in src
+    # the main CALIBRATION.md chains use warmup 1000 / samples 4000 (mirrored by forecast's D6 constants)
+    assert "MAIN_WARMUP, MAIN_SAMPLES = 1000, 4000" in src
     assert "seed=0" in src
     assert '("normal", 0.857, 0.03)' in src
     # and forecast.py's constants match those literals
     assert (forecast.NUM_WARMUP, forecast.NUM_SAMPLES, forecast.SEED) == (1000, 4000, 0)
+
+
+# 11 ---------------------------------------------------------- G-R4: FC-001 chain settings are PINNED
+def test_fc001_chain_settings_pinned():
+    """G-R4: the registered FC-001 realization is pinned to a SINGLE chain and the OLD (pre-widening) R box
+    Uniform(0.10, 0.60), because calibrate.run_mcmc now defaults to 4 chains and R ~ Uniform(0.00, 0.80).
+    Without both overrides the registered card's posterior draws (hence every published prediction) would
+    move. Verified by module constants + the explicit override in posterior_samples, and that calibrate's
+    live defaults really did move away from the pinned values (else the pin would be a silent no-op)."""
+    from openmucf import calibrate
+
+    assert forecast.NUM_CHAINS == 1
+    assert forecast.R_PRIOR == (0.10, 0.60)
+    src = Path(forecast.__file__).read_text(encoding="utf-8")
+    assert "R_prior=R_PRIOR" in src
+    assert "num_chains=NUM_CHAINS" in src
+    # the pin is meaningful ONLY if calibrate's defaults differ from what FC-001 pins:
+    assert calibrate.R_PRIOR_DEFAULT == (0.00, 0.80)
+    assert calibrate.NUM_CHAINS_DEFAULT == 4
+
+
+def test_fc001_pinned_posterior_reproduces_registered_predictions(fresh_card, shipped_card):
+    """G-R4 behavioural proof: a fresh build through the PINNED posterior reproduces every registered card
+    prediction byte-for-byte (the only legitimate payload drift is the evolved-ledger sha256)."""
+    def _preds(card):
+        return {s["name"]: {p["target_id"]: p for p in s["predictions"]}
+                for s in card["payload"]["scenarios"]}
+
+    assert _preds(fresh_card) == _preds(shipped_card)
     assert forecast.OMEGA_S0_PRIOR == ("normal", 0.857, 0.03)
