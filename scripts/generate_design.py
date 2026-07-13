@@ -215,11 +215,7 @@ is **statistically indistinguishable from the R-independent control C2** ({H['Ri
 ranking reads constant-R {H['Rc_rank']} vs R(phi)-inflated {H['Ri_rank']}, but that C1<->C2 crossing is
 itself WITHIN the +/-3 pp noise floor and is NOT a robust ordering -- the robust finding is C1's collapse,
 not the crossing. C4's contraction ({H['Rc_C4']}) does not move between classes: it constrains omega_s0
-DIRECTLY, so it is the one candidate that identifies R without the structural assumption. (Note, 2026-07-13:
-this class-conditional table was re-realized on a 4-chain base posterior this release; the sub-floor
-R(phi)-inflated cells and their nominal ordering shifted from an earlier single-chain realization -- e.g.
-C3's R(phi)-inflated contraction moved toward the collapsed level -- so only the C4-decisive and C1-collapse
-headlines, NOT the sub-3pp fine ordering, are meaningful to compare across releases.)
+DIRECTLY, so it is the one candidate that identifies R without the structural assumption.
 
 ## SECONDARY metric -- nested-Monte-Carlo EIG
 {_eig_table(H, cand_ids)}
