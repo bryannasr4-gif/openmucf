@@ -82,8 +82,10 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   structural (outside the prior's support), not a Monte-Carlo estimate. Density scaling could supply the
   cycling-rate factor at DAC φ≈2.4, but even at infinite λ_c the projection needs reactivation R ≥ 0.77
   (R ≈ 0.94 at λ_c=3e8) vs the model-derived ~0.35. A falsifiable, quantified bet that rides on reactivation.
-- **Identifiability:** experiment pins ω_s^eff (and only loosely bounds λ_c) but not the ω_s0/R split
-  (corr +0.84) — the quantitative reason the Phase-3 microscopic calculation is needed.
+- **Identifiability:** experiment pins ω_s^eff (and only loosely bounds λ_c) but not the ω_s0/R split — the
+  posterior concentrates on the curve ω_s0(1−R)=ω_s^eff, whose linear correlation is prior-conditional
+  (corr ≈ +0.8; see the prior-sensitivity sweep in `CALIBRATION.md`) — the quantitative reason the Phase-3
+  microscopic calculation is needed.
 - **Muon-cost normalization (`MUON_COST.md`):** a curated, provenance-tagged compilation of the
   muon-production energy cost on one auditable basis. Design studies sit at a few GeV per muon (anchor:
   Kelly–Hart–Rose 4.70 GeV/μ, open-access, G4Beamline), while operating facilities are ~10³× worse
@@ -107,7 +109,7 @@ structural workhorse for trajectories/twin/UQ cross-checks and is gated against 
 | tier | outputs | why |
 |---|---|---|
 | **GREEN — citable as-is** | muon-cost ledger + 10³-gap (`MUON_COST.md`), Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model |
-| **AMBER — citable with the stated basis** | calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, disclosed ω_s0/R degeneracy), X_μ at the 300 K liquid anchor | statistically sound but summary-statistic-based; cite WITH the basis caveat |
+| **AMBER — citable with the stated basis** | calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, prior-sensitivity table), X_μ at the 300 K liquid anchor | statistically sound but summary-statistic-based; cite WITH the basis caveat |
 | **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8) — a runtime warning fires in the RED regime |
 
 ## Forecast registry

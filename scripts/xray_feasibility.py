@@ -142,7 +142,12 @@ def main():
 
     # --- guard 0: the added model faithfully MIRRORS calibrate.model (use_ratio=False) ----------------
     mirror = r_sd(WEAK_PRIOR, use_ratio=False)
-    ref = float(np.asarray(calibrate.run_mcmc(NUM_WARMUP, NUM_SAMPLES, seed=SEED)["R"]).std())
+    # the mirror model (above) hardcodes the pre-RG-2 boxes R~U(0.10,0.60) / weak os0~U(0.60,1.10) and a
+    # single chain; pin calibrate.run_mcmc to the same (its RG-2 defaults widened R + went to 4 chains).
+    ref = float(np.asarray(
+        calibrate.run_mcmc(NUM_WARMUP, NUM_SAMPLES, seed=SEED, omega_s0_prior=WEAK_PRIOR,
+                           R_prior=(0.10, 0.60), num_chains=1)["R"]
+    ).std())
     print(f"\n[mirror check] model(use_ratio=False) sd(R)={mirror:.6f} vs "
           f"calibrate.model sd(R)={ref:.6f}  -> |d|={abs(mirror - ref):.2e}")
     assert abs(mirror - ref) < 1e-9, "added model does not reproduce calibrate.model -- mirror broken"
