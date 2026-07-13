@@ -167,6 +167,19 @@ almost entirely from λ_dtμ(T): the Vesman resonance is thermally accessed, so 
 `λ_dtμ^F(T,φ)` is supplied by the Phase-1 interpolant `rates.λ_dtμ(T,φ,F)`; the ODE network (§3) realizes the
 serial combination automatically, while §4's λ_c is the lumped effective value used analytically.
 
+> **Disclosure (2026-07-12, added): the λ_c(T) rise described above is a calibrated CONSTRUCTION, not a
+> sourced temperature dependence.** The resonance positions and widths in `formation.py` other than the
+> measured 0.423 eV peak (Fujiwara 2000) are hand-placed, unsourced placeholders chosen so the Maxwell
+> average rises monotonically over 20–800 K; the temperature SHAPE of λ_c(T) is therefore a model
+> construction (`VALIDATION.md` class column: `shape (calibrated model)`), and the sentence above — that
+> the T-dependence "comes almost entirely from λ_dtμ(T)" — describes this placeholder, not a measured
+> curve. The module's thermal output is an effective CYCLE-scale rate anchored near the measured
+> λ_c(300 K), NOT the bare Faifman λ_dtμ (13–30× larger; ledger rows `lambda_dtmu_900K` /
+> `lambda_dtmu_lowT`, executed as the failing independent targets `V_faifman_900K` / `V_faifman_lowT`),
+> and it is exported under the name `lambda_form_eff` for that reason. It is **linear in φ by
+> construction** and inapplicable above the compressed-gas onset (φ > ~1.45), where
+> `formation.lambda_dtmu` fires a RED-tier scope warning.
+
 ---
 
 ## 6. Energy balance

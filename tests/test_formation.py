@@ -37,3 +37,20 @@ def test_egrid_is_log():
     """A geometric grid has a constant successive-point ratio (log-uniform spacing)."""
     r = formation._EGRID[1:] / formation._EGRID[:-1]
     assert float(jnp.max(r) - jnp.min(r)) < 1e-9
+
+
+def test_formation_scope_warning():
+    """A concrete off-anchor call (phi>1.45 or T<100 K) fires a one-shot RED-tier scope warning;
+    an in-scope call does not warn."""
+    import warnings
+
+    formation._SCOPE_WARNED = False
+    with pytest.warns(UserWarning, match="300 K-anchored placeholder"):
+        formation.lambda_dtmu(300.0, 2.0, 0)
+
+    # in-scope call (phi=1.2, T=300) must NOT warn (reset the one-shot flag first)
+    formation._SCOPE_WARNED = False
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        formation.lambda_dtmu(300.0, 1.2, 0)  # would raise if a warning fired
+    formation._SCOPE_WARNED = False  # leave the module flag clean for other tests

@@ -13,8 +13,19 @@ Anchored to measured data (provenance in openmucf/data/references.bib):
   * eta = epithermal enhancement (ledger row eta_dtmu): 1 (bare theory) .. 5 (Yamashita-Kino fit).
 
 NOT the full Faifman/Adamczak quantum grid nor the condensed-matter S(q,omega) rate -- those are the
-documented upgrade path (Phase 3). This model is calibrated so the cycle reproduces the canonical
-lambda_c(T) band; the F=0 amplitudes are set from the room-temperature anchor (see _CALIB below).
+documented upgrade path (Phase 3).
+
+The resonance POSITIONS and WIDTHS other than the measured 0.423 eV peak are hand-placed, unsourced
+placeholders chosen so the Maxwell average rises monotonically over 20-800 K; the temperature SHAPE of
+this model is therefore a construction, not a prediction (VALIDATION.md class column:
+`shape (calibrated model)`). The module's thermal output is an effective CYCLE-scale rate (anchored
+near the measured lambda_c(300 K)), NOT the bare Faifman lambda_dtmu, which is 13-30x larger (ledger
+rows lambda_dtmu_900K / lambda_dtmu_lowT -- executed as failing targets V_faifman_900K /
+V_faifman_lowT). It is exported under the name lambda_form_eff for this reason. Linear-in-phi by
+construction: inapplicable above the compressed-gas onset (phi > ~1.45); a scope warning fires there.
+
+This model is calibrated so the cycle reproduces the canonical lambda_c(T) band; the F=0 amplitudes are
+set from the room-temperature anchor (see _CALIB below).
 """
 
 from __future__ import annotations
@@ -24,12 +35,17 @@ import jax.numpy as jnp
 K_B = 8.617333e-5  # eV / K
 
 # Vesman resonances per hyperfine F: (E_res [eV], amplitude [s^-1], width [eV]).
-# F=1 carries the measured 0.423 eV beam resonance (amplitude = the measured peak 7.1e9).
-# F=0 (lower hyperfine) carries near-threshold resonances that drive low-temperature formation;
-# its amplitudes are scaled by _CALIB["F0"] to hit the room-temperature thermal anchor.
 _RESONANCES = {
+    # F=0 (lower hyperfine): both tuples are UNSOURCED PLACEHOLDERS -- calibration geometry, not
+    # physics (no ledger row, no citation); positions/widths chosen so the Maxwell average rises
+    # monotonically over 20-800 K. See the docstring + the VALIDATION.md `class` column.
     0: [(0.050, 5.0e8, 0.040), (0.250, 1.5e9, 0.070)],
-    1: [(0.423, 7.1e9, 0.036), (0.080, 3.0e8, 0.045)],
+    1: [
+        # MEASURED anchor: Fujiwara2000 peak (rates.csv lambda_dtmu_peak); width unsourced.
+        (0.423, 7.1e9, 0.036),
+        # UNSOURCED PLACEHOLDER -- calibration geometry, not physics (no ledger row, no citation).
+        (0.080, 3.0e8, 0.045),
+    ],
 }
 # Thermal-scale calibration: set so lambda_dtmu(300 K, F=0, phi=1) ~ 1.3e8 s^-1 -- i.e. the ~1e8
 # room-temperature anchor (Yamashita-Kino 2022) and the canonical lambda_c(300 K) ~ 1.4e8. This scales
@@ -52,6 +68,31 @@ _CALIB = {"F0": 0.30922830500330367, "F1": 0.3094896596177261}
 # 0.01 eV, where the Maxwell weight concentrates for T <~ 50 K, so low-T formation was grid-unconverged
 # (changed by >7% under a grid doubling); the geomspace grid is converged to <0.05% there.
 _EGRID = jnp.geomspace(1.0e-4, 2.0, 800)  # eV
+
+# One-shot host-side scope flag for the RED-tier (off-anchor) warning below.
+_SCOPE_WARNED = False
+
+
+def _maybe_warn_scope(T, phi):
+    """One-shot host-side scope warning; silently skipped for traced (jit) inputs."""
+    global _SCOPE_WARNED
+    if _SCOPE_WARNED:
+        return
+    try:
+        Tf, pf = float(T), float(phi)
+    except (TypeError, Exception):  # jax tracer or non-scalar: skip (never break jit)
+        return
+    if pf > 1.45 or Tf < 100.0:
+        _SCOPE_WARNED = True
+        import warnings
+
+        warnings.warn(
+            "formation.lambda_dtmu called at phi>1.45 or T<100 K: the v1 formation model is a "
+            "300 K-anchored placeholder, linear in phi, with unsourced resonance geometry -- "
+            "RED tier in the README trust map; do not cite off-anchor values.",
+            UserWarning,
+            stacklevel=3,
+        )
 
 
 def lambda_dtmu_energy(E, F=1):
@@ -81,5 +122,11 @@ def lambda_dtmu(T, phi=1.0, F=0, eta=1.0):
     """Thermally-averaged resonant dt-mu formation rate [s^-1] at T [K], density phi, hyperfine F.
 
     ``eta`` is the epithermal enhancement (ledger row eta_dtmu; 1 = bare theory, ~5 = Yamashita-Kino fit).
+
+    Default ``F=0`` returns the placeholder F=0 branch; the physical post-cascade population is
+    3/4 F=1 + 1/4 F=0 (MODEL_SPEC.md sec.3). The thermal output is an effective cycle-scale rate
+    (300 K-anchored), NOT the bare Faifman lambda_dtmu -- see the module docstring. A one-shot scope
+    warning fires for off-anchor concrete calls (phi > ~1.45 or T < 100 K); it is skipped under jit.
     """
+    _maybe_warn_scope(T, phi)
     return eta * phi * _CALIB["F0" if F == 0 else "F1"] * _maxwell_avg(T, F)
