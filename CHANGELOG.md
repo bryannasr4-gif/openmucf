@@ -78,6 +78,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`generate_design.py --audit`: EIG bits at 5% relative, sd-contraction at 3 pp absolute) rather than
   byte-diffing.
 
+### Changed
+- **Class-tiered, falsifiable validation scoreboard.** Every `VALIDATION.md` row now carries a claim
+  tier (`self-consistency` / `reproduction (fed input)` / `anchor-consistency` /
+  `shape (calibrated model)` / `independent`) in a new `class` column, and the two Yamashita rows count
+  as one shape test. Three registered `independent`-tier prediction targets now run and **FAIL by
+  design** — `V_petitjean_omega` (derived effective sticking ω_s0·(1−R_col) = 0.557% vs the 0.45% band)
+  and `V_faifman_900K` / `V_faifman_lowT` (the placeholder formation model vs the ledger's own
+  Faifman1989 rows, ~20×/~17× low) — each a pre-registered, quantified measure of the v1 placeholder's
+  distance from the field's rates (`PRE_REGISTRATION.md` amendment). No input, tolerance, or observation
+  was changed to make any row pass.
+- **Public surface aligned with what the code delivers.** A README trust map ("what you may cite":
+  GREEN / AMBER / RED), a reworded status badge and value-prop stating that the Phase-3 surrogate is
+  planned (today ω_s0 and R are ledger scalars), and `formation.py` truth-labels for every unsourced
+  placeholder resonance plus a RED-tier runtime warning off its 300 K anchor (φ > 1.45 or T < 100 K).
+- **Interop thermal export renamed** to `export_lambda_form_eff_thermal` (an effective cycle-scale rate,
+  not the bare Faifman λ_dtμ); the old `export_lambda_dtmu_thermal` name and the `lambda_dtmu`
+  `geant4_callables` key remain as deprecated aliases (removed in v2.0.0).
+
 ### Planned
 - **Phase 3 — compute-trained effective-sticking/reactivation surrogate `ω_s^eff(φ,T,c_t)`.** The one dominant
   rate that every group currently hard-codes, so that the auditor *produces* it instead of importing a

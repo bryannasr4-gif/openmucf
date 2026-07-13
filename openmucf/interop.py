@@ -117,18 +117,38 @@ def export_omega_s_eff(rates, T_grid, phi_grid, use_legacy_sticking: bool = Fals
     )
 
 
-def export_lambda_dtmu_thermal(T_grid, phi_grid, F: int = 1, eta: float = 1.0) -> RateTable:
-    """Thermally-averaged lambda_dtmu(phi, T) at fixed hyperfine F [s^-1]."""
+def export_lambda_form_eff_thermal(T_grid, phi_grid, F: int = 1, eta: float = 1.0) -> RateTable:
+    """Thermally-averaged effective cycle-scale formation rate lambda_form_eff(phi, T) at fixed F [s^-1].
+
+    This is the 300 K-anchored placeholder formation model's effective CYCLE-scale rate, NOT the bare
+    Faifman lambda_dtmu (see formation.py). Exported under the name ``lambda_form_eff`` until sourced
+    tables land, at which point the bare lambda_dtmu export resumes under its true name.
+    """
     grids = (tuple(float(p) for p in phi_grid), tuple(float(t) for t in T_grid))
     values = _build_2d(grids[0], grids[1], lambda phi, T: formation.lambda_dtmu(T, phi, F, eta))
     return RateTable(
-        name="lambda_dtmu_thermal",
+        name="lambda_form_eff_thermal",
         axis_names=("phi", "T"),
         axis_grids=grids,
         values=values,
         unit="s^-1",
-        note=f"resonance-averaged v1 formation model, F={F}, eta={eta}.",
+        note=f"effective cycle-scale formation rate (300 K-anchored placeholder model), NOT bare Faifman "
+        f"lambda_dtmu -- see formation.py. F={F}, eta={eta}.",
     )
+
+
+def export_lambda_dtmu_thermal(T_grid, phi_grid, F: int = 1, eta: float = 1.0) -> RateTable:
+    """DEPRECATED alias for :func:`export_lambda_form_eff_thermal` (renamed; the exported quantity is an
+    effective cycle-scale rate, not bare lambda_dtmu). Alias removed in v2.0.0."""
+    import warnings
+
+    warnings.warn(
+        "renamed export_lambda_form_eff_thermal; the exported quantity is an effective cycle-scale "
+        "rate, not bare lambda_dtmu; alias removed in v2.0.0",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return export_lambda_form_eff_thermal(T_grid, phi_grid, F=F, eta=eta)
 
 
 def export_lambda_dtmu_energy(E_grid, F: int = 1) -> RateTable:
@@ -141,7 +161,9 @@ def export_lambda_dtmu_energy(E_grid, F: int = 1) -> RateTable:
         axis_grids=(g0,),
         values=values,
         unit="s^-1",
-        note=f"energy-resolved Vesman resonances, F={F}.",
+        note=f"energy-resolved Vesman resonances, F={F}. Illustrative resonance-model curve; only the "
+        "F=1 peak (0.423 eV, 7.1e9, Fujiwara2000) is a measured anchor, other components are unsourced "
+        "placeholders.",
     )
 
 
@@ -166,7 +188,7 @@ def export_all(
 
     tables = [
         export_omega_s_eff(rates, T_grid, phi_grid),
-        export_lambda_dtmu_thermal(T_grid, phi_grid, F=F, eta=eta),
+        export_lambda_form_eff_thermal(T_grid, phi_grid, F=F, eta=eta),
         export_lambda_dtmu_energy(E_grid, F=F),
     ]
     written: dict = {}
@@ -183,21 +205,25 @@ def export_all(
 def geant4_callables(rates, use_legacy_sticking: bool = False, eta: float = 1.0) -> dict:
     """Return plain-Python float callables a GEANT4 embedding can query in-process.
 
-    ``omega_s_eff(phi, T)`` and ``lambda_dtmu(E=None, phi=1.0, T=300.0, F=1)`` -- passing ``E`` gives
-    the energy-resolved rate, omitting it gives the thermally-averaged rate. Values are host-side
-    floats (not traced arrays), which is what an external C++/GEANT4 caller needs.
+    ``omega_s_eff(phi, T)`` and ``lambda_form_eff(E=None, phi=1.0, T=300.0, F=1)`` -- passing ``E`` gives
+    the energy-resolved rate, omitting it gives the thermally-averaged effective cycle-scale rate
+    (300 K-anchored placeholder, NOT bare lambda_dtmu; see formation.py). Values are host-side floats
+    (not traced arrays), which is what an external C++/GEANT4 caller needs. The legacy key
+    ``lambda_dtmu`` is retained as a deprecated alias for ``lambda_form_eff`` (same callable), removed
+    in v2.0.0.
     """
     ose = _ledger_omega_s_eff(rates, use_legacy_sticking)
 
     def omega_s_eff(phi=1.0, T=300.0):  # noqa: ARG001 - v1 is condition-independent (Phase-3 fills in)
         return ose
 
-    def lambda_dtmu(E=None, phi=1.0, T=300.0, F=1):
+    def lambda_form_eff(E=None, phi=1.0, T=300.0, F=1):
         if E is not None:
             return float(formation.lambda_dtmu_energy(E, F))
         return float(formation.lambda_dtmu(T, phi, F, eta))
 
-    return {"omega_s_eff": omega_s_eff, "lambda_dtmu": lambda_dtmu}
+    # canonical `lambda_form_eff`; legacy `lambda_dtmu` retained (same callable, deprecated -> v2.0.0).
+    return {"omega_s_eff": omega_s_eff, "lambda_form_eff": lambda_form_eff, "lambda_dtmu": lambda_form_eff}
 
 
 # ---------------------------------------------------------------------------

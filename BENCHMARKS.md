@@ -21,6 +21,6 @@ Reproduce one case from an installed package with `openmucf reproduce <case-id>`
 
 Notes on the validation-to-registry mapping (the validation side re-exposes engine RESULTS, not raw CSV rows):
 
-- `V_petitjean` runs the CSV row `V_petitjean_Xmu`; the paired row `V_petitjean_omega` is the matched effective-sticking observation consumed by the same check, so it is not a separate case.
+- The three registered independent-prediction targets (`V_petitjean_omega`, `V_faifman_900K`, `V_faifman_lowT`) are executed in `VALIDATION.md` (they FAIL by design) and are deliberately NOT bench cases -- this registry reproduces published numbers, not pre-registered divergence findings. In particular `V_petitjean` here runs the CSV row `V_petitjean_Xmu`; `V_petitjean_omega` is its separate registered sticking prediction, shown in VALIDATION.md's class column.
 - The context-only rows `A_acceleron_density` and `A_acceleron_anomaly` (tolerance `context-only`) are regime anchors, not runnable reproductions, and are deliberately not bench cases.
 - Blocked reproduction cases render as PENDING with the blocking document named; they run nothing and fail nothing until the document is acquired.

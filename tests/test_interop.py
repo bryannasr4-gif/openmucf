@@ -3,6 +3,8 @@
 import json
 import math
 
+import pytest
+
 from openmucf import formation, interop, load_rates
 from openmucf.analytic import effective_sticking
 from openmucf.rates import omega_fraction
@@ -28,10 +30,11 @@ def test_export_omega_s_eff_matches_analytic_and_is_flat():
             assert math.isclose(v, expected, rel_tol=1e-12)
 
 
-def test_export_lambda_dtmu_thermal_shape_and_positive():
+def test_export_lambda_form_eff_thermal_shape_and_positive():
     T = (100.0, 300.0, 800.0)
     phi = (1.0, 1.45)
-    tab = interop.export_lambda_dtmu_thermal(T, phi, F=1)
+    tab = interop.export_lambda_form_eff_thermal(T, phi, F=1)
+    assert tab.name == "lambda_form_eff_thermal"
     assert tab.unit == "s^-1"
     assert len(tab.values) == len(phi)
     for i, p in enumerate(phi):
@@ -39,6 +42,13 @@ def test_export_lambda_dtmu_thermal_shape_and_positive():
             assert tab.values[i][j] > 0.0
             # matches the underlying formation model exactly
             assert math.isclose(tab.values[i][j], float(formation.lambda_dtmu(t, p, 1, 1.0)), rel_tol=1e-9)
+
+
+def test_interop_rename_alias_warns():
+    """The old export_lambda_dtmu_thermal warns (DeprecationWarning) but returns the renamed table."""
+    with pytest.deprecated_call():
+        tab = interop.export_lambda_dtmu_thermal((300.0,), (1.2,), F=1)
+    assert tab.name == "lambda_form_eff_thermal"
 
 
 def test_export_lambda_dtmu_energy_peaks_near_resonance():
@@ -52,23 +62,23 @@ def test_export_lambda_dtmu_energy_peaks_near_resonance():
 
 def test_export_all_writes_csv_and_json(tmp_path):
     written = interop.export_all(RATES, tmp_path, fmt="both")
-    assert set(written) == {"omega_s_eff", "lambda_dtmu_thermal", "lambda_dtmu_energy"}
+    assert set(written) == {"omega_s_eff", "lambda_form_eff_thermal", "lambda_dtmu_energy"}
     for paths in written.values():
         assert len(paths) == 2
         for p in paths:
             assert p.exists() and p.stat().st_size > 0
     # JSON round-trips to a valid payload carrying provenance
-    payload = json.loads((tmp_path / "lambda_dtmu_thermal.json").read_text())
+    payload = json.loads((tmp_path / "lambda_form_eff_thermal.json").read_text())
     assert payload["unit"] == "s^-1"
     assert "openmucf_version" in payload
     assert len(payload["axis_grids"]) == 2
 
 
 def test_csv_long_format_row_count(tmp_path):
-    tab = interop.export_lambda_dtmu_thermal((100.0, 300.0), (1.0, 1.2, 1.45), F=1)
+    tab = interop.export_lambda_form_eff_thermal((100.0, 300.0), (1.0, 1.2, 1.45), F=1)
     p = tab.to_csv(tmp_path / "t.csv")
     lines = [ln for ln in p.read_text().splitlines() if ln.strip()]
-    assert lines[0] == "phi,T,lambda_dtmu_thermal"
+    assert lines[0] == "phi,T,lambda_form_eff_thermal"
     assert len(lines) == 1 + 3 * 2  # header + phi*T rows
 
 
@@ -77,12 +87,22 @@ def test_geant4_callables_are_plain_floats():
     ose = api["omega_s_eff"](phi=1.45, T=800.0)
     assert isinstance(ose, float)
     assert math.isclose(ose, _expected_omega_s_eff(), rel_tol=1e-12)
-    thermal = api["lambda_dtmu"](phi=1.2, T=300.0, F=1)
-    energy = api["lambda_dtmu"](E=0.423, F=1)
+    thermal = api["lambda_form_eff"](phi=1.2, T=300.0, F=1)
+    energy = api["lambda_form_eff"](E=0.423, F=1)
     assert isinstance(thermal, float) and thermal > 0.0
     assert isinstance(energy, float) and energy > 0.0
     # energy-resolved peak >> thermal average (resonance vs Maxwell tail)
     assert energy > thermal
+
+
+def test_geant4_callables_both_keys():
+    """The canonical `lambda_form_eff` and the legacy `lambda_dtmu` keys are the same callable."""
+    api = interop.geant4_callables(RATES)
+    assert "lambda_form_eff" in api and "lambda_dtmu" in api
+    assert api["lambda_form_eff"] is api["lambda_dtmu"]
+    a = api["lambda_form_eff"](phi=1.2, T=300.0, F=1)
+    b = api["lambda_dtmu"](phi=1.2, T=300.0, F=1)
+    assert a == b and isinstance(a, float) and a > 0.0
 
 
 def test_ingest_spectrum_roundtrip_and_normalization(tmp_path):

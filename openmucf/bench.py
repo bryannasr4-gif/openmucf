@@ -2,9 +2,13 @@
 
 Two sources of truth, exposed through a single interface (never merged into one):
 
-* **Validation side** -- the pre-registered trust gate. These cases are exactly the RESULT ids that
-  ``validate.run()`` emits (``validate.py`` owns ``validation_targets.csv`` and ``VALIDATION.md``; this
-  module does not re-read the CSV or re-decide any verdict, it just re-exposes each ``validate.Result``).
+* **Validation side** -- the pre-registered trust gate. These cases are the reproduction- and
+  consistency-tier RESULT ids that ``validate.run()`` emits (``validate.py`` owns
+  ``validation_targets.csv`` and ``VALIDATION.md``; this module does not re-read the CSV or re-decide any
+  verdict, it just re-exposes each ``validate.Result``). The three registered independent-prediction
+  targets, which FAIL by design, are executed in ``VALIDATION.md``'s class column and deliberately kept
+  out of this *friendly-reproduction* registry -- a FAIL there is a verdict about the v1 model, not the
+  reproduction of a published number.
 * **Reproduction side** -- self-contained JSON cases under ``openmucf/data/benchmarks/*.json`` (shipped as
   package data). Each is a *friendly reproduction*: PASS means OpenMuCF reproduces a published number, not
   a verdict on anyone's claim. Cases blocked on an unacquired document render as PENDING (run nothing,
@@ -25,10 +29,12 @@ from .rates import DATA
 
 CASES_DIR = DATA / "benchmarks"
 
-# The 8 RESULT ids that ``validate.run()`` emits (post-ledger), in emission order. This is the
-# "validation side" of the registry -- NOT the raw ``validation_targets.csv`` target_ids (the CSV also
-# carries paired-observation and context-only rows that produce no result). The mapping/exclusions are
-# rendered as footnotes in BENCHMARKS.md.
+# The 8 reproduction/consistency-tier RESULT ids that ``validate.run()`` emits (post-ledger), in
+# emission order -- the "validation side" of the registry. NOT the raw ``validation_targets.csv``
+# target_ids (the CSV also carries paired-observation and context-only rows that produce no result),
+# and NOT the three registered independent-prediction FAIL findings (V_petitjean_omega, V_faifman_900K,
+# V_faifman_lowT) -- those are executed in VALIDATION.md but excluded here (pre-registered divergence
+# findings, not friendly reproductions). The mapping/exclusions are rendered as footnotes in BENCHMARKS.md.
 VALIDATION_IDS = (
     "V_kouchen_base",
     "V_kouchen_best",
@@ -249,8 +255,11 @@ def report_markdown(results) -> str:
         "Notes on the validation-to-registry mapping (the validation side re-exposes engine RESULTS, not "
         "raw CSV rows):",
         "",
-        "- `V_petitjean` runs the CSV row `V_petitjean_Xmu`; the paired row `V_petitjean_omega` is the "
-        "matched effective-sticking observation consumed by the same check, so it is not a separate case.",
+        "- The three registered independent-prediction targets (`V_petitjean_omega`, `V_faifman_900K`, "
+        "`V_faifman_lowT`) are executed in `VALIDATION.md` (they FAIL by design) and are deliberately NOT "
+        "bench cases -- this registry reproduces published numbers, not pre-registered divergence findings. "
+        "In particular `V_petitjean` here runs the CSV row `V_petitjean_Xmu`; `V_petitjean_omega` is its "
+        "separate registered sticking prediction, shown in VALIDATION.md's class column.",
         "- The context-only rows `A_acceleron_density` and `A_acceleron_anomaly` (tolerance `context-only`) "
         "are regime anchors, not runnable reproductions, and are deliberately not bench cases.",
         "- Blocked reproduction cases render as PENDING with the blocking document named; they run nothing "

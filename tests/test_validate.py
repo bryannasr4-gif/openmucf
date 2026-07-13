@@ -1,4 +1,7 @@
-"""Phase 2.4 trust gate: the reproducible validation targets must pass."""
+"""Phase 2.4 trust gate: the reproducible validation targets must pass; the class-tiered
+scoreboard exposes the three registered independent targets that FAIL by design."""
+
+import pytest
 
 from openmucf import load_rates, validate
 
@@ -31,6 +34,10 @@ def test_faifman_peak_now_reproduced_by_resonance_model():
 def test_report_renders():
     md = validate.report_markdown(validate.run(load_rates()))
     assert "VALIDATION.md" in md and "PASS" in md
+    # the class column and the new class-tiered summary format
+    assert "| target | class | observed |" in md
+    assert "Distinct tests:" in md
+    assert "**FAIL**" in md  # the three registered independent rows fail by design
 
 
 def test_verdict_is_csv_driven(tmp_path):
@@ -62,3 +69,103 @@ def test_yamashita_ratio_target():
     res = {r.target_id: r for r in validate.run(load_rates())}
     assert "V_yamashita_ratio" in res
     assert res["V_yamashita_ratio"].passed is True
+
+
+def test_categories_pinned():
+    """Every result carries its DECIDED category tier (test-pinned literals)."""
+    res = _by_id()
+    expected = {
+        "V_kouchen_base": "reproduction (fed input)",
+        "V_kouchen_best": "reproduction (fed input)",
+        "V_petitjean": "reproduction (fed input)",
+        "V_yamashita_lcT": "shape (calibrated model)",
+        "V_yamashita_ratio": "shape (calibrated model)",
+        "V_breunlich_lambdac": "anchor-consistency",
+        "V_faifman_peak": "anchor-consistency",
+        "V_petitjean_omega": "independent",
+        "V_faifman_900K": "independent",
+        "V_faifman_lowT": "independent",
+        "V_nagamine_trend": "independent",
+    }
+    assert {tid: r.category for tid, r in res.items()} == expected
+    for r in res.values():
+        assert r.category in validate.CATEGORIES
+
+
+def test_categories_are_the_pinned_literals():
+    """The claim-tier literals are pinned (VALIDATION.md, the README trust map, and docs depend on them)."""
+    assert validate.CATEGORIES == (
+        "self-consistency",
+        "reproduction (fed input)",
+        "anchor-consistency",
+        "shape (calibrated model)",
+        "independent",
+    )
+
+
+def test_distinct_test_count_dedups_shape_rows():
+    """The two Yamashita shape rows share a dedup group and are counted once (10 distinct of 11)."""
+    results = validate.run(load_rates())
+    assert len(results) == 11
+    groups = [r.dedup_group for r in results if r.target_id in ("V_yamashita_lcT", "V_yamashita_ratio")]
+    assert len(groups) == 2 and groups[0] and groups[0] == groups[1]  # shared, non-empty group
+    assert "Distinct tests: 10" in validate.report_markdown(results)
+
+
+def test_registered_fail_targets():
+    """The three independent targets FAIL by design and are labelled registered findings."""
+    res = _by_id()
+    for tid in ("V_petitjean_omega", "V_faifman_900K", "V_faifman_lowT"):
+        r = res[tid]
+        assert r.passed is False, f"{tid} unexpectedly passed (predicted {r.predicted})"
+        assert "registered" in r.note
+    # the ledger pushforward omega_s0*(1-R_col) = 0.55705% against the [0.40,0.50] band
+    assert res["V_petitjean_omega"].predicted == pytest.approx(0.55705, rel=1e-3)
+
+
+def test_summary_counts():
+    """The summary line reports the class-tiered counts, including zero passing independent rows."""
+    md = validate.report_markdown(validate.run(load_rates()))
+    summary = next(ln for ln in md.splitlines() if ln.startswith("**Summary"))
+    assert "(0 independent)" in summary
+    assert "3 fail" in summary
+    assert "Distinct tests:" in summary
+
+
+def test_expected_fail_guard():
+    """A registered expected-FAIL that PASSES is a bug/tolerance error, not a success (never ship it)."""
+    res = _by_id()
+    for tid in ("V_petitjean_omega", "V_faifman_900K", "V_faifman_lowT"):
+        assert res[tid].passed is False, (
+            f"surprise PASS on a registered expected-FAIL target {tid} -- STOP and root-cause "
+            "(these are pre-registered to FAIL; see PRE_REGISTRATION.md)"
+        )
+
+
+def test_physics_mutation_flips_verdicts():
+    """The suite CAN fail on a physics change: mutate an input/resonance -> a verdict moves."""
+    import dataclasses
+
+    import openmucf.formation as formation
+    from openmucf.rates import RatesTable, omega_fraction
+
+    base = load_rates()
+    base_pred = {r.target_id: r for r in validate.run(base)}["V_petitjean_omega"].predicted
+
+    # (i) R_col -> 0.60 drives V_petitjean_omega's derived sticking down toward/through the band.
+    patched = dict(base._rates)
+    patched["R_col"] = dataclasses.replace(patched["R_col"], value=0.60)
+    mut = RatesTable(patched)
+    pred = {r.target_id: r for r in validate.run(mut)}["V_petitjean_omega"].predicted
+    assert pred == pytest.approx(omega_fraction(base["omega_s0"]) * (1.0 - 0.60) * 100.0)
+    assert pred < base_pred  # moved toward the pass side (physics-driven, CSV/ledger-sourced)
+
+    # (ii) halve the measured F=1 peak amplitude -> V_faifman_peak drops out of its +-25% band -> FAIL.
+    e_r, amp, wid = formation._RESONANCES[1][0]
+    orig_f1 = list(formation._RESONANCES[1])
+    try:
+        formation._RESONANCES[1][0] = (e_r, 0.5 * amp, wid)
+        res = {r.target_id: r for r in validate.run(load_rates())}
+        assert res["V_faifman_peak"].passed is False
+    finally:
+        formation._RESONANCES[1][:] = orig_f1

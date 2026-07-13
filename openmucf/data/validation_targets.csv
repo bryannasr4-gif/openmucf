@@ -1,5 +1,5 @@
 target_id,observable,value,unit,unc,conditions,source_bibkey,source_locator,tolerance,notes
-V_petitjean_omega,omega_s_eff,0.45,percent,0.05,"liquid D-T; phi~1.2; c_t~0.4-0.5",Breunlich1989,"-","+-0.05 band","Measured effective sticking; below theory; weak density/composition dependence in liquid"
+V_petitjean_omega,omega_s_eff,0.45,percent,0.05,"liquid D-T; phi~1.2; c_t~0.4-0.5",Breunlich1989,"-","[0.40,0.50]","Measured effective sticking; below theory; weak density/composition dependence in liquid; tolerance restated as explicit interval 2026-07-12; band unchanged"
 V_petitjean_Xmu,X_mu,113,fusions_per_muon,0.0,"liquid high density",Breunlich1989,"-","[100,150]","Record-class yield; pairs with omega_s_eff and lambda_c_max"
 V_breunlich_lambdac,lambda_c,1.45e8,s^-1,0.0,"liquid; high density",Breunlich1989,"-","+-30%","Max measured cycling rate"
 V_kouchen_base,X_mu,112.6,fusions_per_muon,0.0,"phi=1.25; c_D=c_T=0.5; omega_s_eff=0.557%; collision-only",KouChen2026,"baseline","+-10%","Engine fed Kou-Chen inputs must reproduce this (V4)"
@@ -10,3 +10,5 @@ V_faifman_peak,lambda_dtmu_peak,7.1e9,s^-1,1.8e9,"E=0.423 eV; F=1; ortho-D2",Fuj
 A_acceleron_density,density,2.4,phi,0.0,"933 MPa; 100 K (2024 run)",Kalow2026,"Results","context-only","Acceleron DAC max density reached; regime anchor (not yet a measured rate)"
 A_acceleron_anomaly,omega_s_below_theory,10-50,percent_below,0.0,"high density (cryogenic solid / DAC regime)",Kalow2026,"Introduction","context-only","Measured omega_s 10-50% below standard theory -> the flagship's target; pre-registered as possibly-unconstrained"
 V_yamashita_ratio,lambda_c_ratio_800_300,1.45,ratio,0.0,"gas; phi~0.4; c_t~0.5; engine ratio of implied lambda_c at 800 K vs 300 K",YamashitaKino2022,"Fig.3a (digitized ratio)","+-30%","Executes the pre-registered ratio clause (PRE_REGISTRATION.md amendment note 2026-07-01); digitized ratio needs_verification until full-curve digitization"
+V_faifman_900K,lambda_dtmu_thermal,2.3e9,s^-1,0.0,"Maxwellian average; T=900 K; phi=1; statistical hyperfine mix 3/4 F=1 + 1/4 F=0",Faifman1989,"-","+-50%","Independent check of the formation module against the ledger lambda_dtmu_900K row (needs_verification carried from rates.csv); registered expected-FAIL 2026-07-12: the v1 placeholder sits ~20x low"
+V_faifman_lowT,lambda_dtmu_energy,2e10,s^-1,0.0,"E=0.2 eV; F=0 (low-T epithermal point)",Faifman1989,"-","+-50%","Independent energy-resolved check against the ledger lambda_dtmu_lowT row (needs_verification carried); registered expected-FAIL 2026-07-12: ~17x low"

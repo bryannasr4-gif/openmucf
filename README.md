@@ -4,14 +4,17 @@
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-197%2F200%20(Linux%20CI%20%2B%20Windows)-brightgreen.svg)
-![Status](https://img.shields.io/badge/status-v1%20research--grade-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-208%2F211%20(Linux%20CI%20%2B%20Windows)-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-v1%20open%20infrastructure%20%2B%20honest%20findings-blue.svg)
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
 
-> Status: **v1 spine complete and validated** (Phases 0–2). The high-density effective-sticking surrogate
-> (Phase 3) is the next capability — planned, not yet started (needs HPC + a gold-standard cross-section
-> source). See `MODEL_SPEC.md` for the model formulation, `LITERATURE.md` for the sourced rate ledger, and `CHANGELOG.md` for release history.
+> Status: **v1 spine complete** (Phases 0–2): it reproduces the pre-registered reproduction/consistency
+> targets (see the class column in `VALIDATION.md`); independent-prediction targets are registered and
+> currently FAIL by design against the v1 placeholder formation model — the quantified motivation for the
+> sourced-table upgrade and the Phase-3 effective-sticking surrogate (planned, not yet started; needs HPC
+> + a gold-standard cross-section source). See `MODEL_SPEC.md` for the model formulation, `LITERATURE.md`
+> for the sourced rate ledger, and `CHANGELOG.md` for release history.
 
 μCF had a 2026 renaissance — J-PARC's direct ddμ\* resonance observation (Toyama et al., *Sci. Adv.* 2026),
 Acceleron Fusion's high-density diamond-anvil-cell program ([arXiv:2606.05333](https://arxiv.org/abs/2606.05333)),
@@ -29,17 +32,18 @@ shared substrate:
    field lacks: 13 curated scalar rates today; T/φ/F-dependent tables are the Phase-2 milestone).
 2. **Differentiable (JAX/diffrax) cycle-kinetics + net-electrical energy-balance engine** + a global UQ/Sobol
    auditor that turns point-estimate breakeven claims into **error-barred, falsifiable** verdicts.
-3. **A compute-trained effective-sticking/reactivation surrogate** `ω_s^eff(φ,T,c_t)` *(Phase 3)* so the
-   auditor *produces* the dominant rate instead of hard-coding it.
+3. **(Phase 3, planned — not yet built)** a compute-trained effective-sticking/reactivation surrogate
+   `ω_s^eff(φ,T,c_t)`, so that the auditor will *produce* the dominant rate instead of hard-coding it.
+   Today ω_s0 and R are ledger scalars.
 
 ## Install
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 200 tests (197 pass, 1 skipped-blocked, 2 slow deselected by default)
+pytest                 # 211 tests (208 pass, 1 skipped-blocked, 2 slow deselected by default)
 pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 seeded MCMC fits)
 ```
-Verified platforms: Windows x64 (py3.12) and Linux CI (py3.11/3.12/3.13) — 197/200 tests. The audited docs
+Verified platforms: Windows x64 (py3.12) and Linux CI (py3.11/3.12/3.13) — 208/211 tests. The audited docs
 regenerate byte-identically cross-architecture (`VALIDATION.md` matches on macOS arm64, Windows, and Linux),
 except the NUTS/MCMC-derived docs (`CALIBRATION.md`, `DESIGN.md`), which reproduce to Monte-Carlo tolerance.
 Windows note: enable long-path support (or use a short venv path) for the JAX install.
@@ -53,12 +57,14 @@ from openmucf.energy import EnergyChain
 rates = load_rates()                                   # validated FAIR ledger
 xmu = cycle.fusions_per_muon_from_conditions(rates, T=300, phi=1.2, c_t=0.5)
 print(float(xmu))                                      # ~114 fusions per muon
+# NOTE: ~114 is the ledger pushforward omega_s0*(1-R_col)=0.557% through the closed form -- the same
+# quantity the V_kouchen_base reproduction target checks; it is NOT an independent prediction (trust map below).
 print(EnergyChain().breakeven_xmu_sci())               # ~284 (scientific breakeven)
 print(EnergyChain().breakeven_xmu_net())               # ~2367 (net-electrical breakeven)
 ```
 Reproduce the findings and figures:
 ```bash
-make validate      # reproduce the literature (VALIDATION.md: 7 pass / 1 deferred / 0 fail)
+make validate      # reproduce the pre-registered targets (VALIDATION.md: 7 pass, 3 registered-FAIL findings, 1 deferred; class-tiered)
 make findings      # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 make systems       # Q Rosetta stone + energy-balance graph -> SYSTEMS.md
@@ -91,6 +97,18 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   basis, so a dimensionless "Q" is never quoted without its accounting. The self-first finding: our v1
   default η_acc = 0.30 was optimistic; Kelly's PSI-measured 0.18 moves the net-electrical breakeven
   ~2367 → ~3946 fusions/muon (linear in η_acc).
+
+Headline findings run on the closed form with measured-band inputs; the differentiable ODE engine is the
+structural workhorse for trajectories/twin/UQ cross-checks and is gated against the analytic closed form
+(the V1 self-consistency check, agreement < 1%), but no headline number depends on its multi-pool structure.
+
+## What you may cite (trust map)
+
+| tier | outputs | why |
+|---|---|---|
+| **GREEN — citable as-is** | muon-cost ledger + 10³-gap (`MUON_COST.md`), Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model |
+| **AMBER — citable with the stated basis** | calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, disclosed ω_s0/R degeneracy), X_μ at the 300 K liquid anchor | statistically sound but summary-statistic-based; cite WITH the basis caveat |
+| **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8) — a runtime warning fires in the RED regime |
 
 ## Forecast registry
 OpenMuCF keeps a registry of **pre-registered, hash-stamped probabilistic forecasts** in `forecasts/`

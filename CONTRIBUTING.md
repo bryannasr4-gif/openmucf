@@ -33,12 +33,12 @@ published results.
 ## 2. Running the suite
 
 ```bash
-pytest                 # 131 tests (129 pass, 1 skipped-blocked, 1 slow deselected); the ledger loader raises on any provenance/schema problem
+pytest                 # 211 tests (208 pass, 1 skipped-blocked, 2 slow deselected); the ledger loader raises on any provenance/schema problem
 pytest -m slow         # the ~9-min twin interval-calibration coverage test (deselected by default + in CI)
 ruff check .           # lint (must be clean)
 ruff format .          # auto-format
 
-make validate          # reproduce the pre-registered literature targets -> VALIDATION.md (7 pass / 1 deferred / 0 fail)
+make validate          # reproduce the pre-registered targets -> VALIDATION.md (7 pass, 3 registered-FAIL findings, 1 deferred; class-tiered)
 make findings          # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration       # Bayesian calibration + identifiability -> CALIBRATION.md
 make all               # lint + test + findings + calibration
@@ -156,10 +156,13 @@ Before opening a PR, confirm:
 - [ ] `status`, `validity_range`, and the uncertainty (`unc` + `unc_type`, plus `single_source` /
       `needs_verification` where relevant) are all filled per §3.
 - [ ] Nothing violates `CREDIBILITY_FIREWALL.md`.
-- [ ] **VALIDATION is unaffected, or the discrepancy is documented.** Run `make validate` — the gate must stay
-      **7 pass / 1 deferred / 0 fail**. If your change moves a validated target, that is not automatically wrong, but you
-      must explain it in the PR (and, if the physics genuinely changed, update `PRE_REGISTRATION.md` and say so
-      explicitly — never re-tune inputs to hit a pre-registered target).
+- [ ] **VALIDATION is unaffected, or the discrepancy is documented.** Run `make validate` — the committed
+      class-tiered scoreboard must not silently change: **7 pass, 3 registered independent-FAIL findings (fail
+      by design), 1 deferred**. The three `independent` targets are pre-registered to FAIL; a **PASS** on any of
+      them is the thing to investigate (a bug or a tolerance error), not a success. If your change moves a
+      validated target, that is not automatically wrong, but you must explain it in the PR (and, if the physics
+      genuinely changed, update `PRE_REGISTRATION.md` and say so explicitly — never re-tune inputs to hit a
+      pre-registered target).
 - [ ] If your change affects results, regenerate `FINDINGS.md` / `CALIBRATION.md` (`make findings`,
       `make calibration`) and commit the regenerated files rather than hand-editing them (see §6).
 
