@@ -13,11 +13,11 @@ def _rates():
     return load_rates()
 
 
-def test_case_ids_are_8_validation_plus_2_json():
+def test_case_ids_are_7_validation_plus_2_json():
     ids = bench.case_ids(_rates())
-    assert len(ids) == 10
+    assert len(ids) == 9
     assert set(bench.VALIDATION_IDS) | JSON_IDS == set(ids)
-    assert len(bench.VALIDATION_IDS) == 8
+    assert len(bench.VALIDATION_IDS) == 7
 
 
 def test_validation_ids_match_validate_emission():
@@ -27,7 +27,13 @@ def test_validation_ids_match_validate_emission():
     results = validate.run(_rates())
     emitted = {r.target_id for r in results}
     registered_fail = {r.target_id for r in results if r.passed is False and r.category == "independent"}
-    assert registered_fail == {"V_petitjean_omega", "V_faifman_900K", "V_faifman_lowT"}
+    assert registered_fail == {
+        "V_petitjean_omega",
+        "V_faifman_900K",
+        "V_faifman_lowT",
+        "V_yamashita_ratio",
+        "V_yamashita_curve",
+    }
     assert set(bench.VALIDATION_IDS) == emitted - registered_fail
 
 
@@ -65,13 +71,13 @@ def test_jones_case_ships_blocked_pending():
 
 def test_run_all_and_report_markdown_render_with_footnotes():
     results = bench.run_all(_rates())
-    assert len(results) == 10
+    assert len(results) == 9
     md = bench.report_markdown(results)
     assert "BENCHMARKS.md" in md
-    # the mapping/exclusion footnotes
-    assert "V_petitjean_omega" in md
+    # the mapping/exclusion footnotes (now five excluded registered-FAIL findings)
+    assert "V_petitjean_omega" in md and "V_yamashita_ratio" in md
     assert "A_acceleron_density" in md and "A_acceleron_anomaly" in md
-    # summary line reflects the committed scoreboard being unchanged (8 pass, 0 fail among 10)
+    # the friendly-reproduction registry excludes every registered FAIL, so it stays 0 fail
     assert "0 fail" in md
     # a generated public doc must carry no internal workstream id
     assert "WS-" not in md
