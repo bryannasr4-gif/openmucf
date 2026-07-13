@@ -16,27 +16,35 @@ noise digits) -> this verifies the diffrax solver + JAX autodiff machinery (it i
 independent test of the closed-form reduction; that reduction is the pre-registered V1 gate).
 
 ## 1. Which uncertainty actually controls the yield (global sensitivity)
-Sobol total-order indices $S_T$ (fraction of output variance each input drives, incl. interactions):
+Sobol first-order $S_1$ and total-order $S_T$ indices (fraction of output variance each input drives; $S_T$
+includes interactions), each with a 95% bootstrap CI (200 resamples, seeded => byte-stable):
 
 **X_mu (fusions per muon):**
-| input | $S_T$ |
-|---|---|
-| R | 0.620 |
-| lambda_c | 0.254 |
-| omega_s0_pct | 0.131 |
-| E_mu_GeV | 0.000 |
-| eta_acc | 0.000 |
-| eta_thermal | 0.000 |
+| input | $S_1$ (95% boot CI) | $S_T$ (95% boot CI) |
+|---|---|---|
+| R | 0.616 +/- 0.020 | 0.620 +/- 0.017 |
+| lambda_c | 0.249 +/- 0.014 | 0.254 +/- 0.008 |
+| omega_s0_pct | 0.130 +/- 0.011 | 0.131 +/- 0.004 |
+| E_mu_GeV | 0.000 +/- 0.000 | 0.000 +/- 0.000 |
+| eta_acc | 0.000 +/- 0.000 | 0.000 +/- 0.000 |
+| eta_thermal | 0.000 +/- 0.000 | 0.000 +/- 0.000 |
 
 **Q_net (net-electrical gain):**
-| input | $S_T$ |
-|---|---|
-| E_mu_GeV | 0.631 |
-| eta_acc | 0.427 |
-| eta_thermal | 0.017 |
-| R | 0.014 |
-| lambda_c | 0.006 |
-| omega_s0_pct | 0.003 |
+| input | $S_1$ (95% boot CI) | $S_T$ (95% boot CI) |
+|---|---|---|
+| E_mu_GeV | 0.541 +/- 0.027 | 0.631 +/- 0.023 |
+| eta_acc | 0.340 +/- 0.018 | 0.427 +/- 0.020 |
+| eta_thermal | 0.011 +/- 0.004 | 0.017 +/- 0.001 |
+| R | 0.009 +/- 0.003 | 0.014 +/- 0.001 |
+| lambda_c | 0.004 +/- 0.003 | 0.006 +/- 0.000 |
+| omega_s0_pct | 0.002 +/- 0.002 | 0.003 +/- 0.000 |
+
+The $S_T-S_1$ gap is the interaction share. For the top X_mu driver R it is
+**0.004** (the omega_s0 x R bilinear interaction): small, because the omega_s0 box
+is narrow, so R acts almost first-order here. Total-order ranking is stable across sample size and seed --
+$S_T(R)$ over N in {4096, 8192} x seed in {0, 1} =
+0.620, 0.620, 0.620, 0.620,
+top driver **R** stable across all four.
 
 **Finding.** Under the contested-range priors (see section 1b for the prior-width caveat), X_mu is controlled by the sticking/reactivation pair (`omega_s0`, `R`) and the cycling
 rate `lambda_c`; the muon cost and efficiencies do not enter it. But the *energy* question flips the
@@ -94,6 +102,9 @@ the Kou-Chen best case -- both correspond to conditions the liquid box excludes.
 
 P(Q_sci > 1) = 0.2% ; P(Q_net > 1) = 0.0%.
 
+State-of-knowledge (posterior) X_mu and Q intervals -- as opposed to the ignorance-box propagation above --
+are reported in CALIBRATION.md ("Posterior pushforward").
+
 ## 2b. Q_net by muon-cost tier
 Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To make the
 muon-cost gap (`MUON_COST.md`) legible as an energy-return statement, the SAME seeded forward-UQ Q_net is
@@ -134,7 +145,8 @@ liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:
   which is precisely the unmeasured question the MuFusE program tests.
 - **What would have to be true** for $N_\mu$=500: the (lambda_c, R) frontier runs from
   (2.28e8, R -> 1) to (3e8, R = 0.94); and even at infinite lambda_c,
-  omega_s_eff <= 0.2% i.e. **R >= 0.77** is required. For reference R ~ 0.35 is the model-derived
+  omega_s_eff <= 0.2% i.e. **R >= 0.77** is required (R >= 0.75-0.79 across the
+  omega_s0-box band -- higher initial sticking needs more reactivation). For reference R ~ 0.35 is the model-derived
   collisional value (Kou-Chen Eq.33) -- experiment pins only the product omega_s_eff ~ 0.45%, and our
   Kamimura-prior calibration posterior gives R = 0.46 +- 0.06.
 

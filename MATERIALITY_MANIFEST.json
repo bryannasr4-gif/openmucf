@@ -203,7 +203,7 @@
   ],
   "generated_by": "scripts/generate_materiality.py",
   "inputs": {
-    "findings_manifest_sha256": "574936c9fef7edd8246aecba39af4c82db85bfbd522e5b0db3e01d876a6c2a51",
+    "findings_manifest_sha256": "16edd52eaa4261efc785ddce0807799be6d71d7afb12287a8688ea6cb1b44741",
     "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784"
   }
 }

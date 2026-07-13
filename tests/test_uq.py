@@ -25,6 +25,26 @@ def test_sobol_isolates_the_drivers_of_xmu():
     assert s["ST"]["lambda_c"] > 0.1
 
 
+def test_sobol_cis_present_and_ranking_stable():
+    """sobol_indices returns bootstrap CIs, and the top-1 total-order driver is identical across
+    N in {4096, 8192} x seed in {0, 1} (the ranking is not a sampling artifact)."""
+    tops = set()
+    for N in (4096, 8192):
+        for seed in (0, 1):
+            s = uq.sobol_indices(N=N, output="X_mu", seed=seed)
+            assert set(s) == {"S1", "ST", "S1_conf", "ST_conf"}
+            assert all(s["ST_conf"][k] >= 0 for k in s["ST_conf"])
+            tops.add(max(s["ST"], key=s["ST"].get))
+    assert tops == {"R"}, tops  # one identical top driver across all four cells
+
+
+def test_breakeven_R_required_band():
+    """The R>=0.77 requirement carries an omega_s0-box band (rises with initial sticking)."""
+    r = uq.breakeven_audit(n=50_000)
+    assert r["R_required_band_lo"] < r["R_required_at_infinite_lambda_c"] < r["R_required_band_hi"]
+    assert 0.70 < r["R_required_band_lo"] < r["R_required_band_hi"] < 0.85
+
+
 def test_forward_uq_net_electrical_below_breakeven():
     r = uq.forward_uq(n=50_000)
     assert 50 < r["X_mu"]["med"] < 400

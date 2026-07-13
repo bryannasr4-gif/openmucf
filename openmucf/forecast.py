@@ -34,11 +34,18 @@ from .rates import RATES_CSV
 
 # --- Pre-registered constants (do not adjust after seeing outputs; see FORECAST_PROTOCOL.md) ----------
 # Chain settings mirror scripts/generate_calibration.py:19 (the Kamimura-informative chain).
-# calibrate.run_mcmc DEFAULTS differ (800/2000/uniform), so every argument is passed explicitly below.
+# calibrate.run_mcmc DEFAULTS differ, so every argument is passed explicitly below.
 NUM_WARMUP = 1000
 NUM_SAMPLES = 4000
 SEED = 0
 OMEGA_S0_PRIOR = ("normal", 0.857, 0.03)  # Kamimura 0.857 +- 0.03 %
+# PINNED to the FC-001 registered realization -- never change while a card is registered against it
+# (the FC-001 registered-card freeze). calibrate widened its DEFAULT R box to (0.00, 0.80) and now
+# defaults to 4 chains; the
+# registered card was computed with a SINGLE chain and the OLD R box Uniform(0.10, 0.60), so both are
+# pinned here explicitly. FC-002+ use the new calibrate defaults.
+R_PRIOR = (0.10, 0.60)     # registered-realization R box (calibrate's OLD default)
+NUM_CHAINS = 1             # registered-realization single chain
 
 PHI_GRID = (1.2, 2.0, 2.4)      # D7 scoring grid
 PHI_ANCHOR = 1.2                # D1 canonical liquid operating point (validate.py _OP)
@@ -93,6 +100,8 @@ def posterior_samples() -> dict:
         num_samples=NUM_SAMPLES,
         seed=SEED,
         omega_s0_prior=OMEGA_S0_PRIOR,
+        R_prior=R_PRIOR,      # pinned OLD box (the FC-001 freeze; calibrate default now widened)
+        num_chains=NUM_CHAINS,  # pinned single chain (the FC-001 freeze; calibrate default now 4)
     )
     lam_c = np.asarray(s["lambda_c"])
     return {
@@ -319,15 +328,26 @@ def _env() -> dict:
 
 def _scoring_rules() -> dict:
     return {
+        "interval_score": (
+            "HEADLINE proper score (both prediction types): Winkler interval score "
+            "IS_alpha = (hi - lo) + (2/alpha)*(lo - y)*[y<lo] + (2/alpha)*(y - hi)*[y>hi], reported at "
+            "interval_score_68 (alpha=0.32) and interval_score_95 (alpha=0.05); lower is better. One "
+            "number scores a bracket, so Scenario A (ensemble) and Scenario B (bracket) are directly "
+            "comparable on a single strictly-proper score. See FORECAST_PROTOCOL.md sec.5. "
+            "Applies at RESOLUTION-time scoring (scoring code); the frozen FC-001 card is untouched."
+        ),
         "ensemble": {
-            "metrics": ["CRPS", "interval_coverage"],
+            "metrics": ["interval_score", "CRPS", "interval_coverage"],
             "crps_formula": "CRPS = mean|X - y| - (1/(2 n^2)) sum_{i,j} |x_i - x_j|  (empirical-CDF form)",
             "intervals": ["ci68", "ci95"],
         },
         "bracket": {
-            "metrics": ["interval_coverage", "per_limb_CRPS"],
+            "metrics": ["interval_score", "interval_coverage", "per_limb_CRPS"],
+            "interval_score_headline": (
+                "the Winkler interval score on the envelope-union ci68/ci95 is the bracket HEADLINE metric"
+            ),
             "per_limb_crps": (
-                "reported as a [best, worst] pair over the two structural limbs; NO headline CRPS"
+                "reported as a [best, worst] pair over the two structural limbs (diagnostic); no headline"
             ),
             "note": (
                 "coverage uses the envelope-union ci68/ci95 of the floor (saturation at the phi<=1.45 "
@@ -611,6 +631,25 @@ def crps_empirical(samples, y: float) -> float:
     return term1 - term2
 
 
+def interval_score(lo: float, hi: float, y: float, alpha: float) -> float:
+    """Winkler / (negatively-oriented) interval score of a central (1-alpha) interval [lo, hi] vs truth y::
+
+        IS_alpha = (hi - lo) + (2/alpha)*(lo - y)*[y < lo] + (2/alpha)*(y - hi)*[y > hi]
+
+    Strictly proper for interval forecasts: it rewards SHARPNESS (the width term) and penalizes a MISS
+    (2/alpha times the shortfall). Lower is better. Unlike per-limb CRPS or a raw coverage count, one
+    number scores a bracket, so Scenario A (ensemble) and Scenario B (bracket) are comparable on one
+    proper score. alpha = 0.32 for a 68% interval, 0.05 for a 95% interval.
+    """
+    lo, hi, y = float(lo), float(hi), float(y)
+    penalty = 0.0
+    if y < lo:
+        penalty += (2.0 / alpha) * (lo - y)
+    if y > hi:
+        penalty += (2.0 / alpha) * (y - hi)
+    return (hi - lo) + penalty
+
+
 def coverage(intervals, ys) -> dict:
     """Fraction of ``ys`` covered by matching ``intervals`` ([lo, hi] pairs). ``ys`` may be a scalar."""
     intervals = list(intervals)
@@ -644,13 +683,18 @@ def score_card(card: dict, resolved: dict, samples: dict | None = None) -> dict:
             arr = _predictive_arrays(samples, phi, name)[obs]
             cov = {"ci68": bool(pred["ci68"][0] <= y <= pred["ci68"][1]),
                    "ci95": bool(pred["ci95"][0] <= y <= pred["ci95"][1])}
+            # HEADLINE proper score for BOTH types (comparable A vs B): Winkler interval score at 68/95%.
+            is68 = interval_score(pred["ci68"][0], pred["ci68"][1], y, 0.32)
+            is95 = interval_score(pred["ci95"][0], pred["ci95"][1], y, 0.05)
             if pred["prediction_type"] == "ensemble":
                 sres[tid] = {"prediction_type": "ensemble",
+                             "interval_score_68": is68, "interval_score_95": is95,
                              "crps": crps_empirical(arr, y), "coverage": cov}
             else:
                 c_floor = crps_empirical(arr["floor"], y)
                 c_ceil = crps_empirical(arr["ceiling"], y)
                 sres[tid] = {"prediction_type": "bracket",
+                             "interval_score_68": is68, "interval_score_95": is95,
                              "crps_per_limb": [min(c_floor, c_ceil), max(c_floor, c_ceil)],
                              "coverage": cov}
         out[name] = sres
