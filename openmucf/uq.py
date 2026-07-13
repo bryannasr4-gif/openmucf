@@ -139,11 +139,14 @@ def _salib_api():
     return sample, analyze
 
 
-def sobol_indices(N=4096, output="X_mu", seed=0, bounds=None):
-    """First (S1) and total (ST) order Sobol indices for 'X_mu' or 'Q_net'. Seeded for reproducibility.
+def sobol_indices(N=4096, output="X_mu", seed=0, bounds=None, num_resamples=200):
+    """First (S1) and total (ST) order Sobol indices for 'X_mu' or 'Q_net', WITH bootstrap CIs.
 
-    ``bounds`` overrides the per-input sampling box (default: the contested-range box from ``PARAMS``);
-    pass a custom box to probe how the ranking depends on prior width (see :func:`sobol_robustness`).
+    Seeded (sample seed AND bootstrap seed) for reproducibility, so both the point estimates and the
+    ``S1_conf`` / ``ST_conf`` 95% bootstrap half-widths are byte-stable across environments. ``bounds``
+    overrides the per-input sampling box (default: the contested-range box from ``PARAMS``); pass a custom
+    box to probe how the ranking depends on prior width (see :func:`sobol_robustness`). Returns a dict with
+    keys ``S1``, ``ST``, ``S1_conf``, ``ST_conf`` (each an input-name -> value mapping).
     """
     sample, analyze = _salib_api()
     if bounds is None:
@@ -154,8 +157,11 @@ def sobol_indices(N=4096, output="X_mu", seed=0, bounds=None):
         Y = xmu(X[:, 0], X[:, 1], X[:, 2])
     else:
         Y = q_net(X[:, 0], X[:, 1], X[:, 2], X[:, 3], X[:, 4], X[:, 5])
-    Si = analyze(problem, Y, calc_second_order=False, print_to_console=False)
-    return {"S1": dict(zip(NAMES, Si["S1"], strict=False)), "ST": dict(zip(NAMES, Si["ST"], strict=False))}
+    Si = analyze(
+        problem, Y, calc_second_order=False, print_to_console=False,
+        num_resamples=num_resamples, seed=seed,
+    )
+    return {k: dict(zip(NAMES, Si[k], strict=False)) for k in ("S1", "ST", "S1_conf", "ST_conf")}
 
 
 def sobol_robustness(N=8192, output="X_mu", rel=0.15, seed=0):
@@ -232,6 +238,14 @@ def breakeven_audit(n=400_000, seed=1):
     #     Computed (not transcribed) so the shipped "R >= 0.77" can never silently drift from the
     #     omega_s0 nominal it derives from (cross-vendor review hardening, 2026-07-08).
     R_req_inf_lc = 1.0 - (1.0 / target) / (os0 / 100.0)
+    # (e) uq-6: the same infinite-lambda_c requirement over the FROZEN omega_s0 box edges + nominal, so the
+    #     "R >= 0.77" point value carries its box-band (higher initial sticking needs MORE reactivation).
+    os0_lo = min(NOMINAL["omega_s0_pct"], PARAMS[0].low)
+    os0_hi = max(NOMINAL["omega_s0_pct"], PARAMS[0].high)
+    R_req_inf_band = {
+        f"{o:.3f}": float(1.0 - (1.0 / target) / (o / 100.0))
+        for o in (PARAMS[0].low, os0, PARAMS[0].high)
+    }
 
     return {
         "measured_ranges": {p.name: [p.low, p.high] for p in PARAMS},
@@ -242,6 +256,10 @@ def breakeven_audit(n=400_000, seed=1):
         "lambda_c_needed_for_500_zero_sticking": float(lc_needed_decay_only),
         "R_required_at_lambda_c_3e8": float(R_req),
         "R_required_at_infinite_lambda_c": float(R_req_inf_lc),
+        "R_required_at_infinite_lambda_c_band": R_req_inf_band,
+        # R_required rises with initial sticking, so the band lo is at the omega_s0-box LOW edge:
+        "R_required_band_lo": float(1.0 - (1.0 / target) / (os0_lo / 100.0)),
+        "R_required_band_hi": float(1.0 - (1.0 / target) / (os0_hi / 100.0)),
         "note": (
             "Scope: liquid-scale density (phi <= ~1.45), where lambda_c <= 1.45e8 is the measured max. "
             "To reach X_mu=500 there you need BOTH lambda_c >~ 2.3-3e8 AND reactivation R >~ 0.9 "
