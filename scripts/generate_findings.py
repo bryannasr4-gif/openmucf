@@ -253,6 +253,10 @@ P(Q_sci > 1) = {H["P_qsci_gt1"]} ; P(Q_net > 1) = {H["P_qnet_gt1"]}.
 State-of-knowledge (posterior) X_mu and Q intervals -- as opposed to the ignorance-box propagation above --
 are reported in CALIBRATION.md ("Posterior pushforward").
 
+Structural, one-sided: the parametric intervals above sit on the v1 reduced network; the known deferred
+channels bias X_mu DOWNWARD by up to ~15% combined (ttmu side-cycle, un-pinned pending acquisition;
+d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-edge-faithful.
+
 ## 2b. Q_net by muon-cost tier
 Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To make the
 muon-cost gap (`MUON_COST.md`) legible as an energy-return statement, the SAME seeded forward-UQ Q_net is
