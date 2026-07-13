@@ -64,16 +64,22 @@ def _v1_error_norm(y):
 
 def _field(t, y, args):
     x_dmu, x_tmu1, x_tmu0 = y[0], y[1], y[2]
-    lam0, lam_dt, lam10, lf1, lf0, ose, lam_tt, w_tt, lam_he = args
+    lam0, lam_dt, lam10, lf1, lf0, ose, lam_tt, w_tt, lam_he, f_d = args
     F = lf1 * x_tmu1 + lf0 * x_tmu0  # fusion (= formation) flux out of the tmu pool
     recyc = (1.0 - ose) * F  # muons that survive sticking re-form tmu (3/4 F=1, 1/4 F=0)
     tt1 = lam_tt * x_tmu1  # ttmu formation flux out of each tmu hyperfine pool
     tt0 = lam_tt * x_tmu0
     tt_return = (1.0 - w_tt) * (tt1 + tt0)  # non-stuck tt-branch muons re-enter the tmu pool
     he = lam_he * x_dmu  # He-3 scavenging out of the dmu pool (absorbing)
-    dx_dmu = -(lam_dt + lam0 + lam_he) * x_dmu
-    dx_tmu1 = lam_dt * x_dmu - (lam10 + lf1 + lam0 + lam_tt) * x_tmu1 + 0.75 * (recyc + tt_return)
-    dx_tmu0 = lam10 * x_tmu1 - (lf0 + lam0 + lam_tt) * x_tmu0 + 0.25 * (recyc + tt_return)
+    # d-recapture routing: a fraction f_d of the surviving-sticking flux re-enters via the dmu pool
+    # (the freed muon recaptures on d and must transfer again) instead of re-forming tmu directly.
+    # f_d=0.0 (default) makes the two new terms IEEE-exact identities (x + 0.0 == x; 1.0*x == x), so the
+    # channels-/recapture-off engine reduces to the locked v1 step sequence bit-for-bit (reduction gate).
+    dx_dmu = -(lam_dt + lam0 + lam_he) * x_dmu + f_d * recyc
+    dx_tmu1 = (
+        lam_dt * x_dmu - (lam10 + lf1 + lam0 + lam_tt) * x_tmu1 + 0.75 * ((1.0 - f_d) * recyc + tt_return)
+    )
+    dx_tmu0 = lam10 * x_tmu1 - (lf0 + lam0 + lam_tt) * x_tmu0 + 0.25 * ((1.0 - f_d) * recyc + tt_return)
     dN_fus = F  # d-t 14-MeV-neutron counter ONLY; tt-branch fusion neutrons are out of scope in v1
     dstuck = ose * F
     ddec = lam0 * (x_dmu + x_tmu1 + x_tmu0)
@@ -98,15 +104,18 @@ def solve_cycle(
     lambda_tt=0.0,
     omega_tt=0.0,
     lambda_he=0.0,
+    f_d=0.0,
     saveat=None,
 ):
     """Integrate the cycle to ``t1`` (long enough that the muon is gone). Returns the diffrax solution.
 
     The three WS-N loss-channel rates (``lambda_tt``, ``omega_tt``, ``lambda_he``) are keyword-only and
     default to 0.0, so the engine default is channels-OFF and reduces bit-exactly to the v1 network
-    (reduction gate G-N1). ``saveat`` defaults to ``diffrax.SaveAt(t1=True)`` (today's behavior exactly);
-    pass an explicit ``diffrax.SaveAt(ts=...)`` to record a trajectory (the hook WS-N's reduction check and
-    WS-T's twin need).
+    (reduction gate G-N1). ``f_d`` (default 0.0) is the d-recapture routing fraction: the share of the
+    surviving-sticking flux re-entering via the dmu pool instead of re-forming tmu directly; f_d=0.0 is an
+    IEEE-exact identity, so the default engine is unchanged. ``saveat`` defaults to
+    ``diffrax.SaveAt(t1=True)`` (today's behavior exactly); pass an explicit ``diffrax.SaveAt(ts=...)`` to
+    record a trajectory (the hook WS-N's reduction check and WS-T's twin need).
 
     y0 compatibility: a length-6 ``y0`` is padded with two zeros to length 8 before solving, so every
     existing 6-element caller keeps working unchanged; the default ``y0`` is the 8-element vector.
@@ -119,7 +128,7 @@ def solve_cycle(
             y0 = jnp.concatenate([y0, jnp.zeros(2, dtype=y0.dtype)])
     args = (
         lambda_0, lambda_dt, lambda_10, lambda_form1, lambda_form0, omega_s_eff,
-        lambda_tt, omega_tt, lambda_he,
+        lambda_tt, omega_tt, lambda_he, f_d,
     )
     return diffrax.diffeqsolve(
         diffrax.ODETerm(_field),
@@ -161,6 +170,7 @@ def params_from_conditions(
     eta=None,
     c_he=0.0,
     include_loss_channels=False,
+    q_1s=None,
 ):
     """Assemble cycle rates from the ledger + physical conditions (T [K], density phi, tritium fraction c_t).
 
@@ -176,6 +186,12 @@ def params_from_conditions(
     * c_he`` (He-3 scavenging; ``c_he`` is a STATIC per-run helium fraction, never time-evolved). Channels
     OFF returns all three at 0.0, so the engine default reproduces v1 exactly (the three ledger rows are
     needs_verification and I3 forbids introducing new physics on unverified values as a silent default).
+
+    ``q_1s`` (default None = recapture OFF, f_d=0.0) is the contested cascade ground-state fraction of the
+    d-recapture routing: ``None`` keeps v1's direct recycle-to-tmu, a number sets the routing fraction
+    ``f_d = (1 - c_t) * q_1s`` -- the freed muon recaptures on deuterium with probability ~ the deuterium
+    fraction (1 - c_t), ground-state fraction q_1s re-enters via the dmu pool. This is a first-order
+    construction (docs/accounting.md d-recapture row); the deferred _CALIB unfolding stays acquisition-gated.
     """
     from . import formation
     from .analytic import effective_sticking
@@ -197,6 +213,7 @@ def params_from_conditions(
         lambda_he = rates.value("lambda_dhe3") * phi * c_he
     else:
         lambda_tt = omega_tt = lambda_he = 0.0
+    f_d = 0.0 if q_1s is None else (1.0 - c_t) * q_1s
     return dict(
         lambda_0=lambda_0,
         lambda_dt=lambda_dt,
@@ -207,6 +224,7 @@ def params_from_conditions(
         lambda_tt=lambda_tt,
         omega_tt=omega_tt,
         lambda_he=lambda_he,
+        f_d=f_d,
     )
 
 

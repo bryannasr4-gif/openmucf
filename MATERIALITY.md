@@ -19,10 +19,12 @@ Operating points (fixed conditions; c_t=0.5 throughout):
 - **OP-B** (phi=1.2, T=800 K) -- high-T; **OP-C** (phi=2.0, T=150 K) -- MuFusE mid;
   **OP-D** (phi=2.4, T=100 K) -- MuFusE peak.
 
-Channels covered: the two absorbing loss channels in the v1.1 network (ttmu side-branch; 3He scavenging).
-The ddmu / d-d branch and the epithermal-formation (eta) enhancement are OUT of scope here:
-the ddmu channel does not exist in the engine yet (documented -5..-15% headroom, see docs/accounting.md),
-and eta is already reported as its own structural bracket in FINDINGS.md section 1c (one-home rule I5).
+Channels covered: the two absorbing loss channels in the v1.1 network (ttmu side-branch; 3He scavenging),
+plus the per-cycle d-recapture / q_1s routing (section 4 -- a re-routing, not an absorbing loss: the freed
+muon detours through the dmu pool and races decay one extra transfer). The ddmu / d-d branch and the
+epithermal-formation (eta) enhancement remain OUT of scope here: the ddmu channel does not exist in the
+engine yet (documented -5..-15% headroom, see docs/accounting.md), and eta is already reported as its own
+structural bracket in FINDINGS.md section 1c (one-home rule I5).
 
 ## 2. 3He scavenging channel (LIVE): dmu + 3He
 The dmu + 3He scavenging rate `lambda_dhe3` = 1.92e8 s^-1 (Fotev et al. 2020, arXiv:2001.09927; open) is
@@ -61,11 +63,52 @@ not zero:
 | OP-C (phi=2, T=150 K, c_t=0.5) | blocked -- pending acquisition |
 | OP-D (phi=2.4, T=100 K, c_t=0.5) | blocked -- pending acquisition |
 
-## 4. Summary (headline operating points OP-B / OP-C / OP-D only)
-Across the headline operating points OP-B (high-T), OP-C (MuFusE mid) and OP-D (MuFusE peak), the only
-live absorbing-loss channel (3He scavenging) contributes a one-sided structural bracket no larger than
+## 4. d-recapture / q_1s routing bracket (LIVE)
+The freed muon that survives sticking is, in v1, recycled straight back to the tmu pool (3/4 F=1, 1/4 F=0).
+The per-cycle **d-recapture** correction routes a fraction `f_d = (1 - c_t) * q_1s` of that surviving flux
+through the **dmu** pool instead (the muon recaptures on deuterium and must transfer again, racing decay
+one extra step); `q_1s` is the contested cascade ground-state fraction. This is a re-routing, not an
+absorbing loss -- but it lowers X_mu, so the bracket is one-sided and negative. It is now explicit in
+`cycle.py` (`params_from_conditions(q_1s=...)`); the `_CALIB` unfolding that would re-attribute this leg
+against the 300 K anchor stays acquisition-gated (docs/accounting.md).
+
+| operating point | X_mu (recapture OFF) | X_mu (q_1s=0.4) | bracket | X_mu (q_1s=0.7) | bracket | X_mu (q_1s=1.0) | bracket |
+|---|---|---|---|---|---|---|---|
+| OP-A (phi=1.25, T=300 K, c_t=0.5) -- anchor-adjacent | 116.164 | 109.407 | -6.756 | 104.835 | -11.329 | 100.629 | -15.535 |
+| OP-B (phi=1.2, T=800 K, c_t=0.5) | 125.231 | 117.115 | -8.116 | 111.686 | -13.545 | 106.738 | -18.493 |
+| OP-C (phi=2, T=150 K, c_t=0.5) | 128.779 | 123.477 | -5.302 | 119.778 | -9.001 | 116.294 | -12.485 |
+| OP-D (phi=2.4, T=100 K, c_t=0.5) | 131.643 | 126.990 | -4.653 | 123.710 | -7.933 | 120.596 | -11.047 |
+
+At the anchor-condition (300 K, 1.2 phi, c_t=0.5) MODEL_SPEC section-8 estimated this leg at -6% .. -14%
+for q_1s=0.4..1.0; the explicit computation confirms it to rounding (-5.96% .. -13.68%; see the MODEL_SPEC
+dated note). Above the compressed-gas onset the formation model is a placeholder (RED tier), so OP-C/OP-D
+q_1s brackets share the off-anchor caveat of every off-anchor number here.
+
+## 5. Combined structural band (headline operating points)
+Summing the two LIVE channels -- 3He scavenging (c_He=1e-3, section 2) and d-recapture (q_1s=1.0,
+section 4) -- with the ttmu side-branch still **blocked** (section 3, un-pinned pending acquisition), the
+one-sided downward structural band across the headline operating points is (3He shown at 2 dp; the
+combined total is the full-precision sum):
+
+| operating point | d-recapture (q_1s=1.0) | 3He (c_He=1e-3) | ttmu | combined (live) | % of X_mu(OFF) |
+|---|---|---|---|---|---|
+| OP-B (phi=1.2, T=800 K, c_t=0.5) | -18.493 | -0.17 | blocked | -18.664 | -14.90% |
+| OP-C (phi=2, T=150 K, c_t=0.5) | -12.485 | -0.18 | blocked | -12.661 | -9.83% |
+| OP-D (phi=2.4, T=100 K, c_t=0.5) | -11.047 | -0.18 | blocked | -11.227 | -8.53% |
+
+The band is dominated by d-recapture at the maximal q_1s; 3He is a ~0.1% correction at these helium levels.
+The largest combined live band is **~14.9%** of X_mu (at OP-B), consistent
+with the ~10-15% one-sided structural headroom named in MODEL_SPEC section 8 -- and it is a LOWER bound,
+because the ttmu side-branch (blocked) would add further downward. These brackets are reported beside the
+parametric CI, never convolved into it.
+
+## 6. Summary (headline operating points OP-B / OP-C / OP-D only)
+Across the headline operating points OP-B (high-T), OP-C (MuFusE mid) and OP-D (MuFusE peak), the live
+absorbing-loss channel (3He scavenging) contributes a one-sided structural bracket no larger than
 about -0.18 X_mu units at 0.1% helium -- under ~0.6% of the section-2 forward-UQ CI width
-(33), and smaller still at 0.01% helium. The ttmu side-branch bracket is **blocked -- pending
+(33), and smaller still at 0.01% helium. The per-cycle d-recapture routing (section 4) is the
+dominant deferred correction: up to **~14.9%** of X_mu combined with 3He at
+OP-B (section 5), one-sided downward. The ttmu side-branch bracket is **blocked -- pending
 acquisition** and is deliberately NOT rendered as a zero. The anchor-adjacent OP-A row is listed for
 completeness only and carries no headline claim (docs/accounting.md). No bracket on this page is combined
 into any CI or likelihood.

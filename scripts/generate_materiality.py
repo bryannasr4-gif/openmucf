@@ -49,6 +49,8 @@ HEADLINE_OPS = ("OP-B", "OP-C", "OP-D")
 # Two illustrative tritium-decay-accumulation levels (static per-run helium fraction).
 C_HE_LEVELS: tuple[float, ...] = (1e-4, 1e-3)
 TRITIUM_HALFLIFE_YR = 12.32  # 3H beta decay -> 3He ingrowth driver (12.32 yr, standard)
+# d-recapture / q_1s routing levels (contested cascade ground-state fraction). f_d = (1 - c_t) * q_1s.
+Q1S_LEVELS: tuple[float, ...] = (0.4, 0.7, 1.0)
 
 FINDINGS_MANIFEST = "FINDINGS_MANIFEST.json"
 
@@ -95,6 +97,47 @@ def he_brackets(rates) -> dict:
     return out
 
 
+def _q1s_tag(q: float) -> str:
+    """Id-safe tag for a q_1s level, e.g. 0.4 -> 'q04', 1.0 -> 'q10'."""
+    return f"q{int(round(q * 10)):02d}"
+
+
+def q1s_brackets(rates) -> dict:
+    """Compute the d-recapture / q_1s routing brackets at every operating point.
+
+    Returns ``{op: {"off": X_off, q_1s: {"with": X_on, "bracket": X_on - X_off}, ...}}``. "off" is the
+    recapture-OFF v1 engine (byte-exact v1); "with" routes a fraction ``f_d = (1 - c_t) * q_1s`` of the
+    surviving-sticking flux through the dmu pool (one extra transfer that races decay), so the bracket is
+    one-sided and negative. This is a re-routing, NOT an absorbing loss (the muon is not removed).
+    """
+    out: dict = {}
+    for op, (phi, T, c_t) in OPERATING_POINTS.items():
+        x_off = float(cycle.fusions_per_muon_from_conditions(rates, T, phi, c_t))
+        rec = {"off": x_off}
+        for q in Q1S_LEVELS:
+            x_on = float(cycle.fusions_per_muon_from_conditions(rates, T, phi, c_t, q_1s=q))
+            rec[q] = {"with": x_on, "bracket": x_on - x_off}
+        out[op] = rec
+    return out
+
+
+def combined_band(he_br: dict, q1s_br: dict) -> dict:
+    """Combined one-sided downward structural band at the HEADLINE operating points: the sum of the two
+    live channels (3He scavenging at c_He=1e-3 + d-recapture at q_1s=1.0). The ttmu side-branch stays
+    blocked (un-pinned), so the true band can only be MORE negative than this live sum.
+
+    Returns ``{op: {"he": <3He bracket>, "q1s": <q_1s bracket>, "combined": <sum>, "pct": <% of X_off>}}``.
+    """
+    out: dict = {}
+    for op in HEADLINE_OPS:
+        x_off = he_br[op]["off"]
+        he_b = he_br[op][1e-3]["bracket"]  # 3He at the larger illustrative helium level
+        q_b = q1s_br[op][1.0]["bracket"]  # d-recapture at the maximal q_1s
+        combined = he_b + q_b
+        out[op] = {"he": he_b, "q1s": q_b, "combined": combined, "pct": 100.0 * combined / x_off}
+    return out
+
+
 def tt_blocked_status(rates) -> tuple[bool, str]:
     """Detect the WS-N sec.3.3 blocked-fallback marker on the ttmu formation-rate row.
 
@@ -133,6 +176,8 @@ def ingrowth_pct_per_month(halflife_yr: float = TRITIUM_HALFLIFE_YR) -> float:
 def build_headline(rates) -> dict:
     """Assemble the single-source-of-truth formatted strings shared by the doc and the manifest."""
     br = he_brackets(rates)
+    q1s_br = q1s_brackets(rates)
+    comb = combined_band(br, q1s_br)
     ci_lo, ci_hi = read_forward_uq_ci()
     is_blocked, tt_doc = tt_blocked_status(rates)
 
@@ -143,6 +188,22 @@ def build_headline(rates) -> dict:
             tag = _che_tag(c_he)
             H[f"{op}_with_{tag}"] = f"{br[op][c_he]['with']:.3f}"
             H[f"{op}_bracket_{tag}"] = f"{br[op][c_he]['bracket']:+.3f}"
+        for q in Q1S_LEVELS:
+            qt = _q1s_tag(q)
+            H[f"{op}_{qt}_with"] = f"{q1s_br[op][q]['with']:.3f}"
+            H[f"{op}_{qt}_bracket"] = f"{q1s_br[op][q]['bracket']:+.3f}"
+    for op in HEADLINE_OPS:
+        # 3He shown at 2 dp in the combined table (a summary rounding, distinct from the 3-dp section-2
+        # figure) so the combined row never re-uses a section-2 bracket string verbatim; q_1s and the
+        # combined total keep full 3-dp precision.
+        H[f"{op}_comb_he2"] = f"{comb[op]['he']:+.2f}"
+        H[f"{op}_comb_q1s"] = f"{comb[op]['q1s']:+.3f}"
+        H[f"{op}_comb_total"] = f"{comb[op]['combined']:+.3f}"
+        H[f"{op}_comb_pct"] = f"{comb[op]['pct']:+.2f}"
+    # the largest combined downward band across the headline operating points (drives the summary claim).
+    worst_op = min(HEADLINE_OPS, key=lambda op: comb[op]["pct"])
+    H["comb_worst_pct"] = f"{abs(comb[worst_op]['pct']):.1f}"
+    H["comb_worst_op"] = worst_op
     H["ci_lo"] = f"{ci_lo}"
     H["ci_hi"] = f"{ci_hi}"
     H["ci_width"] = f"{ci_hi - ci_lo}"
@@ -174,6 +235,36 @@ def _tt_table() -> str:
     return head + "\n".join(rows)
 
 
+def _q1s_table(H: dict) -> str:
+    head = (
+        "| operating point | X_mu (recapture OFF) | X_mu (q_1s=0.4) | bracket | X_mu (q_1s=0.7) "
+        "| bracket | X_mu (q_1s=1.0) | bracket |\n|---|---|---|---|---|---|---|---|\n"
+    )
+    q04, q07, q10 = _q1s_tag(0.4), _q1s_tag(0.7), _q1s_tag(1.0)
+    rows = []
+    for op in OPERATING_POINTS:
+        rows.append(
+            f"| {op_label(op)} | {H[f'{op}_off']} | {H[f'{op}_{q04}_with']} | {H[f'{op}_{q04}_bracket']} "
+            f"| {H[f'{op}_{q07}_with']} | {H[f'{op}_{q07}_bracket']} "
+            f"| {H[f'{op}_{q10}_with']} | {H[f'{op}_{q10}_bracket']} |"
+        )
+    return head + "\n".join(rows)
+
+
+def _combined_table(H: dict) -> str:
+    head = (
+        "| operating point | d-recapture (q_1s=1.0) | 3He (c_He=1e-3) | ttmu | combined (live) "
+        "| % of X_mu(OFF) |\n|---|---|---|---|---|---|\n"
+    )
+    rows = []
+    for op in HEADLINE_OPS:
+        rows.append(
+            f"| {op_label(op)} | {H[f'{op}_comb_q1s']} | {H[f'{op}_comb_he2']} | blocked "
+            f"| {H[f'{op}_comb_total']} | {H[f'{op}_comb_pct']}% |"
+        )
+    return head + "\n".join(rows)
+
+
 def build_markdown(H: dict) -> str:
     return f"""# MATERIALITY.md -- structural sensitivity brackets (auto-generated by `scripts/generate_materiality.py`)
 
@@ -198,10 +289,12 @@ Operating points (fixed conditions; c_t=0.5 throughout):
 - **OP-B** (phi=1.2, T=800 K) -- high-T; **OP-C** (phi=2.0, T=150 K) -- MuFusE mid;
   **OP-D** (phi=2.4, T=100 K) -- MuFusE peak.
 
-Channels covered: the two absorbing loss channels in the v1.1 network (ttmu side-branch; 3He scavenging).
-The ddmu / d-d branch and the epithermal-formation (eta) enhancement are OUT of scope here:
-the ddmu channel does not exist in the engine yet (documented -5..-15% headroom, see docs/accounting.md),
-and eta is already reported as its own structural bracket in FINDINGS.md section 1c (one-home rule I5).
+Channels covered: the two absorbing loss channels in the v1.1 network (ttmu side-branch; 3He scavenging),
+plus the per-cycle d-recapture / q_1s routing (section 4 -- a re-routing, not an absorbing loss: the freed
+muon detours through the dmu pool and races decay one extra transfer). The ddmu / d-d branch and the
+epithermal-formation (eta) enhancement remain OUT of scope here: the ddmu channel does not exist in the
+engine yet (documented -5..-15% headroom, see docs/accounting.md), and eta is already reported as its own
+structural bracket in FINDINGS.md section 1c (one-home rule I5).
 
 ## 2. 3He scavenging channel (LIVE): dmu + 3He
 The dmu + 3He scavenging rate `lambda_dhe3` = 1.92e8 s^-1 (Fotev et al. 2020, arXiv:2001.09927; open) is
@@ -230,11 +323,43 @@ not zero:
 
 {_tt_table()}
 
-## 4. Summary (headline operating points OP-B / OP-C / OP-D only)
-Across the headline operating points OP-B (high-T), OP-C (MuFusE mid) and OP-D (MuFusE peak), the only
-live absorbing-loss channel (3He scavenging) contributes a one-sided structural bracket no larger than
+## 4. d-recapture / q_1s routing bracket (LIVE)
+The freed muon that survives sticking is, in v1, recycled straight back to the tmu pool (3/4 F=1, 1/4 F=0).
+The per-cycle **d-recapture** correction routes a fraction `f_d = (1 - c_t) * q_1s` of that surviving flux
+through the **dmu** pool instead (the muon recaptures on deuterium and must transfer again, racing decay
+one extra step); `q_1s` is the contested cascade ground-state fraction. This is a re-routing, not an
+absorbing loss -- but it lowers X_mu, so the bracket is one-sided and negative. It is now explicit in
+`cycle.py` (`params_from_conditions(q_1s=...)`); the `_CALIB` unfolding that would re-attribute this leg
+against the 300 K anchor stays acquisition-gated (docs/accounting.md).
+
+{_q1s_table(H)}
+
+At the anchor-condition (300 K, 1.2 phi, c_t=0.5) MODEL_SPEC section-8 estimated this leg at -6% .. -14%
+for q_1s=0.4..1.0; the explicit computation confirms it to rounding (-5.96% .. -13.68%; see the MODEL_SPEC
+dated note). Above the compressed-gas onset the formation model is a placeholder (RED tier), so OP-C/OP-D
+q_1s brackets share the off-anchor caveat of every off-anchor number here.
+
+## 5. Combined structural band (headline operating points)
+Summing the two LIVE channels -- 3He scavenging (c_He=1e-3, section 2) and d-recapture (q_1s=1.0,
+section 4) -- with the ttmu side-branch still **blocked** (section 3, un-pinned pending acquisition), the
+one-sided downward structural band across the headline operating points is (3He shown at 2 dp; the
+combined total is the full-precision sum):
+
+{_combined_table(H)}
+
+The band is dominated by d-recapture at the maximal q_1s; 3He is a ~0.1% correction at these helium levels.
+The largest combined live band is **~{H["comb_worst_pct"]}%** of X_mu (at {H["comb_worst_op"]}), consistent
+with the ~10-15% one-sided structural headroom named in MODEL_SPEC section 8 -- and it is a LOWER bound,
+because the ttmu side-branch (blocked) would add further downward. These brackets are reported beside the
+parametric CI, never convolved into it.
+
+## 6. Summary (headline operating points OP-B / OP-C / OP-D only)
+Across the headline operating points OP-B (high-T), OP-C (MuFusE mid) and OP-D (MuFusE peak), the live
+absorbing-loss channel (3He scavenging) contributes a one-sided structural bracket no larger than
 about -0.18 X_mu units at 0.1% helium -- under ~0.6% of the section-2 forward-UQ CI width
-({H["ci_width"]}), and smaller still at 0.01% helium. The ttmu side-branch bracket is **blocked -- pending
+({H["ci_width"]}), and smaller still at 0.01% helium. The per-cycle d-recapture routing (section 4) is the
+dominant deferred correction: up to **~{H["comb_worst_pct"]}%** of X_mu combined with 3He at
+{H["comb_worst_op"]} (section 5), one-sided downward. The ttmu side-branch bracket is **blocked -- pending
 acquisition** and is deliberately NOT rendered as a zero. The anchor-adjacent OP-A row is listed for
 completeness only and carries no headline claim (docs/accounting.md). No bracket on this page is combined
 into any CI or likelihood.
@@ -263,6 +388,14 @@ def build_manifest_entries(H: dict) -> list:
             entries.append(
                 _entry(f"{op}_bracket_{tag}", rf"{op}[^\n]*{re.escape(H[f'{op}_bracket_{tag}'])}")
             )
+        for q in Q1S_LEVELS:  # d-recapture / q_1s bracket (section 4) values
+            qt = _q1s_tag(q)
+            entries.append(_entry(f"{op}_{qt}_with", rf"{op}[^\n]*{re.escape(H[f'{op}_{qt}_with'])}"))
+            entries.append(_entry(f"{op}_{qt}_bracket", rf"{op}[^\n]*{re.escape(H[f'{op}_{qt}_bracket'])}"))
+    for op in HEADLINE_OPS:  # combined structural band (section 5)
+        entries.append(_entry(f"{op}_comb_q1s", rf"{op}[^\n]*{re.escape(H[f'{op}_comb_q1s'])}"))
+        entries.append(_entry(f"{op}_comb_total", rf"{op}[^\n]*{re.escape(H[f'{op}_comb_total'])}"))
+        entries.append(_entry(f"{op}_comb_pct", rf"{op}[^\n]*{re.escape(H[f'{op}_comb_pct'])}%"))
     entries += [
         _entry("ci_lo", rf"spans\s*\[{re.escape(H['ci_lo'])}, {re.escape(H['ci_hi'])}\]"),
         _entry("ci_hi", rf"spans\s*\[{re.escape(H['ci_lo'])}, {re.escape(H['ci_hi'])}\]"),

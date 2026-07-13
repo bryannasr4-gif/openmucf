@@ -91,3 +91,37 @@ def test_analytic_v2_reduces_to_v1():
     for ose, lc in ((0.0045, 1.0e8), (0.0057, 1.45e8)):
         assert A.fusions_per_muon_v2(ose, lc) == A.fusions_per_muon(ose, lc)
         assert A.fusions_per_muon_v2(ose, lc, tt_loss_rate=1.0e7, omega_tt=0.0) == A.fusions_per_muon(ose, lc)
+
+
+def test_recapture_off_bit_exact():
+    """d-recapture OFF (f_d=0.0) reproduces the committed v1 reference to atol 1e-9 (reduction gate
+    G-N1): with f_d=0.0 the new routing terms are IEEE-exact identities (x + 0.0*r == x, 1.0*r == r),
+    so the locked step sequence does NOT drift. Extends the reference gate with the new args signature
+    (explicit f_d=0.0), and confirms the explicit-f_d=0.0 path equals the default path bit-for-bit."""
+    a6 = _REF["args6"]
+    ts = _REF["ts"]
+    yref = np.array(_REF["ys"])
+    worst = 0.0
+    for i in range(0, len(ts), 10):
+        y = np.asarray(cycle.solve_cycle(*a6, f_d=0.0, t1=float(ts[i])).ys[-1])[:6]
+        worst = max(worst, float(np.max(np.abs(y - yref[i]))))
+        assert np.max(np.abs(y - yref[i])) < 1e-9, (i, float(np.max(np.abs(y - yref[i]))))
+    x_default = float(cycle.solve_cycle(*a6).ys[-1, 3])
+    x_explicit0 = float(cycle.solve_cycle(*a6, f_d=0.0).ys[-1, 3])
+    assert x_default == x_explicit0, (x_default, x_explicit0)
+    print(f"\nrecapture-off reduction gate: worst |got - ref| = {worst:.3e} (atol 1e-9); "
+          f"N_fus default == f_d=0.0 explicit: {x_default!r}")
+
+
+def test_recapture_bracket_sign():
+    """q_1s recapture lowers X_mu at the canonical point (the freed muon detours through the dmu pool
+    and races decay one extra transfer). The drop magnitude is O(10%) -- reported, not asserted tightly
+    (wide band [2%, 20%])."""
+    rt = load_rates()
+    x_off = float(cycle.fusions_per_muon_from_conditions(rt, 300.0, 1.2, 0.5))
+    x_on = float(cycle.fusions_per_muon_from_conditions(rt, 300.0, 1.2, 0.5, q_1s=1.0))
+    drop = (x_off - x_on) / x_off
+    assert x_on < x_off, (x_off, x_on)
+    assert 0.02 <= drop <= 0.20, drop
+    print(f"\nq_1s=1.0 recapture bracket (canonical): X_off={x_off:.4f} X_on={x_on:.4f} "
+          f"drop={drop:.4f} (band [0.02, 0.20])")

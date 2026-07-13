@@ -100,9 +100,13 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   default η_acc = 0.30 was optimistic; Kelly's PSI-measured 0.18 moves the net-electrical breakeven
   ~2367 → ~3946 fusions/muon (linear in η_acc).
 
+Structural, one-sided: the parametric intervals above sit on the v1 reduced network; the known deferred
+channels bias X_μ DOWNWARD by up to ≈15% combined (ttμ side-cycle, un-pinned pending acquisition;
+d-recapture, bracketed in `MATERIALITY.md`), so intervals are best read as upper-edge-faithful.
+
 Headline findings run on the closed form with measured-band inputs; the differentiable ODE engine is the
-structural workhorse for trajectories/twin/UQ cross-checks and is gated against the analytic closed form
-(the V1 self-consistency check, agreement < 1%), but no headline number depends on its multi-pool structure.
+structural workhorse for trajectories/twin/UQ cross-checks and is gated against an exact linear-algebra
+oracle (`openmucf/exact.py`; tests), but no headline number depends on its multi-pool structure.
 
 ## What you may cite (trust map)
 

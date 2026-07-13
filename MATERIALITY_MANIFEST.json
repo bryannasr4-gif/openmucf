@@ -42,6 +42,54 @@
     },
     {
       "doc": "MATERIALITY.md",
+      "id": "OP-A_q04_with",
+      "pattern": "OP-A[^\\n]*109\\.407",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "109.407"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_q04_bracket",
+      "pattern": "OP-A[^\\n]*\\-6\\.756",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-6.756"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_q07_with",
+      "pattern": "OP-A[^\\n]*104\\.835",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "104.835"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_q07_bracket",
+      "pattern": "OP-A[^\\n]*\\-11\\.329",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-11.329"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_q10_with",
+      "pattern": "OP-A[^\\n]*100\\.629",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "100.629"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_q10_bracket",
+      "pattern": "OP-A[^\\n]*\\-15\\.535",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-15.535"
+    },
+    {
+      "doc": "MATERIALITY.md",
       "id": "OP-B_off",
       "pattern": "OP-B[^\\n]*125\\.231",
       "source": "scripts/generate_materiality.py",
@@ -79,6 +127,54 @@
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.171"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_q04_with",
+      "pattern": "OP-B[^\\n]*117\\.115",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "117.115"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_q04_bracket",
+      "pattern": "OP-B[^\\n]*\\-8\\.116",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-8.116"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_q07_with",
+      "pattern": "OP-B[^\\n]*111\\.686",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "111.686"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_q07_bracket",
+      "pattern": "OP-B[^\\n]*\\-13\\.545",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-13.545"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_q10_with",
+      "pattern": "OP-B[^\\n]*106\\.738",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "106.738"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_q10_bracket",
+      "pattern": "OP-B[^\\n]*\\-18\\.493",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-18.493"
     },
     {
       "doc": "MATERIALITY.md",
@@ -122,6 +218,54 @@
     },
     {
       "doc": "MATERIALITY.md",
+      "id": "OP-C_q04_with",
+      "pattern": "OP-C[^\\n]*123\\.477",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "123.477"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_q04_bracket",
+      "pattern": "OP-C[^\\n]*\\-5\\.302",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-5.302"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_q07_with",
+      "pattern": "OP-C[^\\n]*119\\.778",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "119.778"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_q07_bracket",
+      "pattern": "OP-C[^\\n]*\\-9\\.001",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-9.001"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_q10_with",
+      "pattern": "OP-C[^\\n]*116\\.294",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "116.294"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_q10_bracket",
+      "pattern": "OP-C[^\\n]*\\-12\\.485",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-12.485"
+    },
+    {
+      "doc": "MATERIALITY.md",
       "id": "OP-D_off",
       "pattern": "OP-D[^\\n]*131\\.643",
       "source": "scripts/generate_materiality.py",
@@ -159,6 +303,126 @@
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.180"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_q04_with",
+      "pattern": "OP-D[^\\n]*126\\.990",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "126.990"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_q04_bracket",
+      "pattern": "OP-D[^\\n]*\\-4\\.653",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-4.653"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_q07_with",
+      "pattern": "OP-D[^\\n]*123\\.710",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "123.710"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_q07_bracket",
+      "pattern": "OP-D[^\\n]*\\-7\\.933",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-7.933"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_q10_with",
+      "pattern": "OP-D[^\\n]*120\\.596",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "120.596"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_q10_bracket",
+      "pattern": "OP-D[^\\n]*\\-11\\.047",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-11.047"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_comb_q1s",
+      "pattern": "OP-B[^\\n]*\\-18\\.493",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-18.493"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_comb_total",
+      "pattern": "OP-B[^\\n]*\\-18\\.664",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-18.664"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_comb_pct",
+      "pattern": "OP-B[^\\n]*\\-14\\.90%",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-14.90"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_comb_q1s",
+      "pattern": "OP-C[^\\n]*\\-12\\.485",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-12.485"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_comb_total",
+      "pattern": "OP-C[^\\n]*\\-12\\.661",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-12.661"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_comb_pct",
+      "pattern": "OP-C[^\\n]*\\-9\\.83%",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-9.83"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_comb_q1s",
+      "pattern": "OP-D[^\\n]*\\-11\\.047",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-11.047"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_comb_total",
+      "pattern": "OP-D[^\\n]*\\-11\\.227",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-11.227"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_comb_pct",
+      "pattern": "OP-D[^\\n]*\\-8\\.53%",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-8.53"
     },
     {
       "doc": "MATERIALITY.md",
