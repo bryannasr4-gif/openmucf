@@ -27,6 +27,21 @@ Formalized in `openmucf/data/validation_targets.csv`; backbone is `MODEL_SPEC.md
 > ~1.31 vs ~1.45 digitized = PASS); the 20 K lower bound remains pending (low-T formation is Phase-3
 > condensed-phase scope).
 
+> **Amendment (2026-07-12, disclosed — research-grade hardening):** three pre-existing
+> registered quantities are promoted to executed validation targets BEFORE the implementing code
+> lands, with pre-framed expected outcomes. (1) `V_petitjean_omega` now runs as an independent
+> PREDICTION of effective sticking from the ledger microphysics: ω_s0·(1−R_col) = 0.557% against
+> the registered 0.45±0.05% band — expected **FAIL** (~+24%); the gap is the un-attributed
+> side-channel share already described in `docs/accounting.md` (ttμ + recapture), i.e. a finding
+> about the v1 effective parameters, not a regression. (2) `V_faifman_900K` and (3) `V_faifman_lowT`
+> execute the ledger's own Faifman1989 rows (2.3e9 at 900 K Maxwellian; 2e10 at E=0.2 eV) against
+> the v1 formation model at ±50% — expected **FAIL** by ~20×/~17×: the registered, quantified
+> distance of the v1 placeholder formation model from the field's rates, standing motivation for
+> the sourced-table upgrade and Phase 3. Additionally the validation scoreboard now carries a class
+> column (self-consistency / reproduction / anchor-consistency / shape / independent) and counts
+> the two Yamashita rows as one test. No input, tolerance, or observation was changed to make any
+> row pass; the three new rows are expected to fail and their failure is the reported result.
+
 ## Falsification target (the headline)
 Re-create, **inside the same transparent model**, the 2026 projections:
 - Yin–Kou–Chen (2605.26432): N_μ "> 500", Q > 2 under four-dimensional synergy.
