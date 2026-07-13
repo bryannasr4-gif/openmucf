@@ -29,19 +29,19 @@ from .rates import DATA
 
 CASES_DIR = DATA / "benchmarks"
 
-# The 8 reproduction/consistency-tier RESULT ids that ``validate.run()`` emits (post-ledger), in
+# The 7 reproduction/consistency-tier RESULT ids that ``validate.run()`` emits (post-ledger), in
 # emission order -- the "validation side" of the registry. NOT the raw ``validation_targets.csv``
 # target_ids (the CSV also carries paired-observation and context-only rows that produce no result),
-# and NOT the three registered independent-prediction FAIL findings (V_petitjean_omega, V_faifman_900K,
-# V_faifman_lowT) -- those are executed in VALIDATION.md but excluded here (pre-registered divergence
-# findings, not friendly reproductions). The mapping/exclusions are rendered as footnotes in BENCHMARKS.md.
+# and NOT the five registered independent-prediction FAIL findings (V_petitjean_omega, V_faifman_900K,
+# V_faifman_lowT, and the sourced Yamashita-Kino comparators V_yamashita_ratio, V_yamashita_curve) --
+# those are executed in VALIDATION.md but excluded here (pre-registered divergence findings, not
+# friendly reproductions). The mapping/exclusions are rendered as footnotes in BENCHMARKS.md.
 VALIDATION_IDS = (
     "V_kouchen_base",
     "V_kouchen_best",
     "V_petitjean",
     "V_yamashita_lcT",
     "V_breunlich_lambdac",
-    "V_yamashita_ratio",
     "V_faifman_peak",
     "V_nagamine_trend",
 )
@@ -255,11 +255,12 @@ def report_markdown(results) -> str:
         "Notes on the validation-to-registry mapping (the validation side re-exposes engine RESULTS, not "
         "raw CSV rows):",
         "",
-        "- The three registered independent-prediction targets (`V_petitjean_omega`, `V_faifman_900K`, "
-        "`V_faifman_lowT`) are executed in `VALIDATION.md` (they FAIL by design) and are deliberately NOT "
-        "bench cases -- this registry reproduces published numbers, not pre-registered divergence findings. "
-        "In particular `V_petitjean` here runs the CSV row `V_petitjean_Xmu`; `V_petitjean_omega` is its "
-        "separate registered sticking prediction, shown in VALIDATION.md's class column.",
+        "- The five registered independent-prediction targets (`V_petitjean_omega`, `V_faifman_900K`, "
+        "`V_faifman_lowT`, and the sourced Yamashita-Kino comparators `V_yamashita_ratio`, "
+        "`V_yamashita_curve`) are executed in `VALIDATION.md` (they FAIL by design) and are deliberately "
+        "NOT bench cases -- this registry reproduces published numbers, not pre-registered divergence "
+        "findings. In particular `V_petitjean` here runs the CSV row `V_petitjean_Xmu`; `V_petitjean_omega` "
+        "is its separate registered sticking prediction, shown in VALIDATION.md's class column.",
         "- The context-only rows `A_acceleron_density` and `A_acceleron_anomaly` (tolerance `context-only`) "
         "are regime anchors, not runnable reproductions, and are deliberately not bench cases.",
         "- Blocked reproduction cases render as PENDING with the blocking document named; they run nothing "

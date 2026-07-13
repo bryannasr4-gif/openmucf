@@ -11,16 +11,15 @@ Reproduce one case from an installed package with `openmucf reproduce <case-id>`
 | V_petitjean | validation | openmucf.validate (validation_targets.csv trust gate) | 130.5 | 113 (fed omega_s_eff=0.45%) | [100,150] | PASS |
 | V_yamashita_lcT | validation | openmucf.validate (validation_targets.csv trust gate) | 125.2 | monotone X_mu(T) rise | monotone | PASS |
 | V_breunlich_lambdac | validation | openmucf.validate (validation_targets.csv trust gate) | 1.438e+08 | 1.45e8 s^-1 (max measured cycling rate, liquid; Breunlich 1989) | +-30% | PASS |
-| V_yamashita_ratio | validation | openmucf.validate (validation_targets.csv trust gate) | 1.311 | 1.45 (digitized lambda_c(800 K)/lambda_c(300 K); Yamashita-Kino Fig.3a) | +-30% | PASS |
 | V_faifman_peak | validation | openmucf.validate (validation_targets.csv trust gate) | 7.1e+09 | 7.1e9 s^-1 @ 0.423 eV (Fujiwara 2000) | +-25% | PASS |
 | V_nagamine_trend | validation | openmucf.validate (validation_targets.csv trust gate) | n/a | solid D-T (5-16 K): cycling rises & losses fall as T falls (RIKEN-RAL) | qualitative monotone | DEFERRED |
 | jones-1986 | reproduction | Jones1986 (Jones et al., Phys. Rev. Lett. 56, 588 (1986)) | n/a | 150 | n/a | PENDING |
 | kou-chen-2026 | reproduction | KouChen2026 (abstract + Eq.4 cycle estimate; effective sticking values from the collision-only and optimistic scenarios) | 114.5 / 160.3 | 112.6 / 156.5 | +-10% | PASS |
 
-**Summary: 10 cases -- 8 pass, 0 fail, 1 deferred, 1 pending.**
+**Summary: 9 cases -- 7 pass, 0 fail, 1 deferred, 1 pending.**
 
 Notes on the validation-to-registry mapping (the validation side re-exposes engine RESULTS, not raw CSV rows):
 
-- The three registered independent-prediction targets (`V_petitjean_omega`, `V_faifman_900K`, `V_faifman_lowT`) are executed in `VALIDATION.md` (they FAIL by design) and are deliberately NOT bench cases -- this registry reproduces published numbers, not pre-registered divergence findings. In particular `V_petitjean` here runs the CSV row `V_petitjean_Xmu`; `V_petitjean_omega` is its separate registered sticking prediction, shown in VALIDATION.md's class column.
+- The five registered independent-prediction targets (`V_petitjean_omega`, `V_faifman_900K`, `V_faifman_lowT`, and the sourced Yamashita-Kino comparators `V_yamashita_ratio`, `V_yamashita_curve`) are executed in `VALIDATION.md` (they FAIL by design) and are deliberately NOT bench cases -- this registry reproduces published numbers, not pre-registered divergence findings. In particular `V_petitjean` here runs the CSV row `V_petitjean_Xmu`; `V_petitjean_omega` is its separate registered sticking prediction, shown in VALIDATION.md's class column.
 - The context-only rows `A_acceleron_density` and `A_acceleron_anomaly` (tolerance `context-only`) are regime anchors, not runnable reproductions, and are deliberately not bench cases.
 - Blocked reproduction cases render as PENDING with the blocking document named; they run nothing and fail nothing until the document is acquired.

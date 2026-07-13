@@ -141,6 +141,25 @@
           {"name": "notes", "type": "string", "description": "Caveats and context.", "constraints": {"required": false}}
         ]
       }
+    },
+    {
+      "name": "yamashita-kino-lambda-c-T",
+      "path": "openmucf/data/yamashita_kino_lc_T.csv",
+      "profile": "tabular-data-resource",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "title": "Digitized normalized cycle rate lambda_c(T) from Yamashita-Kino 2022 Fig. 3a (c_t=0.5, EVM-SPM-FIF band centreline)",
+      "schema": {
+        "primaryKey": "T_K",
+        "fields": [
+          {"name": "T_K", "type": "integer", "description": "Temperature in kelvin (20-800 K grid)."},
+          {"name": "lambda_c_s^-1", "type": "number", "description": "Normalized cycle rate lambda_c at c_t=0.5 (s^-1), pixel-traced band centreline."},
+          {"name": "digitization_unc_rel", "type": "number", "description": "Relative digitization uncertainty (pixel read + band-centre-vs-solid-line ambiguity)."},
+          {"name": "source_bibkey", "type": "string", "description": "Key resolvable in references.bib (YamashitaKino2022)."},
+          {"name": "source_locator", "type": "string", "description": "Exact figure/panel locator inside the source."}
+        ]
+      }
     }
   ]
 }

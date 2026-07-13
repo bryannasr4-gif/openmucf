@@ -135,6 +135,14 @@ our posterior `λ̃_c` below the band's lower edge is exactly the kind of normal
 convention (§4, above) **before** any `λ̃_c` computation, and a failed cross-check would be a documented
 finding, never a reason to move it.
 
+> **Correction (2026-07-13, digitization).** The `≈ 1.0–1.45×10⁸ s⁻¹` reading above was a digitization
+> under-read of Fig. 3a. The committed c_t=0.5 digitization (`openmucf/data/yamashita_kino_lc_T.csv`) gives
+> ≈ 0.84×10⁸ (300 K) → 1.97×10⁸ (800 K) s⁻¹ (800/300 ratio ≈ 2.36); the posterior `λ̃_c ≈ 0.95×10⁸` sits
+> comfortably **inside** that band, so the "below the lower edge" tension dissolves. The `1.45×10⁸` liquid
+> maximum is the *separate* Breunlich anchor (`V_breunlich_lambdac`); its numeric coincidence with the old
+> under-read is the same hazard flagged above — the model-validity edge `φ = 1.45` is likewise unrelated to
+> `λ_c = 1.45×10⁸ s⁻¹`.
+
 ## 5. Scoring (fixed BEFORE resolution)
 
 **Estimator conventions (verbatim):** `ci68 = [16th, 84th]` and `ci95 = [2.5th, 97.5th]` equal-tailed

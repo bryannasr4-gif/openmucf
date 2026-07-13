@@ -64,7 +64,7 @@ print(EnergyChain().breakeven_xmu_net())               # ~2367 (net-electrical b
 ```
 Reproduce the findings and figures:
 ```bash
-make validate      # reproduce the pre-registered targets (VALIDATION.md: 7 pass, 3 registered-FAIL findings, 1 deferred; class-tiered)
+make validate      # reproduce the pre-registered targets (VALIDATION.md: 6 pass, 5 registered-FAIL findings, 1 deferred; class-tiered)
 make findings      # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 make systems       # Q Rosetta stone + energy-balance graph -> SYSTEMS.md
@@ -114,7 +114,7 @@ oracle (`openmucf/exact.py`; tests), but no headline number depends on its multi
 |---|---|---|
 | **GREEN — citable as-is** | muon-cost ledger + 10³-gap (`MUON_COST.md`), Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model |
 | **AMBER — citable with the stated basis** | calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, prior-sensitivity table), X_μ at the 300 K liquid anchor | statistically sound but summary-statistic-based; cite WITH the basis caveat |
-| **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8) — a runtime warning fires in the RED regime |
+| **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8); the λ_c(T) shape runs −41% to −44% below the digitized Yamashita–Kino 2022 curve (sourced comparator `V_yamashita_ratio`/`_curve`, fails ±30%) — a runtime warning fires in the RED regime |
 
 ## Forecast registry
 OpenMuCF keeps a registry of **pre-registered, hash-stamped probabilistic forecasts** in `forecasts/`

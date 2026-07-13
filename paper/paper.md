@@ -103,7 +103,7 @@ transport engines and to evaluated-data projects [@Watanabe2026].
 
 **Honest validation (the trust map is the honesty section).** `OpenMuCF` ships a class-tiered
 validation scoreboard in which only rows tagged `independent` are genuine predictions. As of v1 the
-passing set contains **no** independent rows: three registered `independent` targets FAIL by design,
+passing set contains **no** independent rows: five registered `independent` targets FAIL by design,
 each a quantified measure of the distance between the v1 placeholder formation model and the field's
 own rates. Reproducing this scoreboard verbatim, including the failing rows, is a deliberate part of
 the artifact:
@@ -115,15 +115,16 @@ the artifact:
 | V_petitjean | reproduction (fed input) | 130.5 | [100,150] | PASS |
 | V_yamashita_lcT | shape (calibrated model) | monotone X_mu(T) rise | monotone | PASS |
 | V_breunlich_lambdac | anchor-consistency | 1.44e8 s^-1 | +-30% | PASS |
-| V_yamashita_ratio | shape (calibrated model) | 1.3 | +-30% | PASS |
 | V_faifman_peak | anchor-consistency | 7.1e9 s^-1 | +-25% | PASS |
+| V_yamashita_ratio | **independent** | 1.31 (vs digitized 2.36) | +-30% | **FAIL** |
+| V_yamashita_curve | **independent** | 1.31 (800 K vs 2.36) | +-30%/pt | **FAIL** |
 | V_petitjean_omega | **independent** | 0.56% | [0.40,0.50] | **FAIL** |
 | V_faifman_900K | **independent** | 1.06e8 s^-1 | +-50% | **FAIL** |
 | V_faifman_lowT | **independent** | 1.16e9 s^-1 | +-50% | **FAIL** |
 | V_nagamine_trend | **independent** | n/a | qualitative | DEFERRED |
 
-**Summary: 7 pass (0 independent), 3 fail (3 registered placeholder-distance findings), 1 deferred.**
-The three failures are pre-registered findings, not bugs: a *pass* on any of them would be the thing
+**Summary: 6 pass (0 independent), 5 fail (5 registered placeholder-distance findings), 1 deferred.**
+The five failures are pre-registered findings, not bugs: a *pass* on any of them would be the thing
 to investigate. They are the standing, quantified motivation for a sourced-formation upgrade. In the
 repository, a companion trust map sorts every output into **GREEN** (citable as-is: the muon-cost
 compilation, the energy-balance "Rosetta stone", the breakeven falsification and requirements form,
