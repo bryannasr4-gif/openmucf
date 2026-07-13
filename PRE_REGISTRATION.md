@@ -53,8 +53,10 @@ Formalized in `openmucf/data/validation_targets.csv`; backbone is `MODEL_SPEC.md
 > placeholder's temperature-shape deficit; class becomes `independent`. New `V_yamashita_curve` (class
 > `independent`) at 200/400/600/800 K / ±30%: the 800 K point is a registered expected-FAIL (same
 > comparison as the ratio), and 200/400/600 K are **either-outcome-acceptable pre-run** — both a PASS and
-> a FAIL there are registered as acceptable before running (G-R5's surprise-PASS rule applies only to the
-> 800 K point and the ratio row). The three Yamashita rows (`V_yamashita_lcT`, `V_yamashita_ratio`,
+> a FAIL there are registered as acceptable before running (the surprise-PASS stop rule — a PASS on a
+> registered expected-FAIL is investigated as a bug or tolerance error, never shipped as a success —
+> applies only to the 800 K point and the ratio row). The three Yamashita rows (`V_yamashita_lcT`,
+> `V_yamashita_ratio`,
 > `V_yamashita_curve`) count as ONE distinct test. No model parameter, prior, tolerance, or other input
 > was changed; the corrected observation makes the target strictly harder, and the FAILs are the
 > reported result.

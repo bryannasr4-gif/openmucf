@@ -153,14 +153,16 @@ def test_expected_fail_guard():
 
 
 def test_yamashita_expected_fail_guard():
-    """G-R5 for the two sourced Yamashita expected-FAILs: the re-anchored ratio row and the 800 K
-    curve point are pre-registered to FAIL; a surprise PASS on either is a bug/tolerance error."""
+    """The two sourced Yamashita expected-FAILs (the re-anchored ratio row and the 800 K curve point)
+    are pre-registered to FAIL; a surprise PASS on either is a bug/tolerance error, not a success."""
     res = _by_id()
     assert res["V_yamashita_ratio"].passed is False, (
-        "surprise PASS on the re-anchored V_yamashita_ratio -- STOP and root-cause (G-R5)"
+        "surprise PASS on the re-anchored V_yamashita_ratio -- STOP and root-cause "
+        "(pre-registered expected-FAIL; see PRE_REGISTRATION.md)"
     )
     assert res["V_yamashita_curve"].passed is False, (
-        "surprise PASS on V_yamashita_curve -- STOP and root-cause (G-R5)"
+        "surprise PASS on V_yamashita_curve -- STOP and root-cause "
+        "(pre-registered expected-FAIL; see PRE_REGISTRATION.md)"
     )
     # the 800 K point specifically is the registered expected-FAIL
     assert "800 K FAIL" in res["V_yamashita_curve"].note
