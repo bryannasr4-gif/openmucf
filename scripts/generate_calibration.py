@@ -41,7 +41,7 @@ CALIBRATION_MD = "CALIBRATION.md"
 #   * ess + mcse 20% -- effective sample size (and mcse = sd/sqrt(ess)) vary most across realizations.
 #   * r_hat cells 2% -- split-Gelman-Rubin sits at ~1.00; 2% is ample and still catches non-convergence.
 #   * divergences EXACT == 0 -- a divergence is a correctness signal, never a tolerance question.
-# Changing any of these requires a deliberate edit to the pin test + a dated RESULTS.md note.
+# Changing any of these requires a deliberate edit to the pin test + a documented rationale.
 AUDIT_RTOL_MEAN = 0.02        # mean cells
 AUDIT_RTOL_SD = 0.08          # sd cells
 AUDIT_RTOL_CORR = 0.08        # correlation cells
@@ -199,7 +199,8 @@ def _sweep_section(rows, corr_lo, corr_hi):
         for r in rows
     )
     close = (
-        f"\n\nThe product omega_s0(1-R) (= ose mean) and lambda_c are box-invariant; corr and R-width are "
+        f"\n\nThe product omega_s0(1-R) (= ose mean) is box-invariant across the sweep (the ose mean column), "
+        f"and lambda_c stays pinned at its own measured-band prior; corr and R-width are "
         f"support-dependent (corr range [{corr_lo:.2f}, {corr_hi:.2f}] across the sweep) -- the degeneracy "
         f"is the finding, its two-decimal value is not. `rails?` flags a 95% CI endpoint within 1% of its "
         f"OWN box bound; it is `no` for every config here, INCLUDING the legacy boxes -- the old boxes' "
