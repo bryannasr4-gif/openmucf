@@ -44,8 +44,8 @@ def test_export_lambda_form_eff_thermal_shape_and_positive():
             assert math.isclose(tab.values[i][j], float(formation.lambda_dtmu(t, p, 1, 1.0)), rel_tol=1e-9)
 
 
-def test_export_lambda_dtmu_thermal_is_deprecated_alias():
-    """The old name warns (DeprecationWarning) but returns the renamed effective-rate table."""
+def test_interop_rename_alias_warns():
+    """The old export_lambda_dtmu_thermal warns (DeprecationWarning) but returns the renamed table."""
     with pytest.deprecated_call():
         tab = interop.export_lambda_dtmu_thermal((300.0,), (1.2,), F=1)
     assert tab.name == "lambda_form_eff_thermal"
