@@ -142,17 +142,25 @@ liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:
 - **P(X_mu > 500) = 0.0%**, P(Q_sci > 2) = 0.0%,
   P(Q_net > 1) = 0.0%. These zeros are STRUCTURAL, not Monte-Carlo estimates:
   500 lies outside the prior box's support entirely (max supported X_mu ~ 133).
-- Even at **zero sticking**, the best measured cycling rate ($\lambda_c$=1.45e8) caps the yield at
-  **X_mu = 319** at liquid density; even at the +30% reproduction
-  band on lambda_c the cap is ~414 < 500. Density scaling (lambda_c = phi*lambda_c_tilde) at the
+- Even at **zero sticking** the cycling rate caps the yield at lambda_c/lambda_0, so this cap is
+  **condition-dependent, never universal**. At the liquid anchor ($\lambda_c$=1.45e8) it is
+  **X_mu = 319**; at the SIN 12 K solid non-equilibrated anchor
+  ($\lambda_c$=1.93e8, ledger `lambda_c_solid_12K`) it is **X_mu = 424**.
+  Those two anchors are **condition-PAIRED, not independently selectable**: the condition that bought
+  the faster cycle also carried higher measured sticking (0.57% vs 0.45%), so the measured yield rose
+  only 113 -> 124. Even at the +30% reproduction
+  band on lambda_c the liquid cap is ~414 < 500. Density scaling (lambda_c = phi*lambda_c_tilde) at the
   demonstrated DAC phi=2.4 would lift the decay-only cap to ~530-640 *if phi-linearity holds there* --
   which is precisely the unmeasured question the MuFusE program tests.
 - **What would have to be true** for $N_\mu$=500: the (lambda_c, R) frontier runs from
   (2.28e8, R -> 1) to (3e8, R = 0.94); and even at infinite lambda_c,
   omega_s_eff <= 0.2% i.e. **R >= 0.77** is required (R >= 0.75-0.79 across the
-  omega_s0-box band -- higher initial sticking needs more reactivation). For reference R ~ 0.35 is the model-derived
-  collisional value (Kou-Chen Eq.33) -- experiment pins only the product omega_s_eff ~ 0.45%, and our
-  Kamimura-prior calibration posterior gives R = 0.46 +- 0.06.
+  omega_s0-box band -- higher initial sticking needs more reactivation). That **R** is the TOTAL
+  reactivation. It is NOT comparable to the model-derived collisional value R_col = 0.35
+  (Kou-Chen Eq.33): the two act as SUCCESSIVE factors, omega_s_eff = omega_s0 (1-R_col)(1-R_X), so at
+  R_col = 0.35 the field-assisted factor alone would have to reach
+  **R_X >= 0.64**. Experiment pins only the product omega_s_eff ~ 0.45%, and our
+  Kamimura-prior calibration posterior gives a total R = 0.46 +- 0.06.
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as

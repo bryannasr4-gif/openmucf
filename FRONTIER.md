@@ -28,11 +28,14 @@ physical R exceeds 1). Every cell is closed-form float64 algebra -- byte-stable,
 At X_mu = 500 and `lambda_c -> inf`, the required reactivation is **R >= 0.77** -- the
 decay-free floor, reproduced here bit-for-bit from `openmucf.uq.breakeven_audit` and matching the FINDINGS.md
 sec.3 headline. Density scaling (`lambda_c = phi * lambda_c_tilde`) can supply the cycling-rate factor, but
-**sticking it cannot**: the floor is independent of `lambda_c`. For reference, the model-derived collisional
-reactivation is R_col = **0.35** (Kou-Chen Eq.33), and the Kamimura-prior calibration posterior
-gives R = **0.46** +- 0.06 (`CALIBRATION.md`); both sit far below the
-0.77 floor. Expressed as a requirement, an X_mu = 500 mechanism must push reactivation to
-R ~ 0.9+ at any density -- a falsifiable, quantitative bet on the reactivation physics.
+**sticking it cannot**: the floor is independent of `lambda_c`. That floor is on the TOTAL reactivation.
+The model-derived collisional value R_col = **0.35** (Kou-Chen Eq.33) is only the FIRST of two
+SUCCESSIVE factors -- `omega_s_eff = omega_s0 (1-R_col)(1-R_X)` -- so it is not directly comparable to the
+0.77 floor. Read in that decomposition, R_col = 0.35 leaves a required
+field-assisted factor **R_X >= 0.64**. The Kamimura-prior calibration posterior gives a
+total R = **0.46** +- 0.06 (`CALIBRATION.md`), also below the floor.
+Expressed as a requirement, an X_mu = 500 mechanism must push TOTAL reactivation to R ~ 0.9+ at any
+density -- a falsifiable, quantitative bet on the reactivation physics.
 
 ## Solver-backed general inverse (optimistix Newton over the q_net graph)
 `openmucf.frontier.solve_inverse` inverts the full differentiable `systems.q_net` graph for ONE free

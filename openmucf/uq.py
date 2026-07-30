@@ -251,8 +251,30 @@ def breakeven_audit(n=400_000, seed=1):
         f"{o:.3f}": float(1.0 - (1.0 / target) / (o / 100.0))
         for o in (PARAMS[0].low, os0, PARAMS[0].high)
     }
+    # (f) the SAME infinite-lambda_c requirement, expressed in the ledger's TWO-FACTOR decomposition
+    #     omega_s_eff = omega_s0 (1-R_col)(1-R_X). R_col and R_X are SUCCESSIVE factors, so a required
+    #     TOTAL R must never be compared against a collision-only R_col as though they were the same
+    #     quantity; what a given R_col leaves is a required FIELD-ASSISTED factor R_X. Computed from the
+    #     ledger (not transcribed) so it cannot drift from R_col.
+    from .rates import load_rates
+
+    _r = load_rates()
+    R_col_ref = _r.value("R_col")
+    # (g) the decay-only cap is lambda_c/lambda_0 and is therefore CONDITION-DEPENDENT, never universal
+    #     (Kou, 2026-07-28). The ledger carries two condition-tagged anchors; each is reported with the
+    #     sticking measured at the SAME condition, because they are paired, not independently selectable.
+    lc_solid = _r.value("lambda_c_solid_12K")
+    ose_solid = _r.value("omega_s_eff_solid_12K") / 100.0
+    xmu_cap_solid = lc_solid / LAMBDA_0
+    yield_solid_pair = lc_solid / (LAMBDA_0 + ose_solid * lc_solid)
+    surv_req = (1.0 / target) / (os0 / 100.0)  # required surviving product (1-R_col)(1-R_X)
+    R_X_req = 1.0 - surv_req / (1.0 - R_col_ref)
 
     return {
+        "R_col_reference": float(R_col_ref),
+        "R_X_required_given_R_col": float(R_X_req),
+        "xmu_cap_at_solid_lambda_c": float(xmu_cap_solid),
+        "yield_at_solid_anchor_pair": float(yield_solid_pair),
         "measured_ranges": {p.name: [p.low, p.high] for p in PARAMS},
         "P_xmu_gt500": float((x > target).mean()),
         "P_qsci_gt2": float((qs > 2).mean()),
@@ -267,9 +289,12 @@ def breakeven_audit(n=400_000, seed=1):
         "R_required_band_hi": float(1.0 - (1.0 / target) / (os0_hi / 100.0)),
         "note": (
             "Scope: liquid-scale density (phi <= ~1.45), where lambda_c <= 1.45e8 is the measured max. "
-            "To reach X_mu=500 there you need BOTH lambda_c >~ 2.3-3e8 AND reactivation R >~ 0.9 "
-            "(vs the model-derived collisional R ~0.35, Kou-Chen Eq.33 -- experiment constrains only the "
-            "product omega_s_eff ~0.45%, not R itself; our Kamimura-prior posterior gives R = 0.46 +- 0.06). "
+            "To reach X_mu=500 there you need BOTH lambda_c >~ 2.3-3e8 AND a TOTAL reactivation R >~ 0.9 "
+            "(the model-derived value R_col ~0.35, Kou-Chen Eq.33, is only the COLLISIONAL factor: it and "
+            "any field-assisted R_X are successive, so at R_col=0.35 the field-assisted factor alone must "
+            "reach R_X >= 0.64 -- a required total R is not comparable to R_col; experiment constrains only "
+            "the product omega_s_eff ~0.45%, not R itself; our Kamimura-prior posterior gives a total "
+            "R = 0.46 +- 0.06). "
             "Density scaling (lambda_c = phi*lambda_c_tilde) could supply the lambda_c factor alone at "
             "the demonstrated DAC phi=2.4 -- but even at infinite lambda_c, X_mu=500 needs omega_s_eff "
             "<= 0.2%, i.e. R >= 0.77. The binding requirement is reactivation, at any density."

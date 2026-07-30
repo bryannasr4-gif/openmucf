@@ -15,7 +15,7 @@ be UQ theater over a decision variable, so each tier gets its own row.
 
 BASIS (read before trusting a number): every value is neutrons per joule of PRIMARY BEAM kinetic energy
 (beam basis, NOT wall-plug). For muCF the primary-beam joule is the beam energy spent to produce one
-stopped muon (MUON_COST.md ``normalized_GeV_per_stopped_mu``); for the alternative sources it is the
+stopped muon (MUON_COST.md ``normalized_GeV_per_mu``); for the alternative sources it is the
 deuteron or proton beam kinetic energy delivered to the target. Wall-plug = this / eta_acc (< 1), kept
 SEPARATE (the single-accounting-home rule; MUON_COST.md never folds eta_acc into the muon cost). Only
 one eta_acc is pinned to a primary text in this repo (Kelly-Hart-Rose's PSI-measured 0.18), so a
@@ -238,7 +238,7 @@ def build_markdown(table: mucost.MuonCostTable, H: dict[str, str]) -> str:
 ## Basis: neutrons per joule of PRIMARY BEAM energy (beam basis, not wall-plug)
 Every value below is `neutrons / (joule of primary accelerator beam kinetic energy)`. For muCF the
 primary-beam joule is the beam energy spent to produce one stopped muon (MUON_COST.md
-`normalized_GeV_per_stopped_mu`); for the alternative sources it is the deuteron or proton beam kinetic
+`normalized_GeV_per_mu`); for the alternative sources it is the deuteron or proton beam kinetic
 energy delivered to the target. This is a **beam basis**: the wall-plug figure is this divided by the
 accelerator efficiency eta_acc (< 1), kept SEPARATE (the single-accounting-home rule; MUON_COST.md never
 folds eta_acc into the muon cost). Only one eta_acc is pinned to a primary text in this repo --

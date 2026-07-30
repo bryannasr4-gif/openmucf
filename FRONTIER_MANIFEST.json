@@ -18,8 +18,16 @@
     },
     {
       "doc": "FRONTIER.md",
+      "id": "R_X_required",
+      "pattern": "\\*\\*R_X >= 0\\.64\\*\\*",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.64"
+    },
+    {
+      "doc": "FRONTIER.md",
       "id": "R_kamimura",
-      "pattern": "posterior\\s+gives R = \\*\\*0\\.46\\*\\*",
+      "pattern": "posterior gives a\\s+total R = \\*\\*0\\.46\\*\\*",
       "source": "scripts/generate_frontier.py",
       "source_type": "derivation",
       "value": "0.46"
@@ -126,7 +134,7 @@
     ],
     "lambda_c_nominal_s^-1": 130000000.0,
     "omega_s0_default_fraction": 0.00857,
-    "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784",
+    "rates_csv_sha256": "1d60f23d02cbacb7436bb0aac32dfd5e96151ae713a951c84ce60bc469fd9c12",
     "solver_target_q_net": 0.06,
     "x_mu_targets": [
       150.0,
