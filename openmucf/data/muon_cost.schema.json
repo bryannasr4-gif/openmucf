@@ -1,27 +1,111 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OpenMuCF muon-cost ledger row",
-  "description": "One published/derived muon-production energy cost, normalized to a single auditable basis with full provenance. Each row of data/muon_cost.csv must satisfy this. This is a curated compilation with provenance, not an evaluation: every OURS-normalization step is shown verbatim in 'derivation', facility rows are original derivations labeled 'implied, derived here', and no accounting credit (e.g. recapture) is ever silently folded in.",
+  "description": "One published/derived muon-production energy cost, normalized to a single auditable basis with full provenance. Each row of data/muon_cost.csv must satisfy this. This is a curated compilation with provenance, not an evaluation: every OURS-normalization step is shown verbatim in 'derivation', facility rows are original derivations labeled 'implied, derived here', and no accounting credit (e.g. recapture) is ever silently folded in. NOTE: the normalized column is per muon on EACH ROW'S OWN basis (basis_class), not a single common basis; cross-class aggregation is not meaningful and the generator must disclose it.",
   "type": "object",
-  "required": ["source_id", "citation", "year", "tier", "basis_as_published", "derivation", "source_bibkey", "needs_verification"],
+  "required": [
+    "source_id",
+    "citation",
+    "year",
+    "tier",
+    "basis_as_published",
+    "derivation",
+    "source_bibkey",
+    "needs_verification"
+  ],
   "properties": {
-    "source_id": {"type": "string", "description": "Unique machine key, e.g. kelly_hart_rose_2021."},
-    "citation": {"type": "string", "description": "Human-readable source citation (public: by author/venue/DOI, never by acquisition route)."},
-    "year": {"type": "integer"},
-    "tier": {"type": "string", "enum": ["T1-design-study", "T2-demonstrated-tech", "T3-operating-facility"], "description": "T1 = purpose-built muon-source design studies; T2 = demonstrated technology (e.g. muon-collider front end, collected-not-stopped); T3 = operating facilities (GeV/stopped-mu is OUR derivation, no facility reports it)."},
-    "basis_as_published": {"type": "string", "description": "The quantity as the source states it (per pi-, per created mu, per stopped mu, per collected mu; beam vs wall-plug). The single normalized basis lives in normalized_GeV_per_stopped_mu; this records what the source actually reports."},
-    "projectile_target": {"type": "string"},
-    "capture_scheme": {"type": "string"},
-    "recapture_credit_applied": {"type": "boolean", "description": "True iff an accounting recapture/breeding credit is folded into normalized_GeV_per_stopped_mu. Kelly's x2.5 is such a credit and is kept SEPARATE (applied=false, factor in recapture_factor); a credit is never silently folded into the normalized value."},
-    "recapture_factor": {"type": "number", "description": "The recapture/breeding credit factor if the source quotes one (e.g. Kelly x2.5); recorded even when recapture_credit_applied=false, so the credit is visible but not folded in. Empty if none."},
-    "eta_acc_assumption": {"type": "number", "description": "Accelerator/wall-plug efficiency the source assumes, if stated (e.g. Kelly 0.18 PSI-measured). The normalized basis is BEAM energy per muon; wall-plug = normalized / eta_acc. Kept separate, never folded. Empty if the source does not state one."},
-    "value_as_published": {"type": "string", "description": "The verbatim published value + unit (kept as text because sources report heterogeneous quantities)."},
-    "unit_as_published": {"type": "string"},
-    "normalized_GeV_per_stopped_mu": {"type": "number", "description": "THE single auditable basis: beam (kinetic) energy per muon in GeV, per stopped muon where the source reports stopping (per produced/collected where it does not; see basis_as_published + derivation). NOT wall-plug (eta_acc separate). Empty ONLY for a needs_verification row whose digit is not pinned from the primary text."},
-    "derivation": {"type": "string", "description": "Every OURS-normalization step VERBATIM: 'implied, derived here: <formula with numbers>' for facility/derived rows; 'as-published; no OURS-normalization' where the row is copied straight from the source."},
-    "source_bibkey": {"type": "string", "description": "Key(s) resolvable in data/references.bib; ';'-separable."},
-    "source_locator": {"type": "string", "description": "Table/figure/equation/page/DOI/slide within the source."},
-    "needs_verification": {"type": "boolean", "description": "True iff the muon-cost digit is not pinned from the primary text (paywalled/not in hand). A needs_verification row may never headline anything (I3)."},
-    "notes": {"type": "string"}
+    "source_id": {
+      "type": "string",
+      "description": "Unique machine key, e.g. kelly_hart_rose_2021."
+    },
+    "citation": {
+      "type": "string",
+      "description": "Human-readable source citation (public: by author/venue/DOI, never by acquisition route)."
+    },
+    "year": {
+      "type": "integer"
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "T1-design-study",
+        "T2-demonstrated-tech",
+        "T3-operating-facility"
+      ],
+      "description": "T1 = purpose-built muon-source design studies; T2 = demonstrated technology (e.g. muon-collider front end, collected-not-stopped); T3 = operating facilities (GeV/stopped-mu is OUR derivation, no facility reports it)."
+    },
+    "basis_as_published": {
+      "type": "string",
+      "description": "The quantity as the source states it (per pi-, per created mu, per stopped mu, per collected mu; beam vs wall-plug). The single normalized basis lives in normalized_GeV_per_stopped_mu; this records what the source actually reports."
+    },
+    "projectile_target": {
+      "type": "string"
+    },
+    "capture_scheme": {
+      "type": "string"
+    },
+    "recapture_credit_applied": {
+      "type": "boolean",
+      "description": "True iff an accounting recapture/breeding credit is folded into normalized_GeV_per_stopped_mu. Kelly's x2.5 is such a credit and is kept SEPARATE (applied=false, factor in recapture_factor); a credit is never silently folded into the normalized value."
+    },
+    "recapture_factor": {
+      "type": "number",
+      "description": "The recapture/breeding credit factor if the source quotes one (e.g. Kelly x2.5); recorded even when recapture_credit_applied=false, so the credit is visible but not folded in. Empty if none."
+    },
+    "eta_acc_assumption": {
+      "type": "number",
+      "description": "Accelerator/wall-plug efficiency the source assumes, if stated (e.g. Kelly 0.18 PSI-measured). The normalized basis is BEAM energy per muon; wall-plug = normalized / eta_acc. Kept separate, never folded. Empty if the source does not state one."
+    },
+    "value_as_published": {
+      "type": "string",
+      "description": "The verbatim published value + unit (kept as text because sources report heterogeneous quantities)."
+    },
+    "unit_as_published": {
+      "type": "string"
+    },
+    "normalized_GeV_per_mu": {
+      "type": "number",
+      "description": "Beam (kinetic) energy per muon in GeV, ON THAT ROW'S OWN basis -- see basis_class. The rows are NOT all per stopped muon (the previous column name wrongly implied that): they mix per-produced, per-collected, per-stopped-in-D-T and per-stopped-in-another-target. Values on different basis_class are NOT commensurable and must never be aggregated silently. NOT wall-plug (eta_acc is kept separate). Empty ONLY for a needs_verification row whose digit is not pinned."
+    },
+    "basis_class": {
+      "type": "string",
+      "enum": [
+        "produced",
+        "collected",
+        "stopped_in_dt",
+        "stopped_other_target",
+        ""
+      ],
+      "description": "Machine-readable accounting basis, classified from basis_as_published. 'produced' = per muon created; 'collected' = transported/collected but never stopped in fuel; 'stopped_in_dt' = stopped in the D-T target (the quantity a muCF energy balance actually needs); 'stopped_other_target' = stopped in a NON-D-T target (e.g. Al) and therefore not directly usable. A per-produced or per-collected figure is a LOWER BOUND on the per-stopped-in-D-T cost. Empty is allowed only on an unpinned needs_verification row."
+    },
+    "charge_basis": {
+      "type": "string",
+      "enum": [
+        "mu_minus",
+        "mixed",
+        "mu_plus_only",
+        ""
+      ],
+      "description": "Which muon charge the figure counts. muCF needs mu-; 'mixed' counts mu+ and mu- together (so the mu--only cost is roughly 2x higher) and 'mu_plus_only' is irrelevant to muCF and must never enter a muCF cost aggregate. Empty only on an unpinned nv row."
+    },
+    "derivation": {
+      "type": "string",
+      "description": "Every OURS-normalization step VERBATIM: 'implied, derived here: <formula with numbers>' for facility/derived rows; 'as-published; no OURS-normalization' where the row is copied straight from the source."
+    },
+    "source_bibkey": {
+      "type": "string",
+      "description": "Key(s) resolvable in data/references.bib; ';'-separable."
+    },
+    "source_locator": {
+      "type": "string",
+      "description": "Table/figure/equation/page/DOI/slide within the source."
+    },
+    "needs_verification": {
+      "type": "boolean",
+      "description": "True iff the muon-cost digit is not pinned from the primary text (paywalled/not in hand). A needs_verification row may never headline anything (I3)."
+    },
+    "notes": {
+      "type": "string"
+    }
   }
 }

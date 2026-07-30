@@ -86,6 +86,12 @@ def build_headline() -> dict[str, str]:
     # --- the marquee density-independent R floor (reproduces FINDINGS sec.3 EXACTLY) ---
     H["R_floor_500"] = f"{r_required(500.0, math.inf):.2f}"  # 0.77
     H["R_col"] = R_COL_REFERENCE
+    # The SAME floor read in the two-factor decomposition omega_s_eff = omega_s0 (1-R_col)(1-R_X):
+    # R_col and R_X are successive factors, so R_col is not comparable to the total-R floor; what it
+    # leaves is a required field-assisted factor. Closed-form from the same r_required, no transcription.
+    H["R_X_required"] = (
+        f"{1.0 - (1.0 - r_required(500.0, math.inf)) / (1.0 - float(R_COL_REFERENCE)):.2f}"
+    )
     H["R_kamimura"] = R_KAMIMURA_REFERENCE
     H["R_kamimura_sd"] = R_KAMIMURA_SD
 
@@ -156,11 +162,14 @@ physical R exceeds 1). Every cell is closed-form float64 algebra -- byte-stable,
 At X_mu = 500 and `lambda_c -> inf`, the required reactivation is **R >= {H["R_floor_500"]}** -- the
 decay-free floor, reproduced here bit-for-bit from `openmucf.uq.breakeven_audit` and matching the FINDINGS.md
 sec.3 headline. Density scaling (`lambda_c = phi * lambda_c_tilde`) can supply the cycling-rate factor, but
-**sticking it cannot**: the floor is independent of `lambda_c`. For reference, the model-derived collisional
-reactivation is R_col = **{H["R_col"]}** (Kou-Chen Eq.33), and the Kamimura-prior calibration posterior
-gives R = **{H["R_kamimura"]}** +- {H["R_kamimura_sd"]} (`CALIBRATION.md`); both sit far below the
-{H["R_floor_500"]} floor. Expressed as a requirement, an X_mu = 500 mechanism must push reactivation to
-R ~ 0.9+ at any density -- a falsifiable, quantitative bet on the reactivation physics.
+**sticking it cannot**: the floor is independent of `lambda_c`. That floor is on the TOTAL reactivation.
+The model-derived collisional value R_col = **{H["R_col"]}** (Kou-Chen Eq.33) is only the FIRST of two
+SUCCESSIVE factors -- `omega_s_eff = omega_s0 (1-R_col)(1-R_X)` -- so it is not directly comparable to the
+{H["R_floor_500"]} floor. Read in that decomposition, R_col = {H["R_col"]} leaves a required
+field-assisted factor **R_X >= {H["R_X_required"]}**. The Kamimura-prior calibration posterior gives a
+total R = **{H["R_kamimura"]}** +- {H["R_kamimura_sd"]} (`CALIBRATION.md`), also below the floor.
+Expressed as a requirement, an X_mu = 500 mechanism must push TOTAL reactivation to R ~ 0.9+ at any
+density -- a falsifiable, quantitative bet on the reactivation physics.
 
 ## Solver-backed general inverse (optimistix Newton over the q_net graph)
 `openmucf.frontier.solve_inverse` inverts the full differentiable `systems.q_net` graph for ONE free
@@ -203,7 +212,10 @@ def build_manifest_entries(H: dict[str, str]) -> list[ManifestEntry]:
     entries = [
         _entry("R_floor_500", rf"\*\*R >= {re.escape(H['R_floor_500'])}\*\*"),
         _entry("R_col", rf"R_col = \*\*{re.escape(H['R_col'])}\*\*"),
-        _entry("R_kamimura", rf"posterior\s+gives R = \*\*{re.escape(H['R_kamimura'])}\*\*"),
+        _entry("R_X_required", rf"\*\*R_X >= {re.escape(H['R_X_required'])}\*\*"),
+        # wording carries "a total R" since 2026-07-29: the posterior is the TOTAL reactivation, which
+        # is the quantity comparable to the floor -- R_col alone is not (successive-factor fix)
+        _entry("R_kamimura", rf"posterior gives a\s+total R = \*\*{re.escape(H['R_kamimura'])}\*\*"),
         _entry("x_mu_nominal", rf"X_mu = {re.escape(H['x_mu_nominal'])},"),
         _entry("q_net_nominal", rf"q_net = {re.escape(H['q_net_nominal'])}\)"),
         _entry("solver_x_target", rf"X_mu-equivalent {re.escape(H['solver_x_target'])}\)"),

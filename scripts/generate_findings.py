@@ -84,9 +84,16 @@ H["P_qsci_gt1"] = f"{fw['P_Qsci_gt1'] * 100:.1f}%"
 H["P_qnet_gt1"] = f"{fw['P_Qnet_gt1'] * 100:.1f}%"
 H["P_xmu_gt500"] = f"{be['P_xmu_gt500'] * 100:.1f}%"
 H["cap_zero_sticking"] = f"{be['xmu_cap_at_measured_lambda_c']:.0f}"
+# the cap is lambda_c/lambda_0 and therefore CONDITION-dependent; the ledger carries a second,
+# condition-tagged anchor (SIN 12 K solid) whose sticking is paired to the SAME measurement
+H["cap_zero_sticking_solid"] = f"{be['xmu_cap_at_solid_lambda_c']:.0f}"
+H["yield_solid_pair"] = f"{be['yield_at_solid_anchor_pair']:.0f}"
 H["R_required"] = f"{be['R_required_at_infinite_lambda_c']:.2f}"  # computed from the omega_s0 nominal
 # the R>=0.77 point value carries an omega_s0-box band (higher initial sticking needs more R)
 H["R_required_band"] = f"{be['R_required_band_lo']:.2f}-{be['R_required_band_hi']:.2f}"
+# the same requirement in the ledger's TWO-FACTOR form: R_col and R_X are successive, never comparable
+H["R_col_ref"] = f"{be['R_col_reference']:.2f}"
+H["R_X_required"] = f"{be['R_X_required_given_R_col']:.2f}"
 H["eta_bracket_lo"] = f"{_xmu_eta1:.1f}"
 H["eta_bracket_hi"] = f"{_xmu_eta5:.1f}"
 H["eta_bracket_width"] = f"{_xmu_eta5 - _xmu_eta1:.1f}"
@@ -290,17 +297,25 @@ liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:
 - **P(X_mu > 500) = {H["P_xmu_gt500"]}**, P(Q_sci > 2) = {be["P_qsci_gt2"] * 100:.1f}%,
   P(Q_net > 1) = {be["P_qnet_gt1"] * 100:.1f}%. These zeros are STRUCTURAL, not Monte-Carlo estimates:
   500 lies outside the prior box's support entirely (max supported X_mu ~ 133).
-- Even at **zero sticking**, the best measured cycling rate ($\\lambda_c$=1.45e8) caps the yield at
-  **X_mu = {H["cap_zero_sticking"]}** at liquid density; even at the +30% reproduction
-  band on lambda_c the cap is ~414 < 500. Density scaling (lambda_c = phi*lambda_c_tilde) at the
+- Even at **zero sticking** the cycling rate caps the yield at lambda_c/lambda_0, so this cap is
+  **condition-dependent, never universal**. At the liquid anchor ($\\lambda_c$=1.45e8) it is
+  **X_mu = {H["cap_zero_sticking"]}**; at the SIN 12 K solid non-equilibrated anchor
+  ($\\lambda_c$=1.93e8, ledger `lambda_c_solid_12K`) it is **X_mu = {H["cap_zero_sticking_solid"]}**.
+  Those two anchors are **condition-PAIRED, not independently selectable**: the condition that bought
+  the faster cycle also carried higher measured sticking (0.57% vs 0.45%), so the measured yield rose
+  only 113 -> {H["yield_solid_pair"]}. Even at the +30% reproduction
+  band on lambda_c the liquid cap is ~414 < 500. Density scaling (lambda_c = phi*lambda_c_tilde) at the
   demonstrated DAC phi=2.4 would lift the decay-only cap to ~530-640 *if phi-linearity holds there* --
   which is precisely the unmeasured question the MuFusE program tests.
 - **What would have to be true** for $N_\\mu$=500: the (lambda_c, R) frontier runs from
   (2.28e8, R -> 1) to (3e8, R = {be["R_required_at_lambda_c_3e8"]:.2f}); and even at infinite lambda_c,
   omega_s_eff <= 0.2% i.e. **R >= {H["R_required"]}** is required (R >= {H["R_required_band"]} across the
-  omega_s0-box band -- higher initial sticking needs more reactivation). For reference R ~ 0.35 is the model-derived
-  collisional value (Kou-Chen Eq.33) -- experiment pins only the product omega_s_eff ~ 0.45%, and our
-  Kamimura-prior calibration posterior gives R = 0.46 +- 0.06.
+  omega_s0-box band -- higher initial sticking needs more reactivation). That **R** is the TOTAL
+  reactivation. It is NOT comparable to the model-derived collisional value R_col = {H["R_col_ref"]}
+  (Kou-Chen Eq.33): the two act as SUCCESSIVE factors, omega_s_eff = omega_s0 (1-R_col)(1-R_X), so at
+  R_col = {H["R_col_ref"]} the field-assisted factor alone would have to reach
+  **R_X >= {H["R_X_required"]}**. Experiment pins only the product omega_s_eff ~ 0.45%, and our
+  Kamimura-prior calibration posterior gives a total R = 0.46 +- 0.06.
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as
@@ -375,8 +390,14 @@ _entries += [
     _entry("P_qnet_gt1", rf"P\(Q_net > 1\) = {re.escape(H['P_qnet_gt1'])}"),
     _entry("P_xmu_gt500", rf"P\(X_mu > 500\) = {re.escape(H['P_xmu_gt500'])}"),
     _entry("cap_zero_sticking", rf"\*\*X_mu = {re.escape(H['cap_zero_sticking'])}\*\*"),
+    _entry(
+        "cap_zero_sticking_solid",
+        rf"anchor\s*\n?\s*\(\$\\lambda_c\$=1\.93e8[^\n]*\n?[^\n]*\*\*X_mu = "
+        rf"{re.escape(H['cap_zero_sticking_solid'])}\*\*",
+    ),
     _entry("R_required", rf"\*\*R >= {re.escape(H['R_required'])}\*\*"),
     _entry("R_required_band", rf"R >= {re.escape(H['R_required_band'])} across the"),
+    _entry("R_X_required", rf"\*\*R_X >= {re.escape(H['R_X_required'])}\*\*"),
     _entry("eta_bracket_lo", rf"\| 1 \(bare theory\) \| {re.escape(H['eta_bracket_lo'])} \|"),
     _entry("eta_bracket_hi", rf"\| 5 \(Yamashita-Kino fit\) \| {re.escape(H['eta_bracket_hi'])} \|"),
     _entry("eta_bracket_width", rf"X_mu\(eta=5\) - X_mu\(eta=1\) = \*\*{re.escape(H['eta_bracket_width'])}\*\*"),

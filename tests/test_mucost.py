@@ -58,7 +58,7 @@ def test_loader_rejects_bad_tier(tmp_path):
     row.update(
         source_id="bogus", citation="c", year="2020", tier="T9-not-a-tier",
         basis_as_published="b", derivation="d", source_bibkey="Bertin1987", needs_verification="false",
-        recapture_credit_applied="false", normalized_GeV_per_stopped_mu="5.0",
+        recapture_credit_applied="false", normalized_GeV_per_mu="5.0",
     )
     with bad.open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
@@ -95,7 +95,7 @@ def test_normalized_positive_and_tier_ordered(table):
     """Every pinned normalized value is > 0, and the tier medians are ordered T1 < T2 < T3 (G-E2)."""
     for r in table:
         if r.has_normalized:
-            assert r.normalized_GeV_per_stopped_mu > 0.0, r.source_id
+            assert r.normalized_GeV_per_mu > 0.0, r.source_id
     m1 = table.tier_median("T1-design-study")
     m2 = table.tier_median("T2-demonstrated-tech")
     m3 = table.tier_median("T3-operating-facility")
@@ -103,9 +103,63 @@ def test_normalized_positive_and_tier_ordered(table):
 
 
 def test_ten_to_the_three_gap_from_the_table(table):
-    """G-E2: the tier-median gap T3/T1 proves the ~10^3 simulation-to-facility gap from the table itself."""
+    """G-E2: the tier-median spread T3/T1 is ~10^3 -- an ORDER-OF-MAGNITUDE, MIXED-BASIS statement.
+
+    The rows are not on a common accounting basis (see the basis tests below), so this ratio is not a
+    same-basis comparison and MUON_COST.md must not quote it as one. The numeric check is retained
+    because the order of magnitude is the defensible claim.
+    """
     ratio = table.tier_median("T3-operating-facility") / table.tier_median("T1-design-study")
     assert ratio >= 1.0e3, ratio
+
+
+def test_bases_are_heterogeneous_and_declared(table):
+    """Every pinned row declares basis_class + charge_basis, and the table is NOT basis-homogeneous."""
+    for r in table:
+        if r.has_normalized:
+            assert r.basis_class, r.source_id
+            assert r.charge_basis, r.source_id
+    assert not table.is_basis_homogeneous(), "bases are known to be mixed; see MUON_COST.md"
+
+
+def test_no_basis_class_spans_T1_and_T3(table):
+    """The honest finding: a same-basis T1-vs-T3 ratio is NOT COMPUTABLE from these rows.
+
+    T1 holds per-produced / per-stopped-in-D-T figures; T3 holds per-collected /
+    per-stopped-in-another-target ones. With no shared class, any cross-tier ratio mixes bases -- which
+    is exactly what the MUON_COST.md headline now discloses instead of asserting a precise gap.
+    """
+    shared = table.basis_classes("T1-design-study") & table.basis_classes("T3-operating-facility")
+    assert shared == set(), f"a shared basis class appeared: {shared} -- update the headline disclosure"
+
+
+def test_lower_bound_rows_are_flagged(table):
+    """per-produced / per-collected / mixed-charge rows understate the per-stopped-in-D-T cost."""
+    assert table["kelly_hart_rose_2021"].understates_stopped_in_dt_cost is True  # per produced
+    assert table["music"].understates_stopped_in_dt_cost is True  # counts mu+ AND mu-
+    assert table["bertin_1987"].understates_stopped_in_dt_cost is False  # already per stopped in D-T
+
+
+def test_kelly_wallplug_is_a_one_sided_bound(table):
+    """wall-plug = beam / eta_acc is an ENERGY conversion, not a stopping correction.
+
+    Kelly is the only row stating its own eta_acc (0.18, PSI-measured), so it is the only fully-sourced
+    wall-plug figure: 4.70/0.18 = 26.1 GeV per muon PRODUCED. Because that row is per-produced, the
+    remaining (sub-unity) collection and stopping fractions can only raise the true per-stopped-in-D-T
+    cost -- the bound is one-sided.
+    """
+    kelly = table["kelly_hart_rose_2021"]
+    assert kelly.eta_acc_assumption == 0.18
+    assert math.isclose(kelly.wallplug_lower_bound_GeV, 4.70 / 0.18, rel_tol=1e-12)
+    assert kelly.wallplug_lower_bound_GeV > kelly.normalized_GeV_per_mu
+    assert kelly.understates_stopped_in_dt_cost is True
+    # rows that state no eta_acc cannot be converted, and must report NaN rather than a guess
+    assert math.isnan(table["mu2e"].wallplug_lower_bound_GeV)
+
+
+def test_psi_himb_is_mu_plus_only(table):
+    """PSI HIMB is mu+-only and therefore irrelevant to muCF; the flag must be machine-readable."""
+    assert table["psi_himb"].charge_basis == "mu_plus_only"
 
 
 def test_t3_rows_carry_derivation(table):
@@ -127,7 +181,7 @@ def test_recapture_recorded_not_folded(table):
     kelly = table["kelly_hart_rose_2021"]
     assert kelly.recapture_credit_applied is False
     assert kelly.recapture_factor == 2.5
-    assert kelly.normalized_GeV_per_stopped_mu == 4.70  # the pre-credit beam-energy-per-muon value
+    assert kelly.normalized_GeV_per_mu == 4.70  # the pre-credit beam-energy-per-muon value
 
 
 def test_jandel_unpinned(table):
@@ -139,9 +193,9 @@ def test_jandel_unpinned(table):
 
 def test_anchor_values_pinned(table):
     """The three full-text-verified T1 anchors carry their pinned digits (nv=false)."""
-    assert table["kelly_hart_rose_2021"].normalized_GeV_per_stopped_mu == 4.70
-    assert table["bertin_1987"].normalized_GeV_per_stopped_mu == 7.8
-    assert table["eliezer_henis_1994"].normalized_GeV_per_stopped_mu == 5.0
+    assert table["kelly_hart_rose_2021"].normalized_GeV_per_mu == 4.70
+    assert table["bertin_1987"].normalized_GeV_per_mu == 7.8
+    assert table["eliezer_henis_1994"].normalized_GeV_per_mu == 5.0
     for sid in ("kelly_hart_rose_2021", "bertin_1987", "eliezer_henis_1994"):
         assert table[sid].needs_verification is False
 

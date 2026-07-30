@@ -194,7 +194,7 @@ def params_from_conditions(
     construction (docs/accounting.md d-recapture row); the deferred _CALIB unfolding stays acquisition-gated.
     """
     from . import formation
-    from .analytic import effective_sticking
+    from .analytic import effective_sticking, ledger_reactivation
     from .rates import omega_fraction
 
     if eta is None:
@@ -206,7 +206,7 @@ def params_from_conditions(
     lf1 = formation.lambda_dtmu(T, phi, 1, eta)
     if omega_s_eff is None:
         os0 = omega_fraction(rates["omega_s0_legacy" if use_legacy_sticking else "omega_s0"])
-        omega_s_eff = effective_sticking(os0, rates.value("R_col"))
+        omega_s_eff = effective_sticking(os0, ledger_reactivation(rates))
     if include_loss_channels:
         lambda_tt = rates.value("lambda_ttmu") * phi * c_t
         omega_tt = rates.value("omega_tt")

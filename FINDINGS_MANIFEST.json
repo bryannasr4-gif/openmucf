@@ -194,6 +194,14 @@
     },
     {
       "doc": "FINDINGS.md",
+      "id": "cap_zero_sticking_solid",
+      "pattern": "anchor\\s*\\n?\\s*\\(\\$\\\\lambda_c\\$=1\\.93e8[^\\n]*\\n?[^\\n]*\\*\\*X_mu = 424\\*\\*",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "424"
+    },
+    {
+      "doc": "FINDINGS.md",
       "id": "R_required",
       "pattern": "\\*\\*R >= 0\\.77\\*\\*",
       "source": "scripts/generate_findings.py",
@@ -207,6 +215,14 @@
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.75-0.79"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_X_required",
+      "pattern": "\\*\\*R_X >= 0\\.64\\*\\*",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.64"
     },
     {
       "doc": "FINDINGS.md",
@@ -283,7 +299,7 @@
   ],
   "generated_by": "scripts/generate_findings.py",
   "inputs": {
-    "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784",
+    "rates_csv_sha256": "1d60f23d02cbacb7436bb0aac32dfd5e96151ae713a951c84ce60bc469fd9c12",
     "seeds": {
       "breakeven": 1,
       "forward_uq": 0,
@@ -291,6 +307,6 @@
       "tier_panel": 0
     },
     "uq_params_repr_sha256": "2de22958c76d1e537feafeada7b7fddd7f1f614daeeba628a0006dfe9d0db727",
-    "validation_targets_csv_sha256": "8c806e9c459ea67c88703179e0f556d3107253fc54c596a78247591fb6ea947e"
+    "validation_targets_csv_sha256": "a097801e57fe56f389f0e104866a36e33e0916c90f7505ba16a5a8fa999fda96"
   }
 }

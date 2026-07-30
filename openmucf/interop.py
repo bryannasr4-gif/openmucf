@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import formation
-from .analytic import effective_sticking
+from .analytic import effective_sticking, ledger_reactivation
 from .rates import omega_fraction
 
 # ---------------------------------------------------------------------------
@@ -97,9 +97,9 @@ def _build_1d(g0, fn):
 
 
 def _ledger_omega_s_eff(rates, use_legacy_sticking: bool = False) -> float:
-    """omega_s^eff = omega_s0*(1-R) from the ledger (a bare fraction)."""
+    """omega_s^eff = omega_s0*(1-R_col)*(1-R_X) from the ledger (a bare fraction)."""
     os0 = omega_fraction(rates["omega_s0_legacy" if use_legacy_sticking else "omega_s0"])
-    return float(effective_sticking(os0, rates.value("R_col")))
+    return float(effective_sticking(os0, ledger_reactivation(rates)))
 
 
 def export_omega_s_eff(rates, T_grid, phi_grid, use_legacy_sticking: bool = False) -> RateTable:

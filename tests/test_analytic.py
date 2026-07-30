@@ -12,6 +12,38 @@ def test_effective_sticking():
     assert math.isclose(A.effective_sticking(0.00857, 0.35), 0.00857 * 0.65, rel_tol=1e-12)
 
 
+def test_combine_reactivation_is_successive_not_additive():
+    """R_col and R_X compose on the SURVIVING sticking: R = 1-(1-R_col)(1-R_X), never R_col+R_X."""
+    assert math.isclose(A.combine_reactivation(0.35, 0.0), 0.35, rel_tol=1e-15)
+    assert math.isclose(A.combine_reactivation(0.0, 0.641), 0.641, rel_tol=1e-15)
+    # successive composition is strictly BELOW the additive answer whenever both factors are non-zero
+    assert A.combine_reactivation(0.35, 0.40) < 0.35 + 0.40
+    assert math.isclose(A.combine_reactivation(0.35, 0.40), 1 - 0.65 * 0.60, rel_tol=1e-15)
+    # order-independence (the factors commute)
+    assert math.isclose(
+        A.combine_reactivation(0.35, 0.641), A.combine_reactivation(0.641, 0.35), rel_tol=1e-15
+    )
+
+
+def test_combine_reactivation_stays_in_unit_interval():
+    """Domain invariant flagged by cross-vendor review: inputs in [0,1] => result in [0,1], monotone."""
+    grid = [0.0, 0.1, 0.35, 0.5, 0.641, 0.9, 1.0]
+    for a in grid:
+        for b in grid:
+            r = A.combine_reactivation(a, b)
+            assert 0.0 <= r <= 1.0, (a, b, r)
+            assert r >= max(a, b) - 1e-15, (a, b, r)  # adding a factor never reduces total R
+
+
+def test_ledger_reactivation_is_field_off_baseline():
+    """The shipped ledger is the field-off baseline: R_X = 0 => total R == R_col EXACTLY (zero drift)."""
+    from openmucf.rates import load_rates
+
+    r = load_rates()
+    assert r.value("R_X") == 0.0
+    assert A.ledger_reactivation(r) == r.value("R_col")
+
+
 def test_xmu_reproduces_kouchen_baseline_when_fed_their_eff_sticking():
     # Kou-Chen baseline: omega_s_eff = 0.557%, and a cycling rate giving N=112.6.
     x = A.fusions_per_muon(0.00557, 1.371e8)

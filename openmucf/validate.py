@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import cycle
+from .analytic import ledger_reactivation
 from .rates import TARGETS_CSV, omega_fraction
 
 # Canonical liquid operating point for sticking-controlled checks.
@@ -261,7 +262,7 @@ def run(rates, targets_csv=None, channels="off"):
 
     # --- Three registered independent-prediction targets (pre-framed to FAIL; see PRE_REGISTRATION.md).
     # They measure the v1 placeholder's distance from the field's own rates; a PASS is a bug, not a win.
-    omega_pred = omega_fraction(rates["omega_s0"]) * (1.0 - rates.value("R_col")) * 100.0
+    omega_pred = omega_fraction(rates["omega_s0"]) * (1.0 - ledger_reactivation(rates)) * 100.0
     _po = tgt["V_petitjean_omega"]
     out.append(
         Result(
@@ -271,7 +272,7 @@ def run(rates, targets_csv=None, channels="off"):
             _po["tolerance"],
             _within(omega_pred, float(_po["value"]), _po["tolerance"]),
             "independent prediction of effective sticking from the ledger microphysics "
-            "(omega_s0 x (1-R_col)); FAIL is the registered finding: the ~+24% gap to the "
+            "(omega_s0 x (1-R_col) x (1-R_X)); FAIL is the registered finding: the ~+24% gap to the "
             "measured 0.45% is the side-channel share the v1 effective parameters absorb "
             "(accounting.md re-attribution; pending lambda_ttmu acquisition).",
             "independent",

@@ -85,8 +85,8 @@ def test_muon_cost_tier_crossref_is_grounded(parisi):
     table = load_muon_cost()
     assert parisi.MUON_COST_TIER == "T1-design-study"
     assert len(table.tier("T1-design-study")) >= 1
-    assert table["acceleron_2025"].normalized_GeV_per_stopped_mu == 3.0
-    assert table["eliezer_henis_1994"].normalized_GeV_per_stopped_mu == 5.0
+    assert table["acceleron_2025"].normalized_GeV_per_mu == 3.0
+    assert table["eliezer_henis_1994"].normalized_GeV_per_mu == 5.0
 
 
 def test_import_has_no_side_effects(parisi, capsys):
