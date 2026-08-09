@@ -26,6 +26,8 @@ from __future__ import annotations
 import numpy as np
 from jax.scipy.linalg import expm as _expm
 
+from . import _jaxcfg  # noqa: F401  -- MANDATORY float64; this module imports nothing else in-package
+
 # One muon enters on deuterium: y_d(0) = (x_dmu, x_tmu1, x_tmu0) = (1, 0, 0).
 _Y0 = np.array([1.0, 0.0, 0.0])
 

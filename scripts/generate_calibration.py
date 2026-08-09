@@ -430,11 +430,18 @@ def _parse_tables(md_text):
     return [(t, h, r) for t, h, r in sections]
 
 
-def _within(a, b, kind):
+def _rel_distance(a, b, kind) -> float:
+    """Committed-vs-fresh distance in the cell's own class units (relative, except exact-eq classes)."""
     if kind == "div":
-        return a == b
+        return 0.0 if a == b else float("inf")
     denom = max(abs(a), abs(b))
-    return denom == 0.0 or abs(a - b) <= _TOL[kind] * denom
+    return 0.0 if denom == 0.0 else abs(a - b) / denom
+
+
+def _within(a, b, kind):
+    if kind == "div":                       # divergence counts are exact-equality, not a tolerance class
+        return a == b
+    return _rel_distance(a, b, kind) <= _TOL[kind]
 
 
 def audit():
@@ -446,6 +453,12 @@ def audit():
     if len(committed) != len(fresh):
         problems.append(f"section count differs: committed {len(committed)} vs fresh {len(fresh)}")
     n_cells = 0
+    # Per-class worst margin, reported whether or not the audit passes. These tolerances exist to absorb
+    # cross-architecture MCMC drift, so "OK" alone is not evidence they are correctly SIZED -- on a single
+    # architecture every cell reproduces at 0 distance and the bands are never exercised. Printing the
+    # margins makes every CI run on every platform an observation about the headroom (the instrumentation
+    # gap the 2026-07-23 arm64 reproduction identified; measured there: ess_mcse 81.8% of band, sd 60.2%).
+    margins: dict[str, tuple[float, str, float, float]] = {}
     for (ct, chead, crows), (ft, fhead, frows) in zip(committed, fresh, strict=False):
         if ct != ft:
             problems.append(f"section title differs: {ct!r} vs {ft!r}")
@@ -467,14 +480,25 @@ def audit():
                     _cell_specs(col), _cell_floats(crow[j]), _cell_floats(frow[j]), strict=False
                 ):
                     n_cells += 1
+                    d = _rel_distance(cval, fval, kind)
+                    if kind != "div" and (kind not in margins or d > margins[kind][0]):
+                        margins[kind] = (d, f"[{ct}] {key}.{col}({label})", cval, fval)
                     if not _within(cval, fval, kind):
                         tol = "==" if kind == "div" else f"{_TOL[kind]:.0%} rel."
                         problems.append(
                             f"[{ct}] {key}.{col}({label}): committed {cval:.4g} vs fresh {fval:.4g} ({tol} tol)"
                         )
+    report = [
+        f"    [{kind:<8}] tol={_TOL[kind]:.3f}  worst={d:.6f} ({d / _TOL[kind]:.1%} of band)  "
+        f"committed {c:.6g} vs fresh {f:.6g}  {where}"
+        for kind, (d, where, c, f) in sorted(margins.items())
+    ]
     if problems:
-        raise SystemExit("CALIBRATION.md audit FAILED:\n  " + "\n  ".join(problems))
+        raise SystemExit("CALIBRATION.md audit FAILED:\n  " + "\n  ".join(problems)
+                         + "\n  per-class margins:\n" + "\n".join(report))
     print(f"calibration audit OK: {n_cells} class-tolerance cells across {len(committed)} section(s)")
+    print("  per-class worst margin (headroom evidence -- see the audit() docstring):")
+    print("\n".join(report))
 
 
 def main(argv=None):

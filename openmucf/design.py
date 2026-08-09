@@ -17,8 +17,8 @@ Estimand discipline (the reason R is reported class-conditionally)
 ``omega_s^eff = omega_s0 * (1 - R)`` is directly observable from neutron yields, so its EIG /
 contraction is well posed. ``R`` (the microscopic sticking/reactivation split) is NOT identified by
 neutron-only observables without an ASSUMED structural form for how reactivation behaves away from the
-calibration density. We therefore report R's contraction in BOTH structural classes and report the
-class-flip as a finding:
+calibration density. We therefore report R's contraction in BOTH structural classes, and report the class
+CONTRAST -- resolved or not, against its own Monte-Carlo error -- as the finding:
 
 * **constant-R** (scenario A): reactivation at the high-density design point is the SAME latent ``R``
   as at calibration, so a high-density neutron measurement maps straight back onto ``R``.
@@ -31,8 +31,10 @@ form), so its R-contraction is robust across both classes -- which is exactly wh
 
 Kept OUT of ``openmucf.__all__`` (a library, like ``calibrate``/``forecast``); introduces no new runtime
 dependency. All numbers are NUTS/Monte-Carlo derived: they reproduce to Monte-Carlo error, NOT
-byte-identically -- see ``DESIGN.md`` and the 5%-relative-tolerance ``--audit`` in
-``scripts/generate_design.py``.
+byte-identically. Every reported contraction therefore ships WITH its own bootstrap Monte-Carlo standard
+error (:func:`median_se`), and ``scripts/generate_design.py --audit`` builds its tolerance from those SEs
+rather than from a fixed constant -- see the AMENDMENT block in that script for what went wrong when it
+did not.
 """
 
 from __future__ import annotations
@@ -41,7 +43,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from . import calibrate
+from . import _jaxcfg, calibrate
 from .constants import LAMBDA_0
 
 # --- pre-registered design settings (do not adjust after seeing outputs; I2) --------------------------
@@ -55,6 +57,21 @@ PHI_ANCHOR = 1.2         # canonical liquid operating point (forecast.PHI_ANCHOR
 
 # R(phi)-inflated (scenario-B) registered prior on high-density reactivation (forecast.py D2).
 R_INFLATED_LO, R_INFLATED_HI = 0.15, 0.60
+
+# --- Monte-Carlo resolution of the PRIMARY metric (re-registered 2026-08-09; see DESIGN.md) -----------
+# n_synth was 8. The 2026-07-23 cross-architecture reproduction measured what a median-of-8 actually
+# costs: the per-refit contraction spread is 4-18 pp (NOT the ~3 pp that docs/xray_feasibility.md
+# reported), so the reported median carried a Monte-Carlo SE of 1.7-6.4 pp -- larger than the 3 pp
+# absolute band the audit was checking it against. That audit could therefore only ever pass by
+# reproducing the SAME pseudo-random realization, i.e. it was a byte-reproduction check wearing a
+# tolerance-audit costume, and it failed on 5 of 12 cells the first time a genuinely different
+# architecture ran it. n_synth=64 cuts the worst-cell SE to ~2 pp (measured 0.0642 -> 0.0196 on arm64)
+# at ~10 min per generate/audit on a 2025 laptop; the audit band is now DERIVED from the SE the run
+# reports (generate_design.AUDIT_K_SIGMA), so it can never again be tighter than the estimator's own noise.
+N_SYNTH_DEFAULT = 64
+# Nonparametric bootstrap resamples used for the per-cell median SE (deterministic: dedicated seed).
+SE_BOOTSTRAP = 10_000
+SE_BOOTSTRAP_SEED = 20260809
 
 # base-model priors (verbatim from calibrate.model), reused by every refit
 _R_LO, _R_HI = 0.10, 0.60
@@ -165,12 +182,15 @@ def base_posterior(seed: int = 0) -> dict:
     # R box pinned to design's own (_R_LO, _R_HI) = the box every refit uses (line ~60), so the
     # contraction sd_refit/sd_base stays coherent. calibrate WIDENED its default R box to (0.00, 0.80)
     # when the default R box was widened; without this pin the base and refit posteriors would use
-    # different R priors. num_chains is ALSO pinned to 1 (NOT calibrate's new 4-chain default) so the
-    # base and the single-chain refits share one pinned realization that reproduces cross-platform
-    # within the 3 pp contraction floor. A 4-chain base was tried and REVERTED: its sd-contraction cells
-    # drifted >3 pp between x86 Linux (CI) and the dev host, breaking `--audit`; the single-chain
-    # realization is the reproducible one and preserves the registered findings (this metric is a noisy
-    # preposterior expectation, so the audit-stable realization matters more than the extra chains).
+    # different R priors. num_chains is ALSO pinned to 1 (NOT calibrate's new 4-chain default) so the base
+    # and the single-chain refits share ONE pinned realization: multi-chain draws do not reproduce
+    # cross-platform, and a 4-chain base was tried and REVERTED after its cells drifted between x86 Linux
+    # (CI) and the dev host. NOTE (2026-08-09): the original comment justified that revert by "drifted
+    # >3 pp ... within the 3 pp contraction floor" -- circular reasoning against a floor that was itself
+    # wrong (the real per-refit spread is 4-18 pp; see N_SYNTH_DEFAULT above). The pin is KEPT because
+    # single-chain pinning is the right call for a registered realization on its own merits, but it is no
+    # longer what makes `--audit` pass: the band is now derived from each cell's measured Monte-Carlo SE,
+    # so an honest cross-platform difference is absorbed rather than hidden behind a matched realization.
     s = calibrate.run_mcmc(num_warmup=NUM_WARMUP, num_samples=NUM_SAMPLES, seed=seed, num_chains=1,
                            omega_s0_prior=BASE_PRIOR, R_prior=(_R_LO, _R_HI))
     return {
@@ -262,6 +282,24 @@ def eig_nested_mc(candidate, n_outer: int = 256, n_inner: int = 256, seed: int =
     }
 
 
+def median_se(values, n_boot: int = SE_BOOTSTRAP, seed: int = SE_BOOTSTRAP_SEED) -> float:
+    """Nonparametric bootstrap standard error of the MEDIAN of ``values``.
+
+    The reported design cells are medians over ``n_synth`` synthetic datasets, so each one is a
+    Monte-Carlo estimate with its own sampling error -- the quantity the audit band must be built from.
+    A bootstrap is used rather than the normal-theory ``1.2533*s/sqrt(n)`` because the per-refit
+    contraction distribution is visibly skewed and heavy-tailed (see the raw spreads in DESIGN.md); the
+    two agree to ~20% on the measured samples, and the bootstrap makes no shape assumption. Deterministic:
+    its own dedicated seed, independent of the analysis seed, so a cell's SE is reproducible.
+    """
+    v = np.asarray(values, dtype=float)
+    if v.size < 2:
+        return float("nan")
+    rng = np.random.default_rng(seed)
+    boot = np.median(rng.choice(v, size=(n_boot, v.size), replace=True), axis=1)
+    return float(boot.std(ddof=1))
+
+
 # ============================================================ sd-contraction refit (PRIMARY metric)
 def _refit_sd(cand: Candidate, cls: str, y_obs: float, sigma: float, seed: int):
     """Refit the calibration model with the candidate observable appended; return (sd_ose, sd_R)."""
@@ -270,6 +308,7 @@ def _refit_sd(cand: Candidate, cls: str, y_obs: float, sigma: float, seed: int):
     import numpyro.distributions as dist
     from numpyro.infer import MCMC, NUTS
 
+    _jaxcfg.require_x64("the design sd-contraction refits")
     w = cand.kappa_w
 
     def model():
@@ -304,7 +343,7 @@ def _refit_sd(cand: Candidate, cls: str, y_obs: float, sigma: float, seed: int):
     return float(np.asarray(s["omega_s_eff_pct"]).std()), float(np.asarray(s["R"]).std())
 
 
-def sd_contraction(candidate, n_synth: int = 8, seed: int = 0, samples: dict | None = None,
+def sd_contraction(candidate, n_synth: int = N_SYNTH_DEFAULT, seed: int = 0, samples: dict | None = None,
                    classes=("constant", "inflated")) -> dict:
     """PRIMARY metric: preposterior median posterior-sd contraction from adding ``candidate``.
 
@@ -312,11 +351,20 @@ def sd_contraction(candidate, n_synth: int = 8, seed: int = 0, samples: dict | N
     posterior, an observation ``y* = mu(theta*) + noise`` placed at the candidate's design point -- refit
     the calibration model with the observable appended and record the contraction
     ``(sd_before - sd_after) / sd_before`` of the posterior sd of ``omega_s^eff`` and ``R``. Report the
-    MEDIAN over the synthetic datasets.
+    MEDIAN over the synthetic datasets, WITH its bootstrap Monte-Carlo standard error (:func:`median_se`).
 
     ``omega_s^eff`` contraction is well posed (reported under the constant-R / calibrated-model link).
     ``R`` contraction is reported for each class in ``classes``; for a class-INSENSITIVE candidate
     (X-ray ratio, cycling rate) both classes coincide by construction and only one refit is run.
+
+    COMMON RANDOM NUMBERS (2026-08-09). The two structural classes now share their synthetic-dataset
+    draws: the same ``theta*`` indices, the same STANDARDIZED noise ``eps ~ N(0,1)`` (rescaled by each
+    class's own sigma), and the same kappa draws; only ``R_hi`` -- the thing the classes differ by -- comes
+    from its own stream. Previously the classes consumed one shared RNG sequentially, so they saw
+    DIFFERENT y* noise and the constant-vs-inflated difference (the class-flip finding) carried the
+    variance of two independent estimates. Pairing removes that common component without biasing either
+    marginal (textbook CRN variance reduction), which is what makes ``R_contraction_class_delta`` below a
+    meaningful quantity rather than a difference of two noisy numbers.
     """
     cand = _resolve(candidate)
     if samples is None:
@@ -324,42 +372,54 @@ def sd_contraction(candidate, n_synth: int = 8, seed: int = 0, samples: dict | N
     sd_before_ose = float(samples["omega_s_eff_pct"].std())
     sd_before_R = float(samples["R"].std())
 
-    rng = np.random.default_rng(seed)
     n = samples["omega_s0_pct"].size
+    # One draw of the synthetic-dataset design, SHARED by every class (common random numbers).
+    rng = np.random.default_rng(seed)
     idx = rng.integers(0, n, n_synth)
-    run_classes = classes if cand.class_sensitive else ("constant",)
+    eps = rng.normal(0.0, 1.0, n_synth)                       # standardized noise, rescaled per class
+    kappa_draw = (rng.uniform(1.0 - cand.kappa_w, 1.0 + cand.kappa_w, n_synth)
+                  if cand.kind == "xray_ratio" else None)
+    # R_hi lives on its own stream: it is the ONLY thing the inflated class changes.
+    r_hi = np.random.default_rng([seed, 1]).uniform(R_INFLATED_LO, R_INFLATED_HI, n_synth)
 
+    run_classes = classes if cand.class_sensitive else ("constant",)
     per_class: dict[str, dict] = {}
-    ose_contractions: list[float] = []  # from the constant-R (calibrated-model) refit -> well-posed headline
+    raw: dict[str, dict] = {}
     for cls in run_classes:
         c_ose, c_R = [], []
         for j in range(n_synth):
             i = int(idx[j])
             os0, R, lc = samples["omega_s0_pct"][i], samples["R"][i], samples["lambda_c"][i]
-            if cand.class_sensitive and cls == "inflated":
-                r_design = rng.uniform(R_INFLATED_LO, R_INFLATED_HI)
-            else:
-                r_design = float(R)
-            if cand.kind == "xray_ratio":
-                kappa = np.array([float(rng.uniform(1.0 - cand.kappa_w, 1.0 + cand.kappa_w))])
-            else:
-                kappa = None
+            r_design = float(r_hi[j]) if (cand.class_sensitive and cls == "inflated") else float(R)
+            kappa = None if kappa_draw is None else np.array([float(kappa_draw[j])])
             mu_true = float(_mu(cand, np.array([os0]), np.array([r_design]), np.array([lc]), kappa=kappa)[0])
             sigma = cand.sigma_rel * abs(mu_true)
-            y_star = mu_true + float(rng.normal(0.0, sigma)) if sigma > 0 else mu_true
+            y_star = mu_true + sigma * float(eps[j]) if sigma > 0 else mu_true
             sd_ose, sd_R = _refit_sd(cand, cls, y_star, sigma if sigma > 0 else 1.0, seed=1000 * j + 7)
             c_ose.append((sd_before_ose - sd_ose) / sd_before_ose)
             c_R.append((sd_before_R - sd_R) / sd_before_R)
         per_class[cls] = {
             "R_contraction": float(np.median(c_R)),
+            "R_contraction_se": median_se(c_R),
+            "R_contraction_spread_sd": float(np.std(c_R, ddof=1)),
             "ose_contraction": float(np.median(c_ose)),
+            "ose_contraction_se": median_se(c_ose),
+            "ose_contraction_spread_sd": float(np.std(c_ose, ddof=1)),
         }
-        if cls == "constant":
-            ose_contractions = c_ose
+        raw[cls] = {"R": list(map(float, c_R)), "ose": list(map(float, c_ose))}
 
     # R contraction is class-independent for insensitive candidates: mirror the single run into 'inflated'
     if not cand.class_sensitive and "inflated" in classes:
         per_class["inflated"] = dict(per_class["constant"])
+        raw["inflated"] = raw["constant"]
+
+    # Paired class difference (constant - inflated) and its bootstrap SE. Exactly 0 by construction for a
+    # class-insensitive candidate; for a sensitive one this is the class-flip finding's actual statistic.
+    if "constant" in raw and "inflated" in raw:
+        delta = [a - b for a, b in zip(raw["constant"]["R"], raw["inflated"]["R"], strict=True)]
+        class_delta = {"value": float(np.median(delta)), "se": median_se(delta), "paired": True}
+    else:  # pragma: no cover - only when the caller restricts `classes`
+        class_delta = {"value": float("nan"), "se": float("nan"), "paired": False}
 
     return {
         "candidate": cand.id,
@@ -368,10 +428,15 @@ def sd_contraction(candidate, n_synth: int = 8, seed: int = 0, samples: dict | N
         "seed": seed,
         "sd_before": {"omega_s_eff_pct": sd_before_ose, "R": sd_before_R},
         # PRIMARY well-posed headline (constant-R / calibrated-model link):
-        "ose_contraction": float(np.median(ose_contractions)),
-        # class-conditional R:
+        "ose_contraction": per_class["constant"]["ose_contraction"],
+        "ose_contraction_se": per_class["constant"]["ose_contraction_se"],
+        # class-conditional R (value + the Monte-Carlo SE the audit band is built from):
         "R_contraction": {cls: per_class[cls]["R_contraction"] for cls in classes},
+        "R_contraction_se": {cls: per_class[cls]["R_contraction_se"] for cls in classes},
+        "R_contraction_class_delta": class_delta,
         "ose_contraction_by_class": {cls: per_class[cls]["ose_contraction"] for cls in per_class},
+        "spread_sd": {cls: per_class[cls]["R_contraction_spread_sd"] for cls in per_class},
+        "raw": raw,
     }
 
 

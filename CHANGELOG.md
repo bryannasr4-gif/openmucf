@@ -10,6 +10,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — cross-architecture reproducibility (2026-08-09)
+An independent reproduction of the full audit battery on Apple Silicon (arm64), against an x86-64
+reference, found three defects that a single-architecture CI could not have surfaced. All three are fixed
+here, and the gap that hid them is closed with a standing arm64 CI job.
+- **Silent float32 sampling under a shadowed import (correctness, all platforms).** `jax_enable_x64=True`
+  was set only in `openmucf/__init__.py`. Running any script from a directory that also contains a *clone*
+  of this repository binds `openmucf` to a namespace package, so `__init__.py` never executes while the
+  submodules still import — every NUTS chain then ran in float32, silently, on rates spanning ~7 decades.
+  x64 is now enabled by `openmucf/_jaxcfg.py`, imported on every path into the package, and
+  `require_x64()` hard-fails at each sampler entry. Pinned by `tests/test_x64_guard.py`, which reproduces
+  the shadow and asserts the samplers still run in float64.
+- **`DESIGN.md`'s `--audit` tolerance was smaller than the estimator's own Monte-Carlo error.** The
+  sd-contraction cells were checked against a fixed 3 pp absolute band, justified by a "±1–3 pp
+  Monte-Carlo floor" quoted from `docs/xray_feasibility.md` that had never been measured for these cells;
+  the true per-refit spread is 4–18 pp. Such a band can only be met by regenerating the identical
+  pseudo-random realization, so it passed on every x86-64 host and failed on 5 of 12 cells the first time
+  another architecture ran it. Now: `n_synth` 8 → 64, every cell published as `value ± bootstrap MC
+  standard error`, the audit band **derived** as 4σ of those SEs (floored at 0.01 — 4σ, not 3σ, because
+  a gate that runs on every push across 12 cells must not cry wolf), and the *structural*
+  claims the document makes — C4's lead, the ω_s^eff ranking, class-independence — gated at their own
+  separations. The class-contrast prose is now generated from the measured paired difference and its SE,
+  so the file cannot again assert a separation the data do not support.
+- **The FC-001 reproduction tests contradicted FC-001's own determinism statement.** `FORECAST_PROTOCOL.md`
+  §7 claims bit-identity *under the recorded environment (including platform)* and Monte-Carlo agreement
+  cross-platform; two tests asserted bit-identity unconditionally, so a fresh clone failed on any non-x86-64
+  host. The strict gate now runs only on the platform the card itself records, and a new always-on gate
+  checks every registered number (98 cells) against the pre-registered 2 % Monte-Carlo band and the card's
+  structure exactly.
+- **Instrumentation.** `generate_calibration.py --audit` now prints the per-class worst margin (as a
+  percentage of band) whether it passes or fails, so every CI run on every platform is evidence about how
+  the bands are actually sized — previously an "OK" on one architecture proved determinism, not that a
+  tolerance was correctly sized. `generate_design.py --audit` prints its worst margin likewise.
+
 ### Added
 - **Open muon-cost ledger (`openmucf/data/muon_cost.csv` + `openmucf/mucost.py` + `MUON_COST.md`).** A
   curated compilation-with-provenance of the muon-production energy cost on one auditable basis (beam GeV
@@ -60,7 +93,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **X-ray/neutron-ratio degeneracy-breaker feasibility scan (`docs/xray_feasibility.md`).** An exploratory
   (not-audited) scan of whether adding an X-ray-per-fusion-neutron observable to the calibration would break
   the `ω_s0`/`R` degeneracy. Best-cell posterior sd(R) contraction 42.95% in the weak-prior chain (≥ a 15%
-  feasibility threshold), with the ±3 pp Monte-Carlo noise floor documented. Exploratory only; the κ-band
+  feasibility threshold), with its Monte-Carlo noise documented (the "±3 pp" figure originally quoted here
+  is scoped to that study's asymptotic setting — see the Fixed section above). Exploratory only; the κ-band
   likelihood term is specced, not built, pending acquisition of a measured κ.
 - **²²⁵Ac reproduction notebook (`scripts/parisi_ac225.py` + `notebooks/parisi_ac225.ipynb`).** A forward,
   factor-by-factor reproduction of Parisi & Rutkowski's (arXiv:2511.20951) headline — ~20 mg/yr of ²²⁵Ac from
@@ -75,8 +109,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (constant-R vs R(φ)-inflated) because neutron-only observables do not identify R without an assumed
   structural form (the class-flip finding). An internal planning instrument, not a verdict. `DESIGN.md` +
   `DESIGN_MANIFEST.json` carry NUTS-derived numbers, so `make audit` tolerance-checks them
-  (`generate_design.py --audit`: EIG bits at 5% relative, sd-contraction at 3 pp absolute) rather than
-  byte-diffing.
+  (`generate_design.py --audit`: EIG bits at 5% relative, sd-contraction cells at 4σ of each cell's own
+  published Monte-Carlo SE — the fixed 3 pp band this release originally shipped is superseded, see the
+  Fixed section above) rather than byte-diffing.
 
 ### Changed
 - **Class-tiered, falsifiable validation scoreboard.** Every `VALIDATION.md` row now carries a claim

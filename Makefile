@@ -71,8 +71,10 @@ neutronomics:
 # numpyro/NUTS-derived numbers (nested-MC EIG, sd-contraction refits) that are NOT byte-stable cross-arch
 # (the CALIBRATION.md precedent, WAVE2 A1), so NEITHER joins the audit git-diff list below; instead
 # `generate_design.py --audit` re-runs with pinned seeds and tolerance-checks every manifest number (EIG
-# 5% relative; contraction 3 pp absolute). The manifest still joins `provenance --check` (doc<->manifest
-# regenerate together).
+# 5% relative; each sd-contraction cell against 3 sigma of its OWN published Monte-Carlo SE, plus
+# structural gates on the ranking claims -- see the AMENDMENT in scripts/generate_design.py). The
+# manifest still joins `provenance --check` (doc<->manifest regenerate together). Runs ~10 min
+# (n_synth=64 NUTS refits per class-candidate); it is the slowest step of `make audit`.
 design:
 	python scripts/generate_design.py
 

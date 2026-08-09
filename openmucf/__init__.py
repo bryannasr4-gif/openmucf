@@ -10,14 +10,12 @@ formation model).
 
 import importlib as _importlib
 
-import jax as _jax
-
-# Rates span ~7 decades (lambda_f ~1e12 vs lambda_0 ~1e5); float64 is mandatory.
-_jax.config.update("jax_enable_x64", True)
-
-from . import analytic, cycle, energy, formation, interop, uq  # noqa: E402, F401
-from .energy import EnergyChain  # noqa: E402
-from .rates import Rate, RatesTable, bibkeys, load_rates, omega_fraction  # noqa: E402
+# Rates span ~7 decades (lambda_f ~1e12 vs lambda_0 ~1e5); float64 is mandatory. It is enabled by
+# importing openmucf._jaxcfg, which every import path into the package reaches (see that module for why
+# setting it here alone was NOT sufficient: a shadowed namespace-package import skips this file entirely).
+from . import _jaxcfg, analytic, cycle, energy, formation, interop, uq  # noqa: F401
+from .energy import EnergyChain
+from .rates import Rate, RatesTable, bibkeys, load_rates, omega_fraction
 
 __version__ = "1.1.0"
 

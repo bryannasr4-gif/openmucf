@@ -81,15 +81,28 @@ def test_nested_mc_settings_echoed_in_output():
 # --------------------------------------------------------------------- sd-contraction refit (NUTS; slow)
 @pytest.mark.slow
 def test_sd_contraction_refit_behaviour(base):
-    """The PRIMARY metric refits with the observable appended. C2 (cycling rate) is class-INSENSITIVE, so
-    its two R-classes coincide; a class-sensitive candidate (C1) instead COLLAPSES its R information under
-    R(phi)-inflation -- the estimand-discipline finding."""
+    """The PRIMARY metric refits with the observable appended, and reports its own Monte-Carlo error.
+
+    Asserts STRUCTURAL properties only. An earlier version of this test asserted an OUTCOME at n_synth=3
+    (``c1["R_contraction"]["inflated"] < 0.03`` and a strict constant > inflated ordering) -- a coin-flip
+    on three noisy refits whose per-refit spread is 4-18 pp. It passed on the host it was written on and
+    encoded the same over-claim the 2026-07-23 cross-architecture reproduction refuted. Whether the class
+    contrast is RESOLVED is a measurement DESIGN.md now reports with its sigma; it is not a test fixture.
+    """
     c2 = design.sd_contraction("C2", n_synth=3, seed=0, samples=base)
     assert c2["R_contraction"]["constant"] == c2["R_contraction"]["inflated"]  # class-independent
+    assert c2["R_contraction_class_delta"]["value"] == 0.0                     # ... exactly, by construction
     assert set(c2["sd_before"]) == {"omega_s_eff_pct", "R"}
     assert c2["n_synth"] == 3
 
     c1 = design.sd_contraction("C1", n_synth=3, seed=0, samples=base)
-    # C1's R information is real under constant-R and collapses toward zero once R(phi) is decoupled.
-    assert c1["R_contraction"]["constant"] > c1["R_contraction"]["inflated"]
-    assert c1["R_contraction"]["inflated"] < 0.03  # collapsed to the MC-noise floor
+    assert c1["class_sensitive"] is True
+    # the inflated refit really decoupled R at the design point (different draws, not a mirrored copy)
+    assert c1["raw"]["constant"]["R"] != c1["raw"]["inflated"]["R"]
+    # common random numbers: both classes used the SAME theta* draws, so sd_before is shared
+    assert c1["sd_before"] == c2["sd_before"]
+    # every reported cell carries a finite, strictly positive Monte-Carlo standard error
+    for se in (c1["ose_contraction_se"], c1["R_contraction_se"]["constant"],
+               c1["R_contraction_se"]["inflated"], c1["R_contraction_class_delta"]["se"]):
+        assert se == se and se > 0.0
+    assert c1["R_contraction_class_delta"]["paired"] is True
