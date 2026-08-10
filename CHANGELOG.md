@@ -32,6 +32,15 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   claims the document makes — C4's lead, the ω_s^eff ranking, class-independence — gated at their own
   separations. The class-contrast prose is now generated from the measured paired difference and its SE,
   so the file cannot again assert a separation the data do not support.
+- **The published ± omitted the base chain's own error, and the fix above would have failed cross-platform
+  without it.** Every contraction is `1 − s_j/S` with one shared denominator `S = sd(base posterior)`, so a
+  bootstrap over the synthetic datasets is blind to `S`'s Monte-Carlo error — the one term that actually
+  moves when the run is reproduced on another machine. Measured by batch means on the pinned chain, that
+  error is ~1.6% of `sd(ω_s^eff)` and ~1.7% of `sd(R)`, which alone shifts `ose_C1` by 0.011 against a band
+  of 0.013. Every cell now publishes the two components combined in quadrature. It cancels to first order
+  in the paired class contrast, which is unaffected. Also: the fresh run's SE — half of every band, and
+  published nowhere — is now gated against the committed one, and any cell whose band exceeds its own value
+  is reported as NOT INFORMATIVE instead of counting as a silent pass.
 - **The FC-001 reproduction tests contradicted FC-001's own determinism statement.** `FORECAST_PROTOCOL.md`
   §7 claims bit-identity *under the recorded environment (including platform)* and Monte-Carlo agreement
   cross-platform; two tests asserted bit-identity unconditionally, so a fresh clone failed on any non-x86-64
@@ -107,7 +116,8 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   posterior, by a primary preposterior sd-contraction metric and a secondary nested-Monte-Carlo EIG. The
   X-ray/neutron ratio is the decisive, structural-class-robust R-sharpener; R is reported class-conditionally
   (constant-R vs R(φ)-inflated) because neutron-only observables do not identify R without an assumed
-  structural form (the class-flip finding). An internal planning instrument, not a verdict. `DESIGN.md` +
+  structural form, and the class **contrast** is reported against its own Monte-Carlo error — on the shipped
+  run it is *not* resolved, and the document says so. An internal planning instrument, not a verdict. `DESIGN.md` +
   `DESIGN_MANIFEST.json` carry NUTS-derived numbers, so `make audit` tolerance-checks them
   (`generate_design.py --audit`: EIG bits at 5% relative, sd-contraction cells at 4σ of each cell's own
   published Monte-Carlo SE — the fixed 3 pp band this release originally shipped is superseded, see the

@@ -6,8 +6,8 @@
 Content (openmucf.design): rank candidate NEXT muCF experiments (C1 neutron disappearance slope @ phi=2.0;
 C2 lambda_c(T) @ 800 K; C3 omega_s^eff @ phi=2.4 under scenario A AND B; C4 X-ray/neutron ratio) by the
 PRIMARY preposterior sd-contraction metric and the SECONDARY nested-MC EIG, over the EXISTING weak-prior
-calibrate posterior. R is reported class-conditionally (constant-R vs R(phi)-inflated); the class-flip is
-a finding.
+calibrate posterior. R is reported class-conditionally (constant-R vs R(phi)-inflated); the class
+CONTRAST -- resolved or not, against its own Monte-Carlo error -- is the finding.
 
 Reproducibility (WAVE2 A1/A2 -- the CALIBRATION.md precedent, NOT the byte-diff pattern): DESIGN.md +
 DESIGN_MANIFEST.json carry numpyro/NUTS-derived numbers that are NOT byte-stable cross-architecture, so
@@ -77,18 +77,27 @@ AUDIT_RTOL_EIG = 0.05      # EIG-in-bits: 5% RELATIVE (WAVE2 A1 pre-registered; 
 AUDIT_ATOL_FLOOR = 0.01    # contraction band floor: never tighter than 1 pp, whatever the bootstrap says
 # The DETECTION band and the CLAIM threshold are deliberately different numbers, because they trade off in
 # opposite directions and were conflated in the superseded design:
-#   * AUDIT_K_SIGMA sizes a gate that runs on EVERY push, on 12 cells, and must not cry wolf. At 3 sigma
-#     the per-cell false-alarm rate is ~0.27%, i.e. ~3% per audit run across 12 cells -- near-certain to
-#     fire spuriously within a few dozen CI runs, which is how a blocking gate gets ignored or disabled.
-#     4 sigma puts it at ~0.08% per run while still catching any systematic shift the audit exists to
-#     find; it also absorbs the fact that a bootstrap SE is itself an estimate (measured 0.4-1.2x of an
-#     independently determined dispersion at n_synth=8, tighter at 64), so an under-estimated SE cannot
-#     by itself turn the gate red.
+#   * AUDIT_K_SIGMA sizes a gate that runs on EVERY push, on 12 cells, and must not cry wolf. Both sides
+#     of the band are ESTIMATED SEs, so the nominal normal-tail rate understates the truth; MEASURED by
+#     simulation (20k replicates, n=64, normal / lognormal / t3 samples, both SEs bootstrapped exactly as
+#     here): 3 sigma gives ~0.35% per cell = 4.1-4.6% per 12-cell run, and 4 sigma gives ~0.01-0.05% per
+#     cell = 0.12-0.60% per run -- against nominal 3.2% and 0.076%. A ~4% per-run false-alarm rate is
+#     near-certain to fire spuriously within a few dozen CI runs, which is how a blocking gate gets
+#     ignored or disabled; ~0.1-0.6% is not. That is the reason for 4 sigma. (The superseded version of
+#     this comment claimed 0.08% per run and said the margin "absorbs" SE-estimation noise so that an
+#     under-estimated SE "cannot by itself turn the gate red" -- backwards: SE-estimation noise is
+#     precisely what inflates the rate 1.5-8x above nominal. The choice survives; its justification did not.)
 #   * CLAIM_K_SIGMA is the bar for DESIGN.md to state a finding as resolved. Here the conservative
 #     direction is the opposite one -- a lower bar over-claims -- so it stays at the conventional 3 sigma.
 AUDIT_K_SIGMA = 4.0                # sd-contraction band = K sigma of the cell's OWN Monte-Carlo SE
 CLAIM_K_SIGMA = 3.0                # a contrast/cell is only reported as RESOLVED above this
 AUDIT_MIN_SEPARATION_SIGMA = 3.0   # C4's R-contraction lead over the runner-up, in pooled SE units
+# Half the band comes from the FRESH run's SE, which is not published anywhere -- so without this gate a
+# noisier platform would silently award itself a wider band. The bootstrap SE's own relative sd at
+# n_synth=64 is ~25% (measured), so a 3x divergence in either direction is >5 sigma of estimator noise:
+# it means the estimator, not the estimate, changed. Symmetric, because a fresh SE 3x TIGHTER than the
+# committed one is equally a signal that the two runs are not measuring the same thing.
+AUDIT_SE_RATIO_MAX = 3.0
 
 CANDIDATE_ORDER = ("C1", "C2", "C3", "C4")
 
@@ -135,7 +144,7 @@ def _rank(scores: dict) -> list[str]:
 def build_headline(res: dict) -> tuple[dict, dict]:
     """Single source of truth: return (H, RAW). H maps id -> formatted string (for DESIGN.md + manifest
     provenance); RAW maps id -> float (for the --audit tolerance comparison). Also computes rankings and
-    the class-flip finding (put in H as strings)."""
+    the class-contrast finding, resolved or not (put in H as strings)."""
     H: dict[str, str] = {}
     RAW: dict[str, float] = {}
     cand_ids = res["cand_ids"]
@@ -184,7 +193,10 @@ def build_headline(res: dict) -> tuple[dict, dict]:
         gap = RAW[f"{key}_C4"] - others[runner]
         pooled = (RAW[f"se_{key}_C4"] ** 2 + RAW[f"se_{key}_{runner}"] ** 2) ** 0.5
         lead[cls] = {"runner": runner, "gap": gap, "sigma": _sig(gap, pooled)}
+    # Both runner names are emitted: they happen to coincide on the shipped run, but a single name used
+    # for both classes would silently mislabel the moment they diverge.
     H["C4_lead_runner_c"] = lead["constant"]["runner"]
+    H["C4_lead_runner_i"] = lead["inflated"]["runner"]
     H["C4_lead_sigma_c"] = f"{lead['constant']['sigma']:.1f}"
     H["C4_lead_sigma_i"] = f"{lead['inflated']['sigma']:.1f}"
 
@@ -211,35 +223,86 @@ def build_headline(res: dict) -> tuple[dict, dict]:
     # "far larger than the noise floor" from a single realization whose separation was ~1.7 sigma of that
     # realization's own spread, and it did not survive an independent reproduction. Both branches below
     # support the same estimand-discipline conclusion; only one of them is licensed by any given run.
+    #
+    # AMENDMENT 2026-08-10 (merge gate). Both branches still ended in a HARD-CODED tail, and both tails
+    # were wrong:
+    #   * the unresolved branch closed with "the neutron-only candidates deliver no R information that
+    #     survives its own Monte-Carlo error under EITHER structural class" -- a universal quantifier this
+    #     run's own numbers refute (C3 is neutron-only and resolves from zero; it is absent from
+    #     `unresolved_cells` in the same document, so the file contradicted itself);
+    #   * the resolved branch closed with "the apparent constant-R information ... is an artifact of the
+    #     assumed R(phi) form", which only parses when the contraction FALLS under inflation. `_dir()`
+    #     already handled both signs, but the conclusion after it did not -- and the live C3 contrast is
+    #     NEGATIVE at 2.8 sigma, i.e. 0.2 sigma from printing an explanation of the opposite phenomenon.
+    # Every clause below is now derived from the cells, in both branches and for both signs.
+    cands = res["registry"]["candidates"]
+
+    def _resolved_from_zero(cid: str) -> bool:
+        return (_sig(RAW[f"Rc_{cid}"], RAW[f"se_Rc_{cid}"]) >= CLAIM_K_SIGMA
+                or _sig(RAW[f"Ri_{cid}"], RAW[f"se_Ri_{cid}"]) >= CLAIM_K_SIGMA)
+
     def _dir(cid: str) -> str:
         return "collapses under R(phi)-inflation" if flips[cid]["delta"] > 0 else "RISES under R(phi)-inflation"
 
     if resolved:
         H["class_flip_reading"] = (
-            "The contrast is RESOLVED at >= {k:.0f} sigma for {names}: {detail}. The apparent constant-R "
-            "information of the resolved candidate(s) is therefore structural -- an artifact of the "
-            "assumed R(phi) form, not a property of the measurement.".format(
+            "The contrast is RESOLVED at >= {k:.0f} sigma for {names}: {detail}. The direction differs "
+            "between candidates but the reading does not: an R contraction that MOVES with the assumed "
+            "R(phi) form is a property of that assumption, not of the measurement, in either "
+            "direction.".format(
                 k=CLAIM_K_SIGMA, names=", ".join(sorted(resolved)),
                 detail="; ".join(f"{c} {_dir(c)}" for c in sorted(resolved)))
         )
     else:
-        weak = [c for c in sorted(flips)
-                if _sig(RAW[f"Rc_{c}"], RAW[f"se_Rc_{c}"]) < CLAIM_K_SIGMA
-                and _sig(RAW[f"Ri_{c}"], RAW[f"se_Ri_{c}"]) < CLAIM_K_SIGMA]
+        # "neutron-only" is read from the registry (kind != xray_ratio), never hard-coded, so adding a
+        # candidate cannot silently falsify the sentence.
+        neutron_only = [c for c in cand_ids if cands[c].kind != "xray_ratio"]
+        flat = [c for c in neutron_only if not _resolved_from_zero(c)]
+        firm = [c for c in neutron_only if _resolved_from_zero(c)]
+        clauses = []
+        # Colon-list form throughout: the lists are of unknown length, and a generated sentence must not
+        # depend on getting subject-verb agreement right for 1 vs many candidates.
+        if flat:
+            clauses.append(f"{', '.join(flat)} -- no R contraction distinguishable from zero under EITHER "
+                           f"structural class")
+        if firm:
+            clauses.append(f"{', '.join(firm)} -- a nonzero R contraction does resolve, but "
+                           f"class-conditionally, and with the class contrast itself unresolved this run "
+                           f"cannot separate that information from the assumed R(phi) form")
+        clean = [c for c in cand_ids if not res["sdc"][c]["class_sensitive"] and _resolved_from_zero(c)]
         H["class_flip_reading"] = (
             "NO class contrast is resolved at {k:.0f} sigma at this n_synth, so this document does NOT "
-            "claim a measured collapse.{extra} The estimand-discipline conclusion is unchanged and is "
-            "carried by the stronger statement: the neutron-only candidates deliver no R information that "
-            "survives its own Monte-Carlo error under EITHER structural class, whereas C4 does.".format(
+            "claim a measured collapse. What the run does support is narrower: {clauses}. {closer}".format(
                 k=CLAIM_K_SIGMA,
-                extra=(" Both classes of {w} are themselves indistinguishable from zero at that "
-                       "resolution.".format(w=", ".join(weak)) if weak else ""))
+                clauses="; ".join(clauses) if clauses else "nothing about the neutron-only candidates",
+                closer=("Resolved at >= {k:.0f} sigma AND identical across both structural classes by "
+                        "construction: {c} -- which is the recommendation this document makes."
+                        .format(k=CLAIM_K_SIGMA, c=", ".join(clean)) if clean else
+                        f"No candidate's R contraction is both resolved at >= {CLAIM_K_SIGMA:.0f} sigma "
+                        f"and class-independent on this run."))
         )
 
     # Which R cells are resolvable from zero at all, at this n_synth?
     unresolved = [f"{k}_{c}" for c in cand_ids for k in ("Rc", "Ri")
                   if _sig(RAW[f"{k}_{c}"], RAW[f"se_{k}_{c}"]) < CLAIM_K_SIGMA]
     H["unresolved_cells"] = ", ".join(unresolved) if unresolved else "none"
+
+    # The base-chain component of every published +-, surfaced so a reader can see which term dominates.
+    # Which cell it dominates hardest is DERIVED, not asserted: an earlier revision hard-coded "on ose_C1
+    # the base-chain term is ~5x the bootstrap term", which is a per-run measurement, not a constant.
+    comp = res["sdc"][cand_ids[0]]["se_components"]["base_sd_mcse_rel"]
+    H["base_mcse_ose"] = f"{comp['omega_s_eff_pct']:.2%}"
+    H["base_mcse_R"] = f"{comp['R']:.2%}"
+    ratios = {}
+    for cid in cand_ids:
+        boot = res["sdc"][cid]["se_components"]["boot"]
+        ratios[f"ose_{cid}"] = abs(1 - RAW[f"ose_{cid}"]) * comp["omega_s_eff_pct"] / boot["ose"]
+        for cls, key in (("constant", "Rc"), ("inflated", "Ri")):
+            if cls in boot["R"]:
+                ratios[f"{key}_{cid}"] = abs(1 - RAW[f"{key}_{cid}"]) * comp["R"] / boot["R"][cls]
+    dom = max(ratios, key=ratios.get)
+    H["base_dom_cell"] = dom
+    H["base_dom_ratio"] = f"{ratios[dom]:.1f}"
     return H, RAW
 
 
@@ -314,18 +377,26 @@ Ranking by omega_s^eff contraction (the well-posed estimand): **{H['ose_rank']}*
 contraction under constant-R: **{H['Rc_rank']}**; under R(phi)-inflated: **{H['Ri_rank']}**.
 
 **Read the +/- column before the ranking.** Each cell is a MEDIAN over {s['n_synth']} synthetic datasets
-and the quoted +/- is that median's own nonparametric-bootstrap Monte-Carlo standard error. Differences
-smaller than a few times these SEs are not findings. On this run the R cells NOT resolvable from zero at
-{CLAIM_K_SIGMA:.0f} sigma are: **{H['unresolved_cells']}**. This supersedes the "~+/-3 pp Monte-Carlo
-floor" quoted in earlier revisions of this file, which was carried over from `docs/xray_feasibility.md`
-and was never measured for these cells; the true per-refit spread is several times larger, and the
-`--audit` band is now derived from these SEs rather than from a fixed constant (see the audit section).
+and the quoted +/- is that median's total Monte-Carlo standard error: the nonparametric bootstrap over
+those datasets, combined in quadrature with the Monte-Carlo error of the shared denominator
+`sd_before` -- the base chain's own posterior sd, which every contraction divides by and which a
+bootstrap over the datasets cannot see (measured on this chain at {H['base_mcse_ose']} of `sd(omega_s^eff)`
+and {H['base_mcse_R']} of `sd(R)`). Omitting that second term is what would make the band narrower than
+the error it exists to absorb: on `{H['base_dom_cell']}` the base-chain term alone is
+{H['base_dom_ratio']}x the bootstrap term.
+Differences smaller than a few times these SEs are not findings. On this run the R cells NOT resolvable
+from zero at {CLAIM_K_SIGMA:.0f} sigma are: **{H['unresolved_cells']}**.
+This supersedes the "~+/-3 pp Monte-Carlo floor" quoted in earlier revisions of this file, which was
+carried over from `docs/xray_feasibility.md` and was never measured for these cells; the true per-refit
+spread is several times larger, and the `--audit` band is now derived from these SEs rather than from a
+fixed constant (see the audit section).
 
 **The recommended experiment depends on the estimand.** To break the omega_s0/R degeneracy (tighten R),
 **C4 (X-ray/neutron ratio) wins decisively and ROBUSTLY across both structural classes** -- its R
-contraction ({H['Rc_C4']} +- {H['se_Rc_C4']}) leads the runner-up ({H['C4_lead_runner_c']}) by
-{H['C4_lead_sigma_c']} sigma under constant-R and {H['C4_lead_sigma_i']} sigma under R(phi)-inflation, and
-is class-independent because it constrains omega_s0 DIRECTLY, not through the R(phi) form. That
+contraction ({H['Rc_C4']} +- {H['se_Rc_C4']}) leads the runner-up by {H['C4_lead_sigma_c']} sigma under
+constant-R (vs {H['C4_lead_runner_c']}) and by {H['C4_lead_sigma_i']} sigma under R(phi)-inflation
+(vs {H['C4_lead_runner_i']}), and it is class-independent because it constrains omega_s0 DIRECTLY, not
+through the R(phi) form. That
 separation -- not the third decimal of any cell -- is the deliverable, and it is the one ordering the
 `--audit` gate enforces structurally. To tighten omega_s^eff specifically, C3 (a direct high-density
 re-measurement) leads.
@@ -335,7 +406,9 @@ candidate's apparent R information is generated by the ASSUMED R(phi) form. The 
 the PAIRED per-dataset difference (constant-R minus R(phi)-inflated), which shares its theta*, its
 standardized noise and its kappa draws between the two classes, so the class contrast is not swamped by
 synthetic-dataset variation. Measured on this run ({H['class_flip_candidates']} are the class-sensitive
-candidates): {H['class_delta_table']}. {H['class_flip_reading']}
+candidates): {H['class_delta_table']}. Note this is the median of the PER-DATASET differences, which is
+not the difference of the two published per-class medians (medians do not subtract) -- subtracting the
+table columns gives a different, untested number. {H['class_flip_reading']}
 Independently of that contrast, C4's contraction ({H['Rc_C4']}) does not move between classes at all --
 it constrains omega_s0 DIRECTLY -- so it remains the one candidate that identifies R without the
 structural assumption, which is the recommendation this document actually makes.
@@ -375,8 +448,14 @@ Every number here is NUTS/Monte-Carlo derived and reproduces to Monte-Carlo erro
 2. **sd-contraction cells** against a band DERIVED from the numbers themselves --
    `{AUDIT_K_SIGMA:.0f} * sqrt(se_committed^2 + se_fresh^2)`, floored at {AUDIT_ATOL_FLOOR} absolute --
    using the per-cell Monte-Carlo SEs published in the PRIMARY table above and tracked in the manifest.
-   The band is therefore never tighter than the noise of the quantity it checks, and widening it silently
-   is impossible: it would require publishing a larger SE.
+   The committed half of the band is therefore published; the fresh half is cross-checked against it
+   (a fresh SE more than {AUDIT_SE_RATIO_MAX:.0f}x the committed one, in either direction, is itself a
+   failure, so the band cannot quietly inflate on one platform). Two honest limits, stated rather than
+   papered over: the band is a CONSERVATIVE proxy, not an exact `sd(committed - fresh)` -- the two runs
+   share their pinned synthetic-dataset draws, so adding the two SEs in quadrature over-counts the dataset
+   term -- and because a band scales with a cell's own noise, a genuinely noisy cell gets a wide one. Any
+   cell whose band exceeds its own value is listed as NOT INFORMATIVE in the audit output rather than
+   being silently counted as a pass.
 3. **The structural claims** this document actually makes: C4 top-ranked on R contraction under BOTH
    classes and leading the runner-up by >= {AUDIT_MIN_SEPARATION_SIGMA:.0f} sigma; the omega_s^eff ranking
    top-2; C4/C2 class-independence exact; and the categorical Sobol top-parameter gate.
@@ -482,20 +561,26 @@ def _structural_gates(res: dict, RAW: dict) -> list[str]:
         if not res["sdc"][cid]["class_sensitive"] and RAW[f"Rc_{cid}"] != RAW[f"Ri_{cid}"]:
             problems.append(f"structural: {cid} is declared class-insensitive but Rc != Ri "
                             f"({RAW[f'Rc_{cid}']:.6g} vs {RAW[f'Ri_{cid}']:.6g})")
-    # The well-posed-estimand headline: a direct high-density re-measurement leads on omega_s^eff.
+    # The well-posed-estimand headline: a direct high-density re-measurement leads on omega_s^eff, with
+    # the neutron disappearance slope second. DESIGN.md's audit section claims the TOP-2 is gated, so gate
+    # the top-2 (it previously checked only the leader, and the claim was therefore overstated).
     ose = {c: RAW[f"ose_{c}"] for c in cand_ids}
-    if max(ose, key=ose.get) != "C3":
-        problems.append(f"structural: omega_s^eff contraction is no longer led by C3 (ranking {ose})")
+    top2 = sorted(ose, key=lambda c: -ose[c])[:2]
+    if top2 != ["C3", "C1"]:
+        problems.append(f"structural: the omega_s^eff top-2 is no longer C3 > C1 (fresh {top2}; "
+                        f"full ranking {ose})")
     return problems
 
 
 def audit() -> None:
     """Re-run with pinned seeds and check the committed DESIGN.md against a fresh computation.
 
-    Three gates (see the module docstring + the AMENDMENT there):
+    Four gates (see the module docstring + the AMENDMENTs there):
       * EIG bits -- AUDIT_RTOL_EIG relative;
       * sd-contraction cells -- AUDIT_K_SIGMA sigma of the cell's OWN published Monte-Carlo SE, pooled
         committed-vs-fresh and floored at AUDIT_ATOL_FLOOR;
+      * the fresh SE against the committed one (AUDIT_SE_RATIO_MAX), since the fresh half of every band
+        is otherwise unpublished and unchecked;
       * the structural claims (:func:`_structural_gates`) + the categorical sobol_top.
     Every band and every margin is printed, so a CI log on ANY platform is evidence about how the
     tolerances are actually sized -- the instrumentation the 2026-07-23 cross-arch audit found missing.
@@ -511,7 +596,8 @@ def audit() -> None:
     res = compute()
     _, RAW = build_headline(res)
     problems: list[str] = []
-    margins: list[tuple[str, float, float]] = []   # (id, |delta|, band)
+    margins: list[tuple[str, float, float]] = []        # (id, |delta|, band)
+    uninformative: list[tuple[str, float, float]] = []  # (id, value, band) where band > |value|
     n_eig = n_con = 0
     for entry_id, committed_str in committed.items():
         if entry_id == "sobol_top":  # categorical (top Sobol driver), not a tolerance cell
@@ -532,8 +618,18 @@ def audit() -> None:
             n_con += 1
             se_c = float(committed[f"se_{entry_id}"])
             se_f = RAW[f"se_{entry_id}"]
+            # Half the band comes from se_f, which is published nowhere. Gate it against the committed
+            # SE so a noisier run cannot quietly award itself a wider band (AUDIT_SE_RATIO_MAX).
+            if se_c > 0 and se_f > 0 and not (1 / AUDIT_SE_RATIO_MAX <= se_f / se_c <= AUDIT_SE_RATIO_MAX):
+                problems.append(
+                    f"se_{entry_id}: fresh SE {se_f:.4g} vs committed {se_c:.4g} "
+                    f"(ratio {se_f / se_c:.2f}x, allowed {1 / AUDIT_SE_RATIO_MAX:.2f}-"
+                    f"{AUDIT_SE_RATIO_MAX:.2f}x) -- the estimator changed, not just the estimate"
+                )
             band = max(AUDIT_K_SIGMA * (se_c**2 + se_f**2) ** 0.5, AUDIT_ATOL_FLOOR)
             tol = f"{AUDIT_K_SIGMA:.0f}sig(se {se_c:.3f}/{se_f:.3f})"
+            if band > abs(c):   # a band wider than the cell cannot falsify anything about that cell
+                uninformative.append((entry_id, c, band))
         margins.append((entry_id, abs(c - f), band))
         if abs(c - f) > band:
             problems.append(f"{entry_id}: committed {c:.4g} vs fresh {f:.4g}, "
@@ -547,6 +643,13 @@ def audit() -> None:
           f"structural gates pass, sobol_top matches")
     print(f"  worst margin: {worst[0]} at {worst[1] / worst[2]:.1%} of its band "
           f"(|delta|={worst[1]:.4g}, band={worst[2]:.4g})")
+    # Vacuity is reported, never silently counted as a pass: a band wider than the cell's own value means
+    # that cell's per-cell check is uninformative and only the structural gates constrain it.
+    if uninformative:
+        print("  NOT INFORMATIVE (band exceeds the cell's own value -- per-cell check cannot falsify "
+              "these; the structural gates are what constrain them):")
+        for k, c, band in uninformative:
+            print(f"    {k}: value {c:+.4g}, band {band:.4g} ({band / abs(c):.2f}x the value)")
 
 
 def main(argv=None) -> None:

@@ -10,6 +10,8 @@ running the NUTS pipeline (a fixed synthetic ``res`` exercises the pure renderin
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 import openmucf
 from openmucf import design
 from openmucf.provenance import check_manifest, write_manifest
@@ -25,18 +27,22 @@ def _load_script():
     return mod
 
 
-def _mock_res(*, resolved_flip: bool = False):
+def _mock_res(*, resolved_flip: bool = False, negative_delta: bool = False):
     """A fixed synthetic result matching compute()'s structure -- no NUTS, fully deterministic.
 
     ``resolved_flip`` toggles the class-contrast between "not resolved" (the honest default: a small
     paired delta against a comparable SE) and "resolved at >3 sigma", so BOTH branches of the derived
-    class-flip prose are exercised without running NUTS.
+    class-flip prose are exercised without running NUTS. ``negative_delta`` flips C1's contraction so the
+    resolved contrast points the OTHER way (R information RISES under inflation) -- the sign the shipped
+    C3 cell actually has, and the sign whose prose was wrong until 2026-08-10.
     """
     cand_ids = ["C1", "C2", "C3", "C4"]
     eig_bits = {"C1": 1.629, "C2": 1.782, "C3": 1.081, "C4": 3.240}
     ose = {"C1": 0.231, "C2": 0.049, "C3": 0.560, "C4": -0.026}
     rc = {"C1": 0.070, "C2": 0.017, "C3": 0.101, "C4": 0.408}
     ri = {"C1": 0.002, "C2": 0.017, "C3": 0.103, "C4": 0.408}
+    if negative_delta:
+        rc["C1"], ri["C1"] = ri["C1"], rc["C1"]
     se = {"C1": 0.020, "C2": 0.012, "C3": 0.026, "C4": 0.021}
     sens = {"C1": True, "C2": False, "C3": True, "C4": False}
     delta_se = 0.004 if resolved_flip else 0.030
@@ -50,7 +56,10 @@ def _mock_res(*, resolved_flip: bool = False):
                     "class_sensitive": sens[c],
                     "R_contraction": {"constant": rc[c], "inflated": ri[c]},
                     "R_contraction_se": {"constant": se[c], "inflated": se[c]},
-                    "R_contraction_class_delta": {"value": rc[c] - ri[c], "se": delta_se, "paired": True}}
+                    "R_contraction_class_delta": {"value": rc[c] - ri[c], "se": delta_se, "paired": True},
+                    "se_components": {"base_sd_mcse_rel": {"omega_s_eff_pct": 0.016, "R": 0.017},
+                                      "boot": {"ose": 0.004,
+                                               "R": {"constant": 0.006, "inflated": 0.006}}}}
                 for c in cand_ids},
         "zero_eig_bits": -1e-7,  # exercises the negative-zero normalisation
         "sobol": {"top_param": "R"},
@@ -69,8 +78,12 @@ def test_audit_tolerances_pinned():
     This is a deliberate, dated re-registration, not a softening: the old fixed band was SMALLER than the
     estimator's Monte-Carlo error on 7 of 12 cells, so it could only ever be met by regenerating the same
     pseudo-random realization (it failed on 5 cells the first time a different architecture ran it). The
-    new band cannot be widened without publishing a larger SE in DESIGN.md, and n_synth was raised 8 -> 64
-    so the SEs -- hence the band -- actually shrank for every cell.
+    new band's committed half cannot be widened without publishing a larger SE in DESIGN.md, and n_synth
+    was raised 8 -> 64 so the SEs -- hence the band -- actually shrank for every cell.
+
+    2026-08-10: ``AUDIT_SE_RATIO_MAX`` added. The FRESH half of the band is published nowhere, so without
+    it a noisier platform could silently award itself a wider band; and the published SE itself gained the
+    base-chain term (``design.SE_BASE_BATCHES``) it had been omitting.
     """
     src = _SCRIPT.read_text(encoding="utf-8")
     assert "AUDIT_RTOL_EIG = 0.05" in src
@@ -78,6 +91,7 @@ def test_audit_tolerances_pinned():
     assert "CLAIM_K_SIGMA = 3.0" in src
     assert "AUDIT_ATOL_FLOOR = 0.01" in src
     assert "AUDIT_MIN_SEPARATION_SIGMA = 3.0" in src
+    assert "AUDIT_SE_RATIO_MAX = 3.0" in src
     assert "AUDIT_ATOL_CONTRACTION" not in src, "the superseded fixed band must not come back"
 
 
@@ -85,8 +99,35 @@ def test_n_synth_and_se_settings_pinned():
     """The Monte-Carlo resolution of the PRIMARY metric is pre-registered (openmucf.design)."""
     assert design.N_SYNTH_DEFAULT == 64
     assert design.SE_BOOTSTRAP == 10_000
+    assert design.SE_BASE_BATCHES == 20
     src = (Path(design.__file__)).read_text(encoding="utf-8")
     assert "N_SYNTH_DEFAULT = 64" in src
+    assert "SE_BASE_BATCHES = 20" in src
+
+
+def test_published_se_carries_the_base_chain_term():
+    """The published +- is bootstrap (+) base-chain sd error -- NOT the bootstrap alone.
+
+    Without the second term the band is narrower than the error it exists to absorb: on the shipped run
+    the base-chain term alone shifts ose_C1 by ~0.011 against a 4-sigma band of ~0.013, i.e. the
+    cross-architecture audit this branch adds would have been ~50% likely to fail spuriously.
+    """
+    import numpy as np
+
+    values = list(np.random.default_rng(3).normal(0.4, 0.12, 64))
+    med = float(np.median(values))
+    boot = design.median_se(values)
+    total = design._cell_se(values, med, 0.016)
+    assert total > boot                                                   # strictly larger
+    assert total == pytest.approx(np.hypot(boot, (1 - med) * 0.016))      # ... by exactly that term
+    assert design._cell_se(values, med, 0.0) == pytest.approx(boot)       # degenerates cleanly
+
+    # the estimator of the base-chain term is deterministic and tracks a known chain's sd error
+    rng = np.random.default_rng(5)
+    draws = rng.normal(0.0, 1.0, 4000)
+    d = design.base_sd_mcse_rel(draws)
+    assert design.base_sd_mcse_rel(draws) == d                            # deterministic
+    assert 0.3 / np.sqrt(4000) < d < 4.0 / np.sqrt(4000)  # iid theory: 1/sqrt(2n) = 1.1%, batch est ~that
 
 
 def test_median_se_is_deterministic_and_tracks_dispersion():
@@ -138,6 +179,10 @@ def test_design_doc_and_manifest_render_deterministically(tmp_path):
     assert "cells carry a ~+/-3 pp" not in md1
     assert "a drop far larger than" not in md1
     assert "supersedes the" in md1 and "~+/-3 pp Monte-Carlo" in md1
+    # the +- is documented as BOTH components, and the paired-contrast estimand is not left to be
+    # mis-derived by subtracting the table columns (2026-08-10)
+    assert "Monte-Carlo error of the shared denominator" in md1
+    assert "medians do not subtract" in md1
 
     # write doc + manifest to a temp repo root; provenance must find every tracked value in the doc
     (tmp_path / "DESIGN.md").write_text(md1, encoding="utf-8")
@@ -163,7 +208,6 @@ def test_class_contrast_prose_is_derived_not_asserted():
 
     assert h_unres["class_flip"] == "NOT RESOLVED"
     assert "does NOT" in h_unres["class_flip_reading"]
-    assert "no R information that survives" in h_unres["class_flip_reading"].replace("\n", " ")
 
     assert h_res["class_flip"].startswith("RESOLVED for ")
     assert "C1" in h_res["class_flip"]
@@ -173,6 +217,56 @@ def test_class_contrast_prose_is_derived_not_asserted():
     # the sigma actually shown is |delta| / SE, not a narrative
     assert h_res["sigma_delta_C1"] == f"{abs(0.070 - 0.002) / 0.004:.1f}"
     assert h_unres["sigma_delta_C1"] == f"{abs(0.070 - 0.002) / 0.030:.1f}"
+
+
+def test_unresolved_prose_never_generalises_past_the_resolved_cells():
+    """The unresolved branch must not claim "no R information" for a candidate whose cells RESOLVE.
+
+    Regression guard for the 2026-08-10 merge-gate defect: the branch ended in a hard-coded universal --
+    "the neutron-only candidates deliver no R information that survives its own Monte-Carlo error under
+    EITHER structural class" -- while the same document's `unresolved_cells` line (correctly) omitted C3,
+    whose cells sit at 3.9 sigma in this very fixture. The document contradicted itself.
+    """
+    mod = _load_script()
+    h, raw = mod.build_headline(_mock_res(resolved_flip=False))
+    prose = h["class_flip_reading"].replace("\n", " ")
+
+    def sig(cid, key):
+        return abs(raw[f"{key}_{cid}"]) / raw[f"se_{key}_{cid}"]
+
+    # ground truth for this fixture: C3 resolves under BOTH classes and C1 under constant-R, so the old
+    # universal ("the neutron-only candidates deliver no R information") was false about two of the three.
+    assert sig("C3", "Rc") >= 3.0 and sig("C3", "Ri") >= 3.0
+    assert sig("C1", "Rc") >= 3.0
+    assert sig("C2", "Rc") < 3.0 and sig("C2", "Ri") < 3.0
+
+    # a resolved neutron-only candidate is NEVER swept into the "delivers nothing" clause ...
+    flat_clause = prose.split("no R contraction distinguishable")[0]
+    assert "C3" not in flat_clause and "C1" not in flat_clause, prose
+    assert "C2" in flat_clause, prose
+    # ... it is named as resolving, and the universal quantifier is gone for good
+    assert "C1, C3 -- a nonzero R contraction does resolve" in prose, prose
+    assert "the neutron-only candidates deliver no R information" not in prose, prose
+    # C4 (class-insensitive AND resolved) carries the recommendation
+    assert "identical across both structural classes by construction: C4" in prose, prose
+
+
+def test_resolved_prose_is_correct_for_a_NEGATIVE_contrast():
+    """A resolved contrast pointing the other way must not be explained as a collapse.
+
+    The shipped C3 contrast is negative at 2.8 sigma -- 0.2 sigma from firing this branch. Until
+    2026-08-10 the conclusion after ``_dir()`` was hard-coded to "the apparent constant-R information is
+    an artifact", which only parses when the contraction FALLS under inflation.
+    """
+    mod = _load_script()
+    h, _ = mod.build_headline(_mock_res(resolved_flip=True, negative_delta=True))
+    prose = h["class_flip_reading"].replace("\n", " ")
+    assert h["class_flip"].startswith("RESOLVED for ")
+    assert "C1 RISES under R(phi)-inflation" in prose, prose
+    assert "collapses under R(phi)-inflation" not in prose, prose
+    # the conclusion must be sign-neutral -- no claim that the CONSTANT-R side is the artifact
+    assert "in either direction" in prose, prose
+    assert "apparent constant-R information" not in prose, prose
 
 
 def test_structural_gates_catch_a_lost_recommendation():
@@ -193,4 +287,9 @@ def test_structural_gates_catch_a_lost_recommendation():
 
     # (c) the well-posed-estimand headline changes hands
     probs = mod._structural_gates(res, dict(raw, ose_C1=0.900))
-    assert any("no longer led by C3" in p for p in probs), probs
+    assert any("top-2 is no longer C3 > C1" in p for p in probs), probs
+
+    # (d) the top-2 claim DESIGN.md makes is really gated at top-2, not just top-1: C3 still leads, but
+    #     C2 displaces C1 in second place. The pre-2026-08-10 gate checked only the leader and passed.
+    probs = mod._structural_gates(res, dict(raw, ose_C2=0.400))
+    assert any("top-2 is no longer C3 > C1" in p for p in probs), probs
