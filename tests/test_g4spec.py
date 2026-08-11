@@ -9,6 +9,8 @@ Line numbers below are literal on purpose: ``CANONICAL`` has a fixed 17-line lay
 fails loudly instead of being absorbed by a helper that recomputes it.
 """
 
+import dataclasses
+import json
 import locale
 import math
 import random
@@ -18,7 +20,7 @@ import sys
 
 import pytest
 
-from openmucf.g4 import spec
+from openmucf.g4 import provenance, spec
 from openmucf.g4.spec import G4DatFormatError, G4DatTable
 
 DIRECTIVES = {
@@ -75,6 +77,46 @@ def rejected_table(table: G4DatTable) -> G4DatFormatError:
     with pytest.raises(G4DatFormatError) as caught:
         spec.validate(table)
     return caught.value
+
+
+def digest_rejected(table: G4DatTable, layer2: bytes) -> G4DatFormatError:
+    with pytest.raises(G4DatFormatError) as caught:
+        provenance.check_source_digest(table, layer2)
+    return caught.value
+
+
+ROW = {
+    "source_bibkey": "suzuki1987",
+    "source_locator": "Table III",
+    "unc_type": "exp",
+    "conditions": "muonic atom, ground state",
+    "validity_range": "Z 1-94",
+    "evaluation_method": "measured total capture rate",
+    "single_source": True,
+    "needs_verification": False,
+    "recommendation": "recommended",
+    "evaluation_id": "suzuki1987-tableIII",
+    "source_library": "suzuki1987",
+    "isotope_resolved": True,
+}
+
+
+def make_document(rows=None, **overrides) -> provenance.ProvDocument:
+    """The canonical Layer-2 document: one row per record of the canonical table."""
+    if rows is None:
+        rows = {
+            f"{z}-{a}": provenance.ProvRow(**{**ROW, "evaluation_id": f"suzuki1987-{z}-{a}"})
+            for z, a, *_ in RECORDS
+        }
+    document = provenance.ProvDocument(
+        dataset=DIRECTIVES["DATASET"],
+        version=DIRECTIVES["VERSION"],
+        profile=DIRECTIVES["PROFILE"],
+        seam=DIRECTIVES["SEAM"],
+        precedence=("iwamoto2025", "suzuki1987", "geant4-compiled-in"),
+        rows=rows,
+    )
+    return dataclasses.replace(document, **overrides)
 
 
 # --------------------------------------------------------------------------------------------
@@ -142,6 +184,15 @@ def test_t08_e008_duplicate_key():
     error = rejected(replace_line(CANONICAL, "94", " 1   1 12.86 0.19"))
     assert (error.code, error.line) == ("E008", 16)
     assert "first seen at line 14" in str(error)
+
+
+def test_t09_e009_source_digest_mismatch():
+    """The cross-layer code: the digest is checked against the Layer-2 file's bytes, not a copy."""
+    error = digest_rejected(make_table(), provenance.document_bytes(make_document()))
+    assert (error.code, error.line) == ("E009", 8)
+    assert provenance.source_digest(make_document()) in str(error)
+    missing = digest_rejected(make_table(SOURCEDIGEST=None), b"{}\n")
+    assert (missing.code, missing.line) == ("E002", 8)
 
 
 def test_t10_e010_unsupported_grammar_major():
@@ -344,3 +395,75 @@ def test_t21_records_are_sorted_on_render():
     assert spec.parse(text) == make_table()
     unsorted_error = rejected_table(reversed_table)
     assert (unsorted_error.code, unsorted_error.line) == ("E015", 15)
+
+
+# --------------------------------------------------------------------------------------------
+# T-26..T-30 -- Layer 2: schema, the digest binding, precedence, and the isotope disclosure
+# --------------------------------------------------------------------------------------------
+
+
+def test_t26_layer2_schema_round_trip():
+    document = make_document()
+    assert provenance.from_json_obj(provenance.to_json_obj(document)) == document
+    text = provenance.render_json(document)
+    assert json.loads(text) == provenance.to_json_obj(document)
+    assert text.endswith("\n") and text.isascii()
+    assert provenance.document_bytes(document) == text.encode("ascii")
+    assert provenance.render_json(document) == text  # canonical: sorted keys, fixed indent
+    with pytest.raises(ValueError, match="unknown field"):
+        provenance.from_json_obj({**provenance.to_json_obj(document), "extra": 1})
+
+
+def test_t27_source_digest_matches():
+    document = make_document()
+    payload = provenance.document_bytes(document)
+    table = make_table(SOURCEDIGEST=provenance.source_digest(payload))
+    assert provenance.check_source_digest(table, payload) is None
+    assert provenance.source_digest(document) == provenance.source_digest(payload)
+    assert provenance.check_against_table(table, document) is None
+    with pytest.raises(ValueError, match="does not match Layer-1"):
+        provenance.check_against_table(make_table(VERSION="9.9.9"), document)
+
+
+def test_t28_digest_drift_raises_e009():
+    """Regenerate Layer 2 with one field changed and the two layers can no longer both be right."""
+    document = make_document()
+    table = make_table(SOURCEDIGEST=provenance.source_digest(provenance.document_bytes(document)))
+    drifted = dataclasses.replace(
+        document,
+        rows={**document.rows, "1-1": dataclasses.replace(document.rows["1-1"], isotope_resolved=False)},
+    )
+    payload = provenance.document_bytes(drifted)
+    assert payload != provenance.document_bytes(document)
+    error = digest_rejected(table, payload)
+    assert (error.code, error.line) == ("E009", 8)
+
+
+def test_t29_precedence_is_an_ordered_list_of_known_libraries():
+    document = make_document()
+    assert provenance.to_json_obj(document)["precedence"] == list(document.precedence)
+    reordered = dataclasses.replace(document, precedence=tuple(reversed(document.precedence)))
+    assert provenance.render_json(reordered) != provenance.render_json(document)  # order is data
+    for bad, match in (
+        (["not-a-library"], "not one of"),
+        (["suzuki1987", "suzuki1987"], "repeated"),
+        ([], "at least one"),
+        ("suzuki1987", "ordered list"),
+    ):
+        with pytest.raises(ValueError, match=match):
+            provenance.validate_document({**provenance.to_json_obj(document), "precedence": bad})
+
+
+def test_t30_isotope_resolved_required_on_every_row():
+    """The disclosure cannot be omitted: a row without it is not a valid Layer-2 row."""
+    obj = provenance.to_json_obj(make_document())
+    stripped = {
+        key: {k: v for k, v in row.items() if k != "isotope_resolved"} for key, row in obj["rows"].items()
+    }
+    with pytest.raises(ValueError, match="isotope_resolved"):
+        provenance.validate_document({**obj, "rows": stripped})
+    with pytest.raises(ValueError, match="must be a boolean"):
+        provenance.validate_document(
+            {**obj, "rows": {**obj["rows"], "1-1": {**obj["rows"]["1-1"], "isotope_resolved": "yes"}}}
+        )
+    assert all(row["isotope_resolved"] is True for row in obj["rows"].values())

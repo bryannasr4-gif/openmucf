@@ -326,8 +326,11 @@ Two further requirements follow from section 2:
 - `validate(table: G4DatTable) -> None` -- check an in-memory table against section 2.
 - `format_float(x: float) -> str` -- the `%.17g` float syntax of section 2.6.
 
-`openmucf/g4/provenance.py` is the reference implementation of section 3, including the
-`#SOURCEDIGEST` check (`E009`).
+`openmucf/g4/provenance.py` is the reference implementation of section 3: `validate_document()` for
+the schema, `document_bytes()` for the exact bytes the digest is taken over, `check_source_digest()`
+for the cross-layer digest (`E009`), and `check_against_table()` for the requirement that the
+file-level fields equal the Layer-1 directives they mirror. Layer 2 has no line numbers, so its
+schema violations raise `ValueError`; `E009` is the one code that spans both layers.
 
 Guarantees, each covered by a test:
 
