@@ -54,8 +54,9 @@ A directive line has `#` in column 1, an uppercase keyword, whitespace, then the
 directive per line.** The value is everything after the separating whitespace, with leading and
 trailing whitespace removed; internal whitespace is preserved verbatim.
 
-Directives appear in **exactly this order**. A directive that repeats, or that appears after a
-directive that should follow it, is an error (`E003`).
+Directives appear in **exactly this order**. A directive that repeats, that appears after a
+directive that should follow it, or that appears after the record block has begun, is an error
+(`E003`).
 
 | # | Directive | Required | Value |
 |---|---|---|---|
@@ -106,7 +107,8 @@ After the directives come **zero or more records**, one per line.
 
 1. Fields are whitespace-delimited. Leading whitespace is permitted, so a writer may align columns.
    A reader must treat any run of spaces or tabs as one separator and must not depend on alignment.
-2. The number of fields must equal the arity of `#COLUMNS` (`E004`).
+2. The number of fields must equal the arity of `#COLUMNS` (`E004`). A blank line is a record with
+   zero fields and is rejected the same way: the format has no blank lines and no comments.
 3. Columns named `Z` and `A` are **integer columns**: the field must match `^[0-9]+$`.
 4. Every other column is a **float column**: the field must match the strict C-locale float
    `^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$`. **A comma decimal separator is a syntax error
@@ -123,9 +125,10 @@ nothing to check and are not enforced. Every table defined for this format so fa
 
 ### 2.4 Terminator
 
-The record block ends with a line containing exactly `#END`, terminated by a newline. Any further
-line -- including an empty one -- is content after the terminator (`E011`). A file with no
-newline-terminated `#END` line is incomplete (`E012`).
+The record block ends with a line containing `#END` (trailing whitespace is ignored there, as it is
+in a directive value), terminated by a newline. Any further line -- including an empty one -- is
+content after the terminator (`E011`). A file with no newline-terminated `#END` line is incomplete
+(`E012`), which covers both a missing `#END` and a file whose last line has no newline.
 
 ### 2.5 Allowed values
 
