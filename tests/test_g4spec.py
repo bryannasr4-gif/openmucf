@@ -9,10 +9,12 @@ Line numbers below are literal on purpose: ``CANONICAL`` has a fixed 17-line lay
 fails loudly instead of being absorbed by a helper that recomputes it.
 """
 
+import ast
 import dataclasses
 import json
 import locale
 import math
+import pathlib
 import random
 import re
 import struct
@@ -398,6 +400,53 @@ def test_t21_records_are_sorted_on_render():
 
 
 # --------------------------------------------------------------------------------------------
+# T-22..T-25 -- profiles and seams
+# --------------------------------------------------------------------------------------------
+
+
+def test_t22_profile_allowed_set_accepted():
+    """The profile token set is open on purpose: N competing evaluations must be able to coexist."""
+    for profile in ("parity", "evaluated", "iwamoto2025", "jendl-mund", "abc", "a" * 32, "z9_x-y"):
+        table = make_table(PROFILE=profile, SOURCESHA=None)
+        if profile == spec.PARITY_PROFILE:
+            table = make_table(PROFILE=profile)
+        assert spec.validate(table) is None
+        assert spec.parse(spec.render(table)).directives["PROFILE"] == profile
+
+
+def test_t23_profile_outside_allowed_set_rejected():
+    for profile in ("Parity", "ab", "a" * 33, "9lives", "has space", "trailing!", ""):
+        error = rejected_table(make_table(PROFILE=profile, SOURCESHA=None))
+        assert (error.code, error.line) == ("E016", 4), profile
+
+
+def test_t24_seam_allowed_set():
+    for seam in spec.ALLOWED_SEAMS:
+        assert spec.validate(make_table(SEAM=seam)) is None
+    assert spec.ALLOWED_SEAMS == (
+        "d1_nuclear_capture",
+        "d2_atomic_capture",
+        "d3_transitions",
+        "d4_mucf_cycle",
+    )
+    for seam in ("d5_unknown", "D1_NUCLEAR_CAPTURE", "nuclear_capture", ""):
+        error = rejected_table(make_table(SEAM=seam))
+        assert (error.code, error.line) == ("E016", 5), seam
+
+
+def test_t25_sourcesha_required_iff_parity():
+    """A parity file must name the revision it reproduces; a file reproducing nothing must not."""
+    assert spec.validate(make_table(PROFILE="parity")) is None
+    assert spec.validate(make_table(PROFILE="evaluated", SOURCESHA=None)) is None
+
+    missing = rejected_table(make_table(PROFILE="parity", SOURCESHA=None))
+    assert (missing.code, missing.line) == ("E013", 4)
+    unexpected = rejected_table(make_table(PROFILE="evaluated"))
+    assert (unexpected.code, unexpected.line) == ("E013", 9)
+    assert "'#SOURCESHA'" in str(unexpected)
+
+
+# --------------------------------------------------------------------------------------------
 # T-26..T-30 -- Layer 2: schema, the digest binding, precedence, and the isotope disclosure
 # --------------------------------------------------------------------------------------------
 
@@ -467,3 +516,68 @@ def test_t30_isotope_resolved_required_on_every_row():
             {**obj, "rows": {**obj["rows"], "1-1": {**obj["rows"]["1-1"], "isotope_resolved": "yes"}}}
         )
     assert all(row["isotope_resolved"] is True for row in obj["rows"].values())
+
+
+# --------------------------------------------------------------------------------------------
+# T-31..T-34 -- hand-written malformed files on disk, and the import fence
+# --------------------------------------------------------------------------------------------
+
+FIXTURES = pathlib.Path(__file__).resolve().parent / "fixtures" / "g4dat_bad"
+
+
+def fixture_bytes(name: str) -> bytes:
+    """Read the fixture as bytes. Text mode would translate CRLF into LF and hide the very defect
+    one of these files exists to carry."""
+    return (FIXTURES / name).read_bytes()
+
+
+def test_t31_fixture_crlf_line_endings():
+    raw = fixture_bytes("crlf_line_endings.g4dat")
+    assert b"\r\n" in raw, "the checkout stripped the CR this fixture is made of"
+    error = rejected(raw.decode("ascii"))
+    assert (error.code, error.line) == ("E006", 1)
+
+
+def test_t32_fixture_comma_decimal():
+    raw = fixture_bytes("comma_decimal.g4dat")
+    assert b"\r" not in raw, "the checkout rewrote this LF fixture and it now fails as E006"
+    assert b"2,5" in raw
+    error = rejected(raw.decode("ascii"))
+    assert (error.code, error.line) == ("E007", 13)
+
+
+def test_t33_fixture_stray_comment():
+    raw = fixture_bytes("stray_comment.g4dat")
+    assert b"\r" not in raw, "the checkout rewrote this LF fixture and it now fails as E006"
+    error = rejected(raw.decode("ascii"))
+    assert (error.code, error.line) == ("E001", 10)
+    assert str(error) == "E001: unknown directive '#COMMENT' (line 10)"
+
+
+def test_t34_import_fence():
+    """openmucf/g4/ may not import the kinetics modules, so the data layer stays liftable.
+
+    A source-level rule, checked with the AST: the package __init__ eagerly imports that stack, so
+    a sys.modules check would prove nothing. What matters is that no module *here* names it.
+    """
+    banned = {f"openmucf.{name}" for name in ("cycle", "uq", "calibrate", "formation")}
+    root = pathlib.Path(spec.__file__).resolve().parent
+    checked = set()
+    for path in sorted(root.rglob("*.py")):
+        parts = ["openmucf", "g4", *path.relative_to(root).with_suffix("").parts]
+        package = parts[:-1]
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                targets = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                base = ".".join(package[: len(package) - node.level + 1] if node.level else [])
+                base = f"{base}.{node.module}" if base and node.module else (base or node.module or "")
+                targets = [base, *(f"{base}.{alias.name}" for alias in node.names)]
+            else:
+                continue
+            for target in targets:
+                offenders = [name for name in banned if target == name or target.startswith(f"{name}.")]
+                assert not offenders, f"{path.name} imports {target!r} (line {node.lineno})"
+        checked.add(path.name)
+    assert checked == {"__init__.py", "spec.py", "provenance.py"}

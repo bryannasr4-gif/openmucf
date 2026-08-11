@@ -4,3 +4,7 @@
 openmucf/data/yamashita_kino_lc_T.csv text eol=lf
 # Source figure: treat as binary (no line-ending or text munging).
 openmucf/data/yamashita_kino_fig3a.png binary
+# Malformed-by-design format fixtures: their exact bytes ARE the test. One is deliberately CRLF and
+# must stay CRLF; the others are deliberately LF and must stay LF, or the checkout itself would
+# decide which error they raise. -text disables end-of-line translation in both directions.
+tests/fixtures/g4dat_bad/*.g4dat -text
