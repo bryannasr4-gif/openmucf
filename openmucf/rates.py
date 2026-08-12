@@ -22,6 +22,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import _jaxcfg  # noqa: F401  -- MANDATORY float64; see openmucf/_jaxcfg.py (dependency root)
+
 _PKG = Path(__file__).resolve().parent
 _ROOT = _PKG.parent
 DATA = _PKG / "data"

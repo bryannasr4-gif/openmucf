@@ -44,6 +44,7 @@ import numpyro.distributions as dist
 from numpyro.diagnostics import effective_sample_size, split_gelman_rubin
 from numpyro.infer import MCMC, NUTS
 
+from . import _jaxcfg
 from .constants import LAMBDA_0
 
 # observations (Petitjean/Breunlich 1989)
@@ -129,6 +130,7 @@ def run_mcmc_full(
     parameter draws (so the obs_corr=0.0 / single-chain / OLD-box path reproduces the FC-001 realization
     byte-for-byte -- verified by ``git diff --exit-code forecasts/`` and the FC-001 pin test).
     """
+    _jaxcfg.require_x64("NUTS calibration")  # float32 draws would be silently, invisibly wrong
     data = {
         **OBS,
         **obs,

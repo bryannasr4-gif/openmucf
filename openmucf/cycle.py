@@ -22,6 +22,8 @@ import inspect as _inspect  # stdlib; used only to capture diffrax's default err
 import diffrax
 import jax.numpy as jnp
 
+from . import _jaxcfg  # noqa: F401  -- MANDATORY float64; this module imports nothing else in-package
+
 # indices 0..5 are the v1 states (unchanged); 6,7 are the WS-N absorbing loss accumulators (append-only,
 # so ``sol.ys[-1, 3]`` stays N_fus and every existing caller keeps working).
 STATE_LABELS = ("x_dmu", "x_tmu1", "x_tmu0", "N_fus", "stuck", "dec", "loss_tt", "loss_he")

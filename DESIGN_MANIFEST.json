@@ -3,143 +3,287 @@
     {
       "doc": "DESIGN.md",
       "id": "ose_C1",
-      "pattern": "\\| C1 \\| 0\\.231 \\| 0\\.070 \\| 0\\.002 \\|",
+      "pattern": "\\|\\ C1\\ \\|\\ 0\\.235\\ \\+\\-\\ 0\\.013\\ \\|\\ 0\\.025\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.011\\ \\+\\-\\ 0\\.019\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
-      "value": "0.231"
+      "value": "0.235"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_ose_C1",
+      "pattern": "\\|\\ C1\\ \\|\\ 0\\.235\\ \\+\\-\\ 0\\.013\\ \\|\\ 0\\.025\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.011\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.013"
     },
     {
       "doc": "DESIGN.md",
       "id": "Rc_C1",
-      "pattern": "\\| C1 \\| 0\\.231 \\| 0\\.070 \\| 0\\.002 \\|",
+      "pattern": "\\|\\ C1\\ \\|\\ 0\\.235\\ \\+\\-\\ 0\\.013\\ \\|\\ 0\\.025\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.011\\ \\+\\-\\ 0\\.019\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
-      "value": "0.070"
+      "value": "0.025"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_Rc_C1",
+      "pattern": "\\|\\ C1\\ \\|\\ 0\\.235\\ \\+\\-\\ 0\\.013\\ \\|\\ 0\\.025\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.011\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.020"
     },
     {
       "doc": "DESIGN.md",
       "id": "Ri_C1",
-      "pattern": "\\| C1 \\| 0\\.231 \\| 0\\.070 \\| 0\\.002 \\|",
+      "pattern": "\\|\\ C1\\ \\|\\ 0\\.235\\ \\+\\-\\ 0\\.013\\ \\|\\ 0\\.025\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.011\\ \\+\\-\\ 0\\.019\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
-      "value": "0.002"
+      "value": "0.011"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_Ri_C1",
+      "pattern": "\\|\\ C1\\ \\|\\ 0\\.235\\ \\+\\-\\ 0\\.013\\ \\|\\ 0\\.025\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.011\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.019"
     },
     {
       "doc": "DESIGN.md",
       "id": "ose_C2",
-      "pattern": "\\| C2 \\| 0\\.049 \\| 0\\.017 \\| 0\\.017 \\|",
+      "pattern": "\\|\\ C2\\ \\|\\ 0\\.050\\ \\+\\-\\ 0\\.017\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.050"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_ose_C2",
+      "pattern": "\\|\\ C2\\ \\|\\ 0\\.050\\ \\+\\-\\ 0\\.017\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.017"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "Rc_C2",
+      "pattern": "\\|\\ C2\\ \\|\\ 0\\.050\\ \\+\\-\\ 0\\.017\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.001"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_Rc_C2",
+      "pattern": "\\|\\ C2\\ \\|\\ 0\\.050\\ \\+\\-\\ 0\\.017\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.019"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "Ri_C2",
+      "pattern": "\\|\\ C2\\ \\|\\ 0\\.050\\ \\+\\-\\ 0\\.017\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.001"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_Ri_C2",
+      "pattern": "\\|\\ C2\\ \\|\\ 0\\.050\\ \\+\\-\\ 0\\.017\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|\\ 0\\.001\\ \\+\\-\\ 0\\.019\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.019"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "ose_C3",
+      "pattern": "\\|\\ C3\\ \\|\\ 0\\.537\\ \\+\\-\\ 0\\.012\\ \\|\\ 0\\.049\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.151\\ \\+\\-\\ 0\\.044\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.537"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_ose_C3",
+      "pattern": "\\|\\ C3\\ \\|\\ 0\\.537\\ \\+\\-\\ 0\\.012\\ \\|\\ 0\\.049\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.151\\ \\+\\-\\ 0\\.044\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.012"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "Rc_C3",
+      "pattern": "\\|\\ C3\\ \\|\\ 0\\.537\\ \\+\\-\\ 0\\.012\\ \\|\\ 0\\.049\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.151\\ \\+\\-\\ 0\\.044\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
       "value": "0.049"
     },
     {
       "doc": "DESIGN.md",
-      "id": "Rc_C2",
-      "pattern": "\\| C2 \\| 0\\.049 \\| 0\\.017 \\| 0\\.017 \\|",
+      "id": "se_Rc_C3",
+      "pattern": "\\|\\ C3\\ \\|\\ 0\\.537\\ \\+\\-\\ 0\\.012\\ \\|\\ 0\\.049\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.151\\ \\+\\-\\ 0\\.044\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
-      "value": "0.017"
-    },
-    {
-      "doc": "DESIGN.md",
-      "id": "Ri_C2",
-      "pattern": "\\| C2 \\| 0\\.049 \\| 0\\.017 \\| 0\\.017 \\|",
-      "source": "scripts/generate_design.py",
-      "source_type": "derivation",
-      "value": "0.017"
-    },
-    {
-      "doc": "DESIGN.md",
-      "id": "ose_C3",
-      "pattern": "\\| C3 \\| 0\\.560 \\| 0\\.101 \\| 0\\.103 \\|",
-      "source": "scripts/generate_design.py",
-      "source_type": "derivation",
-      "value": "0.560"
-    },
-    {
-      "doc": "DESIGN.md",
-      "id": "Rc_C3",
-      "pattern": "\\| C3 \\| 0\\.560 \\| 0\\.101 \\| 0\\.103 \\|",
-      "source": "scripts/generate_design.py",
-      "source_type": "derivation",
-      "value": "0.101"
+      "value": "0.020"
     },
     {
       "doc": "DESIGN.md",
       "id": "Ri_C3",
-      "pattern": "\\| C3 \\| 0\\.560 \\| 0\\.101 \\| 0\\.103 \\|",
+      "pattern": "\\|\\ C3\\ \\|\\ 0\\.537\\ \\+\\-\\ 0\\.012\\ \\|\\ 0\\.049\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.151\\ \\+\\-\\ 0\\.044\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
-      "value": "0.103"
+      "value": "0.151"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_Ri_C3",
+      "pattern": "\\|\\ C3\\ \\|\\ 0\\.537\\ \\+\\-\\ 0\\.012\\ \\|\\ 0\\.049\\ \\+\\-\\ 0\\.020\\ \\|\\ 0\\.151\\ \\+\\-\\ 0\\.044\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.044"
     },
     {
       "doc": "DESIGN.md",
       "id": "ose_C4",
-      "pattern": "\\| C4 \\| \\-0\\.026 \\| 0\\.408 \\| 0\\.408 \\|",
+      "pattern": "\\|\\ C4\\ \\|\\ \\-0\\.026\\ \\+\\-\\ 0\\.018\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
       "value": "-0.026"
     },
     {
       "doc": "DESIGN.md",
-      "id": "Rc_C4",
-      "pattern": "\\| C4 \\| \\-0\\.026 \\| 0\\.408 \\| 0\\.408 \\|",
+      "id": "se_ose_C4",
+      "pattern": "\\|\\ C4\\ \\|\\ \\-0\\.026\\ \\+\\-\\ 0\\.018\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
-      "value": "0.408"
+      "value": "0.018"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "Rc_C4",
+      "pattern": "\\|\\ C4\\ \\|\\ \\-0\\.026\\ \\+\\-\\ 0\\.018\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.399"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_Rc_C4",
+      "pattern": "\\|\\ C4\\ \\|\\ \\-0\\.026\\ \\+\\-\\ 0\\.018\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.022"
     },
     {
       "doc": "DESIGN.md",
       "id": "Ri_C4",
-      "pattern": "\\| C4 \\| \\-0\\.026 \\| 0\\.408 \\| 0\\.408 \\|",
+      "pattern": "\\|\\ C4\\ \\|\\ \\-0\\.026\\ \\+\\-\\ 0\\.018\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
-      "value": "0.408"
+      "value": "0.399"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_Ri_C4",
+      "pattern": "\\|\\ C4\\ \\|\\ \\-0\\.026\\ \\+\\-\\ 0\\.018\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|\\ 0\\.399\\ \\+\\-\\ 0\\.022\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.022"
     },
     {
       "doc": "DESIGN.md",
       "id": "eig_C1",
-      "pattern": "\\| C1 \\| 1\\.629 \\|",
+      "pattern": "\\|\\ C1\\ \\|\\ 1\\.629\\ \\+\\-\\ 0\\.046\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
       "value": "1.629"
     },
     {
       "doc": "DESIGN.md",
+      "id": "se_eig_C1",
+      "pattern": "\\|\\ C1\\ \\|\\ 1\\.629\\ \\+\\-\\ 0\\.046\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.046"
+    },
+    {
+      "doc": "DESIGN.md",
       "id": "eig_C2",
-      "pattern": "\\| C2 \\| 1\\.782 \\|",
+      "pattern": "\\|\\ C2\\ \\|\\ 1\\.782\\ \\+\\-\\ 0\\.037\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
       "value": "1.782"
     },
     {
       "doc": "DESIGN.md",
+      "id": "se_eig_C2",
+      "pattern": "\\|\\ C2\\ \\|\\ 1\\.782\\ \\+\\-\\ 0\\.037\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.037"
+    },
+    {
+      "doc": "DESIGN.md",
       "id": "eig_C3",
-      "pattern": "\\| C3 \\| 1\\.081 \\|",
+      "pattern": "\\|\\ C3\\ \\|\\ 1\\.081\\ \\+\\-\\ 0\\.058\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
       "value": "1.081"
     },
     {
       "doc": "DESIGN.md",
+      "id": "se_eig_C3",
+      "pattern": "\\|\\ C3\\ \\|\\ 1\\.081\\ \\+\\-\\ 0\\.058\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.058"
+    },
+    {
+      "doc": "DESIGN.md",
       "id": "eig_C4",
-      "pattern": "\\| C4 \\| 3\\.240 \\|",
+      "pattern": "\\|\\ C4\\ \\|\\ 3\\.240\\ \\+\\-\\ 0\\.033\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
       "value": "3.240"
     },
     {
       "doc": "DESIGN.md",
+      "id": "se_eig_C4",
+      "pattern": "\\|\\ C4\\ \\|\\ 3\\.240\\ \\+\\-\\ 0\\.033\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.033"
+    },
+    {
+      "doc": "DESIGN.md",
       "id": "eig_C3_inflated",
-      "pattern": "scenario-B, R\\(phi\\)-inflated\\) \\| 2\\.492 \\|",
+      "pattern": "\\|\\ C3\\ \\(scenario\\-B,\\ R\\(phi\\)\\-inflated\\)\\ \\|\\ 2\\.492\\ \\+\\-\\ 0\\.041\\ \\|",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
       "value": "2.492"
     },
     {
       "doc": "DESIGN.md",
+      "id": "se_eig_C3_inflated",
+      "pattern": "\\|\\ C3\\ \\(scenario\\-B,\\ R\\(phi\\)\\-inflated\\)\\ \\|\\ 2\\.492\\ \\+\\-\\ 0\\.041\\ \\|",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.041"
+    },
+    {
+      "doc": "DESIGN.md",
       "id": "zero_eig",
-      "pattern": "yields EIG =\\s*0\\.000 bits",
+      "pattern": "yields EIG =\\s*0\\.000 \\+\\- 0\\.000 bits",
+      "source": "scripts/generate_design.py",
+      "source_type": "derivation",
+      "value": "0.000"
+    },
+    {
+      "doc": "DESIGN.md",
+      "id": "se_zero_eig",
+      "pattern": "yields EIG =\\s*0\\.000 \\+\\- 0\\.000 bits",
       "source": "scripts/generate_design.py",
       "source_type": "derivation",
       "value": "0.000"
@@ -155,16 +299,22 @@
   ],
   "generated_by": "scripts/generate_design.py",
   "inputs": {
-    "audit_atol_contraction": 0.03,
-    "audit_rtol_eig": 0.05,
+    "audit_atol_floor": 0.01,
+    "audit_eig_replicates": 20,
+    "audit_k_sigma": 4.0,
+    "audit_min_separation_sigma": 3.0,
     "base_prior": [
       "uniform",
       0.6,
       1.1
     ],
+    "claim_k_sigma": 3.0,
+    "n_synth": 64,
     "num_samples": 4000,
     "num_warmup": 1000,
-    "rates_csv_sha256": "6aa4c5afd68dbfd3e05a95dc75c03d9b33f84fcd1b5e50c861f5d7e547e9f784",
+    "rates_csv_sha256": "1d60f23d02cbacb7436bb0aac32dfd5e96151ae713a951c84ce60bc469fd9c12",
+    "se_bootstrap": 10000,
+    "se_bootstrap_seed": 20260809,
     "seed": 0,
     "xray_threshold_pct": 15.0,
     "xray_verdict_pct": 42.95

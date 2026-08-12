@@ -1,12 +1,22 @@
 """Tests for openmucf.forecast (FC-001 pre-registered forecast card).
 
-One module-scoped fixture runs the calibration MCMC once; every card-shape test reuses it. No test asserts
-byte-equality between a freshly generated card and the committed file (fresh builds are compared only to other
-fresh builds in the same process).
+One module-scoped fixture runs the calibration MCMC once; every card-shape test reuses it.
+
+REPRODUCTION CLAIM (FORECAST_PROTOCOL.md sec.7, verbatim): the card regenerates *bit-identically under the
+recorded environment (including platform)*; *cross-platform regeneration reproduces to Monte-Carlo error*.
+The two reproduction tests below are split along exactly that line, because they used to assert bit-identity
+UNCONDITIONALLY -- which contradicted the protocol and made a fresh clone fail on any non-x86-64 host (found
+on Apple Silicon, 2026-07-23: `omega_s_eff@phi=1.2` scenario B came back 0.5371 vs the registered 0.5358,
++0.24%, and the `lambda_c@phi=2.0` bracket limbs moved ~0.4%, with jax_enable_x64 ON in both runs):
+
+* the PORTABLE gate (:data:`MC_RTOL`) runs everywhere and is what a third-party reproducer must satisfy;
+* the BIT-IDENTITY gate runs only on the platform the card itself records in ``generation.env``.
 """
 
 import json
+import platform
 import re
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -16,6 +26,12 @@ from openmucf import forecast
 
 PHI_GRID = (1.2, 2.0, 2.4)
 EXPECTED_IDS = {f"{obs}@phi={phi}" for phi in PHI_GRID for obs in ("omega_s_eff", "lambda_c")}
+
+# Pre-registered cross-platform Monte-Carlo band for MCMC-derived card numbers. This is the SAME 2%
+# relative class tolerance `scripts/generate_calibration.py` pre-registered for MCMC-derived means, which
+# the 2026-07-23 arm64 reproduction exercised at 21.8% of band. The largest card drift measured there was
+# 0.44% (bracket limbs), so 2% carries ~4.5x headroom. Never widen silently.
+MC_RTOL = 0.02
 
 
 @pytest.fixture(scope="module")
@@ -39,6 +55,37 @@ def shipped_card():
 def _pred(card, scenario_name, target_id):
     scen = next(s for s in card["payload"]["scenarios"] if s["name"] == scenario_name)
     return next(p for p in scen["predictions"] if p["target_id"] == target_id)
+
+
+# ------------------------------------------------- reproduction-claim scoping (see the module docstring)
+def _on_recorded_platform(card) -> bool:
+    """True iff this host is the platform the SHIPPED card records as its generation environment.
+
+    Bit-identity is claimed only there. The check reads the card (never a hard-coded string), so it
+    follows the card if FC-002+ is ever generated somewhere else.
+    """
+    env = card["generation"]["env"]
+    return (env["machine"], env["platform"]) == (platform.machine(), sys.platform)
+
+
+def _numeric_pairs(a, b, path="") -> list[tuple[str, float, float]]:
+    """Flatten two same-shaped JSON trees into aligned (path, committed, fresh) numeric triples.
+
+    Raises AssertionError on any STRUCTURAL difference -- shape/keys/strings must match exactly on every
+    platform; only the numbers are allowed to move by Monte-Carlo error.
+    """
+    assert type(a) is type(b), f"{path}: type differs ({type(a).__name__} vs {type(b).__name__})"
+    if isinstance(a, dict):
+        assert a.keys() == b.keys(), f"{path}: keys differ ({sorted(a)} vs {sorted(b)})"
+        return [t for k in sorted(a) for t in _numeric_pairs(a[k], b[k], f"{path}.{k}")]
+    if isinstance(a, list):
+        assert len(a) == len(b), f"{path}: length differs ({len(a)} vs {len(b)})"
+        return [t for i, (x, y) in enumerate(zip(a, b, strict=True))
+                for t in _numeric_pairs(x, y, f"{path}[{i}]")]
+    if isinstance(a, bool) or not isinstance(a, (int, float)):
+        assert a == b, f"{path}: non-numeric value differs ({a!r} vs {b!r})"
+        return []
+    return [(path, float(a), float(b))]
 
 
 # 1 ----------------------------------------------------------------------- determinism (fresh vs fresh)
@@ -237,13 +284,24 @@ def test_provenance_has_every_replication_field(shipped_card):
 
 
 def test_scenario_b_replicates_from_recorded_spec(shipped_card, samples):
-    """An independent verifier reproduces Scenario B from scenario_b_sampling + the posterior os0 marginal."""
+    """An independent verifier reproduces Scenario B from scenario_b_sampling + the posterior os0 marginal.
+
+    PORTABLE gate: the replicated median must land within the pre-registered Monte-Carlo band. The
+    scenario-B draw itself (numpy Generator) is bit-portable; what moves off the recorded platform is the
+    NUTS posterior it multiplies, so this is the cross-platform reproduction claim in its smallest form.
+    """
     sb = shipped_card["payload"]["provenance"]["scenario_b_sampling"]
     rng = np.random.default_rng(sb["seed"])
     r_b = rng.uniform(sb["bounds"][0], sb["bounds"][1], size=sb["n"])
     ose_b = samples["omega_s0_pct"] * (1.0 - r_b)
     med = forecast._round_sig(float(np.median(ose_b)))
-    assert med == _pred(shipped_card, "B", "omega_s_eff@phi=1.2")["median"]
+    registered = _pred(shipped_card, "B", "omega_s_eff@phi=1.2")["median"]
+    assert abs(med - registered) <= MC_RTOL * abs(registered), (
+        f"scenario-B median {med} vs registered {registered} "
+        f"({abs(med - registered) / abs(registered):.2%} > {MC_RTOL:.0%} MC band)"
+    )
+    if _on_recorded_platform(shipped_card):
+        assert med == registered  # bit-identity, claimed only on the recorded platform
 
 
 # 9 -------------------------------------------------------------------------------- wall-clock guard
@@ -286,12 +344,44 @@ def test_fc001_chain_settings_pinned():
     assert calibrate.NUM_CHAINS_DEFAULT == 4
 
 
-def test_fc001_pinned_posterior_reproduces_registered_predictions(fresh_card, shipped_card):
-    """Behavioural proof: a fresh build through the PINNED posterior reproduces every registered card
-    prediction byte-for-byte (the only legitimate payload drift is the evolved-ledger sha256)."""
-    def _preds(card):
-        return {s["name"]: {p["target_id"]: p for p in s["predictions"]}
-                for s in card["payload"]["scenarios"]}
+def _preds(card):
+    return {s["name"]: {p["target_id"]: p for p in s["predictions"]}
+            for s in card["payload"]["scenarios"]}
 
+
+def test_fc001_pinned_posterior_reproduces_registered_predictions_within_mc_band(fresh_card, shipped_card):
+    """PORTABLE reproduction gate -- the one a third party on ANY platform must pass.
+
+    A fresh build through the PINNED posterior must reproduce the registered card's STRUCTURE exactly
+    (scenarios, target ids, prediction types, units, limb layout -- all enforced by ``_numeric_pairs``)
+    and every registered NUMBER to within the pre-registered Monte-Carlo band. This is the claim
+    FORECAST_PROTOCOL.md sec.7 actually makes off the recorded platform; anything stronger is
+    architecture-dependent and belongs in the test below.
+    """
+    pairs = _numeric_pairs(_preds(shipped_card), _preds(fresh_card))
+    assert len(pairs) >= 60, f"only {len(pairs)} numeric cells compared -- the card shape shrank"
+    bad = [(p, c, f, abs(c - f) / max(abs(c), abs(f)))
+           for p, c, f in pairs
+           if abs(c - f) > MC_RTOL * max(abs(c), abs(f))]
+    assert not bad, f"registered predictions outside the {MC_RTOL:.0%} MC band:\n  " + "\n  ".join(
+        f"{p}: registered {c:.6g} vs fresh {f:.6g} ({d:.2%})" for p, c, f, d in bad
+    )
+
+
+def test_fc001_pinned_posterior_reproduces_registered_predictions_bitwise(fresh_card, shipped_card):
+    """STRICT gate, scoped to the platform the card records (FORECAST_PROTOCOL.md sec.7).
+
+    On the recorded environment the pinned realization must come back bit-for-bit: this is what pins the
+    single-chain / OLD-R-box FC-001 freeze and would catch an accidental un-pinning. It is SKIPPED (not
+    softened) elsewhere -- NUTS draws are not bit-portable across architectures even with x64 on, measured
+    on arm64 2026-07-23 -- and the portable band above is what runs there instead.
+    """
+    env = shipped_card["generation"]["env"]
+    if not _on_recorded_platform(shipped_card):
+        pytest.skip(
+            f"card records machine={env['machine']}/{env['platform']}; this host is "
+            f"{platform.machine()}/{sys.platform}. Bit-identity is claimed only on the recorded platform; "
+            "the cross-platform MC-band gate covers this host."
+        )
     assert _preds(fresh_card) == _preds(shipped_card)
     assert forecast.OMEGA_S0_PRIOR == ("normal", 0.857, 0.03)

@@ -32,6 +32,8 @@ from __future__ import annotations
 
 import jax.numpy as jnp
 
+from . import _jaxcfg  # noqa: F401  -- MANDATORY float64; this module imports nothing else in-package
+
 K_B = 8.617333e-5  # eV / K
 
 # Vesman resonances per hyperfine F: (E_res [eV], amplitude [s^-1], width [eV]).
