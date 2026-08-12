@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly slow-suite sweep (SBC coverage, 200 seeded MCMC replicas) on BOTH architectures. These are
+    # the repo's strongest statistical claims and `pytest -q` deselects them, so nothing else exercises
+    # them; they are too slow (~10-15 min) to gate every push.
+    - cron: "0 5 * * 1"
 
 jobs:
   test:
@@ -64,6 +70,54 @@ jobs:
           cmp forecasts/FC-001-mufuse.json /tmp/fc1.json
           echo "forecast determinism OK: two fresh regenerations are byte-identical"
 
+  cross-arch:
+    # CROSS-ARCHITECTURE reproducibility gate (arm64 / Apple Silicon). Every other job in this file runs
+    # on x86-64, so before this existed the tolerance bands that exist to absorb cross-architecture MCMC
+    # drift were never exercised: on one architecture every audited cell reproduces at 0 distance and an
+    # "OK" proves determinism, not that the band is correctly sized. A one-off manual arm64 reproduction
+    # (2026-07-23) found that gap was hiding real defects -- an under-sized design band and two
+    # exact-equality forecast tests that could not pass off x86-64. This job makes it a standing gate.
+    #
+    # It installs from requirements-lock.txt on purpose: that also fails loudly if a pinned wheel ever
+    # ships without an arm64 build (all 41 currently do).
+    runs-on: macos-15   # GitHub-hosted Apple Silicon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install (pinned lockfile, arm64 wheels)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-lock.txt   # pytest + ruff are pinned in there too
+          pip install -e . --no-deps
+      - name: Show architecture
+        run: python -c "import platform,sys; print(platform.machine(), platform.platform(), sys.version)"
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        run: pytest -q
+      - name: Audit (byte-diffed docs + tolerance-audited NUTS docs, on arm64)
+        run: make audit
+
+  slow:
+    # Weekly only (see the `schedule` trigger): SBC coverage + the twin-coverage replicas, both arches.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Slow suite
+        run: pytest -q -m slow -s
+
   windows:
     runs-on: windows-latest
     steps:
@@ -91,10 +145,17 @@ jobs:
         run: python examples/quickstart.py
 
   types:
-    # Static type check. Non-blocking for now (continue-on-error); promotion to a blocking gate
-    # is deferred to a future release. Runs mypy over the package with missing third-party stubs ignored.
+    # Static type check. BLOCKING: `mypy openmucf --ignore-missing-imports` must be clean. It was
+    # masked with `continue-on-error: true` while the package carried a standing 6-error set; that set
+    # is fixed (real annotations, no blanket suppressions), so the mask is gone and a new type error
+    # now fails the build instead of being reported and ignored.
+    #
+    # Known limit, stated rather than implied: this is mypy's DEFAULT mode, which does not check the
+    # bodies of unannotated functions. Adding --check-untyped-defs today reports 3 further errors
+    # (formation.py:104, frontier.py:166, frontier.py:167) that this gate does not see. Tightening to
+    # that flag is a separate, deliberate change -- it widens what must be fixed, so it is not
+    # smuggled in here.
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -103,7 +164,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: mypy (non-blocking)
+      - name: mypy
         run: mypy openmucf --ignore-missing-imports
 
   paper:

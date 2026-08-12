@@ -28,9 +28,17 @@ contraction is the expected (asymptotic) contraction, deterministic given the se
 sample counts. omega_s0_true = 0.857 % is the Kamimura central initial sticking -- the physical
 data-generating value, used identically for BOTH prior chains (only the omega_s0 PRIOR differs).
 
-All numbers below are NUTS-derived: they reproduce to Monte-Carlo noise (~+/-3 percentage points on a
-contraction for the weak chain, ~+/-1-2 pp for the Kamimura chain), NOT byte-identically. That is why this
-doc is exploratory and is deliberately NOT part of the reproducibility audit.
+All numbers below are NUTS-derived: they reproduce to Monte-Carlo noise, NOT byte-identically. That is why
+this doc is exploratory and is deliberately NOT part of the reproducibility audit.
+
+CORRECTION 2026-08-09 -- do not re-use the old figure. This docstring used to quote that noise as
+"~+/-3 percentage points on a contraction for the weak chain, ~+/-1-2 pp for the Kamimura chain". Those
+numbers came from THIS script's own asymptotic setting (the synthetic observation placed exactly at its
+expected value, which suppresses dataset-to-dataset variability by construction) and do NOT transfer to a
+preposterior contraction averaged over sampled synthetic datasets. `openmucf.design` re-used them anyway
+and sized an audit tolerance from them; a direct measurement there found a per-refit spread of 4-18 pp --
+several times larger -- and the under-sized band duly failed on the first independent cross-architecture
+reproduction. Quote a MEASURED per-cell standard error (`openmucf.design.median_se`), never this figure.
 
 Run from repo root:
 

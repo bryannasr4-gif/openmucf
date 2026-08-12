@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-208%2F211%20(Linux%20CI%20%2B%20Windows)-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-274%2F275%20(Linux%20%2B%20Windows%20%2B%20macOS%20arm64)-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-v1%20open%20infrastructure%20%2B%20honest%20findings-blue.svg)
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
@@ -40,12 +40,17 @@ shared substrate:
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 211 tests (208 pass, 1 skipped-blocked, 2 slow deselected by default)
+pytest                 # 278 tests: 275 in the default run (274 pass, 1 skipped-blocked), 3 slow deselected
 pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 seeded MCMC fits)
 ```
-Verified platforms: Windows x64 (py3.12) and Linux CI (py3.11/3.12/3.13) — 208/211 tests. The audited docs
-regenerate byte-identically cross-architecture (`VALIDATION.md` matches on macOS arm64, Windows, and Linux),
-except the NUTS/MCMC-derived docs (`CALIBRATION.md`, `DESIGN.md`), which reproduce to Monte-Carlo tolerance.
+Verified platforms: Linux CI (py3.11/3.12/3.13), Windows x64 (py3.12), and **macOS arm64 / Apple Silicon
+(py3.12)** — every job runs the full suite, and the arm64 job additionally runs `make audit`, so the
+cross-architecture claim below is a standing CI gate rather than a one-off check. All 18 byte-diffed
+audited artifacts regenerate **byte-identically on arm64 and x86-64** (independently reproduced on Apple
+Silicon, 2026-07-23; `git diff --exit-code` clean). The NUTS/MCMC-derived docs (`CALIBRATION.md`,
+`DESIGN.md`) and the FC-001 card are not bit-portable across architectures and are checked against
+pre-registered tolerance bands instead; each audit prints its per-cell margins so the headroom is visible
+in every CI log.
 Windows note: enable long-path support (or use a short venv path) for the JAX install.
 The twin coverage test is marked `slow` and deselected from the default run (and CI); run it with `pytest -m slow`.
 

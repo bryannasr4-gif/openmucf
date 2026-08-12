@@ -10,6 +10,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — cross-architecture reproducibility (2026-08-09)
+An independent reproduction of the full audit battery on Apple Silicon (arm64), against an x86-64
+reference, found three defects that a single-architecture CI could not have surfaced. All three are fixed
+here, and the gap that hid them is closed with a standing arm64 CI job.
+- **Silent float32 sampling under a shadowed import (correctness, all platforms).** `jax_enable_x64=True`
+  was set only in `openmucf/__init__.py`. Running any script from a directory that also contains a *clone*
+  of this repository binds `openmucf` to a namespace package, so `__init__.py` never executes while the
+  submodules still import — every NUTS chain then ran in float32, silently, on rates spanning ~7 decades.
+  x64 is now enabled by `openmucf/_jaxcfg.py`, imported on every path into the package, and
+  `require_x64()` hard-fails at each sampler entry. Pinned by `tests/test_x64_guard.py`, which reproduces
+  the shadow and asserts the samplers still run in float64.
+- **`DESIGN.md`'s `--audit` tolerance was smaller than the estimator's own Monte-Carlo error.** The
+  sd-contraction cells were checked against a fixed 3 pp absolute band, justified by a "±1–3 pp
+  Monte-Carlo floor" quoted from `docs/xray_feasibility.md` that had never been measured for these cells;
+  the true per-refit spread is 4–18 pp. Such a band can only be met by regenerating the identical
+  pseudo-random realization, so it passed on every x86-64 host and failed on 5 of 12 cells the first time
+  another architecture ran it. Now: `n_synth` 8 → 64, every cell published as `value ± bootstrap MC
+  standard error`, the audit band **derived** as 4σ of those SEs (floored at 0.01 — 4σ, not 3σ, because
+  a gate that runs on every push across 12 cells must not cry wolf), and the *structural*
+  claims the document makes — C4's lead, the ω_s^eff ranking, class-independence — gated at their own
+  separations. The class-contrast prose is now generated from the measured paired difference and its SE,
+  so the file cannot again assert a separation the data do not support.
+- **The published ± omitted the base chain's own error, and the fix above would have failed cross-platform
+  without it.** Every contraction is `1 − s_j/S` with one shared denominator `S = sd(base posterior)`, so a
+  bootstrap over the synthetic datasets is blind to `S`'s Monte-Carlo error — the one term that actually
+  moves when the run is reproduced on another machine. Measured by batch means on the pinned chain, that
+  error is ~1.6% of `sd(ω_s^eff)` and ~1.7% of `sd(R)`, which alone shifts `ose_C1` by 0.011 against a band
+  of 0.013. Every cell now publishes the two components combined in quadrature. It cancels to first order
+  in the paired class contrast, which is unaffected. Also: the fresh run's SE — half of every band, and
+  published nowhere — is now gated against the committed one, and any cell whose band exceeds its own value
+  is reported as NOT INFORMATIVE instead of counting as a silent pass.
+- **The FC-001 reproduction tests contradicted FC-001's own determinism statement.** `FORECAST_PROTOCOL.md`
+  §7 claims bit-identity *under the recorded environment (including platform)* and Monte-Carlo agreement
+  cross-platform; two tests asserted bit-identity unconditionally, so a fresh clone failed on any non-x86-64
+  host. The strict gate now runs only on the platform the card itself records, and a new always-on gate
+  checks every registered number (98 cells) against the pre-registered 2 % Monte-Carlo band and the card's
+  structure exactly.
+- **Instrumentation.** `generate_calibration.py --audit` now prints the per-class worst margin (as a
+  percentage of band) whether it passes or fails, so every CI run on every platform is evidence about how
+  the bands are actually sized — previously an "OK" on one architecture proved determinism, not that a
+  tolerance was correctly sized. `generate_design.py --audit` prints its worst margin likewise.
+
+### Fixed — the EIG audit band, measured rather than assumed (2026-08-12)
+- **`DESIGN.md`'s EIG cells were audited against a 5 % *relative* constant, which is the wrong shape.**
+  The sd-contraction cells got a measured, per-cell band on 2026-08-09; the EIG-in-bits cells kept the
+  original pre-registered 5 % relative tolerance, annotated "held cross-arch 2026-07-23" — an annotation
+  now **deleted**, because the artifacts of that reproduction were never tracked in this repository and
+  the claim does not survive measurement. A 200-realization sweep over the base chain's seed (analysis
+  seed held fixed, so the nested-Monte-Carlo draws are identical and only the posterior being integrated
+  over changes) puts the per-cell realization noise at **0.042–0.068 bits = 1.40 %–6.10 % relative**: the
+  noise is *absolute*, its relative size varying 4.4× across cells while its absolute size varies 1.6×.
+  Against an independent realization the 5 % band therefore reds **49.5 % of runs**, worst on `eig_C3`,
+  whose own noise (6.10 %) exceeds the entire band — and no relative constant fixes it, since the ≥ 34.5 %
+  needed to cover `eig_C3` makes `eig_C4`'s band 24.8 σ of its own noise. The one arm64 EIG flag of
+  2026-07-23 (|Δ| = 0.088 bits on `eig_C2`) sits at the 92nd percentile of that distribution, z = +1.48:
+  an ordinary draw, reproduced on x86-64 by nothing more than a different chain seed.
+  The EIG cells now use the same construction as the contraction cells, with the SE **measured in-run**:
+  20 replicate base chains per pass (seeds 1–20, the committed seed excluded from its own error bar),
+  `sd` with ddof = 1, published as `value ± se` in `DESIGN.md` and tracked in the manifest (31 → 37
+  entries). Simulated false alarm **0.555 % per run**, inside the 0.12–0.60 %/run regime already chosen
+  for the contraction cells at 4 σ; cost ≈ +20 s per pass. A fixed *absolute* band (0.383 bits) was
+  measured and rejected — safe but ~10× more conservative than the project's own 4 σ design point, with
+  7.7–18.6 % detection power at a 0.30-bit shift against 22.6–84.3 %, and stale the moment `n_outer`,
+  `n_inner` or the chain length changes. **No published value moves and no finding changes**; the SE-ratio
+  guard is now enforced only where a band is SE-governed, so the identically-zero `zero_eig` cell keeps
+  the 0.01 absolute floor it already had.
+
 ### Added
 - **Open muon-cost ledger (`openmucf/data/muon_cost.csv` + `openmucf/mucost.py` + `MUON_COST.md`).** A
   curated compilation-with-provenance of the muon-production energy cost on one auditable basis (beam GeV
@@ -60,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **X-ray/neutron-ratio degeneracy-breaker feasibility scan (`docs/xray_feasibility.md`).** An exploratory
   (not-audited) scan of whether adding an X-ray-per-fusion-neutron observable to the calibration would break
   the `ω_s0`/`R` degeneracy. Best-cell posterior sd(R) contraction 42.95% in the weak-prior chain (≥ a 15%
-  feasibility threshold), with the ±3 pp Monte-Carlo noise floor documented. Exploratory only; the κ-band
+  feasibility threshold), with its Monte-Carlo noise documented (the "±3 pp" figure originally quoted here
+  is scoped to that study's asymptotic setting — see the Fixed section above). Exploratory only; the κ-band
   likelihood term is specced, not built, pending acquisition of a measured κ.
 - **²²⁵Ac reproduction notebook (`scripts/parisi_ac225.py` + `notebooks/parisi_ac225.ipynb`).** A forward,
   factor-by-factor reproduction of Parisi & Rutkowski's (arXiv:2511.20951) headline — ~20 mg/yr of ²²⁵Ac from
@@ -73,10 +141,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   posterior, by a primary preposterior sd-contraction metric and a secondary nested-Monte-Carlo EIG. The
   X-ray/neutron ratio is the decisive, structural-class-robust R-sharpener; R is reported class-conditionally
   (constant-R vs R(φ)-inflated) because neutron-only observables do not identify R without an assumed
-  structural form (the class-flip finding). An internal planning instrument, not a verdict. `DESIGN.md` +
+  structural form, and the class **contrast** is reported against its own Monte-Carlo error — on the shipped
+  run it is *not* resolved, and the document says so. An internal planning instrument, not a verdict. `DESIGN.md` +
   `DESIGN_MANIFEST.json` carry NUTS-derived numbers, so `make audit` tolerance-checks them
-  (`generate_design.py --audit`: EIG bits at 5% relative, sd-contraction at 3 pp absolute) rather than
-  byte-diffing.
+  (`generate_design.py --audit`: every cell, EIG and sd-contraction alike, at 4σ of its own published
+  Monte-Carlo SE — both the fixed 3 pp contraction band and the 5 % relative EIG band this release
+  originally shipped are superseded, see the Fixed sections above) rather than byte-diffing.
 
 ### Changed
 - **Class-tiered, falsifiable validation scoreboard.** Every `VALIDATION.md` row now carries a claim

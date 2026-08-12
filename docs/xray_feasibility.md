@@ -1,7 +1,17 @@
 # X-ray/neutron-ratio degeneracy-breaker — feasibility scan
 
 > **Exploratory note — NOT part of the reproducibility audit.** Every number here is NUTS-derived and
-> reproduces only to Monte-Carlo noise (≈±1–3 percentage points on a contraction), not byte-identically.
+> reproduces only to Monte-Carlo noise, not byte-identically.
+>
+> **Correction (2026-08-09).** Earlier revisions of this note quoted that noise as "≈±1–3 percentage
+> points on a contraction". That figure was never measured for these cells and is too small: a direct
+> measurement of the per-refit contraction spread (`openmucf.design`, the same estimator) found **4–18
+> percentage points**, so a median over *n* synthetic datasets carries a Monte-Carlo standard error of
+> roughly 2–7 pp at *n*=8. The understated figure propagated into `DESIGN.md`, where it was used to size
+> an audit tolerance *below* the estimator's own noise; both are corrected, and `DESIGN.md` now publishes
+> a per-cell bootstrap standard error instead of quoting a global floor. Read the contraction below as
+> "≈43 %, with a Monte-Carlo error of several percentage points" — the go/no-go verdict is unaffected
+> (the effect is an order of magnitude larger than its error), which is why it stands.
 > This document ships no manifest and is not byte-diffed by `make audit`. It is a go/no-go scan run
 > *before* any effort is spent acquiring the (blocked) κ branching literature or engineering a likelihood
 > term. Regenerate with `python scripts/xray_feasibility.py` (seeded, deterministic on a fixed platform).
@@ -75,6 +85,14 @@ as expected. The near-zero and slightly negative entries in the widest-band row 
 adding the term does nothing and the finite-sample sd estimate fluctuates by a few percent either way. That
 noise floor (≈±3 pp for the weak chain, ≈±1–2 pp for the Kamimura chain) is far below the 43 % signal and
 far below the 15 % threshold, so neither verdict is a knife-edge.
+
+> **Scope of that floor (2026-08-09).** It applies to *this* study's setting only, where the synthetic
+> observation is placed exactly at its expected value — which removes dataset-to-dataset variability by
+> construction. It is **not** the noise of a preposterior contraction averaged over *sampled* synthetic
+> datasets: measured directly in `openmucf.design`, that spread is 4–18 pp per refit. Carrying this figure
+> across was the root cause of `DESIGN.md`'s under-sized audit band (see the correction at the top). The
+> go/no-go verdict here is unaffected — 43 % against a 15 % threshold is not a knife-edge under either
+> figure — but the number must not be re-used outside this document.
 
 **κ-scale-invariance check** (best cell, κ_mid = 1.0 vs 0.5):
 

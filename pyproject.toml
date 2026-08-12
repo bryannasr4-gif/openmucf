@@ -27,12 +27,26 @@ dependencies = [
     "optimistix>=0.1",  # WS-Q frontier.py: Newton root-find for the inverse-design solver (also transitive via diffrax)
     "numpyro>=0.13",
     "SALib>=1.4",
+    # Arrived transitively (SALib requires pandas>=2.0) and no first-party module imports it; kept
+    # declared because the resolver installs it either way and dropping it would only hide the fact.
     "pandas>=2.0",
     "matplotlib>=3.7",
+    # Declared 2026-08-12: both were imported by shipped code while relying on a transitive install.
+    # numpy floor is EXACT, not conventional -- the suite calls np.trapezoid (tests/test_twin.py),
+    # which is the NumPy-2.0 rename of np.trapz and does not exist in 1.x.
+    "numpy>=2.0",
+    # Pillow: scripts/digitize_yamashita_fig3a.py (Image.open(...).convert("RGB")). CONSERVATIVE
+    # bound, not a tested minimum -- only the long-stable Image API is used, and 10.0 is the first
+    # major series released after this project's requires-python floor (3.11).
+    "pillow>=10.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "ruff>=0.5", "mypy>=1.10"]
+# scipy is TEST-ONLY (scipy.stats.chisquare in tests/test_calibrate_sbc.py) and deliberately NOT a
+# runtime dependency -- openmucf/exact.py says so and uses jax.scipy instead. Floor = the one SALib
+# already imposes. mypy is capped below the next major: the `types` CI job is BLOCKING as of
+# 2026-08-12, so a major-version bump (which may add checks) is a deliberate upgrade, not a red main.
+dev = ["pytest>=7", "ruff>=0.5", "mypy>=1.10,<3", "scipy>=1.9.3"]
 
 [project.scripts]
 openmucf = "openmucf.cli:main"

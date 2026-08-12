@@ -81,15 +81,66 @@ def test_nested_mc_settings_echoed_in_output():
 # --------------------------------------------------------------------- sd-contraction refit (NUTS; slow)
 @pytest.mark.slow
 def test_sd_contraction_refit_behaviour(base):
-    """The PRIMARY metric refits with the observable appended. C2 (cycling rate) is class-INSENSITIVE, so
-    its two R-classes coincide; a class-sensitive candidate (C1) instead COLLAPSES its R information under
-    R(phi)-inflation -- the estimand-discipline finding."""
+    """The PRIMARY metric refits with the observable appended, and reports its own Monte-Carlo error.
+
+    Asserts STRUCTURAL properties only. An earlier version of this test asserted an OUTCOME at n_synth=3
+    (``c1["R_contraction"]["inflated"] < 0.03`` and a strict constant > inflated ordering) -- a coin-flip
+    on three noisy refits whose per-refit spread is 4-18 pp. It passed on the host it was written on and
+    encoded the same over-claim the 2026-07-23 cross-architecture reproduction refuted. Whether the class
+    contrast is RESOLVED is a measurement DESIGN.md now reports with its sigma; it is not a test fixture.
+    """
     c2 = design.sd_contraction("C2", n_synth=3, seed=0, samples=base)
     assert c2["R_contraction"]["constant"] == c2["R_contraction"]["inflated"]  # class-independent
+    assert c2["R_contraction_class_delta"]["value"] == 0.0                     # ... exactly, by construction
     assert set(c2["sd_before"]) == {"omega_s_eff_pct", "R"}
     assert c2["n_synth"] == 3
 
     c1 = design.sd_contraction("C1", n_synth=3, seed=0, samples=base)
-    # C1's R information is real under constant-R and collapses toward zero once R(phi) is decoupled.
-    assert c1["R_contraction"]["constant"] > c1["R_contraction"]["inflated"]
-    assert c1["R_contraction"]["inflated"] < 0.03  # collapsed to the MC-noise floor
+    assert c1["class_sensitive"] is True
+    # the inflated refit really decoupled R at the design point (different draws, not a mirrored copy)
+    assert c1["raw"]["constant"]["R"] != c1["raw"]["inflated"]["R"]
+    # common random numbers: both classes used the SAME theta* draws, so sd_before is shared
+    assert c1["sd_before"] == c2["sd_before"]
+    # every reported cell carries a finite, strictly positive Monte-Carlo standard error
+    for se in (c1["ose_contraction_se"], c1["R_contraction_se"]["constant"],
+               c1["R_contraction_se"]["inflated"], c1["R_contraction_class_delta"]["se"]):
+        assert se == se and se > 0.0
+    assert c1["R_contraction_class_delta"]["paired"] is True
+
+
+# --- 2026-08-12: a neutron_slope candidate with no density is a construction error ------------------
+# `Candidate.phi` is Optional, but the neutron_slope observable is DEFINED at a density: lambda_dis
+# scales as phi/PHI_ANCHOR. Both places that use it -- the analytic mean and the sd-contraction refit
+# -- must say so rather than propagate a None into the arithmetic. The refit check is deliberately
+# hoisted out of the traced NUTS model, so it raises immediately and needs no MCMC to exercise.
+
+
+def _phi_less_neutron_slope():
+    return design.Candidate(
+        id="C_bad",
+        label="neutron slope with no density",
+        design_point="n/a",
+        kind="neutron_slope",
+        class_sensitive=True,
+        sigma_rel=0.05,
+        phi=None,
+    )
+
+
+def test_analytic_mean_rejects_a_neutron_slope_candidate_with_no_density():
+    with pytest.raises(ValueError, match="neutron_slope.*no density phi"):
+        design._mu(_phi_less_neutron_slope(), np.array([1.0]), 0.2, 1.0e8)
+
+
+def test_refit_rejects_a_neutron_slope_candidate_with_no_density():
+    with pytest.raises(ValueError, match="neutron_slope.*no density phi"):
+        design._refit_sd(_phi_less_neutron_slope(), "constant", y_obs=1.0, sigma=0.1, seed=0)
+
+
+def test_shipped_neutron_slope_candidates_all_carry_a_density():
+    """The guards above are a backstop; no shipped candidate may actually need them."""
+    shipped = design.registry(xray_verdict_pct=100.0)["candidates"]  # verdict high enough to keep C4
+    assert [c.kind for c in shipped.values()].count("neutron_slope") >= 1
+    for cand in shipped.values():
+        if cand.kind == "neutron_slope":
+            assert cand.phi is not None, f"{cand.id} is neutron_slope with phi=None"

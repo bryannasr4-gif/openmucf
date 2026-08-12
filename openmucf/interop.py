@@ -20,12 +20,17 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from . import formation
 from .analytic import effective_sticking, ledger_reactivation
 from .rates import omega_fraction
+
+# A rate table's sampled values: a flat float list for a 1-D table, a list of rows for a 2-D one.
+# Nesting depth always equals ``RateTable.ndim``; the narrowing accessors below enforce that.
+GridValues = Sequence[float] | Sequence[Sequence[float]]
 
 # ---------------------------------------------------------------------------
 # Export: rate tables + a callable API for GEANT4
@@ -43,13 +48,41 @@ class RateTable:
     name: str
     axis_names: tuple[str, ...]
     axis_grids: tuple[tuple[float, ...], ...]
-    values: object
+    values: GridValues
     unit: str
     note: str = ""
 
     @property
     def ndim(self) -> int:
         return len(self.axis_names)
+
+    # Both accessors ask the SAME question -- "is this entry sized?" -- from opposite sides, because
+    # neither `isinstance(x, Sequence)` nor `isinstance(x, float | int)` alone answers it: a numpy
+    # array is sized but is not a registered Sequence, and a numpy scalar (np.float32) is neither.
+    # Testing only one of them is what made an earlier revision reject a 2-D array while accepting a
+    # 1-D one, and describe a 2-D array as "flat".
+
+    def _values_1d(self) -> Sequence[float]:
+        """``values`` as the flat float sequence a 1-D table must carry -- checked, not assumed."""
+        out: list[float] = []
+        for v in self.values:
+            if isinstance(v, Sequence) or hasattr(v, "__len__"):
+                raise TypeError(
+                    f"table {self.name!r} declares ndim=1 but entry {len(out)} is sized, not scalar: {v!r}"
+                )
+            out.append(v)
+        return out
+
+    def _values_2d(self) -> Sequence[Sequence[float]]:
+        """``values`` as the row sequence a 2-D table must carry -- checked, not assumed."""
+        out: list[Sequence[float]] = []
+        for row in self.values:
+            if isinstance(row, float | int) or not hasattr(row, "__len__"):
+                raise TypeError(
+                    f"table {self.name!r} declares ndim=2 but row {len(out)} is not sized: {row!r}"
+                )
+            out.append(row)
+        return out
 
     def to_json(self, path) -> Path:
         """Serialize to JSON (axes + values + metadata)."""
@@ -76,23 +109,25 @@ class RateTable:
             w.writerow([*self.axis_names, self.name])
             if self.ndim == 1:
                 (g0,) = self.axis_grids
+                flat = self._values_1d()
                 for i, x0 in enumerate(g0):
-                    w.writerow([x0, self.values[i]])
+                    w.writerow([x0, flat[i]])
             elif self.ndim == 2:
                 g0, g1 = self.axis_grids
+                grid = self._values_2d()
                 for i, x0 in enumerate(g0):
                     for j, x1 in enumerate(g1):
-                        w.writerow([x0, x1, self.values[i][j]])
+                        w.writerow([x0, x1, grid[i][j]])
             else:  # pragma: no cover - v1 exports are 1-D or 2-D only
                 raise ValueError(f"CSV export supports 1-D/2-D tables, got ndim={self.ndim}")
         return path
 
 
-def _build_2d(g0, g1, fn):
+def _build_2d(g0, g1, fn) -> list[list[float]]:
     return [[float(fn(x0, x1)) for x1 in g1] for x0 in g0]
 
 
-def _build_1d(g0, fn):
+def _build_1d(g0, fn) -> list[float]:
     return [float(fn(x0)) for x0 in g0]
 
 
