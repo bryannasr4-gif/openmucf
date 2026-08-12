@@ -11,6 +11,7 @@ fails loudly instead of being absorbed by a helper that recomputes it.
 
 import ast
 import dataclasses
+import io
 import json
 import locale
 import math
@@ -18,11 +19,15 @@ import pathlib
 import random
 import re
 import struct
+import subprocess
 import sys
+import tarfile
+import tempfile
+import tomllib
 
 import pytest
 
-from openmucf.g4 import provenance, spec
+from openmucf.g4 import emit, provenance, spec
 from openmucf.g4.spec import G4DatFormatError, G4DatTable
 
 DIRECTIVES = {
@@ -718,4 +723,121 @@ def test_t34_import_fence():
                 offenders = [name for name in banned if target == name or target.startswith(f"{name}.")]
                 assert not offenders, f"{path.name} imports {target!r} (line {node.lineno})"
         checked.add(path.name)
-    assert checked == {"__init__.py", "spec.py", "provenance.py"}
+    assert checked == {"__init__.py", "spec.py", "provenance.py", "emit.py"}
+
+
+# --------------------------------------------------------------------------------------------
+# T-35..T-37 -- the archive, the digest on disk, and the committed example
+# --------------------------------------------------------------------------------------------
+
+REPO = pathlib.Path(__file__).resolve().parents[1]
+G4DIR = REPO / "data" / "g4"
+
+
+def example_members() -> dict[str, bytes]:
+    """The two files the shipped archive holds, read as bytes from the committed dataset."""
+    return {
+        "example.g4dat": (G4DIR / "example.g4dat").read_bytes(),
+        "example.prov.json": (G4DIR / "example.prov.json").read_bytes(),
+    }
+
+
+def test_t35_archive_is_deterministic():
+    """Two builds of the same members are byte-identical, and nothing about this machine is in them.
+
+    A tar entry carries an mtime, a uid/gid, owner names and a mode; a gzip container carries an
+    mtime and can carry the source filename. Each is a channel for the builder to leak into the
+    artifact, and an artifact whose bytes depend on who built it cannot be checksummed once and
+    shipped. The gzip header is asserted field by field so that a future determinism failure can be
+    attributed to the DEFLATE stream (a zlib build difference) rather than to this code.
+    """
+    members = example_members()
+    first = emit.build_tarball(members)
+    assert first == emit.build_tarball(members)
+    assert first == emit.build_tarball(dict(reversed(list(members.items()))))  # insertion order
+
+    header = emit.gzip_header(first)
+    assert header["mtime"] == 0, "the gzip container is stamped with the build time"
+    assert header["flags"] & 0x08 == 0, "the gzip container carries a source filename"
+    assert (header["method"], header["xfl"], header["os"]) == (8, 2, 255)
+
+    with tempfile.TemporaryDirectory() as scratch:
+        path = pathlib.Path(scratch) / f"example.{emit.ARCHIVE_EXTENSION}"
+        path.write_bytes(first)
+        with tarfile.open(path) as archive:
+            entries = archive.getmembers()
+        assert [entry.name for entry in entries] == sorted(members)  # sorted, and nothing else
+        for entry in entries:
+            assert (entry.mtime, entry.uid, entry.gid, entry.uname, entry.gname) == (0, 0, 0, "", "")
+            assert entry.mode == 0o644
+    assert len(emit.tarball_md5(first)) == 32
+
+
+def test_t36_source_digest_survives_a_round_trip_through_the_filesystem():
+    """The digest binds Layer 1 to the BYTES OF A FILE, so prove it against a real file.
+
+    Everything up to here checked the digest in memory, where the bytes cannot be mangled on the way
+    out. The failure this guards is mundane and platform-specific: write the Layer-2 file in text
+    mode on Windows and every LF becomes CRLF, the file grows, the digest no longer matches, and
+    nothing notices until a consumer's validation fails. Unpack the archive, re-read the member from
+    disk, re-hash -- and then do the same with a text-mode copy and require E009.
+    """
+    members = example_members()
+    archive = emit.build_tarball(members)
+
+    with tempfile.TemporaryDirectory() as scratch:
+        root = pathlib.Path(scratch)
+        with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
+            opened.extractall(root, filter="data")
+
+        layer1 = spec.parse((root / "example.g4dat").read_bytes().decode("ascii"))
+        from_disk = (root / "example.prov.json").read_bytes()
+        assert from_disk == members["example.prov.json"]
+        assert layer1.directives["SOURCEDIGEST"] == provenance.source_digest(from_disk)
+        assert provenance.check_source_digest(layer1, from_disk) is None
+
+        # Negative control: the same bytes written through a CRLF-translating text stream. Without
+        # it this test would pass on a build that never writes the file correctly in the first place.
+        crlf_path = root / "example.crlf.prov.json"
+        with open(crlf_path, "w", encoding="ascii", newline="\r\n") as handle:
+            handle.write(from_disk.decode("ascii"))
+        crlf = crlf_path.read_bytes()
+        assert crlf != from_disk and crlf.count(b"\r\n") == from_disk.count(b"\n")
+        error = digest_rejected(layer1, crlf)
+        assert error.code == "E009"
+
+
+def test_t37_committed_example_regenerates_and_ships():
+    """The committed dataset is exactly what the generator produces, and the wheel gets the code.
+
+    `packages` in pyproject.toml is an explicit list, so a new subpackage is shipped only if someone
+    adds it: that is the property under test, pinned here rather than discovered by a user whose
+    `import openmucf.g4` fails after a clean install.
+    """
+    generator = REPO / "scripts" / "generate_g4data.py"
+    result = subprocess.run(
+        [sys.executable, str(generator), "--audit"], capture_output=True, text=True, cwd=REPO
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "g4data audit OK" in result.stdout
+
+    committed = (G4DIR / "example.g4dat").read_bytes()
+    assert b"\r" not in committed, "the checkout rewrote the dataset's line endings"
+    table = spec.parse(committed.decode("ascii"))
+    assert table.directives["DATASET"] == "G4MuonicData"
+    assert table.directives["SOURCEDIGEST"] == provenance.source_digest(
+        (G4DIR / "example.prov.json").read_bytes()
+    )
+    # Nothing synthetic wears a physics label: every row says what it is, in the file itself.
+    document = provenance.from_json_obj(json.loads((G4DIR / "example.prov.json").read_text("ascii")))
+    assert len(document.rows) == len(table.records) == 3
+    for row in document.rows.values():
+        assert row.needs_verification is True
+        assert row.evaluation_method == "format example, not evaluated physics"
+        assert row.source_library == "openmucf"
+
+    snippet = (G4DIR / "geant4_add_dataset.snippet").read_text("ascii")
+    assert "geant4_add_dataset(" in snippet and "ENVVAR    G4MUONICDATA" in snippet
+
+    declared = tomllib.loads((REPO / "pyproject.toml").read_text("utf-8"))
+    assert "openmucf.g4" in declared["tool"]["setuptools"]["packages"]

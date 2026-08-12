@@ -8,3 +8,8 @@ openmucf/data/yamashita_kino_fig3a.png binary
 # must stay CRLF; the others are deliberately LF and must stay LF, or the checkout itself would
 # decide which error they raise. -text disables end-of-line translation in both directions.
 tests/fixtures/g4dat_bad/*.g4dat -text
+# The shipped dataset: byte-exact artifacts, for three separate reasons. example.prov.json is the
+# byte range #SOURCEDIGEST is computed over, so a CRLF checkout would change its digest; example.g4dat
+# is LF-only by the format's own rule (E006); and both, plus the snippet, are regenerated and
+# byte-diffed by `make audit`, which would fail on any platform whose checkout rewrote them.
+data/g4/* -text
