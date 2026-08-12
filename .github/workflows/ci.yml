@@ -151,9 +151,10 @@ jobs:
     # now fails the build instead of being reported and ignored.
     #
     # Known limit, stated rather than implied: this is mypy's DEFAULT mode, which does not check the
-    # bodies of unannotated functions. Adding --check-untyped-defs today reports 4 further errors
-    # (formation.py, frontier.py x2, design.py) that this gate does not see. Tightening to that flag
-    # is a separate, deliberate change -- it widens what must be fixed, so it is not smuggled in here.
+    # bodies of unannotated functions. Adding --check-untyped-defs today reports 3 further errors
+    # (formation.py:104, frontier.py:166, frontier.py:167) that this gate does not see. Tightening to
+    # that flag is a separate, deliberate change -- it widens what must be fixed, so it is not
+    # smuggled in here.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

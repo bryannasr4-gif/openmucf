@@ -410,3 +410,21 @@ def test_validate_card_still_rejects_a_wrong_but_well_typed_target_id(shipped_ca
     card["payload"]["scenarios"][0]["predictions"][0]["target_id"] = "omega_s_eff@phi=99.0"
     with pytest.raises(ValueError, match="do not cover the target grid"):
         forecast.validate_card(card)
+
+
+@pytest.mark.parametrize("bad_id", [None, 42, ["x"]])
+def test_validate_card_reports_a_non_string_target_id_in_the_TARGETS_list(shipped_card, bad_id):
+    """The targets grid check sorts ids too, 17 lines above the scenario one -- same crash, same fix."""
+    card = copy.deepcopy(shipped_card)
+    card["payload"]["targets"][0]["target_id"] = bad_id
+    with pytest.raises(ValueError, match="contain a non-string entry"):
+        forecast.validate_card(card)
+
+
+@pytest.mark.parametrize("bad_id", ["lambda_c@", "lambda_c@xx", "lambda_c@phi=abc"])
+def test_validate_card_reports_an_unparseable_phi_instead_of_raising_a_bare_error(shipped_card, bad_id):
+    """A bare ValueError out of float() carries no card context and reads like a real failure."""
+    card = copy.deepcopy(shipped_card)
+    card["payload"]["scenarios"][1]["predictions"][0]["target_id"] = bad_id
+    with pytest.raises(ValueError, match="forecast card validation failed"):
+        forecast.validate_card(card)

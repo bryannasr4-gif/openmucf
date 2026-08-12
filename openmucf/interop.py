@@ -56,28 +56,30 @@ class RateTable:
     def ndim(self) -> int:
         return len(self.axis_names)
 
+    # Both accessors ask the SAME question -- "is this entry sized?" -- from opposite sides, because
+    # neither `isinstance(x, Sequence)` nor `isinstance(x, float | int)` alone answers it: a numpy
+    # array is sized but is not a registered Sequence, and a numpy scalar (np.float32) is neither.
+    # Testing only one of them is what made an earlier revision reject a 2-D array while accepting a
+    # 1-D one, and describe a 2-D array as "flat".
+
     def _values_1d(self) -> Sequence[float]:
         """``values`` as the flat float sequence a 1-D table must carry -- checked, not assumed."""
         out: list[float] = []
         for v in self.values:
-            if isinstance(v, Sequence):
-                raise TypeError(f"table {self.name!r} declares ndim=1 but its values are nested")
+            if isinstance(v, Sequence) or hasattr(v, "__len__"):
+                raise TypeError(
+                    f"table {self.name!r} declares ndim=1 but entry {len(out)} is sized, not scalar: {v!r}"
+                )
             out.append(v)
         return out
 
     def _values_2d(self) -> Sequence[Sequence[float]]:
-        """``values`` as the row sequence a 2-D table must carry -- checked, not assumed.
-
-        The test is for a SCALAR row, not for a ``Sequence`` row: a numpy array is indexable but is
-        not a registered ``Sequence``, so testing the other way would reject a 2-D array while the
-        1-D path accepted a 1-D one -- an asymmetry nothing intended, reported through a message
-        ("values are flat") that would have been false about the array that triggered it.
-        """
+        """``values`` as the row sequence a 2-D table must carry -- checked, not assumed."""
         out: list[Sequence[float]] = []
         for row in self.values:
-            if isinstance(row, float | int):
+            if isinstance(row, float | int) or not hasattr(row, "__len__"):
                 raise TypeError(
-                    f"table {self.name!r} declares ndim=2 but row {len(out)} is the scalar {row!r}"
+                    f"table {self.name!r} declares ndim=2 but row {len(out)} is not sized: {row!r}"
                 )
             out.append(row)
         return out

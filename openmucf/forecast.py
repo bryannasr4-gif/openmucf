@@ -510,7 +510,11 @@ def validate_card(card: dict, schema_path: Path | str | None = None) -> None:
     if len(targets) != 6:
         errors.append(f"expected 6 targets, found {len(targets)}")
     tids = [t.get("target_id") for t in targets]
-    if sorted(tids) != sorted(expected_ids):
+    # Same short-circuit as the scenario grid check below, for the same reason: sorted() over a mix of
+    # str and None raises TypeError, and the unsorted list is all that can be shown in that case.
+    if any(not isinstance(t, str) for t in tids):
+        errors.append(f"target_ids {tids} contain a non-string entry; expected {sorted(expected_ids)}")
+    elif sorted(tids) != sorted(expected_ids):
         errors.append(f"target_ids {sorted(tids)} != pre-registered grid {sorted(expected_ids)}")
     for t in targets:
         for key in ("observable", "unit", "phi", "stated_conditions", "source", "resolution"):
@@ -542,10 +546,20 @@ def validate_card(card: dict, schema_path: Path | str | None = None) -> None:
 
 
 def _is_bracket_target(scenario_name: str, target_id: str) -> bool:
-    """D3: only Scenario-B lambda_c at phi > 1.45 is a bracket; everything else is an ensemble."""
+    """D3: only Scenario-B lambda_c at phi > 1.45 is a bracket; everything else is an ensemble.
+
+    Total by construction: an id whose phi is missing or unparseable is simply not a bracket. It used
+    to reach ``float(...)`` and raise IndexError/ValueError out of the validator -- and a bare
+    ValueError from here is indistinguishable from a real one, since it carries no card context. The
+    malformed id itself is reported by the grid check, which is where it belongs.
+    """
     if scenario_name != "B" or not target_id.startswith("lambda_c@"):
         return False
-    return float(target_id.split("phi=")[1]) > VALIDITY_EDGE
+    _, _, phi_text = target_id.partition("phi=")
+    try:
+        return float(phi_text) > VALIDITY_EDGE
+    except ValueError:
+        return False
 
 
 def _check_prediction(scenario_name, p: dict) -> list[str]:
