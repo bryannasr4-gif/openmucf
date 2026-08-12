@@ -323,6 +323,48 @@ def test_structural_gates_catch_a_lost_recommendation():
 
 
 # ---------------------------------------------------------------- the 2026-08-12 measured EIG band
+def test_eig_replicate_se_uses_seeds_1_to_R_with_ddof_1(monkeypatch):
+    """The SE ESTIMATOR's own convention is part of the tolerance, so it is pinned like a constant.
+
+    Every other test here injects ``eig_se`` through the fixture, which exercises how the band USES the
+    SE but never how the SE is MADE. That leaves the estimator itself unguarded: silently changing
+    ``ddof=1`` to ``ddof=0``, or the replicate seeds from ``1..R`` to ``0..R-1``, narrows every EIG band
+    (~2.5% for ddof; eig_C3's SE 0.058 -> 0.049 for the seed range), and BOTH edits would regenerate the
+    document cleanly and pass ``--audit``, because the committed and fresh sides move together. That is
+    precisely the silent softening WAVE1 1.5 forbids. This test runs the real ``eig_replicate_se`` with
+    the NUTS calls replaced by a deterministic stand-in, so the seed set and the ddof are checked as
+    BEHAVIOUR rather than as source text.
+    """
+    import numpy as np
+
+    mod = _load_script()
+    seen: list[int] = []
+
+    def fake_base_posterior(seed):
+        seen.append(seed)
+        return {"marker": float(seed)}
+
+    def fake_eig(candidate, samples=None, seed=0, cls="constant"):
+        return {"eig_bits": samples["marker"]}      # cell value == the base seed, exactly
+
+    monkeypatch.setattr(design, "base_posterior", fake_base_posterior)
+    monkeypatch.setattr(design, "eig_nested_mc", fake_eig)
+    monkeypatch.setattr(design, "replicate_candidate", lambda: "REPLICATE")
+
+    se = mod.eig_replicate_se(["C1"], analysis_seed=0)
+    R = mod.AUDIT_EIG_REPLICATES
+
+    # the committed seed stays OUT of its own error bar, and the replicates are 1..R inclusive
+    assert seen == list(range(1, R + 1)), seen
+    assert 0 not in seen
+    # ... and the spread is the ddof=1 sample sd of those values, not the ddof=0 population sd
+    values = list(range(1, R + 1))
+    assert se["eig_C1"] == pytest.approx(float(np.std(values, ddof=1)))
+    assert se["eig_C1"] != pytest.approx(float(np.std(values, ddof=0)))
+    # all six EIG-family cells are measured, not just the candidates
+    assert set(se) == {"eig_C1", "eig_C3_inflated", "zero_eig"}
+
+
 def _audit_against(tmp_path, monkeypatch, committed_res, fresh_res):
     """Run ``audit()`` with a manifest written from ``committed_res`` and a fresh run of ``fresh_res``.
 
