@@ -26,6 +26,7 @@ import json
 import re
 from importlib import metadata as _md
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -460,7 +461,7 @@ def build_card(samples: dict | None = None) -> dict:
         "scoring_rules": _scoring_rules(),
         "provenance": _provenance(),
     }
-    card = {
+    card: dict[str, dict[str, Any]] = {
         "payload": payload,
         "generation": {"env": _env()},
         "registration": {
@@ -509,7 +510,11 @@ def validate_card(card: dict, schema_path: Path | str | None = None) -> None:
     if len(targets) != 6:
         errors.append(f"expected 6 targets, found {len(targets)}")
     tids = [t.get("target_id") for t in targets]
-    if sorted(tids) != sorted(expected_ids):
+    # Same short-circuit as the scenario grid check below, for the same reason: sorted() over a mix of
+    # str and None raises TypeError, and the unsorted list is all that can be shown in that case.
+    if any(not isinstance(t, str) for t in tids):
+        errors.append(f"target_ids {tids} contain a non-string entry; expected {sorted(expected_ids)}")
+    elif sorted(tids) != sorted(expected_ids):
         errors.append(f"target_ids {sorted(tids)} != pre-registered grid {sorted(expected_ids)}")
     for t in targets:
         for key in ("observable", "unit", "phi", "stated_conditions", "source", "resolution"):
@@ -525,7 +530,10 @@ def validate_card(card: dict, schema_path: Path | str | None = None) -> None:
         errors.append(f"scenarios must be exactly ['A','B'] in order, found {names}")
     for s in scenarios:
         preds = s.get("predictions", [])
-        if sorted(p.get("target_id") for p in preds) != sorted(expected_ids):
+        # Short-circuit on a non-string target_id BEFORE sorting: sorted() over a mix of str and None
+        # raises TypeError, which would kill the validator on the very card it exists to describe.
+        pred_ids = [p.get("target_id") for p in preds]
+        if any(not isinstance(t, str) for t in pred_ids) or sorted(pred_ids) != sorted(expected_ids):
             errors.append(f"scenario {s.get('name')!r} predictions do not cover the target grid")
         for p in preds:
             errors.extend(_check_prediction(s.get("name"), p))
@@ -538,16 +546,31 @@ def validate_card(card: dict, schema_path: Path | str | None = None) -> None:
 
 
 def _is_bracket_target(scenario_name: str, target_id: str) -> bool:
-    """D3: only Scenario-B lambda_c at phi > 1.45 is a bracket; everything else is an ensemble."""
+    """D3: only Scenario-B lambda_c at phi > 1.45 is a bracket; everything else is an ensemble.
+
+    Total by construction: an id whose phi is missing or unparseable is simply not a bracket. It used
+    to reach ``float(...)`` and raise IndexError/ValueError out of the validator -- and a bare
+    ValueError from here is indistinguishable from a real one, since it carries no card context. The
+    malformed id itself is reported by the grid check, which is where it belongs.
+    """
     if scenario_name != "B" or not target_id.startswith("lambda_c@"):
         return False
-    return float(target_id.split("phi=")[1]) > VALIDITY_EDGE
+    _, _, phi_text = target_id.partition("phi=")
+    try:
+        return float(phi_text) > VALIDITY_EDGE
+    except ValueError:
+        return False
 
 
-def _check_prediction(scenario_name, p: dict) -> list:
-    errs = []
+def _check_prediction(scenario_name, p: dict) -> list[str]:
+    errs: list[str] = []
     tid = p.get("target_id")
     ptype = p.get("prediction_type")
+    # A missing / non-string target_id is a VALIDATION failure, reported like any other, not a crash:
+    # _is_bracket_target does `target_id.startswith(...)` and would raise AttributeError on None.
+    if not isinstance(tid, str):
+        errs.append(f"scenario {scenario_name} has a prediction whose 'target_id' is not a string: {tid!r}")
+        return errs
     want_bracket = _is_bracket_target(scenario_name, tid)
     if want_bracket and ptype != "bracket":
         errs.append(f"scenario {scenario_name} {tid}: expected bracket, got {ptype!r}")

@@ -106,3 +106,41 @@ def test_sd_contraction_refit_behaviour(base):
                c1["R_contraction_se"]["inflated"], c1["R_contraction_class_delta"]["se"]):
         assert se == se and se > 0.0
     assert c1["R_contraction_class_delta"]["paired"] is True
+
+
+# --- 2026-08-12: a neutron_slope candidate with no density is a construction error ------------------
+# `Candidate.phi` is Optional, but the neutron_slope observable is DEFINED at a density: lambda_dis
+# scales as phi/PHI_ANCHOR. Both places that use it -- the analytic mean and the sd-contraction refit
+# -- must say so rather than propagate a None into the arithmetic. The refit check is deliberately
+# hoisted out of the traced NUTS model, so it raises immediately and needs no MCMC to exercise.
+
+
+def _phi_less_neutron_slope():
+    return design.Candidate(
+        id="C_bad",
+        label="neutron slope with no density",
+        design_point="n/a",
+        kind="neutron_slope",
+        class_sensitive=True,
+        sigma_rel=0.05,
+        phi=None,
+    )
+
+
+def test_analytic_mean_rejects_a_neutron_slope_candidate_with_no_density():
+    with pytest.raises(ValueError, match="neutron_slope.*no density phi"):
+        design._mu(_phi_less_neutron_slope(), np.array([1.0]), 0.2, 1.0e8)
+
+
+def test_refit_rejects_a_neutron_slope_candidate_with_no_density():
+    with pytest.raises(ValueError, match="neutron_slope.*no density phi"):
+        design._refit_sd(_phi_less_neutron_slope(), "constant", y_obs=1.0, sigma=0.1, seed=0)
+
+
+def test_shipped_neutron_slope_candidates_all_carry_a_density():
+    """The guards above are a backstop; no shipped candidate may actually need them."""
+    shipped = design.registry(xray_verdict_pct=100.0)["candidates"]  # verdict high enough to keep C4
+    assert [c.kind for c in shipped.values()].count("neutron_slope") >= 1
+    for cand in shipped.values():
+        if cand.kind == "neutron_slope":
+            assert cand.phi is not None, f"{cand.id} is neutron_slope with phi=None"

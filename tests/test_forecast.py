@@ -13,6 +13,7 @@ on Apple Silicon, 2026-07-23: `omega_s_eff@phi=1.2` scenario B came back 0.5371 
 * the BIT-IDENTITY gate runs only on the platform the card itself records in ``generation.env``.
 """
 
+import copy
 import json
 import platform
 import re
@@ -385,3 +386,45 @@ def test_fc001_pinned_posterior_reproduces_registered_predictions_bitwise(fresh_
         )
     assert _preds(fresh_card) == _preds(shipped_card)
     assert forecast.OMEGA_S0_PRIOR == ("normal", 0.857, 0.03)
+
+
+# --- 2026-08-12: a malformed card must be REPORTED, not crash the validator -------------------------
+# _is_bracket_target calls target_id.startswith(...), and the grid-coverage check sorts the ids. Both
+# raised (AttributeError / TypeError) on a prediction whose target_id was missing, so the validator
+# died on exactly the card it exists to describe. Both paths now report instead.
+
+
+@pytest.mark.parametrize("bad_id", [None, 42, ["x"]])
+def test_validate_card_reports_a_non_string_target_id_instead_of_crashing(shipped_card, bad_id):
+    card = copy.deepcopy(shipped_card)
+    card["payload"]["scenarios"][1]["predictions"][0]["target_id"] = bad_id
+    with pytest.raises(ValueError) as excinfo:
+        forecast.validate_card(card)
+    message = str(excinfo.value)
+    assert "target_id" in message and "not a string" in message
+
+
+def test_validate_card_still_rejects_a_wrong_but_well_typed_target_id(shipped_card):
+    """The report-don't-crash path must not have made the grid check permissive."""
+    card = copy.deepcopy(shipped_card)
+    card["payload"]["scenarios"][0]["predictions"][0]["target_id"] = "omega_s_eff@phi=99.0"
+    with pytest.raises(ValueError, match="do not cover the target grid"):
+        forecast.validate_card(card)
+
+
+@pytest.mark.parametrize("bad_id", [None, 42, ["x"]])
+def test_validate_card_reports_a_non_string_target_id_in_the_TARGETS_list(shipped_card, bad_id):
+    """The targets grid check sorts ids too, 17 lines above the scenario one -- same crash, same fix."""
+    card = copy.deepcopy(shipped_card)
+    card["payload"]["targets"][0]["target_id"] = bad_id
+    with pytest.raises(ValueError, match="contain a non-string entry"):
+        forecast.validate_card(card)
+
+
+@pytest.mark.parametrize("bad_id", ["lambda_c@", "lambda_c@xx", "lambda_c@phi=abc"])
+def test_validate_card_reports_an_unparseable_phi_instead_of_raising_a_bare_error(shipped_card, bad_id):
+    """A bare ValueError out of float() carries no card context and reads like a real failure."""
+    card = copy.deepcopy(shipped_card)
+    card["payload"]["scenarios"][1]["predictions"][0]["target_id"] = bad_id
+    with pytest.raises(ValueError, match="forecast card validation failed"):
+        forecast.validate_card(card)

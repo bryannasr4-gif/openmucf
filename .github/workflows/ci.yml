@@ -145,10 +145,17 @@ jobs:
         run: python examples/quickstart.py
 
   types:
-    # Static type check. Non-blocking for now (continue-on-error); promotion to a blocking gate
-    # is deferred to a future release. Runs mypy over the package with missing third-party stubs ignored.
+    # Static type check. BLOCKING: `mypy openmucf --ignore-missing-imports` must be clean. It was
+    # masked with `continue-on-error: true` while the package carried a standing 6-error set; that set
+    # is fixed (real annotations, no blanket suppressions), so the mask is gone and a new type error
+    # now fails the build instead of being reported and ignored.
+    #
+    # Known limit, stated rather than implied: this is mypy's DEFAULT mode, which does not check the
+    # bodies of unannotated functions. Adding --check-untyped-defs today reports 3 further errors
+    # (formation.py:104, frontier.py:166, frontier.py:167) that this gate does not see. Tightening to
+    # that flag is a separate, deliberate change -- it widens what must be fixed, so it is not
+    # smuggled in here.
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -157,7 +164,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: mypy (non-blocking)
+      - name: mypy
         run: mypy openmucf --ignore-missing-imports
 
   paper:
