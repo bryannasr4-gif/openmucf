@@ -526,7 +526,10 @@ def validate_card(card: dict, schema_path: Path | str | None = None) -> None:
         errors.append(f"scenarios must be exactly ['A','B'] in order, found {names}")
     for s in scenarios:
         preds = s.get("predictions", [])
-        if sorted(p.get("target_id") for p in preds) != sorted(expected_ids):
+        # Short-circuit on a non-string target_id BEFORE sorting: sorted() over a mix of str and None
+        # raises TypeError, which would kill the validator on the very card it exists to describe.
+        pred_ids = [p.get("target_id") for p in preds]
+        if any(not isinstance(t, str) for t in pred_ids) or sorted(pred_ids) != sorted(expected_ids):
             errors.append(f"scenario {s.get('name')!r} predictions do not cover the target grid")
         for p in preds:
             errors.extend(_check_prediction(s.get("name"), p))

@@ -149,6 +149,11 @@ jobs:
     # masked with `continue-on-error: true` while the package carried a standing 6-error set; that set
     # is fixed (real annotations, no blanket suppressions), so the mask is gone and a new type error
     # now fails the build instead of being reported and ignored.
+    #
+    # Known limit, stated rather than implied: this is mypy's DEFAULT mode, which does not check the
+    # bodies of unannotated functions. Adding --check-untyped-defs today reports 4 further errors
+    # (formation.py, frontier.py x2, design.py) that this gate does not see. Tightening to that flag
+    # is a separate, deliberate change -- it widens what must be fixed, so it is not smuggled in here.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

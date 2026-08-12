@@ -20,7 +20,7 @@ import openmucf
 REPO = Path(__file__).resolve().parents[1]
 
 # Directories whose imports must be covered by a declaration (runtime deps or an extra).
-IMPORT_SCAN_DIRS = ("openmucf", "scripts", "tests")
+IMPORT_SCAN_DIRS = ("openmucf", "scripts", "tests", "examples")
 
 # Import name -> distribution name, for the cases where they differ. Kept explicit and static rather
 # than read from the installed environment: the `locked` CI job installs a lockfile that does not
@@ -146,11 +146,18 @@ def _third_party_imports() -> dict[str, list[str]]:
 
 
 def test_every_third_party_import_is_a_declared_dependency():
-    """No module in openmucf/, scripts/ or tests/ may import a distribution nothing declares.
+    """No scanned module may import a distribution nothing declares.
 
     Guards the omission class found on 2026-08-12: numpy (openmucf/) and Pillow (scripts/) were both
     imported by shipped code while arriving only as transitive installs of SALib/matplotlib, so a
     resolver change could have broken the package with no declaration to point at.
+
+    Two limits, stated so nobody reads more into a pass than is there:
+      * It checks that an import is declared SOMEWHERE -- runtime table or any extra -- never that it
+        is declared in the RIGHT one. Moving scipy to [project.dependencies] would not fail this test;
+        that placement judgement is made in pyproject.toml's comments, not enforced here.
+      * It is static, so it sees only real import statements. importlib.import_module(name) and
+        __import__ with a computed name are invisible to it, as are notebooks.
     """
     declared = _declared_distributions()
     undeclared = {

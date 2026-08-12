@@ -359,6 +359,16 @@ def _refit_sd(cand: Candidate, cls: str, y_obs: float, sigma: float, seed: int):
     _jaxcfg.require_x64("the design sd-contraction refits")
     w = cand.kappa_w
 
+    # Same precondition _mu enforces on the analytic mean: a neutron_slope observable is defined AT a
+    # density, so a candidate of that kind without one is a construction error, not a silent NaN.
+    # Checked -- and the ratio taken -- out here rather than inside model(), so it can never fire
+    # inside a traced NUTS step. Pure float64 arithmetic either way, so the refit is bit-identical.
+    phi_ratio = 0.0
+    if cand.kind == "neutron_slope":
+        if cand.phi is None:
+            raise ValueError(f"candidate {cand.id!r} is kind 'neutron_slope' but carries no density phi")
+        phi_ratio = cand.phi / PHI_ANCHOR
+
     def model():
         os0 = numpyro.sample("omega_s0_pct", dist.Uniform(BASE_PRIOR[1], BASE_PRIOR[2]))
         R = numpyro.sample("R", dist.Uniform(_R_LO, _R_HI))
@@ -376,7 +386,7 @@ def _refit_sd(cand: Candidate, cls: str, y_obs: float, sigma: float, seed: int):
             kappa = numpyro.sample("kappa", dist.Uniform(1.0 - w, 1.0 + w))
             mu = kappa * os0 / 100.0
         elif cand.kind == "neutron_slope":
-            mu = LAMBDA_0 + (cand.phi / PHI_ANCHOR) * lambda_c * (os0 * (1.0 - r_design) / 100.0)
+            mu = LAMBDA_0 + phi_ratio * lambda_c * (os0 * (1.0 - r_design) / 100.0)
         elif cand.kind == "cycling_rate":
             mu = lambda_c
         elif cand.kind == "neutron_ose":

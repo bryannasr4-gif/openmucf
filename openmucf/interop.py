@@ -66,11 +66,19 @@ class RateTable:
         return out
 
     def _values_2d(self) -> Sequence[Sequence[float]]:
-        """``values`` as the row sequence a 2-D table must carry -- checked, not assumed."""
+        """``values`` as the row sequence a 2-D table must carry -- checked, not assumed.
+
+        The test is for a SCALAR row, not for a ``Sequence`` row: a numpy array is indexable but is
+        not a registered ``Sequence``, so testing the other way would reject a 2-D array while the
+        1-D path accepted a 1-D one -- an asymmetry nothing intended, reported through a message
+        ("values are flat") that would have been false about the array that triggered it.
+        """
         out: list[Sequence[float]] = []
         for row in self.values:
-            if not isinstance(row, Sequence):
-                raise TypeError(f"table {self.name!r} declares ndim=2 but its values are flat")
+            if isinstance(row, float | int):
+                raise TypeError(
+                    f"table {self.name!r} declares ndim=2 but row {len(out)} is the scalar {row!r}"
+                )
             out.append(row)
         return out
 

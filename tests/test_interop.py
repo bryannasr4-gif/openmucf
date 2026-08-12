@@ -122,3 +122,35 @@ def test_ingest_whitespace_and_comments(tmp_path):
     assert len(spec) == 3
     assert spec.x == (0.0, 1.0, 2.0)
     assert spec.y == (1.0, 2.0, 1.0)
+
+
+# --- 2026-08-12: regression guards for the RateTable.values narrowing ------------------------------
+# `values` gained a real type (flat floats | rows of floats) and to_csv now routes through checked
+# accessors. An earlier revision of that change tested rows for `isinstance(row, Sequence)`, which a
+# numpy array does not satisfy -- so a 2-D array raised while a 1-D array still worked, and the
+# message blamed "flat values" for an array that was not flat. These pin the intended behaviour.
+
+
+def test_to_csv_accepts_indexable_non_sequence_rows(tmp_path):
+    """A 2-D numpy grid must export exactly like the equivalent nested lists."""
+    np = pytest.importorskip("numpy")
+    grids = ((1.0, 2.0), (10.0, 20.0))
+    values = [[1.5, 2.5], [3.5, 4.5]]
+    lists = interop.RateTable("t", ("x", "y"), grids, values, "u")
+    arrays = interop.RateTable("t", ("x", "y"), grids, np.array(values), "u")
+    a, b = tmp_path / "a.csv", tmp_path / "b.csv"
+    lists.to_csv(a)
+    arrays.to_csv(b)
+    assert a.read_bytes() == b.read_bytes()
+
+
+def test_to_csv_rejects_a_flat_table_declared_2d_and_says_so_accurately(tmp_path):
+    table = interop.RateTable("t", ("x", "y"), ((1.0, 2.0), (10.0, 20.0)), [1.5, 2.5], "u")
+    with pytest.raises(TypeError, match=r"declares ndim=2 but row 0 is the scalar 1\.5"):
+        table.to_csv(tmp_path / "o.csv")
+
+
+def test_to_csv_rejects_a_nested_table_declared_1d(tmp_path):
+    table = interop.RateTable("t", ("x",), ((1.0, 2.0),), [[1.5], [2.5]], "u")
+    with pytest.raises(TypeError, match="declares ndim=1"):
+        table.to_csv(tmp_path / "o.csv")
