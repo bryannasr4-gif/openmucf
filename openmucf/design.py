@@ -119,6 +119,8 @@ def _mu(cand: Candidate, os0_pct, R_design, lambda_c, kappa=None):
     if cand.kind == "neutron_slope":
         # muon "disappearance" slope at density phi: lambda_dis = lambda_0 + lambda_c(phi) * ose_frac,
         # with lambda_c(phi) = (phi / PHI_ANCHOR) * lambda_c (the analytic density scaling). [s^-1]
+        if cand.phi is None:
+            raise ValueError(f"candidate {cand.id!r} is kind 'neutron_slope' but carries no density phi")
         return LAMBDA_0 + (cand.phi / PHI_ANCHOR) * lambda_c * ose_frac
     if cand.kind == "cycling_rate":
         return lambda_c                                   # direct cycling-rate readout [s^-1]
@@ -537,12 +539,12 @@ def sobol_consistency(sigma_rel: float = 0.02, n: int = 200_000, seed: int = 0) 
     w = np.exp(logw - logw.max())
     w /= w.sum()
     ess = float(1.0 / np.sum(w * w))
-    contraction = {}
+    contraction: dict[str, float] = {}
     for p in params:
         x = draws[p.name]
         prior_sd = float(x.std())
         mean_w = float(np.sum(w * x))
         post_sd = float(np.sqrt(max(np.sum(w * (x - mean_w) ** 2), 0.0)))
         contraction[p.name] = (prior_sd - post_sd) / prior_sd
-    top = max(contraction, key=contraction.get)
+    top = max(contraction, key=lambda name: contraction[name])
     return {"contraction": contraction, "top_param": top, "ess": ess, "sigma_rel": sigma_rel, "n": n}

@@ -26,6 +26,7 @@ import json
 import re
 from importlib import metadata as _md
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -460,7 +461,7 @@ def build_card(samples: dict | None = None) -> dict:
         "scoring_rules": _scoring_rules(),
         "provenance": _provenance(),
     }
-    card = {
+    card: dict[str, dict[str, Any]] = {
         "payload": payload,
         "generation": {"env": _env()},
         "registration": {
@@ -544,10 +545,15 @@ def _is_bracket_target(scenario_name: str, target_id: str) -> bool:
     return float(target_id.split("phi=")[1]) > VALIDITY_EDGE
 
 
-def _check_prediction(scenario_name, p: dict) -> list:
-    errs = []
+def _check_prediction(scenario_name, p: dict) -> list[str]:
+    errs: list[str] = []
     tid = p.get("target_id")
     ptype = p.get("prediction_type")
+    # A missing / non-string target_id is a VALIDATION failure, reported like any other, not a crash:
+    # _is_bracket_target does `target_id.startswith(...)` and would raise AttributeError on None.
+    if not isinstance(tid, str):
+        errs.append(f"scenario {scenario_name} has a prediction whose 'target_id' is not a string: {tid!r}")
+        return errs
     want_bracket = _is_bracket_target(scenario_name, tid)
     if want_bracket and ptype != "bracket":
         errs.append(f"scenario {scenario_name} {tid}: expected bracket, got {ptype!r}")
