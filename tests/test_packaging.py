@@ -2,15 +2,32 @@
 
 The heavy public submodules load lazily on first attribute access, so a bare `import openmucf`
 never pays the numpyro/statistics import cost. These tests assert the marker file is packaged,
-the lazy names resolve, and importing the package does not eager-load the heavy stack."""
+the lazy names resolve, and importing the package does not eager-load the heavy stack.
 
+2026-08-12 amendment: also guards the DEPENDENCY DECLARATION itself. numpy and Pillow were imported
+by shipped code while arriving only transitively; the last test below makes that class of omission a
+test failure instead of a latent packaging bug, so it cannot recur silently as more code lands."""
+
+import ast
+import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 import openmucf
 
 REPO = Path(__file__).resolve().parents[1]
+
+# Directories whose imports must be covered by a declaration (runtime deps or an extra).
+IMPORT_SCAN_DIRS = ("openmucf", "scripts", "tests")
+
+# Import name -> distribution name, for the cases where they differ. Kept explicit and static rather
+# than read from the installed environment: the `locked` CI job installs a lockfile that does not
+# contain every declared distribution, so an environment-derived map would make this test env-dependent.
+IMPORT_TO_DISTRIBUTION = {"PIL": "pillow"}
+
+FIRST_PARTY = {"openmucf"}
 
 LAZY = (
     "calibrate",
@@ -81,4 +98,67 @@ def test_import_walltime_within_2x_eager_spine():
     assert package < 2.0 * baseline, (
         f"import openmucf ({package:.3f}s) exceeds 2x the eager-spine baseline ({baseline:.3f}s) "
         "-- something heavy is being eager-imported"
+    )
+
+
+def _normalize(name: str) -> str:
+    """PEP 503 distribution-name normalization ('SALib' and 'salib' are the same project)."""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _declared_distributions() -> set[str]:
+    """Every distribution pyproject.toml declares, runtime or extra, normalized."""
+    pyproject = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
+    project = pyproject["project"]
+    requirements = list(project.get("dependencies", []))
+    for extra in project.get("optional-dependencies", {}).values():
+        requirements.extend(extra)
+    declared = set()
+    for req in requirements:
+        match = re.match(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)", req)
+        assert match, f"unparseable requirement {req!r} in pyproject.toml"
+        declared.add(_normalize(match.group(1)))
+    return declared
+
+
+def _third_party_imports() -> dict[str, list[str]]:
+    """Top-level third-party import name -> the repo-relative files that import it.
+
+    Static (ast) on purpose: it sees imports inside functions and inside `if` branches, and it does
+    not require the imported package to be installed in the environment running the test.
+    """
+    stdlib = set(sys.stdlib_module_names)
+    imports: dict[str, list[str]] = {}
+    for directory in IMPORT_SCAN_DIRS:
+        for path in sorted((REPO / directory).rglob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            names = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    names.update(alias.name.split(".")[0] for alias in node.names)
+                elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                    names.add(node.module.split(".")[0])
+            for name in names:
+                if name in stdlib or name in FIRST_PARTY:
+                    continue
+                imports.setdefault(name, []).append(path.relative_to(REPO).as_posix())
+    return imports
+
+
+def test_every_third_party_import_is_a_declared_dependency():
+    """No module in openmucf/, scripts/ or tests/ may import a distribution nothing declares.
+
+    Guards the omission class found on 2026-08-12: numpy (openmucf/) and Pillow (scripts/) were both
+    imported by shipped code while arriving only as transitive installs of SALib/matplotlib, so a
+    resolver change could have broken the package with no declaration to point at.
+    """
+    declared = _declared_distributions()
+    undeclared = {
+        name: files
+        for name, files in sorted(_third_party_imports().items())
+        if _normalize(IMPORT_TO_DISTRIBUTION.get(name, name)) not in declared
+    }
+    assert not undeclared, (
+        "imports with no declared distribution in pyproject.toml (add the dependency, or map the "
+        f"import name in IMPORT_TO_DISTRIBUTION): {undeclared}"
     )
