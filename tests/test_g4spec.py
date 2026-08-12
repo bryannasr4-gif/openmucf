@@ -161,9 +161,31 @@ def test_t04_e004_record_field_count():
     assert (blank.code, blank.line) == ("E004", 15)
 
 
-def test_t05_e005_non_ascii_byte():
+def test_t05_e005_byte_outside_the_allowed_set():
+    """E005 covers the whole byte set `{TAB, LF, CR, 0x20-0x7E}`, not just non-ASCII.
+
+    A VT or FF is ASCII, so an `isascii()` check waves it through -- and then Python's `str.split()`
+    treats it as a separator while a space/tab C++ reader treats it as one more character of the
+    field. Same file, two different field counts. Rejecting the byte is what stops that.
+    """
     error = rejected(CANONICAL.replace("rate=1e6/s", "rate=1e6/µs"))
     assert (error.code, error.line) == ("E005", 10)
+
+    for control in ("\x0b", "\x0c", "\x00", "\x1f", "\x7f"):
+        bad = rejected(replace_line(CANONICAL, " 1", f" 1{control}1 0.000725 1.7e-05"))
+        assert (bad.code, bad.line) == ("E005", 14), control
+        assert f"{ord(control):02X}" in str(bad), control
+
+    # The disagreement the rule exists to prevent, stated as an assertion rather than a comment.
+    separator = "\x0b"
+    vt_separated = f"1{separator}1{separator}2.5"
+    assert vt_separated.split() == ["1", "1", "2.5"]  # what str.split() would have made of it
+    assert spec._split_fields(vt_separated) == [vt_separated]  # what a space/tab reader sees
+
+    # A VT inside a directive value is ASCII and survives .strip(); validate() must reject it too, or
+    # a table it accepts would render to a file parse() rejects, breaking the round-trip guarantee.
+    in_directive = rejected_table(make_table(UNITS="rate=1e6\x0b/s"))
+    assert (in_directive.code, in_directive.line) == ("E005", 10)
 
 
 def test_t06_e006_cr_line_ending():
@@ -173,12 +195,26 @@ def test_t06_e006_cr_line_ending():
     assert (lone_cr.code, lone_cr.line) == ("E006", 10)
 
 
-def test_t07_e007_unparsable_float():
+def test_t07_e007_field_outside_its_column_lexical_class():
     """A comma decimal separator is a syntax error, never a silent truncation."""
     error = rejected(CANONICAL.replace("0.00072499999999999995", "0,00072499999999999995"))
     assert (error.code, error.line) == ("E007", 14)
     negative_z = rejected(replace_line(CANONICAL, " 1", "-1   1 0.000725 1.7e-05"))
     assert (negative_z.code, negative_z.line) == ("E007", 14)
+
+    # Integer columns are BOUNDED, so a C++ reader's integer width is not implementation-defined.
+    assert (spec.INTEGER_MIN, spec.INTEGER_MAX) == (0, 9999)
+    for field in ("10000", "99999", "18446744073709551616"):
+        over = rejected(replace_line(CANONICAL, "94", f"{field} 242 12.86 0.19"))
+        assert (over.code, over.line) == ("E007", 16), field
+        assert "integer out of range" in str(over), field
+    at_bound = spec.parse(replace_line(CANONICAL, "94", "9999 242 12.86 0.19"))
+    assert at_bound.records[2][0] == 9999  # the bound itself is inclusive
+
+    # Same rule on the in-memory path, where the value is an int rather than a field.
+    in_memory = rejected_table(make_table(records=((1, 1, 0.5, 0.1), (10**5, 1, 0.5, 0.1))))
+    assert (in_memory.code, in_memory.line) == ("E007", 15)
+    assert "integer out of range" in str(in_memory)
 
 
 def test_t08_e008_duplicate_key():
@@ -186,6 +222,20 @@ def test_t08_e008_duplicate_key():
     error = rejected(replace_line(CANONICAL, "94", " 1   1 12.86 0.19"))
     assert (error.code, error.line) == ("E008", 16)
     assert "first seen at line 14" in str(error)
+    assert "duplicate key (Z=1, A=1)" in str(error)
+
+    # The label comes from the columns the table DECLARES. An A-only table's duplicate is `A=5`; the
+    # first implementation read the names off INTEGER_COLUMNS and called it `Z=5`, sending whoever
+    # had to fix the file to a column that is not there.
+    a_only = rejected_table(
+        make_table(COLUMNS="A value unc", records=((5, 1.0, 0.1), (5, 2.0, 0.1)))
+    )
+    assert (a_only.code, a_only.line) == ("E008", 14 + 1)
+    assert "duplicate key (A=5)" in str(a_only)
+    z_only = rejected_table(
+        make_table(COLUMNS="Z value unc", records=((5, 1.0, 0.1), (5, 2.0, 0.1)))
+    )
+    assert "duplicate key (Z=5)" in str(z_only)
 
 
 def test_t09_e009_source_digest_mismatch():
@@ -198,11 +248,34 @@ def test_t09_e009_source_digest_mismatch():
 
 
 def test_t10_e010_unsupported_grammar_major():
+    """E010 is raised EAGERLY, at the `#GRAMMAR` line, and therefore preempts every later defect.
+
+    Every other diagnosis is only meaningful under a grammar this reader implements, so reporting
+    one of them first is a true statement about the wrong problem. The two preemption cases below
+    are the ones that were actually wrong before: an out-of-order directive further down reported
+    E003, and a file written to a grammar we do not know reported its new directive as "unknown".
+    """
     error = rejected(replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      2.0"))
     assert (error.code, error.line) == ("E010", 1)
     unreadable = rejected(replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      one"))
     assert (unreadable.code, unreadable.line) == ("E010", 1)
     assert spec.parse(replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      1.7")).directives["GRAMMAR"] == "1.7"
+
+    validity = "#VALIDITY     Z:1-94 A:natural_and_listed\n"
+    fallback = "#FALLBACK     goulard_primakoff b0a=-0.03 b0b=-0.25 b0c=3.24 t1=875e-9\n"
+    out_of_order = replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      9.0").replace(
+        validity + fallback, fallback + validity
+    )
+    assert rejected(out_of_order.replace("#GRAMMAR      9.0", "#GRAMMAR      1.0")).code == "E003"
+    preempted = rejected(out_of_order)
+    assert (preempted.code, preempted.line) == ("E010", 1)  # not E003 on the swapped line
+
+    future = replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      2.0").replace(
+        "#DATASET", "#NEWTHING     x\n#DATASET"
+    )
+    assert rejected(future.replace("#GRAMMAR      2.0", "#GRAMMAR      1.0")).code == "E001"
+    forward = rejected(future)
+    assert (forward.code, forward.line) == ("E010", 1)  # not "unknown directive '#NEWTHING'"
 
 
 def test_t11_e011_content_after_end():
@@ -225,6 +298,22 @@ def test_t13_e013_parity_without_sourcesha():
     error = rejected(drop_line(CANONICAL, "#SOURCESHA"))
     assert (error.code, error.line) == ("E013", 4)
 
+    # An EMPTY value counts as absent. `#SOURCESHA` with nothing after it is a parity file claiming
+    # to reproduce nothing -- the exact claim E013 exists to stop -- and taking the key's presence
+    # as satisfaction let it validate clean.
+    empty = rejected(replace_line(CANONICAL, "#SOURCESHA", "#SOURCESHA"))
+    assert (empty.code, empty.line) == ("E013", 4)
+    in_memory = rejected_table(make_table(SOURCESHA=""))
+    assert (in_memory.code, in_memory.line) == ("E013", 4)
+
+
+class _UnderflowingInt(int):
+    """An int whose ``__float__`` disagrees with its value -- the only witness that reaches the
+    in-memory half of the underflow rule, since no plain int or float can."""
+
+    def __float__(self) -> float:
+        return 0.0
+
 
 def test_t14_e014_non_finite_float():
     error = rejected(replace_line(CANONICAL, "29", "29  63 nan 0.041"))
@@ -234,12 +323,52 @@ def test_t14_e014_non_finite_float():
     overflow = rejected(replace_line(CANONICAL, "29", "29  63 1e400 0.041"))
     assert (overflow.code, overflow.line) == ("E014", 15)
 
+    # UNDERFLOW is the same condition seen from the other end. Python's float("1e-999") is 0.0,
+    # silently; C++'s std::from_chars reports result_out_of_range for the same text. Accepting it
+    # would mean a conforming C++ reader and this reference implementation read one file differently.
+    underflow = rejected(replace_line(CANONICAL, "29", "29  63 1e-999 0.041"))
+    assert (underflow.code, underflow.line) == ("E014", 15)
+    assert "underflows to zero" in str(underflow)
+    for lexically_zero in ("0", "0.0", "-0.0", "0e-999", "0.000e-999"):
+        table = spec.parse(replace_line(CANONICAL, "29", f"29  63 {lexically_zero} 0.041"))
+        assert table.records[1][2] == 0.0, lexically_zero  # a genuine zero is not an underflow
+    assert spec.parse(  # nor is the smallest positive subnormal, which round-trips exactly
+        replace_line(CANONICAL, "29", "29  63 4.9406564584124654e-324 0.041")
+    ).records[1][2] == 5e-324
+
+    # The in-memory path. A Python int too large to convert used to escape as a raw OverflowError --
+    # a stack trace where the format promises a coded, located rejection -- on validate() and
+    # render() alike. Unreachable from any file, so only a hand-built table finds it.
+    huge = make_table(records=((1, 1, 10**400, 0.1),))
+    from_validate = rejected_table(huge)
+    assert (from_validate.code, from_validate.line) == ("E014", 14)
+    assert "overflows to infinity" in str(from_validate)
+    with pytest.raises(G4DatFormatError) as from_render:
+        spec.render(huge)
+    assert (from_render.value.code, from_render.value.line) == ("E014", 14)
+
+    tiny = rejected_table(make_table(records=((1, 1, _UnderflowingInt(3), 0.1),)))
+    assert (tiny.code, tiny.line) == ("E014", 14)
+    assert "underflows to zero" in str(tiny)
+
 
 def test_t15_e015_records_not_sorted():
     swapped = CANONICAL.splitlines(keepends=True)
     swapped[13], swapped[15] = swapped[15], swapped[13]
     error = rejected("".join(swapped))
     assert (error.code, error.line) == ("E015", 15)
+    assert "ascending Z/A order" in str(error)
+
+    # As with E008, the ordering message names the declared key columns, not INTEGER_COLUMNS.
+    a_only = rejected_table(
+        make_table(COLUMNS="A value unc", records=((7, 1.0, 0.1), (5, 2.0, 0.1)))
+    )
+    assert (a_only.code, a_only.line) == ("E015", 15)
+    assert "record (A=5) is not in ascending A order" in str(a_only)
+    z_only = rejected_table(
+        make_table(COLUMNS="Z value unc", records=((7, 1.0, 0.1), (5, 2.0, 0.1)))
+    )
+    assert "ascending Z order" in str(z_only)
 
 
 def test_t16_e016_profile_or_seam_outside_allowed_set():
@@ -444,6 +573,15 @@ def test_t25_sourcesha_required_iff_parity():
     unexpected = rejected_table(make_table(PROFILE="evaluated"))
     assert (unexpected.code, unexpected.line) == ("E013", 9)
     assert "'#SOURCESHA'" in str(unexpected)
+
+    # An empty value is absent for BOTH directions of the iff: it cannot satisfy parity, and it
+    # cannot violate the non-parity half either -- there is no revision being claimed.
+    assert spec.validate(make_table(PROFILE="evaluated", SOURCESHA="")) is None
+    empty_parity = rejected_table(make_table(PROFILE="parity", SOURCESHA=""))
+    assert (empty_parity.code, empty_parity.line) == ("E013", 4)
+    assert spec.parse(spec.render(make_table(PROFILE="evaluated", SOURCESHA=""))) == make_table(
+        PROFILE="evaluated", SOURCESHA=""
+    )  # an empty directive still round-trips
 
 
 # --------------------------------------------------------------------------------------------

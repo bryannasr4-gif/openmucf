@@ -60,6 +60,11 @@ REQUIRED_DIRECTIVES = tuple(k for k in DIRECTIVE_ORDER if k not in ("SOURCESHA",
 #: Columns carrying an unsigned integer; every other column is a float column. ``(Z, A)`` is the
 #: primary key, in this order.
 INTEGER_COLUMNS = ("Z", "A")
+#: Inclusive bounds on an integer column. Unbounded integers would make a C++ reader's integer width
+#: implementation-defined -- the same file would be readable by one conforming reader and not by
+#: another. The range is physically generous (Z <= 118, A <= ~300) and kills the width question dead.
+INTEGER_MIN = 0
+INTEGER_MAX = 9999
 ALLOWED_SEAMS = ("d1_nuclear_capture", "d2_atomic_capture", "d3_transitions", "d4_mucf_cycle")
 PARITY_PROFILE = "parity"
 END_MARKER = "#END"
@@ -75,6 +80,16 @@ _INTEGER_PATTERN = re.compile(r"^[0-9]+$")
 #: syntax error, never a silent truncation.
 _FLOAT_PATTERN = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
 _NON_FINITE_TOKENS = frozenset({"inf", "infinity", "nan"})
+#: Any byte outside ``{TAB, LF, CR, 0x20-0x7E}`` is E005. Restricting the set (rather than accepting
+#: everything ASCII) is what makes "whitespace" mean exactly space and tab: a VT or FF would be a
+#: separator to Python's ``str.split()`` and one more field character to a space/tab C++ reader, so
+#: the two would disagree on the field count of the same file. CR stays inside the set so that a
+#: carriage return keeps reporting as E006, which is the more specific diagnosis.
+_FORBIDDEN_BYTE = re.compile(r"[^\t\n\r\x20-\x7E]")
+#: The only separators this format has.
+_FIELD_SEPARATOR = re.compile(r"[ \t]+")
+#: A mantissa digit that makes a field lexically nonzero (see :func:`_underflows_to_zero`).
+_NONZERO_DIGIT = re.compile(r"[1-9]")
 
 #: ``#KEYWORD`` is padded to this width, so every directive value starts in the same column.
 _KEYWORD_WIDTH = 14
@@ -169,11 +184,15 @@ def _check_header(directives: dict[str, str], dline: _DirectiveLine) -> None:
 
     # "required iff parity", enforced in both directions: a parity file must name the revision it
     # reproduces, and a file that is not reproducing anything must not claim to.
-    if profile == PARITY_PROFILE and "SOURCESHA" not in directives:
+    #
+    # An EMPTY value counts as absent. `#SOURCESHA` with nothing after it is a parity file claiming
+    # to reproduce nothing, which is exactly the claim E013 exists to stop; treating the key's mere
+    # presence as satisfaction would let it through.
+    if profile == PARITY_PROFILE and not directives.get("SOURCESHA"):
         raise G4DatFormatError(
-            "E013", dline("PROFILE"), f"'#PROFILE {PARITY_PROFILE}' requires '#SOURCESHA'"
+            "E013", dline("PROFILE"), f"'#PROFILE {PARITY_PROFILE}' requires a non-empty '#SOURCESHA'"
         )
-    if profile != PARITY_PROFILE and "SOURCESHA" in directives:
+    if profile != PARITY_PROFILE and directives.get("SOURCESHA"):
         raise G4DatFormatError(
             "E013",
             dline("SOURCESHA"),
@@ -195,10 +214,39 @@ def _is_real_value(value: object) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
+def _underflows_to_zero(text: str, number: float) -> bool:
+    """True when a lexically nonzero field converted to exactly ``0.0``.
+
+    ``float("1e-999")`` is ``0.0`` in Python, silently. A conforming C++ reader disagrees:
+    ``std::from_chars`` reports ``result_out_of_range`` for the same text. Rejecting the field
+    (E014, the same code overflow uses) keeps the reference implementation and a C++ reader from
+    reading the same file differently.
+    """
+    if number != 0.0:
+        return False
+    mantissa = re.split(r"[eE]", text, maxsplit=1)[0]
+    return _NONZERO_DIGIT.search(mantissa) is not None
+
+
+def _split_fields(text: str) -> list[str]:
+    """Split on space and tab -- the format's only separators -- never on ``str.split()``'s wider set.
+
+    Any other whitespace byte is E005, so on checked text the two agree; keeping the narrow rule here
+    means they also agree if this is ever called on text that has not been through that check.
+    """
+    stripped = text.strip(" \t")
+    return _FIELD_SEPARATOR.split(stripped) if stripped else []
+
+
+def _key_columns(columns: Sequence[str]) -> list[str]:
+    """The declared subset of ``(Z, A)``, in that order. Empty when the table declares neither, in
+    which case it has no primary key and E008/E015 have nothing to check (``FORMAT_SPEC.md`` 2.3)."""
+    return [name for name in INTEGER_COLUMNS if name in columns]
+
+
 def _key_indices(columns: Sequence[str]) -> list[int]:
-    """Positions of ``Z`` then ``A``. Empty when the table declares neither, in which case it has no
-    primary key and E008/E015 have nothing to check (``FORMAT_SPEC.md`` section 2.3)."""
-    return [columns.index(name) for name in INTEGER_COLUMNS if name in columns]
+    """Positions of the key columns, in key order."""
+    return [columns.index(name) for name in _key_columns(columns)]
 
 
 def _check_records(
@@ -209,6 +257,7 @@ def _check_records(
     E008 is checked before E015 on purpose: a duplicate key is also not strictly ascending, so the
     other order would make E008 unreachable.
     """
+    key_names = _key_columns(columns)
     key_indices = _key_indices(columns)
     first_seen: dict[Key, int] = {}
     previous: Key | None = None
@@ -227,22 +276,51 @@ def _check_records(
                     raise G4DatFormatError(
                         "E007", line, f"column {name!r} needs an unsigned integer, got {value!r}"
                     )
-            elif not _is_real_value(value):
+                if not INTEGER_MIN <= value <= INTEGER_MAX:
+                    raise G4DatFormatError(
+                        "E007",
+                        line,
+                        f"integer out of range in column {name!r}: {value!r} is outside "
+                        f"{INTEGER_MIN}-{INTEGER_MAX}",
+                    )
+                continue
+            if not _is_real_value(value):
                 raise G4DatFormatError("E007", line, f"column {name!r} needs a number, got {value!r}")
-            elif not math.isfinite(float(value)):
+            try:
+                number = float(value)
+            except OverflowError:
+                # An int too large to convert is the in-memory form of "overflows to infinity", and
+                # the section-2.3 rule already covers that condition. Without this it escaped as a
+                # raw OverflowError -- a stack trace instead of a coded, located rejection.
+                raise G4DatFormatError(
+                    "E014", line, f"value in column {name!r} overflows to infinity: {value!r}"
+                ) from None
+            if not math.isfinite(number):
                 raise G4DatFormatError("E014", line, f"non-finite value in column {name!r}: {value!r}")
+            if value != 0 and number == 0.0:
+                # The in-memory twin of the lexical underflow rule (:func:`_underflows_to_zero`).
+                # No plain int or float reaches it -- float(x) is x for a float, and no int
+                # underflows -- so it fires only for a numeric subclass whose __float__ disagrees
+                # with its value. It is here so the rule holds on BOTH paths, not only the one where
+                # it is reachable today, and the test exercises it with exactly such a witness.
+                raise G4DatFormatError(
+                    "E014", line, f"value in column {name!r} underflows to zero: {value!r}"
+                )
 
         if not key_indices:
             continue
         key: Key = tuple(int(record[i]) for i in key_indices)
-        printed = ", ".join(f"{name}={part}" for name, part in zip(INTEGER_COLUMNS, key, strict=False))
+        # Labels come from the columns the table actually declares, not from INTEGER_COLUMNS: an
+        # A-only table's duplicate is "A=5", not "Z=5". The code and the line were always right; the
+        # human text was not, and a wrong label sends the reader to the wrong column.
+        printed = ", ".join(f"{name}={part}" for name, part in zip(key_names, key, strict=True))
         if key in first_seen:
             raise G4DatFormatError(
                 "E008", line, f"duplicate key ({printed}); first seen at line {first_seen[key]}"
             )
         if previous is not None and key < previous:
             raise G4DatFormatError(
-                "E015", line, f"record ({printed}) is not in ascending {'/'.join(INTEGER_COLUMNS)} order"
+                "E015", line, f"record ({printed}) is not in ascending {'/'.join(key_names)} order"
             )
         first_seen[key] = line
         previous = key
@@ -253,16 +331,26 @@ def _check_records(
 # --------------------------------------------------------------------------------------------
 
 
+def _byte_detail(character: str) -> str:
+    """How E005 names the offending byte: a control code by its hex value, anything else by U+."""
+    if character.isascii():
+        return f"control character {character!r} (0x{ord(character):02X})"
+    return f"non-ASCII character {character!r} (U+{ord(character):04X})"
+
+
 def _check_encoding(text: str) -> None:
-    """E005 -- decoding precedes line splitting, so this whole-text check runs first."""
-    if text.isascii():
+    """E005 -- any byte outside ``{TAB, LF, CR, 0x20-0x7E}``.
+
+    Decoding precedes line splitting, so this whole-text check runs first. CR is inside the set on
+    purpose: it is diagnosed by the more specific E006 immediately afterwards.
+    """
+    match = _FORBIDDEN_BYTE.search(text)
+    if match is None:
         return
-    index = next(i for i, ch in enumerate(text) if not ch.isascii())
-    character = text[index]
     raise G4DatFormatError(
         "E005",
-        text.count("\n", 0, index) + 1,
-        f"non-ASCII character {character!r} (U+{ord(character):04X})",
+        text.count("\n", 0, match.start()) + 1,
+        _byte_detail(match.group()),
     )
 
 
@@ -285,13 +373,13 @@ def _split_directive(line: str, lineno: int) -> tuple[str, str]:
     keyword = match.group(1)
     if keyword not in DIRECTIVE_ORDER:
         raise G4DatFormatError("E001", lineno, f"unknown directive '#{keyword}'")
-    return keyword, (match.group(2) or "").strip()
+    return keyword, (match.group(2) or "").strip(" \t")
 
 
 def _lex_record(line: str, lineno: int, columns: Sequence[str]) -> tuple[Number, ...]:
     """Lex one record line -- E004, E007, E014. Leading whitespace and column alignment are fine;
-    any run of whitespace is one separator."""
-    fields = line.split()
+    any run of spaces and tabs is one separator."""
+    fields = _split_fields(line)
     if len(fields) != len(columns):
         raise G4DatFormatError(
             "E004", lineno, f"record has {len(fields)} field(s), '#COLUMNS' declares {len(columns)}"
@@ -303,7 +391,15 @@ def _lex_record(line: str, lineno: int, columns: Sequence[str]) -> tuple[Number,
                 raise G4DatFormatError(
                     "E007", lineno, f"unreadable unsigned integer in column {name!r}: {field!r}"
                 )
-            values.append(int(field))
+            integer = int(field)
+            if not INTEGER_MIN <= integer <= INTEGER_MAX:
+                raise G4DatFormatError(
+                    "E007",
+                    lineno,
+                    f"integer out of range in column {name!r}: {field!r} is outside "
+                    f"{INTEGER_MIN}-{INTEGER_MAX}",
+                )
+            values.append(integer)
             continue
         bare = field[1:] if field[:1] in "+-" else field
         if bare.lower() in _NON_FINITE_TOKENS:
@@ -314,6 +410,10 @@ def _lex_record(line: str, lineno: int, columns: Sequence[str]) -> tuple[Number,
         if not math.isfinite(number):
             raise G4DatFormatError(
                 "E014", lineno, f"value in column {name!r} overflows to infinity: {field!r}"
+            )
+        if _underflows_to_zero(field, number):
+            raise G4DatFormatError(
+                "E014", lineno, f"value in column {name!r} underflows to zero: {field!r}"
             )
         values.append(number)
     return tuple(values)
@@ -343,13 +443,13 @@ def parse(text: str) -> G4DatTable:
     def close_header(at_line: int) -> list[str]:
         """Run the header rules once the directive block is over, then fix the column list."""
         _check_header(directives, lambda keyword: directive_lines.get(keyword, at_line))
-        return directives["COLUMNS"].split()
+        return _split_fields(directives["COLUMNS"])
 
     for lineno, line in enumerate(body, start=1):
         if end_line is not None:
             raise G4DatFormatError("E011", lineno, f"content after '{END_MARKER}': {line.strip()!r}")
 
-        if line.rstrip() == END_MARKER:
+        if line.rstrip(" \t") == END_MARKER:
             if columns is None:
                 columns = close_header(lineno)
             end_line = lineno
@@ -369,6 +469,12 @@ def parse(text: str) -> G4DatTable:
             order_index = index
             directives[keyword] = value
             directive_lines[keyword] = lineno
+            if keyword == "GRAMMAR":
+                # Eagerly, at its own line: every later diagnosis is only meaningful under a grammar
+                # this reader implements. Deferring it to the header close let a per-line defect on a
+                # later line preempt E010, so a grammar-2.0 file that used a 2.0 directive was
+                # reported as "unknown directive" -- a true statement about the wrong problem.
+                _check_grammar(value, lineno)
             continue
 
         if columns is None:
@@ -447,8 +553,14 @@ def validate(table: G4DatTable) -> None:
     dline, rline = _canonical_lines(directives)
 
     for keyword, value in directives.items():
-        if not keyword.isascii() or not value.isascii():
-            raise G4DatFormatError("E005", dline(keyword), f"non-ASCII character in directive '#{keyword}'")
+        # The same byte set parse() enforces, not merely "is it ASCII": a directive value carrying a
+        # VT or FF is ASCII, renders fine, and would then be rejected by parse() as E005 -- which
+        # would break the round-trip guarantee at the one place nothing else checks.
+        offending = _FORBIDDEN_BYTE.search(keyword) or _FORBIDDEN_BYTE.search(value)
+        if offending is not None:
+            raise G4DatFormatError(
+                "E005", dline(keyword), f"{_byte_detail(offending.group())} in directive '#{keyword}'"
+            )
         if "\r" in value:
             raise G4DatFormatError("E006", dline(keyword), f"carriage return in directive '#{keyword}'")
     for keyword in directives:
@@ -456,7 +568,7 @@ def validate(table: G4DatTable) -> None:
             raise G4DatFormatError("E001", dline(keyword), f"unknown directive '#{keyword}'")
 
     _check_header(directives, dline)
-    _check_records(table.records, directives["COLUMNS"].split(), rline)
+    _check_records(table.records, _split_fields(directives["COLUMNS"]), rline)
 
 
 # --------------------------------------------------------------------------------------------
@@ -490,7 +602,7 @@ def render(table: G4DatTable) -> str:
     everything this returns is accepted by :func:`parse` -- an unsorted input is normalized rather
     than rejected, which is the one way :func:`render` is more permissive than :func:`validate`.
     """
-    columns = table.directives.get("COLUMNS", "").split()
+    columns = _split_fields(table.directives.get("COLUMNS", ""))
     records = _sorted_records(table.records, columns)
     validate(G4DatTable(directives=dict(table.directives), records=records))
 

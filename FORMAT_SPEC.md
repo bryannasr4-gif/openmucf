@@ -36,7 +36,13 @@ checkable error (`E009`).
 
 ### 2.1 Lexical rules
 
-1. Encoding is **US-ASCII only**. Any byte outside `0x00`-`0x7F` is an error (`E005`).
+1. Encoding is **US-ASCII only**, and narrower than that: the only permitted bytes are
+   **`0x09` (TAB), `0x0A` (LF), `0x0D` (CR), and `0x20`-`0x7E`**. Any other byte -- non-ASCII, or an
+   ASCII control character such as VT (`0x0B`) or FF (`0x0C`) -- is an error (`E005`).
+   The narrow set is what makes "whitespace" mean exactly space and tab (rule 2.3.1): a VT is a
+   separator to some standard-library split functions and an ordinary field character to a
+   space/tab reader, so a file containing one would have two different field counts depending on
+   who read it. CR is inside the permitted set only so that it receives the more specific `E006`.
 2. Line ending is **LF (`\n`) only**. A carriage return anywhere is an error (`E006`), whether it
    appears as CRLF or as a lone CR.
 3. There is **no byte-order mark**. A BOM is a non-ASCII byte and is rejected by rule 1.
@@ -79,10 +85,30 @@ the version of the data. Without that separation there is no backward-compatibil
 
 `#SOURCESHA` is required **if and only if** `#PROFILE` is `parity`: a parity file exists to reproduce
 a specific upstream revision bit-for-bit, so it must name that revision; a non-parity file is not
-reproducing anything and must not claim to (`E013` in both directions).
+reproducing anything and must not claim to (`E013` in both directions). A directive present with an
+**empty value counts as absent** for this rule: `#SOURCESHA` with nothing after it is a parity file
+claiming to reproduce nothing, which is exactly the claim `E013` exists to stop.
 
 An analytic fallback is carried as declared data rather than as compiled-in behaviour so that it is
 versioned, testable, swappable and citable like any other row.
+
+#### Value sub-grammars
+
+To Layer 1 a directive value is **one string** -- the parser does not decompose it, and no error
+code below concerns a value's internal structure. The sub-grammars here therefore bind the
+**consumer**, not the reader: they are what a C++ implementation must be able to parse out of
+`#UNITS`, `#VALIDITY` and `#FALLBACK` once it has the string, and stating them now is what stops
+three implementations from inventing three different splittings of the same bytes.
+
+| Directive | Value | Element |
+|---|---|---|
+| `#UNITS` | one or more space/tab-separated assignments | `NAME=UNIT`, `NAME` matching `^[A-Za-z_][A-Za-z0-9_]*$`, `UNIT` a non-empty run of printable non-whitespace bytes |
+| `#VALIDITY` | one or more space/tab-separated assignments | `NAME:RANGE`, `NAME` as above, `RANGE` a non-empty run of printable non-whitespace bytes |
+| `#FALLBACK` | a model name, then zero or more assignments | `MODEL` matching `^[a-z][a-z0-9_]*$`, then `NAME=VALUE` with `NAME` as above and `VALUE` a float in the section-2.3 rule-4 syntax |
+
+Every `NAME` used in `#UNITS` should be a `#COLUMNS` name; a unit for a column that does not exist
+is a producer bug, and a consumer may report it as one. `#VALIDITY` names need not be columns
+(`A:natural_and_listed` describes a selection rule, not a column range).
 
 Example header:
 
@@ -105,19 +131,34 @@ Example header:
 
 After the directives come **zero or more records**, one per line.
 
-1. Fields are whitespace-delimited. Leading whitespace is permitted, so a writer may align columns.
-   A reader must treat any run of spaces or tabs as one separator and must not depend on alignment.
+1. Fields are separated by **space (`0x20`) and tab (`0x09`) only** -- no other byte is a separator,
+   because no other whitespace byte may appear at all (rule 2.1.1). Any run of them is one
+   separator, and leading whitespace is permitted, so a writer may align columns and a reader must
+   not depend on the alignment.
 2. The number of fields must equal the arity of `#COLUMNS` (`E004`). A blank line is a record with
    zero fields and is rejected the same way: the format has no blank lines and no comments.
-3. Columns named `Z` and `A` are **integer columns**: the field must match `^[0-9]+$`.
+3. Columns named `Z` and `A` are **integer columns**: the field must match `^[0-9]+$` and its value
+   must lie in **`0`-`9999` inclusive** (`E007` otherwise). The bound is what keeps a reader's
+   integer width from being implementation-defined -- without it, whether a file is readable
+   depends on whether the reader chose `int`, `long` or `int64_t`. It is physically generous:
+   `Z <= 118` and `A` does not reach 300.
 4. Every other column is a **float column**: the field must match the strict C-locale float
    `^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$`. **A comma decimal separator is a syntax error
    (`E007`), never a silent truncation** -- see section 6.
 5. A field that denotes a non-finite value (`inf`, `+inf`, `-inf`, `infinity`, `nan`, in any letter
-   case), or a lexically valid field that overflows to infinity, is rejected (`E014`).
-6. `(Z, A)` is the **primary key**. A repeated key is an error naming the first-seen line (`E008`).
-7. Records are sorted **ascending by `(Z, A)`** (`E015`). Deterministic output requires it and it
-   makes diffs readable.
+   case), or a lexically valid field that leaves the representable range in either direction --
+   **overflowing to infinity or underflowing to zero** -- is rejected (`E014`). Underflow is
+   included for the same reason as overflow and matters just as much in practice: `1e-999` converts
+   to `0.0` silently in some languages, while a C++ `std::from_chars` reports
+   `result_out_of_range` for it, so accepting the field would mean two conforming readers disagree
+   about the same file. A field that is **lexically zero** (no digit `1`-`9` before the exponent,
+   e.g. `0`, `0.0`, `-0.0`, `0e-999`) is a genuine zero and is accepted.
+6. The **primary key** is whichever of `Z` and `A` the table declares, in that order -- `(Z, A)` for
+   the usual table, `(Z)` or `(A)` for one that declares only one of them. A repeated key is an
+   error naming the first-seen line (`E008`), and the message names the key columns that table
+   actually declares.
+7. Records are sorted **ascending by the primary key** (`E015`). Deterministic output requires it
+   and it makes diffs readable.
 
 A table whose `#COLUMNS` contains neither `Z` nor `A` has no primary key; rules 6 and 7 then have
 nothing to check and are not enforced. Every table defined for this format so far carries `Z` and
@@ -125,10 +166,12 @@ nothing to check and are not enforced. Every table defined for this format so fa
 
 ### 2.4 Terminator
 
-The record block ends with a line containing `#END` (trailing whitespace is ignored there, as it is
-in a directive value), terminated by a newline. Any further line -- including an empty one -- is
-content after the terminator (`E011`). A file with no newline-terminated `#END` line is incomplete
-(`E012`), which covers both a missing `#END` and a file whose last line has no newline.
+The record block ends with a line containing `#END`, terminated by a newline. **`#END` starts in
+column 1**, like every other directive; trailing spaces and tabs after it are ignored, leading ones
+are not (a line beginning with whitespace is a record, and is diagnosed as one). Any further line --
+including an empty one -- is content after the terminator (`E011`). A file with no
+newline-terminated `#END` line is incomplete (`E012`), which covers both a missing `#END` and a file
+whose last line has no newline.
 
 ### 2.5 Allowed values
 
@@ -155,16 +198,27 @@ compares bytes. C and C++ readers are **not** automatically safe -- see section 
 
 ### 2.7 Versioning and backward compatibility
 
-`#GRAMMAR` is `MAJOR.MINOR`.
+`#GRAMMAR`'s value is exactly `MAJOR.MINOR`, lexically `^\d+\.\d+$` -- two runs of decimal digits
+separated by one `.`, with no sign, no third component, no pre-release suffix and no leading `v`.
 
-- A reader **must reject a `MAJOR` it does not know** (`E010`). A malformed `#GRAMMAR` value is
-  likewise rejected with `E010`, because no supported major can be established from it.
-- A reader accepts any `MINOR` of a `MAJOR` it knows.
+- A reader **must reject a `MAJOR` it does not know** (`E010`). A `#GRAMMAR` value that does not
+  match the lexical form above is likewise rejected with `E010`, because no major can be
+  established from it at all.
+- A reader **accepts any `MINOR` of a `MAJOR` it knows** -- that is, it accepts the version
+  *declaration*. Accepting the declaration is not the same as being able to read the file: a
+  higher-minor file may use a directive this reader does not have, and it will then be rejected
+  (`E001`) on that directive's line.
+- `#GRAMMAR` is validated **eagerly, at its own line**, before any later line is diagnosed. Every
+  other diagnosis is only meaningful under a grammar the reader implements, so `E010` preempts what
+  follows it; without that rule, a file written to a future grammar reports its new directive as
+  "unknown", which is a true statement about the wrong problem.
 - Because unknown directives are a hard error, a `MINOR` increment that introduces a new directive
-  will be rejected by an older reader **as soon as a file actually uses that directive**. A `MINOR`
-  increment is therefore transparently backward-compatible only when it widens the allowed values of
-  an existing directive (a new `#SEAM` token, say). Producers that must serve older readers emit no
-  directive above the reader's minor.
+  is rejected by an older reader **as soon as a file actually uses that directive**. A `MINOR`
+  increment is therefore transparently backward-compatible only when it widens the allowed values
+  of an **open** value set -- a new `#PROFILE` token, say, which matches an existing pattern rather
+  than joining a fixed list. Widening a **closed** set is not backward-compatible: `#SEAM`'s values
+  are enumerated (section 2.5), so an older reader rejects a new seam token with `E016`.
+  Producers that must serve older readers emit no directive above the reader's minor.
 - A change to the meaning of an existing directive, to the record grammar, or to the terminator is a
   `MAJOR` increment.
 
@@ -174,6 +228,11 @@ compares bytes. C and C++ readers are **not** automatically safe -- see section 
 
 Layer 2 is never read by Geant4. It is a single JSON object with the file-level fields below and one
 object per Layer-1 record under `rows`, keyed `"Z-A"`.
+
+**Row-key format, exactly.** A key is the record's `Z`, a single `-`, then its `A`, each written in
+**decimal with no zero padding, no sign and no whitespace** (`^[0-9]+-[0-9]+$`): `"1-1"`, `"29-63"`,
+`"94-242"` -- never `"001-001"`, `"+1-1"` or `"1 - 1"`. JSON object keys are strings, so without a
+pinned spelling `"1-1"` and `"01-1"` would be two different keys for one record.
 
 **File-level fields**
 
@@ -218,10 +277,18 @@ capture rates is an open question in the literature, while compiled-in tables ar
 throughout; which rows carry a genuinely isotope-resolved measurement is invisible to a consumer
 unless the dataset says so. Making the flag required means the disclosure cannot be quietly skipped.
 
+**Canonical serialization (normative).** A Layer-2 file is written **only** in this form: keys
+sorted at every level, two-space indentation, ASCII-escaped (`ensure_ascii`), LF line endings, and
+exactly one trailing newline. This is not a formatting preference -- it is what makes the digest
+below reproducible, so a Layer-2 file that is valid JSON but not in canonical form is not a valid
+Layer-2 file.
+
 **The digest invariant.** Layer 1's `#SOURCEDIGEST` is `sha256` over the **exact bytes of the
 Layer-2 file**, which are `json.dumps(obj, sort_keys=True, indent=2, ensure_ascii=True)` followed by
 a single `\n`, encoded as ASCII. Any other byte range is a different number: the digest is over the
 serialized file, not over an in-memory object, and not over an LF-normalized or re-indented copy.
+In particular, writing those bytes through a text-mode stream that translates LF to CRLF produces a
+file whose digest no longer matches, and `E009` is what catches it.
 
 ---
 
@@ -239,25 +306,45 @@ Every rejection carries an exact code and a **1-based line number**. The message
 | `E002` | missing required directive |
 | `E003` | directive out of order (including a repeated directive) |
 | `E004` | record field count differs from the `#COLUMNS` arity |
-| `E005` | non-ASCII byte |
+| `E005` | byte outside `{TAB, LF, CR, 0x20-0x7E}` (non-ASCII, or an ASCII control character) |
 | `E006` | CRLF or CR line ending |
-| `E007` | field does not match its column's lexical class (strict C-locale float, or `^[0-9]+$` for `Z` and `A`) |
-| `E008` | duplicate `(Z, A)` key; the message names the first-seen line |
+| `E007` | field does not match its column's lexical class (strict C-locale float, or `^[0-9]+$` within `0`-`9999` for `Z` and `A`) |
+| `E008` | duplicate primary key; the message names the first-seen line |
 | `E009` | `#SOURCEDIGEST` differs from the SHA-256 of the Layer-2 file |
-| `E010` | unsupported `#GRAMMAR` major version |
+| `E010` | unsupported or malformed `#GRAMMAR` version |
 | `E011` | content after `#END` |
 | `E012` | missing newline-terminated `#END` |
-| `E013` | `#PROFILE parity` without `#SOURCESHA`, or `#SOURCESHA` under a non-parity profile |
-| `E014` | non-finite float (`inf` / `nan`) |
-| `E015` | records not sorted ascending by `(Z, A)` |
-| `E016` | `#PROFILE` or `#SEAM` value outside its allowed set |
+| `E013` | `#PROFILE parity` without a non-empty `#SOURCESHA`, or `#SOURCESHA` under a non-parity profile |
+| `E014` | float outside the representable range: non-finite (`inf` / `nan`), overflow to infinity, or underflow to zero |
+| `E015` | records not sorted ascending by the primary key |
+| `E016` | `#PROFILE` or `#SEAM` value outside its allowed set; the message names the offending directive |
 
-**Reporting order.** Whole-file lexical checks run first, encoding (`E005`) before line structure
-(`E006`), because decoding precedes splitting into lines. Then the file is read line by line, so the
-first structural or record error in file order is the one reported. Within one record, field count
-(`E004`) is checked before field lexis (`E007`, `E014`), and a duplicate key (`E008`) is reported
-before an ordering violation (`E015`) -- otherwise a duplicate would always surface as "not
-ascending" and `E008` would be unreachable.
+**Reporting order.** A file usually has one defect, but when it has several the reader must be
+predictable about which one it names, or two conforming implementations will disagree on a file
+they both correctly reject. The order is **three phases**, and it is not simply "first error in file
+order":
+
+1. **Whole-file lexical.** `E005`, then `E006`. Both are properties of the byte stream rather than
+   of any one line, and decoding precedes splitting into lines, so these run before anything else
+   and `E005` runs before `E006`.
+2. **Line scan, in file order.** Each line is diagnosed as it is reached: `E001`, `E003` and `E011`
+   for header and block structure, `E004` then `E007`/`E014` within a record (field count before
+   field lexis, since the lexis of a field the record should not have is not interesting). `E010`
+   is raised **eagerly at the `#GRAMMAR` line**, which makes it the one code that preempts
+   everything after it -- see section 2.7 for why.
+3. **Block-close and post-scan.** Checks that cannot be decided from one line: `E002`, `E013` and
+   `E016` when the directive block closes, then `E012`, then `E008`, then `E015` once all records
+   are in hand. These are **reported at the line of the directive or record at fault**, which may
+   be an *earlier* line than a phase-2 defect that preempted them.
+
+The consequence worth stating plainly: **a per-line defect can preempt a block-level defect on an
+earlier line.** A file whose `#PROFILE` on line 4 lacks its `#SOURCESHA` *and* whose line 12
+repeats a directive reports `E003` on line 12, not `E013` on line 4, because the block does not
+close until line 12 is passed. `E010` is the deliberate exception. Fix the reported defect and
+re-run: the reader is a decision procedure for "is this file conforming", not a defect enumerator.
+
+Within phase 3, a duplicate key (`E008`) is reported before an ordering violation (`E015`) --
+otherwise a duplicate would always surface as "not ascending" and `E008` would be unreachable.
 
 `E009` is the only code that cannot be raised by reading the Layer-1 file alone: it requires the
 Layer-2 file as well. A `.g4dat` is only fully verified together with the Layer-2 file it was
@@ -306,14 +393,34 @@ the job still finishes.
 
 Use one of:
 
-- `std::from_chars(first, last, value)` (C++17; locale-independent by construction), or
+- `std::from_chars(first, last, value)` -- **C++17 or later**, which is also the standard Geant4
+  itself is built with; locale-independent by construction, and the recommended choice; or
 - a stream explicitly imbued with the classic locale: `stream.imbue(std::locale::classic())`.
+
+Three mechanical details that will otherwise be got wrong:
+
+- **Strip a leading `+` before calling `std::from_chars`.** The grammar of section 2.3 rule 4 allows
+  `+1.5`; `std::from_chars` does **not** accept a leading `+` and returns
+  `std::errc::invalid_argument` for it. A reader that passes the field through unmodified rejects a
+  conforming file.
+- **Map `std::errc::result_out_of_range` to `E014`, not to `E007`.** `from_chars` returns it for
+  both ends of the range -- a value too large to represent and a value that underflows to zero --
+  and section 2.3 rule 5 makes both `E014`. Treating it as a lexical failure would report the wrong
+  code for a well-formed number.
+- **Check `ptr == last`.** `from_chars` succeeds on a valid prefix, so `1.5x` parses as `1.5` with
+  `ptr` left at the `x`. The field must be consumed in full or it is `E007`.
 
 Two further requirements follow from section 2:
 
-- The reader must reject a `#GRAMMAR` major it does not know rather than guess.
+- The reader must reject a `#GRAMMAR` major it does not know rather than guess, and must do so
+  before diagnosing anything later in the file (section 2.7).
 - The reader must not accept a comma decimal separator under any locale. The grammar has exactly one
   numeric syntax and it is the C-locale one.
+
+**Line length is not bounded by this format**, and deliberately carries no error code: a dataset is
+a generated, audited artifact of at most a few hundred rows, not untrusted network input, so a
+resource cap would buy nothing and add a seventeenth code. A reader that must run in a fixed memory
+budget should impose its own limit and report it as its own error, not as one of these.
 
 ---
 
@@ -337,7 +444,7 @@ Guarantees, each covered by a test:
 1. **Round-trip.** For every table that `validate()` accepts, `parse(render(t)) == t`.
 2. **Determinism.** `render(t)` is a pure function of `t`: two calls produce identical bytes, the
    output contains no timestamp, and the bytes do not change under a comma-decimal `LC_NUMERIC`.
-3. **Only conforming output.** `render()` first sorts the records ascending by `(Z, A)` and then
+3. **Only conforming output.** `render()` first sorts the records ascending by the primary key and then
    validates; it therefore accepts a table whose records are not yet sorted, and everything it emits
    is accepted by `parse()`. `validate()` itself reports an unsorted table as `E015`.
 4. **Exact floats.** `float(format_float(x)) == x` for every finite double.
