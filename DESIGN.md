@@ -82,11 +82,18 @@ structural assumption, which is the recommendation this document actually makes.
 ## SECONDARY metric -- nested-Monte-Carlo EIG
 | candidate | EIG [bits] |
 |---|---|
-| C1 | 1.629 |
-| C2 | 1.782 |
-| C3 | 1.081 |
-| C4 | 3.240 |
-| C3 (scenario-B, R(phi)-inflated) | 2.492 |
+| C1 | 1.629 +- 0.046 |
+| C2 | 1.782 +- 0.037 |
+| C3 | 1.081 +- 0.058 |
+| C4 | 3.240 +- 0.033 |
+| C3 (scenario-B, R(phi)-inflated) | 2.492 +- 0.041 |
+
+**The +/- here is the BASE-CHAIN realization error**, measured in-run rather than assumed: each cell is
+re-evaluated over 20 independent base chains (the analysis seed held fixed, so the
+nested-MC draws are identical and only the posterior being integrated over changes), and the quoted +/- is
+the sd of those 20 values. That is the term that actually moves when this document is
+reproduced on another machine -- the nested-MC draw indices do not -- and it is what sizes the `--audit`
+band below. Differences between two runs smaller than a few times these SEs are not findings.
 
 **Scenario-B disclaimer.** the scenario-B MuFusE EIG is large BY CONSTRUCTION (the widest prior wins);
 this is a property of the prior, not of the experiment. C3's EIG rises from 1.081 bits under
@@ -106,7 +113,8 @@ they need not agree; **where they disagree, sd_contraction (the estimand-specifi
 
 ## Sanity gates (all three are tests -- `tests/test_design.py`)
 1. **zero-EIG for an exact-replicate measurement:** re-observing an already-pinned constant yields EIG =
-   0.000 bits (<= the estimator's Monte-Carlo noise).
+   0.000 +- 0.000 bits (identically zero: the replicate observable is constant, so
+   this cell carries no realization noise at all and its audit band is the 0.01 absolute floor).
 2. **EIG monotone in stated precision:** a tighter measurement never lowers EIG (a 3-point sigma sweep).
 3. **Sobol-consistency in the small-noise limit:** the parameter a tiny-sigma X_mu measurement informs
    most is **R** -- the top Sobol driver of X_mu over the same `openmucf.uq` prior box.
@@ -116,7 +124,17 @@ Every number here is NUTS/Monte-Carlo derived and reproduces to Monte-Carlo erro
 (the `CALIBRATION.md` precedent). `make audit` byte-diffs NEITHER this file nor its manifest; instead
 `python scripts/generate_design.py --audit` re-runs with the pinned seeds and checks:
 
-1. **EIG bits** at 5% relative (unchanged; reproduced across architectures).
+1. **EIG bits** against a band DERIVED from the SEs published in the SECONDARY table above -- the same
+   `4 * sqrt(se_committed^2 + se_fresh^2)` construction as item 2, floored at
+   0.01 absolute. Until 2026-08-12 these cells were checked against a fixed
+   **5% RELATIVE** constant. That was the wrong SHAPE: a 200-realization sweep over the base chain's seed
+   measures the per-cell realization noise at 0.042-0.068 bits (1.40%-6.10% relative), so the noise is
+   ABSOLUTE -- its relative size varies 4.4x across cells while its absolute size varies 1.6x -- and the
+   5% band would red **49.5% of runs** against an independent realization, worst on `eig_C3`, whose own
+   noise exceeds the whole band. No relative constant fixes that: the >= 34.5% needed to cover `eig_C3`
+   makes `eig_C4`'s band 24.8 sigma of its own noise. The measured band is 0.555%/run instead, and it
+   re-sizes itself if the sampler settings change. See the 2026-08-12 AMENDMENT in
+   `scripts/generate_design.py`.
 2. **sd-contraction cells** against a band DERIVED from the numbers themselves --
    `4 * sqrt(se_committed^2 + se_fresh^2)`, floored at 0.01 absolute --
    using the per-cell Monte-Carlo SEs published in the PRIMARY table above and tracked in the manifest.

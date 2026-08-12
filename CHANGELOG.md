@@ -52,6 +52,31 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   the bands are actually sized — previously an "OK" on one architecture proved determinism, not that a
   tolerance was correctly sized. `generate_design.py --audit` prints its worst margin likewise.
 
+### Fixed — the EIG audit band, measured rather than assumed (2026-08-12)
+- **`DESIGN.md`'s EIG cells were audited against a 5 % *relative* constant, which is the wrong shape.**
+  The sd-contraction cells got a measured, per-cell band on 2026-08-09; the EIG-in-bits cells kept the
+  original pre-registered 5 % relative tolerance, annotated "held cross-arch 2026-07-23" — an annotation
+  now **deleted**, because the artifacts of that reproduction were never tracked in this repository and
+  the claim does not survive measurement. A 200-realization sweep over the base chain's seed (analysis
+  seed held fixed, so the nested-Monte-Carlo draws are identical and only the posterior being integrated
+  over changes) puts the per-cell realization noise at **0.042–0.068 bits = 1.40 %–6.10 % relative**: the
+  noise is *absolute*, its relative size varying 4.4× across cells while its absolute size varies 1.6×.
+  Against an independent realization the 5 % band therefore reds **49.5 % of runs**, worst on `eig_C3`,
+  whose own noise (6.10 %) exceeds the entire band — and no relative constant fixes it, since the ≥ 34.5 %
+  needed to cover `eig_C3` makes `eig_C4`'s band 24.8 σ of its own noise. The one arm64 EIG flag of
+  2026-07-23 (|Δ| = 0.088 bits on `eig_C2`) sits at the 92nd percentile of that distribution, z = +1.48:
+  an ordinary draw, reproduced on x86-64 by nothing more than a different chain seed.
+  The EIG cells now use the same construction as the contraction cells, with the SE **measured in-run**:
+  20 replicate base chains per pass (seeds 1–20, the committed seed excluded from its own error bar),
+  `sd` with ddof = 1, published as `value ± se` in `DESIGN.md` and tracked in the manifest (31 → 37
+  entries). Simulated false alarm **0.555 % per run**, inside the 0.12–0.60 %/run regime already chosen
+  for the contraction cells at 4 σ; cost ≈ +20 s per pass. A fixed *absolute* band (0.383 bits) was
+  measured and rejected — safe but ~10× more conservative than the project's own 4 σ design point, with
+  7.7–18.6 % detection power at a 0.30-bit shift against 22.6–84.3 %, and stale the moment `n_outer`,
+  `n_inner` or the chain length changes. **No published value moves and no finding changes**; the SE-ratio
+  guard is now enforced only where a band is SE-governed, so the identically-zero `zero_eig` cell keeps
+  the 0.01 absolute floor it already had.
+
 ### Added
 - **Open muon-cost ledger (`openmucf/data/muon_cost.csv` + `openmucf/mucost.py` + `MUON_COST.md`).** A
   curated compilation-with-provenance of the muon-production energy cost on one auditable basis (beam GeV
@@ -119,9 +144,9 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   structural form, and the class **contrast** is reported against its own Monte-Carlo error — on the shipped
   run it is *not* resolved, and the document says so. An internal planning instrument, not a verdict. `DESIGN.md` +
   `DESIGN_MANIFEST.json` carry NUTS-derived numbers, so `make audit` tolerance-checks them
-  (`generate_design.py --audit`: EIG bits at 5% relative, sd-contraction cells at 4σ of each cell's own
-  published Monte-Carlo SE — the fixed 3 pp band this release originally shipped is superseded, see the
-  Fixed section above) rather than byte-diffing.
+  (`generate_design.py --audit`: every cell, EIG and sd-contraction alike, at 4σ of its own published
+  Monte-Carlo SE — both the fixed 3 pp contraction band and the 5 % relative EIG band this release
+  originally shipped are superseded, see the Fixed sections above) rather than byte-diffing.
 
 ### Changed
 - **Class-tiered, falsifiable validation scoreboard.** Every `VALIDATION.md` row now carries a claim

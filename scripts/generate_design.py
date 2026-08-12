@@ -11,15 +11,17 @@ CONTRAST -- resolved or not, against its own Monte-Carlo error -- is the finding
 
 Reproducibility (WAVE2 A1/A2 -- the CALIBRATION.md precedent, NOT the byte-diff pattern): DESIGN.md +
 DESIGN_MANIFEST.json carry numpyro/NUTS-derived numbers that are NOT byte-stable cross-architecture, so
-`make audit` byte-diffs NEITHER. Instead `--audit` re-runs with the pinned seeds and compares every
-manifest-tracked number at a pre-registered tolerance, split by quantity class exactly as the calibration
-audit splits its mean/sd cells (2%/8%):
-  * EIG-in-bits (a relative-scale quantity, averaged over n_outer*n_inner draws): 5% RELATIVE tolerance
-    (the A1 pre-registered value).
-  * sd-contraction ratios (dimensionless, legitimately passing through zero -- the estimand-discipline
-    cells collapse to ~0 -- so a pure relative tolerance is ill-posed): each cell is checked against
-    K_SIGMA times ITS OWN reported Monte-Carlo standard error, not a fixed constant. See the AMENDMENT
-    below for why the previous fixed 3 pp band was wrong.
+`make audit` byte-diffs NEITHER. Instead `--audit` re-runs with the pinned seeds and checks every
+manifest-tracked number against a band DERIVED from that cell's OWN published Monte-Carlo standard error
+-- K_SIGMA * sqrt(se_committed^2 + se_fresh^2), floored at AUDIT_ATOL_FLOOR -- never against a fixed
+pre-registered constant. Both audited quantity classes use that one construction; they differ only in how
+the SE is measured:
+  * sd-contraction ratios (dimensionless, and legitimately passing through zero -- the estimand-discipline
+    cells collapse to ~0 -- so a relative tolerance is ill-posed here): SE = the per-refit nonparametric
+    bootstrap, combined in quadrature with the base chain's own posterior-sd error.
+  * EIG-in-bits: SE measured IN-RUN as the spread over AUDIT_EIG_REPLICATES replicate base chains.
+Every band is therefore itself auditable, and re-sizes automatically if the sampler settings change. See
+the two AMENDMENTs below for what each band replaced and why.
 
 AMENDMENT 2026-08-09 (cross-architecture reproduction, arm64 vs x86-64). The contraction band used to be
 a fixed 3 pp absolute, justified by a "~+/-3 pp Monte-Carlo floor" quoted from docs/xray_feasibility.md.
@@ -47,6 +49,37 @@ are the deliverable.
 Both are hard-failing and pinned by tests/test_design_audit.py (the never-soften-silently rule of
 WAVE1 spec 1.5). Doc<->manifest consistency is enforced by `provenance --check` (regenerated together).
 
+AMENDMENT 2026-08-12 (the EIG band, measured rather than assumed). The EIG-in-bits cells kept a
+pre-registered 5% RELATIVE band annotated "held cross-arch 2026-07-23". That annotation is DELETED, not
+repaired: it is unsourceable -- the artifacts of that reproduction were never tracked in this repository --
+and the substance is wrong anyway. A 200-realization sweep over the BASE CHAIN's seed (analysis seed held
+fixed) measures the EIG cells' realization noise at 0.042-0.068 bits per cell, i.e. 1.40%-6.10% relative:
+the noise is ABSOLUTE, and its relative size varies 4.4x across cells while its absolute size varies only
+1.6x. A single relative constant is therefore the wrong SHAPE, not merely the wrong value. Against an
+independent base-chain realization the 5% band reds 49.5% of runs (worst cell eig_C3, whose own noise --
+6.10% -- exceeds the entire band); the smallest relative constant that would control that rate is >= 34.5%,
+set by eig_C3, and it makes eig_C4's band 24.8 sigma of ITS own noise, i.e. unfalsifiable. The single
+arm64 EIG flag of 2026-07-23 (|delta| = 0.088 bits on eig_C2) sits at the 92nd percentile of that
+seed-perturbation distribution, z = +1.48 -- an ordinary draw of an ordinary quantity, and another base
+chain on the x86-64 dev host reproduced essentially the same value.
+The EIG cells therefore move to the SAME construction the contraction cells received on 2026-08-09, with
+the SE MEASURED IN-RUN: AUDIT_EIG_REPLICATES independent base chains per pass (analysis seed unchanged),
+sd with ddof=1 over each cell's replicate values, published as se_<cell> in DESIGN.md and tracked in the
+manifest. Simulated false alarm 0.555% per run (20k replicates, both values AND both SEs resampled -- the
+conservative both-sides-fresh convention), inside the 0.12-0.60%/run regime this file already chose for
+the contraction cells at 4 sigma; the superseded 5% constant scores 73.4% per run on that same convention.
+A fixed ABSOLUTE band (K*sqrt(2)*max-cell sigma = 0.383 bits) was measured and REJECTED: 0.010%/run, but
+~10x more conservative than this file's own 4-sigma design point (8.5 sigma on eig_C4), detection power at
+a 0.30-bit shift 7.7-18.6% against 22.6-84.3% for the measured band, and it is once more a constant that
+goes stale the moment n_outer, n_inner or the chain length changes -- the failure mode the 2026-08-09
+amendment exists to prevent. An in-run measurement re-sizes itself instead.
+`zero_eig` is unaffected in practice: the replicate candidate's observable is constant, so its EIG is
+identically zero and its replicate SE is numerically zero (<= 1e-17 across 200 realizations), leaving the
+AUDIT_ATOL_FLOOR absolute floor it already had. One general rule follows, applied uniformly to every
+SE-banded cell: the SE-ratio guard is enforced only where the band is SE-GOVERNED, since the ratio of two
+numerically-zero SEs is meaningless. It is verified live that all 12 contraction cells remain SE-governed,
+so this changes nothing for them.
+
 Importable without side effects (all work is inside functions / main()); the tests import the pure
 formatting/registry/audit helpers without running the NUTS refits.
 """
@@ -56,6 +89,8 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
+
+import numpy as np
 
 from openmucf import design
 from openmucf.provenance import ManifestEntry, file_sha256, write_manifest
@@ -73,8 +108,16 @@ XRAY_VERDICT_PCT = 42.95
 XRAY_THRESHOLD_PCT = 15.0
 
 # --- audit tolerances (pinned by tests/test_design_audit.py; hard-failing; never widen silently) ------
-AUDIT_RTOL_EIG = 0.05      # EIG-in-bits: 5% RELATIVE (WAVE2 A1 pre-registered; held cross-arch 2026-07-23)
-AUDIT_ATOL_FLOOR = 0.01    # contraction band floor: never tighter than 1 pp, whatever the bootstrap says
+# Replicate base chains used to MEASURE each EIG-family cell's Monte-Carlo SE in-run (2026-08-12; see the
+# AMENDMENT above). Base seeds 1..AUDIT_EIG_REPLICATES -- the committed seed stays out of its own SE --
+# with the analysis seed unchanged. Sized from a 200-realization base-chain-seed sweep (2026-08-10): the
+# EIG realization noise is ABSOLUTE (per-cell sigma 0.042-0.068 bits = 1.4%-6.1% relative), so the
+# superseded 5%-relative constant reds ~50% of runs against an independent realization. Measured false
+# alarm of THIS construction ~0.6%/run at R=20 (R=8/12 give 1.3%/0.8%, outside the 0.12-0.60%/run regime
+# chosen for the contraction cells; R=32 buys ~0.15 pp for 60% more chains). Cost ~+20 s per pass: one
+# base chain is ~1.0 s and the six EIG cells over it are ~3 ms.
+AUDIT_EIG_REPLICATES = 20
+AUDIT_ATOL_FLOOR = 0.01    # band floor: never tighter than 1 pp, whatever the measured SE says
 # The DETECTION band and the CLAIM threshold are deliberately different numbers, because they trade off in
 # opposite directions and were conflated in the superseded design:
 #   * AUDIT_K_SIGMA sizes a gate that runs on EVERY push, on 12 cells, and must not cry wolf. Both sides
@@ -103,18 +146,53 @@ CANDIDATE_ORDER = ("C1", "C2", "C3", "C4")
 
 
 # ============================================================================ computation
+def eig_family(cand_ids, samples: dict, seed: int) -> dict:
+    """The six EIG-family cells for ONE base-posterior realization, keyed by manifest entry id.
+
+    Shared by the committed pass and by the replicate-SE loop below, so the set of cells the band is
+    measured over can never drift from the set of cells the band is applied to.
+    """
+    out = {f"eig_{cid}": design.eig_nested_mc(cid, samples=samples, seed=seed) for cid in cand_ids}
+    out["eig_C3_inflated"] = design.eig_nested_mc("C3", cls="inflated", samples=samples, seed=seed)
+    out["zero_eig"] = design.eig_nested_mc(design.replicate_candidate(), samples=samples, seed=seed)
+    return out
+
+
+def eig_replicate_se(cand_ids, analysis_seed: int) -> dict:
+    """Measure each EIG-family cell's Monte-Carlo SE over AUDIT_EIG_REPLICATES replicate base chains.
+
+    The quantity that moves between two honest reproductions of this document is the BASE CHAIN's
+    realization: the nested-MC draw indices are generated from the analysis seed and are bit-identical
+    everywhere, while the posterior the EIG integrates over is a fresh NUTS realization on every new
+    platform, runner image or pin set. So the replicates perturb the base seed (1..R -- the committed
+    seed 0 is deliberately excluded, an estimate must not be inside its own error bar) and hold the
+    analysis seed fixed, which is exactly the sweep the band was sized from. Sequential, one chain at a
+    time; ddof=1 because these R values are a sample, not the population.
+    """
+    reps: dict[str, list[float]] = {}
+    for r in range(1, AUDIT_EIG_REPLICATES + 1):
+        rep_samples = design.base_posterior(seed=r)
+        for key, res in eig_family(cand_ids, rep_samples, analysis_seed).items():
+            reps.setdefault(key, []).append(res["eig_bits"])
+    return {key: float(np.std(vals, ddof=1)) for key, vals in reps.items()}
+
+
 def compute(seed: int = 0) -> dict:
     """Run the full design analysis once (NUTS-heavy). Returns raw numbers keyed for build_headline."""
     samples = design.base_posterior(seed=seed)
     reg = design.registry(XRAY_VERDICT_PCT, XRAY_THRESHOLD_PCT)
     cand_ids = [c for c in CANDIDATE_ORDER if c in reg["candidates"]]
 
-    eig = {cid: design.eig_nested_mc(cid, samples=samples, seed=seed) for cid in cand_ids}
-    eig_c3_inflated = design.eig_nested_mc("C3", cls="inflated", samples=samples, seed=seed)
+    fam = eig_family(cand_ids, samples, seed)
+    eig = {cid: fam[f"eig_{cid}"] for cid in cand_ids}
+    eig_c3_inflated = fam["eig_C3_inflated"]
     sdc = {cid: design.sd_contraction(cid, samples=samples, seed=seed) for cid in cand_ids}
 
-    zero_eig = design.eig_nested_mc(design.replicate_candidate(), samples=samples, seed=seed)
+    zero_eig = fam["zero_eig"]
     sobol = design.sobol_consistency(seed=seed)
+    # Last, because it is the only part that draws chains other than the committed one: keeping it after
+    # every committed cell is computed makes it structurally impossible for a replicate to leak into one.
+    eig_se = eig_replicate_se(cand_ids, seed)
 
     return {
         "seed": seed,
@@ -122,6 +200,7 @@ def compute(seed: int = 0) -> dict:
         "cand_ids": cand_ids,
         "eig": eig,
         "eig_c3_inflated": eig_c3_inflated,
+        "eig_se": eig_se,
         "sdc": sdc,
         "zero_eig_bits": zero_eig["eig_bits"],
         "sobol": sobol,
@@ -161,6 +240,10 @@ def build_headline(res: dict) -> tuple[dict, dict]:
         RAW[f"se_Ri_{cid}"] = sdc["R_contraction_se"]["inflated"]
     RAW["eig_C3_inflated"] = res["eig_c3_inflated"]["eig_bits"]
     RAW["zero_eig"] = res["zero_eig_bits"]
+    # Per-cell Monte-Carlo SE of every EIG-family cell, measured in-run over replicate base chains:
+    # published, manifest-tracked, and the basis of that cell's audit band (2026-08-12 amendment).
+    for key, se in res["eig_se"].items():
+        RAW[f"se_{key}"] = se
 
     for k, v in RAW.items():
         s = f"{v:.3f}"
@@ -319,9 +402,14 @@ def _sdc_table(H: dict, cand_ids) -> str:
             "|---|---|---|---|\n" + "\n".join(_sdc_row(H, cid) for cid in cand_ids))
 
 
+def _eig_row(H: dict, label: str, entry_id: str) -> str:
+    """One SECONDARY-table row: ``value +- MC standard error``, mirroring the PRIMARY table."""
+    return f"| {label} | {H[entry_id]} +- {H[f'se_{entry_id}']} |"
+
+
 def _eig_table(H: dict, cand_ids) -> str:
-    rows = [f"| {cid} | {H[f'eig_{cid}']} |" for cid in cand_ids]
-    rows.append(f"| C3 (scenario-B, R(phi)-inflated) | {H['eig_C3_inflated']} |")
+    rows = [_eig_row(H, cid, f"eig_{cid}") for cid in cand_ids]
+    rows.append(_eig_row(H, "C3 (scenario-B, R(phi)-inflated)", "eig_C3_inflated"))
     return "| candidate | EIG [bits] |\n|---|---|\n" + "\n".join(rows)
 
 
@@ -416,6 +504,13 @@ structural assumption, which is the recommendation this document actually makes.
 ## SECONDARY metric -- nested-Monte-Carlo EIG
 {_eig_table(H, cand_ids)}
 
+**The +/- here is the BASE-CHAIN realization error**, measured in-run rather than assumed: each cell is
+re-evaluated over {AUDIT_EIG_REPLICATES} independent base chains (the analysis seed held fixed, so the
+nested-MC draws are identical and only the posterior being integrated over changes), and the quoted +/- is
+the sd of those {AUDIT_EIG_REPLICATES} values. That is the term that actually moves when this document is
+reproduced on another machine -- the nested-MC draw indices do not -- and it is what sizes the `--audit`
+band below. Differences between two runs smaller than a few times these SEs are not findings.
+
 **Scenario-B disclaimer.** the scenario-B MuFusE EIG is large BY CONSTRUCTION (the widest prior wins);
 this is a property of the prior, not of the experiment. C3's EIG rises from {H['eig_C3']} bits under
 scenario A (constant-R) to {H['eig_C3_inflated']} bits under scenario B (R replaced by the wider
@@ -434,7 +529,8 @@ they need not agree; **where they disagree, sd_contraction (the estimand-specifi
 
 ## Sanity gates (all three are tests -- `tests/test_design.py`)
 1. **zero-EIG for an exact-replicate measurement:** re-observing an already-pinned constant yields EIG =
-   {H['zero_eig']} bits (<= the estimator's Monte-Carlo noise).
+   {H['zero_eig']} +- {H['se_zero_eig']} bits (identically zero: the replicate observable is constant, so
+   this cell carries no realization noise at all and its audit band is the {AUDIT_ATOL_FLOOR} absolute floor).
 2. **EIG monotone in stated precision:** a tighter measurement never lowers EIG (a 3-point sigma sweep).
 3. **Sobol-consistency in the small-noise limit:** the parameter a tiny-sigma X_mu measurement informs
    most is **{H['sobol_top']}** -- the top Sobol driver of X_mu over the same `openmucf.uq` prior box.
@@ -444,7 +540,17 @@ Every number here is NUTS/Monte-Carlo derived and reproduces to Monte-Carlo erro
 (the `CALIBRATION.md` precedent). `make audit` byte-diffs NEITHER this file nor its manifest; instead
 `python scripts/generate_design.py --audit` re-runs with the pinned seeds and checks:
 
-1. **EIG bits** at {AUDIT_RTOL_EIG:.0%} relative (unchanged; reproduced across architectures).
+1. **EIG bits** against a band DERIVED from the SEs published in the SECONDARY table above -- the same
+   `{AUDIT_K_SIGMA:.0f} * sqrt(se_committed^2 + se_fresh^2)` construction as item 2, floored at
+   {AUDIT_ATOL_FLOOR} absolute. Until 2026-08-12 these cells were checked against a fixed
+   **5% RELATIVE** constant. That was the wrong SHAPE: a 200-realization sweep over the base chain's seed
+   measures the per-cell realization noise at 0.042-0.068 bits (1.40%-6.10% relative), so the noise is
+   ABSOLUTE -- its relative size varies 4.4x across cells while its absolute size varies 1.6x -- and the
+   5% band would red **49.5% of runs** against an independent realization, worst on `eig_C3`, whose own
+   noise exceeds the whole band. No relative constant fixes that: the >= 34.5% needed to cover `eig_C3`
+   makes `eig_C4`'s band 24.8 sigma of its own noise. The measured band is 0.555%/run instead, and it
+   re-sizes itself if the sampler settings change. See the 2026-08-12 AMENDMENT in
+   `scripts/generate_design.py`.
 2. **sd-contraction cells** against a band DERIVED from the numbers themselves --
    `{AUDIT_K_SIGMA:.0f} * sqrt(se_committed^2 + se_fresh^2)`, floored at {AUDIT_ATOL_FLOOR} absolute --
    using the per-cell Monte-Carlo SEs published in the PRIMARY table above and tracked in the manifest.
@@ -482,12 +588,17 @@ def build_manifest_entries(H: dict, cand_ids) -> list[ManifestEntry]:
         for key in ("ose", "Rc", "Ri"):
             entries.append(_e(f"{key}_{cid}", row))
             entries.append(_e(f"se_{key}_{cid}", row))
-    # EIG cells (each appears in the SECONDARY table row: | Cx | eig |)
-    for cid in cand_ids:
-        entries.append(_e(f"eig_{cid}", rf"\| {cid} \| {re.escape(H[f'eig_{cid}'])} \|"))
-    entries.append(_e("eig_C3_inflated", rf"scenario-B, R\(phi\)-inflated\) \| {re.escape(H['eig_C3_inflated'])} \|"))
+    # EIG cells + their replicate-measured Monte-Carlo SEs (both live in the SECONDARY table row:
+    # | Cx | eig +- se |), tracked for the same reason: the SE is what sets that cell's audit band.
+    for cid, label in [(f"eig_{c}", c) for c in cand_ids] + [
+            ("eig_C3_inflated", "C3 (scenario-B, R(phi)-inflated)")]:
+        row = re.escape(_eig_row(H, label, cid))
+        entries.append(_e(cid, row))
+        entries.append(_e(f"se_{cid}", row))
     # sanity-gate headline claims
-    entries.append(_e("zero_eig", rf"yields EIG =\s*{re.escape(H['zero_eig'])} bits"))
+    zero_row = rf"yields EIG =\s*{re.escape(H['zero_eig'])} \+\- {re.escape(H['se_zero_eig'])} bits"
+    entries.append(_e("zero_eig", zero_row))
+    entries.append(_e("se_zero_eig", zero_row))
     entries.append(_e("sobol_top", rf"informs\s+most is \*\*{re.escape(H['sobol_top'])}\*\*"))
     return entries
 
@@ -500,7 +611,7 @@ def _manifest_inputs() -> dict:
         "num_samples": design.NUM_SAMPLES,
         "xray_verdict_pct": XRAY_VERDICT_PCT,
         "xray_threshold_pct": XRAY_THRESHOLD_PCT,
-        "audit_rtol_eig": AUDIT_RTOL_EIG,
+        "audit_eig_replicates": AUDIT_EIG_REPLICATES,
         "audit_k_sigma": AUDIT_K_SIGMA,
         "claim_k_sigma": CLAIM_K_SIGMA,
         "audit_atol_floor": AUDIT_ATOL_FLOOR,
@@ -575,22 +686,25 @@ def _structural_gates(res: dict, RAW: dict) -> list[str]:
 def audit() -> None:
     """Re-run with pinned seeds and check the committed DESIGN.md against a fresh computation.
 
-    Four gates (see the module docstring + the AMENDMENTs there):
-      * EIG bits -- AUDIT_RTOL_EIG relative;
-      * sd-contraction cells -- AUDIT_K_SIGMA sigma of the cell's OWN published Monte-Carlo SE, pooled
-        committed-vs-fresh and floored at AUDIT_ATOL_FLOOR;
-      * the fresh SE against the committed one (AUDIT_SE_RATIO_MAX), since the fresh half of every band
-        is otherwise unpublished and unchecked;
+    Three gates (see the module docstring + the AMENDMENTs there):
+      * every tolerance-audited cell -- EIG-family and sd-contraction alike -- against AUDIT_K_SIGMA sigma
+        of ITS OWN published Monte-Carlo SE, pooled committed-vs-fresh and floored at AUDIT_ATOL_FLOOR;
+      * the fresh SE against the committed one (AUDIT_SE_RATIO_MAX) wherever the band is SE-governed,
+        since the fresh half of every band is otherwise unpublished and unchecked;
       * the structural claims (:func:`_structural_gates`) + the categorical sobol_top.
     Every band and every margin is printed, so a CI log on ANY platform is evidence about how the
     tolerances are actually sized -- the instrumentation the 2026-07-23 cross-arch audit found missing.
     """
     committed = _read_committed_manifest()
-    missing_se = [k for k in committed if k.startswith(("ose_", "Rc_", "Ri_")) and f"se_{k}" not in committed]
+    # EVERY audited cell's band is derived from a published per-cell SE, so every audited cell must have
+    # one. Stated as a general rule rather than a list of prefixes (2026-08-12: the EIG family joined the
+    # construction, and a future cell must not be able to slip in without its SE).
+    missing_se = [k for k in committed
+                  if not k.startswith("se_") and k != "sobol_top" and f"se_{k}" not in committed]
     if missing_se:
         raise SystemExit(
-            "DESIGN_MANIFEST.json predates the 2026-08-09 Monte-Carlo-SE audit (no se_* entries for "
-            f"{', '.join(sorted(missing_se))}). The audit band is derived from those SEs, so it cannot "
+            "DESIGN_MANIFEST.json predates the Monte-Carlo-SE audit (no se_* entries for "
+            f"{', '.join(sorted(missing_se))}). Every audit band is derived from those SEs, so it cannot "
             "run against this manifest: regenerate with `python scripts/generate_design.py`."
         )
     res = compute()
@@ -610,26 +724,35 @@ def audit() -> None:
         f = RAW[entry_id]
         if entry_id.startswith("eig_") or entry_id == "zero_eig":
             n_eig += 1
-            band = AUDIT_RTOL_EIG * max(abs(c), abs(f))
-            if entry_id == "zero_eig":       # a ~0 sanity cell: relative is ill-posed, use the floor
-                band = max(band, AUDIT_ATOL_FLOOR)
-            tol = f"{AUDIT_RTOL_EIG:.0%} rel"
-        else:  # ose_/Rc_/Ri_ -> band derived from the cell's own Monte-Carlo SE
+        else:
             n_con += 1
-            se_c = float(committed[f"se_{entry_id}"])
-            se_f = RAW[f"se_{entry_id}"]
-            # Half the band comes from se_f, which is published nowhere. Gate it against the committed
-            # SE so a noisier run cannot quietly award itself a wider band (AUDIT_SE_RATIO_MAX).
-            if se_c > 0 and se_f > 0 and not (1 / AUDIT_SE_RATIO_MAX <= se_f / se_c <= AUDIT_SE_RATIO_MAX):
-                problems.append(
-                    f"se_{entry_id}: fresh SE {se_f:.4g} vs committed {se_c:.4g} "
-                    f"(ratio {se_f / se_c:.2f}x, allowed {1 / AUDIT_SE_RATIO_MAX:.2f}-"
-                    f"{AUDIT_SE_RATIO_MAX:.2f}x) -- the estimator changed, not just the estimate"
-                )
-            band = max(AUDIT_K_SIGMA * (se_c**2 + se_f**2) ** 0.5, AUDIT_ATOL_FLOOR)
+        # ONE construction for every audited cell (2026-08-12): the band is K sigma of the cell's own
+        # published Monte-Carlo SE, pooled committed-vs-fresh, floored so a fluke-small SE cannot make it
+        # vacuous-tight. The two classes differ only in how their SE was measured, not in how it is used.
+        se_c = float(committed[f"se_{entry_id}"])
+        se_f = RAW[f"se_{entry_id}"]
+        se_band = AUDIT_K_SIGMA * (se_c**2 + se_f**2) ** 0.5
+        band = max(se_band, AUDIT_ATOL_FLOOR)
+        se_governed = se_band >= AUDIT_ATOL_FLOOR
+        # Half the band comes from se_f, which is published nowhere. Gate it against the committed SE so a
+        # noisier run cannot quietly award itself a wider band (AUDIT_SE_RATIO_MAX) -- but only where the
+        # band is actually SE-governed: on a floor-governed cell the SEs do not set the band at all, and
+        # for the zero-EIG sanity cell they are two numerically-zero numbers whose ratio is meaningless.
+        if (se_governed and se_c > 0 and se_f > 0
+                and not (1 / AUDIT_SE_RATIO_MAX <= se_f / se_c <= AUDIT_SE_RATIO_MAX)):
+            problems.append(
+                f"se_{entry_id}: fresh SE {se_f:.4g} vs committed {se_c:.4g} "
+                f"(ratio {se_f / se_c:.2f}x, allowed {1 / AUDIT_SE_RATIO_MAX:.2f}-"
+                f"{AUDIT_SE_RATIO_MAX:.2f}x) -- the estimator changed, not just the estimate"
+            )
+        if se_governed:
             tol = f"{AUDIT_K_SIGMA:.0f}sig(se {se_c:.3f}/{se_f:.3f})"
             if band > abs(c):   # a band wider than the cell cannot falsify anything about that cell
                 uninformative.append((entry_id, c, band))
+        else:
+            # A floor-governed cell is checked against the pre-registered absolute floor, so the
+            # band-vs-value comparison above says nothing about it (and its value may be exactly 0).
+            tol = f"floor {AUDIT_ATOL_FLOOR:g} abs (se {se_c:.3f}/{se_f:.3f})"
         margins.append((entry_id, abs(c - f), band))
         if abs(c - f) > band:
             problems.append(f"{entry_id}: committed {c:.4g} vs fresh {f:.4g}, "
@@ -638,8 +761,9 @@ def audit() -> None:
     worst = max(margins, key=lambda m: (m[1] / m[2]) if m[2] else 0.0, default=("-", 0.0, 1.0))
     if problems:
         raise SystemExit("DESIGN.md audit FAILED:\n  " + "\n  ".join(problems))
-    print(f"design audit OK: {n_eig} EIG/near-zero cells within {AUDIT_RTOL_EIG:.0%} rel, "
-          f"{n_con} contraction cells within {AUDIT_K_SIGMA:.0f} sigma of their published MC SE, "
+    print(f"design audit OK: {n_eig} EIG-family + {n_con} contraction cells within "
+          f"{AUDIT_K_SIGMA:.0f} sigma of their published MC SE (floored at {AUDIT_ATOL_FLOOR:g} absolute; "
+          f"EIG SEs measured over {AUDIT_EIG_REPLICATES} replicate base chains), "
           f"structural gates pass, sobol_top matches")
     print(f"  worst margin: {worst[0]} at {worst[1] / worst[2]:.1%} of its band "
           f"(|delta|={worst[1]:.4g}, band={worst[2]:.4g})")

@@ -27,7 +27,8 @@ def _load_script():
     return mod
 
 
-def _mock_res(*, resolved_flip: bool = False, negative_delta: bool = False):
+def _mock_res(*, resolved_flip: bool = False, negative_delta: bool = False,
+              eig_se_scale: float = 1.0, eig_shift: dict | None = None):
     """A fixed synthetic result matching compute()'s structure -- no NUTS, fully deterministic.
 
     ``resolved_flip`` toggles the class-contrast between "not resolved" (the honest default: a small
@@ -35,6 +36,10 @@ def _mock_res(*, resolved_flip: bool = False, negative_delta: bool = False):
     class-flip prose are exercised without running NUTS. ``negative_delta`` flips C1's contraction so the
     resolved contrast points the OTHER way (R information RISES under inflation) -- the sign the shipped
     C3 cell actually has, and the sign whose prose was wrong until 2026-08-10.
+
+    ``eig_se_scale`` rescales the replicate-measured EIG SEs and ``eig_shift`` moves individual EIG cells,
+    so a test can hold a cell's DELTA fixed while changing only the SE that sets its band (2026-08-12) --
+    which is what distinguishes a derived band from a constant wearing a derived band's name.
     """
     cand_ids = ["C1", "C2", "C3", "C4"]
     eig_bits = {"C1": 1.629, "C2": 1.782, "C3": 1.081, "C4": 3.240}
@@ -46,12 +51,20 @@ def _mock_res(*, resolved_flip: bool = False, negative_delta: bool = False):
     se = {"C1": 0.020, "C2": 0.012, "C3": 0.026, "C4": 0.021}
     sens = {"C1": True, "C2": False, "C3": True, "C4": False}
     delta_se = 0.004 if resolved_flip else 0.030
+    # Replicate-measured EIG SEs (the 2026-08-12 band). zero_eig's is EXACTLY zero -- the replicate
+    # observable is constant -- which is the floor-governed path the audit has to survive.
+    eig_se = {"eig_C1": 0.046, "eig_C2": 0.037, "eig_C3": 0.058, "eig_C4": 0.033,
+              "eig_C3_inflated": 0.041, "zero_eig": 0.0}
+    eig_se = {k: v * eig_se_scale for k, v in eig_se.items()}
+    shift = eig_shift or {}
+    eig_bits = {c: eig_bits[c] + shift.get(f"eig_{c}", 0.0) for c in cand_ids}
     return {
         "seed": 0,
         "registry": design.registry(42.95, 15.0),
         "cand_ids": cand_ids,
         "eig": {c: {"eig_bits": eig_bits[c], "n_outer": 256, "n_inner": 256} for c in cand_ids},
-        "eig_c3_inflated": {"eig_bits": 2.492},
+        "eig_c3_inflated": {"eig_bits": 2.492 + shift.get("eig_C3_inflated", 0.0)},
+        "eig_se": eig_se,
         "sdc": {c: {"ose_contraction": ose[c], "ose_contraction_se": se[c], "n_synth": 64,
                     "class_sensitive": sens[c],
                     "R_contraction": {"constant": rc[c], "inflated": ri[c]},
@@ -61,7 +74,7 @@ def _mock_res(*, resolved_flip: bool = False, negative_delta: bool = False):
                                       "boot": {"ose": 0.004,
                                                "R": {"constant": 0.006, "inflated": 0.006}}}}
                 for c in cand_ids},
-        "zero_eig_bits": -1e-7,  # exercises the negative-zero normalisation
+        "zero_eig_bits": -1e-7 + shift.get("zero_eig", 0.0),  # exercises the negative-zero normalisation
         "sobol": {"top_param": "R"},
         "settings": {"n_outer": 256, "n_inner": 256, "n_synth": 64,
                      "num_warmup": 1000, "num_samples": 4000},
@@ -84,15 +97,25 @@ def test_audit_tolerances_pinned():
     2026-08-10: ``AUDIT_SE_RATIO_MAX`` added. The FRESH half of the band is published nowhere, so without
     it a noisier platform could silently award itself a wider band; and the published SE itself gained the
     base-chain term (``design.SE_BASE_BATCHES``) it had been omitting.
+
+    2026-08-12: the EIG cells' ``AUDIT_RTOL_EIG = 0.05`` (5% RELATIVE) is DELETED and replaced by the same
+    measured per-cell band, with the SE measured in-run over ``AUDIT_EIG_REPLICATES`` replicate base
+    chains. Again a re-registration, not a softening: a 200-realization sweep over the base-chain seed puts
+    those cells' realization noise at 0.042-0.068 bits (1.40%-6.10% RELATIVE), so the noise is ABSOLUTE and
+    a single relative constant is the wrong SHAPE -- the 5% band reds 49.5% of runs against an independent
+    realization (worst cell eig_C3, whose own noise exceeds the whole band), while the >= 34.5% that would
+    cover eig_C3 makes eig_C4's band 24.8 sigma of its own noise. The measured band is 0.555%/run. The
+    superseded constant is guarded like ``AUDIT_ATOL_CONTRACTION``: it must not come back.
     """
     src = _SCRIPT.read_text(encoding="utf-8")
-    assert "AUDIT_RTOL_EIG = 0.05" in src
+    assert "AUDIT_EIG_REPLICATES = 20" in src
     assert "AUDIT_K_SIGMA = 4.0" in src
     assert "CLAIM_K_SIGMA = 3.0" in src
     assert "AUDIT_ATOL_FLOOR = 0.01" in src
     assert "AUDIT_MIN_SEPARATION_SIGMA = 3.0" in src
     assert "AUDIT_SE_RATIO_MAX = 3.0" in src
     assert "AUDIT_ATOL_CONTRACTION" not in src, "the superseded fixed band must not come back"
+    assert "AUDIT_RTOL_EIG" not in src, "the superseded 5% relative EIG band must not come back"
 
 
 def test_n_synth_and_se_settings_pinned():
@@ -191,8 +214,12 @@ def test_design_doc_and_manifest_render_deterministically(tmp_path):
                    generated_by="scripts/generate_design.py")
     failures = check_manifest(tmp_path / "DESIGN_MANIFEST.json", repo_root=tmp_path)
     assert failures == [], failures
-    # 4x3 sd-contraction cells + 4x3 their MC SEs + 4 EIG + inflated + 2 sanity claims
-    assert len(entries) >= 27
+    # 4x3 sd-contraction cells + 4x3 their MC SEs + (4 EIG + inflated + zero-EIG) + those 6 cells' MC SEs
+    # + the categorical sobol_top = 37 (31 before the EIG cells gained published SEs on 2026-08-12).
+    assert len(entries) == 37
+    # every EIG cell is published WITH its replicate-measured SE, in the SECONDARY table
+    assert "| C1 | 1.629 +- 0.046 |" in md1
+    assert "| C3 (scenario-B, R(phi)-inflated) | 2.492 +- 0.041 |" in md1
 
 
 def test_class_contrast_prose_is_derived_not_asserted():
@@ -293,3 +320,102 @@ def test_structural_gates_catch_a_lost_recommendation():
     #     C2 displaces C1 in second place. The pre-2026-08-10 gate checked only the leader and passed.
     probs = mod._structural_gates(res, dict(raw, ose_C2=0.400))
     assert any("top-2 is no longer C3 > C1" in p for p in probs), probs
+
+
+# ---------------------------------------------------------------- the 2026-08-12 measured EIG band
+def _audit_against(tmp_path, monkeypatch, committed_res, fresh_res):
+    """Run ``audit()`` with a manifest written from ``committed_res`` and a fresh run of ``fresh_res``.
+
+    Neither side runs NUTS: ``compute()`` is replaced, so what is exercised is exactly the band
+    arithmetic and the gates -- the part a test can own.
+    """
+    mod = _load_script()
+    h, _ = mod.build_headline(committed_res)
+    entries = mod.build_manifest_entries(h, committed_res["cand_ids"])
+    monkeypatch.chdir(tmp_path)
+    write_manifest(mod.DESIGN_MANIFEST, entries, mod._manifest_inputs(),
+                   generated_by="scripts/generate_design.py")
+    monkeypatch.setattr(mod, "compute", lambda *a, **k: fresh_res)
+    return mod
+
+
+def test_eig_band_is_derived_from_the_published_se_not_a_constant(tmp_path, monkeypatch, capsys):
+    """The SAME |delta| must pass or fail according to the PUBLISHED SE, not any fixed tolerance.
+
+    This is the property the 2026-08-12 re-registration exists to create, and the one a band that is
+    secretly still a constant would fail. A 0.20-bit shift on ``eig_C3`` (committed 1.081) is 18.5%
+    relative -- far outside the superseded 5% band, and outside 10% and 15% too -- yet it is only 1.7
+    sigma of that cell's measured realization noise, so it must PASS. Shrink the SE tenfold on BOTH sides
+    (so the ratio guard sees 1.0x and cannot be what fires) and the identical shift must FAIL.
+    """
+    shift = {"eig_C3": 0.20}
+
+    # (a) wide measured SE -> the shift is inside the band
+    mod = _audit_against(tmp_path, monkeypatch, _mock_res(), _mock_res(eig_shift=shift))
+    mod.audit()
+    out = capsys.readouterr().out
+    assert "design audit OK" in out
+    assert "20 replicate base chains" in out          # the band names its own provenance
+    # the band really is 4 sigma of the two SEs, not a relative constant
+    assert abs(0.20) > 0.15 * 1.081                   # >> any plausible relative constant
+    assert 0.20 < 4.0 * (0.058**2 + 0.058**2) ** 0.5  # ... and inside 4 sigma of the measured SE
+
+    # (b) same shift, SEs 10x tighter on BOTH sides -> the band shrinks with them and it fails
+    mod = _audit_against(tmp_path, monkeypatch,
+                         _mock_res(eig_se_scale=0.1), _mock_res(eig_se_scale=0.1, eig_shift=shift))
+    with pytest.raises(SystemExit) as exc:
+        mod.audit()
+    msg = str(exc.value)
+    assert "eig_C3" in msg and "band" in msg
+    assert "ratio" not in msg, "must fail on the BAND, not on the SE-ratio guard"
+
+
+def test_every_audited_cell_publishes_an_se(tmp_path, monkeypatch):
+    """No audited cell may regress to a bare constant: each one needs a published ``se_<id>`` companion.
+
+    The audit derives every band from a published SE, so an entry without one either crashes the audit or
+    (worse) would have to be given a constant. The shipped manifest is checked, and the preflight is shown
+    to hard-fail with the regenerate instruction -- a SystemExit, never a KeyError -- when one is missing.
+    """
+    import json
+
+    committed = json.loads((_SCRIPT.parent.parent / "DESIGN_MANIFEST.json").read_text(encoding="utf-8"))
+    ids = {e["id"] for e in committed["entries"]}
+    audited = {i for i in ids if not i.startswith("se_") and i != "sobol_top"}
+    assert audited, ids
+    assert {i for i in audited if f"se_{i}" not in ids} == set()
+    assert "audit_rtol_eig" not in committed["inputs"]
+    assert committed["inputs"]["audit_eig_replicates"] == 20
+
+    # an OLD manifest (EIG cells with no SEs) must SystemExit with the instruction, not KeyError
+    mod = _load_script()
+    h, _ = mod.build_headline(_mock_res())
+    entries = [e for e in mod.build_manifest_entries(h, ["C1", "C2", "C3", "C4"])
+               if not e.id.startswith("se_eig") and e.id != "se_zero_eig"]
+    monkeypatch.chdir(tmp_path)
+    write_manifest(mod.DESIGN_MANIFEST, entries, mod._manifest_inputs(),
+                   generated_by="scripts/generate_design.py")
+    monkeypatch.setattr(mod, "compute", lambda *a, **k: _mock_res())
+    with pytest.raises(SystemExit) as exc:
+        mod.audit()
+    assert "regenerate" in str(exc.value) and "eig_C1" in str(exc.value)
+
+
+def test_zero_eig_band_is_floor_governed_and_skips_the_ratio_guard(tmp_path, monkeypatch, capsys):
+    """The zero-EIG sanity cell has an identically-zero SE; the audit must handle it without a special case.
+
+    Its band reduces to AUDIT_ATOL_FLOOR, the SE-ratio guard is not applicable (a ratio of two zeros is
+    meaningless), and it must not be swept into the NOT INFORMATIVE list -- which would both mislabel a
+    working sanity gate and divide by its zero value.
+    """
+    mod = _audit_against(tmp_path, monkeypatch, _mock_res(), _mock_res(eig_shift={"zero_eig": 0.005}))
+    mod.audit()                                  # inside the 0.01 floor: passes, no exception
+    out = capsys.readouterr().out
+    assert "design audit OK" in out
+    vacuity_report = out.split("NOT INFORMATIVE")[-1] if "NOT INFORMATIVE" in out else ""
+    assert "zero_eig" not in vacuity_report, out
+
+    mod = _audit_against(tmp_path, monkeypatch, _mock_res(), _mock_res(eig_shift={"zero_eig": 0.02}))
+    with pytest.raises(SystemExit) as exc:      # outside it: fails on the floor, with the floor named
+        mod.audit()
+    assert "zero_eig" in str(exc.value) and "floor 0.01 abs" in str(exc.value)
