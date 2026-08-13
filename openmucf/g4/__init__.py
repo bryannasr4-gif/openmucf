@@ -10,6 +10,12 @@ This subpackage is **self-contained by rule**: it may not import ``openmucf.cycl
 ``.calibrate`` or ``.formation``. The rule is enforced by a test, not by this docstring, so that the
 data layer can be lifted out into its own distribution without dragging a fusion-kinetics stack
 behind it. Nothing is imported eagerly here; the submodules load on first attribute access.
+
+The fence is what makes that lift possible; it does not deliver it yet, and the difference is worth
+stating rather than letting a reader infer it. The **parent** package still imports eagerly, so
+``import openmucf.g4.spec`` today pulls in ``jax`` and the kinetics modules through
+``openmucf/__init__.py`` -- measured at 926 modules and ~1.4 s. Making the parent lazy is a change to
+this project's public import surface and belongs to the extraction, not here.
 """
 
 from __future__ import annotations

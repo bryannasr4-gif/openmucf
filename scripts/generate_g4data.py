@@ -65,14 +65,11 @@ def load_layer2() -> tuple[bytes, provenance.ProvDocument]:
     stops matching what a reader downloads.
     """
     raw = LAYER2_PATH.read_bytes()
-    document = provenance.from_json_obj(json.loads(raw.decode("ascii")))
-    if provenance.document_bytes(document) != raw:
-        raise SystemExit(
-            f"{LAYER2_PATH.relative_to(ROOT)} is valid but NOT in canonical form (sorted keys, "
-            "two-space indent, ASCII-escaped, one trailing newline). Rewrite it with "
-            "openmucf.g4.provenance.document_bytes()."
-        )
-    return raw, document
+    try:
+        provenance.check_canonical_bytes(raw)
+    except ValueError as exc:
+        raise SystemExit(f"{LAYER2_PATH.relative_to(ROOT)}: {exc}") from None
+    return raw, provenance.from_json_obj(json.loads(raw.decode("ascii")))
 
 
 def build_table(raw: bytes, document: provenance.ProvDocument) -> spec.G4DatTable:
@@ -99,7 +96,10 @@ def build_table(raw: bytes, document: provenance.ProvDocument) -> spec.G4DatTabl
     table = spec.G4DatTable(directives=directives, records=EXAMPLE_RECORDS)
     spec.validate(table)
     provenance.check_against_table(table, document)
-    provenance.check_source_digest(table, raw)  # E009 if the digest and the file ever disagree
+    # A wiring assertion, not an integrity check: the digest three lines up was just derived from
+    # `raw`, so this can only fire if a caller hands build_table() two different byte strings. The
+    # integrity check that has teeth is in audit(), against the two COMMITTED files.
+    provenance.check_source_digest(table, raw)
     return table
 
 
@@ -157,8 +157,15 @@ def audit() -> None:
         {LAYER1_PATH.name: artifacts[LAYER1_PATH], LAYER2_PATH.name: LAYER2_PATH.read_bytes()}
     ) != archive:
         raise SystemExit("g4data audit FAILED: two archive builds in one process differ")
+    # The cross-layer invariant, exercised where it is not a tautology: the digest inside the
+    # COMMITTED Layer-1 file against the bytes of the COMMITTED Layer-2 file, both read from disk.
+    # Regenerating and byte-comparing would catch the same drift, but as "an artifact moved" rather
+    # than as E009 naming the two layers -- and E009 is the diagnosis a consumer would get.
+    committed = spec.parse(LAYER1_PATH.read_bytes().decode("ascii"))
+    provenance.check_source_digest(committed, LAYER2_PATH.read_bytes())
     print(
         f"g4data audit OK: {len(artifacts)} artifact(s) byte-identical to the committed copy; "
+        f"committed cross-layer digest verified (E009 clean); "
         f"archive reproducible in-process (md5={emit.tarball_md5(archive)})"
     )
 

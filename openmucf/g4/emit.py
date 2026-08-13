@@ -9,14 +9,16 @@ permission bits field; a gzip container carries an mtime and, if you let it, the
 Every one of those is a channel through which the machine that built the archive leaks into the
 archive's bytes -- and an artifact whose bytes depend on who built it cannot be byte-diff audited,
 cannot be checksummed once and shipped, and cannot be reproduced by a reader checking our work. All
-of them are pinned here (``FORMAT_SPEC.md`` section 8), entries are written in sorted name order, and
-the archive is a pure function of ``{name: bytes}``.
+of them are pinned here; ``FORMAT_SPEC.md`` **section 8** is the normative statement of the same
+table, so an outside reader can rebuild the archive and verify its ``MD5SUM`` without this file.
+Entries are written in sorted name order, and the archive is a pure function of ``{name: bytes}``.
 
-One honest limit, stated rather than implied: the *container* metadata this module writes is fixed by
-construction, but the DEFLATE stream inside it comes from zlib, and two zlib builds are not
-guaranteed to emit byte-identical compressed output for the same input. Container determinism is
-therefore asserted directly (:func:`gzip_header`), and whole-archive determinism is proven per
-platform by test and by CI rather than assumed from this docstring.
+One honest limit, stated rather than implied (and disclosed in section 8, not only here): the
+*container* metadata this module writes is fixed by construction, but the DEFLATE stream inside it
+comes from zlib, and two zlib builds are not guaranteed to emit byte-identical compressed output for
+the same input. Container determinism is therefore asserted directly (:func:`gzip_header`), and
+whole-archive determinism is proven per platform by test and by CI rather than assumed from this
+docstring.
 
 Standard library only, and no import of the kinetics modules (enforced by test, not by comment).
 """

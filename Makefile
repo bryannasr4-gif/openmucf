@@ -79,10 +79,19 @@ neutronomics:
 design:
 	python scripts/generate_design.py
 
-# Example G4MuonicData dataset (Layer 1 + the geant4_add_dataset snippet). Both are pure
-# deterministic text rendered from the hand-authored Layer-2 file (no MCMC/solver), so BOTH join the
-# audit git-diff list below. The .tar.gz itself is a build product and is NOT committed; its
-# determinism is proven by tests/test_g4spec.py and its MD5 is written into the snippet.
+# Example G4MuonicData dataset (Layer 1 + the geant4_add_dataset snippet). BOTH join the audit
+# git-diff list below, but they are NOT the same kind of artifact and the difference matters:
+#   example.g4dat            -- pure deterministic text rendered from the hand-authored Layer-2 file
+#                               (no MCMC/solver), byte-stable on every platform.
+#   geant4_add_dataset.snippet -- deterministic text EXCEPT for one field: MD5SUM is the MD5 of the
+#                               archive, i.e. of a gzip DEFLATE stream. zlib does not guarantee
+#                               byte-identical compressed output across builds, so this line is
+#                               stable for a given zlib, not by construction (FORMAT_SPEC.md 8).
+#                               Measured identical on Windows/x86-64, ubuntu/x86-64 and macOS/arm64;
+#                               a runner-image zlib change would red this target for a reason that
+#                               has nothing to do with the data. Re-run `make g4data` and recommit.
+# The .tar.gz itself is a build product and is NOT committed; its determinism is proven by
+# tests/test_g4spec.py and its MD5 is written into the snippet.
 g4data:
 	python scripts/generate_g4data.py
 

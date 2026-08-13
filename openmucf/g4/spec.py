@@ -68,14 +68,27 @@ INTEGER_MAX = 9999
 ALLOWED_SEAMS = ("d1_nuclear_capture", "d2_atomic_capture", "d3_transitions", "d4_mucf_cycle")
 PARITY_PROFILE = "parity"
 END_MARKER = "#END"
+#: The terminator's keyword. Deliberately NOT in :data:`DIRECTIVE_ORDER`: ``#END`` is not a
+#: directive, and letting the directive machinery diagnose it is what made ``#END x`` report two
+#: different false messages depending on whether records preceded it.
+END_KEYWORD = "END"
 
 #: A profile token. The set is deliberately open so that N competing evaluations coexist, each as
 #: its own file rather than as extra columns (``FORMAT_SPEC.md`` section 2.5).
 PROFILE_PATTERN = re.compile(r"^[a-z][a-z0-9_-]{2,31}$")
 
 _DIRECTIVE_PATTERN = re.compile(r"^#([A-Z][A-Z0-9]*)(?:[ \t]+(.*))?$")
-_GRAMMAR_PATTERN = re.compile(r"^(\d+)\.(\d+)$")
+#: ``MAJOR.MINOR`` with no leading zeros. Permitting them would let ``01.0`` and ``1.0`` be two
+#: spellings of one version in a format whose whole identity discipline is byte-exactness -- and two
+#: C++ readers would then differ on whether they are the same grammar.
+_GRAMMAR_PATTERN = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 _INTEGER_PATTERN = re.compile(r"^[0-9]+$")
+#: ``#SOURCEDIGEST`` carries the invariant binding Layer 1 to Layer 2, so its shape is checked by the
+#: reader itself: a standalone Layer-1 validator has no Layer-2 file and therefore cannot raise E009,
+#: which would otherwise leave the field entirely unchecked.
+_SOURCEDIGEST_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+#: A ``#COLUMNS`` name -- the same ``NAME`` production the ``#UNITS``/``#VALIDITY`` sub-grammars use.
+_COLUMN_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 #: Strict C-locale float. A comma decimal separator does not match, and that is the point: it is a
 #: syntax error, never a silent truncation.
 _FLOAT_PATTERN = re.compile(r"^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$")
@@ -152,7 +165,11 @@ def _check_grammar(value: str, line: int) -> None:
     """E010: reject a ``#GRAMMAR`` major we do not implement, or a version we cannot read at all."""
     match = _GRAMMAR_PATTERN.match(value)
     if match is None:
-        raise G4DatFormatError("E010", line, f"unreadable '#GRAMMAR' version {value!r}; expected MAJOR.MINOR")
+        raise G4DatFormatError(
+            "E010",
+            line,
+            f"unreadable '#GRAMMAR' version {value!r}; expected MAJOR.MINOR without leading zeros",
+        )
     major = int(match.group(1))
     if major != SUPPORTED_GRAMMAR_MAJOR:
         raise G4DatFormatError(
@@ -168,6 +185,17 @@ def _check_header(directives: dict[str, str], dline: _DirectiveLine) -> None:
     for keyword in REQUIRED_DIRECTIVES:
         if keyword not in directives:
             raise G4DatFormatError("E002", dline(keyword), f"missing required directive '#{keyword}'")
+        # An EMPTY value counts as ABSENT, for every required directive. The rule was written for
+        # `#SOURCESHA` (E013) and it generalizes: a `#PROFILE` with nothing after it has not told the
+        # reader which evaluation the file carries, and saying so is more useful than reporting the
+        # empty string as a malformed token. Without this, six of the thirteen directives accepted an
+        # empty value in silence, and an empty `#COLUMNS` made every blank line a conforming record.
+        if not directives[keyword]:
+            raise G4DatFormatError(
+                "E002",
+                dline(keyword),
+                f"required directive '#{keyword}' has an empty value, which counts as absent",
+            )
 
     _check_grammar(directives["GRAMMAR"], dline("GRAMMAR"))
 
@@ -180,6 +208,31 @@ def _check_header(directives: dict[str, str], dline: _DirectiveLine) -> None:
     if seam not in ALLOWED_SEAMS:
         raise G4DatFormatError(
             "E016", dline("SEAM"), f"'#SEAM' value {seam!r} is not one of {', '.join(ALLOWED_SEAMS)}"
+        )
+    # The digest's shape, checked without Layer 2 present. E009 compares it against the Layer-2 file
+    # and needs that file; a standalone Layer-1 validator has only this.
+    digest = directives["SOURCEDIGEST"]
+    if _SOURCEDIGEST_PATTERN.match(digest) is None:
+        raise G4DatFormatError(
+            "E016",
+            dline("SOURCEDIGEST"),
+            f"'#SOURCEDIGEST' value {digest!r} is not 64 lowercase hex characters",
+        )
+    # Column names must be well formed and DISTINCT: the primary key is "whichever of Z and A the
+    # table declares", which means nothing on a table that declares Z twice -- the key would silently
+    # take the first and the second column would be an unreachable duplicate.
+    columns = _split_fields(directives["COLUMNS"])
+    for name in columns:
+        if _COLUMN_NAME_PATTERN.match(name) is None:
+            raise G4DatFormatError(
+                "E016",
+                dline("COLUMNS"),
+                f"'#COLUMNS' name {name!r} is not a {_COLUMN_NAME_PATTERN.pattern} token",
+            )
+    duplicates = sorted({name for name in columns if columns.count(name) > 1})
+    if duplicates:
+        raise G4DatFormatError(
+            "E016", dline("COLUMNS"), f"'#COLUMNS' repeats the name(s) {', '.join(duplicates)}"
         )
 
     # "required iff parity", enforced in both directions: a parity file must name the revision it
@@ -456,6 +509,16 @@ def parse(text: str) -> G4DatTable:
             continue
 
         if line.startswith("#"):
+            # A terminator carrying content, before anything else can mislabel it. `END` is not a
+            # directive, so the directive machinery had two false things to say about `#END x`:
+            # "unknown directive '#END'" with no records before it, and "'#END' appears after the
+            # record block began" with records before it. Same defect, two codes, both lying.
+            terminator = _DIRECTIVE_PATTERN.match(line)
+            if terminator is not None and terminator.group(1) == END_KEYWORD:
+                trailing = (terminator.group(2) or "").strip(" \t")
+                raise G4DatFormatError(
+                    "E011", lineno, f"the '{END_MARKER}' terminator line carries content: {trailing!r}"
+                )
             if columns is not None:
                 raise G4DatFormatError(
                     "E003", lineno, f"directive {line.split()[0]!r} appears after the record block began"
@@ -464,7 +527,10 @@ def parse(text: str) -> G4DatTable:
             index = DIRECTIVE_ORDER.index(keyword)
             if index <= order_index:
                 previous = DIRECTIVE_ORDER[order_index]
-                detail = "repeated" if keyword == previous else f"must precede '#{previous}'"
+                # "repeated" whenever the keyword is already present -- not only when it immediately
+                # follows its twin. A duplicate with anything in between is still a duplicate, and
+                # "must precede '#VALIDITY'" hides that.
+                detail = "repeated" if keyword in directives else f"must precede '#{previous}'"
                 raise G4DatFormatError("E003", lineno, f"directive '#{keyword}' is out of order ({detail})")
             order_index = index
             directives[keyword] = value
@@ -502,18 +568,19 @@ def parse(text: str) -> G4DatTable:
 # --------------------------------------------------------------------------------------------
 
 
+def _scan_order(directives: dict[str, str]) -> list[str]:
+    """The directives in the order :func:`render` lays them out: the known ones in their one legal
+    order, then any unknown key sorted. A pure function of the key SET, so two tables holding the
+    same directives are diagnosed identically however they were built."""
+    known = [keyword for keyword in DIRECTIVE_ORDER if keyword in directives]
+    return known + sorted(k for k in directives if k not in DIRECTIVE_ORDER)
+
+
 def _canonical_lines(directives: dict[str, str]) -> tuple[_DirectiveLine, _RecordLine]:
     """Line numbers as :func:`render` would lay the table out, so validate and parse report alike."""
-    lines: dict[str, int] = {}
-    count = 0
-    for keyword in DIRECTIVE_ORDER:
-        if keyword in directives:
-            count += 1
-            lines[keyword] = count
-    for keyword in sorted(k for k in directives if k not in DIRECTIVE_ORDER):
-        count += 1
-        lines[keyword] = count
-    header_lines = count
+    order = _scan_order(directives)  # one source of truth for "what order is canonical"
+    lines: dict[str, int] = {keyword: index for index, keyword in enumerate(order, start=1)}
+    header_lines = len(order)
 
     def dline(keyword: str) -> int:
         if keyword in lines:
@@ -539,7 +606,13 @@ def validate(table: G4DatTable) -> None:
     error, and the section-4 codes stay exactly the sixteen file-level conditions.
     """
     directives = table.directives
-    for keyword, value in directives.items():
+    # Every scan below runs in CANONICAL order -- the order render() lays the table out in -- and
+    # never in dict insertion order. Otherwise the same table, built by two callers who inserted the
+    # same directives in different orders, is rejected with two different diagnoses; section 4 exists
+    # precisely so that two implementations cannot disagree about a file they both reject.
+    order = _scan_order(directives)
+    for keyword in order:
+        value = directives[keyword]
         if not isinstance(keyword, str) or not isinstance(value, str):
             raise ValueError(f"directive {keyword!r} must map a str keyword to a str value, got {value!r}")
         if value != value.strip():
@@ -552,18 +625,22 @@ def validate(table: G4DatTable) -> None:
 
     dline, rline = _canonical_lines(directives)
 
-    for keyword, value in directives.items():
+    # Phase 1 (section 4): the byte-set check over the whole table, then carriage returns, then the
+    # per-line phase. parse() runs E005 over the whole text before it splits lines at all, so
+    # validate() must too, or an in-memory table and the file it renders to would report differently.
+    for keyword in order:
         # The same byte set parse() enforces, not merely "is it ASCII": a directive value carrying a
         # VT or FF is ASCII, renders fine, and would then be rejected by parse() as E005 -- which
         # would break the round-trip guarantee at the one place nothing else checks.
-        offending = _FORBIDDEN_BYTE.search(keyword) or _FORBIDDEN_BYTE.search(value)
+        offending = _FORBIDDEN_BYTE.search(keyword) or _FORBIDDEN_BYTE.search(directives[keyword])
         if offending is not None:
             raise G4DatFormatError(
                 "E005", dline(keyword), f"{_byte_detail(offending.group())} in directive '#{keyword}'"
             )
-        if "\r" in value:
+    for keyword in order:
+        if "\r" in directives[keyword]:
             raise G4DatFormatError("E006", dline(keyword), f"carriage return in directive '#{keyword}'")
-    for keyword in directives:
+    for keyword in order:
         if keyword not in DIRECTIVE_ORDER:
             raise G4DatFormatError("E001", dline(keyword), f"unknown directive '#{keyword}'")
 

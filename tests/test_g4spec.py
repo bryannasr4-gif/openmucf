@@ -27,6 +27,7 @@ import tomllib
 
 import pytest
 
+import openmucf
 from openmucf.g4 import emit, provenance, spec
 from openmucf.g4.spec import G4DatFormatError, G4DatTable
 
@@ -61,6 +62,12 @@ def make_table(records=RECORDS, **overrides) -> G4DatTable:
 
 
 CANONICAL = spec.render(make_table())
+#: The 13 directive lines alone -- no records, no `#END`. A file that never closes its directive
+#: block, which is the shape a truncated download has and the case section 4's reporting order turns
+#: on.
+HEADER_ONLY = "".join(
+    line for line in CANONICAL.splitlines(keepends=True) if line.startswith("#") and line != "#END\n"
+)
 
 
 def drop_line(text: str, prefix: str) -> str:
@@ -146,6 +153,29 @@ def test_t02_e002_missing_required_directive():
     assert (error.code, error.line) == ("E002", 13)  # 12 directives left, first record on line 13
     assert "'#VALIDITY'" in str(error)
 
+    # An EMPTY value counts as ABSENT for every required directive, not only for `#SOURCESHA`, and
+    # is reported at its own line. Six of the thirteen directives used to accept one in silence: a
+    # `#SOURCEDIGEST` with nothing after it parsed, validated and round-tripped, carrying the
+    # invariant that binds the two layers as the empty string.
+    for keyword, line in (
+        ("DATASET", 2),
+        ("VERSION", 3),
+        ("TABLE", 6),
+        ("GENERATOR", 7),
+        ("SOURCEDIGEST", 8),
+        ("UNITS", 10),
+        ("COLUMNS", 11),
+        ("VALIDITY", 12),
+    ):
+        from_file = rejected(replace_line(CANONICAL, f"#{keyword}", f"#{keyword}"))
+        assert (from_file.code, from_file.line) == ("E002", line), keyword
+        assert "empty value" in str(from_file), keyword
+        in_memory = rejected_table(make_table(**{keyword: ""}))
+        assert (in_memory.code, in_memory.line) == ("E002", line), keyword
+
+    # `#FALLBACK` is optional, so an empty one is absent and that is simply allowed.
+    assert spec.validate(make_table(FALLBACK="")) is None
+
 
 def test_t03_e003_directive_out_of_order():
     version, profile = "#VERSION      1.0.0\n", "#PROFILE      parity\n"
@@ -154,8 +184,17 @@ def test_t03_e003_directive_out_of_order():
     units = "#UNITS        rate=1e6/s\n"
     repeated = rejected(CANONICAL.replace(units, units + units))
     assert (repeated.code, repeated.line) == ("E003", 11)
+    assert "(repeated)" in str(repeated)
     trailing = rejected(CANONICAL.replace("#END", "#UNITS        rate=1e6/s\n#END"))
     assert (trailing.code, trailing.line) == ("E003", 17)
+
+    # A duplicate is a duplicate wherever it lands. The detail used to say "repeated" only when the
+    # copy immediately followed its twin and "must precede '#VALIDITY'" otherwise -- a true sentence
+    # that hides the more useful fact, and one that made the message depend on incidental position.
+    fallback = "#FALLBACK     goulard_primakoff b0a=-0.03 b0b=-0.25 b0c=3.24 t1=875e-9\n"
+    separated = rejected(CANONICAL.replace(fallback, units + fallback))
+    assert (separated.code, separated.line) == ("E003", 13)
+    assert "(repeated)" in str(separated)
 
 
 def test_t04_e004_record_field_count():
@@ -266,6 +305,16 @@ def test_t10_e010_unsupported_grammar_major():
     assert (unreadable.code, unreadable.line) == ("E010", 1)
     assert spec.parse(replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      1.7")).directives["GRAMMAR"] == "1.7"
 
+    # One version, one spelling. `01.0` names the same major as `1.0`, so a reader that accepts both
+    # lets two byte-different files declare the same grammar -- in a format whose entire identity
+    # discipline is byte-exactness, and whose C++ readers would each pick their own rule for it.
+    for malformed in ("01.0", "1.00", "1.0.0", "0001.0", "+1.0", "v1.0", "1.", ".0", "1"):
+        bad = rejected(replace_line(CANONICAL, "#GRAMMAR", f"#GRAMMAR      {malformed}"))
+        assert (bad.code, bad.line) == ("E010", 1), malformed
+    two_digit = spec.parse(replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      1.10"))
+    assert two_digit.directives["GRAMMAR"] == "1.10"  # a two-digit MINOR is not a leading zero
+    assert rejected(replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      0.9")).code == "E010"  # major 0
+
     validity = "#VALIDITY     Z:1-94 A:natural_and_listed\n"
     fallback = "#FALLBACK     goulard_primakoff b0a=-0.03 b0b=-0.25 b0c=3.24 t1=875e-9\n"
     out_of_order = replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR      9.0").replace(
@@ -289,6 +338,25 @@ def test_t11_e011_content_after_end():
     blank_after = rejected(CANONICAL + "\n")
     assert (blank_after.code, blank_after.line) == ("E011", END_LINE + 1)
 
+    # Content ON the terminator line, which is the same defect one line earlier. `#END` is not a
+    # directive, and letting the directive machinery diagnose it produced two different FALSE
+    # messages for one file shape: "unknown directive '#END'" when no record preceded it, and
+    # "'#END' appears after the record block began" when one did. Now: E011, at that line, always.
+    with_records = rejected(CANONICAL.replace("#END", "#END x"))
+    assert (with_records.code, with_records.line) == ("E011", END_LINE)
+    assert str(with_records) == f"E011: the '#END' terminator line carries content: 'x' (line {END_LINE})"
+    empty_table = HEADER_ONLY + "#END\n"
+    assert empty_table.count("\n") == 14 and empty_table.endswith("#END\n")
+    no_records = rejected(empty_table.replace("#END", "#END x"))
+    assert (no_records.code, no_records.line) == ("E011", 14)
+    assert str(no_records) == "E011: the '#END' terminator line carries content: 'x' (line 14)"
+
+    # `#ENDX` is a different thing -- a directive claiming that name -- and stays diagnosed as one.
+    assert rejected(CANONICAL.replace("#END", "#ENDX")).code == "E003"
+    assert rejected(empty_table.replace("#END", "#ENDX")).code == "E001"
+    # Trailing spaces and tabs after `#END` are still ignored (section 2.4).
+    assert spec.parse(CANONICAL.replace("#END", "#END  \t")) == make_table()
+
 
 def test_t12_e012_missing_end():
     error = rejected(drop_line(CANONICAL, "#END"))
@@ -296,6 +364,25 @@ def test_t12_e012_missing_end():
     unterminated = rejected(CANONICAL.rstrip("\n"))
     assert (unterminated.code, unterminated.line) == ("E012", END_LINE)
     assert "newline" in str(unterminated)
+
+    # The directive block closes at the FIRST RECORD LINE or at `#END`, whichever comes first, and
+    # the header checks run there. So the same header defect reports differently depending on
+    # whether the file has records -- and both answers are right. FORMAT_SPEC section 4 stated a
+    # total order that got the truncated case backwards, which is the case Stage 3's C++ reader
+    # would have inherited: a truncated download is the ordinary way this format breaks.
+    for keyword in ("VALIDITY", "UNITS"):
+        with_records = rejected(drop_line(CANONICAL, f"#{keyword}").replace("#END\n", ""))
+        assert with_records.code == "E002", keyword  # the block closed at the first record line
+        without_records = rejected(drop_line(HEADER_ONLY, f"#{keyword}"))
+        assert without_records.code == "E012", keyword  # the block never closes; E012 wins
+    bad_seam = replace_line(HEADER_ONLY, "#SEAM", "#SEAM         d9_not_a_seam")
+    assert rejected(bad_seam).code == "E012"
+    assert rejected(bad_seam + "#END\n").code == "E016"  # the control: close the block and E016 fires
+    parity_gap = drop_line(HEADER_ONLY, "#SOURCESHA")
+    assert rejected(parity_gap).code == "E012"
+    assert rejected(parity_gap + "#END\n").code == "E013"
+    # E010 stays the deliberate exception: eager at its own line, so it preempts even this.
+    assert rejected(replace_line(HEADER_ONLY, "#GRAMMAR", "#GRAMMAR      9.0")).code == "E010"
 
 
 def test_t13_e013_parity_without_sourcesha():
@@ -376,11 +463,43 @@ def test_t15_e015_records_not_sorted():
     assert "ascending Z order" in str(z_only)
 
 
-def test_t16_e016_profile_or_seam_outside_allowed_set():
+def test_t16_e016_directive_value_outside_its_allowed_form():
     seam = rejected(replace_line(CANONICAL, "#SEAM", "#SEAM         d9_not_a_seam"))
     assert (seam.code, seam.line) == ("E016", 5)
     profile = rejected(replace_line(CANONICAL, "#PROFILE", "#PROFILE      Parity"))
     assert (profile.code, profile.line) == ("E016", 4)
+
+    # `#SOURCEDIGEST` carries section 1's binding invariant, and E009 -- the only check it had --
+    # needs the Layer-2 file. Stage 3's standalone Layer-1 validator will not have one, so without a
+    # lexical rule the field is unchecked: `not-a-sha256`, 63 hex, and 64 UPPERCASE hex all parsed,
+    # validated AND round-tripped.
+    for digest in (
+        "not-a-sha256",
+        "0" * 63,
+        "0" * 65,
+        "0" * 63 + "g",
+        ("0" * 63 + "A").upper(),
+        "0" * 32 + " " + "0" * 31,
+    ):
+        error = rejected_table(make_table(SOURCEDIGEST=digest))
+        assert (error.code, error.line) == ("E016", 8), digest
+        assert "64 lowercase hex" in str(error), digest
+    assert spec.validate(make_table(SOURCEDIGEST="0123456789abcdef" * 4)) is None
+
+    # `#COLUMNS` names must be well formed and DISTINCT. `Z A Z value` used to validate, with the
+    # key silently taking the first `Z` and the second column unreachable -- while section 2.3 rule 6
+    # says the key is "whichever of Z and A the table declares", which that table makes meaningless.
+    repeated = rejected_table(make_table(COLUMNS="Z A Z value", records=((1, 1, 1, 0.5),)))
+    assert (repeated.code, repeated.line) == ("E016", 11)
+    assert "repeats the name(s) Z" in str(repeated)
+    for name, arity in (("9value", 3), ("val-ue", 3), ("val.ue", 3), ("value!", 3)):
+        columns = f"Z A {name}"
+        error = rejected_table(make_table(COLUMNS=columns, records=((1, 1, 0.5),) * 1))
+        assert (error.code, error.line) == ("E016", 11), columns
+        assert len(spec._split_fields(columns)) == arity, columns
+    # A non-ASCII column name is caught one phase earlier, by the byte-set rule, and stays E005.
+    assert rejected_table(make_table(COLUMNS="Z A µ", records=((1, 1, 0.5),))).code == "E005"
+    assert spec.validate(make_table(COLUMNS="Z A value _unc2", records=((1, 1, 0.5, 0.1),))) is None
 
 
 # --------------------------------------------------------------------------------------------
@@ -549,9 +668,14 @@ def test_t22_profile_allowed_set_accepted():
 
 
 def test_t23_profile_outside_allowed_set_rejected():
-    for profile in ("Parity", "ab", "a" * 33, "9lives", "has space", "trailing!", ""):
+    for profile in ("Parity", "ab", "a" * 33, "9lives", "has space", "trailing!"):
         error = rejected_table(make_table(PROFILE=profile, SOURCESHA=None))
         assert (error.code, error.line) == ("E016", 4), profile
+    # An EMPTY value is ABSENT, not malformed: this case moved from E016 to E002 deliberately, under
+    # the rule that generalizes section 2.2's empty-counts-as-absent to every required directive.
+    # "You have not said which evaluation this file carries" beats "'' is not a token".
+    empty = rejected_table(make_table(PROFILE="", SOURCESHA=None))
+    assert (empty.code, empty.line) == ("E002", 4)
 
 
 def test_t24_seam_allowed_set():
@@ -563,9 +687,11 @@ def test_t24_seam_allowed_set():
         "d3_transitions",
         "d4_mucf_cycle",
     )
-    for seam in ("d5_unknown", "D1_NUCLEAR_CAPTURE", "nuclear_capture", ""):
+    for seam in ("d5_unknown", "D1_NUCLEAR_CAPTURE", "nuclear_capture"):
         error = rejected_table(make_table(SEAM=seam))
         assert (error.code, error.line) == ("E016", 5), seam
+    empty = rejected_table(make_table(SEAM=""))  # absent, not malformed -- see T-23
+    assert (empty.code, empty.line) == ("E002", 5)
 
 
 def test_t25_sourcesha_required_iff_parity():
@@ -604,6 +730,28 @@ def test_t26_layer2_schema_round_trip():
     assert provenance.render_json(document) == text  # canonical: sorted keys, fixed indent
     with pytest.raises(ValueError, match="unknown field"):
         provenance.from_json_obj({**provenance.to_json_obj(document), "extra": 1})
+
+    # The canonical form is NORMATIVE (section 3) because the digest is taken over these bytes, and
+    # the check has to live in the shipped package: `packages` ships openmucf and openmucf.g4, not
+    # scripts/, so a rule enforced only by a build script is a rule no installed consumer can apply.
+    assert "check_canonical_bytes" in provenance.__all__
+    canonical = provenance.document_bytes(document)
+    assert provenance.check_canonical_bytes(canonical) is None
+    obj = provenance.to_json_obj(document)
+    for label, variant in (
+        ("re-indented", json.dumps(obj, sort_keys=True, indent=4, ensure_ascii=True) + "\n"),
+        ("compact", json.dumps(obj, sort_keys=True, ensure_ascii=True) + "\n"),
+        ("keys unsorted", json.dumps({"rows": obj["rows"], **obj}, indent=2, ensure_ascii=True) + "\n"),
+        ("no trailing newline", json.dumps(obj, sort_keys=True, indent=2, ensure_ascii=True)),
+        ("CRLF", (json.dumps(obj, sort_keys=True, indent=2, ensure_ascii=True) + "\n").replace("\n", "\r\n")),
+    ):
+        with pytest.raises(ValueError, match="canonical"):
+            provenance.check_canonical_bytes(variant.encode("ascii"))
+        assert provenance.source_digest(variant.encode("ascii")) != provenance.source_digest(canonical), label
+    with pytest.raises(ValueError, match="not ASCII JSON"):
+        provenance.check_canonical_bytes(b"\xef\xbb\xbf{}")
+    with pytest.raises(ValueError, match="not ASCII JSON"):
+        provenance.check_canonical_bytes(b"{not json")
 
 
 def test_t27_source_digest_matches():
@@ -725,6 +873,13 @@ def test_t34_import_fence():
         checked.add(path.name)
     assert checked == {"__init__.py", "spec.py", "provenance.py", "emit.py"}
 
+    # A layout invariant that is currently satisfied with exactly one space to spare, and that a
+    # future directive would break silently: `#SOURCEDIGEST` is 13 characters, the pad is 14, so the
+    # longest directive line has a single separator. A 13-character directive NAME would render with
+    # none at all, and the line would come back as E001.
+    longest = max(len("#" + keyword) for keyword in spec.DIRECTIVE_ORDER)
+    assert longest + 1 <= spec._KEYWORD_WIDTH, "a directive name has outgrown the keyword pad"
+
 
 # --------------------------------------------------------------------------------------------
 # T-35..T-37 -- the archive, the digest on disk, and the committed example
@@ -822,11 +977,27 @@ def test_t37_committed_example_regenerates_and_ships():
     assert "g4data audit OK" in result.stdout
 
     committed = (G4DIR / "example.g4dat").read_bytes()
+    layer2 = (G4DIR / "example.prov.json").read_bytes()
+    # `.gitattributes` marks `data/g4/* -text` and that line is load-bearing on any checkout with
+    # core.autocrlf set: example.prov.json IS the byte range #SOURCEDIGEST is taken over, so a CRLF
+    # checkout changes the digest, and example.g4dat is LF-only by E006. Assert both directly, so
+    # deleting the attribute names its own cause on the windows job instead of surfacing as a
+    # digest mismatch nobody can explain.
     assert b"\r" not in committed, "the checkout rewrote the dataset's line endings"
+    assert b"\r" not in layer2, "the checkout rewrote the Layer-2 file the digest is taken over"
+    provenance.check_canonical_bytes(layer2)
     table = spec.parse(committed.decode("ascii"))
     assert table.directives["DATASET"] == "G4MuonicData"
-    assert table.directives["SOURCEDIGEST"] == provenance.source_digest(
-        (G4DIR / "example.prov.json").read_bytes()
+    assert table.directives["SOURCEDIGEST"] == provenance.source_digest(layer2)
+
+    # #GENERATOR embeds openmucf.__version__, deliberately: a consumer holding a broken file needs
+    # to know which tool version made it. The cost is that a version bump changes these bytes and
+    # the archive MD5, so `make audit` goes red until the dataset is regenerated. That coupling is
+    # made loud HERE, with the remedy in the message, rather than discovered as a byte-diff.
+    assert table.directives["GENERATOR"] == f"openmucf-g4 {openmucf.__version__}", (
+        "openmucf.__version__ has moved but data/g4/ was not regenerated: run "
+        "`python scripts/generate_g4data.py` and commit example.g4dat AND "
+        "geant4_add_dataset.snippet (its MD5SUM changes too)"
     )
     # Nothing synthetic wears a physics label: every row says what it is, in the file itself.
     document = provenance.from_json_obj(json.loads((G4DIR / "example.prov.json").read_text("ascii")))
@@ -841,3 +1012,67 @@ def test_t37_committed_example_regenerates_and_ships():
 
     declared = tomllib.loads((REPO / "pyproject.toml").read_text("utf-8"))
     assert "openmucf.g4" in declared["tool"]["setuptools"]["packages"]
+
+
+# --------------------------------------------------------------------------------------------
+# T-38..T-39 -- diagnosis determinism, and the one write path that actually exists
+# --------------------------------------------------------------------------------------------
+
+
+def test_t38_validate_diagnosis_is_independent_of_insertion_order():
+    """Two tables holding the same directives must be rejected identically, however they were built.
+
+    Section 4 exists so that two implementations cannot disagree about a file they both reject; a
+    diagnosis that depends on `dict` insertion order fails that inside a single implementation. It
+    did: the same directives inserted forward and reversed reported E005 on line 9 versus line 12,
+    and two unknown directives reported E001 on line 13 versus line 12. T-20 pins the same property
+    for `render`, which is where the requirement comes from -- validate() and render() must agree
+    about what "canonical order" means, because validate() reports the lines render() would emit.
+    """
+
+    def both_orders(**overrides) -> tuple[str, str]:
+        forward = make_table(**overrides)
+        reversed_table = G4DatTable(
+            directives=dict(reversed(list(forward.directives.items()))), records=forward.records
+        )
+        assert forward.directives == reversed_table.directives  # same content, opposite layout
+        assert list(forward.directives) != list(reversed_table.directives)
+        return str(rejected_table(forward)), str(rejected_table(reversed_table))
+
+    # Two E005 candidates on different lines: whichever is canonically FIRST must win, both times.
+    forward, backward = both_orders(UNITS="rate=1e6\x0b/s", FALLBACK="model\x0cx=1")
+    assert forward == backward == "E005: control character '\\x0b' (0x0B) in directive '#UNITS' (line 10)"
+
+    # Two unknown directives: the canonical order sorts them, so the answer cannot depend on which
+    # was inserted first. (Their line numbers are notional either way -- render never emits one.)
+    forward, backward = both_orders(AAA="x", ZZZ="y")
+    assert forward == backward and forward.startswith("E001: unknown directive '#AAA'")
+
+    # And a header defect competing with a record defect resolves the same way from either layout.
+    forward, backward = both_orders(SEAM="d9_nope", records=((1, 1, 0.5, 0.1), (1, 1, 0.5, 0.1)))
+    assert forward == backward and forward.startswith("E016: '#SEAM'")
+
+
+def test_t39_the_generator_reads_layer_2_as_bytes():
+    """The digest is over the file's bytes, so the one product read path must be binary.
+
+    R3 asked for proof that the write path is binary; the project has no Layer-2 writer at all --
+    Layer 2 is hand-authored and only ever read -- so T-36 exercises `tarfile`'s writer plus its own
+    text-mode control. The property that DOES exist in product code is this one, and a `read_text`
+    here would rewrite CRLF on Windows and hand back bytes the file does not contain.
+    """
+    source = (REPO / "scripts" / "generate_g4data.py").read_text("utf-8")
+    tree = ast.parse(source)
+    reads = {
+        node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id in {"LAYER2_PATH", "LAYER1_PATH"}
+        and node.func.attr.startswith(("read", "write", "open"))
+    }
+    assert reads == {"read_bytes"}, f"Layer-1/Layer-2 I/O must be binary, found {sorted(reads)}"
+    assert "read_text" not in source and "open(" not in source
+    # The write side of the same rule, on the generated artifacts.
+    assert "write_bytes" in source and "write_text" not in source

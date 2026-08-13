@@ -42,6 +42,7 @@ __all__ = [
     "ProvDocument",
     "ProvRow",
     "check_against_table",
+    "check_canonical_bytes",
     "check_source_digest",
     "document_bytes",
     "from_json_obj",
@@ -233,6 +234,29 @@ def document_bytes(document: ProvDocument) -> bytes:
     """The exact bytes of the Layer-2 file. Write these; do not re-encode them in text mode, or a
     CRLF translation will change the file the digest was taken over."""
     return render_json(document).encode("ascii")
+
+
+def check_canonical_bytes(raw: bytes) -> None:
+    """Reject Layer-2 bytes that are valid JSON but not in the canonical form of section 3.
+
+    The canonical form is normative, for a mechanical reason: the digest is taken over the file's
+    bytes, so a re-indented or key-reordered file is a *different* Layer-2 file with a different
+    digest, and nothing downstream would say why. This check is here, in the shipped package, rather
+    than in the generator script -- ``packages`` ships ``openmucf`` and ``openmucf.g4`` and not
+    ``scripts/``, so a rule enforced only there is a rule no installed consumer can apply.
+    """
+    try:
+        obj = json.loads(raw.decode("ascii"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Layer-2 bytes are not ASCII JSON: {exc}") from None
+    canonical = document_bytes(from_json_obj(obj))
+    if raw != canonical:
+        raise ValueError(
+            "Layer-2 bytes are valid but NOT in canonical form (sorted keys, two-space indent, "
+            "ASCII-escaped, LF endings, exactly one trailing newline). The digest is taken over "
+            "these bytes, so the file must be written with document_bytes(): "
+            f"{len(raw)} bytes on disk, {len(canonical)} bytes canonical."
+        )
 
 
 def source_digest(data: bytes | ProvDocument) -> str:

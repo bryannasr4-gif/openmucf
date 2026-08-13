@@ -83,22 +83,50 @@ directive that should follow it, or that appears after the record block has begu
 `#GRAMMAR` is deliberately **separate from `#VERSION`**: one is the version of the format, the other
 the version of the data. Without that separation there is no backward-compatibility story at all.
 
+**A directive present with an empty value counts as absent.** For a **required** directive that is
+`E002`, reported at that directive's own line: a `#PROFILE` with nothing after it has not told the
+reader which evaluation the file carries, and saying so is more useful than reporting the empty
+string as a malformed token. For `#SOURCESHA` the same principle drives `E013` (below).
+
 `#SOURCESHA` is required **if and only if** `#PROFILE` is `parity`: a parity file exists to reproduce
 a specific upstream revision bit-for-bit, so it must name that revision; a non-parity file is not
-reproducing anything and must not claim to (`E013` in both directions). A directive present with an
-**empty value counts as absent** for this rule: `#SOURCESHA` with nothing after it is a parity file
-claiming to reproduce nothing, which is exactly the claim `E013` exists to stop.
+reproducing anything and must not claim to (`E013` in both directions). An empty `#SOURCESHA` is a
+parity file claiming to reproduce nothing, which is exactly the claim `E013` exists to stop.
 
 An analytic fallback is carried as declared data rather than as compiled-in behaviour so that it is
 versioned, testable, swappable and citable like any other row.
 
+#### Which values the reader itself checks
+
+Layer 1 enforces a lexical form on exactly those values that are **load-bearing for the reader**;
+every other value is one opaque string to it. This is a decision, not an omission, and the boundary
+is where it is for a reason:
+
+| Directive | Enforced form | Why the reader must check it |
+|---|---|---|
+| `#GRAMMAR` | `^(0\|[1-9]\d*)\.(0\|[1-9]\d*)$` (`E010`) | it decides whether to read the file at all |
+| `#SOURCEDIGEST` | exactly 64 lowercase hex characters, `^[0-9a-f]{64}$` (`E016`) | it carries section 1's binding invariant |
+| `#COLUMNS` | one or more names matching `^[A-Za-z_][A-Za-z0-9_]*$`, all **distinct** (`E016`) | it determines record arity and the primary key |
+| `#PROFILE`, `#SEAM` | the value sets of section 2.5 (`E016`) | they select the evaluation and the seam |
+
+`#SOURCEDIGEST` is checked lexically **as well as** against Layer 2 (`E009`) because a standalone
+Layer-1 validator has no Layer-2 file and could otherwise say nothing at all about the field the
+whole two-layer design rests on. Distinct `#COLUMNS` names matter for the same kind of reason:
+"the primary key is whichever of `Z` and `A` the table declares" (section 2.3 rule 6) means nothing
+on a table that declares `Z` twice, and the second column would be silently unreachable.
+
+`#DATASET`, `#VERSION`, `#TABLE`, `#GENERATOR` and `#SOURCESHA` are constrained **only** to being
+non-empty; grammar 1.0 pins no internal syntax for them. `#UNITS`, `#VALIDITY` and `#FALLBACK` are
+likewise one string to the reader — their sub-grammars, below, bind the **consumer**.
+
 #### Value sub-grammars
 
-To Layer 1 a directive value is **one string** -- the parser does not decompose it, and no error
-code below concerns a value's internal structure. The sub-grammars here therefore bind the
-**consumer**, not the reader: they are what a C++ implementation must be able to parse out of
-`#UNITS`, `#VALIDITY` and `#FALLBACK` once it has the string, and stating them now is what stops
-three implementations from inventing three different splittings of the same bytes.
+To Layer 1 the values of `#UNITS`, `#VALIDITY` and `#FALLBACK` are **one string** each -- the parser
+does not decompose them, and no error code concerns their internal structure (unlike the four
+directives in the table above, which the reader does check). The sub-grammars here therefore bind
+the **consumer**, not the reader: they are what a C++ implementation must be able to parse out of
+those three values once it has the string, and stating them now is what stops three implementations
+from inventing three different splittings of the same bytes.
 
 | Directive | Value | Element |
 |---|---|---|
@@ -136,7 +164,9 @@ After the directives come **zero or more records**, one per line.
    separator, and leading whitespace is permitted, so a writer may align columns and a reader must
    not depend on the alignment.
 2. The number of fields must equal the arity of `#COLUMNS` (`E004`). A blank line is a record with
-   zero fields and is rejected the same way: the format has no blank lines and no comments.
+   zero fields and is rejected the same way: the format has no blank lines and no comments. This is
+   also why `#COLUMNS` may not be empty (section 2.2): at arity zero a blank line *would* be a
+   conforming record, and a file of blank lines would round-trip.
 3. Columns named `Z` and `A` are **integer columns**: the field must match `^[0-9]+$` and its value
    must lie in **`0`-`9999` inclusive** (`E007` otherwise). The bound is what keeps a reader's
    integer width from being implementation-defined -- without it, whether a file is readable
@@ -173,6 +203,14 @@ including an empty one -- is content after the terminator (`E011`). A file with 
 newline-terminated `#END` line is incomplete (`E012`), which covers both a missing `#END` and a file
 whose last line has no newline.
 
+**`#END` is not a directive.** It is not part of the directive order of section 2.2, and a reader
+must not diagnose it through the directive machinery. A terminator line that carries anything beyond
+spaces and tabs -- `#END x` -- is **`E011` at that line**, in every position, because the content is
+*on* the terminator. Diagnosing it as an unknown or out-of-order directive produces a message that
+is false about the terminator, and produces a *different* false message depending on whether records
+happened to precede it. A line such as `#ENDX` is a different thing: its keyword is `ENDX`, and it is
+diagnosed as the directive it claims to be.
+
 ### 2.5 Allowed values
 
 `#PROFILE` is a token matching `^[a-z][a-z0-9_-]{2,31}$` (`E016` otherwise). `parity` and
@@ -198,8 +236,10 @@ compares bytes. C and C++ readers are **not** automatically safe -- see section 
 
 ### 2.7 Versioning and backward compatibility
 
-`#GRAMMAR`'s value is exactly `MAJOR.MINOR`, lexically `^\d+\.\d+$` -- two runs of decimal digits
-separated by one `.`, with no sign, no third component, no pre-release suffix and no leading `v`.
+`#GRAMMAR`'s value is exactly `MAJOR.MINOR`, lexically `^(0|[1-9]\d*)\.(0|[1-9]\d*)$` -- two runs of
+decimal digits separated by one `.`, with no sign, no third component, no pre-release suffix, no
+leading `v`, and **no leading zeros**. `01.0` is not a spelling of `1.0`; it is rejected (`E010`).
+One version has one spelling, in a format whose identity discipline is byte-exactness throughout.
 
 - A reader **must reject a `MAJOR` it does not know** (`E010`). A `#GRAMMAR` value that does not
   match the lexical form above is likewise rejected with `E010`, because no major can be
@@ -281,7 +321,9 @@ unless the dataset says so. Making the flag required means the disclosure cannot
 sorted at every level, two-space indentation, ASCII-escaped (`ensure_ascii`), LF line endings, and
 exactly one trailing newline. This is not a formatting preference -- it is what makes the digest
 below reproducible, so a Layer-2 file that is valid JSON but not in canonical form is not a valid
-Layer-2 file.
+Layer-2 file. `openmucf.g4.provenance.check_canonical_bytes()` is the check, and it lives in the
+shipped package rather than in a build script so that any consumer can apply it: a re-indented file
+is a *different* file with a *different* digest, and nothing downstream would say why.
 
 **The digest invariant.** Layer 1's `#SOURCEDIGEST` is `sha256` over the **exact bytes of the
 Layer-2 file**, which are `json.dumps(obj, sort_keys=True, indent=2, ensure_ascii=True)` followed by
@@ -303,7 +345,7 @@ Every rejection carries an exact code and a **1-based line number**. The message
 | Code | Condition |
 |---|---|
 | `E001` | unknown directive |
-| `E002` | missing required directive |
+| `E002` | missing required directive, or one present with an empty value |
 | `E003` | directive out of order (including a repeated directive) |
 | `E004` | record field count differs from the `#COLUMNS` arity |
 | `E005` | byte outside `{TAB, LF, CR, 0x20-0x7E}` (non-ASCII, or an ASCII control character) |
@@ -312,12 +354,12 @@ Every rejection carries an exact code and a **1-based line number**. The message
 | `E008` | duplicate primary key; the message names the first-seen line |
 | `E009` | `#SOURCEDIGEST` differs from the SHA-256 of the Layer-2 file |
 | `E010` | unsupported or malformed `#GRAMMAR` version |
-| `E011` | content after `#END` |
+| `E011` | content after the `#END` terminator, or on the terminator line itself |
 | `E012` | missing newline-terminated `#END` |
 | `E013` | `#PROFILE parity` without a non-empty `#SOURCESHA`, or `#SOURCESHA` under a non-parity profile |
 | `E014` | float outside the representable range: non-finite (`inf` / `nan`), overflow to infinity, or underflow to zero |
 | `E015` | records not sorted ascending by the primary key |
-| `E016` | `#PROFILE` or `#SEAM` value outside its allowed set; the message names the offending directive |
+| `E016` | a directive value outside the set or lexical form section 2.2 requires of it -- `#PROFILE`, `#SEAM`, `#SOURCEDIGEST`, `#COLUMNS`; the message names the offending directive |
 
 **Reporting order.** A file usually has one defect, but when it has several the reader must be
 predictable about which one it names, or two conforming implementations will disagree on a file
@@ -333,15 +375,28 @@ order":
    is raised **eagerly at the `#GRAMMAR` line**, which makes it the one code that preempts
    everything after it -- see section 2.7 for why.
 3. **Block-close and post-scan.** Checks that cannot be decided from one line: `E002`, `E013` and
-   `E016` when the directive block closes, then `E012`, then `E008`, then `E015` once all records
+   `E016` **when the directive block closes**, then `E012`, then `E008`, then `E015` once all records
    are in hand. These are **reported at the line of the directive or record at fault**, which may
    be an *earlier* line than a phase-2 defect that preempted them.
 
-The consequence worth stating plainly: **a per-line defect can preempt a block-level defect on an
-earlier line.** A file whose `#PROFILE` on line 4 lacks its `#SOURCESHA` *and* whose line 12
-repeats a directive reports `E003` on line 12, not `E013` on line 4, because the block does not
-close until line 12 is passed. `E010` is the deliberate exception. Fix the reported defect and
-re-run: the reader is a decision procedure for "is this file conforming", not a defect enumerator.
+**The directive block closes at the first record line, or at `#END`, whichever comes first** -- and
+this is a rule about the reader's control flow, not a footnote. The header checks run *there*, so:
+
+- a file that has records but no `#END`, and is missing `#VALIDITY`, reports **`E002`**: the block
+  closed at the first record line, long before the missing terminator was noticed;
+- a file with **no records and no `#END`** reports **`E012`**, whatever else is wrong with its
+  header, because the block never closes and the header checks never run.
+
+That second case is the ordinary shape of a truncated download, and `E012` is both the true and the
+more useful diagnosis for it: telling someone whose file was cut off that their `#VALIDITY` is
+missing sends them to fix a header that is probably fine.
+
+The consequence worth stating plainly: **a per-line defect, or an unclosed block, can preempt a
+block-level defect on an earlier line.** A file whose `#PROFILE` on line 4 lacks its `#SOURCESHA`
+*and* whose line 12 repeats a directive reports `E003` on line 12, not `E013` on line 4, because the
+block does not close until line 12 is passed. `E010` is the deliberate exception -- it is raised
+eagerly at the `#GRAMMAR` line and preempts everything after it. Fix the reported defect and re-run:
+the reader is a decision procedure for "is this file conforming", not a defect enumerator.
 
 Within phase 3, a duplicate key (`E008`) is reported before an ordering violation (`E015`) --
 otherwise a duplicate would always surface as "not ascending" and `E008` would be unreachable.
@@ -403,10 +458,17 @@ Three mechanical details that will otherwise be got wrong:
   `+1.5`; `std::from_chars` does **not** accept a leading `+` and returns
   `std::errc::invalid_argument` for it. A reader that passes the field through unmodified rejects a
   conforming file.
-- **Map `std::errc::result_out_of_range` to `E014`, not to `E007`.** `from_chars` returns it for
-  both ends of the range -- a value too large to represent and a value that underflows to zero --
-  and section 2.3 rule 5 makes both `E014`. Treating it as a lexical failure would report the wrong
-  code for a well-formed number.
+- **Map `std::errc::result_out_of_range` to `E014`, not to `E007`** -- but **only** when the value
+  really is out of range. `from_chars` returns it for both ends -- a value too large to represent and
+  a value that underflows to zero -- and section 2.3 rule 5 makes both `E014`; treating it as a
+  lexical failure would report the wrong code for a well-formed number. **Subnormals are not an
+  error.** Section 2.6 guarantees that every finite `binary64` value round-trips, subnormals
+  included, and the emitter writes them (`5e-324` is emitted as `4.9406564584124654e-324`); an
+  implementation that forwards to `strtod` may raise `ERANGE` for a subnormal *result*, and a reader
+  that maps that straight to `E014` rejects a file this document guarantees. Test the returned value,
+  not just the error code: report `E014` when the result is ±infinity, or when the field is
+  lexically nonzero (a digit `1`-`9` before the exponent) and the result is exactly zero. Otherwise
+  accept it.
 - **Check `ptr == last`.** `from_chars` succeeds on a valid prefix, so `1.5x` parses as `1.5` with
   `ptr` left at the `x`. The field must be consumed in full or it is `E007`.
 
@@ -434,10 +496,14 @@ budget should impose its own limit and report it as its own error, not as one of
 - `format_float(x: float) -> str` -- the `%.17g` float syntax of section 2.6.
 
 `openmucf/g4/provenance.py` is the reference implementation of section 3: `validate_document()` for
-the schema, `document_bytes()` for the exact bytes the digest is taken over, `check_source_digest()`
-for the cross-layer digest (`E009`), and `check_against_table()` for the requirement that the
-file-level fields equal the Layer-1 directives they mirror. Layer 2 has no line numbers, so its
-schema violations raise `ValueError`; `E009` is the one code that spans both layers.
+the schema, `document_bytes()` for the exact bytes the digest is taken over,
+`check_canonical_bytes()` for the canonical-form rule, `check_source_digest()` for the cross-layer
+digest (`E009`), and `check_against_table()` for the requirement that the file-level fields equal the
+Layer-1 directives they mirror. Layer 2 has no line numbers, so its schema violations raise
+`ValueError`; `E009` is the one code that spans both layers.
+
+`openmucf/g4/emit.py` is the reference implementation of section 8: `build_tarball()`,
+`gzip_header()`, `tarball_md5()` and `add_dataset_snippet()`.
 
 Guarantees, each covered by a test:
 
@@ -450,7 +516,9 @@ Guarantees, each covered by a test:
 4. **Exact floats.** `float(format_float(x)) == x` for every finite double.
 
 `validate()` reports the line number the offending item **would** occupy in the emitted file, so an
-in-memory table and a parsed file report errors the same way.
+in-memory table and a parsed file report errors the same way. It scans in that same canonical order,
+so its diagnosis is a function of the table's *content*: two callers who insert the same directives
+in different orders get the identical error, exactly as they get identical bytes from `render()`.
 
 A table that no file could ever produce -- a directive value carrying leading or trailing
 whitespace, or an embedded newline -- is a programming error rather than a format error: `validate()`
@@ -460,9 +528,46 @@ line number to report; `E014` is raised by `validate()` and `parse()`, which hav
 
 ---
 
-## 8. Not included in this release
+## 8. The archive
 
-The archive packaging (deterministic tarball plus checksum), the dataset generator, and the C++
-reader and its standalone validation application are specified here but are not part of this
-release. Section 5 and section 6 are stated now precisely so that the reader, when written, cannot
-get them wrong by accident.
+A dataset ships as **one gzipped tar archive** holding the Layer-1 `.g4dat` files and the Layer-2
+`*.prov.json` files they were generated from -- the extension Geant4's dataset machinery expects
+(`EXTENSION tar.gz`). The archive is **a pure function of its members**: nothing about the machine
+that built it may appear in its bytes, or the artifact cannot be checksummed once and shipped, and a
+reader cannot reproduce it to check our work.
+
+Every field that would otherwise leak the builder is pinned:
+
+| Layer | Field | Value |
+|---|---|---|
+| tar | format | `ustar` **explicitly** -- the default format has changed between writer versions |
+| tar | member order | ascending by name |
+| tar | `mtime` | `0` |
+| tar | `uid`, `gid` | `0`, `0` |
+| tar | `uname`, `gname` | empty, empty |
+| tar | `mode` | `0644` |
+| tar | type | regular file only |
+| tar | member name | a plain relative path, at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable) |
+| gzip | `mtime` | `0` |
+| gzip | `FNAME` | absent (flag bit `0x08` clear) |
+| gzip | compression level | `9` |
+
+The members sit at the **archive root** (a flat archive), and the checksum in the registration
+snippet is the **MD5 of the archive's bytes** -- MD5 because that is what `geant4_add_dataset`'s
+`MD5SUM` field is: a download-integrity check against corruption, not a security boundary.
+
+**One honest limit.** The table above fixes the *container*; the DEFLATE stream inside it comes from
+zlib, and two zlib builds are not guaranteed to emit byte-identical compressed output for the same
+input. So the container fields are the normative, reproducible part, and **the `MD5SUM` identifies
+one built artifact rather than being a portable identity of the dataset**. The dataset's portable
+identity is `#VERSION` plus `#SOURCEDIGEST` (section 2.1 rule 6), which is why those exist. In
+practice the reference implementation's archive has been byte-identical on Windows/x86-64,
+Linux/x86-64 and macOS/arm64; a consumer that needs to prove two archives carry the same data should
+compare the members, not the compressed bytes.
+
+## 9. Not included in this release
+
+The **C++ reader and its standalone validation application** are specified here (sections 5 and 6)
+but are not part of this release; they are stated now precisely so that the reader, when written,
+cannot get them wrong by accident. Everything else this document specifies -- the grammar, the
+Layer-2 schema, the error codes, the archive, and the generator that produces all of them -- ships.
