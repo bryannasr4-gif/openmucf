@@ -90,9 +90,11 @@ useful than reporting the empty string as a malformed token. `E002` is the code 
 would otherwise apply — an empty `#GRAMMAR` declares no version at all, so it is `E002`, not `E010`.
 For `#SOURCESHA` the same principle drives `E013` (below).
 
-For the one **optional** directive the rule is about meaning, not about validity: an empty
-`#FALLBACK` declares no fallback and a reader must treat it as absent, but the file is still
-conforming and is not byte-identical to one that omits the line — two distinct files, one meaning.
+Where a directive is **not required**, the rule is about meaning rather than validity: the file is
+still conforming, and it is not byte-identical to one that omits the line — two distinct files, one
+meaning. That applies to an empty `#FALLBACK` (which declares no fallback) and to an empty
+`#SOURCESHA` under a non-parity profile (which claims no upstream revision, and so does not trip
+`E013`'s second direction).
 
 `#SOURCESHA` is required **if and only if** `#PROFILE` is `parity`: a parity file exists to reproduce
 a specific upstream revision bit-for-bit, so it must name that revision; a non-parity file is not
@@ -388,9 +390,12 @@ order":
    and `E005` runs before `E006`.
 2. **Line scan, in file order.** Each line is diagnosed as it is reached: `E001`, `E003` and `E011`
    for header and block structure, `E004` then `E007`/`E014` within a record (field count before
-   field lexis, since the lexis of a field the record should not have is not interesting). `E010`
-   is raised **eagerly at the `#GRAMMAR` line**, which makes it the one code that preempts
-   everything after it -- see section 2.7 for why.
+   field lexis, since the lexis of a field the record should not have is not interesting). The
+   `#GRAMMAR` line is checked **eagerly, as it is reached**, which makes its verdict the one that
+   preempts everything after it -- see section 2.7 for why. That verdict is `E010` for a version
+   this reader cannot read, and `E002` for an empty value (section 2.2); **the preemption belongs to
+   the position, not to the code**, so an empty `#GRAMMAR` preempts a later defect exactly as an
+   unsupported one does.
 3. **Block-close and post-scan.** Checks that cannot be decided from one line: `E002`, `E013` and
    `E016` **when the directive block closes**, then `E012`, then `E008`, then `E015` once all records
    are in hand. These are **reported at the line of the directive or record at fault**, which may
@@ -580,7 +585,9 @@ Every field that would otherwise leak the builder is pinned:
 | tar | type | regular file only |
 | tar | member name | a plain relative path, at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable) |
 | tar | magic + version | `ustar\0` then `00` (bytes 257-264 of each header block) |
-| tar | header checksum | **six octal digits, then NUL, then space** — the traditional encoding, not seven digits |
+| tar | numeric field encoding | zero-padded octal, NUL-terminated, filling the field: `mode`/`uid`/`gid` as 7 digits + NUL (`0000644`, `0000000`), `size`/`mtime` as 11 digits + NUL |
+| tar | header checksum | **six octal digits, then NUL, then space** — not seven digits, and not digits + space + NUL |
+| tar | `devmajor`, `devminor` | **16 NUL bytes** (offsets 329-344), *not* octal zeros |
 | tar | end of archive | two 512-byte zero blocks, then zero padding to a multiple of **10240** bytes |
 | gzip | `mtime` | `0` |
 | gzip | `FNAME` | absent (flag bit `0x08` clear) |
@@ -591,9 +598,13 @@ The members sit at the **archive root** (a flat archive), and the checksum in th
 snippet is the **MD5 of the archive's bytes** -- MD5 because that is what `geant4_add_dataset`'s
 `MD5SUM` field is: a download-integrity check against corruption, not a security boundary.
 
-The last four rows are the ones a reimplementation gets wrong: each of them changes the archive's
-MD5, and each has a plausible alternative that a writer would otherwise pick by default. They are
-listed for that reason and not because they matter to a consumer, who only unpacks the archive.
+**The encoding rows matter as much as the value rows**, and they are where a reimplementation goes
+wrong: the numeric-field encoding, the checksum encoding, `devmajor`/`devminor`, the 10240-byte
+padding, `XFL` and the `OS` byte each change the archive's MD5, and each has a plausible alternative
+that a conforming writer picks by default. `bsdtar --format=ustar`, for instance, writes
+`devmajor`/`devminor` as `000000 \0` and `mode` as `000666 \0`, both legal ustar and both a
+different archive. These rows are listed for that reason, not because they matter to a consumer,
+who only unpacks the archive.
 
 **One honest limit.** The table above fixes the *container*; the DEFLATE stream inside it comes from
 zlib, and two zlib builds -- or two compression settings that this document does not pin, such as

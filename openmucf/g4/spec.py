@@ -682,6 +682,17 @@ def validate(table: G4DatTable) -> None:
     for keyword in order:
         if "\r" in directives[keyword]:
             raise G4DatFormatError("E006", dline(keyword), f"carriage return in directive '#{keyword}'")
+    # `#GRAMMAR` EAGERLY, at its own line, exactly as parse() does it -- before the unknown-directive
+    # scan and before the header rules. Section 2.7 makes E010 "the one code that preempts everything
+    # after it" because no later diagnosis means anything under a grammar this reader cannot read;
+    # validate() used to reach it only at the end of _check_header, so a `#GRAMMAR 2.0` table with any
+    # other header defect reported that other defect while parse() reported E010 on the same content.
+    # Whatever this check yields -- E002 for an empty value, E010 for an unreadable or unknown major
+    # -- preempts, because the preemption belongs to the position, not to the code.
+    if "GRAMMAR" in directives:
+        _require_nonempty("GRAMMAR", directives["GRAMMAR"], dline("GRAMMAR"))
+        _check_grammar(directives["GRAMMAR"], dline("GRAMMAR"))
+
     for keyword in order:
         if keyword not in DIRECTIVE_ORDER:
             raise G4DatFormatError("E001", dline(keyword), f"unknown directive '#{keyword}'")
@@ -722,8 +733,16 @@ def render(table: G4DatTable) -> str:
     than rejected, which is the one way :func:`render` is more permissive than :func:`validate`.
     """
     columns = _split_fields(table.directives.get("COLUMNS", ""))
+    # Validate the table AS GIVEN, tolerating only E015. Validating the sorted copy instead meant the
+    # sort could change which record was reached first, so render() and validate() named different
+    # defects on the same table -- E004 from one, E007 from the other. Sorting is the one liberty
+    # render() takes (section 7 guarantee 3); it does not extend to reporting a different diagnosis.
+    try:
+        validate(table)
+    except G4DatFormatError as exc:
+        if exc.code != "E015":
+            raise
     records = _sorted_records(table.records, columns)
-    validate(G4DatTable(directives=dict(table.directives), records=records))
 
     lines = [
         f"{'#' + keyword:<{_KEYWORD_WIDTH}}{table.directives[keyword]}".rstrip()

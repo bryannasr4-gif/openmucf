@@ -62,10 +62,11 @@ def build_tarball(members: Mapping[str, bytes]) -> bytes:
     """
     for name in sorted(members):
         # The archive is FLAT (``FORMAT_SPEC.md`` section 8), so a separator of either kind is a
-        # different layout, not a longer name -- and a non-ASCII name would otherwise be encoded with
-        # ``tarfile.ENCODING``, i.e. with the filesystem encoding of whoever built the archive, which
-        # is exactly the kind of channel this module exists to close. Both are rejected as ValueError
-        # rather than left to surface as a UnicodeEncodeError from the length check below.
+        # different layout, not a longer name. The ASCII rule is stated for its message, honestly:
+        # the length check below already rejects a non-ASCII name, but as a ``UnicodeEncodeError``
+        # from ``str.encode`` rather than as a statement about archive names. No determinism channel
+        # was ever open here -- that check has always run first -- and saying otherwise would be
+        # claiming a fix for a hole that did not exist.
         if not name or "/" in name or "\\" in name:
             raise ValueError(
                 f"archive member name {name!r} must be a plain flat name, with no path separator"

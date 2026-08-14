@@ -11,6 +11,7 @@ fails loudly instead of being absorbed by a helper that recomputes it.
 
 import ast
 import dataclasses
+import gzip
 import io
 import json
 import locale
@@ -189,6 +190,16 @@ def test_t02_e002_missing_required_directive():
     in_memory = rejected_table(make_table(GRAMMAR=""))
     assert (from_file.code, from_file.line) == ("E002", 1)
     assert str(from_file) == str(in_memory)
+
+    # The `#GRAMMAR` line's verdict PREEMPTS what follows -- and the preemption belongs to the
+    # position, not to the code, so the empty case preempts exactly as an unsupported major does.
+    # validate() reached the grammar only at the end of the header rules, so a bad `#GRAMMAR` plus
+    # any other header defect reported the other defect while parse() reported the grammar.
+    for grammar, code in (("", "E002"), ("2.0", "E010"), ("one", "E010")):
+        for other in ({"DATASET": ""}, {"XFOO": "x"}, {"VALIDITY": None}):
+            table = make_table(GRAMMAR=grammar, **other)
+            error = rejected_table(table)
+            assert (error.code, error.line) == (code, 1), (grammar, other)
 
 
 def test_t03_e003_directive_out_of_order():
@@ -729,6 +740,16 @@ def test_t21_records_are_sorted_on_render():
     unsorted_error = rejected_table(reversed_table)
     assert (unsorted_error.code, unsorted_error.line) == ("E015", 15)
 
+    # render() validates the table AS GIVEN and tolerates only E015. Validating the sorted copy let
+    # the sort decide which record was reached first, so render() and validate() named different
+    # defects on one table: E004 from render, E007 from validate. Sorting is the single liberty
+    # render() takes; reporting a different diagnosis is not part of it.
+    multi = make_table(records=((2.5, 1, 0.5, 0.1), (2, 2, 0.5)))
+    with pytest.raises(G4DatFormatError) as from_render:
+        spec.render(multi)
+    from_validate = rejected_table(multi)
+    assert str(from_render.value) == str(from_validate)
+
 
 # --------------------------------------------------------------------------------------------
 # T-22..T-25 -- profiles and seams
@@ -863,6 +884,12 @@ def test_t27_source_digest_matches():
     )
     with pytest.raises(ValueError, match="one-for-one"):
         provenance.check_against_table(table, short)
+    # A single-key table has no `"Z-A"` key, so the rule cannot apply -- but it must SAY so rather
+    # than silently no-op, which let such a table carry any rows at all.
+    with pytest.raises(ValueError, match="defined only for a table declaring both"):
+        provenance.check_against_table(
+            make_table(COLUMNS="Z value unc", records=((1, 0.5, 0.1),)), document
+        )
 
 
 def test_t28_digest_drift_raises_e009():
@@ -1027,15 +1054,29 @@ def test_t35_archive_is_deterministic():
             assert entry.mode == 0o644
     assert len(emit.tarball_md5(first)) == 32
 
-    # Member names are flat and ASCII, both rejected as ValueError rather than left to surface from
-    # deeper in the stack. A non-ASCII name would otherwise be encoded with the BUILDER's filesystem
-    # encoding -- a live determinism channel in the one module whose whole job is closing them -- and
-    # a separator would silently produce a nested archive where section 8 promises a flat one.
-    for bad in ("sub/dir.g4dat", "sub\\dir.g4dat", "examplé.g4dat", ""):
-        with pytest.raises(ValueError):
+    # Member names are flat and ASCII. A separator would silently produce a nested archive where
+    # section 8 promises a flat one; the ASCII rule is about the MESSAGE, since the ustar length
+    # check already rejects a non-ASCII name, as a UnicodeEncodeError rather than as a statement
+    # about archive names.
+    for bad in ("sub/dir.g4dat", "sub\\dir.g4dat", ""):
+        with pytest.raises(ValueError, match="flat name"):
             emit.build_tarball({bad: b"x"})
+    # Matched on the MESSAGE, not on the type: UnicodeEncodeError IS a ValueError, so a bare
+    # `pytest.raises(ValueError)` here passed before the ASCII guard existed and pinned nothing.
+    with pytest.raises(ValueError, match="US-ASCII"):
+        emit.build_tarball({"examplé.g4dat": b"x"})
     with pytest.raises(ValueError, match="ustar"):
         emit.build_tarball({"n" * 101: b"x"})
+
+    # The ustar rows of section 8, asserted against the real bytes rather than only written down.
+    # Each of these has a legal alternative that a different writer picks, and each changes the MD5.
+    decompressed = gzip.decompress(first)
+    header = decompressed[:512]  # the first member's ustar header block
+    assert header[257:265] == b"ustar\x0000"
+    assert header[100:108] == b"0000644\x00" and header[136:148] == b"00000000000\x00"
+    assert header[148:156].endswith(b"\x00 ") and len(header[148:156]) == 8  # 6 octal, NUL, space
+    assert header[329:345] == b"\x00" * 16, "devmajor/devminor must be NUL, not octal zero"
+    assert len(decompressed) % 10240 == 0 and decompressed.endswith(b"\x00" * 1024)
 
 
 def test_t36_source_digest_survives_a_round_trip_through_the_filesystem():

@@ -313,13 +313,22 @@ def check_against_table(table: G4DatTable, document: ProvDocument) -> None:
     # from the table is a dataset whose provenance does not describe what it ships.
     columns = _split_fields(table.directives.get("COLUMNS", ""))
     key_indices = [columns.index(name) for name in ("Z", "A") if name in columns]
-    if len(key_indices) == 2:
-        expected = {"-".join(str(int(record[i])) for i in key_indices) for record in table.records}
-        missing = sorted(expected - set(document.rows))
-        extra = sorted(set(document.rows) - expected)
-        if missing or extra:
+    if len(key_indices) != 2:
+        # Section 3's row key is `"Z-A"`, so it is only defined for a table declaring both. Rather
+        # than silently skipping the rule -- which let a single-key table carry any rows at all -- say
+        # so, and reject a document that claims rows a table cannot be keyed against.
+        if document.rows:
             raise ValueError(
-                "Layer-2 rows do not match the Layer-1 records one-for-one: "
-                f"{len(missing)} record(s) with no row ({', '.join(missing[:5]) or 'none'}), "
-                f"{len(extra)} row(s) with no record ({', '.join(extra[:5]) or 'none'})"
+                "Layer-2 rows are keyed 'Z-A', which is defined only for a table declaring both "
+                f"'Z' and 'A'; this table declares {' '.join(columns) or 'no columns'}"
             )
+        return
+    expected = {"-".join(str(int(record[i])) for i in key_indices) for record in table.records}
+    missing = sorted(expected - set(document.rows))
+    extra = sorted(set(document.rows) - expected)
+    if missing or extra:
+        raise ValueError(
+            "Layer-2 rows do not match the Layer-1 records one-for-one: "
+            f"{len(missing)} record(s) with no row ({', '.join(missing[:5]) or 'none'}), "
+            f"{len(extra)} row(s) with no record ({', '.join(extra[:5]) or 'none'})"
+        )
