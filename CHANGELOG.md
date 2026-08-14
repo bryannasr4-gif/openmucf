@@ -96,8 +96,10 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
     and fenced by test from importing this project's kinetics modules so the layer stays liftable.
   - `data/g4/` ships a worked example that carries **no physics and says so in the file itself** (every
     Layer-2 row reads "format example, not evaluated physics"), regenerated and byte-diffed by `make
-    g4data` inside `make audit`. Float formatting is proven identical on Linux, macOS/arm64 and Windows,
-    and under a comma-decimal locale, on every CI run.
+    g4data` inside `make audit`. Float formatting is proven identical on Linux, macOS/arm64 and
+    Windows on every CI run. The comma-decimal-locale check is *enforced* on Linux, where CI installs
+    `de_DE.UTF-8` and verifies the install, so the test fails rather than skips; on the other two it
+    runs only where a comma-decimal locale happens to be present.
   - Names are **provisional**: `G4MuonicData` and `G4MUONICDATA` are placeholders, and the C++ reader and
     its standalone validation application are specified but not yet part of this release.
 - **Open muon-cost ledger (`openmucf/data/muon_cost.csv` + `openmucf/mucost.py` + `MUON_COST.md`).** A

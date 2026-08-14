@@ -10,7 +10,9 @@ Every one of those is a channel through which the machine that built the archive
 archive's bytes -- and an artifact whose bytes depend on who built it cannot be byte-diff audited,
 cannot be checksummed once and shipped, and cannot be reproduced by a reader checking our work. All
 of them are pinned here; ``FORMAT_SPEC.md`` **section 8** is the normative statement of the same
-table, so an outside reader can rebuild the archive and verify its ``MD5SUM`` without this file.
+table, so an outside reader can reconstruct the archive's container from the public document alone.
+Reproducing its exact bytes -- and therefore its ``MD5SUM`` -- additionally needs a compatible zlib,
+because the compressed stream is not something either document can pin; section 8 says so.
 Entries are written in sorted name order, and the archive is a pure function of ``{name: bytes}``.
 
 One honest limit, stated rather than implied (and disclosed in section 8, not only here): the
@@ -59,8 +61,20 @@ def build_tarball(members: Mapping[str, bytes]) -> bytes:
     nor a source filename.
     """
     for name in sorted(members):
-        if not name or name.startswith("/") or ".." in name.split("/"):
-            raise ValueError(f"archive member name {name!r} must be a plain relative path")
+        # The archive is FLAT (``FORMAT_SPEC.md`` section 8), so a separator of either kind is a
+        # different layout, not a longer name -- and a non-ASCII name would otherwise be encoded with
+        # ``tarfile.ENCODING``, i.e. with the filesystem encoding of whoever built the archive, which
+        # is exactly the kind of channel this module exists to close. Both are rejected as ValueError
+        # rather than left to surface as a UnicodeEncodeError from the length check below.
+        if not name or "/" in name or "\\" in name:
+            raise ValueError(
+                f"archive member name {name!r} must be a plain flat name, with no path separator"
+            )
+        if not name.isascii():
+            raise ValueError(
+                f"archive member name {name!r} must be US-ASCII; a non-ASCII name is encoded with the "
+                "builder's filesystem encoding and would make the archive machine-dependent"
+            )
         if len(name.encode("ascii")) > _MAX_MEMBER_NAME:
             raise ValueError(
                 f"archive member name {name!r} exceeds the {_MAX_MEMBER_NAME}-byte ustar limit; a "

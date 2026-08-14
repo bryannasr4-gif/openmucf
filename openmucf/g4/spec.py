@@ -161,6 +161,19 @@ def format_float(x: float) -> str:
 # --------------------------------------------------------------------------------------------
 
 
+def _require_nonempty(keyword: str, value: str, line: int) -> None:
+    """E002 -- a required directive present with an empty value counts as absent.
+
+    One implementation, called from both entry points. ``parse()`` checks ``#GRAMMAR`` eagerly at its
+    own line and ``validate()`` reaches it through the header loop, so without a shared rule the two
+    reported different codes for the same document -- E010 from one, E002 from the other.
+    """
+    if not value:
+        raise G4DatFormatError(
+            "E002", line, f"required directive '#{keyword}' has an empty value, which counts as absent"
+        )
+
+
 def _check_grammar(value: str, line: int) -> None:
     """E010: reject a ``#GRAMMAR`` major we do not implement, or a version we cannot read at all."""
     match = _GRAMMAR_PATTERN.match(value)
@@ -190,12 +203,7 @@ def _check_header(directives: dict[str, str], dline: _DirectiveLine) -> None:
         # reader which evaluation the file carries, and saying so is more useful than reporting the
         # empty string as a malformed token. Without this, six of the thirteen directives accepted an
         # empty value in silence, and an empty `#COLUMNS` made every blank line a conforming record.
-        if not directives[keyword]:
-            raise G4DatFormatError(
-                "E002",
-                dline(keyword),
-                f"required directive '#{keyword}' has an empty value, which counts as absent",
-            )
+        _require_nonempty(keyword, directives[keyword], dline(keyword))
 
     _check_grammar(directives["GRAMMAR"], dline("GRAMMAR"))
 
@@ -305,16 +313,22 @@ def _key_indices(columns: Sequence[str]) -> list[int]:
 def _check_records(
     records: Sequence[tuple[Number, ...]], columns: Sequence[str], rline: _RecordLine
 ) -> None:
-    """E004, E007, E014, E008, E015 -- the record rules.
+    """E004, E007, E014, E008, E015 -- the record rules, in ``FORMAT_SPEC.md`` section 4's phases.
+
+    **Three passes, not one fused loop.** Field lexis is phase 2 and is decided line by line; the key
+    rules are phase 3 and are decided "once all records are in hand". Interleaving them broke both
+    halves of that: a duplicate key on an early record preempted a malformed field on a later one --
+    so ``validate()`` answered E008 where ``parse()``, which lexes during its own line scan, answered
+    E014 on the same document -- and an ordering break preempted a genuine duplicate further down,
+    though section 4 orders E008 before E015 globally and says why.
 
     E008 is checked before E015 on purpose: a duplicate key is also not strictly ascending, so the
     other order would make E008 unreachable.
     """
     key_names = _key_columns(columns)
     key_indices = _key_indices(columns)
-    first_seen: dict[Key, int] = {}
-    previous: Key | None = None
 
+    # ---- phase 2: every record's fields, in file order, before any key rule is considered.
     for index, record in enumerate(records):
         line = rline(index)
         if len(record) != len(columns):
@@ -360,22 +374,40 @@ def _check_records(
                     "E014", line, f"value in column {name!r} underflows to zero: {value!r}"
                 )
 
-        if not key_indices:
-            continue
-        key: Key = tuple(int(record[i]) for i in key_indices)
+    if not key_indices:
+        return
+
+    def key_of(record: tuple[Number, ...]) -> Key:
+        return tuple(int(record[i]) for i in key_indices)
+
+    def printed(key: Key) -> str:
         # Labels come from the columns the table actually declares, not from INTEGER_COLUMNS: an
         # A-only table's duplicate is "A=5", not "Z=5". The code and the line were always right; the
         # human text was not, and a wrong label sends the reader to the wrong column.
-        printed = ", ".join(f"{name}={part}" for name, part in zip(key_names, key, strict=True))
+        return ", ".join(f"{name}={part}" for name, part in zip(key_names, key, strict=True))
+
+    # ---- phase 3a: duplicate keys, across ALL records.
+    first_seen: dict[Key, int] = {}
+    for index, record in enumerate(records):
+        key = key_of(record)
         if key in first_seen:
             raise G4DatFormatError(
-                "E008", line, f"duplicate key ({printed}); first seen at line {first_seen[key]}"
+                "E008",
+                rline(index),
+                f"duplicate key ({printed(key)}); first seen at line {first_seen[key]}",
             )
+        first_seen[key] = rline(index)
+
+    # ---- phase 3b: ordering, only once no duplicate exists anywhere.
+    previous: Key | None = None
+    for index, record in enumerate(records):
+        key = key_of(record)
         if previous is not None and key < previous:
             raise G4DatFormatError(
-                "E015", line, f"record ({printed}) is not in ascending {'/'.join(key_names)} order"
+                "E015",
+                rline(index),
+                f"record ({printed(key)}) is not in ascending {'/'.join(key_names)} order",
             )
-        first_seen[key] = line
         previous = key
 
 
@@ -540,6 +572,11 @@ def parse(text: str) -> G4DatTable:
                 # this reader implements. Deferring it to the header close let a per-line defect on a
                 # later line preempt E010, so a grammar-2.0 file that used a 2.0 directive was
                 # reported as "unknown directive" -- a true statement about the wrong problem.
+                #
+                # The empty case is E002, not E010, and it is checked here rather than only at the
+                # header close so that BOTH entry points agree: an empty value declares no version at
+                # all, which is the absent-directive condition, not an unreadable one.
+                _require_nonempty(keyword, value, lineno)
                 _check_grammar(value, lineno)
             continue
 
@@ -615,7 +652,12 @@ def validate(table: G4DatTable) -> None:
         value = directives[keyword]
         if not isinstance(keyword, str) or not isinstance(value, str):
             raise ValueError(f"directive {keyword!r} must map a str keyword to a str value, got {value!r}")
-        if value != value.strip():
+        # `.strip(" \t")`, not `.strip()`. This format's whitespace is space and tab (2.1.1); Python's
+        # is wider and includes VT, FF and CR. Using the wider set here classified a value ending in
+        # a VT as a *programming* error while parse() called the same document E005 -- the two entry
+        # points disagreeing on a code, which section 7 promises they never do. Narrowing it lets
+        # those bytes fall through to the E005/E006 checks below, where they belong.
+        if value != value.strip(" \t"):
             raise ValueError(
                 f"directive '#{keyword}' value {value!r} carries leading or trailing whitespace; "
                 "no file can produce that, so the table would not survive a round-trip"

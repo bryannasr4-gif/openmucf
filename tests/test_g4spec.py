@@ -158,6 +158,7 @@ def test_t02_e002_missing_required_directive():
     # `#SOURCEDIGEST` with nothing after it parsed, validated and round-tripped, carrying the
     # invariant that binds the two layers as the empty string.
     for keyword, line in (
+        ("GRAMMAR", 1),
         ("DATASET", 2),
         ("VERSION", 3),
         ("TABLE", 6),
@@ -173,8 +174,21 @@ def test_t02_e002_missing_required_directive():
         in_memory = rejected_table(make_table(**{keyword: ""}))
         assert (in_memory.code, in_memory.line) == ("E002", line), keyword
 
-    # `#FALLBACK` is optional, so an empty one is absent and that is simply allowed.
+    # `#FALLBACK` is optional, so an empty one is absent and that is simply allowed. It is still a
+    # DISTINCT conforming file from one that omits the line -- two files, one meaning (section 2.2).
     assert spec.validate(make_table(FALLBACK="")) is None
+    assert spec.render(make_table(FALLBACK="")) != spec.render(make_table(FALLBACK=None))
+    assert spec.parse(spec.render(make_table(FALLBACK=""))) == make_table(FALLBACK="")
+
+    # `#GRAMMAR` is the one required directive with a competing code, and the two entry points used
+    # to disagree on it: parse() validates it eagerly at its own line and said E010 (an unreadable
+    # version), while validate() reached the header loop first and said E002. An empty value declares
+    # no version at all, so E002 governs -- and both paths must say so, or a C++ reader written from
+    # section 4 has no tie-break rule and section 7's "report errors the same way" is false.
+    from_file = rejected(replace_line(CANONICAL, "#GRAMMAR", "#GRAMMAR"))
+    in_memory = rejected_table(make_table(GRAMMAR=""))
+    assert (from_file.code, from_file.line) == ("E002", 1)
+    assert str(from_file) == str(in_memory)
 
 
 def test_t03_e003_directive_out_of_order():
@@ -230,6 +244,24 @@ def test_t05_e005_byte_outside_the_allowed_set():
     # a table it accepts would render to a file parse() rejects, breaking the round-trip guarantee.
     in_directive = rejected_table(make_table(UNITS="rate=1e6\x0b/s"))
     assert (in_directive.code, in_directive.line) == ("E005", 10)
+
+    # The same byte at the EDGE of a value. This format's whitespace is space and tab; Python's
+    # `str.strip()` also eats VT, FF and CR, so validate()'s "no file can produce that" guard used to
+    # swallow these and raise ValueError while parse() called the identical document E005/E006 --
+    # the two entry points reporting different classes for one file.
+    for value, code in (
+        ("rate=1e6/s\x0b", "E005"),
+        ("\x0brate=1e6/s", "E005"),
+        ("rate=1e6/s\x0c", "E005"),
+        ("rate=1e6/s\r", "E006"),
+    ):
+        edge = rejected_table(make_table(UNITS=value))
+        assert (edge.code, edge.line) == (code, 10), value
+        assert edge.code == rejected(replace_line(CANONICAL, "#UNITS", f"#UNITS        {value}")).code
+    # Space and tab at the edge stay a programming error: no file can produce them (parse strips).
+    for value in ("rate=1e6/s ", "\trate=1e6/s"):
+        with pytest.raises(ValueError, match="leading or trailing whitespace"):
+            spec.validate(make_table(UNITS=value))
 
 
 def test_t06_e006_cr_line_ending():
@@ -442,6 +474,52 @@ def test_t14_e014_non_finite_float():
     tiny = rejected_table(make_table(records=((1, 1, _UnderflowingInt(3), 0.1),)))
     assert (tiny.code, tiny.line) == ("E014", 14)
     assert "underflows to zero" in str(tiny)
+
+
+def test_t08b_key_rules_run_after_field_rules_and_e008_before_e015():
+    """Section 4's phases are global, not per record -- and `parse` and `validate` must agree.
+
+    `_check_records` used to check each record's fields and then its key before moving on, which
+    broke section 4 twice over. A duplicate key on an early record preempted a malformed field on a
+    later one, so `validate()` said E008 where `parse()` -- which lexes during its own line scan --
+    said E014 on the identical document. And an ordering break preempted a genuine duplicate further
+    down, though section 4 orders E008 before E015 globally and gives the reason.
+    """
+
+    def both(records, raw_rows):
+        header = [line for line in CANONICAL.splitlines(keepends=True) if line.startswith("#")][:13]
+        text = "".join(header) + "".join(row + "\n" for row in raw_rows) + "#END\n"
+        return rejected(text), rejected_table(make_table(records=records))
+
+    # A duplicate on line 15, an overflowing field on line 16: the field rule is phase 2 and wins.
+    parsed, validated = both(
+        ((1, 1, 0.5, 0.1), (1, 1, 0.5, 0.1), (3, 3, 10**400, 0.1)),
+        [" 1 1 0.5 0.1", " 1 1 0.5 0.1", " 3 3 1e400 0.1"],
+    )
+    assert (parsed.code, parsed.line) == ("E014", 16)
+    assert (validated.code, validated.line) == ("E014", 16)
+
+    # An ordering break on line 15, a genuine duplicate on line 17: E008 comes first, globally.
+    parsed, validated = both(
+        ((5, 5, 0.5, 0.1), (2, 2, 0.5, 0.1), (9, 9, 0.5, 0.1), (2, 2, 0.5, 0.1)),
+        [" 5 5 0.5 0.1", " 2 2 0.5 0.1", " 9 9 0.5 0.1", " 2 2 0.5 0.1"],
+    )
+    assert (parsed.code, parsed.line) == ("E008", 17)
+    assert (validated.code, validated.line) == ("E008", 17)
+    assert "first seen at line 15" in str(parsed)
+
+
+def test_t08c_a_table_with_no_primary_key():
+    """A table declaring neither `Z` nor `A` has no key, so rules 6 and 7 have nothing to check.
+
+    Section 2.3 says so explicitly. The branch existed and worked but nothing exercised it: every
+    other table in this file, generated or hand-built, declares at least one of `Z`/`A`.
+    """
+    keyless = make_table(COLUMNS="energy value", records=((9.0, 1.0), (2.0, 2.0), (9.0, 3.0)))
+    assert spec._key_columns(["energy", "value"]) == []
+    assert spec.validate(keyless) is None  # duplicated AND descending, both fine without a key
+    assert spec.parse(spec.render(keyless)) == keyless  # and render must not reorder them
+    assert [line.split()[0] for line in spec.render(keyless).splitlines()[13:16]] == ["9", "2", "9"]
 
 
 def test_t15_e015_records_not_sorted():
@@ -753,6 +831,17 @@ def test_t26_layer2_schema_round_trip():
     with pytest.raises(ValueError, match="not ASCII JSON"):
         provenance.check_canonical_bytes(b"{not json")
 
+    # Row keys carry no zero padding. JSON object keys are strings and nothing normalizes them, so a
+    # lax pattern let "1-1", "01-1" and "001-001" be three distinct keys for one record -- the exact
+    # collision section 3's paragraph says it exists to prevent, while its own parenthesized regex
+    # permitted it. (Layer 1's integer FIELDS stay lax on purpose: they are converted to integers and
+    # re-emitted canonically, so no two spellings survive a round-trip.)
+    for bad_key in ("001-001", "01-1", "1-01", "+1-1", "1 - 1", "1-", "-1", "1--1", "01-01"):
+        with pytest.raises(ValueError, match="not of the form"):
+            provenance.validate_document({**obj, "rows": {bad_key: obj["rows"]["1-1"]}})
+    for good_key in ("1-1", "0-0", "94-242", "10-100"):
+        provenance.validate_document({**obj, "rows": {good_key: obj["rows"]["1-1"]}})
+
 
 def test_t27_source_digest_matches():
     document = make_document()
@@ -763,6 +852,17 @@ def test_t27_source_digest_matches():
     assert provenance.check_against_table(table, document) is None
     with pytest.raises(ValueError, match="does not match Layer-1"):
         provenance.check_against_table(make_table(VERSION="9.9.9"), document)
+
+    # Section 3's "one object per Layer-1 record", enforced in the SHIPPED package. It used to live
+    # only in scripts/generate_g4data.py, which `packages` does not ship -- the same gap that put
+    # check_canonical_bytes here.
+    with pytest.raises(ValueError, match="one-for-one"):
+        provenance.check_against_table(make_table(records=(*RECORDS, (7, 14, 1.0, 0.1))), document)
+    short = dataclasses.replace(
+        document, rows={k: v for k, v in document.rows.items() if k != "94-242"}
+    )
+    with pytest.raises(ValueError, match="one-for-one"):
+        provenance.check_against_table(table, short)
 
 
 def test_t28_digest_drift_raises_e009():
@@ -926,6 +1026,16 @@ def test_t35_archive_is_deterministic():
             assert (entry.mtime, entry.uid, entry.gid, entry.uname, entry.gname) == (0, 0, 0, "", "")
             assert entry.mode == 0o644
     assert len(emit.tarball_md5(first)) == 32
+
+    # Member names are flat and ASCII, both rejected as ValueError rather than left to surface from
+    # deeper in the stack. A non-ASCII name would otherwise be encoded with the BUILDER's filesystem
+    # encoding -- a live determinism channel in the one module whose whole job is closing them -- and
+    # a separator would silently produce a nested archive where section 8 promises a flat one.
+    for bad in ("sub/dir.g4dat", "sub\\dir.g4dat", "examplé.g4dat", ""):
+        with pytest.raises(ValueError):
+            emit.build_tarball({bad: b"x"})
+    with pytest.raises(ValueError, match="ustar"):
+        emit.build_tarball({"n" * 101: b"x"})
 
 
 def test_t36_source_digest_survives_a_round_trip_through_the_filesystem():

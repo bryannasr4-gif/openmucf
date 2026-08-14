@@ -83,10 +83,16 @@ directive that should follow it, or that appears after the record block has begu
 `#GRAMMAR` is deliberately **separate from `#VERSION`**: one is the version of the format, the other
 the version of the data. Without that separation there is no backward-compatibility story at all.
 
-**A directive present with an empty value counts as absent.** For a **required** directive that is
-`E002`, reported at that directive's own line: a `#PROFILE` with nothing after it has not told the
-reader which evaluation the file carries, and saying so is more useful than reporting the empty
-string as a malformed token. For `#SOURCESHA` the same principle drives `E013` (below).
+**A directive present with an empty value carries no information, and is treated as absent.** For a
+**required** directive that is `E002`, reported at that directive's own line: a `#PROFILE` with
+nothing after it has not told the reader which evaluation the file carries, and saying so is more
+useful than reporting the empty string as a malformed token. `E002` is the code even where another
+would otherwise apply — an empty `#GRAMMAR` declares no version at all, so it is `E002`, not `E010`.
+For `#SOURCESHA` the same principle drives `E013` (below).
+
+For the one **optional** directive the rule is about meaning, not about validity: an empty
+`#FALLBACK` declares no fallback and a reader must treat it as absent, but the file is still
+conforming and is not byte-identical to one that omits the line — two distinct files, one meaning.
 
 `#SOURCESHA` is required **if and only if** `#PROFILE` is `parity`: a parity file exists to reproduce
 a specific upstream revision bit-for-bit, so it must name that revision; a non-parity file is not
@@ -171,12 +177,14 @@ After the directives come **zero or more records**, one per line.
    must lie in **`0`-`9999` inclusive** (`E007` otherwise). The bound is what keeps a reader's
    integer width from being implementation-defined -- without it, whether a file is readable
    depends on whether the reader chose `int`, `long` or `int64_t`. It is physically generous:
-   `Z <= 118` and `A` does not reach 300.
+   `Z <= 118` and `A` does not reach 300. An integer column has no other lexical class, so `nan` or
+   `1e3` there is `E007` (it is not a number of the kind that column accepts), never `E014`.
 4. Every other column is a **float column**: the field must match the strict C-locale float
    `^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$`. **A comma decimal separator is a syntax error
    (`E007`), never a silent truncation** -- see section 6.
-5. A field that denotes a non-finite value (`inf`, `+inf`, `-inf`, `infinity`, `nan`, in any letter
-   case), or a lexically valid field that leaves the representable range in either direction --
+5. **In a float column**, a field that denotes a non-finite value (`inf`, `+inf`, `-inf`,
+   `infinity`, `nan`, in any letter case), or a lexically valid field that leaves the representable
+   range in either direction --
    **overflowing to infinity or underflowing to zero** -- is rejected (`E014`). Underflow is
    included for the same reason as overflow and matters just as much in practice: `1e-999` converts
    to `0.0` silently in some languages, while a C++ `std::from_chars` reports
@@ -243,7 +251,10 @@ One version has one spelling, in a format whose identity discipline is byte-exac
 
 - A reader **must reject a `MAJOR` it does not know** (`E010`). A `#GRAMMAR` value that does not
   match the lexical form above is likewise rejected with `E010`, because no major can be
-  established from it at all.
+  established from it at all — **except an empty value, which is `E002`** and not `E010`: a
+  directive with nothing after it has not declared a version rather than declared a bad one, and
+  section 2.2's empty-counts-as-absent rule governs it. This carve-out is stated because the two
+  rules otherwise both apply to the same file and a reader would have to guess which wins.
 - A reader **accepts any `MINOR` of a `MAJOR` it knows** -- that is, it accepts the version
   *declaration*. Accepting the declaration is not the same as being able to read the file: a
   higher-minor file may use a directive this reader does not have, and it will then be rejected
@@ -270,9 +281,15 @@ Layer 2 is never read by Geant4. It is a single JSON object with the file-level 
 object per Layer-1 record under `rows`, keyed `"Z-A"`.
 
 **Row-key format, exactly.** A key is the record's `Z`, a single `-`, then its `A`, each written in
-**decimal with no zero padding, no sign and no whitespace** (`^[0-9]+-[0-9]+$`): `"1-1"`, `"29-63"`,
-`"94-242"` -- never `"001-001"`, `"+1-1"` or `"1 - 1"`. JSON object keys are strings, so without a
-pinned spelling `"1-1"` and `"01-1"` would be two different keys for one record.
+**decimal with no zero padding, no sign and no whitespace** —
+`^(0|[1-9][0-9]*)-(0|[1-9][0-9]*)$`: `"1-1"`, `"29-63"`, `"94-242"` -- never `"001-001"`, `"+1-1"`
+or `"1 - 1"`. JSON object keys are strings, so without a pinned spelling `"1-1"` and `"01-1"` would
+be two different keys for one record. (Layer 1's integer *fields* are laxer — `^[0-9]+$`, section 2.3
+rule 3 — because a reader converts them to integers and the writer re-emits them canonically, so no
+two spellings survive. A JSON key is never normalized by anything, which is why this one is strict.)
+
+**One row per record.** `rows` has exactly one object per Layer-1 record and no others;
+`openmucf.g4.provenance.check_against_table()` enforces it alongside the file-level fields.
 
 **File-level fields**
 
@@ -384,8 +401,13 @@ this is a rule about the reader's control flow, not a footnote. The header check
 
 - a file that has records but no `#END`, and is missing `#VALIDITY`, reports **`E002`**: the block
   closed at the first record line, long before the missing terminator was noticed;
-- a file with **no records and no `#END`** reports **`E012`**, whatever else is wrong with its
-  header, because the block never closes and the header checks never run.
+- a file with **no records and no `#END`** reports **`E012`** in place of *any block-close* defect
+  (`E002`, `E013`, `E016`), because the block never closes and those checks never run.
+
+Phase 2 is unaffected by all of this: a defect found during the line scan -- `E001`, `E003`, `E004`,
+`E007`, `E014`, and `E010` at the `#GRAMMAR` line -- is reported when the scan reaches it, whether or
+not the block ever closes. A header-only file carrying an unknown directive reports `E001` at that
+directive's line, not `E012`.
 
 That second case is the ordinary shape of a truncated download, and `E012` is both the true and the
 more useful diagnosis for it: telling someone whose file was cut off that their `#VALIDITY` is
@@ -472,6 +494,15 @@ Three mechanical details that will otherwise be got wrong:
 - **Check `ptr == last`.** `from_chars` succeeds on a valid prefix, so `1.5x` parses as `1.5` with
   `ptr` left at the `x`. The field must be consumed in full or it is `E007`.
 
+**Open the file in binary mode.** `std::ifstream(path, std::ios::binary)`, and read the bytes as
+they are. This is not a portability nicety: on Windows the default is *text* mode, which strips `CR`
+before your code ever sees it — so a CRLF-corrupted dataset reads as if it were clean, `E006` can
+never fire, and if the same mistake is made on the Layer-2 file its digest still matches because the
+bytes you hashed are not the bytes on disk. A reader that omits `std::ios::binary` silently accepts
+exactly the corruption sections 2.1 and 3 exist to catch. The same applies to every other language:
+read bytes, decode yourself, and never let a runtime's universal-newline translation sit between the
+file and the check.
+
 Two further requirements follow from section 2:
 
 - The reader must reject a `#GRAMMAR` major it does not know rather than guess, and must do so
@@ -548,22 +579,32 @@ Every field that would otherwise leak the builder is pinned:
 | tar | `mode` | `0644` |
 | tar | type | regular file only |
 | tar | member name | a plain relative path, at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable) |
+| tar | magic + version | `ustar\0` then `00` (bytes 257-264 of each header block) |
+| tar | header checksum | **six octal digits, then NUL, then space** — the traditional encoding, not seven digits |
+| tar | end of archive | two 512-byte zero blocks, then zero padding to a multiple of **10240** bytes |
 | gzip | `mtime` | `0` |
 | gzip | `FNAME` | absent (flag bit `0x08` clear) |
-| gzip | compression level | `9` |
+| gzip | compression level | `9`, and therefore `XFL` = `2` |
+| gzip | `OS` byte | **255** (unknown) — *not* `3`, which is what a Unix `gzip(1)` writes |
 
 The members sit at the **archive root** (a flat archive), and the checksum in the registration
 snippet is the **MD5 of the archive's bytes** -- MD5 because that is what `geant4_add_dataset`'s
 `MD5SUM` field is: a download-integrity check against corruption, not a security boundary.
 
+The last four rows are the ones a reimplementation gets wrong: each of them changes the archive's
+MD5, and each has a plausible alternative that a writer would otherwise pick by default. They are
+listed for that reason and not because they matter to a consumer, who only unpacks the archive.
+
 **One honest limit.** The table above fixes the *container*; the DEFLATE stream inside it comes from
-zlib, and two zlib builds are not guaranteed to emit byte-identical compressed output for the same
-input. So the container fields are the normative, reproducible part, and **the `MD5SUM` identifies
-one built artifact rather than being a portable identity of the dataset**. The dataset's portable
-identity is `#VERSION` plus `#SOURCEDIGEST` (section 2.1 rule 6), which is why those exist. In
-practice the reference implementation's archive has been byte-identical on Windows/x86-64,
-Linux/x86-64 and macOS/arm64; a consumer that needs to prove two archives carry the same data should
-compare the members, not the compressed bytes.
+zlib, and two zlib builds -- or two compression settings that this document does not pin, such as
+the memory level or the strategy -- are not guaranteed to emit byte-identical compressed output for
+the same input. So the container fields are the normative, reproducible part, **rebuilding the exact
+bytes additionally requires a compatible zlib**, and **the `MD5SUM` identifies one built artifact
+rather than being a portable identity of the dataset**. The dataset's portable identity is
+`#VERSION` plus `#SOURCEDIGEST` (section 2.1 rule 6), which is why those exist. In practice the
+reference implementation's archive has been byte-identical on Windows/x86-64, Linux/x86-64 and
+macOS/arm64; a consumer that needs to prove two archives carry the same data should compare the
+members, not the compressed bytes.
 
 ## 9. Not included in this release
 

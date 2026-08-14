@@ -36,6 +36,7 @@ from .spec import (
     G4DatFormatError,
     G4DatTable,
     _canonical_lines,  # the one line map, shared rather than reimplemented here
+    _split_fields,  # and the one field splitter, for the same reason
 )
 
 __all__ = [
@@ -59,7 +60,11 @@ SOURCE_LIBRARIES = ("geant4-compiled-in", "suzuki1987", "iwamoto2025", "jendl-mu
 UNC_TYPES = ("stat", "exp", "theory", "theory-spread", "model", "table", "estimate", "exact")
 RECOMMENDATIONS = ("recommended", "superseded", "")
 FILE_FIELDS = ("dataset", "version", "profile", "seam", "precedence", "rows")
-_ROW_KEY_PATTERN = re.compile(r"^[0-9]+-[0-9]+$")
+#: ``"Z-A"`` in decimal with **no zero padding**. The looser ``^[0-9]+-[0-9]+$`` implemented only the
+#: parenthesized half of section 3's rule and let ``"1-1"``, ``"01-1"`` and ``"001-001"`` be three
+#: distinct JSON keys for one record -- the exact collision that paragraph exists to prevent, since
+#: JSON object keys are strings and nothing normalizes them.
+_ROW_KEY_PATTERN = re.compile(r"^(0|[1-9][0-9]*)-(0|[1-9][0-9]*)$")
 
 
 @dataclass(frozen=True)
@@ -301,4 +306,20 @@ def check_against_table(table: G4DatTable, document: ProvDocument) -> None:
         if theirs != ours:
             raise ValueError(
                 f"Layer-2 {field_name} {ours!r} does not match Layer-1 '#{directive}' {theirs!r}"
+            )
+
+    # Section 3's "one object per Layer-1 record", enforced in the shipped package rather than in a
+    # build script -- the same reason check_canonical_bytes() lives here. A row set that has drifted
+    # from the table is a dataset whose provenance does not describe what it ships.
+    columns = _split_fields(table.directives.get("COLUMNS", ""))
+    key_indices = [columns.index(name) for name in ("Z", "A") if name in columns]
+    if len(key_indices) == 2:
+        expected = {"-".join(str(int(record[i])) for i in key_indices) for record in table.records}
+        missing = sorted(expected - set(document.rows))
+        extra = sorted(set(document.rows) - expected)
+        if missing or extra:
+            raise ValueError(
+                "Layer-2 rows do not match the Layer-1 records one-for-one: "
+                f"{len(missing)} record(s) with no row ({', '.join(missing[:5]) or 'none'}), "
+                f"{len(extra)} row(s) with no record ({', '.join(extra[:5]) or 'none'})"
             )
