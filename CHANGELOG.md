@@ -78,6 +78,30 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   the 0.01 absolute floor it already had.
 
 ### Added
+- **`G4MuonicData`: an external-data format for muonic-atom physics, with its reference implementation
+  (`FORMAT_SPEC.md` + `openmucf/g4/`).** A dependency-free way to ship muonic-atom data to Geant4 — or to
+  any transport code — **with its provenance and its uncertainty attached**, which no dataset of this kind
+  currently carries. Two layers, shipped together: Layer 1 (`*.g4dat`) is plain US-ASCII directives and
+  numeric records that a C++ reader parses with nothing but its standard library; Layer 2 (`*.prov.json`)
+  holds the bibliographic source, uncertainty type, competing-evaluation identity and disclosure flags that
+  Layer 1 deliberately leaves out. The two are bound by an invariant: Layer 1 is generated from Layer 2 and
+  its `#SOURCEDIGEST` is the SHA-256 of the Layer-2 file's bytes.
+  - `FORMAT_SPEC.md` is normative and states the grammar, the Layer-2 schema, **sixteen exact error codes**
+    (each carrying a 1-based line number), the reporting order two implementations must agree on, the
+    archive format, and the rules a C and C++ reader has to follow — above all *not* `strtod`/`atof`, which
+    honour `LC_NUMERIC` and silently return `0` for every value under a comma-decimal locale.
+  - `openmucf/g4/{spec,provenance,emit}.py` is the reference implementation: parse/render/validate,
+    `%.17g` floats that round-trip every finite double exactly, the Layer-2 schema and digest, and a
+    deterministic `.tar.gz` plus the `geant4_add_dataset(...)` registration snippet. Standard library only,
+    and fenced by test from importing this project's kinetics modules so the layer stays liftable.
+  - `data/g4/` ships a worked example that carries **no physics and says so in the file itself** (every
+    Layer-2 row reads "format example, not evaluated physics"), regenerated and byte-diffed by `make
+    g4data` inside `make audit`. Float formatting is proven identical on Linux, macOS/arm64 and
+    Windows on every CI run. The comma-decimal-locale check is *enforced* on Linux, where CI installs
+    `de_DE.UTF-8` and verifies the install, so the test fails rather than skips; on the other two it
+    runs only where a comma-decimal locale happens to be present.
+  - Names are **provisional**: `G4MuonicData` and `G4MUONICDATA` are placeholders, and the C++ reader and
+    its standalone validation application are specified but not yet part of this release.
 - **Open muon-cost ledger (`openmucf/data/muon_cost.csv` + `openmucf/mucost.py` + `MUON_COST.md`).** A
   curated compilation-with-provenance of the muon-production energy cost on one auditable basis (beam GeV
   per muon; wall-plug and recapture credits kept in separate flagged columns, never folded). Ten rows across

@@ -1,0 +1,15 @@
+#GRAMMAR      1.0
+#DATASET      G4MuonicData
+#VERSION      0.0.0-example
+#PROFILE      evaluated
+#SEAM         d1_nuclear_capture
+#TABLE        format_example
+#GENERATOR    openmucf-g4 1.1.0
+#SOURCEDIGEST 026f73b691d6d2955ae01eaa23921fc2d454048ea3a15ebac83544a0e4f2dd19
+#UNITS        value=arbitrary unc=arbitrary
+#COLUMNS      Z A value unc
+#VALIDITY     Z:listed A:listed
+ 1  1 1 0.10000000000000001
+ 6 12 2 0.20000000000000001
+29 63 3 0.29999999999999999
+#END

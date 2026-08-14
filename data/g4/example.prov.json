@@ -1,0 +1,53 @@
+{
+  "dataset": "G4MuonicData",
+  "precedence": [
+    "openmucf"
+  ],
+  "profile": "evaluated",
+  "rows": {
+    "1-1": {
+      "conditions": "none; this row exists only to exercise the file format",
+      "evaluation_id": "format-example-1-1",
+      "evaluation_method": "format example, not evaluated physics",
+      "isotope_resolved": false,
+      "needs_verification": true,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "openmucf-format-spec",
+      "source_library": "openmucf",
+      "source_locator": "FORMAT_SPEC.md section 2",
+      "unc_type": "estimate",
+      "validity_range": "none; this row makes no physical claim"
+    },
+    "29-63": {
+      "conditions": "none; this row exists only to exercise the file format",
+      "evaluation_id": "format-example-29-63",
+      "evaluation_method": "format example, not evaluated physics",
+      "isotope_resolved": false,
+      "needs_verification": true,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "openmucf-format-spec",
+      "source_library": "openmucf",
+      "source_locator": "FORMAT_SPEC.md section 2",
+      "unc_type": "estimate",
+      "validity_range": "none; this row makes no physical claim"
+    },
+    "6-12": {
+      "conditions": "none; this row exists only to exercise the file format",
+      "evaluation_id": "format-example-6-12",
+      "evaluation_method": "format example, not evaluated physics",
+      "isotope_resolved": false,
+      "needs_verification": true,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "openmucf-format-spec",
+      "source_library": "openmucf",
+      "source_locator": "FORMAT_SPEC.md section 2",
+      "unc_type": "estimate",
+      "validity_range": "none; this row makes no physical claim"
+    }
+  },
+  "seam": "d1_nuclear_capture",
+  "version": "0.0.0-example"
+}

@@ -27,6 +27,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]" ruff
+      # The .g4dat emitter must produce identical bytes under a comma-decimal LC_NUMERIC, which is
+      # the failure mode that turns a table of rates into a table of zeros in a C reader. The test
+      # that proves it FAILS rather than skips on Linux, so the locale has to exist here: a skip on
+      # the one platform we can guarantee it on would be a green tick for a check that never ran.
+      # The `locale -a` grep makes a silently ineffective locale-gen fail this step instead of
+      # surfacing later as a confusing test failure.
+      - name: Install a comma-decimal locale
+        run: |
+          sudo locale-gen de_DE.UTF-8
+          sudo update-locale
+          locale -a | grep -i 'de_DE'
       - name: Lint
         run: ruff check .
       - name: Test
@@ -45,6 +56,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-lock.txt
           pip install -e . --no-deps
+      # This job runs the same suite as `test`, so it needs the same locale. Adding it to only one
+      # of the two ubuntu jobs that run pytest would leave the other red for a reason unrelated to
+      # what it exists to check.
+      - name: Install a comma-decimal locale
+        run: |
+          sudo locale-gen de_DE.UTF-8
+          sudo update-locale
+          locale -a | grep -i 'de_DE'
       - name: Test
         run: pytest -q
 
