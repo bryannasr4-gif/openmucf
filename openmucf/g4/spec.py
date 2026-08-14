@@ -525,9 +525,21 @@ def parse(text: str) -> G4DatTable:
     order_index = -1
     end_line: int | None = None
 
-    def close_header(at_line: int) -> list[str]:
+    def close_header() -> list[str]:
         """Run the header rules once the directive block is over, then fix the column list."""
-        _check_header(directives, lambda keyword: directive_lines.get(keyword, at_line))
+
+        def dline(keyword: str) -> int:
+            # A directive that IS present is reported at the line it occupies. One that is missing
+            # has no line, so it is reported at the line it WOULD have occupied -- the same rule
+            # validate() uses. Reporting the block-close line instead meant every missing directive
+            # came back as the same line number here and as its own slot there: identical content,
+            # identical code, two different lines, which is what section 7 promises cannot happen.
+            if keyword in directive_lines:
+                return directive_lines[keyword]
+            preceding = DIRECTIVE_ORDER[: DIRECTIVE_ORDER.index(keyword)]
+            return sum(1 for k in preceding if k in directives) + 1
+
+        _check_header(directives, dline)
         return _split_fields(directives["COLUMNS"])
 
     for lineno, line in enumerate(body, start=1):
@@ -536,7 +548,7 @@ def parse(text: str) -> G4DatTable:
 
         if line.rstrip(" \t") == END_MARKER:
             if columns is None:
-                columns = close_header(lineno)
+                columns = close_header()
             end_line = lineno
             continue
 
@@ -581,7 +593,7 @@ def parse(text: str) -> G4DatTable:
             continue
 
         if columns is None:
-            columns = close_header(lineno)
+            columns = close_header()
         records.append(_lex_record(line, lineno, columns))
         record_lines.append(lineno)
 
@@ -595,7 +607,7 @@ def parse(text: str) -> G4DatTable:
         )
 
     if columns is None:  # pragma: no cover -- the #END branch closes the header before setting it
-        columns = close_header(end_line)
+        columns = close_header()
     _check_records(records, columns, lambda index: record_lines[index])
     return G4DatTable(directives=dict(directives), records=tuple(records))
 
@@ -680,7 +692,10 @@ def validate(table: G4DatTable) -> None:
                 "E005", dline(keyword), f"{_byte_detail(offending.group())} in directive '#{keyword}'"
             )
     for keyword in order:
-        if "\r" in directives[keyword]:
+        # The keyword as well as the value: a CR in a keyword is unreachable from any file, but
+        # checking only values meant it fell through to E001 while a VT in the same position gave
+        # E005 -- two byte-set violations, two codes, for no reason anyone could state.
+        if "\r" in keyword or "\r" in directives[keyword]:
             raise G4DatFormatError("E006", dline(keyword), f"carriage return in directive '#{keyword}'")
     # `#GRAMMAR` EAGERLY, at its own line, exactly as parse() does it -- before the unknown-directive
     # scan and before the header rules. Section 2.7 makes E010 "the one code that preempts everything

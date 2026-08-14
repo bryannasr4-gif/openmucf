@@ -149,10 +149,24 @@ def test_t01_e001_unknown_directive():
 
 
 def test_t02_e002_missing_required_directive():
-    """A missing required directive is reported where the directive block ended."""
+    """A missing directive is reported at the line it WOULD have occupied, on both entry points.
+
+    It has no line of its own, so a convention is needed; `parse()` used the line where the block
+    closed and `validate()` used the would-be slot, which meant identical content came back with the
+    same code and two different lines for every one of the required directives. The would-be slot
+    wins: it points at where the directive should go, which is what the reader has to act on.
+    """
     error = rejected(drop_line(CANONICAL, "#VALIDITY"))
-    assert (error.code, error.line) == ("E002", 13)  # 12 directives left, first record on line 13
+    assert (error.code, error.line) == ("E002", 12)  # 11 directives precede it, so it belongs on 12
     assert "'#VALIDITY'" in str(error)
+
+    # The comparison that was missing: the two entry points, on the same content, for every one of
+    # the eleven always-required directives.
+    for keyword in spec.REQUIRED_DIRECTIVES:
+        from_file = rejected(drop_line(CANONICAL, f"#{keyword}"))
+        in_memory = rejected_table(make_table(**{keyword: None}))
+        assert str(from_file) == str(in_memory), keyword
+        assert from_file.code == "E002", keyword
 
     # An EMPTY value counts as ABSENT for every required directive, not only for `#SOURCESHA`, and
     # is reported at its own line. Six of the thirteen directives used to accept one in silence: a
@@ -455,6 +469,14 @@ def test_t14_e014_non_finite_float():
     assert (error.code, error.line) == ("E014", 15)
     infinity = rejected(replace_line(CANONICAL, "29", "29  63 -INF 0.041"))
     assert (infinity.code, infinity.line) == ("E014", 15)
+
+    # The non-finite literals are checked BEFORE the lexical float pattern, and the order is not
+    # cosmetic: none of them matches that pattern, so a reader applying the pattern first reports
+    # E007 where this format requires E014. Section 2.3 rule 4 now says so.
+    assert spec._FLOAT_PATTERN.match("inf") is None
+    for literal in ("inf", "+inf", "-inf", "infinity", "nan", "NaN", "INF"):
+        error = rejected(replace_line(CANONICAL, "29", f"29  63 {literal} 0.041"))
+        assert (error.code, error.line) == ("E014", 15), literal
     overflow = rejected(replace_line(CANONICAL, "29", "29  63 1e400 0.041"))
     assert (overflow.code, overflow.line) == ("E014", 15)
 
@@ -730,6 +752,30 @@ def test_t20_render_is_deterministic_and_timestamp_free():
     assert re.search(r"\b(19|20)\d{2}\b", without_sha) is None
 
 
+def test_t20b_record_lines_tolerate_edge_whitespace_and_sort_numerically():
+    """Two rules an independent reader would otherwise have to guess, now stated in section 2.3.
+
+    Both were true of this implementation and unstated in the document, which is the same defect as
+    stating them wrongly: a C++ reader that splits a record line without stripping the END of it sees
+    a trailing separator run as one more empty field and reports E004 on a conforming file, and a
+    reader that compares the key columns as TEXT sorts `10` before `2` and reports E015 on a file
+    this one accepts.
+    """
+    for suffix in ("", " ", "   ", "\t", " \t "):
+        text = replace_line(CANONICAL, " 1", " 1   1 0.000725 1.7e-05" + suffix)
+        assert spec.parse(text).records[0] == (1, 1, 0.000725, 1.7e-05), repr(suffix)
+    leading = replace_line(CANONICAL, " 1", "\t 1   1 0.000725 1.7e-05")
+    assert spec.parse(leading).records[0] == (1, 1, 0.000725, 1.7e-05)
+
+    # Numeric, not lexicographic: (2, 2) then (10, 10) is ascending; the reverse is E015. Compared as
+    # text, "10" sorts before "2" and the two orders would swap.
+    ascending = make_table(records=((2, 2, 0.5, 0.1), (10, 10, 0.5, 0.1)))
+    assert spec.validate(ascending) is None
+    descending = rejected_table(make_table(records=((10, 10, 0.5, 0.1), (2, 2, 0.5, 0.1))))
+    assert (descending.code, descending.line) == ("E015", 15)
+    assert [line.split()[0] for line in spec.render(ascending).splitlines()[13:15]] == ["2", "10"]
+
+
 def test_t21_records_are_sorted_on_render():
     reversed_table = make_table(records=tuple(reversed(RECORDS)))
     text = spec.render(reversed_table)
@@ -890,6 +936,16 @@ def test_t27_source_digest_matches():
         provenance.check_against_table(
             make_table(COLUMNS="Z value unc", records=((1, 0.5, 0.1),)), document
         )
+    # BOTH directions. Guarding only "rows that cannot be keyed" left the worse half open: records
+    # shipping with no provenance row at all, which is exactly what section 3 forbids.
+    empty_doc = dataclasses.replace(document, rows={})
+    for columns, records in (("Z value unc", ((1, 0.5, 0.1),)), ("energy value", ((1.0, 0.5),))):
+        with pytest.raises(ValueError, match="defined only for a table declaring both"):
+            provenance.check_against_table(make_table(COLUMNS=columns, records=records), empty_doc)
+    # A table with neither records nor rows is vacuously fine.
+    assert provenance.check_against_table(
+        make_table(COLUMNS="energy value", records=()), empty_doc
+    ) is None
 
 
 def test_t28_digest_drift_raises_e009():
@@ -1076,6 +1132,7 @@ def test_t35_archive_is_deterministic():
     assert header[100:108] == b"0000644\x00" and header[136:148] == b"00000000000\x00"
     assert header[148:156].endswith(b"\x00 ") and len(header[148:156]) == 8  # 6 octal, NUL, space
     assert header[329:345] == b"\x00" * 16, "devmajor/devminor must be NUL, not octal zero"
+    assert header[156:157] == b"0", "typeflag must be '0', not the equally legal NUL spelling"
     assert len(decompressed) % 10240 == 0 and decompressed.endswith(b"\x00" * 1024)
 
 

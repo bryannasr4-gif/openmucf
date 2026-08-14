@@ -315,12 +315,15 @@ def check_against_table(table: G4DatTable, document: ProvDocument) -> None:
     key_indices = [columns.index(name) for name in ("Z", "A") if name in columns]
     if len(key_indices) != 2:
         # Section 3's row key is `"Z-A"`, so it is only defined for a table declaring both. Rather
-        # than silently skipping the rule -- which let a single-key table carry any rows at all -- say
-        # so, and reject a document that claims rows a table cannot be keyed against.
-        if document.rows:
+        # than silently skipping the rule -- which let a single-key table carry any rows at all --
+        # say so. BOTH directions are a violation: rows that cannot be keyed against the table, and
+        # records that no row can describe. Checking only the first left records shipping with no
+        # provenance at all, which is the half section 3 most cares about.
+        if document.rows or table.records:
             raise ValueError(
                 "Layer-2 rows are keyed 'Z-A', which is defined only for a table declaring both "
-                f"'Z' and 'A'; this table declares {' '.join(columns) or 'no columns'}"
+                f"'Z' and 'A'; this table declares {' '.join(columns) or 'no columns'} and carries "
+                f"{len(table.records)} record(s) against {len(document.rows)} row(s)"
             )
         return
     expected = {"-".join(str(int(record[i])) for i in key_indices) for record in table.records}

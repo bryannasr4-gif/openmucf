@@ -99,7 +99,9 @@ meaning. That applies to an empty `#FALLBACK` (which declares no fallback) and t
 `#SOURCESHA` is required **if and only if** `#PROFILE` is `parity`: a parity file exists to reproduce
 a specific upstream revision bit-for-bit, so it must name that revision; a non-parity file is not
 reproducing anything and must not claim to (`E013` in both directions). An empty `#SOURCESHA` is a
-parity file claiming to reproduce nothing, which is exactly the claim `E013` exists to stop.
+parity file claiming to reproduce nothing, which is exactly the claim `E013` exists to stop — and it
+is **`E013`, not `E002`**, even though the empty-counts-as-absent rule is what makes it a violation:
+`#SOURCESHA` is never in the always-required set, so its absence is only ever a `#PROFILE` problem.
 
 An analytic fallback is carried as declared data rather than as compiled-in behaviour so that it is
 versioned, testable, swappable and citable like any other row.
@@ -169,8 +171,11 @@ After the directives come **zero or more records**, one per line.
 
 1. Fields are separated by **space (`0x20`) and tab (`0x09`) only** -- no other byte is a separator,
    because no other whitespace byte may appear at all (rule 2.1.1). Any run of them is one
-   separator, and leading whitespace is permitted, so a writer may align columns and a reader must
-   not depend on the alignment.
+   separator, and **leading and trailing whitespace are both permitted and are not fields**: strip
+   the line of spaces and tabs at both ends before splitting it. A writer may therefore align
+   columns, and a reader must not depend on the alignment. Stating the trailing case matters as much
+   as the leading one: a reader that splits without stripping the end sees a trailing separator run
+   as one more (empty) field and reports `E004` on a file every other reader accepts.
 2. The number of fields must equal the arity of `#COLUMNS` (`E004`). A blank line is a record with
    zero fields and is rejected the same way: the format has no blank lines and no comments. This is
    also why `#COLUMNS` may not be empty (section 2.2): at arity zero a blank line *would* be a
@@ -183,7 +188,9 @@ After the directives come **zero or more records**, one per line.
    `1e3` there is `E007` (it is not a number of the kind that column accepts), never `E014`.
 4. Every other column is a **float column**: the field must match the strict C-locale float
    `^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$`. **A comma decimal separator is a syntax error
-   (`E007`), never a silent truncation** -- see section 6.
+   (`E007`), never a silent truncation** -- see section 6. **Test rule 5's non-finite literals
+   first**: `inf`, `nan` and friends do not match this pattern, so a reader that applies the pattern
+   before checking for them reports `E007` where this format requires `E014`.
 5. **In a float column**, a field that denotes a non-finite value (`inf`, `+inf`, `-inf`,
    `infinity`, `nan`, in any letter case), or a lexically valid field that leaves the representable
    range in either direction --
@@ -191,14 +198,18 @@ After the directives come **zero or more records**, one per line.
    included for the same reason as overflow and matters just as much in practice: `1e-999` converts
    to `0.0` silently in some languages, while a C++ `std::from_chars` reports
    `result_out_of_range` for it, so accepting the field would mean two conforming readers disagree
-   about the same file. A field that is **lexically zero** (no digit `1`-`9` before the exponent,
-   e.g. `0`, `0.0`, `-0.0`, `0e-999`) is a genuine zero and is accepted.
+   about the same file. **"Underflow" here means the result is *exactly zero*, not merely
+   subnormal**: `4.9406564584124654e-324` is representable, is required to round-trip (section 2.6),
+   and is accepted. A field that is **lexically zero** (no digit `1`-`9` before the exponent, e.g.
+   `0`, `0.0`, `-0.0`, `0e-999`) is a genuine zero and is likewise accepted.
 6. The **primary key** is whichever of `Z` and `A` the table declares, in that order -- `(Z, A)` for
    the usual table, `(Z)` or `(A)` for one that declares only one of them. A repeated key is an
    error naming the first-seen line (`E008`), and the message names the key columns that table
    actually declares.
-7. Records are sorted **ascending by the primary key** (`E015`). Deterministic output requires it
-   and it makes diffs readable.
+7. Records are sorted **ascending by the primary key**, compared as **integers, most significant
+   key column first** -- never as text (`E015`). Numerically `2` precedes `10`; lexicographically
+   `"10"` precedes `"2"`, so a reader that compares the field text sorts the same file differently.
+   Deterministic output requires the order and it makes diffs readable.
 
 A table whose `#COLUMNS` contains neither `Z` nor `A` has no primary key; rules 6 and 7 then have
 nothing to check and are not enforced. Every table defined for this format so far carries `Z` and
@@ -375,7 +386,7 @@ Every rejection carries an exact code and a **1-based line number**. The message
 | `E010` | unsupported or malformed `#GRAMMAR` version |
 | `E011` | content after the `#END` terminator, or on the terminator line itself |
 | `E012` | missing newline-terminated `#END` |
-| `E013` | `#PROFILE parity` without a non-empty `#SOURCESHA`, or `#SOURCESHA` under a non-parity profile |
+| `E013` | `#PROFILE parity` without a non-empty `#SOURCESHA`, or a **non-empty** `#SOURCESHA` under a non-parity profile |
 | `E014` | float outside the representable range: non-finite (`inf` / `nan`), overflow to infinity, or underflow to zero |
 | `E015` | records not sorted ascending by the primary key |
 | `E016` | a directive value outside the set or lexical form section 2.2 requires of it -- `#PROFILE`, `#SEAM`, `#SOURCEDIGEST`, `#COLUMNS`; the message names the offending directive |
@@ -387,7 +398,8 @@ order":
 
 1. **Whole-file lexical.** `E005`, then `E006`. Both are properties of the byte stream rather than
    of any one line, and decoding precedes splitting into lines, so these run before anything else
-   and `E005` runs before `E006`.
+   -- **including the eager `#GRAMMAR` check of phase 2** -- and `E005` runs before `E006`. A file
+   with a forbidden byte on line 40 and an unreadable `#GRAMMAR` on line 1 reports `E005`.
 2. **Line scan, in file order.** Each line is diagnosed as it is reached: `E001`, `E003` and `E011`
    for header and block structure, `E004` then `E007`/`E014` within a record (field count before
    field lexis, since the lexis of a field the record should not have is not interesting). The
@@ -399,7 +411,14 @@ order":
 3. **Block-close and post-scan.** Checks that cannot be decided from one line: `E002`, `E013` and
    `E016` **when the directive block closes**, then `E012`, then `E008`, then `E015` once all records
    are in hand. These are **reported at the line of the directive or record at fault**, which may
-   be an *earlier* line than a phase-2 defect that preempted them.
+   be an *earlier* line than a phase-2 defect that preempted them. A directive that is **missing**
+   has no line of its own, so it is reported at the line it **would have occupied** — count the
+   directives that precede it in the section-2.2 order and are present, and add one.
+
+   Within the block-close group the order is fixed, because several of these can be true at once:
+   **all `E002` first**, in section-2.2 directive order; then `E016` for `#PROFILE`, `#SEAM`,
+   `#SOURCEDIGEST`, `#COLUMNS`, in that order; then `E013`. This is a priority order, not a
+   line order — an `E016` on line 8 is reported ahead of an `E013` whose fault line is 4.
 
 **The directive block closes at the first record line, or at `#END`, whichever comes first** -- and
 this is a rule about the reader's control flow, not a footnote. The header checks run *there*, so:
@@ -417,6 +436,13 @@ directive's line, not `E012`.
 That second case is the ordinary shape of a truncated download, and `E012` is both the true and the
 more useful diagnosis for it: telling someone whose file was cut off that their `#VALIDITY` is
 missing sends them to fix a header that is probably fine.
+
+Two same-line tie-breaks, so no reader has to guess them. **The line that closes the block is
+diagnosed as a block close first**: a file missing `#VALIDITY` whose first record is also malformed
+reports `E002`, not the record's `E004`/`E007`, because the header rules run at that line before it
+is read as a record. And **the directive order is checked before the eager `#GRAMMAR` rule**: a
+`#GRAMMAR` that arrives out of order is `E003` at its own line, not `E010`, because it has not been
+accepted as the grammar declaration yet.
 
 The consequence worth stating plainly: **a per-line defect, or an unclosed block, can preempt a
 block-level defect on an earlier line.** A file whose `#PROFILE` on line 4 lacks its `#SOURCESHA`
@@ -582,16 +608,16 @@ Every field that would otherwise leak the builder is pinned:
 | tar | `uid`, `gid` | `0`, `0` |
 | tar | `uname`, `gname` | empty, empty |
 | tar | `mode` | `0644` |
-| tar | type | regular file only |
-| tar | member name | a plain relative path, at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable) |
+| tar | typeflag | the byte `'0'` (`0x30`), not NUL — both spell "regular file" and readers accept either, but they are different bytes and change the header checksum |
+| tar | member name | a **flat US-ASCII name** -- no path separator, no `./` prefix, no directory component -- at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable) |
 | tar | magic + version | `ustar\0` then `00` (bytes 257-264 of each header block) |
 | tar | numeric field encoding | zero-padded octal, NUL-terminated, filling the field: `mode`/`uid`/`gid` as 7 digits + NUL (`0000644`, `0000000`), `size`/`mtime` as 11 digits + NUL |
-| tar | header checksum | **six octal digits, then NUL, then space** — not seven digits, and not digits + space + NUL |
+| tar | header checksum | **six octal digits, then NUL, then space** — not seven digits, and not digits + space + NUL. Computed per POSIX: the unsigned sum of all 512 header bytes **with the checksum field itself taken as eight spaces** |
 | tar | `devmajor`, `devminor` | **16 NUL bytes** (offsets 329-344), *not* octal zeros |
 | tar | end of archive | two 512-byte zero blocks, then zero padding to a multiple of **10240** bytes |
 | gzip | `mtime` | `0` |
 | gzip | `FNAME` | absent (flag bit `0x08` clear) |
-| gzip | compression level | `9`, and therefore `XFL` = `2` |
+| gzip | compression level | `9` with the **default strategy** and the default memory level, and therefore `XFL` = `2` (a different strategy can change `XFL`, and does change the stream) |
 | gzip | `OS` byte | **255** (unknown) — *not* `3`, which is what a Unix `gzip(1)` writes |
 
 The members sit at the **archive root** (a flat archive), and the checksum in the registration
