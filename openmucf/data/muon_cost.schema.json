@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "OpenMuCF muon-cost ledger row",
-  "description": "One published/derived muon-production energy cost, normalized to a single auditable basis with full provenance. Each row of data/muon_cost.csv must satisfy this. This is a curated compilation with provenance, not an evaluation: every OURS-normalization step is shown verbatim in 'derivation', facility rows are original derivations labeled 'implied, derived here', and no accounting credit (e.g. recapture) is ever silently folded in. NOTE: the normalized column is per muon on EACH ROW'S OWN basis (basis_class), not a single common basis; cross-class aggregation is not meaningful and the generator must disclose it.",
+  "description": "One published/derived muon-production energy cost, carrying its full accounting basis and provenance. Each row of data/muon_cost.csv must satisfy this. This is a curated compilation with provenance, not an evaluation: every OURS-normalization step is shown verbatim in 'derivation', facility rows are original derivations labeled 'implied, derived here', and no accounting credit (e.g. recapture) is ever silently folded in. A cost is only meaningful as a POINT ON A 2-D GRID of 'stage' (how far along the produce -> capture -> transport -> moderate -> stop-useful-in-D-T chain the muon has got) by 'numeraire' (the units the energy is counted in: beam kinetic, or electrical on one of two facility denominators). Wall-plug is a numeraire, NOT a stage. 'basis_class' is the deprecated 1-D predecessor of 'stage' and is retained as an alias. Values at different (stage, numeraire) coordinates are NOT commensurable: cross-coordinate aggregation is not meaningful and the generator must disclose it.",
   "type": "object",
   "required": [
     "source_id",
@@ -11,7 +11,8 @@
     "basis_as_published",
     "derivation",
     "source_bibkey",
-    "needs_verification"
+    "needs_verification",
+    "evidence_status"
   ],
   "properties": {
     "source_id": {
@@ -54,7 +55,24 @@
     },
     "eta_acc_assumption": {
       "type": "number",
-      "description": "Accelerator/wall-plug efficiency the source assumes, if stated (e.g. Kelly 0.18 PSI-measured). The normalized basis is BEAM energy per muon; wall-plug = normalized / eta_acc. Kept separate, never folded. Empty if the source does not state one."
+      "description": "Accelerator (electricity -> beam kinetic energy) efficiency the source assumes, if stated (e.g. Kelly 0.18, rounded from the PSI HIPA measurement). Dividing by it is a NUMERAIRE change (beam_kinetic -> electrical_*), not a stage advance: it converts the units the energy is counted in and applies no collection, moderation or stopping correction. Kept separate, never folded into a beam_kinetic row. Empty if the source does not state one."
+    },
+    "eta_mu_assumption": {
+      "type": "number",
+      "description": "The fraction of PRODUCED mu- the source assumes are actually delivered to the D-T vessel -- i.e. the whole capture + transport + moderate + stop segment collapsed into a single factor. Recorded exactly like recapture_factor and eta_acc_assumption: visible, but NEVER folded into normalized_GeV_per_mu. How well-founded it is lives in eta_mu_evidence_status, and that is what decides whether it may be composed at all. Empty if the source states none."
+    },
+    "eta_mu_evidence_status": {
+      "type": "string",
+      "enum": [
+        "primary",
+        "primary_cited",
+        "derived_here",
+        "author_declared_arbitrary",
+        "assumption",
+        "absent",
+        ""
+      ],
+      "description": "evidence_status of eta_mu_assumption specifically (same enum, same meanings). Kelly, Hart & Rose state they do not know eta_mu and adopt an 'arbitrary but reasonable assumption' of 50%, so their factor is author_declared_arbitrary: it may be DISPLAYED, but composing it yields a BOUND that must never be rendered as a value nor enter a headline. Empty where the row states no eta_mu."
     },
     "value_as_published": {
       "type": "string",
@@ -65,7 +83,49 @@
     },
     "normalized_GeV_per_mu": {
       "type": "number",
-      "description": "Beam (kinetic) energy per muon in GeV, ON THAT ROW'S OWN basis -- see basis_class. The rows are NOT all per stopped muon (the previous column name wrongly implied that): they mix per-produced, per-collected, per-stopped-in-D-T and per-stopped-in-another-target. Values on different basis_class are NOT commensurable and must never be aggregated silently. NOT wall-plug (eta_acc is kept separate). Empty ONLY for a needs_verification row whose digit is not pinned."
+      "description": "Energy per muon in GeV at THIS ROW'S OWN (stage, numeraire) coordinate. The name's 'normalized' means normalized to per-muon, NOT normalized to a common basis: the rows mix per-produced, per-transported, per-stopped-useful-in-D-T and per-stopped-in-another-target figures, and they are now counted in two different kinds of energy (beam kinetic and electrical). Values at different (stage, numeraire) coordinates are NOT commensurable and must never be aggregated silently -- in particular a tier median is only meaningful within one numeraire. Empty ONLY for a needs_verification row whose digit is not pinned.",
+      "exclusiveMinimum": 0
+    },
+    "numeraire": {
+      "type": "string",
+      "enum": [
+        "beam_kinetic",
+        "electrical_minimal",
+        "electrical_site",
+        ""
+      ],
+      "description": "The UNITS normalized_GeV_per_mu is counted in. Wall-plug is a NUMERAIRE, not a stage: the eta_acc conversion is a change of units applicable at ANY stage, so modelling it as a sequential node would make 'electrical energy per TRANSPORTED muon' inexpressible without re-applying eta_acc downstream. 'beam_kinetic' = beam kinetic energy delivered by the accelerator. 'electrical_minimal' = electrical energy on the minimally-required-subsystem denominator (PSI HIPA grid-to-beam 18.3%: 1.3 MW beam / 7.12 MW of only those subsystem parts needed to produce the beam). 'electrical_site' = electrical energy on the facility's total draw (PSI HIPA 1.3 MW beam / 12.5 MW site = 10.4%). Both electrical variants are defensible and come from the SAME primary on two different denominators; that is why the numeraire must be carried per row rather than assumed. Empty only on an unpinned needs_verification row.",
+      "$comment": "Both PSI HIPA denominators: Kovach, Parfenova, Grillenberger & Seidel, J. Phys. Conf. Ser. 874 (2017) 012058, abstract + section 4."
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "produced",
+        "captured",
+        "transported",
+        "moderated",
+        "stopped_useful_in_dt",
+        "stopped_other_target",
+        ""
+      ],
+      "description": "How far along the muon chain this cost is counted, following the five verbs by which the muCF cycle-closure literature defines the muon cost: produce, capture, transport, moderate, and stop one USEFUL negative muon in the target. The muCF chain is produced -> captured -> transported -> moderated -> stopped_useful_in_dt; only that terminal stage is the quantity a muCF energy balance actually needs, and every earlier stage is a strict LOWER BOUND on it because each omitted conversion factor is <= 1. 'stopped_other_target' is a non-D-T sink (e.g. an aluminium stopping target): it is NOT a point on the muCF chain and can never be composed into a muCF cost. Empty only on an unpinned needs_verification row.",
+      "$comment": "Supersedes basis_class; the mapping is documented in that field's description."
+    },
+    "evidence_status": {
+      "type": "string",
+      "enum": [
+        "primary",
+        "primary_cited",
+        "derived_here",
+        "author_declared_arbitrary",
+        "assumption",
+        "absent"
+      ],
+      "description": "How well-founded this row's number is. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attributes it to a primary that has itself been read; 'derived_here' = OUR arithmetic on published inputs, shown verbatim in derivation; 'author_declared_arbitrary' = the source itself calls the value arbitrary or unknown; 'assumption' = assumed without the source saying so; 'absent' = the quantity is simply not in the literature. The last three are NOT SOURCED: any figure that composes one is a BOUND, never a value, and must never headline."
+    },
+    "useful_fraction_sourced": {
+      "type": "boolean",
+      "description": "Only meaningful when stage='stopped_useful_in_dt'. True iff the source establishes that the muons it counts are USEFUL in the cycle-closure sense (actually available to catalyse fusion), rather than merely stopped somewhere in the fuel. False marks a row that maps onto the terminal stage but whose 'useful' qualifier its source never establishes -- such a row is still a bound, not a value. Empty where the stage is not the terminal one."
     },
     "basis_class": {
       "type": "string",
@@ -76,7 +136,7 @@
         "stopped_other_target",
         ""
       ],
-      "description": "Machine-readable accounting basis, classified from basis_as_published. 'produced' = per muon created; 'collected' = transported/collected but never stopped in fuel; 'stopped_in_dt' = stopped in the D-T target (the quantity a muCF energy balance actually needs); 'stopped_other_target' = stopped in a NON-D-T target (e.g. Al) and therefore not directly usable. A per-produced or per-collected figure is a LOWER BOUND on the per-stopped-in-D-T cost. Empty is allowed only on an unpinned needs_verification row."
+      "description": "DEPRECATED ALIAS of 'stage', retained because downstream code and the public MUON_COST.md text still refer to it; do not delete it, and keep it consistent with 'stage'. Mapping: produced -> produced; collected -> transported; stopped_in_dt -> stopped_useful_in_dt (with useful_fraction_sourced recording whether the source actually establishes the 'useful' qualifier, which for every row held today it does NOT); stopped_other_target -> stopped_other_target. The alias is 1-D and cannot express the numeraire axis, which is precisely why 'stage' + 'numeraire' supersede it. Empty is allowed only on an unpinned needs_verification row."
     },
     "charge_basis": {
       "type": "string",

@@ -19,6 +19,23 @@ row counts mu+ and mu- together. ``basis_class`` and ``charge_basis`` make that 
 per-collected figure is a LOWER BOUND on the per-stopped-in-D-T cost, because collection and stopping
 fractions are both < 1.
 
+**A cost is a point on a 2-D grid, not a scalar.** The two axes are :data:`MUCF_CHAIN` (``stage`` --
+how far along produce -> capture -> transport -> moderate -> stop-useful-in-D-T the muon has got) and
+``numeraire`` (the units the energy is counted in: beam kinetic, or electrical on either of two
+facility denominators). **Wall-plug is a numeraire, not a stage:** dividing by an accelerator
+efficiency changes the units and applies at *any* stage, so treating it as a sequential node would
+make "electrical energy per transported muon" inexpressible. ``basis_class`` is the deprecated 1-D
+predecessor of ``stage``, kept as an alias. Because the two axes are independent, every aggregation
+here (:meth:`MuonCostTable.tier_median` and friends) is **restricted to a single numeraire**, defaulting
+to :data:`BEAM_KINETIC` -- medianing beam-kinetic and electrical figures together would be a units error.
+
+**Composition is basis-typed and refuses to lie.** :class:`ChainValue` carries a figure together with
+its stage, numeraire and the evidence status of every factor composed into it. If any composed factor
+is ``author_declared_arbitrary``/``assumption``/``absent``, or if the chain has not reached the terminal
+stage, the result is a **BOUND, not a value** -- and :meth:`ChainValue.render_value` *raises* rather
+than print it as one. Every omitted factor is <= 1, so the bound is one-sided (costs can only rise).
+No row in the literature today has a fully-sourced chain, which is the finding, not a gap in the code.
+
 Not part of the eager-import surface (like ``calibrate``/``validate``/``forecast``); reached as a
 submodule. The rate ledger (``openmucf.rates``) remains the source of truth for microscopic physics;
 this is the E_mu single accounting home (the ``E_mu_cost`` rate-ledger row points here).
@@ -51,6 +68,128 @@ VALID_CHARGE_BASIS = {"mu_minus", "mixed", "mu_plus_only", ""}
 # Classes whose figure understates the true per-stopped-in-D-T cost (collection/stopping fractions < 1).
 LOWER_BOUND_CLASSES = frozenset({"produced", "collected"})
 
+# ------------------------------------------------------------------------------------------------
+# The two basis axes. `stage` says how far along the muon chain the cost is counted; `numeraire` says
+# what kind of energy it is counted in. They are INDEPENDENT -- which is exactly why wall-plug is a
+# numeraire and not a stage (see the module docstring).
+# ------------------------------------------------------------------------------------------------
+#: The muCF chain, in order. Only the last entry is the quantity a muCF energy balance actually needs.
+MUCF_CHAIN: tuple[str, ...] = ("produced", "captured", "transported", "moderated", "stopped_useful_in_dt")
+TERMINAL_STAGE = MUCF_CHAIN[-1]
+#: Stopped somewhere that is not D-T fuel: a real cost, but NOT a point on the muCF chain at all.
+OFF_CHAIN_STAGES = frozenset({"stopped_other_target"})
+VALID_STAGE = set(MUCF_CHAIN) | OFF_CHAIN_STAGES | {""}
+
+BEAM_KINETIC = "beam_kinetic"
+VALID_NUMERAIRE = {BEAM_KINETIC, "electrical_minimal", "electrical_site", ""}
+
+#: Statuses that carry real provenance. Anything else makes a composed figure a BOUND (D4/D5).
+SOURCED_STATUSES = frozenset({"primary", "primary_cited", "derived_here"})
+NON_SOURCED_STATUSES = frozenset({"author_declared_arbitrary", "assumption", "absent"})
+VALID_EVIDENCE_STATUS = SOURCED_STATUSES | NON_SOURCED_STATUSES
+
+#: The deprecated `basis_class` alias -> the `stage` it maps onto. Kept so the two cannot drift.
+STAGE_FROM_BASIS_CLASS = {
+    "produced": "produced",
+    "collected": "transported",
+    "stopped_in_dt": "stopped_useful_in_dt",
+    "stopped_other_target": "stopped_other_target",
+    "": "",
+}
+
+
+class BasisError(ValueError):
+    """Raised when a composition or a rendering would misrepresent a figure's accounting basis."""
+
+
+@dataclass(frozen=True)
+class ChainValue:
+    """A muon-cost figure that knows its own basis and whether it is a VALUE or only a BOUND.
+
+    ``statuses`` accumulates the ``evidence_status`` of every factor composed in, so the verdict is
+    derived from provenance rather than asserted. The figure is a **value** only when it has reached
+    :data:`TERMINAL_STAGE` *and* every composed factor is sourced; otherwise it is a **bound**, and
+    :meth:`render_value` refuses. Because every omitted or unsourced factor is <= 1, the bias is
+    always one-sided: the true cost can only be higher.
+    """
+
+    value_GeV: float
+    stage: str
+    numeraire: str
+    charge_basis: str
+    statuses: tuple[str, ...]
+    provenance: tuple[str, ...]
+
+    @property
+    def missing_stages(self) -> tuple[str, ...]:
+        """Chain stages not yet reached (each contributes a factor <= 1 that would raise the cost)."""
+        return MUCF_CHAIN[MUCF_CHAIN.index(self.stage) + 1 :]
+
+    @property
+    def unsourced_statuses(self) -> tuple[str, ...]:
+        return tuple(s for s in self.statuses if s in NON_SOURCED_STATUSES)
+
+    @property
+    def is_bound(self) -> bool:
+        return bool(self.unsourced_statuses) or bool(self.missing_stages)
+
+    @property
+    def bias_direction(self) -> str:
+        """Which way the truth lies. Always ``'lower'`` for a bound -- never a symmetric interval."""
+        return "lower" if self.is_bound else "none"
+
+    def why_bound(self) -> str:
+        """Human-readable reason, for printing next to the number. Empty iff this is a value."""
+        why = []
+        if self.missing_stages:
+            why.append("stages not reached: " + ", ".join(self.missing_stages))
+        if self.unsourced_statuses:
+            why.append("non-sourced factors: " + ", ".join(self.unsourced_statuses))
+        return "; ".join(why)
+
+    def render(self, digits: int = 2) -> str:
+        """The figure with an explicit bound marker when it is one. Always safe to print."""
+        prefix = ">= " if self.is_bound else ""
+        return f"{prefix}{self.value_GeV:.{digits}f} GeV"
+
+    def render_value(self, digits: int = 2) -> str:
+        """The figure as a plain value. **Raises** :class:`BasisError` if it is only a bound.
+
+        This refusal is the point of the class: it makes the basis error unrepresentable rather than
+        merely discouraged, so a caller cannot quote an incomplete or unsourced chain as a result.
+        """
+        if self.is_bound:
+            raise BasisError(
+                f"refusing to render a bound as a value ({self.value_GeV:.{digits}f} GeV at stage "
+                f"'{self.stage}', numeraire '{self.numeraire}'): {self.why_bound()}. "
+                f"Use render() -- the true cost is one-sided ({self.bias_direction})."
+            )
+        return f"{self.value_GeV:.{digits}f} GeV"
+
+    def compose(self, factor: float, to_stage: str, status: str, label: str) -> ChainValue:
+        """Advance along the chain by dividing by a sub-unity delivery ``factor``.
+
+        The numeraire is unchanged (that is a separate conversion); the stage must strictly advance,
+        and the factor's own ``status`` is carried forward, so composing an
+        ``author_declared_arbitrary`` factor permanently marks the result as a bound.
+        """
+        if to_stage not in MUCF_CHAIN:
+            raise BasisError(f"cannot compose to stage {to_stage!r}: not on the muCF chain {MUCF_CHAIN}")
+        if MUCF_CHAIN.index(to_stage) <= MUCF_CHAIN.index(self.stage):
+            raise BasisError(f"composition must advance the chain: {self.stage!r} -> {to_stage!r}")
+        if status not in VALID_EVIDENCE_STATUS:
+            raise BasisError(f"unknown evidence_status {status!r}")
+        if not 0.0 < factor <= 1.0:
+            raise BasisError(f"a delivery factor must lie in (0, 1]; got {factor!r}")
+        return ChainValue(
+            value_GeV=self.value_GeV / factor,
+            stage=to_stage,
+            numeraire=self.numeraire,
+            charge_basis=self.charge_basis,
+            statuses=self.statuses + (status,),
+            provenance=self.provenance + (label,),
+        )
+
 
 @dataclass(frozen=True)
 class MuonCost:
@@ -64,9 +203,15 @@ class MuonCost:
     recapture_credit_applied: bool
     recapture_factor: float  # NaN if none quoted
     eta_acc_assumption: float  # NaN if the source states none
+    eta_mu_assumption: float  # NaN if the source states none
+    eta_mu_evidence_status: str  # "" iff no eta_mu is stated
     value_as_published: str
     unit_as_published: str
     normalized_GeV_per_mu: float  # NaN iff the digit is not pinned (needs_verification row)
+    numeraire: str
+    stage: str
+    evidence_status: str
+    useful_fraction_sourced: bool | None  # None where stage is not the terminal one
     basis_class: str
     charge_basis: str
     derivation: str
@@ -102,6 +247,46 @@ class MuonCost:
         if math.isnan(self.eta_acc_assumption) or not self.has_normalized:
             return float("nan")
         return self.normalized_GeV_per_mu / self.eta_acc_assumption
+
+    @property
+    def eta_mu_is_sourced(self) -> bool:
+        """True iff this row states an eta_mu whose evidence status is a sourced one.
+
+        Kelly, Hart & Rose state theirs is an "arbitrary but reasonable assumption" and that they do
+        not know the real value, so theirs is False -- it may be displayed, never composed into a
+        quotable result.
+        """
+        return self.eta_mu_evidence_status in SOURCED_STATUSES
+
+    def chain_point(self) -> ChainValue:
+        """This row as a typed point on the muCF chain. Raises for rows that are not on it.
+
+        A ``stopped_other_target`` row is a real measurement but not a muCF cost at any stage, so it
+        cannot become a :class:`ChainValue` at all. A terminal-stage row whose source never establishes
+        the "useful" qualifier picks up an ``assumption`` status here, which keeps it a bound.
+        """
+        if not self.has_normalized:
+            raise BasisError(f"{self.source_id}: no pinned value, so it has no chain point")
+        if self.stage in OFF_CHAIN_STAGES:
+            raise BasisError(
+                f"{self.source_id}: stage {self.stage!r} is not on the muCF chain "
+                f"(the muons are stopped outside D-T fuel) and can never enter a muCF cost"
+            )
+        if self.stage not in MUCF_CHAIN:
+            raise BasisError(f"{self.source_id}: stage {self.stage!r} is not a chain stage")
+        statuses: tuple[str, ...] = (self.evidence_status,)
+        provenance: tuple[str, ...] = (self.source_id,)
+        if self.stage == TERMINAL_STAGE and self.useful_fraction_sourced is not True:
+            statuses += ("assumption",)
+            provenance += (f"{self.source_id}:useful-qualifier-not-established",)
+        return ChainValue(
+            value_GeV=self.normalized_GeV_per_mu,
+            stage=self.stage,
+            numeraire=self.numeraire,
+            charge_basis=self.charge_basis,
+            statuses=statuses,
+            provenance=provenance,
+        )
 
 
 def _to_bool(s: str) -> bool:
@@ -148,33 +333,53 @@ class MuonCostTable:
     def needs_verification(self) -> list[MuonCost]:
         return [r for r in self._rows if r.needs_verification]
 
-    def normalized_values(self, tier: str | None = None) -> list[float]:
-        """Pinned normalized GeV-per-muon values (skips unpinned nv rows), optionally one tier."""
+    def rows_in_numeraire(self, numeraire: str, tier: str | None = None) -> list[MuonCost]:
+        """Pinned rows counted in ``numeraire`` (optionally within one tier)."""
+        if numeraire not in VALID_NUMERAIRE:
+            raise KeyError(f"unknown numeraire {numeraire!r}; expected {sorted(VALID_NUMERAIRE - {''})}")
         rows = self._rows if tier is None else self.tier(tier)
-        return [r.normalized_GeV_per_mu for r in rows if r.has_normalized]
+        return [r for r in rows if r.has_normalized and r.numeraire == numeraire]
 
-    def basis_classes(self, tier: str | None = None) -> set[str]:
-        """The distinct ``basis_class`` values among pinned rows (optionally within one tier)."""
-        rows = self._rows if tier is None else self.tier(tier)
-        return {r.basis_class for r in rows if r.has_normalized and r.basis_class}
+    def normalized_values(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> list[float]:
+        """Pinned GeV-per-muon values in ONE numeraire (default beam-kinetic), optionally one tier.
+
+        The numeraire restriction is not a convenience filter, it is a units guard: the ledger holds
+        beam-kinetic *and* electrical figures, and mixing them in one aggregate would be a units error
+        on top of the stage-basis error this table already documents.
+        """
+        return [r.normalized_GeV_per_mu for r in self.rows_in_numeraire(numeraire, tier)]
+
+    def basis_classes(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> set[str]:
+        """The distinct ``basis_class`` values among pinned rows in one numeraire."""
+        return {r.basis_class for r in self.rows_in_numeraire(numeraire, tier) if r.basis_class}
+
+    def stages(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> set[str]:
+        """The distinct ``stage`` values among pinned rows in one numeraire."""
+        return {r.stage for r in self.rows_in_numeraire(numeraire, tier) if r.stage}
+
+    def numeraires(self) -> set[str]:
+        """Every numeraire present among pinned rows."""
+        return {r.numeraire for r in self._rows if r.has_normalized and r.numeraire}
 
     def is_basis_homogeneous(self, tier: str | None = None) -> bool:
         """True iff every pinned row shares one ``basis_class``, i.e. aggregating them is meaningful."""
         return len(self.basis_classes(tier)) <= 1
 
-    def tier_median(self, tier: str) -> float:
-        """Median normalized GeV/muon for ``tier`` (over pinned rows).
+    def tier_median(self, tier: str, numeraire: str = BEAM_KINETIC) -> float:
+        """Median GeV/muon for ``tier`` within ONE numeraire (default beam-kinetic, over pinned rows).
 
-        WARNING: this medians whatever bases the tier happens to contain. No tier is currently
-        basis-homogeneous, so a cross-tier ratio of these medians is NOT a same-basis comparison --
-        check :meth:`is_basis_homogeneous` and disclose the composition before quoting one.
+        WARNING: this medians whatever *stages* the tier happens to contain. No tier is currently
+        stage-homogeneous, so a cross-tier ratio of these medians is NOT a same-basis comparison --
+        check :meth:`is_basis_homogeneous` and disclose the composition before quoting one. The
+        numeraire, by contrast, IS held fixed here, because medianing beam-kinetic against electrical
+        figures would not even be dimensionally meaningful.
         (``statistics.median`` sorts internally, so the result is independent of row order.)
         """
         import statistics
 
-        vals = self.normalized_values(tier)
+        vals = self.normalized_values(tier, numeraire)
         if not vals:
-            raise ValueError(f"tier {tier!r} has no pinned normalized values")
+            raise ValueError(f"tier {tier!r} has no pinned values in numeraire {numeraire!r}")
         return statistics.median(vals)
 
 
@@ -218,6 +423,61 @@ def load_muon_cost(
                 )
             basis_class = (row.get("basis_class") or "").strip()
             charge_basis = (row.get("charge_basis") or "").strip()
+            numeraire = (row.get("numeraire") or "").strip()
+            stage = (row.get("stage") or "").strip()
+            evidence_status = (row.get("evidence_status") or "").strip()
+            eta_mu = _to_float(row.get("eta_mu_assumption", ""))
+            eta_mu_status = (row.get("eta_mu_evidence_status") or "").strip()
+            useful_raw = (row.get("useful_fraction_sourced") or "").strip()
+            useful = _to_bool(useful_raw) if useful_raw else None
+            if numeraire not in VALID_NUMERAIRE:
+                errors.append(
+                    f"row {i} ({sid}): bad numeraire '{numeraire}' "
+                    f"(expected {sorted(VALID_NUMERAIRE - {''})})"
+                )
+            if stage not in VALID_STAGE:
+                errors.append(
+                    f"row {i} ({sid}): bad stage '{stage}' (expected {sorted(VALID_STAGE - {''})})"
+                )
+            if evidence_status not in VALID_EVIDENCE_STATUS:
+                errors.append(
+                    f"row {i} ({sid}): bad evidence_status '{evidence_status}' "
+                    f"(expected {sorted(VALID_EVIDENCE_STATUS)})"
+                )
+            if eta_mu_status and eta_mu_status not in VALID_EVIDENCE_STATUS:
+                errors.append(f"row {i} ({sid}): bad eta_mu_evidence_status '{eta_mu_status}'")
+            # An eta_mu digit without a status would be composable-looking but ungraded, and a status
+            # without a digit grades nothing: the pair travels together or not at all.
+            if math.isnan(eta_mu) != (eta_mu_status == ""):
+                errors.append(
+                    f"row {i} ({sid}): eta_mu_assumption and eta_mu_evidence_status must both be "
+                    f"present or both empty (got {eta_mu!r} / '{eta_mu_status}')"
+                )
+            # The deprecated alias must keep agreeing with the axis that superseded it, or downstream
+            # code reading either one would silently see two different accounting bases.
+            expected_stage = STAGE_FROM_BASIS_CLASS.get(basis_class)
+            if expected_stage is not None and stage != expected_stage:
+                errors.append(
+                    f"row {i} ({sid}): stage '{stage}' contradicts deprecated basis_class "
+                    f"'{basis_class}' (which maps to '{expected_stage}')"
+                )
+            # A pinned row must say what units it is in and how far along the chain it sits.
+            if has_norm and not (numeraire and stage):
+                errors.append(
+                    f"row {i} ({sid}): a pinned value requires both numeraire and stage "
+                    f"(empty is allowed only on an unpinned needs_verification row)"
+                )
+            # 'useful' is only a question at the terminal stage; claiming it elsewhere is meaningless.
+            if useful is not None and stage != TERMINAL_STAGE:
+                errors.append(
+                    f"row {i} ({sid}): useful_fraction_sourced is only meaningful at stage "
+                    f"'{TERMINAL_STAGE}' (got stage '{stage}')"
+                )
+            if has_norm and stage == TERMINAL_STAGE and useful is None:
+                errors.append(
+                    f"row {i} ({sid}): a pinned '{TERMINAL_STAGE}' row must state "
+                    f"useful_fraction_sourced (true/false), never leave it unsaid"
+                )
             if basis_class not in VALID_BASIS_CLASS:
                 errors.append(
                     f"row {i} ({sid}): bad basis_class '{basis_class}' "
@@ -251,9 +511,15 @@ def load_muon_cost(
                     recapture_credit_applied=applied,
                     recapture_factor=factor,
                     eta_acc_assumption=_to_float(row.get("eta_acc_assumption", "")),
+                    eta_mu_assumption=eta_mu,
+                    eta_mu_evidence_status=eta_mu_status,
                     value_as_published=(row.get("value_as_published") or "").strip(),
                     unit_as_published=(row.get("unit_as_published") or "").strip(),
                     normalized_GeV_per_mu=norm,
+                    numeraire=numeraire,
+                    stage=stage,
+                    evidence_status=evidence_status,
+                    useful_fraction_sourced=useful,
                     basis_class=basis_class,
                     charge_basis=charge_basis,
                     derivation=(row.get("derivation") or "").strip(),
