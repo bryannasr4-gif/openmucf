@@ -17,14 +17,29 @@ from pathlib import Path
 import pytest
 
 import openmucf
-from openmucf import provenance, uq
-from openmucf.mucost import MUON_COST_CSV, MUON_COST_SCHEMA, MuonCostTable, load_muon_cost
+from openmucf import mucost, provenance, uq
+from openmucf.mucost import MUON_COST_CSV, MUON_COST_SCHEMA, BasisError, MuonCostTable, load_muon_cost
 
 REPO = Path(__file__).resolve().parents[1]
+
+
+def _load_generator():
+    """Import scripts/generate_mucost.py by path (scripts/ is not an importable package)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "generate_mucost", REPO / "scripts" / "generate_mucost.py"
+    )
+    assert spec and spec.loader
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 # The nv-flag set committed this session (WAVE2 sec.0-A A8): only Jandel is needs_verification.
 EXPECTED_NV = {
     "kelly_hart_rose_2021": False,
+    "kelly_electrical_minimal": False,
+    "kelly_electrical_site": False,
     "bertin_1987": False,
     "eliezer_henis_1994": False,
     "jandel_1989": True,
@@ -36,6 +51,21 @@ EXPECTED_NV = {
     "psi_himb": False,
 }
 
+# Every normalized value that existed BEFORE the (stage, numeraire) axes were added. The axes were a
+# pure re-labelling: adding them may not move a single published number, and this dict is the pin that
+# proves it (see test_relabelling_moved_no_committed_value).
+PRE_AXIS_VALUES = {
+    "kelly_hart_rose_2021": 4.70,
+    "bertin_1987": 7.8,
+    "eliezer_henis_1994": 5.0,
+    "acceleron_2025": 3.0,
+    "muon_collider_front_end": 178.0,
+    "mu2e": 4993.0,
+    "comet": 2286.0,
+    "music": 6002.0,
+    "psi_himb": 890000.0,
+}
+
 
 @pytest.fixture(scope="module")
 def table() -> MuonCostTable:
@@ -43,7 +73,7 @@ def table() -> MuonCostTable:
 
 
 def test_loader_validates_and_loads(table):
-    assert len(table) == 10
+    assert len(table) == 12
     assert set(table.ids()) == set(EXPECTED_NV)
     # tier partition covers every row
     n = sum(len(table.tier(t)) for t in ("T1-design-study", "T2-demonstrated-tech", "T3-operating-facility"))
@@ -102,15 +132,131 @@ def test_normalized_positive_and_tier_ordered(table):
     assert m1 < m2 < m3, (m1, m2, m3)
 
 
-def test_ten_to_the_three_gap_from_the_table(table):
-    """G-E2: the tier-median spread T3/T1 is ~10^3 -- an ORDER-OF-MAGNITUDE, MIXED-BASIS statement.
+def test_tier_spread_is_an_order_of_magnitude_mixed_basis_observation(table):
+    """The tier-median spread T3/T1 is ~10^3 -- an ORDER-OF-MAGNITUDE, MIXED-BASIS OBSERVATION.
 
-    The rows are not on a common accounting basis (see the basis tests below), so this ratio is not a
-    same-basis comparison and MUON_COST.md must not quote it as one. The numeric check is retained
-    because the order of magnitude is the defensible claim.
+    RE-SPECIFIED (was ``test_ten_to_the_three_gap_from_the_table``, which asserted ``ratio >= 1.0e3``
+    under the name of a "10^3 gap"). That framing pinned a claim the repo has now retracted: the name
+    said *gap*, i.e. a same-basis ratio, while MUON_COST.md's own text denied it was one, and the
+    phrasing propagated into other documents as though it were a result.
+
+    What is actually true, and all that is asserted here: within the SINGLE ``beam_kinetic`` numeraire,
+    the T3 and T1 medians differ by about three orders of magnitude. It is NOT a same-basis ratio --
+    ``test_no_basis_class_spans_T1_and_T3`` proves no accounting stage is even shared between the two
+    tiers, so the quantity has no common denominator to be a ratio *of*. The numeric check is kept
+    (deleting it would drop the only guard on the spread) but deliberately loosened to an
+    order-of-magnitude band, because a tight bound would once again be pinning a precision the bases
+    do not support.
     """
-    ratio = table.tier_median("T3-operating-facility") / table.tier_median("T1-design-study")
-    assert ratio >= 1.0e3, ratio
+    m1 = table.tier_median("T1-design-study")
+    m3 = table.tier_median("T3-operating-facility")
+    spread = m3 / m1
+    assert 1.0e2 <= spread <= 1.0e4, f"tier spread {spread} left its order-of-magnitude band"
+    # and it is only ever computed within one numeraire -- mixing them would be a units error
+    assert {r.numeraire for r in table.rows_in_numeraire("beam_kinetic")} == {"beam_kinetic"}
+
+
+def test_relabelling_moved_no_committed_value(table):
+    """TASK 2 invariant: adding the (stage, numeraire, evidence_status) axes was a PURE re-labelling.
+
+    Not one published number may have moved when the axes were introduced. If this fails, a
+    "classification" change silently edited a result.
+    """
+    for sid, expected in PRE_AXIS_VALUES.items():
+        assert table[sid].normalized_GeV_per_mu == expected, sid
+    assert table["jandel_1989"].has_normalized is False  # unpinned before, unpinned after
+
+
+def test_every_pinned_row_declares_its_full_basis(table):
+    """A pinned row must state BOTH coordinates of the grid plus how well-founded its number is."""
+    for r in table:
+        assert r.evidence_status in mucost.VALID_EVIDENCE_STATUS, r.source_id
+        if r.has_normalized:
+            assert r.numeraire, r.source_id
+            assert r.stage, r.source_id
+    # and the deprecated alias must still agree with the axis that superseded it, row by row
+    for r in table:
+        assert r.stage == mucost.STAGE_FROM_BASIS_CLASS[r.basis_class], r.source_id
+
+
+def test_aggregates_are_numeraire_restricted(table):
+    """The units guard: medians are taken WITHIN one numeraire, never across.
+
+    The ledger holds beam-kinetic and electrical rows. Medianing them together would be a units error
+    on top of the stage-basis error the document already discloses -- and it would silently move the
+    committed T1 median, which NEUTRONOMICS.md consumes.
+    """
+    assert table.numeraires() == {"beam_kinetic", "electrical_minimal", "electrical_site"}
+    # the committed medians are beam-kinetic and are unmoved by the electrical rows
+    assert table.tier_median("T1-design-study") == 4.85
+    assert table.tier_median("T2-demonstrated-tech") == 178.0
+    assert table.tier_median("T3-operating-facility") == 5497.5
+    # the electrical rows exist in T1 and would move that median if they were let in
+    elec = [r.normalized_GeV_per_mu for r in table.tier("T1-design-study") if r.numeraire != "beam_kinetic"]
+    assert elec, "expected electrical-numeraire rows in T1"
+    import statistics
+
+    mixed = statistics.median(table.normalized_values("T1-design-study") + elec)
+    assert mixed != table.tier_median("T1-design-study"), (
+        "the numeraire guard is vacuous if mixing changes nothing -- this test would protect nothing"
+    )
+
+
+def test_derived_electrical_rows_are_pure_numeraire_conversions(table):
+    """TASK 3: both derived rows are Kelly's beam figure re-expressed, at the SAME stage.
+
+    Each is beam / eta_acc, stored at the ledger's two-decimal convention. Nothing about the muon's
+    position on the chain changes -- only the units -- so both stay at stage 'produced'.
+    """
+    beam = table["kelly_hart_rose_2021"].normalized_GeV_per_mu
+    for sid, eta_acc in (("kelly_electrical_minimal", 0.18), ("kelly_electrical_site", 0.104)):
+        r = table[sid]
+        assert r.eta_acc_assumption == eta_acc, sid
+        assert r.normalized_GeV_per_mu == round(beam / eta_acc, 2), sid
+        assert r.stage == "produced", sid  # a numeraire change is NOT a stage advance
+        assert r.charge_basis == "mu_minus", sid
+        assert r.evidence_status == "derived_here", sid
+        assert "derived here" in r.derivation, sid
+    assert table["kelly_electrical_minimal"].numeraire == "electrical_minimal"
+    assert table["kelly_electrical_site"].numeraire == "electrical_site"
+    # the site denominator is the primary's own arithmetic: 1.3 MW beam / 12.5 MW facility draw
+    assert table["kelly_electrical_site"].eta_acc_assumption == pytest.approx(1.3 / 12.5)
+
+
+def test_eta_mu_is_recorded_arbitrary_and_never_folded(table):
+    """TASK 4: Kelly's eta_mu = 0.50 is carried, graded arbitrary, and folded into nothing."""
+    kelly = table["kelly_hart_rose_2021"]
+    assert kelly.eta_mu_assumption == 0.50
+    assert kelly.eta_mu_evidence_status == "author_declared_arbitrary"
+    assert kelly.eta_mu_is_sourced is False
+    assert "arbitrary but reasonable assumption" in kelly.notes  # the authors' own words, verbatim
+    # never folded: the row's value is still the pre-delivery beam figure
+    assert kelly.normalized_GeV_per_mu == 4.70
+    # and no OTHER row quietly folded it either
+    for r in table:
+        if r.has_normalized and not math.isnan(r.eta_mu_assumption):
+            assert r.eta_mu_evidence_status, r.source_id
+
+
+def test_no_headline_number_depends_on_an_arbitrary_row(table):
+    """TASK 4/TASK 6: nothing the generator publishes may be composed from a non-sourced factor.
+
+    Every manifest-pinned headline string is recomputed from sourced ledger rows only. Here we assert
+    the complement directly: composing the arbitrary eta_mu produces a figure that appears NOWHERE in
+    the committed document, in any rendering.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table)
+    doc = (REPO / "MUON_COST.md").read_text(encoding="utf-8")
+    kelly = table["kelly_hart_rose_2021"]
+    for sid in gen.CHAIN_POINT_IDS:
+        composed = table[sid].chain_point().compose(
+            kelly.eta_mu_assumption, "stopped_useful_in_dt", kelly.eta_mu_evidence_status, "eta_mu"
+        )
+        assert composed.is_bound, sid
+        for text in (f"{composed.value_GeV:.2f}", f"{composed.value_GeV:.1f}"):
+            assert text not in doc, f"an eta_mu-composed figure ({text}) reached the document via {sid}"
+            assert text not in H.values(), f"an eta_mu-composed figure ({text}) reached a headline"
 
 
 def test_bases_are_heterogeneous_and_declared(table):
@@ -212,6 +358,76 @@ def test_muon_cost_manifest_verifies():
     """G-E1 kernel: the committed manifest verifies against the committed MUON_COST.md."""
     failures = provenance.check_manifest(REPO / "MUON_COST_MANIFEST.json", repo_root=REPO)
     assert failures == [], failures
+
+
+def test_eq15_ceiling_recomputes_from_the_criterion_constants(table):
+    """TASK 5/TASK 6: the Kou-Chen eq.(15) ceiling is COMPUTED, never a transcribed digit.
+
+    E_cost,max = (eta_sys * E_use / G_mu) * N_fus,mu, checked by hand here against the generator's own
+    helper for BOTH useful-energy conventions, and cross-checked against the committed document.
+    """
+    gen = _load_generator()
+    # hand arithmetic, written out: 1 * 20.4 MeV * 150 / 1 = 3060 MeV = 3.06 GeV
+    assert gen.eq15_max_muon_cost_GeV(gen.E_USE_KOUCHEN_MEV) == pytest.approx(
+        1.0 * 20.4 * 150.0 / 1.0 / 1000.0
+    )
+    assert gen.eq15_max_muon_cost_GeV(gen.E_USE_KOUCHEN_MEV) == pytest.approx(3.06)
+    # Kelly's E_use is itself derived, not pasted: 17.6 + 1.75 * 4.8 = 26.0 MeV -> 3.90 GeV
+    assert gen.E_USE_KELLY_MEV == pytest.approx(17.6 + 1.75 * 4.8) == pytest.approx(26.0)
+    assert gen.eq15_max_muon_cost_GeV(gen.E_USE_KELLY_MEV) == pytest.approx(3.90)
+    # the rest of the criterion, reproduced from the paper's own sec.IV worked values
+    n_L = gen.eq9_cycle_demand(5.0, gen.E_USE_KOUCHEN_MEV)
+    assert n_L == pytest.approx(5000.0 / 20.4) == pytest.approx(245.1, abs=0.05)
+    assert gen.eq12_omega_crit(n_L) * 100.0 == pytest.approx(0.408, abs=0.001)
+    assert gen.eq10_one_muon_gain(n_L) == pytest.approx(150.0 / n_L)
+    # and the committed document carries exactly these, to the precision it prints
+    H = gen.build_headline(table)
+    assert H["ceiling_kc"] == "3.06" and H["ceiling_kelly"] == "3.90"
+    doc = (REPO / "MUON_COST.md").read_text(encoding="utf-8")
+    assert "**3.06 GeV**" in doc and "**3.90 GeV**" in doc
+
+
+def test_a_non_sourced_chain_renders_as_a_bound_not_a_value(table):
+    """D5: the API must REFUSE to render an incomplete or unsourced chain as a value.
+
+    This is the actual contribution of the basis work -- it makes the error unrepresentable rather than
+    merely discouraged. Three cases: incomplete chain, arbitrary factor, and off-chain row.
+    """
+    # 1. incomplete chain -- Kelly stops at 'produced', four conversions short of the terminal stage
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    assert beam.is_bound and beam.bias_direction == "lower"
+    assert beam.render().startswith(">= ")
+    with pytest.raises(BasisError, match="refusing to render a bound as a value"):
+        beam.render_value()
+
+    # 2. an author-declared-arbitrary factor poisons the chain even though it REACHES the terminal stage
+    composed = beam.compose(0.50, "stopped_useful_in_dt", "author_declared_arbitrary", "Kelly eta_mu")
+    assert composed.missing_stages == ()  # it did reach the end...
+    assert composed.is_bound  # ...and is still only a bound
+    assert "author_declared_arbitrary" in composed.why_bound()
+    with pytest.raises(BasisError):
+        composed.render_value()
+
+    # 3. a row stopped outside D-T fuel is not on the chain at all and cannot become a chain point
+    with pytest.raises(BasisError, match="not on the muCF chain"):
+        table["mu2e"].chain_point()
+
+    # 4. the refusal is NOT vacuous: a complete, fully-sourced chain does render as a value
+    ok = mucost.ChainValue(
+        value_GeV=42.0,
+        stage=mucost.TERMINAL_STAGE,
+        numeraire=mucost.BEAM_KINETIC,
+        charge_basis="mu_minus",
+        statuses=("primary", "primary"),
+        provenance=("synthetic-complete-chain",),
+    )
+    assert not ok.is_bound
+    assert ok.render_value() == "42.00 GeV"
+
+    # 5. no row in the real ledger reaches that state today -- which is the finding, and it is asserted
+    for r in table:
+        if r.has_normalized and r.stage in mucost.MUCF_CHAIN:
+            assert r.chain_point().is_bound, f"{r.source_id} claims a fully-sourced chain; verify it"
 
 
 def test_tier_panel_deterministic():

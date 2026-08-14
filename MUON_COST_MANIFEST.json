@@ -51,10 +51,218 @@
     {
       "doc": "MUON_COST.md",
       "id": "kelly_wallplug",
-      "pattern": "\\*\\*26\\.1 GeV per muon produced\\*\\*",
+      "pattern": "\\*\\*26\\.11 GeV per muon produced\\*\\*",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": "26.1"
+      "value": "26.11"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "kelly_wallplug_site",
+      "pattern": "it costs \\*\\*45\\.19 GeV\\*\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "45.19"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "ceiling_kc",
+      "pattern": "\\| 20\\.4 MeV \\|[^\\n]*\\| \\*\\*3\\.06 GeV\\*\\* \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "3.06"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "ceiling_kelly",
+      "pattern": "\\| 26\\.0 MeV \\|[^\\n]*\\| \\*\\*3\\.90 GeV\\*\\* \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "3.90"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "omega_anchor",
+      "pattern": "= 0\\.57%,\\s*\\n?the SIN campaign value",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0.57"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "nl_conventional",
+      "pattern": "cycle demand `N_L` \\| 245\\.1 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "245.1"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "gmu_conventional",
+      "pattern": "\\| 0\\.612 \\| \\*\\*0\\.117\\*\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0.612"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "omegacrit_conventional",
+      "pattern": "`omega_crit` \\| 0\\.408% \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0.408"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "overshoot_conventional",
+      "pattern": "\\| 1\\.4x over \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "1.4"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "n_fully_sourced_chains",
+      "pattern": "\\*\\*0 of the 9 pinned rows",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "chain_beam",
+      "pattern": "\\| >=\\ 4\\.70\\ GeV \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": ">= 4.70 GeV"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "ratio_beam_kc",
+      "pattern": "\\| 1\\.54x \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "1.54"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "ratio_beam_kelly",
+      "pattern": "\\| 1\\.21x \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "1.21"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "chain_elecmin",
+      "pattern": "\\| >=\\ 26\\.11\\ GeV \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": ">= 26.11 GeV"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "ratio_elecmin_kc",
+      "pattern": "\\| 8\\.53x \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "8.53"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "ratio_elecmin_kelly",
+      "pattern": "\\| 6\\.69x \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "6.69"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "chain_elecsite",
+      "pattern": "\\| >=\\ 45\\.19\\ GeV \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": ">= 45.19 GeV"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "ratio_elecsite_kc",
+      "pattern": "\\| 14\\.77x \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "14.77"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "ratio_elecsite_kelly",
+      "pattern": "\\| 11\\.59x \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "11.59"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "nl_elecmin_kc",
+      "pattern": "\\| 1279\\.9 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "1279.9"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "gmu_elecmin_kc",
+      "pattern": "\\*\\*0\\.117\\*\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0.117"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "omegacrit_elecmin_kc",
+      "pattern": "\\*\\*0\\.0781%\\*\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0.0781"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "overshoot_elecmin_kc",
+      "pattern": "\\*\\*7\\.3x over\\*\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "7.3"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "nl_elecsite_kc",
+      "pattern": "\\| 2215\\.2 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "2215.2"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "gmu_elecsite_kc",
+      "pattern": "\\*\\*0\\.068\\*\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0.068"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "omegacrit_elecsite_kc",
+      "pattern": "\\*\\*0\\.0451%\\*\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0.0451"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "overshoot_elecsite_kc",
+      "pattern": "\\*\\*12\\.6x over\\*\\*",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "12.6"
     },
     {
       "doc": "MUON_COST.md",
@@ -127,10 +335,26 @@
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
       "value": "890000"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_kelly_electrical_minimal",
+      "pattern": "Kelly\\ /\\ eta_acc\\ minimal\\-subsystem[^\\n]*\\| 26\\.11 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "26.11"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "norm_kelly_electrical_site",
+      "pattern": "Kelly\\ /\\ eta_acc\\ site\\-wide[^\\n]*\\| 45\\.19 \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "45.19"
     }
   ],
   "generated_by": "scripts/generate_mucost.py",
   "inputs": {
-    "muon_cost_csv_sha256": "b2ab739f633bac43fefa3686d84fbd7e19ac2aed19dea25be2d7f127b3c93531"
+    "muon_cost_csv_sha256": "856cb45276cb4f73ad53aaf9b9f70a8d5da9fe47ad6f97f09e0c8d9ae8c467f8"
   }
 }

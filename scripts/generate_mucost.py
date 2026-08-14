@@ -25,6 +25,7 @@ guarded behind ``main()`` so tests import and assert on the tables without regen
 
 from __future__ import annotations
 
+import math
 import zlib
 from pathlib import Path
 
@@ -40,12 +41,14 @@ DISARMAMENT = (
 TIER_TITLES = {
     "T1-design-study": "Tier 1 -- purpose-built muon-source design studies",
     "T2-demonstrated-tech": "Tier 2 -- demonstrated technology",
-    "T3-operating-facility": "Tier 3 -- operating facilities (GeV/stopped-mu derived here)",
+    "T3-operating-facility": "Tier 3 -- operating facilities (GeV/muon derived here, at each row's own stage)",
 }
 
 # Short display labels used in the tables AND as manifest row anchors (unique per row).
 LABELS = {
     "kelly_hart_rose_2021": "Kelly, Hart & Rose (2021)",
+    "kelly_electrical_minimal": "Kelly / eta_acc minimal-subsystem",
+    "kelly_electrical_site": "Kelly / eta_acc site-wide",
     "bertin_1987": "Bertin et al. (1987)",
     "eliezer_henis_1994": "Eliezer & Henis (1994)",
     "jandel_1989": "Jandel (1989)",
@@ -56,6 +59,79 @@ LABELS = {
     "music": "MuSIC (RCNP)",
     "psi_himb": "PSI HIMB",
 }
+
+# --------------------------------------------------------------------------------------------------
+# The Kou-Chen (2026) cycle-closure criterion, arXiv:2607.10989 (bibkey KouChenLawson2026).
+#
+# These are THEIR accounting choices, declared here as inputs so the comparison runs on their terms.
+# None is fitted to anything of ours, and each carries its provenance in CRITERION_PROVENANCE below --
+# including the two that are NOT sourced in their paper, which is itself part of the result.
+# --------------------------------------------------------------------------------------------------
+ETA_SYS = 1.0  # their sec.IV illustrative system efficiency (they also show 0.4)
+G_MU_TARGET = 1.0  # the TARGET one-muon gain in eq.(15)/eq.(12); G_mu = 1 is breakeven
+N_FUS = 150.0  # their Table I LAMPF/Jones anchor: the best historically demonstrated yield
+E_USE_KOUCHEN_MEV = 20.4  # useful energy per fusion cycle -- NOT sourced in their paper
+# Kelly, Hart & Rose sec.2 derive a larger useful energy from the same fusion: the 17.6 MeV of fusion
+# kinetic energy PLUS the exothermic tritium-breeding reactions each fusion neutron drives. Derived
+# here from its three inputs rather than pasted, so the 26.0 MeV is checkable rather than asserted.
+E_FUSION_KINETIC_MEV = 17.6
+BREEDING_REACTIONS_PER_FUSION = 1.75
+E_BREEDING_MEV = 4.8  # n + 6Li -> t + 4He + 4.8 MeV
+E_USE_KELLY_MEV = E_FUSION_KINETIC_MEV + BREEDING_REACTIONS_PER_FUSION * E_BREEDING_MEV
+MEV_PER_GEV = 1000.0
+
+# The historically demonstrated effective sticking this is measured against, taken from OUR OWN rate
+# ledger rather than retyped: the SIN campaign value that is also Kou-Chen's Table I SIN/Crowe anchor.
+STICKING_RATE_SYMBOL = "omega_s_eff_solid_12K"
+
+# The three ledger rows that form the sourced part of the chain, in chain order.
+CHAIN_POINT_IDS = ("kelly_hart_rose_2021", "kelly_electrical_minimal", "kelly_electrical_site")
+#: Short, stable manifest-key suffixes for those rows (source_ids are too long for readable keys).
+_SHORT = {
+    "kelly_hart_rose_2021": "beam",
+    "kelly_electrical_minimal": "elecmin",
+    "kelly_electrical_site": "elecsite",
+}
+#: The muon cost the criterion paper actually adopts (their historical Jones anchor), for contrast.
+KOUCHEN_CONVENTIONAL_COST_GEV = 5.0
+
+CRITERION_PROVENANCE = {
+    "eta_sys": "Kou-Chen sec.IV illustrative value (they also tabulate 0.4); a lumped system efficiency.",
+    "G_mu": "The TARGET one-muon gain in eq.(15) and the eq.(12) no-go boundary; G_mu = 1 is breakeven.",
+    "N_fus": "Kou-Chen Table I, LAMPF/Jones anchor -- the best historically demonstrated yield per muon.",
+    "E_use_kouchen": (
+        "**not sourced in arXiv:2607.10989.** The paper attributes 'about 20 MeV' to the same Jones "
+        "accounting that supplies its 5 GeV muon cost, so the useful-energy input rests on exactly the "
+        "convention this axis is questioning. Adopted here only to reproduce their numbers on their terms."
+    ),
+    "E_use_kelly": (
+        "primary-derived, and larger, because the same fusion also breeds tritium exothermically: "
+        "17.6 MeV of fusion kinetic energy + 1.75 breeding reactions per fusion neutron x 4.8 MeV each "
+        "(Kelly, Hart & Rose sec.2). Reported alongside the 20.4 MeV convention, never substituted for it."
+    ),
+}
+
+
+def eq15_max_muon_cost_GeV(
+    e_use_MeV: float, eta_sys: float = ETA_SYS, n_fus: float = N_FUS, g_mu: float = G_MU_TARGET
+) -> float:
+    """Kou-Chen eq.(15): the maximum tolerable muon cost, E_cost,max = (eta_sys * E_use / G_mu) * N_fus."""
+    return (eta_sys * e_use_MeV / g_mu) * n_fus / MEV_PER_GEV
+
+
+def eq9_cycle_demand(e_cost_GeV: float, e_use_MeV: float, eta_sys: float = ETA_SYS) -> float:
+    """Kou-Chen eq.(9): the cycle demand N_L = E_cost / (eta_sys * E_use) -- fusions one muon must buy."""
+    return (e_cost_GeV * MEV_PER_GEV) / (eta_sys * e_use_MeV)
+
+
+def eq10_one_muon_gain(n_L: float, n_fus: float = N_FUS) -> float:
+    """Kou-Chen eq.(10): the achieved one-muon gain G_mu = N_fus,mu / N_L."""
+    return n_fus / n_L
+
+
+def eq12_omega_crit(n_L: float, g_mu: float = G_MU_TARGET) -> float:
+    """Kou-Chen eq.(12): the sticking no-go boundary, omega_eff < 1 / (G_mu * N_L). Returns a FRACTION."""
+    return 1.0 / (g_mu * n_L)
 
 
 def _fmt(v: float) -> str:
@@ -94,36 +170,143 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["t3_classes"] = ", ".join(sorted(table.basis_classes("T3-operating-facility")))
     shared = table.basis_classes("T1-design-study") & table.basis_classes("T3-operating-facility")
     H["shared_classes"] = ", ".join(sorted(shared)) if shared else "none"
-    # The one fully-sourced wall-plug-equivalent figure (Kelly states its own eta_acc).
+    # The one fully-sourced wall-plug-equivalent figure. It is now a LEDGER ROW of its own rather than
+    # an inline recomputation, so the repo carries exactly one number for it.
     kelly = table["kelly_hart_rose_2021"]
-    H["kelly_wallplug"] = f"{kelly.wallplug_lower_bound_GeV:.1f}"
     H["kelly_eta_acc"] = f"{kelly.eta_acc_assumption:g}"
+    H["kelly_wallplug"] = _fmt(table["kelly_electrical_minimal"].normalized_GeV_per_mu)
+    H["kelly_eta_acc_site"] = f"{table['kelly_electrical_site'].eta_acc_assumption:g}"
+    H["kelly_wallplug_site"] = _fmt(table["kelly_electrical_site"].normalized_GeV_per_mu)
+
+    # ---- the Kou-Chen cycle-closure comparison (all derived, nothing transcribed) ----
+    H["eta_sys"] = f"{ETA_SYS:g}"
+    H["g_mu_target"] = f"{G_MU_TARGET:g}"
+    H["n_fus"] = f"{N_FUS:g}"
+    # one decimal on both, so the primary-derived 17.6 + 1.75*4.8 reads as 26.0 rather than a bare "26"
+    H["e_use_kouchen"] = f"{E_USE_KOUCHEN_MEV:.1f}"
+    H["e_use_kelly"] = f"{E_USE_KELLY_MEV:.1f}"
+    for key, e_use in (("kc", E_USE_KOUCHEN_MEV), ("kelly", E_USE_KELLY_MEV)):
+        H[f"ceiling_{key}"] = f"{eq15_max_muon_cost_GeV(e_use):.2f}"
+
+    omega_anchor = _sticking_anchor()
+    H["omega_anchor"] = f"{omega_anchor:g}"
+    for sid in CHAIN_POINT_IDS:
+        cv = table[sid].chain_point()
+        short = _SHORT[sid]
+        H[f"chain_{short}"] = cv.render()  # ">= X.XX GeV" -- the bound marker is part of the pinned string
+        for key, e_use in (("kc", E_USE_KOUCHEN_MEV), ("kelly", E_USE_KELLY_MEV)):
+            n_L = eq9_cycle_demand(cv.value_GeV, e_use)
+            H[f"ratio_{short}_{key}"] = f"{cv.value_GeV / eq15_max_muon_cost_GeV(e_use):.2f}"
+            H[f"nl_{short}_{key}"] = f"{n_L:.1f}"
+            H[f"gmu_{short}_{key}"] = f"{eq10_one_muon_gain(n_L):.3f}"
+            H[f"omegacrit_{short}_{key}"] = f"{eq12_omega_crit(n_L) * 100.0:.3g}"
+            H[f"overshoot_{short}_{key}"] = f"{omega_anchor / (eq12_omega_crit(n_L) * 100.0):.1f}"
+    # their own 5 GeV convention, for the same three columns -- the row this program is questioning
+    n_L_conv = eq9_cycle_demand(KOUCHEN_CONVENTIONAL_COST_GEV, E_USE_KOUCHEN_MEV)
+    H["conventional_cost"] = f"{KOUCHEN_CONVENTIONAL_COST_GEV:g}"
+    H["nl_conventional"] = f"{n_L_conv:.1f}"
+    H["gmu_conventional"] = f"{eq10_one_muon_gain(n_L_conv):.3f}"
+    H["omegacrit_conventional"] = f"{eq12_omega_crit(n_L_conv) * 100.0:.3g}"
+    H["overshoot_conventional"] = f"{omega_anchor / (eq12_omega_crit(n_L_conv) * 100.0):.1f}"
+
+    # D8: coverage is the deliverable. Count what is actually sourced across the whole ledger.
+    cov = coverage_rows(table)
+    H["n_chain_rows"] = str(sum(1 for c in cov if c["on_chain"]))
+    H["n_offchain_rows"] = str(sum(1 for c in cov if not c["on_chain"]))
+    H["n_fully_sourced_chains"] = str(sum(1 for c in cov if c["complete"]))
+    H["n_numeraire_sourced"] = str(sum(1 for c in cov if c["numeraire_sourced"]))
     return H
+
+
+def _sticking_anchor() -> float:
+    """The demonstrated effective sticking (percent), read from OUR rate ledger, never retyped."""
+    from openmucf import load_rates
+
+    return float(load_rates()[STICKING_RATE_SYMBOL].value)
+
+
+def coverage_rows(table: mucost.MuonCostTable) -> list[dict]:
+    """Per source: how far the chain actually gets, and which conversions are sourced (D8).
+
+    A row is ``complete`` only if it reaches the terminal stage with every factor sourced -- i.e. only
+    if its :class:`~openmucf.mucost.ChainValue` is not a bound. Rows stopped outside D-T fuel are not
+    on the muCF chain at all and are reported separately rather than silently dropped.
+    """
+    rows = []
+    for r in table:
+        if not r.has_normalized:
+            continue
+        on_chain = r.stage in mucost.MUCF_CHAIN
+        cv = r.chain_point() if on_chain else None
+        if r.stage == mucost.TERMINAL_STAGE:
+            delivery = (
+                "reached"
+                if r.useful_fraction_sourced
+                else "reached, but the source never establishes the 'useful' qualifier"
+            )
+        elif r.eta_mu_evidence_status:
+            delivery = f"stated as one collapsed factor, {r.eta_mu_evidence_status}"
+        else:
+            delivery = "absent"
+        rows.append(
+            {
+                "source_id": r.source_id,
+                "label": LABELS[r.source_id],
+                "on_chain": on_chain,
+                "stage": r.stage,
+                "numeraire": r.numeraire,
+                "numeraire_sourced": not math.isnan(r.eta_acc_assumption),
+                "delivery": delivery,
+                "complete": bool(cv is not None and not cv.is_bound),
+            }
+        )
+    return rows
 
 
 def _tier_table(table: mucost.MuonCostTable, tier: str, H: dict[str, str]) -> str:
     head = (
-        "| source | value as published | GeV/muon (normalized) | basis_class | charge | nv | "
-        "basis / notes |\n"
-        "|---|---|---|---|---|---|---|\n"
+        "| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |\n"
+        "|---|---|---|---|---|---|---|---|\n"
     )
     rows = []
     for r in table.tier(tier):
         norm = H[f"norm_{r.source_id}"] if r.has_normalized else "-- (not pinned)"
         nv = "**yes**" if r.needs_verification else "no"
-        bc = r.basis_class or "--"
+        num = r.numeraire or "--"
+        st = r.stage or "--"
         ch = r.charge_basis or "--"
-        # flag the rows whose figure understates the cost per mu- stopped in D-T fuel
+        # flag the rows whose figure understates the cost per mu- stopped and useful in D-T fuel
         if r.understates_stopped_in_dt_cost:
-            bc += " (lower bound)"
+            st += " (lower bound)"
+        elif r.stage == mucost.TERMINAL_STAGE and not r.useful_fraction_sourced:
+            st += " ('useful' not established)"
         if r.charge_basis == "mu_plus_only":
             ch += " (not muCF)"
-        # keep table cells single-line: collapse the basis to its first clause
-        basis = r.basis_as_published.split(";")[0].strip()
+        if r.stage in mucost.OFF_CHAIN_STAGES:
+            st += " (off-chain)"
         rows.append(
-            f"| {LABELS[r.source_id]} | {r.value_as_published} | {norm} | {bc} | {ch} | {nv} | {basis} |"
+            f"| {LABELS[r.source_id]} | {r.value_as_published} | {norm} | {num} | {st} | {ch} | "
+            f"{r.evidence_status} | {nv} |"
         )
     return head + "\n".join(rows)
+
+
+def _coverage_table(table: mucost.MuonCostTable) -> str:
+    """D8: print, per source, how far the chain gets and which conversions are sourced."""
+    head = (
+        "| source | stage reached | numeraire | beam -> electrical sourced? | "
+        "produced -> stopped & useful in D-T | fully sourced? |\n"
+        "|---|---|---|---|---|---|\n"
+    )
+    lines = []
+    for c in coverage_rows(table):
+        stage = c["stage"] if c["on_chain"] else f"{c['stage']} (NOT on the muCF chain)"
+        conv = "yes (`eta_acc`, from the PSI primary)" if c["numeraire_sourced"] else "absent"
+        lines.append(
+            f"| {c['label']} | {stage} | `{c['numeraire']}` | {conv} | {c['delivery']} | "
+            f"{'yes' if c['complete'] else '**no**'} |"
+        )
+    return head + "\n".join(lines)
 
 
 def build_markdown(table: mucost.MuonCostTable, H: dict[str, str]) -> str:
@@ -132,12 +315,14 @@ def build_markdown(table: mucost.MuonCostTable, H: dict[str, str]) -> str:
     t3 = _tier_table(table, "T3-operating-facility", H)
     return f"""# MUON_COST.md -- the open muon-cost ledger (auto-generated by `scripts/generate_mucost.py`)
 
-> **Curated compilation with provenance, NOT an evaluation.** `normalized_GeV_per_mu` is BEAM energy per
-> muon in GeV **on each row's own accounting basis** (`basis_class`) -- these rows are **NOT all on a
-> common basis and are not commensurable across classes**. Wall-plug = normalized / eta_acc (kept in its
-> own column, never folded). T3 facility rows are ORIGINAL DERIVATIONS ("implied, derived here, formula
-> shown") -- no operating facility reports GeV-per-stopped-muon. An accounting credit (Kelly's x2.5
-> recapture) is recorded in its own flagged column, never folded into the normalized value.
+> **Curated compilation with provenance, NOT an evaluation.** `normalized_GeV_per_mu` is energy per muon
+> in GeV at **each row's own (`stage`, `numeraire`) coordinate** -- these rows are **NOT on a common basis
+> and are not commensurable across either axis**, so every aggregate below is computed within one
+> numeraire and discloses its stage composition. T3 facility rows are ORIGINAL DERIVATIONS ("implied,
+> derived here, formula shown") -- no operating facility reports a per-stopped-muon energy cost. An
+> accounting credit (Kelly's x2.5 recapture) is recorded in its own flagged column, never folded into the
+> normalized value, and a factor whose own authors call it arbitrary (Kelly's `eta_mu`) is recorded but
+> **never composed into any figure quoted here**.
 
 ## Headline
 The purpose-built muon-source **design studies** put the muon cost at a few GeV per muon. The open-access
@@ -150,44 +335,60 @@ all-collected) and **{LABELS['eliezer_henis_1994']}, ~{H['norm_eliezer_henis_199
 (DOI 10.13182/FST94-A30300).
 
 **Those single-GeV figures are beam energy per muon PRODUCED, not the loaded cost of a muon stopped in
-D-T fuel.** On Kelly's own numbers the wall-plug-equivalent is {H['norm_kelly_hart_rose_2021']} /
-{H['kelly_eta_acc']} = **{H['kelly_wallplug']} GeV per muon produced** -- and that is still a LOWER BOUND
-on the wall-plug cost per mu- actually stopped in D-T, because the collection and stopping fractions
-(both < 1) have not been applied. Every factor omitted here pushes the cost UP, so the bound is one-sided.
+D-T fuel.** On Kelly's own accelerator efficiency the same muon costs {H['norm_kelly_hart_rose_2021']} /
+{H['kelly_eta_acc']} = **{H['kelly_wallplug']} GeV per muon produced** in ELECTRICAL energy, and on the
+same primary's site-wide denominator ({H['kelly_eta_acc_site']}) it costs **{H['kelly_wallplug_site']} GeV**
+-- and both are still LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T,
+because the capture, transport, moderation and stopping factors (all <= 1) have not been applied. Every
+factor omitted here pushes the cost UP, so the bound is one-sided.
 
-**Operating muon facilities are ~10^3 worse.** The tier-median rises from **{H['t1_median']}
+**The tier spread is an order of magnitude, on MIXED bases.** The tier-median rises from **{H['t1_median']}
 GeV** (design studies) through **{H['t2_median']} GeV** (demonstrated technology, collected-not-stopped)
 to **{H['t3_median']} GeV** (operating facilities) -- nominally **{H['gap_ratio']}x**. **That ratio is
 NOT a same-basis comparison and must not be quoted as one.** T1 contains {{{H['t1_classes']}}} rows and T3
 contains {{{H['t3_classes']}}} rows; basis classes shared between the two tiers: **{H['shared_classes']}**.
 With no shared class, a same-basis T1-vs-T3 ratio is **not computable from these rows** -- and because
 both the numerator and the denominator contain lower-bound (per-produced / per-collected) figures, the
-ratio is not cleanly bounded in either direction. The defensible statement is the **order of magnitude**
-(~10^3), driven by technology, with the basis composition disclosed above. needs_verification (Jandel)
+ratio is not cleanly bounded in either direction. The defensible statement is the **order of magnitude**,
+driven by technology, with the basis composition disclosed above. needs_verification (Jandel)
 and slide-tier (Acceleron) rows carry visible flags below and never headline.
 
-## Normalization basis (read before the tables)
-Each row's `normalized_GeV_per_mu` is **beam (kinetic) energy per muon on that row's own basis**, recorded
-machine-readably in `basis_class`:
+## Accounting basis (read before the tables)
+A muon cost is only meaningful as a point on a **2-D grid**, and both coordinates are carried per row:
 
-- `produced` -- per muon created (Kelly, Eliezer-Henis, Acceleron)
-- `stopped_in_dt` -- per muon stopped in the D-T target: the quantity a muCF energy balance actually
-  needs (Bertin)
-- `collected` -- transported/collected but never stopped in fuel (muon-collider front end, MuSIC, PSI HIMB)
-- `stopped_other_target` -- stopped in a NON-D-T target, e.g. mu2e's aluminium stopping target (mu2e, COMET)
+**Axis 1 -- `stage`: how far along the chain the muon has got.** The muCF chain is
+`produced -> captured -> transported -> moderated -> stopped_useful_in_dt`, following the five verbs by
+which the cycle-closure literature defines the muon cost. Only the terminal stage is what a muCF energy
+balance actually needs; every earlier stage is a strict lower bound on it, because each omitted
+conversion factor is <= 1. `stopped_other_target` (mu2e, COMET -- muons stopped in aluminium) is **not a
+point on this chain at all** and can never be composed into a muCF cost.
 
-A `produced` or `collected` figure is a **lower bound** on the `stopped_in_dt` cost, since collection and
-stopping fractions are both < 1. `charge_basis` records what is counted: MuSIC's figure is `mixed`
-(mu+ and mu- together, so the mu--only cost is roughly 2x higher) and PSI HIMB is `mu_plus_only` --
-irrelevant to muCF, which needs mu-, and listed for scale only.
+**Axis 2 -- `numeraire`: what kind of energy is being counted.** `beam_kinetic` is beam energy;
+`electrical_minimal` and `electrical_site` are electrical energy on the two different facility
+denominators the same PSI primary supplies (see the tables). **Wall-plug is a numeraire, not a stage:**
+dividing by an accelerator efficiency changes the units and applies at *any* stage, so treating it as a
+step along the chain would make "electrical energy per transported muon" inexpressible. Consequently
+every aggregate in this document -- every tier median, and the figure -- is computed **within a single
+numeraire** (`beam_kinetic`); medianing beam-kinetic against electrical figures would be a units error
+on top of the stage-basis error.
 
-Two factors are deliberately kept SEPARATE and never folded into the normalized value: **wall-plug
-efficiency** (`eta_acc`, the electrical -> muon-beam efficiency, e.g. Kelly's PSI-measured
-{H['kelly_eta_acc']}; wall-plug per muon = normalized / eta_acc -- this is an energy-accounting
-conversion, **not** a collection or stopping correction) and any **recapture/breeding credit**
-(`recapture_factor`: Kelly's x2.5 is recorded but `recapture_credit_applied=false`). T3 facility rows
-report no such cost themselves, so their GeV/muon is an ORIGINAL DERIVATION with the arithmetic shown in
-the row's `derivation` field (verbatim in the CSV).
+`basis_class` is the deprecated 1-D predecessor of `stage`, kept as an alias and validated against it
+(`produced -> produced`, `collected -> transported`, `stopped_in_dt -> stopped_useful_in_dt`).
+`charge_basis` records what is counted: MuSIC's figure is `mixed` (mu+ and mu- together, so the mu--only
+cost is roughly 2x higher) and PSI HIMB is `mu_plus_only` -- irrelevant to muCF, which needs mu-, and
+listed for scale only. `evidence_status` grades each number: `primary` / `primary_cited` /
+`derived_here` are sourced; `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
+figure composing one of those is reported as a **bound, never a value**.
+
+Three factors are deliberately kept in their own flagged columns rather than folded into any row's
+value: the **accelerator efficiency** `eta_acc` (Kelly's {H['kelly_eta_acc']}) -- applying it produces a
+*separate row in a different numeraire*, never a silent edit to the beam-kinetic one, so both readings
+stay side by side and auditable; the **recapture/breeding credit** `recapture_factor` (Kelly's x2.5,
+recorded with `recapture_credit_applied=false`); and the **delivery factor** `eta_mu` (Kelly's 0.50),
+whose authors call it an "arbitrary but reasonable assumption" and state they do not know its value --
+so it carries `eta_mu_evidence_status = author_declared_arbitrary` and is **never composed into any
+figure in this document**. T3 facility rows report no cost of this kind themselves, so their GeV/muon is
+an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field (verbatim in the CSV).
 
 ## {TIER_TITLES['T1-design-study']}
 {t1}
@@ -202,30 +403,108 @@ arithmetic is in the CSV `derivation` column); no facility reports this quantity
 
 {t3}
 
-## The 10^3 simulation-to-facility gap
-![muon-cost gap by tier](figures/muon_cost_gap.png)
+## The tier spread: an order-of-magnitude, mixed-basis, one-sided observation
+![muon-cost tier spread](figures/muon_cost_gap.png)
 
-**Figure `figures/muon_cost_gap.png` (log-scale GeV/muon by tier).** Caption: *{DISARMAMENT}*
+**Figure `figures/muon_cost_gap.png` (log-scale beam GeV/muon by tier).** Caption: *{DISARMAMENT}*
+
+> **This section previously headlined "the 10^3 simulation-to-facility gap".** That heading asserted a
+> same-basis ratio which the text below it already denied, and the phrasing had propagated into other
+> documents as though it were a result. It is retracted here: the tier spread is an order-of-magnitude
+> **mixed-basis** observation, not a measured gap.
 
 The ~{H['gap_ratio']}x tier-median spread ({H['t1_median']} GeV design-study -> {H['t3_median']} GeV
 facility) is **mixed-basis** (see the Headline: shared basis classes between T1 and T3 =
 {H['shared_classes']}), so it is quoted here as an order of magnitude and never as a same-basis ratio.
+Its basis composition is printed rather than summarised: T1 = {{{H['t1_classes']}}},
+T3 = {{{H['t3_classes']}}}, all rows in the `beam_kinetic` numeraire.
 It is also not a claim that the design-study floor is unreachable: existing facilities are built for beam
 brightness and purity, not muons-per-watt; the floor is **unvalidated, not impossible**. This is a
 normalization no facility publishes, presented as a reader-checkable compilation, not a verdict on any
 program. (E_mu single accounting home: the rate-ledger `E_mu_cost` row points here.)
 
-**What would close this properly.** A same-basis comparison needs every row expressed as wall-plug energy
-per mu- *stopped in D-T fuel*: beam GeV per mu- produced -> / eta_acc (wall-plug) -> / collection
-fraction -> / stopping fraction in D-T -> mu--only. Only the first two steps are sourceable for any row
-today (Kelly: {H['norm_kelly_hart_rose_2021']} / {H['kelly_eta_acc']} = {H['kelly_wallplug']} GeV). The
-remaining factors are all < 1, so every published figure in this table is a **lower bound** on that
-quantity -- which is why the one-sided reading above is the only defensible one.
+## What a muon is allowed to cost: the Kou-Chen cycle-closure ceiling
+Kou & Chen (arXiv:2607.10989) close the muCF cycle the way Lawson closes a thermonuclear one. Their
+eq.(15) gives the **maximum tolerable muon cost**, `E_cost,max = (eta_sys * E_use / G_mu) * N_fus,mu`.
+At their own accounting -- `eta_sys` = {H['eta_sys']}, `G_mu` = {H['g_mu_target']} (breakeven),
+`N_fus,mu` = {H['n_fus']} (their Table I LAMPF/Jones anchor, the best historically demonstrated yield):
+
+| `E_use` per fusion cycle | source | ceiling `E_cost,max` |
+|---|---|---|
+| {H['e_use_kouchen']} MeV | Kou & Chen's own choice -- **unsourced in their paper** | **{H['ceiling_kc']} GeV** |
+| {H['e_use_kelly']} MeV | Kelly, Hart & Rose sec.2 -- primary-derived | **{H['ceiling_kelly']} GeV** |
+
+- **{H['e_use_kouchen']} MeV:** {CRITERION_PROVENANCE['E_use_kouchen']}
+- **{H['e_use_kelly']} MeV:** {CRITERION_PROVENANCE['E_use_kelly']}
+
+Both conventions are reported because **`N_L` is linear in `1/E_use`**, so the choice moves the answer by
+the ratio of the two: our axis fixes the *cost* input of `N_L = E_cost / (eta_sys * E_use)` and leaves the
+other two convention-set, and quietly picking one would repeat the very error this document corrects.
+
+Against that ceiling, the only chain points this ledger can actually source -- every one of them a
+**bound**, because all of them stop at stage `produced` and the remaining factors are absent:
+
+| chain point | numeraire | figure | vs {H['ceiling_kc']} GeV ceiling | vs {H['ceiling_kelly']} GeV ceiling |
+|---|---|---|---|---|
+| beam kinetic per mu- produced | `beam_kinetic` | {H['chain_beam']} | {H['ratio_beam_kc']}x | {H['ratio_beam_kelly']}x |
+| electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | {H['chain_elecmin']} | {H['ratio_elecmin_kc']}x | {H['ratio_elecmin_kelly']}x |
+| electrical per mu- produced (site-wide) | `electrical_site` | {H['chain_elecsite']} | {H['ratio_elecsite_kc']}x | {H['ratio_elecsite_kelly']}x |
+
+Read in the criterion's own coordinates, at `E_use` = {H['e_use_kouchen']} MeV, with `omega_crit` the
+eq.(12) sticking no-go boundary `1 / (G_mu * N_L)`:
+
+| quantity | their {H['conventional_cost']} GeV convention | at {H['kelly_wallplug']} GeV | at {H['kelly_wallplug_site']} GeV |
+|---|---|---|---|
+| cycle demand `N_L` | {H['nl_conventional']} | {H['nl_elecmin_kc']} | {H['nl_elecsite_kc']} |
+| one-muon gain `G_mu` at `N_fus` = {H['n_fus']} | {H['gmu_conventional']} | **{H['gmu_elecmin_kc']}** | **{H['gmu_elecsite_kc']}** |
+| `omega_crit` | {H['omegacrit_conventional']}% | **{H['omegacrit_elecmin_kc']}%** | **{H['omegacrit_elecsite_kc']}%** |
+| demonstrated sticking {H['omega_anchor']}% sits | {H['overshoot_conventional']}x over | **{H['overshoot_elecmin_kc']}x over** | **{H['overshoot_elecsite_kc']}x over** |
+
+(The demonstrated sticking is this repo's own ledger row `{STICKING_RATE_SYMBOL}` = {H['omega_anchor']}%,
+the SIN campaign value that is also Kou & Chen's Table I SIN/Crowe anchor -- read from `rates.csv`, not
+retyped.)
+
+**The claim, stated exactly.** This is **not** a finding that muCF fails, and it is **not** a correction
+to Kou & Chen's mathematics, every digit of which reproduces. Their own paper already places the
+historical anchors below breakeven at `G_mu` ~ 0.5-0.6. The contribution here is narrower and sharper:
+**the cost convention that puts them there is itself ~5-9x optimistic relative to the only fully-sourced
+anchor in the field**, so the sourced `G_mu` is ~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than
+~0.6, and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
+forbidden side of the no-go line rather than {H['overshoot_conventional']}x. **Every omitted factor pushes
+the same way**, so this reading is rigorously one-sided: the entries above are lower bounds, and the true
+costs can only be higher.
+
+## Chain coverage: which conversions are actually sourced
+{_coverage_table(table)}
+
+**{H['n_fully_sourced_chains']} of the {H['n_chain_rows']} pinned rows that sit on the muCF chain have a
+fully-sourced chain to a useful stopped muon** (a further {H['n_offchain_rows']} rows are not on the chain
+at all -- they stop muons outside D-T fuel). Exactly **one source** states its own beam-to-electrical
+conversion -- Kelly, Hart & Rose, citing the PSI measurement, which is why {H['n_numeraire_sourced']} of
+these rows carry it -- and that same source states the delivery factor is unknown. So **no row in this
+compilation supports a *value* for the quantity a muCF energy balance needs, only a bound.** That is the
+honest state of the literature, not a gap in this ledger, and it is why
+`ChainValue.render_value()` raises rather than prints for every row here.
+
+**What would close this properly.** Each row would have to reach `stopped_useful_in_dt` in a stated
+numeraire with every conversion sourced: beam GeV per mu- produced -> / eta_acc (a numeraire change)
+-> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. Only the numeraire change
+is sourceable for any row today (Kelly: {H['norm_kelly_hart_rose_2021']} / {H['kelly_eta_acc']} =
+{H['kelly_wallplug']} GeV). Kelly, Hart & Rose do quote a single collapsed delivery factor,
+`eta_mu` = 0.50, but describe it verbatim as an "arbitrary but reasonable assumption" and state they do
+not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
+into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
+published figure in this table is a **lower bound** -- which is why the one-sided reading is the only
+defensible one.
 """
 
 
 def build_figure(table: mucost.MuonCostTable, path: str = "figures/muon_cost_gap.png") -> None:
-    """Render the log-scale GeV/muon-by-tier gap figure. NEVER byte-diffed (matplotlib bytes)."""
+    """Render the log-scale beam-GeV/muon-by-tier spread figure. NEVER byte-diffed (matplotlib bytes).
+
+    Restricted to the ``beam_kinetic`` numeraire: the ledger now also holds electrical-numeraire rows,
+    and plotting those on the same axis would put two different kinds of energy on one scale.
+    """
     import matplotlib
 
     matplotlib.use("Agg")
@@ -236,7 +515,7 @@ def build_figure(table: mucost.MuonCostTable, path: str = "figures/muon_cost_gap
     xpos = {"T1-design-study": 0, "T2-demonstrated-tech": 1, "T3-operating-facility": 2}
     fig, ax = plt.subplots(figsize=(7.5, 5.0))
     for r in table:
-        if not r.has_normalized:
+        if not r.has_normalized or r.numeraire != mucost.BEAM_KINETIC:
             continue
         # tiny deterministic jitter: crc32 is stable across runs/platforms, unlike the built-in hash()
         # (PYTHONHASHSEED-randomized per process), so the figure regenerates identically run-to-run.
@@ -249,8 +528,8 @@ def build_figure(table: mucost.MuonCostTable, path: str = "figures/muon_cost_gap
     ax.set_yscale("log")
     ax.set_xticks(list(xpos.values()))
     ax.set_xticklabels(["T1 design\nstudies", "T2 demonstrated\ntech", "T3 operating\nfacilities"])
-    ax.set_ylabel("beam energy per muon (GeV, log scale)")
-    ax.set_title("The 10$^3$ muon-cost gap: design studies vs operating facilities")
+    ax.set_ylabel("beam kinetic energy per muon (GeV, log scale)")
+    ax.set_title("Muon-cost tier spread (mixed basis): design studies vs operating facilities")
     ax.grid(True, which="both", axis="y", alpha=0.25)
     fig.text(0.5, 0.01, DISARMAMENT, ha="center", fontsize=8, style="italic", wrap=True)
     fig.tight_layout(rect=(0, 0.05, 1, 1))
@@ -276,7 +555,29 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable) -> li
         # the basis disclosure is a shipped claim and is pinned like any other number
         _entry("shared_classes", rf"shared between the two tiers: \*\*{re.escape(H['shared_classes'])}\*\*"),
         _entry("kelly_wallplug", rf"\*\*{re.escape(H['kelly_wallplug'])} GeV per muon produced\*\*"),
+        _entry("kelly_wallplug_site", rf"it costs \*\*{re.escape(H['kelly_wallplug_site'])} GeV\*\*"),
+        # the Kou-Chen ceiling comparison: every cell is a shipped number and is pinned like any other
+        _entry("ceiling_kc", rf"\| {re.escape(H['e_use_kouchen'])} MeV \|[^\n]*\| \*\*{re.escape(H['ceiling_kc'])} GeV\*\* \|"),
+        _entry("ceiling_kelly", rf"\| {re.escape(H['e_use_kelly'])} MeV \|[^\n]*\| \*\*{re.escape(H['ceiling_kelly'])} GeV\*\* \|"),
+        _entry("omega_anchor", rf"= {re.escape(H['omega_anchor'])}%,\s*\n?the SIN campaign value"),
+        _entry("nl_conventional", rf"cycle demand `N_L` \| {re.escape(H['nl_conventional'])} \|"),
+        _entry("gmu_conventional", rf"\| {re.escape(H['gmu_conventional'])} \| \*\*{re.escape(H['gmu_elecmin_kc'])}\*\*"),
+        _entry("omegacrit_conventional", rf"`omega_crit` \| {re.escape(H['omegacrit_conventional'])}% \|"),
+        _entry("overshoot_conventional", rf"\| {re.escape(H['overshoot_conventional'])}x over \|"),
+        _entry("n_fully_sourced_chains", rf"\*\*{re.escape(H['n_fully_sourced_chains'])} of the {re.escape(H['n_chain_rows'])} pinned rows"),
     ]
+    # the three sourced chain points, their bound-marked figures, ratios and criterion coordinates
+    for short in _SHORT.values():
+        entries.append(_entry(f"chain_{short}", rf"\| {re.escape(H[f'chain_{short}'])} \|"))
+        for key in ("kc", "kelly"):
+            entries.append(
+                _entry(f"ratio_{short}_{key}", rf"\| {re.escape(H[f'ratio_{short}_{key}'])}x \|")
+            )
+    for short in ("elecmin", "elecsite"):
+        entries.append(_entry(f"nl_{short}_kc", rf"\| {re.escape(H[f'nl_{short}_kc'])} \|"))
+        entries.append(_entry(f"gmu_{short}_kc", rf"\*\*{re.escape(H[f'gmu_{short}_kc'])}\*\*"))
+        entries.append(_entry(f"omegacrit_{short}_kc", rf"\*\*{re.escape(H[f'omegacrit_{short}_kc'])}%\*\*"))
+        entries.append(_entry(f"overshoot_{short}_kc", rf"\*\*{re.escape(H[f'overshoot_{short}_kc'])}x over\*\*"))
     # every pinned row's normalized value, anchored to its table-row label
     for r in table:
         if not r.has_normalized:
