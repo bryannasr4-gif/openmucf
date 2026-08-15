@@ -148,6 +148,15 @@ Every `NAME` used in `#UNITS` should be a `#COLUMNS` name; a unit for a column t
 is a producer bug, and a consumer may report it as one. `#VALIDITY` names need not be columns
 (`A:natural_and_listed` describes a selection rule, not a column range).
 
+**A `#FALLBACK` model name means whatever the dataset's own documentation says it means**, and that
+documentation must state the formula **and its evaluation order**. This is not pedantry: floating
+point addition and multiplication are not associative, so two consumers that re-group the same
+expression compute different numbers from the same file, and a dataset shipping a fallback without a
+pinned association order cannot be reproduced bit-for-bit by anyone. A model definition must
+therefore also say whether a conforming evaluation may contract operations (fuse a multiply and an
+add) — for the `goulard_primakoff` model of the D1 dataset, see `DATASET_D1.md`, which says it may
+not, and why.
+
 Example header:
 
 ```
@@ -160,10 +169,15 @@ Example header:
 #GENERATOR    openmucf-g4 1.1.0
 #SOURCEDIGEST 3b1f...64 lowercase hex total...
 #SOURCESHA    8cc04f65977807f1848da7b958c421cd5e162f26
-#UNITS        rate=1e6/s
+#UNITS        value=1e6/s unc=1e6/s
 #COLUMNS      Z A value unc
 #VALIDITY     Z:1-94 A:natural_and_listed
 ```
+
+(The `#UNITS` line names `value` and `unc` — the columns — rather than the quantity. An earlier
+revision of this document showed `rate=1e6/s` here, against the paragraph directly above requiring
+every `#UNITS` name to be a `#COLUMNS` name: the example violated its own advisory, and the advisory
+is the part that is right.)
 
 ### 2.3 Records
 
@@ -293,13 +307,27 @@ One version has one spelling, in a format whose identity discipline is byte-exac
 Layer 2 is never read by Geant4. It is a single JSON object with the file-level fields below and one
 object per Layer-1 record under `rows`, keyed `"Z-A"`.
 
-**Row-key format, exactly.** A key is the record's `Z`, a single `-`, then its `A`, each written in
-**decimal with no zero padding, no sign and no whitespace** —
-`^(0|[1-9][0-9]*)-(0|[1-9][0-9]*)$`: `"1-1"`, `"29-63"`, `"94-242"` -- never `"001-001"`, `"+1-1"`
-or `"1 - 1"`. JSON object keys are strings, so without a pinned spelling `"1-1"` and `"01-1"` would
-be two different keys for one record. (Layer 1's integer *fields* are laxer — `^[0-9]+$`, section 2.3
-rule 3 — because a reader converts them to integers and the writer re-emits them canonically, so no
-two spellings survive. A JSON key is never normalized by anything, which is why this one is strict.)
+**Row-key format, exactly.** A key is the record's primary key, written in **decimal with no zero
+padding, no sign and no whitespace**. There are two forms, and which one a file uses is decided by
+the Layer-1 table's `#COLUMNS`, never by the Layer-2 file:
+
+| The table declares | Key form | Examples |
+|---|---|---|
+| both `Z` and `A` | `Z`, a single `-`, then `A` — `^(0\|[1-9][0-9]*)-(0\|[1-9][0-9]*)$` | `"1-1"`, `"29-63"`, `"94-242"` |
+| exactly one of them | that column's integer — `^(0\|[1-9][0-9]*)$` | `"0"`, `"29"`, `"100"` |
+
+Never `"001-001"`, `"+1-1"`, `"1 - 1"` or `"029"`. JSON object keys are strings, so without a pinned
+spelling `"1-1"` and `"01-1"` would be two different keys for one record. (Layer 1's integer *fields*
+are laxer — `^[0-9]+$`, section 2.3 rule 3 — because a reader converts them to integers and the
+writer re-emits them canonically, so no two spellings survive. A JSON key is never normalized by
+anything, which is why this one is strict.)
+
+The single-key form exists because not every table has both coordinates: an effective-charge table
+is a per-`Z` quantity, and a mass number is not a thing it has. The alternative — a sentinel `A`
+column of zeros — was rejected: it would put a column in every file that a C++ reader has to skip,
+and it would state something false, since `0` is not a mass number.
+`openmucf.g4.provenance.check_against_table()` decides which form applies from the table and rejects
+both directions of mismatch — a row that keys nothing, and a record that no row describes.
 
 **One row per record.** `rows` has exactly one object per Layer-1 record and no others;
 `openmucf.g4.provenance.check_against_table()` enforces it alongside the file-level fields.
@@ -649,3 +677,13 @@ The **C++ reader and its standalone validation application** are specified here 
 but are not part of this release; they are stated now precisely so that the reader, when written,
 cannot get them wrong by accident. Everything else this document specifies -- the grammar, the
 Layer-2 schema, the error codes, the archive, and the generator that produces all of them -- ships.
+
+### Attribution
+
+> This product includes software developed by Members of the Geant4 Collaboration
+> ( http://cern.ch/geant4 ).
+
+The `parity` datasets described by this format reproduce values compiled into Geant4, and are
+generated from Geant4 source vendored in `third_party/geant4/` under the Geant4 Software License
+v1.0. Those terms apply to that directory; the rest of this repository is Apache-2.0 (code) and
+CC-BY-4.0 (data).

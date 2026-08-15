@@ -154,6 +154,9 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `openmucf/validate.py` | reproduce the pre-registered targets |
 | `openmucf/forecast.py` | pre-registered forecast cards (posterior pushforward, hashing, CRPS/coverage scoring) |
 | `openmucf/interop.py` | GEANT4 interop stub — export rates (CSV/JSON), ingest validation spectra |
+| `openmucf/g4/`, `FORMAT_SPEC.md` | the `G4MuonicData` external-data format: `.g4dat` grammar, Layer-2 provenance schema, deterministic archive |
+| `openmucf/g4/sources/`, `third_party/geant4/`, `cpp/tools/` | structural extractors for the vendored upstream source, the pinned source itself, and the harvest drivers |
+| `data/g4/d1/`, `DATASET_D1.md` | the D1 nuclear-capture dataset in `parity` mode + its findings (see below) |
 | `openmucf/data/` | `rates.csv`, `validation_targets.csv`, `references.bib`, schema |
 | `forecasts/`, `FORECASTS.md` | pre-registered, hash-stamped forecast cards (FC-001) + protocol + registry table |
 | `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + 10³ gap, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
@@ -161,6 +164,33 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `docs/` | getting-started + API overview |
 | `MODEL_SPEC.md`, `LITERATURE.md`, `PRE_REGISTRATION.md` | the physics, numbers, and locked targets |
 | `CONTRIBUTING.md`, `CHANGELOG.md`, `CITATION.cff` | how to contribute, what changed, how to cite |
+
+## `G4MuonicData` — muonic-atom data as an external, versioned dataset
+Geant4 carries its muon-capture data **compiled in**: 90 `{Z, A, rate, error}` records and a
+101-value effective-charge table, with a Goulard–Primakoff analytic fallback for everything else.
+Changing any of it means recompiling the toolkit, the per-record uncertainties it already stores are
+never used, and nothing tells a user which rows rest on an isotope-resolved measurement.
+
+`FORMAT_SPEC.md` defines a two-layer external-data format for that seam — a `.g4dat` grammar a
+transport code can read with nothing but its standard library, plus a `*.prov.json` layer carrying
+bibliography, uncertainty type and evaluation identity, bound to it by a SHA-256 digest.
+`data/g4/d1/` is the first dataset with real content: a **`parity` profile** that reproduces Geant4
+v11.4.2's compiled-in values bit-for-bit, generated at build time from the vendored upstream source
+rather than transcribed. Its parity was checked against a Geant4-linked binary over **36000 (Z, A)
+points at zero ulp**, and the committed oracle makes that checkable in CI with no Geant4 installed.
+
+Building it surfaced five defects in the upstream seam, all **registered and disclosed rather than
+fixed** — a parity dataset that "corrected" its source would stop being one. They include a fallback
+that returns **negative capture rates on 6325 of those 36000 points** (³H among them, where a
+negative rate silently disables capture entirely), non-finite returns at degenerate inputs with no
+coded rejection, and a fallback whose result moves by up to **2980 ulp** between two conforming
+compiler configurations of the same source. See [`DATASET_D1.md`](DATASET_D1.md).
+
+> This product includes software developed by Members of the Geant4 Collaboration
+> ( http://cern.ch/geant4 ).
+
+The dataset name `G4MuonicData` and the environment variable `G4MUONICDATA` are **provisional
+placeholders**, pending discussion with the Geant4 collaboration.
 
 ## Honest positioning
 OpenMuCF introduces **no new fundamental μCF physics** — the cycle is textbook and the reactivation transport
@@ -181,3 +211,4 @@ repository" button from it). Archived on Zenodo — cite the exact release **v1.
 ## License
 - **Code** — the `openmucf/` package, `scripts/`, tests, and all software: **Apache-2.0** (see [`LICENSE`](LICENSE)).
 - **Data** — the rate ledger `openmucf/data/*` and the generated data docs: **CC-BY-4.0** (see [`LICENSE-DATA`](LICENSE-DATA)), so the compiled, provenance-tagged rates can be reused and cited with attribution.
+- **Third party** — `third_party/geant4/` holds one unmodified Geant4 source file, redistributed under the **Geant4 Software License v1.0** ([`third_party/geant4/LICENSE`](third_party/geant4/LICENSE)). Those terms apply to that directory only.
