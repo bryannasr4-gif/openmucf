@@ -83,8 +83,8 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   reds when a *fresh* realization converges **better** than the committed one — a gate that punishes
   improvement is measuring the sampler's luck, not the artifact's correctness. Measured over a
   100-realization chain-seed sweep of both main chains, that band reds 3.0 % of the weak chain's
-  realizations and 5.6 % of the Kamimura chain's *converged* ones, and it held the worst margin of this
-  file's whole battery in the 2026-07-23
+  realizations and 5.6 % of the Kamimura chain's converged, physical ones, and it held the worst margin
+  of this file's whole battery in the 2026-07-23
   arm64 reproduction — 81.8 % of band, which was `Kamimura.min ess` at 9200 vs 11000: an ordinary draw of
   a diagnostic, not a defect in anything.
   `min ess` therefore leaves the tolerance-audited set. The committed value stays published as a
