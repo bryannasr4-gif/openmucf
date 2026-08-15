@@ -1300,7 +1300,19 @@ def test_t39_the_generator_reads_layer_2_as_bytes():
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and isinstance(node.func.value, ast.Name)
-        and node.func.value.id in {"LAYER2_PATH", "LAYER1_PATH"}
+        and node.func.value.id
+        in {
+            "LAYER2_PATH",
+            "LAYER1_PATH",
+            # The D1 build's four Layer-1/Layer-2 paths are under the same rule, and were added
+            # here rather than left uncovered: the digest is taken over the Layer-2 file's bytes
+            # whichever dataset produced it, so a text-mode read of any of these would break the
+            # same invariant in the same way.
+            "D1_CAPTURE_LAYER1",
+            "D1_CAPTURE_LAYER2",
+            "D1_ZEFF_LAYER1",
+            "D1_ZEFF_LAYER2",
+        }
         and node.func.attr.startswith(("read", "write", "open"))
     }
     assert reads == {"read_bytes"}, f"Layer-1/Layer-2 I/O must be binary, found {sorted(reads)}"

@@ -23,13 +23,18 @@ Three disciplines run through every test here, because the claim is only as good
 import ast
 import dataclasses
 import hashlib
+import json
 import math
 import pathlib
 import struct
+import subprocess
+import sys
 
 import pytest
 
-from openmucf.g4 import provenance, spec
+import openmucf
+from openmucf import rates
+from openmucf.g4 import provenance, sources, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -156,6 +161,18 @@ def test_t42_every_count_is_derived_from_the_vendored_source():
     # The zeff table is indexed by Z after clamping to [1, maxZ], so it must hold maxZ + 1 entries;
     # both sides of this come from the parse, neither is a number anyone chose.
     assert len(found.zeff) == found.zeff_max_z + 1
+
+    # And what SHIPPED carries those counts too -- checked against the source, never against itself.
+    # This is the direction that matters: a count taken from the generated file and then compared to
+    # the generated file is a tautology wearing a derivation's clothes.
+    for layer1_path, layer2_path, expected in (
+        (D1DIR / "d1_capture.g4dat", D1DIR / "d1_capture.prov.json", len(found.capture_records)),
+        (D1DIR / "d1_zeff.g4dat", D1DIR / "d1_zeff.prov.json", len(found.zeff)),
+    ):
+        table = spec.parse(layer1_path.read_bytes().decode("ascii"))
+        document = provenance.from_json_obj(json.loads(layer2_path.read_bytes().decode("ascii")))
+        assert len(table.records) == expected, layer1_path.name
+        assert len(document.rows) == expected, layer2_path.name
 
     module = pathlib.Path(d1.__file__)
     banned = {
@@ -530,3 +547,302 @@ def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
     assert below and above, "the clamp probes must cover both ends"
     assert {model.muon_zeff(z) for z in below} == {found.zeff[model.zmin]}
     assert {model.muon_zeff(z) for z in above} == {found.zeff[model.zmax]}
+
+
+# --------------------------------------------------------------------------------------------
+# T-43..T-47, T-53..T-55, T-57, T-58 -- the shipped dataset against the source it claims
+# --------------------------------------------------------------------------------------------
+
+CAPTURE_LAYER1 = D1DIR / "d1_capture.g4dat"
+CAPTURE_LAYER2 = D1DIR / "d1_capture.prov.json"
+ZEFF_LAYER1 = D1DIR / "d1_zeff.g4dat"
+ZEFF_LAYER2 = D1DIR / "d1_zeff.prov.json"
+GENERATOR = REPO / "scripts" / "generate_g4data.py"
+
+
+def committed(layer1_path: pathlib.Path, layer2_path: pathlib.Path):
+    """The committed pair, parsed: the Layer-1 table and its Layer-2 document."""
+    table = spec.parse(layer1_path.read_bytes().decode("ascii"))
+    raw = layer2_path.read_bytes()
+    provenance.check_canonical_bytes(raw)
+    document = provenance.from_json_obj(json.loads(raw.decode("ascii")))
+    return table, document
+
+
+def shipped_layer2_files() -> list[pathlib.Path]:
+    """Every Layer-2 file this repository ships, example included."""
+    return sorted((REPO / "data" / "g4").rglob("*.prov.json"))
+
+
+def test_t43_every_capture_value_is_the_source_literal():
+    """Bit-for-bit, both columns, against the float LITERALS in the vendored source.
+
+    Not "close", and not "equal after re-parsing our own output": each committed double is compared
+    to `float(<the exact text upstream wrote>)`, byte pattern against byte pattern. That is what
+    rules out a transcription that happens to round to the same displayed digits, and it is why the
+    extractor carries the literals alongside the parsed values.
+    """
+    found = extraction()
+    table, _ = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+
+    assert len(table.records) == len(found.capture_records)
+    by_key = {(int(z), int(a)): (value, unc) for z, a, value, unc in table.records}
+    assert len(by_key) == len(table.records), "the committed table has a duplicate key"
+
+    for (z, a, _, _), (rate_text, error_text) in zip(
+        found.capture_records, found.capture_literals, strict=True
+    ):
+        value, unc = by_key[(z, a)]
+        assert struct.pack("<d", value) == struct.pack("<d", float(rate_text)), f"value at ({z}, {a})"
+        assert struct.pack("<d", unc) == struct.pack("<d", float(error_text)), f"unc at ({z}, {a})"
+
+
+def test_t44_every_effective_charge_is_the_source_literal():
+    """The same, for all 101 entries -- including index 0, which the accessor can never return."""
+    found = extraction()
+    table, _ = committed(ZEFF_LAYER1, ZEFF_LAYER2)
+
+    assert len(table.records) == len(found.zeff)
+    by_z = {int(z): value for z, value in table.records}
+    for z, literal in enumerate(found.zeff_literals):
+        assert struct.pack("<d", by_z[z]) == struct.pack("<d", float(literal)), f"zeff[{z}]"
+    # "101/101 bit-identical" means the array AS DECLARED, so the unreachable element ships too.
+    assert 0 in by_z and by_z[0] == found.zeff[0]
+
+
+def test_t45_row_sets_agree_three_ways():
+    """extraction <-> Layer 1 <-> Layer 2, for both tables. Any two agreeing is not enough.
+
+    The failure this rules out is a generated file that is internally consistent and wrong: Layer 1
+    and Layer 2 are both produced by the same script, so checking them against each other proves
+    only that the script is self-consistent. The third leg -- the vendored source -- is the one that
+    makes it a parity check.
+    """
+    found = extraction()
+
+    capture_table, capture_document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    from_source = {f"{z}-{a}" for z, a, _, _ in found.capture_records}
+    from_layer1 = {f"{int(z)}-{int(a)}" for z, a, _, _ in capture_table.records}
+    assert from_source == from_layer1 == set(capture_document.rows)
+
+    zeff_table, zeff_document = committed(ZEFF_LAYER1, ZEFF_LAYER2)
+    zeff_source = {str(z) for z in range(len(found.zeff))}
+    zeff_layer1 = {str(int(z)) for z, _ in zeff_table.records}
+    assert zeff_source == zeff_layer1 == set(zeff_document.rows)
+
+    # And the checker agrees, which is the rule a consumer would actually apply.
+    assert provenance.check_against_table(capture_table, capture_document) is None
+    assert provenance.check_against_table(zeff_table, zeff_document) is None
+
+
+def test_t46_the_reorder_moved_nothing():
+    """The shipped file is canonically sorted; the upstream array is not. Prove nothing was lost.
+
+    Geant4's array is sorted by Z alone and contains exactly one `(Z, A)` inversion, so a format
+    requiring ascending `(Z, A)` cannot preserve the source order. Re-ordering records is safe only
+    if the multiset is unchanged -- so check the multiset, not the count, because a swap that
+    duplicated one record and dropped another keeps the count identical.
+    """
+    found = extraction()
+    capture_table, _ = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+
+    source_multiset = sorted(found.capture_records)
+    shipped_multiset = sorted((int(z), int(a), value, unc) for z, a, value, unc in capture_table.records)
+    assert shipped_multiset == source_multiset
+
+    # The source really is out of order, or this test is guarding nothing.
+    source_keys = [(z, a) for z, a, _, _ in found.capture_records]
+    assert source_keys != sorted(source_keys), "upstream is already sorted; T-46 no longer has a job"
+    assert [z for z, _, _, _ in found.capture_records] == sorted(
+        z for z, _, _, _ in found.capture_records
+    ), "upstream is not even sorted by Z, which the early-exit scan depends on"
+
+    # Both committed tables are ascending by their own declared key (E015).
+    for table in (capture_table, committed(ZEFF_LAYER1, ZEFF_LAYER2)[0]):
+        columns = table.directives["COLUMNS"].split()
+        indices = [columns.index(name) for name in ("Z", "A") if name in columns]
+        keys = [tuple(int(record[i]) for i in indices) for record in table.records]
+        assert keys == sorted(keys)
+
+
+def test_t47_the_reorder_preserves_geant4s_own_lookup():
+    """Geant4's early-exit scan over the SOURCE order agrees with a keyed lookup over ours.
+
+    This is the argument that the reorder is behaviour-preserving, rather than the hope. Geant4 does
+    not do a dictionary lookup: it walks the array and gives up the moment it sees a Z greater than
+    the one asked for (`if (capRates[j].Z > Z) break;`). That is only sound because the array is
+    sorted by Z -- and our canonical `(Z, A)` order is a refinement of "sorted by Z", so the early
+    exit fires at the same Z. Checking it over the whole sweep box is what turns that sentence into
+    evidence.
+    """
+    found = extraction()
+    capture_table, _ = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    shipped = {(int(z), int(a)): value for z, a, value, unc in capture_table.records}
+
+    def geant4_scan(z: int, a: int) -> float | None:
+        """Upstream's loop, verbatim, over the records in the order upstream declares them."""
+        for record_z, record_a, value, _ in found.capture_records:
+            if record_z == z and record_a == a:
+                return value
+            if record_z > z:
+                return None
+        return None
+
+    hits = 0
+    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            scanned = geant4_scan(z, a)
+            keyed = shipped.get((z, a))
+            assert scanned == keyed, f"({z}, {a}): source scan {scanned!r}, sorted lookup {keyed!r}"
+            hits += scanned is not None
+    assert hits == len(found.capture_records), "the scan did not reach every table row"
+
+
+def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
+    """What a `parity` profile is allowed to claim, asserted row by row on both tables."""
+    found = extraction()
+    for layer1_path, layer2_path in ((CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2)):
+        table, document = committed(layer1_path, layer2_path)
+        assert table.directives["PROFILE"] == spec.PARITY_PROFILE
+        # A parity file must name the revision it reproduces, and it must be the one we vendored.
+        assert table.directives["SOURCESHA"] == d1.UPSTREAM_COMMIT
+        assert document.precedence == ("geant4-compiled-in",)
+        assert document.version == table.directives["VERSION"]
+        for key, row in document.rows.items():
+            # The value came from the library, and the bibkey names the library -- not the papers
+            # the library cites, which no one here has read. Those travel as quoted upstream text.
+            assert row.source_library == "geant4-compiled-in", key
+            assert row.source_bibkey == "geant4_v11_4_2", key
+            # A parity profile reproduces; it does not recommend, and nothing is verified yet.
+            assert row.recommendation == "", key
+            assert row.needs_verification is True, key
+            # Upstream says "weighted average of the two most precise measurements".
+            assert row.single_source is False, key
+            assert row.unc_type == "table", key
+            # The locator must resolve in THIS repository, at a real line of the vendored file.
+            assert row.source_locator.startswith(d1.VENDORED_RELPATH + ":"), key
+            line = int(row.source_locator.split(":")[1].split()[0])
+            assert 1 <= line <= VENDORED.read_text("ascii").count("\n") + 1, key
+            assert d1.UPSTREAM_BLOB_ID in row.source_locator, key
+            # `conditions` carries UPSTREAM's words, marked as upstream's, never as our finding.
+            assert row.conditions.startswith("quoted from the upstream source comment:"), key
+        # Every quoted comment really is a substring of the vendored source's comments.
+        quoted = {row.conditions.split('"')[1] for row in document.rows.values()}
+        available = found.capture_comment_lines + found.zeff_comment_lines
+        for text in quoted:
+            for fragment in text.split(". "):
+                assert any(fragment.strip('. ') in line for line in available) or any(
+                    part in " ".join(available) for part in [fragment[:40]]
+                ), f"{fragment!r} is not upstream text"
+
+
+def test_t54_isotope_resolved_obeys_the_stated_derivation():
+    """The one non-obvious boolean, checked against the rule the file itself states.
+
+    The S2a rule is mechanical and sound in exactly one direction: two different rates at two A for
+    one Z prove the underlying data distinguishes isotopes; one row proves nothing either way. So
+    `true` must mean "this Z carries more than one row" and nothing else -- and `needs_verification`
+    stays true everywhere, because "not established" is not the same claim as "false".
+    """
+    found = extraction()
+    per_z = found.capture_rows_per_z()
+    _, capture_document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+
+    resolved = set()
+    for key, row in capture_document.rows.items():
+        z = int(key.split("-")[0])
+        assert row.isotope_resolved is (per_z[z] > 1), key
+        if row.isotope_resolved:
+            resolved.add(z)
+        # The derivation is stated in the row, so a reader sees how the flag was obtained.
+        assert "isotope_resolved is derived mechanically" in row.evaluation_method, key
+    assert resolved == {z for z, count in per_z.items() if count > 1}
+    assert resolved, "no multi-isotope Z at all would make this rule vacuous"
+
+    # An effective charge is per-Z: there is no isotope for it to be resolved to, on any row.
+    _, zeff_document = committed(ZEFF_LAYER1, ZEFF_LAYER2)
+    assert not any(row.isotope_resolved for row in zeff_document.rows.values())
+    assert all("per-Z quantity" in row.evaluation_method for row in zeff_document.rows.values())
+
+
+def test_t55_every_shipped_bibkey_resolves():
+    """No Layer-2 row may cite a key the bibliography does not define -- in ANY shipped dataset.
+
+    This bites immediately rather than theoretically: the format example's rows cite
+    `openmucf-format-spec`, which resolved nowhere at all until this stage added it.
+    """
+    bib = REPO / "openmucf" / "data" / "references.bib"
+    known = sources.bibkeys(bib)
+    files = shipped_layer2_files()
+    assert len(files) >= 3, "expected the example plus both D1 Layer-2 files"
+    for path in files:
+        document = provenance.from_json_obj(json.loads(path.read_bytes().decode("ascii")))
+        for key, row in document.rows.items():
+            assert row.source_bibkey in known, f"{path.name} row {key}: {row.source_bibkey!r}"
+
+    # The fenced copy of `bibkeys` must not drift from the one in the rest of the package. The g4
+    # subpackage keeps its own three-line regex so the data layer stays liftable; this is the check
+    # that keeps the duplication honest rather than merely admitted.
+    assert known == rates.bibkeys(bib)
+
+
+def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
+    """Corrupt one digit in each generated artifact in turn; `--audit` must fail and name it.
+
+    A byte-diff list is a claim that every file on it is watched. The only way to know is to break
+    each one and check the alarm sounds -- an artifact accidentally left off the list, or one whose
+    regeneration silently reproduces the corruption, passes every other test in this file.
+    """
+    artifacts = sorted(D1DIR.glob("d1_*.g4dat")) + sorted(D1DIR.glob("*.prov.json")) + [
+        D1DIR / "geant4_add_dataset.snippet"
+    ]
+    assert len(artifacts) == 5, [p.name for p in artifacts]
+
+    def audit() -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(GENERATOR), "--audit"], capture_output=True, text=True, cwd=REPO
+        )
+
+    assert audit().returncode == 0, "the drill cannot start from a dirty tree"
+    for path in artifacts:
+        original = path.read_bytes()
+        try:
+            path.write_bytes(_flip_one_digit(original))
+            result = audit()
+            assert result.returncode != 0, f"corrupting {path.name} did not fail the audit"
+            assert path.name in result.stdout + result.stderr, (
+                f"the audit failed but never named {path.name}: {result.stdout}{result.stderr}"
+            )
+        finally:
+            path.write_bytes(original)
+    assert audit().returncode == 0, "the drill did not restore the tree"
+
+
+def _flip_one_digit(payload: bytes) -> bytes:
+    """Change exactly one decimal digit, leaving the file the same length and still well-formed."""
+    for index, byte in enumerate(payload):
+        if 0x30 <= byte <= 0x38 and payload[index - 1 : index] not in (b"\n", b"#"):
+            return payload[:index] + bytes([byte + 1]) + payload[index + 1 :]
+    raise AssertionError("no digit to corrupt")
+
+
+def test_t58_the_generator_version_is_coupled_to_every_dataset_it_stamped():
+    """`#GENERATOR` embeds `openmucf.__version__`, in all three shipped Layer-1 files.
+
+    That is deliberate -- a consumer holding a broken file needs to know which tool made it -- and
+    the cost is that a version bump moves these bytes and both archive MD5s. The coupling is made
+    loud HERE, with the remedy in the message, rather than discovered as a red audit at tag time.
+    """
+    stamped = f"openmucf-g4 {openmucf.__version__}"
+    files = [CAPTURE_LAYER1, ZEFF_LAYER1, REPO / "data" / "g4" / "example.g4dat"]
+    for path in files:
+        table = spec.parse(path.read_bytes().decode("ascii"))
+        assert table.directives["GENERATOR"] == stamped, (
+            f"openmucf.__version__ has moved but {path.relative_to(REPO).as_posix()} was not "
+            "regenerated: run `python scripts/generate_g4data.py` and commit data/g4/example.g4dat, "
+            "data/g4/d1/*.g4dat AND both geant4_add_dataset.snippet files (their MD5SUMs change too)"
+        )
+    # The D1 files also carry no CR, for the same reason the vendored source does not: `data/g4/d1/`
+    # needs its own `-text` line, because a gitattributes `*` does not cross a `/`.
+    for path in files[:2] + [CAPTURE_LAYER2, ZEFF_LAYER2]:
+        assert b"\r" not in path.read_bytes(), f"the checkout rewrote {path.name}"
