@@ -677,3 +677,13 @@ The **C++ reader and its standalone validation application** are specified here 
 but are not part of this release; they are stated now precisely so that the reader, when written,
 cannot get them wrong by accident. Everything else this document specifies -- the grammar, the
 Layer-2 schema, the error codes, the archive, and the generator that produces all of them -- ships.
+
+### Attribution
+
+> This product includes software developed by Members of the Geant4 Collaboration
+> ( http://cern.ch/geant4 ).
+
+The `parity` datasets described by this format reproduce values compiled into Geant4, and are
+generated from Geant4 source vendored in `third_party/geant4/` under the Geant4 Software License
+v1.0. Those terms apply to that directory; the rest of this repository is Apache-2.0 (code) and
+CC-BY-4.0 (data).

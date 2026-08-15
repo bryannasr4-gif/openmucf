@@ -10,6 +10,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — D1 nuclear-capture dataset in `parity` mode (2026-08-14)
+The first `G4MuonicData` dataset carrying real content. `data/g4/d1/` reproduces the muon-capture
+data compiled into Geant4 v11.4.2 — a 90-record `{Z, A, rate, error}` table and a 101-value
+effective-charge table — bit-for-bit, together with the Goulard–Primakoff analytic fallback,
+declared as data in a `#FALLBACK` directive carrying all eight of the constants it needs.
+- **Generated, never transcribed.** The pinned upstream source is vendored at
+  `third_party/geant4/v11.4.2/`, unmodified, and pinned by its upstream **git blob id** — upstream's
+  own object name for those bytes, verifiable against `github.com/Geant4/geant4` with no Geant4
+  checkout and no `git` binary. Both layers are parsed out of it at build time by
+  `openmucf/g4/sources/`, and no record count appears as a literal anywhere in the chain.
+- **Parity checked exhaustively.** A Geant4-linked driver harvested 36000 `(Z, A)` points from the
+  built library; a pure-Python evaluation preserving the C++ association order reproduced **every
+  one bit-for-bit, maximum 0 ulp**. The committed oracle makes that a CI check on every platform
+  with **no Geant4 present**.
+- **Five upstream findings registered and disclosed, not fixed** (`DATASET_D1.md`): negative capture
+  rates on 6325 of 36000 fallback points including ³H; non-finite returns at degenerate inputs with
+  no coded rejection; a fallback that moves by up to **2980 ulp** between two conforming compiler
+  configurations of the same source, which is why the declared model contract forbids floating-point
+  contraction; an attribution that does not reconcile with the table's 74 distinct Z; and a
+  non-monotonic step in the effective-charge table near the Z=82 shell closure.
+- Layer-2 row keys are now defined for tables whose primary key is a **single column** (a previously
+  registered undefined case, whose first consumer is the effective-charge table).
+- `FORMAT_SPEC.md` §2.2's example header no longer violates its own advisory that every `#UNITS`
+  name be a `#COLUMNS` name, and now states that a `#FALLBACK` model's documentation must pin the
+  formula **and its evaluation order**.
+- `third_party/geant4/` is the first third-party licence in this repository: Geant4 Software License
+  v1.0, applying to that directory only.
+
 ### Fixed — cross-architecture reproducibility (2026-08-09)
 An independent reproduction of the full audit battery on Apple Silicon (arm64), against an x86-64
 reference, found three defects that a single-architecture CI could not have surfaced. All three are fixed
