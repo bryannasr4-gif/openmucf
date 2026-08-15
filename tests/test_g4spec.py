@@ -1038,6 +1038,8 @@ def test_t34_import_fence():
     root = pathlib.Path(spec.__file__).resolve().parent
     checked = set()
     for path in sorted(root.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
         parts = ["openmucf", "g4", *path.relative_to(root).with_suffix("").parts]
         package = parts[:-1]
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -1053,8 +1055,18 @@ def test_t34_import_fence():
             for target in targets:
                 offenders = [name for name in banned if target == name or target.startswith(f"{name}.")]
                 assert not offenders, f"{path.name} imports {target!r} (line {node.lineno})"
-        checked.add(path.name)
-    assert checked == {"__init__.py", "spec.py", "provenance.py", "emit.py"}
+        checked.add(path.relative_to(root).as_posix())
+    # Relative paths, not bare names: `sources/` brought a second `__init__.py` into the package, and
+    # a set of names would have silently collapsed the two into one entry -- so a new fenced module
+    # could be added under `sources/` without this inventory noticing it had arrived.
+    assert checked == {
+        "__init__.py",
+        "spec.py",
+        "provenance.py",
+        "emit.py",
+        "sources/__init__.py",
+        "sources/d1_nuclear_capture.py",
+    }
 
     # A layout invariant that is currently satisfied with exactly one space to spare, and that a
     # future directive would break silently: `#SOURCEDIGEST` is 13 characters, the pad is 14, so the
