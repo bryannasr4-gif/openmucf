@@ -21,11 +21,13 @@ Three disciplines run through every test here, because the claim is only as good
 """
 
 import ast
+import dataclasses
 import hashlib
 import pathlib
 
 import pytest
 
+from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -250,3 +252,94 @@ def test_t51_the_reference_implementation_reads_its_constants_from_the_directive
         d1.GoulardPrimakoff.from_directive(
             d1.render_fallback_directive(d1.FALLBACK_MODEL, outward), found.zeff
         )
+
+
+# --------------------------------------------------------------------------------------------
+# T-56 -- S2-R1: Layer-2 row keys for a table whose primary key is a single column
+# --------------------------------------------------------------------------------------------
+
+SINGLE_KEY_ROW = {
+    "source_bibkey": "geant4_v11_4_2",
+    "source_locator": "third_party/geant4/v11.4.2/G4MuonMinusBoundDecay.cc",
+    "unc_type": "table",
+    "conditions": "none",
+    "validity_range": "Z=1",
+    "evaluation_method": "compiled-in constant table",
+    "single_source": False,
+    "needs_verification": True,
+    "recommendation": "",
+    "evaluation_id": "single-key-fixture",
+    "source_library": "geant4-compiled-in",
+    "isotope_resolved": False,
+}
+
+
+def single_key_pair(records=((1, 1.0), (2, 1.98))):
+    """A one-key Layer-1 table and the Layer-2 document that describes it."""
+    document = provenance.ProvDocument(
+        dataset="G4MuonicData",
+        version="0.1.0",
+        profile="parity",
+        seam="d1_nuclear_capture",
+        precedence=("geant4-compiled-in",),
+        rows={str(z): provenance.ProvRow(**SINGLE_KEY_ROW) for z, _ in records},
+    )
+    raw = provenance.document_bytes(document)
+    table = spec.G4DatTable(
+        directives={
+            "GRAMMAR": spec.GRAMMAR_VERSION,
+            "DATASET": document.dataset,
+            "VERSION": document.version,
+            "PROFILE": document.profile,
+            "SEAM": document.seam,
+            "TABLE": "muon_zeff",
+            "GENERATOR": "openmucf-g4 test",
+            "SOURCEDIGEST": provenance.source_digest(raw),
+            "SOURCESHA": d1.UPSTREAM_COMMIT,
+            "UNITS": "value=dimensionless",
+            "COLUMNS": "Z value",
+            "VALIDITY": "Z:0-100",
+        },
+        records=tuple(records),
+    )
+    return table, document
+
+
+def test_t56_single_key_tables_have_a_defined_row_key():
+    """A table keyed by one column keys its rows by that column's unpadded integer.
+
+    Until `muon_zeff` needed it this was an explicitly *registered* undefined case: the checker
+    refused such a table outright and said in a comment that the `"Z-A"` key "is only defined for a
+    table declaring both". Defining it now is the decision that was deferred, not a re-opening --
+    and Layer 2 is never read by Geant4, so nothing in the C++ contract moves.
+
+    Both directions of mismatch must still raise. That is the half most worth testing: a rule that
+    only catches unkeyable rows lets records ship with no provenance at all.
+    """
+    table, document = single_key_pair()
+    spec.validate(table)
+    assert provenance.check_against_table(table, document) is None
+
+    # It also has to survive the JSON round trip, since the key pattern is checked on decode.
+    assert provenance.from_json_obj(provenance.to_json_obj(document)) == document
+
+    # A record with no row.
+    extra_record = dataclasses.replace(table, records=(*table.records, (3, 2.94)))
+    with pytest.raises(ValueError, match="1 record"):
+        provenance.check_against_table(extra_record, document)
+
+    # A row with no record -- including one wearing the two-column spelling, which is not this
+    # table's key form and must therefore read as an unmatched row rather than as a near-miss.
+    for stray in ("3", "1-1"):
+        extra_row = dataclasses.replace(
+            document, rows={**document.rows, stray: provenance.ProvRow(**SINGLE_KEY_ROW)}
+        )
+        with pytest.raises(ValueError, match="1 row"):
+            provenance.check_against_table(table, extra_row)
+
+    # Zero padding stays rejected in the new form, exactly as in the old one.
+    for bad in ("029", "01-1", "+1", "1 "):
+        with pytest.raises(ValueError, match="row key"):
+            provenance.validate_document(
+                {**provenance.to_json_obj(document), "rows": {bad: dict(SINGLE_KEY_ROW)}}
+            )

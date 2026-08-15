@@ -60,11 +60,16 @@ SOURCE_LIBRARIES = ("geant4-compiled-in", "suzuki1987", "iwamoto2025", "jendl-mu
 UNC_TYPES = ("stat", "exp", "theory", "theory-spread", "model", "table", "estimate", "exact")
 RECOMMENDATIONS = ("recommended", "superseded", "")
 FILE_FIELDS = ("dataset", "version", "profile", "seam", "precedence", "rows")
-#: ``"Z-A"`` in decimal with **no zero padding**. The looser ``^[0-9]+-[0-9]+$`` implemented only the
-#: parenthesized half of section 3's rule and let ``"1-1"``, ``"01-1"`` and ``"001-001"`` be three
-#: distinct JSON keys for one record -- the exact collision that paragraph exists to prevent, since
-#: JSON object keys are strings and nothing normalizes them.
-_ROW_KEY_PATTERN = re.compile(r"^(0|[1-9][0-9]*)-(0|[1-9][0-9]*)$")
+#: A row key: ``"Z-A"`` for a table declaring both key columns, or a single unpadded integer for one
+#: declaring exactly one of them. Decimal with **no zero padding** either way. The looser
+#: ``^[0-9]+-[0-9]+$`` implemented only the parenthesized half of section 3's rule and let ``"1-1"``,
+#: ``"01-1"`` and ``"001-001"`` be three distinct JSON keys for one record -- the exact collision that
+#: paragraph exists to prevent, since JSON object keys are strings and nothing normalizes them.
+#:
+#: Which of the two forms a given file must use is not decidable here -- it depends on the Layer-1
+#: table -- so this pattern admits both and :func:`check_against_table` decides. That split is
+#: deliberate: a document is checkable on its own for shape, and only against its table for meaning.
+_ROW_KEY_PATTERN = re.compile(r"^(0|[1-9][0-9]*)(?:-(0|[1-9][0-9]*))?$")
 
 
 @dataclass(frozen=True)
@@ -313,19 +318,28 @@ def check_against_table(table: G4DatTable, document: ProvDocument) -> None:
     # from the table is a dataset whose provenance does not describe what it ships.
     columns = _split_fields(table.directives.get("COLUMNS", ""))
     key_indices = [columns.index(name) for name in ("Z", "A") if name in columns]
-    if len(key_indices) != 2:
-        # Section 3's row key is `"Z-A"`, so it is only defined for a table declaring both. Rather
-        # than silently skipping the rule -- which let a single-key table carry any rows at all --
-        # say so. BOTH directions are a violation: rows that cannot be keyed against the table, and
-        # records that no row can describe. Checking only the first left records shipping with no
-        # provenance at all, which is the half section 3 most cares about.
+    if not key_indices:
+        # A table declaring NEITHER key column has no primary key at all, so there is nothing a row
+        # could be keyed by. Rather than silently skipping the rule -- which let such a table carry
+        # any rows at all -- say so. BOTH directions are a violation: rows that cannot be keyed
+        # against the table, and records that no row can describe. Checking only the first left
+        # records shipping with no provenance at all, which is the half section 3 most cares about.
         if document.rows or table.records:
             raise ValueError(
-                "Layer-2 rows are keyed 'Z-A', which is defined only for a table declaring both "
+                "Layer-2 rows are keyed by the table's primary key, which needs at least one of "
                 f"'Z' and 'A'; this table declares {' '.join(columns) or 'no columns'} and carries "
                 f"{len(table.records)} record(s) against {len(document.rows)} row(s)"
             )
         return
+    # A SINGLE-key table keys its rows by that one column's decimal integer, unpadded ("29"), and a
+    # two-key table by "Z-A". The single-key form was an explicitly registered undefined case until
+    # the `muon_zeff` table became its first consumer: a per-Z quantity has no mass number, and
+    # giving it a sentinel `A` column of zeros would put a column in every file that a C++ reader
+    # must skip -- and would state something false, since 0 is not a mass number.
+    #
+    # Both directions of mismatch still raise, and they do so without a second check: the expected
+    # set is built in the form this table requires, so a "29-0" key against a single-key table is
+    # simply a row with no record.
     expected = {"-".join(str(int(record[i])) for i in key_indices) for record in table.records}
     missing = sorted(expected - set(document.rows))
     extra = sorted(set(document.rows) - expected)

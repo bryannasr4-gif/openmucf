@@ -930,18 +930,29 @@ def test_t27_source_digest_matches():
     )
     with pytest.raises(ValueError, match="one-for-one"):
         provenance.check_against_table(table, short)
-    # A single-key table has no `"Z-A"` key, so the rule cannot apply -- but it must SAY so rather
-    # than silently no-op, which let such a table carry any rows at all.
-    with pytest.raises(ValueError, match="defined only for a table declaring both"):
+    # A SINGLE-key table is now keyed by that one column's integer, so the one-for-one rule applies
+    # to it like any other -- it is no longer the registered-undefined case it was when only the
+    # `"Z-A"` form existed. Here the table's key set is {"1"} and the document's is {"1-1", ...},
+    # so every row and every record is unmatched, in both directions at once.
+    with pytest.raises(ValueError, match="one-for-one"):
         provenance.check_against_table(
             make_table(COLUMNS="Z value unc", records=((1, 0.5, 0.1),)), document
         )
+    # A table declaring NEITHER key column still has no primary key, and must SAY so rather than
+    # silently no-op -- which let such a table carry any rows at all.
+    empty_doc = dataclasses.replace(document, rows={})
+    with pytest.raises(ValueError, match="at least one of"):
+        provenance.check_against_table(
+            make_table(COLUMNS="energy value", records=((1.0, 0.5),)), empty_doc
+        )
     # BOTH directions. Guarding only "rows that cannot be keyed" left the worse half open: records
     # shipping with no provenance row at all, which is exactly what section 3 forbids.
-    empty_doc = dataclasses.replace(document, rows={})
-    for columns, records in (("Z value unc", ((1, 0.5, 0.1),)), ("energy value", ((1.0, 0.5),))):
-        with pytest.raises(ValueError, match="defined only for a table declaring both"):
-            provenance.check_against_table(make_table(COLUMNS=columns, records=records), empty_doc)
+    with pytest.raises(ValueError, match="one-for-one"):
+        provenance.check_against_table(
+            make_table(COLUMNS="Z value unc", records=((1, 0.5, 0.1),)), empty_doc
+        )
+    with pytest.raises(ValueError, match="at least one of"):
+        provenance.check_against_table(make_table(COLUMNS="energy value", records=()), document)
     # A table with neither records nor rows is vacuously fine.
     assert provenance.check_against_table(
         make_table(COLUMNS="energy value", records=()), empty_doc
