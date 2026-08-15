@@ -47,6 +47,8 @@ and this degeneracy is the quantitative reason it is needed.
 
 Convergence gate (`tests/test_calibrate.py::test_multichain_diagnostics`): max r_hat < 1.01, min ess > 400, divergences == 0 on the default (widened-box) chains.
 
+`min ess` above is published as a DESCRIPTION of this realization, not as a reproduction target: `--audit` gates it one-sided (fresh min ess >= 2000) rather than within a relative band, because a symmetric band on a convergence diagnostic reds when a fresh realization converges BETTER than the committed one. Every other cell in this file is checked against its committed value within its own tolerance class.
+
 ## Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)
 | config | boxes | corr | R sd | ose mean | ose sd | rails? |
 |---|---|---|---|---|---|---|
