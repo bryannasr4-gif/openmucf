@@ -23,7 +23,9 @@ Three disciplines run through every test here, because the claim is only as good
 import ast
 import dataclasses
 import hashlib
+import math
 import pathlib
+import struct
 
 import pytest
 
@@ -32,6 +34,8 @@ from openmucf.g4.sources import d1_nuclear_capture as d1
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 VENDORED = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonMinusBoundDecay.cc"
+D1DIR = REPO / "data" / "g4" / "d1"
+ORACLE = D1DIR / "d1_gp_sweep.oracle"
 
 #: Upstream's own object name for the vendored bytes, at tag v11.4.2
 #: (commit 8cc04f65977807f1848da7b958c421cd5e162f26). This is a *pin*, not a measurement: it is the
@@ -343,3 +347,186 @@ def test_t56_single_key_tables_have_a_defined_row_key():
             provenance.validate_document(
                 {**provenance.to_json_obj(document), "rows": {bad: dict(SINGLE_KEY_ROW)}}
             )
+
+
+# --------------------------------------------------------------------------------------------
+# T-48, T-49, T-52 -- the compiled oracle: the sweep digest, the diagnostic subset, the edges
+# --------------------------------------------------------------------------------------------
+
+
+def read_oracle() -> dict:
+    """Parse the harvested oracle into its header fields, subset, zeff rows and degenerate rows.
+
+    Values are converted with `float.fromhex` and compared as **numbers**. Comparing the printed
+    strings instead would turn a C `%a` versus Python `float.hex()` formatting difference into a
+    parity failure, which is a question about printf and not about physics.
+    """
+    header: dict[str, str] = {}
+    subset: dict[tuple[int, int], float] = {}
+    zeff: dict[int, float] = {}
+    degenerate_rates: list[tuple[int, int, str, float]] = []
+    degenerate_zeff: dict[int, float] = {}
+    terminated = False
+    for line in ORACLE.read_text("ascii").splitlines():
+        if line == "#END":
+            terminated = True
+            continue
+        assert not terminated, f"content after #END: {line!r}"
+        if line.startswith("#"):
+            fields = line.lstrip("#").split(None, 1)
+            if len(fields) == 2 and fields[0] not in header:
+                header[fields[0]] = fields[1].strip()
+            continue
+        fields = line.split()
+        if fields[0] == "ZEFF":
+            zeff[int(fields[1])] = float.fromhex(fields[2])
+        elif fields[0] == "RATE":
+            degenerate_rates.append(
+                (int(fields[1]), int(fields[2]), fields[3], float.fromhex(fields[4]))
+            )
+        elif fields[0] == "ZEFFCLAMP":
+            degenerate_zeff[int(fields[1])] = float.fromhex(fields[2])
+        else:
+            subset[(int(fields[0]), int(fields[1]))] = float.fromhex(fields[2])
+    assert terminated, "the oracle is not #END-terminated"
+    return {
+        "header": header,
+        "subset": subset,
+        "zeff": zeff,
+        "degenerate_rates": degenerate_rates,
+        "degenerate_zeff": degenerate_zeff,
+    }
+
+
+def reference_model(found: d1.D1Extraction) -> d1.GoulardPrimakoff:
+    """The declared model, built the way a consumer would: from the `#FALLBACK` string."""
+    return d1.GoulardPrimakoff.from_directive(
+        d1.render_fallback_directive(d1.FALLBACK_MODEL, found.coefficients), found.zeff
+    )
+
+
+def test_t48_the_full_sweep_digest_matches_the_compiled_library():
+    """36000 points of bit-parity against a real Geant4 binary, checked with no Geant4 present.
+
+    This is the whole parity claim in one assertion, and it is worth being precise about why it is
+    not circular. The digest on the right came out of a Geant4-linked binary and is committed; the
+    digest on the left is computed here, now, by evaluating the reference implementation over the
+    same box. Nothing in this repository can regenerate the oracle -- it is not written by
+    `make g4data` and not byte-diffed by `make audit` -- so the two sides have genuinely independent
+    origins, which is what makes a 64-byte committed file worth an exhaustive parity proof.
+
+    It also runs on every CI platform, which is the point of the reference implementation being pure
+    Python: the arm64 job proves the same digest cross-architecture, and needs no Geant4 to do it.
+    """
+    found = extraction()
+    oracle = read_oracle()
+    computed = d1.sweep_digest(found.capture_records, reference_model(found))
+    assert computed == oracle["header"]["fullsweep_sha256"], (
+        "the Python reference implementation no longer reproduces the compiled Geant4 sweep. Do NOT "
+        "re-pin the oracle and do NOT adjust the reference implementation to match: on the build "
+        "recorded in the oracle header the value is determined, so a disagreement means something "
+        "about the extraction, the association order or the model has changed."
+    )
+    # The digest is over the SWEEP, so a test that never evaluated the box could still pass the line
+    # above if `sweep_digest` were gutted. Pin the shape it hashes, from the module's own bounds.
+    swept = (d1.SWEEP_Z_MAX - d1.SWEEP_Z_MIN + 1) * (d1.SWEEP_A_MAX - d1.SWEEP_A_MIN + 1)
+    assert oracle["header"]["sweep"].startswith(
+        f"Z {d1.SWEEP_Z_MIN}..{d1.SWEEP_Z_MAX} x A {d1.SWEEP_A_MIN}..{d1.SWEEP_A_MAX} = {swept} points"
+    )
+
+
+def test_t49_the_diagnostic_subset_agrees_to_zero_ulp():
+    """Every point the oracle spells out, re-derived and compared bit-for-bit.
+
+    The gate asks for <= 1 ulp; this asserts the measured **0**, deliberately. A drift to one ulp
+    would be a finding -- something in the evaluation order or the constants moved -- and a test
+    with a 1-ulp tolerance would absorb it silently. The subset is what makes a digest mismatch
+    diagnosable: a bare hash says only that something moved, these rows say which points.
+    """
+    found = extraction()
+    model = reference_model(found)
+    oracle = read_oracle()
+
+    assert oracle["subset"], "the oracle carries no diagnostic subset"
+    for (z, a), expected in oracle["subset"].items():
+        actual = d1.capture_rate(z, a, found.capture_records, model)
+        assert struct.pack(">d", actual) == struct.pack(">d", expected), (
+            f"({z}, {a}): reference {actual!r} is not bit-identical to compiled Geant4 {expected!r}"
+        )
+
+    # Every table hit is in the subset by the stated rule, so the fallback is not the only path
+    # covered: these are the points where the compiled function returns `cRate / microsecond`.
+    for z, a, _, _ in found.capture_records:
+        assert (z, a) in oracle["subset"]
+
+    # The zeff rows are what `GetMuonZeff(Z)` RETURNS, which is not the same thing as the array's
+    # entries -- the function clamps its argument into [1, maxZ] first. Comparing them to raw array
+    # elements is what surfaced the point: at Z = 0 the array holds 0.0 while the function returns
+    # zeff[1] = 1.0, so element 0 can never be observed through the accessor.
+    assert oracle["zeff"], "the oracle carries no zeff rows"
+    for z, expected in oracle["zeff"].items():
+        assert model.muon_zeff(z) == expected
+
+    # The dataset ships element 0 anyway, and says why: "101/101 bit-identical" means the array as
+    # declared, and silently dropping an element the dataset claims to reproduce would be a worse
+    # artifact. Its unreachability is a disclosure, so assert the unreachability itself.
+    unreachable = found.zeff[0]
+    assert unreachable != oracle["zeff"][0] == found.zeff[model.zmin]
+    assert unreachable not in {model.muon_zeff(z) for z in range(-5, len(found.zeff) + 20)}
+
+
+def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
+    """What Geant4 does at Z = 0, A = 0 and Z < 0 -- registered as a finding, reproduced, not fixed.
+
+    A parity dataset reproduces the library including its edges, so these are compared by
+    classification (`nan` / `+inf` / sign) rather than by value: a NaN has no single bit pattern, so
+    there is nothing here to hash and nothing to assert equal. The finding is that Geant4 returns
+    non-finite rates with no coded rejection at all -- and our own format rejects non-finite floats,
+    which is why the declared model carries a domain contract instead.
+    """
+    found = extraction()
+    model = reference_model(found)
+    oracle = read_oracle()
+
+    assert oracle["degenerate_rates"], "the oracle records no degenerate inputs"
+    assert {row[2] for row in oracle["degenerate_rates"]} == {"nan", "+inf", "negative"}
+    for z, a, classification, recorded in oracle["degenerate_rates"]:
+        # Every recorded probe is outside the declared domain, and every one of them gets a value
+        # out of Geant4 rather than a rejection. That gap IS finding F-S2-2, so state it as an
+        # assertion: the declared model refuses where the library answers.
+        assert z < 1 or a < 1
+        with pytest.raises(ValueError, match="outside its domain"):
+            model.rate(z, a)
+
+        # ...and the reproduction is still checked, on the ungated evaluation, wherever the
+        # arithmetic has a value at all.
+        #
+        # At Z = 0 and at A = 0 it does not. Both divide by zero -- `a2ze = 0.5*A/Z` for the first,
+        # `... / G4double(A*4)` for the second -- and there the two languages part company by
+        # design: IEEE-754 hands C++ a NaN and a +inf and lets them propagate into a lifetime, while
+        # CPython raises. The recorded classification is what Geant4 does; the exception is what
+        # Python does; and the fact that one of them silently produces a number is the finding.
+        if z == 0 or a == 0:
+            assert not math.isfinite(recorded)
+            assert classification == ("nan" if z == 0 else "+inf")
+            assert math.isnan(recorded) if z == 0 else (math.isinf(recorded) and recorded > 0)
+            with pytest.raises(ZeroDivisionError):
+                model.evaluate_unchecked(z, a)
+        else:
+            # Z < 0 is the dangerous one: the zeff clamp pulls the lookup back to Z=1 and the
+            # arithmetic completes, so Geant4 hands back a finite, negative, entirely
+            # plausible-looking rate. Reproduced bit-for-bit -- that is what makes it evidence.
+            assert classification == "negative"
+            actual = model.evaluate_unchecked(z, a)
+            assert math.isfinite(actual) and actual < 0
+            assert struct.pack(">d", actual) == struct.pack(">d", recorded)
+
+    # The clamp holds at both ends, which is what makes `zeff` evaluable for any Z at all.
+    assert oracle["degenerate_zeff"], "the oracle records no zeff clamp probes"
+    for z, expected in oracle["degenerate_zeff"].items():
+        assert model.muon_zeff(z) == expected
+    below = [z for z in oracle["degenerate_zeff"] if z < model.zmin]
+    above = [z for z in oracle["degenerate_zeff"] if z > model.zmax]
+    assert below and above, "the clamp probes must cover both ends"
+    assert {model.muon_zeff(z) for z in below} == {found.zeff[model.zmin]}
+    assert {model.muon_zeff(z) for z in above} == {found.zeff[model.zmax]}

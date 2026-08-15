@@ -499,7 +499,35 @@ class GoulardPrimakoff:
         return self.zeff[max(min(z, self.zmax), self.zmin)]
 
     def rate(self, z: int, a: int) -> float:
-        """The Goulard-Primakoff capture rate in ns^-1, in the compiled association order.
+        """The Goulard-Primakoff capture rate in ns^-1, within the model's **declared domain**.
+
+        The model is declared valid for ``Z >= 1`` and ``A >= 1``. Outside it, this raises rather
+        than returning something: Geant4 returns NaN for ``Z = 0``, ``+inf`` for ``A = 0`` and a
+        plausible-looking finite *negative* rate for ``Z < 0``, in every case with no coded
+        rejection at all -- and a value that looks like a rate but is not one is worse than an
+        error, because it propagates. Our own Layer-1 format rejects non-finite floats outright, so
+        a conforming consumer has to report a domain error here; this is that consumer.
+
+        What Geant4 actually does at those inputs is not hidden, it is recorded: see
+        :meth:`evaluate_unchecked`, ``data/g4/d1/d1_gp_sweep.oracle``, and the finding in
+        ``DATASET_D1.md``. Reproducing the library and declaring a safer contract than the library
+        are different jobs, and this is the only place the two deliberately differ.
+        """
+        if z < 1 or a < 1:
+            raise ValueError(
+                f"the {FALLBACK_MODEL} model is declared for Z >= 1 and A >= 1; (Z={z}, A={a}) is "
+                "outside its domain. Geant4 returns a non-finite or negative value here instead of "
+                "rejecting the input -- a registered finding, reproduced in evaluate_unchecked()."
+            )
+        return self.evaluate_unchecked(z, a)
+
+    def evaluate_unchecked(self, z: int, a: int) -> float:
+        """The compiled expression itself, domain check and all judgement suspended.
+
+        This is what Geant4 computes, in the compiled association order, for any input the
+        arithmetic survives. It exists so that the parity claim covers the library's edges too --
+        and so that the difference between "what the library does" and "what this dataset says a
+        conforming consumer should do" is visible in the code rather than only in prose.
 
         The parenthesisation below is not style. C++ ``*`` and ``+`` are left-associative and
         floating-point arithmetic is not associative, so re-grouping any of these products changes

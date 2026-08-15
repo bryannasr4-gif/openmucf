@@ -1,0 +1,344 @@
+# G4MuonicData D1 -- compiled-Geant4 oracle for the nuclear-capture seam
+#
+# HARVESTED, not generated. These values came out of a Geant4-linked binary; nothing in this
+# repository can produce them, which is exactly why comparing the Python reference
+# implementation against them is evidence and not a tautology. `make g4data` does not rewrite
+# this file and `make audit` does not byte-diff it -- "regenerate and compare" is undefined for
+# a harvested input. It is protected instead by re-derivation: tests/test_g4parity.py recomputes
+# every value here in Python and compares, which is a stronger check than re-reading bytes.
+#
+# upstream_commit   8cc04f65977807f1848da7b958c421cd5e162f26
+# upstream_path     source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
+# upstream_blob     29bd73719cd619de34ef83ca5ca076ceadf1cc5a
+# driver            cpp/tools/harvest_d1.cc
+# driver_degenerate cpp/tools/harvest_d1_degenerate.cc
+#
+# The build is part of the measurement, not a footnote: the identical expression compiled with
+# floating-point contraction enabled returns results up to thousands of ulp away, so a parity
+# claim that does not name its build says nothing. See cpp/tools/README.md and DATASET_D1.md.
+# build             Ubuntu 26.04 (WSL2), x86_64, g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,
+#                   Geant4 11.4.2 RelWithDebInfo (-O2 -g -DNDEBUG), no -ffp-contract setting,
+#                   FMA absent from the baseline ISA so contraction is impossible
+#
+# sweep             Z 1..120 x A 1..300 = 36000 points, row-major, Z ascending outermost
+# digest_rule       sha256 over the concatenated big-endian IEEE-754 binary64 bytes of
+#                   rate(Z, A), in that order. Bytes rather than text: unambiguous in both
+#                   languages, with no formatting degrees of freedom.
+# fullsweep_sha256  8d8728ef1e27f240b2ed52618c0d10a1de7b52404d5e8f49a4aa16ac5e5307a5
+#
+# The subset below exists so that a digest mismatch is DIAGNOSABLE -- a bare hash tells a
+# maintainer nothing about what moved. It is chosen by rule, not by taste: every table hit,
+# every Z's first negative A (which is the negative-rate finding's own evidence, so the fixture
+# and the finding are the same data), and the corners of the sweep box.
+# subset            193 points = 90 table hits + 100 first-negative + 4 corners, deduplicated
+# columns           Z A rate_hexfloat   (compare on PARSED values, never on these strings)
+1 1 0x1.853b3dc3afed9p-21
+1 3 -0x1.ed12255e93fc5p-26
+1 300 0x1.c4bd3ddf6c003p-18
+2 3 0x1.206f13e79c0e9p-19
+2 4 0x1.7e4088ed60266p-22
+2 6 -0x1.d9aed9226f268p-23
+3 6 0x1.37dada2319012p-18
+3 7 0x1.2b2bdb58b454cp-19
+3 8 -0x1.8e08b78703464p-25
+4 9 0x1.99d5760b1680ep-18
+4 11 -0x1.3af0e4736d6b6p-22
+5 10 0x1.ce8c3f93e9ac6p-16
+5 11 0x1.6f15e26a6dddp-16
+5 14 -0x1.91beb518cf41bp-21
+6 12 0x1.3f5ab3d5aff55p-15
+6 13 0x1.236b94f976cefp-15
+6 17 -0x1.88aba63793328p-20
+7 14 0x1.20c71fe4a1d5ap-14
+7 20 -0x1.4b237f2211b22p-19
+8 16 0x1.ad94a33aad251p-14
+8 18 0x1.711947cfa26a2p-14
+8 23 -0x1.fedaa03480b79p-19
+9 19 0x1.e05a484af26cap-13
+9 26 -0x1.6afffec75806ep-18
+10 20 0x1.dfd4108decbd3p-13
+10 29 -0x1.ede2e680a8a0fp-18
+11 23 0x1.8ba0b2928ee36p-12
+11 32 -0x1.44b4b15846be1p-17
+12 24 0x1.f9ba6ba138ca5p-12
+12 35 -0x1.96221a350551dp-17
+13 27 0x1.6e37154003255p-11
+13 38 -0x1.fc9304ead0143p-17
+14 28 0x1.c5d2dd8805f36p-11
+14 41 -0x1.343ed3a7e5264p-16
+15 31 0x1.3235dd319ede7p-10
+15 44 -0x1.6a675f2c410a1p-16
+16 32 0x1.6228134480629p-10
+16 47 -0x1.adfb23ba00c0dp-16
+17 35 0x1.d7dbf487fcb92p-10
+17 37 0x1.47ae147ae147bp-10
+17 50 -0x1.e5f1648a1afdbp-16
+18 40 0x1.4da17382ae9b8p-10
+18 53 -0x1.14f873303811ap-15
+19 39 0x1.e4c1b61855616p-10
+19 56 -0x1.392ad4323be2cp-15
+20 40 0x1.4c62af21c11aep-9
+20 59 -0x1.5ea04ae1c2cd9p-15
+21 45 0x1.635610adcd2d4p-9
+21 62 -0x1.86f436b324cebp-15
+22 48 0x1.5394d28a7bef7p-9
+22 65 -0x1.b14294091a7ecp-15
+23 51 0x1.92c8c5004fb11p-9
+23 68 -0x1.e3e32d1019d8fp-15
+24 50 0x1.f559b3d07c84cp-9
+24 52 0x1.c62a1b5c7cd89p-9
+24 53 0x1.b024f6598e10dp-9
+24 54 0x1.90afe60c38f36p-9
+24 71 -0x1.0137a4e1c23aep-14
+25 55 0x1.ff2e48e8a71dep-9
+25 74 -0x1.183261960cbc5p-14
+26 56 0x1.20e1f7d73c926p-8
+26 77 -0x1.2e08c93a8402dp-14
+27 59 0x1.441355475a31bp-8
+27 80 -0x1.45a76432f93a9p-14
+28 58 0x1.906cca2db61bbp-8
+28 60 0x1.6c61522a6f3f5p-8
+28 62 0x1.355475a31a4bdp-8
+28 83 -0x1.5dd0fe100bfa7p-14
+29 63 0x1.74f722e1ac57ep-8
+29 86 -0x1.7236150880f28p-14
+30 66 0x1.7c80841ede11ap-8
+30 89 -0x1.89a0d415afb0ap-14
+31 69 0x1.758e219652bd4p-8
+31 92 -0x1.9bfe3bcfdd3aap-14
+32 72 0x1.6c7219220ff54p-8
+32 95 -0x1.aefd97e4be0a2p-14
+33 75 0x1.8f605ab3aabcep-8
+33 98 -0x1.c2a192f3e1533p-14
+34 80 0x1.74b4070329803p-8
+34 101 -0x1.d61c2b5f8ea6fp-14
+35 79 0x1.d95dd4c76d118p-8
+35 81 0x1.ee99a62ed3522p-8
+35 104 -0x1.eb0bed23bfd34p-14
+36 107 -0x1.00542a912d05cp-13
+37 85 0x1.c38b04ab606b7p-8
+37 110 -0x1.0b7a11c830c3cp-13
+38 88 0x1.c62a1b5c7cd89p-8
+38 113 -0x1.159e98e18fa4cp-13
+39 89 0x1.028a1dfb9389bp-7
+39 116 -0x1.200cff9220b0fp-13
+40 91 0x1.1a75cd0bb6ed6p-7
+40 119 -0x1.2ac63fb9cf31ap-13
+41 93 0x1.5421c044284ep-7
+41 122 -0x1.35cb55d5487ep-13
+42 96 0x1.30ad46f587d7p-7
+42 125 -0x1.411d40c7afa86p-13
+43 128 -0x1.49bcd341be587p-13
+44 131 -0x1.520df52f42489p-13
+45 103 0x1.4801f75104d55p-7
+45 134 -0x1.5b11e527bc606p-13
+46 106 0x1.47ae147ae147bp-7
+46 137 -0x1.63c45fb7f69ffp-13
+47 107 0x1.6427c7c5260f6p-7
+47 140 -0x1.6d2e08e81c3bbp-13
+48 112 0x1.5c209246bf013p-7
+48 143 -0x1.731085caeeb73p-13
+49 115 0x1.74e65bea0ba2p-7
+49 146 -0x1.777835160b443p-13
+50 119 0x1.5b573eab367a1p-7
+50 149 -0x1.7bfa658ef47ebp-13
+51 121 0x1.54c985f06f694p-7
+51 152 -0x1.7cd5dcc557092p-13
+52 128 0x1.2c9d16fc9bc77p-7
+52 155 -0x1.829a86b6e15b2p-13
+53 127 0x1.717df19d66adbp-7
+53 158 -0x1.887bc49ba652dp-13
+54 161 -0x1.8e7975dbefacfp-13
+55 133 0x1.67caea747d806p-7
+55 164 -0x1.94937f2d2a249p-13
+56 138 0x1.4b599aa60913ap-7
+56 167 -0x1.9ac9ca21370f8p-13
+57 139 0x1.5ef1fddebd902p-7
+57 170 -0x1.a08d9857567c6p-13
+58 140 0x1.78dd616f86a09p-7
+58 173 -0x1.a1658cb94865fp-13
+59 141 0x1.b8bac710cb296p-7
+59 176 -0x1.a3fc56099b745p-13
+60 144 0x1.94af4f0d844dp-7
+60 179 -0x1.a617f03c294c9p-13
+61 182 -0x1.a84627cb0ef91p-13
+62 150 0x1.906cca2db61bbp-7
+62 185 -0x1.aa8681ddc6711p-13
+63 188 -0x1.ad670362a8d44p-13
+64 157 0x1.89374bc6a7efap-7
+64 191 -0x1.afca639165727p-13
+65 159 0x1.a122fad6cb535p-7
+65 194 -0x1.b121880ffb463p-13
+66 163 0x1.92b7fe08aefb2p-7
+66 197 -0x1.b2894bd1c92p-13
+67 165 0x1.a858793dd97f6p-7
+67 200 -0x1.b40136635df37p-13
+68 167 0x1.ab4b72c5197a2p-7
+68 203 -0x1.b588d662d72f9p-13
+69 206 -0x1.b7adbac7bef04p-13
+70 209 -0x1.b9537739b17bap-13
+71 212 -0x1.bb07bf822bef1p-13
+72 178 0x1.aaf78feef5ec8p-7
+72 215 -0x1.bcca39d6d367fp-13
+73 181 0x1.a5657fb69984ap-7
+73 218 -0x1.be9a916c6f2c8p-13
+74 184 0x1.a21ea35935fc4p-7
+74 221 -0x1.c1065bdad4f03p-13
+75 224 -0x1.c52a7672aace1p-13
+76 227 -0x1.c8cede96e6fe8p-13
+77 230 -0x1.cd10e30de8369p-13
+78 233 -0x1.d0d1fed8ffe8dp-13
+79 197 0x1.b573eab367a0fp-7
+79 236 -0x1.d53181eccfc75p-13
+80 201 0x1.a176ddaceee0fp-7
+80 239 -0x1.d90ee1540c45ap-13
+81 205 0x1.c5d63886594afp-7
+81 242 -0x1.ea2e783024536p-13
+82 207 0x1.b3a68b19a415fp-7
+82 245 -0x1.e2a937607dedcp-13
+83 209 0x1.b1c864883fd5p-7
+83 248 -0x1.d2ecf6ca4af02p-13
+84 251 -0x1.d30b86b2608f1p-13
+85 254 -0x1.d3c39a729a961p-13
+86 257 -0x1.d3f93d151dc89p-13
+87 260 -0x1.d4c738b277931p-13
+88 263 -0x1.d512bed00d083p-13
+89 266 -0x1.d5f58f495c2a7p-13
+90 232 0x1.9b66f9335d24ap-7
+90 269 -0x1.d655e3fe64531p-13
+91 272 -0x1.d74c8e5de539p-13
+92 233 0x1.d3996fa82e87dp-7
+92 235 0x1.b9628cbd1244bp-7
+92 236 0x1.c779a6b50b0f3p-7
+92 238 0x1.9c9d5a187a4a5p-7
+92 275 -0x1.d7c0b4620118cp-13
+93 237 0x1.bcfd4bf0995abp-7
+93 278 -0x1.d8ca533cd8392p-13
+94 239 0x1.c779a6b50b0f3p-7
+94 242 0x1.a5657fb69984ap-7
+94 281 -0x1.d9dd0db7bdf54p-13
+95 284 -0x1.d9e1b21b411b5p-13
+96 287 -0x1.db06472ac570ap-13
+97 290 -0x1.dba8442cef0c9p-13
+98 293 -0x1.dcddddfaddf48p-13
+99 296 -0x1.dd90cca714014p-13
+100 299 -0x1.ded6c1aa0f0efp-13
+120 1 0x1.153702ab6cad6p+6
+120 300 0x1.34486483fdc47p-6
+#
+# zeff              Z 0..101, pinning the clamp at both ends
+ZEFF 0 0x1p+0
+ZEFF 1 0x1p+0
+ZEFF 2 0x1.fae147ae147aep+0
+ZEFF 3 0x1.7851eb851eb85p+1
+ZEFF 4 0x1.f1eb851eb851fp+1
+ZEFF 5 0x1.33d70a3d70a3dp+2
+ZEFF 6 0x1.6e147ae147ae1p+2
+ZEFF 7 0x1.a70a3d70a3d71p+2
+ZEFF 8 0x1.df5c28f5c28f6p+2
+ZEFF 9 0x1.0a3d70a3d70a4p+3
+ZEFF 10 0x1.247ae147ae148p+3
+ZEFF 11 0x1.3e66666666666p+3
+ZEFF 12 0x1.56147ae147ae1p+3
+ZEFF 13 0x1.6f5c28f5c28f6p+3
+ZEFF 14 0x1.870a3d70a3d71p+3
+ZEFF 15 0x1.9cccccccccccdp+3
+ZEFF 16 0x1.b47ae147ae148p+3
+ZEFF 17 0x1.c7ae147ae147bp+3
+ZEFF 18 0x1.dc7ae147ae148p+3
+ZEFF 19 0x1.f0f5c28f5c28fp+3
+ZEFF 20 0x1.0266666666666p+4
+ZEFF 21 0x1.0c51eb851eb85p+4
+ZEFF 22 0x1.16147ae147ae1p+4
+ZEFF 23 0x1.20a3d70a3d70ap+4
+ZEFF 24 0x1.27d70a3d70a3dp+4
+ZEFF 25 0x1.30f5c28f5c28fp+4
+ZEFF 26 0x1.3970a3d70a3d7p+4
+ZEFF 27 0x1.42147ae147ae1p+4
+ZEFF 28 0x1.4a8f5c28f5c29p+4
+ZEFF 29 0x1.51eb851eb851fp+4
+ZEFF 30 0x1.59c28f5c28f5cp+4
+ZEFF 31 0x1.6051eb851eb85p+4
+ZEFF 32 0x1.66e147ae147aep+4
+ZEFF 33 0x1.6d70a3d70a3d7p+4
+ZEFF 34 0x1.73d70a3d70a3dp+4
+ZEFF 35 0x1.7a66666666666p+4
+ZEFF 36 0x1.80f5c28f5c28fp+4
+ZEFF 37 0x1.87851eb851eb8p+4
+ZEFF 38 0x1.8d9999999999ap+4
+ZEFF 39 0x1.93ae147ae147bp+4
+ZEFF 40 0x1.99c28f5c28f5cp+4
+ZEFF 41 0x1.9fd70a3d70a3dp+4
+ZEFF 42 0x1.a5eb851eb851fp+4
+ZEFF 43 0x1.ab0a3d70a3d71p+4
+ZEFF 44 0x1.bp+4
+ZEFF 45 0x1.b51eb851eb852p+4
+ZEFF 46 0x1.ba147ae147ae1p+4
+ZEFF 47 0x1.bf33333333333p+4
+ZEFF 48 0x1.c333333333333p+4
+ZEFF 49 0x1.c6b851eb851ecp+4
+ZEFF 50 0x1.ca3d70a3d70a4p+4
+ZEFF 51 0x1.cca3d70a3d70ap+4
+ZEFF 52 0x1.d07ae147ae148p+4
+ZEFF 53 0x1.d451eb851eb85p+4
+ZEFF 54 0x1.d828f5c28f5c3p+4
+ZEFF 55 0x1.dcp+4
+ZEFF 56 0x1.dfd70a3d70a3dp+4
+ZEFF 57 0x1.e3851eb851eb8p+4
+ZEFF 58 0x1.e5c28f5c28f5cp+4
+ZEFF 59 0x1.e87ae147ae148p+4
+ZEFF 60 0x1.eb0a3d70a3d71p+4
+ZEFF 61 0x1.ed9999999999ap+4
+ZEFF 62 0x1.f028f5c28f5c3p+4
+ZEFF 63 0x1.f2e147ae147aep+4
+ZEFF 64 0x1.f570a3d70a3d7p+4
+ZEFF 65 0x1.f7ae147ae147bp+4
+ZEFF 66 0x1.f9eb851eb851fp+4
+ZEFF 67 0x1.fc28f5c28f5c3p+4
+ZEFF 68 0x1.fe66666666666p+4
+ZEFF 69 0x1.0066666666666p+5
+ZEFF 70 0x1.01851eb851eb8p+5
+ZEFF 71 0x1.02a3d70a3d70ap+5
+ZEFF 72 0x1.03c28f5c28f5cp+5
+ZEFF 73 0x1.04e147ae147aep+5
+ZEFF 74 0x1.06147ae147ae1p+5
+ZEFF 75 0x1.07851eb851eb8p+5
+ZEFF 76 0x1.08e147ae147aep+5
+ZEFF 77 0x1.0a51eb851eb85p+5
+ZEFF 78 0x1.0bae147ae147bp+5
+ZEFF 79 0x1.0d1eb851eb852p+5
+ZEFF 80 0x1.0e7ae147ae148p+5
+ZEFF 81 0x1.11ae147ae147bp+5
+ZEFF 82 0x1.1170a3d70a3d7p+5
+ZEFF 83 0x1.1p+5
+ZEFF 84 0x1.10ccccccccccdp+5
+ZEFF 85 0x1.11ae147ae147bp+5
+ZEFF 86 0x1.127ae147ae148p+5
+ZEFF 87 0x1.135c28f5c28f6p+5
+ZEFF 88 0x1.1428f5c28f5c3p+5
+ZEFF 89 0x1.150a3d70a3d71p+5
+ZEFF 90 0x1.15d70a3d70a3dp+5
+ZEFF 91 0x1.16b851eb851ecp+5
+ZEFF 92 0x1.17851eb851eb8p+5
+ZEFF 93 0x1.1866666666666p+5
+ZEFF 94 0x1.1947ae147ae14p+5
+ZEFF 95 0x1.1ap+5
+ZEFF 96 0x1.1ae147ae147aep+5
+ZEFF 97 0x1.1bae147ae147bp+5
+ZEFF 98 0x1.1c8f5c28f5c29p+5
+ZEFF 99 0x1.1d5c28f5c28f6p+5
+ZEFF 100 0x1.1e3d70a3d70a4p+5
+ZEFF 101 0x1.1e3d70a3d70a4p+5
+#
+# degenerate        excluded from the sweep and from the digest: these return non-finite
+#                   values, and a NaN has no single bit pattern to hash. Compared by
+#                   CLASSIFICATION rather than by value. Registered as a finding, not fixed.
+RATE 0 12 nan -nan
+RATE 0 1 nan -nan
+RATE 1 0 +inf inf
+RATE -1 12 negative -0x1.3f4c31fa227f6p-21
+ZEFFCLAMP -5 0x1p+0
+ZEFFCLAMP 0 0x1p+0
+ZEFFCLAMP 101 0x1.1e3d70a3d70a4p+5
+ZEFFCLAMP 120 0x1.1e3d70a3d70a4p+5
+#END
