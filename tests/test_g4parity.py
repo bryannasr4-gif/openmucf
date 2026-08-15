@@ -1418,23 +1418,21 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     are hand-authored: pinning them stops the prose drifting from the CSV, and does not check either
     against NIST.
 
-    **What is NOT covered, enumerated rather than summarised** -- an earlier revision of this
-    docstring said "everything countable from what ships is here", which was false, and was proven
-    false by falsifying an unpinned count and watching the suite stay green. Four groups remain
-    unpinned, each because the evidence for it does not ship:
+    **This is not a census of the document's numbers, and does not claim to be.** Two earlier
+    revisions did claim it, in two different forms -- "everything countable from what ships is here",
+    then a four-group exclusion list -- and adversarial passes falsified both, with eight and
+    thirteen witnesses respectively. The lesson taken is that a completeness claim over a prose
+    document is unbounded and will keep being wrong, so this test no longer makes one. What is
+    pinned below is pinned; other numbers in that document are not, and adding a pin is always in
+    order. Some are structurally out of reach whatever the effort -- F-3's contraction figures need a
+    Geant4 build and two compiler configurations, F-2's `NaN` and `+inf` need C++ division semantics
+    that CPython raises on, every claim about what the primary *prints* rests on a paper this
+    repository does not redistribute, and the dysprosium rounding tie has no shipped source at all --
+    but that list is an illustration, not an inventory.
 
-    * **F-3's contraction figures** (36000 / 14668 / 5547 / 2980 ulp / 3.5e-13) and section 4's build
-      description. Reproducing them needs a Geant4 build and two compiler configurations. Registered
-      against the stage that builds the standalone validator.
-    * **F-2's `NaN` and `+inf`.** CPython raises `ZeroDivisionError` where C++ divides by zero, so
-      the reference implementation cannot reach them; they were harvested from the compiled library.
-      The one degenerate value Python does reach is pinned below.
-    * **Every claim about what the primary PRINTS** -- its abstract's "50 elements plus 8 isotopes",
-      its 4.1 %/5.6 % residuals over 30 and 58 points, its page numbers, the misprinted barium Z, and
-      the three effective charges as they appear on its page. The paper is not redistributed here;
-      those rest on the audit's transcription, which two independent readings of the page images
-      checked.
-    * **The dysprosium rounding tie**, 162.500, which has no shipped source at all.
+    **Three things this cannot make independent**, beyond the two named above: section 5's finding
+    partition is counted from the document's own `F-n` headings, so it checks that the summary agrees
+    with the section rather than with anything that ships.
 
     The ruling if this fails after a deliberate rewording: move the anchor in the same commit, never
     the expected value, and never delete a row.
@@ -1457,6 +1455,19 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     carve_out = {k for k in trues if k[0] in (1, 2)}
     natural = (set(audit) - trues) & settled
     not_most_abundant = {k for k, r in audit.items() if "most abundant nuclide" in r.evidence}
+
+    # The three routes are counted separately below, so assert here that they are what the document
+    # calls them -- a partition of the true rows. Counting them as three independent numbers would
+    # let a row with separated-isotope evidence and a false flag inflate the 23 without touching the
+    # 45, and every count would still agree.
+    assert separated | mononuclidic | carve_out == trues, (
+        "the three isotope-resolution routes no longer cover exactly the resolved rows: "
+        f"uncovered {sorted(trues - (separated | mononuclidic | carve_out))}, "
+        f"outside the resolved set {sorted((separated | mononuclidic | carve_out) - trues)}"
+    )
+    assert len(separated) + len(mononuclidic) + len(carve_out) == len(trues), (
+        "the three isotope-resolution routes overlap; the document presents them as a partition"
+    )
 
     per_z = {z: sum(1 for k in keys if k[0] == z) for z in zs}
     old_rule = {k: per_z[k[0]] > 1 for k in keys}
@@ -1527,9 +1538,13 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
 
     # The section-5 partition, derived from the section's own structure.
     findings = len(re.findall(r"\*\*F-\d+ ", doc))
-    # Counted as F-n headings carrying the marker, not as a bare substring: a future sentence
-    # saying a finding is NOT settled against the primary would otherwise inflate this.
-    settled_findings = len(re.findall(r"\*\*F-\d+ [^*]*SETTLED against the primary\.\*\*", doc))
+    # Counted as F-n headings carrying the marker, and the lookbehind is load-bearing: an earlier
+    # revision matched any heading ending in the marker, so a heading reading "NOT SETTLED against
+    # the primary." counted as settled -- the document could tell a reader a finding is open while
+    # its own summary counted it closed.
+    settled_findings = len(
+        re.findall(r"\*\*F-\d+ [^*]*(?<!NOT )SETTLED against the primary\.\*\*", doc)
+    )
 
     # The free-muon decay rate comes from the VENDORED SOURCE, never from the prose under test.
     # Reading it out of the document would let a self-consistent falsification -- move the constant
@@ -1634,6 +1649,13 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
          r"The (\w+) that do not are", len(zs) - len(located_in_primary)),
         ("effective charges below their predecessor",
          r"rises monotonically except at exactly (\w+) steps", len(descents)),
+        ("declared fallback inputs", r"All (\w+) inputs are declared",
+         len(found.fallback_coefficients)),
+        ("effective-charge array length, section 3", r"The array holds (\d+) entries",
+         len(zeff_table.records)),
+        ("the maximum Z, section 1", r"\"94 entries\"; (\d+) is the maximum", max(zs)),
+        ("table hits inside the sweep, section 4", r"The (\d+) table hits are included",
+         len(found.capture_records)),
     ]
 
     #: Figures the document rounds. `(what, pattern, computed value, decimal places)`.
@@ -1744,3 +1766,68 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     assert degenerate.group(1).replace("−", "-") == (
         f"{model.evaluate_unchecked(-1, 12):.6e}"
     ), "DATASET_D1.md's Z=-1 value is not what the reference implementation returns"
+
+    # The two provenance identities the document tells a reader to check the vendored copy against.
+    # A wrong digit here does not merely misinform, it sends someone to the wrong upstream object.
+    quoted_blob = re.search(r"\*\*git blob id\*\* `([0-9a-f]{40})`", doc)
+    assert quoted_blob, "section 1 no longer prints the upstream blob id where this test reads it"
+    assert quoted_blob.group(1) == d1.UPSTREAM_BLOB_ID, (
+        f"DATASET_D1.md prints the blob id {quoted_blob.group(1)}; the pin is {d1.UPSTREAM_BLOB_ID}"
+    )
+    shipped_sha = re.search(r"#SOURCESHA\s+(\S+)", CAPTURE_LAYER1.read_text(encoding="ascii"))
+    quoted_sha = re.search(r"#SOURCESHA `?([0-9a-f]{40})", doc)
+    assert quoted_sha, "section 1 no longer prints the source revision where this test reads it"
+    assert quoted_sha.group(1) == shipped_sha.group(1), (
+        f"DATASET_D1.md prints #SOURCESHA {quoted_sha.group(1)}; the shipped table declares "
+        f"{shipped_sha.group(1)}"
+    )
+
+    # The model contract quotes the shipped directive as a code block. Quoting it wrongly would
+    # hand a consumer coefficients the dataset does not declare.
+    quoted_fallback = re.search(r"```\s*(#FALLBACK goulard_primakoff [^`]+?)\s*```", doc)
+    assert quoted_fallback, "section 2 no longer quotes the fallback directive where this test reads it"
+    shipped_fallback = re.search(
+        r"(#FALLBACK\s+\S+.*)", CAPTURE_LAYER1.read_text(encoding="ascii")
+    )
+    assert quoted_fallback.group(1).split() == shipped_fallback.group(1).split(), (
+        f"DATASET_D1.md quotes {quoted_fallback.group(1)!r}; the shipped table declares "
+        f"{shipped_fallback.group(1)!r}"
+    )
+
+    # `zeff[0] ships and is unreachable` names the clamp the model applies.
+    clamp = re.search(r"clamps its argument into `\[(\d+), (\d+)\]`", doc)
+    assert clamp, "section 3 no longer states the clamp range where this test reads it"
+    assert (int(clamp.group(1)), int(clamp.group(2))) == (model.zmin, model.zmax), (
+        f"DATASET_D1.md says GetMuonZeff clamps into [{clamp.group(1)}, {clamp.group(2)}]; the "
+        f"declared directive says [{model.zmin}, {model.zmax}]"
+    )
+
+    # F-4's gap list is the evidence for its set equality, so it is checked as a set rather than as
+    # a string: the document writes runs as ranges, and how it spells them is not the claim.
+    gap_text = re.search(r"the same gaps at Z = (.+?)\. That is a set equality", doc)
+    assert gap_text, "F-4 no longer lists its gaps where this test reads them"
+    quoted_gaps: set[int] = set()
+    for piece in re.split(r",| and ", gap_text.group(1)):
+        piece = piece.strip()
+        if not piece:
+            continue
+        run = re.fullmatch(r"(\d+)[–-](\d+)", piece)
+        quoted_gaps.update(range(int(run.group(1)), int(run.group(2)) + 1) if run else [int(piece)])
+    computed_gaps = {z for z in range(min(zs), max(zs) + 1) if z not in zs}
+    assert quoted_gaps == computed_gaps, (
+        f"DATASET_D1.md lists gaps {sorted(quoted_gaps)}; the shipped table has "
+        f"{sorted(computed_gaps)}"
+    )
+
+    # F-7 restates three of F-1's thresholds. Pinned separately so the two statements cannot drift
+    # apart while each looks right on its own.
+    restated = re.search(
+        r"thresholds are small: A=(\d+) at Z=(\d+), A=(\d+) at Z=(\d+), A=(\d+) at Z=(\d+)", doc
+    )
+    assert restated, "F-7 no longer restates F-1's low-Z thresholds where this test reads them"
+    restated_pairs = [int(g) for g in restated.groups()]
+    for stated_a, stated_z in zip(restated_pairs[0::2], restated_pairs[1::2], strict=True):
+        assert first_negative.get(stated_z) == stated_a, (
+            f"DATASET_D1.md F-7 says the first negative A at Z={stated_z} is {stated_a}; the sweep "
+            f"says {first_negative.get(stated_z)}"
+        )
