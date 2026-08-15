@@ -16,9 +16,11 @@ if a `Z` carried more than one record. Every one of the 90 records has now been 
 paper its own value is attributed to, and the audit is shipped as `data/g4/d1/isotope_audit.csv` —
 one row per record, hand-authored, carrying its evidence, the table and page that establish it, and
 which copy of the paper was read.
-- **The old rule disagrees with the primaries on 28 of the 90 records** — 23 it called unresolved
-  that are resolved, 5 it called resolved that are not. Its soundness argument was about the `Z`,
-  and was being applied to each row of that `Z`, which does not follow.
+- **The old rule disagrees with the primaries on 28 of the 90 records**, and the disagreement splits
+  three ways: **23** it called unresolved that the primary establishes as resolved, **2** it called
+  resolved that the primary flatly contradicts, and **3** it called resolved that the primary does
+  not settle either way. Its soundness argument was about the `Z`, and was being applied to each row
+  of that `Z`, which does not follow.
 - **86 records are settled and now carry `needs_verification: false`**, in both directions: 45 are
   established isotope-resolved, 41 are established to rest on a **natural-composition element**. The
   4 that remain open say so with an empty locator rather than guessing.

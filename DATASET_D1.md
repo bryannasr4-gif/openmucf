@@ -6,7 +6,9 @@
 `data/g4/d1/` is the first `G4MuonicData` dataset carrying real content. It is a **parity** dataset:
 its only claim is that it reproduces the muon-capture data compiled into Geant4 v11.4.2
 bit-for-bit. It evaluates nothing, recommends nothing, and corrects nothing — including where the
-upstream data looks wrong. Section 5 lists seven places where it does.
+upstream data looks wrong. Section 5 carries seven findings: **five** defects it reproduces rather
+than corrects, and **two** questions about the upstream data that reading the primary literature has
+since settled.
 
 That restraint is the design. A parity profile is the fixed point everything else is measured
 against: if the dataset and the transport code disagree, exactly one of them has changed, and you
@@ -263,10 +265,14 @@ two exceptions are instructive rather than incidental. **Ca** appears once, as a
 record. **Sr** appears once too, and it is one of the four records this dataset **cannot settle** —
 `(38, 88)`, where the primary prints both natural Sr and Sr-88 and the key matches either.
 
-Sharper still: **three of those four unsettled records are elements this sentence names** —
-`(17, 35)` Cl, `(24, 52)` Cr and `(38, 88)` Sr — and Cl and Sr are named in the half of the sentence
-that doubts the separated-isotope *experiment*. The uncertainty in this audit and the uncertainty in
-the primary are the same uncertainty, not two coincidences.
+Sharper still: **all four of the records this dataset cannot settle sit at elements this sentence
+names.** Three of them — `(17, 35)` Cl, `(24, 52)` Cr and `(38, 88)` Sr — are rows where the primary
+prints *both* a natural-composition entry and a separated isotope of that mass number, so the key
+cannot say which one the record reproduces; and two of those three, Cl and Sr, are named in the half
+of the sentence that doubts the separated-isotope *experiment*. That uncertainty and this one are
+the same uncertainty, not two coincidences. The fourth, `(92, 236)` U, is open for an unrelated
+reason — the primary's table carries no U-236 row at all — and U is named in the model half, where
+the complaint is about the formula rather than about the data.
 
 **F-7 — `(Z, A)` is a label on most rows, not a target specification.** For **41 of the 90 records**
 the primary shows the measurement was made on a **natural-composition element**, not on the nuclide
