@@ -739,7 +739,12 @@ def quoted_attribution(conditions: str) -> str:
     own quote mark after 27 of its 218 characters and the rest goes unchecked.
     """
     assert conditions.startswith(QUOTE_PREFIX), conditions
-    return conditions[len(QUOTE_PREFIX) : conditions.rindex('". ')]
+    closing = conditions.rindex('". ')
+    # `rindex` is only unambiguous while the prose after the quotation carries no quote mark of its
+    # own, so check that rather than assume it. Upstream's title quotes live INSIDE the quotation and
+    # are the reason the naive `split('"')[1]` failed here in the first place.
+    assert '"' not in conditions[closing + 1 :], conditions
+    return conditions[len(QUOTE_PREFIX) : closing]
 
 
 def is_upstream_verbatim(text: str, comment_lines: tuple[str, ...]) -> bool:
@@ -750,27 +755,32 @@ def is_upstream_verbatim(text: str, comment_lines: tuple[str, ...]) -> bool:
     makes a fabricated word impossible rather than merely awkward -- there is nowhere in the string
     left for one to sit. If a future selector legitimately needs part of a line, this is the
     assertion to revisit deliberately, not the one to loosen.
+
+    The base case fires only immediately after a whole line, never after a separator, and the empty
+    text is not a join of anything. Written the other way round -- `if position == len(text): return
+    True` at the top -- it accepts a trailing space and accepts a quotation of nothing at all, both
+    of which are exactly the "certified as upstream's, checked by nobody" failure this guard exists
+    to remove. Checked against a brute-force enumeration of every in-order subsequence.
     """
     memo: dict[tuple[int, int], bool] = {}
 
     def walk(position: int, first: int) -> bool:
-        if position == len(text):
-            return True
         if (position, first) not in memo:
-            memo[position, first] = any(
-                text.startswith(line, position)
-                and (
-                    position + len(line) == len(text)
-                    or (
-                        text[position + len(line)] == " "
-                        and walk(position + len(line) + 1, index + 1)
-                    )
-                )
-                for index, line in enumerate(comment_lines[first:], first)
-            )
+            result = False
+            for index in range(first, len(comment_lines)):
+                line = comment_lines[index]
+                # An empty comment line is not text and cannot carry an attribution; the extractor
+                # drops them (measured: none in the vendored source), so skipping is defensive.
+                if not line or not text.startswith(line, position):
+                    continue
+                end = position + len(line)
+                if end == len(text) or (text[end] == " " and walk(end + 1, index + 1)):
+                    result = True
+                    break
+            memo[position, first] = result
         return memo[position, first]
 
-    return walk(0, 0)
+    return bool(text) and walk(0, 0)
 
 
 def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
