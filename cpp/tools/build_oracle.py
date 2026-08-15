@@ -90,10 +90,17 @@ def read_sweep(path: Path) -> tuple[dict[tuple[int, int], str], dict[int, str]]:
     """Parse ``harvest_d1``'s output into ``{(Z, A): hexfloat}`` and ``{Z: hexfloat}``."""
     rates: dict[tuple[int, int], str] = {}
     zeff: dict[int, str] = {}
-    for line in path.read_text("ascii").splitlines():
+    for number, line in enumerate(path.read_text("ascii").splitlines(), 1):
         fields = line.split()
         if not fields:
             continue
+        # Name the bad line. A bare IndexError out of a three-line parser sends a maintainer looking
+        # for a bug in this script when what they have is a truncated or half-written harvest.
+        if len(fields) != 3:
+            raise SystemExit(
+                f"{path}:{number}: expected 3 fields, got {len(fields)}: {line!r}. A harvest line is "
+                f"'Z A hexfloat' or 'ZEFF Z hexfloat'; this file is truncated or not a harvest."
+            )
         if fields[0] == "ZEFF":
             zeff[int(fields[1])] = fields[2]
         else:

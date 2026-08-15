@@ -31,9 +31,10 @@ declared as data in a `#FALLBACK` directive carrying all eight of the constants 
   contraction; an attribution that does not reconcile with the table's 74 distinct Z; and a
   non-monotonic step in the effective-charge table near the Z=82 shell closure.
 - **The whole harvest chain is committed**, not only its C++ half: `cpp/tools/build_oracle.py` is
-  the script that turns a driver's raw `%a` output into the committed oracle, and on the build its
-  header names it reproduces that file byte for byte. A committed harvested artifact whose producing
-  code is missing is the reproducibility hole vendoring the upstream source exists to close.
+  the script that turns a driver's raw `%a` output into the committed oracle, and it reproduces that
+  file byte for byte when run on the build named in the oracle's own header. A committed harvested
+  artifact whose producing code is missing is the reproducibility hole vendoring the upstream source
+  exists to close.
 - Layer-2 row keys are now defined for tables whose primary key is a **single column** (a previously
   registered undefined case, whose first consumer is the effective-charge table).
 - `FORMAT_SPEC.md` §2.2's example header no longer violates its own advisory that every `#UNITS`
