@@ -583,6 +583,22 @@ def test_t48_the_full_sweep_digest_matches_the_compiled_library():
     #
     # `build` is the one input with no derivation: it records the environment the harvest ran in,
     # and nothing here can confirm it. It is fed back in as found, and checked only for presence.
+    #
+    # The trust boundary, stated rather than implied: this pins the file to its PRODUCER, so the
+    # prose is only as true as the producer's constants. That is the right boundary for a hand-edit
+    # -- the threat this file has, being outside the byte-diff audit -- but it is not a check on the
+    # code. One clause is exempted from that limit because Stage 3's C++ validator implements the
+    # digest from it: "big-endian" is pinned to the arithmetic instead, by requiring the committed
+    # digest to reproduce under big-endian packing and NOT under little-endian.
+    byte_swapped = reference_model(found)
+    little = hashlib.sha256()
+    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            little.update(
+                struct.pack("<d", d1.capture_rate(z, a, found.capture_records, byte_swapped))
+            )
+    assert "big-endian" in oracle["header"]["digest_rule"]
+    assert computed != little.hexdigest(), "the sweep is byte-order blind; the digest rule proves nothing"
     header = oracle["header"]
     assert set(header) == set(ORACLE_FIELDS), (
         f"the oracle's header fields are not the declared set: missing "
