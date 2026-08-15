@@ -23,6 +23,7 @@ Three disciplines run through every test here, because the claim is only as good
 import ast
 import dataclasses
 import hashlib
+import importlib.util
 import json
 import math
 import pathlib
@@ -405,6 +406,13 @@ def read_oracle() -> dict:
     zeff: dict[int, float] = {}
     degenerate_rates: list[tuple[int, int, str, float]] = []
     degenerate_zeff: dict[int, float] = {}
+    # The rows as WRITTEN, kept beside the parsed values so the file can be handed back to its own
+    # producer verbatim. The hexfloat spellings are the harvest's own bytes and nothing here may
+    # re-render them: C's "%a" prints the shortest form, Python's float.hex() pads to 13 digits.
+    raw_subset: list[tuple[int, int, str]] = []
+    raw_zeff: list[tuple[int, str]] = []
+    raw_degenerate: list[str] = []
+    build: list[str] = []
     terminated = False
     last_field: str | None = None
     for line in ORACLE.read_text("ascii").splitlines():
@@ -426,11 +434,19 @@ def read_oracle() -> dict:
                 assert name not in header, f"duplicate header field {name!r}"
                 header[name] = body[len(name) :].strip()
                 last_field = name
+                if name == "build":
+                    build.append(header[name])
             elif line.startswith("#" + " " * 19) and last_field:
                 header[last_field] += " " + body
+                if last_field == "build":
+                    build.append(body)
             else:
                 last_field = None  # a prose line ends the field it followed
             continue
+        # A data row ends the header field above it too. Without this a comment line dropped in
+        # among the rows attaches to a field sixty lines further up, which is where an unchecked
+        # sentence could be smuggled into a checked one.
+        last_field = None
         # Every keyed section rejects a repeat. Assigning into a dict is last-wins, so a duplicated
         # row SHADOWS the one before it: a wrong value could sit in the file, be read, be discarded
         # in favour of the correct copy underneath, and be certified by a test that never saw it.
@@ -441,18 +457,22 @@ def read_oracle() -> dict:
             key = int(fields[1])
             assert key not in zeff, f"duplicate ZEFF row for Z={key}"
             zeff[key] = float.fromhex(fields[2])
+            raw_zeff.append((key, fields[2]))
         elif fields[0] == "RATE":
             degenerate_rates.append(
                 (int(fields[1]), int(fields[2]), fields[3], float.fromhex(fields[4]))
             )
+            raw_degenerate.append(line)
         elif fields[0] == "ZEFFCLAMP":
             key = int(fields[1])
             assert key not in degenerate_zeff, f"duplicate ZEFFCLAMP row for Z={key}"
             degenerate_zeff[key] = float.fromhex(fields[2])
+            raw_degenerate.append(line)
         else:
             pair = (int(fields[0]), int(fields[1]))
             assert pair not in subset, f"duplicate subset row for {pair}"
             subset[pair] = float.fromhex(fields[2])
+            raw_subset.append((*pair, fields[2]))
     assert terminated, "the oracle is not #END-terminated"
     # Ascending by key, like every other committed table here (E015's discipline). The producer
     # emits them sorted, so a file in any other order is one no rebuild reproduces -- and a
@@ -465,7 +485,23 @@ def read_oracle() -> dict:
         "zeff": zeff,
         "degenerate_rates": degenerate_rates,
         "degenerate_zeff": degenerate_zeff,
+        "raw": {
+            "subset": raw_subset,
+            "zeff": raw_zeff,
+            "degenerate": raw_degenerate,
+            "build": build,
+        },
     }
+
+
+def oracle_producer():
+    """`cpp/tools/build_oracle.py`, loaded by path -- `cpp/tools/` is a directory, not a package."""
+    path = REPO / "cpp" / "tools" / "build_oracle.py"
+    spec = importlib.util.spec_from_file_location("build_oracle", path)
+    assert spec and spec.loader, path
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 _RATE_PROBE_DECL = re.compile(r"probes\[\]\[2\]\s*=\s*\{(.*?)\}\s*;", re.DOTALL)
@@ -532,12 +568,21 @@ def test_t48_the_full_sweep_digest_matches_the_compiled_library():
         f"points, row-major, Z ascending outermost"
     )
 
-    # The header is data too, and it is the last part of this file that was checked by nobody. Every
-    # field with a derivation is pinned to it here; the provenance fields say which upstream bytes
-    # the whole chain rests on, and an oracle naming a different one is a false claim whatever its
-    # numbers say. `build` is the single field with NO derivation -- it records the environment the
-    # harvest actually ran in, supplied by whoever ran it, and nothing in this repository can
-    # confirm it. That is stated rather than papered over: it is checked for presence only.
+    # Everything in this file that is not a measured number is emitted by its producer, so hand the
+    # file back to the producer and require the same bytes out. That closes the whole class at once
+    # -- prose, the field set and its order, every field value, the row order, the spacing, stray
+    # lines, invented fields -- instead of asserting one clause at a time and stopping one clause
+    # short, which is what the four rounds before this one each did.
+    #
+    # It is not circular for the NUMBERS. The rows go back in as the harvest's own `%a` strings
+    # (they must: C prints the shortest form and `float.hex()` pads to 13 digits), and every one of
+    # them is re-derived against the Python reimplementation elsewhere in this file, at zero ulp.
+    # What this pins is that the committed artifact is still the artifact the producer emits, which
+    # is exactly what a hand-edit breaks -- and the oracle is deliberately outside `make audit`'s
+    # byte-diff, so nothing else would notice.
+    #
+    # `build` is the one input with no derivation: it records the environment the harvest ran in,
+    # and nothing here can confirm it. It is fed back in as found, and checked only for presence.
     header = oracle["header"]
     assert set(header) == set(ORACLE_FIELDS), (
         f"the oracle's header fields are not the declared set: missing "
@@ -546,9 +591,29 @@ def test_t48_the_full_sweep_digest_matches_the_compiled_library():
     assert header["upstream_commit"] == d1.UPSTREAM_COMMIT
     assert header["upstream_path"] == d1.UPSTREAM_PATH
     assert header["upstream_blob"] == d1.UPSTREAM_BLOB_ID
-    for field in ("driver", "driver_degenerate"):
-        assert (REPO / header[field]).is_file(), f"the oracle names a driver that is not here: {field}"
-    assert header["build"].strip(), "the oracle does not name the build that produced it"
+    assert oracle["raw"]["build"], "the oracle does not name the build that produced it"
+
+    raw = oracle["raw"]
+    hits = {(z, a) for z, a, _, _ in found.capture_records}
+    corners = {
+        (z, a)
+        for z in (d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX)
+        for a in (d1.SWEEP_A_MIN, d1.SWEEP_A_MAX)
+    }
+    negatives = set(oracle["subset"]) - hits - corners
+    rendered = oracle_producer().render_oracle(
+        subset=raw["subset"],
+        zeff=raw["zeff"],
+        degenerate_lines=raw["degenerate"],
+        build=raw["build"],
+        digest=computed,
+        swept=swept,
+        tallies=(len(hits), len(negatives), len(corners)),
+    )
+    assert rendered == ORACLE.read_text("ascii"), (
+        "the committed oracle is no longer what cpp/tools/build_oracle.py emits from its own rows. "
+        "Rebuild it with that script rather than editing it by hand."
+    )
 
 
 def test_t49_the_diagnostic_subset_agrees_to_zero_ulp():

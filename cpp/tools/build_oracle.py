@@ -233,8 +233,38 @@ def render(
     rates, zeff = read_sweep(sweep, len(source.zeff))
     degenerate_lines = check_degenerate(degenerate, driver)
     subset, hits, negatives, corners = select_subset(rates, source)
-    swept = len(rates)
+    return render_oracle(
+        subset=[(z, a, rates[z, a]) for z, a in subset],
+        zeff=[(z, zeff[z]) for z in sorted(zeff)],
+        degenerate_lines=degenerate_lines,
+        build=build,
+        digest=sweep_digest(rates),
+        swept=len(rates),
+        tallies=(hits, negatives, corners),
+    )
 
+
+def render_oracle(
+    *,
+    subset: list[tuple[int, int, str]],
+    zeff: list[tuple[int, str]],
+    degenerate_lines: list[str],
+    build: list[str],
+    digest: str,
+    swept: int,
+    tallies: tuple[int, int, int],
+) -> str:
+    """Every byte of the oracle, from its rows and the one measurement that has no derivation.
+
+    Split out from :func:`render` so that the file's own guard can re-run it. The test suite parses
+    the committed oracle, feeds its rows straight back in, and requires these bytes out again --
+    which pins the prose, the field set, the field order, the spacing and the row order all at once,
+    instead of asserting them clause by clause and stopping one clause short each time. That check
+    is not circular for the *numbers*: the values are re-derived independently against a Python
+    reimplementation of the compiled library. What it pins is that the committed artifact is still
+    the artifact this producer emits -- which is exactly what a hand-edit breaks.
+    """
+    hits, negatives, corners = tallies
     lines = [comment(text) for text in BANNER]
     lines += [
         field("upstream_commit", d1.UPSTREAM_COMMIT),
@@ -256,7 +286,7 @@ def render(
         field("digest_rule", DIGEST_RULE[0]),
     ]
     lines += [continuation(text) for text in DIGEST_RULE[1:]]
-    lines += [field("fullsweep_sha256", sweep_digest(rates)), comment()]
+    lines += [field("fullsweep_sha256", digest), comment()]
     lines += [comment(text) for text in SUBSET_PREAMBLE]
     lines += [
         field(
@@ -266,12 +296,16 @@ def render(
         ),
         field("columns", COLUMNS),
     ]
-    lines += [f"{z} {a} {rates[z, a]}" for z, a in subset]
+    lines += [f"{z} {a} {value}" for z, a, value in subset]
     lines += [
         comment(),
-        field("zeff", f"Z {min(zeff)}..{max(zeff)}, pinning the clamp at both ends"),
+        field(
+            "zeff",
+            f"Z {min(z for z, _ in zeff)}..{max(z for z, _ in zeff)}, "
+            f"pinning the clamp at both ends",
+        ),
     ]
-    lines += [f"ZEFF {z} {zeff[z]}" for z in sorted(zeff)]
+    lines += [f"ZEFF {z} {value}" for z, value in zeff]
     lines += [comment(), field("degenerate", DEGENERATE_RULE[0])]
     lines += [continuation(text) for text in DEGENERATE_RULE[1:]]
     lines += degenerate_lines
