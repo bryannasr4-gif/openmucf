@@ -987,6 +987,26 @@ def quoted_attribution(conditions: str) -> str:
     return conditions[len(QUOTE_PREFIX) : closing]
 
 
+def conditions_tail(conditions: str) -> str:
+    """Everything after the upstream quotation closes -- this project's own prose, not upstream's."""
+    return conditions[conditions.rindex('". ') + 3 :]
+
+
+#: Every sentence this repository is allowed to append after an upstream quotation, verbatim. Three
+#: strings for three situations, and nothing else may ship.
+EXPECTED_CONDITION_TAILS = frozenset({
+    "Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself "
+    "never reads cRErr.",
+    "No uncertainty is published upstream and this table carries no unc column, so unc_type is "
+    "table.",
+    "No uncertainty is published upstream and this table carries no unc column, so unc_type is "
+    "table. This entry is UNREACHABLE through GetMuonZeff, which clamps Z into [1, 100] before "
+    "indexing. It ships because the dataset reproduces the array as declared, and silently dropping "
+    "an element it claims to reproduce would be a worse artifact than shipping one with a "
+    "disclosure.",
+})
+
+
 def is_upstream_verbatim(text: str, comment_lines: tuple[str, ...]) -> bool:
     """Is `text` exactly a space-join of whole `comment_lines` entries, in source order?
 
@@ -1047,9 +1067,18 @@ def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
             # the library cites, which no one here has read. Those travel as quoted upstream text.
             assert row.source_library == "geant4-compiled-in", key
             assert row.source_bibkey == "geant4_v11_4_2", key
-            # A parity profile reproduces; it does not recommend, and nothing is verified yet.
+            # A parity profile reproduces; it does not recommend. That much is unconditional.
             assert row.recommendation == "", key
-            assert row.needs_verification is True, key
+            # `needs_verification` is no longer unconditional on the capture table: a row settled
+            # by a primary read carries false, and the locator's second clause is what says so.
+            # The two must agree on every row, or one of them is decoration. On the zeff table
+            # nothing has been settled, so the original blanket invariant still holds there.
+            established = "; isotope_resolved established by " in row.source_locator
+            if layer2_path == ZEFF_LAYER2:
+                assert row.needs_verification is True, key
+                assert not established, key
+            else:
+                assert row.needs_verification is not established, key
             # Upstream says "weighted average of the two most precise measurements".
             assert row.single_source is False, key
             assert row.unc_type == "table", key
@@ -1072,30 +1101,63 @@ def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
                 f"{text!r} is not a verbatim join of {layer1_path.name}'s upstream comment lines: "
                 f"{comment_lines}"
             )
+        # ...and the PROSE AFTER the quotation is pinned too. Until now it was constrained only to
+        # contain no `"`, which left the majority of several `conditions` strings -- including the
+        # sentence that tells a consumer this zeff entry is unreachable -- free text that any
+        # rewrite could alter with nothing failing. `conditions` is generated from a fixed template
+        # with exactly one variable part, so the tail is a pure function of the producer and there
+        # is no reason for it to be open. Enumerated, not pattern-matched: a regex here would be a
+        # second place for the wording to live.
+        tails = {conditions_tail(row.conditions) for row in document.rows.values()}
+        assert tails <= EXPECTED_CONDITION_TAILS, (
+            f"{layer2_path.name} carries unpinned prose after the upstream quotation: "
+            f"{sorted(tails - EXPECTED_CONDITION_TAILS)!r}. If this wording changed deliberately, "
+            "the ruling is to update EXPECTED_CONDITION_TAILS in the same commit -- not to relax "
+            "this assertion."
+        )
 
 
-def test_t54_isotope_resolved_obeys_the_stated_derivation():
-    """The one non-obvious boolean, checked against the rule the file itself states.
+def test_t54_isotope_resolved_is_the_audit_and_says_which_rule_produced_it():
+    """The one non-obvious boolean, now carried by the audit rather than derived from this table.
 
-    This release's rule is mechanical and sound in exactly one direction: two rates at two A for
-    one Z prove the underlying data distinguishes isotopes; one row proves nothing either way. So
-    `true` must mean "this Z carries more than one row" and nothing else -- and `needs_verification`
-    stays true everywhere, because "not established" is not the same claim as "false".
+    The rule this replaced was mechanical: true if and only if the Z carried more than one capture
+    record. Its soundness argument was about the Z -- two differing rates at one Z do show the
+    underlying data distinguishes isotopes -- and it was applied to each ROW of that Z, which does
+    not follow: one of those rows can still be the natural-composition entry. So the flag is no
+    longer derivable from this file at all, and the test's job is to check that every row's flag is
+    the audited one and that the row SAYS which rule produced it.
     """
-    found = extraction()
-    per_z = found.capture_rows_per_z()
+    audit = d1.load_isotope_audit(REPO / d1.AUDIT_RELPATH)
     _, capture_document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
 
-    resolved = set()
+    assert {f"{z}-{a}" for z, a in audit} == set(capture_document.rows)
     for key, row in capture_document.rows.items():
-        z = int(key.split("-")[0])
-        assert row.isotope_resolved is (per_z[z] > 1), key
-        if row.isotope_resolved:
-            resolved.add(z)
-        # The derivation is stated in the row, so a reader sees how the flag was obtained.
-        assert "isotope_resolved is derived mechanically" in row.evaluation_method, key
-    assert resolved == {z for z, count in per_z.items() if count > 1}
-    assert resolved, "no multi-isotope Z at all would make this rule vacuous"
+        z, a = (int(part) for part in key.split("-"))
+        finding = audit[(z, a)]
+        assert row.isotope_resolved is finding.isotope_resolved, key
+        # The evidence itself is carried into the shipped file, so a consumer never has to fetch
+        # the audit to see why a flag says what it says.
+        assert finding.evidence in row.evaluation_method, key
+        marker = (
+            "isotope_resolved was established by reading the primary literature"
+            if finding.settled
+            else "isotope_resolved is NOT established for this record"
+        )
+        assert marker in row.evaluation_method, key
+
+    # The rule really did change something: if the audit agreed with the old mechanical derivation
+    # on every row, this whole layer would be ceremony. The COUNT is a measurement and belongs in
+    # the ledger, not in an assertion -- what is checked here is that the disagreement is non-empty
+    # in both directions, which is the structural claim.
+    per_z = extraction().capture_rows_per_z()
+    mechanical = {key: per_z[int(key.split("-")[0])] > 1 for key in capture_document.rows}
+    rows = capture_document.rows
+    assert any(rows[k].isotope_resolved and not mechanical[k] for k in rows), (
+        "the audit found no row the mechanical rule under-called"
+    )
+    assert any(mechanical[k] and not rows[k].isotope_resolved for k in rows), (
+        "the audit found no row the mechanical rule over-called"
+    )
 
     # An effective charge is per-Z: there is no isotope for it to be resolved to, on any row.
     _, zeff_document = committed(ZEFF_LAYER1, ZEFF_LAYER2)
@@ -1184,3 +1246,103 @@ def test_t58_the_generator_version_is_coupled_to_every_dataset_it_stamped():
     # needs its own `-text` line, because a gitattributes `*` does not cross a `/`.
     for path in files[:2] + [CAPTURE_LAYER2, ZEFF_LAYER2]:
         assert b"\r" not in path.read_bytes(), f"the checkout rewrote {path.name}"
+
+
+# --------------------------------------------------------------------------------------------
+# T-59..T-62 -- the isotope audit: the one hand-authored input, and what it is allowed to claim
+# --------------------------------------------------------------------------------------------
+
+#: The copies of a paper this project distinguishes. A locator that does not say WHICH copy was
+#: read is a locator that cannot be re-checked: the scanned preprint and the published article are
+#: different documents with different pagination, and this dataset was built from the preprint.
+KNOWN_COPIES = frozenset({"preprint-scan", "arxiv-preprint", "published-pdf"})
+
+
+def audit_rows():
+    return d1.load_isotope_audit(REPO / d1.AUDIT_RELPATH)
+
+
+def test_t59_the_audit_covers_every_capture_record_exactly_once():
+    """Coverage derived from the vendored source, never from the audit's own length.
+
+    Both directions matter. A missing key would leave a record with a flag nobody derived; an extra
+    key is a row somebody audited that this dataset does not ship, which means the audit was
+    written against a different table than the one in the repository.
+    """
+    found = extraction()
+    keys = [(z, a) for z, a, _, _ in found.capture_records]
+    audit = audit_rows()
+
+    assert len(keys) == len(set(keys)), "the vendored source has a duplicate (Z, A)"
+    assert set(audit) == set(keys)
+    assert len(audit) == len(keys)
+
+    table, _ = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    assert set(audit) == {(int(z), int(a)) for z, a, _, _ in table.records}
+
+
+def test_t60_a_resolved_row_carries_a_locator_and_names_the_copy_that_was_read():
+    """`isotope_resolved: true` with nothing behind it is the failure this column pair prevents."""
+    audit = audit_rows()
+    resolved = [row for row in audit.values() if row.isotope_resolved]
+    assert resolved, "an audit that resolves nothing would make every check below vacuous"
+
+    for row in audit.values():
+        where = f"({row.z}, {row.a})"
+        assert row.evidence, where
+        if row.isotope_resolved:
+            assert row.locator, where
+            assert row.copy_read, where
+        # A locator and a copy travel together in both directions -- see the loader, which refuses
+        # the file outright if they do not. Asserted here as well because this is the property a
+        # reader of the audit is entitled to rely on, not an implementation detail of the loader.
+        assert bool(row.locator) == bool(row.copy_read), where
+        if row.copy_read:
+            assert row.copy_read in KNOWN_COPIES, f"{where}: unknown copy {row.copy_read!r}"
+        # Every locator names a table or a section AND a page: "the paper" is not a locator.
+        if row.locator:
+            assert re.search(r"\b(Table|abstract)\b", row.locator), f"{where}: {row.locator!r}"
+            assert re.search(r"\bp\.\d+", row.locator), f"{where}: {row.locator!r}"
+
+
+def test_t61_settled_rows_say_settled_and_unsettled_rows_still_say_open():
+    """The audit and the shipped Layer 2 must agree about which questions are still open."""
+    audit = audit_rows()
+    _, document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+
+    unsettled = {key for key, row in audit.items() if not row.settled}
+    assert unsettled, (
+        "every row settled would be a stronger claim than this primary supports; if that is "
+        "genuinely the finding, it is a ruling to record, not a test to delete"
+    )
+    for (z, a), finding in audit.items():
+        row = document.rows[f"{z}-{a}"]
+        assert row.needs_verification is not finding.settled, (z, a)
+        # An unsettled row may not claim resolution: "not established" is the whole point.
+        if not finding.settled:
+            assert finding.isotope_resolved is False, (z, a)
+            assert row.isotope_resolved is False, (z, a)
+
+
+def test_t62_every_primary_the_audit_cites_resolves_in_the_bibliography():
+    """Nothing enters the audit that is not in `references.bib` with a DOI or a URL to reach it.
+
+    The same discipline the ledger's CSVs already carry, applied to the one file here a human
+    typed. The match is on the bibkey the audit's locator names, so a locator citing a paper
+    nobody added to the bibliography fails rather than passing as free text.
+    """
+    bib_text = (REPO / "openmucf" / "data" / "references.bib").read_text("utf-8")
+    entries = {
+        key: body
+        for key, body in re.findall(r"@\w+\{([^,]+),(.*?)\n\}", bib_text, re.S)
+    }
+    assert entries, "the bibliography parsed to nothing; the regex, not the data, is wrong"
+
+    cited = {row.locator.split()[0].lower() for row in audit_rows().values() if row.locator}
+    assert cited, "no locator names a primary at all"
+    for surname in cited:
+        matches = [key for key in entries if key.lower().startswith(surname)]
+        assert matches, f"the audit cites {surname!r} but no bibliography key begins with it"
+        for key in matches:
+            body = entries[key]
+            assert re.search(r"\b(doi|url)\s*=", body, re.I), f"{key} has neither a DOI nor a URL"

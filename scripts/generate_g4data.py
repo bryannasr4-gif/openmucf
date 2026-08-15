@@ -90,12 +90,30 @@ D1_ZEFF_TABLE = "muon_zeff"
 #: The parity profile's whole claim, in one sentence of two clauses, followed by the derivation
 #: behind the row's one non-obvious boolean. The two live in one field deliberately: a reader who
 #: sees the flag must see how it was obtained, and `conditions` is reserved for upstream's own words.
-CAPTURE_METHOD = (
+#: The parity clause, shared by every capture row. What follows it differs per row, because
+#: `isotope_resolved` no longer has one derivation: most rows are now settled by a primary read and
+#: a few are not, and a reader must be able to tell which from the row alone.
+CAPTURE_PARITY_CLAUSE = (
     "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not "
-    "re-evaluated. isotope_resolved is derived mechanically: true if and only if this Z carries "
-    "more than one capture row. That is sound in one direction and only that direction -- differing "
-    "rates for two A at one Z establish that the underlying data distinguishes isotopes, while a "
-    "single row establishes nothing either way, and needs_verification carries that state."
+    "re-evaluated."
+)
+#: Settled by a primary -- in EITHER direction. `false` here is a finding ("the primary shows this
+#: value to rest on a natural-composition target"), not the absence of one, which is exactly the
+#: distinction `needs_verification` exists to carry.
+CAPTURE_METHOD_SETTLED = (
+    CAPTURE_PARITY_CLAUSE + " isotope_resolved was established by reading the primary literature "
+    "this record's value is attributed to, not derived from the shape of this table: {evidence}."
+)
+#: Not settled: the primary was read and does not decide THIS RECORD. Note what that exposes about
+#: the rule this replaced. "More than one rate at one Z" is evidence about the Z -- it shows the
+#: underlying data distinguishes isotopes -- and it was read as evidence about each row of that Z,
+#: which does not follow: one of those rows can still be the natural-composition entry. These
+#: records sit in exactly that gap, so the flag is false in the field's stated sense, "not
+#: established", and needs_verification says the question is open rather than answered.
+CAPTURE_METHOD_UNSETTLED = (
+    CAPTURE_PARITY_CLAUSE + " isotope_resolved is NOT established for this record: {evidence}. It "
+    "is therefore false in this field's stated sense -- not established, which is not the same "
+    "claim as established-to-be-unresolved -- and needs_verification is true."
 )
 ZEFF_METHOD = (
     "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not "
@@ -129,9 +147,37 @@ def _evaluation_id(table: str) -> str:
     return f"g4-{d1src.UPSTREAM_TAG.lstrip('v')}-boundDecay-{table}"
 
 
+def _isotope_locator(line: int, audit: d1src.IsotopeAuditRow) -> str:
+    """The vendored-source locator, plus the primary locator that establishes the flag.
+
+    Two clauses, labelled, because they answer two different questions and conflating them would be
+    a provenance error. The first says where the VALUE came from and must keep resolving inside this
+    repository (a `parity` row reproduces Geant4, not a paper). The second says what established the
+    row's `isotope_resolved` flag, and is absent on exactly the rows no primary settles -- so the
+    presence of the second clause is itself the machine-checkable statement that the row is settled.
+    """
+    base = _locator(line)
+    if not audit.settled:
+        return base
+    return (
+        f"{base}; isotope_resolved established by {audit.locator} "
+        f"[copy read: {audit.copy_read}]"
+    )
+
+
 def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument:
     """Layer 2 for the capture table: one row per record, every field decided by rule."""
-    per_z = found.capture_rows_per_z()
+    audit = d1src.load_isotope_audit(ROOT / d1src.AUDIT_RELPATH)
+    keys = {(z, a) for z, a, _, _ in found.capture_records}
+    if set(audit) != keys:
+        # Never build from a partial audit. A missing key would otherwise fall back to some default
+        # and ship a flag nobody derived, which is the failure this whole layer exists to prevent.
+        missing = sorted(keys - set(audit))
+        extra = sorted(set(audit) - keys)
+        raise SystemExit(
+            "g4data build FAILED: the isotope audit does not cover the extracted records exactly; "
+            f"missing {missing}, unexpected {extra}"
+        )
     general = _quote_upstream(
         found.capture_comment_lines, "capture data from", "Suzuki", "weighted average"
     )
@@ -141,9 +187,11 @@ def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument
     rows = {}
     for (z, a, _, _), line in zip(found.capture_records, found.capture_lines, strict=True):
         upstream = {1: hydrogen, 2: helium}.get(z, general)
+        finding = audit[(z, a)]
+        template = CAPTURE_METHOD_SETTLED if finding.settled else CAPTURE_METHOD_UNSETTLED
         rows[f"{z}-{a}"] = provenance.ProvRow(
             source_bibkey=D1_BIBKEY,
-            source_locator=_locator(line),
+            source_locator=_isotope_locator(line, finding),
             # The enum has no "unstated", and cRErr is an uncertainty as TABULATED upstream --
             # upstream does not say what kind. `conditions` says so rather than letting the closest
             # available label imply a claim nobody made.
@@ -156,18 +204,19 @@ def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument
             validity_range=(
                 f"Z={z} A={a}; outside the listed keys the {d1src.FALLBACK_MODEL} fallback applies"
             ),
-            evaluation_method=CAPTURE_METHOD,
+            evaluation_method=template.format(evidence=finding.evidence),
             # Upstream says "weighted average of the two most precise measurements"; asserting a
             # single source would be a claim this project cannot make.
             single_source=False,
-            # Nothing here has been checked against a primary. That is a later stage's job, and
-            # saying so is what keeps this profile honest about what it is.
-            needs_verification=True,
+            # False once a primary settles the row -- in either direction. It stays true only where
+            # the primary was read and does not decide, which is a narrower and more useful claim
+            # than the blanket "nothing here has been checked" this shipped before.
+            needs_verification=not finding.settled,
             # A parity profile reproduces; it does not recommend.
             recommendation="",
             evaluation_id=_evaluation_id("capRates"),
             source_library=D1_SOURCE_LIBRARY,
-            isotope_resolved=per_z[z] > 1,
+            isotope_resolved=finding.isotope_resolved,
         )
     return provenance.ProvDocument(
         dataset=DATASET_NAME,
