@@ -257,14 +257,16 @@ formula is reported to over-predict the isotopic spread, while **Cu, Sr, Br and 
 authors say the *experiments* are too imprecise — or, for chlorine, questionable — to judge. Only
 the first group is evidence about the model.
 
-What makes it land here is which elements those are. Of the nine the sentence names, **eight are
-elements this table keys by a separated isotope** — Cr, Ni, U, Pu, Cu, Br, Cl and Sr; the exception
-is Ca, which appears once as a natural-composition record. So the sentence is about almost exactly
-the part of this table that carries isotope structure at all. Sharper still: **three of the four
-records this dataset cannot settle — `(17, 35)` Cl, `(24, 52)` Cr and `(38, 88)` Sr — are in that
-list**, and two of those three are there because the authors doubted the separated-isotope
-experiment. The uncertainty in the audit and the uncertainty in the primary are the same
-uncertainty, not two coincidences.
+What makes it land here is which elements those are. Of the nine the sentence names, **seven carry at
+least one record this audit establishes as a separated isotope** — Cl, Cr, Ni, Cu, Br, U and Pu. The
+two exceptions are instructive rather than incidental. **Ca** appears once, as a natural-composition
+record. **Sr** appears once too, and it is one of the four records this dataset **cannot settle** —
+`(38, 88)`, where the primary prints both natural Sr and Sr-88 and the key matches either.
+
+Sharper still: **three of those four unsettled records are elements this sentence names** —
+`(17, 35)` Cl, `(24, 52)` Cr and `(38, 88)` Sr — and Cl and Sr are named in the half of the sentence
+that doubts the separated-isotope *experiment*. The uncertainty in this audit and the uncertainty in
+the primary are the same uncertainty, not two coincidences.
 
 **F-7 — `(Z, A)` is a label on most rows, not a target specification.** For **41 of the 90 records**
 the primary shows the measurement was made on a **natural-composition element**, not on the nuclide
@@ -333,10 +335,16 @@ primary, which is a later stage's work; this dataset reports them open rather th
 mechanically: `true` if and only if the row's Z carried more than one capture record. Its soundness
 argument was about the *Z* — two differing rates at one Z do show the underlying data distinguishes
 isotopes — and it was then applied to each *row* of that Z, which does not follow, since one of
-those rows can still be the natural-composition entry. The primary disagrees with that rule on **28
-of the 90 records**: 23 it called unresolved that are resolved, and 5 it called resolved that are
-not. Two of the five are plain: the primary lists "C" and "C-13", and "O" and "O-18", so `(6, 12)`
-and `(8, 16)` are natural carbon and natural oxygen, not C-12 and O-16.
+those rows can still be the natural-composition entry. The audited flag differs from that rule on
+**28 of the 90 records**, and the three ways it differs are not the same claim:
+
+* **23** the rule called unresolved that the primary establishes as resolved.
+* **2** the primary flatly contradicts: it lists "C" and "C-13", and "O" and "O-18", so `(6, 12)`
+  and `(8, 16)` are natural carbon and natural oxygen, not C-12 and O-16.
+* **3** — `(17, 35)`, `(24, 52)`, `(92, 236)` — where the primary does not contradict the rule but
+  **fails to establish the question it was answering**, so the flag falls back to "not established"
+  and `needs_verification` stays `true`. Counting these as "the rule was wrong" would overstate it;
+  counting them as agreement would hide an open question.
 
 The `zeff` rows remain `false` throughout, as a fact rather than a default: an effective charge is a
 per-Z quantity, so there is no isotope for it to be resolved to. Their `needs_verification` stays

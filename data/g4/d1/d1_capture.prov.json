@@ -204,7 +204,7 @@
     "20-40": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists natural Ca only, so the value rests on a natural-composition target; Ca-40 is 96.94% of natural Ca.",
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists natural Ca at this Z -- also Ca-43.8, which this mass number does not match -- so the value rests on a natural-composition target; Ca-40 is 96.94% of natural Ca.",
       "isotope_resolved": false,
       "needs_verification": false,
       "recommendation": "",
@@ -862,7 +862,7 @@
     "6-12": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists natural C only, so the value rests on a natural-composition target; C-12 is 98.93% of natural C.",
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists natural C at this Z -- also C-13, which this mass number does not match -- so the value rests on a natural-composition target; C-12 is 98.93% of natural C.",
       "isotope_resolved": false,
       "needs_verification": false,
       "recommendation": "",
@@ -1058,7 +1058,7 @@
     "8-16": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists natural O only, so the value rests on a natural-composition target; O-16 is 99.76% of natural O.",
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists natural O at this Z -- also O-18, which this mass number does not match -- so the value rests on a natural-composition target; O-16 is 99.76% of natural O.",
       "isotope_resolved": false,
       "needs_verification": false,
       "recommendation": "",
@@ -1114,7 +1114,7 @@
     "82-207": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists natural Pb only, so the value rests on a natural-composition target; Pb-207 is 22.10% of natural Pb, not the most abundant nuclide (Pb-208, 52.4%).",
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists natural Pb at this Z -- also RPb (radiogenic lead), which this mass number does not match -- so the value rests on a natural-composition target; Pb-207 is 22.10% of natural Pb, not the most abundant nuclide (Pb-208, 52.4%).",
       "isotope_resolved": false,
       "needs_verification": false,
       "recommendation": "",

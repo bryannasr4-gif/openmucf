@@ -1338,11 +1338,27 @@ def test_t62_every_primary_the_audit_cites_resolves_in_the_bibliography():
     }
     assert entries, "the bibliography parsed to nothing; the regex, not the data, is wrong"
 
-    cited = {row.locator.split()[0].lower() for row in audit_rows().values() if row.locator}
-    assert cited, "no locator names a primary at all"
-    for surname in cited:
-        matches = [key for key in entries if key.lower().startswith(surname)]
-        assert matches, f"the audit cites {surname!r} but no bibliography key begins with it"
+    # A prefix match is not enough: any `Suzuki*` entry would satisfy it regardless of which paper
+    # it is. The audit's locator names an author and a year, so require BOTH, and require the
+    # matched entry to carry the year in its own `year =` field -- that is what ties the citation
+    # to the paper rather than to a surname.
+    cited = {
+        (match.group(1).lower(), match.group(2))
+        for match in (re.match(r"([A-Za-z]+) (\d{4})", row.locator)
+                      for row in audit_rows().values() if row.locator)
+        if match
+    }
+    settled = [row for row in audit_rows().values() if row.locator]
+    assert len(cited) >= 1 and cited, "no locator names a primary at all"
+    assert all(re.match(r"[A-Za-z]+ \d{4}", row.locator) for row in settled), (
+        "every locator must open with an author and a year so it can be tied to a bibliography entry"
+    )
+    for surname, year in sorted(cited):
+        matches = [
+            key for key, body in entries.items()
+            if key.lower().startswith(surname) and re.search(rf"year\s*=\s*\{{?{year}\}}?", body)
+        ]
+        assert matches, f"the audit cites {surname!r} ({year}) but no bibliography entry matches both"
         for key in matches:
             body = entries[key]
             assert re.search(r"\b(doi|url)\s*=", body, re.I), f"{key} has neither a DOI nor a URL"
