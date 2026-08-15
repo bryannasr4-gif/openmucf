@@ -35,6 +35,31 @@ Values are printed with `%a` — the exact hexadecimal float — so nothing is l
 rounding on the way out. Consumers compare **parsed values**, never the printed strings, so no
 `%a`-versus-`float.hex()` formatting question can arise.
 
+## From harvest to oracle
+
+The drivers print raw lines; `build_oracle.py` is the step between those and the committed file, and
+it is committed for the same reason they are — the principle above applies to the whole chain, not
+only to its C++ half. It passes every harvested value through untouched, and computes exactly two
+things: the sha256 over the harvested doubles, and *which* harvested rows are echoed into the
+diagnostic subset (every table hit, every Z's first negative A, the corners of the box).
+
+```sh
+python cpp/tools/build_oracle.py \
+    --sweep sweep.txt --degenerate degenerate.txt \
+    --build "Ubuntu 26.04 (WSL2), x86_64, g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0," \
+    --build "Geant4 11.4.2 RelWithDebInfo (-O2 -g -DNDEBUG), no -ffp-contract setting," \
+    --build "FMA absent from the baseline ISA so contraction is impossible" \
+    -o data/g4/d1/d1_gp_sweep.oracle
+```
+
+That invocation, on the build named in it, reproduces the committed
+`data/g4/d1/d1_gp_sweep.oracle` **byte for byte** from a clean rebuild of both drivers.
+
+The build description is an argument rather than a constant on purpose: the header records the build
+that produced the values, so whoever runs the harvest states it, and a header cannot come to claim a
+build nobody used. Re-running this script does **not** re-pin anything — if the digest it computes
+differs from the committed one, see below.
+
 ## The build is part of the measurement
 
 The recorded build for the committed oracle:

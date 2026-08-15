@@ -1,0 +1,233 @@
+"""Turn a raw harvest into ``data/g4/d1/d1_gp_sweep.oracle``.
+
+    python cpp/tools/build_oracle.py --sweep sweep.txt --degenerate degenerate.txt \
+        --build "<line 1>" --build "<line 2>" --build "<line 3>" -o data/g4/d1/d1_gp_sweep.oracle
+
+The two drivers in this directory print raw ``%a`` lines; this is the step between that and the
+committed file, and it is here for the same reason the drivers are: a committed harvested artifact
+whose producing code is not committed is exactly the reproducibility hole vendoring the upstream
+source exists to close. Leaving this step out was a real gap -- the digest rule and the subset rule
+were documented well enough to re-derive by hand, but "documented" and "committed" are not the same
+standard, and this file is the one the rest of ``cpp/tools/README.md`` demands.
+
+**The values are the harvest's, never this script's.** Rates and effective charges are passed
+through as the exact ``%a`` strings the Geant4-linked binary printed; nothing here recomputes a
+number. What the script does compute is the sha256 over the harvested doubles and *which* harvested
+rows get spelled out in the diagnostic subset. The table-hit keys come from the vendored upstream
+source, because "table hit" is a fact about upstream's array and not about our arithmetic -- and
+selecting which measured rows to echo cannot make a wrong measurement look right.
+
+**The build description is an argument, not a constant.** The oracle header records the build that
+produced the values, so the person running the harvest supplies it: a header claiming a build that
+was not used would be worse than no header. ``cpp/tools/README.md`` carries the exact invocation
+that reproduces the committed file.
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import struct
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))
+
+from openmucf.g4.sources import d1_nuclear_capture as d1  # noqa: E402
+
+BANNER = (
+    "G4MuonicData D1 -- compiled-Geant4 oracle for the nuclear-capture seam",
+    "",
+    "HARVESTED, not generated. These values came out of a Geant4-linked binary; nothing in this",
+    "repository can produce them, which is exactly why comparing the Python reference",
+    "implementation against them is evidence and not a tautology. `make g4data` does not rewrite",
+    'this file and `make audit` does not byte-diff it -- "regenerate and compare" is undefined for',
+    "a harvested input. It is protected instead by re-derivation: tests/test_g4parity.py recomputes",
+    "every value here in Python and compares, which is a stronger check than re-reading bytes.",
+    "",
+)
+BUILD_PREAMBLE = (
+    "The build is part of the measurement, not a footnote: the identical expression compiled with",
+    "floating-point contraction enabled returns results up to thousands of ulp away, so a parity",
+    "claim that does not name its build says nothing. See cpp/tools/README.md and DATASET_D1.md.",
+)
+DIGEST_RULE = (
+    "sha256 over the concatenated big-endian IEEE-754 binary64 bytes of",
+    "rate(Z, A), in that order. Bytes rather than text: unambiguous in both",
+    "languages, with no formatting degrees of freedom.",
+)
+SUBSET_PREAMBLE = (
+    "The subset below exists so that a digest mismatch is DIAGNOSABLE -- a bare hash tells a",
+    "maintainer nothing about what moved. It is chosen by rule, not by taste: every table hit,",
+    "every Z's first negative A (which is the negative-rate finding's own evidence, so the fixture",
+    "and the finding are the same data), and the corners of the sweep box.",
+)
+COLUMNS = "Z A rate_hexfloat   (compare on PARSED values, never on these strings)"
+DEGENERATE_RULE = (
+    "excluded from the sweep and from the digest: these return non-finite",
+    "values, and a NaN has no single bit pattern to hash. Compared by",
+    "CLASSIFICATION rather than by value. Registered as a finding, not fixed.",
+)
+
+
+def comment(text: str = "") -> str:
+    """A header comment line: ``#`` alone when empty, ``# `` plus the text otherwise."""
+    return f"# {text}".rstrip()
+
+
+def field(name: str, value: str) -> str:
+    """A ``# name  value`` header field, on the column the whole header is aligned to."""
+    return f"# {name:<18}{value}"
+
+
+def continuation(value: str) -> str:
+    """A wrapped header value, indented onto the same column as the field it continues."""
+    return f"#{' ' * 19}{value}"
+
+
+def read_sweep(path: Path) -> tuple[dict[tuple[int, int], str], dict[int, str]]:
+    """Parse ``harvest_d1``'s output into ``{(Z, A): hexfloat}`` and ``{Z: hexfloat}``."""
+    rates: dict[tuple[int, int], str] = {}
+    zeff: dict[int, str] = {}
+    for line in path.read_text("ascii").splitlines():
+        fields = line.split()
+        if not fields:
+            continue
+        if fields[0] == "ZEFF":
+            zeff[int(fields[1])] = fields[2]
+        else:
+            rates[int(fields[0]), int(fields[1])] = fields[2]
+    expected = {
+        (z, a)
+        for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1)
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1)
+    }
+    if set(rates) != expected:
+        raise SystemExit(
+            f"{path} does not cover the sweep box: {len(rates)} rows against {len(expected)} "
+            f"expected. The oracle's digest is defined over the whole box, so a partial harvest "
+            f"cannot produce one."
+        )
+    if not zeff:
+        raise SystemExit(f"{path} carries no ZEFF rows; the harvest is not from harvest_d1.cc")
+    return rates, zeff
+
+
+def select_subset(
+    rates: dict[tuple[int, int], str], source: d1.D1Extraction
+) -> tuple[list[tuple[int, int]], int, int, int]:
+    """The diagnostic subset, by the rule the oracle header states, with its three tallies.
+
+    Every table hit, every Z's first negative A, and the corners of the sweep box -- deduplicated.
+    Rule (ii) is not padding: those rows are the negative-rate finding's own evidence, so the
+    fixture and the finding are the same data.
+    """
+    hits = {(z, a) for z, a, _, _ in source.capture_records}
+    first_negative = set()
+    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            if float.fromhex(rates[z, a]) < 0.0:
+                first_negative.add((z, a))
+                break
+    corners = {
+        (z, a)
+        for z in (d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX)
+        for a in (d1.SWEEP_A_MIN, d1.SWEEP_A_MAX)
+    }
+    missing = sorted(hits - set(rates))
+    if missing:
+        raise SystemExit(f"the harvest does not cover table hits {missing}; it is not this dataset")
+    return sorted(hits | first_negative | corners), len(hits), len(first_negative), len(corners)
+
+
+def sweep_digest(rates: dict[tuple[int, int], str]) -> str:
+    """The pre-registered digest rule, over the HARVESTED doubles: row-major, Z outermost."""
+    running = hashlib.sha256()
+    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            running.update(struct.pack(">d", float.fromhex(rates[z, a])))
+    return running.hexdigest()
+
+
+def render(sweep: Path, degenerate: Path, build: list[str], source_path: Path) -> str:
+    """The whole oracle, as text, from the two harvest files and the recorded build."""
+    rates, zeff = read_sweep(sweep)
+    source = d1.extract(source_path.read_text("ascii"))
+    subset, hits, negatives, corners = select_subset(rates, source)
+    swept = len(rates)
+
+    lines = [comment(text) for text in BANNER]
+    lines += [
+        field("upstream_commit", d1.UPSTREAM_COMMIT),
+        field("upstream_path", d1.UPSTREAM_PATH),
+        field("upstream_blob", d1.UPSTREAM_BLOB_ID),
+        field("driver", "cpp/tools/harvest_d1.cc"),
+        field("driver_degenerate", "cpp/tools/harvest_d1_degenerate.cc"),
+        comment(),
+    ]
+    lines += [comment(text) for text in BUILD_PREAMBLE]
+    lines += [field("build", build[0])] + [continuation(text) for text in build[1:]]
+    lines += [
+        comment(),
+        field(
+            "sweep",
+            f"Z {d1.SWEEP_Z_MIN}..{d1.SWEEP_Z_MAX} x A {d1.SWEEP_A_MIN}..{d1.SWEEP_A_MAX} = "
+            f"{swept} points, row-major, Z ascending outermost",
+        ),
+        field("digest_rule", DIGEST_RULE[0]),
+    ]
+    lines += [continuation(text) for text in DIGEST_RULE[1:]]
+    lines += [field("fullsweep_sha256", sweep_digest(rates)), comment()]
+    lines += [comment(text) for text in SUBSET_PREAMBLE]
+    lines += [
+        field(
+            "subset",
+            f"{len(subset)} points = {hits} table hits + {negatives} first-negative + "
+            f"{corners} corners, deduplicated",
+        ),
+        field("columns", COLUMNS),
+    ]
+    lines += [f"{z} {a} {rates[z, a]}" for z, a in subset]
+    lines += [
+        comment(),
+        field("zeff", f"Z {min(zeff)}..{max(zeff)}, pinning the clamp at both ends"),
+    ]
+    lines += [f"ZEFF {z} {zeff[z]}" for z in sorted(zeff)]
+    lines += [comment(), field("degenerate", DEGENERATE_RULE[0])]
+    lines += [continuation(text) for text in DEGENERATE_RULE[1:]]
+    lines += degenerate.read_text("ascii").splitlines()
+    lines += ["#END"]
+    return "\n".join(lines) + "\n"
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--sweep", type=Path, required=True, help="harvest_d1 output")
+    parser.add_argument("--degenerate", type=Path, required=True, help="harvest_d1_degenerate output")
+    parser.add_argument(
+        "--build",
+        action="append",
+        required=True,
+        metavar="LINE",
+        help="one line of the build description, repeatable; recorded in the header verbatim",
+    )
+    parser.add_argument(
+        "--source",
+        type=Path,
+        default=REPO / d1.VENDORED_RELPATH,
+        help="the vendored upstream source the table hits are read from",
+    )
+    parser.add_argument("-o", "--output", type=Path, help="write here instead of stdout")
+    args = parser.parse_args(argv)
+
+    text = render(args.sweep, args.degenerate, args.build, args.source)
+    if args.output:
+        args.output.write_text(text, encoding="ascii", newline="\n")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
