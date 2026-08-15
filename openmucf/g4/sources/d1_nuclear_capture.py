@@ -225,9 +225,10 @@ class D1Extraction:
     from a transcription that happens to round the same way, and what lets ``#FALLBACK`` declare each
     coefficient in the source's own spelling instead of a re-rendered one.
 
-    Line numbers are here for provenance locators only. Nothing in the parse uses them -- that is
-    the whole of decision D2-2 -- but a Layer-2 ``source_locator`` that cannot point at a line is a
-    locator a reader cannot follow.
+    Line numbers are here for provenance locators only. **Nothing in the parse uses them**, by
+    design: a parser that keyed on line numbers would break the moment upstream added a blank line.
+    But a Layer-2 ``source_locator`` that cannot point at a line is a locator a reader cannot
+    follow, so they are carried, and carried separately.
     """
 
     capture_records: tuple[tuple[int, int, float, float], ...]

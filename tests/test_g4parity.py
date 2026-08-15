@@ -539,8 +539,8 @@ def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
     assert {row[2] for row in oracle["degenerate_rates"]} == {"nan", "+inf", "negative"}
     for z, a, classification, recorded in oracle["degenerate_rates"]:
         # Every recorded probe is outside the declared domain, and every one of them gets a value
-        # out of Geant4 rather than a rejection. That gap IS finding F-S2-2, so state it as an
-        # assertion: the declared model refuses where the library answers.
+        # out of Geant4 rather than a rejection. That gap is `DATASET_D1.md`'s finding F-2, so state
+        # it as an assertion: the declared model refuses where the library answers.
         assert z < 1 or a < 1
         with pytest.raises(ValueError, match="outside its domain"):
             model.rate(z, a)
@@ -822,7 +822,7 @@ def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
 def test_t54_isotope_resolved_obeys_the_stated_derivation():
     """The one non-obvious boolean, checked against the rule the file itself states.
 
-    The S2a rule is mechanical and sound in exactly one direction: two different rates at two A for
+    This release's rule is mechanical and sound in exactly one direction: two rates at two A for
     one Z prove the underlying data distinguishes isotopes; one row proves nothing either way. So
     `true` must mean "this Z carries more than one row" and nothing else -- and `needs_verification`
     stays true everywhere, because "not established" is not the same claim as "false".
