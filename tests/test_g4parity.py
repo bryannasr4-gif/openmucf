@@ -1362,3 +1362,204 @@ def test_t62_every_primary_the_audit_cites_resolves_in_the_bibliography():
         for key in matches:
             body = entries[key]
             assert re.search(r"\b(doi|url)\s*=", body, re.I), f"{key} has neither a DOI nor a URL"
+
+
+# --------------------------------------------------------------------------------------------
+# T-63 -- the document's published counts ARE the shipped data's counts
+# --------------------------------------------------------------------------------------------
+
+#: Atomic numbers for the elements the primary's quoted sentence names. Reference data, not a
+#: count: WHICH elements the sentence names is read out of the quotation in the document itself,
+#: so the "nine" and the "seven" below are both derived rather than asserted here.
+SYMBOL_Z = {
+    "Ca": 20, "Cr": 24, "Ni": 28, "U": 92, "Pu": 94, "Cu": 29, "Sr": 38, "Br": 35, "Cl": 17,
+}
+
+#: Counts the document spells in words rather than digits.
+NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+    "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
+}
+
+
+def _stated(text: str) -> int:
+    """The integer a document fragment states, in digits or in words."""
+    cleaned = text.strip().lower()
+    if cleaned in NUMBER_WORDS:
+        return NUMBER_WORDS[cleaned]
+    return int(cleaned.replace(",", "").replace(" ", "").replace(" ", ""))
+
+
+def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
+    """Every number `DATASET_D1.md` counts must equal the number recomputed from shipped files.
+
+    This is the one guard the D1 chain was missing, and its absence was measured rather than
+    supposed: nothing in this repository read `DATASET_D1.md`, so a falsified count in it passed
+    the entire battery, the byte-diff audit included. Six counting claims in that document have
+    been wrong -- each time a number updated to match a rewrite instead of re-derived from the data
+    it describes -- and every one of them would have failed here.
+
+    **No expected value is written in this test.** Each is computed from
+    `data/g4/d1/isotope_audit.csv`, the two committed `.g4dat` tables, or the vendored source, and
+    the document is then required to state that computed value. It is the discipline the extraction
+    already obeys (T-42), applied to the prose that describes it: a count written down is a count
+    that drifts.
+
+    **What this does NOT cover, stated so nobody reads more into it.** F-7's abundance figures --
+    "15 of those", Sm-150 at 7.4 %, Sn-119 at 8.6 %, Pb-208 at 52 %, and the dysprosium rounding
+    tie -- rest on the NIST isotopic-composition table, which this repository does not redistribute.
+    They cannot be recomputed from shipped files and are therefore still prose checked by a reader.
+    Everything countable from what ships is here.
+
+    Two anchors carry a value this test cannot derive from the audit alone and that is stated as a
+    literal deliberately, because deriving it would mean reimplementing the claim under test: the
+    71 Z whose locator names a Suzuki table, and the 65-of-101 effective-charge coverage. Both are
+    recomputed below from the shipped CSV before being compared, so neither is trusted; they are
+    literals only in the sense that the derivation lives beside them.
+
+    The ruling if this fails after a deliberate rewording: move the anchor in the same commit,
+    never the expected value, and never delete a row.
+    """
+    doc = " ".join((REPO / "DATASET_D1.md").read_text(encoding="utf-8").split())
+
+    found = extraction()
+    audit = audit_rows()
+    table, _ = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    zeff_table, _ = committed(ZEFF_LAYER1, ZEFF_LAYER2)
+
+    keys = {(z, a) for z, a, _, _ in found.capture_records}
+    zs = sorted({z for z, _ in keys})
+    trues = {k for k, r in audit.items() if r.isotope_resolved}
+    settled = {k for k, r in audit.items() if r.settled}
+    unsettled = set(audit) - settled
+    separated = {k for k, r in audit.items()
+                 if r.evidence.startswith("the primary lists the separated isotope")}
+    mononuclidic = {k for k, r in audit.items() if "is mononuclidic" in r.evidence}
+    carve_out = {k for k in trues if k[0] in (1, 2)}
+    natural = (set(audit) - trues) & settled
+
+    per_z = {z: sum(1 for k in keys if k[0] == z) for z in zs}
+    old_rule = {k: per_z[k[0]] > 1 for k in keys}
+    disagree = {k for k in keys if old_rule[k] != audit[k].isotope_resolved}
+    under_called = {k for k in disagree if not old_rule[k]}
+    contradicted = {k for k in disagree if old_rule[k] and k in settled}
+    unestablished = {k for k in disagree if old_rule[k] and k in unsettled}
+
+    # The Z whose `locator` column -- not merely whose evidence prose -- names a table of the
+    # primary the set equality is against. F-4 claims the comparison can be repeated from the
+    # shipped files, and this is what "repeated" costs.
+    located_in_suzuki = {
+        z for z in zs
+        if any("Suzuki" in r.locator and ("Table III" in r.locator or "Table IV" in r.locator)
+               for k, r in audit.items() if k[0] == z)
+    }
+    # The effective-charge entries the primary's Table IV covers: the Z at or above its first, which
+    # this table carries. The rest are Z=0, the light nuclides of the other table, the gaps, and
+    # everything past the table's last Z.
+    table_iv_z = {z for z in zs if z >= 10}
+    zeff_covered = {int(z) for z, _ in zeff_table.records if int(z) in table_iv_z}
+    zeff_uncovered = len(zeff_table.records) - len(zeff_covered)
+
+    # Which elements the primary's sentence names is read out of the document's own quotation, so
+    # both "nine" and "seven" are derived from the shipped audit rather than asserted here.
+    quotation = re.search(r"> Now for muon capture (.+?) Read it precisely", doc)
+    assert quotation, "the quoted section-IV sentence is no longer where this test reads it"
+    named = {sym: z for sym, z in SYMBOL_Z.items()
+             if re.search(rf"\b{sym}\b", quotation.group(1))}
+    carrying = {sym for sym, z in named.items() if any(k[0] == z for k in separated)}
+
+    # The section-5 partition, derived from the section's own structure.
+    findings = len(re.findall(r"\*\*F-\d+ ", doc))
+    settled_findings = doc.count("SETTLED against the primary.")
+
+    # The sweep, evaluated once from the shipped directive and the shipped effective charges.
+    coefficients = dict(found.fallback_coefficients)
+    model = d1.GoulardPrimakoff(
+        b0a=float(coefficients["b0a"]), b0b=float(coefficients["b0b"]),
+        b0c=float(coefficients["b0c"]), t1=float(coefficients["t1"]),
+        xmu_coeff=float(coefficients["xmu_coeff"]), mix=float(coefficients["mix"]),
+        zmin=int(coefficients["zmin"]), zmax=int(coefficients["zmax"]),
+        zeff=tuple(found.zeff),
+    )
+    decay_rate = float(
+        re.search(r"free-muon decay rate \(([\d.e−+-]+) ns", doc).group(1).replace("−", "-")
+    )
+    swept = negative = negative_past_decay = 0
+    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            swept += 1
+            value = d1.capture_rate(z, a, found.capture_records, model)
+            if value < 0:
+                negative += 1
+                if abs(value) > decay_rate:
+                    negative_past_decay += 1
+
+    claims = [
+        ("capture record count, file table",
+         r"\| `d1_capture\.g4dat` \| (\d+) records", len(table.records)),
+        ("effective-charge record count, file table",
+         r"\| `d1_zeff\.g4dat` \| (\d+) records", len(zeff_table.records)),
+        ("capture record count, section 1",
+         r"The table has (\d+) records spanning", len(found.capture_records)),
+        ("distinct Z, section 1", r"records spanning (\d+) distinct Z", len(zs)),
+        ("distinct Z, F-4 headline", r"this table spans \*\*(\d+) distinct Z\*\*", len(zs)),
+        ("distinct Z, F-4 set equality",
+         r"span \*\*exactly the same (\d+) distinct Z\*\*", len(zs)),
+        ("Z whose locator names a table of the primary",
+         r"\*\*(\d+) of them carry that table and page", len(located_in_suzuki)),
+        ("effective-charge entries the primary's table covers",
+         r"\*\*(\d+) of the 101 `zeff` entries", len(zeff_covered)),
+        ("effective-charge entries in total, F-5",
+         r"\*\*65 of the (\d+) `zeff` entries", len(zeff_table.records)),
+        ("effective-charge entries not covered", r"the remaining (\d+) \(Z = 0", zeff_uncovered),
+        ("settled rows", r"\*\*(\d+) of the 90 are settled", len(settled)),
+        ("open rows", r"`needs_verification: false`; (\d+) are not", len(unsettled)),
+        ("isotope_resolved true", r"\*\*(\d+) are `isotope_resolved: true`\*\*", len(trues)),
+        ("separated-isotope route", r"(\d+) because the primary lists a separated isotope",
+         len(separated)),
+        ("mononuclidic route", r"(\d+) because the element is mononuclidic", len(mononuclidic)),
+        ("hydrogen and helium carve-out route",
+         r"and (\d+) — the hydrogen and helium records", len(carve_out)),
+        ("natural-composition rows, section 6",
+         r"The remaining \*\*(\d+) are `false` as an established finding\*\*", len(natural)),
+        ("natural-composition rows, F-7", r"For \*\*(\d+) of the 90 records\*\*", len(natural)),
+        ("rows the old rule disagrees with",
+         r"\*\*(\d+) of the 90 records\*\*, and the three ways", len(disagree)),
+        ("rows the old rule under-called",
+         r"\* \*\*(\d+)\*\* the rule called unresolved", len(under_called)),
+        ("rows the primary flatly contradicts",
+         r"\* \*\*(\d+)\*\* the primary flatly contradicts", len(contradicted)),
+        ("rows the primary fails to establish",
+         r"\* \*\*(\d+)\*\* — `\(17, 35\)`", len(unestablished)),
+        ("elements the primary's sentence names", r"Of the (\w+) the sentence names", len(named)),
+        ("named elements carrying a separated-isotope record",
+         r"the sentence names, \*\*(\w+) carry at", len(carrying)),
+        ("unsettled records sitting at a named element",
+         r"\*\*all (\w+) of the records this dataset cannot settle", len(unsettled)),
+        ("findings in section 5", r"Section 5 carries (\w+) findings", findings),
+        ("findings that are defects", r"findings: \*\*(\w+)\*\* defects",
+         findings - settled_findings),
+        ("findings the primary settled", r"corrects, and \*\*(\w+)\*\* questions",
+         settled_findings),
+        ("swept points, section 4", r"= (\d+) points\*\*", swept),
+        ("swept points returning a negative rate, section 2",
+         r"returns λ_c < 0 on (\d+) of the 36000", negative),
+        ("swept points returning a negative rate, F-1",
+         r"capture rates\.\*\* (\d+) of the 36000 swept points", negative),
+        ("negative points past the free-muon decay rate",
+         r"For the \*\*(\d+)\*\* swept points where λ_c is negative", negative_past_decay),
+    ]
+
+    for what, pattern, expected in claims:
+        hits = re.findall(pattern, doc)
+        assert len(hits) == 1, (
+            f"DATASET_D1.md: the anchor for {what} matched {len(hits)} times, expected exactly one. "
+            f"The wording moved; move the anchor in the same commit rather than deleting this row. "
+            f"Pattern: {pattern!r}"
+        )
+        assert _stated(hits[0]) == expected, (
+            f"DATASET_D1.md states {hits[0]!r} for {what}; the shipped data says {expected}. "
+            "The document is wrong, not this test -- every expected value here is recomputed from "
+            "isotope_audit.csv, the committed .g4dat tables, or the vendored source, and none is "
+            "written down."
+        )
