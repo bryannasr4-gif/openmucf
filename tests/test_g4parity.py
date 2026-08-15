@@ -698,10 +698,59 @@ def test_t47_the_reorder_preserves_geant4s_own_lookup():
     assert hits == len(found.capture_records), "the scan did not reach every table row"
 
 
+QUOTE_PREFIX = 'quoted from the upstream source comment: "'
+
+
+def quoted_attribution(conditions: str) -> str:
+    """The whole upstream quotation inside a `conditions` string, quote marks of its own included.
+
+    Splitting on `"` and taking field 1 is the obvious way to do this and it is wrong: the zeff
+    attribution quotes upstream quoting a paper *title*, so the field-1 slice stops at upstream's
+    own quote mark after 27 of its 218 characters and the rest goes unchecked.
+    """
+    assert conditions.startswith(QUOTE_PREFIX), conditions
+    return conditions[len(QUOTE_PREFIX) : conditions.rindex('". ')]
+
+
+def is_upstream_verbatim(text: str, comment_lines: tuple[str, ...]) -> bool:
+    """Is `text` exactly a space-join of whole `comment_lines` entries, in source order?
+
+    That is how an attribution is built: the generator SELECTS comment lines and joins them, and
+    never retypes, trims or reorders one. Checking the join rather than checking substrings is what
+    makes a fabricated word impossible rather than merely awkward -- there is nowhere in the string
+    left for one to sit. If a future selector legitimately needs part of a line, this is the
+    assertion to revisit deliberately, not the one to loosen.
+    """
+    memo: dict[tuple[int, int], bool] = {}
+
+    def walk(position: int, first: int) -> bool:
+        if position == len(text):
+            return True
+        if (position, first) not in memo:
+            memo[position, first] = any(
+                text.startswith(line, position)
+                and (
+                    position + len(line) == len(text)
+                    or (
+                        text[position + len(line)] == " "
+                        and walk(position + len(line) + 1, index + 1)
+                    )
+                )
+                for index, line in enumerate(comment_lines[first:], first)
+            )
+        return memo[position, first]
+
+    return walk(0, 0)
+
+
 def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
     """What a `parity` profile is allowed to claim, asserted row by row on both tables."""
     found = extraction()
-    for layer1_path, layer2_path in ((CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2)):
+    tables = (
+        (CAPTURE_LAYER1, CAPTURE_LAYER2, found.capture_comment_lines),
+        (ZEFF_LAYER1, ZEFF_LAYER2, found.zeff_comment_lines),
+    )
+    for layer1_path, layer2_path, comment_lines in tables:
         table, document = committed(layer1_path, layer2_path)
         assert table.directives["PROFILE"] == spec.PARITY_PROFILE
         # A parity file must name the revision it reproduces, and it must be the one we vendored.
@@ -725,15 +774,19 @@ def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
             assert 1 <= line <= VENDORED.read_text("ascii").count("\n") + 1, key
             assert d1.UPSTREAM_BLOB_ID in row.source_locator, key
             # `conditions` carries UPSTREAM's words, marked as upstream's, never as our finding.
-            assert row.conditions.startswith("quoted from the upstream source comment:"), key
-        # Every quoted comment really is a substring of the vendored source's comments.
-        quoted = {row.conditions.split('"')[1] for row in document.rows.values()}
-        available = found.capture_comment_lines + found.zeff_comment_lines
-        for text in quoted:
-            for fragment in text.split(". "):
-                assert any(fragment.strip('. ') in line for line in available) or any(
-                    part in " ".join(available) for part in [fragment[:40]]
-                ), f"{fragment!r} is not upstream text"
+            assert row.conditions.startswith(QUOTE_PREFIX), key
+        # Every quoted attribution is upstream's own words, WHOLE, and from this table's own comment
+        # block. `conditions` is the one field a parity profile certifies as upstream's, so the
+        # check has to leave no room at all: the full quoted span must be a space-join of complete
+        # comment lines, in source order. What this replaced compared `". "`-split pieces, matching
+        # each against any single comment line OR its first 40 characters against all of them --
+        # which passed a fragment whose tail was fabricated past character 40, and never saw the
+        # 191 characters of the zeff attribution that sit beyond upstream's own quote mark.
+        for text in {quoted_attribution(row.conditions) for row in document.rows.values()}:
+            assert is_upstream_verbatim(text, comment_lines), (
+                f"{text!r} is not a verbatim join of {layer1_path.name}'s upstream comment lines: "
+                f"{comment_lines}"
+            )
 
 
 def test_t54_isotope_resolved_obeys_the_stated_derivation():
