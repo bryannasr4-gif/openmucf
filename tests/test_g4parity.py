@@ -590,15 +590,23 @@ def test_t48_the_full_sweep_digest_matches_the_compiled_library():
     # code. One clause is exempted from that limit because Stage 3's C++ validator implements the
     # digest from it: "big-endian" is pinned to the arithmetic instead, by requiring the committed
     # digest to reproduce under big-endian packing and NOT under little-endian.
-    byte_swapped = reference_model(found)
-    little = hashlib.sha256()
-    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
-        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
-            little.update(
-                struct.pack("<d", d1.capture_rate(z, a, found.capture_records, byte_swapped))
-            )
+    # Be exact about which half of that sentence this pins. The ENCODING is pinned to arithmetic:
+    # the committed digest reproduces under big-endian binary64 and under nothing else tried, so a
+    # validator packing little-endian or single precision cannot agree with this dataset and think
+    # it has. The WORDING is pinned to the producer, like the rest of the header -- a matching edit
+    # to both the artifact and the producer's constant would keep a wrong sentence, and that is a
+    # code change inside the reviewable diff, not the hand-edit this file is exposed to.
+    alternative = reference_model(found)
+    for code, label in (("<d", "little-endian"), (">f", "single-precision")):
+        digest = hashlib.sha256()
+        for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+            for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+                digest.update(
+                    struct.pack(code, d1.capture_rate(z, a, found.capture_records, alternative))
+                )
+        assert computed != digest.hexdigest(), f"the digest does not distinguish {label}"
     assert "big-endian" in oracle["header"]["digest_rule"]
-    assert computed != little.hexdigest(), "the sweep is byte-order blind; the digest rule proves nothing"
+    assert "binary64" in oracle["header"]["digest_rule"]
     header = oracle["header"]
     assert set(header) == set(ORACLE_FIELDS), (
         f"the oracle's header fields are not the declared set: missing "
@@ -771,6 +779,13 @@ def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
             assert not math.isfinite(recorded)
             assert classification == ("nan" if z == 0 else "+inf")
             assert math.isnan(recorded) if z == 0 else (math.isinf(recorded) and recorded > 0)
+            # The SIGN of the NaN is measured too, and the classification column does not carry it:
+            # the driver's `classify()` collapses both signs to "nan", so only the hexfloat records
+            # that this build returns a negative NaN. Pinned as the measurement it is -- if a
+            # re-harvest ever prints a positive one, that is a finding about the seam and should
+            # arrive as a failure here rather than as a silent edit nobody sees.
+            if z == 0:
+                assert math.copysign(1.0, recorded) == -1.0, "the recorded NaN lost its sign"
             with pytest.raises(ZeroDivisionError):
                 model.evaluate_unchecked(z, a)
         else:

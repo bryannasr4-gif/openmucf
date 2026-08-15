@@ -172,6 +172,37 @@ RATE_PROBE_PAIR = re.compile(r"\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}")
 CLAMP_PROBE_DECL = re.compile(r"for\s*\(\s*int\s+Z\s*:\s*\{([^}]*)\}\s*\)")
 
 
+DEGENERATE_SHAPES = {"RATE": 5, "ZEFFCLAMP": 3}
+
+
+def degenerate_line_problem(line: str) -> str | None:
+    """Why `line` is not a degenerate probe row, or ``None`` if it is one.
+
+    One rule, used on both paths: the harvest on its way in, and the committed block on its way back
+    through the renderer. Splitting those two would let the file carry a row the producer would
+    refuse to emit -- which is exactly the state a "rebuild it with this script" error message
+    cannot help anyone out of.
+
+    The comparison is on the canonical spelling, so doubled or trailing spaces are rejected too:
+    a driver prints one space between fields, and bytes no driver produces have no business in an
+    artifact whose whole claim is that a driver produced them.
+    """
+    fields = line.split()
+    if not fields or fields[0] not in DEGENERATE_SHAPES:
+        return (
+            f"not a degenerate harvest line: {line!r}. Every line is 'RATE Z A classification "
+            f"hexfloat' or 'ZEFFCLAMP Z hexfloat'."
+        )
+    if len(fields) != DEGENERATE_SHAPES[fields[0]]:
+        return (
+            f"expected {DEGENERATE_SHAPES[fields[0]]} fields, got {len(fields)}: {line!r}. Every "
+            f"line is 'RATE Z A classification hexfloat' or 'ZEFFCLAMP Z hexfloat'."
+        )
+    if " ".join(fields) != line:
+        return f"non-canonical spacing, which no driver emits: {line!r}"
+    return None
+
+
 def check_degenerate(path: Path, driver: Path) -> list[str]:
     """The degenerate harvest, checked against the probe set its own driver declares.
 
@@ -190,16 +221,10 @@ def check_degenerate(path: Path, driver: Path) -> list[str]:
     declared_clamps = [int(z) for z in clamp_block.group(1).split(",")]
 
     lines = path.read_text("ascii").splitlines()
-    # Every line is a probe of a declared shape. Without this the block is echoed verbatim, so a
-    # comment, a blank, or a half-written row travels into the committed oracle unremarked.
-    shapes = {"RATE": 5, "ZEFFCLAMP": 3}
     for number, line in enumerate(lines, 1):
-        fields = line.split()
-        if not fields or fields[0] not in shapes or len(fields) != shapes[fields[0]]:
-            raise SystemExit(
-                f"{path}:{number}: not a degenerate harvest line: {line!r}. Every line is "
-                f"'RATE Z A classification hexfloat' or 'ZEFFCLAMP Z hexfloat'."
-            )
+        problem = degenerate_line_problem(line)
+        if problem:
+            raise SystemExit(f"{path}:{number}: {problem}")
     harvested_rates = [
         (int(f[1]), int(f[2])) for f in (line.split() for line in lines) if f[0] == "RATE"
     ]
@@ -308,6 +333,10 @@ def render_oracle(
     lines += [f"ZEFF {z} {value}" for z, value in zeff]
     lines += [comment(), field("degenerate", DEGENERATE_RULE[0])]
     lines += [continuation(text) for text in DEGENERATE_RULE[1:]]
+    for line in degenerate_lines:
+        problem = degenerate_line_problem(line)
+        if problem:
+            raise SystemExit(f"degenerate block: {problem}")
     lines += degenerate_lines
     lines += ["#END"]
     return "\n".join(lines) + "\n"
