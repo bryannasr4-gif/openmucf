@@ -54,7 +54,11 @@ declared as data in a `#FALLBACK` directive carrying all eight of the constants 
   no coded rejection; a fallback that moves by up to **2980 ulp** between two conforming compiler
   configurations of the same source, which is why the declared model contract forbids floating-point
   contraction; an attribution that does not reconcile with the table's 74 distinct Z; and a
-  non-monotonic step in the effective-charge table near the Z=82 shell closure.
+  non-monotonic step in the effective-charge table near the Z=82 shell closure. **The last two of
+  those five were settled against the primary literature by the entry above, inside this same
+  unreleased version** — the attribution reconciles and the step is the primary's own — so this
+  version ships **five defects and two settled questions**, not seven defects. Both remain
+  registered in `DATASET_D1.md`, as F-4 and F-5.
 - **The whole harvest chain is committed**, not only its C++ half: `cpp/tools/build_oracle.py` is
   the script that turns a driver's raw `%a` output into the committed oracle, and it reproduces that
   file byte for byte when run on the build named in the oracle's own header. A committed harvested
