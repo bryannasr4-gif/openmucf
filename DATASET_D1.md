@@ -193,11 +193,12 @@ Registered; to be checked against the primary; not altered.
 
 Every Layer-2 row carries a required `isotope_resolved` boolean, and a companion `needs_verification`
 that says how much weight it can bear. **`true` means the row's value is isotope-resolved; `false`
-means it is not.** While `needs_verification` is `true` the flag is **derived** — read off the shape
-of upstream's own table. Once `needs_verification` is `false` it is **established** — resting on an
-isotopically resolved measurement, with a locator naming where. So a `false` on an unverified row
-means "not shown to be resolved", which is not the same claim as "shown to be unresolved"; the
-companion field is what tells the two apart.
+means that has not been shown.** While `needs_verification` is `true` the flag is **derived** — for
+the capture rows, read off the shape of upstream's own table; for the effective charges, fixed by
+what the quantity is. Once `needs_verification` is `false` the flag is **established** — resting on
+an isotopically resolved measurement, with a locator naming where. So a `false` on an unverified row
+says "not shown to be resolved", which is not the claim "shown to be unresolved"; the companion
+field is what tells those two apart.
 
 In this release **every row carries `needs_verification: true`**, so every `true` here is the
 derived kind, and the derivation is mechanical: **`true` if and only if the row's Z carries more

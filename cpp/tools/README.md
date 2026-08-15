@@ -15,9 +15,11 @@ digest is a check anyone can run.
 | `harvest_d1.cc` | `GetMuonCaptureRate(Z, A)` over Z 1..120 × A 1..300, then `GetMuonZeff(Z)` for Z 0..101 |
 | `harvest_d1_degenerate.cc` | the inputs the sweep excludes: `Z = 0`, `A = 0`, `Z < 0`, and the `zeff` clamp at both ends |
 
-The second driver exists because the oracle commits those four rows, and a committed harvested
-artifact whose producing driver is not committed is exactly the reproducibility hole vendoring the
-source was meant to close. They are separate because the sweep must stay a clean numeric box: the
+The second driver exists because the oracle commits those rows, and a committed harvested artifact
+whose producing driver is not committed is exactly the reproducibility hole vendoring the source was
+meant to close. It is also where the degenerate probe set is *declared*: `build_oracle.py` and the
+test suite both read the probes back out of this driver rather than restating them, so the oracle's
+degenerate block is checked against the code that produced it. They are separate because the sweep must stay a clean numeric box: the
 degenerate inputs return non-finite values, a NaN has no single bit pattern to hash, and folding
 them into the digest would make it undefined.
 
