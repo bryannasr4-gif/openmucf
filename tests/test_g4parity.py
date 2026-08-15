@@ -277,7 +277,7 @@ def test_t51_the_reference_implementation_reads_its_constants_from_the_directive
 
 
 # --------------------------------------------------------------------------------------------
-# T-56 -- S2-R1: Layer-2 row keys for a table whose primary key is a single column
+# T-56 -- Layer-2 row keys for a table whose primary key is a single column (FORMAT_SPEC.md 3)
 # --------------------------------------------------------------------------------------------
 
 SINGLE_KEY_ROW = {
