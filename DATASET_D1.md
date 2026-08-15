@@ -191,11 +191,13 @@ Registered; to be checked against the primary; not altered.
 
 ## 6. Isotope resolution — what the flag means here
 
-Every Layer-2 row carries a required `isotope_resolved` boolean. **`true` means the row's value is
-isotope-resolved; `false` means it is not so established** — which includes "not yet checked".
-**The companion field says which kind of `true` a row carries:** while `needs_verification` is
-`true` the flag is *derived*, and it is *established* — resting on an isotopically resolved
-measurement, with a locator naming where — only once `needs_verification` is `false`.
+Every Layer-2 row carries a required `isotope_resolved` boolean, and a companion `needs_verification`
+that says how much weight it can bear. **`true` means the row's value is isotope-resolved; `false`
+means it is not.** While `needs_verification` is `true` the flag is **derived** — read off the shape
+of upstream's own table. Once `needs_verification` is `false` it is **established** — resting on an
+isotopically resolved measurement, with a locator naming where. So a `false` on an unverified row
+means "not shown to be resolved", which is not the same claim as "shown to be unresolved"; the
+companion field is what tells the two apart.
 
 In this release **every row carries `needs_verification: true`**, so every `true` here is the
 derived kind, and the derivation is mechanical: **`true` if and only if the row's Z carries more
