@@ -476,6 +476,36 @@ def test_t49_the_diagnostic_subset_agrees_to_zero_ulp():
     for z, a, _, _ in found.capture_records:
         assert (z, a) in oracle["subset"]
 
+    # The subset's COMPOSITION is part of the fixture, not decoration. The value loop above checks
+    # what is present and says nothing about what is absent, so a subset that had quietly lost its
+    # first-negative rows or a corner would still pass while the negative-rate finding lost its
+    # evidence. The selection rule is fully derivable, so derive it and require set equality.
+    hits = {(z, a) for z, a, _, _ in found.capture_records}
+    first_negative = set()
+    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            if d1.capture_rate(z, a, found.capture_records, model) < 0.0:
+                first_negative.add((z, a))
+                break
+    corners = {
+        (z, a)
+        for z in (d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX)
+        for a in (d1.SWEEP_A_MIN, d1.SWEEP_A_MAX)
+    }
+    derived = hits | first_negative | corners
+    assert set(oracle["subset"]) == derived, (
+        f"the oracle's subset is not what its own rule selects: "
+        f"{sorted(derived - set(oracle['subset']))} missing, "
+        f"{sorted(set(oracle['subset']) - derived)} unexpected. Rebuild it with "
+        f"cpp/tools/build_oracle.py rather than editing it by hand."
+    )
+    # ...and the header states the same composition in words, where a reader meets it first. Pin the
+    # sentence to the derivation so the prose cannot drift away from the rows underneath it.
+    assert oracle["header"]["subset"] == (
+        f"{len(derived)} points = {len(hits)} table hits + {len(first_negative)} first-negative + "
+        f"{len(corners)} corners, deduplicated"
+    )
+
     # The zeff rows are what `GetMuonZeff(Z)` RETURNS, which is not the same thing as the array's
     # entries -- the function clamps its argument into [1, maxZ] first. Comparing them to raw array
     # elements is what surfaced the point: at Z = 0 the array holds 0.0 while the function returns
