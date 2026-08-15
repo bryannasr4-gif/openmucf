@@ -510,7 +510,18 @@ def test_t49_the_diagnostic_subset_agrees_to_zero_ulp():
     # entries -- the function clamps its argument into [1, maxZ] first. Comparing them to raw array
     # elements is what surfaced the point: at Z = 0 the array holds 0.0 while the function returns
     # zeff[1] = 1.0, so element 0 can never be observed through the accessor.
-    assert oracle["zeff"], "the oracle carries no zeff rows"
+    # Coverage before values, for the same reason the subset's composition is checked above: the
+    # loop below only visits rows the file happens to carry, so a harvest interrupted after the
+    # sweep -- which is exactly when the driver is still printing these -- would leave a short tail
+    # whose every remaining value is correct. The range is derived from the vendored source: every
+    # entry of the table, plus one probe past its last index, which is what makes the clamp
+    # observable at the top end at all.
+    covered = set(range(len(found.zeff) + 1))
+    assert set(oracle["zeff"]) == covered, (
+        f"the oracle's zeff rows do not cover Z 0..{len(found.zeff)} as its header claims: missing "
+        f"{sorted(covered - set(oracle['zeff']))}, unexpected "
+        f"{sorted(set(oracle['zeff']) - covered)}"
+    )
     for z, expected in oracle["zeff"].items():
         assert model.muon_zeff(z) == expected
 
@@ -755,6 +766,11 @@ def is_upstream_verbatim(text: str, comment_lines: tuple[str, ...]) -> bool:
     makes a fabricated word impossible rather than merely awkward -- there is nowhere in the string
     left for one to sit. If a future selector legitimately needs part of a line, this is the
     assertion to revisit deliberately, not the one to loosen.
+
+    What this does NOT certify, stated so nobody reads more into it: the selection is a subsequence,
+    so a quotation may omit an upstream line and still pass. Every word is upstream's, whole lines,
+    in order -- completeness of the attribution is a maintainer's judgement, not a checkable
+    property, and `_quote_upstream`'s needles are where that judgement lives.
 
     The base case fires only immediately after a whole line, never after a separator, and the empty
     text is not a join of anything. Written the other way round -- `if position == len(text): return

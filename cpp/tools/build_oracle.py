@@ -86,8 +86,15 @@ def continuation(value: str) -> str:
     return f"#{' ' * 19}{value}"
 
 
-def read_sweep(path: Path) -> tuple[dict[tuple[int, int], str], dict[int, str]]:
-    """Parse ``harvest_d1``'s output into ``{(Z, A): hexfloat}`` and ``{Z: hexfloat}``."""
+def read_sweep(path: Path, zeff_size: int) -> tuple[dict[tuple[int, int], str], dict[int, str]]:
+    """Parse ``harvest_d1``'s output into ``{(Z, A): hexfloat}`` and ``{Z: hexfloat}``.
+
+    Both sections are validated against what the vendored source says they must contain, and for the
+    same reason: the driver prints the sweep first and the effective charges last, so an interrupted
+    run leaves exactly the shape that looks complete -- a full sweep box and a short ``ZEFF`` tail.
+    The header this file goes on to write says the ``ZEFF`` rows pin the clamp "at both ends", which
+    a truncated tail would make false while every value in it stayed correct.
+    """
     rates: dict[tuple[int, int], str] = {}
     zeff: dict[int, str] = {}
     for number, line in enumerate(path.read_text("ascii").splitlines(), 1):
@@ -116,8 +123,19 @@ def read_sweep(path: Path) -> tuple[dict[tuple[int, int], str], dict[int, str]]:
             f"expected. The oracle's digest is defined over the whole box, so a partial harvest "
             f"cannot produce one."
         )
-    if not zeff:
-        raise SystemExit(f"{path} carries no ZEFF rows; the harvest is not from harvest_d1.cc")
+    # Z 0..zeff_size inclusive: every entry of the table, plus one probe past its last index, which
+    # is what makes the clamp observable at the top end. Derived from the vendored source, never
+    # written down here -- if upstream's table changes length, this moves with it.
+    expected_zeff = set(range(zeff_size + 1))
+    if set(zeff) != expected_zeff:
+        missing = sorted(expected_zeff - set(zeff))
+        extra = sorted(set(zeff) - expected_zeff)
+        raise SystemExit(
+            f"{path}: the ZEFF section must cover Z 0..{zeff_size} ({len(expected_zeff)} rows) to "
+            f"pin the clamp at both ends; got {len(zeff)} rows, missing {missing}, unexpected "
+            f"{extra}. The driver prints these last, so a short tail here means the harvest was "
+            f"interrupted."
+        )
     return rates, zeff
 
 
@@ -159,8 +177,8 @@ def sweep_digest(rates: dict[tuple[int, int], str]) -> str:
 
 def render(sweep: Path, degenerate: Path, build: list[str], source_path: Path) -> str:
     """The whole oracle, as text, from the two harvest files and the recorded build."""
-    rates, zeff = read_sweep(sweep)
     source = d1.extract(source_path.read_text("ascii"))
+    rates, zeff = read_sweep(sweep, len(source.zeff))
     subset, hits, negatives, corners = select_subset(rates, source)
     swept = len(rates)
 
