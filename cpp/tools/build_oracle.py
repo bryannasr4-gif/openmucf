@@ -190,11 +190,21 @@ def check_degenerate(path: Path, driver: Path) -> list[str]:
     declared_clamps = [int(z) for z in clamp_block.group(1).split(",")]
 
     lines = path.read_text("ascii").splitlines()
+    # Every line is a probe of a declared shape. Without this the block is echoed verbatim, so a
+    # comment, a blank, or a half-written row travels into the committed oracle unremarked.
+    shapes = {"RATE": 5, "ZEFFCLAMP": 3}
+    for number, line in enumerate(lines, 1):
+        fields = line.split()
+        if not fields or fields[0] not in shapes or len(fields) != shapes[fields[0]]:
+            raise SystemExit(
+                f"{path}:{number}: not a degenerate harvest line: {line!r}. Every line is "
+                f"'RATE Z A classification hexfloat' or 'ZEFFCLAMP Z hexfloat'."
+            )
     harvested_rates = [
-        (int(f[1]), int(f[2])) for f in (line.split() for line in lines) if f and f[0] == "RATE"
+        (int(f[1]), int(f[2])) for f in (line.split() for line in lines) if f[0] == "RATE"
     ]
     harvested_clamps = [
-        int(f[1]) for f in (line.split() for line in lines) if f and f[0] == "ZEFFCLAMP"
+        int(f[1]) for f in (line.split() for line in lines) if f[0] == "ZEFFCLAMP"
     ]
     if harvested_rates != declared_rates or harvested_clamps != declared_clamps:
         raise SystemExit(

@@ -372,6 +372,27 @@ def test_t56_single_key_tables_have_a_defined_row_key():
 # --------------------------------------------------------------------------------------------
 
 
+#: Every field the oracle's header declares. The set is closed on purpose: a missing field and an
+#: invented one are both defects, and the parser below treats anything else on a `#` line as prose.
+ORACLE_FIELDS = frozenset(
+    {
+        "upstream_commit",
+        "upstream_path",
+        "upstream_blob",
+        "driver",
+        "driver_degenerate",
+        "build",
+        "sweep",
+        "digest_rule",
+        "fullsweep_sha256",
+        "subset",
+        "columns",
+        "zeff",
+        "degenerate",
+    }
+)
+
+
 def read_oracle() -> dict:
     """Parse the harvested oracle into its header fields, subset, zeff rows and degenerate rows.
 
@@ -385,15 +406,30 @@ def read_oracle() -> dict:
     degenerate_rates: list[tuple[int, int, str, float]] = []
     degenerate_zeff: dict[int, float] = {}
     terminated = False
+    last_field: str | None = None
     for line in ORACLE.read_text("ascii").splitlines():
         if line == "#END":
+            # A SECOND `#END` is content after `#END`. Tolerating it would let a whole second body
+            # be appended below the terminator and read by nobody.
+            assert not terminated, "the oracle carries more than one #END"
             terminated = True
             continue
         assert not terminated, f"content after #END: {line!r}"
         if line.startswith("#"):
-            fields = line.lstrip("#").split(None, 1)
-            if len(fields) == 2 and fields[0] not in header:
-                header[fields[0]] = fields[1].strip()
+            # A header FIELD is one of the declared names on the column the header is aligned to;
+            # everything else on a `#` line is prose. Keying on "first word of any comment" instead
+            # turned every prose word into a header key, which is how a field could be duplicated
+            # (first-wins) or shadowed by a sentence that happened to start with its name.
+            body = line[1:].strip()
+            name = body.split(None, 1)[0] if body else ""
+            if name in ORACLE_FIELDS and line.startswith(f"# {name} "):
+                assert name not in header, f"duplicate header field {name!r}"
+                header[name] = body[len(name) :].strip()
+                last_field = name
+            elif line.startswith("#" + " " * 19) and last_field:
+                header[last_field] += " " + body
+            else:
+                last_field = None  # a prose line ends the field it followed
             continue
         # Every keyed section rejects a repeat. Assigning into a dict is last-wins, so a duplicated
         # row SHADOWS the one before it: a wrong value could sit in the file, be read, be discarded
@@ -418,6 +454,11 @@ def read_oracle() -> dict:
             assert pair not in subset, f"duplicate subset row for {pair}"
             subset[pair] = float.fromhex(fields[2])
     assert terminated, "the oracle is not #END-terminated"
+    # Ascending by key, like every other committed table here (E015's discipline). The producer
+    # emits them sorted, so a file in any other order is one no rebuild reproduces -- and a
+    # reordered file that still passed would be a certified artifact drifting from its own producer.
+    assert list(subset) == sorted(subset), "the oracle's subset rows are not ascending by (Z, A)"
+    assert list(zeff) == sorted(zeff), "the oracle's ZEFF rows are not ascending by Z"
     return {
         "header": header,
         "subset": subset,
@@ -481,11 +522,33 @@ def test_t48_the_full_sweep_digest_matches_the_compiled_library():
         "about the extraction, the association order or the model has changed."
     )
     # The digest is over the SWEEP, so a test that never evaluated the box could still pass the line
-    # above if `sweep_digest` were gutted. Pin the shape it hashes, from the module's own bounds.
+    # above if `sweep_digest` were gutted. Pin the shape it hashes, from the module's own bounds --
+    # the WHOLE sentence, including the traversal order, because that clause is the digest's
+    # definition and Stage 3's C++ validator implements the digest from this file. A pinned prefix
+    # left "row-major, Z ascending outermost" free to be edited to its own opposite.
     swept = (d1.SWEEP_Z_MAX - d1.SWEEP_Z_MIN + 1) * (d1.SWEEP_A_MAX - d1.SWEEP_A_MIN + 1)
-    assert oracle["header"]["sweep"].startswith(
-        f"Z {d1.SWEEP_Z_MIN}..{d1.SWEEP_Z_MAX} x A {d1.SWEEP_A_MIN}..{d1.SWEEP_A_MAX} = {swept} points"
+    assert oracle["header"]["sweep"] == (
+        f"Z {d1.SWEEP_Z_MIN}..{d1.SWEEP_Z_MAX} x A {d1.SWEEP_A_MIN}..{d1.SWEEP_A_MAX} = {swept} "
+        f"points, row-major, Z ascending outermost"
     )
+
+    # The header is data too, and it is the last part of this file that was checked by nobody. Every
+    # field with a derivation is pinned to it here; the provenance fields say which upstream bytes
+    # the whole chain rests on, and an oracle naming a different one is a false claim whatever its
+    # numbers say. `build` is the single field with NO derivation -- it records the environment the
+    # harvest actually ran in, supplied by whoever ran it, and nothing in this repository can
+    # confirm it. That is stated rather than papered over: it is checked for presence only.
+    header = oracle["header"]
+    assert set(header) == set(ORACLE_FIELDS), (
+        f"the oracle's header fields are not the declared set: missing "
+        f"{sorted(ORACLE_FIELDS - set(header))}, unexpected {sorted(set(header) - ORACLE_FIELDS)}"
+    )
+    assert header["upstream_commit"] == d1.UPSTREAM_COMMIT
+    assert header["upstream_path"] == d1.UPSTREAM_PATH
+    assert header["upstream_blob"] == d1.UPSTREAM_BLOB_ID
+    for field in ("driver", "driver_degenerate"):
+        assert (REPO / header[field]).is_file(), f"the oracle names a driver that is not here: {field}"
+    assert header["build"].strip(), "the oracle does not name the build that produced it"
 
 
 def test_t49_the_diagnostic_subset_agrees_to_zero_ulp():
@@ -558,6 +621,12 @@ def test_t49_the_diagnostic_subset_agrees_to_zero_ulp():
         f"{sorted(covered - set(oracle['zeff']))}, unexpected "
         f"{sorted(set(oracle['zeff']) - covered)}"
     )
+    # ...and the sentence that makes that claim is pinned to the same derivation, exactly as the
+    # subset's tally is. It was this header line the coverage guard above was written to keep true,
+    # and it could be edited into a falsehood while every row underneath stayed correct.
+    assert oracle["header"]["zeff"] == (
+        f"Z 0..{len(found.zeff)}, pinning the clamp at both ends"
+    )
     for z, expected in oracle["zeff"].items():
         assert model.muon_zeff(z) == expected
 
@@ -592,9 +661,11 @@ def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
         f"harvests: file has {[(z, a) for z, a, _, _ in oracle['degenerate_rates']]}, driver "
         f"declares {rate_probes}"
     )
-    assert sorted(oracle["degenerate_zeff"]) == sorted(clamp_probes), (
-        f"the oracle's zeff clamp probes are not the driver's: file has "
-        f"{sorted(oracle['degenerate_zeff'])}, driver declares {sorted(clamp_probes)}"
+    # Exact order, not sorted: the producer compares the harvest's clamp probes as a LIST, so a
+    # sorted comparison here would accept a committed file in an order no rebuild can produce.
+    assert list(oracle["degenerate_zeff"]) == clamp_probes, (
+        f"the oracle's zeff clamp probes are not the driver's, in order: file has "
+        f"{list(oracle['degenerate_zeff'])}, driver declares {clamp_probes}"
     )
 
     assert oracle["degenerate_rates"], "the oracle records no degenerate inputs"
