@@ -108,11 +108,24 @@ the paper the capture table is attributed to — write, in their section IV:
 > observed experimentally in Ca, Cr, Ni, U, and Pu. (For Cu, Sr, and Br the experiments are not
 > sufficiently precise; for Cl the experiment seems questionable.)
 
-That is a published limitation of this exact model, stated by the authors of the data it falls back
-from, and it lands precisely where this dataset's `(Z, A)` keys are weakest — see F-6 and F-7. The
-same paper reports its own fit quality for the formula: a mean `(Exp−Fit)/Exp` of **4.1 %** over 30
-of its own data points and **5.6 %** over 58 past results. The dataset declares no uncertainty on
-fallback values, so those figures are the only published indication of how far off one may be.
+Read it precisely, because the sentence makes two different statements. For **Ca, Cr, Ni, U and Pu**
+it reports a *model* failure — the formula over-predicts the spread between isotopes. For **Cu, Sr,
+Br and Cl** it reports a *data* limitation — the experiments are imprecise, and in chlorine's case
+questionable — which says nothing about the model. F-6 keeps the two apart.
+
+The same paper reports its own fit quality for the formula: a mean `(Exp−Fit)/Exp` of **4.1 %** over
+30 of its own data points and **5.6 %** over 58 past results. Those are **fit residuals over the
+points the fit was made against**, not a validated uncertainty for an arbitrary `(Z, A)`, and in
+particular not for the neutron-rich region where F-1 shows the formula fails outright. The dataset
+declares no uncertainty on fallback values at all, so they are the only published indication of
+scale there is, and they should be read as a floor rather than as an error bar.
+
+**A negative result is a model failure, not a domain error.** The domain above constrains the
+*input*. Inside it the formula still returns λ_c < 0 on 6325 of the 36000 swept points (F-1). This
+dataset's contract is that a conforming evaluation **reproduces** that — a parity consumer must get
+the same negative number, not a clamped or corrected one — while a consumer *using* the value should
+treat λ_c ≤ 0 as unusable rather than as a rate. Geant4 does neither: see F-1 for what it does
+instead.
 
 ## 3. Two disclosures about the shipped tables
 
@@ -159,9 +172,18 @@ dataset exists to have. Everything below was measured against the pinned revisio
 
 **F-1 — the Goulard–Primakoff fallback returns negative capture rates.** 6325 of the 36000 swept
 points return λ_c < 0. The boundary tracks neutron excess: the first negative A is 3 for Z=1, 6 for
-Z=2, 8 for Z=3, 17 for Z=6, 23 for Z=8, 77 for Z=26 and 245 for Z=82 — so for Z ≳ 6 the region is
-beyond the neutron drip line and unreachable in practice. For hydrogen it is **³H**, a legal Geant4
-target and one of direct interest to muon-catalyzed fusion, at λ_c = −2.870050e−08 ns⁻¹.
+Z=2, 8 for Z=3, 17 for Z=6, 23 for Z=8, 77 for Z=26 and 245 for Z=82. For hydrogen it is **³H**, a
+legal Geant4 target and one of direct interest to muon-catalyzed fusion, at
+λ_c = −2.870050e−08 ns⁻¹.
+
+**How much of that region holds bound nuclides is not established here, and an earlier revision of
+this section overstated the answer.** It said that for Z ≳ 6 the negative region lies beyond the
+neutron drip line and is unreachable in practice. That claim carried no source and it is not safe:
+at Z=6 and Z=8 the thresholds above (A=17 and A=23) are well inside the range of nuclides that have
+been observed, so the negative region there is not obviously unreachable. The measurement — the
+per-Z threshold — stands; the claim about reachability is withdrawn and is registered as a question
+for whichever layer of this program next carries evaluated nuclear data. What is certain either way
+is the hydrogen case, since ³H is stable enough to be a routine target.
 
 Read at the two call sites, the consequences are not cosmetic. Where `lambda = lambdac + lambdad`
 and the capture branch is `G4UniformRand()*lambda < lambdac`, a small negative λ_c means the capture
@@ -206,7 +228,9 @@ isotopes" and this table spans **74 distinct Z**. The two are not in conflict. T
 own reference and the authors' own measurements marked with an asterisk; the abstract's count
 describes what *they* measured, a subset. Between them those two tables span **exactly the same 74
 distinct Z** this table carries — the same set, with the same gaps at Z = 36, 43, 44, 54, 61, 63,
-69–71, 75–78, 84–89 and 91. Nothing here draws on an unnamed source.
+69–71, 75–78, 84–89 and 91. That is a set equality, not an impression: every one of the 74 was read
+off the page images and is recorded with its table and page in `isotope_audit.csv`, so the
+comparison can be repeated from the shipped files. Nothing here draws on an unnamed source.
 
 **F-5 — `zeff[]`'s non-monotonicity is the primary's own. SETTLED against the primary.** The array
 rises monotonically except at exactly two steps: Z=81→82 (34.21 → 34.18) and Z=82→83 (34.18 →
@@ -228,13 +252,19 @@ raises rather than settles the prior that the lead-region step is also one. Gean
 correctly: `zeff[56] = 29.99`.
 
 **F-6 — the declared fallback is documented, by the primary, to mispredict isotopic effects.** See
-section 2 for the quotation. It matters here because of what it names: the authors say the formula
-over-predicts the spread between isotopes for Ca, Cr, Ni, U and Pu, and that for **Cu, Sr and Br**
-the experiments are not precise enough to tell, while **for Cl the experiment "seems questionable"**.
-Four of those elements — Cl, Cr, Ni and U — are exactly the ones this table keys by separated
-isotope, so a consumer relying on the fallback to interpolate between isotopes is relying on a
-formula its own source says does not do that well, in the region where it was checked and found
-wanting.
+section 2 for the quotation and for the distinction it draws: **Ca, Cr, Ni, U and Pu** are where the
+formula is reported to over-predict the isotopic spread, while **Cu, Sr, Br and Cl** are where the
+authors say the *experiments* are too imprecise — or, for chlorine, questionable — to judge. Only
+the first group is evidence about the model.
+
+What makes it land here is which elements those are. Of the nine the sentence names, **eight are
+elements this table keys by a separated isotope** — Cr, Ni, U, Pu, Cu, Br, Cl and Sr; the exception
+is Ca, which appears once as a natural-composition record. So the sentence is about almost exactly
+the part of this table that carries isotope structure at all. Sharper still: **three of the four
+records this dataset cannot settle — `(17, 35)` Cl, `(24, 52)` Cr and `(38, 88)` Sr — are in that
+list**, and two of those three are there because the authors doubted the separated-isotope
+experiment. The uncertainty in the audit and the uncertainty in the primary are the same
+uncertainty, not two coincidences.
 
 **F-7 — `(Z, A)` is a label on most rows, not a target specification.** For **41 of the 90 records**
 the primary shows the measurement was made on a **natural-composition element**, not on the nuclide
@@ -243,13 +273,21 @@ extremes are `(62, 150)`, where Sm-150 is **7.4 %** of natural samarium, and `(5
 Sn-119 is **8.6 %** of natural tin. For `(30, 66)` and `(32, 72)` the `A` is neither the rounded
 standard atomic weight nor the most abundant nuclide.
 
-The consequence is a trap with three walls. A consumer asking for the *actual* dominant isotope —
-Pb-208, say, which is 52 % of natural lead where this table keys Pb at A=207 — **misses the table
-entirely**, falls through to `goulard_primakoff` (F-6: documented to mispredict isotopic effects,
-with no declared uncertainty), and in the neutron-rich direction may land in the region where that
-fallback returns a negative rate (F-1). Each of the three is individually minor; together they turn
-a reasonable-looking call into a silent wrong answer. This dataset does not change any key — it
-reproduces the table — but it now says, per row, which reading is which.
+The consequence is that a reasonable-looking call silently changes branch. A consumer asking for the
+*actual* dominant isotope — Pb-208, say, which is 52 % of natural lead where this table keys Pb at
+A=207 — **misses the table entirely** and falls through to `goulard_primakoff`: a formula the
+primary itself says does not account correctly for isotopic effects (F-6), carrying no declared
+uncertainty, in place of a measured value that was sitting one mass number away.
+
+**Be precise about how bad that is, because it varies.** For the Pb-208 case the fallback is merely
+*inaccurate*: F-1's first negative A at Z=82 is 245, far above 208, so the returned rate is a
+plausible number of the right sign. The negative-rate region is a hazard for **light, neutron-rich**
+requests, not for this one — and conflating the two would overstate the finding. The genuine
+overlap is at low Z, where F-1's thresholds are small: A=3 at Z=1, A=6 at Z=2, A=8 at Z=3.
+
+This dataset changes no key — it reproduces the table — but it now says, per row, which reading is
+which, so a consumer can tell a measured isotope from an element wearing an isotope's label before
+deciding whether a miss matters.
 
 ## 6. Isotope resolution — what the flag means here
 
