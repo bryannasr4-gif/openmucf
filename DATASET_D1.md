@@ -199,10 +199,19 @@ established** — which includes "not yet checked". The "not yet checked" state 
 In this release the flag is derived mechanically: **`true` if and only if the row's Z carries more
 than one capture record.** That is sound in one direction and only one — if Geant4 gives different
 rates for two A at the same Z, the underlying data distinguishes isotopes; a single row establishes
-nothing either way. 27 of the 90 rows, over 11 Z values, are `true`. Every row's
-`evaluation_method` states the derivation, so a reader sees how the flag was obtained rather than
-being handed a bare boolean. The `zeff` rows are `false` throughout, as a fact rather than a
-default: an effective charge is a per-Z quantity, so there is no isotope for it to be resolved to.
+nothing either way. 27 of the 90 rows, over 11 Z values, are `true`.
+
+**Be precise about what those 27 rows do and do not assert.** The derivation is a fact about
+*upstream's table* — that it holds distinct values for distinct A at that Z — and not yet a fact
+about a measurement. That the value then rests on an isotopically resolved *measurement* is the
+stronger claim in the definition above, and this release does not establish it for any row: no value
+here has been checked against a primary, which is why **every** row carries `needs_verification:
+true`. Reading the flag as an established provenance claim would be reading past the field that says
+it is not one. Establishing it — row by row, against the primary literature, with a locator — is the
+next step for this dataset. Every row's `evaluation_method` states the derivation, so a reader meets
+it with the flag rather than being handed a bare boolean. The `zeff` rows are `false` throughout, as
+a fact rather than a default: an effective charge is a per-Z quantity, so there is no isotope for it
+to be resolved to.
 
 Refining this against the primary literature — which rows are genuinely isotope-resolved and which
 are element values wearing an isotope label — is the next step for this dataset, and is the part of
