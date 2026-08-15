@@ -453,6 +453,13 @@ def read_oracle() -> dict:
         # The oracle is deliberately outside the byte-diff audit -- re-derivation is its whole
         # protection -- so a hand-edit is precisely the threat this parser has to survive.
         fields = line.split()
+        # Name a malformed row rather than dying on an index further down: an empty line, a stray
+        # token, or a spelling no driver emits should say so, not surface as an IndexError from a
+        # parser three assertions away from the cause.
+        spelling = fields[-1] if fields else ""
+        assert fields and spelling == spelling.lower() and not spelling.startswith("+"), (
+            f"not a row this oracle's producer emits: {line!r}"
+        )
         if fields[0] == "ZEFF":
             key = int(fields[1])
             assert key not in zeff, f"duplicate ZEFF row for Z={key}"
@@ -634,7 +641,11 @@ def test_t48_the_full_sweep_digest_matches_the_compiled_library():
         swept=swept,
         tallies=(len(hits), len(negatives), len(corners)),
     )
-    assert rendered == ORACLE.read_text("ascii"), (
+    # BYTES, not text. `read_text` applies universal newlines, so comparing against it accepted a
+    # CRLF rewrite of the whole file -- the comparison said "same text" while the commit that
+    # introduced it said "same bytes out". `.gitattributes` keeps checkout from doing that rewrite,
+    # but nothing kept a hand-edit from doing it, and this file is outside the byte-diff audit.
+    assert rendered.encode("ascii") == ORACLE.read_bytes(), (
         "the committed oracle is no longer what cpp/tools/build_oracle.py emits from its own rows. "
         "Rebuild it with that script rather than editing it by hand."
     )

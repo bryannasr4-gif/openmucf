@@ -200,6 +200,35 @@ def degenerate_line_problem(line: str) -> str | None:
         )
     if " ".join(fields) != line:
         return f"non-canonical spacing, which no driver emits: {line!r}"
+    value = fields[-1]
+    if value != value.lower() or value.startswith("+"):
+        return (
+            f"a hexfloat spelling no driver emits: {value!r}. C's %a prints lower case and no "
+            f"leading '+'; the exact shortest form is printf's and is not reproducible here, so "
+            f"what is pinned is the value plus the spelling rules printf does obey."
+        )
+    return None
+
+
+def degenerate_block_problem(lines: list[str]) -> str | None:
+    """Why `lines` are not a degenerate block, or ``None`` if they are.
+
+    Per-line validity is not enough: the driver prints every RATE probe before any ZEFFCLAMP probe,
+    so a file that interleaves them is one no harvest produces even though every row in it is
+    well-formed. Like the line rule, this is used on both paths -- the harvest coming in and the
+    committed block going back through the renderer -- because a rule only one path applies is how
+    the round-trip came to accept a file the producer would refuse.
+    """
+    for number, line in enumerate(lines, 1):
+        problem = degenerate_line_problem(line)
+        if problem:
+            return f"{number}: {problem}"
+    kinds = [line.split()[0] for line in lines]
+    if kinds != sorted(kinds, key=["RATE", "ZEFFCLAMP"].index):
+        return (
+            "the block interleaves its two sections; the driver prints every RATE probe before any "
+            "ZEFFCLAMP probe, so this order is one no harvest produces"
+        )
     return None
 
 
@@ -221,16 +250,15 @@ def check_degenerate(path: Path, driver: Path) -> list[str]:
     declared_clamps = [int(z) for z in clamp_block.group(1).split(",")]
 
     lines = path.read_text("ascii").splitlines()
-    for number, line in enumerate(lines, 1):
-        problem = degenerate_line_problem(line)
-        if problem:
-            raise SystemExit(f"{path}:{number}: {problem}")
     harvested_rates = [
         (int(f[1]), int(f[2])) for f in (line.split() for line in lines) if f[0] == "RATE"
     ]
     harvested_clamps = [
         int(f[1]) for f in (line.split() for line in lines) if f[0] == "ZEFFCLAMP"
     ]
+    problem = degenerate_block_problem(lines)
+    if problem:
+        raise SystemExit(f"{path}: {problem}")
     if harvested_rates != declared_rates or harvested_clamps != declared_clamps:
         raise SystemExit(
             f"{path} does not carry the probes {driver.name} harvests. Rate probes: got "
@@ -333,10 +361,9 @@ def render_oracle(
     lines += [f"ZEFF {z} {value}" for z, value in zeff]
     lines += [comment(), field("degenerate", DEGENERATE_RULE[0])]
     lines += [continuation(text) for text in DEGENERATE_RULE[1:]]
-    for line in degenerate_lines:
-        problem = degenerate_line_problem(line)
-        if problem:
-            raise SystemExit(f"degenerate block: {problem}")
+    problem = degenerate_block_problem(degenerate_lines)
+    if problem:
+        raise SystemExit(f"degenerate block: {problem}")
     lines += degenerate_lines
     lines += ["#END"]
     return "\n".join(lines) + "\n"
