@@ -1416,8 +1416,25 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     re-deriving it; the primary is not shipped, so 65 is F-4 restated over a second table, not fresh
     evidence for F-5. And the abundance figures come from the audit's own `evidence` strings, which
     are hand-authored: pinning them stops the prose drifting from the CSV, and does not check either
-    against NIST. The dysprosium rounding tie is the one published figure with no shipped source at
-    all, and it stays prose checked by a reader.
+    against NIST.
+
+    **What is NOT covered, enumerated rather than summarised** -- an earlier revision of this
+    docstring said "everything countable from what ships is here", which was false, and was proven
+    false by falsifying an unpinned count and watching the suite stay green. Four groups remain
+    unpinned, each because the evidence for it does not ship:
+
+    * **F-3's contraction figures** (36000 / 14668 / 5547 / 2980 ulp / 3.5e-13) and section 4's build
+      description. Reproducing them needs a Geant4 build and two compiler configurations. Registered
+      against the stage that builds the standalone validator.
+    * **F-2's `NaN` and `+inf`.** CPython raises `ZeroDivisionError` where C++ divides by zero, so
+      the reference implementation cannot reach them; they were harvested from the compiled library.
+      The one degenerate value Python does reach is pinned below.
+    * **Every claim about what the primary PRINTS** -- its abstract's "50 elements plus 8 isotopes",
+      its 4.1 %/5.6 % residuals over 30 and 58 points, its page numbers, the misprinted barium Z, and
+      the three effective charges as they appear on its page. The paper is not redistributed here;
+      those rest on the audit's transcription, which two independent readings of the page images
+      checked.
+    * **The dysprosium rounding tie**, 162.500, which has no shipped source at all.
 
     The ruling if this fails after a deliberate rewording: move the anchor in the same commit, never
     the expected value, and never delete a row.
@@ -1460,10 +1477,42 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     zeff_covered = {int(z) for z, _ in zeff_table.records if int(z) in table_iv_z}
     zeff_uncovered = len(zeff_table.records) - len(zeff_covered)
 
+    # Section 3's re-ordering disclosure, both halves. "Misplaced record" is an adjacent descent;
+    # "inverted pair" is the standard combinatorial sense. They are different numbers, which is what
+    # the disclosure got wrong before, so both are pinned.
+    source_order = [(z, a) for z, a, _, _ in found.capture_records]
+    misplaced = sum(1 for i in range(1, len(source_order))
+                    if source_order[i] < source_order[i - 1])
+    inverted_pairs = sum(
+        1
+        for i in range(len(source_order))
+        for j in range(i + 1, len(source_order))
+        if source_order[i] > source_order[j]
+    )
+    inverted_z = {z for z, _ in source_order}.intersection(
+        {source_order[i][0] for i in range(1, len(source_order))
+         if source_order[i] < source_order[i - 1]}
+    )
+
+    # F-5's shape claims, from the committed effective-charge table.
+    zeff = {int(z): float(v) for z, v in zeff_table.records}
+    descents = [z for z in range(1, len(zeff)) if zeff[z] < zeff[z - 1]]
+    step_into_81 = round(zeff[81] - zeff[80], 2)
+    preceding_steps = [round(zeff[z] - zeff[z - 1], 2) for z in (78, 79, 80)]
+
     # Which elements the primary's sentence names is read out of the document's own quotation, so
     # both "nine" and "seven" are derived from the shipped audit rather than asserted here.
     quotation = re.search(r"> Now for muon capture (.+?) Read it precisely", doc)
     assert quotation, "the quoted section-IV sentence is no longer where this test reads it"
+    # Every one- or two-letter capitalised token in that quotation is an element symbol -- the
+    # longer words in it ("Primakoff", "Goulard") cannot match. Requiring set equality with
+    # SYMBOL_Z means an element ADDED to the quotation fails here rather than passing unnoticed,
+    # which a lookup keyed only on the known symbols would have allowed.
+    quoted_symbols = set(re.findall(r"\b[A-Z][a-z]?\b", quotation.group(1)))
+    assert quoted_symbols == set(SYMBOL_Z), (
+        f"the quoted sentence names {sorted(quoted_symbols)}; SYMBOL_Z knows "
+        f"{sorted(SYMBOL_Z)}. Extend SYMBOL_Z in the same commit that changes the quotation."
+    )
     named = {sym: z for sym, z in SYMBOL_Z.items()
              if re.search(rf"\b{sym}\b", quotation.group(1))}
     carrying = {sym for sym, z in named.items() if any(k[0] == z for k in separated)}
@@ -1478,7 +1527,9 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
 
     # The section-5 partition, derived from the section's own structure.
     findings = len(re.findall(r"\*\*F-\d+ ", doc))
-    settled_findings = doc.count("SETTLED against the primary.")
+    # Counted as F-n headings carrying the marker, not as a bare substring: a future sentence
+    # saying a finding is NOT settled against the primary would otherwise inflate this.
+    settled_findings = len(re.findall(r"\*\*F-\d+ [^*]*SETTLED against the primary\.\*\*", doc))
 
     # The free-muon decay rate comes from the VENDORED SOURCE, never from the prose under test.
     # Reading it out of the document would let a self-consistent falsification -- move the constant
@@ -1499,12 +1550,14 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
         zeff=tuple(found.zeff),
     )
     swept = negative = negative_past_decay = 0
+    first_negative: dict[int, int] = {}
     for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
         for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
             swept += 1
             value = d1.capture_rate(z, a, found.capture_records, model)
             if value < 0:
                 negative += 1
+                first_negative.setdefault(z, a)
                 if abs(value) > decay_rate:
                     negative_past_decay += 1
 
@@ -1573,6 +1626,14 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
          r"capture rates\.\*\* \d+ of the (\d+) swept points", swept),
         ("negative points past the free-muon decay rate",
          r"For the \*\*(\d+)\*\* swept points where λ_c is negative", negative_past_decay),
+        ("records out of place in the upstream declaration order",
+         r"— \*\*(\w+) misplaced record", misplaced),
+        ("inverted pairs in the upstream declaration order",
+         r"misplaced record, (\w+) inverted pairs\*\*", inverted_pairs),
+        ("distinct Z whose locator does not name the primary",
+         r"The (\w+) that do not are", len(zs) - len(located_in_primary)),
+        ("effective charges below their predecessor",
+         r"rises monotonically except at exactly (\w+) steps", len(descents)),
     ]
 
     #: Figures the document rounds. `(what, pattern, computed value, decimal places)`.
@@ -1591,6 +1652,17 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
          r"Sn-119 is \*\*([\d.]+) %\*\*", _pct((50, 119), "Sn-119"), 1),
         ("Pb-208's share of natural lead",
          r"which is (\d+) % of natural lead", float(lead.group(1)), 0),
+        ("the effective charge at Z=81", r"Z=81→82 \(([\d.]+) →", zeff[81], 2),
+        ("the effective charge at Z=82", r"Z=81→82 \([\d.]+ → ([\d.]+)\)", zeff[82], 2),
+        ("the effective charge at Z=83", r"Z=82→83 \([\d.]+ → ([\d.]+)\)", zeff[83], 2),
+        ("the step into Z=81", r"anomalously large, \+([\d.]+) against", step_into_81, 2),
+        ("the smallest neighbouring step",
+         r"neighbours of \+(\d+\.\d+) to", min(preceding_steps), 2),
+        ("the largest neighbouring step",
+         r"neighbours of \+\d+\.\d+ to \+(\d+\.\d+)", max(preceding_steps), 2),
+        ("the effective charge at Z=56", r"`zeff\[56\] = ([\d.]+)`", zeff[56], 2),
+        ("caesium's effective charge", r"caesium's ([\d.]+) \(Z = 55\)", zeff[55], 2),
+        ("lanthanum's effective charge", r"lanthanum's ([\d.]+)", zeff[57], 2),
     ]
 
     for what, pattern, expected in claims:
@@ -1628,3 +1700,47 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
         f"DATASET_D1.md prints the free-muon decay rate as {stated_rate}; the vendored source "
         f"declares {free_muon.group(1)} per microsecond, which is {decay_rate} per nanosecond."
     )
+
+    # Section 3 names the upstream order at the misplaced record's Z; the numbers above say how many
+    # pairs it inverts, this says which they are.
+    stated_order = re.search(
+        r"at Z=(\d+) the source declares A in the order (\d+), (\d+), (\d+), (\d+)", doc
+    )
+    assert stated_order, "section 3 no longer states the upstream order where this test reads it"
+    inverted_at = int(stated_order.group(1))
+    assert {inverted_at} == inverted_z, (
+        f"DATASET_D1.md says the misplaced record sits at Z={inverted_at}; the vendored source puts "
+        f"it at Z={sorted(inverted_z)}."
+    )
+    assert [int(g) for g in stated_order.groups()[1:]] == [
+        a for z, a in source_order if z == inverted_at
+    ], (
+        f"DATASET_D1.md states the Z={inverted_at} order as {stated_order.groups()[1:]}; the "
+        f"vendored source declares {[a for z, a in source_order if z == inverted_at]}."
+    )
+
+    # F-1's per-Z thresholds, and the one rate it prints in full.
+    thresholds = re.search(
+        r"the first negative A is (\d+) for Z=(\d+), (\d+) for Z=(\d+), (\d+) for Z=(\d+), "
+        r"(\d+) for Z=(\d+), (\d+) for Z=(\d+), (\d+) for Z=(\d+) and (\d+) for Z=(\d+)",
+        doc,
+    )
+    assert thresholds, "F-1 no longer lists its per-Z thresholds where this test reads them"
+    pairs = [int(g) for g in thresholds.groups()]
+    for stated_a, stated_z in zip(pairs[0::2], pairs[1::2], strict=True):
+        assert first_negative.get(stated_z) == stated_a, (
+            f"DATASET_D1.md says the first negative A at Z={stated_z} is {stated_a}; the sweep "
+            f"says {first_negative.get(stated_z)}."
+        )
+
+    tritium = re.search(r"λ_c = (−[\d.]+e−\d+) ns", doc)
+    assert tritium, "F-1 no longer prints the tritium rate where this test reads it"
+    assert tritium.group(1).replace("−", "-") == (
+        f"{d1.capture_rate(1, 3, found.capture_records, model):.6e}"
+    ), "DATASET_D1.md's tritium rate is not what the reference implementation returns"
+
+    degenerate = re.search(r"`Z = -1, A = 12` returns (−[\d.]+e−\d+)", doc)
+    assert degenerate, "F-2 no longer prints the reachable degenerate value where this test reads it"
+    assert degenerate.group(1).replace("−", "-") == (
+        f"{model.evaluate_unchecked(-1, 12):.6e}"
+    ), "DATASET_D1.md's Z=-1 value is not what the reference implementation returns"
