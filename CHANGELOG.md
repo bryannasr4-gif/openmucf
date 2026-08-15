@@ -77,6 +77,27 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   guard is now enforced only where a band is SE-governed, so the identically-zero `zero_eig` cell keeps
   the 0.01 absolute floor it already had.
 
+### Fixed — the `min ess` audit cell, re-registered as a one-sided floor (2026-08-13)
+- **`CALIBRATION.md`'s `min ess` cells were tolerance-audited against the committed realization, which
+  is the wrong shape for a convergence diagnostic.** The symmetric 20 % band shared with the `mcse` cells
+  reds when a *fresh* realization converges **better** than the committed one — a gate that punishes
+  improvement is measuring the sampler's luck, not the artifact's correctness. Measured over a
+  100-realization chain-seed sweep of both main chains, that band reds 3.0 % of the weak chain's
+  realizations and 5.6 % of the Kamimura chain's converged, physical ones, and it held the worst margin
+  of this file's whole battery in the 2026-07-23
+  arm64 reproduction — 81.8 % of band, which was `Kamimura.min ess` at 9200 vs 11000: an ordinary draw of
+  a diagnostic, not a defect in anything.
+  `min ess` therefore leaves the tolerance-audited set. The committed value stays published as a
+  *description* of that realization; what `--audit` now gates is the **fresh** run clearing a structural
+  floor, `AUDIT_ESS_FLOOR = 2000`. Sizing: the 136 converged-and-physical realizations of that sweep span
+  min ess 3885–11398 while the non-convergent mode sits at 2.0, so the floor separates the two regimes by
+  three orders of magnitude rather than cutting through either; and because `mcse = sd/√ess`, a chain
+  sitting at the floor carries an mcse inflated ×1.39 even against the lowest converged realization
+  measured — outside the 20 % `mcse` band, which stays as it was. A run that clears the floor while
+  genuinely mis-converged therefore still fails, on its own `mcse` cells. **No published value moves**;
+  the `mean`/`sd`/`corr`/`r_hat`/`divergences` classes are untouched, and asking the audit for a
+  committed-vs-fresh distance on a one-sided cell is now a hard error rather than a silent number.
+
 ### Added
 - **`G4MuonicData`: an external-data format for muonic-atom physics, with its reference implementation
   (`FORMAT_SPEC.md` + `openmucf/g4/`).** A dependency-free way to ship muonic-atom data to Geant4 — or to

@@ -7,7 +7,9 @@ Importable without side effects: all work runs inside functions / ``main()``.
 
 CALIBRATION.md is MCMC-derived, so it is NOT byte-diffed (the cross-arch realization differs at last-ulp);
 instead ``--audit`` re-runs every chain with the pinned seeds and checks each committed cell within a
-tolerance CLASS chosen for that quantity (mean/sd/corr/ess/mcse/r_hat/divergences). See the AUDIT_* block.
+tolerance CLASS chosen for that quantity (mean/sd/corr/mcse/r_hat/divergences) -- except ``min ess``,
+which is a convergence DIAGNOSTIC and since 2026-08-13 is gated one-sided against a structural floor
+rather than compared with its committed value at all. See the AUDIT_* block.
 """
 
 import contextlib
@@ -38,16 +40,35 @@ CALIBRATION_MD = "CALIBRATION.md"
 #                       code, tight enough that real edits (prior/observation/model) move sd >=10-20%.
 #   * corr cells 8%  -- reported to 2 dp; the linear correlation of the curved ridge is prior-conditional
 #                       (see the sweep) so it is bounded, not byte-pinned.
-#   * ess + mcse 20% -- effective sample size (and mcse = sd/sqrt(ess)) vary most across realizations.
+#   * mcse cells 20% -- the Monte-Carlo standard error (sd/sqrt(ess)) varies most across realizations,
+#                       and it is a genuine PRECISION CLAIM about a published number, so it stays banded.
+#   * min ess        -- NOT a tolerance class since 2026-08-13; one-sided floor, see AUDIT_ESS_FLOOR.
 #   * r_hat cells 2% -- split-Gelman-Rubin sits at ~1.00; 2% is ample and still catches non-convergence.
 #   * divergences EXACT == 0 -- a divergence is a correctness signal, never a tolerance question.
 # Changing any of these requires a deliberate edit to the pin test + a documented rationale.
 AUDIT_RTOL_MEAN = 0.02        # mean cells
 AUDIT_RTOL_SD = 0.08          # sd cells
 AUDIT_RTOL_CORR = 0.08        # correlation cells
-AUDIT_RTOL_ESS_MCSE = 0.20    # ess AND mcse cells
+AUDIT_RTOL_ESS_MCSE = 0.20    # mcse cells (historical name; the ess half left this class 2026-08-13)
 AUDIT_RTOL_RHAT = 0.02        # r_hat cells
 AUDIT_ATOL_DIVERGENCES = 0    # divergences: EXACT equality (==0)
+
+# --- min ess: a one-sided STRUCTURAL FLOOR, not a tolerance band (re-registered 2026-08-13) -----------
+# min ess is a CONVERGENCE DIAGNOSTIC, not a precision claim about a published number, and a symmetric
+# relative band on it is the wrong shape: it reds when a FRESH realization converges BETTER than the
+# committed one. A gate that punishes improvement measures the sampler's luck, not the artifact's
+# correctness -- so the ess cells leave the tolerance-audited set and the committed value stays published
+# as a DESCRIPTION of that realization, never as a reproduction target. What is audited instead is the
+# fresh run clearing a floor. Sizing, from a 100-realization chain-seed sweep over both main chains
+# (2026-08-10): the 136 converged-and-physical realizations span min ess 3885-11398, while the
+# non-convergent mode sits at 2.0 -- so a floor of 2000 separates the two regimes by three orders of
+# magnitude instead of cutting through either. The floor and the mcse audit agree at the boundary:
+# mcse = sd/sqrt(ess), so a chain sitting AT the floor carries an mcse inflated x1.39 even against the
+# LOWEST converged realization measured (28.3% relative distance, outside the 20% mcse band) and x1.58
+# against the committed weak chain -- a run that clears the floor while genuinely mis-converged still
+# fails on its own mcse cells. NEVER lower this floor to make a run pass: re-derive from the accumulated
+# margins the audit prints, exactly as for the bands above.
+AUDIT_ESS_FLOOR = 2000        # min ess: ONE-SIDED floor on the FRESH run; never a committed-vs-fresh band
 
 # --- chain settings (mirrored by forecast.py D6 guard: the two literals below are asserted there) ------
 MAIN_WARMUP, MAIN_SAMPLES = 1000, 4000
@@ -186,7 +207,14 @@ def _convergence_block(sw, sk):
         f"| weak | {wr:.3f} | {we:.2g} | {wd} |\n"
         f"| Kamimura | {kr:.3f} | {ke:.2g} | {kd} |\n\n"
         "Convergence gate (`tests/test_calibrate.py::test_multichain_diagnostics`): max r_hat < 1.01, "
-        "min ess > 400, divergences == 0 on the default (widened-box) chains.\n"
+        "min ess > 400, divergences == 0 on the default (widened-box) chains.\n\n"
+        "`min ess` above is published as a DESCRIPTION of this realization, not as a reproduction "
+        f"target: `--audit` gates it one-sided (fresh min ess >= {AUDIT_ESS_FLOOR}) rather than within a "
+        "relative band, because a symmetric band on a convergence diagnostic reds when a fresh "
+        "realization converges BETTER than the committed one. The audit's other cells are checked "
+        "against their committed values within their own class -- mean, sd, corr and mcse relatively, "
+        "r_hat relatively, divergences exactly; interval, configuration and label columns carry no "
+        "tolerance and are not audited.\n"
     )
 
 
@@ -376,9 +404,9 @@ def _cell_specs(colname):
     if "r_hat" in c or "rhat" in c:
         return [("r_hat", "rhat")]
     if "mcse" in c:
-        return [("mcse", "ess_mcse")]
-    if "ess" in c:
-        return [("ess", "ess_mcse")]
+        return [("mcse", "mcse")]
+    if "ess" in c:                                     # min ess -- and any future ESS column: floor, not band
+        return [("ess", "ess_floor")]
     if "corr" in c:
         return [("corr", "corr")]
     if "mean" in c and "sd" in c:                      # a combined "mean +- sd" cell
@@ -390,9 +418,12 @@ def _cell_specs(colname):
     return []                                          # parameter / config / boxes / 95% CI / rails
 
 
+# RELATIVE-tolerance classes only. "div" (exact equality) and "ess_floor" (one-sided) are deliberately
+# absent: membership here is what makes a cell's COMMITTED value a reproduction target, and _rel_distance
+# refuses any kind that is not a member.
 _TOL = {
     "mean": AUDIT_RTOL_MEAN, "sd": AUDIT_RTOL_SD, "corr": AUDIT_RTOL_CORR,
-    "ess_mcse": AUDIT_RTOL_ESS_MCSE, "rhat": AUDIT_RTOL_RHAT,
+    "mcse": AUDIT_RTOL_ESS_MCSE, "rhat": AUDIT_RTOL_RHAT,
 }
 
 
@@ -430,22 +461,34 @@ def _parse_tables(md_text):
     return [(t, h, r) for t, h, r in sections]
 
 
-def _rel_distance(a, b, kind) -> float:
+def _rel_distance(committed, fresh, kind) -> float:
     """Committed-vs-fresh distance in the cell's own class units (relative, except exact-eq classes)."""
     if kind == "div":
-        return 0.0 if a == b else float("inf")
-    denom = max(abs(a), abs(b))
-    return 0.0 if denom == 0.0 else abs(a - b) / denom
+        return 0.0 if committed == fresh else float("inf")
+    if kind not in _TOL:
+        # Must-not-return guard: a ONE-SIDED cell has no committed-vs-fresh distance, and computing one
+        # for `min ess` is precisely the 2026-08-13 defect coming back (a band that reds on a BETTER
+        # fresh realization). Structural, so it cannot be reintroduced by editing the class map alone.
+        raise AssertionError(
+            f"{kind!r} is not a relative-tolerance class: it has no committed-vs-fresh band (see "
+            f"AUDIT_ESS_FLOOR -- min ess is gated one-sided and its committed value is description only)"
+        )
+    denom = max(abs(committed), abs(fresh))
+    return 0.0 if denom == 0.0 else abs(committed - fresh) / denom
 
 
-def _within(a, b, kind):
+def _within(committed, fresh, kind):
+    """Accept a cell in its own class. One-sided classes ignore ``committed`` BY CONSTRUCTION."""
     if kind == "div":                       # divergence counts are exact-equality, not a tolerance class
-        return a == b
-    return _rel_distance(a, b, kind) <= _TOL[kind]
+        return committed == fresh
+    if kind == "ess_floor":                 # convergence diagnostic: floor the FRESH run, never band it
+        return fresh >= AUDIT_ESS_FLOOR
+    return _rel_distance(committed, fresh, kind) <= _TOL[kind]
 
 
 def audit():
-    """Re-run every chain and tolerance-check each committed CALIBRATION.md cell in its quantity class."""
+    """Re-run every chain and check each committed CALIBRATION.md cell in its quantity class -- within a
+    relative band, or, for the one-sided ``min ess`` cells, against AUDIT_ESS_FLOOR on the fresh run."""
     sw, sk, ssw, ssk, sweep, pushforward, corr_lo, corr_hi = _all()
     committed = _parse_tables(Path(CALIBRATION_MD).read_text(encoding="utf-8"))
     fresh = _parse_tables(build_md(sw, sk, ssw, ssk, sweep, pushforward, corr_lo, corr_hi))
@@ -453,12 +496,17 @@ def audit():
     if len(committed) != len(fresh):
         problems.append(f"section count differs: committed {len(committed)} vs fresh {len(fresh)}")
     n_cells = 0
+    n_floor_cells = 0
     # Per-class worst margin, reported whether or not the audit passes. These tolerances exist to absorb
     # cross-architecture MCMC drift, so "OK" alone is not evidence they are correctly SIZED -- on a single
     # architecture every cell reproduces at 0 distance and the bands are never exercised. Printing the
     # margins makes every CI run on every platform an observation about the headroom (the instrumentation
-    # gap the 2026-07-23 arm64 reproduction identified; measured there: ess_mcse 81.8% of band, sd 60.2%).
+    # gap the 2026-07-23 arm64 reproduction identified; measured there: 81.8% of band in the then-combined
+    # ess+mcse class and 60.2% on an sd cell). That 81.8% reading was a `min ess` cell, which is no longer
+    # banded at all, so the mcse margin below is NOT comparable to it; the ess cells report their own
+    # one-sided headroom (fresh value as a multiple of the floor) on the last line instead.
     margins: dict[str, tuple[float, str, float, float]] = {}
+    floor_worst: tuple[float, str, float] | None = None      # (worst fresh, where, its committed value)
     for (ct, chead, crows), (ft, fhead, frows) in zip(committed, fresh, strict=False):
         if ct != ft:
             problems.append(f"section title differs: {ct!r} vs {ft!r}")
@@ -480,23 +528,45 @@ def audit():
                     _cell_specs(col), _cell_floats(crow[j]), _cell_floats(frow[j]), strict=False
                 ):
                     n_cells += 1
+                    where = f"[{ct}] {key}.{col}({label})"
+                    if kind == "ess_floor":
+                        # ONE-SIDED. The committed value is read only to be REPORTED alongside; it is
+                        # never compared against, so a fresh chain that converges better cannot red.
+                        n_floor_cells += 1
+                        if floor_worst is None or fval < floor_worst[0]:
+                            floor_worst = (fval, where, cval)
+                        if not _within(cval, fval, kind):
+                            problems.append(
+                                f"{where}: fresh {fval:.4g} is BELOW the structural floor "
+                                f"{AUDIT_ESS_FLOOR} -- this chain did not converge (one-sided gate; "
+                                f"committed {cval:.4g} is published as description, not a target)"
+                            )
+                        continue
                     d = _rel_distance(cval, fval, kind)
                     if kind != "div" and (kind not in margins or d > margins[kind][0]):
-                        margins[kind] = (d, f"[{ct}] {key}.{col}({label})", cval, fval)
+                        margins[kind] = (d, where, cval, fval)
                     if not _within(cval, fval, kind):
                         tol = "==" if kind == "div" else f"{_TOL[kind]:.0%} rel."
                         problems.append(
-                            f"[{ct}] {key}.{col}({label}): committed {cval:.4g} vs fresh {fval:.4g} ({tol} tol)"
+                            f"{where}: committed {cval:.4g} vs fresh {fval:.4g} ({tol} tol)"
                         )
     report = [
         f"    [{kind:<8}] tol={_TOL[kind]:.3f}  worst={d:.6f} ({d / _TOL[kind]:.1%} of band)  "
         f"committed {c:.6g} vs fresh {f:.6g}  {where}"
         for kind, (d, where, c, f) in sorted(margins.items())
     ]
+    if floor_worst is not None:
+        f_ess, f_where, c_ess = floor_worst
+        report.append(
+            f"    [ess_floor] floor={AUDIT_ESS_FLOOR}  worst fresh={f_ess:.6g} "
+            f"({f_ess / AUDIT_ESS_FLOOR:.2f}x the floor)  committed {c_ess:.6g} (published, NOT "
+            f"audited)  {f_where}"
+        )
     if problems:
         raise SystemExit("CALIBRATION.md audit FAILED:\n  " + "\n  ".join(problems)
                          + "\n  per-class margins:\n" + "\n".join(report))
-    print(f"calibration audit OK: {n_cells} class-tolerance cells across {len(committed)} section(s)")
+    print(f"calibration audit OK: {n_cells} audited cells across {len(committed)} section(s) "
+          f"({n_cells - n_floor_cells} class-tolerance + {n_floor_cells} one-sided min-ess floor)")
     print("  per-class worst margin (headroom evidence -- see the audit() docstring):")
     print("\n".join(report))
 
