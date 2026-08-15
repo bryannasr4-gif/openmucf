@@ -192,26 +192,24 @@ Registered; to be checked against the primary; not altered.
 ## 6. Isotope resolution — what the flag means here
 
 Every Layer-2 row carries a required `isotope_resolved` boolean. **`true` means the row's value is
-*established* to rest on an isotopically resolved measurement; `false` means it is not so
-established** — which includes "not yet checked". The "not yet checked" state is carried by
-`needs_verification`, which is exactly the field that exists for it.
+isotope-resolved; `false` means it is not so established** — which includes "not yet checked".
+**The companion field says which kind of `true` a row carries:** while `needs_verification` is
+`true` the flag is *derived*, and it is *established* — resting on an isotopically resolved
+measurement, with a locator naming where — only once `needs_verification` is `false`.
 
-In this release the flag is derived mechanically: **`true` if and only if the row's Z carries more
+In this release **every row carries `needs_verification: true`**, so every `true` here is the
+derived kind, and the derivation is mechanical: **`true` if and only if the row's Z carries more
 than one capture record.** That is sound in one direction and only one — if Geant4 gives different
 rates for two A at the same Z, the underlying data distinguishes isotopes; a single row establishes
 nothing either way. 27 of the 90 rows, over 11 Z values, are `true`.
 
-**Be precise about what those 27 rows do and do not assert.** The derivation is a fact about
-*upstream's table* — that it holds distinct values for distinct A at that Z — and not yet a fact
-about a measurement. That the value then rests on an isotopically resolved *measurement* is the
-stronger claim in the definition above, and this release does not establish it for any row: no value
-here has been checked against a primary, which is why **every** row carries `needs_verification:
-true`. Reading the flag as an established provenance claim would be reading past the field that says
-it is not one. Establishing it — row by row, against the primary literature, with a locator — is the
-next step for this dataset. Every row's `evaluation_method` states the derivation, so a reader meets
-it with the flag rather than being handed a bare boolean. The `zeff` rows are `false` throughout, as
-a fact rather than a default: an effective charge is a per-Z quantity, so there is no isotope for it
-to be resolved to.
+**So be precise about what those 27 rows assert.** They assert a fact about *upstream's table* —
+that it holds distinct values for distinct A at that Z. They do not assert that the value rests on
+an isotopically resolved *measurement*, because nothing here has been checked against a primary.
+Every row's `evaluation_method` states the derivation, so a reader meets it together with the flag
+rather than being handed a bare boolean. The `zeff` rows are `false` throughout, as a fact rather
+than a default: an effective charge is a per-Z quantity, so there is no isotope for it to be
+resolved to.
 
 Refining this against the primary literature — which rows are genuinely isotope-resolved and which
 are element values wearing an isotope label — is the next step for this dataset, and is the part of
