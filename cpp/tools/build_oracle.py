@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import re
 import struct
 import sys
 from pathlib import Path
@@ -166,6 +167,45 @@ def select_subset(
     return sorted(hits | first_negative | corners), len(hits), len(first_negative), len(corners)
 
 
+RATE_PROBE_DECL = re.compile(r"probes\[\]\[2\]\s*=\s*\{(.*?)\}\s*;", re.DOTALL)
+RATE_PROBE_PAIR = re.compile(r"\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}")
+CLAMP_PROBE_DECL = re.compile(r"for\s*\(\s*int\s+Z\s*:\s*\{([^}]*)\}\s*\)")
+
+
+def check_degenerate(path: Path, driver: Path) -> list[str]:
+    """The degenerate harvest, checked against the probe set its own driver declares.
+
+    The sweep's two sections are validated against the vendored table; this one has no such
+    reference -- the probes exist nowhere but in the driver -- so the driver is what it is checked
+    against. Without this the block is spliced in verbatim, and since the driver prints the clamp
+    probes last, an interrupted run drops exactly the rows that pin the clamp's far end.
+    """
+    if not driver.exists():
+        raise SystemExit(f"{driver} is missing; the degenerate probe set cannot be verified")
+    text = driver.read_text("ascii")
+    rate_block, clamp_block = RATE_PROBE_DECL.search(text), CLAMP_PROBE_DECL.search(text)
+    if not rate_block or not clamp_block:
+        raise SystemExit(f"{driver} no longer declares its probes as literal lists")
+    declared_rates = [(int(z), int(a)) for z, a in RATE_PROBE_PAIR.findall(rate_block.group(1))]
+    declared_clamps = [int(z) for z in clamp_block.group(1).split(",")]
+
+    lines = path.read_text("ascii").splitlines()
+    harvested_rates = [
+        (int(f[1]), int(f[2])) for f in (line.split() for line in lines) if f and f[0] == "RATE"
+    ]
+    harvested_clamps = [
+        int(f[1]) for f in (line.split() for line in lines) if f and f[0] == "ZEFFCLAMP"
+    ]
+    if harvested_rates != declared_rates or harvested_clamps != declared_clamps:
+        raise SystemExit(
+            f"{path} does not carry the probes {driver.name} harvests. Rate probes: got "
+            f"{harvested_rates}, expected {declared_rates}. Clamp probes: got {harvested_clamps}, "
+            f"expected {declared_clamps}. The driver prints the clamp probes last, so a short tail "
+            f"here means the harvest was interrupted."
+        )
+    return lines
+
+
 def sweep_digest(rates: dict[tuple[int, int], str]) -> str:
     """The pre-registered digest rule, over the HARVESTED doubles: row-major, Z outermost."""
     running = hashlib.sha256()
@@ -175,10 +215,13 @@ def sweep_digest(rates: dict[tuple[int, int], str]) -> str:
     return running.hexdigest()
 
 
-def render(sweep: Path, degenerate: Path, build: list[str], source_path: Path) -> str:
+def render(
+    sweep: Path, degenerate: Path, build: list[str], source_path: Path, driver: Path
+) -> str:
     """The whole oracle, as text, from the two harvest files and the recorded build."""
     source = d1.extract(source_path.read_text("ascii"))
     rates, zeff = read_sweep(sweep, len(source.zeff))
+    degenerate_lines = check_degenerate(degenerate, driver)
     subset, hits, negatives, corners = select_subset(rates, source)
     swept = len(rates)
 
@@ -221,7 +264,7 @@ def render(sweep: Path, degenerate: Path, build: list[str], source_path: Path) -
     lines += [f"ZEFF {z} {zeff[z]}" for z in sorted(zeff)]
     lines += [comment(), field("degenerate", DEGENERATE_RULE[0])]
     lines += [continuation(text) for text in DEGENERATE_RULE[1:]]
-    lines += degenerate.read_text("ascii").splitlines()
+    lines += degenerate_lines
     lines += ["#END"]
     return "\n".join(lines) + "\n"
 
@@ -243,10 +286,16 @@ def main(argv: list[str] | None = None) -> int:
         default=REPO / d1.VENDORED_RELPATH,
         help="the vendored upstream source the table hits are read from",
     )
+    parser.add_argument(
+        "--driver-degenerate",
+        type=Path,
+        default=Path(__file__).resolve().parent / "harvest_d1_degenerate.cc",
+        help="the driver whose declared probe set the degenerate harvest must match",
+    )
     parser.add_argument("-o", "--output", type=Path, help="write here instead of stdout")
     args = parser.parse_args(argv)
 
-    text = render(args.sweep, args.degenerate, args.build, args.source)
+    text = render(args.sweep, args.degenerate, args.build, args.source, args.driver_degenerate)
     if args.output:
         args.output.write_text(text, encoding="ascii", newline="\n")
     else:

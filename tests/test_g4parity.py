@@ -26,6 +26,7 @@ import hashlib
 import json
 import math
 import pathlib
+import re
 import struct
 import subprocess
 import sys
@@ -394,17 +395,28 @@ def read_oracle() -> dict:
             if len(fields) == 2 and fields[0] not in header:
                 header[fields[0]] = fields[1].strip()
             continue
+        # Every keyed section rejects a repeat. Assigning into a dict is last-wins, so a duplicated
+        # row SHADOWS the one before it: a wrong value could sit in the file, be read, be discarded
+        # in favour of the correct copy underneath, and be certified by a test that never saw it.
+        # The oracle is deliberately outside the byte-diff audit -- re-derivation is its whole
+        # protection -- so a hand-edit is precisely the threat this parser has to survive.
         fields = line.split()
         if fields[0] == "ZEFF":
-            zeff[int(fields[1])] = float.fromhex(fields[2])
+            key = int(fields[1])
+            assert key not in zeff, f"duplicate ZEFF row for Z={key}"
+            zeff[key] = float.fromhex(fields[2])
         elif fields[0] == "RATE":
             degenerate_rates.append(
                 (int(fields[1]), int(fields[2]), fields[3], float.fromhex(fields[4]))
             )
         elif fields[0] == "ZEFFCLAMP":
-            degenerate_zeff[int(fields[1])] = float.fromhex(fields[2])
+            key = int(fields[1])
+            assert key not in degenerate_zeff, f"duplicate ZEFFCLAMP row for Z={key}"
+            degenerate_zeff[key] = float.fromhex(fields[2])
         else:
-            subset[(int(fields[0]), int(fields[1]))] = float.fromhex(fields[2])
+            pair = (int(fields[0]), int(fields[1]))
+            assert pair not in subset, f"duplicate subset row for {pair}"
+            subset[pair] = float.fromhex(fields[2])
     assert terminated, "the oracle is not #END-terminated"
     return {
         "header": header,
@@ -413,6 +425,30 @@ def read_oracle() -> dict:
         "degenerate_rates": degenerate_rates,
         "degenerate_zeff": degenerate_zeff,
     }
+
+
+_RATE_PROBE_DECL = re.compile(r"probes\[\]\[2\]\s*=\s*\{(.*?)\}\s*;", re.DOTALL)
+_RATE_PROBE_PAIR = re.compile(r"\{\s*(-?\d+)\s*,\s*(-?\d+)\s*\}")
+_CLAMP_PROBE_DECL = re.compile(r"for\s*\(\s*int\s+Z\s*:\s*\{([^}]*)\}\s*\)")
+
+
+def declared_degenerate_probes() -> tuple[list[tuple[int, int]], list[int]]:
+    """The degenerate probe set, read out of the driver that is the only place it exists.
+
+    `harvest_d1_degenerate.cc` decides which inputs the oracle's degenerate block records; nothing
+    else in the repository states them. Reading them back out of the driver is what makes the block's
+    composition checkable at all -- writing "four rate probes and four clamp probes" into this file
+    would be the written-down count the parity discipline forbids, and would agree with a truncated
+    harvest as happily as with a whole one.
+    """
+    source = (REPO / "cpp" / "tools" / "harvest_d1_degenerate.cc").read_text("ascii")
+    rate_block = _RATE_PROBE_DECL.search(source)
+    clamp_block = _CLAMP_PROBE_DECL.search(source)
+    assert rate_block and clamp_block, "the degenerate driver no longer declares its probes as lists"
+    rates = [(int(z), int(a)) for z, a in _RATE_PROBE_PAIR.findall(rate_block.group(1))]
+    clamps = [int(z) for z in clamp_block.group(1).split(",")]
+    assert rates and clamps, "the degenerate driver declares an empty probe set"
+    return rates, clamps
 
 
 def reference_model(found: d1.D1Extraction) -> d1.GoulardPrimakoff:
@@ -545,6 +581,21 @@ def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
     found = extraction()
     model = reference_model(found)
     oracle = read_oracle()
+
+    # Composition before classification, for the third and last harvested section: this block is
+    # spliced in from its own driver, which prints the clamp probes LAST, so an interrupted run --
+    # or a one-line hand-edit -- drops rows whose absence every assertion below survives. The probe
+    # set is derived from the driver that produced it, the only place it is stated.
+    rate_probes, clamp_probes = declared_degenerate_probes()
+    assert [(z, a) for z, a, _, _ in oracle["degenerate_rates"]] == rate_probes, (
+        f"the oracle's degenerate rate probes are not the ones cpp/tools/harvest_d1_degenerate.cc "
+        f"harvests: file has {[(z, a) for z, a, _, _ in oracle['degenerate_rates']]}, driver "
+        f"declares {rate_probes}"
+    )
+    assert sorted(oracle["degenerate_zeff"]) == sorted(clamp_probes), (
+        f"the oracle's zeff clamp probes are not the driver's: file has "
+        f"{sorted(oracle['degenerate_zeff'])}, driver declares {sorted(clamp_probes)}"
+    )
 
     assert oracle["degenerate_rates"], "the oracle records no degenerate inputs"
     assert {row[2] for row in oracle["degenerate_rates"]} == {"nan", "+inf", "negative"}
