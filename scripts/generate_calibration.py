@@ -211,8 +211,10 @@ def _convergence_block(sw, sk):
         "`min ess` above is published as a DESCRIPTION of this realization, not as a reproduction "
         f"target: `--audit` gates it one-sided (fresh min ess >= {AUDIT_ESS_FLOOR}) rather than within a "
         "relative band, because a symmetric band on a convergence diagnostic reds when a fresh "
-        "realization converges BETTER than the committed one. Every other cell in this file is checked "
-        "against its committed value within its own tolerance class.\n"
+        "realization converges BETTER than the committed one. The audit's other cells are checked "
+        "against their committed values within their own class -- mean, sd, corr and mcse relatively, "
+        "r_hat relatively, divergences exactly; interval, configuration and label columns carry no "
+        "tolerance and are not audited.\n"
     )
 
 

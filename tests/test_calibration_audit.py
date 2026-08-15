@@ -100,6 +100,33 @@ def test_min_ess_can_never_regain_a_committed_vs_fresh_band():
         mod._rel_distance(5000.0, 9000.0, "ess_floor")
 
 
+def test_the_shipped_document_actually_gets_the_floor():
+    """A floor that silently stops applying is exactly as bad as the band coming back.
+
+    Renaming the `min ess` column on BOTH sides, or dropping the convergence table, would remove the
+    one-sided cells with nothing to show for it but a changed count in a CI log -- the pins above all
+    guard the RULE and none of them guards its REACH. So pin the shipped document against the audit's
+    own routing: exactly two floor cells, one per main chain, and both clearing the floor.
+    """
+    mod = _load_script()
+    calib = Path(openmucf.__file__).resolve().parent.parent / "CALIBRATION.md"
+    found = []
+    for _title, header, rows in mod._parse_tables(calib.read_text(encoding="utf-8")):
+        if header is None:
+            continue
+        for row in rows:
+            for j, col in enumerate(header[1:], start=1):
+                for (_label, kind), value in zip(
+                    mod._cell_specs(col), mod._cell_floats(row[j]), strict=False
+                ):
+                    if kind == "ess_floor":
+                        found.append((row[0], value))
+    assert sorted(chain for chain, _ in found) == ["Kamimura", "weak"], found
+    # and the verdict on the REAL cells does not depend on their committed values: a nonsense
+    # committed value still passes, because only the fresh side is read.
+    assert all(mod._within(0.0, v, "ess_floor") for _, v in found), found
+
+
 def _audit_with(tmp_path, monkeypatch, committed_md, fresh_md):
     """Drive ``audit()`` over a crafted committed/fresh pair -- no MCMC, so what is exercised is exactly
     the parse -> classify -> compare path the real audit runs (the test_design_audit.py pattern)."""
