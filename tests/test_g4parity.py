@@ -1391,7 +1391,7 @@ def _stated(text: str) -> int:
 
 
 def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
-    """Every number `DATASET_D1.md` counts must equal the number recomputed from shipped files.
+    """Counts published in `DATASET_D1.md` and `CHANGELOG.md` are pinned to the shipped data.
 
     This is the guard the D1 chain was missing, and its absence was measured rather than supposed:
     nothing in this repository read `DATASET_D1.md`, so a falsified count in it passed the entire
@@ -1399,16 +1399,19 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     each a number updated to match a rewrite instead of re-derived from the data it describes -- and
     every one would have failed here.
 
-    **No expected value is written down.** Each is computed from `data/g4/d1/isotope_audit.csv`, the
-    committed `.g4dat` tables, or the vendored source, and the document is then required to state
-    that computed value. It is the discipline the extraction already obeys (T-42), applied to the
-    prose that describes it: a count written down is a count that drifts.
+    **No expected value is written down.** Each is computed -- most from
+    `data/g4/d1/isotope_audit.csv`, the committed `.g4dat` tables or the vendored source, and a few
+    from the documents' own structure, which are named below -- and the document is then required to
+    state that computed value. It is the discipline the extraction already obeys (T-42), applied to
+    the prose that describes it: a count written down is a count that drifts.
 
-    **What is hard-coded here, named exactly, because it is not nothing.** Four string constants and
-    one threshold pick out subsets of the audit: `"Suzuki"`, `"Table III"` and `"Table IV"` select
-    the locators that name the primary the set equality is against, and `z >= 10` selects the Z its
-    Table IV covers. `SYMBOL_Z` above is atomic numbers, reference data. Everything else -- every
-    expected value in `claims` and `rounded` -- is a computed expression.
+    **What is hard-coded here is selectors, never expected values.** Several string and numeric
+    constants pick out subsets of the audit -- the locator substrings that name the primary, the
+    evidence openings that mark each isotope-resolution route, the atomic number where the primary's
+    second table starts -- and they are visible in the code below rather than inventoried here,
+    because two attempts at an exact inventory in this docstring have each been wrong. `SYMBOL_Z` is
+    atomic numbers, reference data. What matters is the invariant: every expected value in `claims`,
+    `rounded` and `changelog_claims` is a computed expression, never a number typed in.
 
     **Two things this cannot make independent, stated so nobody reads more into them.** The
     effective-charge coverage is derived as "the Z at or above Table IV's first that this table
@@ -1430,9 +1433,15 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     repository does not redistribute, and the dysprosium rounding tie has no shipped source at all --
     but that list is an illustration, not an inventory.
 
-    **Three things this cannot make independent**, beyond the two named above: section 5's finding
-    partition is counted from the document's own `F-n` headings, so it checks that the summary agrees
-    with the section rather than with anything that ships.
+    **Four things here are not independent of what they check, and are named so nobody counts them
+    as more than they are.** The effective-charge coverage restates the attribution finding's set
+    equality rather than re-deriving it, because the primary does not ship. The abundance figures are
+    read from the audit's own hand-authored `evidence` strings, so they hold the prose to the CSV and
+    check neither against an external table. Section 5's finding partition is counted from the
+    document's own `F-n` headings, so it checks that the summary agrees with the section rather than
+    with anything that ships. And the count of elements the primary's sentence names is read out of
+    the quotation in that same document: only the *seven of them carrying a separated-isotope record*
+    reaches the audit, while the *nine* is the document checked against itself.
 
     The ruling if this fails after a deliberate rewording: move the anchor in the same commit, never
     the expected value, and never delete a row.
@@ -1452,7 +1461,13 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     separated = {k for k, r in audit.items()
                  if r.evidence.startswith("the primary lists the separated isotope")}
     mononuclidic = {k for k, r in audit.items() if "is mononuclidic" in r.evidence}
-    carve_out = {k for k in trues if k[0] in (1, 2)}
+    # Derived from which paper settled the row, NOT from `trues`. Defining it as "the resolved rows
+    # at Z=1 and Z=2" made the partition assertion below a tautology exactly where the document
+    # counts three: no resolved row there could fall outside the union however its evidence read,
+    # and stripping both helium rows of any recognisable route still passed. The carve-out is a
+    # claim about the SOURCE -- the two papers Geant4's comment carves hydrogen and helium out to --
+    # so it is selected on the locator, which is the same evidence the document cites for it.
+    carve_out = {k for k, r in audit.items() if r.settled and "Suzuki" not in r.locator}
     natural = (set(audit) - trues) & settled
     not_most_abundant = {k for k, r in audit.items() if "most abundant nuclide" in r.evidence}
 
@@ -1511,8 +1526,10 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     step_into_81 = round(zeff[81] - zeff[80], 2)
     preceding_steps = [round(zeff[z] - zeff[z - 1], 2) for z in (78, 79, 80)]
 
-    # Which elements the primary's sentence names is read out of the document's own quotation, so
-    # both "nine" and "seven" are derived from the shipped audit rather than asserted here.
+    # Which elements the primary's sentence names is read out of the document's own quotation. Be
+    # precise about what that buys: the SEVEN reaches the shipped audit, because carrying a
+    # separated-isotope record is a fact about the CSV. The NINE does not -- it is the document
+    # checked against itself, and is listed among this test's non-independences for that reason.
     quotation = re.search(r"> Now for muon capture (.+?) Read it precisely", doc)
     assert quotation, "the quoted section-IV sentence is no longer where this test reads it"
     # Every one- or two-letter capitalised token in that quotation is an element symbol -- the
@@ -1538,12 +1555,14 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
 
     # The section-5 partition, derived from the section's own structure.
     findings = len(re.findall(r"\*\*F-\d+ ", doc))
-    # Counted as F-n headings carrying the marker, and the lookbehind is load-bearing: an earlier
-    # revision matched any heading ending in the marker, so a heading reading "NOT SETTLED against
-    # the primary." counted as settled -- the document could tell a reader a finding is open while
-    # its own summary counted it closed.
+    # Counted as F-n headings where the marker OPENS ITS OWN SENTENCE, which is load-bearing twice
+    # over. A revision that matched any heading ending in the marker counted "NOT SETTLED against
+    # the primary." as settled; a revision that excluded only the literal "NOT " still counted
+    # "UNSETTLED", "NOT YET SETTLED", "Not SETTLED" and "NEVER SETTLED" -- so the document could
+    # declare a finding open while its own summary counted it closed. Requiring the preceding
+    # sentence to have ended closes the whole negation family rather than the spellings thought of.
     settled_findings = len(
-        re.findall(r"\*\*F-\d+ [^*]*(?<!NOT )SETTLED against the primary\.\*\*", doc)
+        re.findall(r"\*\*F-\d+ [^*]*\. SETTLED against the primary\.\*\*", doc)
     )
 
     # The free-muon decay rate comes from the VENDORED SOURCE, never from the prose under test.
@@ -1554,7 +1573,9 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
         r"\{\s*0,\s*0,\s*([0-9.]+),\s*[0-9.]+\s*\}\s*//\s*free muon", VENDORED.read_text()
     )
     assert free_muon, "the free-muon decay rate is no longer where this test reads it in the source"
-    decay_rate = float(free_muon.group(1)) / 1000.0  # us^-1 -> ns^-1, as the model converts
+    # us^-1 -> ns^-1 through the module's own constant, which it derives from CLHEP's chain rather
+    # than asserting; a second literal here would be a second place the unit convention lives.
+    decay_rate = float(free_muon.group(1)) / d1.MICROSECOND
 
     coefficients = dict(found.fallback_coefficients)
     model = d1.GoulardPrimakoff(
@@ -1564,11 +1585,15 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
         zmin=int(coefficients["zmin"]), zmax=int(coefficients["zmax"]),
         zeff=tuple(found.zeff),
     )
-    swept = negative = negative_past_decay = 0
+    swept = negative = negative_past_decay = table_hits = 0
     first_negative: dict[int, int] = {}
     for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
         for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
             swept += 1
+            # Counted inside the sweep, not taken as `len(records)`. Section 4's claim is that the
+            # sweep COVERS the table, which is only the record count if every key is distinct and
+            # every one lands inside the box -- two preconditions nothing else here asserts.
+            table_hits += (z, a) in keys
             value = d1.capture_rate(z, a, found.capture_records, model)
             if value < 0:
                 negative += 1
@@ -1655,7 +1680,7 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
          len(zeff_table.records)),
         ("the maximum Z, section 1", r"\"94 entries\"; (\d+) is the maximum", max(zs)),
         ("table hits inside the sweep, section 4", r"The (\d+) table hits are included",
-         len(found.capture_records)),
+         table_hits),
     ]
 
     #: Figures the document rounds. `(what, pattern, computed value, decimal places)`.
@@ -1696,10 +1721,45 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
         )
         assert _stated(hits[0]) == expected, (
             f"DATASET_D1.md states {hits[0]!r} for {what}; the shipped data says {expected}. "
-            "The document is wrong, not this test -- every expected value here is recomputed from "
-            "isotope_audit.csv, the committed .g4dat tables, or the vendored source, and none is "
-            "written down."
+            "The document is wrong, not this test -- every expected value here is computed, most "
+            "from isotope_audit.csv, the committed .g4dat tables or the vendored source and a few "
+            "from the documents own structure, and none is written down."
         )
+
+    # `CHANGELOG.md` restates the same counts for a reader who never opens the dataset document --
+    # a second copy of every number, on a file nothing else in this repository reads, and one where
+    # a count has already shipped wrong once: its account of the old rule's failures survived a
+    # round after the dataset document's had been corrected.
+    changelog = " ".join((REPO / "CHANGELOG.md").read_text(encoding="utf-8").split())
+    changelog_claims = [
+        ("records checked", r"Every one of the (\d+) records has now been checked", len(audit)),
+        ("rows the old rule disagrees with", r"on (\d+) of the \d+ records", len(disagree)),
+        ("records the old rule was applied to", r"on \d+ of the (\d+) records", len(audit)),
+        ("rows the old rule under-called", r"\*\*(\d+)\*\* it called unresolved", len(under_called)),
+        ("rows the primary flatly contradicts",
+         r"\*\*(\d+)\*\* it called resolved that the primary flatly", len(contradicted)),
+        ("rows the primary fails to establish",
+         r"and \*\*(\d+)\*\* it called resolved that the primary does not", len(unestablished)),
+        ("settled rows", r"\*\*(\d+) records are settled", len(settled)),
+        ("isotope_resolved true", r"(\d+) are established isotope-resolved", len(trues)),
+        ("natural-composition rows",
+         r"(\d+) are established to rest on a \*\*natural", len(natural)),
+        ("open rows", r"The (\d+) that remain open", len(unsettled)),
+        ("distinct Z", r"span exactly the same (\d+) Z", len(zs)),
+        ("rows where the key is a label", r"a target specification\*\* on (\d+) records",
+         len(natural)),
+        ("findings that are defects", r"ships \*\*(\w+) defects", findings - settled_findings),
+        ("findings the primary settled", r"defects and (\w+) settled questions", settled_findings),
+        ("capture record count", r"a (\d+)-record `\{Z, A, rate, error\}` table",
+         len(found.capture_records)),
+        ("effective-charge record count", r"a (\d+)-value effective-charge table",
+         len(zeff_table.records)),
+        ("swept points returning a negative rate",
+         r"negative capture rates on (\d+) of \d+ fallback points", negative),
+        ("swept points in total, fallback",
+         r"negative capture rates on \d+ of (\d+) fallback points", swept),
+        ("swept points harvested", r"harvested (\d+) `\(Z, A\)` points", swept),
+    ]
 
     for what, pattern, value, places in rounded:
         hits = re.findall(pattern, doc)
@@ -1712,6 +1772,24 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
             f"DATASET_D1.md states {hits[0]!r} for {what}; the audit says {value}, which rounds to "
             f"{expected} at {places} decimal place(s)."
         )
+
+    for what, pattern, expected in changelog_claims:
+        hits = re.findall(pattern, changelog)
+        assert len(hits) == 1, (
+            f"CHANGELOG.md: the anchor for {what} matched {len(hits)} times, expected exactly one. "
+            f"Move the anchor in the same commit rather than deleting this row. Pattern: {pattern!r}"
+        )
+        assert _stated(hits[0]) == expected, (
+            f"CHANGELOG.md states {hits[0]!r} for {what}; the shipped data says {expected}. The "
+            "changelog is wrong, not this test."
+        )
+
+    changelog_pct = re.search(r"is ([\d.]+) % of the natural element", changelog)
+    assert changelog_pct, "CHANGELOG.md no longer states the extreme abundance where this test reads it"
+    assert float(changelog_pct.group(1)) == round(_pct((62, 150), "Sm-150"), 1), (
+        f"CHANGELOG.md states {changelog_pct.group(1)} % for the extreme natural abundance; the "
+        f"audit says {_pct((62, 150), 'Sm-150')}"
+    )
 
     # The one physical constant the document prints. Derived from the vendored source above, so
     # this pins the printed value rather than trusting it.
