@@ -29,6 +29,7 @@ Standard library only, and no import of the kinetics modules.
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import re
 import struct
@@ -37,12 +38,16 @@ from dataclasses import dataclass
 from pathlib import Path
 
 __all__ = [
+    "AUDIT_COLUMNS",
+    "AUDIT_RELPATH",
     "D1Extraction",
     "GoulardPrimakoff",
+    "IsotopeAuditRow",
     "SourceExtractionError",
     "capture_rate",
     "extract",
     "load",
+    "load_isotope_audit",
     "parse_fallback_directive",
     "render_fallback_directive",
     "sweep_digest",
@@ -585,3 +590,104 @@ def sweep_digest(
         for a in range(SWEEP_A_MIN, SWEEP_A_MAX + 1):
             running.update(struct.pack(">d", capture_rate(z, a, records, model)))
     return running.hexdigest()
+
+
+# --------------------------------------------------------------------------------------------
+# the isotope audit -- the one hand-authored input in this chain
+# --------------------------------------------------------------------------------------------
+
+#: Where the audit lives, relative to the repository root.
+AUDIT_RELPATH = "data/g4/d1/isotope_audit.csv"
+#: Its columns, in order. The header must match exactly: a reordered or renamed column is a
+#: silent re-interpretation of hand-entered data, which is the one thing this file cannot survive.
+AUDIT_COLUMNS = ("Z", "A", "isotope_resolved", "evidence", "locator", "copy_read")
+
+
+@dataclass(frozen=True)
+class IsotopeAuditRow:
+    """One capture record's isotope-resolution finding, read from a primary.
+
+    ``locator`` is not decoration. It names the table and page that ESTABLISH this row's flag, and
+    it is empty on exactly those rows no primary settles -- so ``settled`` is a property of the
+    data rather than a second, driftable column that could disagree with it.
+    """
+
+    z: int
+    a: int
+    isotope_resolved: bool
+    evidence: str
+    locator: str
+    copy_read: str
+
+    @property
+    def settled(self) -> bool:
+        """True when a primary establishes this row's flag, in either direction."""
+        return bool(self.locator)
+
+
+class IsotopeAuditError(RuntimeError):
+    """The audit is malformed. Raised with the row named, never swallowed."""
+
+
+def _audit_bool(text: str, where: str) -> bool:
+    if text not in ("true", "false"):
+        raise IsotopeAuditError(f"{where}: isotope_resolved must be 'true' or 'false', got {text!r}")
+    return text == "true"
+
+
+def load_isotope_audit(path: Path) -> dict[tuple[int, int], IsotopeAuditRow]:
+    """Parse the audit, refusing anything a generator could otherwise carry into shipped bytes.
+
+    The checks are deliberately unforgiving. This is the only file in the D1 chain a human typed,
+    so it is the only one where a mistake cannot be caught by comparing against the vendored
+    source -- which makes the structural invariants the whole of the protection available.
+    """
+    raw = path.read_bytes()
+    if b"\r" in raw:
+        raise IsotopeAuditError(f"{path.name} contains CR; the audit is committed LF-only")
+    try:
+        text = raw.decode("ascii")
+    except UnicodeDecodeError as exc:
+        raise IsotopeAuditError(f"{path.name} is not ASCII: {exc}") from None
+
+    reader = csv.DictReader(text.splitlines())
+    if tuple(reader.fieldnames or ()) != AUDIT_COLUMNS:
+        raise IsotopeAuditError(
+            f"{path.name} header is {tuple(reader.fieldnames or ())!r}, expected {AUDIT_COLUMNS!r}"
+        )
+
+    rows: dict[tuple[int, int], IsotopeAuditRow] = {}
+    for number, record in enumerate(reader, start=2):
+        where = f"{path.name} line {number}"
+        try:
+            z, a = int(record["Z"]), int(record["A"])
+        except (TypeError, ValueError):
+            raise IsotopeAuditError(f"{where}: Z and A must be integers") from None
+        row = IsotopeAuditRow(
+            z=z,
+            a=a,
+            isotope_resolved=_audit_bool(record["isotope_resolved"], where),
+            evidence=record["evidence"],
+            locator=record["locator"],
+            copy_read=record["copy_read"],
+        )
+        if (z, a) in rows:
+            raise IsotopeAuditError(f"{where}: duplicate key ({z}, {a})")
+        if not row.evidence:
+            raise IsotopeAuditError(f"{where}: every row must state its evidence")
+        # The rule this file's own documentation states, enforced rather than trusted.
+        if row.isotope_resolved and not row.locator:
+            raise IsotopeAuditError(
+                f"{where}: isotope_resolved is true with no locator -- a flag with nothing behind it"
+            )
+        # A locator names a copy that was read; recording one without the other loses exactly the
+        # provenance the column pair exists to carry.
+        if bool(row.locator) != bool(row.copy_read):
+            raise IsotopeAuditError(
+                f"{where}: locator and copy_read must be present or absent together, got "
+                f"{row.locator!r} and {row.copy_read!r}"
+            )
+        rows[(z, a)] = row
+    if not rows:
+        raise IsotopeAuditError(f"{path.name} carries no rows")
+    return rows

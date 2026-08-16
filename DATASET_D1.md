@@ -6,7 +6,9 @@
 `data/g4/d1/` is the first `G4MuonicData` dataset carrying real content. It is a **parity** dataset:
 its only claim is that it reproduces the muon-capture data compiled into Geant4 v11.4.2
 bit-for-bit. It evaluates nothing, recommends nothing, and corrects nothing — including where the
-upstream data looks wrong. Section 5 lists five places where it does.
+upstream data looks wrong. Section 5 carries seven findings: **five** defects it reproduces rather
+than corrects, and **two** questions about the upstream data that reading the primary literature has
+since settled.
 
 That restraint is the design. A parity profile is the fixed point everything else is measured
 against: if the dataset and the transport code disagree, exactly one of them has changed, and you
@@ -20,6 +22,7 @@ consumer chooses by name rather than by hoping.
 | `d1_zeff.g4dat` | 101 records `Z value` — the effective-charge table the fallback needs |
 | `d1_capture.prov.json`, `d1_zeff.prov.json` | Layer 2: per-row provenance for every record |
 | `d1_gp_sweep.oracle` | a harvested bit-parity fixture (section 4) |
+| `isotope_audit.csv` | the isotope-resolution audit against the primary literature (section 6) |
 | `geant4_add_dataset.snippet` | the registration block, with the archive's MD5 |
 
 Both tables carry `#PROFILE parity` and `#SOURCESHA 8cc04f65977807f1848da7b958c421cd5e162f26`,
@@ -40,13 +43,20 @@ matters more than it sounds. An earlier design note for this project recorded th
 having "94 entries"; 94 is the maximum *Z*. The table has 90 records spanning 74 distinct Z. A
 number written down once is a number that drifts.
 
-**What the bibliography says, and what it deliberately does not.** Every Layer-2 row cites
-`geant4_v11_4_2` — the software release, which this project has read, because it vendored it. Geant4's
-own source comments attribute the data to Suzuki, Measday & Roalsvig (1987), to Phys. Rev. Lett. 99
-(2007) 032002 for hydrogen, and to Measday's 2001 review for helium. Those attributions are carried
-in each row's `conditions` field as **quoted upstream text, marked as upstream's words**. They are
-not this dataset's citations, because citing a paper nobody here has opened would be a provenance
-claim this project cannot make. Every row therefore also carries `needs_verification: true`.
+**What the bibliography says, and what it deliberately does not.** Every Layer-2 row's
+`source_bibkey` is `geant4_v11_4_2` — the software release, which this project has read, because it
+vendored it. That does not change: for a parity dataset the value's source *is* the library.
+Geant4's own source comments attribute the data to Suzuki, Measday & Roalsvig (1987), to
+Phys. Rev. Lett. 99 (2007) 032002 for hydrogen, and to Measday's 2001 review for helium, and those
+attributions travel in each row's `conditions` field as **quoted upstream text, marked as upstream's
+words** rather than adopted as ours.
+
+Those three papers have since been read, for the isotope audit of section 6 and nothing else, and
+they are now in the bibliography. Where a row's `isotope_resolved` flag rests on one of them, its
+`source_locator` names the paper, the table and the page in a second, clearly labelled clause, and
+records which copy was read. So the two provenance questions stay separate: the first clause of a
+locator says where the **value** came from, the second says what established the **flag**. Rows the
+primaries do not settle carry no second clause and keep `needs_verification: true`.
 
 ## 2. The `goulard_primakoff` model contract
 
@@ -92,11 +102,45 @@ CPython rounds every operation separately, which is why the reference implementa
 **Domain.** The model is declared valid for **Z ≥ 1 and A ≥ 1**. Outside that range a conforming
 consumer must report a domain error. Geant4 does not — see F-2.
 
+**The primary states that this formula gets isotopic effects wrong.** Suzuki, Measday & Roalsvig —
+the paper the capture table is attributed to — write, in their section IV:
+
+> Now for muon capture the Primakoff and Goulard-Primakoff formulae do not account correctly for
+> isotopic effects; thus these formulae predict a larger spread between the isotopes than is
+> observed experimentally in Ca, Cr, Ni, U, and Pu. (For Cu, Sr, and Br the experiments are not
+> sufficiently precise; for Cl the experiment seems questionable.)
+
+Read it precisely, because the sentence makes two different statements. For **Ca, Cr, Ni, U and Pu**
+it reports a *model* failure — the formula over-predicts the spread between isotopes. For **Cu, Sr,
+Br and Cl** it reports a *data* limitation — the experiments are imprecise, and in chlorine's case
+questionable — which says nothing about the model. F-6 keeps the two apart.
+
+The same paper reports its own fit quality for the formula, in its Table V (printed p. 29): the row
+it labels `(Exp-Fit)/Exp` reads **4.1 %** against 30 of its own data points and **5.6 %** against 58
+past results. Read those with two qualifications.
+They are **fit residuals over the points the fit was made against**, not a validated uncertainty for
+an arbitrary `(Z, A)`, and in particular not for the neutron-rich region where F-1 shows the formula
+fails outright. And they belong to **that paper's own fit**, whereas the coefficients this dataset
+declares are the ones the upstream source attributes to Goulard and Primakoff, PRC 10 (1974) 2034 —
+the same functional form, but not the same numbers, and no derivation of either from the other is
+asserted anywhere. The dataset declares no uncertainty on fallback values at all, so these remain
+the only published indication of scale there is, and they should be read as a floor rather than as
+an error bar.
+
+**A negative result is a model failure, not a domain error.** The domain above constrains the
+*input*. Inside it the formula still returns λ_c < 0 on 6325 of the 36000 swept points (F-1). This
+dataset's contract is that a conforming evaluation **reproduces** that — a parity consumer must get
+the same negative number, not a clamped or corrected one — while a consumer *using* the value should
+treat λ_c ≤ 0 as unusable rather than as a rate. Geant4 does neither: see F-1 for what it does
+instead.
+
 ## 3. Two disclosures about the shipped tables
 
 **The capture records are re-ordered, and nothing moved.** The `.g4dat` grammar requires records
-ascending by `(Z, A)`. Geant4's array is sorted by Z *alone*, and contains exactly one inversion:
-`{92, 238, 12.592, 0.035}` is declared before `{92, 233, 14.27, 0.15}`. This dataset is canonically
+ascending by `(Z, A)`. Geant4's array is sorted by Z *alone*, and exactly one record sits out of
+place: at Z=92 the source declares A in the order 238, 233, 235, 236, so
+`{92, 238, 12.592, 0.035}` is declared before `{92, 233, 14.27, 0.15}` and before the two records
+that follow it — **one misplaced record, three inverted pairs**. This dataset is canonically
 sorted, so its record order is not upstream's. Two tests hold that equivalence up: one compares the
 record **multiset**, and one reimplements Geant4's actual lookup — a linear scan with the early exit
 `if (capRates[j].Z > Z) break;` — over the source order and requires it to agree with a keyed lookup
@@ -137,15 +181,29 @@ dataset exists to have. Everything below was measured against the pinned revisio
 
 **F-1 — the Goulard–Primakoff fallback returns negative capture rates.** 6325 of the 36000 swept
 points return λ_c < 0. The boundary tracks neutron excess: the first negative A is 3 for Z=1, 6 for
-Z=2, 8 for Z=3, 17 for Z=6, 23 for Z=8, 77 for Z=26 and 245 for Z=82 — so for Z ≳ 6 the region is
-beyond the neutron drip line and unreachable in practice. For hydrogen it is **³H**, a legal Geant4
-target and one of direct interest to muon-catalyzed fusion, at λ_c = −2.870050e−08 ns⁻¹.
+Z=2, 8 for Z=3, 17 for Z=6, 23 for Z=8, 77 for Z=26 and 245 for Z=82. For hydrogen it is **³H**, a
+legal Geant4 target and one of direct interest to muon-catalyzed fusion, at
+λ_c = −2.870050e−08 ns⁻¹.
+
+**How much of that region holds bound nuclides is not established here, and an earlier revision of
+this section overstated the answer.** It said that for Z ≳ 6 the negative region lies beyond the
+neutron drip line and is unreachable in practice. That claim carried no source, and this dataset
+still cannot supply one: deciding which `(Z, A)` in the negative region are bound nuclides needs
+evaluated nuclear masses across that region — separation energies, or a drip-line systematic. The
+composition table this dataset does cite, for isotopic abundances (section 6), is not that: it
+tabulates relative atomic masses but no neutron mass, and its nuclide list does not reach the
+thresholds reported above for iron or lead, so it cannot settle bound-ness across the region. The
+measurement — the per-Z threshold — stands; the reachability claim is withdrawn as **unsupported**,
+rather than answered in either direction, and is
+registered as a question for whichever layer of this program next carries evaluated nuclear data.
+What is certain either way is the hydrogen case, since ³H is stable enough to be a routine target.
 
 Read at the two call sites, the consequences are not cosmetic. Where `lambda = lambdac + lambdad`
 and the capture branch is `G4UniformRand()*lambda < lambdac`, a small negative λ_c means the capture
 branch can **never** be taken — capture is silently disabled rather than made rare. For the **5407**
-swept points where |λ_c| exceeds the free-muon decay rate (4.5517e−04 ns⁻¹), the total λ goes
-negative and `time = t − log(U)/λ` moves the muon's global time **backwards**. And a muonic-atom
+swept points where λ_c is negative *and* exceeds the free-muon decay rate (4.5517e−04 ns⁻¹) in
+magnitude, the total λ goes negative and `time = t − log(U)/λ` moves the muon's global time
+**backwards**. And a muonic-atom
 lifetime computed as `1/(lambdac + lambdad)` becomes negative.
 
 **F-2 — degenerate inputs return non-finite rates, with no coded rejection.** `Z = 0` returns NaN
@@ -176,47 +234,186 @@ on whoever **compiles the expression** — a standalone validator, or a reimplem
 model. Measured here: a caller built `-mfma` against the library gives byte-identical results to one
 built `-ffp-contract=off`.
 
-**F-4 — the attribution does not obviously reconcile.** The source comment credits the capture table
-to Suzuki, Measday & Roalsvig (1987), with hydrogen and helium carved out. That paper's own abstract
-describes lifetimes measured "in 50 elements plus 8 isotopes", while this table spans **74 distinct
-Z**. Either the paper compiles world data beyond its own measurements, or the table draws on sources
-it does not name. Registered as open; it will be settled against the primary text, and reported
-either way. (The abstract is a secondary source and decides nothing on its own.)
+**F-4 — the attribution reconciles; the paper is a compilation. SETTLED against the primary.** The
+source comment credits the capture table to Suzuki, Measday & Roalsvig (1987), with hydrogen and
+helium carved out, while that paper's abstract describes lifetimes measured "in 50 elements plus 8
+isotopes" and this table spans **74 distinct Z**. The two are not in conflict. The paper's Table III
+(light nuclides) and Table IV (Z ≥ 10) are a **compilation of world data**, each row carrying its
+own reference and the authors' own measurements marked with an asterisk; the abstract's count
+describes what *they* measured, a subset. Between them those two tables span **exactly the same 74
+distinct Z** this table carries — the same set, with the same gaps at Z = 36, 43, 44, 54, 61, 63,
+69–71, 75–78, 84–89 and 91. That is a set equality, not an impression: every one of the 74 was read
+off the page images, and **71 of them carry that table and page in `isotope_audit.csv`'s `locator`
+column**, so the comparison can be repeated from the shipped files. The three that do not are
+visible in the file rather than hidden by it: hydrogen and helium carry instead the locator of the
+source that established *their* flag, because Geant4 carves them out to other papers, and
+strontium's single record is unsettled, so it carries no locator at all and names its table and page
+in its `evidence` field instead. Nothing here draws on an unnamed source.
 
-**F-5 — `zeff[]` is non-monotonic in the lead region.** The array rises monotonically except at
-exactly two steps: Z=81→82 (34.21 → 34.18) and Z=82→83 (34.18 → 34.00), after which it resumes
-rising. The step *into* Z=81 is also anomalously large — +0.40, against neighbours of +0.17 to
-+0.18. This may be physical structure near the Z=82 shell closure, or a transcription artifact.
-Registered; to be checked against the primary; not altered.
+**F-5 — `zeff[]`'s non-monotonicity is the primary's own. SETTLED against the primary.** The array
+rises monotonically except at exactly two steps: Z=81→82 (34.21 → 34.18) and Z=82→83 (34.18 →
+34.00), after which it resumes rising; the step *into* Z=81 is also anomalously large, +0.40 against
+neighbours of +0.17 to +0.18. The primary's Table IV prints **81(34.21), 82(34.18), 83(34.0)** — so
+the pattern is not introduced by Geant4's transcription; it is reproduced faithfully from the
+source. More generally, **74 of the 101 `zeff` entries appear in the primary and every one of them
+matches** — 65 in Table IV, and 9 in Table III (printed p. 24), whose first column is headed
+`Z(Z_eff)` under the same footnote, *"Z_eff is taken from ref. 77"*; the remaining 27 (Z = 0, the
+gaps above, and Z > 94) are in neither table, and the source comment attributes whatever it does not
+take from this paper to "Ford and Wills … or interpolated". This dataset does
+not decide whether the lead-region step is physical structure near the Z = 82 shell closure or an
+artifact inherited from further upstream — the primary attributes its Zeff column to its reference
+77, which it prints as *K.W. Ford and J.G. Wills, Nucl. Phys. 35, 1397 (1968)*, while the Geant4
+comment names `Ford and Wills Nucl Phys 35(1962)295`: the same authors, journal and volume, cited
+with a different year and page, which this dataset records rather than adjudicates. Neither citation
+resolves the question. Not altered.
+
+One measured fact bears on it. Table IV of that same paper prints the barium row as **"59(29.99)"**
+— barium is Z = 56, and 29.99 sits correctly between caesium's 29.75 (Z = 55) and lanthanum's 30.22
+(Z = 57). The argument does not rest on that ordering, which is the very regularity this finding
+shows the table can break: **`59` is printed a second time three rows further down, as `59(30.53)`
+against praseodymium, where Z = 59 belongs.** The same Z is printed against two elements, so one of
+the two is a misprint, and the element column settles which: barium *is* Z = 56 and praseodymium *is*
+Z = 59, so it is the barium row's printed Z that is wrong — a fact about the periodic table, not
+about how Geant4 read the row. So
+the table demonstrably contains at least one typographical error in its Z column, which raises rather
+than settles the prior that the lead-region step is also one. Geant4 read that row correctly:
+`zeff[56] = 29.99`.
+
+**F-6 — the declared fallback is documented, by the primary, to mispredict isotopic effects.** See
+section 2 for the quotation and for the distinction it draws: **Ca, Cr, Ni, U and Pu** are where the
+formula is reported to over-predict the isotopic spread, while **Cu, Sr, Br and Cl** are where the
+authors say the *experiments* are too imprecise — or, for chlorine, questionable — to judge. Only
+the first group is evidence about the model.
+
+What makes it land here is which elements those are. Of the nine the sentence names, **seven carry at
+least one record this audit establishes as a separated isotope** — Cl, Cr, Ni, Cu, Br, U and Pu. The
+two exceptions are instructive rather than incidental. **Ca** appears once, as a natural-composition
+record. **Sr** appears once too, and it is one of the four records this dataset **cannot settle** —
+`(38, 88)`, where the primary prints both natural Sr and Sr-88 and the key matches either.
+
+Sharper still: **all four of the records this dataset cannot settle sit at elements this sentence
+names.** Three of them — `(17, 35)` Cl, `(24, 52)` Cr and `(38, 88)` Sr — are rows where the primary
+prints *both* a natural-composition entry and a separated isotope of that mass number, so the key
+cannot say which one the record reproduces; and two of those three, Cl and Sr, are named in the half
+of the sentence that doubts the separated-isotope *experiment*. The fourth, `(92, 236)` U, is open
+for an unrelated reason — the primary's table carries no U-236 row at all — and U is named in the
+model half, where the complaint is about the formula rather than about the data.
+
+**Those are not the same uncertainty, and saying so would overstate it.** This dataset cannot settle
+a row because the *key* fails to distinguish two printed entries; the primary doubts the
+*measurements* themselves. The two are independent, and the shipped audit shows it in both
+directions: **Cr** carries exactly the same key ambiguity yet sits in the half of the sentence that
+uses its experiments as evidence *against* the formula, while **Cu** and **Br** carry the primary's
+doubt and are settled here as separated isotopes with no ambiguity at all. What is true is narrower
+and still worth saying: the two overlap at Cl and Sr, and they overlap because a separated-isotope
+entry can only be there to be ambiguous with where separated-isotope work was done — which is also
+where these authors had something to say about isotopic effects.
+
+**F-7 — `(Z, A)` is a label on most rows, not a target specification.** For **41 of the 90 records**
+the primary shows the measurement was made on a **natural-composition element**, not on the nuclide
+the record's `A` names. In 15 of those, `A` is not even the element's most abundant nuclide: the
+extremes are `(62, 150)`, where Sm-150 is **7.4 %** of natural samarium, and `(50, 119)`, where
+Sn-119 is **8.6 %** of natural tin. For `(30, 66)` and `(32, 72)` the `A` is neither the rounded
+standard atomic weight nor the most abundant nuclide — rounding **half up**, a convention that
+matters exactly once here: dysprosium's standard atomic weight is **162.500**, an exact tie, so
+`(66, 163)` counts as matching its rounded weight, and would not under round-half-to-even.
+
+The consequence is that a reasonable-looking call silently changes branch. A consumer asking for the
+*actual* dominant isotope — Pb-208, say, which is 52 % of natural lead where this table keys Pb at
+A=207 — **misses the table entirely** and falls through to `goulard_primakoff`: a formula the
+primary itself says does not account correctly for isotopic effects (F-6), carrying no declared
+uncertainty, in place of a measured value that was sitting one mass number away.
+
+**Be precise about how bad that is, because it varies.** For the Pb-208 case the fallback is merely
+*inaccurate*: F-1's first negative A at Z=82 is 245, far above 208, so the returned rate is a
+plausible number of the right sign. The negative-rate region is a hazard for **light, neutron-rich**
+requests, not for this one — and conflating the two would overstate the finding. The genuine
+overlap is at low Z, where F-1's thresholds are small: A=3 at Z=1, A=6 at Z=2, A=8 at Z=3.
+
+This dataset changes no key — it reproduces the table — but it now says, per row, which reading is
+which, so a consumer can tell a measured isotope from an element wearing an isotope's label before
+deciding whether a miss matters.
 
 ## 6. Isotope resolution — what the flag means here
 
 Every Layer-2 row carries a required `isotope_resolved` boolean, and a companion `needs_verification`
-that says how much weight it can bear. **`true` means the row's value is isotope-resolved; `false`
-means that has not been shown.** While `needs_verification` is `true` the flag is **derived** — for
-the capture rows, read off the shape of upstream's own table; for the effective charges, fixed by
-what the quantity is. Once `needs_verification` is `false` the flag is **established** — resting on
-an isotopically resolved measurement, with a locator naming where. So a `false` on an unverified row
-says "not shown to be resolved", which is not the claim "shown to be unresolved"; the companion
-field is what tells those two apart.
+that says how much weight it can bear. **`true` means the row's value is established to rest on an
+isotopically resolved measurement; `false` means it is not so established.** `needs_verification`
+is what separates the two ways a row can be `false`. While it is `true`, the question is *open* —
+the flag has not been established either way and `false` is only "not shown to be resolved". Once
+it is `false`, the row has been **checked against a primary** and the flag is a finding in whichever
+direction it points: `true` means shown resolved, `false` means shown *un*resolved. Reading a
+`false` without its companion field therefore loses exactly the distinction this section exists to
+draw.
 
-In this release **every row carries `needs_verification: true`**, so every `true` here is the
-derived kind, and the derivation is mechanical: **`true` if and only if the row's Z carries more
-than one capture record.** That is sound in one direction and only one — if Geant4 gives different
-rates for two A at the same Z, the underlying data distinguishes isotopes; a single row establishes
-nothing either way. 27 of the 90 rows, over 11 Z values, are `true`.
+**In this release the capture flags are established from the primary literature, row by row.** Each
+of the 90 records was checked against the paper its own value is attributed to — the capture table
+to Suzuki, Measday & Roalsvig (1987), hydrogen and helium to the two sources the source comment
+carves them out to. **86 of the 90 are settled and carry `needs_verification: false`; 4 are not and
+still carry `true`.** Of the settled rows, **45 are `isotope_resolved: true`**: 23 because the
+primary lists a separated isotope with that mass number, 19 because the element is mononuclidic and
+so a natural-composition target *is* a single nuclide, and 3 — the hydrogen and helium records —
+because the sources the table carves them out to describe an isotopically distinct target
+(deuterium-depleted protium; ³He and ⁴He tabulated as separate nuclides). The remaining **41 are
+`false` as an established finding**, because the primary shows the value rests on a
+natural-composition element (F-7).
 
-**So be precise about what those 27 rows assert.** They assert a fact about *upstream's table* —
-that it holds distinct values for distinct A at that Z. They do not assert that the value rests on
-an isotopically resolved *measurement*, because nothing here has been checked against a primary.
-Every row's `evaluation_method` states the derivation, so a reader meets it together with the flag
-rather than being handed a bare boolean. The `zeff` rows are `false` throughout, as a fact rather
-than a default: an effective charge is a per-Z quantity, so there is no isotope for it to be
-resolved to.
+**Two different sources are doing work here, and only one of them is the primary.** Whether a
+measurement was made on a separated isotope or on a natural element is read from the primary. But
+whether a natural element *is* a single nuclide — the 19 mononuclidic calls above — and every
+isotopic abundance this document quotes, F-7's two extremes and its comparisons against the rounded
+standard atomic weight among them, come from the NIST *Atomic Weights and
+Isotopic Compositions* table (`NISTIsotopicCompositions` in `references.bib`). The primary states no
+natural isotopic abundance: its tables carry no abundance column, and the composition it prints in a
+Table IV footnote (printed p. 28) is what that footnote labels `RPb`, radiogenic lead — not an
+element's standard isotopic composition. So nothing in it
+establishes a natural abundance or a mononuclidic element, and these calls cannot rest on it.
 
-Refining this against the primary literature — which rows are genuinely isotope-resolved and which
-are element values wearing an isotope label — is the next step for this dataset, and is the part of
-it that is a contribution rather than a reproduction.
+Every row's `evaluation_method` now states which of those routes produced its flag and carries the
+evidence itself, so a reader meets the reasoning together with the boolean rather than a bare one.
+Its `source_locator` gains a second, labelled clause naming the table and page that established the
+flag and which copy of the paper was read; the first clause still points at the vendored source
+line, because that is where the *value* comes from and the two questions must not be conflated. The
+audit is shipped as `data/g4/d1/isotope_audit.csv` — one row per record, hand-authored, reviewable
+and diffable.
+
+**The four unsettled rows say so with an empty locator, and they are worth naming.** Three —
+`(17, 35)`, `(24, 52)` and `(38, 88)` — sit where the primary lists *both* a natural-composition
+entry and a separated isotope of that mass number, and where the mass number is also the rounded
+standard atomic weight, so the key alone cannot say which entry the record reproduces. The fourth,
+`(92, 236)`, is a record whose nuclide the primary's table does not contain at all: it carries
+U-233, U-235 and U-238 and no U-236. Deciding these needs a value-level comparison against the
+primary, which is a later stage's work; this dataset reports them open rather than guessing.
+
+**What changed, and why the previous rule was not enough.** The earlier release derived the flag
+mechanically: `true` if and only if the row's Z carried more than one capture record. Its soundness
+argument was about the *Z* — two differing rates at one Z do show the underlying data distinguishes
+isotopes — and it was then applied to each *row* of that Z, which does not follow, since one of
+those rows can still be the natural-composition entry. The audited flag differs from that rule on
+**28 of the 90 records**, and the three ways it differs are not the same claim:
+
+* **23** the rule called unresolved that the primary establishes as resolved.
+* **2** the primary flatly contradicts: it lists "C" and "C-13", and "O" and "O-18", so `(6, 12)`
+  and `(8, 16)` are natural carbon and natural oxygen, not C-12 and O-16.
+* **3** — `(17, 35)`, `(24, 52)`, `(92, 236)` — where the primary does not contradict the rule but
+  **fails to establish the question it was answering**, so the flag falls back to "not established"
+  and `needs_verification` stays `true`. Counting these as "the rule was wrong" would overstate it;
+  counting them as agreement would hide an open question.
+
+Three of the four unsettled rows appear in that list and one does not, which is not an oversight:
+`(38, 88)` is the only capture record at Z=38, so the old rule called it unresolved as well, and
+rule and audited flag agree. The four open rows and the 28 disagreements are different sets and do
+not line up row for row.
+
+The `zeff` rows remain `false` throughout, as a fact rather than a default: an effective charge is a
+per-Z quantity, so there is no isotope for it to be resolved to. Their `needs_verification` stays
+`true`.
+
+**Two limits on all of the above, stated plainly.** First, what was read is the TRIUMF preprint
+TRI-PP-87-5 (January 1987), a scanned copy, not the published article; every locator cites the
+preprint's pagination and every row records `copy_read`, and if a value's evidence differs between
+the two copies this audit is the one that must move. Second, this is a resolution audit, not an
+evaluation: no shipped value was compared to the primary for correctness, and none was altered.
 
 ## 7. Licensing
 
