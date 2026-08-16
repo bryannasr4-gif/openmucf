@@ -1494,8 +1494,16 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
         if any("Suzuki" in r.locator and ("Table III" in r.locator or "Table IV" in r.locator)
                for k, r in audit.items() if k[0] == z)
     }
-    table_iv_z = {z for z in zs if z >= 10}
-    zeff_covered = {int(z) for z, _ in zeff_table.records if int(z) in table_iv_z}
+    # The primary tabulates an effective charge in BOTH of its per-nuclide tables. Table III's
+    # first column is headed Z(Zeff) for the light nuclides Z = 1-9 exactly as Table IV's is from
+    # Z = 10 up, under the same "Zeff is taken from ref. 77" footnote. An earlier revision counted
+    # only the Z >= 10 half here and the document then told the reader the other nine fell to the
+    # fallback branch -- which the vendored comment's own "and if not present from" makes false.
+    # So the covered set is the whole Z set F-4's equality is against, and because the document
+    # now states the split between the two tables, both halves are pinned as well.
+    zeff_covered = {int(z) for z, _ in zeff_table.records if int(z) in zs}
+    zeff_covered_iv = {z for z in zeff_covered if z >= 10}
+    zeff_covered_iii = zeff_covered - zeff_covered_iv
     zeff_uncovered = len(zeff_table.records) - len(zeff_covered)
 
     # Section 3's re-ordering disclosure, both halves. "Misplaced record" is an adjacent descent;
@@ -1609,10 +1617,14 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
          r"span \*\*exactly the same (\d+) distinct Z\*\*", len(zs)),
         ("Z whose locator names a table of the primary",
          r"\*\*(\d+) of them carry that table and page", len(located_in_primary)),
-        ("effective-charge entries the primary's table covers",
+        ("effective-charge entries the primary covers",
          r"\*\*(\d+) of the \d+ `zeff` entries", len(zeff_covered)),
         ("effective-charge entries in total, F-5",
          r"\*\*\d+ of the (\d+) `zeff` entries", len(zeff_table.records)),
+        ("effective-charge entries the primary's Table IV covers",
+         r"(\d+) in Table IV", len(zeff_covered_iv)),
+        ("effective-charge entries the primary's Table III covers",
+         r"(\d+) in Table III", len(zeff_covered_iii)),
         ("effective-charge entries not covered", r"the remaining (\d+) \(Z = 0", zeff_uncovered),
         ("settled rows", r"\*\*(\d+) of the \d+ are settled", len(settled)),
         ("records checked, section 6", r"\*\*\d+ of the (\d+) are settled", len(audit)),

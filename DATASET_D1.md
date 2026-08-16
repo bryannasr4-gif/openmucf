@@ -255,15 +255,17 @@ rises monotonically except at exactly two steps: Z=81→82 (34.21 → 34.18) and
 34.00), after which it resumes rising; the step *into* Z=81 is also anomalously large, +0.40 against
 neighbours of +0.17 to +0.18. The primary's Table IV prints **81(34.21), 82(34.18), 83(34.0)** — so
 the pattern is not introduced by Geant4's transcription; it is reproduced faithfully from the
-source. More generally, **65 of the 101 `zeff` entries appear verbatim in that table and every one
-of them matches**; the remaining 36 (Z = 0, Z = 1–9, the gaps above, and Z > 94) are not in it, and
-fall to the "Ford and Wills … or interpolated" branch the source comment names. This dataset does
+source. More generally, **74 of the 101 `zeff` entries appear in the primary and every one of them
+matches** — 65 in Table IV, and 9 in Table III (printed p. 24), whose first column is headed
+`Z(Z_eff)` under the same footnote, *"Z_eff is taken from ref. 77"*; the remaining 27 (Z = 0, the
+gaps above, and Z > 94) are in neither table, and the source comment attributes whatever it does not
+take from this paper to "Ford and Wills … or interpolated". This dataset does
 not decide whether the lead-region step is physical structure near the Z = 82 shell closure or an
 artifact inherited from further upstream — the primary attributes its Zeff column to its reference
 77, which it prints as *K.W. Ford and J.G. Wills, Nucl. Phys. 35, 1397 (1968)*, while the Geant4
 comment names `Ford and Wills Nucl Phys 35(1962)295`: the same authors, journal and volume, cited
-with a different year and page, which this dataset records rather than adjudicates. The two agree on
-their source and neither resolves the question. Not altered.
+with a different year and page, which this dataset records rather than adjudicates. Neither citation
+resolves the question. Not altered.
 
 One measured fact bears on it. Table IV of that same paper prints the barium row as **"59(29.99)"**
 — barium is Z = 56, and 29.99 sits correctly between caesium's 29.75 (Z = 55) and lanthanum's 30.22
