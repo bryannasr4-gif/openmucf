@@ -13,3 +13,15 @@ tests/fixtures/g4dat_bad/*.g4dat -text
 # is LF-only by the format's own rule (E006); and both, plus the snippet, are regenerated and
 # byte-diffed by `make audit`, which would fail on any platform whose checkout rewrote them.
 data/g4/* -text
+# A SEPARATE line, not covered by the one above: a gitattributes `*` does not cross `/`, so
+# `data/g4/*` does not match `data/g4/d1/...`. Verified rather than argued from the manual --
+# `git check-attr text -- data/g4/example.g4dat data/g4/d1/d1_capture.g4dat` reported `text: unset`
+# for the first and `text: unspecified` for the second. The D1 build has the same three reasons as
+# the example, and this checkout has `core.autocrlf=true`, so without this line a fresh clone would
+# rewrite the digested Layer-2 bytes.
+data/g4/d1/* -text
+# The vendored upstream source: its IDENTITY is its bytes. The dataset pins it by its upstream git
+# blob id, which is a hash of exactly these bytes, so a checkout that rewrote its line endings would
+# break the pin and with it the entire parity chain -- and would do so silently on Windows only.
+# tests/test_g4parity.py asserts the file carries no CR, so deleting this line names its own cause.
+third_party/geant4/** -text

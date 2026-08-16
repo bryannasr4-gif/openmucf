@@ -63,7 +63,7 @@ Changelog = "https://github.com/bryannasr4-gif/openmucf/blob/main/CHANGELOG.md"
 # distribution, and an explicit list is what makes that move a visible one-line edit rather than a
 # silent consequence of directory layout. `openmucf.g4` must be named here or a wheel ships the
 # parent package without it -- tests/test_g4spec.py pins that it is.
-packages = ["openmucf", "openmucf.g4"]
+packages = ["openmucf", "openmucf.g4", "openmucf.g4.sources"]
 
 [tool.setuptools.package-data]
 openmucf = ["data/*", "data/benchmarks/*", "py.typed"]

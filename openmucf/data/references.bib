@@ -254,6 +254,100 @@
   note   = {Invited talk, II International Symposium on Muon and Pion Interactions with Matter, Dubna, USSR, June 1987. SIN campaign at 12-35 K in gas/liquid/solid: density-dependent cycle rates up to 1.93e8 s^-1 with sticking 0.57\% and yield 124+-10 fusions/muon, at 12 K in SOLID non-equilibrated D2+T2 at c_t=0.4 -- a DIFFERENT condition from the liquid 1.45e8 anchor. Abstract verified 2026-07-29 (OSTI 6083812; eScholarship 61k4n4wm)}
 }
 
+@software{geant4_v11_4_2,
+  author = {{Geant4 Collaboration}},
+  title  = {Geant4 toolkit, release 11.4.2},
+  year   = {2026},
+  url    = {https://github.com/Geant4/geant4/tree/v11.4.2},
+  note   = {The release the G4MuonicData D1 `parity` profile reproduces. Pinned by commit
+            8cc04f65977807f1848da7b958c421cd5e162f26; the one file this project vendors,
+            source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc, is pinned by its
+            upstream git blob id 29bd73719cd619de34ef83ca5ca076ceadf1cc5a and redistributed under
+            the Geant4 Software License v1.0 (see third_party/geant4/). This bibkey names the
+            SOFTWARE RELEASE that was read, not the papers that release cites -- those are carried
+            verbatim as quoted upstream text in each Layer-2 row's `conditions` field, because
+            citing a paper this project has not opened would be a provenance claim it cannot make.}
+}
+
+@misc{openmucf-format-spec,
+  author = {Nasr, Bryan},
+  title  = {G4MuonicData external-data format specification (FORMAT\_SPEC.md)},
+  year   = {2026},
+  doi    = {10.5281/zenodo.21251511},
+  note   = {The two-layer .g4dat / *.prov.json format specification shipped in this repository as
+            FORMAT\_SPEC.md. Cited by the format-example dataset's Layer-2 rows, whose values are
+            synthetic and whose only source IS the specification. Version-independent concept DOI.}
+}
+
+@article{Suzuki1987,
+  author  = {Suzuki, T. and Measday, D. F. and Roalsvig, J. P.},
+  title   = {Total nuclear capture rates for negative muons},
+  journal = {Phys. Rev. C},
+  volume  = {35},
+  pages   = {2212--2224},
+  year    = {1987},
+  doi     = {10.1103/PhysRevC.35.2212},
+  note    = {The primary the D1 capture table is attributed to. What was actually read for the
+             isotope audit is the TRIUMF preprint TRI-PP-87-5 (January 1987), a scanned copy
+             carrying the KEK library accession stamp; every audit locator therefore cites
+             TRI-PP-87-5 pagination, and each row records copy\_read = preprint-scan. The published
+             article is the citation target. Tables III (p.~24) and IV (pp.~25--28) of the preprint
+             together span exactly the 74 distinct Z the compiled-in table carries.}
+}
+
+@article{Measday2001,
+  author  = {Measday, D. F.},
+  title   = {The nuclear physics of muon capture},
+  journal = {Phys. Rep.},
+  volume  = {354},
+  pages   = {243--409},
+  year    = {2001},
+  doi     = {10.1016/S0370-1573(01)00012-6},
+  note    = {The source the compiled-in table's own comment names for helium. Table 4.2 (p.~295),
+             captioned "Some illustrative total capture rates for mu- in nuclei", lists 3He and 4He
+             as separate nuclides, which is what settles the two helium records' isotope\_resolved
+             flag. Read as the published article; copy\_read = published-pdf.}
+}
+
+@article{MuCap2007,
+  author  = {Andreev, V. A. and others},
+  title   = {Measurement of the rate of muon capture in hydrogen gas and determination of the
+             proton's pseudoscalar coupling $g_P$},
+  journal = {Phys. Rev. Lett.},
+  volume  = {99},
+  pages   = {032002},
+  year    = {2007},
+  doi     = {10.1103/PhysRevLett.99.032002},
+  eprint  = {0704.2072},
+  url     = {https://arxiv.org/abs/0704.2072},
+  note    = {The MuCap Collaboration. The source the compiled-in table's own comment names for
+             hydrogen. Its abstract states the target was ultra-clean, deuterium-depleted hydrogen
+             gas, which is what settles the single hydrogen record as isotopically resolved
+             (protium). Read as the arXiv preprint; copy\_read = arxiv-preprint.}
+}
+
+@misc{NISTIsotopicCompositions,
+  author       = {{National Institute of Standards and Technology}},
+  title        = {Atomic Weights and Isotopic Compositions for All Elements},
+  howpublished = {NIST Physical Measurement Laboratory, online database},
+  year         = {2026},
+  url          = {https://physics.nist.gov/PhysRefData/Compositions/},
+  note         = {The authority for every isotopic-composition claim in this dataset, chiefly the 19
+                  mononuclidic determinations in the isotope audit, and the abundance figures and
+                  rounded-standard-atomic-weight comparisons in DATASET\_D1.md section 5, F-7. The
+                  capture primary states no natural isotopic abundance -- its tables carry no
+                  abundance column, and the composition it prints in a Table IV footnote is
+                  radiogenic lead, not an element's standard isotopic composition -- so none of
+                  those calls can rest on it. The copy read carries 3352
+                  nuclide records, of which 288 have a natural abundance; those 288 span 84
+                  elements. sha256
+                  48831a76b7483c4f9c5b86655f0dc9c4ab964c68424777f9d3e48eabeeeb7835, retrieved
+                  2026-08-15. The title is the one the retrieved page carries; that copy names no
+                  individual authors and carries no version block, so \emph{author} records the
+                  publishing institution and \emph{year} the retrieval date rather than a database
+                  version.}
+}
+
 @article{Kovach2017,
   author = {Kovach, A. and Parfenova, A. and Grillenberger, J. and Seidel, M.},
   title  = {Energy efficiency and saving potential analysis of the high intensity proton accelerator HIPA at PSI},

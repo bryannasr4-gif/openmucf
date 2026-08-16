@@ -1,0 +1,91 @@
+Z,A,isotope_resolved,evidence,locator,copy_read
+1,1,true,"the cited primary measured muon capture in ultra-clean, deuterium-depleted hydrogen gas, i.e. protium","MuCap 2007 (Phys. Rev. Lett. 99, 032002) abstract p.1",arxiv-preprint
+2,3,true,"the cited primary's Table 4.2 lists 3He and 4He as separate nuclides (caption: ""Some illustrative total capture rates"")","Measday 2001 (Phys. Rep. 354, 243) Table 4.2 p.295",published-pdf
+2,4,true,"the cited primary's Table 4.2 lists 3He and 4He as separate nuclides (caption: ""Some illustrative total capture rates"")","Measday 2001 (Phys. Rep. 354, 243) Table 4.2 p.295",published-pdf
+3,6,true,the primary lists the separated isotope Li-6,Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+3,7,true,the primary lists the separated isotope Li-7,Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+4,9,true,the primary lists natural Be; Be is mononuclidic (Be-9 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+5,10,true,the primary lists the separated isotope B-10,Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+5,11,true,the primary lists the separated isotope B-11,Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+6,12,false,"the primary lists natural C at this Z -- also C-13, which this mass number does not match -- so the value rests on a natural-composition target; C-12 is 98.93% of natural C",Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+6,13,true,the primary lists the separated isotope C-13,Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+7,14,false,"the primary lists natural N only, so the value rests on a natural-composition target; N-14 is 99.64% of natural N",Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+8,16,false,"the primary lists natural O at this Z -- also O-18, which this mass number does not match -- so the value rests on a natural-composition target; O-16 is 99.76% of natural O",Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+8,18,true,the primary lists the separated isotope O-18,Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+9,19,true,the primary lists natural F; F is mononuclidic (F-19 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table III p.24,preprint-scan
+10,20,false,"the primary lists natural Ne only, so the value rests on a natural-composition target; Ne-20 is 90.48% of natural Ne",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+11,23,true,the primary lists natural Na; Na is mononuclidic (Na-23 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+12,24,false,"the primary lists natural Mg only, so the value rests on a natural-composition target; Mg-24 is 78.99% of natural Mg",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+13,27,true,the primary lists natural Al; Al is mononuclidic (Al-27 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+14,28,false,"the primary lists natural Si only, so the value rests on a natural-composition target; Si-28 is 92.22% of natural Si",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+15,31,true,the primary lists natural P; P is mononuclidic (P-31 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+16,32,false,"the primary lists natural S only, so the value rests on a natural-composition target; S-32 is 94.99% of natural S",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+17,35,false,"the primary lists BOTH natural Cl and the separated isotope Cl-35; A=35 is also round(Ar)=35, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.25",,
+17,37,true,the primary lists the separated isotope Cl-37,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+18,40,false,"the primary lists natural Ar only, so the value rests on a natural-composition target; Ar-40 is 99.60% of natural Ar",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+19,39,false,"the primary lists natural K only, so the value rests on a natural-composition target; K-39 is 93.26% of natural K",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+20,40,false,"the primary lists natural Ca at this Z -- also Ca-43.8, which this mass number does not match -- so the value rests on a natural-composition target; Ca-40 is 96.94% of natural Ca",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+21,45,true,the primary lists natural Sc; Sc is mononuclidic (Sc-45 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+22,48,false,"the primary lists natural Ti only, so the value rests on a natural-composition target; Ti-48 is 73.72% of natural Ti",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+23,51,false,"the primary lists natural V only, so the value rests on a natural-composition target; V-51 is 99.75% of natural V",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+24,50,true,the primary lists the separated isotope Cr-50,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+24,52,false,"the primary lists BOTH natural Cr and the separated isotope Cr-52; A=52 is also round(Ar)=52, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.25",,
+24,53,true,the primary lists the separated isotope Cr-53,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+24,54,true,the primary lists the separated isotope Cr-54,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+25,55,true,the primary lists natural Mn; Mn is mononuclidic (Mn-55 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+26,56,false,"the primary lists natural Fe only, so the value rests on a natural-composition target; Fe-56 is 91.75% of natural Fe",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+27,59,true,the primary lists natural Co; Co is mononuclidic (Co-59 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+28,58,true,the primary lists the separated isotope Ni-58,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+28,60,true,the primary lists the separated isotope Ni-60,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+28,62,true,the primary lists the separated isotope Ni-62,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+29,63,true,the primary lists the separated isotope Cu-63,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+30,66,false,"the primary lists natural Zn only, so the value rests on a natural-composition target; Zn-66 is 27.73% of natural Zn, and A=66 is neither round(Ar)=65 nor the most abundant nuclide (Zn-64)",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+31,69,false,"the primary lists natural Ga only, so the value rests on a natural-composition target; Ga-69 is 60.11% of natural Ga",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+32,72,false,"the primary lists natural Ge only, so the value rests on a natural-composition target; Ge-72 is 27.45% of natural Ge, and A=72 is neither round(Ar)=73 nor the most abundant nuclide (Ge-74)",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+33,75,true,the primary lists natural As; As is mononuclidic (As-75 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+34,80,false,"the primary lists natural Se only, so the value rests on a natural-composition target; Se-80 is 49.61% of natural Se",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+35,79,true,the primary lists the separated isotope Br-79,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+35,81,true,the primary lists the separated isotope Br-81,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+37,85,false,"the primary lists natural Rb only, so the value rests on a natural-composition target; Rb-85 is 72.17% of natural Rb",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+38,88,false,"the primary lists BOTH natural Sr and the separated isotope Sr-88; A=88 is also round(Ar)=88, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.26",,
+39,89,true,the primary lists natural Y; Y is mononuclidic (Y-89 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+40,91,false,"the primary lists natural Zr only, so the value rests on a natural-composition target; Zr-91 is 11.22% of natural Zr, not the most abundant nuclide (Zr-90, 51.4%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+41,93,true,the primary lists natural Nb; Nb is mononuclidic (Nb-93 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+42,96,false,"the primary lists natural Mo only, so the value rests on a natural-composition target; Mo-96 is 16.67% of natural Mo, not the most abundant nuclide (Mo-98, 24.4%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+45,103,true,the primary lists natural Rh; Rh is mononuclidic (Rh-103 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+46,106,false,"the primary lists natural Pd only, so the value rests on a natural-composition target; Pd-106 is 27.33% of natural Pd",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+47,107,false,"the primary lists natural Ag only, so the value rests on a natural-composition target; Ag-107 is 51.84% of natural Ag",Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+48,112,false,"the primary lists natural Cd only, so the value rests on a natural-composition target; Cd-112 is 24.13% of natural Cd, not the most abundant nuclide (Cd-114, 28.7%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+49,115,false,"the primary lists natural In only, so the value rests on a natural-composition target; In-115 is 95.71% of natural In",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+50,119,false,"the primary lists natural Sn only, so the value rests on a natural-composition target; Sn-119 is 8.59% of natural Sn, not the most abundant nuclide (Sn-120, 32.6%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+51,121,false,"the primary lists natural Sb only, so the value rests on a natural-composition target; Sb-121 is 57.21% of natural Sb",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+52,128,false,"the primary lists natural Te only, so the value rests on a natural-composition target; Te-128 is 31.74% of natural Te, not the most abundant nuclide (Te-130, 34.1%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+53,127,true,the primary lists natural I; I is mononuclidic (I-127 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+55,133,true,the primary lists natural Cs; Cs is mononuclidic (Cs-133 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+56,138,false,"the primary lists natural Ba only, so the value rests on a natural-composition target; Ba-138 is 71.70% of natural Ba",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+57,139,false,"the primary lists natural La only, so the value rests on a natural-composition target; La-139 is 99.91% of natural La",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+58,140,false,"the primary lists natural Ce only, so the value rests on a natural-composition target; Ce-140 is 88.45% of natural Ce",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+59,141,true,the primary lists natural Pr; Pr is mononuclidic (Pr-141 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+60,144,false,"the primary lists natural Nd only, so the value rests on a natural-composition target; Nd-144 is 23.80% of natural Nd, not the most abundant nuclide (Nd-142, 27.2%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+62,150,false,"the primary lists natural Sm only, so the value rests on a natural-composition target; Sm-150 is 7.38% of natural Sm, not the most abundant nuclide (Sm-152, 26.8%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+64,157,false,"the primary lists natural Gd only, so the value rests on a natural-composition target; Gd-157 is 15.65% of natural Gd, not the most abundant nuclide (Gd-158, 24.8%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+65,159,true,the primary lists natural Tb; Tb is mononuclidic (Tb-159 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+66,163,false,"the primary lists natural Dy only, so the value rests on a natural-composition target; Dy-163 is 24.90% of natural Dy, not the most abundant nuclide (Dy-164, 28.3%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+67,165,true,the primary lists natural Ho; Ho is mononuclidic (Ho-165 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+68,167,false,"the primary lists natural Er only, so the value rests on a natural-composition target; Er-167 is 22.87% of natural Er, not the most abundant nuclide (Er-166, 33.5%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+72,178,false,"the primary lists natural Hf only, so the value rests on a natural-composition target; Hf-178 is 27.28% of natural Hf, not the most abundant nuclide (Hf-180, 35.1%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+73,181,false,"the primary lists natural Ta only, so the value rests on a natural-composition target; Ta-181 is 99.99% of natural Ta",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+74,184,false,"the primary lists natural W only, so the value rests on a natural-composition target; W-184 is 30.64% of natural W",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+79,197,true,the primary lists natural Au; Au is mononuclidic (Au-197 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+80,201,false,"the primary lists natural Hg only, so the value rests on a natural-composition target; Hg-201 is 13.18% of natural Hg, not the most abundant nuclide (Hg-202, 29.9%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+81,205,false,"the primary lists natural Tl only, so the value rests on a natural-composition target; Tl-205 is 70.48% of natural Tl",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+82,207,false,"the primary lists natural Pb at this Z -- also RPb (radiogenic lead), which this mass number does not match -- so the value rests on a natural-composition target; Pb-207 is 22.10% of natural Pb, not the most abundant nuclide (Pb-208, 52.4%)",Suzuki 1987 (TRI-PP-87-5) Table IV p.27,preprint-scan
+83,209,true,the primary lists natural Bi; Bi is mononuclidic (Bi-209 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.28,preprint-scan
+90,232,true,the primary lists the separated isotope Th-232,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,preprint-scan
+92,233,true,the primary lists the separated isotope U-233,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,preprint-scan
+92,235,true,the primary lists the separated isotope U-235,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,preprint-scan
+92,236,false,"the primary carries U-233, U-235, U-238 at Z=92 but no U-236 -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.28",,
+92,238,true,the primary lists the separated isotope U-238,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,preprint-scan
+93,237,true,the primary lists the separated isotope Np-237,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,preprint-scan
+94,239,true,the primary lists the separated isotope Pu-239,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,preprint-scan
+94,242,true,the primary lists the separated isotope Pu-242,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,preprint-scan

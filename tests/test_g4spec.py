@@ -930,18 +930,29 @@ def test_t27_source_digest_matches():
     )
     with pytest.raises(ValueError, match="one-for-one"):
         provenance.check_against_table(table, short)
-    # A single-key table has no `"Z-A"` key, so the rule cannot apply -- but it must SAY so rather
-    # than silently no-op, which let such a table carry any rows at all.
-    with pytest.raises(ValueError, match="defined only for a table declaring both"):
+    # A SINGLE-key table is now keyed by that one column's integer, so the one-for-one rule applies
+    # to it like any other -- it is no longer the registered-undefined case it was when only the
+    # `"Z-A"` form existed. Here the table's key set is {"1"} and the document's is {"1-1", ...},
+    # so every row and every record is unmatched, in both directions at once.
+    with pytest.raises(ValueError, match="one-for-one"):
         provenance.check_against_table(
             make_table(COLUMNS="Z value unc", records=((1, 0.5, 0.1),)), document
         )
+    # A table declaring NEITHER key column still has no primary key, and must SAY so rather than
+    # silently no-op -- which let such a table carry any rows at all.
+    empty_doc = dataclasses.replace(document, rows={})
+    with pytest.raises(ValueError, match="at least one of"):
+        provenance.check_against_table(
+            make_table(COLUMNS="energy value", records=((1.0, 0.5),)), empty_doc
+        )
     # BOTH directions. Guarding only "rows that cannot be keyed" left the worse half open: records
     # shipping with no provenance row at all, which is exactly what section 3 forbids.
-    empty_doc = dataclasses.replace(document, rows={})
-    for columns, records in (("Z value unc", ((1, 0.5, 0.1),)), ("energy value", ((1.0, 0.5),))):
-        with pytest.raises(ValueError, match="defined only for a table declaring both"):
-            provenance.check_against_table(make_table(COLUMNS=columns, records=records), empty_doc)
+    with pytest.raises(ValueError, match="one-for-one"):
+        provenance.check_against_table(
+            make_table(COLUMNS="Z value unc", records=((1, 0.5, 0.1),)), empty_doc
+        )
+    with pytest.raises(ValueError, match="at least one of"):
+        provenance.check_against_table(make_table(COLUMNS="energy value", records=()), document)
     # A table with neither records nor rows is vacuously fine.
     assert provenance.check_against_table(
         make_table(COLUMNS="energy value", records=()), empty_doc
@@ -1038,6 +1049,8 @@ def test_t34_import_fence():
     root = pathlib.Path(spec.__file__).resolve().parent
     checked = set()
     for path in sorted(root.rglob("*.py")):
+        if "__pycache__" in path.parts:
+            continue
         parts = ["openmucf", "g4", *path.relative_to(root).with_suffix("").parts]
         package = parts[:-1]
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -1053,8 +1066,18 @@ def test_t34_import_fence():
             for target in targets:
                 offenders = [name for name in banned if target == name or target.startswith(f"{name}.")]
                 assert not offenders, f"{path.name} imports {target!r} (line {node.lineno})"
-        checked.add(path.name)
-    assert checked == {"__init__.py", "spec.py", "provenance.py", "emit.py"}
+        checked.add(path.relative_to(root).as_posix())
+    # Relative paths, not bare names: `sources/` brought a second `__init__.py` into the package, and
+    # a set of names would have silently collapsed the two into one entry -- so a new fenced module
+    # could be added under `sources/` without this inventory noticing it had arrived.
+    assert checked == {
+        "__init__.py",
+        "spec.py",
+        "provenance.py",
+        "emit.py",
+        "sources/__init__.py",
+        "sources/d1_nuclear_capture.py",
+    }
 
     # A layout invariant that is currently satisfied with exactly one space to spare, and that a
     # future directive would break silently: `#SOURCEDIGEST` is 13 characters, the pad is 14, so the
@@ -1277,7 +1300,19 @@ def test_t39_the_generator_reads_layer_2_as_bytes():
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Attribute)
         and isinstance(node.func.value, ast.Name)
-        and node.func.value.id in {"LAYER2_PATH", "LAYER1_PATH"}
+        and node.func.value.id
+        in {
+            "LAYER2_PATH",
+            "LAYER1_PATH",
+            # The D1 build's four Layer-1/Layer-2 paths are under the same rule, and were added
+            # here rather than left uncovered: the digest is taken over the Layer-2 file's bytes
+            # whichever dataset produced it, so a text-mode read of any of these would break the
+            # same invariant in the same way.
+            "D1_CAPTURE_LAYER1",
+            "D1_CAPTURE_LAYER2",
+            "D1_ZEFF_LAYER1",
+            "D1_ZEFF_LAYER2",
+        }
         and node.func.attr.startswith(("read", "write", "open"))
     }
     assert reads == {"read_bytes"}, f"Layer-1/Layer-2 I/O must be binary, found {sorted(reads)}"

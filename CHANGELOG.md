@@ -10,6 +10,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — the D1 isotope-resolution audit, established from the primary literature (2026-08-15)
+`isotope_resolved` was previously derived from the shape of the compiled-in table: true if and only
+if a `Z` carried more than one record. Every one of the 90 records has now been checked against the
+paper its own value is attributed to, and the audit is shipped as `data/g4/d1/isotope_audit.csv` —
+one row per record, hand-authored, carrying its evidence, the table and page that establish it, and
+which copy of the paper was read.
+- **The old rule disagrees with the primaries on 28 of the 90 records**, and the disagreement splits
+  three ways: **23** it called unresolved that the primary establishes as resolved, **2** it called
+  resolved that the primary flatly contradicts, and **3** it called resolved that the primary does
+  not settle either way. Its soundness argument was about the `Z`, and was being applied to each row
+  of that `Z`, which does not follow.
+- **86 records are settled and now carry `needs_verification: false`**, in both directions: 45 are
+  established isotope-resolved, 41 are established to rest on a **natural-composition element**. The
+  4 that remain open say so with an empty locator rather than guessing.
+- **Two registered findings are settled and two are new** (`DATASET_D1.md`). The 74-distinct-Z
+  attribution reconciles — the primary's two capture tables span exactly the same 74 Z, gaps
+  included, as a compilation of world data. The effective-charge table's non-monotonic step near
+  Z=82 is reproduced faithfully from the primary and is not a Geant4 transcription artifact. New:
+  the primary states in its own text that the Goulard–Primakoff formula this dataset declares as its
+  fallback "do[es] not account correctly for isotopic effects"; and `(Z, A)` is a **label rather
+  than a target specification** on 41 records, in the extreme naming a nuclide that is 7.4 % of the
+  natural element.
+- **No value or uncertainty byte moved.** All 90 Layer-1 record lines are unchanged; the only
+  Layer-1 edit is the digest that is supposed to move when Layer 2 does.
+
+### Added — D1 nuclear-capture dataset in `parity` mode (2026-08-14)
+The first `G4MuonicData` dataset carrying real content. `data/g4/d1/` reproduces the muon-capture
+data compiled into Geant4 v11.4.2 — a 90-record `{Z, A, rate, error}` table and a 101-value
+effective-charge table — bit-for-bit, together with the Goulard–Primakoff analytic fallback,
+declared as data in a `#FALLBACK` directive carrying all eight of the constants it needs.
+- **Generated, never transcribed.** The pinned upstream source is vendored at
+  `third_party/geant4/v11.4.2/`, unmodified, and pinned by its upstream **git blob id** — upstream's
+  own object name for those bytes, verifiable against `github.com/Geant4/geant4` with no Geant4
+  checkout and no `git` binary. Both layers are parsed out of it at build time by
+  `openmucf/g4/sources/`, and no record count appears as a literal anywhere in the chain.
+- **Parity checked exhaustively.** A Geant4-linked driver harvested 36000 `(Z, A)` points from the
+  built library; a pure-Python evaluation preserving the C++ association order reproduced **every
+  one bit-for-bit, maximum 0 ulp**. The committed oracle makes that a CI check on every platform
+  with **no Geant4 present**.
+- **Five upstream findings registered and disclosed, not fixed** (`DATASET_D1.md`): negative capture
+  rates on 6325 of 36000 fallback points including ³H; non-finite returns at degenerate inputs with
+  no coded rejection; a fallback that moves by up to **2980 ulp** between two conforming compiler
+  configurations of the same source, which is why the declared model contract forbids floating-point
+  contraction; an attribution that does not reconcile with the table's 74 distinct Z; and a
+  non-monotonic step in the effective-charge table near the Z=82 shell closure. **The last two of
+  those five were settled against the primary literature by the entry above, inside this same
+  unreleased version** — the attribution reconciles and the step is the primary's own — so this
+  version ships **five defects and two settled questions**, not seven defects. Both remain
+  registered in `DATASET_D1.md`, as F-4 and F-5.
+- **The whole harvest chain is committed**, not only its C++ half: `cpp/tools/build_oracle.py` is
+  the script that turns a driver's raw `%a` output into the committed oracle, and it reproduces that
+  file byte for byte when run on the build named in the oracle's own header. A committed harvested
+  artifact whose producing code is missing is the reproducibility hole vendoring the upstream source
+  exists to close.
+- Layer-2 row keys are now defined for tables whose primary key is a **single column** (a previously
+  registered undefined case, whose first consumer is the effective-charge table).
+- `FORMAT_SPEC.md` §2.2's example header no longer violates its own advisory that every `#UNITS`
+  name be a `#COLUMNS` name, and now states that a `#FALLBACK` model's documentation must pin the
+  formula **and its evaluation order**.
+- `third_party/geant4/` is the first third-party licence in this repository: Geant4 Software License
+  v1.0, applying to that directory only.
+
 ### Fixed — cross-architecture reproducibility (2026-08-09)
 An independent reproduction of the full audit battery on Apple Silicon (arm64), against an x86-64
 reference, found three defects that a single-architecture CI could not have surfaced. All three are fixed
@@ -76,6 +138,27 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   `n_inner` or the chain length changes. **No published value moves and no finding changes**; the SE-ratio
   guard is now enforced only where a band is SE-governed, so the identically-zero `zero_eig` cell keeps
   the 0.01 absolute floor it already had.
+
+### Fixed — the `min ess` audit cell, re-registered as a one-sided floor (2026-08-13)
+- **`CALIBRATION.md`'s `min ess` cells were tolerance-audited against the committed realization, which
+  is the wrong shape for a convergence diagnostic.** The symmetric 20 % band shared with the `mcse` cells
+  reds when a *fresh* realization converges **better** than the committed one — a gate that punishes
+  improvement is measuring the sampler's luck, not the artifact's correctness. Measured over a
+  100-realization chain-seed sweep of both main chains, that band reds 3.0 % of the weak chain's
+  realizations and 5.6 % of the Kamimura chain's converged, physical ones, and it held the worst margin
+  of this file's whole battery in the 2026-07-23
+  arm64 reproduction — 81.8 % of band, which was `Kamimura.min ess` at 9200 vs 11000: an ordinary draw of
+  a diagnostic, not a defect in anything.
+  `min ess` therefore leaves the tolerance-audited set. The committed value stays published as a
+  *description* of that realization; what `--audit` now gates is the **fresh** run clearing a structural
+  floor, `AUDIT_ESS_FLOOR = 2000`. Sizing: the 136 converged-and-physical realizations of that sweep span
+  min ess 3885–11398 while the non-convergent mode sits at 2.0, so the floor separates the two regimes by
+  three orders of magnitude rather than cutting through either; and because `mcse = sd/√ess`, a chain
+  sitting at the floor carries an mcse inflated ×1.39 even against the lowest converged realization
+  measured — outside the 20 % `mcse` band, which stays as it was. A run that clears the floor while
+  genuinely mis-converged therefore still fails, on its own `mcse` cells. **No published value moves**;
+  the `mean`/`sd`/`corr`/`r_hat`/`divergences` classes are untouched, and asking the audit for a
+  committed-vs-fresh distance on a one-sided cell is now a hard error rather than a silent number.
 
 ### Added
 - **`G4MuonicData`: an external-data format for muonic-atom physics, with its reference implementation
