@@ -332,12 +332,15 @@
   howpublished = {NIST Physical Measurement Laboratory, online database},
   year         = {2026},
   url          = {https://physics.nist.gov/PhysRefData/Compositions/},
-  note         = {The authority for every isotopic-composition claim in this dataset: the 19
+  note         = {The authority for every isotopic-composition claim in this dataset, chiefly the 19
                   mononuclidic determinations in the isotope audit, and the abundance figures and
                   rounded-standard-atomic-weight comparisons in DATASET\_D1.md section 5, F-7. The
-                  capture primary tabulates no abundances, so those calls cannot rest on it. The
-                  copy read carries 3352 nuclide records, 288 of them with a natural abundance,
-                  across 84 elements; sha256
+                  capture primary states no natural isotopic abundance -- its tables carry no
+                  abundance column, and the composition it prints in a Table IV footnote is
+                  radiogenic lead, not an element's standard isotopic composition -- so none of
+                  those calls can rest on it. The copy read carries 3352
+                  nuclide records, of which 288 have a natural abundance; those 288 span 84
+                  elements. sha256
                   48831a76b7483c4f9c5b86655f0dc9c4ab964c68424777f9d3e48eabeeeb7835, retrieved
                   2026-08-15. The title is the one the retrieved page carries; that copy carries no
                   version or author block, so none is asserted here, and \emph{year} records the
