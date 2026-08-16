@@ -115,9 +115,9 @@ it reports a *model* failure — the formula over-predicts the spread between is
 Br and Cl** it reports a *data* limitation — the experiments are imprecise, and in chlorine's case
 questionable — which says nothing about the model. F-6 keeps the two apart.
 
-The same paper reports its own fit quality for the formula, in its Table V (printed p. 29): a mean
-`(Exp−Fit)/Exp` of **4.1 %** over 30 of its own data points and **5.6 %** over 58 past results. Read
-those with two qualifications.
+The same paper reports its own fit quality for the formula, in its Table V (printed p. 29): the row
+it labels `(Exp-Fit)/Exp` reads **4.1 %** against 30 of its own data points and **5.6 %** against 58
+past results. Read those with two qualifications.
 They are **fit residuals over the points the fit was made against**, not a validated uncertainty for
 an arbitrary `(Z, A)`, and in particular not for the neutron-rich region where F-1 shows the formula
 fails outright. And they belong to **that paper's own fit**, whereas the coefficients this dataset
