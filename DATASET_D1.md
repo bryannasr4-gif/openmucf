@@ -259,9 +259,11 @@ source. More generally, **65 of the 101 `zeff` entries appear verbatim in that t
 of them matches**; the remaining 36 (Z = 0, Z = 1–9, the gaps above, and Z > 94) are not in it, and
 fall to the "Ford and Wills … or interpolated" branch the source comment names. This dataset does
 not decide whether the lead-region step is physical structure near the Z = 82 shell closure or an
-artifact inherited from further upstream — the primary attributes its Zeff column to Ford & Wills
-(1962), which is also the fallback the Geant4 comment names, so the two agree on their source and
-neither resolves the question. Not altered.
+artifact inherited from further upstream — the primary attributes its Zeff column to its reference
+77, which it prints as *K.W. Ford and J.G. Wills, Nucl. Phys. 35, 1397 (1968)*, while the Geant4
+comment names `Ford and Wills Nucl Phys 35(1962)295`: the same authors, journal and volume, cited
+with a different year and page, which this dataset records rather than adjudicates. The two agree on
+their source and neither resolves the question. Not altered.
 
 One measured fact bears on it. Table IV of that same paper prints the barium row as **"59(29.99)"**
 — barium is Z = 56, and 29.99 sits correctly between caesium's 29.75 (Z = 55) and lanthanum's 30.22
@@ -363,7 +365,7 @@ Isotopic Compositions* table (`NISTIsotopicCompositions` in `references.bib`). T
 natural isotopic abundance: its tables carry no abundance column, and the composition it prints in a
 Table IV footnote (printed p. 28) is what that footnote labels `RPb`, radiogenic lead — not an
 element's standard isotopic composition. So nothing in it
-establishes an abundance or a mononuclidic element, and these calls cannot rest on it.
+establishes a natural abundance or a mononuclidic element, and these calls cannot rest on it.
 
 Every row's `evaluation_method` now states which of those routes produced its flag and carries the
 evidence itself, so a reader meets the reasoning together with the boolean rather than a bare one.
