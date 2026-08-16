@@ -1391,13 +1391,14 @@ def _stated(text: str) -> int:
 
 
 def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
-    """Counts published in `DATASET_D1.md` and `CHANGELOG.md` are pinned to the shipped data.
+    """Counts published in `DATASET_D1.md`, `CHANGELOG.md` and `README.md` are pinned to the
+    shipped data.
 
     This is the guard the D1 chain was missing, and its absence was measured rather than supposed:
     nothing in this repository read `DATASET_D1.md`, so a falsified count in it passed the entire
-    battery, the byte-diff audit included. Six counting claims in that document have been wrong --
+    battery, the byte-diff audit included. Counting claims in that document have shipped wrong --
     each a number updated to match a rewrite instead of re-derived from the data it describes -- and
-    every one would have failed here.
+    they would have failed here.
 
     **No expected value is written down.** Each is computed -- most from
     `data/g4/d1/isotope_audit.csv`, the committed `.g4dat` tables or the vendored source, and a few
@@ -1411,37 +1412,31 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     second table starts -- and they are visible in the code below rather than inventoried here,
     because two attempts at an exact inventory in this docstring have each been wrong. `SYMBOL_Z` is
     atomic numbers, reference data. What matters is the invariant: every expected value in `claims`,
-    `rounded` and `changelog_claims` is a computed expression, never a number typed in.
+    `rounded`, `changelog_claims` and `readme_claims` is a computed expression, never typed in.
 
-    **Two things this cannot make independent, stated so nobody reads more into them.** The
-    effective-charge coverage is derived as "the Z at or above Table IV's first that this table
-    carries", which *uses* the set equality F-4 establishes against the primary rather than
-    re-deriving it; the primary is not shipped, so 65 is F-4 restated over a second table, not fresh
-    evidence for F-5. And the abundance figures come from the audit's own `evidence` strings, which
-    are hand-authored: pinning them stops the prose drifting from the CSV, and does not check either
-    against NIST.
-
-    **This is not a census of the document's numbers, and does not claim to be.** Two earlier
+    **This is not a census of these documents' numbers, and does not claim to be.** Two earlier
     revisions did claim it, in two different forms -- "everything countable from what ships is here",
-    then a four-group exclusion list -- and adversarial passes falsified both, with eight and
-    thirteen witnesses respectively. The lesson taken is that a completeness claim over a prose
-    document is unbounded and will keep being wrong, so this test no longer makes one. What is
-    pinned below is pinned; other numbers in that document are not, and adding a pin is always in
-    order. Some are structurally out of reach whatever the effort -- F-3's contraction figures need a
-    Geant4 build and two compiler configurations, F-2's `NaN` and `+inf` need C++ division semantics
-    that CPython raises on, every claim about what the primary *prints* rests on a paper this
-    repository does not redistribute, and the dysprosium rounding tie has no shipped source at all --
-    but that list is an illustration, not an inventory.
+    then a four-group exclusion list -- and adversarial passes falsified both. The lesson taken is
+    that a completeness claim over prose is unbounded and will keep being wrong, so this test no
+    longer makes one. What is pinned below is pinned; other numbers in those documents are not, and
+    adding a pin is always in order. Some are structurally out of reach whatever the effort -- F-3's
+    contraction figures need a Geant4 build and two compiler configurations, F-2's `NaN` and `+inf`
+    need C++ division semantics that CPython raises on, every claim about what the primary *prints*
+    rests on a paper this repository does not redistribute, and the dysprosium rounding tie has no
+    shipped source at all -- but that list is an illustration, not an inventory.
 
-    **Four things here are not independent of what they check, and are named so nobody counts them
-    as more than they are.** The effective-charge coverage restates the attribution finding's set
-    equality rather than re-deriving it, because the primary does not ship. The abundance figures are
-    read from the audit's own hand-authored `evidence` strings, so they hold the prose to the CSV and
-    check neither against an external table. Section 5's finding partition is counted from the
-    document's own `F-n` headings, so it checks that the summary agrees with the section rather than
-    with anything that ships. And the count of elements the primary's sentence names is read out of
-    the quotation in that same document: only the *seven of them carrying a separated-isotope record*
-    reaches the audit, while the *nine* is the document checked against itself.
+    **Some pins here are not independent of what they check, and are named so nobody counts them as
+    more than they are.** They are named, deliberately, without a running total: every enumeration
+    of this docstring's own contents has eventually gone stale, each time because a later edit was
+    correct and an earlier sentence counting it was left behind. The
+    effective-charge coverage restates the attribution finding's set equality rather than re-deriving
+    it, because the primary does not ship. The abundance figures are read from the audit's own
+    hand-authored `evidence` strings, so they hold the prose to the CSV and check neither against an
+    external table. Section 5's finding partition is counted from the document's own `F-n` headings,
+    so it checks that the summary agrees with the section rather than with anything that ships. And
+    the count of elements the primary's sentence names is read out of the quotation in that same
+    document: only the *seven of them carrying a separated-isotope record* reaches the audit, while
+    the *nine* is the document checked against itself.
 
     The ruling if this fails after a deliberate rewording: move the anchor in the same commit, never
     the expected value, and never delete a row.
@@ -1759,6 +1754,35 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
         ("swept points in total, fallback",
          r"negative capture rates on \d+ of (\d+) fallback points", swept),
         ("swept points harvested", r"harvested (\d+) `\(Z, A\)` points", swept),
+        ("distinct Z, attribution headline",
+         r"The (\d+)-distinct-Z attribution reconciles", len(zs)),
+        ("distinct Z, superseded finding",
+         r"reconcile with the table's (\d+) distinct Z", len(zs)),
+        ("Layer-1 record lines unchanged",
+         r"All (\d+) Layer-1 record lines are unchanged", len(found.capture_records)),
+        ("fallback constants declared",
+         r"carrying all (\w+) of the constants it needs", len(found.fallback_coefficients)),
+        ("findings in total", r"settled questions\*\*, not (\w+) defects", findings),
+    ]
+
+    # `README.md` is the third copy of these numbers and the one a reader meets first. Its G4
+    # section restates the table sizes, the sweep and the finding count for a reader who never opens
+    # either document, and until this test grew to reach it nothing in the repository read it
+    # either -- the same condition that let the counting claims ship wrong in the first place.
+    readme = " ".join((REPO / "README.md").read_text(encoding="utf-8").split())
+    readme_claims = [
+        ("capture record count",
+         r"compiled in\*\*: (\d+) `\{Z, A, rate, error\}` records", len(found.capture_records)),
+        ("effective-charge record count",
+         r"(\d+)-value effective-charge table", len(zeff_table.records)),
+        ("swept points at zero ulp",
+         r"over \*\*(\d+) \(Z, A\) points at zero ulp\*\*", swept),
+        ("findings that are defects",
+         r"surfaced (\w+) defects in the upstream seam", findings - settled_findings),
+        ("swept points returning a negative rate",
+         r"negative capture rates on (\d+) of those \d+ points", negative),
+        ("swept points in total, restated",
+         r"negative capture rates on \d+ of those (\d+) points", swept),
     ]
 
     for what, pattern, value, places in rounded:
@@ -1773,16 +1797,21 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
             f"{expected} at {places} decimal place(s)."
         )
 
-    for what, pattern, expected in changelog_claims:
-        hits = re.findall(pattern, changelog)
-        assert len(hits) == 1, (
-            f"CHANGELOG.md: the anchor for {what} matched {len(hits)} times, expected exactly one. "
-            f"Move the anchor in the same commit rather than deleting this row. Pattern: {pattern!r}"
-        )
-        assert _stated(hits[0]) == expected, (
-            f"CHANGELOG.md states {hits[0]!r} for {what}; the shipped data says {expected}. The "
-            "changelog is wrong, not this test."
-        )
+    for where, text, rows in (
+        ("CHANGELOG.md", changelog, changelog_claims),
+        ("README.md", readme, readme_claims),
+    ):
+        for what, pattern, expected in rows:
+            hits = re.findall(pattern, text)
+            assert len(hits) == 1, (
+                f"{where}: the anchor for {what} matched {len(hits)} times, expected exactly one. "
+                f"Move the anchor in the same commit rather than deleting this row. "
+                f"Pattern: {pattern!r}"
+            )
+            assert _stated(hits[0]) == expected, (
+                f"{where} states {hits[0]!r} for {what}; the shipped data says {expected}. "
+                f"{where} is wrong, not this test."
+            )
 
     changelog_pct = re.search(r"is ([\d.]+) % of the natural element", changelog)
     assert changelog_pct, "CHANGELOG.md no longer states the extreme abundance where this test reads it"
