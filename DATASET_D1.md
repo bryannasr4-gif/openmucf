@@ -115,8 +115,9 @@ it reports a *model* failure — the formula over-predicts the spread between is
 Br and Cl** it reports a *data* limitation — the experiments are imprecise, and in chlorine's case
 questionable — which says nothing about the model. F-6 keeps the two apart.
 
-The same paper reports its own fit quality for the formula: a mean `(Exp−Fit)/Exp` of **4.1 %** over
-30 of its own data points and **5.6 %** over 58 past results. Read those with two qualifications.
+The same paper reports its own fit quality for the formula, in its Table V (printed p. 29): a mean
+`(Exp−Fit)/Exp` of **4.1 %** over 30 of its own data points and **5.6 %** over 58 past results. Read
+those with two qualifications.
 They are **fit residuals over the points the fit was made against**, not a validated uncertainty for
 an arbitrary `(Z, A)`, and in particular not for the neutron-rich region where F-1 shows the formula
 fails outright. And they belong to **that paper's own fit**, whereas the coefficients this dataset
@@ -186,12 +187,13 @@ legal Geant4 target and one of direct interest to muon-catalyzed fusion, at
 
 **How much of that region holds bound nuclides is not established here, and an earlier revision of
 this section overstated the answer.** It said that for Z ≳ 6 the negative region lies beyond the
-neutron drip line and is unreachable in practice. That claim carried no source and it is not safe:
-at Z=6 and Z=8 the thresholds above (A=17 and A=23) are well inside the range of nuclides that have
-been observed, so the negative region there is not obviously unreachable. The measurement — the
-per-Z threshold — stands; the claim about reachability is withdrawn and is registered as a question
-for whichever layer of this program next carries evaluated nuclear data. What is certain either way
-is the hydrogen case, since ³H is stable enough to be a routine target.
+neutron drip line and is unreachable in practice. That claim carried no source, and this dataset
+cannot supply one: deciding which `(Z, A)` in the negative region are bound nuclides needs an
+evaluated nuclear mass table, which a parity dataset of capture rates neither carries nor cites. The
+measurement — the per-Z threshold — stands; the reachability claim is withdrawn as **unsupported**,
+rather than answered in either direction from a source this document does not have, and is
+registered as a question for whichever layer of this program next carries evaluated nuclear data.
+What is certain either way is the hydrogen case, since ³H is stable enough to be a routine target.
 
 Read at the two call sites, the consequences are not cosmetic. Where `lambda = lambdac + lambdad`
 and the capture branch is `G4UniformRand()*lambda < lambdac`, a small negative λ_c means the capture
@@ -260,9 +262,13 @@ neither resolves the question. Not altered.
 
 One measured fact bears on it. Table IV of that same paper prints the barium row as **"59(29.99)"**
 — barium is Z = 56, and 29.99 sits correctly between caesium's 29.75 (Z = 55) and lanthanum's 30.22
-(Z = 57). So the table demonstrably contains at least one typographical error in its Z column, which
-raises rather than settles the prior that the lead-region step is also one. Geant4 read that row
-correctly: `zeff[56] = 29.99`.
+(Z = 57). The argument does not rest on that ordering, which is the very regularity this finding
+shows the table can break: **`59` is printed a second time three rows further down, as `59(30.53)`
+against praseodymium, where Z = 59 belongs.** The same Z is printed against two elements, so one of
+the two is a misprint — and it is the barium row, whose value the shipped table carries at Z = 56. So
+the table demonstrably contains at least one typographical error in its Z column, which raises rather
+than settles the prior that the lead-region step is also one. Geant4 read that row correctly:
+`zeff[56] = 29.99`.
 
 **F-6 — the declared fallback is documented, by the primary, to mispredict isotopic effects.** See
 section 2 for the quotation and for the distinction it draws: **Ca, Cr, Ni, U and Pu** are where the
@@ -342,6 +348,14 @@ because the sources the table carves them out to describe an isotopically distin
 (deuterium-depleted protium; ³He and ⁴He tabulated as separate nuclides). The remaining **41 are
 `false` as an established finding**, because the primary shows the value rests on a
 natural-composition element (F-7).
+
+**Two different sources are doing work here, and only one of them is the primary.** Whether a
+measurement was made on a separated isotope or on a natural element is read from the primary. But
+whether a natural element *is* a single nuclide — the 19 mononuclidic calls above — and every
+isotopic abundance this document quotes, including F-7's 7.4 % for Sm-150 and 8.6 % for Sn-119 and
+its comparisons against the rounded standard atomic weight, come from the NIST *Atomic Weights and
+Isotopic Compositions* table (`NISTIsotopicCompositions` in `references.bib`). The primary tabulates
+no abundances, so those calls cannot rest on it.
 
 Every row's `evaluation_method` now states which of those routes produced its flag and carries the
 evidence itself, so a reader meets the reasoning together with the boolean rather than a bare one.
