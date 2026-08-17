@@ -19,8 +19,8 @@ full-text-verified design studies corroborate the same single-GeV scale: **Berti
 all-collected) and **Eliezer & Henis (1994), ~5.0 GeV/muon**
 (DOI 10.13182/FST94-A30300).
 
-**Those single-GeV figures are beam energy per muon PRODUCED, not the loaded cost of a muon stopped in
-D-T fuel.** On Kelly's own accelerator efficiency the same muon costs 4.70 /
+**Those single-GeV figures are not on one basis: Kelly, Hart & Rose (2021) and Eliezer & Henis (1994) are beam energy per muon PRODUCED, while Bertin et al. (1987) (`stopped_useful_in_dt`) is carried at a different stage of the same chain.** On Kelly's own
+accelerator efficiency the same muon costs 4.70 /
 0.18 = **26.11 GeV per muon produced** in ELECTRICAL energy, and on the
 same primary's site-wide denominator (0.104) it costs **45.19 GeV**
 -- and both are still LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T,

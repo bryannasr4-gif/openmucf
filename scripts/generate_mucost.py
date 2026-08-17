@@ -97,6 +97,16 @@ _SHORT = {
 #: The muon cost the criterion paper actually adopts (their historical Jones anchor), for contrast.
 KOUCHEN_CONVENTIONAL_COST_GEV = 5.0
 
+#: The rows the Headline names as design-study anchors, in the order it names them.
+HEADLINE_ANCHOR_IDS = ("kelly_hart_rose_2021", "bertin_1987", "eliezer_henis_1994")
+
+
+def _join(items: list[str]) -> str:
+    """'A' / 'A and B' / 'A, B and C' -- deterministic, no Oxford comma (the document's style)."""
+    if len(items) <= 1:
+        return items[0] if items else ""
+    return ", ".join(items[:-1]) + " and " + items[-1]
+
 CRITERION_PROVENANCE = {
     "eta_sys": (
         "Kou-Chen sec.IV illustrative value; a lumped system efficiency. **They also report 0.4** -- in "
@@ -183,6 +193,23 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     for r in table:
         if r.has_normalized:
             H[f"norm_{r.source_id}"] = _fmt(r.normalized_GeV_per_mu)
+    # The Headline's basis claim is a statement about OUR OWN rows, so it is DERIVED from their
+    # `stage` rather than typed. A typed universal here read "Those single-GeV figures are beam
+    # energy per muon PRODUCED" over all three anchors while the ledger carried one of them at the
+    # terminal stage -- a basis claim the same document contradicted sixty lines below it.
+    at_produced = [LABELS[s] for s in HEADLINE_ANCHOR_IDS if table[s].stage == "produced"]
+    off_produced = [
+        f"{LABELS[s]} (`{table[s].stage}`)"
+        for s in HEADLINE_ANCHOR_IDS
+        if table[s].stage != "produced"
+    ]
+    clause = f"{_join(at_produced)} {'is' if len(at_produced) == 1 else 'are'} beam energy per muon PRODUCED"
+    if off_produced:
+        clause += (
+            f", while {_join(off_produced)} {'is' if len(off_produced) == 1 else 'are'} carried"
+            " at a different stage of the same chain"
+        )
+    H["anchor_basis_clause"] = clause
     # tier medians + the gap
     m1 = table.tier_median("T1-design-study")
     m2 = table.tier_median("T2-demonstrated-tech")
@@ -384,8 +411,8 @@ full-text-verified design studies corroborate the same single-GeV scale: **{LABE
 all-collected) and **{LABELS['eliezer_henis_1994']}, ~{H['norm_eliezer_henis_1994']} GeV/muon**
 (DOI 10.13182/FST94-A30300).
 
-**Those single-GeV figures are beam energy per muon PRODUCED, not the loaded cost of a muon stopped in
-D-T fuel.** On Kelly's own accelerator efficiency the same muon costs {H['norm_kelly_hart_rose_2021']} /
+**Those single-GeV figures are not on one basis: {H['anchor_basis_clause']}.** On Kelly's own
+accelerator efficiency the same muon costs {H['norm_kelly_hart_rose_2021']} /
 {H['kelly_eta_acc']} = **{H['kelly_wallplug']} GeV per muon produced** in ELECTRICAL energy, and on the
 same primary's site-wide denominator ({H['kelly_eta_acc_site']}) it costs **{H['kelly_wallplug_site']} GeV**
 -- and both are still LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T,
