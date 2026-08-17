@@ -11,6 +11,7 @@ regenerates deterministically; and the muon-cost manifest verifies against MUON_
 from __future__ import annotations
 
 import csv
+import json
 import math
 import re
 from pathlib import Path
@@ -509,7 +510,7 @@ _SHIPPED_BASIS_CLAIMS = (
 
 
 def test_csv_is_structurally_well_formed():
-    """Every row must have exactly the header's field count, and match the published contract.
+    """Every row must have exactly the header's field count, and the resource must be declared.
 
     A free-text cell that gains an unquoted comma silently becomes two fields: the row shifts, later
     columns take the wrong values and the last one is dropped entirely. None of the other guards can
@@ -528,6 +529,13 @@ def test_csv_is_structurally_well_formed():
     # r may be empty (a blank line): report it rather than indexing into it
     malformed = [(r[0] if r else "<blank row>", len(r)) for r in rows[1:] if len(r) != n_fields]
     assert not malformed, f"rows whose field count != header's {n_fields}: {malformed}"
+
+    # ...and the resource must be DECLARED at all. `test_datapackage.py` compares names and order for
+    # every resource that exists, so it iterates past a resource that has been deleted outright; that
+    # existence check lives nowhere else.
+    package = json.loads((REPO / "datapackage.json").read_text(encoding="utf-8"))
+    declared = [r for r in package["resources"] if str(r.get("path", "")).endswith("muon_cost.csv")]
+    assert len(declared) == 1, "muon_cost.csv must be declared exactly once in datapackage.json"
 
 
 def test_a_non_sourced_chain_renders_as_a_bound_not_a_value(table):
