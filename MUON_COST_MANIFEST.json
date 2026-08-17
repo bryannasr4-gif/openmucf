@@ -66,6 +66,14 @@
     },
     {
       "doc": "MUON_COST.md",
+      "id": "kelly_eta_mu",
+      "pattern": "`eta_mu` = 0\\.50, but describe it verbatim",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "0.50"
+    },
+    {
+      "doc": "MUON_COST.md",
       "id": "ceiling_kc",
       "pattern": "\\| 20\\.4 MeV \\|[^\\n]*\\| \\*\\*3\\.06 GeV\\*\\* \\|",
       "source": "scripts/generate_mucost.py",
@@ -355,6 +363,6 @@
   ],
   "generated_by": "scripts/generate_mucost.py",
   "inputs": {
-    "muon_cost_csv_sha256": "856cb45276cb4f73ad53aaf9b9f70a8d5da9fe47ad6f97f09e0c8d9ae8c467f8"
+    "muon_cost_csv_sha256": "e15d470f7af2d7b50aa46aa296980cae50e3857361386286e89e67f340d943d0"
   }
 }

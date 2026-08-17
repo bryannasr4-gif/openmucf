@@ -2,7 +2,8 @@
 
 A curated compilation with provenance, not an evaluation. These tests lock: the loader validates and
 rejects a bad tier; every bibkey resolves; the needs_verification flags match the A8-committed set
-(Jandel is the only nv=true row); normalized values are positive and tier-ordered (the 10^3 gap, G-E2);
+(Jandel is the only nv=true row); normalized values are positive and tier-ordered (the order-of-magnitude
+mixed-basis tier spread, G-E2);
 every T3 row carries its derivation; recapture is recorded-not-folded; the FINDINGS section-2b tier panel
 regenerates deterministically; and the muon-cost manifest verifies against MUON_COST.md.
 """
@@ -157,7 +158,7 @@ def test_tier_spread_is_an_order_of_magnitude_mixed_basis_observation(table):
 
 
 def test_relabelling_moved_no_committed_value(table):
-    """TASK 2 invariant: adding the (stage, numeraire, evidence_status) axes was a PURE re-labelling.
+    """Invariant: adding the (stage, numeraire, evidence_status) axes was a PURE re-labelling.
 
     Not one published number may have moved when the axes were introduced. If this fails, a
     "classification" change silently edited a result.
@@ -203,7 +204,7 @@ def test_aggregates_are_numeraire_restricted(table):
 
 
 def test_derived_electrical_rows_are_pure_numeraire_conversions(table):
-    """TASK 3: both derived rows are Kelly's beam figure re-expressed, at the SAME stage.
+    """Both derived rows are Kelly's beam figure re-expressed, at the SAME stage.
 
     Each is beam / eta_acc, stored at the ledger's two-decimal convention. Nothing about the muon's
     position on the chain changes -- only the units -- so both stay at stage 'produced'.
@@ -224,7 +225,7 @@ def test_derived_electrical_rows_are_pure_numeraire_conversions(table):
 
 
 def test_eta_mu_is_recorded_arbitrary_and_never_folded(table):
-    """TASK 4: Kelly's eta_mu = 0.50 is carried, graded arbitrary, and folded into nothing."""
+    """Kelly's eta_mu is carried, graded arbitrary, and folded into nothing."""
     kelly = table["kelly_hart_rose_2021"]
     assert kelly.eta_mu_assumption == 0.50
     assert kelly.eta_mu_evidence_status == "author_declared_arbitrary"
@@ -239,7 +240,7 @@ def test_eta_mu_is_recorded_arbitrary_and_never_folded(table):
 
 
 def test_no_headline_number_depends_on_an_arbitrary_row(table):
-    """TASK 4/TASK 6: nothing the generator publishes may be composed from a non-sourced factor.
+    """Nothing the generator publishes may be composed from a non-sourced factor.
 
     Every manifest-pinned headline string is recomputed from sourced ledger rows only. Here we assert
     the complement directly: composing the arbitrary eta_mu produces a figure that appears NOWHERE in
@@ -361,7 +362,7 @@ def test_muon_cost_manifest_verifies():
 
 
 def test_eq15_ceiling_recomputes_from_the_criterion_constants(table):
-    """TASK 5/TASK 6: the Kou-Chen eq.(15) ceiling is COMPUTED, never a transcribed digit.
+    """The Kou-Chen eq.(15) ceiling is COMPUTED, never a transcribed digit.
 
     E_cost,max = (eta_sys * E_use / G_mu) * N_fus,mu, checked by hand here against the generator's own
     helper for BOTH useful-energy conventions, and cross-checked against the committed document.
@@ -388,7 +389,7 @@ def test_eq15_ceiling_recomputes_from_the_criterion_constants(table):
 
 
 def test_a_non_sourced_chain_renders_as_a_bound_not_a_value(table):
-    """D5: the API must REFUSE to render an incomplete or unsourced chain as a value.
+    """The API must REFUSE to render an incomplete or unsourced chain as a value.
 
     This is the actual contribution of the basis work -- it makes the error unrepresentable rather than
     merely discouraged. Three cases: incomplete chain, arbitrary factor, and off-chain row.

@@ -83,7 +83,7 @@ VALID_STAGE = set(MUCF_CHAIN) | OFF_CHAIN_STAGES | {""}
 BEAM_KINETIC = "beam_kinetic"
 VALID_NUMERAIRE = {BEAM_KINETIC, "electrical_minimal", "electrical_site", ""}
 
-#: Statuses that carry real provenance. Anything else makes a composed figure a BOUND (D4/D5).
+#: Statuses that carry real provenance. Anything else makes a composed figure a BOUND.
 SOURCED_STATUSES = frozenset({"primary", "primary_cited", "derived_here"})
 NON_SOURCED_STATUSES = frozenset({"author_declared_arbitrary", "assumption", "absent"})
 VALID_EVIDENCE_STATUS = SOURCED_STATUSES | NON_SOURCED_STATUSES

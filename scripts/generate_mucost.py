@@ -3,7 +3,7 @@
     python scripts/generate_mucost.py
 
 Content (WAVE2_EXECUTION_SPEC sec.1, WS-E): the open muon-cost ledger rendered as tier tables + a
-normalization-basis explainer + the 10^3 simulation-to-facility gap figure. This is a **curated
+normalization-basis explainer + the tier-spread figure. This is a **curated
 compilation with provenance, not an evaluation** (I8): the single auditable basis is beam energy per
 muon in GeV; wall-plug = that / eta_acc (kept separate); T3 facility rows are original derivations
 ("implied, derived here, formula shown"); an accounting credit (Kelly's x2.5 recapture) is recorded in
@@ -177,6 +177,11 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["kelly_wallplug"] = _fmt(table["kelly_electrical_minimal"].normalized_GeV_per_mu)
     H["kelly_eta_acc_site"] = f"{table['kelly_electrical_site'].eta_acc_assumption:g}"
     H["kelly_wallplug_site"] = _fmt(table["kelly_electrical_site"].normalized_GeV_per_mu)
+    # eta_mu is PUBLISHED twice in the prose below, so it must be read from the ledger like every other
+    # published number. Typing it into the template would let the CSV move while the document kept
+    # printing the old digit, and no guard would notice: `provenance --check` only compares the manifest
+    # against the document, so a literal that appears in both stays self-consistent while both are stale.
+    H["kelly_eta_mu"] = f"{kelly.eta_mu_assumption:.2f}"
 
     # ---- the Kou-Chen cycle-closure comparison (all derived, nothing transcribed) ----
     H["eta_sys"] = f"{ETA_SYS:g}"
@@ -209,7 +214,7 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["omegacrit_conventional"] = f"{eq12_omega_crit(n_L_conv) * 100.0:.3g}"
     H["overshoot_conventional"] = f"{omega_anchor / (eq12_omega_crit(n_L_conv) * 100.0):.1f}"
 
-    # D8: coverage is the deliverable. Count what is actually sourced across the whole ledger.
+    # Coverage is the deliverable. Count what is actually sourced across the whole ledger.
     cov = coverage_rows(table)
     H["n_chain_rows"] = str(sum(1 for c in cov if c["on_chain"]))
     H["n_offchain_rows"] = str(sum(1 for c in cov if not c["on_chain"]))
@@ -226,7 +231,7 @@ def _sticking_anchor() -> float:
 
 
 def coverage_rows(table: mucost.MuonCostTable) -> list[dict]:
-    """Per source: how far the chain actually gets, and which conversions are sourced (D8).
+    """Per source: how far the chain actually gets, and which conversions are sourced.
 
     A row is ``complete`` only if it reaches the terminal stage with every factor sourced -- i.e. only
     if its :class:`~openmucf.mucost.ChainValue` is not a bound. Rows stopped outside D-T fuel are not
@@ -292,7 +297,7 @@ def _tier_table(table: mucost.MuonCostTable, tier: str, H: dict[str, str]) -> st
 
 
 def _coverage_table(table: mucost.MuonCostTable) -> str:
-    """D8: print, per source, how far the chain gets and which conversions are sourced."""
+    """Print, per source, how far the chain gets and which conversions are sourced."""
     head = (
         "| source | stage reached | numeraire | beam -> electrical sourced? | "
         "produced -> stopped & useful in D-T | fully sourced? |\n"
@@ -384,7 +389,7 @@ Three factors are deliberately kept in their own flagged columns rather than fol
 value: the **accelerator efficiency** `eta_acc` (Kelly's {H['kelly_eta_acc']}) -- applying it produces a
 *separate row in a different numeraire*, never a silent edit to the beam-kinetic one, so both readings
 stay side by side and auditable; the **recapture/breeding credit** `recapture_factor` (Kelly's x2.5,
-recorded with `recapture_credit_applied=false`); and the **delivery factor** `eta_mu` (Kelly's 0.50),
+recorded with `recapture_credit_applied=false`); and the **delivery factor** `eta_mu` (Kelly's {H['kelly_eta_mu']}),
 whose authors call it an "arbitrary but reasonable assumption" and state they do not know its value --
 so it carries `eta_mu_evidence_status = author_declared_arbitrary` and is **never composed into any
 figure in this document**. T3 facility rows report no cost of this kind themselves, so their GeV/muon is
@@ -425,7 +430,10 @@ program. (E_mu single accounting home: the rate-ledger `E_mu_cost` row points he
 
 ## What a muon is allowed to cost: the Kou-Chen cycle-closure ceiling
 Kou & Chen (arXiv:2607.10989) close the muCF cycle the way Lawson closes a thermonuclear one. Their
-eq.(15) gives the **maximum tolerable muon cost**, `E_cost,max = (eta_sys * E_use / G_mu) * N_fus,mu`.
+eq.(15) gives the **maximum tolerable muon cost**. Their printed form carries the cycle-strength factor
+`L_mu / (1 + omega_eff * L_mu)`; that factor *is* `N_fus,mu` by their own eq.(2), and it is substituted
+here to read `E_cost,max = (eta_sys * E_use / G_mu) * N_fus,mu` -- an exact rewriting on their algebra,
+not a form the paper prints.
 At their own accounting -- `eta_sys` = {H['eta_sys']}, `G_mu` = {H['g_mu_target']} (breakeven),
 `N_fus,mu` = {H['n_fus']} (their Table I LAMPF/Jones anchor, the best historically demonstrated yield):
 
@@ -450,8 +458,12 @@ Against that ceiling, the only chain points this ledger can actually source -- e
 | electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | {H['chain_elecmin']} | {H['ratio_elecmin_kc']}x | {H['ratio_elecmin_kelly']}x |
 | electrical per mu- produced (site-wide) | `electrical_site` | {H['chain_elecsite']} | {H['ratio_elecsite_kc']}x | {H['ratio_elecsite_kelly']}x |
 
-Read in the criterion's own coordinates, at `E_use` = {H['e_use_kouchen']} MeV, with `omega_crit` the
-eq.(12) sticking no-go boundary `1 / (G_mu * N_L)`:
+Read in the criterion's own coordinates, at `E_use` = {H['e_use_kouchen']} MeV. **`G_mu` carries two
+distinct meanings in eq.(12) and they must not be substituted into each other:** the row below reports
+the gain a chain point *achieves* at `N_fus` = {H['n_fus']}, whereas the boundary
+`omega_crit = 1 / (G_mu * N_L)` is evaluated at the *target* gain, here breakeven
+`G_mu` = {H['g_mu_target']}, so the `omega_crit` row is `1 / N_L`. Putting the achieved gain into the
+boundary formula answers a different question and yields a different number:
 
 | quantity | their {H['conventional_cost']} GeV convention | at {H['kelly_wallplug']} GeV | at {H['kelly_wallplug_site']} GeV |
 |---|---|---|---|
@@ -491,7 +503,7 @@ numeraire with every conversion sourced: beam GeV per mu- produced -> / eta_acc 
 -> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. Only the numeraire change
 is sourceable for any row today (Kelly: {H['norm_kelly_hart_rose_2021']} / {H['kelly_eta_acc']} =
 {H['kelly_wallplug']} GeV). Kelly, Hart & Rose do quote a single collapsed delivery factor,
-`eta_mu` = 0.50, but describe it verbatim as an "arbitrary but reasonable assumption" and state they do
+`eta_mu` = {H['kelly_eta_mu']}, but describe it verbatim as an "arbitrary but reasonable assumption" and state they do
 not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
 into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
 published figure in this table is a **lower bound** -- which is why the one-sided reading is the only
@@ -556,6 +568,9 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable) -> li
         _entry("shared_classes", rf"shared between the two tiers: \*\*{re.escape(H['shared_classes'])}\*\*"),
         _entry("kelly_wallplug", rf"\*\*{re.escape(H['kelly_wallplug'])} GeV per muon produced\*\*"),
         _entry("kelly_wallplug_site", rf"it costs \*\*{re.escape(H['kelly_wallplug_site'])} GeV\*\*"),
+        # eta_mu is published but never composed, which is exactly why it needs a pin: an unpinned
+        # published number can drift from the CSV with every existing guard still green.
+        _entry("kelly_eta_mu", rf"`eta_mu` = {re.escape(H['kelly_eta_mu'])}, but describe it verbatim"),
         # the Kou-Chen ceiling comparison: every cell is a shipped number and is pinned like any other
         _entry("ceiling_kc", rf"\| {re.escape(H['e_use_kouchen'])} MeV \|[^\n]*\| \*\*{re.escape(H['ceiling_kc'])} GeV\*\* \|"),
         _entry("ceiling_kelly", rf"\| {re.escape(H['e_use_kelly'])} MeV \|[^\n]*\| \*\*{re.escape(H['ceiling_kelly'])} GeV\*\* \|"),

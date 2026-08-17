@@ -125,7 +125,10 @@ program. (E_mu single accounting home: the rate-ledger `E_mu_cost` row points he
 
 ## What a muon is allowed to cost: the Kou-Chen cycle-closure ceiling
 Kou & Chen (arXiv:2607.10989) close the muCF cycle the way Lawson closes a thermonuclear one. Their
-eq.(15) gives the **maximum tolerable muon cost**, `E_cost,max = (eta_sys * E_use / G_mu) * N_fus,mu`.
+eq.(15) gives the **maximum tolerable muon cost**. Their printed form carries the cycle-strength factor
+`L_mu / (1 + omega_eff * L_mu)`; that factor *is* `N_fus,mu` by their own eq.(2), and it is substituted
+here to read `E_cost,max = (eta_sys * E_use / G_mu) * N_fus,mu` -- an exact rewriting on their algebra,
+not a form the paper prints.
 At their own accounting -- `eta_sys` = 1, `G_mu` = 1 (breakeven),
 `N_fus,mu` = 150 (their Table I LAMPF/Jones anchor, the best historically demonstrated yield):
 
@@ -150,8 +153,12 @@ Against that ceiling, the only chain points this ledger can actually source -- e
 | electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | >= 26.11 GeV | 8.53x | 6.69x |
 | electrical per mu- produced (site-wide) | `electrical_site` | >= 45.19 GeV | 14.77x | 11.59x |
 
-Read in the criterion's own coordinates, at `E_use` = 20.4 MeV, with `omega_crit` the
-eq.(12) sticking no-go boundary `1 / (G_mu * N_L)`:
+Read in the criterion's own coordinates, at `E_use` = 20.4 MeV. **`G_mu` carries two
+distinct meanings in eq.(12) and they must not be substituted into each other:** the row below reports
+the gain a chain point *achieves* at `N_fus` = 150, whereas the boundary
+`omega_crit = 1 / (G_mu * N_L)` is evaluated at the *target* gain, here breakeven
+`G_mu` = 1, so the `omega_crit` row is `1 / N_L`. Putting the achieved gain into the
+boundary formula answers a different question and yields a different number:
 
 | quantity | their 5 GeV convention | at 26.11 GeV | at 45.19 GeV |
 |---|---|---|---|
