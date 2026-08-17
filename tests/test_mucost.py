@@ -11,6 +11,7 @@ regenerates deterministically; and the muon-cost manifest verifies against MUON_
 from __future__ import annotations
 
 import csv
+import json
 import math
 import re
 from pathlib import Path
@@ -433,10 +434,6 @@ def test_published_values_are_read_from_the_ledger_not_typed(table):
     assert f"~{H['optimism_low']}-{H['optimism_high']}x optimistic relative to" in doc
 
 
-#: Spelled row counts, because CHANGELOG.md writes the count as a word.
-_ROW_COUNT_WORDS = {9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve", 13: "Thirteen", 14: "Fourteen"}
-
-
 def test_hand_written_docs_restate_the_ledger_correctly():
     """The hand-written docs carry ledger facts that nothing regenerates. Bind the facts.
 
@@ -446,9 +443,11 @@ def test_hand_written_docs_restate_the_ledger_correctly():
     them -- twice, in the same bullet. ``tests/test_g4parity.py`` does this for the dataset counts;
     this is the ledger's equivalent.
 
-    **What this binds, exactly.** The three COUNTS below are read from the ledger and asserted against
-    the prose, in both directions: the right one must be present and no other spelled count may appear
-    in the same construction. That is a real guard.
+    **What this binds, exactly.** TWO counts -- rows and tiers -- are read from the ledger and asserted
+    against the prose in both directions: the right one must be present, and no other spelled count may
+    appear in the same construction. The numeraire count is NOT prose-bound, because no hand-written
+    document states one; the assertion on it is a ledger invariant that trips if a fourth numeraire
+    appears without this test being revisited. Do not describe it as a prose binding.
 
     **What it does not bind, and why.** It cannot detect the retracted *premise* by substring, because
     a substring cannot tell an assertion from its negation -- ``datapackage.json`` correctly contains
@@ -478,6 +477,7 @@ def test_hand_written_docs_restate_the_ledger_correctly():
         if n != n_tiers:
             stale = f"across {word.lower()} tiers"
             assert stale not in changelog, f"CHANGELOG.md also says '{stale}'"
+    # ledger invariant, not a prose binding: no hand-written document states a numeraire count
     assert n_numeraires == 3, f"expected 3 numeraires in the ledger, found {n_numeraires}"
 
     for name in ("CHANGELOG.md", "README.md", "ADOPTERS.md", "paper/paper.md"):
@@ -507,6 +507,31 @@ _SHIPPED_BASIS_CLAIMS = (
     "single normalized basis",
     "one normalized basis",
 )
+
+
+def test_csv_is_structurally_well_formed():
+    """Every row must have exactly the header's field count, and match the published contract.
+
+    A free-text cell that gains an unquoted comma silently becomes two fields: the row shifts, later
+    columns take the wrong values and the last one is dropped entirely. None of the existing guards can
+    see it -- the loader coerces what it is handed, the affected columns are not rendered into
+    ``MUON_COST.md``, so the byte-diff has nothing to compare, and a shifted boolean happened to coerce
+    to the value it should have had. That is how a 27-field row shipped and survived review.
+    """
+    with MUON_COST_CSV.open(encoding="utf-8", newline="") as fh:
+        rows = list(csv.reader(fh))
+    n_fields = len(rows[0])
+    malformed = [(r[0], len(r)) for r in rows[1:] if len(r) != n_fields]
+    assert not malformed, f"rows whose field count != header's {n_fields}: {malformed}"
+
+    # and the header must match what datapackage.json publishes for this resource
+    package = json.loads((REPO / "datapackage.json").read_text(encoding="utf-8"))
+    declared = [
+        res for res in package["resources"]
+        if "muon_cost.csv" in json.dumps(res)
+    ]
+    assert len(declared) == 1, "expected exactly one muon_cost resource in datapackage.json"
+    assert len(declared[0]["schema"]["fields"]) == n_fields
 
 
 def test_a_non_sourced_chain_renders_as_a_bound_not_a_value(table):
