@@ -303,6 +303,14 @@ def test_kelly_wallplug_is_a_one_sided_bound(table):
     assert kelly.understates_stopped_in_dt_cost is True
     # rows that state no eta_acc cannot be converted, and must report NaN rather than a guess
     assert math.isnan(table["mu2e"].wallplug_lower_bound_GeV)
+    # nor can a row that is ALREADY counted in an electrical numeraire: it carries an eta_acc *and*
+    # has had that conversion applied by construction, so dividing again double-counts it and returns
+    # a cost of nothing (26.11 / 0.18 = 145.06). The two preconditions are asserted so this cannot
+    # pass vacuously if either field is later emptied.
+    elec = table["kelly_electrical_minimal"]
+    assert elec.numeraire == "electrical_minimal"
+    assert not math.isnan(elec.eta_acc_assumption)
+    assert math.isnan(elec.wallplug_lower_bound_GeV)
 
 
 def test_psi_himb_is_mu_plus_only(table):

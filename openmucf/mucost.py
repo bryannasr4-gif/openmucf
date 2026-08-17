@@ -4,8 +4,11 @@ Loads ``openmucf/data/muon_cost.csv`` (one row per published or derived muon-pro
 cost), validates each row against ``openmucf/data/muon_cost.schema.json``, and cross-checks that
 every ``source_bibkey`` resolves in ``openmucf/data/references.bib``. Mirrors ``openmucf.rates``.
 
-This is a **compilation with provenance, not an evaluation**: ``normalized_GeV_per_mu`` is beam energy
-per muon in GeV **on that row's own accounting basis** (wall-plug = this / eta_acc, kept separate);
+This is a **compilation with provenance, not an evaluation**: ``normalized_GeV_per_mu`` is energy per
+muon in GeV at **that row's own (stage, numeraire) coordinate** -- beam kinetic energy where
+``numeraire`` is ``beam_kinetic``, electrical energy where it is one of the ``electrical_*``
+denominators, and the two are not commensurable. Applying a source's ``eta_acc`` is a NUMERAIRE
+change, so it produces a separate row and is never folded into a beam-kinetic value;
 every OURS-normalization step is recorded verbatim in ``derivation``; T3 facility rows are original
 derivations ("implied, derived here, formula shown") from public beam-power/muon-rate numbers, since no
 facility reports GeV-per-stopped-muon; and an accounting credit (e.g. Kelly's x2.5 recapture,
@@ -243,9 +246,17 @@ class MuonCost:
         ``eta_acc`` is the electrical -> muon-beam (wall-plug) efficiency the source states, so this
         converts BEAM GeV to WALL-PLUG GeV; it is NOT a collection or stopping correction. Whether the
         result is a *lower bound* on the wall-plug cost per mu- stopped in D-T depends on the row's
-        basis -- see :attr:`understates_stopped_in_dt_cost`. NaN if the source states no eta_acc.
+        basis -- see :attr:`understates_stopped_in_dt_cost`.
+
+        NaN if the source states no eta_acc, **and NaN if this row is not counted in
+        ``beam_kinetic``**: a row already in an electrical numeraire has had the conversion applied
+        by construction, so dividing by ``eta_acc`` again would double-count it and return a number
+        that is not a cost of anything. Refusing is the same discipline
+        :meth:`ChainValue.render_value` applies to an unsourced chain.
         """
         if math.isnan(self.eta_acc_assumption) or not self.has_normalized:
+            return float("nan")
+        if self.numeraire != BEAM_KINETIC:
             return float("nan")
         return self.normalized_GeV_per_mu / self.eta_acc_assumption
 

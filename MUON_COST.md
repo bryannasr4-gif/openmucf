@@ -147,8 +147,8 @@ Both conventions are reported because **`N_L` is linear in `1/E_use`**, so the c
 the ratio of the two: our axis fixes the *cost* input of `N_L = E_cost / (eta_sys * E_use)` and leaves the
 other two convention-set, and quietly picking one would repeat the very error this document corrects.
 
-Against that ceiling, the only chain points this ledger can actually source -- every one of them a
-**bound**, because all of them stop at stage `produced` and the remaining factors are absent:
+Against that ceiling, the three chain points built from the open-access anchor -- every one of them a
+**bound**, because all three stop at stage `produced` and the remaining factors are absent:
 
 | chain point | numeraire | figure | vs 3.06 GeV ceiling | vs 3.90 GeV ceiling |
 |---|---|---|---|---|

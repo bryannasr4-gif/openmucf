@@ -203,13 +203,33 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
         for s in HEADLINE_ANCHOR_IDS
         if table[s].stage != "produced"
     ]
-    clause = f"{_join(at_produced)} {'is' if len(at_produced) == 1 else 'are'} beam energy per muon PRODUCED"
-    if off_produced:
-        clause += (
-            f", while {_join(off_produced)} {'is' if len(off_produced) == 1 else 'are'} carried"
-            " at a different stage of the same chain"
+    # The heterogeneity claim is derived too, not just the row lists: a typed "are not on one basis"
+    # prefix in front of a derived clause would contradict itself the moment every anchor shared a
+    # stage, which is the same shape of defect one axis down.
+    if at_produced and off_produced:
+        H["anchor_basis_sentence"] = (
+            f"Those single-GeV figures are not on one basis: {_join(at_produced)} "
+            f"{'is' if len(at_produced) == 1 else 'are'} beam energy per muon PRODUCED, while "
+            f"{_join(off_produced)} {'is' if len(off_produced) == 1 else 'are'} carried at a "
+            "different stage of the same chain"
         )
-    H["anchor_basis_clause"] = clause
+    elif at_produced:
+        H["anchor_basis_sentence"] = (
+            f"Those single-GeV figures are all at stage `produced`: {_join(at_produced)} "
+            f"{'is' if len(at_produced) == 1 else 'are'} beam energy per muon PRODUCED"
+        )
+    else:
+        H["anchor_basis_sentence"] = (
+            f"None of those single-GeV figures is at stage `produced`: {_join(off_produced)} "
+            f"{'is' if len(off_produced) == 1 else 'are'} carried further along the chain"
+        )
+    # The chain-point table's stage claim, derived for the same reason.
+    chain_stages = sorted({table[s].stage for s in CHAIN_POINT_IDS})
+    H["chain_points_stage_clause"] = (
+        f"all three stop at stage `{chain_stages[0]}`"
+        if len(chain_stages) == 1
+        else "they stop at " + _join([f"`{s}`" for s in chain_stages]) + " rather than at one stage"
+    )
     # tier medians + the gap
     m1 = table.tier_median("T1-design-study")
     m2 = table.tier_median("T2-demonstrated-tech")
@@ -411,7 +431,7 @@ full-text-verified design studies corroborate the same single-GeV scale: **{LABE
 all-collected) and **{LABELS['eliezer_henis_1994']}, ~{H['norm_eliezer_henis_1994']} GeV/muon**
 (DOI 10.13182/FST94-A30300).
 
-**Those single-GeV figures are not on one basis: {H['anchor_basis_clause']}.** On Kelly's own
+**{H['anchor_basis_sentence']}.** On Kelly's own
 accelerator efficiency the same muon costs {H['norm_kelly_hart_rose_2021']} /
 {H['kelly_eta_acc']} = **{H['kelly_wallplug']} GeV per muon produced** in ELECTRICAL energy, and on the
 same primary's site-wide denominator ({H['kelly_eta_acc_site']}) it costs **{H['kelly_wallplug_site']} GeV**
@@ -524,8 +544,8 @@ Both conventions are reported because **`N_L` is linear in `1/E_use`**, so the c
 the ratio of the two: our axis fixes the *cost* input of `N_L = E_cost / (eta_sys * E_use)` and leaves the
 other two convention-set, and quietly picking one would repeat the very error this document corrects.
 
-Against that ceiling, the only chain points this ledger can actually source -- every one of them a
-**bound**, because all of them stop at stage `produced` and the remaining factors are absent:
+Against that ceiling, the three chain points built from the open-access anchor -- every one of them a
+**bound**, because {H['chain_points_stage_clause']} and the remaining factors are absent:
 
 | chain point | numeraire | figure | vs {H['ceiling_kc']} GeV ceiling | vs {H['ceiling_kelly']} GeV ceiling |
 |---|---|---|---|---|
