@@ -143,8 +143,8 @@ requirements rather than a verdict on any group's work. Second, a **muon-cost co
 auditable basis: design studies sit at a few GeV per muon [@KellyHartRose2021], while operating
 facilities sit roughly three orders of magnitude higher on bases that are not common to the two tiers,
 and re-running the net-electrical gain under each cost tier exposes that spread in energy-return form
-(reported as "floor unvalidated, not impossible", and as an order-of-magnitude mixed-basis observation
-rather than a same-basis ratio). Third, a **pre-registered forecast registry** (FC-001) that commits probabilistic
+(reported as "floor unvalidated, not impossible"). The ledger states that spread as an
+order-of-magnitude, mixed-basis observation rather than a same-basis ratio. Third, a **pre-registered forecast registry** (FC-001) that commits probabilistic
 predictions with a portable payload hash before the experiments report, so the model can later be
 scored honestly rather than fit after the fact.
 

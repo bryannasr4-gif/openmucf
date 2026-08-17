@@ -96,7 +96,13 @@ _SHORT = {
 KOUCHEN_CONVENTIONAL_COST_GEV = 5.0
 
 CRITERION_PROVENANCE = {
-    "eta_sys": "Kou-Chen sec.IV illustrative value (they also tabulate 0.4); a lumped system efficiency.",
+    "eta_sys": (
+        "Kou-Chen sec.IV illustrative value; a lumped system efficiency. **They also tabulate 0.4**, and "
+        "`N_L` is linear in `1/eta_sys` exactly as it is in `1/E_use`, so this choice moves the answer the "
+        "same way: on their own sec.IV arithmetic `eta_sys` = 0.4 at 5 GeV raises `N_L` to 613 and lowers "
+        "`omega_crit` to 0.16%. Reported here at 1 to reproduce their headline panel, never as the only "
+        "defensible value."
+    ),
     "G_mu": "The TARGET one-muon gain in eq.(15) and the eq.(12) no-go boundary; G_mu = 1 is breakeven.",
     "N_fus": "Kou-Chen Table I, LAMPF/Jones anchor -- the best historically demonstrated yield per muon.",
     "E_use_kouchen": (
@@ -182,6 +188,7 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     # printing the old digit, and no guard would notice: `provenance --check` only compares the manifest
     # against the document, so a literal that appears in both stays self-consistent while both are stale.
     H["kelly_eta_mu"] = f"{kelly.eta_mu_assumption:.2f}"
+    H["kelly_recapture"] = f"{kelly.recapture_factor:g}"
 
     # ---- the Kou-Chen cycle-closure comparison (all derived, nothing transcribed) ----
     H["eta_sys"] = f"{ETA_SYS:g}"
@@ -325,7 +332,7 @@ def build_markdown(table: mucost.MuonCostTable, H: dict[str, str]) -> str:
 > and are not commensurable across either axis**, so every aggregate below is computed within one
 > numeraire and discloses its stage composition. T3 facility rows are ORIGINAL DERIVATIONS ("implied,
 > derived here, formula shown") -- no operating facility reports a per-stopped-muon energy cost. An
-> accounting credit (Kelly's x2.5 recapture) is recorded in its own flagged column, never folded into the
+> accounting credit (Kelly's x{H['kelly_recapture']} recapture) is recorded in its own flagged column, never folded into the
 > normalized value, and a factor whose own authors call it arbitrary (Kelly's `eta_mu`) is recorded but
 > **never composed into any figure quoted here**.
 
@@ -388,7 +395,7 @@ figure composing one of those is reported as a **bound, never a value**.
 Three factors are deliberately kept in their own flagged columns rather than folded into any row's
 value: the **accelerator efficiency** `eta_acc` (Kelly's {H['kelly_eta_acc']}) -- applying it produces a
 *separate row in a different numeraire*, never a silent edit to the beam-kinetic one, so both readings
-stay side by side and auditable; the **recapture/breeding credit** `recapture_factor` (Kelly's x2.5,
+stay side by side and auditable; the **recapture/breeding credit** `recapture_factor` (Kelly's x{H['kelly_recapture']},
 recorded with `recapture_credit_applied=false`); and the **delivery factor** `eta_mu` (Kelly's {H['kelly_eta_mu']}),
 whose authors call it an "arbitrary but reasonable assumption" and state they do not know its value --
 so it carries `eta_mu_evidence_status = author_declared_arbitrary` and is **never composed into any
@@ -444,6 +451,7 @@ At their own accounting -- `eta_sys` = {H['eta_sys']}, `G_mu` = {H['g_mu_target'
 
 - **{H['e_use_kouchen']} MeV:** {CRITERION_PROVENANCE['E_use_kouchen']}
 - **{H['e_use_kelly']} MeV:** {CRITERION_PROVENANCE['E_use_kelly']}
+- **`eta_sys` = {H['eta_sys']}:** {CRITERION_PROVENANCE['eta_sys']}
 
 Both conventions are reported because **`N_L` is linear in `1/E_use`**, so the choice moves the answer by
 the ratio of the two: our axis fixes the *cost* input of `N_L = E_cost / (eta_sys * E_use)` and leaves the
@@ -571,6 +579,7 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable) -> li
         # eta_mu is published but never composed, which is exactly why it needs a pin: an unpinned
         # published number can drift from the CSV with every existing guard still green.
         _entry("kelly_eta_mu", rf"`eta_mu` = {re.escape(H['kelly_eta_mu'])}, but describe it verbatim"),
+        _entry("kelly_recapture", rf"`recapture_factor` \(Kelly's x{re.escape(H['kelly_recapture'])},"),
         # the Kou-Chen ceiling comparison: every cell is a shipped number and is pinned like any other
         _entry("ceiling_kc", rf"\| {re.escape(H['e_use_kouchen'])} MeV \|[^\n]*\| \*\*{re.escape(H['ceiling_kc'])} GeV\*\* \|"),
         _entry("ceiling_kelly", rf"\| {re.escape(H['e_use_kelly'])} MeV \|[^\n]*\| \*\*{re.escape(H['ceiling_kelly'])} GeV\*\* \|"),

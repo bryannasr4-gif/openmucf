@@ -162,7 +162,7 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `data/g4/d1/`, `DATASET_D1.md` | the D1 nuclear-capture dataset in `parity` mode + its findings (see below) |
 | `openmucf/data/` | `rates.csv`, `validation_targets.csv`, `references.bib`, schema |
 | `forecasts/`, `FORECASTS.md` | pre-registered, hash-stamped forecast cards (FC-001) + protocol + registry table |
-| `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + 10³ gap, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
+| `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + mixed-basis tier spread, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
 | `examples/`, `notebooks/` | runnable `quickstart.py` + `quickstart.ipynb` |
 | `docs/` | getting-started + API overview |
 | `MODEL_SPEC.md`, `LITERATURE.md`, `PRE_REGISTRATION.md` | the physics, numbers, and locked targets |

@@ -74,6 +74,14 @@
     },
     {
       "doc": "MUON_COST.md",
+      "id": "kelly_recapture",
+      "pattern": "`recapture_factor` \\(Kelly's x2\\.5,",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "2.5"
+    },
+    {
+      "doc": "MUON_COST.md",
       "id": "ceiling_kc",
       "pattern": "\\| 20\\.4 MeV \\|[^\\n]*\\| \\*\\*3\\.06 GeV\\*\\* \\|",
       "source": "scripts/generate_mucost.py",
@@ -363,6 +371,6 @@
   ],
   "generated_by": "scripts/generate_mucost.py",
   "inputs": {
-    "muon_cost_csv_sha256": "e15d470f7af2d7b50aa46aa296980cae50e3857361386286e89e67f340d943d0"
+    "muon_cost_csv_sha256": "cc4ff46415a1710b75ddf0b366ce206db5389def774b497b7b4900f4f8fa012f"
   }
 }

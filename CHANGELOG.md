@@ -10,6 +10,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — every muon cost now carries its stage and its numeraire (2026-08-16)
+`normalized_GeV_per_mu` was a bare number. Each row now states **where on the muCF chain** the muon
+has got (`produced -> captured -> transported -> moderated -> stopped_useful_in_dt`) and **what kind
+of energy** is being counted (`beam_kinetic`, or electrical on either of the two facility
+denominators the same PSI primary states). Wall-plug is treated as a numeraire, not a stage: dividing
+by an accelerator efficiency changes the units and applies at any stage. `basis_class` is kept as a
+deprecated alias and the loader errors if the two ever disagree. The re-labelling moved **no**
+published value, and a test pins that.
+- Enforced in code, not prose: `ChainValue` carries a figure with its stage, numeraire and the
+  evidence status of every factor composed into it. A figure short of the terminal stage, or
+  composing a factor its own source calls arbitrary, is a **bound** — `render()` prefixes `>= ` and
+  `render_value()` raises. All aggregation is restricted to a single numeraire, which is why the
+  neutrons-per-joule medians did not move when electrical rows joined the table.
+- Two derived rows added: Kelly, Hart & Rose's beam figure re-expressed in electrical energy on the
+  18.3% minimally-required-subsystem and 10.4% site-wide denominators. Both stay at stage
+  `produced`; a numeraire change is not a stage advance.
+- The delivery factor whose authors call it an "arbitrary but reasonable assumption" is recorded in
+  its own flagged column and composed into nothing that is published.
+
+### Retracted — the "10^3 simulation-to-facility gap" (2026-08-16)
+That heading asserted a **same-basis ratio**, which the text beneath it already denied: no basis
+class is shared between the design-study and operating-facility tiers, so the quantity has no common
+denominator to be a ratio *of*. The spread itself is unchanged and is now stated as what the data
+supports — an **order-of-magnitude, mixed-basis, one-sided observation**, with its basis composition
+printed. The test that pinned the old claim was re-specified rather than deleted, so what was
+retracted and why is recorded in the suite.
+- **This retraction applies retroactively to the v1.1.0 entry below**, which states the gap "is
+  proved from the table itself", and to its `FINDINGS.md` §2b companion. Those release notes are
+  historical record and are left as written; read them against this entry.
+- `FINDINGS.md` and `NEUTRONOMICS.md` still carry the retracted phrasing. Both are byte-diffed
+  audited artifacts regenerated from their own generators, and correcting them is the job of the
+  downstream basis pass; they are unchanged here by design and are **owed before any tag**.
+
+### Added — the Kou-Chen cycle-closure ceiling (2026-08-16)
+A ceiling on what a muon may cost, computed from declared constants on both the 20.4 MeV convention
+their paper adopts and the 26.0 MeV a primary derives, with this ledger's sourceable chain points
+placed against it and a coverage table showing, per source, which conversions are actually sourced.
+`references.bib` gains `Kovach2017` and `KouChenLawson2026` — the latter deliberately NOT
+`KouChen2026`, which already exists and is bound to a different paper by the same authors.
+
 ### Added — the D1 isotope-resolution audit, established from the primary literature (2026-08-15)
 `isotope_resolved` was previously derived from the shape of the compiled-in table: true if and only
 if a `Z` carried more than one record. Every one of the 90 records has now been checked against the

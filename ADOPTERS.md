@@ -27,7 +27,7 @@ community and its funders, with what each would actually consume and what would 
 
 ## What to cite (trust map)
 Cite along the README **trust map** (`README.md`, "What you may cite"): **GREEN** outputs (muon-cost
-ledger + 10³ gap, Q Rosetta stone, neutrons-per-joule table, breakeven falsification & requirements form,
+ledger + the mixed-basis tier spread, Q Rosetta stone, neutrons-per-joule table, breakeven falsification & requirements form,
 sensitivity split, forecast-registry machinery) are citable as-is; **AMBER** (the calibrated ω_s^eff / λ_c
 posterior, X_μ at the 300 K anchor) with its stated basis; **RED** (the λ_c(T) / X_μ(T) temperature shape,
 anything at φ > 1.45, the ω_s0/R split, all off-anchor `formation.py` outputs) is illustrative only. The

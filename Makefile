@@ -38,7 +38,7 @@ twin-audit:
 materiality: findings
 	python scripts/generate_materiality.py
 
-# muon-cost ledger (WS-E). Regenerates MUON_COST.md + the 10^3-gap PNG + MUON_COST_MANIFEST.json.
+# muon-cost ledger (WS-E). Regenerates MUON_COST.md + the tier-spread PNG + MUON_COST_MANIFEST.json.
 # The PNG is NEVER byte-diffed (matplotlib/freetype bytes are not cross-platform stable); only the .md
 # and the manifest join the audit git-diff list below. All committed numbers are pure arithmetic on the
 # committed muon_cost.csv (no MCMC/solver), so the two byte-diffed artifacts are cross-arch stable.

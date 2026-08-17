@@ -139,6 +139,7 @@ At their own accounting -- `eta_sys` = 1, `G_mu` = 1 (breakeven),
 
 - **20.4 MeV:** **not sourced in arXiv:2607.10989.** The paper attributes 'about 20 MeV' to the same Jones accounting that supplies its 5 GeV muon cost, so the useful-energy input rests on exactly the convention this axis is questioning. Adopted here only to reproduce their numbers on their terms.
 - **26.0 MeV:** primary-derived, and larger, because the same fusion also breeds tritium exothermically: 17.6 MeV of fusion kinetic energy + 1.75 breeding reactions per fusion neutron x 4.8 MeV each (Kelly, Hart & Rose sec.2). Reported alongside the 20.4 MeV convention, never substituted for it.
+- **`eta_sys` = 1:** Kou-Chen sec.IV illustrative value; a lumped system efficiency. **They also tabulate 0.4**, and `N_L` is linear in `1/eta_sys` exactly as it is in `1/E_use`, so this choice moves the answer the same way: on their own sec.IV arithmetic `eta_sys` = 0.4 at 5 GeV raises `N_L` to 613 and lowers `omega_crit` to 0.16%. Reported here at 1 to reproduce their headline panel, never as the only defensible value.
 
 Both conventions are reported because **`N_L` is linear in `1/E_use`**, so the choice moves the answer by
 the ratio of the two: our axis fixes the *cost* input of `N_L = E_cost / (eta_sys * E_use)` and leaves the
