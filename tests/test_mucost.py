@@ -392,7 +392,7 @@ def test_eq15_ceiling_recomputes_from_the_criterion_constants(table):
     n_L = gen.eq9_cycle_demand(5.0, gen.E_USE_KOUCHEN_MEV)
     assert n_L == pytest.approx(5000.0 / 20.4) == pytest.approx(245.1, abs=0.05)
     assert gen.eq12_omega_crit(n_L) * 100.0 == pytest.approx(0.408, abs=0.001)
-    assert gen.eq10_one_muon_gain(n_L) == pytest.approx(150.0 / n_L)
+    assert gen.one_muon_gain(n_L) == pytest.approx(150.0 / n_L)
     # The eta_sys = 0.4 case is PUBLISHED in the eta_sys provenance bullet as the paper's own sec.IV
     # arithmetic, and it was the one quoted source pair with no guard: reproduce both digits here so a
     # constant cannot move underneath a sentence that attributes them to Kou & Chen.

@@ -129,7 +129,12 @@ CRITERION_PROVENANCE = {
 def eq15_max_muon_cost_GeV(
     e_use_MeV: float, eta_sys: float = ETA_SYS, n_fus: float = N_FUS, g_mu: float = G_MU_TARGET
 ) -> float:
-    """Kou-Chen eq.(15): the maximum tolerable muon cost, E_cost,max = (eta_sys * E_use / G_mu) * N_fus."""
+    """Kou-Chen eq.(15)'s ceiling, in the N_fus,mu form: (eta_sys * E_use / G_mu) * N_fus,mu.
+
+    Their printed eq.(15) carries the cycle-strength factor L_mu / (1 + omega_eff * L_mu); that factor
+    IS N_fus,mu by their eq.(2), so this is an exact rewriting on their algebra, NOT a form the paper
+    prints -- the same disclosure MUON_COST.md and the bibliography carry for it.
+    """
     return (eta_sys * e_use_MeV / g_mu) * n_fus / MEV_PER_GEV
 
 
@@ -138,8 +143,14 @@ def eq9_cycle_demand(e_cost_GeV: float, e_use_MeV: float, eta_sys: float = ETA_S
     return (e_cost_GeV * MEV_PER_GEV) / (eta_sys * e_use_MeV)
 
 
-def eq10_one_muon_gain(n_L: float, n_fus: float = N_FUS) -> float:
-    """Kou-Chen eq.(10): the achieved one-muon gain G_mu = N_fus,mu / N_L."""
+def one_muon_gain(n_L: float, n_fus: float = N_FUS) -> float:
+    """The achieved one-muon gain as G_mu = N_fus,mu / N_L -- a rewriting, not a printed form.
+
+    Their eq.(8) prints G_mu = (eta_sys * E_use / E_cost) * N_fus,mu and their eq.(9) defines
+    N_L = E_cost / (eta_sys * E_use); eq.(8) taken with eq.(9) gives this quotient. It is NOT their
+    eq.(10), which is the different substitution G_mu = (1/N_L) * L_mu / (1 + omega_eff * L_mu),
+    reached by putting eq.(2) into eq.(8) -- so this must not be attributed to eq.(10).
+    """
     return n_fus / n_L
 
 
@@ -223,14 +234,14 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
             n_L = eq9_cycle_demand(cv.value_GeV, e_use)
             H[f"ratio_{short}_{key}"] = f"{cv.value_GeV / eq15_max_muon_cost_GeV(e_use):.2f}"
             H[f"nl_{short}_{key}"] = f"{n_L:.1f}"
-            H[f"gmu_{short}_{key}"] = f"{eq10_one_muon_gain(n_L):.3f}"
+            H[f"gmu_{short}_{key}"] = f"{one_muon_gain(n_L):.3f}"
             H[f"omegacrit_{short}_{key}"] = f"{eq12_omega_crit(n_L) * 100.0:.3g}"
             H[f"overshoot_{short}_{key}"] = f"{omega_anchor / (eq12_omega_crit(n_L) * 100.0):.1f}"
     # their own 5 GeV convention, for the same three columns -- the row this program is questioning
     n_L_conv = eq9_cycle_demand(KOUCHEN_CONVENTIONAL_COST_GEV, E_USE_KOUCHEN_MEV)
     H["conventional_cost"] = f"{KOUCHEN_CONVENTIONAL_COST_GEV:g}"
     H["nl_conventional"] = f"{n_L_conv:.1f}"
-    H["gmu_conventional"] = f"{eq10_one_muon_gain(n_L_conv):.3f}"
+    H["gmu_conventional"] = f"{one_muon_gain(n_L_conv):.3f}"
     H["omegacrit_conventional"] = f"{eq12_omega_crit(n_L_conv) * 100.0:.3g}"
     H["overshoot_conventional"] = f"{omega_anchor / (eq12_omega_crit(n_L_conv) * 100.0):.1f}"
     # The optimism factor and the one-decimal conventional gain are PUBLISHED in the claim paragraph, so
@@ -243,7 +254,7 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["optimism_high"] = (
         f"{table['kelly_electrical_site'].normalized_GeV_per_mu / KOUCHEN_CONVENTIONAL_COST_GEV:.0f}"
     )
-    H["gmu_conventional_1dp"] = f"{eq10_one_muon_gain(n_L_conv):.1f}"
+    H["gmu_conventional_1dp"] = f"{one_muon_gain(n_L_conv):.1f}"
 
     # Coverage is the deliverable. Count what is actually sourced across the whole ledger.
     cov = coverage_rows(table)
