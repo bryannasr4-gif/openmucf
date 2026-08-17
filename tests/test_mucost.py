@@ -309,6 +309,17 @@ def test_psi_himb_is_mu_plus_only(table):
     assert table["psi_himb"].charge_basis == "mu_plus_only"
 
 
+def test_music_is_mixed_charge(table):
+    """MuSIC's published rate counts mu+ and mu- together -- pinned to the source, not just to the doc.
+
+    ``test_published_values_are_read_from_the_ledger_not_typed`` binds document to ledger; this binds
+    ledger to source, which is the other half. Without it the CSV could be set to a wrong charge basis
+    and every document-vs-ledger check would stay green because both moved together. PSI HIMB already
+    had this pin (``test_psi_himb_is_mu_plus_only``); MuSIC did not.
+    """
+    assert table["music"].charge_basis == "mixed"
+
+
 def test_t3_rows_carry_derivation(table):
     """Every T3 (facility) row is an 'implied, derived here' row -- derivation must be non-empty and
     show the arithmetic; and every row's derivation is non-empty."""
@@ -416,7 +427,7 @@ def test_published_values_are_read_from_the_ledger_not_typed(table):
     doc = " ".join((REPO / "MUON_COST.md").read_text(encoding="utf-8").split())
     # Anchored to each row's OWN sentence, not to a bare token: `charge_basis` draws from a small
     # vocabulary, so a bare-token check is satisfied by whichever row happens to render that value --
-    # setting MuSIC to `mu_plus_only` would then match PSI HIMB's token and the drill would pass.
+    # setting MuSIC to `mu_plus_only` would then match PSI HIMB's token and the check would pass.
     assert f"MuSIC's figure is `{H['charge_music']}`" in doc
     assert f"PSI HIMB is `{H['charge_psi_himb']}`" in doc
     assert f"~{H['optimism_low']}-{H['optimism_high']}x optimistic relative to" in doc
@@ -427,33 +438,70 @@ _ROW_COUNT_WORDS = {9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve", 13: "Thirt
 
 
 def test_hand_written_docs_restate_the_ledger_correctly():
-    """The hand-written docs carry ledger facts that nothing regenerates. Bind them.
+    """The hand-written docs carry ledger facts that nothing regenerates. Bind the facts.
 
     ``MUON_COST.md`` is generated, byte-diffed and provenance-checked, so a stale digit there dies at
     the gate. ``CHANGELOG.md`` and ``README.md`` restate the same facts by hand with no such binding,
-    which is exactly how a row count and a retracted single-basis premise both survived a change that
-    moved them -- twice, in the same bullet. ``tests/test_g4parity.py`` already does this for the
-    dataset counts; this is the ledger's equivalent.
+    which is how a row count and a retracted single-basis premise both survived a change that moved
+    them -- twice, in the same bullet. ``tests/test_g4parity.py`` does this for the dataset counts;
+    this is the ledger's equivalent.
 
-    If a document ever needs to QUOTE the retracted phrasing in order to retract it, put that in
-    ``MUON_COST.md`` (which is generated and audited) or amend ``_RETRACTED_BASIS_CLAIMS`` here with
-    the reason -- do not weaken the check silently.
+    **What this binds, exactly.** The three COUNTS below are read from the ledger and asserted against
+    the prose, in both directions: the right one must be present and no other spelled count may appear
+    in the same construction. That is a real guard.
+
+    **What it does not bind, and why.** It cannot detect the retracted *premise* by substring, because
+    a substring cannot tell an assertion from its negation -- ``datapackage.json`` correctly contains
+    "NOT a single common basis", and banning that string would fail on correct text. The list below is
+    therefore a **regression guard for the four wordings this repo has actually shipped**, not a
+    detector for the class; paraphrases will pass it and are left to review. Do not describe it as
+    more than that.
     """
     table = mucost.load_muon_cost()
-    n_rows = len(list(table))
+    rows = list(table)
+    n_rows = len(rows)
+    n_tiers = len({r.tier for r in rows})
+    n_numeraires = len({r.numeraire for r in rows if r.numeraire})
     changelog = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
-    word = _ROW_COUNT_WORDS[n_rows]
-    assert f"{word} rows across" in changelog, (
-        f"CHANGELOG.md must say '{word} rows across' -- the ledger has {n_rows} rows"
+
+    assert f"{_count_word(n_rows)} rows across" in changelog, (
+        f"CHANGELOG.md must say '{_count_word(n_rows)} rows across' -- the ledger has {n_rows} rows"
     )
+    assert f"across {_count_word(n_tiers).lower()} tiers" in changelog, (
+        f"CHANGELOG.md must say 'across {_count_word(n_tiers).lower()} tiers' -- the ledger has {n_tiers}"
+    )
+    # and no OTHER spelled count may appear in the same construction, so a stale restatement cannot
+    # simply coexist beside the correct one (asserting presence alone does not assert absence)
+    for n, word in _COUNT_WORDS.items():
+        if n != n_rows:
+            assert f"{word} rows across" not in changelog, f"CHANGELOG.md also says '{word} rows across'"
+        if n != n_tiers:
+            stale = f"across {word.lower()} tiers"
+            assert stale not in changelog, f"CHANGELOG.md also says '{stale}'"
+    assert n_numeraires == 3, f"expected 3 numeraires in the ledger, found {n_numeraires}"
+
     for name in ("CHANGELOG.md", "README.md", "ADOPTERS.md", "paper/paper.md"):
         text = (REPO / name).read_text(encoding="utf-8").lower()
-        for claim in _RETRACTED_BASIS_CLAIMS:
+        for claim in _SHIPPED_BASIS_CLAIMS:
             assert claim not in text, f"{name} still asserts '{claim}'; the rows are not on a common basis"
 
 
-#: The retracted premise, in the wordings it has actually appeared in.
-_RETRACTED_BASIS_CLAIMS = (
+#: Spelled counts, because the prose writes them as words. Wide enough that growth does not KeyError.
+_COUNT_WORDS = {
+    1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six", 7: "Seven", 8: "Eight",
+    9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve", 13: "Thirteen", 14: "Fourteen",
+    15: "Fifteen", 16: "Sixteen", 17: "Seventeen", 18: "Eighteen", 19: "Nineteen", 20: "Twenty",
+}
+
+
+def _count_word(n: int) -> str:
+    """Spelled form of ``n``, or the digits if the ledger grows past the table."""
+    return _COUNT_WORDS.get(n, str(n))
+
+
+#: The exact wordings of the retracted premise that this repo has actually shipped. A REGRESSION guard
+#: for these four strings only -- see the docstring above for why it cannot be more than that.
+_SHIPPED_BASIS_CLAIMS = (
     "one auditable basis",
     "single auditable basis",
     "single normalized basis",
