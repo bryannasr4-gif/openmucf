@@ -36,9 +36,13 @@ denominator to be a ratio *of*. The spread itself is unchanged and is now stated
 supports — an **order-of-magnitude, mixed-basis, one-sided observation**, with its basis composition
 printed. The test that pinned the old claim was re-specified rather than deleted, so what was
 retracted and why is recorded in the suite.
-- **This retraction applies retroactively to the v1.1.0 entry below**, which states the gap "is
-  proved from the table itself", and to its `FINDINGS.md` §2b companion. Those release notes are
-  historical record and are left as written; read them against this entry.
+- **It applies to three statements still standing in this same `[Unreleased]` section**, not to a
+  released one: the muon-cost bullet, which said the gap "is proved from the table itself"; its
+  `FINDINGS.md` §2b companion, which called the median collapse "the 10³ gap in energy-return form";
+  and the neutronomics bullet, which said the gap "transfers one-for-one to the neutron economy". The
+  first is corrected below, because this entry owns it. The other two describe `FINDINGS.md` and
+  `NEUTRONOMICS.md`, which are left unchanged by design (see the next bullet); both are marked in
+  place and are **owed before any tag**.
 - `FINDINGS.md` and `NEUTRONOMICS.md` still carry the retracted phrasing. Both are byte-diffed
   audited artifacts regenerated from their own generators, and correcting them is the job of the
   downstream basis pass; they are unchanged here by design and are **owed before any tag**.
@@ -230,11 +234,14 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   per muon; wall-plug and recapture credits kept in separate flagged columns, never folded). Ten rows across
   three tiers — design studies (anchor: Kelly–Hart–Rose 4.70 GeV/μ, open access; corroborated by
   full-text-verified Bertin 1987 and Eliezer–Henis 1994), demonstrated technology, and operating facilities
-  (mu2e/COMET/MuSIC/HIMB — original derivations with the arithmetic shown). The 10³ simulation-to-facility
-  gap is proved from the table itself and drawn in `figures/muon_cost_gap.png`.
+  (mu2e/COMET/MuSIC/HIMB — original derivations with the arithmetic shown). The tier spread is drawn in
+  `figures/muon_cost_gap.png`. **Corrected by the retraction above:** it is an order-of-magnitude,
+  mixed-basis, one-sided observation, not a same-basis ratio proved from the table.
 - **`FINDINGS.md` §2b — Q_net by muon-cost tier.** The forward-UQ Q_net is re-run under T1/T2/T3 E_μ priors
   (via `uq.qnet_tier_panel`), holding every measured input fixed; the median Q_net collapses ~10⁵× from
-  design-study to facility muons — the 10³ gap in energy-return form. The default flat [2, 10] GeV E_μ box
+  design-study to facility muons — described here at the time as "the 10³ gap in energy-return form"
+  (**retracted above**; `FINDINGS.md` still carries that phrasing and is the downstream basis pass's).
+  The default flat [2, 10] GeV E_μ box
   in §1/§2 is unchanged (the tier panel is an added section, not a replacement).
 - `MUON_COST.md` + `MUON_COST_MANIFEST.json` join `make audit` (regenerated + byte-diffed; the PNG is not
   byte-diffed); the provenance manifest check now covers the muon-cost manifest too.
@@ -259,8 +266,9 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   never a single blended row — computed as X_μ / (E_μ,tier in J) with the **measured** record yield
   X_μ = 113 (`calibrate.OBS['xmu_obs']` / ledger target `V_petitjean_Xmu`, not the forward-UQ median). At
   the design-study muon cost μCF is competitive with a spallation source (~43 MeV of beam per neutron) and
-  ~10³× better than a sealed-tube D-T generator; at the operating-facility muon cost the ~10³ muon-cost gap
-  transfers one-for-one to the neutron economy. A short sourced table of alternative 14 MeV/n sources
+  ~10³× better than a sealed-tube D-T generator; at the operating-facility muon cost the ~10³ muon-cost
+  spread transfers one-for-one to the neutron economy (**retracted above** as a same-basis ratio;
+  `NEUTRONOMICS.md` still carries that phrasing and is the downstream basis pass's). A short sourced table of alternative 14 MeV/n sources
   (Thermo P385 sealed tube, FNG, RTNS-II, ISIS spallation) is included, each n/J derived from published
   beam parameters. Beam basis only (wall-plug kept separate, I5); neutron-source economics, not breakeven
   (I9); no new physics (I1). `NEUTRONOMICS.md` + `NEUTRONOMICS_MANIFEST.json` join `make audit`.

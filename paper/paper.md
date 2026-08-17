@@ -140,7 +140,8 @@ under measured, unpolarized ranges the probability of exceeding 500 fusions per 
 zero, and even with an unbounded cycling rate the projection requires a reactivation fraction
 $R \gtrsim 0.77$ versus the model-derived $\approx 0.35$ — a falsifiable, quantified bet stated as
 requirements rather than a verdict on any group's work. Second, a **muon-cost compilation** on one
-auditable basis: design studies sit at a few GeV per muon [@KellyHartRose2021], while operating
+auditable compilation, each row carrying its own accounting basis: design studies sit at a few GeV
+per muon [@KellyHartRose2021], while operating
 facilities sit roughly three orders of magnitude higher on bases that are not common to the two tiers,
 and re-running the net-electrical gain under each cost tier exposes that spread in energy-return form
 (reported as "floor unvalidated, not impossible"). The ledger states that spread as an

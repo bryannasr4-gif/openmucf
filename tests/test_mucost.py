@@ -133,7 +133,7 @@ def test_normalized_positive_and_tier_ordered(table):
     assert m1 < m2 < m3, (m1, m2, m3)
 
 
-def test_tier_spread_is_an_order_of_magnitude_mixed_basis_observation(table):
+def test_tier_spread_is_about_three_orders_of_magnitude_on_mixed_bases(table):
     """The tier-median spread T3/T1 is ~10^3 -- an ORDER-OF-MAGNITUDE, MIXED-BASIS OBSERVATION.
 
     RE-SPECIFIED (was ``test_ten_to_the_three_gap_from_the_table``, which asserted ``ratio >= 1.0e3``
@@ -381,11 +381,41 @@ def test_eq15_ceiling_recomputes_from_the_criterion_constants(table):
     assert n_L == pytest.approx(5000.0 / 20.4) == pytest.approx(245.1, abs=0.05)
     assert gen.eq12_omega_crit(n_L) * 100.0 == pytest.approx(0.408, abs=0.001)
     assert gen.eq10_one_muon_gain(n_L) == pytest.approx(150.0 / n_L)
+    # The eta_sys = 0.4 case is PUBLISHED in the eta_sys provenance bullet as the paper's own sec.IV
+    # arithmetic, and it was the one quoted source pair with no guard: reproduce both digits here so a
+    # constant cannot move underneath a sentence that attributes them to Kou & Chen.
+    n_L_conservative = gen.eq9_cycle_demand(5.0, gen.E_USE_KOUCHEN_MEV, eta_sys=0.4)
+    assert n_L_conservative == pytest.approx(613.0, abs=0.5)
+    assert gen.eq12_omega_crit(n_L_conservative) * 100.0 == pytest.approx(0.16, abs=0.005)
     # and the committed document carries exactly these, to the precision it prints
     H = gen.build_headline(table)
     assert H["ceiling_kc"] == "3.06" and H["ceiling_kelly"] == "3.90"
     doc = (REPO / "MUON_COST.md").read_text(encoding="utf-8")
     assert "**3.06 GeV**" in doc and "**3.90 GeV**" in doc
+
+
+def test_published_values_are_read_from_the_ledger_not_typed(table):
+    """Every value this document publishes about the ledger must move when the ledger moves.
+
+    Three findings in three consecutive rounds had the same shape: a structured column (``eta_mu``,
+    ``recapture_factor``, ``charge_basis``) or a derived ratio published as a literal typed into the
+    template, so the CSV could move while the document kept printing the old value and every guard
+    stayed green -- ``provenance --check`` compares the manifest to the document, and a literal that
+    appears in both stays self-consistent while both are stale. This asserts the rendered values equal
+    a recomputation from the ledger, which is what makes the byte-diff a live drift detector for them.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table)
+    assert H["charge_music"] == table["music"].charge_basis
+    assert H["charge_psi_himb"] == table["psi_himb"].charge_basis
+    conv = gen.KOUCHEN_CONVENTIONAL_COST_GEV
+    assert H["optimism_low"] == f"{table['kelly_electrical_minimal'].normalized_GeV_per_mu / conv:.0f}"
+    assert H["optimism_high"] == f"{table['kelly_electrical_site'].normalized_GeV_per_mu / conv:.0f}"
+    # and the document actually prints them, so the assertion is about shipped bytes
+    # whitespace-collapsed, because the template's line wrapping shifts with the rendered widths
+    doc = " ".join((REPO / "MUON_COST.md").read_text(encoding="utf-8").split())
+    assert f"`{H['charge_music']}`" in doc and f"`{H['charge_psi_himb']}`" in doc
+    assert f"~{H['optimism_low']}-{H['optimism_high']}x optimistic relative to" in doc
 
 
 def test_a_non_sourced_chain_renders_as_a_bound_not_a_value(table):

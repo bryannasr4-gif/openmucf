@@ -92,7 +92,7 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   (corr ≈ +0.8; see the prior-sensitivity sweep in `CALIBRATION.md`) — the quantitative reason the Phase-3
   microscopic calculation is needed.
 - **Muon-cost normalization (`MUON_COST.md`):** a curated, provenance-tagged compilation of the
-  muon-production energy cost on one auditable basis. Design studies sit at a few GeV per muon (anchor:
+  muon-production energy cost, each row at its own (stage, numeraire) coordinate. Design studies sit at a few GeV per muon (anchor:
   Kelly–Hart–Rose 4.70 GeV/μ, open-access, G4Beamline), while operating facilities sit ~10³× higher
   (mu2e ~5×10³, COMET ~2.3×10³, MuSIC ~6×10³ GeV/μ — original derivations, arithmetic shown). Those
   tiers do **not** share a basis (see `MUON_COST.md`: no basis class is common to T1 and T3), so the

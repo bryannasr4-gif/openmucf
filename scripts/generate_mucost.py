@@ -4,10 +4,12 @@
 
 Content (WAVE2_EXECUTION_SPEC sec.1, WS-E): the open muon-cost ledger rendered as tier tables + a
 normalization-basis explainer + the tier-spread figure. This is a **curated
-compilation with provenance, not an evaluation** (I8): the single auditable basis is beam energy per
-muon in GeV; wall-plug = that / eta_acc (kept separate); T3 facility rows are original derivations
-("implied, derived here, formula shown"); an accounting credit (Kelly's x2.5 recapture) is recorded in
-its own flagged column, never folded into the normalized value.
+compilation with provenance, not an evaluation** (I8): each cost is carried at its OWN
+(stage, numeraire) coordinate and the rows are NOT on a common basis, so every aggregate is computed
+within a single numeraire; wall-plug is a numeraire rather than a stage, so applying eta_acc produces a
+separate row (kept separate); T3 facility rows are original derivations ("implied, derived here, formula
+shown"); an accounting credit (Kelly's x2.5 recapture, stated in his abstract) is recorded in its own
+flagged column, never folded into the normalized value.
 
 Paywall/headline rule (I3): the headline sentence cites Kelly (4.70, open access) FIRST as the named
 anchor, then the full-text-verified Bertin and Eliezer-Henis values as corroboration (by DOI). Rows that
@@ -69,7 +71,7 @@ LABELS = {
 # --------------------------------------------------------------------------------------------------
 ETA_SYS = 1.0  # their sec.IV illustrative system efficiency (they also show 0.4)
 G_MU_TARGET = 1.0  # the TARGET one-muon gain in eq.(15)/eq.(12); G_mu = 1 is breakeven
-N_FUS = 150.0  # their Table I LAMPF/Jones anchor: the best historically demonstrated yield
+N_FUS = 150.0  # their Table I LAMPF/Jones row, which that table types a "literature anchor"
 E_USE_KOUCHEN_MEV = 20.4  # useful energy per fusion cycle -- NOT sourced in their paper
 # Kelly, Hart & Rose sec.2 derive a larger useful energy from the same fusion: the 17.6 MeV of fusion
 # kinetic energy PLUS the exothermic tritium-breeding reactions each fusion neutron drives. Derived
@@ -97,14 +99,20 @@ KOUCHEN_CONVENTIONAL_COST_GEV = 5.0
 
 CRITERION_PROVENANCE = {
     "eta_sys": (
-        "Kou-Chen sec.IV illustrative value; a lumped system efficiency. **They also tabulate 0.4**, and "
+        "Kou-Chen sec.IV illustrative value; a lumped system efficiency. **They also report 0.4** -- in "
+        "their sec.IV running text and as a Fig.2(a) legend entry, NOT in a table: their only table, "
+        "Table I, states in its caption that its gain column is evaluated at `eta_sys` = 1 -- and "
         "`N_L` is linear in `1/eta_sys` exactly as it is in `1/E_use`, so this choice moves the answer the "
         "same way: on their own sec.IV arithmetic `eta_sys` = 0.4 at 5 GeV raises `N_L` to 613 and lowers "
         "`omega_crit` to 0.16%. Reported here at 1 to reproduce their headline panel, never as the only "
         "defensible value."
     ),
     "G_mu": "The TARGET one-muon gain in eq.(15) and the eq.(12) no-go boundary; G_mu = 1 is breakeven.",
-    "N_fus": "Kou-Chen Table I, LAMPF/Jones anchor -- the best historically demonstrated yield per muon.",
+    "N_fus": (
+        "Kou-Chen Table I, LAMPF/Jones row. That table types it a *literature anchor* at `Y_f` ~ 150 "
+        "with an adopted sticking value, not a measurement; its one row typed *experiment*, SIN/Crowe, "
+        "is `Y_f` = 124 +/- 10. Adopted here as their own headline-panel input, not as a demonstrated yield."
+    ),
     "E_use_kouchen": (
         "**not sourced in arXiv:2607.10989.** The paper attributes 'about 20 MeV' to the same Jones "
         "accounting that supplies its 5 GeV muon cost, so the useful-energy input rests on exactly the "
@@ -189,6 +197,11 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     # against the document, so a literal that appears in both stays self-consistent while both are stale.
     H["kelly_eta_mu"] = f"{kelly.eta_mu_assumption:.2f}"
     H["kelly_recapture"] = f"{kelly.recapture_factor:g}"
+    # charge_basis is PUBLISHED in the accounting-basis prose, so it is read from the ledger for the
+    # same reason eta_mu is: typing it would let the CSV move while the document kept asserting the
+    # old basis, and both the document and the manifest would stay self-consistent while both were stale.
+    H["charge_music"] = table["music"].charge_basis
+    H["charge_psi_himb"] = table["psi_himb"].charge_basis
 
     # ---- the Kou-Chen cycle-closure comparison (all derived, nothing transcribed) ----
     H["eta_sys"] = f"{ETA_SYS:g}"
@@ -220,6 +233,17 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["gmu_conventional"] = f"{eq10_one_muon_gain(n_L_conv):.3f}"
     H["omegacrit_conventional"] = f"{eq12_omega_crit(n_L_conv) * 100.0:.3g}"
     H["overshoot_conventional"] = f"{omega_anchor / (eq12_omega_crit(n_L_conv) * 100.0):.1f}"
+    # The optimism factor and the one-decimal conventional gain are PUBLISHED in the claim paragraph, so
+    # they are computed from the same two ledger rows and the same constant the table above prints. Typed
+    # as literals they would keep asserting "~5-9x" and "~0.6" after the CSV moved the costs they are
+    # ratios of -- which is exactly the defect eta_mu, x2.5 and charge_basis each turned out to be.
+    H["optimism_low"] = (
+        f"{table['kelly_electrical_minimal'].normalized_GeV_per_mu / KOUCHEN_CONVENTIONAL_COST_GEV:.0f}"
+    )
+    H["optimism_high"] = (
+        f"{table['kelly_electrical_site'].normalized_GeV_per_mu / KOUCHEN_CONVENTIONAL_COST_GEV:.0f}"
+    )
+    H["gmu_conventional_1dp"] = f"{eq10_one_muon_gain(n_L_conv):.1f}"
 
     # Coverage is the deliverable. Count what is actually sourced across the whole ledger.
     cov = coverage_rows(table)
@@ -354,16 +378,16 @@ same primary's site-wide denominator ({H['kelly_eta_acc_site']}) it costs **{H['
 because the capture, transport, moderation and stopping factors (all <= 1) have not been applied. Every
 factor omitted here pushes the cost UP, so the bound is one-sided.
 
-**The tier spread is an order of magnitude, on MIXED bases.** The tier-median rises from **{H['t1_median']}
+**The tier spread is about three orders of magnitude, on MIXED bases.** The tier-median rises from **{H['t1_median']}
 GeV** (design studies) through **{H['t2_median']} GeV** (demonstrated technology, collected-not-stopped)
 to **{H['t3_median']} GeV** (operating facilities) -- nominally **{H['gap_ratio']}x**. **That ratio is
 NOT a same-basis comparison and must not be quoted as one.** T1 contains {{{H['t1_classes']}}} rows and T3
 contains {{{H['t3_classes']}}} rows; basis classes shared between the two tiers: **{H['shared_classes']}**.
 With no shared class, a same-basis T1-vs-T3 ratio is **not computable from these rows** -- and because
 both the numerator and the denominator contain lower-bound (per-produced / per-collected) figures, the
-ratio is not cleanly bounded in either direction. The defensible statement is the **order of magnitude**,
-driven by technology, with the basis composition disclosed above. needs_verification (Jandel)
-and slide-tier (Acceleron) rows carry visible flags below and never headline.
+ratio is not cleanly bounded in either direction. The defensible statement is the spread's **order of
+magnitude**, driven by technology, with the basis composition disclosed above. needs_verification
+(Jandel) and slide-tier (Acceleron) rows carry visible flags below and never headline.
 
 ## Accounting basis (read before the tables)
 A muon cost is only meaningful as a point on a **2-D grid**, and both coordinates are carried per row:
@@ -386,8 +410,9 @@ on top of the stage-basis error.
 
 `basis_class` is the deprecated 1-D predecessor of `stage`, kept as an alias and validated against it
 (`produced -> produced`, `collected -> transported`, `stopped_in_dt -> stopped_useful_in_dt`).
-`charge_basis` records what is counted: MuSIC's figure is `mixed` (mu+ and mu- together, so the mu--only
-cost is roughly 2x higher) and PSI HIMB is `mu_plus_only` -- irrelevant to muCF, which needs mu-, and
+`charge_basis` records what is counted, and is read from the ledger here rather than described:
+MuSIC's figure is `{H['charge_music']}` (mu+ and mu- together, so the mu--only cost is roughly 2x
+higher) and PSI HIMB is `{H['charge_psi_himb']}` -- irrelevant to muCF, which needs mu-, and
 listed for scale only. `evidence_status` grades each number: `primary` / `primary_cited` /
 `derived_here` are sourced; `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
 figure composing one of those is reported as a **bound, never a value**.
@@ -442,7 +467,8 @@ eq.(15) gives the **maximum tolerable muon cost**. Their printed form carries th
 here to read `E_cost,max = (eta_sys * E_use / G_mu) * N_fus,mu` -- an exact rewriting on their algebra,
 not a form the paper prints.
 At their own accounting -- `eta_sys` = {H['eta_sys']}, `G_mu` = {H['g_mu_target']} (breakeven),
-`N_fus,mu` = {H['n_fus']} (their Table I LAMPF/Jones anchor, the best historically demonstrated yield):
+`N_fus,mu` = {H['n_fus']} (their Table I LAMPF/Jones row, which that table types a *literature
+anchor*; its one *experiment* row, SIN/Crowe, is `Y_f` = 124 +/- 10):
 
 | `E_use` per fusion cycle | source | ceiling `E_cost,max` |
 |---|---|---|
@@ -485,11 +511,14 @@ the SIN campaign value that is also Kou & Chen's Table I SIN/Crowe anchor -- rea
 retyped.)
 
 **The claim, stated exactly.** This is **not** a finding that muCF fails, and it is **not** a correction
-to Kou & Chen's mathematics, every digit of which reproduces. Their own paper already places the
-historical anchors below breakeven at `G_mu` ~ 0.5-0.6. The contribution here is narrower and sharper:
-**the cost convention that puts them there is itself ~5-9x optimistic relative to the only fully-sourced
-anchor in the field**, so the sourced `G_mu` is ~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than
-~0.6, and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
+to Kou & Chen's mathematics, every digit of which reproduces. Their own sec.IV places the historical
+anchors below breakeven, saying they "fall near the `G_mu` ~ 0.5-0.6 region"; their Table I `G_mu` column
+prints 0.51 (SIN/Crowe) and 0.61 (LAMPF/Jones), and 0.41 (Petitjean low) is the nearest value it prints
+outside that range. The contribution here is narrower and sharper:
+**the cost convention that puts them there is itself ~{H['optimism_low']}-{H['optimism_high']}x
+optimistic relative to the only fully-sourced anchor in the field**, so the sourced `G_mu` is
+~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than ~{H['gmu_conventional_1dp']},
+and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
 forbidden side of the no-go line rather than {H['overshoot_conventional']}x. **Every omitted factor pushes
 the same way**, so this reading is rigorously one-sided: the entries above are lower bounds, and the true
 costs can only be higher.

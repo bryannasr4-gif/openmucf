@@ -37,7 +37,7 @@
     },
     "basis_as_published": {
       "type": "string",
-      "description": "The quantity as the source states it (per pi-, per created mu, per stopped mu, per collected mu; beam vs wall-plug). The single normalized basis lives in normalized_GeV_per_stopped_mu; this records what the source actually reports."
+      "description": "The quantity as the source states it (per pi-, per created mu, per stopped mu, per collected mu; beam vs wall-plug). The normalized value lives in normalized_GeV_per_mu, at THAT ROW'S OWN (stage, numeraire) coordinate -- there is no single common basis; this records what the source actually reports."
     },
     "projectile_target": {
       "type": "string"
@@ -47,11 +47,11 @@
     },
     "recapture_credit_applied": {
       "type": "boolean",
-      "description": "True iff an accounting recapture/breeding credit is folded into normalized_GeV_per_stopped_mu. Kelly's x2.5 is such a credit and is kept SEPARATE (applied=false, factor in recapture_factor); a credit is never silently folded into the normalized value."
+      "description": "True iff an accounting recapture/breeding credit is folded into normalized_GeV_per_mu. Kelly's x2.5, which his abstract attributes to recapturing waste-particle kinetic energy and generating heat through tritium breeding, is such a credit and is kept SEPARATE (applied=false, factor in recapture_factor); a credit is never silently folded into the normalized value."
     },
     "recapture_factor": {
       "type": "number",
-      "description": "The recapture/breeding credit factor if the source quotes one (e.g. Kelly x2.5); recorded even when recapture_credit_applied=false, so the credit is visible but not folded in. Empty if none."
+      "description": "The recapture/breeding credit factor if the source quotes one (e.g. Kelly x2.5, stated in his abstract); recorded even when recapture_credit_applied=false, so the credit is visible but not folded in. Empty if none."
     },
     "eta_acc_assumption": {
       "type": "number",

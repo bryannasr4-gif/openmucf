@@ -8,7 +8,8 @@ This is a **compilation with provenance, not an evaluation**: ``normalized_GeV_p
 per muon in GeV **on that row's own accounting basis** (wall-plug = this / eta_acc, kept separate);
 every OURS-normalization step is recorded verbatim in ``derivation``; T3 facility rows are original
 derivations ("implied, derived here, formula shown") from public beam-power/muon-rate numbers, since no
-facility reports GeV-per-stopped-muon; and an accounting credit (e.g. Kelly's x2.5 recapture) is
+facility reports GeV-per-stopped-muon; and an accounting credit (e.g. Kelly's x2.5 recapture,
+stated in his abstract) is
 recorded in its own flagged column, never silently folded into the normalized value.
 
 **Bases are heterogeneous and are NOT commensurable.** The column was previously named
