@@ -291,8 +291,11 @@ def test_lower_bound_rows_are_flagged(table):
 def test_kelly_wallplug_is_a_one_sided_bound(table):
     """wall-plug = beam / eta_acc is an ENERGY conversion, not a stopping correction.
 
-    Kelly is the only row stating its own eta_acc (0.18, PSI-measured), so it is the only fully-sourced
-    wall-plug figure: 4.70/0.18 = 26.1 GeV per muon PRODUCED. Because that row is per-produced, the
+    Kelly's beam row states an eta_acc (0.18, PSI-measured), so the conversion is available for it, and
+    the ledger publishes the converted figures as rows of their own rather than folding them into a
+    beam-kinetic value -- which is why more than one row carries an eta_acc. Do not restate a count or
+    a uniqueness claim here: the document renders those from the ledger, and this docstring cannot.
+    Because Kelly's beam row is per-produced, the
     remaining (sub-unity) collection and stopping fractions can only raise the true per-stopped-in-D-T
     cost -- the bound is one-sided.
     """
@@ -307,10 +310,12 @@ def test_kelly_wallplug_is_a_one_sided_bound(table):
     # has had that conversion applied by construction, so dividing again double-counts it and returns
     # a cost of nothing (26.11 / 0.18 = 145.06). The two preconditions are asserted so this cannot
     # pass vacuously if either field is later emptied.
-    elec = table["kelly_electrical_minimal"]
-    assert elec.numeraire == "electrical_minimal"
-    assert not math.isnan(elec.eta_acc_assumption)
-    assert math.isnan(elec.wallplug_lower_bound_GeV)
+    for sid in ("kelly_electrical_minimal", "kelly_electrical_site"):
+        elec = table[sid]
+        assert elec.numeraire != mucost.BEAM_KINETIC
+        assert not math.isnan(elec.eta_acc_assumption)
+        assert elec.has_normalized  # else NaN would come from the missing value, not the guard
+        assert math.isnan(elec.wallplug_lower_bound_GeV)
 
 
 def test_psi_himb_is_mu_plus_only(table):

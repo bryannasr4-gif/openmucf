@@ -231,17 +231,20 @@ class MuonCost:
 
     @property
     def understates_stopped_in_dt_cost(self) -> bool:
-        """True iff this row's basis makes it a LOWER BOUND on cost per mu- stopped in D-T fuel.
+        """True iff this row's basis makes it a LOWER BOUND on cost per mu- stopped in D-T fuel,
+        **counted in this row's own numeraire**.
 
         A per-produced or per-collected figure omits the collection and stopping fractions (both < 1),
         so the real per-stopped-in-D-T cost is higher. A ``mixed`` charge basis counts mu+ alongside
-        mu-, which understates the mu--only cost the same way.
+        mu-, which understates the mu--only cost the same way. The bound is on the cost in the units
+        this row is counted in: an electrical row bounds the electrical cost, not the beam-kinetic one,
+        so the annotation this drives must not be read across numeraires.
         """
         return self.basis_class in LOWER_BOUND_CLASSES or self.charge_basis == "mixed"
 
     @property
     def wallplug_lower_bound_GeV(self) -> float:
-        """Wall-plug-equivalent GeV per muon = normalized / eta_acc, on THIS ROW'S basis.
+        """Wall-plug-equivalent GeV per muon, or NaN where this row cannot yield one.
 
         ``eta_acc`` is the electrical -> muon-beam (wall-plug) efficiency the source states, so this
         converts BEAM GeV to WALL-PLUG GeV; it is NOT a collection or stopping correction. Whether the
@@ -373,16 +376,26 @@ class MuonCostTable:
         """Every numeraire present among pinned rows."""
         return {r.numeraire for r in self._rows if r.has_normalized and r.numeraire}
 
-    def is_basis_homogeneous(self, tier: str | None = None) -> bool:
-        """True iff every pinned row shares one ``basis_class``, i.e. aggregating them is meaningful."""
-        return len(self.basis_classes(tier)) <= 1
+    def is_basis_homogeneous(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> bool:
+        """True iff the pinned rows **in one numeraire** share one ``basis_class``.
+
+        Scope, exactly: like :meth:`basis_classes` and :meth:`stages`, this inspects only the rows in
+        ``numeraire`` (beam-kinetic by default), because a basis_class comparison across numeraires
+        answers no question -- the two are different kinds of energy. It therefore does NOT tell a
+        caller that a *whole tier* is safe to aggregate when that tier holds more than one numeraire;
+        for that, compare :meth:`numeraires` as well. The parameter exists so the scope is stated in
+        the signature rather than inherited silently from a default one call down.
+        """
+        return len(self.basis_classes(tier, numeraire)) <= 1
 
     def tier_median(self, tier: str, numeraire: str = BEAM_KINETIC) -> float:
         """Median GeV/muon for ``tier`` within ONE numeraire (default beam-kinetic, over pinned rows).
 
-        WARNING: this medians whatever *stages* the tier happens to contain. No tier is currently
-        stage-homogeneous, so a cross-tier ratio of these medians is NOT a same-basis comparison --
-        check :meth:`is_basis_homogeneous` and disclose the composition before quoting one. The
+        WARNING: this medians whatever *stages* the tier happens to contain. A tier holding more than
+        one stage is not a same-basis aggregate, so a cross-tier ratio of these medians is NOT a
+        same-basis comparison -- check :meth:`stages` and :meth:`is_basis_homogeneous`, and disclose
+        the composition, before quoting one. (Which tiers those are is a property of the shipped CSV,
+        so it is stated where the CSV is rendered, never asserted here.) The
         numeraire, by contrast, IS held fixed here, because medianing beam-kinetic against electrical
         figures would not even be dimensionally meaningful.
         (``statistics.median`` sorts internally, so the result is independent of row order.)

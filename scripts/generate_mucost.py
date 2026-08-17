@@ -206,12 +206,14 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     # The heterogeneity claim is derived too, not just the row lists: a typed "are not on one basis"
     # prefix in front of a derived clause would contradict itself the moment every anchor shared a
     # stage, which is the same shape of defect one axis down.
+    if not at_produced and not off_produced:  # no anchors at all: fail loudly rather than render prose
+        raise ValueError("HEADLINE_ANCHOR_IDS is empty; the Headline has no anchors to describe")
     if at_produced and off_produced:
         H["anchor_basis_sentence"] = (
             f"Those single-GeV figures are not on one basis: {_join(at_produced)} "
             f"{'is' if len(at_produced) == 1 else 'are'} beam energy per muon PRODUCED, while "
             f"{_join(off_produced)} {'is' if len(off_produced) == 1 else 'are'} carried at a "
-            "different stage of the same chain"
+            "different stage"
         )
     elif at_produced:
         H["anchor_basis_sentence"] = (
@@ -221,12 +223,12 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     else:
         H["anchor_basis_sentence"] = (
             f"None of those single-GeV figures is at stage `produced`: {_join(off_produced)} "
-            f"{'is' if len(off_produced) == 1 else 'are'} carried further along the chain"
+            f"{'is' if len(off_produced) == 1 else 'are'} carried at another stage"
         )
     # The chain-point table's stage claim, derived for the same reason.
     chain_stages = sorted({table[s].stage for s in CHAIN_POINT_IDS})
     H["chain_points_stage_clause"] = (
-        f"all three stop at stage `{chain_stages[0]}`"
+        f"they all stop at stage `{chain_stages[0]}`"
         if len(chain_stages) == 1
         else "they stop at " + _join([f"`{s}`" for s in chain_stages]) + " rather than at one stage"
     )
@@ -245,8 +247,8 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["t3_classes"] = ", ".join(sorted(table.basis_classes("T3-operating-facility")))
     shared = table.basis_classes("T1-design-study") & table.basis_classes("T3-operating-facility")
     H["shared_classes"] = ", ".join(sorted(shared)) if shared else "none"
-    # The one fully-sourced wall-plug-equivalent figure. It is now a LEDGER ROW of its own rather than
-    # an inline recomputation, so the repo carries exactly one number for it.
+    # The fully-sourced wall-plug-equivalent figures. Each is a LEDGER ROW of its own rather than an
+    # inline recomputation, so the repo carries each number once, on its own electrical denominator.
     kelly = table["kelly_hart_rose_2021"]
     H["kelly_eta_acc"] = f"{kelly.eta_acc_assumption:g}"
     H["kelly_wallplug"] = _fmt(table["kelly_electrical_minimal"].normalized_GeV_per_mu)
@@ -544,7 +546,7 @@ Both conventions are reported because **`N_L` is linear in `1/E_use`**, so the c
 the ratio of the two: our axis fixes the *cost* input of `N_L = E_cost / (eta_sys * E_use)` and leaves the
 other two convention-set, and quietly picking one would repeat the very error this document corrects.
 
-Against that ceiling, the three chain points built from the open-access anchor -- every one of them a
+Against that ceiling, the chain points built from the open-access anchor -- every one of them a
 **bound**, because {H['chain_points_stage_clause']} and the remaining factors are absent:
 
 | chain point | numeraire | figure | vs {H['ceiling_kc']} GeV ceiling | vs {H['ceiling_kelly']} GeV ceiling |
