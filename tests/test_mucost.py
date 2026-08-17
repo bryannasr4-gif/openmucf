@@ -397,12 +397,12 @@ def test_eq15_ceiling_recomputes_from_the_criterion_constants(table):
 def test_published_values_are_read_from_the_ledger_not_typed(table):
     """Every value this document publishes about the ledger must move when the ledger moves.
 
-    Three findings in three consecutive rounds had the same shape: a structured column (``eta_mu``,
-    ``recapture_factor``, ``charge_basis``) or a derived ratio published as a literal typed into the
-    template, so the CSV could move while the document kept printing the old value and every guard
-    stayed green -- ``provenance --check`` compares the manifest to the document, and a literal that
-    appears in both stays self-consistent while both are stale. This asserts the rendered values equal
-    a recomputation from the ledger, which is what makes the byte-diff a live drift detector for them.
+    A recurring defect class: a structured column (``eta_mu``, ``recapture_factor``, ``charge_basis``)
+    or a derived ratio published as a literal typed into the template, so the CSV could move while the
+    document kept printing the old value and every guard stayed green -- ``provenance --check`` compares
+    the manifest to the document, and a literal that appears in both stays self-consistent while both
+    are stale. This asserts the rendered values equal a recomputation from the ledger, which is what
+    makes the byte-diff a live drift detector for them.
     """
     gen = _load_generator()
     H = gen.build_headline(table)
@@ -414,8 +414,51 @@ def test_published_values_are_read_from_the_ledger_not_typed(table):
     # and the document actually prints them, so the assertion is about shipped bytes
     # whitespace-collapsed, because the template's line wrapping shifts with the rendered widths
     doc = " ".join((REPO / "MUON_COST.md").read_text(encoding="utf-8").split())
-    assert f"`{H['charge_music']}`" in doc and f"`{H['charge_psi_himb']}`" in doc
+    # Anchored to each row's OWN sentence, not to a bare token: `charge_basis` draws from a small
+    # vocabulary, so a bare-token check is satisfied by whichever row happens to render that value --
+    # setting MuSIC to `mu_plus_only` would then match PSI HIMB's token and the drill would pass.
+    assert f"MuSIC's figure is `{H['charge_music']}`" in doc
+    assert f"PSI HIMB is `{H['charge_psi_himb']}`" in doc
     assert f"~{H['optimism_low']}-{H['optimism_high']}x optimistic relative to" in doc
+
+
+#: Spelled row counts, because CHANGELOG.md writes the count as a word.
+_ROW_COUNT_WORDS = {9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve", 13: "Thirteen", 14: "Fourteen"}
+
+
+def test_hand_written_docs_restate_the_ledger_correctly():
+    """The hand-written docs carry ledger facts that nothing regenerates. Bind them.
+
+    ``MUON_COST.md`` is generated, byte-diffed and provenance-checked, so a stale digit there dies at
+    the gate. ``CHANGELOG.md`` and ``README.md`` restate the same facts by hand with no such binding,
+    which is exactly how a row count and a retracted single-basis premise both survived a change that
+    moved them -- twice, in the same bullet. ``tests/test_g4parity.py`` already does this for the
+    dataset counts; this is the ledger's equivalent.
+
+    If a document ever needs to QUOTE the retracted phrasing in order to retract it, put that in
+    ``MUON_COST.md`` (which is generated and audited) or amend ``_RETRACTED_BASIS_CLAIMS`` here with
+    the reason -- do not weaken the check silently.
+    """
+    table = mucost.load_muon_cost()
+    n_rows = len(list(table))
+    changelog = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
+    word = _ROW_COUNT_WORDS[n_rows]
+    assert f"{word} rows across" in changelog, (
+        f"CHANGELOG.md must say '{word} rows across' -- the ledger has {n_rows} rows"
+    )
+    for name in ("CHANGELOG.md", "README.md", "ADOPTERS.md", "paper/paper.md"):
+        text = (REPO / name).read_text(encoding="utf-8").lower()
+        for claim in _RETRACTED_BASIS_CLAIMS:
+            assert claim not in text, f"{name} still asserts '{claim}'; the rows are not on a common basis"
+
+
+#: The retracted premise, in the wordings it has actually appeared in.
+_RETRACTED_BASIS_CLAIMS = (
+    "one auditable basis",
+    "single auditable basis",
+    "single normalized basis",
+    "one normalized basis",
+)
 
 
 def test_a_non_sourced_chain_renders_as_a_bound_not_a_value(table):

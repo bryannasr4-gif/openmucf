@@ -230,9 +230,11 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   - Names are **provisional**: `G4MuonicData` and `G4MUONICDATA` are placeholders, and the C++ reader and
     its standalone validation application are specified but not yet part of this release.
 - **Open muon-cost ledger (`openmucf/data/muon_cost.csv` + `openmucf/mucost.py` + `MUON_COST.md`).** A
-  curated compilation-with-provenance of the muon-production energy cost on one auditable basis (beam GeV
-  per muon; wall-plug and recapture credits kept in separate flagged columns, never folded). Ten rows across
-  three tiers — design studies (anchor: Kelly–Hart–Rose 4.70 GeV/μ, open access; corroborated by
+  curated compilation-with-provenance of the muon-production energy cost, **each row at its own
+  (`stage`, `numeraire`) coordinate rather than on a single common basis** (see the stage/numeraire
+  entry above); a recapture credit stays in its own flagged column and is never folded, and wall-plug
+  appears as a separate row in an electrical numeraire rather than as an edit to a beam-kinetic one.
+  Twelve rows across three tiers — design studies (anchor: Kelly–Hart–Rose 4.70 GeV/μ, open access; corroborated by
   full-text-verified Bertin 1987 and Eliezer–Henis 1994), demonstrated technology, and operating facilities
   (mu2e/COMET/MuSIC/HIMB — original derivations with the arithmetic shown). The tier spread is drawn in
   `figures/muon_cost_gap.png`. **Corrected by the retraction above:** it is an order-of-magnitude,
