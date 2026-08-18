@@ -613,7 +613,7 @@ def test_tier_panel_deterministic():
         assert re.search(rf"{labels[t]}[^\n]*\| {re.escape(med)} \|", findings), (t, med)
 
 
-# ---- appended to tests/test_mucost.py by the round-14 fix pack -------------------------------------
+# ---- basis and loader contracts, each exercised by the input that breaks it -----------------------
 
 
 def _bad_row(header: list[str], **overrides: str) -> dict[str, str]:
@@ -763,3 +763,26 @@ def test_exactly_one_cost_source_states_a_beam_to_electrical_conversion(table):
     assert {r.numeraire for r in carriers} == {
         "beam_kinetic", "electrical_minimal", "electrical_site"
     }
+
+
+def test_the_lower_bound_universal_excludes_the_off_chain_rows(table):
+    """The document's closing universal must not claim off-chain figures are muCF lower bounds.
+
+    It read "every published figure in this table is a lower bound". Two pinned rows stop muons
+    outside D-T fuel; the same document rules them "NOT a point on this chain at all", the loader
+    refuses to give them a chain point, and ``understates_stopped_in_dt_cost`` is False for both --
+    so the sub-unity-factors argument does not reach them and the universal was false for 2 of 11.
+    """
+    gen = _load_generator()
+    doc = (REPO / "MUON_COST.md").read_text(encoding="utf-8")
+    off_chain = [r for r in table if r.has_normalized and r.stage in mucost.OFF_CHAIN_STAGES]
+    assert off_chain, "no off-chain rows: this guard would pass vacuously"
+    for r in off_chain:
+        assert r.understates_stopped_in_dt_cost is False, r.source_id
+        with pytest.raises(BasisError):
+            r.chain_point()
+    # the retracted wording must not come back, and the count that replaces it stays derived
+    assert "every\npublished figure in this table is a **lower bound**" not in doc
+    assert "figure in this table is a **lower bound**" not in doc
+    assert f"The {len(off_chain)} off-chain" in doc.replace("\n", " ")
+    assert gen.build_headline(table)["n_offchain_rows"] == str(len(off_chain))

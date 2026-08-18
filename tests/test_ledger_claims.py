@@ -5,10 +5,11 @@ byte-diff or `provenance --check` can see: a manifest pins a value against the d
 it, so a claim typed into a docstring, a comment or a hand-written CHANGELOG line can be false while
 every existing gate stays green.
 
-- **G1 :func:`test_quantified_claims_registered`** enumerates every strong-quantifier claim about the
-  ledger and requires each one to be registered as either exercised by a named test or explicitly
-  deferred with a reason. It cannot tell truth from falsehood; it makes an unreviewed universal
-  impossible to add silently, which is the property that was missing.
+- **G1 :func:`test_quantified_claims_registered`** enumerates the claims its two regexes match over
+  the named paths and requires each to be registered as either exercised by a named test or
+  explicitly deferred with a reason. It cannot tell truth from falsehood, and it is a net with
+  stated holes rather than a proof of coverage -- see the holes listed on the test itself. What it
+  does buy is that a universal matching that shape cannot enter those paths without a registry diff.
 - **G2 :func:`test_prose_arithmetic_recomputes`** recomputes arithmetic that prose states in full.
 
 Both keep their bookkeeping in TSV files beside this one, keyed by the SHA-1 of the
@@ -28,7 +29,7 @@ REPO = Path(__file__).resolve().parents[1]
 # G1 -- quantified claims about the ledger
 # --------------------------------------------------------------------------------------------------
 
-#: The ten prose-bearing paths that carry claims about the muon-cost ledger. Everything the
+#: The prose-bearing paths that carry claims about the muon-cost ledger. Everything the
 #: cost-basis work writes about the ledger lands in one of these; nothing else is in scope, and a new
 #: prose home for ledger claims must be added here deliberately.
 CLAIM_PATHS = (
@@ -42,6 +43,11 @@ CLAIM_PATHS = (
     "ADOPTERS.md",
     "openmucf/data/references.bib",
     "openmucf/data/muon_cost.schema.json",
+    # This file. A guard that exempts itself is not a guard: both of the false measured numbers this
+    # module shipped in its first revision -- a file count and a claim count, each stale the moment
+    # the commit that stated them landed -- lived here, in the one prose-bearing file the registry
+    # did not cover.
+    "tests/test_ledger_claims.py",
 )
 
 #: Genuine universals and uniqueness words only. Modals (`must`, `cannot`), ordinals and
@@ -110,10 +116,10 @@ def _read_registry() -> dict[str, tuple[str, str, str]]:
 
 
 def test_quantified_claims_registered():
-    """Every quantified claim about the ledger is registered; nothing unreviewed beyond the ceiling.
+    """Claims the enumerator matches are registered; nothing unreviewed beyond the ceiling.
 
-    **The enumerator, stated verbatim -- this is the whole definition of what gets caught.** Over the
-    ten paths in :data:`CLAIM_PATHS`, read **per line** (not per docstring: an AST pass over function
+    **The enumerator, stated verbatim -- this is the whole definition of what gets caught.** Over
+    the paths in :data:`CLAIM_PATHS`, read **per line** (not per docstring: an AST pass over function
     and class docstrings misses the module docstring and every comment, which is where a real defect
     was found hiding). A line is a **claim** iff it matches BOTH of these, case-insensitively:
 
@@ -125,13 +131,33 @@ def test_quantified_claims_registered():
       |denominator|problem|problems|contract|contracts|claim|claims|number|numbers)\\b``
 
     Each claim is keyed by the SHA-1 of its whitespace-normalized text. The test fails when a claim is
-    not in the registry (a new universal cannot enter the tree unreviewed), when a registry row is no
-    longer enumerated (deleting a claim cannot silently keep its credit), and when the ``UNREVIEWED``
-    count exceeds :data:`LEDGER_CLAIMS_UNREVIEWED_CEILING`.
+    not in the registry, when a registry row is no longer enumerated (deleting a claim cannot silently
+    keep its credit), and when the ``UNREVIEWED`` count exceeds
+    :data:`LEDGER_CLAIMS_UNREVIEWED_CEILING`.
+
+    **Known holes, stated rather than left to be found.** This catches an unreviewed universal only
+    within the shape below; it is not a proof that none exists.
+
+    1. **The key is the text, not (path, text).** Copying an already-registered sentence into a
+       different watched file changes no hash, so it enters with no registry diff. Re-keying on
+       ``(path, sha1)`` is the fix and is a separate change: it turns every duplicate into its own
+       row and so moves the ceiling, which must not happen as a side effect.
+    2. **A universal split across two lines escapes**, because the scan is per line -- the mechanism
+       is stated above, and this is its consequence.
+    3. **``no`` and ``nothing`` are absent from STRONG** while ``none`` is present. They are the
+       commonest universal negatives; adding them was measured to pull in 65 further lines, most of
+       them not universals at all (``no pinned value``, ``no eta_acc``), so it is a reviewed
+       expansion rather than a one-word edit.
+    4. **:data:`CLAIM_PATHS` is hand-maintained and nothing tests it for completeness.** Prose about
+       the ledger outside those paths is invisible here -- including the free-text
+       ``basis_as_published`` / ``derivation`` / ``notes`` columns of ``muon_cost.csv`` itself, which
+       carry per-row basis claims and ship in the data package.
 
     **What this does NOT do:** it does not decide whether a claim is true. ``REGISTERED:`` records a
-    judgement made by a person; ``EXERCISED:`` names a test that fails when the claim is negated, and
-    that naming is checked below only for resolvability, not for strength.
+    judgement made by a person and its substance is not machine-checked -- an empty or worthless
+    reason passes, so the review layer is exactly as strong as the reviewer. ``EXERCISED:`` names a
+    test that fails when the claim is negated, and that naming is checked below only for
+    resolvability, not for strength.
     """
     claims = enumerate_claims()
     registry = _read_registry()
@@ -192,9 +218,10 @@ STATEMENT = re.compile(
 )
 _TERM = re.compile(rf"({_OP})[ \t]*({_NUM})")
 
-#: Directories never descended. Measured when this guard was written: pruning these and collecting
-#: `*.md`, `*.py`, `*.bib` reproduces `git ls-files` on this tree exactly (116 files, identical
-#: sets), so the guard needs no git at test time.
+#: Directories never descended. Pruning these and collecting `*.md`, `*.py`, `*.bib` was measured to
+#: reproduce `git ls-files` on this tree exactly -- identical sets, no count quoted here because a
+#: count in a comment goes stale on the next file added, and this comment cannot count itself. The
+#: walk is over the WORKING TREE, not the index: an untracked `*.md` sitting in a checkout is scanned.
 _PRUNE = {".git", "__pycache__", "node_modules", "build", "dist",
           ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 
@@ -288,14 +315,32 @@ def test_prose_arithmetic_recomputes():
     """Arithmetic a sentence writes out in full must recompute, at the precision it prints.
 
     Scope, exactly: the *expression-then-result* form ``<num>[unit] <op> <num>[unit] ... = <num>[%]``,
-    matched **per line**, over every tracked ``*.md`` / ``*.py`` / ``*.bib`` file outside the virtual
-    environments. Three deliberate boundaries, disclosed rather than hidden:
+    matched **per line**, over every ``*.md`` / ``*.py`` / ``*.bib`` file in the working tree outside
+    the virtual environments. **This guard is a net with known holes, and the holes are listed here
+    rather than left to be discovered** -- an undisclosed boundary would turn an open question into a
+    false all-clear, which is worse than no guard.
 
-    1. **The reversed form is not matched.** ``E_mu_GeV: float = 4.70  # 3.61 GeV beam / 0.77 muons
-       per beam particle`` states its result *before* its expression; a statement written that way
-       passes this guard untouched. Widening the guard to cover it is a separate change.
-    2. **A statement wrapped across two lines is not matched**, because the scan is per line.
-    3. It checks arithmetic, not physics: a correctly-computed quotient of two wrong inputs passes.
+    Statements it does NOT match (a wrong one written this way passes):
+
+    1. **The reversed form**, result before expression: ``E_mu_GeV: float = 4.70  # 3.61 GeV beam /
+       0.77 muons per beam particle``.
+    2. **A statement wrapped across two lines**, because the scan is per line.
+    3. **A negative result** -- :data:`_NUM` carries no sign, so ``4.85 - 178 -> -170`` is unmatchable.
+    4. **A non-ASCII operator**, e.g. the interpunct in ``20.4 · 150 -> 3210``.
+    5. **A unit glued to its operand** without a space, e.g. ``3.61GeV / 0.77 -> 9.99``.
+    6. **A word between ``=`` and the result**, e.g. ``-> roughly 5.69``.
+    7. Anything the two skip rules below drop: a result followed by ``-<digit>`` (read as a range) or
+       immediately by an operator and a digit (read as a fraction such as ``-> 5/3``).
+
+    Statements it may match and mis-report (a CORRECT one written this way is flagged):
+
+    8. **Mixed units in one expression** -- units are skipped, not converted, so ``1 GeV + 500 MeV ->
+       1.5 GeV`` recomputes to 501.
+    9. **A percentage whose expression already multiplies by 100** -- the ``%`` branch scales by 100
+       again, so ``1.3/12.5*100 -> 10.4%`` recomputes to 1040.
+
+    A flag is therefore evidence to weigh, never an instruction to add an exception row. It
+    checks arithmetic, not physics: a correctly-computed quotient of two wrong inputs passes.
 
     A statement that does not recompute fails the test. The exceptions file exists for a defect that
     is real, already ruled, and owned by other work -- never to make a red run green.

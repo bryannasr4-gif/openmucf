@@ -223,5 +223,7 @@ is sourceable for any row today (Kelly: 4.70 / 0.18 =
 `eta_mu` = 0.50, but describe it verbatim as an "arbitrary but reasonable assumption" and state they do
 not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
 into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
-published figure in this table is a **lower bound** -- which is why the one-sided reading is the only
-defensible one.
+figure above that sits **on the muCF chain** is a **lower bound** on the cost at the terminal stage --
+which is why the one-sided reading is the only defensible one. The 2 off-chain
+figures are not bounds on a muCF cost at all: they price stopping a muon somewhere that is not D-T
+fuel, so no chain of sub-unity factors connects them to the quantity this table is about.
