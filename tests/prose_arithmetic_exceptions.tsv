@@ -1,0 +1,6 @@
+# Statements test_prose_arithmetic_recomputes flags that are REAL and already ruled, but owned by
+# work outside the muon-cost ledger. A row here is a registered defect, never a way to make a red run
+# green: a newly-flagged statement is a new finding and is ruled before anything is added here.
+# A row whose statement starts recomputing (or disappears) fails the test until it is deleted.
+# Columns: sha1(whitespace-normalized line) <TAB> path <TAB> measured <TAB> ruling
+3036048597d7dd360496064bb3e1b9c0fa2c39cf	SYSTEMS.md	3.61 / 0.77 = 4.688311688311688, printed as 4.70	REGISTERED: real. 4.70 is the source's own quoted figure, carried as published, and it is load-bearing for the faithful reproduction of that source's table; the printed equation is what is wrong, not the number. Outside the files the cost-basis work owns, so it is fixed by the follow-up pass that revisits the systems chapter, which deletes this row.
