@@ -227,6 +227,8 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
         )
     # The chain-point table's stage claim, derived for the same reason.
     chain_stages = sorted({table[s].stage for s in CHAIN_POINT_IDS})
+    if not chain_stages:  # no chain points at all: fail loudly rather than render prose
+        raise ValueError("CHAIN_POINT_IDS is empty; the chain-point table has no stages to describe")
     H["chain_points_stage_clause"] = (
         f"they all stop at stage `{chain_stages[0]}`"
         if len(chain_stages) == 1
@@ -247,8 +249,10 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["t3_classes"] = ", ".join(sorted(table.basis_classes("T3-operating-facility")))
     shared = table.basis_classes("T1-design-study") & table.basis_classes("T3-operating-facility")
     H["shared_classes"] = ", ".join(sorted(shared)) if shared else "none"
-    # The fully-sourced wall-plug-equivalent figures. Each is a LEDGER ROW of its own rather than an
-    # inline recomputation, so the repo carries each number once, on its own electrical denominator.
+    # The wall-plug-equivalent figures, i.e. the ones whose numeraire conversion is sourced. Each is a
+    # LEDGER ROW of its own rather than an inline recomputation, so the repo carries each number once,
+    # on its own electrical denominator. ("fully-sourced CHAIN" is a different and stronger property,
+    # counted separately below; no row in this ledger has one.)
     kelly = table["kelly_hart_rose_2021"]
     H["kelly_eta_acc"] = f"{kelly.eta_acc_assumption:g}"
     H["kelly_wallplug"] = _fmt(table["kelly_electrical_minimal"].normalized_GeV_per_mu)
@@ -579,7 +583,8 @@ anchors below breakeven, saying they "fall near the `G_mu` ~ 0.5-0.6 region"; th
 prints 0.51 (SIN/Crowe) and 0.61 (LAMPF/Jones), and 0.41 (Petitjean low) is the nearest value it prints
 outside that range. The contribution here is narrower and sharper:
 **the cost convention that puts them there is itself ~{H['optimism_low']}-{H['optimism_high']}x
-optimistic relative to the only fully-sourced anchor in the field**, so the sourced `G_mu` is
+optimistic relative to the only anchor in the field whose beam-to-electrical conversion is
+sourced**, so that anchor's `G_mu` is
 ~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than ~{H['gmu_conventional_1dp']},
 and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
 forbidden side of the no-go line rather than {H['overshoot_conventional']}x. **Every omitted factor pushes
@@ -591,9 +596,12 @@ costs can only be higher.
 
 **{H['n_fully_sourced_chains']} of the {H['n_chain_rows']} pinned rows that sit on the muCF chain have a
 fully-sourced chain to a useful stopped muon** (a further {H['n_offchain_rows']} rows are not on the chain
-at all -- they stop muons outside D-T fuel). Exactly **one source** states its own beam-to-electrical
-conversion -- Kelly, Hart & Rose, citing the PSI measurement, which is why {H['n_numeraire_sourced']} of
-these rows carry it -- and that same source states the delivery factor is unknown. So **no row in this
+at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states its own
+beam-to-electrical conversion -- Kelly, Hart & Rose, who take 18% from the PSI primary they cite -- and
+that same source states the delivery factor is unknown. {H['n_numeraire_sourced']} rows carry an
+`eta_acc`: his beam row and its two electrical re-expressions, on the two denominators that same PSI
+primary supplies. Kelly adopts the minimally-required-subsystem one; the site-wide figure is the
+primary's, not his. So **no row in this
 compilation supports a *value* for the quantity a muCF energy balance needs, only a bound.** That is the
 honest state of the literature, not a gap in this ledger, and it is why
 `ChainValue.render_value()` raises rather than prints for every row here.

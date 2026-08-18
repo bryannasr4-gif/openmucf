@@ -308,8 +308,9 @@ def test_kelly_wallplug_is_a_one_sided_bound(table):
     assert math.isnan(table["mu2e"].wallplug_lower_bound_GeV)
     # nor can a row that is ALREADY counted in an electrical numeraire: it carries an eta_acc *and*
     # has had that conversion applied by construction, so dividing again double-counts it and returns
-    # a cost of nothing (26.11 / 0.18 = 145.06). The two preconditions are asserted so this cannot
-    # pass vacuously if either field is later emptied.
+    # a cost of nothing -- 26.11 / 0.18 = 145.06 for the minimal row, 45.19 / 0.104 = 434.52 for the
+    # site one. The loop covers both, and all three preconditions are asserted per row so it cannot
+    # pass vacuously if any of those fields is later emptied.
     for sid in ("kelly_electrical_minimal", "kelly_electrical_site"):
         elec = table[sid]
         assert elec.numeraire != mucost.BEAM_KINETIC
@@ -610,3 +611,155 @@ def test_tier_panel_deterministic():
     for t, (lo, hi) in boxes.items():
         med = f"{uq.qnet_tier_panel(lo, hi)['median']:.2e}"
         assert re.search(rf"{labels[t]}[^\n]*\| {re.escape(med)} \|", findings), (t, med)
+
+
+# ---- appended to tests/test_mucost.py by the round-14 fix pack -------------------------------------
+
+
+def _bad_row(header: list[str], **overrides: str) -> dict[str, str]:
+    """A syntactically complete CSV row with empty defaults, so one fault can be isolated."""
+    row = {c: "" for c in header}
+    row.update(
+        source_id="bogus", citation="c", year="2020", tier="T1-design-study",
+        basis_as_published="b", derivation="d", source_bibkey="Bertin1987",
+        needs_verification="false", recapture_credit_applied="false",
+    )
+    row.update(overrides)
+    return row
+
+
+def _write_csv(path, header: list[str], row: dict[str, str]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+        w.writeheader()
+        w.writerow(row)
+
+
+def test_loader_lists_every_problem_including_unparseable_numbers(tmp_path):
+    """The loader's contract -- one raise listing EVERY problem -- exercised, not read.
+
+    Four numeric columns were converted outside the accumulating block, so a single unparseable cell
+    raised a bare ``float()``/``int()`` error that listed nothing and hid every other fault in the
+    file. Reading ``errors.append`` and the closing ``raise`` passes this contract; one bad float
+    fails it, which is why it is fed one here for each column at once, alongside an unrelated enum
+    error that must survive into the same message.
+    """
+    header = list(csv.reader([MUON_COST_CSV.read_text(encoding="utf-8").splitlines()[0]]))[0]
+    bad = tmp_path / "bad.csv"
+    _write_csv(bad, header, _bad_row(
+        header,
+        tier="T9-not-a-tier",                # the unrelated fault that must not be masked
+        year="two thousand twenty",
+        recapture_factor="2.5x",
+        normalized_GeV_per_mu="4.70 GeV",
+        eta_mu_assumption="fifty percent",
+        eta_acc_assumption="18%",
+    ))
+    with pytest.raises(ValueError) as exc:
+        load_muon_cost(csv_path=bad, schema_path=MUON_COST_SCHEMA, check_refs=False)
+    msg = str(exc.value)
+    for column in ("year", "recapture_factor", "normalized_GeV_per_mu",
+                   "eta_mu_assumption", "eta_acc_assumption"):
+        assert f"{column} is not a number" in msg or f"{column} is not an integer" in msg, (
+            f"{column} did not reach the accumulated report:\n{msg}"
+        )
+    assert "bad tier" in msg, f"an unrelated fault was masked by the bad numbers:\n{msg}"
+    # ...and the malformed cell must not ALSO raise the "empty is allowed only when
+    # needs_verification=true" complaint, which would describe a cell that is not empty.
+    assert "empty normalized_GeV_per_mu" not in msg
+
+
+def test_loader_still_reports_a_good_row_with_one_bad_number(tmp_path):
+    """A single unparseable number must not swallow the rest of the row's validation.
+
+    The control for the test above: with only ``normalized_GeV_per_mu`` malformed, the row's own
+    stage/numeraire faults must still be listed rather than lost to an early raise.
+    """
+    header = list(csv.reader([MUON_COST_CSV.read_text(encoding="utf-8").splitlines()[0]]))[0]
+    bad = tmp_path / "bad.csv"
+    _write_csv(bad, header, _bad_row(
+        header, normalized_GeV_per_mu="not-a-number", numeraire="furlongs", stage="nowhere",
+    ))
+    with pytest.raises(ValueError) as exc:
+        load_muon_cost(csv_path=bad, schema_path=MUON_COST_SCHEMA, check_refs=False)
+    msg = str(exc.value)
+    assert "normalized_GeV_per_mu is not a number" in msg
+    assert "bad numeraire" in msg and "bad stage" in msg
+
+
+def test_bound_message_names_the_bound_not_the_direction_of_the_truth():
+    """``bias_direction`` names the BOUND's type; the truth lies the other way.
+
+    The refusal used to end "the true cost is one-sided (lower)", the inverse of the module's own
+    "the true cost can only be higher": the FIGURE is the lower bound, the truth is above it.
+    """
+    cv = mucost.ChainValue(
+        value_GeV=4.70, stage="produced", numeraire=mucost.BEAM_KINETIC,
+        charge_basis="mu_minus", statuses=("primary",), provenance=("kelly",),
+    )
+    assert cv.is_bound and cv.bias_direction == "lower"
+    with pytest.raises(BasisError) as exc:
+        cv.render_value()
+    msg = str(exc.value)
+    assert "can only be higher" in msg, msg
+    assert "the true cost is one-sided" not in msg, msg
+
+
+def test_numeraires_is_tier_scoped(table):
+    """:meth:`is_basis_homogeneous` prescribes comparing ``numeraires`` for the same tier, so the
+    method must accept one.
+
+    Un-scoped it returned every numeraire in the table for every tier, which turns T2 -- which really
+    does hold one kind of energy -- into an apparent mixture and inverts its genuinely-safe answer.
+    """
+    assert table.numeraires() == {"beam_kinetic", "electrical_minimal", "electrical_site"}
+    assert table.numeraires("T2-demonstrated-tech") == {"beam_kinetic"}
+    assert table.numeraires("T3-operating-facility") == {"beam_kinetic"}
+    assert table.numeraires("T1-design-study") == {
+        "beam_kinetic", "electrical_minimal", "electrical_site"
+    }
+    # T2 is safe on BOTH axes; T1 is homogeneous within beam-kinetic yet spans three numeraires, so
+    # the basis_class answer alone would not have told a caller that.
+    assert table.is_basis_homogeneous("T2-demonstrated-tech")
+    assert len(table.numeraires("T2-demonstrated-tech")) == 1
+    assert len(table.numeraires("T1-design-study")) > 1
+    with pytest.raises(KeyError):
+        table.numeraires("T9-not-a-tier")
+
+
+def test_generator_refuses_an_empty_headline_anchor_set(table):
+    """An empty subject must fail loudly rather than render prose about nothing."""
+    gen = _load_generator()
+    gen.HEADLINE_ANCHOR_IDS = ()
+    with pytest.raises(ValueError, match="HEADLINE_ANCHOR_IDS is empty"):
+        gen.build_headline(table)
+
+
+def test_generator_refuses_an_empty_chain_point_set(table):
+    """The same guard on the parallel construct, which did not have one.
+
+    ``CHAIN_POINT_IDS`` feeds a clause built by indexing the derived stage list; emptied, it rendered
+    "they stop at  rather than at one stage" -- prose about no rows at all -- instead of failing.
+    """
+    gen = _load_generator()
+    gen.CHAIN_POINT_IDS = ()
+    with pytest.raises(ValueError, match="CHAIN_POINT_IDS is empty"):
+        gen.build_headline(table)
+
+
+def test_exactly_one_cost_source_states_a_beam_to_electrical_conversion(table):
+    """MUON_COST.md's typed uniqueness claim, exercised against the ledger rather than read.
+
+    The claim is about this compilation's COST sources -- the primary each row is a row *of*. A row
+    may additionally cite a supporting source for its denominator (the site-wide figure is the PSI
+    primary's, not Kelly's), which is why the assertion is on the leading bibkey and why the document
+    no longer says Kelly's statement is why all three rows carry one.
+    """
+    carriers = [r for r in table if not math.isnan(r.eta_acc_assumption)]
+    assert len(carriers) == 3
+    assert {r.source_bibkey.split(";")[0].strip() for r in carriers} == {"KellyHartRose2021"}
+    # the beam row states its own; the two electrical rows are re-expressions of that same row
+    assert table["kelly_hart_rose_2021"].numeraire == mucost.BEAM_KINETIC
+    assert {r.numeraire for r in carriers} == {
+        "beam_kinetic", "electrical_minimal", "electrical_site"
+    }

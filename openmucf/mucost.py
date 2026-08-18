@@ -20,8 +20,9 @@ recorded in its own flagged column, never silently folded into the normalized va
 mix per-produced, per-collected, per-stopped-in-D-T and per-stopped-in-another-target figures, and one
 row counts mu+ and mu- together. ``basis_class`` and ``charge_basis`` make that machine-readable, and
 :meth:`MuonCostTable.is_basis_homogeneous` lets a caller check before aggregating. A per-produced or
-per-collected figure is a LOWER BOUND on the per-stopped-in-D-T cost, because collection and stopping
-fractions are both < 1.
+per-collected figure is a LOWER BOUND on the per-stopped-in-D-T cost **counted in that row's own
+numeraire**, because collection and stopping fractions are both < 1; an electrical row bounds the
+electrical cost, never the beam-kinetic one, so the bound must not be read across numeraires.
 
 **A cost is a point on a 2-D grid, not a scalar.** The two axes are :data:`MUCF_CHAIN` (``stage`` --
 how far along produce -> capture -> transport -> moderate -> stop-useful-in-D-T the muon has got) and
@@ -65,8 +66,9 @@ VALID_TIER = {"T1-design-study", "T2-demonstrated-tech", "T3-operating-facility"
 TIER_ORDER = ("T1-design-study", "T2-demonstrated-tech", "T3-operating-facility")
 
 # Accounting bases. Only ``stopped_in_dt`` is the quantity a muCF energy balance actually needs;
-# ``produced``/``collected`` are LOWER BOUNDS on it, and ``stopped_other_target`` is stopped somewhere
-# that is not D-T fuel. Values on different classes are not commensurable.
+# ``produced``/``collected`` are LOWER BOUNDS on it **within the row's own numeraire** (an electrical
+# row bounds the electrical cost, not the beam-kinetic one), and ``stopped_other_target`` is stopped
+# somewhere that is not D-T fuel. Values on different classes are not commensurable.
 VALID_BASIS_CLASS = {"produced", "collected", "stopped_in_dt", "stopped_other_target", ""}
 VALID_CHARGE_BASIS = {"mu_minus", "mixed", "mu_plus_only", ""}
 # Classes whose figure understates the true per-stopped-in-D-T cost (collection/stopping fractions < 1).
@@ -139,7 +141,11 @@ class ChainValue:
 
     @property
     def bias_direction(self) -> str:
-        """Which way the truth lies. Always ``'lower'`` for a bound -- never a symmetric interval."""
+        """The BOUND's type: ``'lower'`` for a bound, ``'none'`` otherwise -- never a symmetric interval.
+
+        The word names the bound, NOT the direction of the truth. Every omitted or unsourced factor is
+        <= 1, so a lower bound understates the cost and the true value lies ABOVE the figure printed.
+        """
         return "lower" if self.is_bound else "none"
 
     def why_bound(self) -> str:
@@ -166,7 +172,8 @@ class ChainValue:
             raise BasisError(
                 f"refusing to render a bound as a value ({self.value_GeV:.{digits}f} GeV at stage "
                 f"'{self.stage}', numeraire '{self.numeraire}'): {self.why_bound()}. "
-                f"Use render() -- the true cost is one-sided ({self.bias_direction})."
+                f"Use render() -- this is a one-sided '{self.bias_direction}' bound, so the true "
+                f"cost can only be higher."
             )
         return f"{self.value_GeV:.{digits}f} GeV"
 
@@ -317,6 +324,28 @@ def _to_int(s: str) -> int:
     return int(str(s).strip())
 
 
+# Every numeric cell goes through one of these two. Converting a column OUTSIDE the accumulating block
+# aborts the load from inside the row loop with a bare ``float()``/``int()`` message that lists
+# nothing -- so the loader's promise to report every problem would hold only for the columns that
+# happened to be validated rather than parsed. These record the failure and carry on.
+def _float_cell(raw: str, i: int, sid: str, column: str, errors: list[str]) -> tuple[float, bool]:
+    """(value, parsed_ok). NaN when the cell will not parse, with the failure appended to ``errors``."""
+    try:
+        return _to_float(raw), True
+    except (TypeError, ValueError):
+        errors.append(f"row {i} ({sid}): {column} is not a number (got {str(raw).strip()!r})")
+        return float("nan"), False
+
+
+def _int_cell(raw: str, i: int, sid: str, column: str, errors: list[str]) -> tuple[int, bool]:
+    """(value, parsed_ok). 0 when the cell will not parse; the load raises before the 0 can be used."""
+    try:
+        return _to_int(raw), True
+    except (TypeError, ValueError):
+        errors.append(f"row {i} ({sid}): {column} is not an integer (got {str(raw).strip()!r})")
+        return 0, False
+
+
 class MuonCostTable:
     """Validated, ordered collection of :class:`MuonCost` rows, keyed by ``source_id``."""
 
@@ -372,9 +401,15 @@ class MuonCostTable:
         """The distinct ``stage`` values among pinned rows in one numeraire."""
         return {r.stage for r in self.rows_in_numeraire(numeraire, tier) if r.stage}
 
-    def numeraires(self) -> set[str]:
-        """Every numeraire present among pinned rows."""
-        return {r.numeraire for r in self._rows if r.has_normalized and r.numeraire}
+    def numeraires(self, tier: str | None = None) -> set[str]:
+        """The distinct numeraires among pinned rows (optionally within one tier).
+
+        The ``tier`` scope is what makes the check :meth:`is_basis_homogeneous` prescribes performable:
+        without it this returns every numeraire in the table for every tier, which reports a tier that
+        really does hold one kind of energy as a mixture and inverts its genuinely-safe answer.
+        """
+        rows = self._rows if tier is None else self.tier(tier)
+        return {r.numeraire for r in rows if r.has_normalized and r.numeraire}
 
     def is_basis_homogeneous(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> bool:
         """True iff the pinned rows **in one numeraire** share one ``basis_class``.
@@ -383,8 +418,9 @@ class MuonCostTable:
         ``numeraire`` (beam-kinetic by default), because a basis_class comparison across numeraires
         answers no question -- the two are different kinds of energy. It therefore does NOT tell a
         caller that a *whole tier* is safe to aggregate when that tier holds more than one numeraire;
-        for that, compare :meth:`numeraires` as well. The parameter exists so the scope is stated in
-        the signature rather than inherited silently from a default one call down.
+        for that, compare :meth:`numeraires` **for the same tier** as well -- un-scoped it answers
+        about the whole table and cannot settle the question. The parameter exists so the scope is
+        stated in the signature rather than inherited silently from a default one call down.
         """
         return len(self.basis_classes(tier, numeraire)) <= 1
 
@@ -413,7 +449,13 @@ def load_muon_cost(
     schema_path: Path = MUON_COST_SCHEMA,
     check_refs: bool = True,
 ) -> MuonCostTable:
-    """Load + validate the muon-cost ledger. Raises ``ValueError`` listing every problem."""
+    """Load + validate the muon-cost ledger. Raises ``ValueError`` listing every problem.
+
+    "Every problem" means every fault this pass can detect, accumulated across all rows and reported
+    in one message -- including a numeric cell that will not parse, which is recorded like any other
+    fault rather than raised on the spot. The only faults it cannot list together are ones that make a
+    row unconstructible after its cells have been read, which are caught per row and reported too.
+    """
     schema = json.loads(Path(schema_path).read_text()) if Path(schema_path).exists() else {}
     required = schema.get("required", [])
     known_keys = bibkeys() if check_refs else None
@@ -431,17 +473,23 @@ def load_muon_cost(
             if tier and tier not in VALID_TIER:
                 errors.append(f"row {i} ({sid}): bad tier '{tier}' (expected {sorted(VALID_TIER)})")
             applied = _to_bool(row.get("recapture_credit_applied", ""))
-            factor = _to_float(row.get("recapture_factor", ""))
+            factor, factor_ok = _float_cell(
+                row.get("recapture_factor", ""), i, sid, "recapture_factor", errors
+            )
             # Consistency: a credit cannot be APPLIED without a factor. (A factor may be RECORDED
             # without being applied -- Kelly's x2.5 is recorded, applied=false, never folded in.)
-            if applied and math.isnan(factor):
+            # Skipped when the cell did not parse: the factor IS stated, so "no recapture_factor"
+            # would describe a cell that is not empty and would report one fault as two.
+            if applied and factor_ok and math.isnan(factor):
                 errors.append(f"row {i} ({sid}): recapture_credit_applied=true but no recapture_factor")
             nv = _to_bool(row.get("needs_verification", ""))
-            norm = _to_float(row.get("normalized_GeV_per_mu", ""))
-            has_norm = not math.isnan(norm)
+            norm, norm_ok = _float_cell(
+                row.get("normalized_GeV_per_mu", ""), i, sid, "normalized_GeV_per_mu", errors
+            )
+            has_norm = norm_ok and not math.isnan(norm)
             if has_norm and norm <= 0.0:
                 errors.append(f"row {i} ({sid}): normalized_GeV_per_mu must be > 0 (got {norm})")
-            if not has_norm and not nv:
+            if norm_ok and not has_norm and not nv:
                 errors.append(
                     f"row {i} ({sid}): empty normalized_GeV_per_mu is allowed only when "
                     f"needs_verification=true"
@@ -451,7 +499,13 @@ def load_muon_cost(
             numeraire = (row.get("numeraire") or "").strip()
             stage = (row.get("stage") or "").strip()
             evidence_status = (row.get("evidence_status") or "").strip()
-            eta_mu = _to_float(row.get("eta_mu_assumption", ""))
+            eta_mu, eta_mu_ok = _float_cell(
+                row.get("eta_mu_assumption", ""), i, sid, "eta_mu_assumption", errors
+            )
+            eta_acc, _eta_acc_ok = _float_cell(
+                row.get("eta_acc_assumption", ""), i, sid, "eta_acc_assumption", errors
+            )
+            year, _year_ok = _int_cell(row.get("year", "0") or "0", i, sid, "year", errors)
             eta_mu_status = (row.get("eta_mu_evidence_status") or "").strip()
             useful_raw = (row.get("useful_fraction_sourced") or "").strip()
             useful = _to_bool(useful_raw) if useful_raw else None
@@ -472,8 +526,9 @@ def load_muon_cost(
             if eta_mu_status and eta_mu_status not in VALID_EVIDENCE_STATUS:
                 errors.append(f"row {i} ({sid}): bad eta_mu_evidence_status '{eta_mu_status}'")
             # An eta_mu digit without a status would be composable-looking but ungraded, and a status
-            # without a digit grades nothing: the pair travels together or not at all.
-            if math.isnan(eta_mu) != (eta_mu_status == ""):
+            # without a digit grades nothing: the pair travels together or not at all. Skipped when
+            # the digit did not parse -- it IS present, so this would report one fault as two.
+            if eta_mu_ok and math.isnan(eta_mu) != (eta_mu_status == ""):
                 errors.append(
                     f"row {i} ({sid}): eta_mu_assumption and eta_mu_evidence_status must both be "
                     f"present or both empty (got {eta_mu!r} / '{eta_mu_status}')"
@@ -528,14 +583,14 @@ def load_muon_cost(
                 mc = MuonCost(
                     source_id=sid,
                     citation=(row.get("citation") or "").strip(),
-                    year=_to_int(row.get("year", "0") or "0"),
+                    year=year,
                     tier=tier,
                     basis_as_published=(row.get("basis_as_published") or "").strip(),
                     projectile_target=(row.get("projectile_target") or "").strip(),
                     capture_scheme=(row.get("capture_scheme") or "").strip(),
                     recapture_credit_applied=applied,
                     recapture_factor=factor,
-                    eta_acc_assumption=_to_float(row.get("eta_acc_assumption", "")),
+                    eta_acc_assumption=eta_acc,
                     eta_mu_assumption=eta_mu,
                     eta_mu_evidence_status=eta_mu_status,
                     value_as_published=(row.get("value_as_published") or "").strip(),

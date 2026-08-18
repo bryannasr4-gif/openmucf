@@ -180,7 +180,8 @@ anchors below breakeven, saying they "fall near the `G_mu` ~ 0.5-0.6 region"; th
 prints 0.51 (SIN/Crowe) and 0.61 (LAMPF/Jones), and 0.41 (Petitjean low) is the nearest value it prints
 outside that range. The contribution here is narrower and sharper:
 **the cost convention that puts them there is itself ~5-9x
-optimistic relative to the only fully-sourced anchor in the field**, so the sourced `G_mu` is
+optimistic relative to the only anchor in the field whose beam-to-electrical conversion is
+sourced**, so that anchor's `G_mu` is
 ~0.068-0.117 rather than ~0.6,
 and the demonstrated sticking sits 7.3-12.6x on the
 forbidden side of the no-go line rather than 1.4x. **Every omitted factor pushes
@@ -204,9 +205,12 @@ costs can only be higher.
 
 **0 of the 9 pinned rows that sit on the muCF chain have a
 fully-sourced chain to a useful stopped muon** (a further 2 rows are not on the chain
-at all -- they stop muons outside D-T fuel). Exactly **one source** states its own beam-to-electrical
-conversion -- Kelly, Hart & Rose, citing the PSI measurement, which is why 3 of
-these rows carry it -- and that same source states the delivery factor is unknown. So **no row in this
+at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states its own
+beam-to-electrical conversion -- Kelly, Hart & Rose, who take 18% from the PSI primary they cite -- and
+that same source states the delivery factor is unknown. 3 rows carry an
+`eta_acc`: his beam row and its two electrical re-expressions, on the two denominators that same PSI
+primary supplies. Kelly adopts the minimally-required-subsystem one; the site-wide figure is the
+primary's, not his. So **no row in this
 compilation supports a *value* for the quantity a muCF energy balance needs, only a bound.** That is the
 honest state of the literature, not a gap in this ledger, and it is why
 `ChainValue.render_value()` raises rather than prints for every row here.

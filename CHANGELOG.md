@@ -24,8 +24,11 @@ published value, and a test pins that.
   `render_value()` raises. All aggregation is restricted to a single numeraire, which is why the
   neutrons-per-joule medians did not move when electrical rows joined the table.
 - Two derived rows added: Kelly, Hart & Rose's beam figure re-expressed in electrical energy on the
-  18.3% minimally-required-subsystem and 10.4% site-wide denominators. Both stay at stage
-  `produced`; a numeraire change is not a stage advance.
+  two denominators the same PSI primary supplies — Kelly's own adopted **18%**, his two-figure
+  rounding of that primary's 18.3% minimally-required-subsystem efficiency, and the primary's 10.4%
+  site-wide figure, which Kelly does not adopt. The rows divide by 0.18 and 0.104, not by 0.183:
+  recomputing on the unrounded 18.3% gives 25.68 GeV rather than the shipped 26.11. Both stay at
+  stage `produced`; a numeraire change is not a stage advance.
 - The delivery factor whose authors call it an "arbitrary but reasonable assumption" is recorded in
   its own flagged column and composed into nothing that is published.
 
