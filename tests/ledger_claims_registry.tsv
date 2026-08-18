@@ -47,45 +47,45 @@ efa1c59c2aa5b4d37a9377dedefddf6fa5d6bf5d	CHANGELOG.md	UNREVIEWED
 f37374c38727965c42ef6ddead18d5e6b0de78af	CHANGELOG.md	UNREVIEWED
 f53a5496601875532084e88ac54016c806409000	CHANGELOG.md	UNREVIEWED
 f706e6ccf7d4e4d844b6d90692ebc5a9c5927ed2	CHANGELOG.md	UNREVIEWED
-07a5c07b11facd1f812bd6926e8568fbc53a19b9	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+02e26105a8dd6d3f89fc50992edc38709452d743	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+07a5c07b11facd1f812bd6926e8568fbc53a19b9	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 0c45b601a2c343d41d6167cb9970b6cbcf1fc054	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
-0e68c4fd0246e123cab975b21b64c082dad6de7c	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-15ce189c029ab21eeeb626861322a67d3a915faa	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-18fb9322bbd403222e64c4d5134056bfa8e164fa	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-1f7466eca915ab724ff6c943e7cbc1568af2fc24	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-2252865c3bbcb70ab333104e3076909697cc5dd7	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+0e68c4fd0246e123cab975b21b64c082dad6de7c	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+15ce189c029ab21eeeb626861322a67d3a915faa	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+18fb9322bbd403222e64c4d5134056bfa8e164fa	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+1f7466eca915ab724ff6c943e7cbc1568af2fc24	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+2252865c3bbcb70ab333104e3076909697cc5dd7	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 23cf4b67140c66619e33935ac407e5e20c336553	MUON_COST.md	UNREVIEWED
 32b1c743dbfe3f390b468ad5ecd9c046f05a9c76	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
-3423eeb0ca5b312ba6ff5e77cdbd7c97b4fb32b3	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-353f916bb204aec8b8c56fef4168e97cd0e4f39b	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-35cf2902d09c64677485adc5e7644b1058812c07	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-3762113c8128e9b5ec3c8ed238acaff7889f7c73	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-3d795e8ce3b22535411d622499971ae0c13ec90d	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+3423eeb0ca5b312ba6ff5e77cdbd7c97b4fb32b3	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+353f916bb204aec8b8c56fef4168e97cd0e4f39b	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+35cf2902d09c64677485adc5e7644b1058812c07	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+3762113c8128e9b5ec3c8ed238acaff7889f7c73	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+3d795e8ce3b22535411d622499971ae0c13ec90d	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 484be619f7e1afdf4a79be4f11e89ae3e98f37d8	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
-49cfb57d960d341fffabf64e2e043b47f50fcec9	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-593ec588555ab587cc453f44647070490bdcc6a6	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+593ec588555ab587cc453f44647070490bdcc6a6	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 5986961d7cd769e660eb04836f565daf517c360d	MUON_COST.md	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
-603b5190d5d94504afc5d4699a35c7ddfa097654	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-640f678041464d58aa27095306daa30602484428	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+603b5190d5d94504afc5d4699a35c7ddfa097654	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+640f678041464d58aa27095306daa30602484428	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 6bc5f33926a3cabd0a4600984de7b45e38859ce4	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 800e89e6c55bd9484984b4bf1e246f6115b6bb3e	MUON_COST.md	UNREVIEWED
-86da5a99468a49c025d3e5bcd888b1b4f71f1da0	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-88b8a60504e6c481b8956dd6ee95175ff2bbe092	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-8b00658090e4adc92c6349430b78f086335f698e	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-8ea55e613080774baa1fb313af6a322015c93fdf	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+86da5a99468a49c025d3e5bcd888b1b4f71f1da0	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+88b8a60504e6c481b8956dd6ee95175ff2bbe092	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+8b00658090e4adc92c6349430b78f086335f698e	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+8ea55e613080774baa1fb313af6a322015c93fdf	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 9ee64786443d1c1007d3ecaee910531acd6e186d	MUON_COST.md	UNREVIEWED
 a5a39ec6eac67be6323dc4fd583986e37df3c022	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
-acd703246094fd897fad7dee72d0dce8d0251cd2	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+acd703246094fd897fad7dee72d0dce8d0251cd2	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 c206530e15e32d491f38c856f66ffa2a7e7bd3e1	MUON_COST.md	UNREVIEWED
-d2679a550fc350b050ea845d217547889b2914ee	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-d3f02568e849184d16e0c4219a778c5f06635eeb	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+d2679a550fc350b050ea845d217547889b2914ee	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+d3f02568e849184d16e0c4219a778c5f06635eeb	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 d44d9fa7cbef25d3f92a7c5a38c2bc4243f83aa7	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion
 dcc44994d214c93487965ec51fbe33a721dd7a66	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
-de34cf44f3bff8a4a761316efe3935a3ede7949f	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+de34cf44f3bff8a4a761316efe3935a3ede7949f	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 e062f77e5ea2bee9ef79f34dfa557fb6cd241b16	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 e59129f2917a2b60b111f04116975ffd3094b261	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 e9b7e4065fd77a1dba03cf1491e630e1c60eb24d	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion
-f00328f3e74045ce643fde76e3f65a3d6f30825d	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+f00328f3e74045ce643fde76e3f65a3d6f30825d	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 f2bf7df6bd6520c137073f68f98db932fa8707a9	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
 f8c38e7669922655dfbd9ce07a9d0db11e6ec6a1	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
 fcdb9881cc3321e4593098cd182d74878ab444fb	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
@@ -187,6 +187,7 @@ fa9b79c4f27f4adf308b8ae66a5b5769593592e3	openmucf/mucost.py	REGISTERED:model/loa
 f050bef85240ff4f0f7ff9b463abc3ac988f3963	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
 fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED
 010f08de571b3a83e023ff161e5520cd62d1394b	scripts/generate_mucost.py	UNREVIEWED
+02e26105a8dd6d3f89fc50992edc38709452d743	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 06107f12c44341726dfe31e4cc267598c360f917	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 07a5c07b11facd1f812bd6926e8568fbc53a19b9	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 07c9522e9ec20e62aa369e15bb5317ca1e3d9981	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
@@ -209,7 +210,6 @@ fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED
 3762113c8128e9b5ec3c8ed238acaff7889f7c73	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 3d795e8ce3b22535411d622499971ae0c13ec90d	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 4804e9d44c1f68151aaf6470f1dc11a9030437ee	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
-49cfb57d960d341fffabf64e2e043b47f50fcec9	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 4e089297dcf679abb6e6d00d6ce158af3c8cc592	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 4e9d593f22c07af2590b38cccd4d31492c6c78dc	scripts/generate_mucost.py	UNREVIEWED
 5639c6795637b0da13bcf02e211af9f90680a506	scripts/generate_mucost.py	UNREVIEWED

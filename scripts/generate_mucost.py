@@ -608,8 +608,8 @@ sourced**, so that anchor's `G_mu` is
 ~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than ~{H['gmu_conventional_1dp']},
 and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
 forbidden side of the no-go line rather than {H['overshoot_conventional']}x. **Every omitted factor pushes
-the same way**, so this reading is rigorously one-sided: the entries above are lower bounds, and the true
-costs can only be higher.
+the same way**, so this reading is rigorously one-sided: the chain points above are lower bounds, and
+the true costs can only be higher.
 
 ## Chain coverage: which conversions are actually sourced
 {_coverage_table(table)}

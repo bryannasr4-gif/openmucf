@@ -185,8 +185,8 @@ sourced**, so that anchor's `G_mu` is
 ~0.068-0.117 rather than ~0.6,
 and the demonstrated sticking sits 7.3-12.6x on the
 forbidden side of the no-go line rather than 1.4x. **Every omitted factor pushes
-the same way**, so this reading is rigorously one-sided: the entries above are lower bounds, and the true
-costs can only be higher.
+the same way**, so this reading is rigorously one-sided: the chain points above are lower bounds, and
+the true costs can only be higher.
 
 ## Chain coverage: which conversions are actually sourced
 | source | stage reached | numeraire | beam -> electrical sourced? | produced -> stopped & useful in D-T | fully sourced? |

@@ -30,9 +30,8 @@ REPO = Path(__file__).resolve().parents[1]
 # G1 -- quantified claims about the ledger
 # --------------------------------------------------------------------------------------------------
 
-#: The prose-bearing paths that carry claims about the muon-cost ledger. Everything the
-#: cost-basis work writes about the ledger lands in one of these; nothing else is in scope, and a new
-#: prose home for ledger claims must be added here deliberately.
+#: The prose-bearing paths this guard reads. A new prose home for ledger claims must be added here
+#: deliberately; one that is not listed is not read.
 CLAIM_PATHS = (
     "openmucf/mucost.py",
     "scripts/generate_mucost.py",
