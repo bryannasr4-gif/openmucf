@@ -46,7 +46,17 @@ dependencies = [
 # runtime dependency -- openmucf/exact.py says so and uses jax.scipy instead. Floor = the one SALib
 # already imposes. mypy is capped below the next major: the `types` CI job is BLOCKING as of
 # 2026-08-12, so a major-version bump (which may add checks) is a deliberate upgrade, not a red main.
-dev = ["pytest>=7", "ruff>=0.5", "mypy>=1.10,<3", "scipy>=1.9.3"]
+# jax is capped for the TEST environment only -- the runtime floor above is deliberately left
+# alone. jax 0.11.1 moves the seed-0 NUTS chain that tests/test_calibrate.py pins, taking its
+# omega_s0 r_hat from <1.05 to 36.88775458613908 on ubuntu/3.12 and 3.13, and reddening the
+# `audit` job at "CALIBRATION.md audit FAILED". The pinned jobs (`locked`, `cross-arch`), which
+# resolve 0.10.2 from requirements-lock.txt, are green on both architectures throughout, so this
+# is a floating-resolution problem, not a code one. STOPGAP, and deliberately narrow: the
+# assertion it protects samples an UNBOUNDED prior on a thin degeneracy ridge and is now brittle
+# in library version as well as architecture, so the durable fix is a decision about that cell
+# -- tolerance band, bounded prior, or a pin in the floating jobs too -- not this line. Drop the
+# cap when that lands.
+dev = ["pytest>=7", "ruff>=0.5", "mypy>=1.10,<3", "scipy>=1.9.3", "jax<0.11.1"]
 
 [project.scripts]
 openmucf = "openmucf.cli:main"
