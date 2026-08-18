@@ -765,24 +765,57 @@ def test_exactly_one_cost_source_states_a_beam_to_electrical_conversion(table):
     }
 
 
-def test_the_lower_bound_universal_excludes_the_off_chain_rows(table):
-    """The document's closing universal must not claim off-chain figures are muCF lower bounds.
+#: The wording this branch retracted, as one phrase. Compared against whitespace-normalized text, so
+#: a re-wrap does not defeat it; a restatement in other words is a different string and is not caught.
+RETRACTED_LOWER_BOUND_UNIVERSAL = "every published figure in this table is a **lower bound**"
 
-    It read "every published figure in this table is a lower bound". Two pinned rows stop muons
-    outside D-T fuel; the same document rules them "NOT a point on this chain at all", the loader
-    refuses to give them a chain point, and ``understates_stopped_in_dt_cost`` is False for both --
-    so the sub-unity-factors argument does not reach them and the universal was false for 2 of 11.
+#: The rendered document and the template it comes from. A sentence deleted from one and left in the
+#: other still ships, so both are read.
+LOWER_BOUND_PROSE_PATHS = ("MUON_COST.md", "scripts/generate_mucost.py")
+
+
+def _normalized(rel: str) -> str:
+    return " ".join((REPO / rel).read_text(encoding="utf-8").split())
+
+
+def test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches(table):
+    """The closing universal reaches chain rows that count mu-, and only those.
+
+    Two axes exclude a row. A row stopped outside D-T fuel is not on the chain: the loader refuses it
+    a chain point and ``understates_stopped_in_dt_cost`` is False, so the sub-unity-factors argument
+    never reaches it. A ``mu_plus_only`` row IS on the chain and does get a chain point, but prices no
+    mu- at all, so a bound on its mu--only cost holds without saying anything -- the shape the
+    retracted wording had one axis over. Both exclusions are derived from the ledger, not typed.
     """
     gen = _load_generator()
-    doc = (REPO / "MUON_COST.md").read_text(encoding="utf-8")
+    prose = {rel: _normalized(rel) for rel in LOWER_BOUND_PROSE_PATHS}
+    doc = prose["MUON_COST.md"]
+    H = gen.build_headline(table)
+
     off_chain = [r for r in table if r.has_normalized and r.stage in mucost.OFF_CHAIN_STAGES]
     assert off_chain, "no off-chain rows: this guard would pass vacuously"
     for r in off_chain:
         assert r.understates_stopped_in_dt_cost is False, r.source_id
         with pytest.raises(BasisError):
             r.chain_point()
-    # the retracted wording must not come back, and the count that replaces it stays derived
-    assert "every\npublished figure in this table is a **lower bound**" not in doc
-    assert "figure in this table is a **lower bound**" not in doc
-    assert f"The {len(off_chain)} off-chain" in doc.replace("\n", " ")
-    assert gen.build_headline(table)["n_offchain_rows"] == str(len(off_chain))
+
+    on_chain = [r for r in table if r.has_normalized and r.stage in mucost.MUCF_CHAIN]
+    mu_plus_only = [r for r in on_chain if r.charge_basis == "mu_plus_only"]
+    assert mu_plus_only, "no mu+-only chain rows: the scope clause would pass vacuously"
+    for r in mu_plus_only:
+        r.chain_point()  # on the chain: excluded by what it counts, not by where it stops
+    excluded = {r.source_id for r in mu_plus_only}
+    reached = [r for r in on_chain if r.source_id not in excluded]
+    assert reached, "no rows left for the universal to reach"
+    # the complement: what the scope word claims of the rows it does keep
+    assert {r.charge_basis for r in reached} <= {"mu_minus", "mixed"}
+    clause = " ".join(H["mu_plus_only_clause"].split())
+    assert clause and clause in doc
+    for r in mu_plus_only:
+        assert gen.LABELS[r.source_id] in clause
+
+    for rel, text in prose.items():
+        assert RETRACTED_LOWER_BOUND_UNIVERSAL not in text, rel
+    assert "on the muCF chain** and counts mu- is a **lower bound**" in doc
+    assert f"The {len(off_chain)} off-chain" in doc
+    assert H["n_offchain_rows"] == str(len(off_chain))

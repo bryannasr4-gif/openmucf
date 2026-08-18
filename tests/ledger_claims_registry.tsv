@@ -1,283 +1,315 @@
 # Registry of quantified claims about the muon-cost ledger. Produced by the enumerator in
 # tests/test_ledger_claims.py; see test_quantified_claims_registered for its exact definition.
-# Columns: sha1(whitespace-normalized line) <TAB> path <TAB> status <TAB> note
+# Columns: sha1(whitespace-normalized line) <TAB> path <TAB> status
 # status is EXERCISED:<test node id> | REGISTERED:<reason> | UNREVIEWED.
 # EXERCISED means a named test fails when the claim is negated -- not that a test merely mentions it.
 # REGISTERED means the claim was read and judged when this registry was written; the note
 # records which review category it fell into, not a bespoke sentence per claim.
 # UNREVIEWED is for claims that predate the cost-basis work; their count is capped by the
 # monotone non-increasing LEDGER_CLAIMS_UNREVIEWED_CEILING and may only ever go down.
-99ec64643192bb9b78a8f505aae3493aff302a78	openmucf/mucost.py	UNREVIEWED	cost), validates each row against ``openmucf/data/muon_cost.schema.json``, and cross-checks that
-725cc5ebba27feca124508afaf0c695c83f1e257	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	change, so it produces a separate row and is never folded into a beam-kinetic value;
-bf82765342e46f11f1ded711e2aee86e47205161	openmucf/mucost.py	UNREVIEWED	every OURS-normalization step is recorded verbatim in ``derivation``; T3 facility rows are original
-9cc5da77a33ae17156f1be76537542bd331b6daf	openmucf/mucost.py	UNREVIEWED	recorded in its own flagged column, never silently folded into the normalized value.
-c159768f8435e57b72d2b17f8da18427808b2dd1	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	electrical cost, never the beam-kinetic one, so the bound must not be read across numeraires.
-ebddb27f1a1a56a124ed0586793874eef073f32d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	efficiency changes the units and applies at *any* stage, so treating it as a sequential node would
-63422a24dfe768e681f4615b38d96f26a8626cad	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	predecessor of ``stage``, kept as an alias. Because the two axes are independent, every aggregation
-a613efb0c7703fdfa020c03c952490c5e28c50d6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	its stage, numeraire and the evidence status of every factor composed into it. If any composed factor
-d16c560fff0c1b108bf97697d8cd2b7881c2f761	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	than print it as one. Every omitted factor is <= 1, so the bound is one-sided (costs can only rise).
-1abea9af6c14e70c5f2b569c0b4c14aaac5f14fc	openmucf/mucost.py	UNREVIEWED	# Accounting bases. Only ``stopped_in_dt`` is the quantity a muCF energy balance actually needs;
-77c23545959c362963d0df9be2edd525b61d6b67	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	#: The muCF chain, in order. Only the last entry is the quantity a muCF energy balance actually needs.
-067f4e1e4a3346d54dac8f16857743ae23a8177a	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	#: Stopped somewhere that is not D-T fuel: a real cost, but NOT a point on the muCF chain at all.
-20f279f6df5d4acbd5604bbc5692591e2fcdd158	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	"""A muon-cost figure that knows its own basis and whether it is a VALUE or only a BOUND.
-1f5ed6e488836dbcf5c011d517a924c2b7befa1d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	``statuses`` accumulates the ``evidence_status`` of every factor composed in, so the verdict is
-e0d1b920a87749dff91ada4b059e1d43d476be04	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	derived from provenance rather than asserted. The figure is a **value** only when it has reached
-2618b9774a512014eb16b4953d422e0a1e9fb201	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	:data:`TERMINAL_STAGE` *and* every composed factor is sourced; otherwise it is a **bound**, and
-5d9a0212920a84a3c5b1da23b0477d8c66a04048	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	always one-sided: the true cost can only be higher.
-860cd73fc3e4302b79e0c64d5b02ce4a58bf9aa6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	"""Chain stages not yet reached (each contributes a factor <= 1 that would raise the cost)."""
-35ace2a47360c6272d21f83eb5603e2228567cb5	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_bound_message_names_the_bound_not_the_direction_of_the_truth	"""The BOUND's type: ``'lower'`` for a bound, ``'none'`` otherwise -- never a symmetric interval.
-64e1b6b689f013d875ea4e6906505b2b40c971e2	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	The word names the bound, NOT the direction of the truth. Every omitted or unsourced factor is
-e8401dd57a360f693b87a28c87294e04c849539d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	"""The figure with an explicit bound marker when it is one. Always safe to print."""
-3cfc4a27a6f9a93ae5bbc2d5365109f3c8c62950	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	"""The figure as a plain value. **Raises** :class:`BasisError` if it is only a bound.
-07a26dd62dd1900976e1732af0fcc8238a25a176	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	f"cost can only be higher."
-c6f4d48451f9fb1d0c3e82e5feca55f1a58c50fc	openmucf/mucost.py	UNREVIEWED	eta_acc_assumption: float # NaN if the source states none
-6f6fb186c5d85766e0e7c9772216f3ab38704798	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	eta_mu_assumption: float # NaN if the source states none
-a25a4b3f33f8cba9a5f46c3af70b9b5ca45178fb	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	useful_fraction_sourced: bool | None # None where stage is not the terminal one
-1baede9fafebfbd4989edd410fd3e5e89ad83f21	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	mu-, which understates the mu--only cost the same way. The bound is on the cost in the units
-905fb1066cc51d305de2e1af23bb6a62fd27a90a	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	not know the real value, so theirs is False -- it may be displayed, never composed into a
-e669b43f039f3275c49df7792dd280b72fbdfdf8	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	A ``stopped_other_target`` row is a real measurement but not a muCF cost at any stage, so it
-ce124b11e8dcef23a6f11ded1d7777be9c062ae7	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_a_non_sourced_chain_renders_as_a_bound_not_a_value	cannot become a :class:`ChainValue` at all. A terminal-stage row whose source never establishes
-1f58bba984382f6f4ed3bdcb4051c030fd143518	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_a_non_sourced_chain_renders_as_a_bound_not_a_value	f"(the muons are stopped outside D-T fuel) and can never enter a muCF cost"
-e4550bda2ca2861059d07821cb977271c5ba04e3	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# Every numeric cell goes through one of these two. Converting a column OUTSIDE the accumulating block
-ebce009b41b63ba02e2679d137bf9df7aae5d414	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# nothing -- so the loader's promise to report every problem would hold only for the columns that
-f2fcd65b703f34fec68cd93ea6bc13b1d20eeeb8	openmucf/mucost.py	UNREVIEWED	"""All rows in tier ``t`` (in file order). Raises ``KeyError`` on an unknown tier."""
-b26c0be0060f8ddbfc332a4a1fe8d60f2e109e41	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	def rows_in_numeraire(self, numeraire: str, tier: str | None = None) -> list[MuonCost]:
-b27c45d335f9174b4c13311e84df980c21202198	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	rows = self._rows if tier is None else self.tier(tier)
-c485a217c86dc1f9a8c65872d3bc20d26308c7f1	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	def normalized_values(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> list[float]:
-241a365656aa5cad0bf3dfe79d17d2c98b9100a2	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	def basis_classes(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> set[str]:
-5150940df5e0caca38e6a24bf4d8b70e032b81fa	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	def stages(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> set[str]:
-3d319c24290fb3c1a93eb32895caed24dee34725	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	def numeraires(self, tier: str | None = None) -> set[str]:
-76da6b31808b0e8420baac86aa28eb3ee86cf6ec	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_numeraires_is_tier_scoped	without it this returns every numeraire in the table for every tier, which reports a tier that
-12536c92eb76ff91736739ac57f56666170e9b70	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	def is_basis_homogeneous(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> bool:
-fa9b79c4f27f4adf308b8ae66a5b5769593592e3	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	Scope, exactly: like :meth:`basis_classes` and :meth:`stages`, this inspects only the rows in
-bd65d26c5619b08df3b575c912bb0a1e5feecbbd	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers	"""Load + validate the muon-cost ledger. Raises ``ValueError`` listing every problem.
-84ecf9856a75268e3a1e9c46b050b853909d1385	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	"Every problem" means every fault this pass can detect, accumulated across all rows and reported
-8679eb72b557cf48d93576a79718552017fd8c47	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	in one message -- including a numeric cell that will not parse, which is recorded like any other
-147ae6b6f8499bd2937d5acd61fb9d4d3631ea4d	openmucf/mucost.py	UNREVIEWED	known_keys = bibkeys() if check_refs else None
-7ecb457ab40e5850818d09e6395174e67a60d98d	openmucf/mucost.py	UNREVIEWED	f"row {i} ({sid}): empty normalized_GeV_per_mu is allowed only when "
-b3b5975fd541857b6a745d315fd519edb4debdd1	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	if expected_stage is not None and stage != expected_stage:
-0578080af3f1c6b2e9cc3a1c563fc64a5fe41115	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	f"(empty is allowed only on an unpinned needs_verification row)"
-631599677b8c934b25b0ddc26dc42612c964eb2e	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# 'useful' is only a question at the terminal stage; claiming it elsewhere is meaningless.
-4815274b30556de5b98721e8c619198a5c7c94ec	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	if useful is not None and stage != TERMINAL_STAGE:
-ccad2e598c027b31e0a7b1f302699c874995c58f	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording	f"row {i} ({sid}): useful_fraction_sourced is only meaningful at stage "
-4b6773339dbb3e4ac6461f6fec3f8fb76a6f2d1b	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger	if has_norm and stage == TERMINAL_STAGE and useful is None:
-54330d1f333e170b4e9bd473d2eee00ddfddbbfb	openmucf/mucost.py	UNREVIEWED	f"charge_basis (empty is allowed only on an unpinned needs_verification row)"
-06107f12c44341726dfe31e4cc267598c360f917	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	compilation with provenance, not an evaluation** (I8): each cost is carried at its OWN
-6d03ead2b64b2339708b91db6d165c49755b9210	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	(stage, numeraire) coordinate and the rows are NOT on a common basis, so every aggregate is computed
-cf1fc41f123f675d23ef92df38808eeebef6c412	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	flagged column, never folded into the normalized value.
-7608e5f107c3e783ece59a57002b7b80fd886781	scripts/generate_mucost.py	UNREVIEWED	are needs_verification (Jandel) or slide-tier (Acceleron) appear only in the tables with visible flags
-72f9620d488be46868d991d3a3df0918c3cc0d43	scripts/generate_mucost.py	UNREVIEWED	and NEVER headline.
-5e358e3695f47faf7f7a5dccd1c02d9d5fbd7f4d	scripts/generate_mucost.py	UNREVIEWED	(matplotlib/freetype bytes are not cross-platform stable). All committed numbers are pure deterministic
-d41878ef947459641a8dbbb90b82d29dac9e7287	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	"T3-operating-facility": "Tier 3 -- operating facilities (GeV/muon derived here, at each row's own stage)",
-c5c97c394b52a199b5961f66383d02ed652d9f1f	scripts/generate_mucost.py	UNREVIEWED	# Short display labels used in the tables AND as manifest row anchors (unique per row).
-6ec6b4d2e4376a4da92a11eb9a438539629f4213	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	"their sec.IV running text and as a Fig.2(a) legend entry, NOT in a table: their only table, "
-4e089297dcf679abb6e6d00d6ce158af3c8cc592	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	"`omega_crit` to 0.16%. Reported here at 1 to reproduce their headline panel, never as the only "
-0806c4cdebca2a4afe457bf95943d4639cfc1efa	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	"accounting that supplies its 5 GeV muon cost, so the useful-energy input rests on exactly the "
-07c9522e9ec20e62aa369e15bb5317ca1e3d9981	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	"convention this axis is questioning. Adopted here only to reproduce their numbers on their terms."
-5639c6795637b0da13bcf02e211af9f90680a506	scripts/generate_mucost.py	UNREVIEWED	# per-row normalized display (pinned rows only; Jandel has no value)
-9b94f80e74206a9f98365e0387d2f6aaf84d3f05	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# energy per muon PRODUCED" over all three anchors while the ledger carried one of them at the
-0a7f2ffed6be41020caf074d379cf26d76798023	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# prefix in front of a derived clause would contradict itself the moment every anchor shared a
-1de46930c04663cad21cd4335f2b4c08d2d81a09	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_generator_refuses_an_empty_headline_anchor_set	if not at_produced and not off_produced: # no anchors at all: fail loudly rather than render prose
-cf5b5e66cea0708a7e17013d58974e4229b767ab	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV	f"Those single-GeV figures are all at stage `produced`: {_join(at_produced)} "
-a7c133e66899953e880c1afde194d7dacb4e5cb5	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV	f"None of those single-GeV figures is at stage `produced`: {_join(off_produced)} "
-a1875b7e89cd0c07e7e8dba28070933e0989962a	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_generator_refuses_an_empty_chain_point_set	if not chain_stages: # no chain points at all: fail loudly rather than render prose
-c7f19f375c6aa9561ad6097abd5b048869662704	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV	f"they all stop at stage `{chain_stages[0]}`"
-5b6c3ff82f126279c7b505e17692494ae6bdf1ba	scripts/generate_mucost.py	UNREVIEWED	# Basis composition -- computed, so the disclosure can never drift from the CSV. No basis_class is
-81db11888fe4b8691b27964d42bbf5727d19e0ed	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# The wall-plug-equivalent figures, i.e. the ones whose numeraire conversion is sourced. Each is a
-5d6606eef3c61a73c9769b08768db0136ed9c297	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# LEDGER ROW of its own rather than an inline recomputation, so the repo carries each number once,
-1f33f909b7f167a80d2e035dfe91f5b1f29de104	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# eta_mu is PUBLISHED twice in the prose below, so it must be read from the ledger like every other
-b00c01b08ff199bfd44d4df8bab5a12f037fcfb0	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# printing the old digit, and no guard would notice: `provenance --check` only compares the manifest
-b4a9852a3a55250ec621407d81e07b7593934103	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# ratios of -- which is exactly the defect eta_mu, x2.5 and charge_basis each turned out to be.
-ef39c3e99f50c2d138cbf939f5ebbf02acd2c050	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	"""The demonstrated effective sticking (percent), read from OUR rate ledger, never retyped."""
-75ee8480c7afba2f8bf3d8f9533f17dd005004b4	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	A row is ``complete`` only if it reaches the terminal stage with every factor sourced -- i.e. only
-a61d77636eb032e8b0b01ac6649c015cd0a0a1e4	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	on the muCF chain at all and are reported separately rather than silently dropped.
-f4612c16a8312abf3e8907afab354ec190505db8	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	else "reached, but the source never establishes the 'useful' qualifier"
-8b00658090e4adc92c6349430b78f086335f698e	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	> in GeV at **each row's own (`stage`, `numeraire`) coordinate** -- these rows are **NOT on a common basis
-603b5190d5d94504afc5d4699a35c7ddfa097654	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	> **never composed into any figure quoted here**.
-23cf4b67140c66619e33935ac407e5e20c336553	MUON_COST.md,scripts/generate_mucost.py	UNREVIEWED	deuteron on a tungsten target; DOI 10.1088/2515-7655/abfb4b) -- the only fully reader-checkable row,
-de34cf44f3bff8a4a761316efe3935a3ede7949f	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	(Jandel) and slide-tier (Acceleron) rows carry visible flags below and never headline.
-640f678041464d58aa27095306daa30602484428	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	A muon cost is only meaningful as a point on a **2-D grid**, and both coordinates are carried per row:
-353f916bb204aec8b8c56fef4168e97cd0e4f39b	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	which the cycle-closure literature defines the muon cost. Only the terminal stage is what a muCF energy
-1f7466eca915ab724ff6c943e7cbc1568af2fc24	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	balance actually needs; every earlier stage is a strict lower bound on it, because each omitted
-d3f02568e849184d16e0c4219a778c5f06635eeb	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	point on this chain at all** and can never be composed into a muCF cost.
-35cf2902d09c64677485adc5e7644b1058812c07	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	dividing by an accelerator efficiency changes the units and applies at *any* stage, so treating it as a
-3762113c8128e9b5ec3c8ed238acaff7889f7c73	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	every aggregate in this document -- every tier median, and the figure -- is computed **within a single
-d89d883ef1f6f08f7244778ad537c3c5f4ba055e	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV	MuSIC's figure is `{H['charge_music']}` (mu+ and mu- together, so the mu--only cost is roughly 2x
-3423eeb0ca5b312ba6ff5e77cdbd7c97b4fb32b3	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	listed for scale only. `evidence_status` grades each number: `primary` / `primary_cited` /
-d2679a550fc350b050ea845d217547889b2914ee	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	figure composing one of those is reported as a **bound, never a value**.
-3d795e8ce3b22535411d622499971ae0c13ec90d	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	Three factors are deliberately kept in their own flagged columns rather than folded into any row's
-86da5a99468a49c025d3e5bcd888b1b4f71f1da0	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	*separate row in a different numeraire*, never a silent edit to the beam-kinetic one, so both readings
-c206530e15e32d491f38c856f66ffa2a7e7bd3e1	MUON_COST.md,scripts/generate_mucost.py	UNREVIEWED	Each GeV/muon below is *implied, derived here* from public beam-power / muon-rate numbers (the full
-b912765778adc576ff733b2a70d486973b675b2e	scripts/generate_mucost.py	UNREVIEWED	{H['shared_classes']}), so it is quoted here as an order of magnitude and never as a same-basis ratio.
-861fe9df1112e25c0d68db16810c0c8199201dcb	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV	T3 = {{{H['t3_classes']}}}, all rows in the `beam_kinetic` numeraire.
-8ea55e613080774baa1fb313af6a322015c93fdf	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	Against that ceiling, the chain points built from the open-access anchor -- every one of them a
-88b8a60504e6c481b8956dd6ee95175ff2bbe092	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	distinct meanings in eq.(12) and they must not be substituted into each other:** the row below reports
-593ec588555ab587cc453f44647070490bdcc6a6	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	**The claim, stated exactly.** This is **not** a finding that muCF fails, and it is **not** a correction
-d44d9fa7cbef25d3f92a7c5a38c2bc4243f83aa7	MUON_COST.md,scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion	optimistic relative to the only anchor in the field whose beam-to-electrical conversion is
-49cfb57d960d341fffabf64e2e043b47f50fcec9	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	costs can only be higher.
-e9b7e4065fd77a1dba03cf1491e630e1c60eb24d	MUON_COST.md,scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion	at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states its own
-f00328f3e74045ce643fde76e3f65a3d6f30825d	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	compilation supports a *value* for the quantity a muCF energy balance needs, only a bound.** That is the
-0e68c4fd0246e123cab975b21b64c082dad6de7c	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	`ChainValue.render_value()` raises rather than prints for every row here.
-15ce189c029ab21eeeb626861322a67d3a915faa	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	**What would close this properly.** Each row would have to reach `stopped_useful_in_dt` in a stated
-2252865c3bbcb70ab333104e3076909697cc5dd7	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	numeraire with every conversion sourced: beam GeV per mu- produced -> / eta_acc (a numeraire change)
-07a5c07b11facd1f812bd6926e8568fbc53a19b9	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	-> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. Only the numeraire change
-24d73894e27c35a80176790982b3a1468c5cfded	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV	is sourceable for any row today (Kelly: {H['norm_kelly_hart_rose_2021']} / {H['kelly_eta_acc']} =
-acd703246094fd897fad7dee72d0dce8d0251cd2	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
-18fb9322bbd403222e64c4d5134056bfa8e164fa	MUON_COST.md,scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
-6a41d783ccda2f35152eae5af49cc1ded2ba7080	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_excludes_the_off_chain_rows	which is why the one-sided reading is the only defensible one. The {H['n_offchain_rows']} off-chain
-dcc44994d214c93487965ec51fbe33a721dd7a66	MUON_COST.md,scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_excludes_the_off_chain_rows	figures are not bounds on a muCF cost at all: they price stopping a muon somewhere that is not D-T
-4e9d593f22c07af2590b38cccd4d31492c6c78dc	scripts/generate_mucost.py	UNREVIEWED	def build_figure(table: mucost.MuonCostTable, path: str = "figures/muon_cost_gap.png") -> None:
-7de7d1da39a888256b37143cf3819b82992b9357	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document	"""Render the log-scale beam-GeV/muon-by-tier spread figure. NEVER byte-diffed (matplotlib bytes).
-35ea0eddca9fad06127174f217de1a5c7c46e965	scripts/generate_mucost.py	UNREVIEWED	# the basis disclosure is a shipped claim and is pinned like any other number
-f73ad0f0aa4019baa29c9115f219fc79bd98f6d5	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# published number can drift from the CSV with every existing guard still green.
-cf1929ea16bbf52737b3e657a12a9f74adf9ac0d	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes	# the Kou-Chen ceiling comparison: every cell is a shipped number and is pinned like any other
-010f08de571b3a83e023ff161e5520cd62d1394b	scripts/generate_mucost.py	UNREVIEWED	# every pinned row's normalized value, anchored to its table-row label
-a8da82885b56ca3f3ed3e803069cd223aa8493a5	tests/test_mucost.py	UNREVIEWED	rejects a bad tier; every bibkey resolves; the needs_verification flags match the A8-committed set
-e50cd262f5ecf0762c27b42f980f9742768ce207	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	(Jandel is the only nv=true row); normalized values are positive and tier-ordered (the order-of-magnitude
-a10ee4031447ec559265c028666a5ee4b2c31ea7	tests/test_mucost.py	UNREVIEWED	every T3 row carries its derivation; recapture is recorded-not-folded; the FINDINGS section-2b tier panel
-d00802cb973f32be14ab22b09d676d16b88b7970	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	# Every normalized value that existed BEFORE the (stage, numeraire) axes were added. The axes were a
-abb72443c94e2a280c36008247c981348427883c	tests/test_mucost.py	UNREVIEWED	# tier partition covers every row
-04e8d7de246fd8b22e3215c92b6e8e1f4aa3331c	tests/test_mucost.py	UNREVIEWED	"""nv flags == the A8-committed set; Jandel is the ONLY needs_verification row (T1 and overall)."""
-1b339c4b157172d72e53c1e28fada3aa0e01edc1	tests/test_mucost.py	UNREVIEWED	# the invariant A8 sec.1.5 asserts: Jandel is the only nv=true row in T1
-4d4eea9d56f018eef9c4b9c61b87930aeafc24ed	tests/test_mucost.py	UNREVIEWED	"""Every pinned normalized value is > 0, and the tier medians are ordered T1 < T2 < T3 (G-E2)."""
-1d4c418e76a448142b0be9541c20c94d322f0c19	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	What is actually true, and all that is asserted here: within the SINGLE ``beam_kinetic`` numeraire,
-9c999d9a8f1eb7ceb92f4eb441f4f3d36f406e17	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	# and it is only ever computed within one numeraire -- mixing them would be a units error
-125ba8541eb5d3f7c0242482ec5be52d40eef40a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	"""The units guard: medians are taken WITHIN one numeraire, never across.
-27837199d5ad2a87471806f2815b9ecaf8ec2a82	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	Each is beam / eta_acc, stored at the ledger's two-decimal convention. Nothing about the muon's
-2fd42360838de0b00832486e967eec145e1e5470	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	position on the chain changes -- only the units -- so both stay at stage 'produced'.
-868b7a60534fa4103e59fb8bf79e82c2d73e605f	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	# never folded: the row's value is still the pre-delivery beam figure
-0b42f9562f8bf43fd6c145c33b70ba78e0d3b772	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	Every manifest-pinned headline string is recomputed from sourced ledger rows only. Here we assert
-6964f6d85c76bb39adefeba2996c3502f54de073	tests/test_mucost.py	UNREVIEWED	"""Every pinned row declares basis_class + charge_basis, and the table is NOT basis-homogeneous."""
-b12dedd692c676c3eb313a34154c6fd2cea4e2b5	tests/test_mucost.py	UNREVIEWED	per-stopped-in-another-target ones. With no shared class, any cross-tier ratio mixes bases -- which
-21066b05ce4f81ad258b36094e15c9ee799fd101	tests/test_mucost.py	UNREVIEWED	is exactly what the MUON_COST.md headline now discloses instead of asserting a precise gap.
-866ffa0e22d23e1b2465773a3fb48d83dd41594a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	# site one. The loop covers both, and all three preconditions are asserted per row so it cannot
-a99a1388bd180f2d4009352e559da2d4068f3071	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	and every document-vs-ledger check would stay green because both moved together. PSI HIMB already
-2545bc77df2b56f69eefab04ffa9c30d6437dffa	tests/test_mucost.py	UNREVIEWED	"""Every T3 (facility) row is an 'implied, derived here' row -- derivation must be non-empty and
-1f666ad676fd74af2b8806da2c336ce9f5f9f48e	tests/test_mucost.py	UNREVIEWED	show the arithmetic; and every row's derivation is non-empty."""
-80e90a9b44315bd561337b8ca3ba256c92d96cfa	tests/test_mucost.py	UNREVIEWED	but applied=false, and the normalized 4.70 is the pre-credit value (never silently folded)."""
-3c51faf4b1ee7bf6244b24aaa72a13f45fe51d66	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	"""Every value this document publishes about the ledger must move when the ledger moves.
-3a90a1458b31f15601ef770972891d111dba4f92	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	document kept printing the old value and every guard stayed green -- ``provenance --check`` compares
-486126ed846ab86304031907e6827bab865ed673	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	# Anchored to each row's OWN sentence, not to a bare token: `charge_basis` draws from a small
-7148627ebeee24bb9f53382aaee8d156fdc04986	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	**What this binds, exactly.** TWO counts -- rows and tiers -- are read from the ledger and asserted
-f0cb78cc26ecd0b21ceec178a7c2a8a2cfd7aa2e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	"""Every row must have exactly the header's field count, and the resource must be declared.
-817a39706adf76d40df07c35a44e27361be0603e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	columns take the wrong values and the last one is dropped entirely. None of the other guards can
-991bfc6068d5bcbbd3d07f63f539540439b63291	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	Scope, exactly: this binds each row's field COUNT against the header, and nothing else. The
-db0e9dfe9063b66b23812ab00e89491a89c3f72e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	assert composed.is_bound # ...and is still only a bound
-42e5317f9fb4ce2d80ac96dc0aa175e678edc675	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	# 3. a row stopped outside D-T fuel is not on the chain at all and cannot become a chain point
-3516c7c72f7dda6dcb84836323dc260e8b291e46	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	# ---- basis and loader contracts, each exercised by the input that breaks it -----------------------
-a86b4abee14c74cb56cb9648bdd953eee02f7863	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	def _write_csv(path, header: list[str], row: dict[str, str]) -> None:
-9d2b34a710eaf3b8603a78e225f055773f156797	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	"""The loader's contract -- one raise listing EVERY problem -- exercised, not read.
-c31bd2aaec64475b2055d7dd6eae7a3c3f37f254	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	# ...and the malformed cell must not ALSO raise the "empty is allowed only when
-703c22b65f5fa8889a23653ae932d4331bd4e1a5	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	The control for the test above: with only ``normalized_GeV_per_mu`` malformed, the row's own
-6d78377e51e5c227774ba78f33e81ba1e9f084de	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	"the true cost can only be higher": the FIGURE is the lower bound, the truth is above it.
-95b12dd0543136bc9dfaff070cf0064d18448b9b	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	Un-scoped it returned every numeraire in the table for every tier, which turns T2 -- which really
-066a2476ab79febb99a4422e22b8bbfb2903397c	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	"they stop at rather than at one stage" -- prose about no rows at all -- instead of failing.
-65d9e62310a95ab3ec65c62b020405fe08342c27	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	The claim is about this compilation's COST sources -- the primary each row is a row *of*. A row
-b10befbaf5a01934522acd8f6013e36daa46b701	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	no longer says Kelly's statement is why all three rows carry one.
-c64b1162f0f67152e3d52efececa6f028bb23850	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	It read "every published figure in this table is a lower bound". Two pinned rows stop muons
-90aa3df91989561936def3cbaf0efadcf803dfd7	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	outside D-T fuel; the same document rules them "NOT a point on this chain at all", the loader
-40b256a14ff3f1e11f81d824ff20bbe6fd736b37	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property	assert "every\npublished figure in this table is a **lower bound**" not in doc
-9ee64786443d1c1007d3ecaee910531acd6e186d	MUON_COST.md	UNREVIEWED	contains {collected, stopped_other_target} rows; basis classes shared between the two tiers: **none**.
-0c45b601a2c343d41d6167cb9970b6cbcf1fc054	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	MuSIC's figure is `mixed` (mu+ and mu- together, so the mu--only cost is roughly 2x
-e062f77e5ea2bee9ef79f34dfa557fb6cd241b16	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	## Tier 3 -- operating facilities (GeV/muon derived here, at each row's own stage)
-6bc5f33926a3cabd0a4600984de7b45e38859ce4	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	| PSI HIMB | 1.42 MW; 1e10 mu+/s (mu+-only) | 890000 | beam_kinetic | transported (lower bound) | mu_plus_only (not muCF) | derived_here | no |
-800e89e6c55bd9484984b4bf1e246f6115b6bb3e	MUON_COST.md	UNREVIEWED	none), so it is quoted here as an order of magnitude and never as a same-basis ratio.
-a5a39ec6eac67be6323dc4fd583986e37df3c022	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	T3 = {collected, stopped_other_target}, all rows in the `beam_kinetic` numeraire.
-32b1c743dbfe3f390b468ad5ecd9c046f05a9c76	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	- **20.4 MeV:** **not sourced in arXiv:2607.10989.** The paper attributes 'about 20 MeV' to the same Jones accounting that supplies its 5 GeV muon cost, so the 
-e59129f2917a2b60b111f04116975ffd3094b261	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	- **`eta_sys` = 1:** Kou-Chen sec.IV illustrative value; a lumped system efficiency. **They also report 0.4** -- in their sec.IV running text and as a Fig.2(a) 
-11c2a254d3607614d645d05f0bcc9d8ff754c7cd	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	**bound**, because they all stop at stage `produced` and the remaining factors are absent:
-fcdb9881cc3321e4593098cd182d74878ab444fb	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	| Bertin et al. (1987) | stopped_useful_in_dt | `beam_kinetic` | absent | reached, but the source never establishes the 'useful' qualifier | **no** |
-484be619f7e1afdf4a79be4f11e89ae3e98f37d8	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording	is sourceable for any row today (Kelly: 4.70 / 0.18 =
-2f06fe19c0b287997c0716501d1726704a171881	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_excludes_the_off_chain_rows	which is why the one-sided reading is the only defensible one. The 2 off-chain
-c450e5a7b660c5d95225a474424a008884c4ab16	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written	### Changed — every muon cost now carries its stage and its numeraire (2026-08-16)
-11bb8386e381fd359bbdfec4964278c2ec2f2686	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written	`normalized_GeV_per_mu` was a bare number. Each row now states **where on the muCF chain** the muon
-0f9b0d29d0aaafd4138704d5daaea837224667b8	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written	by an accelerator efficiency changes the units and applies at any stage. `basis_class` is kept as a
-0feb6f2db8be66909911a2c2be6a77fde6b6bb0e	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written	evidence status of every factor composed into it. A figure short of the terminal stage, or
-aa11c6f87bdf68540da337796c835b8325ded361	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written	`render_value()` raises. All aggregation is restricted to a single numeraire, which is why the
-9392fb84e63d9efde8eec6b66420e0aa446ab254	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written	downstream basis pass; they are unchanged here by design and are **owed before any tag**.
-6edbcbd2aeff85bef58c1ee57830a7dfae20ed3c	CHANGELOG.md	UNREVIEWED	not settle either way. Its soundness argument was about the `Z`, and was being applied to each row
-efa1c59c2aa5b4d37a9377dedefddf6fa5d6bf5d	CHANGELOG.md	UNREVIEWED	- **No value or uncertainty byte moved.** All 90 Layer-1 record lines are unchanged; the only
-9933c3df4d1e7fdebb9fca78af3db26c7c60b9fa	CHANGELOG.md	UNREVIEWED	- **Generated, never transcribed.** The pinned upstream source is vendored at
-c4ea8c48ea568d4b5657183616528ade2d499f4d	CHANGELOG.md	UNREVIEWED	- **The whole harvest chain is committed**, not only its C++ half: `cpp/tools/build_oracle.py` is
-939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	UNREVIEWED	submodules still import — every NUTS chain then ran in float32, silently, on rates spanning ~7 decades.
-7e8877ca16f083f10bc3b7ce38649e4cc011345e	CHANGELOG.md	UNREVIEWED	`require_x64()` hard-fails at each sampler entry. Pinned by `tests/test_x64_guard.py`, which reproduces
-8b08e657b1d2b5ecf29c659409c7eab6733804dd	CHANGELOG.md	UNREVIEWED	Monte-Carlo floor" quoted from `docs/xray_feasibility.md` that had never been measured for these cells;
-db1eb055ab498ac5539ae1b8821d8149ac11ca04	CHANGELOG.md	UNREVIEWED	pseudo-random realization, so it passed on every x86-64 host and failed on 5 of 12 cells the first time
-6e9844c6d1af57dbc5a9f8ecd94846fcc07af654	CHANGELOG.md	UNREVIEWED	another architecture ran it. Now: `n_synth` 8 → 64, every cell published as `value ± bootstrap MC
-724bd28f81cbd0c07a1b1daaada4ad71fda424ec	CHANGELOG.md	UNREVIEWED	a gate that runs on every push across 12 cells must not cry wolf), and the *structural*
-0095e47b5aa503f76bde8ed3e46d105bb405dc52	CHANGELOG.md	UNREVIEWED	without it.** Every contraction is `1 − s_j/S` with one shared denominator `S = sd(base posterior)`, so a
-4a2a2acb69fc274f7548505d37935f91c2c0b52e	CHANGELOG.md	UNREVIEWED	of 0.013. Every cell now publishes the two components combined in quadrature. It cancels to first order
-17b650d6d1fa411b82af5fe867adc5116386b644	CHANGELOG.md	UNREVIEWED	published nowhere — is now gated against the committed one, and any cell whose band exceeds its own value
-2dc4e924b06f410bca40c50ab33b81e9f6083352	CHANGELOG.md	UNREVIEWED	checks every registered number (98 cells) against the pre-registered 2 % Monte-Carlo band and the card's
-bd0bdc10a82520e5f600c186181c56fc457bdd60	CHANGELOG.md	UNREVIEWED	guard is now enforced only where a band is SE-governed, so the identically-zero `zero_eig` cell keeps
-5b96247fa797ae8308f82bff72b57480cfddde7c	CHANGELOG.md	UNREVIEWED	(each carrying a 1-based line number), the reporting order two implementations must agree on, the
-83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	UNREVIEWED	honour `LC_NUMERIC` and silently return `0` for every value under a comma-decimal locale.
-23de6bf2d07ffe7694141568642da452b22b1986	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written	curated compilation-with-provenance of the muon-production energy cost, **each row at its own
-8bd6861b333936a7d7f225faa46952b89871d3a7	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written	entry above); a recapture credit stays in its own flagged column and is never folded, and wall-plug
-76496482ca0915427e8aace458b84df7edb0b6f4	CHANGELOG.md	UNREVIEWED	never a single blended row — computed as X_μ / (E_μ,tier in J) with the **measured** record yield
-c407fb0b95ca60ce0b88ae7c9bc38ccc0780d309	CHANGELOG.md	UNREVIEWED	beam parameters. Beam basis only (wall-plug kept separate, I5); neutron-source economics, not breakeven
-ea174f8ea268469d1707edea406526336e0824ff	CHANGELOG.md	UNREVIEWED	(`generate_design.py --audit`: every cell, EIG and sd-contraction alike, at 4σ of its own published
-f53a5496601875532084e88ac54016c806409000	CHANGELOG.md	UNREVIEWED	- **Class-tiered, falsifiable validation scoreboard.** Every `VALIDATION.md` row now carries a claim
-69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	UNREVIEWED	Faifman1989 rows, ~20×/~17× low) — each a pre-registered, quantified measure of the v1 placeholder's
-28a05be9178a0780f4590d239d0c6b1a7d82c284	CHANGELOG.md	UNREVIEWED	was changed to make any row pass.
-49443f6be9392fe3a3a620c5f14e2c62c74daa9e	CHANGELOG.md	UNREVIEWED	planned (today ω_s0 and R are ledger scalars), and `formation.py` truth-labels for every unsourced
-f706e6ccf7d4e4d844b6d90692ebc5a9c5927ed2	CHANGELOG.md	UNREVIEWED	- **Machine-checkable provenance (`openmucf/provenance.py` + `FINDINGS_MANIFEST.json`).** Every headline
-35b31a7ecc21b5ab6746e3d1c3fbc39aece8ab6a	CHANGELOG.md	UNREVIEWED	--check FINDINGS_MANIFEST.json` fails if any value drifts from its doc.
-d45b3c707aea27d18eeed0c9ae22c479c9a3a291	CHANGELOG.md	UNREVIEWED	and a broken ledger fails fast at import (zero numeric change to any result).
-dfe1e574dd82b601b1c49118d84bb1e19da5cb2b	CHANGELOG.md	UNREVIEWED	Matsuzaki/Bom tt-fusion tables"** — the generator detects the ledger row's `blocked:` marker and never
-7e180128a3694d3513998b47756c27ae395b6c16	CHANGELOG.md	UNREVIEWED	re-anchored so the disclosed 300 K rates are preserved bit-exactly (no 300 K result moved; off-anchor
-f37374c38727965c42ef6ddead18d5e6b0de78af	CHANGELOG.md	UNREVIEWED	- **FAIR rate ledger (`openmucf/data/`).** `rates.csv` with 13 input rates (9 contested, 4 established; each carrying per-row provenance,
-0645ef59d4821bcd80b483e9add1121b418330eb	README.md	UNREVIEWED	1. **FAIR rate ledger** (`openmucf/data/`) — every rate with per-row provenance, conditions, uncertainty, an
-6fe1fdc5ffcd2eff2e217cc02899b91e62bf75f2	README.md	UNREVIEWED	cross-architecture claim below is a standing CI gate rather than a one-off check. All 18 byte-diffed
-1a52bef4be08aeb15e9074b6201d555c6ed74443	README.md	UNREVIEWED	pre-registered tolerance bands instead; each audit prints its per-cell margins so the headroom is visible
-55211c2f1d8f7822fb9faf9740e77ba1759744ab	README.md	UNREVIEWED	- **Identifiability:** experiment pins ω_s^eff (and only loosely bounds λ_c) but not the ω_s0/R split — the
-caadceb259301af2a3f48cbdecafff9818b899a9	README.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document	muon-production energy cost, each row at its own (stage, numeraire) coordinate. Design studies sit at a few GeV per muon (anchor:
-a389d4a40b1d8c0d9a5e2e842f8a8c04e49909a8	README.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document	spread is an order-of-magnitude, mixed-basis, one-sided observation and never a same-basis ratio.
-9fca10a4aa026bde695b6fc69e44f498cac082fc	README.md	UNREVIEWED	Q_net under each cost tier (`FINDINGS.md` §2b) collapses the median Q_net ~10⁵× from design-study to
-2b1ad20830e2d61ab896bf0e68626a36314140d8	README.md	UNREVIEWED	basis, so a dimensionless "Q" is never quoted without its accounting. The self-first finding: our v1
-c77ae914453a7a838b724c221071b3893612c4d5	README.md	UNREVIEWED	| **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` ou
-27703eed5984a3beaa79ac0a279c1d89a7081452	README.md	UNREVIEWED	ignorance bound. The card's `payload_sha256` covers only the scientific payload (environment metadata is
-ef5f863f07ba9f184e1932d13dc5a21c70ecf12e	README.md	UNREVIEWED	never used, and nothing tells a user which rows rest on an isotope-resolved measurement.
-f255ebcbbf3980d4b3eddf46db6c68bb1e7ca93f	README.md	UNREVIEWED	- **Third party** — `third_party/geant4/` holds one unmodified Geant4 source file, redistributed under the **Geant4 Software License v1.0** ([`third_party/geant
-42fba44119c860de0eed6e6d24e51d13d3b3b67a	paper/paper.md	UNREVIEWED	citable form: (1) a **FAIR rate ledger** in which every microscopic rate carries per-row provenance,
-5cf0353da802688eb4239fa4c47dc4bbb4e896cd	paper/paper.md	UNREVIEWED	rate ledger, a differentiable forward map, and honest uncertainty propagation, all reproducible from a
-692b9d432c13014fc0ace7eebddaf3029470f10b	paper/paper.md	UNREVIEWED	uncertainty priors, and a muon-cost table. The loader refuses any row that is unsourced or fails
-3cc955c8ddccf8634f5cd2543669b9fe6b2bf066	paper/paper.md	UNREVIEWED	comparable basis, so a dimensionless gain is never quoted without its accounting.
-fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED	validation scoreboard in which only rows tagged `independent` are genuine predictions. As of v1 the
-540664a65eacea4e77397a79bf1c52463183f85b	paper/paper.md	UNREVIEWED	repository, a companion trust map sorts every output into **GREEN** (citable as-is: the muon-cost
-2a669477f641be3b126774e260b4561ab6b519f9	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document	requirements rather than a verdict on any group's work. Second, a **muon-cost compilation** in which
-1d7cf942817f1116a86140d6f20b9509e065c2aa	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document	each row carries its own accounting basis: design studies sit at a few GeV per muon
-f050bef85240ff4f0f7ff9b463abc3ac988f3963	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document	and re-running the net-electrical gain under each cost tier exposes that spread in energy-return form
-ae845f3fa7bbe8b8e5d163f39a681650c380354a	ADOPTERS.md	UNREVIEWED	| **Acceleron / MuFusE collaboration** (e.g. J.D. Kalow, K.R. Lynch, N.J.L. MacFadden, L.E. & A.N. Knaian; arXiv:2606.05333) | the FAIR ledger; the UQ methodolo
-91ea0a0634ebc32f6dd6875ba419a19546424612	ADOPTERS.md	UNREVIEWED	anything at φ > 1.45, the ω_s0/R split, all off-anchor `formation.py` outputs) is illustrative only. The
-a7d095c3fc7b1b01ae0a2b02789e1625c6d0db03	openmucf/data/references.bib	UNREVIEWED	% DOI/URL backfill 2026-07-13: every entry carries a live-verified `doi` or `url`, EXCEPT the
-67056208ca3b3637751aadd2933788cd6562d880	openmucf/data/references.bib	UNREVIEWED	verbatim as quoted upstream text in each Layer-2 row's `conditions` field, because
-a5ba51f26f479dd8455af0ca3a096341b63df0fd	openmucf/data/references.bib	UNREVIEWED	synthetic and whose only source IS the specification. Version-independent concept DOI.}
-ae436b917c42083891a27623e316dbdd08a31330	openmucf/data/references.bib	UNREVIEWED	TRI-PP-87-5 pagination, and each row records copy\_read = preprint-scan. The published
-ef117e0b8309953fd44d7ac67695acd58b5ef006	openmucf/data/references.bib	UNREVIEWED	note = {The authority for every isotopic-composition claim in this dataset, chiefly the 19
-617a7fa6c6ce1bb1e56496f2b2758e12551817bc	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "One published/derived muon-production energy cost, carrying its full accounting basis and provenance. Each row of data/muon_cost.csv must satisf
-583f97392197a75b8e67da7b152375358e411f0f	openmucf/data/muon_cost.schema.json	UNREVIEWED	"description": "Human-readable source citation (public: by author/venue/DOI, never by acquisition route)."
-6a37f9a11563afce444ff412d8a036612488e12f	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "True iff an accounting recapture/breeding credit is folded into normalized_GeV_per_mu. Kelly's x2.5, which his abstract attributes to recapturin
-3b8e99089faf38a2f7a4c0fa5c9527e866864c89	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "The recapture/breeding credit factor if the source quotes one (e.g. Kelly x2.5, stated in his abstract); recorded even when recapture_credit_app
-8b208015727c890d3c081e400badf51309232c5a	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "Accelerator (electricity -> beam kinetic energy) efficiency the source assumes, if stated (e.g. Kelly 0.18, rounded from the PSI HIPA measuremen
-422ee8b097788ea6a4dfcd1e8d49566af020cf33	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "The fraction of PRODUCED mu- the source assumes are actually delivered to the D-T vessel -- i.e. the whole capture + transport + moderate + stop
-d1edc0dca15b22daa09e01e60dcb0f69b3156ccd	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "evidence_status of eta_mu_assumption specifically (same enum, same meanings). Kelly, Hart & Rose state they do not know eta_mu and adopt an 'arb
-bf03883059fc1d1a22af8b88912ad043ab00e4e3	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "Energy per muon in GeV at THIS ROW'S OWN (stage, numeraire) coordinate. The name's 'normalized' means normalized to per-muon, NOT normalized to 
-2bce94e1ec97ca84887d4343229a6fb85c0340cd	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "The UNITS normalized_GeV_per_mu is counted in. Wall-plug is a NUMERAIRE, not a stage: the eta_acc conversion is a change of units applicable at 
-f49267383b0fd1a19bdb8c0309dff18d190bed76	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "How far along the muon chain this cost is counted, following the five verbs by which the muCF cycle-closure literature defines the muon cost: pr
-dacb171a55efa7b9679b1fcbad685c63b495c318	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "How well-founded this row's number is. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attr
-e30a609bce5b14a3dae80e1c537d7a7f9ae56b3d	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "Only meaningful when stage='stopped_useful_in_dt'. True iff the source establishes that the muons it counts are USEFUL in the cycle-closure sens
-bd499b17cb0775b909d64a68c2a384898b5891ea	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py	"description": "DEPRECATED ALIAS of 'stage', retained because downstream code and the public MUON_COST.md text still refer to it; do not delete it, and keep it 
-e7465e6891e11a72171c4d03b20d3a506f8ec582	openmucf/data/muon_cost.schema.json	UNREVIEWED	"description": "Which muon charge the figure counts. muCF needs mu-; 'mixed' counts mu+ and mu- together (so the mu--only cost is roughly 2x higher) and 'mu_plu
-1b51fd19b0eaac30723c03fbd8d6622ccd6b022b	openmucf/data/muon_cost.schema.json	UNREVIEWED	"description": "Every OURS-normalization step VERBATIM: 'implied, derived here: <formula with numbers>' for facility/derived rows; 'as-published; no OURS-normal
-35f03e6d3cef1d650ba427441ad1cba30a401879	openmucf/data/muon_cost.schema.json	UNREVIEWED	"description": "True iff the muon-cost digit is not pinned from the primary text (paywalled/not in hand). A needs_verification row may never headline anything (
-ce1b59361b635e8a1bdf7753ff5cbeb94420e644	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	Neither guard reads the ledger. They bind the sentences written *about* it, which no manifest,
-9d4fc1a7bf131a6177ff23ee1376bec1b77790ec	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	whitespace-normalized claim line -- never by line number, which churns on every commit.
-45d74fd7a5cdf652eaa6a5636a9307950888998d	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	# module shipped in its first revision -- a file count and a claim count, each stale the moment
-4b32ef74ec46fde7f21bb9ecb88a63ac6ae38430	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	"""(path, lineno, sha1, normalized text) for every claim line, in file then line order."""
-b2ec76c48ce3de2797e21164e31e777f820b9785	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	Each claim is keyed by the SHA-1 of its whitespace-normalized text. The test fails when a claim is
-94451223ae94c0beeb298b91af25ec2575fedb19	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	them not universals at all (``no pinned value``, ``no eta_acc``), so it is a reviewed
-303750ea2e48abb9f20f39817bf619b7ea1d8c52	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	test that fails when the claim is negated, and that naming is checked below only for
-7dd6964f2dd04531caefcdb84f6024209ebe3bef	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	#: A number: interior commas allowed but never a trailing one (without that restriction the `6` of
-ada6c5cf9f6ec8d50adcc1eaac49cc6fef80fb96	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	exceptions file is: by the SHA-1 of the whitespace-normalized line, never by line number.
-a059eaaeab58f35486834a2efdd1b59dfe9400c1	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written, and the guard's stated holes are listed on the test rather than left to be discovered	A flag is therefore evidence to weigh, never an instruction to add an exception row. It
+91ea0a0634ebc32f6dd6875ba419a19546424612	ADOPTERS.md	UNREVIEWED
+ae845f3fa7bbe8b8e5d163f39a681650c380354a	ADOPTERS.md	UNREVIEWED
+0095e47b5aa503f76bde8ed3e46d105bb405dc52	CHANGELOG.md	UNREVIEWED
+0f9b0d29d0aaafd4138704d5daaea837224667b8	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+0feb6f2db8be66909911a2c2be6a77fde6b6bb0e	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+11bb8386e381fd359bbdfec4964278c2ec2f2686	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+17b650d6d1fa411b82af5fe867adc5116386b644	CHANGELOG.md	UNREVIEWED
+23de6bf2d07ffe7694141568642da452b22b1986	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+28a05be9178a0780f4590d239d0c6b1a7d82c284	CHANGELOG.md	UNREVIEWED
+2dc4e924b06f410bca40c50ab33b81e9f6083352	CHANGELOG.md	UNREVIEWED
+35b31a7ecc21b5ab6746e3d1c3fbc39aece8ab6a	CHANGELOG.md	UNREVIEWED
+49443f6be9392fe3a3a620c5f14e2c62c74daa9e	CHANGELOG.md	UNREVIEWED
+4a2a2acb69fc274f7548505d37935f91c2c0b52e	CHANGELOG.md	UNREVIEWED
+5b96247fa797ae8308f82bff72b57480cfddde7c	CHANGELOG.md	UNREVIEWED
+69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	UNREVIEWED
+6e9844c6d1af57dbc5a9f8ecd94846fcc07af654	CHANGELOG.md	UNREVIEWED
+6edbcbd2aeff85bef58c1ee57830a7dfae20ed3c	CHANGELOG.md	UNREVIEWED
+724bd28f81cbd0c07a1b1daaada4ad71fda424ec	CHANGELOG.md	UNREVIEWED
+76496482ca0915427e8aace458b84df7edb0b6f4	CHANGELOG.md	UNREVIEWED
+7e180128a3694d3513998b47756c27ae395b6c16	CHANGELOG.md	UNREVIEWED
+7e8877ca16f083f10bc3b7ce38649e4cc011345e	CHANGELOG.md	UNREVIEWED
+83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	UNREVIEWED
+8b08e657b1d2b5ecf29c659409c7eab6733804dd	CHANGELOG.md	UNREVIEWED
+8bd6861b333936a7d7f225faa46952b89871d3a7	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+9392fb84e63d9efde8eec6b66420e0aa446ab254	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	UNREVIEWED
+9933c3df4d1e7fdebb9fca78af3db26c7c60b9fa	CHANGELOG.md	UNREVIEWED
+aa11c6f87bdf68540da337796c835b8325ded361	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+bd0bdc10a82520e5f600c186181c56fc457bdd60	CHANGELOG.md	UNREVIEWED
+c407fb0b95ca60ce0b88ae7c9bc38ccc0780d309	CHANGELOG.md	UNREVIEWED
+c450e5a7b660c5d95225a474424a008884c4ab16	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+c4ea8c48ea568d4b5657183616528ade2d499f4d	CHANGELOG.md	UNREVIEWED
+d45b3c707aea27d18eeed0c9ae22c479c9a3a291	CHANGELOG.md	UNREVIEWED
+db1eb055ab498ac5539ae1b8821d8149ac11ca04	CHANGELOG.md	UNREVIEWED
+dfe1e574dd82b601b1c49118d84bb1e19da5cb2b	CHANGELOG.md	UNREVIEWED
+ea174f8ea268469d1707edea406526336e0824ff	CHANGELOG.md	UNREVIEWED
+efa1c59c2aa5b4d37a9377dedefddf6fa5d6bf5d	CHANGELOG.md	UNREVIEWED
+f37374c38727965c42ef6ddead18d5e6b0de78af	CHANGELOG.md	UNREVIEWED
+f53a5496601875532084e88ac54016c806409000	CHANGELOG.md	UNREVIEWED
+f706e6ccf7d4e4d844b6d90692ebc5a9c5927ed2	CHANGELOG.md	UNREVIEWED
+07a5c07b11facd1f812bd6926e8568fbc53a19b9	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+0c45b601a2c343d41d6167cb9970b6cbcf1fc054	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+0e68c4fd0246e123cab975b21b64c082dad6de7c	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+15ce189c029ab21eeeb626861322a67d3a915faa	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+18fb9322bbd403222e64c4d5134056bfa8e164fa	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+1f7466eca915ab724ff6c943e7cbc1568af2fc24	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+2252865c3bbcb70ab333104e3076909697cc5dd7	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+23cf4b67140c66619e33935ac407e5e20c336553	MUON_COST.md	UNREVIEWED
+32b1c743dbfe3f390b468ad5ecd9c046f05a9c76	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+3423eeb0ca5b312ba6ff5e77cdbd7c97b4fb32b3	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+353f916bb204aec8b8c56fef4168e97cd0e4f39b	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+35cf2902d09c64677485adc5e7644b1058812c07	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+3762113c8128e9b5ec3c8ed238acaff7889f7c73	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+3d795e8ce3b22535411d622499971ae0c13ec90d	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+484be619f7e1afdf4a79be4f11e89ae3e98f37d8	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+49cfb57d960d341fffabf64e2e043b47f50fcec9	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+593ec588555ab587cc453f44647070490bdcc6a6	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+5986961d7cd769e660eb04836f565daf517c360d	MUON_COST.md	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
+603b5190d5d94504afc5d4699a35c7ddfa097654	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+640f678041464d58aa27095306daa30602484428	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+6bc5f33926a3cabd0a4600984de7b45e38859ce4	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+800e89e6c55bd9484984b4bf1e246f6115b6bb3e	MUON_COST.md	UNREVIEWED
+86da5a99468a49c025d3e5bcd888b1b4f71f1da0	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+88b8a60504e6c481b8956dd6ee95175ff2bbe092	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+8b00658090e4adc92c6349430b78f086335f698e	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+8ea55e613080774baa1fb313af6a322015c93fdf	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+9ee64786443d1c1007d3ecaee910531acd6e186d	MUON_COST.md	UNREVIEWED
+a5a39ec6eac67be6323dc4fd583986e37df3c022	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+acd703246094fd897fad7dee72d0dce8d0251cd2	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+c206530e15e32d491f38c856f66ffa2a7e7bd3e1	MUON_COST.md	UNREVIEWED
+d2679a550fc350b050ea845d217547889b2914ee	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+d3f02568e849184d16e0c4219a778c5f06635eeb	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+d44d9fa7cbef25d3f92a7c5a38c2bc4243f83aa7	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion
+dcc44994d214c93487965ec51fbe33a721dd7a66	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
+de34cf44f3bff8a4a761316efe3935a3ede7949f	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+e062f77e5ea2bee9ef79f34dfa557fb6cd241b16	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+e59129f2917a2b60b111f04116975ffd3094b261	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+e9b7e4065fd77a1dba03cf1491e630e1c60eb24d	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion
+f00328f3e74045ce643fde76e3f65a3d6f30825d	MUON_COST.md	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+f2bf7df6bd6520c137073f68f98db932fa8707a9	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
+f8c38e7669922655dfbd9ce07a9d0db11e6ec6a1	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
+fcdb9881cc3321e4593098cd182d74878ab444fb	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+0645ef59d4821bcd80b483e9add1121b418330eb	README.md	UNREVIEWED
+1a52bef4be08aeb15e9074b6201d555c6ed74443	README.md	UNREVIEWED
+27703eed5984a3beaa79ac0a279c1d89a7081452	README.md	UNREVIEWED
+2b1ad20830e2d61ab896bf0e68626a36314140d8	README.md	UNREVIEWED
+55211c2f1d8f7822fb9faf9740e77ba1759744ab	README.md	UNREVIEWED
+6fe1fdc5ffcd2eff2e217cc02899b91e62bf75f2	README.md	UNREVIEWED
+9fca10a4aa026bde695b6fc69e44f498cac082fc	README.md	UNREVIEWED
+a389d4a40b1d8c0d9a5e2e842f8a8c04e49909a8	README.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
+c77ae914453a7a838b724c221071b3893612c4d5	README.md	UNREVIEWED
+caadceb259301af2a3f48cbdecafff9818b899a9	README.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
+ef5f863f07ba9f184e1932d13dc5a21c70ecf12e	README.md	UNREVIEWED
+f255ebcbbf3980d4b3eddf46db6c68bb1e7ca93f	README.md	UNREVIEWED
+1b51fd19b0eaac30723c03fbd8d6622ccd6b022b	openmucf/data/muon_cost.schema.json	UNREVIEWED
+2bce94e1ec97ca84887d4343229a6fb85c0340cd	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+35f03e6d3cef1d650ba427441ad1cba30a401879	openmucf/data/muon_cost.schema.json	UNREVIEWED
+3b8e99089faf38a2f7a4c0fa5c9527e866864c89	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+422ee8b097788ea6a4dfcd1e8d49566af020cf33	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+583f97392197a75b8e67da7b152375358e411f0f	openmucf/data/muon_cost.schema.json	UNREVIEWED
+617a7fa6c6ce1bb1e56496f2b2758e12551817bc	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+6a37f9a11563afce444ff412d8a036612488e12f	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+8b208015727c890d3c081e400badf51309232c5a	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+bd499b17cb0775b909d64a68c2a384898b5891ea	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+bf03883059fc1d1a22af8b88912ad043ab00e4e3	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+d1edc0dca15b22daa09e01e60dcb0f69b3156ccd	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+dacb171a55efa7b9679b1fcbad685c63b495c318	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+e30a609bce5b14a3dae80e1c537d7a7f9ae56b3d	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+e7465e6891e11a72171c4d03b20d3a506f8ec582	openmucf/data/muon_cost.schema.json	UNREVIEWED
+f49267383b0fd1a19bdb8c0309dff18d190bed76	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
+67056208ca3b3637751aadd2933788cd6562d880	openmucf/data/references.bib	UNREVIEWED
+a5ba51f26f479dd8455af0ca3a096341b63df0fd	openmucf/data/references.bib	UNREVIEWED
+a7d095c3fc7b1b01ae0a2b02789e1625c6d0db03	openmucf/data/references.bib	UNREVIEWED
+ae436b917c42083891a27623e316dbdd08a31330	openmucf/data/references.bib	UNREVIEWED
+ef117e0b8309953fd44d7ac67695acd58b5ef006	openmucf/data/references.bib	UNREVIEWED
+0578080af3f1c6b2e9cc3a1c563fc64a5fe41115	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+067f4e1e4a3346d54dac8f16857743ae23a8177a	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+07a26dd62dd1900976e1732af0fcc8238a25a176	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+12536c92eb76ff91736739ac57f56666170e9b70	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+147ae6b6f8499bd2937d5acd61fb9d4d3631ea4d	openmucf/mucost.py	UNREVIEWED
+1abea9af6c14e70c5f2b569c0b4c14aaac5f14fc	openmucf/mucost.py	UNREVIEWED
+1baede9fafebfbd4989edd410fd3e5e89ad83f21	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+1f58bba984382f6f4ed3bdcb4051c030fd143518	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_a_non_sourced_chain_renders_as_a_bound_not_a_value
+1f5ed6e488836dbcf5c011d517a924c2b7befa1d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+20f279f6df5d4acbd5604bbc5692591e2fcdd158	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+241a365656aa5cad0bf3dfe79d17d2c98b9100a2	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+2618b9774a512014eb16b4953d422e0a1e9fb201	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+35ace2a47360c6272d21f83eb5603e2228567cb5	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_bound_message_names_the_bound_not_the_direction_of_the_truth
+3cfc4a27a6f9a93ae5bbc2d5365109f3c8c62950	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+3d319c24290fb3c1a93eb32895caed24dee34725	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+4815274b30556de5b98721e8c619198a5c7c94ec	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+4b6773339dbb3e4ac6461f6fec3f8fb76a6f2d1b	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+5150940df5e0caca38e6a24bf4d8b70e032b81fa	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+54330d1f333e170b4e9bd473d2eee00ddfddbbfb	openmucf/mucost.py	UNREVIEWED
+5d9a0212920a84a3c5b1da23b0477d8c66a04048	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+631599677b8c934b25b0ddc26dc42612c964eb2e	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+63422a24dfe768e681f4615b38d96f26a8626cad	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+64e1b6b689f013d875ea4e6906505b2b40c971e2	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+6f6fb186c5d85766e0e7c9772216f3ab38704798	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+725cc5ebba27feca124508afaf0c695c83f1e257	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+76da6b31808b0e8420baac86aa28eb3ee86cf6ec	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_numeraires_is_tier_scoped
+77c23545959c362963d0df9be2edd525b61d6b67	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+7ecb457ab40e5850818d09e6395174e67a60d98d	openmucf/mucost.py	UNREVIEWED
+84ecf9856a75268e3a1e9c46b050b853909d1385	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+860cd73fc3e4302b79e0c64d5b02ce4a58bf9aa6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+8679eb72b557cf48d93576a79718552017fd8c47	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+905fb1066cc51d305de2e1af23bb6a62fd27a90a	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+99ec64643192bb9b78a8f505aae3493aff302a78	openmucf/mucost.py	UNREVIEWED
+9cc5da77a33ae17156f1be76537542bd331b6daf	openmucf/mucost.py	UNREVIEWED
+a25a4b3f33f8cba9a5f46c3af70b9b5ca45178fb	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+a613efb0c7703fdfa020c03c952490c5e28c50d6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+b26c0be0060f8ddbfc332a4a1fe8d60f2e109e41	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+b27c45d335f9174b4c13311e84df980c21202198	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+b3b5975fd541857b6a745d315fd519edb4debdd1	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+bd65d26c5619b08df3b575c912bb0a1e5feecbbd	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers
+bf82765342e46f11f1ded711e2aee86e47205161	openmucf/mucost.py	UNREVIEWED
+c159768f8435e57b72d2b17f8da18427808b2dd1	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+c485a217c86dc1f9a8c65872d3bc20d26308c7f1	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+c6f4d48451f9fb1d0c3e82e5feca55f1a58c50fc	openmucf/mucost.py	UNREVIEWED
+ccad2e598c027b31e0a7b1f302699c874995c58f	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+ce124b11e8dcef23a6f11ded1d7777be9c062ae7	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_a_non_sourced_chain_renders_as_a_bound_not_a_value
+d16c560fff0c1b108bf97697d8cd2b7881c2f761	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+e0d1b920a87749dff91ada4b059e1d43d476be04	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+e4550bda2ca2861059d07821cb977271c5ba04e3	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+e669b43f039f3275c49df7792dd280b72fbdfdf8	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+e8401dd57a360f693b87a28c87294e04c849539d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+ebce009b41b63ba02e2679d137bf9df7aae5d414	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+ebddb27f1a1a56a124ed0586793874eef073f32d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+f2fcd65b703f34fec68cd93ea6bc13b1d20eeeb8	openmucf/mucost.py	UNREVIEWED
+fa9b79c4f27f4adf308b8ae66a5b5769593592e3	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+1d7cf942817f1116a86140d6f20b9509e065c2aa	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
+2a669477f641be3b126774e260b4561ab6b519f9	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
+3cc955c8ddccf8634f5cd2543669b9fe6b2bf066	paper/paper.md	UNREVIEWED
+42fba44119c860de0eed6e6d24e51d13d3b3b67a	paper/paper.md	UNREVIEWED
+540664a65eacea4e77397a79bf1c52463183f85b	paper/paper.md	UNREVIEWED
+5cf0353da802688eb4239fa4c47dc4bbb4e896cd	paper/paper.md	UNREVIEWED
+692b9d432c13014fc0ace7eebddaf3029470f10b	paper/paper.md	UNREVIEWED
+f050bef85240ff4f0f7ff9b463abc3ac988f3963	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
+fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED
+010f08de571b3a83e023ff161e5520cd62d1394b	scripts/generate_mucost.py	UNREVIEWED
+06107f12c44341726dfe31e4cc267598c360f917	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+07a5c07b11facd1f812bd6926e8568fbc53a19b9	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+07c9522e9ec20e62aa369e15bb5317ca1e3d9981	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+0806c4cdebca2a4afe457bf95943d4639cfc1efa	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+0a7f2ffed6be41020caf074d379cf26d76798023	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+0e68c4fd0246e123cab975b21b64c082dad6de7c	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+15ce189c029ab21eeeb626861322a67d3a915faa	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+172fc6e7265785b664116c524a122dfb403f889a	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
+18fb9322bbd403222e64c4d5134056bfa8e164fa	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+1de46930c04663cad21cd4335f2b4c08d2d81a09	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_generator_refuses_an_empty_headline_anchor_set
+1f33f909b7f167a80d2e035dfe91f5b1f29de104	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+1f7466eca915ab724ff6c943e7cbc1568af2fc24	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+2252865c3bbcb70ab333104e3076909697cc5dd7	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+23cf4b67140c66619e33935ac407e5e20c336553	scripts/generate_mucost.py	UNREVIEWED
+24d73894e27c35a80176790982b3a1468c5cfded	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
+3423eeb0ca5b312ba6ff5e77cdbd7c97b4fb32b3	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+353f916bb204aec8b8c56fef4168e97cd0e4f39b	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+35cf2902d09c64677485adc5e7644b1058812c07	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+35ea0eddca9fad06127174f217de1a5c7c46e965	scripts/generate_mucost.py	UNREVIEWED
+3762113c8128e9b5ec3c8ed238acaff7889f7c73	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+3d795e8ce3b22535411d622499971ae0c13ec90d	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+4804e9d44c1f68151aaf6470f1dc11a9030437ee	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+49cfb57d960d341fffabf64e2e043b47f50fcec9	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+4e089297dcf679abb6e6d00d6ce158af3c8cc592	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+4e9d593f22c07af2590b38cccd4d31492c6c78dc	scripts/generate_mucost.py	UNREVIEWED
+5639c6795637b0da13bcf02e211af9f90680a506	scripts/generate_mucost.py	UNREVIEWED
+593ec588555ab587cc453f44647070490bdcc6a6	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+5b6c3ff82f126279c7b505e17692494ae6bdf1ba	scripts/generate_mucost.py	UNREVIEWED
+5d6606eef3c61a73c9769b08768db0136ed9c297	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+5e358e3695f47faf7f7a5dccd1c02d9d5fbd7f4d	scripts/generate_mucost.py	UNREVIEWED
+603b5190d5d94504afc5d4699a35c7ddfa097654	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+640f678041464d58aa27095306daa30602484428	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+6d03ead2b64b2339708b91db6d165c49755b9210	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+6ec6b4d2e4376a4da92a11eb9a438539629f4213	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+72f9620d488be46868d991d3a3df0918c3cc0d43	scripts/generate_mucost.py	UNREVIEWED
+75ee8480c7afba2f8bf3d8f9533f17dd005004b4	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+7608e5f107c3e783ece59a57002b7b80fd886781	scripts/generate_mucost.py	UNREVIEWED
+7901ce19e25633ea4e300d2d484f06cb303d9a84	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
+7de7d1da39a888256b37143cf3819b82992b9357	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+81db11888fe4b8691b27964d42bbf5727d19e0ed	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+861fe9df1112e25c0d68db16810c0c8199201dcb	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
+86da5a99468a49c025d3e5bcd888b1b4f71f1da0	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+88b8a60504e6c481b8956dd6ee95175ff2bbe092	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+8b00658090e4adc92c6349430b78f086335f698e	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+8ea55e613080774baa1fb313af6a322015c93fdf	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+9b94f80e74206a9f98365e0387d2f6aaf84d3f05	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+a1875b7e89cd0c07e7e8dba28070933e0989962a	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_generator_refuses_an_empty_chain_point_set
+a61d77636eb032e8b0b01ac6649c015cd0a0a1e4	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+a7c133e66899953e880c1afde194d7dacb4e5cb5	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
+acd703246094fd897fad7dee72d0dce8d0251cd2	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+b00c01b08ff199bfd44d4df8bab5a12f037fcfb0	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+b4a9852a3a55250ec621407d81e07b7593934103	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+b912765778adc576ff733b2a70d486973b675b2e	scripts/generate_mucost.py	UNREVIEWED
+c206530e15e32d491f38c856f66ffa2a7e7bd3e1	scripts/generate_mucost.py	UNREVIEWED
+c5c97c394b52a199b5961f66383d02ed652d9f1f	scripts/generate_mucost.py	UNREVIEWED
+c7f19f375c6aa9561ad6097abd5b048869662704	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
+cf1929ea16bbf52737b3e657a12a9f74adf9ac0d	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+cf1fc41f123f675d23ef92df38808eeebef6c412	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+cf5b5e66cea0708a7e17013d58974e4229b767ab	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
+d2679a550fc350b050ea845d217547889b2914ee	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+d3f02568e849184d16e0c4219a778c5f06635eeb	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+d41878ef947459641a8dbbb90b82d29dac9e7287	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+d44d9fa7cbef25d3f92a7c5a38c2bc4243f83aa7	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion
+d89d883ef1f6f08f7244778ad537c3c5f4ba055e	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
+dcc44994d214c93487965ec51fbe33a721dd7a66	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
+de34cf44f3bff8a4a761316efe3935a3ede7949f	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+e0546b3e52554167ff7069a3f7cca701219c75f6	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+e9b7e4065fd77a1dba03cf1491e630e1c60eb24d	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion
+ef39c3e99f50c2d138cbf939f5ebbf02acd2c050	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+f00328f3e74045ce643fde76e3f65a3d6f30825d	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+f4612c16a8312abf3e8907afab354ec190505db8	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+f73ad0f0aa4019baa29c9115f219fc79bd98f6d5	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+4b32ef74ec46fde7f21bb9ecb88a63ac6ae38430	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
+7dd6964f2dd04531caefcdb84f6024209ebe3bef	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
+ada6c5cf9f6ec8d50adcc1eaac49cc6fef80fb96	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
+bf5d85c8602baadcd34ea4e66e698bafe10727c8	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
+c1dc0de5e0b5b03060ccc6e1f8bb08ea3c129295	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
+ce1b59361b635e8a1bdf7753ff5cbeb94420e644	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
+ecfa7ab0e26f508095b868ca4c7ebdbf241ea91d	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
+04e8d7de246fd8b22e3215c92b6e8e1f4aa3331c	tests/test_mucost.py	UNREVIEWED
+066a2476ab79febb99a4422e22b8bbfb2903397c	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+0b42f9562f8bf43fd6c145c33b70ba78e0d3b772	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+125ba8541eb5d3f7c0242482ec5be52d40eef40a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+1b339c4b157172d72e53c1e28fada3aa0e01edc1	tests/test_mucost.py	UNREVIEWED
+1d4c418e76a448142b0be9541c20c94d322f0c19	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+1f666ad676fd74af2b8806da2c336ce9f5f9f48e	tests/test_mucost.py	UNREVIEWED
+21066b05ce4f81ad258b36094e15c9ee799fd101	tests/test_mucost.py	UNREVIEWED
+2545bc77df2b56f69eefab04ffa9c30d6437dffa	tests/test_mucost.py	UNREVIEWED
+27837199d5ad2a87471806f2815b9ecaf8ec2a82	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+2fd42360838de0b00832486e967eec145e1e5470	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+3516c7c72f7dda6dcb84836323dc260e8b291e46	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+3a90a1458b31f15601ef770972891d111dba4f92	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+3c51faf4b1ee7bf6244b24aaa72a13f45fe51d66	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+42e5317f9fb4ce2d80ac96dc0aa175e678edc675	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+46f4acd6d8e80a9f8213d763f1d6a02d23f21af2	tests/test_mucost.py	REGISTERED:assertion line of the test that asserts the property; the quantifier the enumerator matched is part of the identifier `mu_plus_only`
+486126ed846ab86304031907e6827bab865ed673	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+4d4eea9d56f018eef9c4b9c61b87930aeafc24ed	tests/test_mucost.py	UNREVIEWED
+5a8d3404ec97c54a0dd7634476bd7866af9da303	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+65d9e62310a95ab3ec65c62b020405fe08342c27	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+6964f6d85c76bb39adefeba2996c3502f54de073	tests/test_mucost.py	UNREVIEWED
+6d291040b6421371c757b32b1f6ceec05591bed4	tests/test_mucost.py	REGISTERED:the retracted wording, quoted so the test below can assert it is absent from both prose paths; not a claim made here
+6d78377e51e5c227774ba78f33e81ba1e9f084de	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+703c22b65f5fa8889a23653ae932d4331bd4e1a5	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+7148627ebeee24bb9f53382aaee8d156fdc04986	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+80e90a9b44315bd561337b8ca3ba256c92d96cfa	tests/test_mucost.py	UNREVIEWED
+817a39706adf76d40df07c35a44e27361be0603e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+866ffa0e22d23e1b2465773a3fb48d83dd41594a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+868b7a60534fa4103e59fb8bf79e82c2d73e605f	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+8c964e5386029e1077ac1eaf21588d934eeef45a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+94c156a165cc2d0d813f0ce879d3bbfe2207fc28	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+95b12dd0543136bc9dfaff070cf0064d18448b9b	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+991bfc6068d5bcbbd3d07f63f539540439b63291	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+9c999d9a8f1eb7ceb92f4eb441f4f3d36f406e17	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+9d2b34a710eaf3b8603a78e225f055773f156797	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+a10ee4031447ec559265c028666a5ee4b2c31ea7	tests/test_mucost.py	UNREVIEWED
+a86b4abee14c74cb56cb9648bdd953eee02f7863	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+a8da82885b56ca3f3ed3e803069cd223aa8493a5	tests/test_mucost.py	UNREVIEWED
+a99a1388bd180f2d4009352e559da2d4068f3071	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+abb72443c94e2a280c36008247c981348427883c	tests/test_mucost.py	UNREVIEWED
+b10befbaf5a01934522acd8f6013e36daa46b701	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+b12dedd692c676c3eb313a34154c6fd2cea4e2b5	tests/test_mucost.py	UNREVIEWED
+c31bd2aaec64475b2055d7dd6eae7a3c3f37f254	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+d00802cb973f32be14ab22b09d676d16b88b7970	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+db0e9dfe9063b66b23812ab00e89491a89c3f72e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+e50cd262f5ecf0762c27b42f980f9742768ce207	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+f0cb78cc26ecd0b21ceec178a7c2a8a2cfd7aa2e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property

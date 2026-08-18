@@ -318,6 +318,26 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["n_offchain_rows"] = str(sum(1 for c in cov if not c["on_chain"]))
     H["n_fully_sourced_chains"] = str(sum(1 for c in cov if c["complete"]))
     H["n_numeraire_sourced"] = str(sum(1 for c in cov if c["numeraire_sourced"]))
+    # The closing universal reaches only rows that count mu-. A `mu_plus_only` row prices no mu- at
+    # all, so a bound on its mu--only cost holds without saying anything; the exclusion is derived
+    # from `charge_basis` so that recharging a row rewrites the sentence instead of leaving it stale.
+    mu_plus_only = [
+        LABELS[r.source_id]
+        for r in table
+        if r.has_normalized and r.stage in mucost.MUCF_CHAIN and r.charge_basis == "mu_plus_only"
+    ]
+    H["mu_plus_only_clause"] = (
+        ""
+        if not mu_plus_only
+        else "The mu+-only chain {} ({}) {} excluded on the other axis: {} no mu-, so {}\n"
+             "mu--only cost is unbounded and any figure bounds it vacuously.".format(
+                 "figure" if len(mu_plus_only) == 1 else "figures",
+                 _join(mu_plus_only),
+                 "is" if len(mu_plus_only) == 1 else "are",
+                 "it counts" if len(mu_plus_only) == 1 else "they count",
+                 "its" if len(mu_plus_only) == 1 else "their",
+             )
+    )
     return H
 
 
@@ -548,10 +568,10 @@ anchor*; its one *experiment* row, SIN/Crowe, is `Y_f` = 124 +/- 10):
 
 Both conventions are reported because **`N_L` is linear in `1/E_use`**, so the choice moves the answer by
 the ratio of the two: our axis fixes the *cost* input of `N_L = E_cost / (eta_sys * E_use)` and leaves the
-other two convention-set, and quietly picking one would repeat the very error this document corrects.
+other two convention-set.
 
 Against that ceiling, the chain points built from the open-access anchor -- every one of them a
-**bound**, because {H['chain_points_stage_clause']} and the remaining factors are absent:
+**bound**, because {H['chain_points_stage_clause']}:
 
 | chain point | numeraire | figure | vs {H['ceiling_kc']} GeV ceiling | vs {H['ceiling_kelly']} GeV ceiling |
 |---|---|---|---|---|
@@ -614,10 +634,11 @@ is sourceable for any row today (Kelly: {H['norm_kelly_hart_rose_2021']} / {H['k
 `eta_mu` = {H['kelly_eta_mu']}, but describe it verbatim as an "arbitrary but reasonable assumption" and state they do
 not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
 into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
-figure above that sits **on the muCF chain** is a **lower bound** on the cost at the terminal stage --
-which is why the one-sided reading is the only defensible one. The {H['n_offchain_rows']} off-chain
+figure above that sits **on the muCF chain** and counts mu- is a **lower bound** on the cost at the
+terminal stage. The {H['n_offchain_rows']} off-chain
 figures are not bounds on a muCF cost at all: they price stopping a muon somewhere that is not D-T
 fuel, so no chain of sub-unity factors connects them to the quantity this table is about.
+{H['mu_plus_only_clause']}
 """
 
 
