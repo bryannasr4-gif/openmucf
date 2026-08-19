@@ -73,7 +73,7 @@ make validate      # reproduce the pre-registered targets (VALIDATION.md: 6 pass
 make findings      # sensitivity ranking + breakeven falsification -> FINDINGS.md
 make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 make systems       # Q Rosetta stone + energy-balance graph -> SYSTEMS.md
-make mucost        # open muon-cost ledger + the 10^3 gap figure -> MUON_COST.md
+make mucost        # open muon-cost ledger + the tier-spread figure -> MUON_COST.md
 make frontier      # inverse-design "what would have to be true" frontiers -> FRONTIER.md
 make neutronomics  # neutrons-per-joule league table -> NEUTRONOMICS.md
 make design        # Bayesian experimental-design ranking -> DESIGN.md
@@ -92,11 +92,14 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   (corr ≈ +0.8; see the prior-sensitivity sweep in `CALIBRATION.md`) — the quantitative reason the Phase-3
   microscopic calculation is needed.
 - **Muon-cost normalization (`MUON_COST.md`):** a curated, provenance-tagged compilation of the
-  muon-production energy cost on one auditable basis. Design studies sit at a few GeV per muon (anchor:
-  Kelly–Hart–Rose 4.70 GeV/μ, open-access, G4Beamline), while operating facilities are ~10³× worse
-  (mu2e ~5×10³, COMET ~2.3×10³, MuSIC ~6×10³ GeV/μ — original derivations, arithmetic shown). Re-running
+  muon-production energy cost, each row at its own (stage, numeraire) coordinate. Design studies sit at a few GeV per muon (anchor:
+  Kelly–Hart–Rose 4.70 GeV/μ, open-access, G4Beamline), while operating facilities sit ~10³× higher
+  (mu2e ~5×10³, COMET ~2.3×10³, MuSIC ~6×10³ GeV/μ — original derivations, arithmetic shown). Those
+  tiers do **not** share a basis (see `MUON_COST.md`: no basis class is common to T1 and T3), so the
+  spread is an order-of-magnitude, mixed-basis, one-sided observation and never a same-basis ratio.
+  Re-running
   Q_net under each cost tier (`FINDINGS.md` §2b) collapses the median Q_net ~10⁵× from design-study to
-  facility muons — the 10³ simulation-to-facility gap in energy-return form. *The floor is unvalidated,
+  facility muons — the same tier spread in energy-return form. *The floor is unvalidated,
   not impossible.*
 - **The Q Rosetta stone (`SYSTEMS.md`):** a differentiable energy-balance graph (`openmucf.systems`, a
   superset of the frozen `EnergyChain`) that places the several muCF "Q" conventions — scientific gain,
@@ -117,7 +120,7 @@ oracle (`openmucf/exact.py`; tests), but no headline number depends on its multi
 
 | tier | outputs | why |
 |---|---|---|
-| **GREEN — citable as-is** | muon-cost ledger + 10³-gap (`MUON_COST.md`), Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model |
+| **GREEN — citable as-is** | muon-cost ledger + the mixed-basis tier spread (`MUON_COST.md`), Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model |
 | **AMBER — citable with the stated basis** | calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, prior-sensitivity table), X_μ at the 300 K liquid anchor | statistically sound but summary-statistic-based; cite WITH the basis caveat |
 | **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8); the λ_c(T) shape runs −41% to −44% below the digitized Yamashita–Kino 2022 curve (sourced comparator `V_yamashita_ratio`/`_curve`, fails ±30%) — a runtime warning fires in the RED regime |
 
@@ -159,7 +162,7 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `data/g4/d1/`, `DATASET_D1.md` | the D1 nuclear-capture dataset in `parity` mode + its findings (see below) |
 | `openmucf/data/` | `rates.csv`, `validation_targets.csv`, `references.bib`, schema |
 | `forecasts/`, `FORECASTS.md` | pre-registered, hash-stamped forecast cards (FC-001) + protocol + registry table |
-| `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + 10³ gap, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
+| `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + mixed-basis tier spread, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
 | `examples/`, `notebooks/` | runnable `quickstart.py` + `quickstart.ipynb` |
 | `docs/` | getting-started + API overview |
 | `MODEL_SPEC.md`, `LITERATURE.md`, `PRE_REGISTRATION.md` | the physics, numbers, and locked targets |

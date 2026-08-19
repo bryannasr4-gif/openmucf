@@ -10,6 +10,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — every muon cost now carries its stage and its numeraire (2026-08-16)
+`normalized_GeV_per_mu` was a bare number. Each row now states **where on the muCF chain** the muon
+has got (`produced -> captured -> transported -> moderated -> stopped_useful_in_dt`) and **what kind
+of energy** is being counted (`beam_kinetic`, or electrical on either of the two facility
+denominators the same PSI primary states). Wall-plug is treated as a numeraire, not a stage: dividing
+by an accelerator efficiency changes the units and applies at any stage. `basis_class` is kept as a
+deprecated alias and the loader errors if the two ever disagree. The re-labelling moved **no**
+published value, and a test pins that.
+- Enforced in code, not prose: `ChainValue` carries a figure with its stage, numeraire and the
+  evidence status of every factor composed into it. A figure short of the terminal stage, or
+  composing a factor its own source calls arbitrary, is a **bound** — `render()` prefixes `>= ` and
+  `render_value()` raises. All aggregation is restricted to a single numeraire, which is why the
+  neutrons-per-joule medians did not move when electrical rows joined the table.
+- Two derived rows added: Kelly, Hart & Rose's beam figure re-expressed in electrical energy on the
+  two denominators the same PSI primary supplies — Kelly's own adopted **18%**, his two-figure
+  rounding of that primary's 18.3% minimally-required-subsystem efficiency, and the primary's 10.4%
+  site-wide figure, which Kelly does not adopt. The rows divide by 0.18 and 0.104, not by 0.183:
+  recomputing on the unrounded 18.3% gives 25.68 GeV rather than the shipped 26.11. Both stay at
+  stage `produced`; a numeraire change is not a stage advance.
+- The delivery factor whose authors call it an "arbitrary but reasonable assumption" is recorded in
+  its own flagged column and composed into nothing that is published.
+
+### Retracted — the "10^3 simulation-to-facility gap" (2026-08-16)
+That heading asserted a **same-basis ratio**, which the text beneath it already denied: no basis
+class is shared between the design-study and operating-facility tiers, so the quantity has no common
+denominator to be a ratio *of*. The spread itself is unchanged and is now stated as what the data
+supports — an **order-of-magnitude, mixed-basis, one-sided observation**, with its basis composition
+printed. The test that pinned the old claim was re-specified rather than deleted, so what was
+retracted and why is recorded in the suite.
+- **It applies to three statements still standing in this same `[Unreleased]` section**, not to a
+  released one: the muon-cost bullet, which said the gap "is proved from the table itself"; its
+  `FINDINGS.md` §2b companion, which called the median collapse "the 10³ gap in energy-return form";
+  and the neutronomics bullet, which said the gap "transfers one-for-one to the neutron economy". The
+  first is corrected below, because this entry owns it. The other two describe `FINDINGS.md` and
+  `NEUTRONOMICS.md`, which are left unchanged by design (see the next bullet); both are marked in
+  place and are **owed before any tag**.
+- `FINDINGS.md` and `NEUTRONOMICS.md` still carry the retracted phrasing. Both are byte-diffed
+  audited artifacts regenerated from their own generators, and correcting them is the job of the
+  downstream basis pass; they are unchanged here by design and are **owed before any tag**.
+
+### Added — the Kou-Chen cycle-closure ceiling (2026-08-16)
+A ceiling on what a muon may cost, computed from declared constants on both the 20.4 MeV convention
+their paper adopts and the 26.0 MeV a primary derives, with this ledger's sourceable chain points
+placed against it and a coverage table showing, per source, which conversions are actually sourced.
+`references.bib` gains `Kovach2017` and `KouChenLawson2026` — the latter deliberately NOT
+`KouChen2026`, which already exists and is bound to a different paper by the same authors.
+
 ### Added — the D1 isotope-resolution audit, established from the primary literature (2026-08-15)
 `isotope_resolved` was previously derived from the shape of the compiled-in table: true if and only
 if a `Z` carried more than one record. Every one of the 90 records has now been checked against the
@@ -186,15 +233,20 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   - Names are **provisional**: `G4MuonicData` and `G4MUONICDATA` are placeholders, and the C++ reader and
     its standalone validation application are specified but not yet part of this release.
 - **Open muon-cost ledger (`openmucf/data/muon_cost.csv` + `openmucf/mucost.py` + `MUON_COST.md`).** A
-  curated compilation-with-provenance of the muon-production energy cost on one auditable basis (beam GeV
-  per muon; wall-plug and recapture credits kept in separate flagged columns, never folded). Ten rows across
-  three tiers — design studies (anchor: Kelly–Hart–Rose 4.70 GeV/μ, open access; corroborated by
+  curated compilation-with-provenance of the muon-production energy cost, **each row at its own
+  (`stage`, `numeraire`) coordinate rather than on a single common basis** (see the stage/numeraire
+  entry above); a recapture credit stays in its own flagged column and is never folded, and wall-plug
+  appears as a separate row in an electrical numeraire rather than as an edit to a beam-kinetic one.
+  Twelve rows across three tiers — design studies (anchor: Kelly–Hart–Rose 4.70 GeV/μ, open access; corroborated by
   full-text-verified Bertin 1987 and Eliezer–Henis 1994), demonstrated technology, and operating facilities
-  (mu2e/COMET/MuSIC/HIMB — original derivations with the arithmetic shown). The 10³ simulation-to-facility
-  gap is proved from the table itself and drawn in `figures/muon_cost_gap.png`.
+  (mu2e/COMET/MuSIC/HIMB — original derivations with the arithmetic shown). The tier spread is drawn in
+  `figures/muon_cost_gap.png`. **Corrected by the retraction above:** it is an order-of-magnitude,
+  mixed-basis, one-sided observation, not a same-basis ratio proved from the table.
 - **`FINDINGS.md` §2b — Q_net by muon-cost tier.** The forward-UQ Q_net is re-run under T1/T2/T3 E_μ priors
   (via `uq.qnet_tier_panel`), holding every measured input fixed; the median Q_net collapses ~10⁵× from
-  design-study to facility muons — the 10³ gap in energy-return form. The default flat [2, 10] GeV E_μ box
+  design-study to facility muons — described here at the time as "the 10³ gap in energy-return form"
+  (**retracted above**; `FINDINGS.md` still carries that phrasing and is the downstream basis pass's).
+  The default flat [2, 10] GeV E_μ box
   in §1/§2 is unchanged (the tier panel is an added section, not a replacement).
 - `MUON_COST.md` + `MUON_COST_MANIFEST.json` join `make audit` (regenerated + byte-diffed; the PNG is not
   byte-diffed); the provenance manifest check now covers the muon-cost manifest too.
@@ -219,8 +271,9 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   never a single blended row — computed as X_μ / (E_μ,tier in J) with the **measured** record yield
   X_μ = 113 (`calibrate.OBS['xmu_obs']` / ledger target `V_petitjean_Xmu`, not the forward-UQ median). At
   the design-study muon cost μCF is competitive with a spallation source (~43 MeV of beam per neutron) and
-  ~10³× better than a sealed-tube D-T generator; at the operating-facility muon cost the ~10³ muon-cost gap
-  transfers one-for-one to the neutron economy. A short sourced table of alternative 14 MeV/n sources
+  ~10³× better than a sealed-tube D-T generator; at the operating-facility muon cost the ~10³ muon-cost
+  spread transfers one-for-one to the neutron economy (**retracted above** as a same-basis ratio;
+  `NEUTRONOMICS.md` still carries that phrasing and is the downstream basis pass's). A short sourced table of alternative 14 MeV/n sources
   (Thermo P385 sealed tube, FNG, RTNS-II, ISIS spallation) is included, each n/J derived from published
   beam parameters. Beam basis only (wall-plug kept separate, I5); neutron-source economics, not breakeven
   (I9); no new physics (I1). `NEUTRONOMICS.md` + `NEUTRONOMICS_MANIFEST.json` join `make audit`.
