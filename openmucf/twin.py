@@ -5,7 +5,7 @@ cycle ODE, a Poisson sampler for raw histograms, and the IDEALIZED two-exponenti
 fits -- so its bias against the model truth can be quantified on synthetic data (see
 ``scripts/generate_twin_audit.py`` and ``TWIN_AUDIT.md``).
 
-Fenced v0 (DECIDED, WAVE1_EXECUTION_SPEC.md sec.5.1): constant density phi; d-t only; delta beam pulse
+Fenced v0 -- a deliberate scope limit, not an oversight: constant density phi; d-t only; delta beam pulse
 (the muon starts on deuterium at t=0); flat background; NO detector-response prediction; NO
 dataset-specific claims. Each named historical dataset's ACTUAL published procedure (pulse structure,
 material stopping components, detector response) is stage 2 and acquisition/contact-gated -- nothing

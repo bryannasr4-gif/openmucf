@@ -101,7 +101,7 @@ def test_eta_threads_through_params():
 
 
 def test_wsn_norm_excludes_loss_accumulators_bit_exact():
-    """PIN (Fable amendment 2026-07-08, §3.4; diagnostic de-pinned same day, hotfix ws-fix-gradient-pin):
+    """PIN -- why the step-error norm covers the 6 v1 states only, and why the diagnostic is BOUNDED:
     step-error is controlled over the 6 v1 states only, so the channels-OFF 8-component network reduces
     to the v1 reference BIT-FOR-BIT (reduction gate G-N1 at PURE atol 1e-9, rtol=0); reverting to
     diffrax's default 8-component norm regresses N_fus to ~5e-9 and fails that gate. The through-the-ODE

@@ -95,7 +95,7 @@
       "format": "csv",
       "mediatype": "text/csv",
       "encoding": "utf-8",
-      "title": "Frozen Wave-1 uncertainty-quantification priors (Sobol / forward-UQ boxes)",
+      "title": "Frozen uncertainty-quantification priors (Sobol / forward-UQ boxes)",
       "schema": {
         "primaryKey": "name",
         "fields": [

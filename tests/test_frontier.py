@@ -211,7 +211,7 @@ def test_frontier_manifest_verifies():
 
 
 def test_frontier_manifest_solver_numbers_are_six_sig_figs():
-    """WAVE2 A2: every solver-worked-example value shipped in FRONTIER.md is quantised to <= 6 significant
+    """Every solver-worked-example value shipped in FRONTIER.md is quantised to <= 6 significant
     figures (so the byte-diffed doc cannot depend on iterative-solver noise)."""
     gen = _load_generator()
     H = gen.build_headline()

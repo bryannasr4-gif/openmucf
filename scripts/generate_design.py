@@ -9,7 +9,7 @@ PRIMARY preposterior sd-contraction metric and the SECONDARY nested-MC EIG, over
 calibrate posterior. R is reported class-conditionally (constant-R vs R(phi)-inflated); the class
 CONTRAST -- resolved or not, against its own Monte-Carlo error -- is the finding.
 
-Reproducibility (WAVE2 A1/A2 -- the CALIBRATION.md precedent, NOT the byte-diff pattern): DESIGN.md +
+Reproducibility (the CALIBRATION.md precedent, NOT the byte-diff pattern): DESIGN.md +
 DESIGN_MANIFEST.json carry numpyro/NUTS-derived numbers that are NOT byte-stable cross-architecture, so
 `make audit` byte-diffs NEITHER. Instead `--audit` re-runs with the pinned seeds and checks every
 manifest-tracked number against a band DERIVED from that cell's OWN published Monte-Carlo standard error
@@ -46,8 +46,8 @@ band built from a run's self-reported SE is therefore honestly sized, not self-s
 Structural claims the doc actually makes (the C4 recommendation, the rankings, class-independence) are
 additionally gated in `audit()` at their own separations, because those -- not 3-decimal noise cells --
 are the deliverable.
-Both are hard-failing and pinned by tests/test_design_audit.py (the never-soften-silently rule of
-WAVE1 spec 1.5). Doc<->manifest consistency is enforced by `provenance --check` (regenerated together).
+Both are hard-failing and pinned by tests/test_design_audit.py (an audit tolerance may never be
+softened silently). Doc<->manifest consistency is enforced by `provenance --check` (regenerated together).
 
 AMENDMENT 2026-08-12 (the EIG band, measured rather than assumed). The EIG-in-bits cells kept a
 pre-registered 5% RELATIVE band annotated "held cross-arch 2026-07-23". That annotation is DELETED, not

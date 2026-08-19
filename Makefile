@@ -69,7 +69,7 @@ neutronomics:
 
 # Bayesian experimental-design ranking (WS-D). Regenerates DESIGN.md + DESIGN_MANIFEST.json. BOTH carry
 # numpyro/NUTS-derived numbers (nested-MC EIG, sd-contraction refits) that are NOT byte-stable cross-arch
-# (the CALIBRATION.md precedent, WAVE2 A1), so NEITHER joins the audit git-diff list below; instead
+# (the CALIBRATION.md precedent), so NEITHER joins the audit git-diff list below; instead
 # `generate_design.py --audit` re-runs with pinned seeds and tolerance-checks every manifest number: each
 # cell -- EIG and sd-contraction alike -- against 4 sigma of its OWN published Monte-Carlo SE, plus
 # structural gates on the ranking claims (see the AMENDMENTs in scripts/generate_design.py). The

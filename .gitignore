@@ -10,8 +10,3 @@ quickstart_export/
 .ipynb_checkpoints/
 build/
 dist/
-
-# Internal working docs — kept private (relocated to the umbrella folder). Never publish.
-RESULTS.md
-PROJECT_PROMPTS.md
-LESSONS_AND_HANDOFF.md

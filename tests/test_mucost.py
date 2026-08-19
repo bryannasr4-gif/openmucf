@@ -37,7 +37,7 @@ def _load_generator():
     spec.loader.exec_module(mod)
     return mod
 
-# The nv-flag set committed this session (WAVE2 sec.0-A A8): only Jandel is needs_verification.
+# The nv-flag set committed this session (A8): only Jandel is needs_verification.
 EXPECTED_NV = {
     "kelly_hart_rose_2021": False,
     "kelly_electrical_minimal": False,

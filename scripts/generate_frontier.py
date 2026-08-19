@@ -2,7 +2,7 @@
 
     python scripts/generate_frontier.py
 
-Content (WAVE2_EXECUTION_SPEC sec.3, WS-Q): the inverse-design mode -- "what would have to be true".
+Content (WS-Q): the inverse-design mode -- "what would have to be true".
 The (lambda_c, R) reactivation frontier for X_mu in {150, 284, 500} (closed-form), the density-independent
 R floor that reproduces the FINDINGS.md sec.3 "R >= 0.77" headline, and a solver-backed general inverse
 over the differentiable systems.q_net graph.
@@ -10,7 +10,7 @@ over the differentiable systems.q_net graph.
 Framing (I1/I8): INVERSE-DESIGN ONLY, never a verdict. It states requirements exactly as FINDINGS.md
 sec.3 does; it encodes no scenario/verdict registry (fenced OUT, sec.3.2).
 
-Byte-stability (WAVE2 sec.0-A A2): FRONTIER.md + FRONTIER_MANIFEST.json ship ONLY closed-form float64
+Byte-stability: FRONTIER.md + FRONTIER_MANIFEST.json ship ONLY closed-form float64
 numbers (byte-stable cross-arch, like SYSTEMS.md); the solver-backed inverses are cross-checked against
 those closed forms to < 1e-9 (relative) in the tests, and the shipped worked-example digits are the
 closed-form values quantised to 6 significant figures -- so nothing byte-diffed depends on iterative-solver
@@ -61,7 +61,7 @@ SOLVER_TARGET_QNET = 0.06
 
 
 def _sig6(x: float) -> str:
-    """6 significant figures (the WAVE2 A2 solver-print precision). Applied to closed-form values here."""
+    """6 significant figures -- the precision at which a solver-derived value may be printed. Applied to closed-form values here."""
     return f"{x:.6g}"
 
 

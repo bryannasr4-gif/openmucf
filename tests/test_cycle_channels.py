@@ -2,7 +2,7 @@
 
 The engine default is channels-OFF; these tests exercise the explicit opt-in and the reduction to v1.
 The FULL 50-point bit-exact reduction + the FINDINGS byte-lock are pinned by
-``tests/test_cycle.py::test_wsn_norm_excludes_loss_accumulators_bit_exact`` (Fable amendment, spec §3.4).
+``tests/test_cycle.py::test_wsn_norm_excludes_loss_accumulators_bit_exact``.
 """
 
 import json

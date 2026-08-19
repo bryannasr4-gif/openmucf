@@ -2,7 +2,7 @@
 
     python scripts/generate_materiality.py
 
-Content (WAVE1_EXECUTION_SPEC sec.6, WS-M): one-at-a-time absorbing-loss-channel toggles at fixed
+Content (WS-M): one-at-a-time absorbing-loss-channel toggles at fixed
 operating points, reported as ONE-SIDED "structural sensitivity brackets" (X_mu^with - X_mu^without)
 beside the section-2 forward-UQ CI width for scale. These are NOT error bars and are never combined
 into any likelihood or CI (pre-registered combination rule: side-by-side only).
@@ -35,7 +35,7 @@ from openmucf import cycle, provenance
 from openmucf.rates import RATES_CSV, load_rates
 
 # --------------------------------------------------------------------------- DECIDED spec parameters
-# Operating points (WAVE1 sec.6.2, deviation D12). OP-A is anchor-adjacent: kept IN the table for
+# Operating points (deviation D12). OP-A is anchor-adjacent: kept IN the table for
 # completeness (accounting.md exists) but flagged and EXCLUDED from every headline/summary sentence.
 # (phi, T [K], c_t)
 OPERATING_POINTS: dict[str, tuple[float, float, float]] = {

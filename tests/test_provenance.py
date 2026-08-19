@@ -10,7 +10,7 @@ from openmucf.rates import RATES_CSV, TARGETS_CSV
 REPO_ROOT = Path(openmucf.__file__).resolve().parent.parent
 MANIFEST = REPO_ROOT / "FINDINGS_MANIFEST.json"
 
-# The 25 headline ids the FINDINGS manifest must always carry (WAVE1 spec 1.4 minimum set).
+# The 25 headline ids the FINDINGS manifest must always carry (the minimum set).
 MIN_IDS = {
     "sobol_xmu_ST_R", "sobol_xmu_ST_lambda_c", "sobol_xmu_ST_omega_s0_pct",
     "sobol_qnet_ST_E_mu_GeV", "sobol_qnet_ST_eta_acc",
@@ -32,7 +32,7 @@ def test_manifest_checks_clean():
 
 def test_manifest_mutation_detected(tmp_path):
     """Corrupt one digit of FINDINGS.md in a scratch copy and repoint a copied manifest at it: the check
-    must flag the now-missing value. In-suite version of the G-A1 mutation drill (WAVE1 spec 1.6 test 5)."""
+    must flag the now-missing value. In-suite version of the G-A1 mutation drill."""
     findings = (REPO_ROOT / "FINDINGS.md").read_text(encoding="utf-8")
     corrupted = findings.replace("**X_mu = 319**", "**X_mu = 318**", 1)  # zero-sticking cap 319 -> 318
     assert corrupted != findings
@@ -45,7 +45,7 @@ def test_manifest_mutation_detected(tmp_path):
 
 
 def test_manifest_entry_coverage():
-    """Every one of the 25 minimum ids is present (WAVE1 spec 1.4: extend, don't shrink)."""
+    """Every one of the 25 minimum ids is present (the set may be extended, never shrunk)."""
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
     ids = {e["id"] for e in manifest["entries"]}
     assert ids >= MIN_IDS, f"missing ids: {sorted(MIN_IDS - ids)}"

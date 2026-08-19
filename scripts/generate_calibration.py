@@ -343,7 +343,7 @@ def _tt_refit_section():
         )
     raise NotImplementedError(
         "tt re-attribution chain: the unblocked path lands with the Matsuzaki/Bom tt-table acquisition "
-        "(lambda_ttmu is no longer 0.0) -- implement the 3rd NUTS chain per WAVE1 spec Sec.3.5 before regen."
+        "(lambda_ttmu is no longer 0.0) -- add the third NUTS chain, the channels-on re-attribution, before regen."
     )
 
 

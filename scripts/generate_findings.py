@@ -25,7 +25,7 @@ rob = uq.sobol_robustness(N=8192, output="X_mu")
 fw = uq.forward_uq(n=400_000)
 be = uq.breakeven_audit(n=400_000)
 xchk = uq.cross_check_gradient()
-# Fable hotfix 2026-07-08 (ws-fix-gradient-pin): rel_diff is autodiff-vs-analytic machine noise
+# The gradient cross-check ships as a BOUND, never a pinned digit: rel_diff is autodiff-vs-analytic noise
 # (~3e-13); its leading digit is env-dependent, so FINDINGS emits the asserted bound, never raw digits.
 assert xchk["rel_diff"] < 1e-11, (
     f"gradient cross-check degraded: rel_diff={xchk['rel_diff']:.3e} (bound 1e-11)"

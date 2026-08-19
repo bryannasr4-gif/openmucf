@@ -28,7 +28,7 @@ from . import _jaxcfg  # noqa: F401  -- MANDATORY float64; this module imports n
 # so ``sol.ys[-1, 3]`` stays N_fus and every existing caller keeps working).
 STATE_LABELS = ("x_dmu", "x_tmu1", "x_tmu0", "N_fus", "stuck", "dec", "loss_tt", "loss_he")
 
-# --- WS-N adaptive-step error-norm scope (Fable amendment 2026-07-08, WAVE1_EXECUTION_SPEC.md §3.4) ---
+# --- Adaptive-step error-norm scope: the loss accumulators are OUT of the norm. Reason below. ---
 # diffrax's PIDController averages its RMS step-error norm over ALL state components. The two WS-N
 # absorbing OUTPUT accumulators (loss_tt, loss_he) would change that average (/8 vs /6) and shift v1's
 # exact step sequence at ~1e-13 -- enough to move the one FINDINGS number computed THROUGH the ODE

@@ -24,7 +24,7 @@ def test_constants_match_ledger():
 
 
 def _executable_lines(text: str) -> str:
-    """Heuristic strip of full-line comments and triple-quoted blocks (WAVE1 spec 1.6 test 2).
+    """Heuristic strip of full-line comments and triple-quoted blocks.
 
     Deliberately simple -- NOT a Python parser. It drops lines whose stripped form starts with '#'
     and the contents of triple-quoted docstring blocks. Good enough to tell an executable constant

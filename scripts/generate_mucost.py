@@ -2,7 +2,7 @@
 
     python scripts/generate_mucost.py
 
-Content (WAVE2_EXECUTION_SPEC sec.1, WS-E): the open muon-cost ledger rendered as tier tables + a
+Content (WS-E): the open muon-cost ledger rendered as tier tables + a
 normalization-basis explainer + the tier-spread figure. This is a **curated
 compilation with provenance, not an evaluation** (I8): each cost is carried at its OWN
 (stage, numeraire) coordinate and the rows are NOT on a common basis, so every aggregate is computed

@@ -2,7 +2,7 @@
 
     python scripts/generate_systems.py
 
-Content (WAVE2_EXECUTION_SPEC sec.2, WS-S): the full differentiable energy-balance graph as a "Q
+Content (WS-S): the full differentiable energy-balance graph as a "Q
 Rosetta stone" -- one table putting the several muCF Q conventions on ONE comparable reference basis
 (the efficiency-free scientific gain) -- plus the eta_acc self-correction finding, the G-Kelly
 cross-basis validation, and the Acceleron worked example.

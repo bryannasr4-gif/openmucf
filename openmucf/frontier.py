@@ -11,13 +11,13 @@ Two layers over the SAME physics as the forward map (``analytic`` + ``systems``)
     differentiable ``systems.q_net`` graph to solve for ONE free variable among ``FREE_VARS`` =
     (E_mu_GeV, R, lambda_c, eta_acc) at a ``q_net`` target with the others fixed. In this analytically
     invertible model every case also has a closed form, which is exactly why the two paths can be gated to
-    agree to < 1e-9. Per the Wave-2 solver-printing rule, any solver output that ships is quantised to <= 6
+    agree to < 1e-9. Any solver output that ships is quantised to <= 6
     significant figures; this module keeps the shipped digits closed-form (byte-stable) and gate-tests the
     solver against them, so nothing byte-diffed depends on iterative-solver noise.
 
 INVERSE-DESIGN ONLY (I1/I8). Given a target it reports the *required* parameter value -- exactly the
 requirement form of FINDINGS.md sec.3 ("R >= 0.77 is required"). It renders NO verdict on any external
-projection and encodes NO scenario/verdict registry; that is fenced OUT (WAVE2 sec.3.2). A required value
+projection and encodes NO scenario/verdict registry; that is deliberately out of scope. A required value
 that lands outside [0, 1] (R, eta_acc) or at ``math.inf`` (lambda_c) is the honest readout that the target
 is unreachable in that variable -- reported, never clamped.
 
