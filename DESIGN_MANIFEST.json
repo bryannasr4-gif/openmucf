@@ -312,7 +312,7 @@
     "n_synth": 64,
     "num_samples": 4000,
     "num_warmup": 1000,
-    "rates_csv_sha256": "1d60f23d02cbacb7436bb0aac32dfd5e96151ae713a951c84ce60bc469fd9c12",
+    "rates_csv_sha256": "f88cc170847aa2c2bef1aac2d570b7c7413f89ac413c34e81bdb9992bfeadd0a",
     "se_bootstrap": 10000,
     "se_bootstrap_seed": 20260809,
     "seed": 0,
