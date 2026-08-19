@@ -11,8 +11,7 @@ separate row (kept separate); T3 facility rows are original derivations ("implie
 shown"); an accounting credit (Kelly's x2.5 recapture, stated in his abstract) is recorded in its own
 flagged column, never folded into the normalized value.
 
-Paywall/headline rule -- a needs_verification row may never headline anything: the headline sentence
-cites Kelly (4.70, open access) FIRST as the named
+Paywall/headline rule: the headline sentence cites Kelly (4.70, open access) FIRST as the named
 anchor, then the full-text-verified Bertin and Eliezer-Henis values as corroboration (by DOI). Rows that
 are needs_verification (Jandel) or slide-tier (Acceleron) appear only in the tables with visible flags
 and NEVER headline.
