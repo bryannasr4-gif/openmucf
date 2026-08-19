@@ -162,7 +162,7 @@
     },
     "needs_verification": {
       "type": "boolean",
-      "description": "True iff the muon-cost digit is not pinned from the primary text (paywalled/not in hand). A needs_verification row may never headline anything (I3)."
+      "description": "True iff the muon-cost digit is not pinned from the primary text (paywalled/not in hand). A needs_verification row may never headline anything."
     },
     "notes": {
       "type": "string"

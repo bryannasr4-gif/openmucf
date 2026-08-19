@@ -1,4 +1,4 @@
-"""WS-D design.py -- Bayesian experimental design over the calibrate posterior.
+"""design.py -- Bayesian experimental design over the calibrate posterior.
 
 The three sanity gates (zero-EIG replicate, EIG monotone in precision, Sobol-consistency in the
 small-noise limit) are TESTS here, plus the C4 registry conditional (mocked X-ray verdict, both ways),

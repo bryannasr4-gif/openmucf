@@ -1,4 +1,4 @@
-"""openmucf.likelihood -- counts-level Bayesian model for a neutron time-spectrum histogram (WS-T v0).
+"""openmucf.likelihood -- counts-level Bayesian model for a neutron time-spectrum histogram (v0).
 
 The likelihood an experimenter would actually put on a raw histogram: a Poisson observation of per-bin
 neutron counts whose expectation is the CLOSED-FORM single-exponential limit of the v1 cycle,

@@ -108,7 +108,7 @@
           },
           "additionalProperties": false
         },
-        "source": {"type": "string", "description": "Public literature / repo-data anchor this target is measured/compared against. Never a private planning doc."},
+        "source": {"type": "string", "description": "Public literature / repo-data anchor this target is measured/compared against. Must resolve inside this repository or its bibliography."},
         "resolution": {"type": "string", "description": "How this target resolves once MuFusE publishes (see FORECAST_PROTOCOL.md basis-conversion rules)."}
       },
       "additionalProperties": false

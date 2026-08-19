@@ -1,8 +1,8 @@
-"""WS-T slow gate: interval calibration of the counts-level likelihood (200 seeded replicas).
+"""Slow gate: interval calibration of the counts-level likelihood (200 seeded replicas).
 
 Marked `slow`: deselected from the default `pytest -q` (and CI) by the `addopts = "-m 'not slow'"` in
 pyproject.toml; run it explicitly with `pytest -m slow -q` (~9 min). It is the workstream's own gate
-(G-T2), executed once and its observed coverage recorded in RESULTS -- NOT a CI job (the coverage run is
+executed once and its observed coverage recorded -- NOT a CI job (the coverage run is
 too long for CI, and its Poisson replicas are deterministic only on a fixed platform).
 
 What it checks: the DISAPPEARANCE RATE lambda_n is the quantity a delta-pulse counts histogram actually

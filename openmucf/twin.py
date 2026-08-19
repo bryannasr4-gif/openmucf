@@ -13,7 +13,7 @@ here is a claim about any specific published spectrum.
 
 Runs CHANNELS-OFF by default: the forward model calls ``cycle.solve_cycle`` with the loss channels at
 their 0.0 defaults, so the twin reduces to the established v1 engine (the ``saveat`` trajectory hook it
-uses is the one authorized for WS-N + WS-T). ``likelihood.py`` holds the Bayesian counts-level model.
+uses is the one the loss-channel network and this twin share). ``likelihood.py`` holds the Bayesian model.
 
 Standard muCF disappearance identity used throughout:
 

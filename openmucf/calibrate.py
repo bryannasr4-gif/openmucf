@@ -17,7 +17,7 @@ Sampling API
 * ``run_mcmc`` / ``run_mcmc_full`` default to 4 sequential chains x 2000 draws (multi-chain diagnostics).
 * ``summarize(samples, mcmc=...)`` optionally attaches split-R_hat / ESS / divergence diagnostics via
   ``numpyro.diagnostics`` (no new runtime dependency).
-* The default prior boxes were WIDENED 2026-07-12 (a disclosed statistical correction, I2-clean -- no
+* The default prior boxes were WIDENED 2026-07-12 (a disclosed statistical correction -- no
   target involved) because the previous boxes provably railed: R ~ Uniform(0.00, 0.80) (was 0.10-0.60;
   the weak-chain 95% CI hi 0.588 sat against the old 0.60 bound) and weak omega_s0_pct ~ Uniform(0.50,
   1.20) (was 0.60-1.10; the weak-chain 95% CI lo 0.608 sat against the old 0.60 bound). The lambda_c box

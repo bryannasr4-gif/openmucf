@@ -1,4 +1,4 @@
-"""WS-A: the machine-checkable provenance manifest (openmucf.provenance + FINDINGS_MANIFEST.json)."""
+"""The machine-checkable provenance manifest (openmucf.provenance + FINDINGS_MANIFEST.json)."""
 
 import json
 from pathlib import Path
@@ -32,7 +32,7 @@ def test_manifest_checks_clean():
 
 def test_manifest_mutation_detected(tmp_path):
     """Corrupt one digit of FINDINGS.md in a scratch copy and repoint a copied manifest at it: the check
-    must flag the now-missing value. In-suite version of the G-A1 mutation drill."""
+    must flag the now-missing value. In-suite version of the manifest mutation drill."""
     findings = (REPO_ROOT / "FINDINGS.md").read_text(encoding="utf-8")
     corrupted = findings.replace("**X_mu = 319**", "**X_mu = 318**", 1)  # zero-sticking cap 319 -> 318
     assert corrupted != findings

@@ -62,7 +62,7 @@ def test_cell_specs_class_map():
 
 def test_audit_tolerances_pinned():
     """Any *silent* softening of the audit tolerance CLASSES trips this test (same literal-substring guard
-    as test_forecast.py::test_d6). Changing them requires deliberately editing this pin + a dated RESULTS
+    as test_forecast.py::test_d6). Changing them requires deliberately editing this pin + a dated CHANGELOG
     note (never-soften rule)."""
     src = _SCRIPT.read_text(encoding="utf-8")
     assert "AUDIT_RTOL_MEAN = 0.02" in src        # mean cells 2%

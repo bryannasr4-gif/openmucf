@@ -2,21 +2,22 @@
 
     python scripts/generate_mucost.py
 
-Content (WS-E): the open muon-cost ledger rendered as tier tables + a
+Content: the open muon-cost ledger rendered as tier tables + a
 normalization-basis explainer + the tier-spread figure. This is a **curated
-compilation with provenance, not an evaluation** (I8): each cost is carried at its OWN
+compilation with provenance, not an evaluation**: each cost is carried at its OWN
 (stage, numeraire) coordinate and the rows are NOT on a common basis, so every aggregate is computed
 within a single numeraire; wall-plug is a numeraire rather than a stage, so applying eta_acc produces a
 separate row (kept separate); T3 facility rows are original derivations ("implied, derived here, formula
 shown"); an accounting credit (Kelly's x2.5 recapture, stated in his abstract) is recorded in its own
 flagged column, never folded into the normalized value.
 
-Paywall/headline rule (I3): the headline sentence cites Kelly (4.70, open access) FIRST as the named
+Paywall/headline rule -- a needs_verification row may never headline anything: the headline sentence
+cites Kelly (4.70, open access) FIRST as the named
 anchor, then the full-text-verified Bertin and Eliezer-Henis values as corroboration (by DOI). Rows that
 are needs_verification (Jandel) or slide-tier (Acceleron) appear only in the tables with visible flags
 and NEVER headline.
 
-Audit wiring (WS-E): this generator regenerates all three artifacts; only MUON_COST.md +
+Audit wiring: this generator regenerates all three artifacts; only MUON_COST.md +
 MUON_COST_MANIFEST.json join the `git diff --exit-code` list -- the PNG is never byte-diffed
 (matplotlib/freetype bytes are not cross-platform stable). All committed numbers are pure deterministic
 arithmetic on the committed CSV (no MCMC/solver), so the two byte-diffed artifacts are cross-arch stable.
@@ -34,7 +35,7 @@ from pathlib import Path
 from openmucf import mucost, provenance
 from openmucf.mucost import MUON_COST_CSV
 
-# The disarmament sentence -- goes VERBATIM in the figure caption (WS-E spec). Em-dash intentional.
+# The disarmament sentence -- goes VERBATIM in the figure caption. Em-dash intentional.
 DISARMAMENT = (
     "Facilities optimize brightness/purity, not muons-per-watt "
     "— the floor is unvalidated, not impossible."

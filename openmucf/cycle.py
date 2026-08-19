@@ -7,9 +7,9 @@ The dt-mu molecule is adiabatically eliminated (fast-fusion limit): ``lambda_for
 denotes the formation-limited rate, so the 7-decade stiffness from lambda_f ~ 1e12 is removed.
 
 Conserved invariant: x_dmu + x_tmu1 + x_tmu0 + stuck + dec + loss_tt + loss_he = 1
-(N_fus is an event counter, not an occupancy). The two loss accumulators are the WS-N absorbing
+(N_fus is an event counter, not an occupancy). The two loss accumulators are the absorbing
 channels (ttmu side-branch, He-3 scavenging); with their rates at 0 they stay identically zero and the
-network reduces bit-exactly to the v1 six-state system (reduction gate G-N1).
+network reduces bit-exactly to the v1 six-state system (the reduction gate).
 
 Gate V1: in the single-pool limit (lf0 == lf1, muon started in the tmu pool) N_fus(inf) must
 reproduce analytic.fusions_per_muon(omega_s_eff, lambda_form) to < 1%.
@@ -24,12 +24,12 @@ import jax.numpy as jnp
 
 from . import _jaxcfg  # noqa: F401  -- MANDATORY float64; this module imports nothing else in-package
 
-# indices 0..5 are the v1 states (unchanged); 6,7 are the WS-N absorbing loss accumulators (append-only,
+# indices 0..5 are the v1 states (unchanged); 6,7 are the absorbing loss accumulators (append-only,
 # so ``sol.ys[-1, 3]`` stays N_fus and every existing caller keeps working).
 STATE_LABELS = ("x_dmu", "x_tmu1", "x_tmu0", "N_fus", "stuck", "dec", "loss_tt", "loss_he")
 
 # --- Adaptive-step error-norm scope: the loss accumulators are OUT of the norm. Reason below. ---
-# diffrax's PIDController averages its RMS step-error norm over ALL state components. The two WS-N
+# diffrax's PIDController averages its RMS step-error norm over ALL state components. The two
 # absorbing OUTPUT accumulators (loss_tt, loss_he) would change that average (/8 vs /6) and shift v1's
 # exact step sequence at ~1e-13 -- enough to move the one FINDINGS number computed THROUGH the ODE
 # (uq.cross_check_gradient: 2.9e-13 -> 3.2e-13) and to break the channels-OFF bit-exact reduction.
@@ -39,7 +39,7 @@ STATE_LABELS = ("x_dmu", "x_tmu1", "x_tmu0", "N_fus", "stuck", "dec", "loss_tt",
 # error-controlled driving fluxes; excluding pure output-only states from step control is standard and
 # a true no-op on the base integration. This does NOT re-decide v1: N_fus/stuck/dec (3/4/5) stay in the
 # norm exactly as in v1 -- we only decline to EXTEND error control to the new outputs. Numerics only;
-# no physics input is tuned (I2). Result: channels-OFF reduces to v1 bit-for-bit (G-N1 pure atol 1e-9)
+# no physics input is tuned. Result: channels-OFF reduces to v1 bit-for-bit (reduction gate, pure atol 1e-9)
 # and every locked number stays byte-identical. Locked by test_wsn_norm_excludes_loss_accumulators_bit_exact.
 _N_V1_STATES = 6
 # Introspection (not a formula copy) is deliberate: it is guaranteed bit-identical to whatever this
@@ -60,7 +60,7 @@ except (KeyError, TypeError) as exc:  # pragma: no cover - trips only on a diffr
 
 
 def _v1_error_norm(y):
-    """Step-error norm over the v1 states only; trailing WS-N loss accumulators (y[6:]) are excluded."""
+    """Step-error norm over the v1 states only; the trailing loss accumulators (y[6:]) are excluded."""
     return _DIFFRAX_DEFAULT_NORM(y[:_N_V1_STATES])
 
 
@@ -111,13 +111,13 @@ def solve_cycle(
 ):
     """Integrate the cycle to ``t1`` (long enough that the muon is gone). Returns the diffrax solution.
 
-    The three WS-N loss-channel rates (``lambda_tt``, ``omega_tt``, ``lambda_he``) are keyword-only and
+    The three loss-channel rates (``lambda_tt``, ``omega_tt``, ``lambda_he``) are keyword-only and
     default to 0.0, so the engine default is channels-OFF and reduces bit-exactly to the v1 network
-    (reduction gate G-N1). ``f_d`` (default 0.0) is the d-recapture routing fraction: the share of the
+    (the reduction gate). ``f_d`` (default 0.0) is the d-recapture routing fraction: the share of the
     surviving-sticking flux re-entering via the dmu pool instead of re-forming tmu directly; f_d=0.0 is an
     IEEE-exact identity, so the default engine is unchanged. ``saveat`` defaults to
     ``diffrax.SaveAt(t1=True)`` (today's behavior exactly); pass an explicit ``diffrax.SaveAt(ts=...)`` to
-    record a trajectory (the hook WS-N's reduction check and WS-T's twin need).
+    record a trajectory (the hook the reduction check and the counts-level twin both need).
 
     y0 compatibility: a length-6 ``y0`` is padded with two zeros to length 8 before solving, so every
     existing 6-element caller keeps working unchanged; the default ``y0`` is the 8-element vector.
@@ -155,7 +155,7 @@ def fusions_per_muon_ode(lambda_0, lambda_dt, lambda_10, lambda_form1, lambda_fo
 def conservation_residual(sol):
     """x_dmu + x_tmu1 + x_tmu0 + stuck + dec + loss_tt + loss_he - 1 at the final time (should be ~0).
 
-    Includes the two WS-N loss accumulators (y[6], y[7]); with channels off they are 0 and this reduces
+    Includes the two loss accumulators (y[6], y[7]); with channels off they are 0 and this reduces
     to the v1 five-term sum. N_fus (y[3]) is an event counter and is deliberately excluded.
     """
     y = sol.ys[-1]
@@ -181,13 +181,13 @@ def params_from_conditions(
 
     ``eta`` is the epithermal formation enhancement (ledger row ``eta_dtmu``); ``None`` reads it from the
     ledger (= 1.0, so behavior is unchanged), and it is a structural knob (eta=1 bare theory .. ~5 fit),
-    NOT a UQ prior -- the measured lambda_c band already contains eta as it occurred at the anchors (I5).
+    NOT a UQ prior -- the measured lambda_c band already contains eta as it occurred at the anchors.
 
-    ``include_loss_channels`` (default False = channels OFF) pulls the WS-N loss-channel rates from the
+    ``include_loss_channels`` (default False = channels OFF) pulls the loss-channel rates from the
     ledger: ``lambda_tt = lambda_ttmu * phi * c_t`` (ttmu side-branch) and ``lambda_he = lambda_dhe3 * phi
     * c_he`` (He-3 scavenging; ``c_he`` is a STATIC per-run helium fraction, never time-evolved). Channels
     OFF returns all three at 0.0, so the engine default reproduces v1 exactly (the three ledger rows are
-    needs_verification and I3 forbids introducing new physics on unverified values as a silent default).
+    needs_verification, and an unverified value may never become a silent default).
 
     ``q_1s`` (default None = recapture OFF, f_d=0.0) is the contested cascade ground-state fraction of the
     d-recapture routing: ``None`` keeps v1's direct recycle-to-tmu, a number sets the routing fraction

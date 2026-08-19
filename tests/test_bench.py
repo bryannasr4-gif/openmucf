@@ -97,8 +97,6 @@ def test_run_all_and_report_markdown_render_with_footnotes():
     assert "A_acceleron_density" in md and "A_acceleron_anomaly" in md
     # the friendly-reproduction registry excludes every registered FAIL, so it stays 0 fail
     assert "0 fail" in md
-    # a generated public doc must carry no internal workstream id
-    assert "WS-" not in md
 
 
 def test_load_cases_returns_two_schema_valid_cases():

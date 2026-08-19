@@ -32,7 +32,7 @@ CALIBRATION_MD = "CALIBRATION.md"
 # CALIBRATION.md is regenerated on one platform and audited on another (arm64-committed / x86 CI history,
 # now x86-committed / x86 CI); last-ulp XLA/libm differences compound over the NUTS leapfrog steps, so the
 # two platforms are statistically independent draws of the same posterior. Each committed number is checked
-# within a tolerance sized for its quantity's realization noise (I2: these are numerical-reproducibility
+# within a tolerance sized for its quantity's realization noise (these are numerical-reproducibility
 # tolerances, NOT tuning of any physics input -- no prior/observation/seed/number changes):
 #   * mean cells 2%  -- tightly constrained (worst measured cross-arch ~0.7%; ~1.1% at 1 sigma).
 #   * sd cells 8%    -- the noisiest cell (weak-chain R on the degeneracy ridge) drifts ~2.8% (1 sigma)
@@ -279,7 +279,7 @@ def _build_md_base(sw, sk, ssw, ssk, corr_lo, corr_hi):
 Calibrated (omega_s0, R, lambda_c) to Petitjean/Breunlich: omega_s_eff = 0.45+-0.05 %, X_mu = 113+-12,
 via numpyro NUTS (4 sequential chains). See `openmucf/calibrate.py`.
 
-The default prior boxes were WIDENED 2026-07-12 (disclosed statistical correction, I2-clean -- no target
+The default prior boxes were WIDENED 2026-07-12 (a disclosed statistical correction -- no target
 involved): the previous boxes provably RAILED -- the old weak-chain 95% CI had R hi 0.588 against the old
 R bound 0.60, and omega_s0 lo 0.608 against the old omega_s0 bound 0.60. New boxes: `R ~ Uniform(0.00,
 0.80)` (was 0.10-0.60) and weak `omega_s0_pct ~ Uniform(0.50, 1.20)` (was 0.60-1.10); the lambda_c box is
@@ -319,7 +319,7 @@ and this degeneracy is the quantitative reason it is needed.
 
 
 def _tt_refit_section():
-    """The channels-on re-attribution (3rd chain). SKIPPED-blocked while `lambda_ttmu` is 0.0 (I10, WS-N).
+    """The channels-on re-attribution (3rd chain). SKIPPED-blocked while `lambda_ttmu` is 0.0.
 
     Deterministic host read of the ledger: if the ttmu formation rate is blocked, emit only the section
     header (no MCMC, no cells); the generic --audit parser handles a table-less section. When the primary

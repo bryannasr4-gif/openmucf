@@ -57,7 +57,7 @@ class Rate:
     single_source: bool
     needs_verification: bool
     notes: str
-    # WS-L typed condition/recommendation projections (backward-compatible defaults):
+    # Typed condition/recommendation projections (backward-compatible defaults):
     distribution: str = ""
     dist_lo: float = float("nan")
     dist_hi: float = float("nan")
@@ -150,7 +150,7 @@ def load_rates(
             status = (row.get("status") or "").strip()
             if status and status not in VALID_STATUS:
                 errors.append(f"row {i} ({sym}): bad status '{status}'")
-            # WS-L typed columns: enum membership + interval-distribution bounds.
+            # Typed columns: enum membership + interval-distribution bounds.
             dist = (row.get("distribution") or "").strip()
             if dist not in VALID_DISTRIBUTION:
                 errors.append(f"row {i} ({sym}): bad distribution '{dist}'")

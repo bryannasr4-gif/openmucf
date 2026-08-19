@@ -1,4 +1,4 @@
-"""WS-T: the counts-level twin -- neutron time-spectrum forward model + idealized estimator (fast tests).
+"""The counts-level twin -- neutron time-spectrum forward model + idealized estimator (fast tests).
 
 The forward model runs the v1 cycle CHANNELS-OFF (the loss channels stay at their 0.0 defaults), so the
 twin reduces to the established engine. The slow interval-calibration coverage test lives in

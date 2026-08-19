@@ -1,6 +1,6 @@
 """openmucf.frontier -- inverse design: "what would have to be true" for a target yield / gain.
 
-Two layers over the SAME physics as the forward map (``analytic`` + ``systems``), never new physics (I1):
+Two layers over the SAME physics as the forward map (``analytic`` + ``systems``), never new physics:
 
   * CLOSED-FORM frontiers where exact algebra exists (no solver): :func:`r_required`,
     :func:`lambda_c_required`, :func:`frontier_lambda_c_R`. Pure-Python ``float`` (float64) arithmetic --
@@ -15,7 +15,8 @@ Two layers over the SAME physics as the forward map (``analytic`` + ``systems``)
     significant figures; this module keeps the shipped digits closed-form (byte-stable) and gate-tests the
     solver against them, so nothing byte-diffed depends on iterative-solver noise.
 
-INVERSE-DESIGN ONLY (I1/I8). Given a target it reports the *required* parameter value -- exactly the
+INVERSE-DESIGN ONLY -- no new physics, no verdict. Given a target it reports the *required*
+parameter value -- exactly the
 requirement form of FINDINGS.md sec.3 ("R >= 0.77 is required"). It renders NO verdict on any external
 projection and encodes NO scenario/verdict registry; that is deliberately out of scope. A required value
 that lands outside [0, 1] (R, eta_acc) or at ``math.inf`` (lambda_c) is the honest readout that the target

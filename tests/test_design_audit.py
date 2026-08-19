@@ -1,4 +1,4 @@
-"""WS-D: the DESIGN.md audit wiring.
+"""The DESIGN.md audit wiring.
 
 DESIGN.md + DESIGN_MANIFEST.json are NUTS-derived and NOT byte-diffed; `generate_design.py --audit`
 tolerance-checks them. Here we (a) pin the audit tolerances against a SILENT softening (an audit
@@ -169,7 +169,7 @@ def test_median_se_is_deterministic_and_tracks_dispersion():
 
 def test_design_doc_and_manifest_render_deterministically(tmp_path):
     """The doc + manifest render bit-identically from a fixed result, carry the verbatim paragraphs +
-    the I6 fence, and every tracked manifest number is found in the doc (provenance green)."""
+    the not-an-outbound-artifact fence, and every tracked manifest number is in the doc (provenance green)."""
     mod = _load_script()
     res = _mock_res()
     h1, _ = mod.build_headline(res)
@@ -189,7 +189,7 @@ def test_design_doc_and_manifest_render_deterministically(tmp_path):
     # verbatim scenario-B disclaimer
     assert "the scenario-B MuFusE EIG is large BY CONSTRUCTION (the widest prior wins)" in md1
     assert "this is a property of the prior, not of the experiment." in md1
-    # I6 fence in the header (generic warm-thread language; no named private outreach targets in a public doc)
+    # The not-an-outbound-artifact fence in the header (generic language; no named recipients in a public doc)
     assert "never cold-mailed" in md1 and "ALREADY-WARM thread" in md1 and "not outreach" in md1
     assert "Antognini" not in md1 and "NCCR" not in md1  # public-hygiene: no private outreach target names
     # negative-zero normalised, class-contrast + C4 conditional surfaced

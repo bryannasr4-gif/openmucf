@@ -1,4 +1,4 @@
-"""WS-Q: frontier.py -- inverse-design "what would have to be true".
+"""frontier.py -- inverse-design "what would have to be true".
 
 These tests lock: the closed-form R-floor reproduces the FINDINGS.md sec.3 "R >= 0.77" headline
 bit-for-bit (regression lock to openmucf.uq.breakeven_audit); the closed-form and optimistix-Newton

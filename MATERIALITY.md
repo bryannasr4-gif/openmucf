@@ -24,7 +24,7 @@ plus the per-cycle d-recapture / q_1s routing (section 4 -- a re-routing, not an
 muon detours through the dmu pool and races decay one extra transfer). The ddmu / d-d branch and the
 epithermal-formation (eta) enhancement remain OUT of scope here: the ddmu channel does not exist in the
 engine yet (documented -5..-15% headroom, see docs/accounting.md), and eta is already reported as its own
-structural bracket in FINDINGS.md section 1c (one-home rule I5).
+structural bracket in FINDINGS.md section 1c (one channel, one accounting home).
 
 ## 2. 3He scavenging channel (LIVE): dmu + 3He
 The dmu + 3He scavenging rate `lambda_dhe3` = 1.92e8 s^-1 (Fotev et al. 2020, arXiv:2001.09927; open) is

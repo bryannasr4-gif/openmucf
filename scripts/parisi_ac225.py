@@ -7,7 +7,7 @@ The headline (abstract + Section IV + Table I): a muCF neutron source with a 10 
 steady-state rate of 1e12 muons/s -- roughly half a kilowatt of D-T fusion power -- produces ~20 mg/yr of
 ^225Ac, "comparable to 400 times global supply in 2024". This script reproduces that number as a genuine
 FORWARD computation from the paper's own published factors (no factor is back-solved to hit 20 mg/yr --
-invariant I2). The transmutation pathway is
+reported, never tuned). The transmutation pathway is
 
     ^226Ra(n,2n)^225Ra --beta^- (15 d)--> ^225Ac                                            [paper eq. (28)]
 
@@ -21,16 +21,16 @@ Two published cross-checks fall out of the same factors: the fusion power P_fus 
 564 W (Table I; abstract "half a kilowatt"), and the yield over the 2024 global supply (51 ug/yr, ref. [33])
 lands at ~400x (abstract).
 
-I2 / honest-finding note. eta_pro = 0.0087 is taken as the paper's published Table-I value. It is the one
+Honest-finding note. eta_pro = 0.0087 is taken as the paper's published Table-I value. It is the one
 factor NOT re-derived here from first principles: the authors obtain it from the blanket geometry
 (eqs. (33)-(38)) folded with an EXTERNAL ^226Ra(n,2n) microscopic cross section (an ENDF/B-class nuclear-data
 input; the paper defines sigma_(n,2n) in eq. (36) but prints no numeric value) and validate it with an
 OpenMC transport run. We reproduce the headline at the level the paper's printed factors support and flag
-that external dependency explicitly (invariant I3: every number sourced). Given eta_pro, the analytic factor
+that external dependency explicitly -- every number is sourced. Given eta_pro, the analytic factor
 chain (eqs. (3),(14),(39)) reproduces the OpenMC Table-I value 20,480 ug/yr to < 1% -- an internal
 consistency check on the paper, computed forward.
 
-Positioning (invariant I8/I9): this is a reproduction of an EXTERNAL group's result, not an OpenMuCF claim.
+Positioning: this is a reproduction of an EXTERNAL group's result, not an OpenMuCF claim.
 See the framing paragraph printed by ``main()``; the "viable well before energy breakeven" language is
 Parisi & Rutkowski's, quoted as theirs.
 
@@ -51,7 +51,7 @@ TABLE_I_PFUS_W = 564.0  # Table I / Sec IV: P_fus ~= 564 W ("roughly half a kilo
 GLOBAL_2024_UG_PER_YEAR = 51.0  # 2024 global 225Ac production ~3 Ci/yr ~= 51 ug/yr (ref. [33])
 GLOBAL_2024_MULTIPLE = 400.0  # abstract: "comparable to 400 times global supply in 2024"
 
-RECON_TOL_FRAC = 0.05  # +/-5% reproduction band on the headline (the I2 forward-reproduction tolerance)
+RECON_TOL_FRAC = 0.05  # +/-5% forward-reproduction band on the headline; nothing is tuned to it
 
 
 @dataclass(frozen=True)
@@ -62,7 +62,7 @@ class Factor:
     name: str
     value: float
     unit: str
-    citation: str  # non-empty by construction; asserted in the tests (invariant I3)
+    citation: str  # non-empty by construction; asserted in the tests -- every number is sourced
 
 
 # --- THE FACTOR CHAIN (every row carries a locator; arXiv:2511.20951v2 unless noted) -------------------
@@ -173,7 +173,7 @@ def ac225_mg_per_year(
     """The headline forward computation: 225Ac mass production rate in mg/yr.
 
     Mdot = Ndot_225 * m_pro * s_per_year, converted g -> mg [eqs. (3), (14), (39)]. Every default is a
-    cited ``FACTORS`` value; nothing is tuned to the 20 mg/yr target (invariant I2).
+    cited ``FACTORS`` value; nothing is tuned to the 20 mg/yr target.
     """
     mdot_g_s = ac225_atoms_per_s(r_mu, n_fus_mu, eta_pro) * atom_mass_g(a_molar, n_a)
     return mdot_g_s * s_per_year * 1000.0
@@ -256,7 +256,7 @@ def main() -> None:
     print(textwrap.fill(MUON_COST_TIER_NOTE, width=96, initial_indent="    ", subsequent_indent="    "))
     print()
 
-    print("FRAMING (invariant I9; the claim below is Parisi & Rutkowski's, quoted as theirs -- I8):")
+    print("FRAMING (the claim below is Parisi & Rutkowski's, quoted as theirs -- not an evaluation):")
     print(
         "  Below energy breakeven, muCF's utility is NEUTRON-SOURCE / MEDICAL-ISOTOPE economics, not\n"
         "  electricity. Selling the 14.1 MeV D-T neutrons as Ac-225 (a targeted-alpha-therapy isotope in\n"

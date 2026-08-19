@@ -275,8 +275,8 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   spread transfers one-for-one to the neutron economy (**retracted above** as a same-basis ratio;
   `NEUTRONOMICS.md` still carries that phrasing and is the downstream basis pass's). A short sourced table of alternative 14 MeV/n sources
   (Thermo P385 sealed tube, FNG, RTNS-II, ISIS spallation) is included, each n/J derived from published
-  beam parameters. Beam basis only (wall-plug kept separate, I5); neutron-source economics, not breakeven
-  (I9); no new physics (I1). `NEUTRONOMICS.md` + `NEUTRONOMICS_MANIFEST.json` join `make audit`.
+  beam parameters. Beam basis only (wall-plug kept separate); neutron-source economics, not breakeven;
+  no new physics. `NEUTRONOMICS.md` + `NEUTRONOMICS_MANIFEST.json` join `make audit`.
 - **Inverse-design frontiers (`openmucf/frontier.py` + `FRONTIER.md`).** "What would have to be true"
   breakeven frontiers over the energy-balance graph: closed-form requirement curves (`r_required`,
   `lambda_c_required`, `frontier_lambda_c_R`) plus an `optimistix` Newton solver (`solve_inverse`) that
@@ -372,13 +372,13 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
 - **Two absorbing loss channels in the cycle ODE (`cycle.py`) + the accounting table (`docs/accounting.md`).**
   The ttμ side-branch and ³He scavenging are added as explicit, opt-in (`include_loss_channels=True`)
   absorbing channels; the engine default stays channels-OFF and reduces to the v1 network bit-for-bit
-  (reduction gate, pure atol 1e-9). `docs/accounting.md` is the single one-channel-one-home table (I5)
+  (reduction gate, pure atol 1e-9). `docs/accounting.md` is the single one-channel-one-home table
   recording where each deferred channel lives today and its re-attribution rule. **Framing: loss
   RE-ATTRIBUTION under the constraint that anchor-condition totals still match the measured effective
   sticking — a joint refit, not "more physics moved the numbers."**
 - **Three loss-channel ledger rows (`lambda_ttmu`, `omega_tt`, `lambda_dhe3`).** `lambda_dhe3` = 1.92e8 s⁻¹
   from a live open source (Fotev et al., *Search for muon catalyzed d³He fusion*, arXiv:2001.09927);
-  `omega_tt` = 0.14 (corroborated ω_tt=13.9%); `lambda_ttmu` ships the documented I10 blocked fallback
+  `omega_tt` = 0.14 (corroborated ω_tt=13.9%); `lambda_ttmu` ships the documented blocked fallback
   (0.0, `needs_verification`) pending the Matsuzaki/Bom tt-fusion tables (*Muon Catal. Fusion*).
 - **Extended closed form (`analytic.fusions_per_muon_v2`).** Adds the ttμ competing-hazard term
   `ω_tt·λ_tt/λ_c` (derived in `MODEL_SPEC.md` §4.1, validated to <1% against the ODE); ³He scavenging is

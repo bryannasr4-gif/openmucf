@@ -1,4 +1,4 @@
-"""WS-N: two absorbing loss channels (ttmu side-branch + He-3 scavenging) + analytic v2 + reduction gate.
+"""Two absorbing loss channels (ttmu side-branch + He-3 scavenging) + analytic v2 + reduction gate.
 
 The engine default is channels-OFF; these tests exercise the explicit opt-in and the reduction to v1.
 The FULL 50-point bit-exact reduction + the FINDINGS byte-lock are pinned by
@@ -18,7 +18,8 @@ _REF = json.loads((Path(__file__).parent / "cycle_v1_reference.json").read_text(
 
 
 def test_reduction_gate_channels_zero():
-    """G-N1: the channels-zeroed 8-state solve reproduces the recorded v1 trajectory to atol 1e-9, and a
+    """Reduction gate: the channels-zeroed 8-state solve reproduces the recorded v1 trajectory to atol
+    1e-9, and a
     legacy 6-element y0 still solves (the padding contract)."""
     a6 = _REF["args6"]
     ts = _REF["ts"]
@@ -75,7 +76,7 @@ def test_channels_off_is_default():
 
 
 def test_analytic_v2_matches_ode_with_channels():
-    """G-N2: closed-form v2 matches the single-pool ODE (tt channel ON) to <1% over a 3-point grid."""
+    """Analytic-vs-ODE gate: closed-form v2 matches the single-pool ODE (tt ON) to <1% over a 3-point grid."""
     lam0, lc, ose = 4.552e5, 1.2e8, 0.0055
     for lam_tt, w_tt in ((1.0e6, 0.14), (5.0e6, 0.14), (2.0e7, 0.5)):
         v2 = A.fusions_per_muon_v2(ose, lc, lambda_0=lam0, tt_loss_rate=lam_tt, omega_tt=w_tt)
@@ -95,7 +96,8 @@ def test_analytic_v2_reduces_to_v1():
 
 def test_recapture_off_bit_exact():
     """d-recapture OFF (f_d=0.0) reproduces the committed v1 reference to atol 1e-9 (reduction gate
-    G-N1): with f_d=0.0 the new routing terms are IEEE-exact identities (x + 0.0*r == x, 1.0*r == r),
+    the reduction gate): with f_d=0.0 the routing terms are IEEE-exact identities (x + 0.0*r == x,
+    1.0*r == r),
     so the locked step sequence does NOT drift. Extends the reference gate with the new args signature
     (explicit f_d=0.0), and confirms the explicit-f_d=0.0 path equals the default path bit-for-bit."""
     a6 = _REF["args6"]

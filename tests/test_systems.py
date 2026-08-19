@@ -1,9 +1,9 @@
-"""WS-S: systems.py -- the full energy-balance graph + the Q Rosetta stone.
+"""systems.py -- the full energy-balance graph + the Q Rosetta stone.
 
 These tests lock: the differentiable graph's gradient SIGNS (jax.grad); the G-legacy degenerate special
 case reproduces the frozen v1 EnergyChain breakevens to rel 1e-12; the G-Kelly cross-basis value is the
 faithful Eq.(2)+Table-1 reproduction (15.69%), which lands JUST ABOVE the pre-registered band -- a
-documented finding, not tuned (I2); every QBasis round-trips its own reference conversion; rosetta_table
+documented finding, not tuned; every QBasis round-trips its own reference conversion; rosetta_table
 covers all four bases; the two flagged knobs (breeding credit, recirculating fraction) are degenerate-off;
 and SYSTEMS.md + its manifest regenerate deterministically and verify.
 """
@@ -127,7 +127,7 @@ def test_g_kelly_reproduces_eq2_from_cited_numbers():
 
 
 def test_g_kelly_band_is_a_documented_finding_not_tuned():
-    """The faithful reproduction (15.69%) lands JUST ABOVE the pre-registered band [12.6%, 15.4%]. Per I2
+    """The faithful reproduction (15.69%) lands JUST ABOVE the pre-registered band [12.6%, 15.4%]. It
     this is a documented finding (Kelly's max-Q Table-1 config vs his 14% figure-3 curve headline), NOT a
     value tuned to hit 14%. This test LOCKS that we did not tune down into the band."""
     band_hi = 15.4  # pre-registered upper edge of [12.6%, 15.4%]

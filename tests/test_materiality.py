@@ -1,4 +1,4 @@
-"""WS-M: MATERIALITY.md structural sensitivity brackets (scripts/generate_materiality.py).
+"""MATERIALITY.md structural sensitivity brackets (scripts/generate_materiality.py).
 
 Brackets are one-sided channel toggles reported side-by-side with the parametric CI, never convolved in.
 The ttmu channel is BLOCKED (ledger lambda_ttmu=0.0, notes begin `blocked:`) and MUST render as
@@ -27,7 +27,7 @@ def _load_script():
 
 
 def test_operating_points_and_c_he_match_spec():
-    """Operating points + conditions + c_He levels match the registered design (deviation D12) exactly."""
+    """Operating points + conditions + c_He levels match the registered design exactly."""
     mod = _load_script()
     assert mod.OPERATING_POINTS == {
         "OP-A": (1.25, 300.0, 0.5),
@@ -36,7 +36,7 @@ def test_operating_points_and_c_he_match_spec():
         "OP-D": (2.4, 100.0, 0.5),
     }
     assert mod.C_HE_LEVELS == (1e-4, 1e-3)
-    # OP-A is the anchor-adjacent, non-headline row (D12); the headline set is exactly OP-B/C/D.
+    # OP-A is the anchor-adjacent, non-headline row; the headline set is exactly OP-B/C/D.
     assert mod.ANCHOR_ADJACENT == "OP-A"
     assert mod.HEADLINE_OPS == ("OP-B", "OP-C", "OP-D")
     assert "OP-A" not in mod.HEADLINE_OPS
@@ -78,7 +78,7 @@ def test_manifest_checks_clean():
 
 def test_manifest_mutation_detected(tmp_path):
     """Corrupt one bracket digit in a scratch MATERIALITY.md and repoint a copied manifest at it: the
-    check must flag the now-missing value (in-suite version of the G-M mutation drill)."""
+    check must flag the now-missing value (in-suite version of the manifest mutation drill)."""
     doc = DOC.read_text(encoding="utf-8")
     corrupted = doc.replace("-0.180", "-0.181", 1)  # OP-D 3He bracket at c_He=1e-3
     assert corrupted != doc, "expected the OP-D c_He=1e-3 bracket -0.180 to be present"

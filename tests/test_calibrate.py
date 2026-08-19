@@ -46,7 +46,7 @@ def test_multichain_diagnostics():
 
 
 def test_default_boxes_are_the_widened_ones():
-    """The disclosed statistical correction (I2-clean): the default R / weak-omega_s0 boxes are the WIDENED
+    """The disclosed statistical correction: the default R / weak-omega_s0 boxes are the WIDENED
     ones; the old boxes railed (documented in CALIBRATION.md)."""
     assert calibrate.R_PRIOR_DEFAULT == (0.00, 0.80)          # was (0.10, 0.60)
     assert calibrate.WEAK_OMEGA_S0_PRIOR == ("uniform", 0.50, 1.20)  # was (..., 0.60, 1.10)
@@ -64,7 +64,7 @@ def test_obs_correlation_keeps_product_pinned():
 
 
 def test_reattribution_shifts_ose_down():
-    """WS-N Sec.3.5: with tt_pc>0 the omega_s0(1-R) posterior mean shifts strictly below the tt_pc=0 mean,
+    """Re-attribution: with tt_pc>0 the omega_s0(1-R) posterior mean shifts strictly below the tt_pc=0 mean,
     and the total reproduces the anchor. SKIPPED while lambda_ttmu is blocked (0.0) -- the joint refit is
     not run (Sec.3.5 blocked path); revive when the Matsuzaki/Bom tt tables land and lambda_ttmu != 0."""
     import pytest
@@ -72,7 +72,7 @@ def test_reattribution_shifts_ose_down():
     from openmucf import load_rates
 
     if load_rates().value("lambda_ttmu") == 0.0:
-        pytest.skip("lambda_ttmu blocked (0.0); tt re-attribution refit skipped (WS-N Sec.3.5 blocked path)")
+        pytest.skip("lambda_ttmu blocked (0.0); tt re-attribution refit skipped (blocked path)")
 
 
 def test_reattribution_blocked_section_in_calibration():

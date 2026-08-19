@@ -6,7 +6,7 @@ from openmucf import load_rates, uq
 
 
 def test_params_from_ledger_matches_frozen_literals():
-    """uq.PARAMS (now file-sourced) equals the six frozen pre-WS-L literals.
+    """uq.PARAMS (now file-sourced) equals the six frozen pre-schema literals.
 
     Compares (name, nominal, low, high, unit) ONLY; ``note`` is deliberately excluded -- the rationale
     strings intentionally supersede the old note strings, so the NUMBERS are the regression lock, the
