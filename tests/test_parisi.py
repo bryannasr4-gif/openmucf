@@ -1,9 +1,9 @@
-"""WS-Y1: the Parisi-Rutkowski Ac-225 reproduction (scripts/parisi_ac225.py).
+"""The Parisi-Rutkowski Ac-225 reproduction (scripts/parisi_ac225.py).
 
 These tests lock the forward reproduction of arXiv:2511.20951v2's headline: the entered factor chain
-reproduces the ~20 mg/yr Ac-225 number within +/-5% (invariant I2 -- a FORWARD computation, not a tuned
-fit), matches the OpenMC Table-I value to <1%, every factor row carries a non-empty citation (invariant
-I3), the P_fus=564 W cross-check holds, and the MUON_COST.md tier cross-reference points at rows that
+reproduces the ~20 mg/yr Ac-225 number within +/-5% (a FORWARD computation, not a tuned
+fit), matches the OpenMC Table-I value to <1%, every factor row carries a non-empty citation, the
+P_fus=564 W cross-check holds, and the MUON_COST.md tier cross-reference points at rows that
 actually exist in the repo's muon-cost ledger.
 
 The script imports with NO side effects (all I/O is behind ``main()``), so these tests exercise the pure
@@ -37,7 +37,7 @@ def parisi():
 
 
 def test_reproduces_headline_within_5pct(parisi):
-    """The forward factor chain reproduces the 20 mg/yr headline within +/-5% (I2: forward, not tuned)."""
+    """The forward factor chain reproduces the 20 mg/yr headline within +/-5% (forward, not tuned)."""
     mg_yr = parisi.ac225_mg_per_year()
     lo = parisi.HEADLINE_MG_PER_YEAR * (1.0 - parisi.RECON_TOL_FRAC)
     hi = parisi.HEADLINE_MG_PER_YEAR * (1.0 + parisi.RECON_TOL_FRAC)
@@ -54,7 +54,7 @@ def test_matches_table_I_openmc_value(parisi):
 
 
 def test_every_factor_has_citation(parisi):
-    """I3: every factor row carries a non-empty citation string (and a name, unit, positive value)."""
+    """Every factor row carries a non-empty citation string (and a name, unit, positive value)."""
     assert len(parisi.FACTORS) >= 6
     for f in parisi.FACTORS:
         assert isinstance(f.citation, str) and f.citation.strip(), f"{f.symbol}: empty citation"

@@ -1,12 +1,27 @@
 """muCF-Bench: the case registry (openmucf.bench) over the validation trust gate + JSON reproductions."""
 
 import json
+import os
+import re
+from pathlib import Path
 
 import pytest
 
 from openmucf import bench, load_rates, validate
 
 JSON_IDS = {"jones-1986", "kou-chen-2026"}
+REPO = Path(__file__).resolve().parents[1]
+#: Directories that are not part of the shipped tree (environments, caches, build output).
+_SKIP_DIRS = {".git", ".venv", ".venv-win", "__pycache__", ".pytest_cache", ".ruff_cache", "build", "dist"}
+
+
+def _shipped_documents() -> set[str]:
+    """Basenames of every Markdown document this repository actually ships."""
+    names = set()
+    for _root, dirs, fnames in os.walk(REPO):
+        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS and not d.endswith(".egg-info")]
+        names.update(f for f in fnames if f.endswith(".md"))
+    return names
 
 
 def _rates():
@@ -61,9 +76,15 @@ def test_jones_case_ships_blocked_pending():
     got = bench.run_case(_rates(), "jones-1986")
     assert got.verdict == "PENDING"
     assert got.type == "reproduction"
-    # the blocking DOCUMENT is named publicly (never ACQUISITIONS.md); no guessed conditions
+    # The blocking DOCUMENT is named publicly, by its citation, and the note may name only
+    # documents this repository actually ships -- a reader of a shipped artifact must be able to
+    # resolve every document it points at. Stated positively: the note's cited-document set is a
+    # subset of the repository's own documents (here, empty -- it cites literature, not files).
     assert "Phys. Rev. Lett. 56, 588" in got.source
-    assert "ACQUISITIONS" not in got.note
+    # Non-vacuity first: an empty set is a subset of anything, so the subset assertion below says
+    # nothing unless the note actually has content to say it about.
+    assert len(got.note) > 100 and "Jones" in got.note
+    assert set(re.findall(r"[A-Za-z0-9_.\-]+\.md", got.note)) <= _shipped_documents()
     case = bench.load_cases()["jones-1986"]
     assert case["status"] == "blocked-acquisition"
     assert case["inputs"] == []
@@ -79,8 +100,11 @@ def test_run_all_and_report_markdown_render_with_footnotes():
     assert "A_acceleron_density" in md and "A_acceleron_anomaly" in md
     # the friendly-reproduction registry excludes every registered FAIL, so it stays 0 fail
     assert "0 fail" in md
-    # a generated public doc must carry no internal workstream id
-    assert "WS-" not in md
+    # A generated public document must carry no identifier of the LETTERS-DASH-LETTER shape that
+    # internal bookkeeping uses, because a reader has nothing to resolve it against. Stated as the
+    # shape rather than as a list of prefixes: a guard that spells out the strings it is hiding
+    # publishes them. Measured on the current document: the set is empty.
+    assert not re.findall(r"\b[A-Z]{2}-[A-Z][A-Za-z0-9]*\b", md)
 
 
 def test_load_cases_returns_two_schema_valid_cases():

@@ -3,7 +3,7 @@
 Calibrated (omega_s0, R, lambda_c) to Petitjean/Breunlich: omega_s_eff = 0.45+-0.05 %, X_mu = 113+-12,
 via numpyro NUTS (4 sequential chains). See `openmucf/calibrate.py`.
 
-The default prior boxes were WIDENED 2026-07-12 (disclosed statistical correction, I2-clean -- no target
+The default prior boxes were WIDENED 2026-07-12 (a disclosed statistical correction -- no target
 involved): the previous boxes provably RAILED -- the old weak-chain 95% CI had R hi 0.588 against the old
 R bound 0.60, and omega_s0 lo 0.608 against the old omega_s0 bound 0.60. New boxes: `R ~ Uniform(0.00,
 0.80)` (was 0.10-0.60) and weak `omega_s0_pct ~ Uniform(0.50, 1.20)` (was 0.60-1.10); the lambda_c box is

@@ -148,7 +148,7 @@
   "generated_by": "scripts/generate_twin_audit.py",
   "inputs": {
     "fc001_card_sha256": "2ea54b650eff34ea38e91c0b0915dde707c40ac91382b4419fe6a8052fa1855f",
-    "rates_csv_sha256": "1d60f23d02cbacb7436bb0aac32dfd5e96151ae713a951c84ce60bc469fd9c12",
+    "rates_csv_sha256": "f88cc170847aa2c2bef1aac2d570b7c7413f89ac413c34e81bdb9992bfeadd0a",
     "seeds": {
       "gate_synthetic": 0
     }

@@ -371,6 +371,6 @@
   ],
   "generated_by": "scripts/generate_mucost.py",
   "inputs": {
-    "muon_cost_csv_sha256": "adb0c84876f6026b627dd51958ebc1bf385d9e86f2d033ca091f2a202550bf01"
+    "muon_cost_csv_sha256": "3cde1334f0e963817c8bb8618be3d5368183d310450531be28d8417c58381dc8"
   }
 }

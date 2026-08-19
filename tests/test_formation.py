@@ -12,7 +12,7 @@ A1 = 53094361.62224904  # lambda_dtmu(300, 1, F=1)
 
 
 def test_calib_anchor_preserved():
-    """The 300 K anchor rates are preserved by the _CALIB re-derivation (I2: anchor honored, not tuned)."""
+    """The 300 K anchor rates are preserved by the _CALIB re-derivation (anchor honored, not tuned)."""
     assert float(formation.lambda_dtmu(300.0, 1.0, 0)) == pytest.approx(A0, rel=1e-9)
     assert float(formation.lambda_dtmu(300.0, 1.0, 1)) == pytest.approx(A1, rel=1e-9)
 

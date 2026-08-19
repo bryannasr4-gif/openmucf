@@ -25,7 +25,7 @@ rob = uq.sobol_robustness(N=8192, output="X_mu")
 fw = uq.forward_uq(n=400_000)
 be = uq.breakeven_audit(n=400_000)
 xchk = uq.cross_check_gradient()
-# Fable hotfix 2026-07-08 (ws-fix-gradient-pin): rel_diff is autodiff-vs-analytic machine noise
+# The gradient cross-check ships as a BOUND, never a pinned digit: rel_diff is autodiff-vs-analytic noise
 # (~3e-13); its leading digit is env-dependent, so FINDINGS emits the asserted bound, never raw digits.
 assert xchk["rel_diff"] < 1e-11, (
     f"gradient cross-check degraded: rel_diff={xchk['rel_diff']:.3e} (bound 1e-11)"
@@ -37,7 +37,7 @@ _rates = load_rates()
 _xmu_eta1 = float(cycle.fusions_per_muon_from_conditions(_rates, 300.0, 1.2, 0.5, eta=1.0))
 _xmu_eta5 = float(cycle.fusions_per_muon_from_conditions(_rates, 300.0, 1.2, 0.5, eta=5.0))
 
-# section 2b: Q_net under three muon-cost E_mu-tier priors (WS-E, deviation E1). The default flat
+# section 2b: Q_net under three muon-cost E_mu-tier priors. The default flat
 # [2,10] box in sections 1/2 is UNCHANGED; this panel ADDS a per-tier Q_net view (T1 Uniform(3.0,6.0),
 # T2 Uniform(1e2,1e3), T3 Uniform(2.3e3,1e6)). Seeded forward-UQ MC (byte-stable like section 2).
 _TIER_BOXES = {"T1": (3.0, 6.0), "T2": (1.0e2, 1.0e3), "T3": (2.3e3, 1.0e6)}
@@ -240,7 +240,7 @@ full cycle ODE at the canonical operating point (300 K, phi=1.2, c_t=0.5):
 so the structural bracket is X_mu(eta=5) - X_mu(eta=1) = **{H["eta_bracket_width"]}**.
 
 eta rescales the FORMATION pathway; the measured lambda_c band in sections 1/2 already contains eta as it
-occurred in the anchor experiments (accounting rule I5), so eta is reported as a structural bracket beside
+occurred in the anchor experiments (one channel, one accounting home), so eta is reported as a structural bracket beside
 the CI, never convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
@@ -287,8 +287,8 @@ simulated, unvalidated, company slide) and 6.0 GeV (a design-study upper value).
 Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE this edge), with a ~3 GeV
 ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box [3.0, 6.0] spans the low/central
 design-study range, its edges are disclosed alongside the pinned values, and it is left UNCHANGED
-(pre-registered; a discrepant pin is disclosed, never tuned away -- I2). Replacing the flat [2, 10] default
-with a tiered prior is deferred to Phase-4 findings-v2 (deviation E1).
+(pre-registered; a discrepant pin is disclosed, never tuned away). Replacing the flat [2, 10] default
+with a tiered prior is deferred to Phase-4 findings-v2.
 
 ## 3. Breakeven audit (the marquee result)
 The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\\mu > 500$, $Q > 2$. Under the **measured,
@@ -349,7 +349,7 @@ with open("FINDINGS.md", "w") as f:
     f.write(md)
 
 
-# ---------------------------------------------------- machine-checkable provenance manifest (WS-A)
+# --------------------------------------------------------- machine-checkable provenance manifest
 # Built from the SAME H used for the document above, so every tracked value is identical by construction.
 def _entry(entry_id, pattern):
     return provenance.ManifestEntry(
@@ -402,7 +402,7 @@ _entries += [
     _entry("eta_bracket_hi", rf"\| 5 \(Yamashita-Kino fit\) \| {re.escape(H['eta_bracket_hi'])} \|"),
     _entry("eta_bracket_width", rf"X_mu\(eta=5\) - X_mu\(eta=1\) = \*\*{re.escape(H['eta_bracket_width'])}\*\*"),
 ]
-# section 2b (WS-E tier panel): anchor each tracked number to its row of the Q_net-by-tier table.
+# section 2b (the muon-cost tier panel): anchor each tracked number to its row of the Q_net-by-tier table.
 _tier_rows = {
     "T1": r"T1 design studies, Uniform\(3\.0, 6\.0\) GeV",
     "T2": r"T2 demonstrated tech, Uniform\(1e2, 1e3\) GeV",

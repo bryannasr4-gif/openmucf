@@ -1,4 +1,4 @@
-"""openmucf.likelihood -- counts-level Bayesian model for a neutron time-spectrum histogram (WS-T v0).
+"""openmucf.likelihood -- counts-level Bayesian model for a neutron time-spectrum histogram (v0).
 
 The likelihood an experimenter would actually put on a raw histogram: a Poisson observation of per-bin
 neutron counts whose expectation is the CLOSED-FORM single-exponential limit of the v1 cycle,
@@ -86,7 +86,7 @@ def spectrum_model(t_edges, counts, phi=1.2, lambda_c_bounds=None, lambda_0=LAMB
                    amp_center=None, amp_log_sd=2.0, background_scale=None):
     """numpyro model for a raw neutron histogram ``counts`` on bins ``t_edges``.
 
-    Priors (DECIDED, sec.5.2): omega_s_eff_pct ~ Uniform(0.2, 0.8) %; lambda_c ~ Uniform over the ledger
+    Priors (DECIDED): omega_s_eff_pct ~ Uniform(0.2, 0.8) %; lambda_c ~ Uniform over the ledger
     ``lambda_c_liquid`` band scaled to ``phi`` (the informative prior that breaks the identifiability
     degeneracy above); amplitude = n_mu*efficiency ~ LogNormal (weak, data-scaled); background_rate ~
     Exponential (weak). Observation: counts ~ Poisson(expected).

@@ -1,5 +1,5 @@
 {
- "description": "v1 cycle reference: endpoint-per-gridpoint (t1=True at each grid time) from the UNMODIFIED module; WS-N reduction gate G-N1.",
+ "description": "v1 cycle reference: endpoint-per-gridpoint (t1=True at each grid time) from the UNMODIFIED module; the loss-channel reduction gate.",
  "method": "endpoint-per-gridpoint (each point = a full 0->t solve, SaveAt(t1=True)); avoids dense-interpolation error so the 8-vs-6-component reduction is comparable at the solver rtol.",
  "op": {
   "T": 300.0,

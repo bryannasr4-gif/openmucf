@@ -47,7 +47,7 @@ import numpy as np
 from . import _jaxcfg, calibrate
 from .constants import LAMBDA_0
 
-# --- pre-registered design settings (do not adjust after seeing outputs; I2) --------------------------
+# --- pre-registered design settings (do not adjust after seeing outputs) ------------------------------
 # Base knowledge = the WEAK-prior calibration chain: the omega_s0/R degeneracy this design exists to
 # break (the +0.84 ridge of CALIBRATION.md; the same chain the X-ray feasibility study used).
 BASE_PRIOR = ("uniform", 0.60, 1.10)

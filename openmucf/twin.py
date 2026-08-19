@@ -5,7 +5,7 @@ cycle ODE, a Poisson sampler for raw histograms, and the IDEALIZED two-exponenti
 fits -- so its bias against the model truth can be quantified on synthetic data (see
 ``scripts/generate_twin_audit.py`` and ``TWIN_AUDIT.md``).
 
-Fenced v0 (DECIDED, WAVE1_EXECUTION_SPEC.md sec.5.1): constant density phi; d-t only; delta beam pulse
+Fenced v0 -- a deliberate scope limit, not an oversight: constant density phi; d-t only; delta beam pulse
 (the muon starts on deuterium at t=0); flat background; NO detector-response prediction; NO
 dataset-specific claims. Each named historical dataset's ACTUAL published procedure (pulse structure,
 material stopping components, detector response) is stage 2 and acquisition/contact-gated -- nothing
@@ -13,7 +13,8 @@ here is a claim about any specific published spectrum.
 
 Runs CHANNELS-OFF by default: the forward model calls ``cycle.solve_cycle`` with the loss channels at
 their 0.0 defaults, so the twin reduces to the established v1 engine (the ``saveat`` trajectory hook it
-uses is the one authorized for WS-N + WS-T). ``likelihood.py`` holds the Bayesian counts-level model.
+uses is the one the loss-channel network and this twin share). ``likelihood.py`` holds the Bayesian
+counts-level model.
 
 Standard muCF disappearance identity used throughout:
 

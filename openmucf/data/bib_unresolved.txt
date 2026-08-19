@@ -1,7 +1,7 @@
 # Unresolved references (no live-verified open DOI or URL as of 2026-07-13)
 #
 # Every entry in openmucf/data/references.bib carries a live-verified `doi` or `url` EXCEPT the
-# bibkeys listed below. Each was searched this session against CrossRef and arXiv; none resolved
+# bibkeys listed below. Each was searched against CrossRef and arXiv on that date; none resolved
 # to an open identifier that could be attached without guessing (never fabricate an
 # identifier; a blocked document is a tracked go/no-go resource, not an estimate).
 #

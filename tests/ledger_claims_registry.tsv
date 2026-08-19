@@ -18,6 +18,7 @@ ae845f3fa7bbe8b8e5d163f39a681650c380354a	ADOPTERS.md	UNREVIEWED
 28a05be9178a0780f4590d239d0c6b1a7d82c284	CHANGELOG.md	UNREVIEWED
 2dc4e924b06f410bca40c50ab33b81e9f6083352	CHANGELOG.md	UNREVIEWED
 35b31a7ecc21b5ab6746e3d1c3fbc39aece8ab6a	CHANGELOG.md	UNREVIEWED
+376edb76ca6cf40ea72b4353d27ed13c3c1758b0	CHANGELOG.md	UNREVIEWED
 49443f6be9392fe3a3a620c5f14e2c62c74daa9e	CHANGELOG.md	UNREVIEWED
 4a2a2acb69fc274f7548505d37935f91c2c0b52e	CHANGELOG.md	UNREVIEWED
 5b96247fa797ae8308f82bff72b57480cfddde7c	CHANGELOG.md	UNREVIEWED
@@ -27,6 +28,7 @@ ae845f3fa7bbe8b8e5d163f39a681650c380354a	ADOPTERS.md	UNREVIEWED
 724bd28f81cbd0c07a1b1daaada4ad71fda424ec	CHANGELOG.md	UNREVIEWED
 76496482ca0915427e8aace458b84df7edb0b6f4	CHANGELOG.md	UNREVIEWED
 7e180128a3694d3513998b47756c27ae395b6c16	CHANGELOG.md	UNREVIEWED
+7e32e2ea8148d410f2916f0fcfa6375e471486cb	CHANGELOG.md	REGISTERED:measured at the commit that wrote it -- the audit chain's git-diff step over its 25 watched paths exits 0, all 239 manifest entries are byte-identical to the parent, and the suite gains tests without any existing outcome changing
 7e8877ca16f083f10bc3b7ce38649e4cc011345e	CHANGELOG.md	UNREVIEWED
 83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	UNREVIEWED
 8b08e657b1d2b5ecf29c659409c7eab6733804dd	CHANGELOG.md	UNREVIEWED
@@ -34,9 +36,9 @@ ae845f3fa7bbe8b8e5d163f39a681650c380354a	ADOPTERS.md	UNREVIEWED
 9392fb84e63d9efde8eec6b66420e0aa446ab254	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	UNREVIEWED
 9933c3df4d1e7fdebb9fca78af3db26c7c60b9fa	CHANGELOG.md	UNREVIEWED
+9b30266980799306d53a02aa44e268bd7a03f8e1	CHANGELOG.md	REGISTERED:scoped to the CC-BY package's structure, and true of the diff it describes -- the three edits touch free-text note and description fields only; row count, every numeric cell, every unit, every boolean flag and every schema type declaration are unchanged
 aa11c6f87bdf68540da337796c835b8325ded361	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 bd0bdc10a82520e5f600c186181c56fc457bdd60	CHANGELOG.md	UNREVIEWED
-c407fb0b95ca60ce0b88ae7c9bc38ccc0780d309	CHANGELOG.md	UNREVIEWED
 c450e5a7b660c5d95225a474424a008884c4ab16	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 c4ea8c48ea568d4b5657183616528ade2d499f4d	CHANGELOG.md	UNREVIEWED
 d45b3c707aea27d18eeed0c9ae22c479c9a3a291	CHANGELOG.md	UNREVIEWED
@@ -101,9 +103,9 @@ c77ae914453a7a838b724c221071b3893612c4d5	README.md	UNREVIEWED
 caadceb259301af2a3f48cbdecafff9818b899a9	README.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
 ef5f863f07ba9f184e1932d13dc5a21c70ecf12e	README.md	UNREVIEWED
 f255ebcbbf3980d4b3eddf46db6c68bb1e7ca93f	README.md	UNREVIEWED
+0a1f04003f8a301ada54afb4cf71b80ebcba9ecf	openmucf/data/muon_cost.schema.json	UNREVIEWED
 1b51fd19b0eaac30723c03fbd8d6622ccd6b022b	openmucf/data/muon_cost.schema.json	UNREVIEWED
 2bce94e1ec97ca84887d4343229a6fb85c0340cd	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
-35f03e6d3cef1d650ba427441ad1cba30a401879	openmucf/data/muon_cost.schema.json	UNREVIEWED
 3b8e99089faf38a2f7a4c0fa5c9527e866864c89	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
 422ee8b097788ea6a4dfcd1e8d49566af020cf33	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
 583f97392197a75b8e67da7b152375358e411f0f	openmucf/data/muon_cost.schema.json	UNREVIEWED
@@ -188,7 +190,6 @@ f050bef85240ff4f0f7ff9b463abc3ac988f3963	paper/paper.md	REGISTERED:summary sente
 fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED
 010f08de571b3a83e023ff161e5520cd62d1394b	scripts/generate_mucost.py	UNREVIEWED
 02e26105a8dd6d3f89fc50992edc38709452d743	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-06107f12c44341726dfe31e4cc267598c360f917	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 07a5c07b11facd1f812bd6926e8568fbc53a19b9	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 07c9522e9ec20e62aa369e15bb5317ca1e3d9981	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 0806c4cdebca2a4afe457bf95943d4639cfc1efa	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
@@ -239,6 +240,7 @@ a7c133e66899953e880c1afde194d7dacb4e5cb5	scripts/generate_mucost.py	REGISTERED:r
 acd703246094fd897fad7dee72d0dce8d0251cd2	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 b00c01b08ff199bfd44d4df8bab5a12f037fcfb0	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 b4a9852a3a55250ec621407d81e07b7593934103	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+b69216b0f4b4ecbfb7bc119c5258a5e3261995b8	scripts/generate_mucost.py	REGISTERED:module docstring, rendered into no document; states the framing MUON_COST.md carries in its own header at line 3, and the tier/numeraire rule the tables implement
 b912765778adc576ff733b2a70d486973b675b2e	scripts/generate_mucost.py	UNREVIEWED
 c206530e15e32d491f38c856f66ffa2a7e7bd3e1	scripts/generate_mucost.py	UNREVIEWED
 c5c97c394b52a199b5961f66383d02ed652d9f1f	scripts/generate_mucost.py	UNREVIEWED
@@ -266,15 +268,14 @@ bf5d85c8602baadcd34ea4e66e698bafe10727c8	tests/test_ledger_claims.py	REGISTERED:
 c1dc0de5e0b5b03060ccc6e1f8bb08ea3c129295	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
 ce1b59361b635e8a1bdf7753ff5cbeb94420e644	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
 ecfa7ab0e26f508095b868ca4c7ebdbf241ea91d	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
-04e8d7de246fd8b22e3215c92b6e8e1f4aa3331c	tests/test_mucost.py	UNREVIEWED
 066a2476ab79febb99a4422e22b8bbfb2903397c	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 0b42f9562f8bf43fd6c145c33b70ba78e0d3b772	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 125ba8541eb5d3f7c0242482ec5be52d40eef40a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
-1b339c4b157172d72e53c1e28fada3aa0e01edc1	tests/test_mucost.py	UNREVIEWED
 1d4c418e76a448142b0be9541c20c94d322f0c19	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 1f666ad676fd74af2b8806da2c336ce9f5f9f48e	tests/test_mucost.py	UNREVIEWED
 21066b05ce4f81ad258b36094e15c9ee799fd101	tests/test_mucost.py	UNREVIEWED
 2545bc77df2b56f69eefab04ffa9c30d6437dffa	tests/test_mucost.py	UNREVIEWED
+26e1c484ae464f7ccf615d7deb9224402f3afe30	tests/test_mucost.py	UNREVIEWED
 27837199d5ad2a87471806f2815b9ecaf8ec2a82	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 2fd42360838de0b00832486e967eec145e1e5470	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 3516c7c72f7dda6dcb84836323dc260e8b291e46	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -283,7 +284,7 @@ ecfa7ab0e26f508095b868ca4c7ebdbf241ea91d	tests/test_ledger_claims.py	REGISTERED:
 42e5317f9fb4ce2d80ac96dc0aa175e678edc675	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 46f4acd6d8e80a9f8213d763f1d6a02d23f21af2	tests/test_mucost.py	REGISTERED:assertion line of the test that asserts the property; the quantifier the enumerator matched is part of the identifier `mu_plus_only`
 486126ed846ab86304031907e6827bab865ed673	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
-4d4eea9d56f018eef9c4b9c61b87930aeafc24ed	tests/test_mucost.py	UNREVIEWED
+4d22e063cdd30b263d2b9dbcd124737568edb39a	tests/test_mucost.py	UNREVIEWED
 5a8d3404ec97c54a0dd7634476bd7866af9da303	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 65d9e62310a95ab3ec65c62b020405fe08342c27	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 6964f6d85c76bb39adefeba2996c3502f54de073	tests/test_mucost.py	UNREVIEWED
@@ -291,6 +292,7 @@ ecfa7ab0e26f508095b868ca4c7ebdbf241ea91d	tests/test_ledger_claims.py	REGISTERED:
 6d78377e51e5c227774ba78f33e81ba1e9f084de	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 703c22b65f5fa8889a23653ae932d4331bd4e1a5	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 7148627ebeee24bb9f53382aaee8d156fdc04986	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+71bcf4e4c9cc0437d6f654c1cd43f39edb078ab6	tests/test_mucost.py	UNREVIEWED
 80e90a9b44315bd561337b8ca3ba256c92d96cfa	tests/test_mucost.py	UNREVIEWED
 817a39706adf76d40df07c35a44e27361be0603e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 866ffa0e22d23e1b2465773a3fb48d83dd41594a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -303,11 +305,11 @@ ecfa7ab0e26f508095b868ca4c7ebdbf241ea91d	tests/test_ledger_claims.py	REGISTERED:
 9d2b34a710eaf3b8603a78e225f055773f156797	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 a10ee4031447ec559265c028666a5ee4b2c31ea7	tests/test_mucost.py	UNREVIEWED
 a86b4abee14c74cb56cb9648bdd953eee02f7863	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
-a8da82885b56ca3f3ed3e803069cd223aa8493a5	tests/test_mucost.py	UNREVIEWED
 a99a1388bd180f2d4009352e559da2d4068f3071	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 abb72443c94e2a280c36008247c981348427883c	tests/test_mucost.py	UNREVIEWED
 b10befbaf5a01934522acd8f6013e36daa46b701	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 b12dedd692c676c3eb313a34154c6fd2cea4e2b5	tests/test_mucost.py	UNREVIEWED
+b22c4a3f9b4f76f91144c71cc2ffd1c7c59f3a54	tests/test_mucost.py	UNREVIEWED
 c31bd2aaec64475b2055d7dd6eae7a3c3f37f254	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 d00802cb973f32be14ab22b09d676d16b88b7970	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 db0e9dfe9063b66b23812ab00e89491a89c3f72e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property

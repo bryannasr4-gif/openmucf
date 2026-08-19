@@ -1,4 +1,4 @@
-"""WS-A: constants single-sourcing + the engine-number regression lock.
+"""Constants single-sourcing + the engine-number regression lock.
 
 ``openmucf.constants`` re-exports three physical constants from the ledger so multiple engine modules
 stop carrying forked literals. These tests prove the rewire is numerically inert and that no fork remains.
@@ -24,7 +24,7 @@ def test_constants_match_ledger():
 
 
 def _executable_lines(text: str) -> str:
-    """Heuristic strip of full-line comments and triple-quoted blocks (WAVE1 spec 1.6 test 2).
+    """Heuristic strip of full-line comments and triple-quoted blocks.
 
     Deliberately simple -- NOT a Python parser. It drops lines whose stripped form starts with '#'
     and the contents of triple-quoted docstring blocks. Good enough to tell an executable constant
@@ -72,7 +72,7 @@ def test_no_duplicate_literals():
 
 def test_engine_numbers_unchanged():
     """The rewire is numerically inert: the canonical quickstart yield and the scientific breakeven are
-    bit-for-bit what they were before WS-A (full-precision values recorded on clean main, 2026-07-07)."""
+    bit-for-bit what they were before single-sourcing (full precision, recorded on clean main 2026-07-07)."""
     r = load_rates()
     x = float(cycle.fusions_per_muon_from_conditions(r, T=300, phi=1.2, c_t=0.5))
     assert x == pytest.approx(114.47527542334024, rel=1e-9)

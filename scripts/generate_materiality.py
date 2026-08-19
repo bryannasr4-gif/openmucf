@@ -2,15 +2,15 @@
 
     python scripts/generate_materiality.py
 
-Content (WAVE1_EXECUTION_SPEC sec.6, WS-M): one-at-a-time absorbing-loss-channel toggles at fixed
+Content: one-at-a-time absorbing-loss-channel toggles at fixed
 operating points, reported as ONE-SIDED "structural sensitivity brackets" (X_mu^with - X_mu^without)
 beside the section-2 forward-UQ CI width for scale. These are NOT error bars and are never combined
 into any likelihood or CI (pre-registered combination rule: side-by-side only).
 
-Two channels, per the WS-N network:
+Two channels, per the loss-channel network:
   * He-3 scavenging (dmu + 3He): LIVE (ledger `lambda_dhe3`=1.92e8 s^-1, Fotev et al. 2020). Toggled at
     two illustrative static helium fractions c_He in {1e-4, 1e-3}.
-  * ttmu side-branch: BLOCKED. The ledger `lambda_ttmu` row shipped the WS-N sec.3.3 machine-representable
+  * ttmu side-branch: BLOCKED. The ledger `lambda_ttmu` row shipped the machine-representable
     fallback (value 0.0, notes beginning `blocked:`) because no open source pins its x-phi-x-c_t
     normalization. This generator DETECTS that marker and renders the ttmu rows "blocked -- pending
     acquisition of <the document named in the row notes>", NEVER a (misleading) zero bracket.
@@ -35,7 +35,7 @@ from openmucf import cycle, provenance
 from openmucf.rates import RATES_CSV, load_rates
 
 # --------------------------------------------------------------------------- DECIDED spec parameters
-# Operating points (WAVE1 sec.6.2, deviation D12). OP-A is anchor-adjacent: kept IN the table for
+# Operating points. OP-A is anchor-adjacent: kept IN the table for
 # completeness (accounting.md exists) but flagged and EXCLUDED from every headline/summary sentence.
 # (phi, T [K], c_t)
 OPERATING_POINTS: dict[str, tuple[float, float, float]] = {
@@ -44,7 +44,7 @@ OPERATING_POINTS: dict[str, tuple[float, float, float]] = {
     "OP-C": (2.0, 150.0, 0.5),  # MuFusE mid
     "OP-D": (2.4, 100.0, 0.5),  # MuFusE peak
 }
-ANCHOR_ADJACENT = "OP-A"  # excluded from headline sentences (D12)
+ANCHOR_ADJACENT = "OP-A"  # excluded from headline sentences
 HEADLINE_OPS = ("OP-B", "OP-C", "OP-D")
 # Two illustrative tritium-decay-accumulation levels (static per-run helium fraction).
 C_HE_LEVELS: tuple[float, ...] = (1e-4, 1e-3)
@@ -139,7 +139,7 @@ def combined_band(he_br: dict, q1s_br: dict) -> dict:
 
 
 def tt_blocked_status(rates) -> tuple[bool, str]:
-    """Detect the WS-N sec.3.3 blocked-fallback marker on the ttmu formation-rate row.
+    """Detect the blocked-fallback marker on the ttmu formation-rate row.
 
     Returns ``(is_blocked, document_name)``. ``is_blocked`` is True when the ``lambda_ttmu`` ledger row
     ships value 0.0 with notes beginning ``blocked:`` (the machine-representable fallback). The document
@@ -294,7 +294,7 @@ plus the per-cycle d-recapture / q_1s routing (section 4 -- a re-routing, not an
 muon detours through the dmu pool and races decay one extra transfer). The ddmu / d-d branch and the
 epithermal-formation (eta) enhancement remain OUT of scope here: the ddmu channel does not exist in the
 engine yet (documented -5..-15% headroom, see docs/accounting.md), and eta is already reported as its own
-structural bracket in FINDINGS.md section 1c (one-home rule I5).
+structural bracket in FINDINGS.md section 1c (one channel, one accounting home).
 
 ## 2. 3He scavenging channel (LIVE): dmu + 3He
 The dmu + 3He scavenging rate `lambda_dhe3` = 1.92e8 s^-1 (Fotev et al. 2020, arXiv:2001.09927; open) is

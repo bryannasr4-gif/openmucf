@@ -144,7 +144,7 @@ The extra per-cycle loss term **`ω_tt·(λ_tt/λ_c)`** is exactly the `tt_pc` s
 re-attribution refit (`accounting.md`): introducing it forces the fitted ω_s^eff (= ω_s0(1−R)) down so the
 anchor total still reproduces the measured 0.45 %. With λ_tt→0 this collapses to §4's v1 identity. The
 implementation is `analytic.fusions_per_muon_v2(omega_s_eff, lambda_c, lambda_0, tt_loss_rate, omega_tt)`,
-gated against the ODE (`cycle.py` channels-on, single-pool limit) to **<1 %** (G-N2; measured worst
+gated against the ODE (`cycle.py` channels-on, single-pool limit) to **<1 %** (measured worst
 0.0 % over the 3-point (λ_tt, ω_tt) grid).
 
 **Documented asymmetry (³He scavenging omitted from the closed form).** The ³He channel removes the muon

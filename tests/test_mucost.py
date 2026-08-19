@@ -1,9 +1,9 @@
-"""WS-E: the open muon-cost ledger + tier panel.
+"""The open muon-cost ledger + tier panel.
 
 A curated compilation with provenance, not an evaluation. These tests lock: the loader validates and
-rejects a bad tier; every bibkey resolves; the needs_verification flags match the A8-committed set
+rejects a bad tier; every bibkey resolves; the needs_verification flags match the committed set
 (Jandel is the only nv=true row); normalized values are positive and tier-ordered (the order-of-magnitude
-mixed-basis tier spread, G-E2);
+mixed-basis tier spread);
 every T3 row carries its derivation; recapture is recorded-not-folded; the FINDINGS section-2b tier panel
 regenerates deterministically; and the muon-cost manifest verifies against MUON_COST.md.
 """
@@ -37,7 +37,7 @@ def _load_generator():
     spec.loader.exec_module(mod)
     return mod
 
-# The nv-flag set committed this session (WAVE2 sec.0-A A8): only Jandel is needs_verification.
+# The committed needs_verification set: only Jandel is flagged.
 EXPECTED_NV = {
     "kelly_hart_rose_2021": False,
     "kelly_electrical_minimal": False,
@@ -113,18 +113,18 @@ def test_every_bibkey_resolves(table):
 
 
 def test_nv_flags_match_committed_set(table):
-    """nv flags == the A8-committed set; Jandel is the ONLY needs_verification row (T1 and overall)."""
+    """nv flags == the committed set; Jandel is the ONLY needs_verification row (T1 and overall)."""
     got = {r.source_id: r.needs_verification for r in table}
     assert got == EXPECTED_NV
     nv_rows = [r.source_id for r in table.needs_verification()]
     assert nv_rows == ["jandel_1989"]
-    # the invariant A8 sec.1.5 asserts: Jandel is the only nv=true row in T1
+    # the committed set asserts: Jandel is the only nv=true row in T1
     t1_nv = [r.source_id for r in table.tier("T1-design-study") if r.needs_verification]
     assert t1_nv == ["jandel_1989"]
 
 
 def test_normalized_positive_and_tier_ordered(table):
-    """Every pinned normalized value is > 0, and the tier medians are ordered T1 < T2 < T3 (G-E2)."""
+    """Every pinned normalized value is > 0, and the tier medians are ordered T1 < T2 < T3."""
     for r in table:
         if r.has_normalized:
             assert r.normalized_GeV_per_mu > 0.0, r.source_id
@@ -382,7 +382,7 @@ def test_mucost_is_lazy_public_api():
 
 
 def test_muon_cost_manifest_verifies():
-    """G-E1 kernel: the committed manifest verifies against the committed MUON_COST.md."""
+    """Manifest-verification kernel: the committed manifest verifies against the committed MUON_COST.md."""
     failures = provenance.check_manifest(REPO / "MUON_COST_MANIFEST.json", repo_root=REPO)
     assert failures == [], failures
 
@@ -765,7 +765,7 @@ def test_exactly_one_cost_source_states_a_beam_to_electrical_conversion(table):
     }
 
 
-#: The wording this branch retracted, as one phrase. Compared against whitespace-normalized text, so
+#: The retracted wording, as one phrase. Compared against whitespace-normalized text, so
 #: a re-wrap does not defeat it; a restatement in other words is a different string and is not caught.
 RETRACTED_LOWER_BOUND_UNIVERSAL = "every published figure in this table is a **lower bound**"
 

@@ -38,21 +38,21 @@ twin-audit:
 materiality: findings
 	python scripts/generate_materiality.py
 
-# muon-cost ledger (WS-E). Regenerates MUON_COST.md + the tier-spread PNG + MUON_COST_MANIFEST.json.
+# muon-cost ledger. Regenerates MUON_COST.md + the tier-spread PNG + MUON_COST_MANIFEST.json.
 # The PNG is NEVER byte-diffed (matplotlib/freetype bytes are not cross-platform stable); only the .md
 # and the manifest join the audit git-diff list below. All committed numbers are pure arithmetic on the
 # committed muon_cost.csv (no MCMC/solver), so the two byte-diffed artifacts are cross-arch stable.
 mucost:
 	python scripts/generate_mucost.py
 
-# Q Rosetta stone + energy-balance graph (WS-S). Regenerates SYSTEMS.md + SYSTEMS_MANIFEST.json. All
+# Q Rosetta stone + energy-balance graph. Regenerates SYSTEMS.md + SYSTEMS_MANIFEST.json. All
 # committed numbers are CLOSED-FORM algebra over openmucf.systems (a superset of the frozen
 # energy.EnergyChain; no MCMC/solver), so both artifacts are byte-stable cross-arch and both join the
 # audit git-diff list below.
 systems:
 	python scripts/generate_systems.py
 
-# Inverse-design frontiers (WS-Q). Regenerates FRONTIER.md + FRONTIER_MANIFEST.json + the frontier PNG.
+# Inverse-design frontiers. Regenerates FRONTIER.md + FRONTIER_MANIFEST.json + the frontier PNG.
 # FRONTIER.md + the manifest are CLOSED-FORM float64 (byte-stable cross-arch, like SYSTEMS.md) and join the
 # audit git-diff list below; the solver inverses are cross-checked against those closed forms to <1e-9 in
 # the tests, so no byte-diffed number depends on iterative-solver noise. The PNG (which draws the Kamimura
@@ -67,9 +67,9 @@ frontier:
 neutronomics:
 	python scripts/generate_neutronomics.py
 
-# Bayesian experimental-design ranking (WS-D). Regenerates DESIGN.md + DESIGN_MANIFEST.json. BOTH carry
+# Bayesian experimental-design ranking. Regenerates DESIGN.md + DESIGN_MANIFEST.json. BOTH carry
 # numpyro/NUTS-derived numbers (nested-MC EIG, sd-contraction refits) that are NOT byte-stable cross-arch
-# (the CALIBRATION.md precedent, WAVE2 A1), so NEITHER joins the audit git-diff list below; instead
+# (the CALIBRATION.md precedent), so NEITHER joins the audit git-diff list below; instead
 # `generate_design.py --audit` re-runs with pinned seeds and tolerance-checks every manifest number: each
 # cell -- EIG and sd-contraction alike -- against 4 sigma of its OWN published Monte-Carlo SE, plus
 # structural gates on the ranking claims (see the AMENDMENTs in scripts/generate_design.py). The

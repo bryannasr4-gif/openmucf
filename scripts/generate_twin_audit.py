@@ -2,7 +2,7 @@
 
 python scripts/generate_twin_audit.py
 
-Content (WAVE1_EXECUTION_SPEC sec.5.3), all seeded/deterministic so `make audit` byte-diffs it:
+Content, all seeded/deterministic so `make audit` byte-diffs it:
   1. closed-form disappearance gate (G-T1): a synthetic spectrum at the canonical OP is fit with the
      idealized two-exponential estimator and must recover the analytic lambda_n to < 1%.
   2. estimator-bias sweep t_min x c_t on the EXACT ODE truth (noise-free expected counts, so the numbers

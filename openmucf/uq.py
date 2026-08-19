@@ -26,8 +26,8 @@ import numpy as np
 
 from .constants import E_F_MEV, LAMBDA_0
 
-# Registered-priors file (provenance type: registered prior; I3). The UQ box VALUES are frozen this
-# wave; this file makes them machine-sourced instead of module literals (regression-locked by
+# Registered-priors file (provenance type: registered prior). The UQ box VALUES are frozen; this
+# file makes them machine-sourced instead of module literals (regression-locked by
 # tests/test_uq_priors.py::test_params_from_ledger_matches_frozen_literals).
 _PRIORS_CSV = Path(__file__).resolve().parent / "data" / "uq_priors.csv"
 
@@ -303,13 +303,13 @@ def breakeven_audit(n=400_000, seed=1):
 
 
 def qnet_tier_panel(emu_lo, emu_hi, n=400_000, seed=0, blanket_M=1.0):
-    """Forward-UQ Q_net under a REPLACED E_mu prior box -- the muon-cost tier panel (WS-E, deviation E1).
+    """Forward-UQ Q_net under a REPLACED E_mu prior box -- the muon-cost tier panel.
 
     Draws every uq :data:`PARAMS` input from its default box, then OVERRIDES ``E_mu_GeV`` with
     ``Uniform(emu_lo, emu_hi)``. This probes the Q_net distribution under a muon-cost *tier's* E_mu prior
     WITHOUT changing the default box: :func:`forward_uq`, :func:`sobol_indices`, :func:`breakeven_audit`
     and :data:`PARAMS` are all untouched (the flat [2, 10] GeV default stands; the tier panel is an
-    additional FINDINGS section, not a replacement -- deviation E1). Seeded and deterministic; the seeded
+    additional FINDINGS section, not a replacement). Seeded and deterministic; the seeded
     numpy-MC median is byte-stable cross-environment (same class as :func:`forward_uq`'s shipped medians).
 
     Returns ``{"P_gt1": P(Q_net > 1), "median": median Q_net}`` under the tier's E_mu prior.

@@ -1,6 +1,6 @@
 """neutronomics Layer 1: the neutrons-per-joule league table.
 
-A curated compilation with provenance, not an evaluation (I8); no new physics (I1). These tests lock:
+A curated compilation with provenance, not an evaluation; no new physics. These tests lock:
 muCF is THREE tier-separated rows, each tier-labelled T1/T2/T3 (never one blended row); every row (muCF
 AND alternative-source) carries a non-empty source; X_mu = 113 is the MEASURED Petitjean/Breunlich value
 imported from ``calibrate.OBS`` (NOT the forward-UQ median 104, NOT a bare literal); the n/J values match
@@ -101,7 +101,7 @@ def test_xmu_grounded_in_calibrate_obs_not_104():
     assert mod.XMU == OBS["xmu_obs"] == 113.0
     doc = _committed_doc()
     assert "X_mu = 113 fusions per muon" in doc
-    # the doc must explicitly disclaim the forward-UQ median 104 (I2/I3)
+    # the doc must explicitly disclaim the forward-UQ median 104
     assert "104" in doc and "NOT" in doc
 
 
@@ -127,7 +127,7 @@ def test_npj_matches_hand_arithmetic():
 def test_alt_source_derivations_correct():
     mod = _load_generator()
     by_key = {a.key: a for a in mod.build_alt_sources()}
-    # each n/J re-derived here from the row's own published triple (I3 "derived here" arithmetic)
+    # each n/J re-derived here from the row's own published triple
     expected = {
         "dt_generator": 8.2e8 / (90e-6 * 140e3),  # yield / (I * V)
         "fng": 1e11 / (1e-3 * 300e3),
@@ -142,8 +142,8 @@ def test_alt_source_derivations_correct():
 
 
 def test_dropped_list_present_in_doc():
-    """The 'dropped for unsourceability' list (empty here) MUST appear in the doc (I3)."""
+    """The 'dropped for unsourceability' list (empty here) MUST appear in the doc."""
     doc = _committed_doc()
     assert "Dropped for unsourceability" in doc
     mod = _load_generator()
-    assert mod.DROPPED == []  # all rows sourced this session; nothing approximated
+    assert mod.DROPPED == []  # every row carries a live-verified primary; nothing approximated

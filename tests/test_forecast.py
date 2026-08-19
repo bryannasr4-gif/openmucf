@@ -267,7 +267,7 @@ LEDGER_SHA256_AT_REGISTRATION = "11e09e0d5342be08b20b25ab77c9d1554e1ffae16d13287
 
 def test_ledger_hash_matches_fresh_lf_normalized_hash(shipped_card):
     # Registration-record integrity (NOT live-file freshness): the shipped card immutably records the
-    # ledger hash as of registration; the live ledger has since evolved (WS-L fix-pack), so this asserts
+    # ledger hash as of registration; the live ledger has since evolved, so this asserts
     # the recorded hash equals the pinned registration-time literal, not a fresh hash of the live file.
     assert shipped_card["payload"]["provenance"]["ledger_sha256"] == LEDGER_SHA256_AT_REGISTRATION
 

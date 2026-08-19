@@ -85,7 +85,7 @@ full cycle ODE at the canonical operating point (300 K, phi=1.2, c_t=0.5):
 so the structural bracket is X_mu(eta=5) - X_mu(eta=1) = **43.1**.
 
 eta rescales the FORMATION pathway; the measured lambda_c band in sections 1/2 already contains eta as it
-occurred in the anchor experiments (accounting rule I5), so eta is reported as a structural bracket beside
+occurred in the anchor experiments (one channel, one accounting home), so eta is reported as a structural bracket beside
 the CI, never convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
@@ -132,8 +132,8 @@ simulated, unvalidated, company slide) and 6.0 GeV (a design-study upper value).
 Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE this edge), with a ~3 GeV
 ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box [3.0, 6.0] spans the low/central
 design-study range, its edges are disclosed alongside the pinned values, and it is left UNCHANGED
-(pre-registered; a discrepant pin is disclosed, never tuned away -- I2). Replacing the flat [2, 10] default
-with a tiered prior is deferred to Phase-4 findings-v2 (deviation E1).
+(pre-registered; a discrepant pin is disclosed, never tuned away). Replacing the flat [2, 10] default
+with a tiered prior is deferred to Phase-4 findings-v2.
 
 ## 3. Breakeven audit (the marquee result)
 The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Under the **measured,
