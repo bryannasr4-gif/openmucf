@@ -146,4 +146,4 @@ def test_dropped_list_present_in_doc():
     doc = _committed_doc()
     assert "Dropped for unsourceability" in doc
     mod = _load_generator()
-    assert mod.DROPPED == []  # all rows sourced this session; nothing approximated
+    assert mod.DROPPED == []  # every row carries a live-verified primary; nothing approximated
