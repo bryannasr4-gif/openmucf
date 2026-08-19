@@ -8,7 +8,7 @@ R floor that reproduces the FINDINGS.md sec.3 "R >= 0.77" headline, and a solver
 over the differentiable systems.q_net graph.
 
 Framing: INVERSE-DESIGN ONLY, never a verdict, and no new physics. It states requirements as FINDINGS.md
-sec.3 does; it encodes no scenario/verdict registry (fenced OUT, sec.3.2).
+sec.3 does; it encodes no scenario/verdict registry, which is deliberately out of scope.
 
 Byte-stability: FRONTIER.md + FRONTIER_MANIFEST.json ship ONLY closed-form float64
 numbers (byte-stable cross-arch, like SYSTEMS.md); the solver-backed inverses are cross-checked against

@@ -81,6 +81,9 @@ def test_jones_case_ships_blocked_pending():
     # resolve every document it points at. Stated positively: the note's cited-document set is a
     # subset of the repository's own documents (here, empty -- it cites literature, not files).
     assert "Phys. Rev. Lett. 56, 588" in got.source
+    # Non-vacuity first: an empty set is a subset of anything, so the subset assertion below says
+    # nothing unless the note actually has content to say it about.
+    assert len(got.note) > 100 and "Jones" in got.note
     assert set(re.findall(r"[A-Za-z0-9_.\-]+\.md", got.note)) <= _shipped_documents()
     case = bench.load_cases()["jones-1986"]
     assert case["status"] == "blocked-acquisition"
@@ -97,6 +100,11 @@ def test_run_all_and_report_markdown_render_with_footnotes():
     assert "A_acceleron_density" in md and "A_acceleron_anomaly" in md
     # the friendly-reproduction registry excludes every registered FAIL, so it stays 0 fail
     assert "0 fail" in md
+    # A generated public document must carry no identifier of the LETTERS-DASH-LETTER shape that
+    # internal bookkeeping uses, because a reader has nothing to resolve it against. Stated as the
+    # shape rather than as a list of prefixes: a guard that spells out the strings it is hiding
+    # publishes them. Measured on the current document: the set is empty.
+    assert not re.findall(r"\b[A-Z]{2}-[A-Z][A-Za-z0-9]*\b", md)
 
 
 def test_load_cases_returns_two_schema_valid_cases():

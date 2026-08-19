@@ -2,8 +2,8 @@
 
 These tests lock the forward reproduction of arXiv:2511.20951v2's headline: the entered factor chain
 reproduces the ~20 mg/yr Ac-225 number within +/-5% (a FORWARD computation, not a tuned
-fit), matches the OpenMC Table-I value to <1%, every factor row carries a non-empty citation (invariant
-sourced), the P_fus=564 W cross-check holds, and the MUON_COST.md tier cross-reference points at rows that
+fit), matches the OpenMC Table-I value to <1%, every factor row carries a non-empty citation, the
+P_fus=564 W cross-check holds, and the MUON_COST.md tier cross-reference points at rows that
 actually exist in the repo's muon-cost ledger.
 
 The script imports with NO side effects (all I/O is behind ``main()``), so these tests exercise the pure

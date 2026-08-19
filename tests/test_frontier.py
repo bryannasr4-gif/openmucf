@@ -6,7 +6,7 @@ solver paths agree to < 1e-9 (relative) for every free variable, with q_net(inve
 the (lambda_c, R) frontier is monotone decreasing in lambda_c; the Newton solver converges (no NaNs) from
 the documented initialisations across the grid; the optimistix dependency is DECLARED (import + pyproject);
 and FRONTIER.md + its manifest regenerate deterministically and verify. NO verdict-shaped surface is built
-(sec.3.2 fence): the module exposes only inverse-design functions.
+(the inverse-design fence): the module exposes only inverse-design functions.
 """
 
 from __future__ import annotations
@@ -179,8 +179,9 @@ def test_optimistix_import_declared():
 
 
 def test_frontier_is_inverse_design_only_no_verdict_surface():
-    """sec.3.2 fence: frontier exposes ONLY inverse-design helpers -- no scenario/verdict registry, enum,
-    or table-audit surface. Guards against the fenced-out verdict mode creeping in."""
+    """The inverse-design fence: frontier exposes ONLY inverse-design helpers -- no
+    scenario/verdict registry, enum, or table-audit surface. Guards against the fenced-out verdict
+    mode creeping in."""
     public = {n for n in dir(frontier) if not n.startswith("_")}
     forbidden = {"verdict", "scenario", "registry", "audit_table", "ykc_table", "Verdict", "Scenario"}
     assert public.isdisjoint(forbidden), public & forbidden

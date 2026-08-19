@@ -95,8 +95,8 @@ def test_analytic_v2_reduces_to_v1():
 
 
 def test_recapture_off_bit_exact():
-    """d-recapture OFF (f_d=0.0) reproduces the committed v1 reference to atol 1e-9 (reduction gate
-    the reduction gate): with f_d=0.0 the routing terms are IEEE-exact identities (x + 0.0*r == x,
+    """d-recapture OFF (f_d=0.0) reproduces the committed v1 reference to atol 1e-9 (the reduction
+    gate): with f_d=0.0 the routing terms are IEEE-exact identities (x + 0.0*r == x,
     1.0*r == r),
     so the locked step sequence does NOT drift. Extends the reference gate with the new args signature
     (explicit f_d=0.0), and confirms the explicit-f_d=0.0 path equals the default path bit-for-bit."""

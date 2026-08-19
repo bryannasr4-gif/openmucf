@@ -44,7 +44,7 @@ the single sharpest demonstration of why the transparent chain matters.*
 Precisely (closed form, `SystemChain(eta_acc=0.18).breakeven_xmu_net()`): the net-electrical breakeven
 is E_mu/(E_f*eta_thermal*eta_acc) = 5000/(17.6x0.40x0.18) = **3945.71**, i.e.
 **3946** fusions/muon (vs the v1-default 2367.42 at eta_acc=0.30) --
-a 5/3x rise, exactly linear in 1/eta_acc. The v1 code default STAYS 0.30 this wave (changing it would
+a 5/3x rise, exactly linear in 1/eta_acc. The v1 code default STAYS 0.30 (changing it would
 re-anchor the FINDINGS; that is a later decision); the FINDING carries the correction.
 
 ## G-legacy: the degenerate special case (no-tuning anchor)

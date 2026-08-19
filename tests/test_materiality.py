@@ -27,7 +27,7 @@ def _load_script():
 
 
 def test_operating_points_and_c_he_match_spec():
-    """Operating points + conditions + c_He levels match the registered design exactly."""
+    """Operating points + conditions + c_He levels are exactly the set pinned in this test."""
     mod = _load_script()
     assert mod.OPERATING_POINTS == {
         "OP-A": (1.25, 300.0, 0.5),

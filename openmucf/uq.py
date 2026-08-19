@@ -26,7 +26,7 @@ import numpy as np
 
 from .constants import E_F_MEV, LAMBDA_0
 
-# Registered-priors file (provenance type: registered prior). The UQ box VALUES are frozen this
+# Registered-priors file (provenance type: registered prior). The UQ box VALUES are frozen and
 # wave; this file makes them machine-sourced instead of module literals (regression-locked by
 # tests/test_uq_priors.py::test_params_from_ledger_matches_frozen_literals).
 _PRIORS_CSV = Path(__file__).resolve().parent / "data" / "uq_priors.csv"

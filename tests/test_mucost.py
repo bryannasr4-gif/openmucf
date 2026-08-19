@@ -765,7 +765,7 @@ def test_exactly_one_cost_source_states_a_beam_to_electrical_conversion(table):
     }
 
 
-#: The wording this branch retracted, as one phrase. Compared against whitespace-normalized text, so
+#: The retracted wording, as one phrase. Compared against whitespace-normalized text, so
 #: a re-wrap does not defeat it; a restatement in other words is a different string and is not caught.
 RETRACTED_LOWER_BOUND_UNIVERSAL = "every published figure in this table is a **lower bound**"
 

@@ -110,7 +110,7 @@ def test_eta_acc_self_correction_3946():
     assert f"{be:.0f}" == "3946"
     # exactly linear in 1/eta_acc: the ratio is 0.30/0.18 = 5/3
     assert math.isclose(be / SystemChain(eta_acc=0.30).breakeven_xmu_net(), 0.30 / 0.18, rel_tol=1e-12)
-    # the v1 default in code is untouched this wave
+    # the v1 default in code is untouched
     assert SystemChain().eta_acc == 0.30
 
 
@@ -127,8 +127,8 @@ def test_g_kelly_reproduces_eq2_from_cited_numbers():
 
 
 def test_g_kelly_band_is_a_documented_finding_not_tuned():
-    """The faithful reproduction (15.69%) lands JUST ABOVE the pre-registered band [12.6%, 15.4%]. It
-    this is a documented finding (Kelly's max-Q Table-1 config vs his 14% figure-3 curve headline), NOT a
+    """The faithful reproduction (15.69%) lands JUST ABOVE the pre-registered band [12.6%, 15.4%]. That
+    is a documented finding (Kelly's max-Q Table-1 config vs his 14% figure-3 curve headline), NOT a
     value tuned to hit 14%. This test LOCKS that we did not tune down into the band."""
     band_hi = 15.4  # pre-registered upper edge of [12.6%, 15.4%]
     pct = 100.0 * KELLY.q_elec()

@@ -134,7 +134,7 @@ def test_published_se_carries_the_base_chain_term():
 
     Without the second term the band is narrower than the error it exists to absorb: on the shipped run
     the base-chain term alone shifts ose_C1 by ~0.011 against a 4-sigma band of ~0.013, i.e. the
-    cross-architecture audit this branch adds would have been ~50% likely to fail spuriously.
+    cross-architecture audit would have been ~50% likely to fail spuriously.
     """
     import numpy as np
 
@@ -282,7 +282,7 @@ def test_unresolved_prose_never_generalises_past_the_resolved_cells():
 def test_resolved_prose_is_correct_for_a_NEGATIVE_contrast():
     """A resolved contrast pointing the other way must not be explained as a collapse.
 
-    The shipped C3 contrast is negative at 2.8 sigma -- 0.2 sigma from firing this branch. Until
+    The shipped C3 contrast is negative at 2.8 sigma -- 0.2 sigma from firing. Until
     2026-08-10 the conclusion after ``_dir()`` was hard-coded to "the apparent constant-R information is
     an artifact", which only parses when the contraction FALLS under inflation.
     """

@@ -98,7 +98,8 @@ def _per_proton(label, key, neutron_energy, n_per_proton, proton_E_eV, published
 
 def build_alt_sources() -> list[AltSource]:
     """The 3-4 alternative 14 MeV/n sources, each with a live-verified primary source (values entered
-    from the cited locators, never approximated). Every row below carries a full triple or is dropped.
+    from the cited locators, never approximated). Every row below carries a full triple; a source that
+    cannot supply one is dropped and named, never approximated.
     """
     return [
         _iv(

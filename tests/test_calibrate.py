@@ -66,7 +66,7 @@ def test_obs_correlation_keeps_product_pinned():
 def test_reattribution_shifts_ose_down():
     """Re-attribution: with tt_pc>0 the omega_s0(1-R) posterior mean shifts strictly below the tt_pc=0 mean,
     and the total reproduces the anchor. SKIPPED while lambda_ttmu is blocked (0.0) -- the joint refit is
-    not run (Sec.3.5 blocked path); revive when the Matsuzaki/Bom tt tables land and lambda_ttmu != 0."""
+    not run; revive when the Matsuzaki/Bom tt tables land and lambda_ttmu != 0."""
     import pytest
 
     from openmucf import load_rates

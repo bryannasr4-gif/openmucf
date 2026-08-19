@@ -15,13 +15,16 @@ suffix-free forms is not this test's job and is not claimed by it.
 
 What it does buy, mechanically and for every tracked text file: no `*.md` citation can enter this
 repository pointing at a document the repository does not ship, and none can be orphaned later by
-a rename or a deletion -- the same edit that removes the file fails this test.
+a rename or a deletion -- the same edit that removes the file fails this test. "Tracked" is meant
+literally: the file list comes from `git ls-files`, not from a walk of the working tree, because an
+untracked scratch file would otherwise satisfy a citation that no clone can resolve.
 """
 
 from __future__ import annotations
 
 import os
 import re
+import subprocess
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -44,11 +47,41 @@ ALLOWED_UNRESOLVED: dict[str, str] = {}
 
 
 def _tracked_text_files() -> list[Path]:
-    out = []
+    """The files git actually publishes, when git can say so.
+
+    The distinction is not pedantic: an UNTRACKED file satisfies a walk of the working tree while
+    shipping nothing, so a citation could be "resolved" by a scratch file that no clone will ever
+    have -- the guard would be green about a document the repository does not contain. `git ls-files`
+    is therefore the primary source. The walk survives only as the fallback for a source tree
+    unpacked without its history (an sdist), where every present file is by definition a shipped one,
+    and :func:`_listing_is_from_git` reports which of the two ran.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(REPO), "ls-files"],
+            capture_output=True, text=True, check=True, timeout=60,
+        )
+        listed = [REPO / line for line in out.stdout.splitlines() if line]
+        if listed:
+            return listed
+    except (OSError, subprocess.SubprocessError):
+        pass
+    files = []
     for root, dirs, fnames in os.walk(REPO):
         dirs[:] = [d for d in dirs if d not in _SKIP_DIRS and not d.endswith(".egg-info")]
-        out.extend(Path(root) / f for f in fnames)
-    return out
+        files.extend(Path(root) / f for f in fnames)
+    return files
+
+
+def _listing_is_from_git() -> bool:
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(REPO), "ls-files"],
+            capture_output=True, text=True, check=True, timeout=60,
+        )
+        return bool(out.stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        return False
 
 
 def test_every_cited_markdown_document_exists() -> None:
@@ -86,6 +119,29 @@ def test_the_guard_would_notice_a_broken_citation() -> None:
     found = {n for n in _CITATION.findall(text) if n not in shipped}
     assert found == {absent}, found
     assert not [n for n in _CITATION.findall("hashlib.md5(b'x')") if n], "md5 must not read as a citation"
+
+
+def test_the_file_list_comes_from_git_not_from_a_directory_walk() -> None:
+    """An untracked file must not be able to satisfy a citation.
+
+    This is the property the module docstring claims, and it is the one a directory walk quietly
+    fails: an untracked scratch document dropped into the tree makes a walk-based guard report the
+    repository as shipping it. Asserted here rather than described, because the walk is still
+    present as a fallback and nothing else would notice if it became the primary path again.
+    """
+    if not _listing_is_from_git():
+        import pytest
+
+        pytest.skip("no git history here (sdist); the walk fallback is the documented behaviour")
+    listed = {p.resolve() for p in _tracked_text_files()}
+    # Assembled, so this file does not itself cite a document the tree does not contain.
+    stub = REPO / ("UNTRACKED_STUB_FOR_THIS_TEST" + ".md")
+    stub.write_text("scratch", encoding="utf-8")
+    try:
+        assert stub.resolve() not in {p.resolve() for p in _tracked_text_files()}
+        assert stub.resolve() not in listed
+    finally:
+        stub.unlink()
 
 
 def test_every_allowed_exception_carries_a_reason() -> None:
