@@ -282,7 +282,7 @@ def test_unresolved_prose_never_generalises_past_the_resolved_cells():
 def test_resolved_prose_is_correct_for_a_NEGATIVE_contrast():
     """A resolved contrast pointing the other way must not be explained as a collapse.
 
-    The shipped C3 contrast is negative at 2.8 sigma -- 0.2 sigma from firing. Until
+    The shipped C3 contrast is negative at 2.8 sigma -- 0.2 sigma from firing this code path. Until
     2026-08-10 the conclusion after ``_dir()`` was hard-coded to "the apparent constant-R information is
     an artifact", which only parses when the contraction FALLS under inflation.
     """
