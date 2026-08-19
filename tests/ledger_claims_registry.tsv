@@ -28,15 +28,15 @@ ae845f3fa7bbe8b8e5d163f39a681650c380354a	ADOPTERS.md	UNREVIEWED
 724bd28f81cbd0c07a1b1daaada4ad71fda424ec	CHANGELOG.md	UNREVIEWED
 76496482ca0915427e8aace458b84df7edb0b6f4	CHANGELOG.md	UNREVIEWED
 7e180128a3694d3513998b47756c27ae395b6c16	CHANGELOG.md	UNREVIEWED
-7e32e2ea8148d410f2916f0fcfa6375e471486cb	CHANGELOG.md	REGISTERED:measured at the commit that wrote it -- the audit chain's git-diff step over its 25 watched paths exits 0, all 239 manifest entries are byte-identical to the parent, and the suite moves only by the three tests the same commit adds
+7e32e2ea8148d410f2916f0fcfa6375e471486cb	CHANGELOG.md	REGISTERED:measured at the commit that wrote it -- the audit chain's git-diff step over its 25 watched paths exits 0, all 239 manifest entries are byte-identical to the parent, and the suite gains tests without any existing outcome changing
 7e8877ca16f083f10bc3b7ce38649e4cc011345e	CHANGELOG.md	UNREVIEWED
 83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	UNREVIEWED
-893974c618358a8ebdd38993a9986febb67fedb2	CHANGELOG.md	REGISTERED:scoped to the CC-BY package's structure, and true of the diff it describes -- the three edits touch free-text note and description fields only; row count, every numeric cell, every unit, every boolean flag and every schema type declaration are unchanged
 8b08e657b1d2b5ecf29c659409c7eab6733804dd	CHANGELOG.md	UNREVIEWED
 8bd6861b333936a7d7f225faa46952b89871d3a7	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 9392fb84e63d9efde8eec6b66420e0aa446ab254	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	UNREVIEWED
 9933c3df4d1e7fdebb9fca78af3db26c7c60b9fa	CHANGELOG.md	UNREVIEWED
+9b30266980799306d53a02aa44e268bd7a03f8e1	CHANGELOG.md	REGISTERED:scoped to the CC-BY package's structure, and true of the diff it describes -- the three edits touch free-text note and description fields only; row count, every numeric cell, every unit, every boolean flag and every schema type declaration are unchanged
 aa11c6f87bdf68540da337796c835b8325ded361	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 bd0bdc10a82520e5f600c186181c56fc457bdd60	CHANGELOG.md	UNREVIEWED
 c450e5a7b660c5d95225a474424a008884c4ab16	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written

@@ -21,10 +21,10 @@ defines each with a section heading of its own.
 
 Three strings inside the CC-BY data package changed and are called out for anyone diffing it:
 `datapackage.json`'s uncertainty-quantification resource title loses a planning-phase adjective;
-three `muon_cost.csv` note fields replace "verified recently" with the date the primary was read
-(2026-07-11), recovered from this repository's own history of those rows; and
-`forecasts/forecast.schema.json`'s `source` description drops a clause about what a source may not
-be, keeping only what the field is. No row, value, unit, flag or schema type changes.
+three `muon_cost.csv` note fields replace a phrase that dated the check relative to the work with the
+date the primary was actually read (2026-07-11), recovered from this repository's own history of those
+rows; and `forecasts/forecast.schema.json`'s `source` description drops a clause about what a source
+may not be, keeping only what the field is. No row, value, unit, flag or schema type changes.
 
 New: `tests/test_docs_cited_exist.py` requires every `*.md` filename written anywhere in the tree to
 name a file the tree contains. It states in its own docstring what it cannot see — references without
