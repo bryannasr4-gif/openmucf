@@ -23,7 +23,7 @@ from pathlib import Path
 from openmucf import provenance
 from openmucf.energy import EnergyChain
 from openmucf.rates import RATES_CSV
-from openmucf.systems import KELLY, SystemChain, rosetta_table
+from openmucf.systems import KELLY, KELLY_MU_PER_BEAM_PARTICLE, SystemChain, rosetta_table
 
 # The Rosetta X_mu grid: the measured record (Petitjean ~113), the Jones/Kelly record (150), the
 # scientific breakeven (~284), and a frontier target (500). All lie within Kelly's fig-3 fit range
@@ -67,6 +67,19 @@ def build_headline() -> dict[str, str]:
     H["kelly_band_lo"] = f"{KELLY_BAND_LO:.1f}"                  # 12.6
     H["kelly_band_hi"] = f"{KELLY_BAND_HI:.1f}"                  # 15.4
     H["kelly_E_mu"] = f"{KELLY.E_mu_GeV:.2f}"                   # 4.70
+    # The quotient of Kelly's own printed digits, COMPUTED here so the document can state what the
+    # division actually gives instead of printing his rounded figure as though it were the result of
+    # it. Both ship: the quoted number is what his Table-1 result is quoted against and is what the
+    # reproduction uses, and the quotient is what a reader checking his arithmetic will get.
+    _kelly_quotient_MeV = KELLY.B_beam_MeV / KELLY_MU_PER_BEAM_PARTICLE
+    H["kelly_mu_per_beam"] = f"{KELLY_MU_PER_BEAM_PARTICLE:g}"      # 0.77
+    H["kelly_quotient_MeV"] = f"{_kelly_quotient_MeV:.0f}"                  # 4683
+    H["kelly_quotient_GeV"] = f"{_kelly_quotient_MeV / 1000.0:.2f}"         # 4.68
+    # The size of his rounding, computed from the same two figures rather than characterised: a typed
+    # "~0.4%" would keep asserting itself if either number moved.
+    H["kelly_rounding_pct"] = (
+        f"{100.0 * (KELLY.E_mu_GeV * 1000.0 - _kelly_quotient_MeV) / _kelly_quotient_MeV:.1f}"
+    )
 
     # Acceleron worked example (slide-tier).
     acc = SystemChain(E_mu_GeV=ACCELERON_E_MU_GEV)
@@ -164,7 +177,10 @@ heat, row A) = **{H['kelly_F']}** MeV [17.6 MeV D-T kinetic + 8.4 MeV fusion-neu
 (2664+23+526+530); B (beam energy, row G) = **{H['kelly_B']}** MeV; efficiencies eta_mu=0.50
 ("arbitrary but reasonable"), eta_rec=1.00 (100% capture), eta_acc={H['eta_acc_kelly']} (PSI 590 MeV
 accelerator), eta_heat=0.60 (heat->electricity, ">60%"; eta_acc*eta_heat = 10.8%). Their beam energy per
-muon is 3.61 GeV / 0.77 muons-per-beam-particle = {H['kelly_E_mu']} GeV.
+muon is quoted as **{H['kelly_E_mu']} GeV**, and that quoted figure is what this reproduction carries.
+Dividing his own printed digits gives {H['kelly_B']} MeV / {H['kelly_mu_per_beam']} muons-per-beam-particle = {H['kelly_quotient_MeV']} MeV, i.e. {H['kelly_quotient_GeV']} GeV -- the
+{H['kelly_rounding_pct']}% difference is his rounding, not ours. The quoted value is the one his
+Table-1 result is quoted against, so it is carried as published and never replaced by the quotient.
 
 Evaluating Eq. (2) on these cited numbers reproduces **Q_elec = {H['kelly_q_elec_pct']}%**.
 
@@ -213,6 +229,17 @@ def build_manifest_entries(H: dict[str, str]) -> list:
         _entry("kelly_F", rf"row A\) = \*\*{re.escape(H['kelly_F'])}\*\* MeV"),
         _entry("kelly_H", rf"rows B-E\) = \*\*{re.escape(H['kelly_H'])}\*\* MeV"),
         _entry("kelly_B", rf"row G\) = \*\*{re.escape(H['kelly_B'])}\*\* MeV"),
+        # The quoted beam-energy-per-muon figure AND the quotient of the printed digits it rounds.
+        # Both are published, so both are tracked: the document states that they differ and by how
+        # much, and a manifest that carried only one of them could not detect that pair drifting apart.
+        _entry("kelly_E_mu", rf"quoted as \*\*{re.escape(H['kelly_E_mu'])} GeV\*\*"),
+        _entry(
+            "kelly_quotient_MeV",
+            rf"{re.escape(H['kelly_mu_per_beam'])} muons-per-beam-particle = "
+            rf"{re.escape(H['kelly_quotient_MeV'])} MeV",
+        ),
+        _entry("kelly_quotient_GeV", rf"i\.e\. {re.escape(H['kelly_quotient_GeV'])} GeV"),
+        _entry("kelly_rounding_pct", rf"the\s*\n?\s*{re.escape(H['kelly_rounding_pct'])}% difference is his rounding"),
         _entry("kelly_q_sci", rf"q_sci = \*\*{re.escape(H['kelly_q_sci'])}\*\*"),
         _entry("acc_q_net_150", rf"q_net \(v1 default efficiencies\) = \*\*{re.escape(H['acc_q_net_150'])}\*\*"),
     ]

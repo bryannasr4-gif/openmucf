@@ -62,7 +62,10 @@ heat, row A) = **2991** MeV [17.6 MeV D-T kinetic + 8.4 MeV fusion-neutron triti
 (2664+23+526+530); B (beam energy, row G) = **3606** MeV; efficiencies eta_mu=0.50
 ("arbitrary but reasonable"), eta_rec=1.00 (100% capture), eta_acc=0.18 (PSI 590 MeV
 accelerator), eta_heat=0.60 (heat->electricity, ">60%"; eta_acc*eta_heat = 10.8%). Their beam energy per
-muon is 3.61 GeV / 0.77 muons-per-beam-particle = 4.70 GeV.
+muon is quoted as **4.70 GeV**, and that quoted figure is what this reproduction carries.
+Dividing his own printed digits gives 3606 MeV / 0.77 muons-per-beam-particle = 4683 MeV, i.e. 4.68 GeV -- the
+0.4% difference is his rounding, not ours. The quoted value is the one his
+Table-1 result is quoted against, so it is carried as published and never replaced by the quotient.
 
 Evaluating Eq. (2) on these cited numbers reproduces **Q_elec = 15.69%**.
 

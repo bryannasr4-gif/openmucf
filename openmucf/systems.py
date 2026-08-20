@@ -120,6 +120,12 @@ def q_net(chain: SystemChain, x_mu):
 # --------------------------------------------------------------------------------------------------
 # Kelly-Hart-Rose 2021 electrical-gain convention (an external published Q basis)
 # --------------------------------------------------------------------------------------------------
+#: Kelly's negative muons per beam particle (his Table 1), declared so the quotient below is COMPUTED
+#: rather than typed. 3606 MeV / 0.77 = 4683 MeV = 4.68 GeV; he QUOTES 4.70 GeV/muon, which is what
+#: :attr:`KellyElectrical.E_mu_GeV` carries. Both figures ship, side by side, in the document.
+KELLY_MU_PER_BEAM_PARTICLE = 0.77
+
+
 @dataclass(frozen=True)
 class KellyElectrical:
     """Kelly, Hart & Rose 2021 (J. Phys. Energy 3, 035003, open access) electrical-gain chain.
@@ -148,7 +154,12 @@ class KellyElectrical:
     eta_heat: float = 0.60
     x_mu_ref: float = 150.0  # Jones 1986 record fusions/muon (the headline operating point)
     E_fusion_kinetic_MeV: float = E_F_MEV  # 17.6 MeV pure D-T (for the scientific-gain reference)
-    E_mu_GeV: float = 4.70  # 3.61 GeV beam / 0.77 muons per beam particle (Table 1)
+    # Kelly's QUOTED beam energy per muon. It is carried as published, not recomputed: dividing his
+    # printed Table-1 digits gives 3606 / 0.77 = 4683 MeV, i.e. 4.68 GeV, so the ~0.4% is his
+    # rounding and not ours -- and 4.70 is the figure his Table-1 result is quoted against, so
+    # replacing it with the quotient would break a faithful reproduction to fix a rounding.
+    # See KELLY_MU_PER_BEAM_PARTICLE.
+    E_mu_GeV: float = 4.70
 
     def q_elec(self, x_mu: float | None = None) -> float:
         """Kelly Eq. (2) electrical gain at ``x_mu`` fusions/muon (default: the 150-fusion anchor).
