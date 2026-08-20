@@ -43,18 +43,26 @@
     {
       "doc": "NEUTRONOMICS.md",
       "id": "emu_T3",
-      "pattern": "MUON_COST\\.md T3\\-operating\\-facility median\\) \\| 5497\\.5 \\|",
+      "pattern": "MUON_COST\\.md T3\\-operating\\-facility median\\) \\| 4993 \\|",
       "source": "openmucf/data/muon_cost.csv (mucost.tier_median)",
       "source_type": "ledger_row",
-      "value": "5497.5"
+      "value": "4993"
     },
     {
       "doc": "NEUTRONOMICS.md",
       "id": "npj_T3",
-      "pattern": "5497\\.5 \\| 8\\.808e\\-07 \\| 1\\.283e\\+08 \\|",
+      "pattern": "4993 \\| 8\\.000e\\-07 \\| 1\\.413e\\+08 \\|",
       "source": "scripts/generate_neutronomics.py",
       "source_type": "derivation",
-      "value": "1.283e+08"
+      "value": "1.413e+08"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_ratio_T1_T3",
+      "pattern": "\\*\\*by construction\\*\\*:\\s*\\n?\\s*1029\\.5x",
+      "source": "openmucf/data/muon_cost.csv (mucost.tier_median)",
+      "source_type": "ledger_row",
+      "value": "1029.5"
     },
     {
       "doc": "NEUTRONOMICS.md",

@@ -243,6 +243,12 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
     H["t3_median"] = _fmt_med(m3)
     H["gap_ratio"] = f"{m3 / m1:.1f}"
     H["disarmament"] = DISARMAMENT
+    # WHICH rows each median is taken over, and which the charge-basis rule kept out. Both are derived
+    # from the ledger rather than described, because a median whose membership is asserted in prose can
+    # drift from the rows it is actually computed on -- which is the defect this document is amending.
+    H["t1_median_rows"] = _median_membership(table, "T1-design-study")
+    H["t3_median_rows"] = _median_membership(table, "T3-operating-facility")
+    H["aggregate_excluded_clause"] = _aggregate_exclusion_clause(table)
     # Basis composition -- computed, so the disclosure can never drift from the CSV. No basis_class is
     # shared between T1 and T3, so a same-basis T1-vs-T3 ratio is NOT COMPUTABLE from these rows.
     H["t1_classes"] = ", ".join(sorted(table.basis_classes("T1-design-study")))
@@ -339,6 +345,45 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
              )
     )
     return H
+
+
+def _median_membership(table: mucost.MuonCostTable, tier: str) -> str:
+    """'LABEL v, LABEL v and LABEL v GeV' for the rows a tier median is actually taken over.
+
+    Ordered by value so the rendering is deterministic and a reader can see the median position
+    directly. Reads :meth:`~openmucf.mucost.MuonCostTable.aggregate_rows`, i.e. exactly the set the
+    median is computed on -- not a hand-kept list that could disagree with it.
+    """
+    rows = sorted(table.aggregate_rows(tier=tier), key=lambda r: r.normalized_GeV_per_mu)
+    if not rows:  # an empty aggregate must fail loudly rather than render prose about no rows
+        raise ValueError(f"tier {tier!r} has no aggregable rows; the median has no membership to state")
+    return _join([f"{LABELS[r.source_id]} {_fmt(r.normalized_GeV_per_mu)}" for r in rows]) + " GeV"
+
+
+def _aggregate_exclusion_clause(table: mucost.MuonCostTable) -> str:
+    """The sentence naming every row the charge-basis rule keeps OUT of every aggregate.
+
+    Derived, so recharging a row rewrites this sentence instead of leaving it stale, and so the
+    exclusion is disclosed rather than silently applied: the rows named here are still rendered in
+    their tier tables with their own labels, they simply enter no median, spread or ratio.
+    """
+    excluded = sorted(
+        table.rows_excluded_from_aggregates(), key=lambda r: r.normalized_GeV_per_mu
+    )
+    if not excluded:
+        return (
+            "No row in this ledger carries a charge basis the aggregate rule excludes, so every "
+            "pinned `beam_kinetic` row enters the medians above."
+        )
+    names = _join([f"{LABELS[r.source_id]} (`{r.charge_basis}`)" for r in excluded])
+    is_are = "is" if len(excluded) == 1 else "are"
+    it_they = "it prices" if len(excluded) == 1 else "they price"
+    return (
+        f"{names} {is_are} kept OUT of every aggregate here -- {it_they} no mu- at all, and the "
+        f"ledger schema bars such a figure from any muCF cost aggregate -- so the row stays in its "
+        f"tier table for scale and enters no median, spread or ratio. The exclusion is applied at "
+        f"the aggregate, never at the row."
+    )
 
 
 def _sticking_anchor() -> float:
@@ -476,6 +521,9 @@ ratio is not cleanly bounded in either direction. The defensible statement is th
 magnitude**, driven by technology, with the basis composition disclosed above. needs_verification
 (Jandel) and slide-tier (Acceleron) rows carry visible flags below and never headline.
 
+**Which rows each median is taken over.** T1: {H['t1_median_rows']}. T3: {H['t3_median_rows']}.
+{H['aggregate_excluded_clause']}
+
 ## Accounting basis (read before the tables)
 A muon cost is only meaningful as a point on a **2-D grid**, and both coordinates are carried per row:
 
@@ -536,6 +584,20 @@ arithmetic is in the CSV `derivation` column); no facility reports this quantity
 > same-basis ratio which the text below it already denied, and the phrasing had propagated into other
 > documents as though it were a result. It is retracted here: the tier spread is an order-of-magnitude
 > **mixed-basis** observation, not a measured gap.
+
+> **AMENDMENT (2026-08-19) -- the T3 tier median and the tier ratio both moved, and the correction
+> makes this document's own spread SMALLER.** The median took a tier, a numeraire and a pinned status,
+> and applied no charge-basis filter -- so the PSI HIMB figure, which counts mu+ only and which this
+> ledger's schema bars from any muCF cost aggregate, entered the published T3 median. It is now
+> excluded where an aggregate is formed, and only there: the row is still rendered in the T3 table
+> with its own label. **T3 tier median: 5497.5 -> {H['t3_median']} GeV.** Before, the median ran over
+> four values -- 2286, 4993, 6002 and 890000 GeV -- and was the mean of the two middle ones
+> (4993 + 6002 = 10995 GeV, and 10995 / 2 = 5497.5 GeV). After, it runs over three --
+> {H['t3_median_rows']} -- and is the middle one. **Tier ratio: 1133.5x -> {H['gap_ratio']}x**
+> (5497.5 / 4.85 = 1133.5 before, {H['t3_median']} / {H['t1_median']} = {H['gap_ratio']} after; the T1
+> median is unchanged). The correction was taken BECAUSE it weakens the spread this document reports,
+> not despite it. Nothing was tuned: the discrepant PSI HIMB figure is disclosed in the T3 table and in
+> the sentence above, never deleted and never argued down.
 
 The ~{H['gap_ratio']}x tier-median spread ({H['t1_median']} GeV design-study -> {H['t3_median']} GeV
 facility) is **mixed-basis** (see the Headline: shared basis classes between T1 and T3 =

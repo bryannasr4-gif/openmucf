@@ -4,6 +4,7 @@ python scripts/generate_findings.py
 """
 
 import hashlib
+import math
 import os
 import re
 
@@ -13,7 +14,7 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from openmucf import cycle, provenance, uq  # noqa: E402
+from openmucf import cycle, mucost, provenance, uq  # noqa: E402
 from openmucf.rates import RATES_CSV, TARGETS_CSV, load_rates  # noqa: E402
 
 os.makedirs("figures", exist_ok=True)
@@ -37,11 +38,59 @@ _rates = load_rates()
 _xmu_eta1 = float(cycle.fusions_per_muon_from_conditions(_rates, 300.0, 1.2, 0.5, eta=1.0))
 _xmu_eta5 = float(cycle.fusions_per_muon_from_conditions(_rates, 300.0, 1.2, 0.5, eta=5.0))
 
-# section 2b: Q_net under three muon-cost E_mu-tier priors. The default flat
-# [2,10] box in sections 1/2 is UNCHANGED; this panel ADDS a per-tier Q_net view (T1 Uniform(3.0,6.0),
-# T2 Uniform(1e2,1e3), T3 Uniform(2.3e3,1e6)). Seeded forward-UQ MC (byte-stable like section 2).
-_TIER_BOXES = {"T1": (3.0, 6.0), "T2": (1.0e2, 1.0e3), "T3": (2.3e3, 1.0e6)}
-_tiers = {k: uq.qnet_tier_panel(lo, hi) for k, (lo, hi) in _TIER_BOXES.items()}
+# section 2b: Q_net under three muon-cost E_mu-tier priors. The default flat [2,10] box in sections
+# 1/2 is UNCHANGED; this panel ADDS a per-tier Q_net view. Seeded forward-UQ MC (byte-stable like
+# section 2). The boxes come from `mucost.panel_tier_boxes`, which carries each edge's provenance and
+# enforces that no edge -- and no box's support -- may take in a row barred from muCF cost aggregates;
+# the paragraphs below render that provenance rather than assert it. Every edge read off a row is that
+# row's own pinned value, so the ledger moving moves this section and the byte-diff sees it.
+_MU_COST = mucost.load_muon_cost()
+_TIER_BOXES = mucost.panel_tier_boxes(_MU_COST)
+_TIER_NAMES = {"T1": "design studies", "T2": "demonstrated tech", "T3": "operating facilities"}
+_tiers = {k: uq.qnet_tier_panel(lo.value, hi.value) for k, (lo, hi) in _TIER_BOXES.items()}
+
+
+def _box_label(t):
+    """'T3 operating facilities, Uniform(2286, 6002) GeV' -- the table row's own subject, rendered once.
+
+    Used for BOTH the document row and the manifest anchor, so a box edge cannot move in one and not
+    the other; each edge renders itself (`BoxEdge.render`) rather than being formatted here.
+    """
+    lo, hi = _TIER_BOXES[t]
+    return f"{t} {_TIER_NAMES[t]}, Uniform({lo.render()}, {hi.render()}) GeV"
+
+
+def _box_composition(t):
+    """One markdown line per edge of box ``t``: what sets it, and its full basis coordinate.
+
+    Every edge gets a line, including a declared constant -- which is named as declared rather than
+    left out, because an edge with nothing said about it is exactly the state this section is
+    amending. A ledger edge prints the row's stage, numeraire and charge basis, read from the row
+    rather than described. Line breaks are fixed here so the rendered document wraps the same way on
+    every run.
+    """
+    lo, hi = _TIER_BOXES[t]
+    lines = []
+    for edge, which in ((lo, "lower"), (hi, "upper")):
+        if not edge.from_ledger:
+            lines.append(
+                f"- {which} edge {edge.render()} GeV -- a DECLARED constant, not a ledger row; its "
+                f"reason is\n  stated above."
+            )
+            continue
+        r = _MU_COST[edge.source_id]
+        lines.append(
+            f"- {which} edge {edge.render()} GeV -- ledger row `{r.source_id}`: stage `{r.stage}`, "
+            f"numeraire\n  `{r.numeraire}`, charge basis `{r.charge_basis}`."
+        )
+    return "\n".join(lines)
+
+
+# The Finding sentence below states one P(Q_net > 1) for all three tiers. That is a claim about the
+# rendered numbers, so it is checked here instead of being trusted: if the tiers ever separate, the
+# sentence stops being true and this stops the document being written rather than shipping it.
+_pgt1 = {k: f"{v['P_gt1'] * 100:.1f}%" for k, v in _tiers.items()}
+assert len(set(_pgt1.values())) == 1, f"the tiers no longer share one P(Q_net>1): {_pgt1}"
 
 # ----------------------------------------------------------- headline numbers (single source of truth)
 # Every number that appears BOTH in FINDINGS.md and FINDINGS_MANIFEST.json is formatted exactly once
@@ -94,12 +143,27 @@ H["R_required_band"] = f"{be['R_required_band_lo']:.2f}-{be['R_required_band_hi'
 # the same requirement in the ledger's TWO-FACTOR form: R_col and R_X are successive, never comparable
 H["R_col_ref"] = f"{be['R_col_reference']:.2f}"
 H["R_X_required"] = f"{be['R_X_required_given_R_col']:.2f}"
+# The rendered box edges, so the document, the provenance paragraphs and the manifest all print the
+# same strings from one place (each edge renders itself; nothing here reformats a value).
+for _t, (_lo, _hi) in _TIER_BOXES.items():
+    H[f"{_t.lower()}_lo"] = _lo.render()
+    H[f"{_t.lower()}_hi"] = _hi.render()
 H["eta_bracket_lo"] = f"{_xmu_eta1:.1f}"
 H["eta_bracket_hi"] = f"{_xmu_eta5:.1f}"
 H["eta_bracket_width"] = f"{_xmu_eta5 - _xmu_eta1:.1f}"
 for _t in ("T1", "T2", "T3"):
     H[f"tier_qnet_Pgt1_{_t}"] = f"{_tiers[_t]['P_gt1'] * 100:.1f}%"
     H[f"tier_qnet_median_{_t}"] = f"{_tiers[_t]['median']:.2e}"
+# What the T1 -> T3 fall actually tracks. Q_net goes as 1/E_mu at fixed other inputs, so each row is
+# governed by where its box sits; these two ratios are published side by side so a reader can see that
+# the fall is a property of the chosen support rather than a measurement of the muon-cost spread. Both
+# are computed, never typed, and a test binds their agreement so the sentence cannot go stale quietly.
+_MIDPOINT = {t: (lo.value + hi.value) / 2.0 for t, (lo, hi) in _TIER_BOXES.items()}
+H["tier_span_oom"] = f"{math.log10(_tiers['T1']['median'] / _tiers['T3']['median']):.0f}"
+H["tier_median_ratio"] = f"{_tiers['T1']['median'] / _tiers['T3']['median']:.1f}"
+H["tier_midpoint_T1"] = f"{_MIDPOINT['T1']:g}"
+H["tier_midpoint_T3"] = f"{_MIDPOINT['T3']:g}"
+H["tier_midpoint_ratio"] = f"{_MIDPOINT['T3'] / _MIDPOINT['T1']:.1f}"
 
 
 def _rank(d):
@@ -265,30 +329,90 @@ channels bias X_mu DOWNWARD by up to ~15% combined (ttmu side-cycle, un-pinned p
 d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-edge-faithful.
 
 ## 2b. Q_net by muon-cost tier
-Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To make the
-muon-cost gap (`MUON_COST.md`) legible as an energy-return statement, the SAME seeded forward-UQ Q_net is
-re-run under three tier-specific E_mu priors, with every other input (the measured omega_s0 / R / lambda_c /
-eta boxes) held fixed:
+
+> **AMENDMENT (2026-08-19).** This section previously ran its T3 row on Uniform(2.3e3, 1e6) GeV and
+> closed its Finding by calling the resulting median collapse -- then reported as ~5 orders of
+> magnitude -- "the ~10^3 muon-cost gap expressed in energy-return form". Both are retracted. Neither
+> old T3 edge carried recorded provenance anywhere in this document or its generator, and the box's
+> support ran past the PSI HIMB figure (890000 GeV per mu+ produced), which counts mu+ only and which
+> the muon-cost ledger's schema bars from any muCF cost aggregate -- a prior support drawn over a tier
+> being no exception. The T3 box is now the min and the max of the pinned beam-kinetic T3 rows that
+> rule admits: **Uniform({H["t3_lo"]}, {H["t3_hi"]}) GeV**. The T3 median Q_net therefore moves from
+> **4.39e-07 to {H["tier_qnet_median_T3"]}** -- a fall of about {H["tier_span_oom"]} orders of
+> magnitude, not five. The retracted sentence read that fall as the muon-cost spread restated in
+> energy-return units; it is not that quantity, and "What the panel measures" below says what it is.
+> T1 and T2 are UNCHANGED -- no barred row touches either -- and the full-text-pinned Bertin et al.
+> (1987) value still sits ABOVE the T1 box, where a discrepant pin is disclosed and never tuned away.
+
+Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To show how
+Q_net responds to the assumed muon cost, the SAME seeded forward-UQ Q_net is re-run under three
+tier-specific E_mu priors, with every other input (the measured omega_s0 / R / lambda_c / eta boxes)
+held fixed. This is a sensitivity-of-Q_net-to-E_mu panel: the boxes are disclosed modelling choices
+(provenance below), not ledger aggregates, and the panel measures no gap, no ratio and no same-basis
+comparison.
 
 | E_mu prior (muon-cost tier) | P(Q_net > 1) | median Q_net |
 |---|---|---|
-| T1 design studies, Uniform(3.0, 6.0) GeV | {H["tier_qnet_Pgt1_T1"]} | {H["tier_qnet_median_T1"]} |
-| T2 demonstrated tech, Uniform(1e2, 1e3) GeV | {H["tier_qnet_Pgt1_T2"]} | {H["tier_qnet_median_T2"]} |
-| T3 operating facilities, Uniform(2.3e3, 1e6) GeV | {H["tier_qnet_Pgt1_T3"]} | {H["tier_qnet_median_T3"]} |
+| {_box_label("T1")} | {H["tier_qnet_Pgt1_T1"]} | {H["tier_qnet_median_T1"]} |
+| {_box_label("T2")} | {H["tier_qnet_Pgt1_T2"]} | {H["tier_qnet_median_T2"]} |
+| {_box_label("T3")} | {H["tier_qnet_Pgt1_T3"]} | {H["tier_qnet_median_T3"]} |
 
 **Finding.** The open-access anchor for the muon cost is Kelly, Hart & Rose (2021) at 4.70 GeV/muon
 (full-text-verified; see `MUON_COST.md`). P(Q_net > 1) is {H["tier_qnet_Pgt1_T1"]} in every tier -- even the
 cheapest design-study muons cap Q_net well below 1 at liquid density -- so the tier signal lives in the
-MEDIAN Q_net, which collapses by ~5 orders of magnitude from T1 ({H["tier_qnet_median_T1"]}) to T3
-({H["tier_qnet_median_T3"]}): the ~10^3 muon-cost gap expressed in energy-return form.
+MEDIAN Q_net, which falls by about {H["tier_span_oom"]} orders of magnitude from
+T1 ({H["tier_qnet_median_T1"]}) to T3 ({H["tier_qnet_median_T3"]}). That fall is a property of the
+E_mu boxes chosen here, NOT a measurement of the muon-cost spread: no same-basis T1-vs-T3 cost ratio
+is computable from the ledger rows at all (`MUON_COST.md`), and this panel computes none.
 
-**T1 box-edge provenance.** The T1 box edges are 3.0 GeV (the Acceleron 2025 active-target slide value --
-simulated, unvalidated, company slide) and 6.0 GeV (a design-study upper value). The full-text-pinned
-Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE this edge), with a ~3 GeV
-ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box [3.0, 6.0] spans the low/central
-design-study range, its edges are disclosed alongside the pinned values, and it is left UNCHANGED
-(pre-registered; a discrepant pin is disclosed, never tuned away). Replacing the flat [2, 10] default
-with a tiered prior is deferred to Phase-4 findings-v2.
+**What the panel measures.** At fixed other inputs Q_net goes as 1/E_mu, so where each box sits
+governs its row. Measured here: the T1-to-T3 median Q_net ratio is **{H["tier_median_ratio"]}**, and
+the ratio of the two boxes' midpoints -- {H["tier_midpoint_T1"]} GeV and {H["tier_midpoint_T3"]} GeV
+-- is {H["tier_midpoint_ratio"]}. They agree to the digits printed, and THAT is the point: the spread
+this panel shows is a property of the support this document chose, not of the muon-cost data. It is a
+different quantity from the muon-cost tier-median ratio reported in `MUON_COST.md` (which is itself a
+mixed-basis, order-of-magnitude observation and not a same-basis ratio) -- the two do not even take
+the same value -- so any resemblance between them is a coincidence of where the boxes were drawn and
+never corroboration of either.
+
+**Box-edge provenance.** A box edge is a prior-support choice for a sensitivity scan, not a ledger
+aggregate -- but one rule binds every edge and is enforced by a test rather than promised here: no
+edge may be read off a row barred from muCF cost aggregates, and no box's support may CONTAIN such a
+row's value. Each box below prints every edge it has, and what set it.
+
+**T1 box edges.** {H["t1_lo"]} GeV is the Acceleron 2025 active-target slide value -- simulated,
+unvalidated, a company slide. `MUON_COST.md` records that the slide-tier Acceleron row never
+headlines; letting it set the lower edge of a prior support is a JUDGMENT CALL, disclosed here as
+one, and not a violation of that rule, because the edge of a sensitivity box is not a headline
+figure. {H["t1_hi"]} GeV is a declared design-study upper constant and is not a ledger row. The
+full-text-pinned Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE the
+upper edge), with a ~3 GeV ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box
+spans the low/central design-study range, its edges are disclosed alongside the pinned values, and it
+is left UNCHANGED (pre-registered; a discrepant pin is disclosed, never tuned away).
+
+{_box_composition("T1")}
+
+**T2 box edges.** {H["t2_lo"]} and {H["t2_hi"]} GeV are declared decade constants bracketing the
+tier's single pinned row, the muon-collider front end at 178 GeV. Neither edge is a ledger row, and
+this document previously recorded no provenance for either; they are recorded now as what they are, a
+bracket around a one-row tier, and left UNCHANGED.
+
+{_box_composition("T2")}
+
+**T3 box edges.** This box previously shipped as [2.3e3, 1e6] GeV with no recorded provenance for
+either edge. It is now a pure function of the ledger: the min and the max of the pinned
+`beam_kinetic` T3 rows carrying a charge basis a muCF cost aggregate admits -- COMET at 2286 GeV,
+mu2e at 4993 GeV and MuSIC at 6002 GeV. PSI HIMB (890000 GeV per mu+ produced) is `mu_plus_only` and
+is excluded, which is why the support no longer reaches 1e6. Two things about the surviving edges are
+disclosed rather than smoothed over: the upper edge comes from a MIXED-charge row (MuSIC counts mu+
+and mu- together, so the mu--only cost it implies is roughly 2x higher), and the two edge-setting
+rows sit at DIFFERENT stages -- one `stopped_other_target`, which is not a point on the muCF chain at
+all, the other `transported` -- so this box spans heterogeneous accounting bases and supports a
+sensitivity scan only, never a cost statement.
+
+{_box_composition("T3")}
+
+Replacing the flat [2, 10] default with a tiered prior is deferred to Phase-4 findings-v2.
 
 ## 3. Breakeven audit (the marquee result)
 The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\\mu > 500$, $Q > 2$. Under the **measured,
@@ -336,10 +460,13 @@ quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking sur
   E_mu is beam energy per muon delivered (Breunlich 1989 convention); wall-plug efficiency enters
   separately as eta_acc.
 - **Muon-cost caveat (the Q_net floor).** The 2-10 GeV E_mu range is a *design-study* figure for an
-  unbuilt, purpose-built muon source; existing facilities are ~10^3x worse per delivered muon (they
-  optimize beam brightness, not muons-per-watt). So the Q_net interval above is a best-case floor
-  conditional on such a source existing -- real-facility Q_net today would be far lower. (The
-  efficiency-free Q_sci comparison to Yin-Kou-Chen is unaffected: it is genuinely same-basis.)
+  unbuilt, purpose-built muon source, and the operating facilities in the muon-cost ledger sit about
+  three orders of magnitude above it per muon. That spread is a MIXED-BASIS, order-of-magnitude
+  observation and never a same-basis ratio: no accounting stage is even shared between the two tiers
+  (`MUON_COST.md`), and facilities optimize beam brightness and purity rather than muons-per-watt. So
+  the Q_net interval above is a best-case floor conditional on such a source existing -- real-facility
+  Q_net today would be far lower. (The efficiency-free Q_sci comparison to Yin-Kou-Chen is unaffected:
+  it is genuinely same-basis.)
 - The blanket multiplier M=1 (pure muCF); a fission/breeding hybrid (M>1) is a separate, explicit knob.
 
 Figures: `figures/sobol.png`, `figures/forward_uq.png`, `figures/breakeven.png`.
@@ -403,11 +530,7 @@ _entries += [
     _entry("eta_bracket_width", rf"X_mu\(eta=5\) - X_mu\(eta=1\) = \*\*{re.escape(H['eta_bracket_width'])}\*\*"),
 ]
 # section 2b (the muon-cost tier panel): anchor each tracked number to its row of the Q_net-by-tier table.
-_tier_rows = {
-    "T1": r"T1 design studies, Uniform\(3\.0, 6\.0\) GeV",
-    "T2": r"T2 demonstrated tech, Uniform\(1e2, 1e3\) GeV",
-    "T3": r"T3 operating facilities, Uniform\(2\.3e3, 1e6\) GeV",
-}
+_tier_rows = {_t: re.escape(_box_label(_t)) for _t in ("T1", "T2", "T3")}
 for _t in ("T1", "T2", "T3"):
     _p = _tier_rows[_t]
     _entries.append(_entry(f"tier_qnet_Pgt1_{_t}", rf"{_p} \| {re.escape(H[f'tier_qnet_Pgt1_{_t}'])} \|"))
@@ -415,9 +538,29 @@ for _t in ("T1", "T2", "T3"):
         _entry(f"tier_qnet_median_{_t}", rf"{_p}[^\n]*\| {re.escape(H[f'tier_qnet_median_{_t}'])} \|")
     )
 
+_entries += [
+    # section 2b's two published ratios and the midpoints they are read against. Tracked because the
+    # sentence they sit in is the one that replaces a retracted claim: if either moved without the
+    # other, the paragraph would still read as though they agreed.
+    _entry("tier_span_oom", rf"falls by about {re.escape(H['tier_span_oom'])} orders of magnitude"),
+    _entry(
+        "tier_median_ratio",
+        rf"median Q_net ratio is \*\*{re.escape(H['tier_median_ratio'])}\*\*",
+    ),
+    _entry("tier_midpoint_T1", rf"midpoints -- {re.escape(H['tier_midpoint_T1'])} GeV"),
+    _entry("tier_midpoint_T3", rf"and {re.escape(H['tier_midpoint_T3'])} GeV\s*\n?\s*-- is"),
+    _entry(
+        "tier_midpoint_ratio",
+        rf"-- is {re.escape(H['tier_midpoint_ratio'])}\. They agree",
+    ),
+]
+
 _manifest_inputs = {
     "rates_csv_sha256": provenance.file_sha256(RATES_CSV),
     "validation_targets_csv_sha256": provenance.file_sha256(TARGETS_CSV),
+    # section 2b's tier boxes are read off the muon-cost ledger, so this document's bytes depend on
+    # that CSV as directly as they do on the rate ledger.
+    "muon_cost_csv_sha256": provenance.file_sha256(mucost.MUON_COST_CSV),
     "uq_params_repr_sha256": hashlib.sha256(repr(uq.PARAMS).encode("utf-8")).hexdigest(),
     "seeds": {"sobol": 0, "forward_uq": 0, "breakeven": 1, "tier_panel": 0},
 }

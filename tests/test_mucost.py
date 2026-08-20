@@ -11,6 +11,7 @@ regenerates deterministically; and the muon-cost manifest verifies against MUON_
 from __future__ import annotations
 
 import csv
+import dataclasses
 import json
 import math
 import re
@@ -192,7 +193,7 @@ def test_aggregates_are_numeraire_restricted(table):
     # the committed medians are beam-kinetic and are unmoved by the electrical rows
     assert table.tier_median("T1-design-study") == 4.85
     assert table.tier_median("T2-demonstrated-tech") == 178.0
-    assert table.tier_median("T3-operating-facility") == 5497.5
+    assert table.tier_median("T3-operating-facility") == 4993.0
     # the electrical rows exist in T1 and would move that median if they were let in
     elec = [r.normalized_GeV_per_mu for r in table.tier("T1-design-study") if r.numeraire != "beam_kinetic"]
     assert elec, "expected electrical-numeraire rows in T1"
@@ -595,22 +596,190 @@ def test_a_non_sourced_chain_renders_as_a_bound_not_a_value(table):
             assert r.chain_point().is_bound, f"{r.source_id} claims a fully-sourced chain; verify it"
 
 
-def test_tier_panel_deterministic():
-    """FINDINGS section-2b regenerates deterministically: qnet_tier_panel is seed-stable and matches the
-    committed FINDINGS.md T1/T2/T3 rows."""
+def test_tier_panel_deterministic(table):
+    """FINDINGS section-2b regenerates deterministically, and its rows match the LEDGER's own boxes.
+
+    The boxes are no longer copied into this test. They are read from :func:`mucost.panel_tier_boxes`,
+    which is the single place they are defined, and the committed document is then required to carry
+    the panel value each of those boxes produces. A box edited in one place and not the other used to
+    leave this test green against a stale copy of itself.
+    """
     a = uq.qnet_tier_panel(3.0, 6.0)
     b = uq.qnet_tier_panel(3.0, 6.0)
     assert a == b
-    boxes = {"T1": (3.0, 6.0), "T2": (1.0e2, 1.0e3), "T3": (2.3e3, 1.0e6)}
+    boxes = mucost.panel_tier_boxes(table)
+    names = {"T1": "design studies", "T2": "demonstrated tech", "T3": "operating facilities"}
     findings = (REPO / "FINDINGS.md").read_text(encoding="utf-8")
-    labels = {
-        "T1": r"T1 design studies, Uniform\(3\.0, 6\.0\) GeV",
-        "T2": r"T2 demonstrated tech, Uniform\(1e2, 1e3\) GeV",
-        "T3": r"T3 operating facilities, Uniform\(2\.3e3, 1e6\) GeV",
-    }
     for t, (lo, hi) in boxes.items():
-        med = f"{uq.qnet_tier_panel(lo, hi)['median']:.2e}"
-        assert re.search(rf"{labels[t]}[^\n]*\| {re.escape(med)} \|", findings), (t, med)
+        label = re.escape(f"{t} {names[t]}, Uniform({lo.render()}, {hi.render()}) GeV")
+        med = f"{uq.qnet_tier_panel(lo.value, hi.value)['median']:.2e}"
+        assert re.search(rf"{label}[^\n]*\| {re.escape(med)} \|", findings), (t, med)
+    # and the T3 box is exactly the admitted rows' range -- the property that replaced two edges no
+    # document could account for. Asserted on values, so a relabelled edge cannot satisfy it.
+    admitted = [r.normalized_GeV_per_mu for r in table.aggregate_rows(tier="T3-operating-facility")]
+    assert (boxes["T3"][0].value, boxes["T3"][1].value) == (min(admitted), max(admitted))
+
+
+def test_the_panel_spread_tracks_its_boxes_and_not_the_ledger(table):
+    """FINDINGS section-2b prints two ratios and asserts they agree; both are checked here.
+
+    The paragraph exists to defuse a coincidence. The panel's T1-to-T3 median ratio lands within about
+    10% of the muon-cost tier-median ratio, and the retracted sentence read that as the panel
+    MEASURING the cost spread. It does not: Q_net goes as 1/E_mu, so the panel ratio tracks the ratio
+    of the two boxes' MIDPOINTS, which is a modelling choice this document makes. Three things are
+    bound, because the prose asserts all three: the panel ratio agrees with the midpoint ratio, it
+    does NOT equal the ledger ratio, and the document prints the values this recomputes.
+    """
+    boxes = mucost.panel_tier_boxes(table)
+    med = {t: uq.qnet_tier_panel(lo.value, hi.value)["median"] for t, (lo, hi) in boxes.items()}
+    mid = {t: (lo.value + hi.value) / 2.0 for t, (lo, hi) in boxes.items()}
+    panel_ratio = med["T1"] / med["T3"]
+    midpoint_ratio = mid["T3"] / mid["T1"]
+    ledger_ratio = table.tier_median("T3-operating-facility") / table.tier_median("T1-design-study")
+
+    assert panel_ratio == pytest.approx(midpoint_ratio, rel=0.01), (panel_ratio, midpoint_ratio)
+    assert panel_ratio != pytest.approx(ledger_ratio, rel=1e-3), (
+        "the panel ratio and the ledger ratio have converged -- the document says they are different "
+        "quantities that merely resemble each other, and that sentence would now be misleading"
+    )
+    doc = " ".join((REPO / "FINDINGS.md").read_text(encoding="utf-8").split())
+    assert f"median Q_net ratio is **{panel_ratio:.1f}**" in doc
+    assert f"midpoints -- {mid['T1']:g} GeV and {mid['T3']:g} GeV -- is {midpoint_ratio:.1f}." in doc
+    # and the fall the Finding states is the order of magnitude of that same ratio
+    assert f"falls by about {math.log10(panel_ratio):.0f} orders of magnitude" in doc
+
+
+def test_no_aggregate_admits_a_mu_plus_only_row(table):
+    """The schema rule, drilled: EVERY aggregate must move (or red) when a row is recharged.
+
+    ``muon_cost.schema.json`` says a ``mu_plus_only`` figure "must never enter a muCF cost aggregate".
+    That was prose, and the tier median did not honour it. Here the rule is exercised three ways: the
+    excluded row is named and still present; flipping an ADMITTED row to ``mu_plus_only`` moves the
+    median and shrinks the box, so the filter is load-bearing rather than decorative; and flipping the
+    excluded row BACK restores exactly the figures that used to ship, which is what makes the
+    correction's before/after reproducible rather than remembered.
+    """
+    excluded = table.rows_excluded_from_aggregates()
+    assert [r.source_id for r in excluded] == ["psi_himb"], "the drill below assumes one excluded row"
+    assert excluded[0].source_id in table, "an excluded row is still IN the ledger; it is not hidden"
+    assert excluded[0] in list(table), "and it is still rendered by any caller iterating the table"
+
+    def _recharged(source_id, charge_basis):
+        rows = [
+            dataclasses.replace(r, charge_basis=charge_basis) if r.source_id == source_id else r
+            for r in table
+        ]
+        return MuonCostTable(rows)
+
+    # 1. flipping an ADMITTED row out moves the median and pulls the box edge in
+    without_music = _recharged("music", "mu_plus_only")
+    assert without_music.tier_median("T3-operating-facility") != table.tier_median(
+        "T3-operating-facility"
+    )
+    assert mucost.panel_tier_boxes(without_music)["T3"][1].value == 4993.0
+
+    # 2. flipping the EXCLUDED row back in reproduces the pre-correction figures exactly
+    as_shipped_before = _recharged("psi_himb", "mu_minus")
+    m3_before = as_shipped_before.tier_median("T3-operating-facility")
+    m1 = table.tier_median("T1-design-study")
+    assert m3_before == 5497.5
+    assert f"{m3_before / m1:.1f}" == "1133.5"
+    assert f"{table.tier_median('T3-operating-facility') / m1:.1f}" == "1029.5"
+
+    # 3. both box rules fire, and on the two different faults they exist for. Recharging the row that
+    #    SETS the T1 lower edge trips the attribution rule; recharging an INTERIOR T3 row leaves the
+    #    edges where they are and trips the containment rule instead -- which is the fault the box
+    #    this replaced actually had, and the one an attribution check alone would have missed.
+    with pytest.raises(BasisError, match="may never set the edge of a muCF cost aggregate"):
+        mucost.panel_tier_boxes(_recharged("acceleron_2025", "mu_plus_only"))
+    with pytest.raises(BasisError, match="which may never enter a"):
+        mucost.panel_tier_boxes(_recharged("mu2e", "mu_plus_only"))
+
+
+def test_no_box_edge_is_set_by_a_barred_row(table):
+    """No prior-box edge is read off a barred row, and no box CONTAINS one.
+
+    Two rules, because the edge that shipped was a round literal rather than a row's value: an
+    attribution check alone would have called it clean. The containment rule is the one that catches
+    it, and the historical box is used here as the negative control -- if [2.3e3, 1e6] did not fail,
+    this guard would be asserting nothing.
+    """
+    boxes = mucost.panel_tier_boxes(table)
+    barred = table.rows_excluded_from_aggregates()
+    assert barred, "no barred rows: both rules below would pass vacuously"
+    for t, (lo, hi) in boxes.items():
+        for edge in (lo, hi):
+            if edge.from_ledger:
+                assert table[edge.source_id].charge_basis not in (
+                    mucost.AGGREGATE_EXCLUDED_CHARGE_BASIS
+                ), (t, edge.source_id)
+                assert table[edge.source_id].normalized_GeV_per_mu == edge.value
+        for r in barred:
+            assert not lo.value <= r.normalized_GeV_per_mu <= hi.value, (t, r.source_id)
+    # the negative control: the box this replaced DID contain a barred row
+    old_t3 = (2.3e3, 1.0e6)
+    assert any(old_t3[0] <= r.normalized_GeV_per_mu <= old_t3[1] for r in barred), (
+        "the historical T3 box no longer trips the containment rule -- this guard has gone vacuous"
+    )
+    # every edge is accounted for: a ledger row, or a declared constant. There is no third state.
+    for t, (lo, hi) in boxes.items():
+        for edge in (lo, hi):
+            assert edge.from_ledger or edge.value in mucost._DECLARED_EDGES.values(), (t, edge)
+
+
+def test_the_median_membership_sentence_is_derived_from_the_ledger(table):
+    """MUON_COST.md names WHICH rows each median is taken over; that list must BE the aggregate.
+
+    A membership sentence written by hand can name a set the median is not actually computed on --
+    the same class of defect as a median that admitted a barred row, one level up in the prose. Both
+    clauses are rendered from ``aggregate_rows`` and are checked here against it, in both directions:
+    every admitted row is named, and no excluded row is.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table)
+    doc = " ".join((REPO / "MUON_COST.md").read_text(encoding="utf-8").split())
+    for tier, key in (
+        ("T1-design-study", "t1_median_rows"),
+        ("T3-operating-facility", "t3_median_rows"),
+    ):
+        rows = table.aggregate_rows(tier=tier)
+        assert rows, tier
+        for r in rows:
+            assert gen.LABELS[r.source_id] in H[key], (tier, r.source_id)
+        for r in table.rows_excluded_from_aggregates(tier=tier):
+            assert gen.LABELS[r.source_id] not in H[key], (tier, r.source_id)
+        assert " ".join(H[key].split()) in doc
+    excluded = table.rows_excluded_from_aggregates()
+    assert excluded, "no excluded rows: the disclosure clause below would pass vacuously"
+    clause = " ".join(H["aggregate_excluded_clause"].split())
+    assert clause and clause in doc
+    for r in excluded:
+        assert gen.LABELS[r.source_id] in clause, r.source_id
+
+
+def test_published_tier_ratio_is_bound_to_the_ledger(table):
+    """MUON_COST.md's published ratio is a recomputation of the ledger, not a typed digit.
+
+    Both the current figure and the pre-correction figure the amendment quotes are checked, because a
+    retraction that misquotes what it retracts is its own defect. The historical value is recovered
+    from the ledger by re-admitting the excluded row, never by trusting the string in the document.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table)
+    m1 = table.tier_median("T1-design-study")
+    m3 = table.tier_median("T3-operating-facility")
+    assert H["gap_ratio"] == f"{m3 / m1:.1f}" == "1029.5"
+    assert H["t3_median"] == "4993"
+    doc = " ".join((REPO / "MUON_COST.md").read_text(encoding="utf-8").split())
+    assert f"nominally **{H['gap_ratio']}x**" in doc
+    # the amendment's own arithmetic, recomputed rather than read
+    rows = [
+        dataclasses.replace(r, charge_basis="mu_minus") if r.source_id == "psi_himb" else r
+        for r in table
+    ]
+    before = MuonCostTable(rows).tier_median("T3-operating-facility")
+    assert f"T3 tier median: {before:g} -> {H['t3_median']} GeV" in doc
+    assert f"Tier ratio: {before / m1:.1f}x -> {H['gap_ratio']}x" in doc
 
 
 # ---- basis and loader contracts, each exercised by the input that breaks it -----------------------

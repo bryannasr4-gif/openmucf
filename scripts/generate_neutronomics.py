@@ -181,6 +181,12 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
         H[f"emu_{s}"] = _fmt_gev(r["emu_GeV"])
         H[f"emuJ_{s}"] = _fmt_j(r["emu_J"])
         H[f"npj_{s}"] = _fmt_npj(r["n_per_joule"])
+    # The T1-to-T3 neutron-column ratio, COMPUTED. n/J = X_mu / E_mu, so this is exactly the muon-cost
+    # tier-median ratio and nothing else -- an inheritance, not a second measurement. It is published
+    # here so the sentence below states the factor it actually carries rather than an approximation of
+    # it, and so it moves when the ledger moves.
+    _by_short = {r["short"]: r for r in mucf_rows(table)}
+    H["npj_ratio_T1_T3"] = f"{_by_short['T1']['n_per_joule'] / _by_short['T3']['n_per_joule']:.1f}"
     for a in build_alt_sources():
         H[f"npj_alt_{a.key}"] = _fmt_npj(a.n_per_joule)
     return H
@@ -266,12 +272,22 @@ not a UQ pushforward. Each E_mu tier median is sourced from the muon-cost ledger
 
 {_mucf_table(rows, H)}
 
-The muon cost spans ~10^3 across tiers (the MUON_COST.md finding), so muCF's neutrons-per-beam-joule
-spans the same ~10^3: from **{H['npj_T1']} n/J** at the design-study muon cost (E_mu {H['emu_T1']} GeV,
+The tier medians span about three orders of magnitude, and `n/J = X_mu / E_mu` is exactly inversely
+proportional to the muon cost, so the neutron column spans the SAME factor **by construction**:
+{H['npj_ratio_T1_T3']}x, which is the muon-cost tier-median ratio itself and not a second measurement
+of anything. It runs from **{H['npj_T1']} n/J** at the design-study muon cost (E_mu {H['emu_T1']} GeV,
 ~{rows[0]['emu_GeV'] * 1000 / XMU:.0f} MeV of beam per neutron) down to **{H['npj_T3']} n/J** at the
-operating-facility muon cost (E_mu {H['emu_T3']} GeV). Which row is real depends entirely on whether a
-purpose-built muon source at the design-study cost is ever demonstrated -- the same open question
-MUON_COST.md flags ("the floor is unvalidated, not impossible").
+operating-facility muon cost (E_mu {H['emu_T3']} GeV).
+
+**That spread is inherited, and it inherits the basis it came from.** MUON_COST.md records that its
+tier medians are a MIXED-BASIS, order-of-magnitude observation -- no accounting stage is shared
+between T1 and T3 at all, so a same-basis cost ratio between them is not computable from those rows.
+Dividing one row of this table by another therefore does not produce a same-basis neutron-economy
+comparison either; it reproduces the cost spread together with its heterogeneity. Each row remains a
+well-defined statement conditional on ITS OWN tier median, which is why the table is tier-separated
+and never blended. Which row is real depends entirely on whether a purpose-built muon source at the
+design-study cost is ever demonstrated -- the same open question MUON_COST.md flags ("the floor is
+unvalidated, not impossible").
 
 ## 2. Alternative 14 MeV/n sources (sourced comparison)
 Established neutron sources, each `n per beam joule` derived here from published beam parameters (the
@@ -286,8 +302,13 @@ arithmetic is in each row's inputs). Spallation is included per the neutronomics
 On a beam-energy basis, muCF at the **design-study** muon cost ({H['npj_T1']} n/J, ~{rows[0]['emu_GeV'] * 1000 / XMU:.0f}
 MeV of beam per neutron) is competitive with a spallation source and ~10^3 better than a sealed-tube D-T
 generator -- because one expensive muon catalyzes ~{H['xmu']} fusions. At the **operating-facility** muon
-cost ({H['npj_T3']} n/J) that advantage is gone: the ~10^3 muon-cost gap (MUON_COST.md) transfers
-one-for-one to the neutron economy. The comparison is beam-basis only (no wall-plug for any row; the
+cost ({H['npj_T3']} n/J) that advantage is gone: because `n/J` is inversely proportional to `E_mu`,
+the muon-cost tier spread carries into the neutron column exactly ({H['npj_ratio_T1_T3']}x), and it
+carries its accounting with it -- that spread is MIXED-BASIS and an order of magnitude, never a
+same-basis ratio (MUON_COST.md), so neither is the ratio between two rows of the muCF table. The
+comparison against the alternative sources in section 2 is a different one and IS same-basis: every
+`n per beam joule` in this document, muCF row and alternative alike, is counted on beam energy and
+on nothing else (no wall-plug for any row; the
 alternatives' accelerator efficiencies are likewise not folded), the spallation spectrum is not 14 MeV,
 and none of this is an energy-breakeven claim -- it is neutron-source accounting, and no new physics
 is introduced. E_mu single accounting home: MUON_COST.md; X_mu single ground: the measured `V_petitjean_Xmu`.
@@ -321,6 +342,16 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable, alts:
             )
         )
         entries.append(_entry(f"npj_{short}", rf"{re.escape(emu)} \| {re.escape(H[f'emuJ_{short}'])} \| {re.escape(npj)} \|"))
+    # The published tier ratio. Tracked because it is the number the retracted "transfers one-for-one"
+    # sentence used to assert without printing: it is now printed, and bound to the ledger by the
+    # manifest as well as by the test that recomputes it from the muon-cost medians.
+    entries.append(
+        _entry(
+            "npj_ratio_T1_T3",
+            rf"\*\*by construction\*\*:\s*\n?\s*{re.escape(H['npj_ratio_T1_T3'])}x",
+            source_type="ledger_row", source="openmucf/data/muon_cost.csv (mucost.tier_median)",
+        )
+    )
     # alt-source rows: each derived n/J, anchored to its label
     for a in alts:
         eid = f"npj_alt_{a.key}"
