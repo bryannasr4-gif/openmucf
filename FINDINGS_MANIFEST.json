@@ -307,15 +307,15 @@
     {
       "doc": "FINDINGS.md",
       "id": "tier_median_ratio",
-      "pattern": "median Q_net ratio is \\*\\*920\\.9\\*\\*",
+      "pattern": "ratio of the medians\\s*\\n?\\s*above is \\*\\*920\\*\\*",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
-      "value": "920.9"
+      "value": "920"
     },
     {
       "doc": "FINDINGS.md",
       "id": "tier_midpoint_T1",
-      "pattern": "midpoints -- 4\\.5 GeV",
+      "pattern": "-- 4\\.5 GeV and",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "4.5"
@@ -323,7 +323,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "tier_midpoint_T3",
-      "pattern": "and 4144 GeV\\s*\\n?\\s*-- is",
+      "pattern": "and 4144 GeV -- is",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "4144"
@@ -331,10 +331,10 @@
     {
       "doc": "FINDINGS.md",
       "id": "tier_midpoint_ratio",
-      "pattern": "-- is 920\\.9\\. They agree",
+      "pattern": "GeV -- is 920\\. Both",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
-      "value": "920.9"
+      "value": "920"
     }
   ],
   "generated_by": "scripts/generate_findings.py",

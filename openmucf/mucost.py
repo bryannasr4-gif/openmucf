@@ -571,6 +571,13 @@ def panel_tier_boxes(table: MuonCostTable) -> dict[str, tuple[BoxEdge, BoxEdge]]
     Rule 2 is the one that catches the box this replaces: its support ran to 1e6 and so contained the
     mu+-only 890000 GeV figure. Rule 1 alone would not have, because that edge was a round literal
     rather than the row's value -- which is why both rules are here and not just the obvious one.
+
+    Rule 2 is deliberately NOT scoped to the box's own tier. Every box here is a prior over the same
+    physical quantity -- energy per muon for muCF -- so a figure that prices no mu- is an implausible
+    value for any of them, and the tier a row is filed under grades its source's maturity rather than
+    what the number counts. Scoping the rule per tier would still have caught the box this replaces
+    (that row and that box are both T3), so the wider form costs nothing and refuses one more way to
+    be wrong.
     """
     t3 = table.aggregate_rows(tier=PANEL_TIER_OF["T3"])
     if not t3:

@@ -118,10 +118,12 @@ d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-e
 > support ran past the PSI HIMB figure (890000 GeV per mu+ produced), which counts mu+ only and which
 > the muon-cost ledger's schema bars from any muCF cost aggregate -- a prior support drawn over a tier
 > being no exception. The T3 box is now the min and the max of the pinned beam-kinetic T3 rows that
-> rule admits: **Uniform(2286, 6002) GeV**. The T3 median Q_net therefore moves from
-> **4.39e-07 to 5.25e-05** -- a fall of about 3 orders of
-> magnitude, not five. The retracted sentence read that fall as the muon-cost spread restated in
-> energy-return units; it is not that quantity, and "What the panel measures" below says what it is.
+> rule admits: **Uniform(2286, 6002) GeV**. Dropping the T3 support from 1e6 GeV to
+> 6002 GeV RAISES the T3 median Q_net, from **4.39e-07 to 5.25e-05**, since
+> cheaper assumed muons buy more return. Its effect on what this section reports is the T1-to-T3
+> FALL: about 3 orders of magnitude, where the retracted text said five. That
+> sentence also read the fall as the muon-cost spread restated in energy-return units; it is not that
+> quantity, and "What sets the panel's spread" below says what it is.
 > T1 and T2 are UNCHANGED -- no barred row touches either -- and the full-text-pinned Bertin et al.
 > (1987) value still sits ABOVE the T1 box, where a discrepant pin is disclosed and never tuned away.
 
@@ -129,8 +131,9 @@ Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHA
 Q_net responds to the assumed muon cost, the SAME seeded forward-UQ Q_net is re-run under three
 tier-specific E_mu priors, with every other input (the measured omega_s0 / R / lambda_c / eta boxes)
 held fixed. This is a sensitivity-of-Q_net-to-E_mu panel: the boxes are disclosed modelling choices
-(provenance below), not ledger aggregates, and the panel measures no gap, no ratio and no same-basis
-comparison.
+(provenance below), not ledger aggregates. It measures no cost gap, computes no cost ratio, and makes
+no same-basis comparison. (Arithmetic ON ITS OWN OUTPUTS is a different thing and is reported below;
+it says something about the boxes this document chose, and nothing about the muon-cost data.)
 
 | E_mu prior (muon-cost tier) | P(Q_net > 1) | median Q_net |
 |---|---|---|
@@ -146,15 +149,16 @@ T1 (4.83e-02) to T3 (5.25e-05). That fall is a property of the
 E_mu boxes chosen here, NOT a measurement of the muon-cost spread: no same-basis T1-vs-T3 cost ratio
 is computable from the ledger rows at all (`MUON_COST.md`), and this panel computes none.
 
-**What the panel measures.** At fixed other inputs Q_net goes as 1/E_mu, so where each box sits
-governs its row. Measured here: the T1-to-T3 median Q_net ratio is **920.9**, and
-the ratio of the two boxes' midpoints -- 4.5 GeV and 4144 GeV
--- is 920.9. They agree to the digits printed, and THAT is the point: the spread
-this panel shows is a property of the support this document chose, not of the muon-cost data. It is a
-different quantity from the muon-cost tier-median ratio reported in `MUON_COST.md` (which is itself a
-mixed-basis, order-of-magnitude observation and not a same-basis ratio) -- the two do not even take
-the same value -- so any resemblance between them is a coincidence of where the boxes were drawn and
-never corroboration of either.
+**What sets the panel's spread.** At fixed other inputs Q_net goes as 1/E_mu, so where each box sits
+governs its row. Dividing this panel's own outputs by each other: the T1-to-T3 ratio of the medians
+above is **920**, and the ratio of the two boxes' midpoints
+-- 4.5 GeV and 4144 GeV -- is 920. Both
+are quoted to the two significant figures the medians in the table carry, and at that precision they
+are the same number; that agreement is the point. What the panel shows is a property of the support
+this document chose, not of the muon-cost data. It is a different quantity from the muon-cost
+tier-median ratio reported in `MUON_COST.md` (which is itself a mixed-basis, order-of-magnitude
+observation and not a same-basis ratio), and the two do not take the same value, so any resemblance
+between them is a coincidence of where the boxes were drawn and never corroboration of either.
 
 **Box-edge provenance.** A box edge is a prior-support choice for a sensitivity scan, not a ledger
 aggregate -- but one rule binds every edge and is enforced by a test rather than promised here: no

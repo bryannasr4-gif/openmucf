@@ -642,11 +642,27 @@ def test_the_panel_spread_tracks_its_boxes_and_not_the_ledger(table):
         "the panel ratio and the ledger ratio have converged -- the document says they are different "
         "quantities that merely resemble each other, and that sentence would now be misleading"
     )
+
+    def two_sig(x):
+        return f"{float(f'{x:.2g}'):.0f}"
+
+    # THE CHECK A READER WOULD RUN. The medians ship at three figures, so dividing the two PRINTED
+    # values is the only recomputation available from the page -- and it must land on the published
+    # ratio. Quoting a finer precision than the table supports made that check fail while every other
+    # guard stayed green, which is how a paragraph written to be verified became unverifiable.
+    printed = {t: float(f"{v:.2e}") for t, v in med.items()}
+    assert two_sig(printed["T1"] / printed["T3"]) == two_sig(panel_ratio), (
+        printed["T1"] / printed["T3"], panel_ratio
+    )
+
     doc = " ".join((REPO / "FINDINGS.md").read_text(encoding="utf-8").split())
-    assert f"median Q_net ratio is **{panel_ratio:.1f}**" in doc
-    assert f"midpoints -- {mid['T1']:g} GeV and {mid['T3']:g} GeV -- is {midpoint_ratio:.1f}." in doc
+    assert f"ratio of the medians above is **{two_sig(panel_ratio)}**" in doc
+    assert f"midpoints -- {mid['T1']:g} GeV and {mid['T3']:g} GeV -- is {two_sig(midpoint_ratio)}." in doc
     # and the fall the Finding states is the order of magnitude of that same ratio
     assert f"falls by about {math.log10(panel_ratio):.0f} orders of magnitude" in doc
+    # the amendment must not describe the T3 move as a fall: excluding the barred row RAISED it
+    assert "RAISES the T3 median Q_net" in doc
+    assert med["T3"] > 4.39e-07, "the T3 median rose; a sentence calling that a fall would be wrong"
 
 
 def test_no_aggregate_admits_a_mu_plus_only_row(table):
@@ -694,6 +710,37 @@ def test_no_aggregate_admits_a_mu_plus_only_row(table):
         mucost.panel_tier_boxes(_recharged("acceleron_2025", "mu_plus_only"))
     with pytest.raises(BasisError, match="which may never enter a"):
         mucost.panel_tier_boxes(_recharged("mu2e", "mu_plus_only"))
+
+
+def test_deleting_a_barred_row_changes_no_aggregate(table):
+    """The invariant behind "every aggregate", stated once instead of enumerated.
+
+    Naming each aggregate and checking it individually is only as complete as the list, and the list
+    is what went wrong: the tier median and the prior box were two aggregates, and one of them was
+    not on anybody's list. This asserts the property directly -- DELETING the barred row from the
+    ledger entirely must leave every aggregate value identical -- which holds for aggregates nobody
+    thought to enumerate, including ones added later. Non-vacuous because the row exists and its value
+    is three orders of magnitude from its tier's others.
+    """
+    barred = table.rows_excluded_from_aggregates()
+    assert barred, "no barred rows: this invariant would be trivially true"
+    without = MuonCostTable([r for r in table if r not in barred])
+    assert len(list(without)) == len(list(table)) - len(barred)
+    for tier in mucost.TIER_ORDER:
+        assert without.tier_median(tier) == table.tier_median(tier), tier
+        assert without.aggregate_values(tier) == table.aggregate_values(tier), tier
+    boxes_with = mucost.panel_tier_boxes(table)
+    boxes_without = mucost.panel_tier_boxes(without)
+    assert {t: (lo.value, hi.value, lo.source_id, hi.source_id)
+            for t, (lo, hi) in boxes_with.items()} == {
+        t: (lo.value, hi.value, lo.source_id, hi.source_id)
+        for t, (lo, hi) in boxes_without.items()
+    }
+    # and the row IS still visible everywhere a reader would look for it
+    for r in barred:
+        assert r.source_id in table
+        assert r in table.rows_in_numeraire(mucost.BEAM_KINETIC, r.tier)
+        assert r.basis_class in table.basis_classes(r.tier)
 
 
 def test_no_box_edge_is_set_by_a_barred_row(table):

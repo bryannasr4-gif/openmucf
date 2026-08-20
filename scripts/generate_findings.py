@@ -160,10 +160,30 @@ for _t in ("T1", "T2", "T3"):
 # are computed, never typed, and a test binds their agreement so the sentence cannot go stale quietly.
 _MIDPOINT = {t: (lo.value + hi.value) / 2.0 for t, (lo, hi) in _TIER_BOXES.items()}
 H["tier_span_oom"] = f"{math.log10(_tiers['T1']['median'] / _tiers['T3']['median']):.0f}"
-H["tier_median_ratio"] = f"{_tiers['T1']['median'] / _tiers['T3']['median']:.1f}"
+
+
+def _two_sig_figs(x):
+    """A value at TWO significant figures, rendered without an exponent.
+
+    Both published ratios are quoted at this precision and not finer, because the medians in the
+    table above are printed to three figures: a ratio quoted to one decimal cannot be reproduced from
+    them, and a reader who tries gets a different number in the last two digits. The paragraph exists
+    to be checked, so it may not quote a precision its own inputs cannot support.
+    """
+    return f"{float(f'{x:.2g}'):.0f}"
+
+
+H["tier_median_ratio"] = _two_sig_figs(_tiers["T1"]["median"] / _tiers["T3"]["median"])
 H["tier_midpoint_T1"] = f"{_MIDPOINT['T1']:g}"
 H["tier_midpoint_T3"] = f"{_MIDPOINT['T3']:g}"
-H["tier_midpoint_ratio"] = f"{_MIDPOINT['T3'] / _MIDPOINT['T1']:.1f}"
+H["tier_midpoint_ratio"] = _two_sig_figs(_MIDPOINT["T3"] / _MIDPOINT["T1"])
+# The check a reader would actually run: divide the two medians AS PRINTED. It must land on the same
+# published figure, or this document quotes a number its own table cannot reproduce.
+_printed_ratio = float(H["tier_qnet_median_T1"]) / float(H["tier_qnet_median_T3"])
+assert _two_sig_figs(_printed_ratio) == H["tier_median_ratio"], (
+    f"the printed medians give {_printed_ratio}, which does not round to the published "
+    f"{H['tier_median_ratio']} -- a reader checking this paragraph would get a different number"
+)
 
 
 def _rank(d):
@@ -337,10 +357,12 @@ d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-e
 > support ran past the PSI HIMB figure (890000 GeV per mu+ produced), which counts mu+ only and which
 > the muon-cost ledger's schema bars from any muCF cost aggregate -- a prior support drawn over a tier
 > being no exception. The T3 box is now the min and the max of the pinned beam-kinetic T3 rows that
-> rule admits: **Uniform({H["t3_lo"]}, {H["t3_hi"]}) GeV**. The T3 median Q_net therefore moves from
-> **4.39e-07 to {H["tier_qnet_median_T3"]}** -- a fall of about {H["tier_span_oom"]} orders of
-> magnitude, not five. The retracted sentence read that fall as the muon-cost spread restated in
-> energy-return units; it is not that quantity, and "What the panel measures" below says what it is.
+> rule admits: **Uniform({H["t3_lo"]}, {H["t3_hi"]}) GeV**. Dropping the T3 support from 1e6 GeV to
+> {H["t3_hi"]} GeV RAISES the T3 median Q_net, from **4.39e-07 to {H["tier_qnet_median_T3"]}**, since
+> cheaper assumed muons buy more return. Its effect on what this section reports is the T1-to-T3
+> FALL: about {H["tier_span_oom"]} orders of magnitude, where the retracted text said five. That
+> sentence also read the fall as the muon-cost spread restated in energy-return units; it is not that
+> quantity, and "What sets the panel's spread" below says what it is.
 > T1 and T2 are UNCHANGED -- no barred row touches either -- and the full-text-pinned Bertin et al.
 > (1987) value still sits ABOVE the T1 box, where a discrepant pin is disclosed and never tuned away.
 
@@ -348,8 +370,9 @@ Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHA
 Q_net responds to the assumed muon cost, the SAME seeded forward-UQ Q_net is re-run under three
 tier-specific E_mu priors, with every other input (the measured omega_s0 / R / lambda_c / eta boxes)
 held fixed. This is a sensitivity-of-Q_net-to-E_mu panel: the boxes are disclosed modelling choices
-(provenance below), not ledger aggregates, and the panel measures no gap, no ratio and no same-basis
-comparison.
+(provenance below), not ledger aggregates. It measures no cost gap, computes no cost ratio, and makes
+no same-basis comparison. (Arithmetic ON ITS OWN OUTPUTS is a different thing and is reported below;
+it says something about the boxes this document chose, and nothing about the muon-cost data.)
 
 | E_mu prior (muon-cost tier) | P(Q_net > 1) | median Q_net |
 |---|---|---|
@@ -365,15 +388,16 @@ T1 ({H["tier_qnet_median_T1"]}) to T3 ({H["tier_qnet_median_T3"]}). That fall is
 E_mu boxes chosen here, NOT a measurement of the muon-cost spread: no same-basis T1-vs-T3 cost ratio
 is computable from the ledger rows at all (`MUON_COST.md`), and this panel computes none.
 
-**What the panel measures.** At fixed other inputs Q_net goes as 1/E_mu, so where each box sits
-governs its row. Measured here: the T1-to-T3 median Q_net ratio is **{H["tier_median_ratio"]}**, and
-the ratio of the two boxes' midpoints -- {H["tier_midpoint_T1"]} GeV and {H["tier_midpoint_T3"]} GeV
--- is {H["tier_midpoint_ratio"]}. They agree to the digits printed, and THAT is the point: the spread
-this panel shows is a property of the support this document chose, not of the muon-cost data. It is a
-different quantity from the muon-cost tier-median ratio reported in `MUON_COST.md` (which is itself a
-mixed-basis, order-of-magnitude observation and not a same-basis ratio) -- the two do not even take
-the same value -- so any resemblance between them is a coincidence of where the boxes were drawn and
-never corroboration of either.
+**What sets the panel's spread.** At fixed other inputs Q_net goes as 1/E_mu, so where each box sits
+governs its row. Dividing this panel's own outputs by each other: the T1-to-T3 ratio of the medians
+above is **{H["tier_median_ratio"]}**, and the ratio of the two boxes' midpoints
+-- {H["tier_midpoint_T1"]} GeV and {H["tier_midpoint_T3"]} GeV -- is {H["tier_midpoint_ratio"]}. Both
+are quoted to the two significant figures the medians in the table carry, and at that precision they
+are the same number; that agreement is the point. What the panel shows is a property of the support
+this document chose, not of the muon-cost data. It is a different quantity from the muon-cost
+tier-median ratio reported in `MUON_COST.md` (which is itself a mixed-basis, order-of-magnitude
+observation and not a same-basis ratio), and the two do not take the same value, so any resemblance
+between them is a coincidence of where the boxes were drawn and never corroboration of either.
 
 **Box-edge provenance.** A box edge is a prior-support choice for a sensitivity scan, not a ledger
 aggregate -- but one rule binds every edge and is enforced by a test rather than promised here: no
@@ -545,13 +569,13 @@ _entries += [
     _entry("tier_span_oom", rf"falls by about {re.escape(H['tier_span_oom'])} orders of magnitude"),
     _entry(
         "tier_median_ratio",
-        rf"median Q_net ratio is \*\*{re.escape(H['tier_median_ratio'])}\*\*",
+        rf"ratio of the medians\s*\n?\s*above is \*\*{re.escape(H['tier_median_ratio'])}\*\*",
     ),
-    _entry("tier_midpoint_T1", rf"midpoints -- {re.escape(H['tier_midpoint_T1'])} GeV"),
-    _entry("tier_midpoint_T3", rf"and {re.escape(H['tier_midpoint_T3'])} GeV\s*\n?\s*-- is"),
+    _entry("tier_midpoint_T1", rf"-- {re.escape(H['tier_midpoint_T1'])} GeV and"),
+    _entry("tier_midpoint_T3", rf"and {re.escape(H['tier_midpoint_T3'])} GeV -- is"),
     _entry(
         "tier_midpoint_ratio",
-        rf"-- is {re.escape(H['tier_midpoint_ratio'])}\. They agree",
+        rf"GeV -- is {re.escape(H['tier_midpoint_ratio'])}\. Both",
     ),
 ]
 
