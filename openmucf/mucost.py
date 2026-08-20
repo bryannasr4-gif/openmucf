@@ -678,8 +678,9 @@ def panel_t3_exclusion_clause(table: MuonCostTable) -> str:
     """The section-2b sentence naming what the charge-basis rule keeps out of the T3 box, and why.
 
     Every coordinate in it -- value, charge basis, stage -- is read off the excluded row itself, so
-    the sentence cannot misstate the row's accounting stage: it shipped once saying "per mu+
-    produced" about a row whose own stage is ``transported``. "per mu+" is derived, not assumed --
+    the sentence cannot misstate the row's accounting stage: the wording "per mu+ produced" shipped
+    twice (here and in the amendment block) about a row whose own stage is ``transported``.
+    "per mu+" is derived, not assumed --
     every charge basis in :data:`AGGREGATE_EXCLUDED_CHARGE_BASIS` prices mu+ only, and the assertion
     below keeps that wording honest if the excluded set is ever widened.
     """
@@ -704,11 +705,16 @@ def panel_t3_exclusion_clause(table: MuonCostTable) -> str:
         ]
     )
     is_are = "is" if len(excluded) == 1 else "are"
+    this_figure = "this figure" if len(excluded) == 1 else "these figures"
     bases = _join_clause(sorted({f"`{r.charge_basis}`" for r in excluded}))
+    # The causal claim is exactly this and no more: exclusion sets where the support ENDS. It must
+    # not name the retracted 1e6 edge as what exclusion prevents -- that edge was a declared
+    # constant, and even with the excluded row admitted a min/max support would stop at the row's
+    # own value, not at 1e6.
     return (
         f"{names} {is_are} {bases}\n"
-        f"and {is_are} excluded, which is why the support no longer reaches the retracted 1e6\n"
-        f"upper edge."
+        f"and {is_are} excluded, so the support ends at the largest admitted row rather than\n"
+        f"running past {this_figure}."
     )
 
 

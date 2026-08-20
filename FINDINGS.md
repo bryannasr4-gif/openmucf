@@ -199,8 +199,8 @@ COMET at 2286 GeV, mu2e at 4993 GeV and MuSIC at 6002 GeV.
 That row list is rendered from the same aggregate the edges are read off, so it moves when the
 ledger moves, and so does the exclusion that follows.
 PSI HIMB (890000 GeV per mu+, at its row's `transported` stage) is `mu_plus_only`
-and is excluded, which is why the support no longer reaches the retracted 1e6
-upper edge.
+and is excluded, so the support ends at the largest admitted row rather than
+running past this figure.
 Two things about the surviving edges are disclosed rather than smoothed over: the upper edge comes
 from a MIXED-charge row (MuSIC counts mu+ and mu-
 together, so the mu--only cost it implies is roughly 2x higher), and the two edge-setting rows sit

@@ -263,24 +263,30 @@ def _dropped_block() -> str:
 def _stage_mix_clause(table: mucost.MuonCostTable) -> str:
     """The within-tier composition disclosure: a tier median can itself mix accounting stages.
 
-    Rendered from the same rows the median is computed over (``aggregate_rows``), never typed, and
-    conditional: if the T3 aggregate ever collapses to one stage, the mixing sentence would be false
-    and the single-stage form is emitted instead. This is the disclosure that keeps the one-row-at-
-    a-time reading honest -- each row is conditional on its tier median AS COMPOSED, and the T3
-    median today is taken over rows at two different stages.
+    Rendered from the same rows each median is computed over (``aggregate_rows``), never typed, and
+    over EVERY tier rather than one example -- naming a single mixed tier invites the reader to
+    conclude the others are stage-homogeneous, and today two of the three are not. Conditional: a
+    tier whose aggregate holds one stage is left out of the sentence, and if no tier mixes, the
+    homogeneous form is emitted instead. This is the disclosure that keeps the one-row-at-a-time
+    reading honest -- each row is conditional on its tier median AS COMPOSED.
     """
-    stages = sorted({r.stage for r in table.aggregate_rows(tier="T3-operating-facility")})
-    joined = " and ".join(f"`{s}`" for s in stages)
-    if len(stages) == 1:
+    mixed = []
+    for short, tier_id, _label in TIERS:
+        stages = sorted({r.stage for r in table.aggregate_rows(tier=tier_id)})
+        if len(stages) > 1:
+            joined = " and ".join(f"`{s}`" for s in stages)
+            mixed.append(f"the {short} median over rows at {joined}")
+    if not mixed:
         return (
-            f"(The T3 median is taken over rows all at stage {joined}, so its row conditions on a "
-            f"stage-homogeneous median.)"
+            "(Every tier median here is taken over rows at a single accounting stage, so each row "
+            "conditions on a stage-homogeneous median.)"
         )
+    listed = ";\n".join(mixed)
     return (
         f"(One more inherited property: a tier median can itself mix accounting stages within its\n"
-        f"tier -- the T3 median here is taken over rows at {joined} -- so\n"
-        f"each row conditions on its tier median as composed, with the per-row stages printed in\n"
-        f"MUON_COST.md.)"
+        f"tier -- {listed} --\n"
+        f"so each row conditions on its tier median as composed, with the per-row stages printed\n"
+        f"in MUON_COST.md.)"
     )
 
 

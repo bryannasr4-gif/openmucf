@@ -810,7 +810,7 @@ def test_the_t3_provenance_paragraph_is_derived_from_the_ledger(table):
     old figures. Same contract as test_the_median_membership_sentence_is_derived_from_the_ledger,
     in both directions: every admitted row is named with its ledger value, no excluded row appears
     in the admitted list, the excluded row is named with its value AND the stage read off its own
-    row -- it shipped once as "per mu+ produced" against a row whose stage is ``transported`` --
+    row -- it shipped twice as "per mu+ produced" against a row whose stage is ``transported`` --
     and the rendered clauses appear verbatim in the committed document.
     """
     membership = mucost.panel_t3_membership(table)
