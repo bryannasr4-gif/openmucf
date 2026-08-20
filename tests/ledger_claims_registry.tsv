@@ -217,7 +217,6 @@ fa9b79c4f27f4adf308b8ae66a5b5769593592e3	openmucf/mucost.py	REGISTERED:model/loa
 540664a65eacea4e77397a79bf1c52463183f85b	paper/paper.md	UNREVIEWED
 5cf0353da802688eb4239fa4c47dc4bbb4e896cd	paper/paper.md	UNREVIEWED
 692b9d432c13014fc0ace7eebddaf3029470f10b	paper/paper.md	UNREVIEWED
-f050bef85240ff4f0f7ff9b463abc3ac988f3963	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
 fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED
 010f08de571b3a83e023ff161e5520cd62d1394b	scripts/generate_mucost.py	UNREVIEWED
 02e26105a8dd6d3f89fc50992edc38709452d743	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
@@ -379,4 +378,16 @@ a60e5843e56fe633ef4a67f3c2a4121b626a15b4	tests/test_mucost.py	REGISTERED: descri
 6fb7dcc162ad14e63963e7328df19c28c6072a73	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 0dbe479c33542207d2ffcc08229f2cf5bcb1a6aa	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 f95bf598c306e244544810343928ba31a8502769	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
-28333fad4f08289c61269d09deb19b9832f7904c	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_deleting_a_barred_row_changes_no_aggregate
+d111df1d680a81ea70eeaa5ee76302c92e491d09	openmucf/mucost.py	REGISTERED: an indexing-policy statement, enforced by construction -- PANEL_ROW_LABELS is indexed strictly, so a missing label raises KeyError rather than rendering.
+3d7b80de5683343130a42e71e44a3b4d0c698569	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_t3_provenance_paragraph_is_derived_from_the_ledger
+2d3845ba1a7678e834e797236b87a02a1443f771	openmucf/mucost.py	REGISTERED: true of AGGREGATE_EXCLUDED_CHARGE_BASIS's sole member mu_plus_only; the in-code assertion two lines below fails the render if the set is ever widened past that wording.
+a00f0d04bca10bf24b856d6375f305db003ca714	openmucf/mucost.py	REGISTERED: the empty-exclusion branch's text, emitted only when rows_excluded_from_aggregates(T3) is empty; unreachable against today's ledger and true by the branch condition when reached.
+ce0b8c9e870f8a4255a5267a15feb5e02ae157b7	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_t3_provenance_paragraph_is_derived_from_the_ledger
+6e85c9764c8497adc5063225b4ad39c5c8951af9	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_deleting_a_barred_row_changes_no_aggregate
+aac6bddd59c757e2343fc200cdd4b014912d809d	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_declared_edges_and_published_boxes_are_pinned
+8d3347c428d08e877277e79b5129103de5243f69	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_declared_edges_and_published_boxes_are_pinned
+77a05df87e93a728e0739c2e833a9b5617590543	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_declared_edges_and_published_boxes_are_pinned
+a5d9448607aa2142bf32d974d58e31fe977dc9e1	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_t3_provenance_paragraph_is_derived_from_the_ledger
+b90147f691ecd8c831c4597b800794fe7e47dfe6	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_t3_provenance_paragraph_is_derived_from_the_ledger
+57e2c1fcdb98ba4e992afd000e15fa36961c268e	paper/paper.md	REGISTERED: trust-map summary synced 2026-08-19 to the README map that demoted cross-tier comparisons; a citability judgement mirroring the map, not a measurement.
+d892a368a297cee7aa9f06143ff6f2b79239493f	paper/paper.md	REGISTERED: restates MUON_COST.md's own qualification of the tier spread (mixed-basis, order-of-magnitude, never a same-basis ratio); reviewed against that document 2026-08-19.

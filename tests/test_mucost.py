@@ -718,9 +718,13 @@ def test_deleting_a_barred_row_changes_no_aggregate(table):
     Naming each aggregate and checking it individually is only as complete as the list, and the list
     is what went wrong: the tier median and the prior box were two aggregates, and one of them was
     not on anybody's list. This asserts the property directly -- DELETING the barred row from the
-    ledger entirely must leave every aggregate value identical -- which holds for aggregates nobody
-    thought to enumerate, including ones added later. Non-vacuous because the row exists and its value
-    is three orders of magnitude from its tier's others.
+    ledger entirely must leave every aggregate value identical -- across the aggregate surfaces the
+    module exposes: ``tier_median``, ``aggregate_values`` and ``panel_tier_boxes``, all of which
+    route through ``aggregate_rows``. An aggregate added later is covered only if it reads
+    ``aggregate_rows`` too (the module contract) AND is added to this drill; the docstring used to
+    claim the drill reached later additions by itself, which was more than the body checks.
+    Non-vacuous because the row exists and its value is three orders of magnitude from its tier's
+    others.
     """
     barred = table.rows_excluded_from_aggregates()
     assert barred, "no barred rows: this invariant would be trivially true"
@@ -769,9 +773,71 @@ def test_no_box_edge_is_set_by_a_barred_row(table):
         "the historical T3 box no longer trips the containment rule -- this guard has gone vacuous"
     )
     # every edge is accounted for: a ledger row, or a declared constant. There is no third state.
+    # (Membership in the dict alone was circular -- the dict could move WITH the edge and this line
+    # stayed green. The dict itself is now pinned by literals in
+    # test_declared_edges_and_published_boxes_are_pinned, which is what closes the loop.)
     for t, (lo, hi) in boxes.items():
         for edge in (lo, hi):
             assert edge.from_ledger or edge.value in mucost._DECLARED_EDGES.values(), (t, edge)
+
+
+def test_declared_edges_and_published_boxes_are_pinned(table):
+    """Every published prior-box edge, pinned by literals OUTSIDE the module that defines it.
+
+    ``_DECLARED_EDGES`` used to be checked only by ``edge.value in mucost._DECLARED_EDGES.values()``
+    (in test_no_box_edge_is_set_by_a_barred_row), which is circular: mutate the dict, regenerate,
+    and every gate stays green while the published T1 row silently becomes Uniform(3.0, 7.0) --
+    measured on this branch, twice, before this pin existed. The section-2b stop says the T1 and T2
+    rows are byte-identical or the run halts; this is the test that halts it. The T3 edges are
+    ledger values and are pinned here too: a ledger move is a published-number move, and a published
+    number moves only through a conscious two-place edit (ledger + this literal), never through a
+    coordinated regeneration alone.
+    """
+    assert mucost._DECLARED_EDGES == {"T1_hi": 6.0, "T2_lo": 1.0e2, "T2_hi": 1.0e3}
+    boxes = mucost.panel_tier_boxes(table)
+    assert {t: (lo.value, hi.value) for t, (lo, hi) in boxes.items()} == {
+        "T1": (3.0, 6.0),
+        "T2": (100.0, 1000.0),
+        "T3": (2286.0, 6002.0),
+    }
+
+
+def test_the_t3_provenance_paragraph_is_derived_from_the_ledger(table):
+    """FINDINGS section 2b's T3 provenance prose names rows and stages; that prose must BE the ledger.
+
+    The paragraph calls the box "a pure function of the ledger", and its row list was hand-typed: a
+    ledger mutation moved the box and both manifests while the sentence three lines below kept the
+    old figures. Same contract as test_the_median_membership_sentence_is_derived_from_the_ledger,
+    in both directions: every admitted row is named with its ledger value, no excluded row appears
+    in the admitted list, the excluded row is named with its value AND the stage read off its own
+    row -- it shipped once as "per mu+ produced" against a row whose stage is ``transported`` --
+    and the rendered clauses appear verbatim in the committed document.
+    """
+    membership = mucost.panel_t3_membership(table)
+    exclusion = mucost.panel_t3_exclusion_clause(table)
+    admitted = table.aggregate_rows(tier="T3-operating-facility")
+    excluded = table.rows_excluded_from_aggregates(tier="T3-operating-facility")
+    assert admitted and excluded, "either list empty: the two-direction checks below would be vacuous"
+    for r in admitted:
+        assert f"{mucost.PANEL_ROW_LABELS[r.source_id]} at {r.normalized_GeV_per_mu:g} GeV" in membership
+    for r in excluded:
+        assert mucost.PANEL_ROW_LABELS[r.source_id] not in membership
+        assert f"{r.normalized_GeV_per_mu:g} GeV" in exclusion
+        assert f"`{r.stage}` stage" in exclusion, "the stage must be the row's own, never assumed"
+    doc = " ".join((REPO / "FINDINGS.md").read_text(encoding="utf-8").split())
+    assert " ".join(membership.split()) in doc
+    assert " ".join(exclusion.split()) in doc
+    # the wording the ledger refutes must not come back, anywhere in the document
+    assert "per mu+ produced" not in doc
+    # and a ledger move moves the sentence: the same mutation the round-1 verifier ran, in memory
+    mutated = MuonCostTable(
+        [
+            dataclasses.replace(r, normalized_GeV_per_mu=6500.0) if r.source_id == "music" else r
+            for r in table
+        ]
+    )
+    assert "MuSIC at 6500 GeV" in mucost.panel_t3_membership(mutated)
+    assert " ".join(mucost.panel_t3_membership(mutated).split()) not in doc
 
 
 def test_the_median_membership_sentence_is_derived_from_the_ledger(table):

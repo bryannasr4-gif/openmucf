@@ -115,7 +115,8 @@ d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-e
 > closed its Finding by calling the resulting median collapse -- then reported as ~5 orders of
 > magnitude -- "the ~10^3 muon-cost gap expressed in energy-return form". Both are retracted. Neither
 > old T3 edge carried recorded provenance anywhere in this document or its generator, and the box's
-> support ran past the PSI HIMB figure (890000 GeV per mu+ produced), which counts mu+ only and which
+> support ran past the PSI HIMB figure (890000 GeV per mu+, at its row's
+> `transported` stage), which counts mu+ only and which
 > the muon-cost ledger's schema bars from any muCF cost aggregate -- a prior support drawn over a tier
 > being no exception. The T3 box is now the min and the max of the pinned beam-kinetic T3 rows that
 > rule admits: **Uniform(2286, 6002) GeV**. Dropping the T3 support from 1e6 GeV to
@@ -153,8 +154,9 @@ is computable from the ledger rows at all (`MUON_COST.md`), and this panel compu
 governs its row. Dividing this panel's own outputs by each other: the T1-to-T3 ratio of the medians
 above is **920**, and the ratio of the two boxes' midpoints
 -- 4.5 GeV and 4144 GeV -- is 920. Both
-are quoted to the two significant figures the medians in the table carry, and at that precision they
-are the same number; that agreement is the point. What the panel shows is a property of the support
+are quoted to two significant figures and no finer -- the medians in the table above carry three, so
+a ratio quoted finer could not be reproduced by dividing the printed values -- and at that precision
+they are the same number; that agreement is the point. What the panel shows is a property of the support
 this document chose, not of the muon-cost data. It is a different quantity from the muon-cost
 tier-median ratio reported in `MUON_COST.md` (which is itself a mixed-basis, order-of-magnitude
 observation and not a same-basis ratio), and the two do not take the same value, so any resemblance
@@ -192,13 +194,18 @@ bracket around a one-row tier, and left UNCHANGED.
 
 **T3 box edges.** This box previously shipped as [2.3e3, 1e6] GeV with no recorded provenance for
 either edge. It is now a pure function of the ledger: the min and the max of the pinned
-`beam_kinetic` T3 rows carrying a charge basis a muCF cost aggregate admits -- COMET at 2286 GeV,
-mu2e at 4993 GeV and MuSIC at 6002 GeV. PSI HIMB (890000 GeV per mu+ produced) is `mu_plus_only` and
-is excluded, which is why the support no longer reaches 1e6. Two things about the surviving edges are
-disclosed rather than smoothed over: the upper edge comes from a MIXED-charge row (MuSIC counts mu+
-and mu- together, so the mu--only cost it implies is roughly 2x higher), and the two edge-setting
-rows sit at DIFFERENT stages -- one `stopped_other_target`, which is not a point on the muCF chain at
-all, the other `transported` -- so this box spans heterogeneous accounting bases and supports a
+`beam_kinetic` T3 rows carrying a charge basis a muCF cost aggregate admits --
+COMET at 2286 GeV, mu2e at 4993 GeV and MuSIC at 6002 GeV.
+That row list is rendered from the same aggregate the edges are read off, so it moves when the
+ledger moves, and so does the exclusion that follows.
+PSI HIMB (890000 GeV per mu+, at its row's `transported` stage) is `mu_plus_only`
+and is excluded, which is why the support no longer reaches the retracted 1e6
+upper edge.
+Two things about the surviving edges are disclosed rather than smoothed over: the upper edge comes
+from a MIXED-charge row (MuSIC counts mu+ and mu-
+together, so the mu--only cost it implies is roughly 2x higher), and the two edge-setting rows sit
+at DIFFERENT stages -- one `stopped_other_target`, which is not a point on the muCF chain at all, the
+other `transported` -- so this box spans heterogeneous accounting bases and supports a
 sensitivity scan only, never a cost statement.
 
 - lower edge 2286 GeV -- ledger row `comet`: stage `stopped_other_target`, numeraire

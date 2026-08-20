@@ -134,6 +134,33 @@ def test_npj_matches_hand_arithmetic():
     assert f"**by construction**: {H['npj_ratio_T1_T3']}x" in " ".join(_committed_doc().split())
 
 
+def test_reader_division_of_printed_columns():
+    """The published factor is reproducible from the page, and the page says which column carries it.
+
+    The class this guards: a ratio quoted finer than its printed inputs support. The E_mu column
+    reproduces the published factor exactly (4993 / 4.85 = 1029.5); the n/J column, whose cells are
+    independently rounded to four significant figures, gives 1029.0 -- so the document publishes
+    BOTH quotients and says why they differ, instead of leaving a reader's division one last-digit
+    step away from the sentence it checks. Both directions: the strings are recomputed from the
+    generator's own headline dict, required to be internally consistent, and required to appear in
+    the committed document.
+    """
+    mod = _load_generator()
+    table = mucost.load_muon_cost()
+    H = mod.build_headline(table)
+    emu_div = f"{float(H['emu_T3']) / float(H['emu_T1']):.1f}"
+    assert emu_div == H["emu_ratio_from_printed"] == H["npj_ratio_T1_T3"]
+    printed = float(H["npj_T1"]) / float(H["npj_T3"])
+    assert f"{printed:.1f}" == H["npj_ratio_from_printed"]
+    exact = table.tier_median("T3-operating-facility") / table.tier_median("T1-design-study")
+    # each .3e cell is within 5e-4 relative of its value, so the printed quotient must sit within
+    # ~1e-3 of the exact factor -- the bound under which the disclosure sentence is true
+    assert abs(printed / exact - 1.0) < 1.1e-3
+    doc = " ".join(_committed_doc().split())
+    assert f"= {H['emu_ratio_from_printed']}x)" in doc
+    assert f"gives {H['npj_ratio_from_printed']}x" in doc
+
+
 # --------------------------------------------------------------------------------------------------
 # 5. Alternative-source n/J each match their own published triple; dropped-list present
 # --------------------------------------------------------------------------------------------------

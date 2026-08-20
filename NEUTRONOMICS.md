@@ -42,7 +42,12 @@ not a UQ pushforward. Each E_mu tier median is sourced from the muon-cost ledger
 The tier medians span about three orders of magnitude, and `n/J = X_mu / E_mu` is exactly inversely
 proportional to the muon cost, so the neutron column spans the SAME factor **by construction**:
 1029.5x, which is the muon-cost tier-median ratio itself and not a second measurement
-of anything. It runs from **1.454e+11 n/J** at the design-study muon cost (E_mu 4.85 GeV,
+of anything. Checked from the page itself: the E_mu column reproduces the factor exactly
+(4993 / 4.85 = 1029.5x), while dividing the printed n/J
+column gives 1029.0x -- those cells carry four significant figures and are
+rounded independently, so their quotient can differ from the factor in the last digit; the E_mu
+column is the one that carries the factor's own inputs.
+It runs from **1.454e+11 n/J** at the design-study muon cost (E_mu 4.85 GeV,
 ~43 MeV of beam per neutron) down to **1.413e+08 n/J** at the
 operating-facility muon cost (E_mu 4993 GeV).
 
@@ -52,7 +57,11 @@ between T1 and T3 at all, so a same-basis cost ratio between them is not computa
 Dividing one row of this table by another therefore does not produce a same-basis neutron-economy
 comparison either; it reproduces the cost spread together with its heterogeneity. Each row remains a
 well-defined statement conditional on ITS OWN tier median, which is why the table is tier-separated
-and never blended. Which row is real depends entirely on whether a purpose-built muon source at the
+and never blended. (One more inherited property: a tier median can itself mix accounting stages within its
+tier -- the T3 median here is taken over rows at `stopped_other_target` and `transported` -- so
+each row conditions on its tier median as composed, with the per-row stages printed in
+MUON_COST.md.)
+Which row is real depends entirely on whether a purpose-built muon source at the
 design-study cost is ever demonstrated -- the same open question MUON_COST.md flags ("the floor is
 unvalidated, not impossible").
 

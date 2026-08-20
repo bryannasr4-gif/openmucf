@@ -335,6 +335,54 @@
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "920"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "t1_lo",
+      "pattern": "T1\\ design\\ studies,\\ Uniform\\(3\\.0,\\ 6\\.0\\)\\ GeV",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "3.0"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "t1_hi",
+      "pattern": "T1\\ design\\ studies,\\ Uniform\\(3\\.0,\\ 6\\.0\\)\\ GeV",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "6.0"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "t2_lo",
+      "pattern": "T2\\ demonstrated\\ tech,\\ Uniform\\(1e2,\\ 1e3\\)\\ GeV",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "1e2"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "t2_hi",
+      "pattern": "T2\\ demonstrated\\ tech,\\ Uniform\\(1e2,\\ 1e3\\)\\ GeV",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "1e3"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "t3_lo",
+      "pattern": "T3\\ operating\\ facilities,\\ Uniform\\(2286,\\ 6002\\)\\ GeV",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "2286"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "t3_hi",
+      "pattern": "T3\\ operating\\ facilities,\\ Uniform\\(2286,\\ 6002\\)\\ GeV",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "6002"
     }
   ],
   "generated_by": "scripts/generate_findings.py",

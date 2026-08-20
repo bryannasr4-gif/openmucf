@@ -634,6 +634,84 @@ def panel_tier_boxes(table: MuonCostTable) -> dict[str, tuple[BoxEdge, BoxEdge]]
     return boxes
 
 
+#: Display names for the ledger rows the FINDINGS panel prose enumerates. Indexed strictly, never
+#: with a fallback: a new row reaching the panel without a display name must fail loudly here rather
+#: than render half a sentence. (``_median_membership`` in ``scripts/generate_mucost.py`` applies
+#: the same rule with its own label table.)
+PANEL_ROW_LABELS: dict[str, str] = {
+    "comet": "COMET",
+    "mu2e": "mu2e",
+    "music": "MuSIC",
+    "psi_himb": "PSI HIMB",
+}
+
+
+def _join_clause(parts: list[str]) -> str:
+    """'a', 'a and b', 'a, b and c' -- the list shape the panel prose uses."""
+    if len(parts) == 1:
+        return parts[0]
+    return ", ".join(parts[:-1]) + " and " + parts[-1]
+
+
+def panel_t3_membership(table: MuonCostTable) -> str:
+    """'COMET at 2286 GeV, mu2e at 4993 GeV and MuSIC at 6002 GeV' -- the section-2b T3 row list.
+
+    Reads :meth:`MuonCostTable.aggregate_rows`, i.e. exactly the set whose min and max ARE the T3
+    box edges -- never a hand-kept list. The FINDINGS paragraph carrying this sentence calls the box
+    "a pure function of the ledger", and its row list was hand-typed: a ledger mutation moved the
+    box and both manifests while the sentence three lines below kept the old figures. This helper
+    retires that defect the same way ``_median_membership`` (scripts/generate_mucost.py) retired its
+    twin; it lives here rather than in the findings generator because that script runs on import,
+    so nothing defined inside it is reachable from a test.
+    """
+    rows = sorted(
+        table.aggregate_rows(tier=PANEL_TIER_OF["T3"]), key=lambda r: r.normalized_GeV_per_mu
+    )
+    if not rows:
+        raise BasisError("no aggregable T3 rows: the T3 box provenance has no membership to state")
+    return _join_clause(
+        [f"{PANEL_ROW_LABELS[r.source_id]} at {r.normalized_GeV_per_mu:g} GeV" for r in rows]
+    )
+
+
+def panel_t3_exclusion_clause(table: MuonCostTable) -> str:
+    """The section-2b sentence naming what the charge-basis rule keeps out of the T3 box, and why.
+
+    Every coordinate in it -- value, charge basis, stage -- is read off the excluded row itself, so
+    the sentence cannot misstate the row's accounting stage: it shipped once saying "per mu+
+    produced" about a row whose own stage is ``transported``. "per mu+" is derived, not assumed --
+    every charge basis in :data:`AGGREGATE_EXCLUDED_CHARGE_BASIS` prices mu+ only, and the assertion
+    below keeps that wording honest if the excluded set is ever widened.
+    """
+    excluded = sorted(
+        table.rows_excluded_from_aggregates(tier=PANEL_TIER_OF["T3"]),
+        key=lambda r: r.normalized_GeV_per_mu,
+    )
+    if not excluded:
+        return (
+            "No pinned `beam_kinetic` T3 row is barred from muCF cost aggregates, so every one "
+            "is eligible to set an edge."
+        )
+    assert all(r.charge_basis == "mu_plus_only" for r in excluded), (
+        "the 'per mu+' wording below is derived from mu_plus_only; a newly excluded charge basis "
+        "needs its own wording, not this one"
+    )
+    names = _join_clause(
+        [
+            f"{PANEL_ROW_LABELS[r.source_id]} ({r.normalized_GeV_per_mu:g} GeV per mu+, at its "
+            f"row's `{r.stage}` stage)"
+            for r in excluded
+        ]
+    )
+    is_are = "is" if len(excluded) == 1 else "are"
+    bases = _join_clause(sorted({f"`{r.charge_basis}`" for r in excluded}))
+    return (
+        f"{names} {is_are} {bases}\n"
+        f"and {is_are} excluded, which is why the support no longer reaches the retracted 1e6\n"
+        f"upper edge."
+    )
+
+
 def load_muon_cost(
     csv_path: Path = MUON_COST_CSV,
     schema_path: Path = MUON_COST_SCHEMA,

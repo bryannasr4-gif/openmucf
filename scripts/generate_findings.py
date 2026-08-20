@@ -49,6 +49,29 @@ _TIER_BOXES = mucost.panel_tier_boxes(_MU_COST)
 _TIER_NAMES = {"T1": "design studies", "T2": "demonstrated tech", "T3": "operating facilities"}
 _tiers = {k: uq.qnet_tier_panel(lo.value, hi.value) for k, (lo, hi) in _TIER_BOXES.items()}
 
+# The section-2b provenance prose contrasts the two T3 edge-setting rows by charge and stage.
+# Everything those sentences state is either rendered from the row below or asserted here, so a
+# ledger move that falsifies a sentence refuses to write the document instead of shipping a
+# self-contradiction the byte-diff cannot see.
+_T3_LO_ROW = _MU_COST[_TIER_BOXES["T3"][0].source_id]
+_T3_HI_ROW = _MU_COST[_TIER_BOXES["T3"][1].source_id]
+assert _T3_HI_ROW.charge_basis == "mixed", (
+    f"the MIXED-charge upper-edge sentence is no longer true: {_T3_HI_ROW.source_id} is "
+    f"{_T3_HI_ROW.charge_basis!r} -- re-word the T3 box-edges paragraph before regenerating"
+)
+assert _T3_LO_ROW.stage in mucost.OFF_CHAIN_STAGES and _T3_LO_ROW.stage != _T3_HI_ROW.stage, (
+    "the DIFFERENT-stages sentence is no longer true -- re-word the T3 box-edges paragraph"
+)
+# The AMENDMENT quotes the excluded figure as it stood at the 2026-08-19 retraction. It is rendered
+# from the row AND pinned here: if the row ever moves, regeneration must not silently rewrite the
+# history the amendment records -- re-word it to past-tense the figure instead.
+_PSI = _MU_COST["psi_himb"]
+assert (_PSI.normalized_GeV_per_mu, _PSI.stage, _PSI.charge_basis) == (
+    890000.0,
+    "transported",
+    "mu_plus_only",
+), "psi_himb moved: the AMENDMENT quotes its 2026-08-19 coordinates; re-word it, do not regenerate"
+
 
 def _box_label(t):
     """'T3 operating facilities, Uniform(2286, 6002) GeV' -- the table row's own subject, rendered once.
@@ -183,6 +206,13 @@ _printed_ratio = float(H["tier_qnet_median_T1"]) / float(H["tier_qnet_median_T3"
 assert _two_sig_figs(_printed_ratio) == H["tier_median_ratio"], (
     f"the printed medians give {_printed_ratio}, which does not round to the published "
     f"{H['tier_median_ratio']} -- a reader checking this paragraph would get a different number"
+)
+# "at that precision they are the same number" is a claim about the rendered strings; enforce it.
+# If the two two-figure renderings ever diverge, the sentence is false and the document must be
+# re-worded, never written around it.
+assert H["tier_median_ratio"] == H["tier_midpoint_ratio"], (
+    f"the two published ratios no longer agree at two significant figures "
+    f"({H['tier_median_ratio']} vs {H['tier_midpoint_ratio']}) -- re-word the paragraph"
 )
 
 
@@ -354,7 +384,8 @@ d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-e
 > closed its Finding by calling the resulting median collapse -- then reported as ~5 orders of
 > magnitude -- "the ~10^3 muon-cost gap expressed in energy-return form". Both are retracted. Neither
 > old T3 edge carried recorded provenance anywhere in this document or its generator, and the box's
-> support ran past the PSI HIMB figure (890000 GeV per mu+ produced), which counts mu+ only and which
+> support ran past the PSI HIMB figure ({_PSI.normalized_GeV_per_mu:g} GeV per mu+, at its row's
+> `{_PSI.stage}` stage), which counts mu+ only and which
 > the muon-cost ledger's schema bars from any muCF cost aggregate -- a prior support drawn over a tier
 > being no exception. The T3 box is now the min and the max of the pinned beam-kinetic T3 rows that
 > rule admits: **Uniform({H["t3_lo"]}, {H["t3_hi"]}) GeV**. Dropping the T3 support from 1e6 GeV to
@@ -392,8 +423,9 @@ is computable from the ledger rows at all (`MUON_COST.md`), and this panel compu
 governs its row. Dividing this panel's own outputs by each other: the T1-to-T3 ratio of the medians
 above is **{H["tier_median_ratio"]}**, and the ratio of the two boxes' midpoints
 -- {H["tier_midpoint_T1"]} GeV and {H["tier_midpoint_T3"]} GeV -- is {H["tier_midpoint_ratio"]}. Both
-are quoted to the two significant figures the medians in the table carry, and at that precision they
-are the same number; that agreement is the point. What the panel shows is a property of the support
+are quoted to two significant figures and no finer -- the medians in the table above carry three, so
+a ratio quoted finer could not be reproduced by dividing the printed values -- and at that precision
+they are the same number; that agreement is the point. What the panel shows is a property of the support
 this document chose, not of the muon-cost data. It is a different quantity from the muon-cost
 tier-median ratio reported in `MUON_COST.md` (which is itself a mixed-basis, order-of-magnitude
 observation and not a same-basis ratio), and the two do not take the same value, so any resemblance
@@ -425,13 +457,16 @@ bracket around a one-row tier, and left UNCHANGED.
 
 **T3 box edges.** This box previously shipped as [2.3e3, 1e6] GeV with no recorded provenance for
 either edge. It is now a pure function of the ledger: the min and the max of the pinned
-`beam_kinetic` T3 rows carrying a charge basis a muCF cost aggregate admits -- COMET at 2286 GeV,
-mu2e at 4993 GeV and MuSIC at 6002 GeV. PSI HIMB (890000 GeV per mu+ produced) is `mu_plus_only` and
-is excluded, which is why the support no longer reaches 1e6. Two things about the surviving edges are
-disclosed rather than smoothed over: the upper edge comes from a MIXED-charge row (MuSIC counts mu+
-and mu- together, so the mu--only cost it implies is roughly 2x higher), and the two edge-setting
-rows sit at DIFFERENT stages -- one `stopped_other_target`, which is not a point on the muCF chain at
-all, the other `transported` -- so this box spans heterogeneous accounting bases and supports a
+`beam_kinetic` T3 rows carrying a charge basis a muCF cost aggregate admits --
+{mucost.panel_t3_membership(_MU_COST)}.
+That row list is rendered from the same aggregate the edges are read off, so it moves when the
+ledger moves, and so does the exclusion that follows.
+{mucost.panel_t3_exclusion_clause(_MU_COST)}
+Two things about the surviving edges are disclosed rather than smoothed over: the upper edge comes
+from a MIXED-charge row ({mucost.PANEL_ROW_LABELS[_T3_HI_ROW.source_id]} counts mu+ and mu-
+together, so the mu--only cost it implies is roughly 2x higher), and the two edge-setting rows sit
+at DIFFERENT stages -- one `{_T3_LO_ROW.stage}`, which is not a point on the muCF chain at all, the
+other `{_T3_HI_ROW.stage}` -- so this box spans heterogeneous accounting bases and supports a
 sensitivity scan only, never a cost statement.
 
 {_box_composition("T3")}
@@ -578,6 +613,14 @@ _entries += [
         rf"GeV -- is {re.escape(H['tier_midpoint_ratio'])}\. Both",
     ),
 ]
+# Every box edge, anchored to its own table row. The declared constants (T1_hi, T2_lo, T2_hi) have
+# no ledger row to answer for them, so the manifest is where their published values are recorded as
+# provenance-tracked; the literal pin that stops one moving silently lives in
+# tests/test_mucost.py::test_declared_edges_and_published_boxes_are_pinned.
+for _t in ("T1", "T2", "T3"):
+    _lbl = re.escape(_box_label(_t))
+    _entries.append(_entry(f"{_t.lower()}_lo", _lbl))
+    _entries.append(_entry(f"{_t.lower()}_hi", _lbl))
 
 _manifest_inputs = {
     "rates_csv_sha256": provenance.file_sha256(RATES_CSV),

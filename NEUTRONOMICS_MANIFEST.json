@@ -66,6 +66,22 @@
     },
     {
       "doc": "NEUTRONOMICS.md",
+      "id": "emu_ratio_from_printed",
+      "pattern": "= 1029\\.5x\\)",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "1029.5"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
+      "id": "npj_ratio_from_printed",
+      "pattern": "gives 1029\\.0x",
+      "source": "scripts/generate_neutronomics.py",
+      "source_type": "derivation",
+      "value": "1029.0"
+    },
+    {
+      "doc": "NEUTRONOMICS.md",
       "id": "npj_alt_dt_generator",
       "pattern": "Sealed\\-tube\\ D\\-T\\ generator\\ \\(Thermo\\ Sci\\.\\ P385\\) \\|[^\\n]*\\| 6\\.508e\\+07 \\|",
       "source": "scripts/generate_neutronomics.py",
