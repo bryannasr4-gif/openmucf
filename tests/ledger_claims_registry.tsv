@@ -7,8 +7,10 @@
 # records which review category it fell into, not a bespoke sentence per claim.
 # UNREVIEWED is for claims that predate the cost-basis work; their count is capped by the
 # monotone non-increasing LEDGER_CLAIMS_UNREVIEWED_CEILING and may only ever go down.
+18f71f2aedd4915f794d5ac34c88bbf7cc3bb255	ADOPTERS.md	REGISTERED: a citability judgement, not a measurement. Its substance is the T1/T3 basis disjointness that test_no_basis_class_spans_T1_and_T3 proves; the tier assignment itself is a human call and is recorded as one.
 91ea0a0634ebc32f6dd6875ba419a19546424612	ADOPTERS.md	UNREVIEWED
 ae845f3fa7bbe8b8e5d163f39a681650c380354a	ADOPTERS.md	UNREVIEWED
+b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability judgement, not a measurement. Its substance is the T1/T3 basis disjointness that test_no_basis_class_spans_T1_and_T3 proves; the tier assignment itself is a human call and is recorded as one.
 0095e47b5aa503f76bde8ed3e46d105bb405dc52	CHANGELOG.md	UNREVIEWED
 0f9b0d29d0aaafd4138704d5daaea837224667b8	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 0feb6f2db8be66909911a2c2be6a77fde6b6bb0e	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
@@ -33,7 +35,6 @@ ae845f3fa7bbe8b8e5d163f39a681650c380354a	ADOPTERS.md	UNREVIEWED
 83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	UNREVIEWED
 8b08e657b1d2b5ecf29c659409c7eab6733804dd	CHANGELOG.md	UNREVIEWED
 8bd6861b333936a7d7f225faa46952b89871d3a7	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
-9392fb84e63d9efde8eec6b66420e0aa446ab254	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	UNREVIEWED
 9933c3df4d1e7fdebb9fca78af3db26c7c60b9fa	CHANGELOG.md	UNREVIEWED
 9b30266980799306d53a02aa44e268bd7a03f8e1	CHANGELOG.md	REGISTERED:scoped to the CC-BY package's structure, and true of the diff it describes -- the three edits touch free-text note and description fields only; row count, every numeric cell, every unit, every boolean flag and every schema type declaration are unchanged
@@ -56,6 +57,7 @@ f706e6ccf7d4e4d844b6d90692ebc5a9c5927ed2	CHANGELOG.md	UNREVIEWED
 15ce189c029ab21eeeb626861322a67d3a915faa	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 18fb9322bbd403222e64c4d5134056bfa8e164fa	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 1f7466eca915ab724ff6c943e7cbc1568af2fc24	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+1fe6dc6ad4b0bb8ad87bf3785b9115ade1f5ec3d	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_the_median_membership_sentence_is_derived_from_the_ledger
 2252865c3bbcb70ab333104e3076909697cc5dd7	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 23cf4b67140c66619e33935ac407e5e20c336553	MUON_COST.md	UNREVIEWED
 32b1c743dbfe3f390b468ad5ecd9c046f05a9c76	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
@@ -65,6 +67,7 @@ f706e6ccf7d4e4d844b6d90692ebc5a9c5927ed2	CHANGELOG.md	UNREVIEWED
 3762113c8128e9b5ec3c8ed238acaff7889f7c73	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 3d795e8ce3b22535411d622499971ae0c13ec90d	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 484be619f7e1afdf4a79be4f11e89ae3e98f37d8	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+48fe63c00d7f5856dad3b8a55e5b27d2497d2750	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 593ec588555ab587cc453f44647070490bdcc6a6	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 5986961d7cd769e660eb04836f565daf517c360d	MUON_COST.md	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
 603b5190d5d94504afc5d4699a35c7ddfa097654	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
@@ -78,7 +81,10 @@ f706e6ccf7d4e4d844b6d90692ebc5a9c5927ed2	CHANGELOG.md	UNREVIEWED
 9ee64786443d1c1007d3ecaee910531acd6e186d	MUON_COST.md	UNREVIEWED
 a5a39ec6eac67be6323dc4fd583986e37df3c022	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 acd703246094fd897fad7dee72d0dce8d0251cd2	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+b9968767f7a66d17694a27810539c6a9c7c56cfd	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 c206530e15e32d491f38c856f66ffa2a7e7bd3e1	MUON_COST.md	UNREVIEWED
+c67764b4de510dcf35a2e6647510644f2dc8113e	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+cef214c42ed6ec1f4b20d9eb6de499f8ef898b93	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 d2679a550fc350b050ea845d217547889b2914ee	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 d3f02568e849184d16e0c4219a778c5f06635eeb	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 d44d9fa7cbef25d3f92a7c5a38c2bc4243f83aa7	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion
@@ -96,11 +102,13 @@ fcdb9881cc3321e4593098cd182d74878ab444fb	MUON_COST.md	REGISTERED:typed sentence 
 27703eed5984a3beaa79ac0a279c1d89a7081452	README.md	UNREVIEWED
 2b1ad20830e2d61ab896bf0e68626a36314140d8	README.md	UNREVIEWED
 55211c2f1d8f7822fb9faf9740e77ba1759744ab	README.md	UNREVIEWED
+57885e407df2201904b4572157e0dbcb336277f6	README.md	REGISTERED: a citability judgement, not a measurement. Its substance is the T1/T3 basis disjointness that test_no_basis_class_spans_T1_and_T3 proves; the tier assignment itself is a human call and is recorded as one.
 6fe1fdc5ffcd2eff2e217cc02899b91e62bf75f2	README.md	UNREVIEWED
-9fca10a4aa026bde695b6fc69e44f498cac082fc	README.md	UNREVIEWED
+9c761e0371dcf898f0a500d2a89d9659bb704c76	README.md	REGISTERED: a citability judgement, not a measurement. Its substance is the T1/T3 basis disjointness that test_no_basis_class_spans_T1_and_T3 proves; the tier assignment itself is a human call and is recorded as one.
 a389d4a40b1d8c0d9a5e2e842f8a8c04e49909a8	README.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
 c77ae914453a7a838b724c221071b3893612c4d5	README.md	UNREVIEWED
 caadceb259301af2a3f48cbdecafff9818b899a9	README.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
+dbb9e1a79d7a06bde4c0b7b0f642cf53eb9b4629	README.md	REGISTERED: a hand-written restatement of the FINDINGS section-2b panel, which is generated and manifest-checked at its own home; this line carries the order of magnitude only, and the sentence beside it states that the panel's spread is set by its declared E_mu boxes.
 ef5f863f07ba9f184e1932d13dc5a21c70ecf12e	README.md	UNREVIEWED
 f255ebcbbf3980d4b3eddf46db6c68bb1e7ca93f	README.md	UNREVIEWED
 0a1f04003f8a301ada54afb4cf71b80ebcba9ecf	openmucf/data/muon_cost.schema.json	UNREVIEWED
@@ -127,42 +135,61 @@ ef117e0b8309953fd44d7ac67695acd58b5ef006	openmucf/data/references.bib	UNREVIEWED
 0578080af3f1c6b2e9cc3a1c563fc64a5fe41115	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 067f4e1e4a3346d54dac8f16857743ae23a8177a	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 07a26dd62dd1900976e1732af0fcc8238a25a176	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+10bb5072e39d24048fccee90c7be42c1e92f032b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 12536c92eb76ff91736739ac57f56666170e9b70	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 147ae6b6f8499bd2937d5acd61fb9d4d3631ea4d	openmucf/mucost.py	UNREVIEWED
 1abea9af6c14e70c5f2b569c0b4c14aaac5f14fc	openmucf/mucost.py	UNREVIEWED
+1b97e6b7d4a070a4be899590282292ed39b884de	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 1baede9fafebfbd4989edd410fd3e5e89ad83f21	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+1e3b320d77d1b1c8b34044603edfbab40a7b2c89	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
+1e566535af516279d38d3f085a1df0adf7346863	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 1f58bba984382f6f4ed3bdcb4051c030fd143518	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_a_non_sourced_chain_renders_as_a_bound_not_a_value
 1f5ed6e488836dbcf5c011d517a924c2b7befa1d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 20f279f6df5d4acbd5604bbc5692591e2fcdd158	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 241a365656aa5cad0bf3dfe79d17d2c98b9100a2	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+255af98c859d6fee14db7fc4945f4e63d779efe7	openmucf/mucost.py	REGISTERED: states why `mixed` is NOT excluded -- it biases an aggregate in the ledger's own declared one-sided direction, so dropping it would raise our own headline ratio. A scope decision, recorded; test_music_is_mixed_charge pins the row it is about.
+255e62d52f6246c7de8d2366ec1113c9364b05ae	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 2618b9774a512014eb16b4953d422e0a1e9fb201	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+32c01d6484239d6933ed58cb3ff16cc4643e79a6	openmucf/mucost.py	REGISTERED: states why `mixed` is NOT excluded -- it biases an aggregate in the ledger's own declared one-sided direction, so dropping it would raise our own headline ratio. A scope decision, recorded; test_music_is_mixed_charge pins the row it is about.
+33de52468107673e7ff3bd10859881067c989524	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
+33e31e89cfd427b517a3bf058b2c9cb5a18b9176	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 35ace2a47360c6272d21f83eb5603e2228567cb5	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_bound_message_names_the_bound_not_the_direction_of_the_truth
 3cfc4a27a6f9a93ae5bbc2d5365109f3c8c62950	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 3d319c24290fb3c1a93eb32895caed24dee34725	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+442274206bddffdbefa68692fa26743b07ce1efc	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 4815274b30556de5b98721e8c619198a5c7c94ec	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+4b1aa8be9bb639fcec96516f0e03a5bb914013e0	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 4b6773339dbb3e4ac6461f6fec3f8fb76a6f2d1b	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 5150940df5e0caca38e6a24bf4d8b70e032b81fa	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 54330d1f333e170b4e9bd473d2eee00ddfddbbfb	openmucf/mucost.py	UNREVIEWED
 5d9a0212920a84a3c5b1da23b0477d8c66a04048	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 631599677b8c934b25b0ddc26dc42612c964eb2e	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 63422a24dfe768e681f4615b38d96f26a8626cad	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+64600e211fa3f67ca39facb5569eb3210942b210	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 64e1b6b689f013d875ea4e6906505b2b40c971e2	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+66c4880975dfe5c3d45c73ed6ecbd231988064b3	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
+6b9ef43a29c9016d472045d3b6bf8c64051f251d	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 6f6fb186c5d85766e0e7c9772216f3ab38704798	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 725cc5ebba27feca124508afaf0c695c83f1e257	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 76da6b31808b0e8420baac86aa28eb3ee86cf6ec	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_numeraires_is_tier_scoped
 77c23545959c362963d0df9be2edd525b61d6b67	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 7ecb457ab40e5850818d09e6395174e67a60d98d	openmucf/mucost.py	UNREVIEWED
+80b21c3100a7a29a32ffad17020787825353117c	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 84ecf9856a75268e3a1e9c46b050b853909d1385	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 860cd73fc3e4302b79e0c64d5b02ce4a58bf9aa6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 8679eb72b557cf48d93576a79718552017fd8c47	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 905fb1066cc51d305de2e1af23bb6a62fd27a90a	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+90c3d65e131a3231822ef10ebc48552ec844b8dc	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 99ec64643192bb9b78a8f505aae3493aff302a78	openmucf/mucost.py	UNREVIEWED
 9cc5da77a33ae17156f1be76537542bd331b6daf	openmucf/mucost.py	UNREVIEWED
 a25a4b3f33f8cba9a5f46c3af70b9b5ca45178fb	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 a613efb0c7703fdfa020c03c952490c5e28c50d6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+ab5dfb7db7f91c2e51c8aa86dee559522a591f19	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
+add95ac110452033015bf5ac2291d88aff34ff2b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 b26c0be0060f8ddbfc332a4a1fe8d60f2e109e41	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 b27c45d335f9174b4c13311e84df980c21202198	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 b3b5975fd541857b6a745d315fd519edb4debdd1	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+bb82e8201ddbef20e3a13cedda04f7086d34a819	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 bd65d26c5619b08df3b575c912bb0a1e5feecbbd	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers
 bf82765342e46f11f1ded711e2aee86e47205161	openmucf/mucost.py	UNREVIEWED
 c159768f8435e57b72d2b17f8da18427808b2dd1	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
@@ -171,13 +198,17 @@ c6f4d48451f9fb1d0c3e82e5feca55f1a58c50fc	openmucf/mucost.py	UNREVIEWED
 ccad2e598c027b31e0a7b1f302699c874995c58f	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 ce124b11e8dcef23a6f11ded1d7777be9c062ae7	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_a_non_sourced_chain_renders_as_a_bound_not_a_value
 d16c560fff0c1b108bf97697d8cd2b7881c2f761	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+d2495652d183b6b0cc46b35e30f5811c5ebba3d5	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 e0d1b920a87749dff91ada4b059e1d43d476be04	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 e4550bda2ca2861059d07821cb977271c5ba04e3	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 e669b43f039f3275c49df7792dd280b72fbdfdf8	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+e829c9d709355a30dedebb05fffb5be3bd08858e	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 e8401dd57a360f693b87a28c87294e04c849539d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+e8f070e95098ee35e2f7b61c0da4a4cc3754a7ec	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 ebce009b41b63ba02e2679d137bf9df7aae5d414	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 ebddb27f1a1a56a124ed0586793874eef073f32d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 f2fcd65b703f34fec68cd93ea6bc13b1d20eeeb8	openmucf/mucost.py	UNREVIEWED
+f557d6ed467b013c229b7dcf3c82030ad26577e6	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 fa9b79c4f27f4adf308b8ae66a5b5769593592e3	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 1d7cf942817f1116a86140d6f20b9509e065c2aa	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
 2a669477f641be3b126774e260b4561ab6b519f9	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
@@ -211,6 +242,7 @@ fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED
 3762113c8128e9b5ec3c8ed238acaff7889f7c73	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 3d795e8ce3b22535411d622499971ae0c13ec90d	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 4804e9d44c1f68151aaf6470f1dc11a9030437ee	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+48fe63c00d7f5856dad3b8a55e5b27d2497d2750	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 4e089297dcf679abb6e6d00d6ce158af3c8cc592	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 4e9d593f22c07af2590b38cccd4d31492c6c78dc	scripts/generate_mucost.py	UNREVIEWED
 5639c6795637b0da13bcf02e211af9f90680a506	scripts/generate_mucost.py	UNREVIEWED
@@ -236,15 +268,23 @@ fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED
 9b94f80e74206a9f98365e0387d2f6aaf84d3f05	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 a1875b7e89cd0c07e7e8dba28070933e0989962a	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_generator_refuses_an_empty_chain_point_set
 a61d77636eb032e8b0b01ac6649c015cd0a0a1e4	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+a7b82ab769f92bd85bb363cbcc0c7f2a611d704f	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_the_median_membership_sentence_is_derived_from_the_ledger
 a7c133e66899953e880c1afde194d7dacb4e5cb5	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
 acd703246094fd897fad7dee72d0dce8d0251cd2	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
+af33dbd481f9fd0a0a16bc344ad5336540395091	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 b00c01b08ff199bfd44d4df8bab5a12f037fcfb0	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 b4a9852a3a55250ec621407d81e07b7593934103	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+b620605137bbfec7346f08c49dce251f58aae547	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 b69216b0f4b4ecbfb7bc119c5258a5e3261995b8	scripts/generate_mucost.py	REGISTERED:module docstring, rendered into no document; states the framing MUON_COST.md carries in its own header at line 3, and the tier/numeraire rule the tables implement
 b912765778adc576ff733b2a70d486973b675b2e	scripts/generate_mucost.py	UNREVIEWED
+b9968767f7a66d17694a27810539c6a9c7c56cfd	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+bcf18563124409d768ce65a201311c2ba4f0e50f	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_the_median_membership_sentence_is_derived_from_the_ledger
 c206530e15e32d491f38c856f66ffa2a7e7bd3e1	scripts/generate_mucost.py	UNREVIEWED
 c5c97c394b52a199b5961f66383d02ed652d9f1f	scripts/generate_mucost.py	UNREVIEWED
+c67764b4de510dcf35a2e6647510644f2dc8113e	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 c7f19f375c6aa9561ad6097abd5b048869662704	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
+c84c4dfacddf0955fe1da38a450c4490f197f125	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_the_median_membership_sentence_is_derived_from_the_ledger
+ce5ed0f73de1c123dc66b4d4ea906da0ac516397	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 cf1929ea16bbf52737b3e657a12a9f74adf9ac0d	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 cf1fc41f123f675d23ef92df38808eeebef6c412	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 cf5b5e66cea0708a7e17013d58974e4229b767ab	scripts/generate_mucost.py	REGISTERED:rendered from a value computed from the ledger at generation time, so it cannot go stale independently of the CSV
@@ -270,13 +310,16 @@ ce1b59361b635e8a1bdf7753ff5cbeb94420e644	tests/test_ledger_claims.py	REGISTERED:
 ecfa7ab0e26f508095b868ca4c7ebdbf241ea91d	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
 066a2476ab79febb99a4422e22b8bbfb2903397c	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 0b42f9562f8bf43fd6c145c33b70ba78e0d3b772	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+111a4916c0f6778116ab4abd0e6f58a91050d8c4	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 125ba8541eb5d3f7c0242482ec5be52d40eef40a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 1d4c418e76a448142b0be9541c20c94d322f0c19	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+1ef7de72cfdd96147677a47b69ab913bd882f52f	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 1f666ad676fd74af2b8806da2c336ce9f5f9f48e	tests/test_mucost.py	UNREVIEWED
 21066b05ce4f81ad258b36094e15c9ee799fd101	tests/test_mucost.py	UNREVIEWED
 2545bc77df2b56f69eefab04ffa9c30d6437dffa	tests/test_mucost.py	UNREVIEWED
 26e1c484ae464f7ccf615d7deb9224402f3afe30	tests/test_mucost.py	UNREVIEWED
 27837199d5ad2a87471806f2815b9ecaf8ec2a82	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+2934d8c10319a4db0ab0af12d3a5acef7f7c9035	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 2fd42360838de0b00832486e967eec145e1e5470	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 3516c7c72f7dda6dcb84836323dc260e8b291e46	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 3a90a1458b31f15601ef770972891d111dba4f92	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -285,6 +328,7 @@ ecfa7ab0e26f508095b868ca4c7ebdbf241ea91d	tests/test_ledger_claims.py	REGISTERED:
 46f4acd6d8e80a9f8213d763f1d6a02d23f21af2	tests/test_mucost.py	REGISTERED:assertion line of the test that asserts the property; the quantifier the enumerator matched is part of the identifier `mu_plus_only`
 486126ed846ab86304031907e6827bab865ed673	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 4d22e063cdd30b263d2b9dbcd124737568edb39a	tests/test_mucost.py	UNREVIEWED
+59291d9eed280c4afed0e983a6b115e7347caf04	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 5a8d3404ec97c54a0dd7634476bd7866af9da303	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 65d9e62310a95ab3ec65c62b020405fe08342c27	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 6964f6d85c76bb39adefeba2996c3502f54de073	tests/test_mucost.py	UNREVIEWED
@@ -292,14 +336,18 @@ ecfa7ab0e26f508095b868ca4c7ebdbf241ea91d	tests/test_ledger_claims.py	REGISTERED:
 6d78377e51e5c227774ba78f33e81ba1e9f084de	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 703c22b65f5fa8889a23653ae932d4331bd4e1a5	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 7148627ebeee24bb9f53382aaee8d156fdc04986	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+71794a8d1bacee8bad4fe37d4ab7df735113c935	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 71bcf4e4c9cc0437d6f654c1cd43f39edb078ab6	tests/test_mucost.py	UNREVIEWED
 80e90a9b44315bd561337b8ca3ba256c92d96cfa	tests/test_mucost.py	UNREVIEWED
 817a39706adf76d40df07c35a44e27361be0603e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 866ffa0e22d23e1b2465773a3fb48d83dd41594a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 868b7a60534fa4103e59fb8bf79e82c2d73e605f	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+8a12038953b8750bb37b18374104bb0391db855b	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 8c964e5386029e1077ac1eaf21588d934eeef45a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+8fb72fe1df224bedc01c5c606a8b46cf415f0f58	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 94c156a165cc2d0d813f0ce879d3bbfe2207fc28	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 95b12dd0543136bc9dfaff070cf0064d18448b9b	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+9797c296d607e33a4e2da051ddb2d4e28de23176	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 991bfc6068d5bcbbd3d07f63f539540439b63291	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 9c999d9a8f1eb7ceb92f4eb441f4f3d36f406e17	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 9d2b34a710eaf3b8603a78e225f055773f156797	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -307,11 +355,24 @@ a10ee4031447ec559265c028666a5ee4b2c31ea7	tests/test_mucost.py	UNREVIEWED
 a86b4abee14c74cb56cb9648bdd953eee02f7863	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 a99a1388bd180f2d4009352e559da2d4068f3071	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 abb72443c94e2a280c36008247c981348427883c	tests/test_mucost.py	UNREVIEWED
+ad618fd51038d47b77d534ca9c590a84dffea4f7	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 b10befbaf5a01934522acd8f6013e36daa46b701	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 b12dedd692c676c3eb313a34154c6fd2cea4e2b5	tests/test_mucost.py	UNREVIEWED
 b22c4a3f9b4f76f91144c71cc2ffd1c7c59f3a54	tests/test_mucost.py	UNREVIEWED
 c31bd2aaec64475b2055d7dd6eae7a3c3f37f254	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 d00802cb973f32be14ab22b09d676d16b88b7970	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 db0e9dfe9063b66b23812ab00e89491a89c3f72e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+e42164bbcd87785b515bf3ad609d0ddc73bcea09	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 e50cd262f5ecf0762c27b42f980f9742768ce207	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+e7223976c9d3d530bcf666a7bace0545960e37c0	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 f0cb78cc26ecd0b21ceec178a7c2a8a2cfd7aa2e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+6b83d87f1b78580841b781efef0fef247e24072b	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+34bdc05056b5e7f9f880361b344bff986d199594	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+c1074b5d8f20fcf2bc8675b2dc71ac485a31a4b2	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+66bfad040d377363f4026b398378e502fad33e5b	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+71da42c260f3e2c85cf15bc0e364b6307b2cf341	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+4a52fbe43d1abb680841fe49b1601aa702c79083	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+3fd19904649a3f2f0e1518b2362a033ecc1644ad	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+7af9082d9d6183a4c811c292f7da617f7c8b3037	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+a83e8467f5865fcfa46d264eb7ed5909e7818962	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
+a60e5843e56fe633ef4a67f3c2a4121b626a15b4	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
