@@ -710,11 +710,13 @@ def panel_t3_exclusion_clause(table: MuonCostTable) -> str:
     # The causal claim is exactly this and no more: exclusion sets where the support ENDS. It must
     # not name the retracted 1e6 edge as what exclusion prevents -- that edge was a declared
     # constant, and even with the excluded row admitted a min/max support would stop at the row's
-    # own value, not at 1e6.
+    # own value, not at 1e6. For the same reason the verb is "reaching" and not "running past":
+    # a min/max support over the admitted rows ends AT the largest of them, so an excluded row's
+    # figure is what the support would reach, never a value it would overshoot.
     return (
         f"{names} {is_are} {bases}\n"
         f"and {is_are} excluded, so the support ends at the largest admitted row rather than\n"
-        f"running past {this_figure}."
+        f"reaching {this_figure}."
     )
 
 
