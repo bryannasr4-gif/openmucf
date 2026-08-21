@@ -40,10 +40,11 @@ and the trust gate cannot drift apart on what "within tolerance" means.
 from __future__ import annotations
 
 import csv
+from pathlib import Path
 
 import pytest
 
-from openmucf import validate
+from openmucf import formation, validate
 from openmucf.analytic import breakeven_xmu, energy_gain, fusions_per_muon
 from openmucf.rates import TARGETS_CSV, load_rates
 
@@ -316,6 +317,55 @@ def test_bands_exclude_the_neighbouring_printed_value():
         published, ulp, tol = float(row["value"]), _printed_ulp(row["value"]), row["tolerance"]
         assert not validate._within(published + ulp, published, tol), tid
         assert not validate._within(published - ulp, published, tol), tid
+
+
+def test_registered_but_not_scored_by_the_engine_trust_gate():
+    """These rows are registered in the CSV and deliberately absent from VALIDATION.md's scoreboard.
+
+    Both facts are pinned together here. If a later change scores them in ``validate.run()``, this test
+    fires and forces the disclosure paragraph to be revisited in the same edit, rather than leaving a
+    document that says they are excluded next to a table that includes them.
+    """
+    scored = {r.target_id for r in validate.run(load_rates())}
+    assert scored.isdisjoint(_registered_rows()), sorted(scored & set(_registered_rows()))
+
+    repo = Path(__file__).resolve().parents[1]
+    for doc in ("VALIDATION.md", "VALIDATION_CHANNELS.md"):
+        text = (repo / doc).read_text(encoding="utf-8")
+        assert "deliberately NOT scored above" in text, doc
+        assert PREFIX in text and "tests/test_koucheng2026.py" in text, doc
+
+
+def test_these_rows_cannot_detect_an_engine_defect():
+    """The measured reason they are not scored above: they are blind to the engine, by construction.
+
+    Halving the formation model's calibration scale is a gross engine defect. It moves most of the
+    scored rows and none of these, because nothing here calls the ODE or the formation model -- only
+    the closed forms and three ledger values. That is a property worth pinning rather than asserting:
+    it is exactly why adding these to the trust gate would inflate a count of engine tests.
+    """
+    rates = load_rates()
+    before_scored = {r.target_id: r.predicted for r in validate.run(rates)}
+    before_ours = _predictions(rates)
+
+    original = dict(formation._CALIB)
+    try:
+        formation._CALIB.update({k: v * 0.5 for k, v in original.items()})
+        after_scored = {r.target_id: r.predicted for r in validate.run(rates)}
+        after_ours = _predictions(rates)
+    finally:
+        formation._CALIB.clear()
+        formation._CALIB.update(original)
+    assert original == formation._CALIB
+
+    moved = [
+        tid
+        for tid, was in before_scored.items()
+        if was == was and was != after_scored[tid]  # was == was skips the DEFERRED nan row
+    ]
+    assert len(moved) == 8, sorted(moved)  # the count the disclosure paragraph states
+    assert after_ours == before_ours, "an engine defect moved a row that does not use the engine"
+    assert _predictions(load_rates()) == before_ours  # and the restore is real
 
 
 def test_the_registered_bibkey_is_the_cycle_closure_paper():

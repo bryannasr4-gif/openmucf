@@ -413,5 +413,17 @@ def report_markdown(results, channels="off") -> str:
         "band) -- the first sourced quantification of the placeholder's too-flat temperature shape, and the "
         "standing, quantified motivation for the sourced-formation upgrade and the Phase-3 reactivation "
         "module.",
+        "",
+        "**A second block of registered targets is deliberately NOT scored above.** "
+        "`openmucf/data/validation_targets.csv` also carries the `V_kouchenlawson_` rows, which register the "
+        "published cycle-closure values of Kou and Chen 2026 (bibkey `KouChenLawson2026`) as reproduction "
+        "targets. They are absent from this table on purpose, and the reason is measurable rather than "
+        "editorial: every row above runs the kinetics engine at an operating point against an observed "
+        "quantity, whereas those rows compare two closed forms and pass unchanged when the engine is broken "
+        "-- halving the formation model's calibration scale moves eight of the rows above and none of them. "
+        "Scoring them here would add passes this gate cannot earn and would dilute a count of engine tests "
+        "with algebraic identities. They are reproduced, tolerance-checked and drilled in CI by "
+        "`tests/test_koucheng2026.py`, which also pins this paragraph against the scoreboard so the two "
+        "cannot drift apart.",
     ]
     return "\n".join(lines) + "\n"
