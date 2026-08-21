@@ -311,6 +311,24 @@ def test_the_rounding_boundary_guard_is_not_decorative():
     assert all(validate._within(s, 0.26, registered) for s in spellings), spellings
 
 
+def test_the_guard_rescues_no_row():
+    """The anti-tuning check: widening the band did not turn a single FAIL into a PASS.
+
+    The 0.05-unit guard exists to remove a dependence on how Eq.(12) is spelled, not to buy headroom.
+    So every row must clear the STRICT +-0.5-unit rounding interval as well -- as this file spells the
+    arithmetic, all sixteen do, and the 8 GeV boundary does it by sitting exactly on the edge, which is
+    the whole reason the guard is there. If a future change makes the guard load-bearing for some row,
+    that is a decision to take in the open, not a band to widen quietly.
+    """
+    pred = _predictions(load_rates())
+    for tid, row in sorted(_registered_rows().items()):
+        published, half = float(row["value"]), 0.5 * _printed_ulp(row["value"])
+        assert published - half <= pred[tid] <= published + half, (
+            f"{tid} needs the guard to pass: {pred[tid]!r} outside the strict band "
+            f"[{published - half}, {published + half}]"
+        )
+
+
 def test_bands_exclude_the_neighbouring_printed_value():
     """Tight enough to fail a real disagreement: one unit in the last printed place is already out."""
     for tid, row in sorted(_registered_rows().items()):
