@@ -38,6 +38,7 @@ guarded behind ``main()`` so tests import and assert on the tables without regen
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -153,6 +154,11 @@ def _fmt_j(v: float) -> str:
     return f"{v:.3e}"
 
 
+#: Spelled orders of magnitude for the section-1 span sentence. Deliberately narrow: a tier spread
+#: outside this range is a different document and must be re-worded, not silently re-numbered.
+_OOM_WORDS = {2: "two", 3: "three", 4: "four"}
+
+
 def mucf_rows(table: mucost.MuonCostTable) -> list[dict]:
     """The three tier-separated muCF rows: n/J = X_mu / (E_mu_tier in J), E_mu_tier = MUON_COST median."""
     rows = []
@@ -181,6 +187,34 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
         H[f"emu_{s}"] = _fmt_gev(r["emu_GeV"])
         H[f"emuJ_{s}"] = _fmt_j(r["emu_J"])
         H[f"npj_{s}"] = _fmt_npj(r["n_per_joule"])
+    # The T1-to-T3 neutron-column ratio, COMPUTED. n/J = X_mu / E_mu, so this is exactly the muon-cost
+    # tier-median ratio and nothing else -- an inheritance, not a second measurement. It is published
+    # here so the sentence below states the factor it actually carries rather than an approximation of
+    # it, and so it moves when the ledger moves.
+    _by_short = {r["short"]: r for r in mucf_rows(table)}
+    _exact_ratio = _by_short["T1"]["n_per_joule"] / _by_short["T3"]["n_per_joule"]
+    H["npj_ratio_T1_T3"] = f"{_exact_ratio:.1f}"
+    # The reader's two recomputation routes from the printed page, published beside the factor (the
+    # same rule the FINDINGS ratio carries: a paragraph written to be checked may not quote a number
+    # its own printed inputs cannot reproduce). The E_mu column must reproduce the published figure
+    # EXACTLY -- the generator refuses to write the page otherwise -- and the n/J column's quotient
+    # is printed too, because its cells are rounded independently to four significant figures, so a
+    # reader dividing them can land one last-digit step away and must not have to guess why.
+    H["emu_ratio_from_printed"] = f"{float(H['emu_T3']) / float(H['emu_T1']):.1f}"
+    assert H["emu_ratio_from_printed"] == H["npj_ratio_T1_T3"], (
+        f"the printed E_mu cells give {H['emu_ratio_from_printed']}, which does not reproduce the "
+        f"published {H['npj_ratio_T1_T3']} -- a reader checking the sentence gets a different number"
+    )
+    H["npj_ratio_from_printed"] = f"{float(H['npj_T1']) / float(H['npj_T3']):.1f}"
+    # each .3e cell carries a relative rounding error of at most 5e-4, so their quotient sits within
+    # ~1e-3 of the exact factor; outside that bound the disclosure sentence itself is false.
+    assert abs(float(H["npj_ratio_from_printed"]) / _exact_ratio - 1.0) < 1.1e-3, (
+        f"the printed n/J cells no longer reproduce the factor to display rounding "
+        f"({H['npj_ratio_from_printed']} vs {_exact_ratio}) -- re-word the disclosure sentence"
+    )
+    # The order-of-magnitude word in section 1 is derived from the same factor, never typed. Strict
+    # map: a spread drifting outside it must be re-worded consciously, not printed as a bare digit.
+    H["tier_span_words"] = _OOM_WORDS[round(math.log10(_exact_ratio))]
     for a in build_alt_sources():
         H[f"npj_alt_{a.key}"] = _fmt_npj(a.n_per_joule)
     return H
@@ -226,6 +260,36 @@ def _dropped_block() -> str:
     return "**Dropped for unsourceability (named, not silently omitted):**\n" + lines
 
 
+def _stage_mix_clause(table: mucost.MuonCostTable) -> str:
+    """The within-tier composition disclosure: a tier median can itself mix accounting stages.
+
+    Rendered from the same rows each median is computed over (``aggregate_rows``), never typed, and
+    over EVERY tier rather than one example -- naming a single mixed tier invites the reader to
+    conclude the others are stage-homogeneous, and today two of the three are not. Conditional: a
+    tier whose aggregate holds one stage is left out of the sentence, and if no tier mixes, the
+    homogeneous form is emitted instead. This is the disclosure that keeps the one-row-at-a-time
+    reading honest -- each row is conditional on its tier median AS COMPOSED.
+    """
+    mixed = []
+    for short, tier_id, _label in TIERS:
+        stages = sorted({r.stage for r in table.aggregate_rows(tier=tier_id)})
+        if len(stages) > 1:
+            joined = " and ".join(f"`{s}`" for s in stages)
+            mixed.append(f"the {short} median over rows at {joined}")
+    if not mixed:
+        return (
+            "(Every tier median here is taken over rows at a single accounting stage, so each row "
+            "conditions on a stage-homogeneous median.)"
+        )
+    listed = ";\n".join(mixed)
+    return (
+        f"(One more inherited property: a tier median can itself mix accounting stages within its\n"
+        f"tier -- {listed} --\n"
+        f"so each row conditions on its tier median as composed, with the per-row stages printed\n"
+        f"in MUON_COST.md.)"
+    )
+
+
 def build_markdown(table: mucost.MuonCostTable, H: dict[str, str]) -> str:
     rows = mucf_rows(table)
     alts = build_alt_sources()
@@ -266,12 +330,28 @@ not a UQ pushforward. Each E_mu tier median is sourced from the muon-cost ledger
 
 {_mucf_table(rows, H)}
 
-The muon cost spans ~10^3 across tiers (the MUON_COST.md finding), so muCF's neutrons-per-beam-joule
-spans the same ~10^3: from **{H['npj_T1']} n/J** at the design-study muon cost (E_mu {H['emu_T1']} GeV,
+The tier medians span about {H['tier_span_words']} orders of magnitude, and `n/J = X_mu / E_mu` is exactly inversely
+proportional to the muon cost, so the neutron column spans the SAME factor **by construction**:
+{H['npj_ratio_T1_T3']}x, which is the muon-cost tier-median ratio itself and not a second measurement
+of anything. Checked from the page itself: the E_mu column reproduces the factor exactly
+({H['emu_T3']} / {H['emu_T1']} = {H['emu_ratio_from_printed']}x), while dividing the printed n/J
+column gives {H['npj_ratio_from_printed']}x -- those cells carry four significant figures and are
+rounded independently, so their quotient can differ from the factor in the last digit; the E_mu
+column is the one that carries the factor's own inputs.
+It runs from **{H['npj_T1']} n/J** at the design-study muon cost (E_mu {H['emu_T1']} GeV,
 ~{rows[0]['emu_GeV'] * 1000 / XMU:.0f} MeV of beam per neutron) down to **{H['npj_T3']} n/J** at the
-operating-facility muon cost (E_mu {H['emu_T3']} GeV). Which row is real depends entirely on whether a
-purpose-built muon source at the design-study cost is ever demonstrated -- the same open question
-MUON_COST.md flags ("the floor is unvalidated, not impossible").
+operating-facility muon cost (E_mu {H['emu_T3']} GeV).
+
+**That spread is inherited, and it inherits the basis it came from.** MUON_COST.md records that its
+tier medians are a MIXED-BASIS, order-of-magnitude observation -- no accounting stage is shared
+between T1 and T3 at all, so a same-basis cost ratio between them is not computable from those rows.
+Dividing one row of this table by another therefore does not produce a same-basis neutron-economy
+comparison either; it reproduces the cost spread together with its heterogeneity. Each row remains a
+well-defined statement conditional on ITS OWN tier median, which is why the table is tier-separated
+and never blended. {_stage_mix_clause(table)}
+Which row is real depends entirely on whether a purpose-built muon source at the
+design-study cost is ever demonstrated -- the same open question MUON_COST.md flags ("the floor is
+unvalidated, not impossible").
 
 ## 2. Alternative 14 MeV/n sources (sourced comparison)
 Established neutron sources, each `n per beam joule` derived here from published beam parameters (the
@@ -286,8 +366,13 @@ arithmetic is in each row's inputs). Spallation is included per the neutronomics
 On a beam-energy basis, muCF at the **design-study** muon cost ({H['npj_T1']} n/J, ~{rows[0]['emu_GeV'] * 1000 / XMU:.0f}
 MeV of beam per neutron) is competitive with a spallation source and ~10^3 better than a sealed-tube D-T
 generator -- because one expensive muon catalyzes ~{H['xmu']} fusions. At the **operating-facility** muon
-cost ({H['npj_T3']} n/J) that advantage is gone: the ~10^3 muon-cost gap (MUON_COST.md) transfers
-one-for-one to the neutron economy. The comparison is beam-basis only (no wall-plug for any row; the
+cost ({H['npj_T3']} n/J) that advantage is gone: because `n/J` is inversely proportional to `E_mu`,
+the muon-cost tier spread carries into the neutron column exactly ({H['npj_ratio_T1_T3']}x), and it
+carries its accounting with it -- that spread is MIXED-BASIS and an order of magnitude, never a
+same-basis ratio (MUON_COST.md), so neither is the ratio between two rows of the muCF table. The
+comparison against the alternative sources in section 2 is a different one and IS same-basis: every
+`n per beam joule` in this document, muCF row and alternative alike, is counted on beam energy and
+on nothing else (no wall-plug for any row; the
 alternatives' accelerator efficiencies are likewise not folded), the spallation spectrum is not 14 MeV,
 and none of this is an energy-breakeven claim -- it is neutron-source accounting, and no new physics
 is introduced. E_mu single accounting home: MUON_COST.md; X_mu single ground: the measured `V_petitjean_Xmu`.
@@ -321,6 +406,25 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable, alts:
             )
         )
         entries.append(_entry(f"npj_{short}", rf"{re.escape(emu)} \| {re.escape(H[f'emuJ_{short}'])} \| {re.escape(npj)} \|"))
+    # The published tier ratio. Tracked because it is the number the retracted "transfers one-for-one"
+    # sentence used to assert without printing: it is now printed, and bound to the ledger by the
+    # manifest as well as by the test that recomputes it from the muon-cost medians.
+    entries.append(
+        _entry(
+            "npj_ratio_T1_T3",
+            rf"\*\*by construction\*\*:\s*\n?\s*{re.escape(H['npj_ratio_T1_T3'])}x",
+            source_type="ledger_row", source="openmucf/data/muon_cost.csv (mucost.tier_median)",
+        )
+    )
+    # The two reader-recomputation figures published beside the factor: the E_mu-column quotient
+    # (must equal the published factor -- the generator asserts it) and the n/J-column quotient
+    # (display-rounded, disclosed so a reader's division is explained rather than surprising).
+    entries.append(
+        _entry("emu_ratio_from_printed", rf"= {re.escape(H['emu_ratio_from_printed'])}x\)")
+    )
+    entries.append(
+        _entry("npj_ratio_from_printed", rf"gives {re.escape(H['npj_ratio_from_printed'])}x")
+    )
     # alt-source rows: each derived n/J, anchored to its label
     for a in alts:
         eid = f"npj_alt_{a.key}"

@@ -110,30 +110,110 @@ channels bias X_mu DOWNWARD by up to ~15% combined (ttmu side-cycle, un-pinned p
 d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-edge-faithful.
 
 ## 2b. Q_net by muon-cost tier
-Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To make the
-muon-cost gap (`MUON_COST.md`) legible as an energy-return statement, the SAME seeded forward-UQ Q_net is
-re-run under three tier-specific E_mu priors, with every other input (the measured omega_s0 / R / lambda_c /
-eta boxes) held fixed:
+
+> **AMENDMENT (2026-08-19).** This section previously ran its T3 row on Uniform(2.3e3, 1e6) GeV and
+> closed its Finding by calling the resulting median collapse -- then reported as ~5 orders of
+> magnitude -- "the ~10^3 muon-cost gap expressed in energy-return form". Both are retracted. Neither
+> old T3 edge carried recorded provenance anywhere in this document or its generator, and the box's
+> support ran past the PSI HIMB figure (890000 GeV per mu+, at its row's
+> `transported` stage), which counts mu+ only and which
+> the muon-cost ledger's schema bars from any muCF cost aggregate -- a prior support drawn over a tier
+> being no exception. The T3 box is now the min and the max of the pinned beam-kinetic T3 rows that
+> rule admits: **Uniform(2286, 6002) GeV**. Dropping the T3 support from 1e6 GeV to
+> 6002 GeV RAISES the T3 median Q_net, from **4.39e-07 to 5.25e-05**, since
+> cheaper assumed muons buy more return. Its effect on what this section reports is the T1-to-T3
+> FALL: about 3 orders of magnitude, where the retracted text said five. That
+> sentence also read the fall as the muon-cost spread restated in energy-return units; it is not that
+> quantity, and "What sets the panel's spread" below says what it is.
+> T1 and T2 are UNCHANGED -- no barred row touches either -- and the full-text-pinned Bertin et al.
+> (1987) value still sits ABOVE the T1 box, where a discrepant pin is disclosed and never tuned away.
+
+Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To show how
+Q_net responds to the assumed muon cost, the SAME seeded forward-UQ Q_net is re-run under three
+tier-specific E_mu priors, with every other input (the measured omega_s0 / R / lambda_c / eta boxes)
+held fixed. This is a sensitivity-of-Q_net-to-E_mu panel: the boxes are disclosed modelling choices
+(provenance below), not ledger aggregates. It measures no cost gap, computes no cost ratio, and makes
+no same-basis comparison. (Arithmetic ON ITS OWN OUTPUTS is a different thing and is reported below;
+it says something about the boxes this document chose, and nothing about the muon-cost data.)
 
 | E_mu prior (muon-cost tier) | P(Q_net > 1) | median Q_net |
 |---|---|---|
 | T1 design studies, Uniform(3.0, 6.0) GeV | 0.0% | 4.83e-02 |
 | T2 demonstrated tech, Uniform(1e2, 1e3) GeV | 0.0% | 3.99e-04 |
-| T3 operating facilities, Uniform(2.3e3, 1e6) GeV | 0.0% | 4.39e-07 |
+| T3 operating facilities, Uniform(2286, 6002) GeV | 0.0% | 5.25e-05 |
 
 **Finding.** The open-access anchor for the muon cost is Kelly, Hart & Rose (2021) at 4.70 GeV/muon
 (full-text-verified; see `MUON_COST.md`). P(Q_net > 1) is 0.0% in every tier -- even the
 cheapest design-study muons cap Q_net well below 1 at liquid density -- so the tier signal lives in the
-MEDIAN Q_net, which collapses by ~5 orders of magnitude from T1 (4.83e-02) to T3
-(4.39e-07): the ~10^3 muon-cost gap expressed in energy-return form.
+MEDIAN Q_net, which falls by about 3 orders of magnitude from
+T1 (4.83e-02) to T3 (5.25e-05). That fall is a property of the
+E_mu boxes chosen here, NOT a measurement of the muon-cost spread: no same-basis T1-vs-T3 cost ratio
+is computable from the ledger rows at all (`MUON_COST.md`), and this panel computes none.
 
-**T1 box-edge provenance.** The T1 box edges are 3.0 GeV (the Acceleron 2025 active-target slide value --
-simulated, unvalidated, company slide) and 6.0 GeV (a design-study upper value). The full-text-pinned
-Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE this edge), with a ~3 GeV
-ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box [3.0, 6.0] spans the low/central
-design-study range, its edges are disclosed alongside the pinned values, and it is left UNCHANGED
-(pre-registered; a discrepant pin is disclosed, never tuned away). Replacing the flat [2, 10] default
-with a tiered prior is deferred to Phase-4 findings-v2.
+**What sets the panel's spread.** At fixed other inputs Q_net goes as 1/E_mu, so where each box sits
+governs its row. Dividing this panel's own outputs by each other: the T1-to-T3 ratio of the medians
+above is **920**, and the ratio of the two boxes' midpoints
+-- 4.5 GeV and 4144 GeV -- is 920. Both
+are quoted to two significant figures and no finer -- the medians in the table above carry three, so
+a ratio quoted finer could not be reproduced by dividing the printed values -- and at that precision
+they are the same number; that agreement is the point. What the panel shows is a property of the support
+this document chose, not of the muon-cost data. It is a different quantity from the muon-cost
+tier-median ratio reported in `MUON_COST.md` (which is itself a mixed-basis, order-of-magnitude
+observation and not a same-basis ratio), and the two do not take the same value, so any resemblance
+between them is a coincidence of where the boxes were drawn and never corroboration of either.
+
+**Box-edge provenance.** A box edge is a prior-support choice for a sensitivity scan, not a ledger
+aggregate -- but one rule binds every edge and is enforced by a test rather than promised here: no
+edge may be read off a row barred from muCF cost aggregates, and no box's support may CONTAIN such a
+row's value. Each box below prints every edge it has, and what set it.
+
+**T1 box edges.** 3.0 GeV is the Acceleron 2025 active-target slide value -- simulated,
+unvalidated, a company slide. `MUON_COST.md` records that the slide-tier Acceleron row never
+headlines; letting it set the lower edge of a prior support is a JUDGMENT CALL, disclosed here as
+one, and not a violation of that rule, because the edge of a sensitivity box is not a headline
+figure. 6.0 GeV is a declared design-study upper constant and is not a ledger row. The
+full-text-pinned Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE the
+upper edge), with a ~3 GeV ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box
+spans the low/central design-study range, its edges are disclosed alongside the pinned values, and it
+is left UNCHANGED (pre-registered; a discrepant pin is disclosed, never tuned away).
+
+- lower edge 3.0 GeV -- ledger row `acceleron_2025`: stage `produced`, numeraire
+  `beam_kinetic`, charge basis `mu_minus`.
+- upper edge 6.0 GeV -- a DECLARED constant, not a ledger row; its reason is
+  stated above.
+
+**T2 box edges.** 1e2 and 1e3 GeV are declared decade constants bracketing the
+tier's single pinned row, the muon-collider front end at 178 GeV. Neither edge is a ledger row, and
+this document previously recorded no provenance for either; they are recorded now as what they are, a
+bracket around a one-row tier, and left UNCHANGED.
+
+- lower edge 1e2 GeV -- a DECLARED constant, not a ledger row; its reason is
+  stated above.
+- upper edge 1e3 GeV -- a DECLARED constant, not a ledger row; its reason is
+  stated above.
+
+**T3 box edges.** This box previously shipped as [2.3e3, 1e6] GeV with no recorded provenance for
+either edge. It is now a pure function of the ledger: the min and the max of the pinned
+`beam_kinetic` T3 rows carrying a charge basis a muCF cost aggregate admits --
+COMET at 2286 GeV, mu2e at 4993 GeV and MuSIC at 6002 GeV.
+That row list is rendered from the same aggregate the edges are read off, so it moves when the
+ledger moves, and so does the exclusion that follows.
+PSI HIMB (890000 GeV per mu+, at its row's `transported` stage) is `mu_plus_only`
+and is excluded, so the support ends at the largest admitted row rather than
+reaching this figure.
+Two things about the surviving edges are disclosed rather than smoothed over: the upper edge comes
+from a MIXED-charge row (MuSIC counts mu+ and mu-
+together, so the mu--only cost it implies is roughly 2x higher), and the two edge-setting rows sit
+at DIFFERENT stages -- one `stopped_other_target`, which is not a point on the muCF chain at all, the
+other `transported` -- so this box spans heterogeneous accounting bases and supports a
+sensitivity scan only, never a cost statement.
+
+- lower edge 2286 GeV -- ledger row `comet`: stage `stopped_other_target`, numeraire
+  `beam_kinetic`, charge basis `mu_minus`.
+- upper edge 6002 GeV -- ledger row `music`: stage `transported`, numeraire
+  `beam_kinetic`, charge basis `mixed`.
+
+Replacing the flat [2, 10] default with a tiered prior is deferred to Phase-4 findings-v2.
 
 ## 3. Breakeven audit (the marquee result)
 The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Under the **measured,
@@ -181,10 +261,13 @@ quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking sur
   E_mu is beam energy per muon delivered (Breunlich 1989 convention); wall-plug efficiency enters
   separately as eta_acc.
 - **Muon-cost caveat (the Q_net floor).** The 2-10 GeV E_mu range is a *design-study* figure for an
-  unbuilt, purpose-built muon source; existing facilities are ~10^3x worse per delivered muon (they
-  optimize beam brightness, not muons-per-watt). So the Q_net interval above is a best-case floor
-  conditional on such a source existing -- real-facility Q_net today would be far lower. (The
-  efficiency-free Q_sci comparison to Yin-Kou-Chen is unaffected: it is genuinely same-basis.)
+  unbuilt, purpose-built muon source, and the operating facilities in the muon-cost ledger sit about
+  three orders of magnitude above it per muon. That spread is a MIXED-BASIS, order-of-magnitude
+  observation and never a same-basis ratio: no accounting stage is even shared between the two tiers
+  (`MUON_COST.md`), and facilities optimize beam brightness and purity rather than muons-per-watt. So
+  the Q_net interval above is a best-case floor conditional on such a source existing -- real-facility
+  Q_net today would be far lower. (The efficiency-free Q_sci comparison to Yin-Kou-Chen is unaffected:
+  it is genuinely same-basis.)
 - The blanket multiplier M=1 (pure muCF); a fission/breeding hybrid (M>1) is a separate, explicit knob.
 
 Figures: `figures/sobol.png`, `figures/forward_uq.png`, `figures/breakeven.png`.

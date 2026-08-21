@@ -90,6 +90,38 @@
     },
     {
       "doc": "SYSTEMS.md",
+      "id": "kelly_E_mu",
+      "pattern": "quoted as \\*\\*4\\.70 GeV\\*\\*",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "4.70"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_quotient_MeV",
+      "pattern": "0\\.77 muons-per-beam-particle = 4683 MeV",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "4683"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_quotient_GeV",
+      "pattern": "i\\.e\\. 4\\.68 GeV",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "4.68"
+    },
+    {
+      "doc": "SYSTEMS.md",
+      "id": "kelly_rounding_pct",
+      "pattern": "the\\s*\\n?\\s*0\\.4% difference is his rounding",
+      "source": "scripts/generate_systems.py",
+      "source_type": "derivation",
+      "value": "0.4"
+    },
+    {
+      "doc": "SYSTEMS.md",
       "id": "kelly_q_sci",
       "pattern": "q_sci = \\*\\*0\\.5617\\*\\*",
       "source": "scripts/generate_systems.py",

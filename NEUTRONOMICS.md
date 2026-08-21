@@ -37,14 +37,34 @@ not a UQ pushforward. Each E_mu tier median is sourced from the muon-cost ledger
 |---|---|---|---|
 | T1 design study (MUON_COST.md T1-design-study median) | 4.85 | 7.771e-10 | 1.454e+11 |
 | T2 demonstrated tech (MUON_COST.md T2-demonstrated-tech median) | 178 | 2.852e-08 | 3.962e+09 |
-| T3 operating facility (MUON_COST.md T3-operating-facility median) | 5497.5 | 8.808e-07 | 1.283e+08 |
+| T3 operating facility (MUON_COST.md T3-operating-facility median) | 4993 | 8.000e-07 | 1.413e+08 |
 
-The muon cost spans ~10^3 across tiers (the MUON_COST.md finding), so muCF's neutrons-per-beam-joule
-spans the same ~10^3: from **1.454e+11 n/J** at the design-study muon cost (E_mu 4.85 GeV,
-~43 MeV of beam per neutron) down to **1.283e+08 n/J** at the
-operating-facility muon cost (E_mu 5497.5 GeV). Which row is real depends entirely on whether a
-purpose-built muon source at the design-study cost is ever demonstrated -- the same open question
-MUON_COST.md flags ("the floor is unvalidated, not impossible").
+The tier medians span about three orders of magnitude, and `n/J = X_mu / E_mu` is exactly inversely
+proportional to the muon cost, so the neutron column spans the SAME factor **by construction**:
+1029.5x, which is the muon-cost tier-median ratio itself and not a second measurement
+of anything. Checked from the page itself: the E_mu column reproduces the factor exactly
+(4993 / 4.85 = 1029.5x), while dividing the printed n/J
+column gives 1029.0x -- those cells carry four significant figures and are
+rounded independently, so their quotient can differ from the factor in the last digit; the E_mu
+column is the one that carries the factor's own inputs.
+It runs from **1.454e+11 n/J** at the design-study muon cost (E_mu 4.85 GeV,
+~43 MeV of beam per neutron) down to **1.413e+08 n/J** at the
+operating-facility muon cost (E_mu 4993 GeV).
+
+**That spread is inherited, and it inherits the basis it came from.** MUON_COST.md records that its
+tier medians are a MIXED-BASIS, order-of-magnitude observation -- no accounting stage is shared
+between T1 and T3 at all, so a same-basis cost ratio between them is not computable from those rows.
+Dividing one row of this table by another therefore does not produce a same-basis neutron-economy
+comparison either; it reproduces the cost spread together with its heterogeneity. Each row remains a
+well-defined statement conditional on ITS OWN tier median, which is why the table is tier-separated
+and never blended. (One more inherited property: a tier median can itself mix accounting stages within its
+tier -- the T1 median over rows at `produced` and `stopped_useful_in_dt`;
+the T3 median over rows at `stopped_other_target` and `transported` --
+so each row conditions on its tier median as composed, with the per-row stages printed
+in MUON_COST.md.)
+Which row is real depends entirely on whether a purpose-built muon source at the
+design-study cost is ever demonstrated -- the same open question MUON_COST.md flags ("the floor is
+unvalidated, not impossible").
 
 ## 2. Alternative 14 MeV/n sources (sourced comparison)
 Established neutron sources, each `n per beam joule` derived here from published beam parameters (the
@@ -64,8 +84,13 @@ arithmetic is in each row's inputs). Spallation is included per the neutronomics
 On a beam-energy basis, muCF at the **design-study** muon cost (1.454e+11 n/J, ~43
 MeV of beam per neutron) is competitive with a spallation source and ~10^3 better than a sealed-tube D-T
 generator -- because one expensive muon catalyzes ~113 fusions. At the **operating-facility** muon
-cost (1.283e+08 n/J) that advantage is gone: the ~10^3 muon-cost gap (MUON_COST.md) transfers
-one-for-one to the neutron economy. The comparison is beam-basis only (no wall-plug for any row; the
+cost (1.413e+08 n/J) that advantage is gone: because `n/J` is inversely proportional to `E_mu`,
+the muon-cost tier spread carries into the neutron column exactly (1029.5x), and it
+carries its accounting with it -- that spread is MIXED-BASIS and an order of magnitude, never a
+same-basis ratio (MUON_COST.md), so neither is the ratio between two rows of the muCF table. The
+comparison against the alternative sources in section 2 is a different one and IS same-basis: every
+`n per beam joule` in this document, muCF row and alternative alike, is counted on beam energy and
+on nothing else (no wall-plug for any row; the
 alternatives' accelerator efficiencies are likewise not folded), the spallation spectrum is not 14 MeV,
 and none of this is an energy-breakeven claim -- it is neutron-source accounting, and no new physics
 is introduced. E_mu single accounting home: MUON_COST.md; X_mu single ground: the measured `V_petitjean_Xmu`.

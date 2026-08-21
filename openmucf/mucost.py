@@ -15,6 +15,13 @@ facility reports GeV-per-stopped-muon; and an accounting credit (e.g. Kelly's x2
 stated in his abstract) is
 recorded in its own flagged column, never silently folded into the normalized value.
 
+**Aggregates are charge-basis filtered, at the aggregate and never at the row.** A ``mu_plus_only``
+row prices no mu- at all, and ``muon_cost.schema.json`` says such a figure "must never enter a muCF
+cost aggregate". Every number this package computes ACROSS rows -- :meth:`MuonCostTable.tier_median`,
+any spread or ratio built from it, and the edges of a prior box drawn over a tier -- therefore reads
+:meth:`MuonCostTable.aggregate_rows`, while the row itself stays in the rendered table with its own
+label. See :data:`AGGREGATE_EXCLUDED_CHARGE_BASIS` for why ``mixed`` is not filtered.
+
 **Bases are heterogeneous and are NOT commensurable.** The column was previously named
 ``normalized_GeV_per_stopped_mu``, which wrongly implied a single per-stopped basis; the rows in fact
 mix per-produced, per-collected, per-stopped-in-D-T and per-stopped-in-another-target figures, and one
@@ -73,6 +80,16 @@ VALID_BASIS_CLASS = {"produced", "collected", "stopped_in_dt", "stopped_other_ta
 VALID_CHARGE_BASIS = {"mu_minus", "mixed", "mu_plus_only", ""}
 # Classes whose figure understates the true per-stopped-in-D-T cost (collection/stopping fractions < 1).
 LOWER_BOUND_CLASSES = frozenset({"produced", "collected"})
+
+#: Charge bases barred from every aggregate this package forms -- a tier median, a spread, a ratio, or
+#: the edge of a prior box drawn over a tier. ``muon_cost.schema.json`` states the rule for
+#: ``mu_plus_only`` ("irrelevant to muCF, which needs mu-, and must never enter a muCF cost
+#: aggregate"), and this constant is where the CODE enforces it rather than the prose asserting it.
+#: ``mixed`` is deliberately NOT listed: it counts mu+ and mu- together, so the mu--only cost is
+#: roughly 2x higher and the row biases an aggregate in the same one-sided direction as every other
+#: row here. Dropping it would remove the row that makes our own headline ratio LARGER, which is the
+#: opposite of the discipline this constant exists for.
+AGGREGATE_EXCLUDED_CHARGE_BASIS = frozenset({"mu_plus_only"})
 
 # ------------------------------------------------------------------------------------------------
 # The two basis axes. `stage` says how far along the muon chain the cost is counted; `numeraire` says
@@ -393,8 +410,45 @@ class MuonCostTable:
         """
         return [r.normalized_GeV_per_mu for r in self.rows_in_numeraire(numeraire, tier)]
 
+    def aggregate_rows(self, numeraire: str = BEAM_KINETIC, tier: str | None = None) -> list[MuonCost]:
+        """Pinned rows in ``numeraire`` that MAY enter an aggregate, per
+        :data:`AGGREGATE_EXCLUDED_CHARGE_BASIS`.
+
+        The aggregate surface is deliberately separate from the DISPLAY surface
+        (:meth:`rows_in_numeraire`, :meth:`normalized_values`, :meth:`basis_classes`,
+        :meth:`stages`): an excluded row is still rendered, still carries its provenance and still
+        counts for a heterogeneity disclosure -- it simply may not enter a number computed ACROSS
+        rows. Hiding it would answer the schema rule by deleting the evidence for it.
+        """
+        return [
+            r for r in self.rows_in_numeraire(numeraire, tier)
+            if r.charge_basis not in AGGREGATE_EXCLUDED_CHARGE_BASIS
+        ]
+
+    def rows_excluded_from_aggregates(
+        self, numeraire: str = BEAM_KINETIC, tier: str | None = None
+    ) -> list[MuonCost]:
+        """The complement of :meth:`aggregate_rows` -- so a document can state WHICH rows it left out.
+
+        A silent exclusion and a hidden row are the same defect from a reader's side, so the exclusion
+        is enumerable and the documents that aggregate print it.
+        """
+        return [
+            r for r in self.rows_in_numeraire(numeraire, tier)
+            if r.charge_basis in AGGREGATE_EXCLUDED_CHARGE_BASIS
+        ]
+
+    def aggregate_values(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> list[float]:
+        """Pinned GeV-per-muon values that may be aggregated: one numeraire, charge-basis filtered."""
+        return [r.normalized_GeV_per_mu for r in self.aggregate_rows(numeraire, tier)]
+
     def basis_classes(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> set[str]:
-        """The distinct ``basis_class`` values among pinned rows in one numeraire."""
+        """The distinct ``basis_class`` values among pinned rows in one numeraire.
+
+        Display surface: this reports what the tier CONTAINS, so it counts every pinned row including
+        one barred from aggregates -- a heterogeneity disclosure that dropped a row would understate
+        the heterogeneity it exists to disclose.
+        """
         return {r.basis_class for r in self.rows_in_numeraire(numeraire, tier) if r.basis_class}
 
     def stages(self, tier: str | None = None, numeraire: str = BEAM_KINETIC) -> set[str]:
@@ -425,7 +479,8 @@ class MuonCostTable:
         return len(self.basis_classes(tier, numeraire)) <= 1
 
     def tier_median(self, tier: str, numeraire: str = BEAM_KINETIC) -> float:
-        """Median GeV/muon for ``tier`` within ONE numeraire (default beam-kinetic, over pinned rows).
+        """Median GeV/muon for ``tier`` in ONE numeraire (default beam-kinetic), over the rows
+        :meth:`aggregate_rows` admits.
 
         WARNING: this medians whatever *stages* the tier happens to contain. A tier holding more than
         one stage is not a same-basis aggregate, so a cross-tier ratio of these medians is NOT a
@@ -434,14 +489,235 @@ class MuonCostTable:
         so it is stated where the CSV is rendered, never asserted here.) The
         numeraire, by contrast, IS held fixed here, because medianing beam-kinetic against electrical
         figures would not even be dimensionally meaningful.
+
+        The CHARGE basis is held too, and by a rule rather than by a caller remembering: this reads
+        :meth:`aggregate_values`, so a ``mu_plus_only`` row cannot enter the median even though it is
+        still rendered in the tier table. The schema states that rule; here it is enforced. It is a
+        filter on the aggregate, never on the ledger.
         (``statistics.median`` sorts internally, so the result is independent of row order.)
         """
         import statistics
 
-        vals = self.normalized_values(tier, numeraire)
+        vals = self.aggregate_values(tier, numeraire)
         if not vals:
-            raise ValueError(f"tier {tier!r} has no pinned values in numeraire {numeraire!r}")
+            raise ValueError(
+                f"tier {tier!r} has no aggregable pinned values in numeraire {numeraire!r}"
+            )
         return statistics.median(vals)
+
+
+#: The short tier keys the FINDINGS Q_net-by-tier panel uses -> the ledger tier each one draws on.
+#: The panel lives in another document; the BOXES live here because their edges are an aggregate over
+#: ledger rows, and :data:`AGGREGATE_EXCLUDED_CHARGE_BASIS` has to reach every aggregate or it reaches
+#: none. Keeping the edges in the document generator is what let one ship unaccounted for.
+PANEL_TIER_OF = {
+    "T1": "T1-design-study",
+    "T2": "T2-demonstrated-tech",
+    "T3": "T3-operating-facility",
+}
+
+#: The declared (non-ledger) prior-box edges: modelling choices, not values read off a row. Each is
+#: justified where the panel is rendered; here they are named as declared so that "this edge came from
+#: nowhere" is not a state a box can be in.
+_DECLARED_EDGES = {"T1_hi": 6.0, "T2_lo": 1.0e2, "T2_hi": 1.0e3}
+
+
+@dataclass(frozen=True)
+class BoxEdge:
+    """One edge of an E_mu prior box, carrying the provenance that makes it accountable.
+
+    Two kinds, and no third. An edge READ OFF a ledger row: ``source_id`` names the row and ``value``
+    is that row's pinned figure, so the box moves when the ledger moves. Or a DECLARED constant:
+    ``source_id`` is empty, and the reason is stated where the panel is rendered. What shipped before
+    was neither -- a bare literal whose origin no document recorded -- which is how an edge that only
+    a mu+-only row could account for survived review.
+    """
+
+    value: float
+    source_id: str
+
+    @property
+    def from_ledger(self) -> bool:
+        """True iff this edge is read off a ledger row rather than declared as a constant."""
+        return bool(self.source_id)
+
+    def render(self) -> str:
+        """Deterministic display: an EXACT power of ten in exponent form, anything else plainly.
+
+        Two forms rather than one because the document has always carried both -- decade brackets read
+        as ``1e2``, a figure read off a row reads as the figure. The test is exact equality with
+        ``10 ** e``, not a tolerance, so nothing near a decade is dressed up as one.
+        """
+        if self.value >= 100.0:
+            e = round(math.log10(self.value))
+            return f"1e{e}" if self.value == 10.0**e else f"{self.value:.0f}"
+        return f"{self.value:.1f}"
+
+
+def panel_tier_boxes(table: MuonCostTable) -> dict[str, tuple[BoxEdge, BoxEdge]]:
+    """The three E_mu prior boxes of the Q_net-by-tier panel, every edge accounted for.
+
+    T3's edges are a pure function of the ledger: the min and the max of the pinned ``beam_kinetic``
+    T3 rows :meth:`MuonCostTable.aggregate_rows` admits. T1's lower edge is a ledger row too. The
+    other three are declared constants (:data:`_DECLARED_EDGES`).
+
+    Two rules are ENFORCED here rather than asserted anywhere:
+
+    1. an edge read off a row must be pinned, counted in ``beam_kinetic``, sit in its own tier, carry
+       exactly that row's value, and not be barred by :data:`AGGREGATE_EXCLUDED_CHARGE_BASIS`;
+    2. **no barred row's pinned beam-kinetic value may lie inside any box** -- a prior support that
+       contains such a figure is aggregating it whatever the edges are named.
+
+    Rule 2 is the one that catches the box this replaces: its support ran to 1e6 and so contained the
+    mu+-only 890000 GeV figure. Rule 1 alone would not have, because that edge was a round literal
+    rather than the row's value -- which is why both rules are here and not just the obvious one.
+
+    Rule 2 is deliberately NOT scoped to the box's own tier. Every box here is a prior over the same
+    physical quantity -- energy per muon for muCF -- so a figure that prices no mu- is an implausible
+    value for any of them, and the tier a row is filed under grades its source's maturity rather than
+    what the number counts. Scoping the rule per tier would still have caught the box this replaces
+    (that row and that box are both T3), so the wider form costs nothing and refuses one more way to
+    be wrong.
+    """
+    t3 = table.aggregate_rows(tier=PANEL_TIER_OF["T3"])
+    if not t3:
+        raise BasisError("no aggregable T3 rows: the T3 box has no edges to be read off")
+    lo3 = min(t3, key=lambda r: r.normalized_GeV_per_mu)
+    hi3 = max(t3, key=lambda r: r.normalized_GeV_per_mu)
+    boxes = {
+        "T1": (
+            BoxEdge(table["acceleron_2025"].normalized_GeV_per_mu, "acceleron_2025"),
+            BoxEdge(_DECLARED_EDGES["T1_hi"], ""),
+        ),
+        "T2": (BoxEdge(_DECLARED_EDGES["T2_lo"], ""), BoxEdge(_DECLARED_EDGES["T2_hi"], "")),
+        "T3": (
+            BoxEdge(lo3.normalized_GeV_per_mu, lo3.source_id),
+            BoxEdge(hi3.normalized_GeV_per_mu, hi3.source_id),
+        ),
+    }
+    barred = table.rows_excluded_from_aggregates()
+    for key, (lo, hi) in boxes.items():
+        if not lo.value < hi.value:
+            raise BasisError(f"tier box {key}: edges [{lo.value}, {hi.value}] are not an interval")
+        for edge in (lo, hi):
+            if not edge.from_ledger:
+                continue
+            row = table[edge.source_id]
+            if not row.has_normalized:
+                raise BasisError(f"tier box {key}: edge row {edge.source_id!r} has no pinned value")
+            if row.numeraire != BEAM_KINETIC:
+                raise BasisError(
+                    f"tier box {key}: edge row {edge.source_id!r} is counted in "
+                    f"{row.numeraire!r}, not {BEAM_KINETIC!r}"
+                )
+            if row.tier != PANEL_TIER_OF[key]:
+                raise BasisError(
+                    f"tier box {key}: edge row {edge.source_id!r} is in tier {row.tier!r}"
+                )
+            if row.charge_basis in AGGREGATE_EXCLUDED_CHARGE_BASIS:
+                raise BasisError(
+                    f"tier box {key}: edge row {edge.source_id!r} is {row.charge_basis!r} and "
+                    f"may never set the edge of a muCF cost aggregate"
+                )
+            if row.normalized_GeV_per_mu != edge.value:
+                raise BasisError(
+                    f"tier box {key}: edge {edge.value} does not equal row "
+                    f"{edge.source_id!r} ({row.normalized_GeV_per_mu})"
+                )
+        for r in barred:
+            if lo.value <= r.normalized_GeV_per_mu <= hi.value:
+                raise BasisError(
+                    f"tier box {key} = [{lo.value}, {hi.value}] contains {r.source_id!r} "
+                    f"({r.charge_basis}, {r.normalized_GeV_per_mu} GeV), which may never enter a "
+                    f"muCF cost aggregate -- a prior support that contains it aggregates it"
+                )
+    return boxes
+
+
+#: Display names for the ledger rows the FINDINGS panel prose enumerates. Indexed strictly, never
+#: with a fallback: a new row reaching the panel without a display name must fail loudly here rather
+#: than render half a sentence. (``_median_membership`` in ``scripts/generate_mucost.py`` applies
+#: the same rule with its own label table.)
+PANEL_ROW_LABELS: dict[str, str] = {
+    "comet": "COMET",
+    "mu2e": "mu2e",
+    "music": "MuSIC",
+    "psi_himb": "PSI HIMB",
+}
+
+
+def _join_clause(parts: list[str]) -> str:
+    """'a', 'a and b', 'a, b and c' -- the list shape the panel prose uses."""
+    if len(parts) == 1:
+        return parts[0]
+    return ", ".join(parts[:-1]) + " and " + parts[-1]
+
+
+def panel_t3_membership(table: MuonCostTable) -> str:
+    """'COMET at 2286 GeV, mu2e at 4993 GeV and MuSIC at 6002 GeV' -- the section-2b T3 row list.
+
+    Reads :meth:`MuonCostTable.aggregate_rows`, i.e. exactly the set whose min and max ARE the T3
+    box edges -- never a hand-kept list. The FINDINGS paragraph carrying this sentence calls the box
+    "a pure function of the ledger", and its row list was hand-typed: a ledger mutation moved the
+    box and both manifests while the sentence three lines below kept the old figures. This helper
+    retires that defect the same way ``_median_membership`` (scripts/generate_mucost.py) retired its
+    twin; it lives here rather than in the findings generator because that script runs on import,
+    so nothing defined inside it is reachable from a test.
+    """
+    rows = sorted(
+        table.aggregate_rows(tier=PANEL_TIER_OF["T3"]), key=lambda r: r.normalized_GeV_per_mu
+    )
+    if not rows:
+        raise BasisError("no aggregable T3 rows: the T3 box provenance has no membership to state")
+    return _join_clause(
+        [f"{PANEL_ROW_LABELS[r.source_id]} at {r.normalized_GeV_per_mu:g} GeV" for r in rows]
+    )
+
+
+def panel_t3_exclusion_clause(table: MuonCostTable) -> str:
+    """The section-2b sentence naming what the charge-basis rule keeps out of the T3 box, and why.
+
+    Every coordinate in it -- value, charge basis, stage -- is read off the excluded row itself, so
+    the sentence cannot misstate the row's accounting stage: the wording "per mu+ produced" shipped
+    twice (here and in the amendment block) about a row whose own stage is ``transported``.
+    "per mu+" is derived, not assumed --
+    every charge basis in :data:`AGGREGATE_EXCLUDED_CHARGE_BASIS` prices mu+ only, and the assertion
+    below keeps that wording honest if the excluded set is ever widened.
+    """
+    excluded = sorted(
+        table.rows_excluded_from_aggregates(tier=PANEL_TIER_OF["T3"]),
+        key=lambda r: r.normalized_GeV_per_mu,
+    )
+    if not excluded:
+        return (
+            "No pinned `beam_kinetic` T3 row is barred from muCF cost aggregates, so every one "
+            "is eligible to set an edge."
+        )
+    assert all(r.charge_basis == "mu_plus_only" for r in excluded), (
+        "the 'per mu+' wording below is derived from mu_plus_only; a newly excluded charge basis "
+        "needs its own wording, not this one"
+    )
+    names = _join_clause(
+        [
+            f"{PANEL_ROW_LABELS[r.source_id]} ({r.normalized_GeV_per_mu:g} GeV per mu+, at its "
+            f"row's `{r.stage}` stage)"
+            for r in excluded
+        ]
+    )
+    is_are = "is" if len(excluded) == 1 else "are"
+    this_figure = "this figure" if len(excluded) == 1 else "these figures"
+    bases = _join_clause(sorted({f"`{r.charge_basis}`" for r in excluded}))
+    # The causal claim is exactly this and no more: exclusion sets where the support ENDS. It must
+    # not name the retracted 1e6 edge as what exclusion prevents -- that edge was a declared
+    # constant, and even with the excluded row admitted a min/max support would stop at the row's
+    # own value, not at 1e6. For the same reason the verb is "reaching" and not "running past":
+    # a min/max support over the admitted rows ends AT the largest of them, so an excluded row's
+    # figure is what the support would reach, never a value it would overshoot.
+    return (
+        f"{names} {is_are} {bases}\n"
+        f"and {is_are} excluded, so the support ends at the largest admitted row rather than\n"
+        f"reaching {this_figure}."
+    )
 
 
 def load_muon_cost(

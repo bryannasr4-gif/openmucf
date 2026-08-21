@@ -98,9 +98,10 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   tiers do **not** share a basis (see `MUON_COST.md`: no basis class is common to T1 and T3), so the
   spread is an order-of-magnitude, mixed-basis, one-sided observation and never a same-basis ratio.
   Re-running
-  Q_net under each cost tier (`FINDINGS.md` §2b) collapses the median Q_net ~10⁵× from design-study to
-  facility muons — the same tier spread in energy-return form. *The floor is unvalidated,
-  not impossible.*
+  Q_net under each cost tier (`FINDINGS.md` §2b) drops the median Q_net by about three orders of
+  magnitude from design-study to facility muons. That panel is a sensitivity scan: its spread is set
+  by the E_mu prior boxes it declares, not by a measured cost ratio, and §2b says so and prints the
+  provenance of every box edge. *The floor is unvalidated, not impossible.*
 - **The Q Rosetta stone (`SYSTEMS.md`):** a differentiable energy-balance graph (`openmucf.systems`, a
   superset of the frozen `EnergyChain`) that places the several muCF "Q" conventions — scientific gain,
   net-electrical gain, Kelly–Hart–Rose's electrical gain, an efficiency-free gain — on one comparable
@@ -120,8 +121,8 @@ oracle (`openmucf/exact.py`; tests), but no headline number depends on its multi
 
 | tier | outputs | why |
 |---|---|---|
-| **GREEN — citable as-is** | muon-cost ledger + the mixed-basis tier spread (`MUON_COST.md`), Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model |
-| **AMBER — citable with the stated basis** | calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, prior-sensitivity table), X_μ at the 300 K liquid anchor | statistically sound but summary-statistic-based; cite WITH the basis caveat |
+| **GREEN — citable as-is** | muon-cost ledger **per row** and its basis classification (`MUON_COST.md`: each cost at its own stage / numeraire / charge coordinate, with provenance), the Kou–Chen Eq.(15) ceiling comparison, Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table read **one tier row at a time** (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model. Each row is a self-contained statement in its own declared basis |
+| **AMBER — citable with the stated basis** | **any CROSS-TIER muon-cost comparison** — the `MUON_COST.md` tier-median ratio, the cross-tier neutrons-per-joule ratio (`NEUTRONOMICS.md`), and the `FINDINGS.md` §2b Q_net-by-tier panel; basis: mixed, order-of-magnitude, one-sided. Also the calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, prior-sensitivity table), X_μ at the 300 K liquid anchor | **no accounting stage is shared between T1 and T3**, so a cross-tier ratio has no common denominator to be a ratio *of*: quote it as a mixed-basis order-of-magnitude observation, never as a measured gap. The §2b panel's spread is additionally set by the E_mu prior boxes that section declares. The posterior is statistically sound but summary-statistic-based; cite WITH the basis caveat |
 | **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8); the λ_c(T) shape runs −41% to −44% below the digitized Yamashita–Kino 2022 curve (sourced comparator `V_yamashita_ratio`/`_curve`, fails ±30%) — a runtime warning fires in the RED regime |
 
 ## Forecast registry

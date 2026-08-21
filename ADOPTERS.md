@@ -26,10 +26,13 @@ community and its funders, with what each would actually consume and what would 
   uncertainty is propagated. Pre-registered as a still-useful result (it tells the field what to measure).
 
 ## What to cite (trust map)
-Cite along the README **trust map** (`README.md`, "What you may cite"): **GREEN** outputs (muon-cost
-ledger + the mixed-basis tier spread, Q Rosetta stone, neutrons-per-joule table, breakeven falsification & requirements form,
-sensitivity split, forecast-registry machinery) are citable as-is; **AMBER** (the calibrated ω_s^eff / λ_c
-posterior, X_μ at the 300 K anchor) with its stated basis; **RED** (the λ_c(T) / X_μ(T) temperature shape,
+Cite along the README **trust map** (`README.md`, "What you may cite"): **GREEN** outputs (the muon-cost
+ledger per row and its basis classification, the Kou–Chen Eq.(15) ceiling comparison, Q Rosetta stone,
+the neutrons-per-joule table read one tier row at a time, breakeven falsification & requirements form,
+sensitivity split, forecast-registry machinery) are citable as-is; **AMBER** (any CROSS-TIER muon-cost
+comparison — the tier-median ratio, the cross-tier neutrons-per-joule ratio, the `FINDINGS.md` §2b
+Q_net-by-tier panel — which is mixed-basis and order-of-magnitude and never a measured gap; and the
+calibrated ω_s^eff / λ_c posterior, X_μ at the 300 K anchor) with its stated basis; **RED** (the λ_c(T) / X_μ(T) temperature shape,
 anything at φ > 1.45, the ω_s0/R split, all off-anchor `formation.py` outputs) is illustrative only. The
 `independent`-tier validation targets currently FAIL by design against the v1 placeholder formation model —
 that gap is the quantified motivation for the Phase-3 upgrade, not a citable result.

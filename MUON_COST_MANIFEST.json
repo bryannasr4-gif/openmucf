@@ -19,18 +19,18 @@
     {
       "doc": "MUON_COST.md",
       "id": "t3_median",
-      "pattern": "to \\*\\*5497\\.5\\s*\\n?GeV\\*\\* \\(operating",
+      "pattern": "to \\*\\*4993\\s*\\n?GeV\\*\\* \\(operating",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": "5497.5"
+      "value": "4993"
     },
     {
       "doc": "MUON_COST.md",
       "id": "gap_ratio",
-      "pattern": "nominally \\*\\*1133\\.5x\\*\\*",
+      "pattern": "nominally \\*\\*1029\\.5x\\*\\*",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": "1133.5"
+      "value": "1029.5"
     },
     {
       "doc": "MUON_COST.md",

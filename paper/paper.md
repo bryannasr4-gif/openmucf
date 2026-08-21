@@ -127,9 +127,12 @@ the artifact:
 The five failures are pre-registered findings, not bugs: a *pass* on any of them would be the thing
 to investigate. They are the standing, quantified motivation for a sourced-formation upgrade. In the
 repository, a companion trust map sorts every output into **GREEN** (citable as-is: the muon-cost
-compilation, the energy-balance "Rosetta stone", the breakeven falsification and requirements form,
-the sensitivity split with error bars, the forecast-registry machinery), **AMBER** (citable with the
-stated basis: the calibrated effective-sticking and cycling-rate posterior), and **RED** (illustrative
+compilation read per row in its own declared basis, the Kou–Chen ceiling comparison, the
+energy-balance "Rosetta stone", the neutrons-per-joule table read one tier row at a time, the
+breakeven falsification and requirements form, the sensitivity split with error bars, the
+forecast-registry machinery), **AMBER** (citable with the stated basis: any cross-tier muon-cost
+comparison — a mixed-basis, order-of-magnitude observation, never a same-basis ratio — and the
+calibrated effective-sticking and cycling-rate posterior), and **RED** (illustrative
 only: the temperature-dependence shape and anything above roughly liquid density, where the v1
 formation geometry is an unsourced placeholder that emits a runtime warning).
 
@@ -142,10 +145,11 @@ $R \gtrsim 0.77$ versus the model-derived $\approx 0.35$ — a falsifiable, quan
 requirements rather than a verdict on any group's work. Second, a **muon-cost compilation** in which
 each row carries its own accounting basis: design studies sit at a few GeV per muon
 [@KellyHartRose2021], while operating
-facilities sit roughly three orders of magnitude higher on bases that are not common to the two tiers,
-and re-running the net-electrical gain under each cost tier exposes that spread in energy-return form
+facilities sit roughly three orders of magnitude higher on bases that are not common to the two tiers
 (reported as "floor unvalidated, not impossible"). The ledger states that spread as an
-order-of-magnitude, mixed-basis observation rather than a same-basis ratio. Third, a **pre-registered forecast registry** (FC-001) that commits probabilistic
+order-of-magnitude, mixed-basis observation rather than a same-basis ratio; re-running the
+net-electrical gain under tier-specific cost priors is published as a sensitivity panel — how the
+gain responds to the assumed muon cost — not as that spread restated in energy-return form. Third, a **pre-registered forecast registry** (FC-001) that commits probabilistic
 predictions with a portable payload hash before the experiments report, so the model can later be
 scored honestly rather than fit after the fact.
 

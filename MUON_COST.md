@@ -29,7 +29,7 @@ factor omitted here pushes the cost UP, so the bound is one-sided.
 
 **The tier spread is about three orders of magnitude, on MIXED bases.** The tier-median rises from **4.85
 GeV** (design studies) through **178 GeV** (demonstrated technology, collected-not-stopped)
-to **5497.5 GeV** (operating facilities) -- nominally **1133.5x**. **That ratio is
+to **4993 GeV** (operating facilities) -- nominally **1029.5x**. **That ratio is
 NOT a same-basis comparison and must not be quoted as one.** T1 contains {produced, stopped_in_dt} rows and T3
 contains {collected, stopped_other_target} rows; basis classes shared between the two tiers: **none**.
 With no shared class, a same-basis T1-vs-T3 ratio is **not computable from these rows** -- and because
@@ -37,6 +37,9 @@ both the numerator and the denominator contain lower-bound (per-produced / per-c
 ratio is not cleanly bounded in either direction. The defensible statement is the spread's **order of
 magnitude**, driven by technology, with the basis composition disclosed above. needs_verification
 (Jandel) and slide-tier (Acceleron) rows carry visible flags below and never headline.
+
+**Which rows each median is taken over.** T1: Acceleron (2025 deck) 3.0, Kelly, Hart & Rose (2021) 4.70, Eliezer & Henis (1994) 5.0 and Bertin et al. (1987) 7.80 GeV. T3: COMET (J-PARC) 2286, mu2e (Fermilab) 4993 and MuSIC (RCNP) 6002 GeV.
+PSI HIMB (`mu_plus_only`) is kept OUT of every aggregate here -- it prices no mu- at all, and the ledger schema bars such a figure from any muCF cost aggregate -- so the row stays in its tier table for scale and enters no median, spread or ratio. The exclusion is applied at the aggregate, never at the row.
 
 ## Accounting basis (read before the tables)
 A muon cost is only meaningful as a point on a **2-D grid**, and both coordinates are carried per row:
@@ -114,7 +117,21 @@ arithmetic is in the CSV `derivation` column); no facility reports this quantity
 > documents as though it were a result. It is retracted here: the tier spread is an order-of-magnitude
 > **mixed-basis** observation, not a measured gap.
 
-The ~1133.5x tier-median spread (4.85 GeV design-study -> 5497.5 GeV
+> **AMENDMENT (2026-08-19) -- the T3 tier median and the tier ratio both moved, and the correction
+> makes this document's own spread SMALLER.** The median took a tier, a numeraire and a pinned status,
+> and applied no charge-basis filter -- so the PSI HIMB figure, which counts mu+ only and which this
+> ledger's schema bars from any muCF cost aggregate, entered the published T3 median. It is now
+> excluded where an aggregate is formed, and only there: the row is still rendered in the T3 table
+> with its own label. **T3 tier median: 5497.5 -> 4993 GeV.** Before, the median ran over
+> four values -- 2286, 4993, 6002 and 890000 GeV -- and was the mean of the two middle ones
+> (4993 + 6002 = 10995 GeV, and 10995 / 2 = 5497.5 GeV). After, it runs over three --
+> COMET (J-PARC) 2286, mu2e (Fermilab) 4993 and MuSIC (RCNP) 6002 GeV -- and is the middle one. **Tier ratio: 1133.5x -> 1029.5x**
+> (5497.5 / 4.85 = 1133.5 before, 4993 / 4.85 = 1029.5 after; the T1
+> median is unchanged). The correction was taken BECAUSE it weakens the spread this document reports,
+> not despite it. Nothing was tuned: the discrepant PSI HIMB figure is disclosed in the T3 table and in
+> the sentence above, never deleted and never argued down.
+
+The ~1029.5x tier-median spread (4.85 GeV design-study -> 4993 GeV
 facility) is **mixed-basis** (see the Headline: shared basis classes between T1 and T3 =
 none), so it is quoted here as an order of magnitude and never as a same-basis ratio.
 Its basis composition is printed rather than summarised: T1 = {produced, stopped_in_dt},

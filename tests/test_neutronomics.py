@@ -16,6 +16,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 import openmucf
 from openmucf import mucost, provenance
 from openmucf.calibrate import OBS
@@ -109,16 +111,54 @@ def test_npj_matches_hand_arithmetic():
     """Each muCF n/J equals X_mu / (E_mu_tier in J), E_mu_tier = mucost.tier_median -- recomputed here."""
     mod = _load_generator()
     table = mucost.load_muon_cost()
-    expected_medians = {"T1": 4.85, "T2": 178.0, "T3": 5497.5}
+    expected_medians = {"T1": 4.85, "T2": 178.0, "T3": 4993.0}
     for r in mod.mucf_rows(table):
         med = table.tier_median(r["tier_id"])
         assert med == expected_medians[r["short"]] == r["emu_GeV"]
         hand = 113.0 / (med * GEV_TO_J)
         assert abs(r["n_per_joule"] - hand) < 1e-3 * hand
-    # ordering: the ~10^3 muon-cost gap transfers to the neutron economy (T1 > T2 > T3)
+    # RE-SPECIFIED. This used to read "the ~10^3 muon-cost gap transfers to the neutron economy" and
+    # to assert a bare `> 1.0e3` floor, which pinned the retracted same-basis reading of the tier
+    # spread: no accounting stage is shared between T1 and T3, so there is no gap to transfer. What is
+    # actually true, and all that is asserted here: n/J = X_mu / E_mu is strictly decreasing in the
+    # muon cost, so the tier ORDER is inverted exactly, and the T1/T3 factor is not an independent
+    # quantity at all -- it EQUALS the muon-cost tier-median ratio, to the digit the document prints.
+    # Binding it to that ratio (rather than to a floor) is what makes it a live check: the two now
+    # move together or the test fails, and the number's mixed-basis status is inherited with it.
     npj = {r["short"]: r["n_per_joule"] for r in mod.mucf_rows(table)}
     assert npj["T1"] > npj["T2"] > npj["T3"]
-    assert npj["T1"] / npj["T3"] > 1.0e3
+    ledger_ratio = table.tier_median("T3-operating-facility") / table.tier_median("T1-design-study")
+    assert npj["T1"] / npj["T3"] == pytest.approx(ledger_ratio, rel=1e-12)
+    H = mod.build_headline(table)
+    assert H["npj_ratio_T1_T3"] == f"{ledger_ratio:.1f}"
+    assert f"**by construction**: {H['npj_ratio_T1_T3']}x" in " ".join(_committed_doc().split())
+
+
+def test_reader_division_of_printed_columns():
+    """The published factor is reproducible from the page, and the page says which column carries it.
+
+    The class this guards: a ratio quoted finer than its printed inputs support. The E_mu column
+    reproduces the published factor exactly (4993 / 4.85 = 1029.5); the n/J column, whose cells are
+    independently rounded to four significant figures, gives 1029.0 -- so the document publishes
+    BOTH quotients and says why they differ, instead of leaving a reader's division one last-digit
+    step away from the sentence it checks. Both directions: the strings are recomputed from the
+    generator's own headline dict, required to be internally consistent, and required to appear in
+    the committed document.
+    """
+    mod = _load_generator()
+    table = mucost.load_muon_cost()
+    H = mod.build_headline(table)
+    emu_div = f"{float(H['emu_T3']) / float(H['emu_T1']):.1f}"
+    assert emu_div == H["emu_ratio_from_printed"] == H["npj_ratio_T1_T3"]
+    printed = float(H["npj_T1"]) / float(H["npj_T3"])
+    assert f"{printed:.1f}" == H["npj_ratio_from_printed"]
+    exact = table.tier_median("T3-operating-facility") / table.tier_median("T1-design-study")
+    # each .3e cell is within 5e-4 relative of its value, so the printed quotient must sit within
+    # ~1e-3 of the exact factor -- the bound under which the disclosure sentence is true
+    assert abs(printed / exact - 1.0) < 1.1e-3
+    doc = " ".join(_committed_doc().split())
+    assert f"= {H['emu_ratio_from_printed']}x)" in doc
+    assert f"gives {H['npj_ratio_from_printed']}x" in doc
 
 
 # --------------------------------------------------------------------------------------------------

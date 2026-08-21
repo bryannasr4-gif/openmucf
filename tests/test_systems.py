@@ -24,6 +24,7 @@ from openmucf.energy import EnergyChain
 from openmucf.systems import (
     BASES,
     KELLY,
+    KELLY_MU_PER_BEAM_PARTICLE,
     REFERENCE_BASIS,
     SystemChain,
     _native_value,
@@ -124,6 +125,31 @@ def test_g_kelly_reproduces_eq2_from_cited_numbers():
     expected = ((F * eta_mu + H * eta_rec) / B) * eta_acc * eta_heat
     assert math.isclose(KELLY.q_elec(), expected, rel_tol=1e-12)
     assert math.isclose(KELLY.q_elec(), 0.15689, abs_tol=5e-5)
+
+
+def test_kelly_quoted_figure_ships_beside_its_true_quotient_and_nothing_moved():
+    """The claim was fixed, not the number: the quotient is printed and 4.70 stays exactly where it is.
+
+    This document used to print the division "3.61 GeV / 0.77 muons-per-beam-particle" with Kelly's
+    quoted 4.70 GeV as its result -- an equation whose own quotient is 4.68, shipped beside a ledger
+    note saying so. 4.70 is the figure Kelly quotes and the figure his Table-1 result is quoted
+    against, so moving it would break a faithful reproduction to correct a rounding that is his.
+    Asserted here in both directions: no published value moved, and the quotient the document now
+    prints is the real one, computed from his own two printed digits rather than typed.
+    """
+    assert KELLY.E_mu_GeV == 4.70, "Kelly's quoted figure is load-bearing for the Table-1 reproduction"
+    assert KELLY_MU_PER_BEAM_PARTICLE == 0.77
+    assert round(100.0 * KELLY.q_elec(), 2) == 15.69, "the reproduction this figure feeds is unmoved"
+    quotient = KELLY.B_beam_MeV / KELLY_MU_PER_BEAM_PARTICLE
+    assert quotient == pytest.approx(4683.1169, abs=1e-3)
+    assert quotient != KELLY.E_mu_GeV * 1000.0, "if these ever agreed this guard would be vacuous"
+    doc = " ".join((REPO / "SYSTEMS.md").read_text(encoding="utf-8").split())
+    assert (
+        f"{KELLY.B_beam_MeV:.0f} MeV / {KELLY_MU_PER_BEAM_PARTICLE:g} muons-per-beam-particle = "
+        f"{quotient:.0f} MeV" in doc
+    )
+    assert f"quoted as **{KELLY.E_mu_GeV:.2f} GeV**" in doc
+    assert f"i.e. {quotient / 1000.0:.2f} GeV" in doc
 
 
 def test_g_kelly_band_is_a_documented_finding_not_tuned():
