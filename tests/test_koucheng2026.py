@@ -353,6 +353,9 @@ def test_registered_but_not_scored_by_the_engine_trust_gate():
         assert "deliberately NOT scored above" in text, doc
         assert PREFIX in text and "tests/test_koucheng2026.py" in text, doc
 
+    for tid, row in sorted(_registered_rows().items()):
+        assert "NOT SCORED IN VALIDATION.md" in row["notes"], tid
+
 
 def test_these_rows_cannot_detect_an_engine_defect():
     """The measured reason they are not scored above: they are blind to the engine, by construction.
