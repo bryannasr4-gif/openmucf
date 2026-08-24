@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Kou–Chen 2026 cycle-closure criterion registered as machine-checked reproduction targets (2026-08-20)
+Sixteen `V_kouchenlawson_` rows in `openmucf/data/validation_targets.csv` register the published
+Table I / Sec. IV values of arXiv:2607.10989 (four L_mu anchors, four N_L demands, four omega_crit
+boundaries, four G_mu gains) and reproduce all sixteen from the package's existing closed forms in
+`tests/test_koucheng2026.py` — 16/16 PASS within the paper's printed precision. The rows are
+deliberately NOT scored by the `VALIDATION.md` trust gate: they compare two closed forms and are
+blind to the engine, and both generated documents state the exclusion, which two tests pin.
+
 ### Changed — a mu⁺-only figure no longer reaches any aggregate; the downstream retraction lands (2026-08-19)
 `muon_cost.schema.json` has always said a `mu_plus_only` figure "must never enter a muCF cost
 aggregate". It was prose, and two published numbers broke it. **`MuonCostTable.tier_median` filtered
