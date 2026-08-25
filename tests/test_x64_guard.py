@@ -11,6 +11,7 @@ The fix (``openmucf/_jaxcfg.py``) is two-layered, and both layers are tested her
   2. the samplers hard-fail if it is ever off (test 4-5).
 """
 
+import re
 import subprocess
 import sys
 import textwrap
@@ -79,9 +80,17 @@ def test_require_x64_raises_with_a_diagnosis(monkeypatch):
         _jaxcfg.require_x64("a test")
 
 
-def test_samplers_call_the_guard():
-    """Both NUTS entry points are guarded (a refactor that drops the call trips this)."""
-    for mod, needle in (("calibrate.py", 'require_x64("NUTS calibration")'),
-                        ("design.py", 'require_x64("the design sd-contraction refits")')):
-        src = (_REPO_ROOT / "openmucf" / mod).read_text(encoding="utf-8")
-        assert f"_jaxcfg.{needle}" in src, f"{mod} no longer guards x64 at the sampler entry"
+def test_every_sampler_entry_calls_the_guard():
+    """Every file that builds an ``MCMC(NUTS(...))`` also calls ``require_x64`` in that file.
+
+    Stated as a property over the tree rather than as a list of known entry points: a sampler added
+    later without the guard fails here, which a list cannot catch. Whitespace is normalized first
+    because the constructor is written across lines in some of them.
+    """
+    files = sorted(p for d in ("openmucf", "scripts") for p in (_REPO_ROOT / d).rglob("*.py"))
+    entries = [p for p in files
+               if "MCMC(NUTS(" in re.sub(r"\s+", "", p.read_text(encoding="utf-8"))]
+    assert entries, "no sampler entry found at all -- this guard would pass vacuously"
+    unguarded = sorted(str(p.relative_to(_REPO_ROOT)) for p in entries
+                       if "require_x64(" not in p.read_text(encoding="utf-8"))
+    assert not unguarded, f"NUTS entry with no x64 guard: {unguarded}"

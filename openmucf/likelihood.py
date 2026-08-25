@@ -35,6 +35,7 @@ import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 
+from . import _jaxcfg
 from .constants import LAMBDA_0
 
 
@@ -122,6 +123,7 @@ def fit_spectrum(t_edges, counts, phi=1.2, lambda_c_bounds=None, num_warmup=300,
     Matches calibrate.py's conventions (seeded PRNGKey, progress_bar=False). ``num_warmup``/``num_samples``
     default to the reduced coverage-test settings; pass smaller values for smoke fits.
     """
+    _jaxcfg.require_x64("the spectrum-fit MCMC")  # float32 draws would be silently, invisibly wrong
     if lambda_c_bounds is None:
         lambda_c_bounds = ledger_lambda_c_bounds(phi)
     amp_center, background_scale = _data_scales(t_edges, counts)
