@@ -137,9 +137,9 @@ def test_kelly_quoted_figure_ships_beside_its_true_quotient_and_nothing_moved():
     Asserted here in both directions: no published value moved, and the quotient the document now
     prints is the real one, computed from his own two printed digits rather than typed.
     """
-    assert KELLY.E_mu_GeV == 4.70, "Kelly's quoted figure is load-bearing for the Table-1 reproduction"
+    assert KELLY.E_mu_GeV == 4.70, "Kelly's quoted figure sets the scientific Q of the Table-1 reproduction"
     assert KELLY_MU_PER_BEAM_PARTICLE == 0.77
-    assert round(100.0 * KELLY.q_elec(), 2) == 15.69, "the reproduction this figure feeds is unmoved"
+    assert round(100.0 * KELLY.q_elec(), 2) == 15.69, "his published electrical Q is unmoved (no E_mu term)"
     quotient = KELLY.B_beam_MeV / KELLY_MU_PER_BEAM_PARTICLE
     assert quotient == pytest.approx(4683.1169, abs=1e-3)
     assert quotient != KELLY.E_mu_GeV * 1000.0, "if these ever agreed this guard would be vacuous"

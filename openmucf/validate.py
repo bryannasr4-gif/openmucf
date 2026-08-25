@@ -8,7 +8,7 @@ predicted vs observed within tolerance. Mutating a CSV target value/tolerance ch
 
 Every result carries a ``category`` tier (see ``CATEGORIES``) so the scoreboard is falsifiable rather
 than flattering: only rows marked ``independent`` are genuine predictions. As of v1 the passing set
-contains no ``independent`` row -- three ``independent`` targets run and FAIL by design (registered,
+contains no ``independent`` row -- the ``independent`` targets that run FAIL by design (registered,
 pre-framed placeholder-distance findings); a PASS on any of them is a bug or a tolerance error, not a
 success (see ``tests/test_validate.py::test_expected_fail_guard``).
 """
@@ -260,7 +260,7 @@ def run(rates, targets_csv=None, channels="off"):
         )
     )
 
-    # --- Three registered independent-prediction targets (pre-framed to FAIL; see PRE_REGISTRATION.md).
+    # --- Registered independent-prediction targets (pre-framed to FAIL; see PRE_REGISTRATION.md).
     # They measure the v1 placeholder's distance from the field's own rates; a PASS is a bug, not a win.
     omega_pred = omega_fraction(rates["omega_s0"]) * (1.0 - ledger_reactivation(rates)) * 100.0
     _po = tgt["V_petitjean_omega"]
@@ -361,8 +361,8 @@ def report_markdown(results, channels="off") -> str:
             "",
             "Engine reproduction of the pre-registered targets in `openmucf/data/validation_targets.csv` "
             "(see `PRE_REGISTRATION.md`). The `class` column is the claim tier: only `independent` rows are "
-            "genuine predictions -- and as of v1 the passing set contains none (the three `independent` rows "
-            "are registered, pre-framed FAILs, below).",
+            "genuine predictions -- and as of v1 the passing set contains none (the failing `independent` "
+            "rows are registered, pre-framed FAILs, counted in the summary below).",
             "Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** "
             "(canonical liquid).",
             "",
