@@ -109,6 +109,7 @@ fa1f206c58ac747c775a61c7f735704221ed20a5	FINDINGS.md	REGISTERED: read in the 202
 32b1c743dbfe3f390b468ad5ecd9c046f05a9c76	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 3423eeb0ca5b312ba6ff5e77cdbd7c97b4fb32b3	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 353f916bb204aec8b8c56fef4168e97cd0e4f39b	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+35795cad9e88885a8857a1db707c232ce3f2a20c	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 35cf2902d09c64677485adc5e7644b1058812c07	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 3762113c8128e9b5ec3c8ed238acaff7889f7c73	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 3d795e8ce3b22535411d622499971ae0c13ec90d	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
@@ -133,8 +134,6 @@ fa1f206c58ac747c775a61c7f735704221ed20a5	FINDINGS.md	REGISTERED: read in the 202
 88b8a60504e6c481b8956dd6ee95175ff2bbe092	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 8b00658090e4adc92c6349430b78f086335f698e	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 8ea55e613080774baa1fb313af6a322015c93fdf	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
-9509496a611c4db176505f15a82aed928a5019c6	MUON_COST.md	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
-9da6fa1b26979ec67ecf1d540e7a2ec3f6abb37f	MUON_COST.md	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
 9ee64786443d1c1007d3ecaee910531acd6e186d	MUON_COST.md	UNREVIEWED
 a4479e9e198a74ed3b20ed2aa34357dc3b219978	MUON_COST.md	REGISTERED: table data, not prose. This row matches only because a needs_verification cell reads `no`; the quantifier list reads that cell as a universal.
 a482d3ca747fd633fce741c4c47b73a5bd75aa0f	MUON_COST.md	REGISTERED: table data, not prose. This row matches only because a needs_verification cell reads `no`; the quantifier list reads that cell as a universal.
@@ -142,12 +141,12 @@ a5a39ec6eac67be6323dc4fd583986e37df3c022	MUON_COST.md	REGISTERED:typed sentence 
 a9b60740e56bd2f78b55208f14af915ab918282f	MUON_COST.md	REGISTERED: table data, not prose. This row matches only because a needs_verification cell reads `no`; the quantifier list reads that cell as a universal.
 a9fa9c8b7e0f89a5270df445dc69f8326b6297c6	MUON_COST.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 acd703246094fd897fad7dee72d0dce8d0251cd2	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
+b40b3376b166c6a4d6553f719c9fd529276e7e93	MUON_COST.md	REGISTERED: rewritten by the 2026-08-24 claim sweep (KOU-P1-SWEEP-FIX). What it states was re-derived against the tree in that session, and the commit body names the sibling sentence each repair was propagated from.
 b9968767f7a66d17694a27810539c6a9c7c56cfd	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 bc550a96365a997657b9215f28663e783f67fb7e	MUON_COST.md	REGISTERED: table data, not prose. This row matches only because a needs_verification cell reads `no`; the quantifier list reads that cell as a universal.
 c03d27f1206f86c34e20f51a2f7627b04aad727d	MUON_COST.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 c206530e15e32d491f38c856f66ffa2a7e7bd3e1	MUON_COST.md	UNREVIEWED
 c67764b4de510dcf35a2e6647510644f2dc8113e	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
-cef214c42ed6ec1f4b20d9eb6de499f8ef898b93	MUON_COST.md	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 d118408e4529ac3dc0c4ed0c2eabab363c87cb6e	MUON_COST.md	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
 d2679a550fc350b050ea845d217547889b2914ee	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 d44d9fa7cbef25d3f92a7c5a38c2bc4243f83aa7	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_exactly_one_cost_source_states_a_beam_to_electrical_conversion
@@ -159,6 +158,7 @@ e9b7e4065fd77a1dba03cf1491e630e1c60eb24d	MUON_COST.md	EXERCISED:tests/test_mucos
 f00328f3e74045ce643fde76e3f65a3d6f30825d	MUON_COST.md	REGISTERED:sentence rendered into this document by scripts/generate_mucost.py; read and judged at this line when this registry was written
 f2bf7df6bd6520c137073f68f98db932fa8707a9	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
 f8c38e7669922655dfbd9ce07a9d0db11e6ec6a1	MUON_COST.md	EXERCISED:tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
+fb31a4c344031dc693d97962eb41c6f4d93013c7	MUON_COST.md	REGISTERED: rewritten by the 2026-08-24 claim sweep (KOU-P1-SWEEP-FIX). What it states was re-derived against the tree in that session, and the commit body names the sibling sentence each repair was propagated from.
 fcdb9881cc3321e4593098cd182d74878ab444fb	MUON_COST.md	REGISTERED:typed sentence in the generated document; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 0f3fd5365d7da37b7067d9b06942a5aba4a99a93	NEUTRONOMICS.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 217453a3920d4aa5cd81d1f5710992b6193e892a	NEUTRONOMICS.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
@@ -199,7 +199,7 @@ ef5f863f07ba9f184e1932d13dc5a21c70ecf12e	README.md	UNREVIEWED
 f255ebcbbf3980d4b3eddf46db6c68bb1e7ca93f	README.md	UNREVIEWED
 102fef38c4738c6695249a0e7c1ec4f8a69fecef	datapackage.json	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
 2047c6791b3e87865c3252d177b1e33e60ea98af	datapackage.json	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
-2cc1411c46015657e4b33e4ca55883d541a9649e	datapackage.json	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
+4b0bdffe70f393c398c11db7489e0e8ded2bbe88	datapackage.json	REGISTERED: rewritten by the 2026-08-24 claim sweep (KOU-P1-SWEEP-FIX). What it states was re-derived against the tree in that session, and the commit body names the sibling sentence each repair was propagated from.
 52968878539e930d1b764818193baf02987e12e3	datapackage.json	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
 5343542c281cb545748afcde2054ee3a68fd0452	datapackage.json	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 b789f6a965e488c306ad37dbee179c3760e096d4	datapackage.json	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
@@ -213,6 +213,7 @@ b5b8df269d2f918053aeb3dfe4b004c6b4c24722	openmucf/data/muon_cost.csv	REGISTERED:
 b61ad0b2a0d12bbf59a8712965029a6d2a016d57	openmucf/data/muon_cost.csv	REGISTERED: read in the 2026-08-23/24 claim sweep and returned UNVERIFIABLE from the copies in hand; registered with the route named rather than asserted or deleted.
 ee3553a0019e0e224983f8ffc7445c3c0f39697a	openmucf/data/muon_cost.csv	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 fcfc24270c41b992d62189dd2d8f39e34ed718c7	openmucf/data/muon_cost.csv	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+03a88718972900e4b718a40b9ff4dddea1904fe2	openmucf/data/muon_cost.schema.json	REGISTERED: rewritten by the 2026-08-24 claim sweep (KOU-P1-SWEEP-FIX). What it states was re-derived against the tree in that session, and the commit body names the sibling sentence each repair was propagated from.
 0a1f04003f8a301ada54afb4cf71b80ebcba9ecf	openmucf/data/muon_cost.schema.json	UNREVIEWED
 1b51fd19b0eaac30723c03fbd8d6622ccd6b022b	openmucf/data/muon_cost.schema.json	UNREVIEWED
 2bce94e1ec97ca84887d4343229a6fb85c0340cd	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
@@ -222,7 +223,6 @@ fcfc24270c41b992d62189dd2d8f39e34ed718c7	openmucf/data/muon_cost.csv	REGISTERED:
 583f97392197a75b8e67da7b152375358e411f0f	openmucf/data/muon_cost.schema.json	UNREVIEWED
 617a7fa6c6ce1bb1e56496f2b2758e12551817bc	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
 6a37f9a11563afce444ff412d8a036612488e12f	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
-6f75e8e0735ea20818e188b3c535d4a98fef928a	openmucf/data/muon_cost.schema.json	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
 8b208015727c890d3c081e400badf51309232c5a	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
 bd499b17cb0775b909d64a68c2a384898b5891ea	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
 bf03883059fc1d1a22af8b88912ad043ab00e4e3	openmucf/data/muon_cost.schema.json	REGISTERED:schema field description; the enum or required-ness it states is enforced by load_muon_cost and pinned by tests/test_mucost.py
@@ -449,9 +449,8 @@ fa1f206c58ac747c775a61c7f735704221ed20a5	scripts/generate_findings.py	REGISTERED
 88b8a60504e6c481b8956dd6ee95175ff2bbe092	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 8b00658090e4adc92c6349430b78f086335f698e	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 8ea55e613080774baa1fb313af6a322015c93fdf	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
-9509496a611c4db176505f15a82aed928a5019c6	scripts/generate_mucost.py	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
+94b84232e5b1bbe2ee7ac98a4ffff58142b6a252	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 9b94f80e74206a9f98365e0387d2f6aaf84d3f05	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
-9da6fa1b26979ec67ecf1d540e7a2ec3f6abb37f	scripts/generate_mucost.py	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
 a14a71b487ff5b7e765bc18714317c727d3883c0	scripts/generate_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 a1875b7e89cd0c07e7e8dba28070933e0989962a	scripts/generate_mucost.py	EXERCISED:tests/test_mucost.py::test_generator_refuses_an_empty_chain_point_set
 a27dcca51faed0941dcf149de50f4020df2c8e78	scripts/generate_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
@@ -462,8 +461,8 @@ a9fa9c8b7e0f89a5270df445dc69f8326b6297c6	scripts/generate_mucost.py	REGISTERED: 
 acd703246094fd897fad7dee72d0dce8d0251cd2	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 af33dbd481f9fd0a0a16bc344ad5336540395091	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 b00c01b08ff199bfd44d4df8bab5a12f037fcfb0	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+b40b3376b166c6a4d6553f719c9fd529276e7e93	scripts/generate_mucost.py	REGISTERED: rewritten by the 2026-08-24 claim sweep (KOU-P1-SWEEP-FIX). What it states was re-derived against the tree in that session, and the commit body names the sibling sentence each repair was propagated from.
 b4a9852a3a55250ec621407d81e07b7593934103	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
-b620605137bbfec7346f08c49dce251f58aae547	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 b69216b0f4b4ecbfb7bc119c5258a5e3261995b8	scripts/generate_mucost.py	REGISTERED:module docstring, rendered into no document; states the framing MUON_COST.md carries in its own header at line 3, and the tier/numeraire rule the tables implement
 b912765778adc576ff733b2a70d486973b675b2e	scripts/generate_mucost.py	UNREVIEWED
 b9968767f7a66d17694a27810539c6a9c7c56cfd	scripts/generate_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
@@ -491,6 +490,7 @@ f00328f3e74045ce643fde76e3f65a3d6f30825d	scripts/generate_mucost.py	REGISTERED:t
 f4612c16a8312abf3e8907afab354ec190505db8	scripts/generate_mucost.py	REGISTERED:template source of the MUON_COST.md sentence with the same wording; reviewed at its rendered line in that document
 f624e7001be175ce58e6972c4f35caeb203042dd	scripts/generate_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 f73ad0f0aa4019baa29c9115f219fc79bd98f6d5	scripts/generate_mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+fb31a4c344031dc693d97962eb41c6f4d93013c7	scripts/generate_mucost.py	REGISTERED: rewritten by the 2026-08-24 claim sweep (KOU-P1-SWEEP-FIX). What it states was re-derived against the tree in that session, and the commit body names the sibling sentence each repair was propagated from.
 0f3fd5365d7da37b7067d9b06942a5aba4a99a93	scripts/generate_neutronomics.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 1b7bbb5d37a08e52b37d0e7f064d3a0b8d5da937	scripts/generate_neutronomics.py	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 1faf8a2c6f7d07da7a58cd698b5831eccaed1835	scripts/generate_neutronomics.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.

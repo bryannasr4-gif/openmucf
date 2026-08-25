@@ -49,7 +49,7 @@
           {"name": "unc_type", "type": "string", "description": "Provenance of the uncertainty: stat, exp, theory, theory-spread, model, table, estimate, exact."},
           {"name": "conditions", "type": "string", "description": "Physical state the value holds at (T, phi, F, ortho/para, c_t, field)."},
           {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib; ';'-separable."},
-          {"name": "source_locator", "type": "string", "description": "Equation/table/figure/page within the source; '-' where the source states none.", "constraints": {"required": false}},
+          {"name": "source_locator", "type": "string", "description": "Equation/table/figure/page within the source; '-' where none is recorded.", "constraints": {"required": false}},
           {"name": "status", "type": "string", "description": "established or contested.", "constraints": {"enum": ["established", "contested"]}},
           {"name": "validity_range", "type": "string", "description": "Regime the row is valid over."},
           {"name": "single_source", "type": "boolean", "description": "True if it traces to a single, never-independently-rechecked measurement.", "constraints": {"required": false}},

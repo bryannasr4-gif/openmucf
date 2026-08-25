@@ -146,7 +146,7 @@
         "mu_plus_only",
         ""
       ],
-      "description": "Which muon charge the figure counts. muCF needs mu-; 'mixed' counts mu+ and mu- together (so the mu--only cost is higher by a factor this ledger does not source) and 'mu_plus_only' is irrelevant to muCF and must never enter a muCF cost aggregate. Empty only on an unpinned nv row."
+      "description": "Which muon charge the figure counts. muCF needs mu-; 'mixed' counts mu+ and mu- together (so the mu--only cost is higher by a factor this ledger does not source) and 'mu_plus_only' is irrelevant to muCF and must never enter a muCF cost aggregate -- any statistic this ledger forms over rows: a tier median, a spread, a ratio, or the edge of a prior box drawn over a tier. That is a different bar from the stage rule above: an aggregate is a statistic over a tier's rows and may contain a row that is not itself a point on the muCF chain. Empty only on an unpinned nv row."
     },
     "derivation": {
       "type": "string",

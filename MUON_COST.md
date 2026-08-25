@@ -35,13 +35,13 @@ contains {collected, stopped_other_target} rows; basis classes shared between th
 With no shared class, a same-basis T1-vs-T3 ratio is **not computable from these rows** -- and because
 both the numerator and the denominator contain lower-bound (per-produced / per-collected) figures, the
 ratio is not cleanly bounded in either direction. The defensible statement is the spread's **order of
-magnitude**, driven by technology, with the basis composition disclosed above. needs_verification
-(Jandel) and slide-tier (Acceleron) rows are labelled as such below and neither is a named headline
-anchor; the Jandel row has no pinned value and enters no aggregate, while the Acceleron row is one of
-the T1 median rows named next.
+magnitude**, driven by technology, with the basis composition disclosed above. Neither the
+needs_verification row (Jandel) nor the slide-tier row (Acceleron) is a named headline anchor: the
+Jandel row has no pinned value and enters no aggregate, while the Acceleron row is one of the T1
+median rows named next.
 
 **Which rows each median is taken over.** T1: Acceleron (2025 deck) 3.0, Kelly, Hart & Rose (2021) 4.70, Eliezer & Henis (1994) 5.0 and Bertin et al. (1987) 7.80 GeV. T3: COMET (J-PARC) 2286, mu2e (Fermilab) 4993 and MuSIC (RCNP) 6002 GeV.
-PSI HIMB (`mu_plus_only`) is kept OUT of every aggregate here -- it prices no mu- at all, and the ledger schema bars such a figure from any muCF cost aggregate -- so the row stays in its tier table for scale and enters no median, spread or ratio. The exclusion is applied at the aggregate, never at the row.
+PSI HIMB (`mu_plus_only`) is kept OUT of every aggregate here -- it prices no mu- at all, and the ledger schema bars such a figure from any muCF cost aggregate -- any statistic formed over rows: a tier median, a spread, a ratio, or a prior-box edge -- so the row stays in its tier table for scale and enters no median, spread or ratio. The exclusion is applied at the aggregate, never at the row.
 
 ## Accounting basis (read before the tables)
 A muon cost is only meaningful as a point on a **2-D grid**, and both coordinates are carried per row:
