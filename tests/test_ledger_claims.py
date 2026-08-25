@@ -44,10 +44,9 @@ CLAIM_PATHS = (
     "ADOPTERS.md",
     "openmucf/data/references.bib",
     "openmucf/data/muon_cost.schema.json",
-    # The prose homes read and registered in the 2026-08-24 claim sweep before they were added
-    # here: the shipped
-    # data's own free text, the CC-BY data-package descriptor, and the two generated documents that
-    # restate ledger claims together with the generators that emit them.
+    # The prose homes read and registered in the 2026-08-24 claim sweep before they were added here:
+    # the shipped data's own free text, the CC-BY data-package descriptor, and the two generated
+    # documents that restate ledger claims, together with the generators that emit them.
     "openmucf/data/muon_cost.csv",
     "datapackage.json",
     "FINDINGS.md",

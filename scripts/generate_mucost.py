@@ -581,7 +581,7 @@ arithmetic is in the CSV `derivation` column); no facility reports this quantity
 
 {t3}
 
-## The tier spread: an order-of-magnitude, mixed-basis, one-sided observation
+## The tier spread: an order-of-magnitude, mixed-basis observation
 ![muon-cost tier spread](figures/muon_cost_gap.png)
 
 **Figure `figures/muon_cost_gap.png` (log-scale beam GeV/muon by tier).** Caption: *{DISARMAMENT}*

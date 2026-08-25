@@ -439,10 +439,10 @@ edge may be read off a row barred from muCF cost aggregates, and no box's suppor
 row's value. Each box below prints every edge it has, and what set it.
 
 **T1 box edges.** {H["t1_lo"]} GeV is the Acceleron 2025 active-target slide value -- simulated,
-unvalidated, a company slide. `MUON_COST.md` records that the slide-tier Acceleron row never
-headlines; letting it set the lower edge of a prior support is a JUDGMENT CALL, disclosed here as
-one, and not a violation of that rule, because the edge of a sensitivity box is not a headline
-figure. {H["t1_hi"]} GeV is a declared design-study upper constant and is not a ledger row. The
+unvalidated, a company slide. `MUON_COST.md` records that the slide-tier Acceleron row is not one
+of its named headline anchors; letting it set the lower edge of a prior support is a JUDGMENT CALL,
+disclosed here as one, because the edge of a sensitivity box is neither a headline figure nor a
+ledger aggregate. {H["t1_hi"]} GeV is a declared design-study upper constant and is not a ledger row. The
 full-text-pinned Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE the
 upper edge), with a ~3 GeV ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box
 spans the low/central design-study range, its edges are disclosed alongside the pinned values, and it

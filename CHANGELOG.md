@@ -26,8 +26,8 @@ T3 median; and the `FINDINGS.md` §2b T3 prior ran to 1e6 GeV, a support that co
 figure. Both are fixed at the aggregate boundary, never at the row: PSI HIMB still ships in the T3
 table with its own label, and the exclusion is now applied by `MuonCostTable.aggregate_rows`, which
 every median, spread, ratio and prior-box edge reads. `mixed` is deliberately NOT excluded — it counts
-μ⁺ and μ⁻ together, biasing an aggregate in this ledger's own declared one-sided direction, so
-dropping it would raise our own headline rather than lower it.
+μ⁺ and μ⁻ together, biasing an aggregate in this ledger's own declared one-sided direction, so it is
+kept on basis grounds rather than on what it does to our own headline, which it raises.
 
 **Numbers moved, and every one of them weakens a claim of ours:**
 - `MUON_COST.md` T3 tier median **5497.5 → 4993 GeV**, and the tier ratio **1133.5× → 1029.5×**.

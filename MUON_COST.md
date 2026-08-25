@@ -112,7 +112,7 @@ arithmetic is in the CSV `derivation` column); no facility reports this quantity
 | MuSIC (RCNP) | (10.4 +- 2.7)e5 mu/W (mu+ and mu-) | 6002 | beam_kinetic | transported (lower bound) | mixed | derived_here | no |
 | PSI HIMB | 1.42 MW; 1e10 mu+/s (mu+-only) | 890000 | beam_kinetic | transported (lower bound) | mu_plus_only (not muCF) | derived_here | no |
 
-## The tier spread: an order-of-magnitude, mixed-basis, one-sided observation
+## The tier spread: an order-of-magnitude, mixed-basis observation
 ![muon-cost tier spread](figures/muon_cost_gap.png)
 
 **Figure `figures/muon_cost_gap.png` (log-scale beam GeV/muon by tier).** Caption: *Facilities optimize brightness/purity, not muons-per-watt — the floor is unvalidated, not impossible.*
