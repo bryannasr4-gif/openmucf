@@ -8,12 +8,13 @@
 
 ## Basis: neutrons per joule of PRIMARY BEAM energy (beam basis, not wall-plug)
 Every value below is `neutrons / (joule of primary accelerator beam kinetic energy)`. For muCF the
-primary-beam joule is the beam energy spent to produce one stopped muon (MUON_COST.md
-`normalized_GeV_per_mu`); for the alternative sources it is the deuteron or proton beam kinetic
+primary-beam joule is the MUON_COST.md tier median, at whatever accounting stage that tier's rows carry
+(MUON_COST.md `normalized_GeV_per_mu`; the per-row stages are printed there, and a tier median can mix
+them); for the alternative sources it is the deuteron or proton beam kinetic
 energy delivered to the target. This is a **beam basis**: the wall-plug figure is this divided by the
-accelerator efficiency eta_acc (< 1), kept SEPARATE (the single-accounting-home rule; MUON_COST.md never
-folds eta_acc into the muon cost). Only one eta_acc is pinned to a primary text in this repo --
-Kelly-Hart-Rose's PSI-measured 0.18 -- so a wall-plug muCF column would rest on an unsourced per-tier
+accelerator efficiency eta_acc (< 1), kept SEPARATE (the single-accounting-home rule; in MUON_COST.md
+applying eta_acc is a numeraire change that produces its own row and is never folded into a
+beam-kinetic value). A wall-plug muCF column would rest on an unsourced per-tier
 efficiency for T2/T3 and is deliberately NOT tabulated; on a wall-plug basis every muCF value below
 falls by 1/eta_acc (e.g. ~5.6x at eta_acc = 0.18).
 
@@ -78,7 +79,7 @@ arithmetic is in each row's inputs). Spallation is included per the neutronomics
 | RTNS-II (LLNL, beam-target 14 MeV source) | 14 MeV (T(d,n)alpha) | 2.1e11 n/s per mA of 400 keV D+ (fresh Ti-tritide target; up to 150 mA -> 3e13 n/s) | 5.250e+08 | 400 kV, 150 mA D+ accelerator; initial yield 2.1e11 n/s-mA (RTNS-II operational summary) |
 | Spallation source (ISIS, W target) | broad evaporation spectrum (NOT 14 MeV) | ~20 neutrons per 800 MeV proton on a tungsten target (broad spectrum, ~1-2 MeV peak) | 1.560e+11 | isis.stfc.ac.uk: 800 MeV proton accelerator; ~20 neutrons/proton on the W target |
 
-**Dropped for unsourceability: none.** Every alternative-source row above carries a live-verified primary (yield, beam-current, beam-energy) or (neutrons-per-proton, proton-energy) triple; no row required approximation.
+**Dropped for unsourceability: none.** Every alternative-source row above carries a primary (yield, beam-current, beam-energy) or (neutrons-per-proton, proton-energy) triple; no row required approximation.
 
 ## 3. What the table says (honest reading)
 On a beam-energy basis, muCF at the **design-study** muon cost (1.454e+11 n/J, ~43

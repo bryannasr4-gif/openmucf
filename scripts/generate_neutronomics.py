@@ -14,12 +14,12 @@ design study vs a demonstrated collider front end vs an operating facility). Ave
 be UQ theater over a decision variable, so each tier gets its own row.
 
 BASIS (read before trusting a number): every value is neutrons per joule of PRIMARY BEAM kinetic energy
-(beam basis, NOT wall-plug). For muCF the primary-beam joule is the beam energy spent to produce one
-stopped muon (MUON_COST.md ``normalized_GeV_per_mu``); for the alternative sources it is the
-deuteron or proton beam kinetic energy delivered to the target. Wall-plug = this / eta_acc (< 1), kept
-SEPARATE (the single-accounting-home rule; MUON_COST.md never folds eta_acc into the muon cost). Only
-one eta_acc is pinned to a primary text in this repo (Kelly-Hart-Rose's PSI-measured 0.18), so a
-wall-plug muCF column would rest on an unsourced per-tier efficiency and is deliberately NOT tabulated.
+(beam basis, NOT wall-plug). For muCF the primary-beam joule is the MUON_COST.md tier median, at
+whatever accounting stage that tier's rows carry (``normalized_GeV_per_mu``); for the alternative
+sources it is the deuteron or proton beam kinetic energy delivered to the target. Wall-plug = this /
+eta_acc (< 1), kept SEPARATE (the single-accounting-home rule; applying eta_acc is a numeraire change
+that produces its own row, never folded into a beam-kinetic value). A wall-plug muCF column would rest
+on an unsourced per-tier efficiency and is deliberately NOT tabulated.
 
 Grounding -- every number sourced, one channel one accounting home: X_mu = 113 is imported from
 ``openmucf.calibrate.OBS['xmu_obs']`` -- the MEASURED
@@ -30,7 +30,8 @@ never a hardcoded literal. GeV -> J via 1 GeV = 1.602176634e-10 J (CODATA elemen
 
 Audit wiring: this generator regenerates BOTH artifacts and BOTH join the ``git diff --exit-code`` list
 and the ``provenance --check`` line -- all committed numbers are pure deterministic arithmetic on the
-committed muon_cost.csv + the ledger X_mu (no MCMC/solver), so both are byte-stable cross-arch (A2).
+committed muon_cost.csv + the ledger X_mu + the published beam parameters of the alternative sources
+(no MCMC/solver), so both are byte-stable cross-arch (A2).
 
 Computation lives in importable helpers (no file I/O or printing on import); file I/O + printing are
 guarded behind ``main()`` so tests import and assert on the tables without regenerating the doc.
@@ -68,7 +69,7 @@ class AltSource:
 
     ``n_per_joule`` is neutrons per joule of PRIMARY BEAM kinetic energy, derived here from the
     published (yield, beam-current, beam-energy) or (neutrons-per-proton, proton-energy) triple. Every
-    row carries a live-verified ``source`` + ``locator``; a row that cannot be sourced is DROPPED, never
+    row carries a ``source`` + ``locator``; a row that cannot be sourced is DROPPED, never
     approximated (see ``DROPPED`` below).
     """
 
@@ -135,7 +136,7 @@ def build_alt_sources() -> list[AltSource]:
 
 
 # Sources considered but DROPPED for unsourceability. Empty here: every included row carries a
-# full live-verified triple; no row required approximation. (Kept as an explicit, possibly-empty list so
+# full triple; no row required approximation. (Kept as an explicit, possibly-empty list so
 # the discipline is visible in the doc regardless of outcome.)
 DROPPED: list[str] = []
 
@@ -253,7 +254,7 @@ def _dropped_block() -> str:
     if not DROPPED:
         return (
             "**Dropped for unsourceability: none.** Every alternative-source row above carries a "
-            "live-verified primary (yield, beam-current, beam-energy) or (neutrons-per-proton, "
+            "primary (yield, beam-current, beam-energy) or (neutrons-per-proton, "
             "proton-energy) triple; no row required approximation."
         )
     lines = "\n".join(f"- {d}" for d in DROPPED)
@@ -303,12 +304,13 @@ def build_markdown(table: mucost.MuonCostTable, H: dict[str, str]) -> str:
 
 ## Basis: neutrons per joule of PRIMARY BEAM energy (beam basis, not wall-plug)
 Every value below is `neutrons / (joule of primary accelerator beam kinetic energy)`. For muCF the
-primary-beam joule is the beam energy spent to produce one stopped muon (MUON_COST.md
-`normalized_GeV_per_mu`); for the alternative sources it is the deuteron or proton beam kinetic
+primary-beam joule is the MUON_COST.md tier median, at whatever accounting stage that tier's rows carry
+(MUON_COST.md `normalized_GeV_per_mu`; the per-row stages are printed there, and a tier median can mix
+them); for the alternative sources it is the deuteron or proton beam kinetic
 energy delivered to the target. This is a **beam basis**: the wall-plug figure is this divided by the
-accelerator efficiency eta_acc (< 1), kept SEPARATE (the single-accounting-home rule; MUON_COST.md never
-folds eta_acc into the muon cost). Only one eta_acc is pinned to a primary text in this repo --
-Kelly-Hart-Rose's PSI-measured 0.18 -- so a wall-plug muCF column would rest on an unsourced per-tier
+accelerator efficiency eta_acc (< 1), kept SEPARATE (the single-accounting-home rule; in MUON_COST.md
+applying eta_acc is a numeraire change that produces its own row and is never folded into a
+beam-kinetic value). A wall-plug muCF column would rest on an unsourced per-tier
 efficiency for T2/T3 and is deliberately NOT tabulated; on a wall-plug basis every muCF value below
 falls by 1/eta_acc (e.g. ~5.6x at eta_acc = 0.18).
 
