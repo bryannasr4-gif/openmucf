@@ -410,9 +410,11 @@ per-Z quantity, so there is no isotope for it to be resolved to. Their `needs_ve
 `true`.
 
 **Two limits on all of the above, stated plainly.** First, what was read is the TRIUMF preprint
-TRI-PP-87-5 (January 1987), a scanned copy, not the published article; every locator cites the
-preprint's pagination and every row records `copy_read`, and if a value's evidence differs between
-the two copies this audit is the one that must move. Second, this is a resolution audit, not an
+TRI-PP-87-5 (January 1987), a scanned copy, not the published article; every locator for a row
+attributed to Suzuki cites the preprint's pagination and records `copy_read`, and if a value's
+evidence differs between the two copies this audit is the one that must move. A row attributed to
+another primary carries that primary's locator and copy, and a row whose isotope is unresolved
+carries its evidence in place of a locator. Second, this is a resolution audit, not an
 evaluation: no shipped value was compared to the primary for correctness, and none was altered.
 
 ## 7. Licensing
