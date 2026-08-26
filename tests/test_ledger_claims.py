@@ -53,6 +53,10 @@ CLAIM_PATHS = (
     "NEUTRONOMICS.md",
     "scripts/generate_findings.py",
     "scripts/generate_neutronomics.py",
+    # The shipped list of bibkeys with an unresolved identifier: a prose home the 2026-08-24 sweep
+    # read, added here after a drill restored a retracted universal to it and the suite stayed
+    # green.
+    "openmucf/data/bib_unresolved.txt",
     # This file. A guard that exempts itself is not a guard: this module's own prose is watched on
     # the same terms as every other path here.
     "tests/test_ledger_claims.py",
@@ -66,11 +70,13 @@ STRONG = re.compile(
     re.IGNORECASE,
 )
 
-#: Nouns that make a sentence a claim about the ledger rather than about anything else. `bound` and
+#: Words that make a sentence a claim about the ledger rather than about anything else. `bound` and
 #: `cost` are deliberately in: the ledger's basis universals are commonly phrased with them.
+#: The verb form of `headline` is included, after a drill wrote a sentence using it that matched
+#: nothing here.
 LEDGER = re.compile(
     r"\b(row|rows|tier|tiers|cell|cells|anchor|anchors|source|sources|basis|bases"
-    r"|numeraire|numeraires|stage|stages|ledger|entry|entries|chain|chains|headline"
+    r"|numeraire|numeraires|stage|stages|ledger|entry|entries|chain|chains|headline|headlines"
     r"|manifest|bibkey|bibkeys|evidence_status|charge_basis|bound|bounds|cost|costs"
     r"|value|values|figure|figures|quotient|denominator|problem|problems|contract"
     r"|contracts|claim|claims|number|numbers)\b",
@@ -136,7 +142,7 @@ def test_quantified_claims_registered():
     - STRONG ``\\b(every|all|each|none|never|always|only|sole|solely|exactly|unique|uniquely|neither
       |any|entire|without\\s+exception|no|nothing)\\b``
     - LEDGER ``\\b(row|rows|tier|tiers|cell|cells|anchor|anchors|source|sources|basis|bases|numeraire
-      |numeraires|stage|stages|ledger|entry|entries|chain|chains|headline|manifest|bibkey|bibkeys
+      |numeraires|stage|stages|ledger|entry|entries|chain|chains|headline|headlines|manifest|bibkey|bibkeys
       |evidence_status|charge_basis|bound|bounds|cost|costs|value|values|figure|figures|quotient
       |denominator|problem|problems|contract|contracts|claim|claims|number|numbers)\\b``
 
