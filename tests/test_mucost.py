@@ -876,7 +876,7 @@ def test_the_t3_provenance_paragraph_is_derived_from_the_ledger(table):
     assert " ".join(exclusion.split()) in doc
     # the wording the ledger refutes must not come back, anywhere in the document
     assert "per mu+ produced" not in doc
-    # and a ledger move moves the sentence: the same mutation the round-1 verifier ran, in memory
+    # and a ledger move moves the sentence: the same mutation an adversarial re-read ran, in memory
     mutated = MuonCostTable(
         [
             dataclasses.replace(r, normalized_GeV_per_mu=6500.0) if r.source_id == "music" else r

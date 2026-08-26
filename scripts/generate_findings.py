@@ -362,7 +362,7 @@ the CI, never convolved into it.
 ## 2. Propagated uncertainty (what we can actually say today)
 Monte-Carlo propagation of the measured liquid-density ranges (95% intervals; prior propagation, not a
 posterior). Note the propagated interval deliberately reflects LIQUID conditions (phi ~ 1.2, T ~ 300 K):
-the record X_mu ~ 150 (Jones 1986, high-T/high-c_t conditions) lies outside it by construction, as does
+the record X_mu ~ 150 (Jones 1986, a liquefied d-t target at c_t = 0.3) lies outside it by construction, as does
 the Kou-Chen best case -- both correspond to conditions the liquid box excludes.
 
 | quantity | 2.5% | median | 97.5% |

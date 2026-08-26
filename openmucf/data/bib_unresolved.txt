@@ -6,7 +6,7 @@
 # identifier; a blocked document is a tracked go/no-go resource, not an estimate).
 #
 # Format:  <bibkey> | <why unresolved> | <acquisition route / candidate to confirm>
-# The rates-provenance test (tests/test_rates.py::test_every_bibkey_has_doi_or_url_or_listed)
+# The rates-provenance test (tests/test_rates.py::test_every_referenced_bibkey_resolves_or_is_listed_unresolved)
 # treats a bibkey listed here as an accepted "unresolved-with-route" state.
 
 Faifman1989 | Legacy theory of lambda_dtmu(T,F) in the barely-digitized Muon Catal. Fusion journal (1989); no open DOI for the 1989 primary. | Muon Catal. Fusion journal (1989) via interlibrary loan; the closest open successor is Faifman & Ponomarev, Phys. Lett. B 265, 201 (1991), doi 10.1016/0370-2693(91)90041-N (triple-mixture resonant formation) -- a successor, NOT the 1989 T/F-dependence primary.

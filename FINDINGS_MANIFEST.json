@@ -387,7 +387,7 @@
   ],
   "generated_by": "scripts/generate_findings.py",
   "inputs": {
-    "muon_cost_csv_sha256": "f6a8b263ebc61d46073b8ad6f1ce9bb1730b1709f8c249965aec7d57de39885f",
+    "muon_cost_csv_sha256": "6934fcd10420fba458d973cd4b64dc91eac16ab60348a3e6d9db3eb58fda86de",
     "rates_csv_sha256": "f88cc170847aa2c2bef1aac2d570b7c7413f89ac413c34e81bdb9992bfeadd0a",
     "seeds": {
       "breakeven": 1,
