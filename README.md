@@ -87,7 +87,7 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
 - **Breakeven audit:** at liquid-scale density (φ ≤ ~1.45), under measured, unpolarized ranges, P(X_μ>500)=0 —
   structural (outside the prior's support), not a Monte-Carlo estimate. Density scaling could supply the
   cycling-rate factor at DAC φ≈2.4, but even at infinite λ_c the projection needs reactivation R ≥ 0.77
-  (R ≈ 0.94 at λ_c=3e8) vs the model-derived ~0.35. A falsifiable, quantified bet that rides on reactivation.
+  (R ≈ 0.94 at λ_c=3e8). A falsifiable, quantified bet that rides on reactivation.
 - **Identifiability:** experiment pins ω_s^eff (and only loosely bounds λ_c) but not the ω_s0/R split — the
   posterior concentrates on the curve ω_s0(1−R)=ω_s^eff, whose linear correlation is prior-conditional
   (corr ≈ +0.8; see the prior-sensitivity sweep in `CALIBRATION.md`) — the quantitative reason the Phase-3

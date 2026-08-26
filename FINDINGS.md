@@ -133,8 +133,8 @@ d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-e
 Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To show how
 Q_net responds to the assumed muon cost, the SAME seeded forward-UQ Q_net is re-run under three
 tier-specific E_mu priors, with every other input (the omega_s0 / R / lambda_c / eta boxes)
-held fixed. This is a sensitivity-of-Q_net-to-E_mu panel: the boxes are disclosed modelling choices
-(provenance below), not ledger aggregates. It measures no cost gap, computes no cost ratio, and makes
+held fixed. This is a sensitivity-of-Q_net-to-E_mu panel: the boxes are disclosed modelling choices,
+with their provenance below. It measures no cost gap, computes no cost ratio, and makes
 no same-basis comparison. (Arithmetic ON ITS OWN OUTPUTS is a different thing and is reported below;
 it says something about the boxes this document chose, and nothing about the muon-cost data.)
 
@@ -164,20 +164,21 @@ tier-median ratio reported in `MUON_COST.md` (which is itself a mixed-basis, ord
 observation and not a same-basis ratio), and the two do not take the same value, so any resemblance
 between them is a coincidence of where the boxes were drawn and never corroboration of either.
 
-**Box-edge provenance.** A box edge is a prior-support choice for a sensitivity scan, not a ledger
-aggregate -- but one rule binds every edge and is enforced by a test rather than promised here: no
+**Box-edge provenance.** A box edge is a prior-support choice for a sensitivity scan, and the
+ledger's aggregate rule binds every edge -- enforced by a test rather than promised here: no
 edge may be read off a row barred from muCF cost aggregates, and no box's support may CONTAIN such a
 row's value. Each box below prints every edge it has, and what set it.
 
 **T1 box edges.** 3.0 GeV is the Acceleron 2025 active-target slide value -- simulated,
 unvalidated, a company slide. `MUON_COST.md` records that the slide-tier Acceleron row is not one
 of its named headline anchors; letting it set the lower edge of a prior support is a JUDGMENT CALL,
-disclosed here as one, because the edge of a sensitivity box is neither a headline figure nor a
-ledger aggregate. 6.0 GeV is a declared design-study upper constant and is not a ledger row. The
-full-text-pinned Bertin et al. (1987) per-stopped-muon cost at liquid density is ~7.8 GeV (ABOVE the
-upper edge), with a ~3 GeV ideal all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box
-spans the low/central design-study range, its edges are disclosed alongside the pinned values, and it
-is left UNCHANGED (pre-registered; a discrepant pin is disclosed, never tuned away).
+disclosed here as one, because the edge of a sensitivity box is not a headline figure and no rule
+bars the row it is read off from muCF cost aggregates. 6.0 GeV is a declared design-study
+upper constant and is not a ledger row. The full-text-pinned Bertin et al. (1987) per-stopped-muon
+cost at liquid density is ~7.8 GeV (ABOVE the upper edge), with a ~3 GeV ideal all-collected floor,
+and Eliezer-Henis (1994) is ~5 GeV; the box spans the low/central design-study range, its edges are
+disclosed alongside the pinned values, and it is left UNCHANGED (pre-registered; a discrepant pin is
+disclosed, never tuned away).
 
 - lower edge 3.0 GeV -- ledger row `acceleron_2025`: stage `produced`, numeraire
   `beam_kinetic`, charge basis `mu_minus`.

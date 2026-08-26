@@ -101,7 +101,7 @@ published value, and a test pins that.
 That heading asserted a **same-basis ratio**, which the text beneath it already denied: no basis
 class is shared between the design-study and operating-facility tiers, so the quantity has no common
 denominator to be a ratio *of*. The spread itself is unchanged and is now stated as what the data
-supports — an **order-of-magnitude, mixed-basis, one-sided observation**, with its basis composition
+supports — an **order-of-magnitude, mixed-basis observation**, with its basis composition
 printed. The test that pinned the old claim was re-specified rather than deleted, so what was
 retracted and why is recorded in the suite.
 - **It applies to three statements standing in this same `[Unreleased]` section**, not to a
@@ -306,7 +306,7 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   full-text-verified Bertin 1987 and Eliezer–Henis 1994), demonstrated technology, and operating facilities
   (mu2e/COMET/MuSIC/HIMB — original derivations with the arithmetic shown). The tier spread is drawn in
   `figures/muon_cost_gap.png`. **Corrected by the retraction above:** it is an order-of-magnitude,
-  mixed-basis, one-sided observation, not a same-basis ratio proved from the table.
+  mixed-basis observation, not a same-basis ratio proved from the table.
 - **`FINDINGS.md` §2b — Q_net by muon-cost tier.** The forward-UQ Q_net is re-run under T1/T2/T3 E_μ priors
   (via `uq.qnet_tier_panel`), holding every measured input fixed; the median Q_net fell ~10⁵× from
   design-study to facility muons — described here at the time as "the 10³ gap in energy-return form"
