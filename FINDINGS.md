@@ -58,10 +58,10 @@ lever for yield, but "cheaper muons + higher efficiency" is the lever for energy
 reprioritization is not visible in any single-point projection.
 
 ## 1b. Is that ranking a physics fact, or a prior-width artifact?
-The variance split in section 1 uses the **contested-range** box, where `R`'s measured range is relatively
+The variance split in section 1 uses the **contested-range** box, where `R`'s range is relatively
 wide (~+/-36% of nominal) while `omega_s0`'s is narrow (~+/-9%). Re-running Sobol under an **equal-relative**
 box (each input +/-15% of its nominal) reorders the drivers -- **`omega_s0_pct` now leads** --
-so part of the contested-box ranking reflects how wide each *measured range* is, not physics alone:
+so part of the contested-box ranking reflects how wide each *range* is, not physics alone:
 
 | input | $S_T$ (contested box) | $S_T$ (equal-relative +/-15%) |
 |---|---|---|
@@ -93,7 +93,7 @@ occurred in the anchor experiments (one channel, one accounting home), so eta is
 the CI, never convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
-Monte-Carlo propagation of the measured liquid-density ranges (95% intervals; prior propagation, not a
+Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
 posterior). The interval deliberately reflects LIQUID conditions (phi ~ 1.2, T ~ 300 K). The
 record X_mu ~ 150 (Jones 1986, a liquefied d-t target at c_t = 0.3) and the Kou-Chen best case
 both lie above it, and for the same reason: each needs an effective sticking below the
@@ -223,8 +223,7 @@ sensitivity scan only, never a cost statement.
 Replacing the flat [2, 10] default with a tiered prior is deferred to Phase-4 findings-v2.
 
 ## 3. Breakeven audit (the marquee result)
-The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Under the **measured,
-liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:
+The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Under the **liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:
 
 - **P(X_mu > 500) = 0.0%**, P(Q_sci > 2) = 0.0%,
   P(Q_net > 1) = 0.0%. These zeros are STRUCTURAL, not Monte-Carlo estimates:
@@ -257,7 +256,7 @@ quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking sur
 (Figure `figures/breakeven.png`.)
 
 ## Honest caveats
-- These use the closed-form yield map with uniform priors over contested ranges; the
+- These use the closed-form yield map with uniform priors over the declared input ranges; the
   sticking/reactivation inputs are the v1 literature band, not yet the Phase-3 surrogate. The
   falsification result depends only on measured lambda_c and lambda_0 -- not on the v1 network
   structure -- which is the strongest defense of its robustness.

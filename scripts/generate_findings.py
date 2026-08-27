@@ -74,9 +74,10 @@ assert (_PSI.normalized_GeV_per_mu, _PSI.stage, _PSI.charge_basis) == (
     "mu_plus_only",
 ), "psi_himb moved: the AMENDMENT quotes its 2026-08-19 coordinates; re-word it, do not regenerate"
 
-# Section 2 says the Jones record and the Kou-Chen best case both need an effective sticking BELOW
-# this box's support, and that neither exits on conditions. Both halves are read from the data and
-# pinned here: if a prior moves, regeneration fails loudly rather than shipping a stale reason.
+# Section 2 says the Jones record and the Kou-Chen best case both lie ABOVE this box, and that each
+# needs an effective sticking BELOW its support. Both claims are read from the data and pinned here:
+# if a prior or the row moves, regeneration fails loudly rather than shipping a stale reason. The
+# pinned sentence rests on sticking alone; the LIQUID-conditions premise above it is NOT pinned.
 # Re-word the paragraph; do not regenerate past this.
 _OS0_P = next(p for p in uq.PARAMS if p.name == "omega_s0_pct")
 _R_P = next(p for p in uq.PARAMS if p.name == "R")
@@ -91,12 +92,20 @@ assert _JONES_NEEDS_OSE < _OSE_SUPPORT_LO and _KOU_OSE < _OSE_SUPPORT_LO, (
     "sticking below this box's support; that is no longer true -- re-word the paragraph"
 )
 # ... and its conclusion, which the premise above does not by itself pin: both figures must
-# still lie ABOVE the box. This reads the row's stated value, not just its conditions, so the two
-# cannot drift apart silently.
+# still lie ABOVE the box. This reads the row's stated value as well as its conditions, and the
+# assert below ties those two to each other, so they cannot drift apart silently.
 _BOX_MAX_XMU = 1.0 / (_OSE_SUPPORT_LO + LAMBDA_0 / _LC_P.high)
 assert _BOX_MAX_XMU < 150.0 and float(_KOU_BEST["value"]) > _BOX_MAX_XMU, (
     "the section-2 sentence says both figures lie ABOVE this box's attainable maximum; that is "
     "no longer true -- re-word the paragraph"
+)
+# The row's value and its own stated conditions must stay mutually reachable: X_mu = 1/(ose +
+# lambda_0/lambda_c) is bounded above by 1/ose for ANY lambda_c, so a value >= 1/omega_s_eff is
+# unreachable at the conditions the same row states. Without this the two can be moved apart to a
+# physically impossible pair with both asserts above still silent.
+assert 1.0 / float(_KOU_BEST["value"]) - _KOU_OSE > 0.0, (
+    "V_kouchen_best's stated value is unreachable at its own stated omega_s_eff -- the row is "
+    "internally inconsistent; fix the row, do not regenerate past this"
 )
 
 
@@ -263,8 +272,8 @@ plt.close(fig)
 fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 axes[0].hist(fw["samples"]["X_mu"], bins=80, color="#6699cc")
 axes[0].axvline(fw["X_mu"]["med"], color="k", label=f"median {fw['X_mu']['med']:.0f}")
-axes[0].axvline(150, color="green", ls="--", label="record ~150 (high-T/c_t, outside liquid box)")
-axes[0].set_title("prior-propagated $X_\\mu$ (measured liquid ranges)")
+axes[0].axvline(150, color="green", ls="--", label="record ~150 (Jones 1986, liquefied d-t at c_t=0.3)")
+axes[0].set_title("prior-propagated $X_\\mu$ (liquid ranges)")
 axes[0].set_xlabel("fusions per muon")
 axes[0].legend(fontsize=8)
 axes[1].hist(fw["samples"]["Q_net"], bins=80, color="#cc9966")
@@ -361,10 +370,10 @@ lever for yield, but "cheaper muons + higher efficiency" is the lever for energy
 reprioritization is not visible in any single-point projection.
 
 ## 1b. Is that ranking a physics fact, or a prior-width artifact?
-The variance split in section 1 uses the **contested-range** box, where `R`'s measured range is relatively
+The variance split in section 1 uses the **contested-range** box, where `R`'s range is relatively
 wide (~+/-36% of nominal) while `omega_s0`'s is narrow (~+/-9%). Re-running Sobol under an **equal-relative**
 box (each input +/-{int(rob["rel"] * 100)}% of its nominal) reorders the drivers -- **`{_rank(rob["equal_relative_box"])[0][0]}` now leads** --
-so part of the contested-box ranking reflects how wide each *measured range* is, not physics alone:
+so part of the contested-box ranking reflects how wide each *range* is, not physics alone:
 
 {_tbl2(rob["contested_box"], rob["equal_relative_box"], rob["rel"])}
 
@@ -389,7 +398,7 @@ occurred in the anchor experiments (one channel, one accounting home), so eta is
 the CI, never convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
-Monte-Carlo propagation of the measured liquid-density ranges (95% intervals; prior propagation, not a
+Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
 posterior). The interval deliberately reflects LIQUID conditions (phi ~ 1.2, T ~ 300 K). The
 record X_mu ~ 150 (Jones 1986, a liquefied d-t target at c_t = 0.3) and the Kou-Chen best case
 both lie above it, and for the same reason: each needs an effective sticking below the
@@ -508,8 +517,7 @@ sensitivity scan only, never a cost statement.
 Replacing the flat [2, 10] default with a tiered prior is deferred to Phase-4 findings-v2.
 
 ## 3. Breakeven audit (the marquee result)
-The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\\mu > 500$, $Q > 2$. Under the **measured,
-liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:
+The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\\mu > 500$, $Q > 2$. Under the **liquid-density (phi <= ~1.45), unpolarized** uncertainty ranges:
 
 - **P(X_mu > 500) = {H["P_xmu_gt500"]}**, P(Q_sci > 2) = {be["P_qsci_gt2"] * 100:.1f}%,
   P(Q_net > 1) = {be["P_qnet_gt1"] * 100:.1f}%. These zeros are STRUCTURAL, not Monte-Carlo estimates:
@@ -542,7 +550,7 @@ quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking sur
 (Figure `figures/breakeven.png`.)
 
 ## Honest caveats
-- These use the closed-form yield map with uniform priors over contested ranges; the
+- These use the closed-form yield map with uniform priors over the declared input ranges; the
   sticking/reactivation inputs are the v1 literature band, not yet the Phase-3 surrogate. The
   falsification result depends only on measured lambda_c and lambda_0 -- not on the v1 network
   structure -- which is the strongest defense of its robustness.

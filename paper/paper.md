@@ -139,7 +139,7 @@ formation geometry is an unsourced placeholder that emits a runtime warning).
 # Research use
 
 `OpenMuCF` supports three concrete uses today. First, **breakeven auditing**: at liquid-scale density
-under measured, unpolarized ranges the probability of exceeding 500 fusions per muon is structurally
+under unpolarized ranges the probability of exceeding 500 fusions per muon is structurally
 zero, and even with an unbounded cycling rate the projection requires a reactivation fraction
 $R \gtrsim 0.77$ — a falsifiable, quantified bet stated as
 requirements rather than a verdict on any group's work. Second, a **muon-cost compilation** in which

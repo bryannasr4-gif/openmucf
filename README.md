@@ -84,7 +84,7 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
 ## Headline results (see `FINDINGS.md`, `MUON_COST.md`, `CALIBRATION.md`)
 - **Sensitivity split:** yield X_μ is controlled by reactivation R (Sobol S_T=0.62), λ_c, ω_s0; net-electrical
   Q is controlled by muon cost and accelerator efficiency. Different levers for yield vs energy.
-- **Breakeven audit:** at liquid-scale density (φ ≤ ~1.45), under measured, unpolarized ranges, P(X_μ>500)=0 —
+- **Breakeven audit:** at liquid-scale density (φ ≤ ~1.45), under unpolarized ranges, P(X_μ>500)=0 —
   structural (outside the prior's support), not a Monte-Carlo estimate. Density scaling could supply the
   cycling-rate factor at DAC φ≈2.4, but even at infinite λ_c the projection needs reactivation R ≥ 0.77
   (R ≈ 0.94 at λ_c=3e8). A falsifiable, quantified bet that rides on reactivation.
@@ -114,7 +114,7 @@ Structural, one-sided: the parametric intervals above sit on the v1 reduced netw
 channels bias X_μ DOWNWARD by up to ≈15% combined (ttμ side-cycle, un-pinned pending acquisition;
 d-recapture, bracketed in `MATERIALITY.md`), so intervals are best read as upper-edge-faithful.
 
-Headline findings run on the closed form with measured-band inputs; the differentiable ODE engine is the
+Headline findings run on the closed form; the differentiable ODE engine is the
 structural workhorse for trajectories/twin/UQ cross-checks and is gated against an exact linear-algebra
 oracle (`openmucf/exact.py`; tests), but no headline number depends on its multi-pool structure.
 

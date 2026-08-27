@@ -86,7 +86,7 @@ This regenerates `FINDINGS.md`, whose marquee results are:
 - **Propagated uncertainty (95% CI):** X_μ = [89, 104, 122]; Q_sci =
   [0.177, 0.305, 0.839]; Q_net = [0.0107, 0.0364, 0.1246]. P(Q_sci > 1) = 0.2%,
   P(Q_net > 1) = 0.0%.
-- **Breakeven falsification:** under the measured ranges **P(X_μ > 500) = 0.0%**.
+- **Breakeven falsification:** under the prior ranges **P(X_μ > 500) = 0.0%**.
   Even at zero sticking the best measured cycling rate (λ_c = 1.45e8) caps the
   yield at **X_μ = 319**, so 500 is arithmetically impossible without also roughly
   doubling λ_c *and* pushing reactivation R from ~0.35 toward ~0.94.
