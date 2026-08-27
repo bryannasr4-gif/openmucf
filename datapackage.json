@@ -49,7 +49,7 @@
           {"name": "unc_type", "type": "string", "description": "Provenance of the uncertainty: stat, exp, theory, theory-spread, model, table, estimate, exact."},
           {"name": "conditions", "type": "string", "description": "Physical state the value holds at (T, phi, F, ortho/para, c_t, field)."},
           {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib; ';'-separable."},
-          {"name": "source_locator", "type": "string", "description": "Equation/table/figure/page within the source; '-' where none is recorded.", "constraints": {"required": false}},
+          {"name": "source_locator", "type": "string", "description": "Free-text provenance for the value: where it sits inside the source (equation, table, figure, page, section, slide or named case), the source itself where the row cites the document as a whole, the named quantity, model or expression the value is taken from, '-' where none is recorded, a status note where the primary is not in hand, or -- on rows derived here -- the sources and parameters the derivation used. Free text, not a controlled vocabulary.", "constraints": {"required": false}},
           {"name": "status", "type": "string", "description": "established or contested.", "constraints": {"enum": ["established", "contested"]}},
           {"name": "validity_range", "type": "string", "description": "Regime the row is valid over."},
           {"name": "single_source", "type": "boolean", "description": "True if it traces to a single, never-independently-rechecked measurement.", "constraints": {"required": false}},
@@ -82,7 +82,7 @@
           {"name": "unc", "type": "number", "description": "Reported uncertainty on the observed value.", "constraints": {"required": false}},
           {"name": "conditions", "type": "string", "description": "Physical conditions of the observation."},
           {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib."},
-          {"name": "source_locator", "type": "string", "description": "Equation/table/figure/page within the source; '-' where none is recorded, or a status note where the primary is not in hand.", "constraints": {"required": false}},
+          {"name": "source_locator", "type": "string", "description": "Free-text provenance for the value: where it sits inside the source (equation, table, figure, page, section, slide or named case), the source itself where the row cites the document as a whole, the named quantity, model or expression the value is taken from, '-' where none is recorded, a status note where the primary is not in hand, or -- on rows derived here -- the sources and parameters the derivation used. Free text, not a controlled vocabulary.", "constraints": {"required": false}},
           {"name": "tolerance", "type": "string", "description": "Pre-registered pass tolerance: [a,b] absolute interval, +-N% relative, or a qualitative pass rule (e.g. 'monotone trend', 'context-only') where the check is not numeric."},
           {"name": "notes", "type": "string", "description": "Class/tier and framing notes.", "constraints": {"required": false}}
         ]
@@ -144,7 +144,7 @@
           {"name": "charge_basis", "type": "string", "description": "Charge counted: mu_minus | mixed (mu+ and mu- together, so the mu--only cost is higher by a factor this ledger does not source) | mu_plus_only (irrelevant to muCF)."},
           {"name": "derivation", "type": "string", "description": "Arithmetic taking the published value to the normalized basis.", "constraints": {"required": false}},
           {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib."},
-          {"name": "source_locator", "type": "string", "description": "Equation/table/figure/page within the source; '-' where none is recorded, or a status note where the primary is not in hand.", "constraints": {"required": false}},
+          {"name": "source_locator", "type": "string", "description": "Free-text provenance for the value: where it sits inside the source (equation, table, figure, page, section, slide or named case), the source itself where the row cites the document as a whole, the named quantity, model or expression the value is taken from, '-' where none is recorded, a status note where the primary is not in hand, or -- on rows derived here -- the sources and parameters the derivation used. Free text, not a controlled vocabulary.", "constraints": {"required": false}},
           {"name": "needs_verification", "type": "boolean", "description": "True if the exact digit/locator is not yet pinned.", "constraints": {"required": false}},
           {"name": "notes", "type": "string", "description": "Caveats and context.", "constraints": {"required": false}}
         ]
