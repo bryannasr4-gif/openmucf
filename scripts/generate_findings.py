@@ -93,7 +93,8 @@ assert _JONES_NEEDS_OSE < _OSE_SUPPORT_LO and _KOU_OSE < _OSE_SUPPORT_LO, (
 )
 # ... and its conclusion, which the premise above does not by itself pin: both figures must
 # still lie ABOVE the box. This reads the row's stated value as well as its conditions, and the
-# assert below ties those two to each other, so they cannot drift apart silently.
+# assert below refuses a value that the row's own stated sticking cannot reach. That is a bound,
+# not a consistency proof: a pair below it can still disagree with the row's other conditions.
 _BOX_MAX_XMU = 1.0 / (_OSE_SUPPORT_LO + LAMBDA_0 / _LC_P.high)
 assert _BOX_MAX_XMU < 150.0 and float(_KOU_BEST["value"]) > _BOX_MAX_XMU, (
     "the section-2 sentence says both figures lie ABOVE this box's attainable maximum; that is "

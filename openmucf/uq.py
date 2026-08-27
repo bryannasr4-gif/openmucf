@@ -12,9 +12,10 @@ Deliverables
 * ``breakeven_audit``     -- honest, uncertainty-propagated verdict on the 2026 N_mu>500 / Q>2 claims,
                              plus the "what-would-have-to-be-true" required (R, lambda_c).
 
-Priors are UNIFORM over each input's declared range (maximally honest about ignorance). The four
-inputs that have ledger rows take their range from those rows; the two efficiency inputs are systems
-assumptions with no ledger row. Every choice is documented in :data:`PARAMS`.
+Priors are UNIFORM over each input's declared range (maximally honest about ignorance). Each range
+carries its own provenance -- a ledger row's own bounds, a box widened around one or more row values, a
+design-study range, or a systems assumption with no ledger row -- recorded per row in
+``openmucf/data/uq_priors.csv`` and documented in :data:`PARAMS`.
 """
 
 from __future__ import annotations
@@ -222,7 +223,7 @@ def breakeven_audit(n=400_000, seed=1):
     """Honest, uncertainty-propagated verdict on the 2026 N_mu>500 / Q>2 projections.
 
     Under the prior uncertainty ranges, report P(X_mu>500), P(Q_sci>2), P(Q_net>1); then the
-    'what-would-have-to-be-true' required (R, lambda_c) to reach X_mu=500, versus what is measured.
+    'what-would-have-to-be-true' required (R, lambda_c) to reach X_mu=500, versus what the ledger carries.
     """
     d = _draw(n, seed)
     x = xmu(d["omega_s0_pct"], d["R"], d["lambda_c"])
