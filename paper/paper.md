@@ -25,7 +25,7 @@ bibliography: paper.bib
 `OpenMuCF` is open, reproducible, differentiable, uncertainty-bearing infrastructure for the
 muon-catalyzed-fusion ($\mu$CF) cycle. It combines three things the field has lacked in open,
 citable form: (1) a **FAIR rate ledger** in which every microscopic rate carries per-row provenance,
-physical conditions, an uncertainty and its type, an `established`/`contested` tag, and a validity
+physical conditions, an uncertainty type, an `established`/`contested` tag, and a validity
 range; (2) a **differentiable (JAX/diffrax) cycle-kinetics and net-electrical energy-balance engine**
 gated against an exact linear-algebra oracle; and (3) a **global (Sobol) forward-uncertainty auditor**
 that turns point-estimate breakeven claims into error-barred, falsifiable verdicts, together with a
@@ -84,9 +84,9 @@ transport engines and to evaluated-data projects [@Watanabe2026].
 `OpenMuCF` is a small Python package with a layered design:
 
 - **FAIR ledger** (`openmucf/data/`, loaded by `openmucf.rates`): a curated compilation with
-  provenance of the microscopic rates (13 curated scalar rates in v1), validation targets,
-  uncertainty priors, and a muon-cost table. The loader refuses any row that is unsourced or fails
-  the schema. The ledger is licensed CC-BY-4.0 and described by a `datapackage.json`; it is a
+  provenance of the microscopic rates, validation targets,
+  uncertainty priors, and a muon-cost table. The loader refuses any row that is unsourced or missing
+  a schema-required field. The ledger is licensed CC-BY-4.0 and described by a `datapackage.json`; it is a
   compilation with provenance, **not** an independently evaluated nuclear-data library.
 - **Closed-form and differentiable ODE cycle** (`openmucf.analytic`, `openmucf.cycle`): the analytic
   fusions-per-muon map and a JAX/diffrax multi-pool network. The ODE is gated against an exact
@@ -104,7 +104,7 @@ transport engines and to evaluated-data projects [@Watanabe2026].
 **Honest validation (the trust map is the honesty section).** `OpenMuCF` ships a class-tiered
 validation scoreboard in which only rows tagged `independent` are genuine predictions. As of v1 the
 passing set contains **no** independent rows: five registered `independent` targets FAIL by design,
-each a quantified measure of the distance between the v1 placeholder formation model and the field's
+each a quantified measure of the distance between the v1 placeholder model and the field's
 own rates. Reproducing this scoreboard verbatim, including the failing rows, is a deliberate part of
 the artifact:
 
@@ -139,9 +139,9 @@ formation geometry is an unsourced placeholder that emits a runtime warning).
 # Research use
 
 `OpenMuCF` supports three concrete uses today. First, **breakeven auditing**: at liquid-scale density
-under measured, unpolarized ranges the probability of exceeding 500 fusions per muon is structurally
+under unpolarized ranges the probability of exceeding 500 fusions per muon is structurally
 zero, and even with an unbounded cycling rate the projection requires a reactivation fraction
-$R \gtrsim 0.77$ versus the model-derived $\approx 0.35$ — a falsifiable, quantified bet stated as
+$R \gtrsim 0.77$ — a falsifiable, quantified bet stated as
 requirements rather than a verdict on any group's work. Second, a **muon-cost compilation** in which
 each row carries its own accounting basis: design studies sit at a few GeV per muon
 [@KellyHartRose2021], while operating

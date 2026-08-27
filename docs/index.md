@@ -42,7 +42,7 @@ verdict everyone can share, cite, and falsify.
 OpenMuCF introduces **no new fundamental μCF physics**. The cycle is textbook and
 the reactivation transport is Stodden (1990) / Rafelski–Müller (1988/89). The
 contribution is **open, reproducible, differentiable, UQ-bearing infrastructure**
-plus honest findings that fall out of it — for example, that under the *measured*
+plus honest findings that fall out of it — for example, that under the *prior*
 uncertainty ranges the 2026 N_μ > 500 projection sits at probability zero and
 requires two microscopic quantities to move far outside anything measured. It
 **complements** GEANT4; it does not compete with it. See `CREDIBILITY_FIREWALL.md`

@@ -9,7 +9,7 @@
     "description": {"type": "string"},
     "value": {"type": "number"},
     "unit": {"type": "string", "examples": ["s^-1", "percent", "fraction", "MeV", "GeV"]},
-    "unc": {"type": "number", "description": "1-sigma-style uncertainty in the same unit; 0 if not quoted."},
+    "unc": {"type": "number", "description": "1-sigma-style uncertainty in the same unit; 0 where the source quotes none, '-' where the row's spread is carried by distribution/dist_lo/dist_hi instead."},
     "unc_type": {"type": "string", "enum": ["stat", "exp", "theory", "theory-spread", "model", "table", "estimate", "exact"]},
     "conditions": {"type": "string", "description": "Structured-ish: T, phi, hyperfine F, ortho-para, c_t, field."},
     "source_bibkey": {"type": "string", "description": "Key(s) resolvable in data/references.bib; ';'-separable."},

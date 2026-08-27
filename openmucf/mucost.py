@@ -86,9 +86,9 @@ LOWER_BOUND_CLASSES = frozenset({"produced", "collected"})
 #: ``mu_plus_only`` ("irrelevant to muCF, which needs mu-, and must never enter a muCF cost
 #: aggregate"), and this constant is where the CODE enforces it rather than the prose asserting it.
 #: ``mixed`` is deliberately NOT listed: it counts mu+ and mu- together, so the mu--only cost is
-#: roughly 2x higher and the row biases an aggregate in the same one-sided direction as every other
-#: row here. Dropping it would remove the row that makes our own headline ratio LARGER, which is the
-#: opposite of the discipline this constant exists for.
+#: higher by a factor this ledger does not source, and the row therefore understates rather than
+#: overstates the aggregate it enters. Dropping it would remove the row that makes our own headline
+#: ratio LARGER, which is the opposite of the discipline this constant exists for.
 AGGREGATE_EXCLUDED_CHARGE_BASIS = frozenset({"mu_plus_only"})
 
 # ------------------------------------------------------------------------------------------------
@@ -309,7 +309,8 @@ class MuonCost:
         if self.stage in OFF_CHAIN_STAGES:
             raise BasisError(
                 f"{self.source_id}: stage {self.stage!r} is not on the muCF chain "
-                f"(the muons are stopped outside D-T fuel) and can never enter a muCF cost"
+                f"(the muons are stopped outside D-T fuel), so no chain of sub-unity factors "
+                f"connects it to a muCF cost"
             )
         if self.stage not in MUCF_CHAIN:
             raise BasisError(f"{self.source_id}: stage {self.stage!r} is not a chain stage")

@@ -92,7 +92,7 @@
   title  = {Observation of unexpected density effects in muon-catalyzed d-t fusion},
   journal= {Phys. Rev. Lett.}, volume = {56}, pages = {588}, year = {1986},
   doi    = {10.1103/PhysRevLett.56.588},
-  note   = {LAMPF campaign; record-class X_mu ~ 150 at a specific (T, phi, c_t) within phi~0.12-1.30, T~15-800 K; full text needs_verification (blocks the jones-1986 bench case)}
+  note   = {LAMPF campaign; record-class X_mu = 150 +- 4(stat) +- 20(syst) fusions per muon for a liquefied d-t target with c_t = 0.3, stated on p.591 in the paragraph before the summary; the 20-500 K temperature range the paper states on p.589 belongs to its fit for lambda_dt, the dmu -> tmu muon-transfer rate. The (T, phi) of the record point are not stated there, so the jones-1986 bench case stays unpinned}
 }
 
 @article{Faifman1989,
@@ -164,7 +164,7 @@
   title  = {Experimental investigation of muon-catalyzed dt fusion in wide ranges of D/T mixture conditions},
   journal= {J. Exp. Theor. Phys.}, volume = {100}, pages = {663--687}, year = {2005},
   doi    = {10.1134/1.1926428},
-  note   = {JINR Phasotron muCF program. The tt side-branch parameters (lambda_ttmu, omega_tt~0.14) live in the companion Matsuzaki/Bom tt-fusion tables (Muon Catal. Fusion) -- acquisition-pending; ledger values carry needs_verification}
+  note   = {JINR Phasotron muCF program. The tt side-branch parameters are measured in the companion JINR preprint E15-2008-99 (Bogdanova et al. 2008), which reports lambda_ttmu = 2.84(0.32) us^-1 and omega_tt = 0.139(15) for a liquid tritium target at 22 K and 1.25 LHD. Those are quoted at one condition rather than in this ledger's x-phi-x-c_t normalization, so lambda_ttmu still ships 0.0 (blocked) and both rows carry needs_verification pending the Matsuzaki/Bom tt-fusion tables (Muon Catal. Fusion)}
 }
 
 @article{Fotev2020,
@@ -208,7 +208,7 @@
   title  = {Developing muon-catalyzed fusion as an abundant new source of energy},
   howpublished = {ARPA-E Fusion Programs Annual Meeting, 8--9 July 2025 (public slide deck)},
   year   = {2025},
-  note   = {GEANT4 sim: 3.0 GeV per negative pion+muon exiting the active target (slide 6); 3 GeV/muon system diagram, 3.4 GeV net export (slide 5). Simulated, unvalidated, company slide -- never headlines; no DOI (public deck, see data/bib_unresolved.txt)}
+  note   = {GEANT4 sim: 3.0 GeV per negative pion+muon exiting the active target (slide 6); 3 GeV/muon system diagram, 3.4 GeV net export (slide 5). Simulated, unvalidated, company slide; no DOI (public deck, see data/bib_unresolved.txt)}
 }
 @article{MuonColliderFrontEnd,
   author = {Sayed, H. K. and Berg, J. S.},
@@ -243,7 +243,7 @@
   title  = {Future facilities at PSI, the High-Intensity Muon Beams (HIMB) project},
   journal= {EPJ Web Conf. (SSP2023)}, volume = {282}, pages = {01012}, year = {2023},
   doi    = {10.1051/epjconf/202328201012},
-  note   = {HIMB design 1e10 mu+/s (surface muons, mu+ ONLY); HIPA 590 MeV, up to 1.42 MW CW proton beam (shared across stations). [Author corrected 2026-07-13 to the DOI target's first author (Dal Maso et al.); title/vol/page/year already pinned the paper.]}
+  note   = {HIMB design 1e10 mu+/s (surface muons, mu+ ONLY); HIPA 590 MeV, up to 1.42 MW CW proton beam (shared across stations). [Author corrected 2026-07-13 to the DOI target's first author (Dal Maso et al.); title/pages/year already pinned the paper, and volume + DOI were added by the same commit.]}
 }
 
 @techreport{Crowe1987,
@@ -289,8 +289,10 @@
   doi     = {10.1103/PhysRevC.35.2212},
   note    = {The primary the D1 capture table is attributed to. What was actually read for the
              isotope audit is the TRIUMF preprint TRI-PP-87-5 (January 1987), a scanned copy
-             carrying the KEK library accession stamp; every audit locator therefore cites
-             TRI-PP-87-5 pagination, and each row records copy\_read = preprint-scan. The published
+             carrying the KEK library accession stamp; every audit locator for a row this table
+             attributes to Suzuki therefore cites TRI-PP-87-5 pagination and records copy\_read =
+             preprint-scan; a row attributed to another primary carries that primary's locator and
+             copy, and a row the audit leaves unsettled carries its evidence in place of a locator. The published
              article is the citation target. Tables III (p.~24) and IV (pp.~25--28) of the preprint
              together span exactly the 74 distinct Z the compiled-in table carries.}
 }

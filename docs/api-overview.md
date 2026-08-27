@@ -98,7 +98,7 @@ Keeps the scientific and net-electrical gains as separate, fully-knobbed layers.
 ## `openmucf.uq` — UQ, global sensitivity, breakeven falsification
 
 Runs on the closed-form map (validated < 1% vs the ODE); priors are uniform over
-each input's contested range, defined in `PARAMS`.
+each input's declared range, defined in `PARAMS`.
 
 - `Param` / `PARAMS` — dataclass and the list of six inputs (`omega_s0_pct`, `R`,
   `lambda_c`, `E_mu_GeV`, `eta_acc`, `eta_thermal`) with nominal/low/high ranges;

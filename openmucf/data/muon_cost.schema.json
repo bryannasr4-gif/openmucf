@@ -108,7 +108,7 @@
         "stopped_other_target",
         ""
       ],
-      "description": "How far along the muon chain this cost is counted, following the five verbs by which the muCF cycle-closure literature defines the muon cost: produce, capture, transport, moderate, and stop one USEFUL negative muon in the target. The muCF chain is produced -> captured -> transported -> moderated -> stopped_useful_in_dt; only that terminal stage is the quantity a muCF energy balance actually needs, and every earlier stage is a strict LOWER BOUND on it because each omitted conversion factor is <= 1. 'stopped_other_target' is a non-D-T sink (e.g. an aluminium stopping target): it is NOT a point on the muCF chain and can never be composed into a muCF cost. Empty only on an unpinned needs_verification row.",
+      "description": "How far along the muon chain this cost is counted, following the five verbs by which the muCF cycle-closure literature defines the muon cost: produce, capture, transport, moderate, and stop one USEFUL negative muon in the target. The muCF chain is produced -> captured -> transported -> moderated -> stopped_useful_in_dt; only that terminal stage is the quantity a muCF energy balance actually needs, and every earlier stage is a LOWER BOUND on it because each omitted conversion factor is <= 1. 'stopped_other_target' is a non-D-T sink (e.g. an aluminium stopping target): it is NOT a point on the muCF chain, no chain of sub-unity factors connects it to a muCF cost, and it is not a bound on one; it is still carried in its tier and read by aggregates over that tier. Empty only on an unpinned needs_verification row.",
       "$comment": "Supersedes basis_class; the mapping is documented in that field's description."
     },
     "evidence_status": {
@@ -146,7 +146,7 @@
         "mu_plus_only",
         ""
       ],
-      "description": "Which muon charge the figure counts. muCF needs mu-; 'mixed' counts mu+ and mu- together (so the mu--only cost is roughly 2x higher) and 'mu_plus_only' is irrelevant to muCF and must never enter a muCF cost aggregate. Empty only on an unpinned nv row."
+      "description": "Which muon charge the figure counts. muCF needs mu-; 'mixed' counts mu+ and mu- together (so the mu--only cost is higher by a factor this ledger does not source) and 'mu_plus_only' is irrelevant to muCF and must never enter a muCF cost aggregate -- any statistic this ledger forms over rows: a tier median, a spread, a ratio, or the edge of a prior box drawn over a tier. That is a different bar from the stage rule above: an aggregate is a statistic over a tier's rows and may contain a row that is not itself a point on the muCF chain. Empty only on an unpinned nv row."
     },
     "derivation": {
       "type": "string",

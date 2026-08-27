@@ -53,7 +53,7 @@ import numpyro
 import numpyro.distributions as dist
 from numpyro.infer import MCMC, NUTS
 
-from openmucf import calibrate
+from openmucf import _jaxcfg, calibrate
 from openmucf.constants import LAMBDA_0
 
 # --- fixed feasibility-scan settings (seeded + deterministic) -----------------------------------------
@@ -120,6 +120,7 @@ def model(
 
 def r_sd(omega_s0_prior, seed=SEED, num_samples=NUM_SAMPLES, **kw):
     """Posterior sd(R) for one fit of ``model`` (seeded, reduced-but-adequate settings)."""
+    _jaxcfg.require_x64("the x-ray feasibility refits")  # float32 draws would be silently wrong
     mcmc = MCMC(NUTS(model), num_warmup=NUM_WARMUP, num_samples=num_samples, progress_bar=False)
     mcmc.run(jax.random.PRNGKey(seed), omega_s0_prior=omega_s0_prior, **kw)
     return float(np.asarray(mcmc.get_samples()["R"]).std())

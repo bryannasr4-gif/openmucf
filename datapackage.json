@@ -2,7 +2,7 @@
   "name": "openmucf-rate-ledger",
   "id": "https://doi.org/10.5281/zenodo.21251511",
   "title": "OpenMuCF FAIR rate ledger (curated compilation with provenance)",
-  "description": "A curated compilation with provenance of the microscopic rates, validation targets, uncertainty-quantification priors, and muon-production energy costs used by OpenMuCF. Every row carries its source, physical conditions, uncertainty, and an established/contested tag. This is a provenance-tagged compilation of published values, NOT an independently evaluated nuclear-data library.",
+  "description": "A curated compilation with provenance of the microscopic rates, validation targets, uncertainty-quantification priors, and muon-production energy costs used by OpenMuCF. This is a provenance-tagged compilation of published values, NOT an independently evaluated nuclear-data library.",
   "version": "1.1.0",
   "homepage": "https://github.com/bryannasr4-gif/openmucf",
   "keywords": [
@@ -45,11 +45,11 @@
           {"name": "description", "type": "string", "description": "One human-readable line."},
           {"name": "value", "type": "number", "description": "The numeric value in the stated unit."},
           {"name": "unit", "type": "string", "description": "Physical unit, e.g. s^-1, percent, fraction, MeV."},
-          {"name": "unc", "type": "number", "description": "1-sigma-style uncertainty in the same unit (0 if none quoted).",  "constraints": {"required": false}},
+          {"name": "unc", "type": "number", "description": "1-sigma-style uncertainty in the same unit; 0 where the source quotes none, '-' where the row's spread is carried by distribution/dist_lo/dist_hi instead.",  "constraints": {"required": false}},
           {"name": "unc_type", "type": "string", "description": "Provenance of the uncertainty: stat, exp, theory, theory-spread, model, table, estimate, exact."},
           {"name": "conditions", "type": "string", "description": "Physical state the value holds at (T, phi, F, ortho/para, c_t, field)."},
           {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib; ';'-separable."},
-          {"name": "source_locator", "type": "string", "description": "Exact equation/table/figure/page inside the source.", "constraints": {"required": false}},
+          {"name": "source_locator", "type": "string", "description": "Free-text provenance for the value: where it sits inside the source (equation, table, figure, page, section, slide or named case), the source itself where the row cites the document as a whole, the named quantity, model or expression the value is taken from, '-' where none is recorded, a status note where the primary is not in hand, or -- on rows derived here -- the sources and parameters the derivation used. Free text, not a controlled vocabulary.", "constraints": {"required": false}},
           {"name": "status", "type": "string", "description": "established or contested.", "constraints": {"enum": ["established", "contested"]}},
           {"name": "validity_range", "type": "string", "description": "Regime the row is valid over."},
           {"name": "single_source", "type": "boolean", "description": "True if it traces to a single, never-independently-rechecked measurement.", "constraints": {"required": false}},
@@ -59,8 +59,8 @@
           {"name": "dist_lo", "type": "number", "description": "Lower bound for the UQ distribution, if applicable.", "constraints": {"required": false}},
           {"name": "dist_hi", "type": "number", "description": "Upper bound for the UQ distribution, if applicable.", "constraints": {"required": false}},
           {"name": "recommendation", "type": "string", "description": "Recommended-use note for the row.", "constraints": {"required": false}},
-          {"name": "phase", "type": "string", "description": "Project phase in which the row is used/added.", "constraints": {"required": false}},
-          {"name": "target_molecule", "type": "string", "description": "Target muonic molecule the row pertains to, if applicable.", "constraints": {"required": false}}
+          {"name": "phase", "type": "string", "description": "Typed projection of conditions: physical phase ('any' = condition-free).", "constraints": {"required": false}},
+          {"name": "target_molecule", "type": "string", "description": "Typed projection of conditions: target molecule; 'n/a' where the concept does not apply.", "constraints": {"required": false}}
         ]
       }
     },
@@ -82,8 +82,8 @@
           {"name": "unc", "type": "number", "description": "Reported uncertainty on the observed value.", "constraints": {"required": false}},
           {"name": "conditions", "type": "string", "description": "Physical conditions of the observation."},
           {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib."},
-          {"name": "source_locator", "type": "string", "description": "Exact locator inside the source.", "constraints": {"required": false}},
-          {"name": "tolerance", "type": "string", "description": "Pre-registered pass tolerance: [a,b] absolute interval or +-N% relative."},
+          {"name": "source_locator", "type": "string", "description": "Free-text provenance for the value: where it sits inside the source (equation, table, figure, page, section, slide or named case), the source itself where the row cites the document as a whole, the named quantity, model or expression the value is taken from, '-' where none is recorded, a status note where the primary is not in hand, or -- on rows derived here -- the sources and parameters the derivation used. Free text, not a controlled vocabulary.", "constraints": {"required": false}},
+          {"name": "tolerance", "type": "string", "description": "Pre-registered pass tolerance: [a,b] absolute interval, +-N% relative, or a qualitative pass rule (e.g. 'monotone trend', 'context-only') where the check is not numeric."},
           {"name": "notes", "type": "string", "description": "Class/tier and framing notes.", "constraints": {"required": false}}
         ]
       }
@@ -117,34 +117,34 @@
       "format": "csv",
       "mediatype": "text/csv",
       "encoding": "utf-8",
-      "title": "Muon-production energy-cost compilation, each row carried at its own (stage, numeraire) accounting coordinate",
+      "title": "Muon-production energy-cost compilation",
       "schema": {
         "primaryKey": "source_id",
         "fields": [
           {"name": "source_id", "type": "string", "description": "Unique source identifier."},
           {"name": "citation", "type": "string", "description": "Human-readable citation."},
           {"name": "year", "type": "integer", "description": "Publication year."},
-          {"name": "tier", "type": "string", "description": "Design-study vs operating-facility tier."},
-          {"name": "basis_as_published", "type": "string", "description": "The cost basis exactly as the source states it."},
+          {"name": "tier", "type": "string", "description": "T1 design study / T2 demonstrated technology / T3 operating facility."},
+          {"name": "basis_as_published", "type": "string", "description": "The quantity as the source states it; a row the ledger derived instead says so verbatim ('DERIVED, not published as such')."},
           {"name": "projectile_target", "type": "string", "description": "Projectile and production target."},
           {"name": "capture_scheme", "type": "string", "description": "Pion/muon capture scheme.", "constraints": {"required": false}},
           {"name": "recapture_credit_applied", "type": "boolean", "description": "Whether a recapture/recovery credit was applied by the source.", "constraints": {"required": false}},
-          {"name": "recapture_factor", "type": "number", "description": "Recapture credit factor, if applied.", "constraints": {"required": false}},
+          {"name": "recapture_factor", "type": "number", "description": "Recapture credit factor if the source quotes one; recorded even when recapture_credit_applied=false, so the credit is visible but not folded in.", "constraints": {"required": false}},
           {"name": "eta_acc_assumption", "type": "number", "description": "Accelerator (electricity -> beam kinetic energy) efficiency assumed by the source, if stated. Dividing by it is a NUMERAIRE change, not a stage advance.", "constraints": {"required": false}},
           {"name": "eta_mu_assumption", "type": "number", "description": "Fraction of PRODUCED mu- the source assumes reach the D-T vessel (capture+transport+moderate+stop collapsed into one factor). Recorded, never folded into the cost.", "constraints": {"required": false}},
           {"name": "eta_mu_evidence_status", "type": "string", "description": "Provenance grade of eta_mu_assumption; 'author_declared_arbitrary' where the source itself calls the value arbitrary or unknown.", "constraints": {"required": false}},
-          {"name": "value_as_published", "type": "number", "description": "The published cost value in its own unit."},
+          {"name": "value_as_published", "type": "number", "description": "The published value in its own unit, or 'not published as such' where the row is a numeraire conversion derived here."},
           {"name": "unit_as_published", "type": "string", "description": "Unit of value_as_published."},
           {"name": "normalized_GeV_per_mu", "type": "number", "description": "Energy per muon in GeV at THAT ROW'S own (stage, numeraire) coordinate. NOT a single common basis: values are not commensurable across either axis."},
           {"name": "numeraire", "type": "string", "description": "The units the energy is counted in: beam_kinetic | electrical_minimal | electrical_site. Wall-plug is a NUMERAIRE, not a stage, so it applies at any stage."},
           {"name": "stage", "type": "string", "description": "How far along the muCF chain the cost is counted: produced | captured | transported | moderated | stopped_useful_in_dt, plus the off-chain sink stopped_other_target."},
           {"name": "evidence_status", "type": "string", "description": "Provenance grade of this row's number: primary | primary_cited | derived_here | author_declared_arbitrary | assumption | absent. The last three are NOT sourced."},
           {"name": "useful_fraction_sourced", "type": "boolean", "description": "At the terminal stage only: whether the source establishes that the stopped muons it counts are 'useful' in the cycle-closure sense.", "constraints": {"required": false}},
-          {"name": "basis_class", "type": "string", "description": "DEPRECATED alias of 'stage' (produced | collected | stopped_in_dt | stopped_other_target), kept for downstream compatibility and validated against it. A per-produced/collected figure is a LOWER BOUND on the per-stopped-in-D-T cost."},
-          {"name": "charge_basis", "type": "string", "description": "Charge counted: mu_minus | mixed (mu+ and mu- together, so the mu--only cost is ~2x higher) | mu_plus_only (irrelevant to muCF)."},
+          {"name": "basis_class", "type": "string", "description": "DEPRECATED alias of 'stage' (produced | collected | stopped_in_dt | stopped_other_target), kept for downstream compatibility and validated against it. A per-produced/collected figure is a LOWER BOUND on the per-stopped-in-D-T cost counted in that row's own numeraire, never across numeraires."},
+          {"name": "charge_basis", "type": "string", "description": "Charge counted: mu_minus | mixed (mu+ and mu- together, so the mu--only cost is higher by a factor this ledger does not source) | mu_plus_only (irrelevant to muCF)."},
           {"name": "derivation", "type": "string", "description": "Arithmetic taking the published value to the normalized basis.", "constraints": {"required": false}},
           {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib."},
-          {"name": "source_locator", "type": "string", "description": "Exact locator inside the source.", "constraints": {"required": false}},
+          {"name": "source_locator", "type": "string", "description": "Free-text provenance for the value: where it sits inside the source (equation, table, figure, page, section, slide or named case), the source itself where the row cites the document as a whole, the named quantity, model or expression the value is taken from, '-' where none is recorded, a status note where the primary is not in hand, or -- on rows derived here -- the sources and parameters the derivation used. Free text, not a controlled vocabulary.", "constraints": {"required": false}},
           {"name": "needs_verification", "type": "boolean", "description": "True if the exact digit/locator is not yet pinned.", "constraints": {"required": false}},
           {"name": "notes", "type": "string", "description": "Caveats and context.", "constraints": {"required": false}}
         ]

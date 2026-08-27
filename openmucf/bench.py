@@ -48,6 +48,9 @@ VALIDATION_IDS = (
 
 _REQUIRED_KEYS = {"id", "type", "title", "engine", "inputs", "provenance", "status", "notes"}
 _VALID_TYPES = {"reproduction"}
+#: ``blocked-acquisition`` marks a case that is registered but NOT run because its inputs cannot be
+#: pinned from the primary -- originally and usually because the primary is not in hand. The case
+#: states which of its inputs is unpinned; the label does not.
 _VALID_STATUS = {"active", "blocked-acquisition"}
 _VALID_ENGINES = {"analytic", "cycle"}
 _PROV_KEYS = {"source_bibkey", "locator", "input_basis"}

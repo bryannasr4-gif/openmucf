@@ -12,8 +12,10 @@ Deliverables
 * ``breakeven_audit``     -- honest, uncertainty-propagated verdict on the 2026 N_mu>500 / Q>2 claims,
                              plus the "what-would-have-to-be-true" required (R, lambda_c).
 
-Priors are UNIFORM over each input's contested range (maximally honest about ignorance). Ranges are
-taken from the ledger's contested rows; every choice is documented in :data:`PARAMS`.
+Priors are UNIFORM over each input's declared range (maximally honest about ignorance). Each range
+carries its own provenance -- a ledger row's own bounds, a box widened around one or more row values, a
+design-study range, or a systems assumption with no ledger row -- recorded per row in
+``openmucf/data/uq_priors.csv`` and documented in :data:`PARAMS`.
 """
 
 from __future__ import annotations
@@ -172,7 +174,7 @@ def sobol_indices(N=4096, output="X_mu", seed=0, bounds=None, num_resamples=200)
 def sobol_robustness(N=8192, output="X_mu", rel=0.15, seed=0):
     """Total-order Sobol S_T for ``output`` under two prior boxes, to expose prior-WIDTH dependence:
 
-    (a) the contested-range box (``PARAMS.low/high``) -- where a relatively wide *measured* range (e.g. R
+    (a) the contested-range box (``PARAMS.low/high``) -- where a relatively wide range (e.g. R
         at +/-~36% of nominal vs omega_s0 at +/-~9%) can dominate the variance; and
     (b) an equal-relative box (each input nominal * (1 +/- ``rel``)) -- where the ranking instead follows
         the local elasticities. The ranking generally REORDERS between the two, so "R drives the variance"
@@ -220,8 +222,8 @@ def forward_uq(n=400_000, seed=0, blanket_M=1.0):
 def breakeven_audit(n=400_000, seed=1):
     """Honest, uncertainty-propagated verdict on the 2026 N_mu>500 / Q>2 projections.
 
-    Under the MEASURED uncertainty ranges, report P(X_mu>500), P(Q_sci>2), P(Q_net>1); then the
-    'what-would-have-to-be-true' required (R, lambda_c) to reach X_mu=500, versus what is measured.
+    Under the prior uncertainty ranges, report P(X_mu>500), P(Q_sci>2), P(Q_net>1); then the
+    'what-would-have-to-be-true' required (R, lambda_c) to reach X_mu=500, versus what the ledger carries.
     """
     d = _draw(n, seed)
     x = xmu(d["omega_s0_pct"], d["R"], d["lambda_c"])
@@ -275,7 +277,7 @@ def breakeven_audit(n=400_000, seed=1):
         "R_X_required_given_R_col": float(R_X_req),
         "xmu_cap_at_solid_lambda_c": float(xmu_cap_solid),
         "yield_at_solid_anchor_pair": float(yield_solid_pair),
-        "measured_ranges": {p.name: [p.low, p.high] for p in PARAMS},
+        "prior_ranges": {p.name: [p.low, p.high] for p in PARAMS},
         "P_xmu_gt500": float((x > target).mean()),
         "P_qsci_gt2": float((qs > 2).mean()),
         "P_qnet_gt1": float((qn > 1).mean()),

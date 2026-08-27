@@ -13,8 +13,9 @@ every existing gate stays green.
   without a registry diff.
 - **G2 :func:`test_prose_arithmetic_recomputes`** recomputes arithmetic that prose states in full.
 
-Both keep their bookkeeping in TSV files beside this one, keyed on the path and the SHA-1 of the
-whitespace-normalized line -- never on line number, which churns on every commit.
+Both keep their bookkeeping in TSV files beside this one, keyed on the SHA-1 of the
+whitespace-normalized line -- the registry additionally on the path -- never on line number, which
+churns on every commit.
 """
 
 from __future__ import annotations
@@ -43,6 +44,19 @@ CLAIM_PATHS = (
     "ADOPTERS.md",
     "openmucf/data/references.bib",
     "openmucf/data/muon_cost.schema.json",
+    # The prose homes read and registered in the 2026-08-24 claim sweep before they were added here:
+    # the shipped data's own free text, the CC-BY data-package descriptor, and the two generated
+    # documents that restate ledger claims, together with the generators that emit them.
+    "openmucf/data/muon_cost.csv",
+    "datapackage.json",
+    "FINDINGS.md",
+    "NEUTRONOMICS.md",
+    "scripts/generate_findings.py",
+    "scripts/generate_neutronomics.py",
+    # The shipped list of bibkeys with an unresolved identifier: a prose home the 2026-08-24 sweep
+    # read, added here after a drill restored a retracted universal to it and the suite stayed
+    # green.
+    "openmucf/data/bib_unresolved.txt",
     # This file. A guard that exempts itself is not a guard: this module's own prose is watched on
     # the same terms as every other path here.
     "tests/test_ledger_claims.py",
@@ -52,15 +66,17 @@ CLAIM_PATHS = (
 #: `both`/`identical`/`unchanged` are deliberately OUT: they are not quantifiers.
 STRONG = re.compile(
     r"\b(every|all|each|none|never|always|only|sole|solely|exactly"
-    r"|unique|uniquely|neither|any|entire|without\s+exception)\b",
+    r"|unique|uniquely|neither|any|entire|without\s+exception|no|nothing)\b",
     re.IGNORECASE,
 )
 
-#: Nouns that make a sentence a claim about the ledger rather than about anything else. `bound` and
+#: Words that make a sentence a claim about the ledger rather than about anything else. `bound` and
 #: `cost` are deliberately in: the ledger's basis universals are commonly phrased with them.
+#: The verb form of `headline` is included, after a drill wrote a sentence using it that matched
+#: nothing here.
 LEDGER = re.compile(
     r"\b(row|rows|tier|tiers|cell|cells|anchor|anchors|source|sources|basis|bases"
-    r"|numeraire|numeraires|stage|stages|ledger|entry|entries|chain|chains|headline"
+    r"|numeraire|numeraires|stage|stages|ledger|entry|entries|chain|chains|headline|headlines"
     r"|manifest|bibkey|bibkeys|evidence_status|charge_basis|bound|bounds|cost|costs"
     r"|value|values|figure|figures|quotient|denominator|problem|problems|contract"
     r"|contracts|claim|claims|number|numbers)\b",
@@ -71,7 +87,7 @@ LEDGER = re.compile(
 #: the exact precedent of ``AUDIT_ESS_FLOOR``: raising it is a visible diff to this line and must be
 #: argued for, lowering it needs no argument. Review defers rather than drops: an unreviewed line
 #: stays enumerated and capped instead of leaving the registry.
-LEDGER_CLAIMS_UNREVIEWED_CEILING = 94
+LEDGER_CLAIMS_UNREVIEWED_CEILING = 83
 
 REGISTRY = Path(__file__).with_name("ledger_claims_registry.tsv")
 VALID_PREFIXES = ("EXERCISED:", "REGISTERED:")
@@ -124,9 +140,9 @@ def test_quantified_claims_registered():
     iff it matches BOTH of these, case-insensitively:
 
     - STRONG ``\\b(every|all|each|none|never|always|only|sole|solely|exactly|unique|uniquely|neither
-      |any|entire|without\\s+exception)\\b``
+      |any|entire|without\\s+exception|no|nothing)\\b``
     - LEDGER ``\\b(row|rows|tier|tiers|cell|cells|anchor|anchors|source|sources|basis|bases|numeraire
-      |numeraires|stage|stages|ledger|entry|entries|chain|chains|headline|manifest|bibkey|bibkeys
+      |numeraires|stage|stages|ledger|entry|entries|chain|chains|headline|headlines|manifest|bibkey|bibkeys
       |evidence_status|charge_basis|bound|bounds|cost|costs|value|values|figure|figures|quotient
       |denominator|problem|problems|contract|contracts|claim|claims|number|numbers)\\b``
 

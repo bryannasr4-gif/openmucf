@@ -101,6 +101,53 @@ def test_loader_rejects_bad_tier(tmp_path):
         load_muon_cost(csv_path=bad, schema_path=MUON_COST_SCHEMA, check_refs=False)
 
 
+def test_the_schema_required_columns_are_pinned_and_enforced(tmp_path):
+    """The ledger's required columns, pinned as a SET and drilled one at a time through the loader.
+
+    ``load_muon_cost`` reads ``required`` out of the schema at run time, so a column quietly dropped
+    from that list would stop being enforced with nothing failing. Pinned as the set itself and never
+    as a count: swapping one name for another leaves a count unchanged. The drill blanks one required
+    cell at a time in an otherwise-loadable row, so the negative control (the full row) proves the
+    drill isolates the fault it names.
+    """
+    schema = json.loads(Path(MUON_COST_SCHEMA).read_text(encoding="utf-8"))
+    required = set(schema["required"])
+    assert required == {
+        "source_id", "citation", "year", "tier", "basis_as_published", "derivation",
+        "source_bibkey", "needs_verification", "evidence_status",
+    }
+    assert required <= set(schema["properties"]), "a required column with no property to describe it"
+
+    header = list(csv.reader([MUON_COST_CSV.read_text(encoding="utf-8").splitlines()[0]]))[0]
+    assert required <= set(header), "a required column the shipped CSV does not carry"
+    full = {c: "" for c in header}
+    full.update(
+        source_id="bogus", citation="c", year="2020", tier="T1-design-study",
+        basis_as_published="b", derivation="d", source_bibkey="Bertin1987",
+        needs_verification="false", evidence_status="primary",
+        recapture_credit_applied="false", normalized_GeV_per_mu="5.0", numeraire="beam_kinetic",
+        stage="produced", basis_class="produced", charge_basis="mu_minus",
+    )
+
+    def _write(row, name):
+        path = tmp_path / name
+        with path.open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+            w.writeheader()
+            w.writerow(row)
+        return path
+
+    control = _write(full, "control.csv")
+    load_muon_cost(csv_path=control, schema_path=MUON_COST_SCHEMA, check_refs=False)
+
+    for col in sorted(required):
+        row = dict(full, **{col: ""})
+        path = _write(row, f"missing_{col}.csv")
+        with pytest.raises(ValueError) as exc:
+            load_muon_cost(csv_path=path, schema_path=MUON_COST_SCHEMA, check_refs=False)
+        assert f"missing required '{col}'" in str(exc.value)
+
+
 def test_every_bibkey_resolves(table):
     """Every source_bibkey resolves in references.bib (loading with check_refs=True already enforces
     this; assert it explicitly too)."""
@@ -829,7 +876,7 @@ def test_the_t3_provenance_paragraph_is_derived_from_the_ledger(table):
     assert " ".join(exclusion.split()) in doc
     # the wording the ledger refutes must not come back, anywhere in the document
     assert "per mu+ produced" not in doc
-    # and a ledger move moves the sentence: the same mutation the round-1 verifier ran, in memory
+    # and a ledger move moves the sentence: the same mutation an adversarial re-read ran, in memory
     mutated = MuonCostTable(
         [
             dataclasses.replace(r, normalized_GeV_per_mu=6500.0) if r.source_id == "music" else r

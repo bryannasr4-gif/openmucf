@@ -13,8 +13,8 @@ flagged column, never folded into the normalized value.
 
 Paywall/headline rule: the headline sentence cites Kelly (4.70, open access) FIRST as the named
 anchor, then the full-text-verified Bertin and Eliezer-Henis values as corroboration (by DOI). Rows that
-are needs_verification (Jandel) or slide-tier (Acceleron) appear only in the tables with visible flags
-and NEVER headline.
+are needs_verification (Jandel) or slide-tier (Acceleron) are not in ``HEADLINE_ANCHOR_IDS``; a
+slide-tier row can still sit inside a tier median.
 
 Audit wiring: this generator regenerates all three artifacts; only MUON_COST.md +
 MUON_COST_MANIFEST.json join the `git diff --exit-code` list -- the PNG is never byte-diffed
@@ -380,7 +380,8 @@ def _aggregate_exclusion_clause(table: mucost.MuonCostTable) -> str:
     it_they = "it prices" if len(excluded) == 1 else "they price"
     return (
         f"{names} {is_are} kept OUT of every aggregate here -- {it_they} no mu- at all, and the "
-        f"ledger schema bars such a figure from any muCF cost aggregate -- so the row stays in its "
+        f"ledger schema bars such a figure from any muCF cost aggregate -- any statistic formed over "
+        f"rows: a tier median, a spread, a ratio, or a prior-box edge -- so the row stays in its "
         f"tier table for scale and enters no median, spread or ratio. The exclusion is applied at "
         f"the aggregate, never at the row."
     )
@@ -518,8 +519,10 @@ contains {{{H['t3_classes']}}} rows; basis classes shared between the two tiers:
 With no shared class, a same-basis T1-vs-T3 ratio is **not computable from these rows** -- and because
 both the numerator and the denominator contain lower-bound (per-produced / per-collected) figures, the
 ratio is not cleanly bounded in either direction. The defensible statement is the spread's **order of
-magnitude**, driven by technology, with the basis composition disclosed above. needs_verification
-(Jandel) and slide-tier (Acceleron) rows carry visible flags below and never headline.
+magnitude**, driven by technology, with the basis composition disclosed above. Neither the
+needs_verification row (Jandel) nor the slide-tier row (Acceleron) is a named headline anchor: the
+Jandel row has no pinned value and enters no aggregate, while the Acceleron row is one of the T1
+median rows named next.
 
 **Which rows each median is taken over.** T1: {H['t1_median_rows']}. T3: {H['t3_median_rows']}.
 {H['aggregate_excluded_clause']}
@@ -530,9 +533,12 @@ A muon cost is only meaningful as a point on a **2-D grid**, and both coordinate
 **Axis 1 -- `stage`: how far along the chain the muon has got.** The muCF chain is
 `produced -> captured -> transported -> moderated -> stopped_useful_in_dt`, following the five verbs by
 which the cycle-closure literature defines the muon cost. Only the terminal stage is what a muCF energy
-balance actually needs; every earlier stage is a strict lower bound on it, because each omitted
+balance actually needs; every earlier stage is a lower bound on it, because each omitted
 conversion factor is <= 1. `stopped_other_target` (mu2e, COMET -- muons stopped in aluminium) is **not a
-point on this chain at all** and can never be composed into a muCF cost.
+point on this chain at all**: it prices stopping a muon somewhere that is not D-T fuel, so no chain of
+sub-unity factors connects it to a muCF cost and it is not a bound on one. Such a row is still carried in
+its tier table and read by the aggregates over that tier -- part of why the tier spread above is on MIXED
+bases -- while `chain_point()` refuses to compose it.
 
 **Axis 2 -- `numeraire`: what kind of energy is being counted.** `beam_kinetic` is beam energy;
 `electrical_minimal` and `electrical_site` are electrical energy on the two different facility
@@ -546,8 +552,8 @@ on top of the stage-basis error.
 `basis_class` is the deprecated 1-D predecessor of `stage`, kept as an alias and validated against it
 (`produced -> produced`, `collected -> transported`, `stopped_in_dt -> stopped_useful_in_dt`).
 `charge_basis` records what is counted, and is read from the ledger here rather than described:
-MuSIC's figure is `{H['charge_music']}` (mu+ and mu- together, so the mu--only cost is roughly 2x
-higher) and PSI HIMB is `{H['charge_psi_himb']}` -- irrelevant to muCF, which needs mu-, and
+MuSIC's figure is `{H['charge_music']}` (mu+ and mu- together, so the mu--only cost is higher by a
+factor this ledger does not source) and PSI HIMB is `{H['charge_psi_himb']}` -- irrelevant to muCF, which needs mu-, and
 listed for scale only. `evidence_status` grades each number: `primary` / `primary_cited` /
 `derived_here` are sourced; `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
 figure composing one of those is reported as a **bound, never a value**.
@@ -575,7 +581,7 @@ arithmetic is in the CSV `derivation` column); no facility reports this quantity
 
 {t3}
 
-## The tier spread: an order-of-magnitude, mixed-basis, one-sided observation
+## The tier spread: an order-of-magnitude, mixed-basis observation
 ![muon-cost tier spread](figures/muon_cost_gap.png)
 
 **Figure `figures/muon_cost_gap.png` (log-scale beam GeV/muon by tier).** Caption: *{DISARMAMENT}*

@@ -27,9 +27,10 @@ fusion physics" on its 2024 work plan, and standalone muon-target sims — but n
 energy balance / UQ; OpenMuCF is that layer, complementary to Geant4 transport.) OpenMuCF is the neutral
 shared substrate:
 
-1. **FAIR rate ledger** (`openmucf/data/`) — every rate with per-row provenance, conditions, uncertainty, an
-   established/contested tag, and a validity range (the v1 seed/schema of the ENDF/IMAS-analog ledger the
-   field lacks: 13 curated scalar rates today; T/φ/F-dependent tables are the Phase-2 milestone).
+1. **FAIR rate ledger** (`openmucf/data/`) — every rate with per-row provenance, conditions, an
+   uncertainty type, an established/contested tag, and a validity range (the v1 seed/schema of the
+   ENDF/IMAS-analog ledger the field lacks: scalar rates today; T/φ/F-dependent tables are the
+   Phase-2 milestone).
 2. **Differentiable (JAX/diffrax) cycle-kinetics + net-electrical energy-balance engine** + a global UQ/Sobol
    auditor that turns point-estimate breakeven claims into **error-barred, falsifiable** verdicts.
 3. **(Phase 3, planned — not yet built)** a compute-trained effective-sticking/reactivation surrogate
@@ -45,12 +46,12 @@ pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 
 ```
 Verified platforms: Linux CI (py3.11/3.12/3.13), Windows x64 (py3.12), and **macOS arm64 / Apple Silicon
 (py3.12)** — every job runs the full suite, and the arm64 job additionally runs `make audit`, so the
-cross-architecture claim below is a standing CI gate rather than a one-off check. All 18 byte-diffed
-audited artifacts regenerate **byte-identically on arm64 and x86-64** (independently reproduced on Apple
+cross-architecture claim below is a standing CI gate rather than a one-off check. Every byte-diffed
+audited artifact regenerates **byte-identically on arm64 and x86-64** (independently reproduced on Apple
 Silicon, 2026-07-23; `git diff --exit-code` clean). The NUTS/MCMC-derived docs (`CALIBRATION.md`,
 `DESIGN.md`) and the FC-001 card are not bit-portable across architectures and are checked against
-pre-registered tolerance bands instead; each audit prints its per-cell margins so the headroom is visible
-in every CI log.
+pre-registered tolerance bands instead; the CALIBRATION and DESIGN audits print their worst margin, so
+the headroom is visible in the CI log that runs them.
 Windows note: enable long-path support (or use a short venv path) for the JAX install.
 The twin coverage test is marked `slow` and deselected from the default run (and CI); run it with `pytest -m slow`.
 
@@ -83,10 +84,10 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
 ## Headline results (see `FINDINGS.md`, `MUON_COST.md`, `CALIBRATION.md`)
 - **Sensitivity split:** yield X_μ is controlled by reactivation R (Sobol S_T=0.62), λ_c, ω_s0; net-electrical
   Q is controlled by muon cost and accelerator efficiency. Different levers for yield vs energy.
-- **Breakeven audit:** at liquid-scale density (φ ≤ ~1.45), under measured, unpolarized ranges, P(X_μ>500)=0 —
+- **Breakeven audit:** at liquid-scale density (φ ≤ ~1.45), under unpolarized ranges, P(X_μ>500)=0 —
   structural (outside the prior's support), not a Monte-Carlo estimate. Density scaling could supply the
   cycling-rate factor at DAC φ≈2.4, but even at infinite λ_c the projection needs reactivation R ≥ 0.77
-  (R ≈ 0.94 at λ_c=3e8) vs the model-derived ~0.35. A falsifiable, quantified bet that rides on reactivation.
+  (R ≈ 0.94 at λ_c=3e8). A falsifiable, quantified bet that rides on reactivation.
 - **Identifiability:** experiment pins ω_s^eff (and only loosely bounds λ_c) but not the ω_s0/R split — the
   posterior concentrates on the curve ω_s0(1−R)=ω_s^eff, whose linear correlation is prior-conditional
   (corr ≈ +0.8; see the prior-sensitivity sweep in `CALIBRATION.md`) — the quantitative reason the Phase-3
@@ -96,7 +97,7 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   Kelly–Hart–Rose 4.70 GeV/μ, open-access, G4Beamline), while operating facilities sit ~10³× higher
   (mu2e ~5×10³, COMET ~2.3×10³, MuSIC ~6×10³ GeV/μ — original derivations, arithmetic shown). Those
   tiers do **not** share a basis (see `MUON_COST.md`: no basis class is common to T1 and T3), so the
-  spread is an order-of-magnitude, mixed-basis, one-sided observation and never a same-basis ratio.
+  spread is an order-of-magnitude, mixed-basis observation and never a same-basis ratio.
   Re-running
   Q_net under each cost tier (`FINDINGS.md` §2b) drops the median Q_net by about three orders of
   magnitude from design-study to facility muons. That panel is a sensitivity scan: its spread is set
@@ -113,7 +114,7 @@ Structural, one-sided: the parametric intervals above sit on the v1 reduced netw
 channels bias X_μ DOWNWARD by up to ≈15% combined (ttμ side-cycle, un-pinned pending acquisition;
 d-recapture, bracketed in `MATERIALITY.md`), so intervals are best read as upper-edge-faithful.
 
-Headline findings run on the closed form with measured-band inputs; the differentiable ODE engine is the
+Headline findings run on the closed form; the differentiable ODE engine is the
 structural workhorse for trajectories/twin/UQ cross-checks and is gated against an exact linear-algebra
 oracle (`openmucf/exact.py`; tests), but no headline number depends on its multi-pool structure.
 
@@ -122,8 +123,8 @@ oracle (`openmucf/exact.py`; tests), but no headline number depends on its multi
 | tier | outputs | why |
 |---|---|---|
 | **GREEN — citable as-is** | muon-cost ledger **per row** and its basis classification (`MUON_COST.md`: each cost at its own stage / numeraire / charge coordinate, with provenance), the Kou–Chen Eq.(15) ceiling comparison, Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table read **one tier row at a time** (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model. Each row is a self-contained statement in its own declared basis |
-| **AMBER — citable with the stated basis** | **any CROSS-TIER muon-cost comparison** — the `MUON_COST.md` tier-median ratio, the cross-tier neutrons-per-joule ratio (`NEUTRONOMICS.md`), and the `FINDINGS.md` §2b Q_net-by-tier panel; basis: mixed, order-of-magnitude, one-sided. Also the calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, prior-sensitivity table), X_μ at the 300 K liquid anchor | **no accounting stage is shared between T1 and T3**, so a cross-tier ratio has no common denominator to be a ratio *of*: quote it as a mixed-basis order-of-magnitude observation, never as a measured gap. The §2b panel's spread is additionally set by the E_mu prior boxes that section declares. The posterior is statistically sound but summary-statistic-based; cite WITH the basis caveat |
-| **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8); the λ_c(T) shape runs −41% to −44% below the digitized Yamashita–Kino 2022 curve (sourced comparator `V_yamashita_ratio`/`_curve`, fails ±30%) — a runtime warning fires in the RED regime |
+| **AMBER — citable with the stated basis** | **any CROSS-TIER muon-cost comparison** — the `MUON_COST.md` tier-median ratio and the cross-tier neutrons-per-joule ratio (`NEUTRONOMICS.md`); basis: mixed, order-of-magnitude. Also the `FINDINGS.md` §2b Q_net-by-tier panel, which computes no cost ratio and is a sensitivity scan over the E_mu boxes that section declares. Also the calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, prior-sensitivity table), X_μ at the 300 K liquid anchor | **no accounting stage is shared between T1 and T3**, so a cross-tier ratio has no common denominator to be a ratio *of*: quote it as a mixed-basis order-of-magnitude observation, never as a measured gap. The §2b panel's spread is additionally set by the E_mu prior boxes that section declares. The posterior is statistically sound but summary-statistic-based; cite WITH the basis caveat |
+| **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8); the λ_c(T) shape runs −41% to −44% below the digitized Yamashita–Kino 2022 curve (sourced comparator `V_yamashita_ratio`/`_curve`, fails ±30%); a one-shot scope warning fires for off-anchor concrete calls (phi > ~1.45 or T < 100 K) and is skipped under jit |
 
 ## Forecast registry
 OpenMuCF keeps a registry of **pre-registered, hash-stamped probabilistic forecasts** in `forecasts/`
