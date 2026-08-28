@@ -25,10 +25,12 @@ import sys
 def _peak_rss_bytes() -> int | None:
     """Peak resident set size of this process in BYTES, or None where it cannot be read.
 
-    `ru_maxrss` is reported in BYTES on macOS/BSD and in KIBIBYTES on Linux. The units genuinely
-    differ between the two platforms this job runs on, so reading it as one unit on both is a
-    silent factor-1024 error -- in the direction that would make a macOS run look 1024x smaller
-    than it is, i.e. it would hide precisely the thing this file exists to surface.
+    `ru_maxrss` is reported in BYTES on macOS (Darwin) and in KIBIBYTES on Linux -- Darwin is the
+    outlier here, and the *BSDs report kibibytes like Linux, which is why the branch tests for
+    darwin rather than for "BSD". The units genuinely differ between the two platforms this job
+    runs on, so reading it as one unit on both is a silent factor-1024 error -- in the direction
+    that would make a macOS run look 1024x smaller than it is, i.e. it would hide precisely the
+    thing this file exists to surface.
     """
     try:
         import resource  # POSIX only; absent on Windows
