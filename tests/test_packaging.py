@@ -27,7 +27,11 @@ IMPORT_SCAN_DIRS = ("openmucf", "scripts", "tests", "examples")
 # contain every declared distribution, so an environment-derived map would make this test env-dependent.
 IMPORT_TO_DISTRIBUTION = {"PIL": "pillow"}
 
-FIRST_PARTY = {"openmucf"}
+# `conftest` is a repo-local module under tests/, not a distribution -- pytest makes it importable by
+# name, so a test that exercises the hooks in it reads to the static scan below like a third-party
+# import that nothing declares. Listing it here fixes that misclassification; it exempts no actual
+# distribution, because there is no package named `conftest` in any dependency table.
+FIRST_PARTY = {"openmucf", "conftest"}
 
 LAZY = (
     "calibrate",
