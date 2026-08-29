@@ -17,7 +17,7 @@ from . import _jaxcfg, analytic, cycle, energy, formation, interop, uq  # noqa: 
 from .energy import EnergyChain
 from .rates import Rate, RatesTable, bibkeys, load_rates, omega_fraction
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 # Heavy public submodules loaded lazily (PEP 562) on first attribute access, so a bare
 # `import openmucf` never pays the numpyro/statistics import cost. Accessing e.g.

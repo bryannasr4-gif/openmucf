@@ -3,7 +3,7 @@
   "id": "https://doi.org/10.5281/zenodo.21251511",
   "title": "OpenMuCF FAIR rate ledger (curated compilation with provenance)",
   "description": "A curated compilation with provenance of the microscopic rates, validation targets, uncertainty-quantification priors, and muon-production energy costs used by OpenMuCF. This is a provenance-tagged compilation of published values, NOT an independently evaluated nuclear-data library.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "homepage": "https://github.com/bryannasr4-gif/openmucf",
   "keywords": [
     "muon-catalyzed fusion",
