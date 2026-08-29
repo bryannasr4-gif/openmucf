@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2026-08-29
 
 **What this release is.** v1.2.0 finishes the muon-cost axis. `openmucf/data/muon_cost.csv` holds
-cost *nodes*, every one of them carrying its value at its own (stage, numeraire, charge-basis)
-coordinate — and
+cost *nodes* — each pinned row carrying its value at its own (stage, numeraire, charge-basis)
+coordinate, with one row held open and unpinned until its primary is in hand — and
 `openmucf/data/muon_cost_chain.csv` now holds the *edges* that join them, so a composed cost carries
 the competing published readings of its own conversion factors instead of collapsing them, and
 refuses to print a bound as a value. The cycle-closure criterion of Kou & Chen (arXiv:2607.10989) is
@@ -22,11 +22,14 @@ registered as sixteen machine-checked reproduction targets. The cross-tier basis
 complete: `README.md`, `FINDINGS.md` and `NEUTRONOMICS.md` each state the tier spread as an
 order-of-magnitude, mixed-basis observation, and `test_no_basis_class_spans_T1_and_T3` pins the
 reason — the design-study and operating-facility tiers share no basis class, so the quantity has
-no common denominator to be a ratio *of*. And the registry of quantified claims about the ledger
-grew from 386 to 836 enumerated lines while its `UNREVIEWED` ceiling ratcheted **83 → 82** — that
-ceiling is monotone non-increasing, so every line added since is one that was read and ruled.
+no common denominator to be a ratio *of*. And the claims themselves are now enumerated: a registry
+of **840** lines that state a universal about the ledger, **130** of them EXERCISED — a named test
+fails when the claim is negated — **628** REGISTERED with the reason each was ruled true, and **82**
+still UNREVIEWED under a cap the suite lets fall without argument and lets rise only with one. The
+cap moved 92 → 82 across this release, rising once (to 94) when the enumeration was re-keyed. No
+registry existed at v1.1.0.
 
-**What is deferred, named here rather than left for a reader to find.**
+**What is deferred to v1.3.0, named here rather than left for a reader to find.**
 - **The claim guard's own blind spots.** `tests/test_ledger_claims.py` enumerates a claim by matching
   a universal quantifier beside a ledger word, one rendered line at a time. It therefore does not see
   a universal stated by *negation* (`not`, `cannot`, `n't` are not in its pattern — about 223 further
@@ -47,7 +50,17 @@ ceiling is monotone non-increasing, so every line added since is one that was re
   versions, so a bit-identity assertion is being made across an arbitrary numerics toolchain. `jax`
   is capped below `0.11.1` in the dev extra for both reasons together. Fixing them moves audited
   `CALIBRATION.md` cells, so it gets its own release rather than riding this one.
-- **Two rate-ledger rows carry digits their in-hand primaries could sharpen.** `rates.csv`'s
+- **One ledger row is carried at a stage its primary does not establish.**
+  `openmucf/data/muon_cost.csv`'s `bertin_1987` row is typed `stopped_useful_in_dt`. Re-read against
+  the primary (Europhys. Lett. **4**, 875 (1987)), its Table II is captioned as the cost of
+  *producing* muons, and the quantity is built from the beam energy per negative pion and the
+  probability that such a pion decays in flight; nothing about the muon after its birth — range,
+  escape, decay, stopping — is computed anywhere in pp. 875–880, and the target is liquid deuterium,
+  with D-T reached by an argument in a footnote rather than by a calculation. The row is due to be
+  re-typed to `produced`. `MUON_COST.md` already records that the source never establishes the
+  "useful" qualifier; what this deferral adds is that `stopped` is not established either, and the
+  re-typing is held for its own pass rather than folded into a release.
+- **Three rate-ledger rows carry digits their in-hand primaries could sharpen.** `rates.csv`'s
   `lambda_ttmu` ships the `0.0` placeholder that keeps the tt channel inert and `omega_tt` ships
   `0.14 ± 0.015`, while the JINR preprint's `2.84(32) µs⁻¹` and `0.139(15)` are recorded in those
   rows' notes and in `references.bib` but not in their value cells — because the primary quotes them
@@ -55,7 +68,8 @@ ceiling is monotone non-increasing, so every line added since is one that was re
   still say the channel is blocked pending the Matsuzaki/Bom tables. Separately,
   `lambda_dt_transfer` is carried as a commonly-cited value with no locator, where Jones et al.
   (1986) print the same central value with a different uncertainty and an explicit temperature
-  dependence. Both rows move manifest-pinned values and touch the calibration chain.
+  dependence. All three are shipped ledger values, so correcting any of them moves numbers the
+  manifests pin — which is why they get their own pass rather than this one.
 
 ### Added — the muon-cost chain gets its edge table, and a composed cost carries its competing readings (2026-08-28)
 `muon_cost.csv` holds the cost **nodes**; `openmucf/data/muon_cost_chain.csv` now holds the **edges**
@@ -78,12 +92,14 @@ carry competing values from two primaries**, and a column cannot hold two.
   raises `BasisError` instead of printing it as a value; and a path through a factor whose own authors
   state that they do not know it is marked *direction unknown* and carries no bound marker at all,
   because it is not one-sided. Each refusal is pinned by a test.
-- **Not one of the four stage advances a full chain needs is sourced by anybody.** `MUON_COST.md`'s
-  coverage table is derived from both tables at generation time rather than typed: of the 6
-  conversions a fully-sourced chain requires — 4 stage advances plus 2 numeraire changes out of
-  `beam_kinetic` — **2 carry a factor from a primary read here, and both are numeraire changes**.
-  The four unsourced links ship as explicit `absent` rows naming what would source them, rather than
-  as silence.
+- **Not one of the four stage advances a full chain needs is sourced by any primary read here.**
+  `MUON_COST.md`'s coverage table is derived from both tables at generation time rather than typed:
+  of the 6 conversions a fully-sourced chain requires — 4 stage advances plus the 2 numeraire
+  changes out of `beam_kinetic` — **2 carry a factor from a primary read here, and both of those are
+  numeraire changes**. The scope is the compilation's own reading, not a claim about the whole
+  literature. The four unsourced links ship as explicit `absent` rows recording what was read and
+  found silent — two of them also naming the study type that would source them — rather than as
+  silence.
 - The stopping fraction is **deliberately not simulated**. A stopping fraction for negative muons in a
   d-t target is a particle-transport result, and producing one here would turn a compilation of
   published numbers into a model of our own; it is recorded as absent and left as a future
@@ -145,7 +161,7 @@ deferral noted at the top of this release says what the scan does not see.
 - The enumeration was extended over the shipped documents, the data descriptors, `references.bib`,
   the schema files and the matplotlib title/label/legend strings, taking the registry from **386 to
   633** lines in this pass, and the sentences it surfaced were read against the tree rather than
-  against memory.
+  against recollection.
 - **The false ones were retracted, not softened.** "measured" was deleted from prior ranges and box
   edges it is false of; "strict" was dropped where the code admits the bound; what the audit, the
   manifest and the trust map are *said* to do was corrected to what they do; the shipped column
@@ -248,7 +264,7 @@ denominator to be a ratio *of*. The spread itself is unchanged and is now stated
 supports — an **order-of-magnitude, mixed-basis observation**, with its basis composition
 printed. The test that pinned the old claim was re-specified rather than deleted, so what was
 retracted and why is recorded in the suite.
-- **It applies to three statements standing in this same `[Unreleased]` section**, not to a
+- **It applies to three statements standing in this same section, then unreleased**, not to a
   released one: the muon-cost bullet, which said the gap "is proved from the table itself"; its
   `FINDINGS.md` §2b companion, which called the median collapse "the 10³ gap in energy-return form";
   and the neutronomics bullet, which said the gap "transfers one-for-one to the neutron economy". The
