@@ -53,7 +53,7 @@ theory–experiment tension). We do NOT try to resolve it; we quantify how much 
 | Fusion energy E_f | 17.6 MeV (α 3.5 + n 14.1) | d+t → α+n | settled |
 | Muon production cost E_μ | ≈ 5 GeV (range ~2–10 GeV cited) | dominant cost; accelerator-dependent | Jändel; Petrov; reviews |
 | Scientific breakeven X_μ | ≈ E_μ/E_f = 5000/17.6 ≈ **284** (for Q=1, η_conv=1) | the number current μCF cannot reach | derived |
-| Current record X_μ | ≈ **150** (150±4±20) | best experimental; liquefied d-t, c_t = 0.3 (Jones p.591) | Jones et al. PRL 56, 588 (1986); Yin–Kou–Chen 2026 |
+| Jones 1986 average X_μ | ≈ **150** (150±4±20) | reported as an average value; liquefied d-t, c_t = 0.3 (Jones p.591) | Jones et al. PRL 56, 588 (1986); Yin–Kou–Chen 2026 |
 | Energy gain Q (current) | ≈ 0.3–0.5 | with realistic η_conv | reviews |
 
 ## 4. The 2026 "breakeven" claims (the falsification targets)
@@ -91,7 +91,7 @@ theory–experiment tension). We do NOT try to resolve it; we quantify how much 
 | E_f = 17.6 MeV; breakeven X_μ ≈ 284 | reactivation R (density- and model-dependent) |
 | λ_f ≈ 10¹² s⁻¹ (fusion ≫ formation) | λ_dtμ(T,φ,F) absolute scale & epithermal enhancement (η ~ 1 vs ~5 debate) |
 | resonant (Vesman) formation is real (Toyama 2026) | muon production cost E_μ (2–10 GeV) and η_conv chain |
-| record X_μ ≈ 150; Q < 1 today | whether 2026 N_μ>500 / Q>2 projections survive honest uncertainty ← WE TEST THIS |
+| measured X_μ ≈ 150 (Jones 1986); Q < 1 today | whether 2026 N_μ>500 / Q>2 projections survive honest uncertainty ← WE TEST THIS |
 
 ## 7. The exact claim this project makes (and does not)
 

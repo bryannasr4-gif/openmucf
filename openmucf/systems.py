@@ -152,7 +152,7 @@ class KellyElectrical:
     eta_rec: float = 1.00
     eta_acc: float = 0.18
     eta_heat: float = 0.60
-    x_mu_ref: float = 150.0  # Jones 1986 record fusions/muon (the headline operating point)
+    x_mu_ref: float = 150.0  # Jones 1986 average fusions/muon (Kelly's headline operating point)
     E_fusion_kinetic_MeV: float = E_F_MEV  # 17.6 MeV pure D-T (for the scientific-gain reference)
     # Kelly's QUOTED beam energy per muon. It is carried as published, not recomputed: dividing his
     # printed Table-1 digits gives 3606 / 0.77 = 4683 MeV, i.e. 4.68 GeV, so the ~0.4% is his

@@ -25,6 +25,19 @@ sens = uq.local_sensitivities()
 sob_x = uq.sobol_indices(N=8192, output="X_mu")
 sob_q = uq.sobol_indices(N=8192, output="Q_net")
 rob = uq.sobol_robustness(N=8192, output="X_mu")
+# Section 1b names the equal-relative box as a width control. Which declared ranges it runs past is
+# read off the box edges here, never typed: if the box ever lies inside every declared range the
+# sentence is false and regeneration must stop so the paragraph is re-worded.
+_EQREL_OUTSIDE = [
+    (p, p.nominal * (1.0 - rob["rel"]), p.nominal * (1.0 + rob["rel"]))
+    for p in uq.PARAMS
+    if p.nominal * (1.0 - rob["rel"]) < p.low or p.nominal * (1.0 + rob["rel"]) > p.high
+]
+assert _EQREL_OUTSIDE, "the equal-relative box lies inside every declared range -- re-word section 1b"
+_EQREL_OUTSIDE_TEXT = ", ".join(
+    f"`{p.name}` ([{lo:.3g}, {hi:.3g}] against the declared [{p.low:.3g}, {p.high:.3g}])"
+    for p, lo, hi in _EQREL_OUTSIDE
+)
 fw = uq.forward_uq(n=400_000)
 be = uq.breakeven_audit(n=400_000)
 xchk = uq.cross_check_gradient()
@@ -382,6 +395,10 @@ so part of the contested-box ranking reflects how wide each *range* is, not phys
 
 {_tbl2(rob["contested_box"], rob["equal_relative_box"], rob["rel"])}
 
+The equal-relative box is a width control, not a provenance-bearing prior: at +/-{int(rob["rel"] * 100)}%
+it runs past the declared range of {_EQREL_OUTSIDE_TEXT}, so its S_T column is a statement about
+range width and is never propagated into a result.
+
 The prior-independent statements are therefore the *local elasticity* ranking at the operating point
 (|dlnX_mu/dln omega_s0| > |dlnX_mu/dln lambda_c| > |dlnX_mu/dln R|) and the requirement-form result in
 section 3 -- not "R is the dominant driver" as an unconditional claim.
@@ -404,8 +421,9 @@ the CI, never convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
-posterior). The interval deliberately reflects LIQUID conditions: the lambda_c band is the ledger's
-liquid-anchor row `lambda_c_liquid` (phi ~ 1.2), and the box carries no temperature axis. The
+posterior). The interval deliberately reflects LIQUID conditions -- the lambda_c band is the ledger's
+liquid-anchor row `lambda_c_liquid` (phi ~ 1.2) and the R box is widened around the liquid-scale
+`R_col` -- and the box carries no temperature axis. The
 Jones 1986 average X_mu ~ 150 (150 +- 4(stat) +- 20(syst) fusions per muon in a liquefied d-t
 target at c_t = 0.3, p.591) and the Kou-Chen best case both lie above it, and for the same reason:
 each needs an effective sticking below the omega_s0/R support the box samples. Jones reports
@@ -448,8 +466,9 @@ d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-e
 
 Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To show how
 Q_net responds to the assumed muon cost, the SAME seeded forward-UQ Q_net is re-run under three
-tier-specific E_mu priors, with every other input (the omega_s0 / R / lambda_c / eta boxes)
-held fixed. This is a sensitivity-of-Q_net-to-E_mu panel: the boxes are disclosed modelling choices,
+tier-specific E_mu priors, with every other input still drawn from its default box (the omega_s0 /
+R / lambda_c / eta boxes are unchanged). This is a sensitivity-of-Q_net-to-E_mu panel: the boxes
+are disclosed modelling choices,
 with their provenance below. It measures no cost gap, computes no cost ratio, and makes
 no same-basis comparison. (Arithmetic ON ITS OWN OUTPUTS is a different thing and is reported below;
 it says something about the boxes this document chose, and nothing about the muon-cost data.)

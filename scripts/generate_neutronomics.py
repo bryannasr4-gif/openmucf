@@ -5,7 +5,7 @@
 Content (neutronomics, Layer 1): the neutrons-per-joule "league table" that places muon-catalyzed
 fusion, as a 14 MeV neutron source, against the established incumbents. This is a **curated
 compilation with provenance, not an evaluation** and asserts **no new physics**: every number
-is either a measured record (X_mu), a tier median already published in MUON_COST.md, or a transparent
+is either a measured yield (X_mu), a tier median already published in MUON_COST.md, or a transparent
 "derived here" ratio of published beam parameters.
 
 muCF appears as THREE tier-separated rows -- one per MUON_COST.md muon-cost tier -- NEVER one blended
@@ -44,7 +44,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from openmucf import mucost, provenance
-from openmucf.calibrate import OBS  # X_mu = OBS['xmu_obs'] = 113.0 (Petitjean/Breunlich record value)
+from openmucf.calibrate import OBS  # X_mu = OBS['xmu_obs'] = 113.0 (Petitjean/Breunlich measured value)
 from openmucf.mucost import MUON_COST_CSV
 
 # CODATA 2018 elementary charge -> energy conversions (exact, byte-stable).

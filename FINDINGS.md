@@ -74,6 +74,10 @@ so part of the contested-box ranking reflects how wide each *range* is, not phys
 | eta_acc | 0.000 | 0.000 |
 | eta_thermal | 0.000 | 0.000 |
 
+The equal-relative box is a width control, not a provenance-bearing prior: at +/-15%
+it runs past the declared range of `omega_s0_pct` ([0.728, 0.986] against the declared [0.8, 0.95]), `lambda_c` ([1.1e+08, 1.5e+08] against the declared [1e+08, 1.45e+08]), `eta_thermal` ([0.34, 0.46] against the declared [0.35, 0.45]), so its S_T column is a statement about
+range width and is never propagated into a result.
+
 The prior-independent statements are therefore the *local elasticity* ranking at the operating point
 (|dlnX_mu/dln omega_s0| > |dlnX_mu/dln lambda_c| > |dlnX_mu/dln R|) and the requirement-form result in
 section 3 -- not "R is the dominant driver" as an unconditional claim.
@@ -96,8 +100,9 @@ the CI, never convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
-posterior). The interval deliberately reflects LIQUID conditions: the lambda_c band is the ledger's
-liquid-anchor row `lambda_c_liquid` (phi ~ 1.2), and the box carries no temperature axis. The
+posterior). The interval deliberately reflects LIQUID conditions -- the lambda_c band is the ledger's
+liquid-anchor row `lambda_c_liquid` (phi ~ 1.2) and the R box is widened around the liquid-scale
+`R_col` -- and the box carries no temperature axis. The
 Jones 1986 average X_mu ~ 150 (150 +- 4(stat) +- 20(syst) fusions per muon in a liquefied d-t
 target at c_t = 0.3, p.591) and the Kou-Chen best case both lie above it, and for the same reason:
 each needs an effective sticking below the omega_s0/R support the box samples. Jones reports
@@ -140,8 +145,9 @@ d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-e
 
 Sections 1 and 2 use the default flat E_mu = [2, 10] GeV design-study box (UNCHANGED). To show how
 Q_net responds to the assumed muon cost, the SAME seeded forward-UQ Q_net is re-run under three
-tier-specific E_mu priors, with every other input (the omega_s0 / R / lambda_c / eta boxes)
-held fixed. This is a sensitivity-of-Q_net-to-E_mu panel: the boxes are disclosed modelling choices,
+tier-specific E_mu priors, with every other input still drawn from its default box (the omega_s0 /
+R / lambda_c / eta boxes are unchanged). This is a sensitivity-of-Q_net-to-E_mu panel: the boxes
+are disclosed modelling choices,
 with their provenance below. It measures no cost gap, computes no cost ratio, and makes
 no same-basis comparison. (Arithmetic ON ITS OWN OUTPUTS is a different thing and is reported below;
 it says something about the boxes this document chose, and nothing about the muon-cost data.)

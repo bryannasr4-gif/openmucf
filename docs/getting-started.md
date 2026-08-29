@@ -88,9 +88,9 @@ This regenerates `FINDINGS.md`, whose marquee results are:
   P(Q_net > 1) = 0.0%.
 - **Breakeven falsification:** under the prior ranges **P(X_μ > 500) = 0.0%**.
   Even at zero sticking the best measured cycling rate (λ_c = 1.45e8) caps the
-  yield at **X_μ = 319**, so 500 is arithmetically impossible without also roughly
-  doubling λ_c *and* a TOTAL reactivation R ≈ 0.94 (at λ_c = 3e8; R ≥ 0.77 even at infinite
-  λ_c). That R is not comparable to the collisional R_col ≈ 0.35: the two are successive
+  yield at **X_μ = 319**, so 500 is arithmetically impossible without both roughly
+  doubling λ_c *and* raising the TOTAL reactivation to R ≈ 0.94 (at λ_c = 3e8; R ≥ 0.77 even
+  at infinite λ_c). That R is not comparable to the collisional R_col ≈ 0.35: the two are successive
   factors, ω_s^eff = ω_s0 (1 − R_col)(1 − R_X), so at R_col = 0.35 the field-assisted factor
   alone would have to reach R_X ≥ 0.64.
 
