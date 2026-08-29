@@ -12,7 +12,9 @@ Deliverables
 * ``breakeven_audit``     -- honest, uncertainty-propagated verdict on the 2026 N_mu>500 / Q>2 claims,
                              plus the "what-would-have-to-be-true" required (R, lambda_c).
 
-Priors are UNIFORM over each input's declared range (maximally honest about ignorance). Each range
+The default priors (:data:`PARAMS`) are UNIFORM over each input's declared range;
+``sobol_robustness``'s equal-relative box and ``qnet_tier_panel``'s tier E_mu box are the two
+alternatives, each stated where it is used. Each range
 carries its own provenance -- a ledger row's own bounds, a box widened around one or more row values, a
 design-study range, or a systems assumption with no ledger row -- recorded per row in
 ``openmucf/data/uq_priors.csv`` and documented in :data:`PARAMS`.

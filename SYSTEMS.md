@@ -88,5 +88,5 @@ simulated-unvalidated inputs; never a gate -- it would be unevaluable-as-silent-
 transparent chain at E_mu = 3.0 GeV, X_mu = 150, q_sci = **0.8800** and
 q_net (v1 default efficiencies) = **0.1056** -- still sub-unity. Reaching net-electrical
 export (q_net > 1) at their 3.0 GeV/muon needs X_mu >= **1420**
-fusions/muon, ~1420/150 = far above today's record. Their claim is recorded, not
+fusions/muon, ~1420/150 = far above the Jones 1986 average. Their claim is recorded, not
 endorsed.

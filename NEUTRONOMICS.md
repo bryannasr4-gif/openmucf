@@ -27,10 +27,10 @@ falls by 1/eta_acc (e.g. ~5.6x at eta_acc = 0.18).
 > named rather than approximated.
 
 ## 1. muCF as a 14 MeV neutron source (three tier-separated rows)
-**X_mu = 113 fusions per muon** -- the MEASURED Petitjean/Breunlich record-class yield
+**X_mu = 113 fusions per muon** -- the MEASURED Petitjean/Breunlich yield
 (`openmucf.calibrate.OBS['xmu_obs']`; rate-ledger validation target `V_petitjean_Xmu`, Breunlich et al.,
-Annu. Rev. Nucl. Part. Sci. 39 (1989) 311, band [100,150]). This is the measured record, **NOT** the
-forward-UQ posterior median (104): the league table is a tier-SELECTED accounting of the measured record,
+Annu. Rev. Nucl. Part. Sci. 39 (1989) 311, band [100,150]). This is the measured value, **NOT** the
+forward-UQ posterior median (104): the league table is a tier-SELECTED accounting of the measured yield,
 not a UQ pushforward. Each E_mu tier median is sourced from the muon-cost ledger (MUON_COST.md /
 `openmucf.mucost`), converted at 1 GeV = 1.602176634e-10 J.
 

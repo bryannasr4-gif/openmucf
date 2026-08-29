@@ -25,7 +25,8 @@ from openmucf.energy import EnergyChain
 from openmucf.rates import RATES_CSV
 from openmucf.systems import KELLY, KELLY_MU_PER_BEAM_PARTICLE, SystemChain, rosetta_table
 
-# The Rosetta X_mu grid: the measured record (Petitjean ~113), the Jones/Kelly record (150), the
+# The Rosetta X_mu grid: the measured Petitjean/Breunlich yield (~113), the Jones 1986 average that
+# Kelly adopts (150), the
 # scientific breakeven (~284), and a frontier target (500). All lie within Kelly's fig-3 fit range
 # [100, 600], so the kelly_Q_elec column is interpolation, never extrapolation.
 X_MU_GRID = [113.0, 150.0, 284.0, 500.0]
@@ -203,7 +204,7 @@ simulated-unvalidated inputs; never a gate -- it would be unevaluable-as-silent-
 transparent chain at E_mu = {H['acc_e_mu']} GeV, X_mu = 150, q_sci = **{H['acc_q_sci_150']}** and
 q_net (v1 default efficiencies) = **{H['acc_q_net_150']}** -- still sub-unity. Reaching net-electrical
 export (q_net > 1) at their {H['acc_e_mu']} GeV/muon needs X_mu >= **{H['acc_breakeven_net']}**
-fusions/muon, ~{H['acc_breakeven_net']}/150 = far above today's record. Their claim is recorded, not
+fusions/muon, ~{H['acc_breakeven_net']}/150 = far above the Jones 1986 average. Their claim is recorded, not
 endorsed.
 """
 

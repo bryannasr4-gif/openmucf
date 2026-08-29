@@ -18,12 +18,12 @@ def test_q_sci_unity_at_scientific_breakeven():
 
 def test_net_electrical_breakeven_is_much_harder():
     ch = EnergyChain()
-    # net-electrical breakeven is far above scientific breakeven AND the ~150 record
+    # net-electrical breakeven is far above scientific breakeven AND the ~150 Jones 1986 average
     assert ch.breakeven_xmu_net() > 1000
     assert ch.breakeven_xmu_net() > ch.breakeven_xmu_sci()
 
 
-def test_record_yield_is_subunity_net_electrical():
+def test_jones_average_yield_is_subunity_net_electrical():
     ch = EnergyChain()
     assert ch.Q_net_electrical(150.0) < 1.0
 

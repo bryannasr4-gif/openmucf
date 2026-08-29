@@ -10,6 +10,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — prose and locators re-derived against their sources; no published number moves (2026-08-28)
+Wording only: no shipped number or test outcome moves, and every generated document regenerates from
+its generator. Three CC-BY data files change text cells only — `muon_cost.csv` and
+`validation_targets.csv` one cell each, `benchmarks/jones-1986.json` its `title`, `input_basis` and
+`notes` — and the two CSVs' digests in the FINDINGS, MUON_COST and NEUTRONOMICS manifests move, with
+MATERIALITY's digest of the FINDINGS manifest following; no manifest VALUE does. Each line below was
+checked against the primary or the code it describes and rewritten to what that source says.
+- **"record" was this repository's word, not Jones's.** Phys. Rev. Lett. 56, 588 (1986) states on
+  p.591 "an average value of 150 ± 4(stat.) ± 20(syst.) fusions per muon" for a liquefied d-t target
+  at c_t = 0.3 and does not call it a record. `FINDINGS.md` §2 and its figure legend,
+  `references.bib`, the `jones-1986` benchmark case, the quickstart notebook's prose, `LITERATURE.md`,
+  `SYSTEMS.md`, `openmucf/systems.py` and the energy tests now say "average"; `MODEL_SPEC.md` and
+  the quickstart example name the figure by its source; and the same
+  unsourced descriptor ("record-class", "measured record") is dropped from the Petitjean/Breunlich
+  113 in `NEUTRONOMICS.md`, its generator and `validation_targets.csv`. The two occurrences inside
+  the 1.1.0 and 1.0.0 release notes below are left as those releases wrote them.
+- **`docs/getting-started.md` no longer compares the required TOTAL reactivation with the collisional
+  `R_col`** ("from ~0.35 toward ~0.94"): the two are successive factors, as `FINDINGS.md` §3 and
+  `README.md` already state; the docs line now carries the same R ≥ 0.77 / R_X ≥ 0.64 form.
+- **`FINDINGS.md` §2** names the ledger rows its liquid box comes from (`lambda_c_liquid` at
+  phi ~ 1.2, and the liquid-scale `R_col`) instead of "(phi ~ 1.2, T ~ 300 K)" — the box has no
+  temperature axis. Its header
+  blockquote scopes "uniform over each input's own range" to the default box, names the two other
+  priors the document uses (§1b's equal-relative box, §2b's tier E_mu boxes), and drops a rhetorical
+  clause; §1b now states, read off the box edges at generation time, that the equal-relative box
+  runs past three inputs' declared ranges; §2b says the other five inputs are drawn from their
+  default boxes, not held fixed.
+- **`muon_cost.csv`**: the Kelly–Hart–Rose row's `source_locator` now places each quantity in its
+  own section — 4.70 GeV/muon in Sec.5 item (a), Q_elec = 14% in Sec.6 — as its sibling rows already
+  did. **`validation_targets.csv`**: one notes cell. **`benchmarks/jones-1986.json`**: `title`,
+  `input_basis` and `notes`.
+- `paper/paper.md` states the RED-tier warning's scope as `README.md` does (one-shot, concrete calls,
+  skipped under jit). `tests/test_uq.py`'s breakeven test is renamed `..._under_prior_uncertainty` —
+  only one of the six priors is measured — and this file's §2b bullet below now says the tier panel
+  draws the other five inputs from their default boxes rather than holding them fixed.
+
 ### Added — Kou–Chen 2026 cycle-closure criterion registered as machine-checked reproduction targets (2026-08-20)
 Sixteen `V_kouchenlawson_` rows in `openmucf/data/validation_targets.csv` register the published
 Table I / Sec. IV values of arXiv:2607.10989 (four L_mu anchors, four N_L demands, four omega_crit
@@ -308,7 +344,7 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
   `figures/muon_cost_gap.png`. **Corrected by the retraction above:** it is an order-of-magnitude,
   mixed-basis observation, not a same-basis ratio proved from the table.
 - **`FINDINGS.md` §2b — Q_net by muon-cost tier.** The forward-UQ Q_net is re-run under T1/T2/T3 E_μ priors
-  (via `uq.qnet_tier_panel`), holding every measured input fixed; the median Q_net fell ~10⁵× from
+  (via `uq.qnet_tier_panel`), with the other five inputs drawn from their default prior boxes; the median Q_net fell ~10⁵× from
   design-study to facility muons — described here at the time as "the 10³ gap in energy-return form"
   (**retracted above**, and corrected in `FINDINGS.md` on 2026-08-19; the T3 prior that produced the
   ~10⁵ figure took in a mu⁺-only row, and both it and that reading are amended in §2b itself).
@@ -334,7 +370,7 @@ here, and the gap that hid them is closed with a standing arm64 CI job.
 - **Neutrons-per-joule league table (`NEUTRONOMICS.md` + `scripts/generate_neutronomics.py`).** Places μCF
   as a 14 MeV neutron source against the established incumbents on one basis: neutrons per joule of primary
   beam energy. μCF appears as **three tier-separated rows** — one per muon-cost tier (`MUON_COST.md`),
-  never a single blended row — computed as X_μ / (E_μ,tier in J) with the **measured** record yield
+  never a single blended row — computed as X_μ / (E_μ,tier in J) with the **measured** yield
   X_μ = 113 (`calibrate.OBS['xmu_obs']` / ledger target `V_petitjean_Xmu`, not the forward-UQ median). At
   the design-study muon cost μCF is competitive with a spallation source (~43 MeV of beam per neutron) and
   ~10³× better than a sealed-tube D-T generator; at the operating-facility muon cost the muon-cost

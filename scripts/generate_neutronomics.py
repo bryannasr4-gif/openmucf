@@ -5,7 +5,7 @@
 Content (neutronomics, Layer 1): the neutrons-per-joule "league table" that places muon-catalyzed
 fusion, as a 14 MeV neutron source, against the established incumbents. This is a **curated
 compilation with provenance, not an evaluation** and asserts **no new physics**: every number
-is either a measured record (X_mu), a tier median already published in MUON_COST.md, or a transparent
+is either a measured yield (X_mu), a tier median already published in MUON_COST.md, or a transparent
 "derived here" ratio of published beam parameters.
 
 muCF appears as THREE tier-separated rows -- one per MUON_COST.md muon-cost tier -- NEVER one blended
@@ -23,7 +23,7 @@ on an unsourced per-tier efficiency and is deliberately NOT tabulated.
 
 Grounding -- every number sourced, one channel one accounting home: X_mu = 113 is imported from
 ``openmucf.calibrate.OBS['xmu_obs']`` -- the MEASURED
-Petitjean/Breunlich record-class yield (rate-ledger validation target ``V_petitjean_Xmu``, band
+Petitjean/Breunlich yield (rate-ledger validation target ``V_petitjean_Xmu``, band
 [100,150]) -- NOT the forward-UQ posterior median (104). The three E_mu tier medians come from
 ``openmucf.mucost.load_muon_cost().tier_median(...)`` (the muon-cost ledger's single accounting home),
 never a hardcoded literal. GeV -> J via 1 GeV = 1.602176634e-10 J (CODATA elementary charge).
@@ -44,14 +44,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from openmucf import mucost, provenance
-from openmucf.calibrate import OBS  # X_mu = OBS['xmu_obs'] = 113.0 (Petitjean/Breunlich record value)
+from openmucf.calibrate import OBS  # X_mu = OBS['xmu_obs'] = 113.0 (Petitjean/Breunlich measured value)
 from openmucf.mucost import MUON_COST_CSV
 
 # CODATA 2018 elementary charge -> energy conversions (exact, byte-stable).
 GEV_TO_J = 1.602176634e-10
 EV_TO_J = 1.602176634e-19
 
-# X_mu: the MEASURED Petitjean/Breunlich record-class yield, imported from the ledger (calibrate.OBS),
+# X_mu: the MEASURED Petitjean/Breunlich yield, imported from the ledger (calibrate.OBS),
 # NOT the forward-UQ posterior median 104. Kept as the single ground so the doc cannot drift from it.
 XMU = OBS["xmu_obs"]
 
@@ -323,10 +323,10 @@ falls by 1/eta_acc (e.g. ~5.6x at eta_acc = 0.18).
 > named rather than approximated.
 
 ## 1. muCF as a 14 MeV neutron source (three tier-separated rows)
-**X_mu = {H['xmu']} fusions per muon** -- the MEASURED Petitjean/Breunlich record-class yield
+**X_mu = {H['xmu']} fusions per muon** -- the MEASURED Petitjean/Breunlich yield
 (`openmucf.calibrate.OBS['xmu_obs']`; rate-ledger validation target `V_petitjean_Xmu`, Breunlich et al.,
-Annu. Rev. Nucl. Part. Sci. 39 (1989) 311, band [100,150]). This is the measured record, **NOT** the
-forward-UQ posterior median (104): the league table is a tier-SELECTED accounting of the measured record,
+Annu. Rev. Nucl. Part. Sci. 39 (1989) 311, band [100,150]). This is the measured value, **NOT** the
+forward-UQ posterior median (104): the league table is a tier-SELECTED accounting of the measured yield,
 not a UQ pushforward. Each E_mu tier median is sourced from the muon-cost ledger (MUON_COST.md /
 `openmucf.mucost`), converted at 1 GeV = 1.602176634e-10 J.
 

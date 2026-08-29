@@ -32,7 +32,7 @@ print(f"[3] closed-form X_mu = {x_mu_analytic:.1f}  (omega_s^eff = {ose*100:.3f}
 
 # 4. The honest energy ladder -- scientific vs net-electrical breakeven.
 chain = EnergyChain()
-print(f"[4] record X_mu ~150 | scientific breakeven {chain.breakeven_xmu_sci():.0f} "
+print(f"[4] Jones 1986 X_mu ~150 | scientific breakeven {chain.breakeven_xmu_sci():.0f} "
       f"| net-electrical breakeven {chain.breakeven_xmu_net():.0f}")
 print(f"    Q_sci(150) = {chain.Q_sci(150):.3f}   Q_net(150) = {chain.Q_net_electrical(150):.3f}")
 
