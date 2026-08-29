@@ -134,7 +134,8 @@ forecast-registry machinery), **AMBER** (citable with the stated basis: any cros
 comparison — a mixed-basis, order-of-magnitude observation, never a same-basis ratio — and the
 calibrated effective-sticking and cycling-rate posterior), and **RED** (illustrative
 only: the temperature-dependence shape and anything above roughly liquid density, where the v1
-formation geometry is an unsourced placeholder that emits a runtime warning).
+formation geometry is an unsourced placeholder; a one-shot scope warning fires on concrete calls
+there, at phi > ~1.45 or T < 100 K, and is skipped under jit).
 
 # Research use
 

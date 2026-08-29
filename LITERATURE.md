@@ -64,7 +64,7 @@ theory–experiment tension). We do NOT try to resolve it; we quantify how much 
   synergistic scheme" (dual polarization + high-density confinement + electric-field-assisted muon
   recovery + resonant enhancement — per the abstract; in-flight μCF and heavy-ion-driven
   magneto-inertial fusion are separately-discussed breakthrough routes, §IV) could lift
-  fusions-per-muon from the record ~150 to **"more than 500"**,
+  fusions-per-muon from the measured ~150 (Jones 1986) to **"more than 500"**,
   **potentially enabling Q > 2**. These are single-point, error-bar-free projections. ← our marquee target.
 - **Kou–Chen, arXiv:2606.07077 (2026)**: rate-network model of external-field-assisted reactivation;
   N_fus,μ 112.6 → 156.5; derives the η_X^crit > 1 no-go. ← our Phase-3 validation anchor + Phase-4 sibling.

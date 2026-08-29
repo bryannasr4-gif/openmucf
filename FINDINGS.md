@@ -3,9 +3,11 @@
 > Runs on the closed-form forward map X_mu = 1/(omega_s_eff + lambda_0/lambda_c) with the MEASURED
 > lambda_c band -- so the headline results in sections 1 and 2 do not depend on the v1 ODE
 > network's structure (the network reduces exactly to this form in the single-pool V1 gate).
-> Priors are **uniform over each input's own range** (see `openmucf/uq.py` `PARAMS`), whose
-> provenance is recorded per row in `openmucf/data/uq_priors.csv` --
-> maximally honest about what is actually known. No input was tuned to hit a validation target, with
+> The default priors -- the box every Monte-Carlo section here draws from unless it says otherwise --
+> are **uniform over each input's own range** (see `openmucf/uq.py` `PARAMS`), whose provenance is
+> recorded per row in `openmucf/data/uq_priors.csv`; section 1b's equal-relative box and section 2b's
+> tier E_mu boxes are the two exceptions, each stated where it is used.
+> No input was tuned to hit a validation target, with
 > one disclosed anchor: the formation model's overall scale (`formation._CALIB`) is set to the
 > room-temperature thermal rate, so the section-1c eta bracket, the one result here that reaches
 > `_CALIB`, is not fully independent of it.
@@ -94,11 +96,13 @@ the CI, never convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
-posterior). The interval deliberately reflects LIQUID conditions (phi ~ 1.2, T ~ 300 K). The
-record X_mu ~ 150 (Jones 1986, a liquefied d-t target at c_t = 0.3) and the Kou-Chen best case
-both lie above it, and for the same reason: each needs an effective sticking below the
-omega_s0/R support the box samples. Jones reports omega_s_eff "as small as 0.35%" and still
-falling with density (p.590); these priors carry no density dependence.
+posterior). The interval deliberately reflects LIQUID conditions: the lambda_c band is the ledger's
+liquid-anchor row `lambda_c_liquid` (phi ~ 1.2), and the box carries no temperature axis. The
+Jones 1986 average X_mu ~ 150 (150 +- 4(stat) +- 20(syst) fusions per muon in a liquefied d-t
+target at c_t = 0.3, p.591) and the Kou-Chen best case both lie above it, and for the same reason:
+each needs an effective sticking below the omega_s0/R support the box samples. Jones reports
+omega_s_eff "as small as 0.35%" and still falling with density (p.590); these priors carry no
+density dependence.
 
 | quantity | 2.5% | median | 97.5% |
 |---|---|---|---|

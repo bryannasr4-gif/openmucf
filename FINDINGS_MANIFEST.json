@@ -387,7 +387,7 @@
   ],
   "generated_by": "scripts/generate_findings.py",
   "inputs": {
-    "muon_cost_csv_sha256": "6934fcd10420fba458d973cd4b64dc91eac16ab60348a3e6d9db3eb58fda86de",
+    "muon_cost_csv_sha256": "8a0ffbe756cfb3e72b963b796bbfa270696493a50254243d5b1b184f6356797b",
     "rates_csv_sha256": "f88cc170847aa2c2bef1aac2d570b7c7413f89ac413c34e81bdb9992bfeadd0a",
     "seeds": {
       "breakeven": 1,
@@ -396,6 +396,6 @@
       "tier_panel": 0
     },
     "uq_params_repr_sha256": "2de22958c76d1e537feafeada7b7fddd7f1f614daeeba628a0006dfe9d0db727",
-    "validation_targets_csv_sha256": "e861d49c87a1cabe79434ba54817b088e23c135ce003b30cca08d51d48b82a01"
+    "validation_targets_csv_sha256": "803d51a19f185e7234e6aee76c20378972f4435bd84bdaabccc2e8b67110ac16"
   }
 }

@@ -214,7 +214,7 @@ and physically explained.
 | # | Target | Source | Tolerance band |
 |---|---|---|---|
 | V1 | analytic X_μ == ODE N_fus(∞) in single-pool limit | self-consistency | < 1 % (numerical) |
-| V2 | X_μ ∈ [100, 150] at φ≈1.2, ω_s^eff≈0.45–0.5 %, λ_c≈10⁸ s⁻¹ | Breunlich 1989; record ~150 | within [80, 160] |
+| V2 | X_μ ∈ [100, 150] at φ≈1.2, ω_s^eff≈0.45–0.5 %, λ_c≈10⁸ s⁻¹ | Breunlich 1989; Jones 1986 ~150 | within [80, 160] |
 | V3 | λ_c(T) rises monotonically 20→800 K; λ_c(800)/λ_c(300) ratio | Yamashita–Kino 2022 (graphical) | shape monotone; ratio within ±30 % of digitized |
 | V4 | Fed Kou–Chen ω_s^eff inputs, reproduce N_fus,μ 112.6 and 156.5 | Kou–Chen 2606.07077 | within ±10 % |
 | V5 | Q ≈ 0.5 at X_μ≈150 (stated η_conv); breakeven X_μ | derived | breakeven within 1 % of 284 |
