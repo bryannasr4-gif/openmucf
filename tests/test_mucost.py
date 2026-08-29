@@ -15,6 +15,7 @@ import dataclasses
 import json
 import math
 import re
+import statistics
 from pathlib import Path
 
 import pytest
@@ -307,6 +308,22 @@ def test_no_headline_number_depends_on_an_arbitrary_row(table):
         for text in (f"{composed.value_GeV:.2f}", f"{composed.value_GeV:.1f}"):
             assert text not in doc, f"an eta_mu-composed figure ({text}) reached the document via {sid}"
             assert text not in H.values(), f"an eta_mu-composed figure ({text}) reached a headline"
+    # The edge table made this reachable a second way: `compose_path` will compose the same arbitrary
+    # factor from `muon_cost_chain.csv`, so the rule is asserted over EVERY path the edge table can
+    # build and not only over the eta_mu column it was written for.
+    edges = mucost.load_muon_cost_chain()
+    for r in table:
+        if not r.has_normalized or r.stage not in mucost.MUCF_CHAIN:
+            continue
+        if r.chain_point().charge_basis not in mucost.COMPOSABLE_CHARGE_BASIS:
+            continue
+        for path in mucost.enumerate_chain_paths(r.chain_point(), list(edges)):
+            if all(edges[e].is_sourced for e in path.edge_ids):
+                continue
+            for text in (f"{path.value.value_GeV:.2f}", f"{path.value.value_GeV:.1f}"):
+                assert text not in doc, (
+                    f"an unsourced-path figure ({text}) reached the document via {path.describe()}"
+                )
 
 
 def test_bases_are_heterogeneous_and_declared(table):
@@ -1148,3 +1165,609 @@ def test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches(table):
     assert "on the muCF chain** and counts mu- is a **lower bound**" in doc
     assert f"The {len(off_chain)} off-chain" in doc
     assert H["n_offchain_rows"] == str(len(off_chain))
+
+
+def test_to_numeraire_refuses_the_ways_it_must_and_carries_what_it_must():
+    """The numeraire axis gets the same refusals as the stage axis -- drilled in both directions.
+
+    ``compose`` has always refused an off-chain stage, a non-advancing stage, an unknown status and a
+    factor outside (0, 1]. The numeraire axis had no typed conversion at all until this test's
+    subject existed, so the refusals are drilled here rather than assumed to mirror.
+    """
+    beam = mucost.ChainValue(
+        value_GeV=4.70,
+        stage="produced",
+        numeraire=mucost.BEAM_KINETIC,
+        charge_basis="mu_minus",
+        statuses=("primary",),
+        provenance=("kelly_hart_rose_2021",),
+    )
+
+    # -- the refusals -------------------------------------------------------------------------
+    with pytest.raises(BasisError, match="cannot convert to numeraire"):
+        beam.to_numeraire(0.18, "wall_plug", "primary_cited", "typo")
+    with pytest.raises(BasisError, match="cannot convert to numeraire"):
+        beam.to_numeraire(0.18, "", "primary_cited", "empty is not a numeraire")
+    with pytest.raises(BasisError, match="must change the numeraire"):
+        beam.to_numeraire(0.18, mucost.BEAM_KINETIC, "primary_cited", "no-op")
+    with pytest.raises(BasisError, match="unknown evidence_status"):
+        beam.to_numeraire(0.18, "electrical_minimal", "probably_fine", "bad status")
+    for bad in (0.0, -0.18, 1.5):
+        with pytest.raises(BasisError, match=r"must lie in \(0, 1\]"):
+            beam.to_numeraire(bad, "electrical_minimal", "primary_cited", "bad factor")
+
+    # -- and the other way: the legal conversion does what it says --------------------------------
+    elec = beam.to_numeraire(0.18, "electrical_minimal", "primary_cited", "Kelly eta_acc")
+    assert elec.value_GeV == 4.70 / 0.18
+    assert elec.stage == "produced"  # a numeraire change is NOT a stage advance
+    assert elec.numeraire == "electrical_minimal"
+    assert elec.charge_basis == "mu_minus"
+    assert elec.statuses == ("primary", "primary_cited")
+    assert elec.provenance == ("kelly_hart_rose_2021", "Kelly eta_acc")
+    # still a bound, because the chain has not reached the terminal stage
+    assert elec.is_bound and elec.missing_stages == ("captured", "transported", "moderated",
+                                                     "stopped_useful_in_dt")
+    # an unsourced conversion poisons the result exactly as an unsourced delivery factor does
+    poisoned = beam.to_numeraire(0.18, "electrical_site", "assumption", "guessed eta_acc")
+    assert "assumption" in poisoned.unsourced_statuses
+    # a factor of exactly 1 is legal on both axes (an efficiency of 100% is a real, stated value)
+    assert beam.to_numeraire(1.0, "electrical_site", "assumption", "unity").value_GeV == 4.70
+
+
+def test_the_float_wallplug_path_cannot_disagree_with_the_typed_conversion(table):
+    """``wallplug_lower_bound_GeV`` and ``ChainValue.to_numeraire`` must give the same magnitude.
+
+    The float property predates the typed conversion and drops the statuses, the provenance and the
+    bound flag on the way out. It is kept because downstream code reads it; this pins it to the typed
+    path bit-for-bit so the two arithmetics can never drift, which is the guarantee that lets the
+    property stay a float.
+    """
+    checked = 0
+    for r in table:
+        wp = r.wallplug_lower_bound_GeV
+        if math.isnan(wp):
+            continue
+        typed = r.chain_point().to_numeraire(
+            r.eta_acc_assumption, "electrical_minimal", "primary_cited", f"{r.source_id}:eta_acc"
+        )
+        assert typed.value_GeV == wp, f"{r.source_id}: float {wp} != typed {typed.value_GeV}"
+        # the magnitude does not depend on WHICH electrical denominator the label names; the label
+        # does, which is why the property cannot pick one for itself and this test supplies it.
+        other = r.chain_point().to_numeraire(
+            r.eta_acc_assumption, "electrical_site", "primary_cited", f"{r.source_id}:eta_acc"
+        )
+        assert other.value_GeV == typed.value_GeV
+        checked += 1
+    assert checked == 1, "exactly one committed row yields a wall-plug figure (Kelly's beam row)"
+    # and the typed conversion reproduces the shipped electrical rows to the digits they publish
+    kelly = table["kelly_hart_rose_2021"].chain_point()
+    for sid, eta in (("kelly_electrical_minimal", 0.18), ("kelly_electrical_site", 0.104)):
+        got = kelly.to_numeraire(eta, table[sid].numeraire, "primary_cited", sid).value_GeV
+        assert round(got, 2) == table[sid].normalized_GeV_per_mu
+
+
+# --------------------------------------------------------------------------------------------------
+# The EDGE table (muon_cost_chain.csv): the conversions that join the cost grid's points.
+# --------------------------------------------------------------------------------------------------
+
+CHAIN_COLUMNS = [
+    "edge_id", "from_stage", "from_numeraire", "to_stage", "to_numeraire",
+    "factor", "factor_lo", "factor_hi", "bias_direction", "charge_basis",
+    "conditions", "evidence_status", "source_bibkey", "source_locator", "derivation", "notes",
+]
+
+#: A loadable numeraire edge, used as the negative control every drill below mutates one cell of.
+CHAIN_CONTROL = {
+    "edge_id": "control_edge", "from_stage": "*", "from_numeraire": "beam_kinetic",
+    "to_stage": "*", "to_numeraire": "electrical_minimal",
+    "factor": "0.5", "factor_lo": "", "factor_hi": "",
+    "bias_direction": "none", "charge_basis": "*", "conditions": "synthetic",
+    "evidence_status": "primary", "source_bibkey": "Kovach2017",
+    "source_locator": "synthetic fixture, not a reading of the source",
+    "derivation": "synthetic fixture", "notes": "",
+}
+
+
+@pytest.fixture(scope="module")
+def chain() -> mucost.ChainEdgeTable:
+    return mucost.load_muon_cost_chain()
+
+
+def _write_chain(tmp_path, rows, name="chain.csv"):
+    path = tmp_path / name
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=CHAIN_COLUMNS, lineterminator="\n")
+        w.writeheader()
+        for r in rows:
+            w.writerow({c: r.get(c, "") for c in CHAIN_COLUMNS})
+    return path
+
+
+def _load_chain(path):
+    return mucost.load_muon_cost_chain(
+        csv_path=path, schema_path=mucost.MUON_COST_CHAIN_SCHEMA, check_refs=False
+    )
+
+
+def test_the_edge_table_loads_and_every_stated_factor_cites_a_primary(chain):
+    """The committed edge table, and the rule that is the whole reason it can be trusted.
+
+    Every edge either carries a factor WITH a bibkey and a locator, or carries evidence_status
+    'absent' and no number in any of its three numeric cells. A plausible invented factor filling a
+    hole is the failure this table exists to prevent, and this is where that is checked rather than
+    promised.
+    """
+    assert len(chain) == 9
+    assert chain.ids() == [
+        "eta_acc_kelly_psi_minimal", "eta_acc_kovach_minimal", "eta_acc_kovach_site",
+        "delivery_kelly_eta_mu", "utilization_kelly_phase_one",
+        "produced_to_captured_absent", "captured_to_transported_absent",
+        "transported_to_moderated_absent", "moderated_to_stopped_useful_absent",
+    ]
+    known = mucost.bibkeys()
+    for e in chain:
+        if e.has_factor:
+            assert e.evidence_status != "absent"
+            assert e.source_bibkey and e.source_locator, f"{e.edge_id}: a factor with no provenance"
+            assert 0.0 < e.factor <= 1.0
+            assert e.derivation, f"{e.edge_id}: no derivation recorded"
+        else:
+            assert e.evidence_status == "absent"
+            assert math.isnan(e.factor) and math.isnan(e.factor_lo) and math.isnan(e.factor_hi)
+        for key in e.source_bibkey.split(";"):
+            if key.strip():
+                assert key.strip() in known, f"{e.edge_id}: {key} does not resolve"
+    # the numeraire conversion is the only one the literature sources at all
+    assert {e.edge_id for e in chain.sourced()} == {
+        "eta_acc_kelly_psi_minimal", "eta_acc_kovach_minimal", "eta_acc_kovach_site"
+    }
+    # an absent row may cite the sources READ AND FOUND SILENT; the shipped ones all do, and the
+    # schema says so. (This is the half of the provenance rule that is easy to get backwards: the
+    # bibkey on such a row names what was checked, never the source of a number there is none of.)
+    for e in chain:
+        if not e.has_factor:
+            assert e.source_bibkey and e.source_locator, f"{e.edge_id}: an unchecked absence"
+    schema = json.loads(Path(mucost.MUON_COST_CHAIN_SCHEMA).read_text(encoding="utf-8"))
+    assert "READ AND FOUND SILENT" in schema["properties"]["source_bibkey"]["description"]
+    assert all(e.kind == mucost.NUMERAIRE_EDGE for e in chain.sourced())
+    assert chain.of_kind(mucost.STAGE_EDGE) and chain.of_kind(mucost.NUMERAIRE_EDGE)
+    with pytest.raises(KeyError, match="unknown edge kind"):
+        chain.of_kind("diagonal")
+
+
+def test_the_chain_schema_required_columns_are_pinned_and_enforced(tmp_path):
+    """The edge table's required columns, pinned as a SET and drilled one at a time.
+
+    Same discipline as the node table's: the loader reads `required` from the schema at run time, so
+    a name quietly dropped there would stop being enforced with nothing failing.
+    """
+    schema = json.loads(Path(mucost.MUON_COST_CHAIN_SCHEMA).read_text(encoding="utf-8"))
+    required = set(schema["required"])
+    assert required == {
+        "edge_id", "from_stage", "from_numeraire", "to_stage", "to_numeraire",
+        "bias_direction", "charge_basis", "evidence_status", "derivation",
+    }
+    assert required <= set(schema["properties"])
+    assert set(schema["properties"]) == set(CHAIN_COLUMNS)
+    header = mucost.MUON_COST_CHAIN_CSV.read_text(encoding="utf-8").splitlines()[0].split(",")
+    assert header == CHAIN_COLUMNS, "the shipped edge CSV's header must match the schema's fields"
+
+    _load_chain(_write_chain(tmp_path, [CHAIN_CONTROL], "control.csv"))  # negative control
+    for col in sorted(required):
+        path = _write_chain(tmp_path, [dict(CHAIN_CONTROL, **{col: ""})], f"missing_{col}.csv")
+        with pytest.raises(ValueError) as exc:
+            _load_chain(path)
+        assert f"missing required '{col}'" in str(exc.value)
+
+
+def test_an_edge_moves_exactly_one_axis(tmp_path, chain):
+    """One axis per edge, and the wildcard on the other -- drilled in every way it can be wrong.
+
+    This is what keeps wall-plug a numeraire rather than a chain node. An edge that moved both axes
+    would be a source's collapsed factor smuggled in as one conversion; an edge that pinned the axis
+    it does not move would make the same conversion inexpressible everywhere else on the chain.
+    """
+    for e in chain:
+        if e.kind == mucost.NUMERAIRE_EDGE:
+            assert e.from_stage == e.to_stage == mucost.ANY
+            assert e.from_numeraire != e.to_numeraire
+        else:
+            assert e.from_numeraire == e.to_numeraire == mucost.ANY
+            assert mucost.MUCF_CHAIN.index(e.to_stage) > mucost.MUCF_CHAIN.index(e.from_stage)
+
+    cases = [
+        (dict(from_stage="produced", to_stage="captured"), "moves both"),
+        (dict(from_numeraire="*", to_numeraire="*"), "must move one axis"),
+        (dict(from_stage="produced", to_stage="produced", from_numeraire="*", to_numeraire="*"),
+         "must advance the chain"),
+        (dict(from_stage="captured", to_stage="produced", from_numeraire="*", to_numeraire="*"),
+         "must advance the chain"),
+        (dict(to_numeraire="beam_kinetic"), "must change the numeraire"),
+        (dict(from_stage="produced", to_stage="*", from_numeraire="*", to_numeraire="*"),
+         "needs both endpoints on the chain"),
+        (dict(from_numeraire="*"), "needs both endpoints named"),
+        (dict(from_stage="produced", to_stage="captured", from_numeraire="*", to_numeraire="*",
+              factor="", evidence_status="absent", bias_direction="lower", source_bibkey="",
+              source_locator=""), None),  # a legal stage edge: the drill's own control
+        (dict(from_stage="stopped_other_target", to_stage="*", from_numeraire="*",
+              to_numeraire="*"), "bad from_stage"),
+    ]
+    for i, (mutation, expected) in enumerate(cases):
+        path = _write_chain(tmp_path, [dict(CHAIN_CONTROL, **mutation)], f"axis_{i}.csv")
+        if expected is None:
+            _load_chain(path)
+            continue
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            _load_chain(path)
+
+
+def test_an_absent_edge_carries_no_number_and_refuses_to_compose(tmp_path, chain):
+    """'absent' means the hole is recorded, not filled -- enforced on load and again on composition."""
+    absent = chain["moderated_to_stopped_useful_absent"]
+    assert not absent.has_factor and not absent.is_sourced
+    start = mucost.ChainValue(1.0, "moderated", mucost.BEAM_KINETIC, "mu_minus", ("primary",), ("x",))
+    with pytest.raises(BasisError, match="carries no factor"):
+        absent.apply_to(start)
+    with pytest.raises(BasisError, match="carries no factor"):
+        mucost.compose_path(start, [absent])
+
+    stage_absent = dict(
+        CHAIN_CONTROL, edge_id="a", from_stage="produced", to_stage="captured",
+        from_numeraire="*", to_numeraire="*", evidence_status="absent", bias_direction="lower",
+        factor="", source_bibkey="", source_locator="",
+    )
+    _load_chain(_write_chain(tmp_path, [stage_absent], "absent_ok.csv"))  # control
+    for mutation, expected in (
+        (dict(factor="0.9"), "the factor cell must be empty"),
+        (dict(factor_lo="0.2"), "must be empty"),
+        (dict(factor_hi="0.9"), "must be empty"),
+    ):
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            _load_chain(_write_chain(tmp_path, [dict(stage_absent, **mutation)], "absent_bad.csv"))
+    # and the other way: a status that CLAIMS a stated factor may not leave the cell empty
+    with pytest.raises(ValueError, match="may not be empty"):
+        _load_chain(_write_chain(tmp_path, [dict(CHAIN_CONTROL, factor="")], "no_factor.csv"))
+    # ...nor may it leave the factor uncited. This is the rule the whole table rests on -- a number
+    # with no primary behind it is the invented factor the 'absent' status exists to make
+    # unnecessary -- so it is drilled from both missing halves, not assumed from one.
+    for missing in ("source_bibkey", "source_locator"):
+        with pytest.raises(ValueError, match="every edge value comes from a primary"):
+            _load_chain(_write_chain(
+                tmp_path, [dict(CHAIN_CONTROL, **{missing: ""})], f"uncited_{missing}.csv"
+            ))
+
+
+def test_bias_direction_must_agree_with_the_evidence_status(tmp_path, chain):
+    """A sourced factor biases nothing; an unsourced one always biases somehow. Both ways drilled."""
+    for e in chain:
+        assert (e.bias_direction == "none") == e.is_sourced, e.edge_id
+    with pytest.raises(ValueError, match="contradicts evidence_status"):
+        _load_chain(_write_chain(tmp_path, [dict(CHAIN_CONTROL, bias_direction="lower")], "b1.csv"))
+    with pytest.raises(ValueError, match="contradicts evidence_status"):
+        _load_chain(_write_chain(
+            tmp_path,
+            [dict(CHAIN_CONTROL, evidence_status="assumption", bias_direction="none")],
+            "b2.csv",
+        ))
+    with pytest.raises(ValueError, match="bad bias_direction"):
+        _load_chain(_write_chain(tmp_path, [dict(CHAIN_CONTROL, bias_direction="up")], "b3.csv"))
+
+
+def test_a_stated_interval_must_bracket_its_factor(tmp_path):
+    """factor_lo/factor_hi are empty on every committed edge, so their rules are drilled here.
+
+    No primary read for this table states a range for any conversion, which is itself part of the
+    coverage finding. The columns exist for the source that does, and an unexercised validator is
+    not a validator, so the bracket rules are drilled on a synthetic edge instead of assumed.
+    """
+    ok = dict(CHAIN_CONTROL, factor="0.5", factor_lo="0.4", factor_hi="0.6")
+    edge = _load_chain(_write_chain(tmp_path, [ok], "iv_ok.csv"))["control_edge"]
+    assert (edge.factor_lo, edge.factor_hi) == (0.4, 0.6)
+    for mutation, expected in (
+        (dict(factor_lo="0.7"), "lies below factor_lo"),
+        (dict(factor_hi="0.4"), "lies above factor_hi"),
+        (dict(factor_lo="0.8", factor_hi="0.3", factor="0.5"), "exceeds factor_hi"),
+        (dict(factor_hi="1.5"), "factor_hi must lie in (0, 1]"),
+        (dict(factor="1.5", factor_lo="", factor_hi=""), "factor must lie in (0, 1]"),
+    ):
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            _load_chain(_write_chain(tmp_path, [dict(ok, **mutation)], "iv_bad.csv"))
+
+
+def test_compose_path_refuses_every_join_that_would_misrepresent_the_figure(table, chain):
+    """D5, drilled: the joins must match, the charge must be mu-, and no factor is applied twice."""
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    eta_acc = chain["eta_acc_kelly_psi_minimal"]
+    delivery = chain["delivery_kelly_eta_mu"]
+
+    # a numeraire edge whose from_numeraire is not where the figure sits
+    already_electrical = mucost.compose_path(beam, [eta_acc]).value
+    with pytest.raises(BasisError, match="does not join here"):
+        mucost.compose_path(already_electrical, [eta_acc])
+    # a stage edge whose from_stage is not where the figure sits
+    with pytest.raises(BasisError, match="does not join here"):
+        mucost.compose_path(mucost.compose_path(beam, [delivery]).value, [delivery])
+    # the same edge twice on one path
+    with pytest.raises(BasisError, match="appears twice"):
+        mucost.compose_path(beam, [eta_acc, eta_acc])
+    # a starting figure that prices no mu-
+    mu_plus = dataclasses.replace(beam, charge_basis="mu_plus_only")
+    with pytest.raises(BasisError, match="must be counted on mu-"):
+        mucost.compose_path(mu_plus, [eta_acc])
+    # an edge stated for a charge basis a muCF chain may not compose
+    mixed = dataclasses.replace(eta_acc, charge_basis="mixed")
+    with pytest.raises(BasisError, match="may not enter a muCF chain"):
+        mucost.compose_path(beam, [mixed])
+    # the legal path still composes -- the refusals above are not refusing everything
+    assert mucost.compose_path(beam, [eta_acc, delivery]).value.stage == "transported"
+
+
+def test_an_unsourced_path_is_a_bound_and_a_fully_sourced_synthetic_one_is_not(tmp_path):
+    """The D5 refusal, both ways, on a SYNTHETIC edge set.
+
+    The positive half is deliberately synthetic. Asserting it against the committed table would
+    assert that the literature has a fully-sourced chain, which it does not -- so the test would
+    either fail today or, worse, be written to pass by grading a real hole as sourced. The synthetic
+    edges prove the refusal is not vacuous without making any claim about the literature.
+    """
+    edges = [
+        dict(CHAIN_CONTROL, edge_id="syn_numeraire", factor="0.20"),
+        dict(CHAIN_CONTROL, edge_id="syn_delivery", from_stage="produced",
+             to_stage="stopped_useful_in_dt", from_numeraire="*", to_numeraire="*",
+             factor="0.25", charge_basis="mu_minus"),
+    ]
+    syn = _load_chain(_write_chain(tmp_path, edges, "synthetic.csv"))
+    start = mucost.ChainValue(
+        value_GeV=4.0, stage="produced", numeraire=mucost.BEAM_KINETIC, charge_basis="mu_minus",
+        statuses=("primary",), provenance=("synthetic_start",),
+    )
+    good = mucost.compose_path(start, list(syn))
+    assert good.value.value_GeV == 4.0 / 0.20 / 0.25
+    assert good.value.stage == mucost.TERMINAL_STAGE and good.value.missing_stages == ()
+    assert not good.value.is_bound
+    assert good.bias_direction == "none"
+    assert good.render() == good.render_value() == "80.00 GeV"
+
+    # ...and one unsourced factor anywhere on the same path takes the value away again
+    edges[1] = dict(edges[1], evidence_status="assumption", bias_direction="lower")
+    poisoned = mucost.compose_path(start, list(_load_chain(_write_chain(tmp_path, edges, "syn2.csv"))))
+    assert poisoned.value.value_GeV == good.value.value_GeV  # same number...
+    assert poisoned.bias_direction == "lower"  # ...different epistemic status
+    with pytest.raises(BasisError, match="refusing to render"):
+        poisoned.render_value()
+    with pytest.raises(BasisError, match="refusing to render a bound as a value"):
+        poisoned.value.render_value()
+    assert poisoned.render() == ">= 80.00 GeV"
+
+
+def test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean(table, chain):
+    """Where two sources give the same conversion, both survive to the end as separate figures.
+
+    This is the reason the edges are a second TABLE rather than more columns on the node table: a
+    per-source column set would force one path per source, and the two readings of the same
+    conversion could not both exist. No mean is formed and no value is preferred.
+    """
+    competing = chain.competing()
+    assert list(competing) == [("*", "beam_kinetic", "*", "electrical_minimal")]
+    rival_ids = [e.edge_id for e in competing[("*", "beam_kinetic", "*", "electrical_minimal")]]
+    assert rival_ids == ["eta_acc_kelly_psi_minimal", "eta_acc_kovach_minimal"]
+    rivals = [chain[i].factor for i in rival_ids]
+    assert rivals == [0.18, 0.183]
+
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    paths = mucost.enumerate_chain_paths(beam, list(chain))
+    figures = [round(p.value.value_GeV, 2) for p in paths]
+    assert len(figures) == len(set(figures)) == 3, "three maximal paths, three distinct figures"
+    # the two rival readings of one conversion reach the SAME coordinate with DIFFERENT numbers
+    same_coord = [p for p in paths if p.value.numeraire == "electrical_minimal"]
+    assert len(same_coord) == 2
+    assert {round(p.value.value_GeV, 2) for p in same_coord} == {52.22, 51.37}
+    assert statistics.mean(rivals) not in rivals  # the mean is not a value this table holds
+    for p in paths:  # every figure carries the edges it was built from
+        assert len(p.edge_ids) == 3 and p.describe().startswith("kelly_hart_rose_2021 -> ")
+
+
+def test_composition_is_order_independent_which_is_why_paths_dedupe_by_edge_set(table, chain):
+    """Applying the same edges in a different order gives the same figure, exactly.
+
+    ``enumerate_chain_paths`` deduplicates by edge SET on that basis, so this is the property the
+    deduplication rests on rather than an incidental one. Bit-identical, not close: the composition
+    is a sequence of divisions by the same floats.
+    """
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    a = chain["eta_acc_kovach_site"]
+    b = chain["delivery_kelly_eta_mu"]
+    first = mucost.compose_path(beam, [a, b])
+    second = mucost.compose_path(beam, [b, a])
+    assert first.value.value_GeV == second.value.value_GeV
+    assert first.value.stage == second.value.stage == "transported"
+    assert first.value.numeraire == second.value.numeraire == "electrical_site"
+    assert sorted(first.value.statuses) == sorted(second.value.statuses)
+    assert first.bias_direction == second.bias_direction
+    paths = mucost.enumerate_chain_paths(beam, list(chain))
+    assert len({frozenset(p.edge_ids) for p in paths}) == len(paths)
+
+
+def test_no_committed_path_reaches_a_figure_this_ledger_may_render_as_a_value(table, chain):
+    """The finding, asserted: not one path over the committed edges earns a plain number.
+
+    Every path either stops short of the terminal stage or runs through a factor whose own authors
+    call it arbitrary. That is a statement about the literature, not a gap in the code, and it is why
+    both refusals are exercised on every committed path here.
+    """
+    seen = 0
+    for r in table:
+        if not r.has_normalized or r.stage not in mucost.MUCF_CHAIN:
+            continue
+        start = r.chain_point()
+        if start.charge_basis not in mucost.COMPOSABLE_CHARGE_BASIS:
+            with pytest.raises(BasisError, match="must be counted on mu-"):
+                mucost.enumerate_chain_paths(start, list(chain))
+            continue
+        for p in mucost.enumerate_chain_paths(start, list(chain)):
+            assert p.bias_direction in {"lower", "unknown"}, f"{p.describe()} claims a value"
+            with pytest.raises(BasisError):
+                p.render_value()
+            seen += 1
+    assert seen, "no committed row produced a path, so this test asserted nothing"
+
+
+def test_a_direction_unknown_path_is_never_printed_with_a_bound_marker(table, chain):
+    """An arbitrary factor is weaker than an omitted one, and the rendering must say so.
+
+    An OMITTED factor is bounded above by 1, so leaving it out can only understate the cost: that is
+    a one-sided lower bound and prints with ">=". A factor a source states while saying it does not
+    know the value can move the figure either way, so the same marker would be a false claim. The
+    edge carries the direction and the path reads it; ``ChainValue.bias_direction`` cannot see it,
+    which is precisely why ``ChainPath`` exists.
+    """
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    delivery = chain["delivery_kelly_eta_mu"]
+    assert delivery.bias_direction == "unknown"
+
+    partial = mucost.compose_path(beam, [chain["eta_acc_kovach_site"]])
+    assert partial.bias_direction == "lower" and partial.render().startswith(">= ")
+
+    through_arbitrary = mucost.compose_path(beam, [delivery])
+    assert through_arbitrary.bias_direction == "unknown"
+    assert not through_arbitrary.render().startswith(">= ")
+    assert through_arbitrary.render().endswith("(direction unknown)")
+    assert "direction unknown: delivery_kelly_eta_mu" in through_arbitrary.why_bound()
+    # the underlying ChainValue still grades itself 'lower'; the two answer different questions and
+    # the path's answer is the one a document may print
+    assert through_arbitrary.value.bias_direction == "lower"
+    with pytest.raises(BasisError, match=re.escape("refusing to render a figure graded 'unknown'")):
+        through_arbitrary.render_value()
+
+
+def test_the_edge_table_is_declared_in_the_data_package(chain):
+    """The FAIR descriptor must list the edge CSV as a resource, with its fields and its licence.
+
+    Same rule the node table is held to: a shipped CC-BY data file that the data package does not
+    declare is undiscoverable by the machinery that makes the package worth having.
+    """
+    package = json.loads((REPO / "datapackage.json").read_text(encoding="utf-8"))
+    declared = [r for r in package["resources"]
+                if str(r.get("path", "")).endswith("muon_cost_chain.csv")]
+    assert len(declared) == 1, "muon_cost_chain.csv must be declared exactly once"
+    resource = declared[0]
+    assert resource["schema"]["primaryKey"] == "edge_id"
+    assert [f["name"] for f in resource["schema"]["fields"]] == CHAIN_COLUMNS
+    assert {lic["name"] for lic in package["licenses"]} == {"CC-BY-4.0"}
+
+
+def test_the_edge_csv_is_a_generator_input_bound_by_the_manifest():
+    """The edge table must be a declared INPUT, or the rendered conversions float free of their bytes.
+
+    ``provenance --check`` binds each manifest entry to the document that renders it; what binds the
+    document to the DATA is the inputs digest. A new CSV that fed the document without appearing here
+    could move under a green gate, which is exactly the hole this records.
+    """
+    manifest = json.loads((REPO / "MUON_COST_MANIFEST.json").read_text(encoding="utf-8"))
+    inputs = manifest["inputs"]
+    assert set(inputs) == {"muon_cost_csv_sha256", "muon_cost_chain_csv_sha256"}
+    assert inputs["muon_cost_chain_csv_sha256"] == provenance.file_sha256(
+        mucost.MUON_COST_CHAIN_CSV
+    )
+    assert inputs["muon_cost_csv_sha256"] == provenance.file_sha256(MUON_COST_CSV)
+
+
+def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain):
+    """The document's coverage headline is computed from the CSVs, never typed into the template.
+
+    It is the sentence a reader is most likely to quote, so it is the one that must not be able to go
+    stale: every count in it is recomputed here from the tables, and the rendered sentence is then
+    required to be present in the committed document verbatim.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table, chain)
+    sentence = H["chain_coverage_sentence"]
+    doc = _normalized("MUON_COST.md")
+    assert " ".join(sentence.split()) in doc
+
+    cov = gen.edge_coverage_rows(table, chain)
+    links = [c for c in cov if c["kind"] == mucost.STAGE_EDGE]
+    numeraire = [c for c in cov if c["kind"] == mucost.NUMERAIRE_EDGE]
+    # the four consecutive chain links, derived from MUCF_CHAIN rather than listed
+    assert [c["label"] for c in links] == [
+        f"`{a}` -> `{b}`"
+        for a, b in zip(mucost.MUCF_CHAIN[:-1], mucost.MUCF_CHAIN[1:], strict=True)
+    ]
+    # the numeraire conversions are the ones the LEDGER's own pinned rows are counted in
+    assert {c["label"] for c in numeraire} == {
+        f"`{mucost.BEAM_KINETIC}` -> `{n}`"
+        for n in {r.numeraire for r in table if r.has_normalized} - {mucost.BEAM_KINETIC}
+    }
+    # ...and the finding itself: the sourced conversions are exactly the numeraire ones
+    assert [c["label"] for c in cov if c["sourced"]] == [c["label"] for c in numeraire]
+    assert H["n_sourced_stage_conversions"] == "0"
+    assert H["n_sourced_conversions"] == str(len(numeraire))
+    # every stage link IS covered by an edge -- by an arbitrary or absent one, which is the point
+    for c in links:
+        assert c["edges"], f"{c['label']} has no edge at all, not even an absent one"
+        assert not c["sourced"]
+    # the sentence agrees with the node table's own count of fully-sourced chains
+    assert H["n_fully_sourced_chains"] == "0"
+    assert f"**{H['n_fully_sourced_chains']} of the {H['n_chain_rows']} pinned rows" in \
+        (REPO / "MUON_COST.md").read_text(encoding="utf-8")
+
+
+def test_the_published_figure_set_is_sourced_only_and_is_never_reduced(table, chain):
+    """What the document prints: every fully-sourced path, as a SET, and no reconciled number.
+
+    Two rules meet here. The competing readings of one conversion are the deliverable, so no mean,
+    midpoint or preferred value may be rendered. And nothing printed may be composed through a factor
+    its own authors call arbitrary, which is why the published set is built from
+    ``chain.sourced()`` while the API composes the rest.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table, chain)
+    doc = _normalized("MUON_COST.md")
+    paths = gen.sourced_paths(table, chain)
+    assert len(paths) == int(H["n_sourced_paths"]) >= 2
+    values = [p.value.value_GeV for p in paths]
+    assert values == sorted(values), "the rendered set must be ordered deterministically"
+    for i, p in enumerate(paths, 1):
+        assert H[f"sourced_path_{i}"] == p.render()
+        assert p.render() in doc
+        assert " -> ".join(f"`{e}`" for e in p.edge_ids) in doc
+        assert all(chain[e].is_sourced for e in p.edge_ids), "a published path used an unsourced edge"
+        assert p.bias_direction == "lower" and p.render().startswith(">= ")
+    # the two rival readings of one conversion land at the same coordinate with different numbers,
+    # and their mean is nowhere in the document
+    rivals = [p for p in paths if p.value.numeraire == "electrical_minimal"]
+    assert len(rivals) == 2
+    mean = statistics.mean(p.value.value_GeV for p in rivals)
+    assert f"{mean:.2f}" not in doc, "a mean of two competing readings must never be rendered"
+    assert H["competing_clause"] and " ".join(H["competing_clause"].split()) in doc
+    # the composed figures reproduce the ledger's own electrical rows, to the digits it publishes
+    published = {round(p.value.value_GeV, 2) for p in paths}
+    ledger = {r.normalized_GeV_per_mu for r in table
+              if r.has_normalized and r.numeraire != mucost.BEAM_KINETIC}
+    assert ledger < published, "the composed set must contain the ledger rows and at least one more"
+
+
+def test_the_generated_edge_section_says_what_stops_the_chain(table, chain):
+    """The document must name the conversions that would continue the chain and may not be printed.
+
+    A set of lower bounds with no statement of what stops them reads as though nothing more is
+    known, when in fact the next factor is published and disowned by its own authors. That
+    distinction -- an omitted factor is bounded above by 1, an arbitrary one is not bounded at all --
+    is the sharpest thing the edge layer has to say, so it is stated where the figures are.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table, chain)
+    doc = _normalized("MUON_COST.md")
+    assert "direction unknown" in doc
+    assert "every conversion it omits is <= 1" in doc
+    blocked = gen.blocked_extensions(chain)
+    assert blocked, "nothing is blocked, so the clause would pass vacuously"
+    assert int(H["n_blocked_extensions"]) == len(blocked)
+    for e in blocked:
+        assert not e.is_sourced and e.has_factor
+        assert f"`{e.edge_id}`" in doc
+    assert " ".join(H["blocked_clause"].split()) in doc
+    # and the marker is not decoration: a sourced partial path earns '>=', an arbitrary one does not
+    beam = table[gen.CHAIN_ANCHOR_ID].chain_point()
+    assert mucost.compose_path(beam, [chain["eta_acc_kovach_site"]]).render().startswith(">= ")
+    assert not mucost.compose_path(beam, [chain["delivery_kelly_eta_mu"]]).render().startswith(">= ")

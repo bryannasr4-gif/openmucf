@@ -48,6 +48,11 @@ CLAIM_PATHS = (
     # the shipped data's own free text, the CC-BY data-package descriptor, and the two generated
     # documents that restate ledger claims, together with the generators that emit them.
     "openmucf/data/muon_cost.csv",
+    # The edge table and its schema, added when they shipped: they are the same kind of prose home
+    # as the node table and its schema above, and a guard that watched one and not the other would
+    # be blindest exactly where the newest claims are.
+    "openmucf/data/muon_cost_chain.csv",
+    "openmucf/data/muon_cost_chain.schema.json",
     "datapackage.json",
     "FINDINGS.md",
     "NEUTRONOMICS.md",

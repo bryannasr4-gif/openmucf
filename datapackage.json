@@ -151,6 +151,37 @@
       }
     },
     {
+      "name": "muon-cost-chain",
+      "path": "openmucf/data/muon_cost_chain.csv",
+      "profile": "tabular-data-resource",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "title": "Muon-cost chain edges: the conversions between points of the cost grid",
+      "description": "The EDGES that join the nodes of muon-cost.csv. muon_cost.csv holds one cost per source at one (stage, numeraire) coordinate; this resource holds the conversions between coordinates, so that one source can supply several conversions and one conversion can carry COMPETING values from different sources. An edge moves exactly one axis and writes '*' on the other, which reads 'any': a delivery fraction is dimensionless and holds in any numeraire, and an accelerator efficiency applies at any stage. A factor appears only where a primary states it; where no source read states the conversion the row carries evidence_status 'absent' and no number at all. Licensed CC-BY-4.0 with the rest of this package (see LICENSE-DATA); the quoted locator text is short attributed quotation from the cited primaries.",
+      "schema": {
+        "primaryKey": "edge_id",
+        "fields": [
+          {"name": "edge_id", "type": "string", "description": "Unique identifier for this conversion as stated by one source. Two sources giving the same conversion are two rows, never one averaged row."},
+          {"name": "from_stage", "type": "string", "description": "Chain stage the conversion starts at, or '*' on a numeraire edge, which applies at any stage.", "constraints": {"enum": ["produced", "captured", "transported", "moderated", "stopped_useful_in_dt", "*"]}},
+          {"name": "from_numeraire", "type": "string", "description": "Units counted in before the conversion, or '*' on a stage edge, whose factor is dimensionless.", "constraints": {"enum": ["beam_kinetic", "electrical_minimal", "electrical_site", "*"]}},
+          {"name": "to_stage", "type": "string", "description": "Chain stage the conversion ends at; strictly later than from_stage on a stage edge, and '*' on a numeraire edge.", "constraints": {"enum": ["produced", "captured", "transported", "moderated", "stopped_useful_in_dt", "*"]}},
+          {"name": "to_numeraire", "type": "string", "description": "Units counted in after the conversion; different from from_numeraire on a numeraire edge, and '*' on a stage edge.", "constraints": {"enum": ["beam_kinetic", "electrical_minimal", "electrical_site", "*"]}},
+          {"name": "factor", "type": "number", "description": "The conversion factor as the source states it, in (0, 1]; a cost is DIVIDED by it. Empty, and only empty, where evidence_status is 'absent'.", "constraints": {"required": false}},
+          {"name": "factor_lo", "type": "number", "description": "Lower end of an interval the source states for the factor, where it states one.", "constraints": {"required": false}},
+          {"name": "factor_hi", "type": "number", "description": "Upper end of an interval the source states for the factor, where it states one.", "constraints": {"required": false}},
+          {"name": "bias_direction", "type": "string", "description": "Which way this edge can move a composed cost away from the truth: 'none' iff the factor is sourced, 'lower' where using the row as written can only understate the cost, 'unknown' where the source declares its value arbitrary and gives no direction.", "constraints": {"enum": ["lower", "unknown", "none"]}},
+          {"name": "charge_basis", "type": "string", "description": "Charge the factor was stated for; '*' where the conversion is charge-agnostic. A muCF chain composes only 'mu_minus' and '*'.", "constraints": {"enum": ["mu_minus", "mixed", "mu_plus_only", "*"]}},
+          {"name": "conditions", "type": "string", "description": "Operating conditions the factor holds at (facility, beam, target, load point).", "constraints": {"required": false}},
+          {"name": "evidence_status", "type": "string", "description": "Provenance grade of this factor, on the same closed enum as muon_cost.csv's column of the same name. The last three are NOT sourced: a path composing one is a bound, never a value.", "constraints": {"enum": ["primary", "primary_cited", "derived_here", "author_declared_arbitrary", "assumption", "absent"]}},
+          {"name": "source_bibkey", "type": "string", "description": "Key(s) resolvable in references.bib. On a stated factor it names the source of the number; on an 'absent' row it names the sources read and found not to state the conversion.", "constraints": {"required": false}},
+          {"name": "source_locator", "type": "string", "description": "Where inside the source the factor sits, quoting the stating sentence where its wording is what grades the row.", "constraints": {"required": false}},
+          {"name": "derivation", "type": "string", "description": "Every normalization step verbatim, and every reading of ours the source does not itself state, in particular which chain node a source's own phrase was mapped onto."},
+          {"name": "notes", "type": "string", "description": "Competing values for the same edge, what would source an absent one, and any caveat a reader needs before composing the row.", "constraints": {"required": false}}
+        ]
+      }
+    },
+    {
       "name": "yamashita-kino-lambda-c-T",
       "path": "openmucf/data/yamashita_kino_lc_T.csv",
       "profile": "tabular-data-resource",

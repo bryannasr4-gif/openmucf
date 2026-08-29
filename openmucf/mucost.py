@@ -218,6 +218,45 @@ class ChainValue:
             provenance=self.provenance + (label,),
         )
 
+    def to_numeraire(self, factor: float, to_numeraire: str, status: str, label: str) -> ChainValue:
+        """Change the UNITS the figure is counted in, dividing by a sub-unity conversion ``factor``.
+
+        The twin of :meth:`compose` on the other axis, under the same discipline: reject an unknown
+        numeraire, reject a no-op, require the factor in (0, 1], and carry the factor's own
+        ``status`` forward so an unsourced conversion permanently marks the result a bound. The
+        **stage is unchanged** -- dividing by an accelerator efficiency converts beam energy to
+        electrical energy and applies no collection, moderation or stopping correction, which is
+        exactly why wall-plug is a numeraire and not a chain node.
+
+        Without this method the one quantity the two axes exist to make expressible -- electrical
+        energy per muon at a stated stage -- could only leave the type system as a bare float
+        (:attr:`MuonCost.wallplug_lower_bound_GeV`), losing its statuses, its provenance and its
+        bound flag on the way out.
+        """
+        if to_numeraire not in VALID_NUMERAIRE or not to_numeraire:
+            raise BasisError(
+                f"cannot convert to numeraire {to_numeraire!r}: expected one of "
+                f"{sorted(VALID_NUMERAIRE - {''})}"
+            )
+        if to_numeraire == self.numeraire:
+            raise BasisError(
+                f"a numeraire conversion must change the numeraire: {self.numeraire!r} -> "
+                f"{to_numeraire!r} converts nothing, and silently applying a factor that changes "
+                f"no units would double-count it"
+            )
+        if status not in VALID_EVIDENCE_STATUS:
+            raise BasisError(f"unknown evidence_status {status!r}")
+        if not 0.0 < factor <= 1.0:
+            raise BasisError(f"a numeraire conversion factor must lie in (0, 1]; got {factor!r}")
+        return ChainValue(
+            value_GeV=self.value_GeV / factor,
+            stage=self.stage,
+            numeraire=to_numeraire,
+            charge_basis=self.charge_basis,
+            statuses=self.statuses + (status,),
+            provenance=self.provenance + (label,),
+        )
+
 
 @dataclass(frozen=True)
 class MuonCost:
@@ -280,6 +319,15 @@ class MuonCost:
         by construction, so dividing by ``eta_acc`` again would double-count it and return a number
         that is not a cost of anything. Refusing is the same discipline
         :meth:`ChainValue.render_value` applies to an unsourced chain.
+
+        **This is the float path, and it is the weaker one.** It returns a magnitude with no status,
+        no provenance and no bound flag; the typed conversion is
+        :meth:`ChainValue.to_numeraire`, which is what the edge table
+        (``muon_cost_chain.csv``) composes. The property does not delegate to it because the typed
+        call needs two things this row does not carry -- which electrical denominator the source's
+        own ``eta_acc`` lands on, and that factor's evidence status -- and both live per edge in the
+        edge table rather than per row here. The two are instead pinned against each other in
+        ``tests/test_mucost.py``, so the float path cannot drift from the typed one.
         """
         if math.isnan(self.eta_acc_assumption) or not self.has_normalized:
             return float("nan")
@@ -896,3 +944,488 @@ def load_muon_cost(
     if errors:
         raise ValueError("muon-cost ledger validation failed:\n  " + "\n  ".join(errors))
     return MuonCostTable(rows)
+
+
+# ==================================================================================================
+# The EDGE layer: the conversions that JOIN the cost grid's points.
+#
+# ``muon_cost.csv`` holds NODES -- one row per source, a cost at one (stage, numeraire) coordinate.
+# This layer holds the EDGES between them, in ``muon_cost_chain.csv``. They are two tables and not
+# one because one source supplies several conversions and one conversion takes COMPETING values from
+# different sources: bolting factor columns onto the node table would force exactly one path per
+# source and make a competing evaluation of the same conversion inexpressible.
+# ==================================================================================================
+
+MUON_COST_CHAIN_CSV = DATA / "muon_cost_chain.csv"
+MUON_COST_CHAIN_SCHEMA = DATA / "muon_cost_chain.schema.json"
+
+#: The wildcard an edge writes on the axis it does NOT move, read as "any". A delivery fraction is
+#: dimensionless and holds in any numeraire; an accelerator efficiency converts beam energy to
+#: electrical energy at any stage. That second fact is the same one that makes wall-plug a numeraire
+#: rather than a chain node, so writing the unmoved axis as a fixed value would re-introduce, in the
+#: edge table, exactly the 1-D collapse the two axes exist to prevent.
+ANY = "*"
+
+VALID_EDGE_STAGE = set(MUCF_CHAIN) | {ANY}
+VALID_EDGE_NUMERAIRE = (VALID_NUMERAIRE - {""}) | {ANY}
+VALID_EDGE_CHARGE_BASIS = (VALID_CHARGE_BASIS - {""}) | {ANY}
+
+#: How an edge can move a composed cost away from the truth. ``none`` iff its factor is sourced;
+#: ``lower`` where using the row as written can only understate the cost; ``unknown`` where the
+#: source declares its own value arbitrary and gives no direction.
+VALID_BIAS_DIRECTION = frozenset({"lower", "unknown", "none"})
+
+#: Charge bases a muCF chain may compose. ``mu_minus`` because that is what muCF needs, and
+#: :data:`ANY` because a charge-agnostic conversion (a grid-to-beam efficiency counts no muons)
+#: prices mu- as correctly as anything else. ``mixed`` and ``mu_plus_only`` are refused.
+COMPOSABLE_CHARGE_BASIS = frozenset({"mu_minus", ANY})
+
+STAGE_EDGE = "stage"
+NUMERAIRE_EDGE = "numeraire"
+
+
+@dataclass(frozen=True)
+class ChainEdge:
+    """One conversion between two points of the cost grid, exactly as some source states it.
+
+    An edge moves **exactly one axis**: a stage edge advances along :data:`MUCF_CHAIN` and leaves the
+    numeraire alone, a numeraire edge converts the units and leaves the stage alone. The unmoved axis
+    is :data:`ANY`. Where no source read here states a conversion the row carries
+    ``evidence_status='absent'`` and **no number at all** -- :attr:`has_factor` is False and
+    :meth:`apply_to` refuses, because a plausible invented factor is the one failure this table
+    exists to prevent.
+    """
+
+    edge_id: str
+    from_stage: str
+    from_numeraire: str
+    to_stage: str
+    to_numeraire: str
+    factor: float  # NaN iff evidence_status is 'absent'
+    factor_lo: float  # NaN unless the source states an interval
+    factor_hi: float
+    bias_direction: str
+    charge_basis: str
+    conditions: str
+    evidence_status: str
+    source_bibkey: str
+    source_locator: str
+    derivation: str
+    notes: str
+
+    @property
+    def kind(self) -> str:
+        """``'stage'`` or ``'numeraire'`` -- which axis this edge moves. The loader has already
+        rejected an edge that moves both or neither, so exactly one of the two holds here."""
+        return NUMERAIRE_EDGE if self.from_stage == ANY else STAGE_EDGE
+
+    @property
+    def has_factor(self) -> bool:
+        return not math.isnan(self.factor)
+
+    @property
+    def is_sourced(self) -> bool:
+        """True iff the factor's evidence status is one that carries real provenance."""
+        return self.evidence_status in SOURCED_STATUSES
+
+    @property
+    def spans(self) -> tuple[str, ...]:
+        """The chain stages this edge crosses, for a stage edge; empty for a numeraire edge.
+
+        A source that collapses several conversions into one factor produces one edge spanning
+        several stages, and the stages it skips are then simply never separately sourced -- which is
+        a fact about the literature that the coverage table reports rather than hides.
+        """
+        if self.kind == NUMERAIRE_EDGE:
+            return ()
+        lo = MUCF_CHAIN.index(self.from_stage)
+        hi = MUCF_CHAIN.index(self.to_stage)
+        return MUCF_CHAIN[lo + 1 : hi + 1]
+
+    def applies_to(self, value: ChainValue) -> bool:
+        """True iff this edge starts where ``value`` currently sits, on the axis it moves."""
+        if self.kind == NUMERAIRE_EDGE:
+            return value.numeraire == self.from_numeraire
+        return value.stage == self.from_stage
+
+    def apply_to(self, value: ChainValue) -> ChainValue:
+        """Compose this edge onto ``value``, refusing every way the join could misrepresent it."""
+        if not self.has_factor:
+            raise BasisError(
+                f"edge {self.edge_id!r} carries no factor (evidence_status "
+                f"{self.evidence_status!r}): there is nothing to compose, and supplying a plausible "
+                f"number here is the failure this table exists to prevent"
+            )
+        if self.charge_basis not in COMPOSABLE_CHARGE_BASIS:
+            raise BasisError(
+                f"edge {self.edge_id!r} is stated for charge basis {self.charge_basis!r} and may "
+                f"not enter a muCF chain, which needs mu-"
+            )
+        if not self.applies_to(value):
+            raise BasisError(
+                f"edge {self.edge_id!r} does not join here: it starts at "
+                f"({self.from_stage}, {self.from_numeraire}) and the figure sits at "
+                f"({value.stage}, {value.numeraire})"
+            )
+        if self.kind == NUMERAIRE_EDGE:
+            return value.to_numeraire(
+                self.factor, self.to_numeraire, self.evidence_status, self.edge_id
+            )
+        return value.compose(self.factor, self.to_stage, self.evidence_status, self.edge_id)
+
+
+class ChainEdgeTable:
+    """Validated, ordered collection of :class:`ChainEdge` rows, keyed by ``edge_id``."""
+
+    def __init__(self, edges: list[ChainEdge]):
+        self._edges = list(edges)
+        self._by_id = {e.edge_id: e for e in edges}
+
+    def __len__(self) -> int:
+        return len(self._edges)
+
+    def __iter__(self):
+        return iter(self._edges)
+
+    def __getitem__(self, edge_id: str) -> ChainEdge:
+        return self._by_id[edge_id]
+
+    def __contains__(self, edge_id: str) -> bool:
+        return edge_id in self._by_id
+
+    def ids(self) -> list[str]:
+        return [e.edge_id for e in self._edges]
+
+    def of_kind(self, kind: str) -> list[ChainEdge]:
+        if kind not in (STAGE_EDGE, NUMERAIRE_EDGE):
+            raise KeyError(f"unknown edge kind {kind!r}; expected {STAGE_EDGE!r} or {NUMERAIRE_EDGE!r}")
+        return [e for e in self._edges if e.kind == kind]
+
+    def sourced(self) -> list[ChainEdge]:
+        return [e for e in self._edges if e.is_sourced]
+
+    def competing(self) -> dict[tuple[str, str, str, str], list[ChainEdge]]:
+        """Coordinate -> the edges that state a factor for it, for every coordinate with more than
+        one. Two sources giving the same conversion are the point of this table, so they are
+        enumerable rather than reconciled: no mean is ever formed and no value is preferred."""
+        by_coord: dict[tuple[str, str, str, str], list[ChainEdge]] = {}
+        for e in self._edges:
+            if not e.has_factor:
+                continue
+            by_coord.setdefault(
+                (e.from_stage, e.from_numeraire, e.to_stage, e.to_numeraire), []
+            ).append(e)
+        return {k: v for k, v in by_coord.items() if len(v) > 1}
+
+
+@dataclass(frozen=True)
+class ChainPath:
+    """A composed sequence of edges, its terminal figure, and which way that figure can be wrong.
+
+    :attr:`bias_direction` is the reason this class exists rather than a bare
+    :class:`ChainValue`. ``ChainValue.bias_direction`` grades a figure by whether it is a bound at
+    all, and every factor a chain OMITS is bounded above by 1, so an omission can only understate the
+    cost. A factor a source states but calls arbitrary is different in kind: it can move the figure
+    either way, so a path through it is not a one-sided bound and must not be printed with a ">="
+    marker. Only the edges know that, so only a path can answer it.
+    """
+
+    start: ChainValue
+    edges: tuple[ChainEdge, ...]
+    value: ChainValue
+
+    @property
+    def edge_ids(self) -> tuple[str, ...]:
+        return tuple(e.edge_id for e in self.edges)
+
+    @property
+    def bias_direction(self) -> str:
+        """``'unknown'`` if any edge is, else ``'lower'`` if the figure is a bound, else ``'none'``."""
+        if any(e.bias_direction == "unknown" for e in self.edges):
+            return "unknown"
+        return "lower" if self.value.is_bound else "none"
+
+    def why_bound(self) -> str:
+        """The composed figure's reason for being a bound, plus any direction-unknown edge."""
+        why = self.value.why_bound()
+        unknown = [e.edge_id for e in self.edges if e.bias_direction == "unknown"]
+        if unknown:
+            why = (why + "; " if why else "") + "direction unknown: " + ", ".join(unknown)
+        return why
+
+    def render(self, digits: int = 2) -> str:
+        """The figure with the marker its bias actually earns. Always safe to print.
+
+        Three forms and no fourth: a one-sided lower bound gets ">=", a figure built through a
+        factor whose own authors call it arbitrary gets no inequality at all (it is not a bound in
+        either direction), and a fully sourced complete chain prints plainly.
+        """
+        bias = self.bias_direction
+        if bias == "lower":
+            return f">= {self.value.value_GeV:.{digits}f} GeV"
+        if bias == "unknown":
+            return f"{self.value.value_GeV:.{digits}f} GeV (direction unknown)"
+        return f"{self.value.value_GeV:.{digits}f} GeV"
+
+    def render_value(self, digits: int = 2) -> str:
+        """The figure as a plain value. **Raises** :class:`BasisError` unless the path earns it."""
+        if self.bias_direction != "none":
+            raise BasisError(
+                f"refusing to render a figure graded {self.bias_direction!r} as a value "
+                f"({self.value.value_GeV:.{digits}f} GeV via "
+                f"{' -> '.join(self.edge_ids) or 'no edges'}): {self.why_bound()}"
+            )
+        return self.value.render_value(digits)
+
+    def describe(self) -> str:
+        """``start -> edge -> edge`` -- the provenance of the figure, in composition order."""
+        return " -> ".join((self.start.provenance[0] if self.start.provenance else "?",) + self.edge_ids)
+
+
+def compose_path(start: ChainValue, edges) -> ChainPath:
+    """Compose ``edges`` onto ``start`` in order, enforcing every join rule.
+
+    The joins must match on the axis each edge moves; ``charge_basis`` must be composable at every
+    step and at the start; an edge may appear at most once; and no path may return to a
+    (stage, numeraire) coordinate it has already left. An edge with no factor cannot be composed at
+    all. Any ``author_declared_arbitrary``, ``assumption`` or ``absent`` status carried in makes the
+    terminal figure a BOUND, and :meth:`ChainValue.render_value` then refuses it.
+    """
+    if start.charge_basis not in COMPOSABLE_CHARGE_BASIS:
+        raise BasisError(
+            f"a muCF chain must be counted on mu-; the starting figure is "
+            f"{start.charge_basis!r} and prices something else"
+        )
+    current = start
+    used: list[ChainEdge] = []
+    seen_ids: set[str] = set()
+    seen_coords = {(start.stage, start.numeraire)}
+    for edge in edges:
+        if edge.edge_id in seen_ids:
+            raise BasisError(
+                f"edge {edge.edge_id!r} appears twice on one path: applying a conversion factor "
+                f"more than once double-counts it"
+            )
+        current = edge.apply_to(current)
+        coord = (current.stage, current.numeraire)
+        if coord in seen_coords:
+            raise BasisError(
+                f"edge {edge.edge_id!r} returns the path to ({coord[0]}, {coord[1]}), a coordinate "
+                f"it has already left"
+            )
+        seen_coords.add(coord)
+        seen_ids.add(edge.edge_id)
+        used.append(edge)
+    return ChainPath(start=start, edges=tuple(used), value=current)
+
+
+def enumerate_chain_paths(start: ChainValue, edges) -> list[ChainPath]:
+    """Every MAXIMAL path out of ``start``, one per distinct edge SET, in deterministic order.
+
+    Maximal means no further edge in the table joins. Deduplicated by edge set rather than by order
+    because composition is multiplication and therefore commutative: the same edges applied in a
+    different order give the same figure, and listing that twice would report one result as two. The
+    first order found, in file order, is the representative kept.
+    """
+    results: dict[frozenset, ChainPath] = {}
+
+    def walk(path: ChainPath) -> None:
+        extensions = []
+        for edge in edges:
+            if edge.edge_id in path.edge_ids or not edge.has_factor:
+                continue
+            if edge.charge_basis not in COMPOSABLE_CHARGE_BASIS or not edge.applies_to(path.value):
+                continue
+            try:
+                extensions.append(compose_path(start, path.edges + (edge,)))
+            except BasisError:
+                continue
+        if not extensions:
+            results.setdefault(frozenset(path.edge_ids), path)
+            return
+        for nxt in extensions:
+            walk(nxt)
+
+    walk(compose_path(start, ()))
+    return list(results.values())
+
+
+def load_muon_cost_chain(
+    csv_path: Path = MUON_COST_CHAIN_CSV,
+    schema_path: Path = MUON_COST_CHAIN_SCHEMA,
+    check_refs: bool = True,
+) -> ChainEdgeTable:
+    """Load + validate the edge table. Raises ``ValueError`` listing every problem, like
+    :func:`load_muon_cost`, and validates ``evidence_status`` against the same closed enum."""
+    schema = json.loads(Path(schema_path).read_text()) if Path(schema_path).exists() else {}
+    required = schema.get("required", [])
+    known_keys = bibkeys() if check_refs else None
+
+    edges: list[ChainEdge] = []
+    seen_ids: set[str] = set()
+    errors: list[str] = []
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        for i, row in enumerate(csv.DictReader(f)):
+            eid = (row.get("edge_id") or "?").strip()
+            for col in required:
+                if not (row.get(col) or "").strip():
+                    errors.append(f"row {i} ({eid}): missing required '{col}'")
+            from_stage = (row.get("from_stage") or "").strip()
+            to_stage = (row.get("to_stage") or "").strip()
+            from_num = (row.get("from_numeraire") or "").strip()
+            to_num = (row.get("to_numeraire") or "").strip()
+            for name, got, allowed in (
+                ("from_stage", from_stage, VALID_EDGE_STAGE),
+                ("to_stage", to_stage, VALID_EDGE_STAGE),
+                ("from_numeraire", from_num, VALID_EDGE_NUMERAIRE),
+                ("to_numeraire", to_num, VALID_EDGE_NUMERAIRE),
+            ):
+                if got not in allowed:
+                    errors.append(f"row {i} ({eid}): bad {name} '{got}' (expected {sorted(allowed)})")
+            moves_stage = from_stage != ANY or to_stage != ANY
+            moves_num = from_num != ANY or to_num != ANY
+            if moves_stage and moves_num:
+                errors.append(
+                    f"row {i} ({eid}): an edge moves exactly one axis, but this one moves both "
+                    f"(stage {from_stage}->{to_stage}, numeraire {from_num}->{to_num}); a source "
+                    f"that states a combined factor states two edges"
+                )
+            elif not moves_stage and not moves_num:
+                errors.append(f"row {i} ({eid}): an edge must move one axis; this one moves neither")
+            elif moves_stage:
+                if from_stage in VALID_EDGE_STAGE and to_stage in VALID_EDGE_STAGE:
+                    if from_stage == ANY or to_stage == ANY:
+                        errors.append(
+                            f"row {i} ({eid}): a stage edge needs both endpoints on the chain "
+                            f"(got '{from_stage}' -> '{to_stage}')"
+                        )
+                    elif MUCF_CHAIN.index(to_stage) <= MUCF_CHAIN.index(from_stage):
+                        errors.append(
+                            f"row {i} ({eid}): a stage edge must advance the chain "
+                            f"('{from_stage}' -> '{to_stage}')"
+                        )
+                if from_num != ANY or to_num != ANY:
+                    errors.append(
+                        f"row {i} ({eid}): a stage factor is dimensionless and holds in any "
+                        f"numeraire, so both numeraire cells must be '{ANY}'"
+                    )
+            else:
+                if from_num in VALID_EDGE_NUMERAIRE and to_num in VALID_EDGE_NUMERAIRE:
+                    if from_num == ANY or to_num == ANY:
+                        errors.append(
+                            f"row {i} ({eid}): a numeraire edge needs both endpoints named "
+                            f"(got '{from_num}' -> '{to_num}')"
+                        )
+                    elif from_num == to_num:
+                        errors.append(
+                            f"row {i} ({eid}): a numeraire edge must change the numeraire "
+                            f"('{from_num}' -> '{to_num}' converts nothing)"
+                        )
+                if from_stage != ANY or to_stage != ANY:
+                    errors.append(
+                        f"row {i} ({eid}): a numeraire conversion applies at any stage, so both "
+                        f"stage cells must be '{ANY}'"
+                    )
+            status = (row.get("evidence_status") or "").strip()
+            if status not in VALID_EVIDENCE_STATUS:
+                errors.append(
+                    f"row {i} ({eid}): bad evidence_status '{status}' "
+                    f"(expected {sorted(VALID_EVIDENCE_STATUS)})"
+                )
+            factor, factor_ok = _float_cell(row.get("factor", ""), i, eid, "factor", errors)
+            lo, lo_ok = _float_cell(row.get("factor_lo", ""), i, eid, "factor_lo", errors)
+            hi, hi_ok = _float_cell(row.get("factor_hi", ""), i, eid, "factor_hi", errors)
+            has_factor = factor_ok and not math.isnan(factor)
+            if has_factor and not 0.0 < factor <= 1.0:
+                errors.append(f"row {i} ({eid}): factor must lie in (0, 1]; got {factor}")
+            # A row with no source states no number, and a row with a number states a source. The
+            # two halves of that rule are the whole point of the 'absent' status: it records the
+            # hole rather than filling it.
+            if status == "absent" and has_factor:
+                errors.append(
+                    f"row {i} ({eid}): evidence_status 'absent' means no source read here states "
+                    f"the conversion, so the factor cell must be empty (got {factor})"
+                )
+            if status and status != "absent" and factor_ok and not has_factor:
+                errors.append(
+                    f"row {i} ({eid}): evidence_status '{status}' claims a stated factor, so the "
+                    f"factor cell may not be empty"
+                )
+            for name, val, ok in (("factor_lo", lo, lo_ok), ("factor_hi", hi, hi_ok)):
+                if ok and not math.isnan(val):
+                    if not 0.0 < val <= 1.0:
+                        errors.append(f"row {i} ({eid}): {name} must lie in (0, 1]; got {val}")
+                    if status == "absent":
+                        errors.append(
+                            f"row {i} ({eid}): an 'absent' row carries no number, so {name} must "
+                            f"be empty (got {val})"
+                        )
+            if lo_ok and hi_ok and not math.isnan(lo) and not math.isnan(hi) and lo > hi:
+                errors.append(f"row {i} ({eid}): factor_lo {lo} exceeds factor_hi {hi}")
+            if has_factor:
+                if lo_ok and not math.isnan(lo) and lo > factor:
+                    errors.append(f"row {i} ({eid}): factor {factor} lies below factor_lo {lo}")
+                if hi_ok and not math.isnan(hi) and hi < factor:
+                    errors.append(f"row {i} ({eid}): factor {factor} lies above factor_hi {hi}")
+            bias = (row.get("bias_direction") or "").strip()
+            if bias not in VALID_BIAS_DIRECTION:
+                errors.append(
+                    f"row {i} ({eid}): bad bias_direction '{bias}' "
+                    f"(expected {sorted(VALID_BIAS_DIRECTION)})"
+                )
+            elif status in VALID_EVIDENCE_STATUS:
+                sourced = status in SOURCED_STATUSES
+                if sourced != (bias == "none"):
+                    errors.append(
+                        f"row {i} ({eid}): bias_direction '{bias}' contradicts evidence_status "
+                        f"'{status}' -- a sourced factor biases nothing and an unsourced one always "
+                        f"biases somehow"
+                    )
+            charge = (row.get("charge_basis") or "").strip()
+            if charge not in VALID_EDGE_CHARGE_BASIS:
+                errors.append(
+                    f"row {i} ({eid}): bad charge_basis '{charge}' "
+                    f"(expected {sorted(VALID_EDGE_CHARGE_BASIS)})"
+                )
+            bibkey_raw = (row.get("source_bibkey") or "").strip()
+            locator = (row.get("source_locator") or "").strip()
+            if status and status != "absent" and not (bibkey_raw and locator):
+                errors.append(
+                    f"row {i} ({eid}): a stated factor needs both a source_bibkey and a "
+                    f"source_locator; every edge value comes from a primary, cited where it sits"
+                )
+            if check_refs and known_keys is not None:
+                for key in re.split(r"[;,]", bibkey_raw):
+                    key = key.strip()
+                    if key and key not in known_keys:
+                        errors.append(f"row {i} ({eid}): source_bibkey '{key}' not in references.bib")
+            try:
+                edge = ChainEdge(
+                    edge_id=eid,
+                    from_stage=from_stage,
+                    from_numeraire=from_num,
+                    to_stage=to_stage,
+                    to_numeraire=to_num,
+                    factor=factor,
+                    factor_lo=lo,
+                    factor_hi=hi,
+                    bias_direction=bias,
+                    charge_basis=charge,
+                    conditions=(row.get("conditions") or "").strip(),
+                    evidence_status=status,
+                    source_bibkey=bibkey_raw,
+                    source_locator=locator,
+                    derivation=(row.get("derivation") or "").strip(),
+                    notes=(row.get("notes") or "").strip(),
+                )
+            except Exception as exc:  # noqa: BLE001
+                errors.append(f"row {i} ({eid}): parse error {exc}")
+                continue
+            if eid in seen_ids:
+                errors.append(f"duplicate edge_id '{eid}'")
+            seen_ids.add(eid)
+            edges.append(edge)
+
+    if errors:
+        raise ValueError("muon-cost chain validation failed:\n  " + "\n  ".join(errors))
+    return ChainEdgeTable(edges)

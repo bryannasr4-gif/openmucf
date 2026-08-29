@@ -32,7 +32,7 @@ import zlib
 from pathlib import Path
 
 from openmucf import mucost, provenance
-from openmucf.mucost import MUON_COST_CSV
+from openmucf.mucost import MUON_COST_CHAIN_CSV, MUON_COST_CSV
 
 # The disarmament sentence -- goes VERBATIM in the figure caption. Em-dash intentional.
 DISARMAMENT = (
@@ -99,6 +99,11 @@ KOUCHEN_CONVENTIONAL_COST_GEV = 5.0
 
 #: The rows the Headline names as design-study anchors, in the order it names them.
 HEADLINE_ANCHOR_IDS = ("kelly_hart_rose_2021", "bertin_1987", "eliezer_henis_1994")
+
+#: The ledger row the terminal-figure set is composed FROM. Not a preference among rows: it is the
+#: only row whose own source states any conversion at all, so it is the only starting point for which
+#: a composed figure uses that row's own literature rather than borrowing another paper's factor.
+CHAIN_ANCHOR_ID = "kelly_hart_rose_2021"
 
 
 def _join(items: list[str]) -> str:
@@ -186,8 +191,12 @@ def _fmt_med(v: float) -> str:
     return f"{v:g}"
 
 
-def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
+def build_headline(
+    table: mucost.MuonCostTable, chain: mucost.ChainEdgeTable | None = None
+) -> dict[str, str]:
     """Single source of truth: the formatted strings shared by MUON_COST.md and the manifest."""
+    if chain is None:
+        chain = mucost.load_muon_cost_chain()
     H: dict[str, str] = {}
     # per-row normalized display (pinned rows only; Jandel has no value)
     for r in table:
@@ -344,6 +353,142 @@ def build_headline(table: mucost.MuonCostTable) -> dict[str, str]:
                  "its" if len(mu_plus_only) == 1 else "their",
              )
     )
+
+    # ---- the EDGE layer: what the conversions themselves are, and which of them are sourced ----
+    # The headline sentence below is DERIVED from the two tables at generation time and not typed.
+    # A typed version of it would keep asserting a coverage the CSVs had moved out from under, which
+    # is the same defect the derived membership and basis sentences above already retired one layer
+    # up; and the sentence is the one a reader is most likely to quote, so it is the one that must
+    # not be able to go stale.
+    cov = edge_coverage_rows(table, chain)
+    links = [c for c in cov if c["kind"] == mucost.STAGE_EDGE]
+    numeraire_convs = [c for c in cov if c["kind"] == mucost.NUMERAIRE_EDGE]
+    sourced = [c for c in cov if c["sourced"]]
+    sourced_links = [c for c in links if c["sourced"]]
+    H["n_chain_edges"] = str(len(chain))
+    H["n_absent_edges"] = str(sum(1 for e in chain if not e.has_factor))
+    H["n_required_conversions"] = str(len(cov))
+    H["n_stage_conversions"] = str(len(links))
+    H["n_numeraire_conversions"] = str(len(numeraire_convs))
+    H["n_sourced_conversions"] = str(len(sourced))
+    H["n_sourced_stage_conversions"] = str(len(sourced_links))
+
+    # which cost sources state their own beam-to-electrical conversion, read off the ledger
+    carriers = [r for r in table if not math.isnan(r.eta_acc_assumption)]
+    carrier_names = _join(
+        sorted({LABELS[r.source_id] for r in carriers if r.numeraire == mucost.BEAM_KINETIC})
+    )
+    carrier_keys = {r.source_bibkey.split(";")[0].strip() for r in carriers}
+    # ...and whether those same sources state a delivery factor they call unsourced
+    declared_delivery = [
+        e for e in chain
+        if e.kind == mucost.STAGE_EDGE
+        and e.has_factor
+        and not e.is_sourced
+        and e.source_bibkey.split(";")[0].strip() in carrier_keys
+    ]
+    n_carriers = len({r.source_bibkey.split(";")[0].strip() for r in carriers})
+
+    if sourced_links:
+        links_clause = (
+            f"**{len(sourced_links)} of the {len(links)} stage advances** {'is' if len(sourced_links) == 1 else 'are'} "
+            f"sourced: {_join([c['label'] for c in sourced_links])}"
+        )
+    else:
+        links_clause = (
+            f"**not one of the {len(links)} stage advances the chain requires is sourced by any "
+            f"primary read here**"
+        )
+    kind_clause = (
+        "every one of them is a numeraire change"
+        if sourced and all(c["kind"] == mucost.NUMERAIRE_EDGE for c in sourced)
+        else _join([c["label"] for c in sourced]) or "none of them"
+    )
+    one_carrier = n_carriers == 1
+    one_delivery = len(declared_delivery) == 1
+    delivery_clause = (
+        ""
+        if not declared_delivery
+        else (
+            f" {'That source' if one_carrier else 'Those sources'} "
+            f"also state{'s' if one_carrier else ''} {len(declared_delivery)} of the chain's "
+            f"delivery {'factor' if one_delivery else 'factors'} "
+            f"({_join([f'`{e.edge_id}`' for e in declared_delivery])}), and "
+            f"grade{'s' if one_carrier else ''} "
+            f"{'it' if one_delivery else 'every one of them'} "
+            f"{_join(sorted({f'`{e.evidence_status}`' for e in declared_delivery}))} -- so composing "
+            f"{'it' if one_delivery else 'them'} yields a bound and never a value."
+        )
+    )
+    H["chain_coverage_sentence"] = (
+        f"Of the {len(cov)} conversions a fully-sourced chain needs -- {len(links)} stage advances "
+        f"along the muCF chain and {len(numeraire_convs)} numeraire "
+        f"{'change' if len(numeraire_convs) == 1 else 'changes'} out of `beam_kinetic` -- "
+        f"**{len(sourced)}** carry a factor from a primary read here, and {kind_clause}: "
+        f"{links_clause}. Exactly {n_carriers} cost "
+        f"{'source' if n_carriers == 1 else 'sources'} in this compilation "
+        f"({carrier_names}) {'states its' if n_carriers == 1 else 'state their'} own "
+        f"beam-to-electrical conversion.{delivery_clause}"
+    )
+
+    # the figures the competing conversions lead to: a SET, with its provenance. Sourced paths only
+    # -- the document prints no figure composed through a factor its own authors call arbitrary.
+    paths = sourced_paths(table, chain)
+    H["n_sourced_paths"] = str(len(paths))
+    for i, p in enumerate(paths, 1):
+        H[f"sourced_path_{i}"] = p.render()
+        H[f"sourced_path_coord_{i}"] = f"{p.value.stage} / {p.value.numeraire}"
+    blocked = blocked_extensions(chain)
+    # NOT every blocked conversion is direction-unknown, and saying so of all of them would be the
+    # overclaim this layer exists to catch: a factor a source states at its ceiling while saying the
+    # truth lies below it still biases one way. The two are separated by their own bias_direction.
+    undirected = [e for e in blocked if e.bias_direction == "unknown"]
+    H["n_blocked_extensions"] = str(len(blocked))
+    blocked_clause = (
+        "No stated conversion in the edge table is barred from these paths."
+        if not blocked
+        else "{} the chain could be continued with {} stated but not sourced: {}. None of the "
+             "figures here is composed through {}.".format(
+                 "Beyond that," if len(blocked) == 1 else "Beyond those,",
+                 "one conversion" if len(blocked) == 1 else f"{len(blocked)} conversions",
+                 _join([
+                     f"`{e.edge_id}` ({e.evidence_status}, bias `{e.bias_direction}`)"
+                     for e in blocked
+                 ]),
+                 "it" if len(blocked) == 1 else "any of them",
+             )
+    )
+    if undirected:
+        blocked_clause += (
+            " {} not even one-sided: {} own authors state they do not know the {}, so a figure "
+            "built through {} could be too high or too low rather than bounded below."
+        ).format(
+            f"`{undirected[0].edge_id}` is"
+            if len(undirected) == 1
+            else _join([f"`{e.edge_id}`" for e in undirected]) + " are",
+            "its" if len(undirected) == 1 else "their",
+            "value" if len(undirected) == 1 else "values",
+            "it" if len(undirected) == 1 else "them",
+        )
+    H["blocked_clause"] = blocked_clause
+    competing = chain.competing()
+    H["n_competing_conversions"] = str(len(competing))
+    H["competing_clause"] = (
+        "No conversion in the edge table carries more than one stated value today."
+        if not competing
+        else "{} {} more than one stated value: {}. Both readings are carried to the end as "
+             "separate figures -- no mean is formed and no value is preferred.".format(
+                 len(competing),
+                 "conversion carries" if len(competing) == 1 else "conversions carry",
+                 _join([
+                     "{} ({})".format(
+                         f"`{k[1]}` -> `{k[3]}`" if k[0] == mucost.ANY else f"`{k[0]}` -> `{k[2]}`",
+                         _join([f"`{e.edge_id}` = {e.factor:g}" for e in v]),
+                     )
+                     for k, v in competing.items()
+                 ]),
+             )
+    )
     return H
 
 
@@ -432,6 +577,135 @@ def coverage_rows(table: mucost.MuonCostTable) -> list[dict]:
     return rows
 
 
+def required_conversions(table: mucost.MuonCostTable) -> list[dict]:
+    """The conversions a fully-sourced chain would need, derived rather than listed.
+
+    The stage advances are the consecutive links of :data:`~openmucf.mucost.MUCF_CHAIN`; the numeraire
+    changes are the ones out of ``beam_kinetic`` into each electrical numeraire the ledger's own
+    pinned rows are actually counted in. Deriving the second from the ledger means a new numeraire in
+    the CSV enters the coverage table instead of being silently uncounted.
+    """
+    out = [
+        {"kind": mucost.STAGE_EDGE, "label": f"`{a}` -> `{b}`", "key": (a, b)}
+        for a, b in zip(mucost.MUCF_CHAIN[:-1], mucost.MUCF_CHAIN[1:], strict=True)
+    ]
+    electrical = sorted(
+        {r.numeraire for r in table if r.has_normalized and r.numeraire}
+        - {mucost.BEAM_KINETIC}
+    )
+    out += [
+        {
+            "kind": mucost.NUMERAIRE_EDGE,
+            "label": f"`{mucost.BEAM_KINETIC}` -> `{n}`",
+            "key": (mucost.BEAM_KINETIC, n),
+        }
+        for n in electrical
+    ]
+    return out
+
+
+def edge_coverage_rows(table: mucost.MuonCostTable, chain: mucost.ChainEdgeTable) -> list[dict]:
+    """Per required conversion: which edges cover it, and whether any of them is sourced.
+
+    A stage edge covers every link it spans, so a source that collapses several conversions into one
+    factor is credited against each of them -- and, because the factor keeps its own evidence status,
+    a collapsed arbitrary factor covers those links without sourcing any of them. That distinction is
+    the whole content of this table.
+    """
+    rows = []
+    for conv in required_conversions(table):
+        if conv["kind"] == mucost.STAGE_EDGE:
+            covering = [
+                e for e in chain
+                if e.kind == mucost.STAGE_EDGE and conv["key"][1] in e.spans
+            ]
+        else:
+            covering = [
+                e for e in chain
+                if e.kind == mucost.NUMERAIRE_EDGE
+                and (e.from_numeraire, e.to_numeraire) == conv["key"]
+            ]
+        rows.append(
+            {
+                "kind": conv["kind"],
+                "label": conv["label"],
+                "edges": covering,
+                "sourced": [e for e in covering if e.is_sourced],
+                "stated": [e for e in covering if e.has_factor],
+            }
+        )
+    return rows
+
+
+def sourced_paths(table: mucost.MuonCostTable, chain: mucost.ChainEdgeTable) -> list:
+    """Every maximal path out of the anchor row **built only from sourced conversions**.
+
+    The restriction to sourced edges is the document's rule, not the API's: ``compose_path`` will
+    compose an author-declared-arbitrary factor and mark the result *direction unknown*, and the edge
+    table carries those conversions so a reader can see them. What this document may PRINT is
+    narrower -- no figure here is composed through a factor whose own authors say they do not know
+    it, which is the rule ``test_no_headline_number_depends_on_an_arbitrary_row`` enforces and the
+    reason the accounting-basis section can say the delivery factor is folded into nothing.
+
+    Sorted by figure so the set reads as a set; the tie-break on the edge ids keeps the order total
+    (and the rendered document deterministic) if two paths ever agree to the last bit.
+    """
+    paths = mucost.enumerate_chain_paths(table[CHAIN_ANCHOR_ID].chain_point(), chain.sourced())
+    return sorted(paths, key=lambda p: (p.value.value_GeV, p.edge_ids))
+
+
+def blocked_extensions(chain: mucost.ChainEdgeTable) -> list:
+    """The conversions that would continue a sourced path, and cannot: stated but not sourced.
+
+    Derived so the document can say WHAT stops the chain rather than merely that something does.
+    """
+    return [e for e in chain if e.has_factor and not e.is_sourced]
+
+
+def _edge_table(chain: mucost.ChainEdgeTable) -> str:
+    head = (
+        "| edge | conversion | factor | evidence | bias | source |\n"
+        "|---|---|---|---|---|---|\n"
+    )
+    lines = []
+    for e in chain:
+        if e.kind == mucost.NUMERAIRE_EDGE:
+            conv = f"`{e.from_numeraire}` -> `{e.to_numeraire}` (at any stage)"
+        else:
+            conv = f"`{e.from_stage}` -> `{e.to_stage}` (in any numeraire)"
+        factor = f"{e.factor:g}" if e.has_factor else "-- (no number)"
+        source = e.source_bibkey.replace(";", ", ") if e.source_bibkey else "--"
+        lines.append(
+            f"| `{e.edge_id}` | {conv} | {factor} | {e.evidence_status} | {e.bias_direction} | "
+            f"{source} |"
+        )
+    return head + "\n".join(lines)
+
+
+def _edge_coverage_table(rows: list[dict]) -> str:
+    head = (
+        "| conversion | kind | edges that cover it | any sourced? |\n"
+        "|---|---|---|---|\n"
+    )
+    lines = []
+    for c in rows:
+        covering = ", ".join(f"`{e.edge_id}` ({e.evidence_status})" for e in c["edges"]) or "none"
+        lines.append(
+            f"| {c['label']} | {c['kind']} | {covering} | "
+            f"{'yes' if c['sourced'] else '**no**'} |"
+        )
+    return head + "\n".join(lines)
+
+
+def _sourced_path_table(paths: list) -> str:
+    head = "| conversions applied | coordinate reached | figure |\n|---|---|---|\n"
+    lines = []
+    for p in paths:
+        applied = " -> ".join(f"`{i}`" for i in p.edge_ids)
+        lines.append(f"| {applied} | `{p.value.stage}` / `{p.value.numeraire}` | {p.render()} |")
+    return head + "\n".join(lines)
+
+
 def _tier_table(table: mucost.MuonCostTable, tier: str, H: dict[str, str]) -> str:
     head = (
         "| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |\n"
@@ -478,7 +752,11 @@ def _coverage_table(table: mucost.MuonCostTable) -> str:
     return head + "\n".join(lines)
 
 
-def build_markdown(table: mucost.MuonCostTable, H: dict[str, str]) -> str:
+def build_markdown(
+    table: mucost.MuonCostTable, H: dict[str, str], chain: mucost.ChainEdgeTable | None = None
+) -> str:
+    if chain is None:
+        chain = mucost.load_muon_cost_chain()
     t1 = _tier_table(table, "T1-design-study", H)
     t2 = _tier_table(table, "T2-demonstrated-tech", H)
     t3 = _tier_table(table, "T3-operating-facility", H)
@@ -707,6 +985,41 @@ terminal stage. The {H['n_offchain_rows']} off-chain
 figures are not bounds on a muCF cost at all: they price stopping a muon somewhere that is not D-T
 fuel, so no chain of sub-unity factors connects them to the quantity this table is about.
 {H['mu_plus_only_clause']}
+
+## The conversions themselves: the edge table
+A cost row above is a **point** on the grid. A conversion between two points is an **edge**, and the
+edges live in their own table (`openmucf/data/muon_cost_chain.csv`) rather than in extra columns on
+the ledger. That is not tidiness: one source supplies several conversions, and one conversion takes
+COMPETING values from different sources, so a per-source column set would force exactly one path per
+source and make the second reading of a conversion inexpressible. An edge moves exactly one axis and
+writes `*` on the other, which reads *any* -- a delivery fraction is dimensionless and holds in any
+numeraire, and an accelerator efficiency applies at any stage, which is the same fact that makes
+wall-plug a numeraire rather than a chain node. Where no source read here states a conversion, the row
+carries `absent` and **no number**: {H['n_absent_edges']} of the {H['n_chain_edges']} edges
+are that kind, and filling one of those cells with a plausible factor is the failure this table
+exists to prevent.
+
+{_edge_table(chain)}
+
+### Which conversions are actually sourced
+{_edge_coverage_table(edge_coverage_rows(table, chain))}
+
+{H['chain_coverage_sentence']}
+
+### Where the competing readings lead
+{H['competing_clause']}
+
+Composing every path out of the open-access anchor row ({LABELS[CHAIN_ANCHOR_ID]}) that uses **only
+sourced conversions** gives {H['n_sourced_paths']} figures, and the deliverable is the SET of them
+with their provenance -- never a mean, and never one of them singled out:
+
+{_sourced_path_table(sourced_paths(table, chain))}
+
+**Read the marker, and read what is missing.** Each figure above prints `>=` because it is a
+one-sided **lower** bound: every conversion it omits is <= 1, so leaving it out can only understate
+the cost. {H['blocked_clause']} The edge table carries every one of those conversions and the API
+will compose them, marking a result *direction unknown* wherever its edges cannot bound it -- which
+is how this compilation records a factor it may not publish a number from.
 """
 
 
@@ -780,7 +1093,14 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable) -> li
         _entry("omegacrit_conventional", rf"`omega_crit` \| {re.escape(H['omegacrit_conventional'])}% \|"),
         _entry("overshoot_conventional", rf"\| {re.escape(H['overshoot_conventional'])}x over \|"),
         _entry("n_fully_sourced_chains", rf"\*\*{re.escape(H['n_fully_sourced_chains'])} of the {re.escape(H['n_chain_rows'])} pinned rows"),
+        # the edge layer: the coverage counts and every terminal figure the competing edges produce
+        _entry("n_chain_edges", rf"of the {re.escape(H['n_chain_edges'])} edges\s*\n?are that kind"),
+        _entry("n_absent_edges", rf"\*\*no number\*\*: {re.escape(H['n_absent_edges'])} of the"),
+        _entry("n_sourced_conversions", rf"\*\*{re.escape(H['n_sourced_conversions'])}\*\* carry a factor from a primary"),
+        _entry("n_sourced_paths", rf"gives {re.escape(H['n_sourced_paths'])} figures"),
     ]
+    for i in range(1, int(H["n_sourced_paths"]) + 1):
+        entries.append(_entry(f"sourced_path_{i}", rf"\| {re.escape(H[f'sourced_path_{i}'])} \|"))
     # the three sourced chain points, their bound-marked figures, ratios and criterion coordinates
     for short in _SHORT.values():
         entries.append(_entry(f"chain_{short}", rf"\| {re.escape(H[f'chain_{short}'])} \|"))
@@ -809,7 +1129,12 @@ def main() -> None:
     Path("MUON_COST.md").write_text(build_markdown(table, H), encoding="utf-8")
     build_figure(table)
     entries = build_manifest_entries(H, table)
-    inputs = {"muon_cost_csv_sha256": provenance.file_sha256(MUON_COST_CSV)}
+    inputs = {
+        "muon_cost_csv_sha256": provenance.file_sha256(MUON_COST_CSV),
+        # the edge table is a generator INPUT like the node table: its hash lands in the manifest, so
+        # `provenance --check` binds the rendered conversions to the bytes they were rendered from.
+        "muon_cost_chain_csv_sha256": provenance.file_sha256(MUON_COST_CHAIN_CSV),
+    }
     provenance.write_manifest(
         "MUON_COST_MANIFEST.json", entries, inputs, generated_by="scripts/generate_mucost.py"
     )

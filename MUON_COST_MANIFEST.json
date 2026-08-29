@@ -146,6 +146,62 @@
     },
     {
       "doc": "MUON_COST.md",
+      "id": "n_chain_edges",
+      "pattern": "of the 9 edges\\s*\\n?are that kind",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "9"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "n_absent_edges",
+      "pattern": "\\*\\*no number\\*\\*: 4 of the",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "4"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "n_sourced_conversions",
+      "pattern": "\\*\\*2\\*\\* carry a factor from a primary",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "2"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "n_sourced_paths",
+      "pattern": "gives 3 figures",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "3"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "sourced_path_1",
+      "pattern": "\\| >=\\ 25\\.68\\ GeV \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": ">= 25.68 GeV"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "sourced_path_2",
+      "pattern": "\\| >=\\ 26\\.11\\ GeV \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": ">= 26.11 GeV"
+    },
+    {
+      "doc": "MUON_COST.md",
+      "id": "sourced_path_3",
+      "pattern": "\\| >=\\ 45\\.19\\ GeV \\|",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": ">= 45.19 GeV"
+    },
+    {
+      "doc": "MUON_COST.md",
       "id": "chain_beam",
       "pattern": "\\| >=\\ 4\\.70\\ GeV \\|",
       "source": "scripts/generate_mucost.py",
@@ -371,6 +427,7 @@
   ],
   "generated_by": "scripts/generate_mucost.py",
   "inputs": {
+    "muon_cost_chain_csv_sha256": "feddaaa94b8f1c0bc2a16946d2bf80d3bf5f0d4deb689eb25bc5994ebb1d7430",
     "muon_cost_csv_sha256": "6934fcd10420fba458d973cd4b64dc91eac16ab60348a3e6d9db3eb58fda86de"
   }
 }
