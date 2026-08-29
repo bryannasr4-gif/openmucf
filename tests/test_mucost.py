@@ -1297,13 +1297,20 @@ def test_the_edge_table_loads_and_every_stated_factor_cites_a_primary(chain):
     hole is the failure this table exists to prevent, and this is where that is checked rather than
     promised.
     """
-    assert len(chain) == 9
+    assert len(chain) == 8
     assert chain.ids() == [
         "eta_acc_kelly_psi_minimal", "eta_acc_kovach_minimal", "eta_acc_kovach_site",
-        "delivery_kelly_eta_mu", "utilization_kelly_phase_one",
+        "delivery_kelly_eta_mu",
         "produced_to_captured_absent", "captured_to_transported_absent",
         "transported_to_moderated_absent", "moderated_to_stopped_useful_absent",
     ]
+    # the one stated stage factor spans the WHOLE delivery segment, which is what its source's own
+    # eq.(2) makes it: a factor multiplying the fusion energy is the useful-stopped fraction, not an
+    # arrival fraction. Composing it alongside that source's earlier 100% placeholder for the same
+    # conversion would apply one factor twice, so only one of the two is an edge.
+    delivery = chain["delivery_kelly_eta_mu"]
+    assert (delivery.from_stage, delivery.to_stage) == ("produced", mucost.TERMINAL_STAGE)
+    assert delivery.spans == mucost.MUCF_CHAIN[1:]
     known = mucost.bibkeys()
     for e in chain:
         if e.has_factor:
@@ -1499,7 +1506,7 @@ def test_compose_path_refuses_every_join_that_would_misrepresent_the_figure(tabl
     with pytest.raises(BasisError, match="may not enter a muCF chain"):
         mucost.compose_path(beam, [mixed])
     # the legal path still composes -- the refusals above are not refusing everything
-    assert mucost.compose_path(beam, [eta_acc, delivery]).value.stage == "transported"
+    assert mucost.compose_path(beam, [eta_acc, delivery]).value.stage == mucost.TERMINAL_STAGE
 
 
 def test_an_unsourced_path_is_a_bound_and_a_fully_sourced_synthetic_one_is_not(tmp_path):
@@ -1564,7 +1571,10 @@ def test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean(table, c
     assert {round(p.value.value_GeV, 2) for p in same_coord} == {52.22, 51.37}
     assert statistics.mean(rivals) not in rivals  # the mean is not a value this table holds
     for p in paths:  # every figure carries the edges it was built from
-        assert len(p.edge_ids) == 3 and p.describe().startswith("kelly_hart_rose_2021 -> ")
+        # one numeraire conversion and the one collapsed delivery factor: the whole chain the
+        # literature can build, which is two edges long and ends on an arbitrary one
+        assert len(p.edge_ids) == 2 and p.describe().startswith("kelly_hart_rose_2021 -> ")
+        assert p.value.stage == mucost.TERMINAL_STAGE
 
 
 def test_composition_is_order_independent_which_is_why_paths_dedupe_by_edge_set(table, chain):
@@ -1580,7 +1590,7 @@ def test_composition_is_order_independent_which_is_why_paths_dedupe_by_edge_set(
     first = mucost.compose_path(beam, [a, b])
     second = mucost.compose_path(beam, [b, a])
     assert first.value.value_GeV == second.value.value_GeV
-    assert first.value.stage == second.value.stage == "transported"
+    assert first.value.stage == second.value.stage == mucost.TERMINAL_STAGE
     assert first.value.numeraire == second.value.numeraire == "electrical_site"
     assert sorted(first.value.statuses) == sorted(second.value.statuses)
     assert first.bias_direction == second.bias_direction

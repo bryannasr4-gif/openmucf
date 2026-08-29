@@ -160,8 +160,15 @@ class ChainValue:
     def bias_direction(self) -> str:
         """The BOUND's type: ``'lower'`` for a bound, ``'none'`` otherwise -- never a symmetric interval.
 
-        The word names the bound, NOT the direction of the truth. Every omitted or unsourced factor is
+        The word names the bound, NOT the direction of the truth. Every factor this figure OMITS is
         <= 1, so a lower bound understates the cost and the true value lies ABOVE the figure printed.
+
+        **Scope, and it is narrower than it looks.** That reasoning covers omitted factors. A factor
+        a source states, calls arbitrary, and :meth:`compose` then applies is different in kind: it
+        can put the figure above or below the truth, so a chain that composes one is not a one-sided
+        bound at all. This property cannot see the difference -- it reads statuses, not directions --
+        so where a figure is built from the edge table, :attr:`ChainPath.bias_direction` is the one
+        that answers, and it is the one a document may print a marker from.
         """
         return "lower" if self.is_bound else "none"
 

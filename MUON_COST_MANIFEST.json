@@ -147,10 +147,10 @@
     {
       "doc": "MUON_COST.md",
       "id": "n_chain_edges",
-      "pattern": "of the 9 edges\\s*\\n?are that kind",
+      "pattern": "of the 8 edges\\s*\\n?are that kind",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": "9"
+      "value": "8"
     },
     {
       "doc": "MUON_COST.md",
@@ -427,7 +427,7 @@
   ],
   "generated_by": "scripts/generate_mucost.py",
   "inputs": {
-    "muon_cost_chain_csv_sha256": "feddaaa94b8f1c0bc2a16946d2bf80d3bf5f0d4deb689eb25bc5994ebb1d7430",
+    "muon_cost_chain_csv_sha256": "632750eff5b2de39510786de3e058e3f9e6f2a0660b0fec6f635df508638efb2",
     "muon_cost_csv_sha256": "6934fcd10420fba458d973cd4b64dc91eac16ab60348a3e6d9db3eb58fda86de"
   }
 }

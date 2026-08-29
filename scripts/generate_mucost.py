@@ -406,13 +406,18 @@ def build_headline(
     )
     one_carrier = n_carriers == 1
     one_delivery = len(declared_delivery) == 1
+    how_many_delivery = (
+        "the chain's one delivery factor"
+        if one_delivery
+        else f"{len(declared_delivery)} of the chain's delivery factors"
+    )
     delivery_clause = (
         ""
         if not declared_delivery
         else (
             f" {'That source' if one_carrier else 'Those sources'} "
-            f"also state{'s' if one_carrier else ''} {len(declared_delivery)} of the chain's "
-            f"delivery {'factor' if one_delivery else 'factors'} "
+            f"also state{'s' if one_carrier else ''} "
+            f"{how_many_delivery} "
             f"({_join([f'`{e.edge_id}`' for e in declared_delivery])}), and "
             f"grade{'s' if one_carrier else ''} "
             f"{'it' if one_delivery else 'every one of them'} "
