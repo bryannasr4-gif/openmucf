@@ -15,8 +15,8 @@ Wording only: no shipped number or test outcome moves, and every generated docum
 its generator. Three CC-BY data files change text cells only — `muon_cost.csv` and
 `validation_targets.csv` one cell each, `benchmarks/jones-1986.json` its `title`, `input_basis` and
 `notes` — and the two CSVs' digests in the FINDINGS, MUON_COST and NEUTRONOMICS manifests move, with
-MATERIALITY's digest of the FINDINGS manifest following; no manifest VALUE does. Each line below was checked against the primary or the code it describes and rewritten to
-what that source says.
+MATERIALITY's digest of the FINDINGS manifest following; no manifest VALUE does. Each line below was
+checked against the primary or the code it describes and rewritten to what that source says.
 - **"record" was this repository's word, not Jones's.** Phys. Rev. Lett. 56, 588 (1986) states on
   p.591 "an average value of 150 ± 4(stat.) ± 20(syst.) fusions per muon" for a liquefied d-t target
   at c_t = 0.3 and does not call it a record. `FINDINGS.md` §2 and its figure legend,
@@ -30,7 +30,8 @@ what that source says.
   `R_col`** ("from ~0.35 toward ~0.94"): the two are successive factors, as `FINDINGS.md` §3 and
   `README.md` already state; the docs line now carries the same R ≥ 0.77 / R_X ≥ 0.64 form.
 - **`FINDINGS.md` §2** names the ledger rows its liquid box comes from (`lambda_c_liquid` at
-  phi ~ 1.2, and the liquid-scale `R_col`) instead of "(phi ~ 1.2, T ~ 300 K)" — the box has no temperature axis. Its header
+  phi ~ 1.2, and the liquid-scale `R_col`) instead of "(phi ~ 1.2, T ~ 300 K)" — the box has no
+  temperature axis. Its header
   blockquote scopes "uniform over each input's own range" to the default box, names the two other
   priors the document uses (§1b's equal-relative box, §2b's tier E_mu boxes), and drops a rhetorical
   clause; §1b now states, read off the box edges at generation time, that the equal-relative box
