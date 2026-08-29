@@ -192,11 +192,11 @@ unvalidated, a company slide. `MUON_COST.md` records that the slide-tier Acceler
 of its named headline anchors; letting it set the lower edge of a prior support is a JUDGMENT CALL,
 disclosed here as one, because the edge of a sensitivity box is not a headline figure and no rule
 bars the row it is read off from muCF cost aggregates. 6.0 GeV is a declared design-study
-upper constant and is not a ledger row. The full-text-pinned Bertin et al. (1987) per-stopped-muon
-cost at liquid density is ~7.8 GeV (ABOVE the upper edge), with a ~3 GeV ideal all-collected floor,
-and Eliezer-Henis (1994) is ~5 GeV; the box spans the low/central design-study range, its edges are
-disclosed alongside the pinned values, and it is left UNCHANGED (pre-registered; a discrepant pin is
-disclosed, never tuned away).
+upper constant and is not a ledger row. The full-text-pinned Bertin et al. (1987) cost per muon
+produced in-target at liquid density is ~7.8 GeV (ABOVE the upper edge), with a ~3 GeV ideal
+all-collected floor, and Eliezer-Henis (1994) is ~5 GeV; the box spans the low/central design-study
+range, its edges are disclosed alongside the pinned values, and it is left UNCHANGED
+(pre-registered; a discrepant pin is disclosed, never tuned away).
 
 - lower edge 3.0 GeV -- ledger row `acceleron_2025`: stage `produced`, numeraire
   `beam_kinetic`, charge basis `mu_minus`.

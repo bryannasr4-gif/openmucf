@@ -338,9 +338,10 @@ def test_bases_are_heterogeneous_and_declared(table):
 def test_no_basis_class_spans_T1_and_T3(table):
     """The honest finding: a same-basis T1-vs-T3 ratio is NOT COMPUTABLE from these rows.
 
-    T1 holds per-produced / per-stopped-in-D-T figures; T3 holds per-collected /
-    per-stopped-in-another-target ones. With no shared class, any cross-tier ratio mixes bases -- which
-    is exactly what the MUON_COST.md headline now discloses instead of asserting a precise gap.
+    Whichever classes the two tiers hold, they hold none in common, so any cross-tier ratio mixes
+    bases -- which is exactly what the MUON_COST.md headline discloses instead of asserting a precise
+    gap. The assertion is emptiness rather than a pair of listed contents on purpose: the contents
+    move with the ledger (T1's did, on 2026-08-29), and it is the disjointness that carries the claim.
     """
     shared = table.basis_classes("T1-design-study") & table.basis_classes("T3-operating-facility")
     assert shared == set(), f"a shared basis class appeared: {shared} -- update the headline disclosure"
@@ -350,7 +351,37 @@ def test_lower_bound_rows_are_flagged(table):
     """per-produced / per-collected / mixed-charge rows understate the per-stopped-in-D-T cost."""
     assert table["kelly_hart_rose_2021"].understates_stopped_in_dt_cost is True  # per produced
     assert table["music"].understates_stopped_in_dt_cost is True  # counts mu+ AND mu-
-    assert table["bertin_1987"].understates_stopped_in_dt_cost is False  # already per stopped in D-T
+    assert table["bertin_1987"].understates_stopped_in_dt_cost is True  # per produced, in-target
+
+
+def test_bertin_is_counted_at_production(table):
+    """The 2026-08-29 re-typing, pinned at the cell it corrects and at the sentence it moves.
+
+    The row shipped stage `stopped_useful_in_dt` / basis class `stopped_in_dt` with
+    `useful_fraction_sourced = false`, which the primary does not support: its Table II is captioned
+    as the cost of PRODUCING muons, the quantity is built from the beam kinetic energy per negative
+    pion produced and the probability that such a pion decays in flight inside the target, and
+    nothing about the muon after its birth is computed anywhere in the paper. Pinned here are the
+    corrected cells, the lower-bound flag the row now earns, and -- because a data fix whose document
+    still describes the old state is half a fix -- the derived Headline sentence as committed.
+    """
+    r = table["bertin_1987"]
+    assert (r.stage, r.basis_class) == ("produced", "produced")
+    assert r.useful_fraction_sourced is None  # the question is only meaningful at the terminal stage
+    # the flag records whether the DIGIT is pinned from the primary text, which it is (Table II)
+    assert r.needs_verification is False
+    assert r.normalized_GeV_per_mu == 7.8 and r.evidence_status == "primary"
+    assert r.understates_stopped_in_dt_cost is True
+
+    cv = r.chain_point()
+    assert cv.statuses == ("primary",)  # no 'useful'-qualifier assumption is carried any more
+    assert cv.bias_direction == "lower" and cv.render().startswith(">= ")
+    assert cv.missing_stages == ("captured", "transported", "moderated", mucost.TERMINAL_STAGE)
+
+    # the sentence the cell drives is DERIVED, so correcting the cell has to have moved it
+    sentence = _load_generator().build_headline(table)["anchor_basis_sentence"]
+    assert "all at stage `produced`" in sentence
+    assert " ".join(sentence.split()) in _normalized("MUON_COST.md")
 
 
 def test_kelly_wallplug_is_a_one_sided_bound(table):
@@ -1065,9 +1096,11 @@ def test_numeraires_is_tier_scoped(table):
         "beam_kinetic", "electrical_minimal", "electrical_site"
     }
     # T2 is safe on BOTH axes; T1 is homogeneous within beam-kinetic yet spans three numeraires, so
-    # the basis_class answer alone would not have told a caller that.
+    # the basis_class answer alone would not have told a caller that. The T1 half of that sentence was
+    # false until the 2026-08-29 Bertin re-typing and is asserted here now that it holds.
     assert table.is_basis_homogeneous("T2-demonstrated-tech")
     assert len(table.numeraires("T2-demonstrated-tech")) == 1
+    assert table.is_basis_homogeneous("T1-design-study")
     assert len(table.numeraires("T1-design-study")) > 1
     with pytest.raises(KeyError):
         table.numeraires("T9-not-a-tier")
@@ -1687,8 +1720,18 @@ def test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned(table,
     sourced = chain["eta_acc_kovach_site"].apply_to(beam)
     assert sourced.bias_direction == "lower" and sourced.render().startswith(">= ")
     # an `assumption` status from an OMITTED qualifier is still one-sided: it is not read as a
-    # composed factor, which is the distinction direction_is_one_sided is scoped on
-    terminal = table["bertin_1987"].chain_point()
+    # composed factor, which is the distinction direction_is_one_sided is scoped on. No SHIPPED row
+    # sits at the terminal stage any more (the Bertin row was re-typed to `produced` on 2026-08-29),
+    # so the row that exercises the branch is built here instead of borrowed from the ledger -- a
+    # borrowed one would make this test fail for a reason that has nothing to do with its subject.
+    terminal_row = dataclasses.replace(
+        table["bertin_1987"],
+        stage=mucost.TERMINAL_STAGE,
+        basis_class="stopped_in_dt",
+        useful_fraction_sourced=False,
+    )
+    terminal = terminal_row.chain_point()
+    assert terminal.stage == mucost.TERMINAL_STAGE and not terminal.missing_stages
     assert "assumption" in terminal.statuses and terminal.direction_is_one_sided
 
 

@@ -261,6 +261,17 @@ def build_headline(
     # Basis composition -- computed, so the disclosure can never drift from the CSV. No basis_class is
     # shared between T1 and T3, so a same-basis T1-vs-T3 ratio is NOT COMPUTABLE from these rows.
     H["t1_classes"] = ", ".join(sorted(table.basis_classes("T1-design-study")))
+    # The 2026-08-29 amendment block below states what the re-typed row now says and what its tier
+    # therefore contains. Both are READ from the ledger: an amendment that typed its own outcome
+    # would keep asserting a correction the CSV could later move away from.
+    bertin = table["bertin_1987"]
+    H["bertin_stage"] = bertin.stage
+    H["bertin_basis_class"] = bertin.basis_class
+    H["t1_stage_clause"] = (
+        "the tier is stage-homogeneous within the `beam_kinetic` numeraire"
+        if table.is_basis_homogeneous("T1-design-study")
+        else "the tier still holds more than one accounting stage within the `beam_kinetic` numeraire"
+    )
     H["t3_classes"] = ", ".join(sorted(table.basis_classes("T3-operating-facility")))
     shared = table.basis_classes("T1-design-study") & table.basis_classes("T3-operating-facility")
     H["shared_classes"] = ", ".join(sorted(shared)) if shared else "none"
@@ -876,6 +887,34 @@ an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field
 
 ## {TIER_TITLES['T1-design-study']}
 {t1}
+
+> **AMENDMENT (2026-08-29) -- the Bertin et al. (1987) row is re-typed to stage
+> `{H['bertin_stage']}`, and no published number moves.** That row carried the deprecated alias
+> `stopped_in_dt` from 2026-07-29 and the stage `stopped_useful_in_dt` from 2026-08-13, with
+> `useful_fraction_sourced = false` recording that the 'useful' qualifier was never established. Read
+> again against the primary, the terminal-stage typing is not supported at all. Table II (p. 879) is
+> captioned as the cost of *producing* muons; its `C_mu-` figures are built from the beam kinetic
+> energy per negative pion produced and the probability that such a pion decays in flight inside the
+> target; and nothing about the muon after its birth -- range, escape, collection, stopping -- is
+> computed anywhere in pp. 875-880. Where the Conclusions do reach for the fate of the muons, it is
+> to say that the cost of the *alternative* intermediate-beam scheme depends on their canalization --
+> a dependence they leave unquantified there too. The sentence the older typing rested on (p. 876,
+> the muons from pion decay "are stopped and interact" in the target) states the scheme's premise,
+> not a result of the calculation. The Table II target is liquid deuterium, and D-T is reached by an
+> argument in a footnote rather than by a calculation.
+> The row now carries stage `{H['bertin_stage']}`, basis class `{H['bertin_basis_class']}` and an
+> empty `useful_fraction_sourced`: the muon is counted at birth inside the fuel, so the figure is
+> flagged a **lower bound** in the table above, exactly like every other PINNED row of its tier --
+> the unpinned one carries no figure to bound.
+> **What moves in this document:** T1's basis composition is now {{{H['t1_classes']}}},
+> so {H['t1_stage_clause']},
+> and the Headline says so instead of describing a mixture.
+> **What does not:** the value stays {H['norm_bertin_1987']} GeV; the tier medians
+> ({H['t1_median']}, {H['t2_median']} and {H['t3_median']} GeV) and the {H['gap_ratio']}x spread are
+> unchanged; and basis classes shared between T1 and T3 remain **{H['shared_classes']}**, so a
+> same-basis cross-tier ratio is still not computable from these rows. The correction makes this
+> ledger weaker where it counts: a row that had reached the quantity a muCF energy balance needs now
+> only bounds it from below.
 
 ## {TIER_TITLES['T2-demonstrated-tech']}
 {t2}

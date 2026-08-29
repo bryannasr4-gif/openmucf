@@ -59,8 +59,7 @@ Dividing one row of this table by another therefore does not produce a same-basi
 comparison either; it reproduces the cost spread together with its heterogeneity. Each row remains a
 well-defined statement conditional on ITS OWN tier median, which is why the table is tier-separated
 and never blended. (One more inherited property: a tier median can itself mix accounting stages within its
-tier -- the T1 median over rows at `produced` and `stopped_useful_in_dt`;
-the T3 median over rows at `stopped_other_target` and `transported` --
+tier -- the T3 median over rows at `stopped_other_target` and `transported` --
 so each row conditions on its tier median as composed, with the per-row stages printed
 in MUON_COST.md.)
 Which row is real depends entirely on whether a purpose-built muon source at the
