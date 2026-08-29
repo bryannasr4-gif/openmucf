@@ -75,8 +75,12 @@ so part of the contested-box ranking reflects how wide each *range* is, not phys
 | eta_thermal | 0.000 | 0.000 |
 
 The equal-relative box is a width control, not a provenance-bearing prior: at +/-15%
-it runs past the declared range of `omega_s0_pct` ([0.728, 0.986] against the declared [0.8, 0.95]), `lambda_c` ([1.1e+08, 1.5e+08] against the declared [1e+08, 1.45e+08]), `eta_thermal` ([0.34, 0.46] against the declared [0.35, 0.45]), so its S_T column is a statement about
-range width and is never propagated into a result.
+it runs past the declared range of
+`omega_s0_pct` ([0.7284, 0.9855] against the declared [0.8, 0.95]),
+`lambda_c` ([1.105e+08, 1.495e+08] against the declared [1e+08, 1.45e+08]),
+`eta_thermal` ([0.34, 0.46] against the declared [0.35, 0.45]),
+so its S_T column is a statement about range width: it is reported here and pinned in the manifest,
+and no propagated interval or breakeven figure below draws on it.
 
 The prior-independent statements are therefore the *local elasticity* ranking at the operating point
 (|dlnX_mu/dln omega_s0| > |dlnX_mu/dln lambda_c| > |dlnX_mu/dln R|) and the requirement-form result in

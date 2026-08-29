@@ -34,8 +34,8 @@ _EQREL_OUTSIDE = [
     if p.nominal * (1.0 - rob["rel"]) < p.low or p.nominal * (1.0 + rob["rel"]) > p.high
 ]
 assert _EQREL_OUTSIDE, "the equal-relative box lies inside every declared range -- re-word section 1b"
-_EQREL_OUTSIDE_TEXT = ", ".join(
-    f"`{p.name}` ([{lo:.3g}, {hi:.3g}] against the declared [{p.low:.3g}, {p.high:.3g}])"
+_EQREL_OUTSIDE_TEXT = ",\n".join(
+    f"`{p.name}` ([{lo:.4g}, {hi:.4g}] against the declared [{p.low:.4g}, {p.high:.4g}])"
     for p, lo, hi in _EQREL_OUTSIDE
 )
 fw = uq.forward_uq(n=400_000)
@@ -396,8 +396,10 @@ so part of the contested-box ranking reflects how wide each *range* is, not phys
 {_tbl2(rob["contested_box"], rob["equal_relative_box"], rob["rel"])}
 
 The equal-relative box is a width control, not a provenance-bearing prior: at +/-{int(rob["rel"] * 100)}%
-it runs past the declared range of {_EQREL_OUTSIDE_TEXT}, so its S_T column is a statement about
-range width and is never propagated into a result.
+it runs past the declared range of
+{_EQREL_OUTSIDE_TEXT},
+so its S_T column is a statement about range width: it is reported here and pinned in the manifest,
+and no propagated interval or breakeven figure below draws on it.
 
 The prior-independent statements are therefore the *local elasticity* ranking at the operating point
 (|dlnX_mu/dln omega_s0| > |dlnX_mu/dln lambda_c| > |dlnX_mu/dln R|) and the requirement-form result in
