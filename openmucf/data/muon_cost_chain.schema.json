@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenMuCF muon-cost chain edge",
+  "description": "One CONVERSION between two points of the muon-cost grid, as some primary source states it. Each row of data/muon_cost_chain.csv must satisfy this. muon_cost.csv holds NODES (a cost at one (stage, numeraire) coordinate, one row per source); this file holds the EDGES that join them. The two are deliberately separate tables: one source supplies several edges, and one edge takes competing values from different sources, so folding conversions into extra columns on the node table would force exactly one path per source and make competing evaluations of the same conversion inexpressible. An edge moves EXACTLY ONE axis. A stage edge advances 'produced -> captured -> transported -> moderated -> stopped_useful_in_dt' and leaves the numeraire alone; a numeraire edge converts the units the energy is counted in and leaves the stage alone. The axis an edge does not move is written '*', which reads 'any': a delivery fraction is dimensionless and holds in any numeraire, and an accelerator efficiency converts beam energy to electrical energy whatever stage the muon has reached. That is the same fact that makes wall-plug a numeraire rather than a chain node. A factor is entered ONLY where a primary states it; where no source states the conversion the row carries evidence_status 'absent' and NO number, because a plausible invented factor is the one failure this table exists to prevent.",
+  "type": "object",
+  "required": [
+    "edge_id",
+    "from_stage",
+    "from_numeraire",
+    "to_stage",
+    "to_numeraire",
+    "bias_direction",
+    "charge_basis",
+    "evidence_status",
+    "derivation"
+  ],
+  "properties": {
+    "edge_id": {
+      "type": "string",
+      "description": "Unique machine key for this edge, e.g. eta_acc_kovach_minimal. Two sources giving the same conversion are two rows with two keys, never one row with an averaged number."
+    },
+    "from_stage": {
+      "type": "string",
+      "enum": ["produced", "captured", "transported", "moderated", "stopped_useful_in_dt", "*"],
+      "description": "Chain stage the conversion starts at, or '*' on a numeraire edge, which applies at any stage. 'stopped_other_target' is absent from this enum on purpose: it is not a point on the muCF chain, so no edge can start or end there."
+    },
+    "from_numeraire": {
+      "type": "string",
+      "enum": ["beam_kinetic", "electrical_minimal", "electrical_site", "*"],
+      "description": "Units the energy is counted in before the conversion, or '*' on a stage edge, whose factor is a dimensionless fraction and therefore holds in any numeraire."
+    },
+    "to_stage": {
+      "type": "string",
+      "enum": ["produced", "captured", "transported", "moderated", "stopped_useful_in_dt", "*"],
+      "description": "Chain stage the conversion ends at. On a stage edge it must lie strictly later on the chain than from_stage; an edge may span more than one stage where the source collapses several conversions into one factor, and the stages it skips are then simply never separately sourced."
+    },
+    "to_numeraire": {
+      "type": "string",
+      "enum": ["beam_kinetic", "electrical_minimal", "electrical_site", "*"],
+      "description": "Units the energy is counted in after the conversion. On a numeraire edge it must differ from from_numeraire: a conversion that changes no units converts nothing, and applying its factor anyway would double-count it."
+    },
+    "factor": {
+      "type": "number",
+      "description": "The conversion factor as the source states it, in (0, 1]. A cost is DIVIDED by it, so a factor below 1 raises the cost. Empty -- and only empty -- where evidence_status is 'absent'.",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "factor_lo": {
+      "type": "number",
+      "description": "Lower end of the interval the source states for the factor, if it states one. Empty where it states a bare value. An interval here is a range the source gives, never a fitted or assumed spread.",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "factor_hi": {
+      "type": "number",
+      "description": "Upper end of the interval the source states for the factor, if it states one. Empty where it states a bare value.",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "bias_direction": {
+      "type": "string",
+      "enum": ["lower", "unknown", "none"],
+      "description": "Which way this edge can move a composed cost away from the truth. 'none' iff the factor is sourced. 'lower' where using the row as written can only understate the cost -- an absent factor is bounded above by 1, so omitting it understates, and a factor a source states at its own ceiling while saying the truth lies below it understates the same way. 'unknown' where a source declares its value arbitrary and gives no direction: composing such a factor can understate OR overstate, which is strictly weaker than an omitted one, and a chain that uses it is therefore not a one-sided bound at all.",
+      "$comment": "This grades the EDGE. ChainValue.bias_direction grades a composed figure by a different and older rule -- whether it is a bound at all -- so the two answer different questions and ChainPath.bias_direction is the one that reads these cells."
+    },
+    "charge_basis": {
+      "type": "string",
+      "enum": ["mu_minus", "mixed", "mu_plus_only", "*"],
+      "description": "Which muon charge the factor was stated for; '*' where the conversion is charge-agnostic, as an accelerator's grid-to-beam efficiency is. A muCF chain needs mu-, so composition admits only 'mu_minus' and '*' and refuses the other two."
+    },
+    "conditions": {
+      "type": "string",
+      "description": "The operating conditions the factor holds at (facility, beam, target, load point). Free text, not a controlled vocabulary."
+    },
+    "evidence_status": {
+      "type": "string",
+      "enum": [
+        "primary",
+        "primary_cited",
+        "derived_here",
+        "author_declared_arbitrary",
+        "assumption",
+        "absent"
+      ],
+      "description": "How well-founded this factor is, on the same closed enum and with the same meanings as muon_cost.csv's column of the same name. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attributes it to a primary that has itself been read; 'derived_here' = our arithmetic on published inputs, shown verbatim in derivation; 'author_declared_arbitrary' = the source itself calls the value arbitrary or unknown; 'assumption' = assumed without the source saying so; 'absent' = no source read here states the conversion at all. The last three are NOT SOURCED: a path composing one of them is a BOUND, never a value."
+    },
+    "source_bibkey": {
+      "type": "string",
+      "description": "Key(s) resolvable in data/references.bib; ';'-separable. Required where a factor is stated, where it names the source of the number. On an 'absent' row it names instead the sources that were READ AND FOUND SILENT, with source_locator saying where that was checked -- which turns 'no source states this' from an assertion into something a reader can go and test."
+    },
+    "source_locator": {
+      "type": "string",
+      "description": "Where inside the source the factor sits: section, equation, table, figure or page, with the stating sentence quoted where its wording is what grades the row. Required where a factor is stated."
+    },
+    "derivation": {
+      "type": "string",
+      "description": "Every normalization step verbatim, and every reading of ours that the source does not itself state -- in particular which chain node a source's own phrase was mapped onto, since no source writes in these coordinates. 'as stated; no normalization' where the factor is copied straight from the source."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Context: competing values for the same edge, what would source an absent one, and any caveat a reader needs before composing the row."
+    }
+  }
+}

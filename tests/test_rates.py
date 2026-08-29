@@ -8,6 +8,7 @@ from openmucf import load_rates
 from openmucf.rates import DATA, RATES_CSV, REFS_BIB, TARGETS_CSV, bibkeys
 
 MUON_COST_CSV = DATA / "muon_cost.csv"
+MUON_COST_CHAIN_CSV = DATA / "muon_cost_chain.csv"
 BIB_UNRESOLVED = DATA / "bib_unresolved.txt"
 
 
@@ -138,9 +139,14 @@ def _unresolved_entries():
 
 
 def _referenced_bibkeys():
-    """Every bibkey cited by rates.csv / validation_targets.csv / muon_cost.csv (';'/',' split)."""
+    """Every bibkey cited by a shipped CSV that carries a source_bibkey column (';'/',' split).
+
+    The muon-cost CHAIN table is read here too: its edges cite the primaries their factors come
+    from, and an 'absent' edge cites the sources read and found not to state the conversion, so an
+    unresolvable key there is the same defect as one in any other shipped table.
+    """
     keys = set()
-    for path in (RATES_CSV, TARGETS_CSV, MUON_COST_CSV):
+    for path in (RATES_CSV, TARGETS_CSV, MUON_COST_CSV, MUON_COST_CHAIN_CSV):
         with open(path, newline="", encoding="utf-8") as f:
             for row in csv.DictReader(f):
                 raw = (row.get("source_bibkey") or "").strip()

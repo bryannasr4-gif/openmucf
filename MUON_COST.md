@@ -251,3 +251,57 @@ figures are not bounds on a muCF cost at all: they price stopping a muon somewhe
 fuel, so no chain of sub-unity factors connects them to the quantity this table is about.
 The mu+-only chain figure (PSI HIMB) is excluded on the other axis: it counts no mu-, so its
 mu--only cost is unbounded and any figure bounds it vacuously.
+
+## The conversions themselves: the edge table
+A cost row above is a **point** on the grid. A conversion between two points is an **edge**, and the
+edges live in their own table (`openmucf/data/muon_cost_chain.csv`) rather than in extra columns on
+the ledger. That is not tidiness: one source supplies several conversions, and one conversion takes
+COMPETING values from different sources, so a per-source column set would force exactly one path per
+source and make the second reading of a conversion inexpressible. An edge moves exactly one axis and
+writes `*` on the other, which reads *any* -- a delivery fraction is dimensionless and holds in any
+numeraire, and an accelerator efficiency applies at any stage, which is the same fact that makes
+wall-plug a numeraire rather than a chain node. Where no source read here states a conversion, the row
+carries `absent` and **no number**: 4 of the 8 edges
+are that kind, and filling one of those cells with a plausible factor is the failure this table
+exists to prevent.
+
+| edge | conversion | factor | evidence | bias | source |
+|---|---|---|---|---|---|
+| `eta_acc_kelly_psi_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.18 | primary_cited | none | KellyHartRose2021 |
+| `eta_acc_kovach_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.183 | primary | none | Kovach2017 |
+| `eta_acc_kovach_site` | `beam_kinetic` -> `electrical_site` (at any stage) | 0.104 | primary | none | Kovach2017 |
+| `delivery_kelly_eta_mu` | `produced` -> `stopped_useful_in_dt` (in any numeraire) | 0.5 | author_declared_arbitrary | unknown | KellyHartRose2021 |
+| `produced_to_captured_absent` | `produced` -> `captured` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
+| `captured_to_transported_absent` | `captured` -> `transported` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
+| `transported_to_moderated_absent` | `transported` -> `moderated` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
+| `moderated_to_stopped_useful_absent` | `moderated` -> `stopped_useful_in_dt` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
+
+### Which conversions are actually sourced
+| conversion | kind | edges that cover it | any sourced? |
+|---|---|---|---|
+| `produced` -> `captured` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `produced_to_captured_absent` (absent) | **no** |
+| `captured` -> `transported` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `captured_to_transported_absent` (absent) | **no** |
+| `transported` -> `moderated` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `transported_to_moderated_absent` (absent) | **no** |
+| `moderated` -> `stopped_useful_in_dt` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `moderated_to_stopped_useful_absent` (absent) | **no** |
+| `beam_kinetic` -> `electrical_minimal` | numeraire | `eta_acc_kelly_psi_minimal` (primary_cited), `eta_acc_kovach_minimal` (primary) | yes |
+| `beam_kinetic` -> `electrical_site` | numeraire | `eta_acc_kovach_site` (primary) | yes |
+
+Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every one of them is a numeraire change: **not one of the 4 stage advances the chain requires is sourced by any primary read here**. Exactly 1 cost source in this compilation (Kelly, Hart & Rose (2021)) states its own beam-to-electrical conversion. That source also states the chain's one delivery factor (`delivery_kelly_eta_mu`), and grades it `author_declared_arbitrary` -- so composing it yields a bound and never a value.
+
+### Where the competing readings lead
+1 conversion carries more than one stated value: `beam_kinetic` -> `electrical_minimal` (`eta_acc_kelly_psi_minimal` = 0.18 and `eta_acc_kovach_minimal` = 0.183). Both readings are carried to the end as separate figures -- no mean is formed and no value is preferred.
+
+Composing every path out of the open-access anchor row (Kelly, Hart & Rose (2021)) that uses **only
+sourced conversions** gives 3 figures, and the deliverable is the SET of them
+with their provenance -- never a mean, and never one of them singled out:
+
+| conversions applied | coordinate reached | figure |
+|---|---|---|
+| `eta_acc_kovach_minimal` | `produced` / `electrical_minimal` | >= 25.68 GeV |
+| `eta_acc_kelly_psi_minimal` | `produced` / `electrical_minimal` | >= 26.11 GeV |
+| `eta_acc_kovach_site` | `produced` / `electrical_site` | >= 45.19 GeV |
+
+**Read the marker, and read what is missing.** Each figure above prints `>=` because it is a one-sided **lower** bound: every conversion it omits is <= 1, so leaving it out can only understate the cost.
+Beyond that, the chain could be continued with one conversion stated but not sourced: `delivery_kelly_eta_mu` (author_declared_arbitrary, bias `unknown`). None of the figures here is composed through it. `delivery_kelly_eta_mu` is not even one-sided: its own authors state they do not know the value, so a figure built through it could be too high or too low rather than bounded below. The edge table carries every one of those conversions and the API
+will compose them, marking a result *direction unknown* wherever its edges cannot bound it -- which
+is how this compilation records a factor it may not publish a number from.
