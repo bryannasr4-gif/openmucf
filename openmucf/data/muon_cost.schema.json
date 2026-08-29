@@ -136,7 +136,7 @@
         "stopped_other_target",
         ""
       ],
-      "description": "DEPRECATED ALIAS of 'stage', retained because downstream code and the public MUON_COST.md text still refer to it; do not delete it, and keep it consistent with 'stage'. Mapping: produced -> produced; collected -> transported; stopped_in_dt -> stopped_useful_in_dt (with useful_fraction_sourced recording whether the source actually establishes the 'useful' qualifier, which for every row held today it does NOT); stopped_other_target -> stopped_other_target. The alias is 1-D and cannot express the numeraire axis, which is precisely why 'stage' + 'numeraire' supersede it. Empty is allowed only on an unpinned needs_verification row."
+      "description": "DEPRECATED ALIAS of 'stage', retained because downstream code and the public MUON_COST.md text still refer to it; do not delete it, and keep it consistent with 'stage'. Mapping: produced -> produced; collected -> transported; stopped_in_dt -> stopped_useful_in_dt (with useful_fraction_sourced recording, on any row that carries that alias value, whether the source actually establishes the 'useful' qualifier rather than merely stopping the muon somewhere in the fuel); stopped_other_target -> stopped_other_target. The alias is 1-D and cannot express the numeraire axis, which is precisely why 'stage' + 'numeraire' supersede it. Empty is allowed only on an unpinned needs_verification row."
     },
     "charge_basis": {
       "type": "string",

@@ -19,7 +19,7 @@ full-text-verified design studies corroborate the same single-GeV scale: **Berti
 all-collected) and **Eliezer & Henis (1994), ~5.0 GeV/muon**
 (DOI 10.13182/FST94-A30300).
 
-**Those single-GeV figures are not on one basis: Kelly, Hart & Rose (2021) and Eliezer & Henis (1994) are beam energy per muon PRODUCED, while Bertin et al. (1987) (`stopped_useful_in_dt`) is carried at a different stage.** On Kelly's own
+**Those single-GeV figures are all at stage `produced`: Kelly, Hart & Rose (2021), Bertin et al. (1987) and Eliezer & Henis (1994) are beam energy per muon PRODUCED.** On Kelly's own
 accelerator efficiency the same muon costs 4.70 /
 0.18 = **26.11 GeV per muon produced** in ELECTRICAL energy, and on the
 same primary's site-wide denominator (0.104) it costs **45.19 GeV**
@@ -30,7 +30,7 @@ factor omitted here pushes the cost UP, so the bound is one-sided.
 **The tier spread is about three orders of magnitude, on MIXED bases.** The tier-median rises from **4.85
 GeV** (design studies) through **178 GeV** (demonstrated technology, collected-not-stopped)
 to **4993 GeV** (operating facilities) -- nominally **1029.5x**. **That ratio is
-NOT a same-basis comparison and must not be quoted as one.** T1 contains {produced, stopped_in_dt} rows and T3
+NOT a same-basis comparison and must not be quoted as one.** T1 contains {produced} rows and T3
 contains {collected, stopped_other_target} rows; basis classes shared between the two tiers: **none**.
 With no shared class, a same-basis T1-vs-T3 ratio is **not computable from these rows** -- and because
 both the numerator and the denominator contain lower-bound (per-produced / per-collected) figures, the
@@ -88,12 +88,40 @@ an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field
 | source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |
 |---|---|---|---|---|---|---|---|
 | Kelly, Hart & Rose (2021) | 4.70 GeV/muon | 4.70 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Bertin et al. (1987) | 7.8 +- 1.8 GeV (n-beam 3.5 GeV/c, rho_0) | 7.80 | beam_kinetic | stopped_useful_in_dt ('useful' not established) | mu_minus | primary | no |
+| Bertin et al. (1987) | 7.8 +- 1.8 GeV (n-beam 3.5 GeV/c, rho_0) | 7.80 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
 | Eliezer & Henis (1994) | ~5 GeV (~5000 MeV) per muon | 5.0 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
 | Jandel (1989) | (not pinned) | -- (not pinned) | -- | -- | -- | absent | **yes** |
 | Acceleron (2025 deck) | 3.0 GeV per pi-/muon exiting target | 3.0 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
 | Kelly / eta_acc minimal-subsystem | not published as such (derived here from 4.70 GeV/muon and eta_acc=0.18) | 26.11 | electrical_minimal | produced (lower bound) | mu_minus | derived_here | no |
 | Kelly / eta_acc site-wide | not published as such (derived here from 4.70 GeV/muon and eta_acc(site)=0.104) | 45.19 | electrical_site | produced (lower bound) | mu_minus | derived_here | no |
+
+> **AMENDMENT (2026-08-29) -- the Bertin et al. (1987) row is re-typed to stage
+> `produced`, and no published number moves.** That row carried the deprecated alias
+> `stopped_in_dt` from 2026-07-29 and the stage `stopped_useful_in_dt` from 2026-08-13, with
+> `useful_fraction_sourced = false` recording that the 'useful' qualifier was never established. Read
+> again against the primary, the terminal-stage typing is not supported at all. Table II (p. 879) is
+> captioned as the cost of *producing* muons; its `C_mu-` figures are built from the beam kinetic
+> energy per negative pion produced and the probability that such a pion decays in flight inside the
+> target; and nothing about the muon after its birth -- range, escape, collection, stopping -- is
+> computed anywhere in pp. 875-880. Where the Conclusions do reach for the fate of the muons, it is
+> to say that the cost of the *alternative* intermediate-beam scheme depends on their canalization --
+> a dependence they leave unquantified there too. The sentence the older typing rested on (p. 876,
+> the muons from pion decay "are stopped and interact" in the target) states the scheme's premise,
+> not a result of the calculation. The Table II target is liquid deuterium, and D-T is reached by an
+> argument in a footnote rather than by a calculation.
+> The row now carries stage `produced`, basis class `produced` and an
+> empty `useful_fraction_sourced`: the muon is counted at birth inside the fuel, so the figure is
+> flagged a **lower bound** in the table above, exactly like every other PINNED row of its tier --
+> the unpinned one carries no figure to bound.
+> **What moves in this document:** T1's basis composition is now {produced},
+> so the tier is stage-homogeneous within the `beam_kinetic` numeraire,
+> and the Headline says so instead of describing a mixture.
+> **What does not:** the value stays 7.80 GeV; the tier medians
+> (4.85, 178 and 4993 GeV) and the 1029.5x spread are
+> unchanged; and basis classes shared between T1 and T3 remain **none**, so a
+> same-basis cross-tier ratio is still not computable from these rows. The correction makes this
+> ledger weaker where it counts: a row that had reached the quantity a muCF energy balance needs now
+> only bounds it from below.
 
 ## Tier 2 -- demonstrated technology
 | source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |
@@ -139,7 +167,7 @@ arithmetic is in the CSV `derivation` column); no facility reports this quantity
 The ~1029.5x tier-median spread (4.85 GeV design-study -> 4993 GeV
 facility) is **mixed-basis** (see the Headline: shared basis classes between T1 and T3 =
 none), so it is quoted here as an order of magnitude and never as a same-basis ratio.
-Its basis composition is printed rather than summarised: T1 = {produced, stopped_in_dt},
+Its basis composition is printed rather than summarised: T1 = {produced},
 T3 = {collected, stopped_other_target}, all rows in the `beam_kinetic` numeraire.
 It is also not a claim that the design-study floor is unreachable: existing facilities are built for beam
 brightness and purity, not muons-per-watt; the floor is **unvalidated, not impossible**. This is a
@@ -214,7 +242,7 @@ the true costs can only be higher.
 | source | stage reached | numeraire | beam -> electrical sourced? | produced -> stopped & useful in D-T | fully sourced? |
 |---|---|---|---|---|---|
 | Kelly, Hart & Rose (2021) | produced | `beam_kinetic` | yes (`eta_acc`, from the PSI primary) | stated as one collapsed factor, author_declared_arbitrary | **no** |
-| Bertin et al. (1987) | stopped_useful_in_dt | `beam_kinetic` | absent | reached, but the source never establishes the 'useful' qualifier | **no** |
+| Bertin et al. (1987) | produced | `beam_kinetic` | absent | absent | **no** |
 | Eliezer & Henis (1994) | produced | `beam_kinetic` | absent | absent | **no** |
 | Acceleron (2025 deck) | produced | `beam_kinetic` | absent | absent | **no** |
 | muon-collider front end | transported | `beam_kinetic` | absent | absent | **no** |

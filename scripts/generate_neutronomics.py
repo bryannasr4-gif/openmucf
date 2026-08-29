@@ -266,7 +266,8 @@ def _stage_mix_clause(table: mucost.MuonCostTable) -> str:
 
     Rendered from the same rows each median is computed over (``aggregate_rows``), never typed, and
     over EVERY tier rather than one example -- naming a single mixed tier invites the reader to
-    conclude the others are stage-homogeneous, and today two of the three are not. Conditional: a
+    conclude the others are stage-homogeneous, which is a claim about the ledger this docstring
+    has no business making on its behalf. Conditional: a
     tier whose aggregate holds one stage is left out of the sentence, and if no tier mixes, the
     homogeneous form is emitted instead. This is the disclosure that keeps the one-row-at-a-time
     reading honest -- each row is conditional on its tier median AS COMPOSED.

@@ -92,7 +92,7 @@ LEDGER = re.compile(
 #: the exact precedent of ``AUDIT_ESS_FLOOR``: raising it is a visible diff to this line and must be
 #: argued for, lowering it needs no argument. Review defers rather than drops: an unreviewed line
 #: stays enumerated and capped instead of leaving the registry.
-LEDGER_CLAIMS_UNREVIEWED_CEILING = 82
+LEDGER_CLAIMS_UNREVIEWED_CEILING = 80
 
 REGISTRY = Path(__file__).with_name("ledger_claims_registry.tsv")
 VALID_PREFIXES = ("EXERCISED:", "REGISTERED:")

@@ -428,6 +428,6 @@
   "generated_by": "scripts/generate_mucost.py",
   "inputs": {
     "muon_cost_chain_csv_sha256": "7aa0626a96d8f0a57da3833dff5359a9f9960c80617b6222618b17db73d9c48d",
-    "muon_cost_csv_sha256": "8a0ffbe756cfb3e72b963b796bbfa270696493a50254243d5b1b184f6356797b"
+    "muon_cost_csv_sha256": "a5c4959d7df4bbefdd07c87dadd3a35b876b77f427e72bb0afc3803d9985a5e8"
   }
 }

@@ -23,10 +23,10 @@ complete: `README.md`, `FINDINGS.md` and `NEUTRONOMICS.md` each state the tier s
 order-of-magnitude, mixed-basis observation, and `test_no_basis_class_spans_T1_and_T3` pins the
 reason — the design-study and operating-facility tiers share no basis class, so the quantity has
 no common denominator to be a ratio *of*. And the claims themselves are now enumerated: a registry
-of **840** lines that state a universal about the ledger, **130** of them EXERCISED — a named test
-fails when the claim is negated — **628** REGISTERED with the reason each was ruled true, and **82**
+of **856** lines that state a universal about the ledger, **140** of them EXERCISED — a named test
+fails when the claim is negated — **636** REGISTERED with the reason each was ruled true, and **80**
 still UNREVIEWED under a cap the suite lets fall without argument and lets rise only with one. The
-cap moved 92 → 82 across this release, rising once (to 94) when the enumeration was re-keyed. No
+cap moved 92 → 80 across this release, rising once (to 94) when the enumeration was re-keyed. No
 registry existed at v1.1.0.
 
 **What is deferred to v1.3.0, named here rather than left for a reader to find.**
@@ -50,16 +50,6 @@ registry existed at v1.1.0.
   versions, so a bit-identity assertion is being made across an arbitrary numerics toolchain. `jax`
   is capped below `0.11.1` in the dev extra for both reasons together. Fixing them moves audited
   `CALIBRATION.md` cells, so it gets its own release rather than riding this one.
-- **One ledger row is carried at a stage its primary does not establish.**
-  `openmucf/data/muon_cost.csv`'s `bertin_1987` row is typed `stopped_useful_in_dt`. Re-read against
-  the primary (Europhys. Lett. **4**, 875 (1987)), its Table II is captioned as the cost of
-  *producing* muons, and the quantity is built from the beam energy per negative pion and the
-  probability that such a pion decays in flight; nothing about the muon after its birth — range,
-  escape, decay, stopping — is computed anywhere in pp. 875–880, and the target is liquid deuterium,
-  with D-T reached by an argument in a footnote rather than by a calculation. The row is due to be
-  re-typed to `produced`. `MUON_COST.md` already records that the source never establishes the
-  "useful" qualifier; what this deferral adds is that `stopped` is not established either, and the
-  re-typing is held for its own pass rather than folded into a release.
 - **Three rate-ledger rows carry digits their in-hand primaries could sharpen.** `rates.csv`'s
   `lambda_ttmu` ships the `0.0` placeholder that keeps the tt channel inert and `omega_tt` ships
   `0.14 ± 0.015`, while the JINR preprint's `2.84(32) µs⁻¹` and `0.139(15)` are recorded in those
@@ -70,6 +60,29 @@ registry existed at v1.1.0.
   (1986) print the same central value with a different uncertainty and an explicit temperature
   dependence. All three are shipped ledger values, so correcting any of them moves numbers the
   manifests pin — which is why they get their own pass rather than this one.
+
+### Fixed — the `bertin_1987` row is counted where its primary counts it (2026-08-29)
+`openmucf/data/muon_cost.csv`'s `bertin_1987` row shipped `stage = stopped_useful_in_dt`,
+`basis_class = stopped_in_dt` and `useful_fraction_sourced = false` — a typing its primary
+(Europhys. Lett. **4**, 875 (1987)) does not support. Its Table II is captioned as the cost of
+*producing* muons; the quantity is built from the beam kinetic energy per negative pion produced and
+the probability that such a pion decays in flight inside the target; and nothing about the muon after
+its birth — range, escape, collection, stopping — is computed anywhere in pp. 875–880. The target
+is liquid deuterium, with D–T reached by an argument in a footnote rather than by a calculation, and
+the sentence the older typing rested on (p. 876) states the scheme's premise rather than a result.
+- The row now carries `stage = produced`, `basis_class = produced` and an empty
+  `useful_fraction_sourced`, so it is flagged a **lower bound** on the cost per muon stopped and
+  useful in D–T, exactly like every other pinned row of its tier. `needs_verification` stays `false` and is
+  not a comment on the typing: that flag records whether the DIGIT is pinned from the primary text,
+  and 7.8 ± 1.8 GeV is pinned from Table II.
+- **No published number moves.** The value stays 7.80 GeV; the tier medians (4.85, 178 and 4993 GeV)
+  and the 1029.5× spread are unchanged; and the design-study and operating-facility tiers still
+  share no basis class, so the mixed-basis reading of that spread stands. What changes is what the
+  documents say: the T1 tier is now stage-homogeneous within the beam-kinetic numeraire, and
+  `MUON_COST.md`, `NEUTRONOMICS.md` and `FINDINGS.md` are regenerated to say so.
+- `MUON_COST.md` carries a dated amendment recording what moved and why, and
+  `test_bertin_is_counted_at_production` pins the corrected cells together with the derived Headline
+  sentence they drive.
 
 ### Added — the muon-cost chain gets its edge table, and a composed cost carries its competing readings (2026-08-28)
 `muon_cost.csv` holds the cost **nodes**; `openmucf/data/muon_cost_chain.csv` now holds the **edges**
