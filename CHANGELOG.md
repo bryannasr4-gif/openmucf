@@ -10,6 +10,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-29
+
+**What this release is.** v1.2.0 finishes the muon-cost axis. `openmucf/data/muon_cost.csv` holds
+cost *nodes*, every one of them carrying its value at its own (stage, numeraire, charge-basis)
+coordinate — and
+`openmucf/data/muon_cost_chain.csv` now holds the *edges* that join them, so a composed cost carries
+the competing published readings of its own conversion factors instead of collapsing them, and
+refuses to print a bound as a value. The cycle-closure criterion of Kou & Chen (arXiv:2607.10989) is
+registered as sixteen machine-checked reproduction targets. The cross-tier basis correction is
+complete: `README.md`, `FINDINGS.md` and `NEUTRONOMICS.md` each state the tier spread as an
+order-of-magnitude, mixed-basis observation, and `test_no_basis_class_spans_T1_and_T3` pins the
+reason — the design-study and operating-facility tiers share no basis class, so the quantity has
+no common denominator to be a ratio *of*. And the registry of quantified claims about the ledger
+grew from 386 to 821 enumerated lines while its `UNREVIEWED` ceiling ratcheted **83 → 82** — that
+ceiling is monotone non-increasing, so every line added since is one that was read and ruled.
+
+**What is deferred, named here rather than left for a reader to find.**
+- **The claim guard's own blind spots.** `tests/test_ledger_claims.py` enumerates a claim by matching
+  a universal quantifier beside a ledger word, one rendered line at a time. It therefore does not see
+  a universal stated by *negation* (`not`, `cannot`, `n't` are not in its pattern — about 223 further
+  lines), and it cannot see a universal whose quantifier and subject fall on different rendered
+  lines. The registry is a **floor** on this repository's quantified-claim surface, not a census of
+  it, and widening the pattern is deferred rather than done here because every line the widening adds
+  must be read and ruled before it may land.
+- **`figures/twin_bias.png` renders its own disclosure truncated.** The panel title
+  "(NOT a detector prediction)" runs past the figure edge. The string is correct in
+  `scripts/generate_twin_audit.py` and the same disclosure is stated in full in `TWIN_AUDIT.md`, so
+  no claim is wrong — but a reader who sees only the figure sees only part of the caveat, and the
+  layout is not fixed in this release.
+- **The Kamimura calibration prior is unbounded, and two byte-identity assertions are scoped to a
+  platform rather than to a toolchain.** `openmucf/calibrate.py`'s informative `omega_s0` prior is a
+  Normal with no support bound, so a chain can trap in a zero-prior-mass basin and the audited
+  convergence of that cell is a property of one seed rather than of the sampler; separately,
+  `_on_recorded_platform` checks machine and platform but not the live `jax`/`jaxlib`/`numpyro`
+  versions, so a bit-identity assertion is being made across an arbitrary numerics toolchain. `jax`
+  is capped below `0.11.1` in the dev extra for both reasons together. Fixing them moves audited
+  `CALIBRATION.md` cells, so it gets its own release rather than riding this one.
+- **Two rate-ledger rows carry digits their in-hand primaries could sharpen.** `rates.csv`'s
+  `lambda_ttmu` ships the `0.0` placeholder that keeps the tt channel inert and `omega_tt` ships
+  `0.14 ± 0.015`, while the JINR preprint's `2.84(32) µs⁻¹` and `0.139(15)` are recorded in those
+  rows' notes and in `references.bib` but not in their value cells — because the primary quotes them
+  at one condition rather than in this ledger's `× φ × c_t` normalization, which is why both rows
+  still say the channel is blocked pending the Matsuzaki/Bom tables. Separately,
+  `lambda_dt_transfer` is carried as a commonly-cited value with no locator, where Jones et al.
+  (1986) print the same central value with a different uncertainty and an explicit temperature
+  dependence. Both rows move manifest-pinned values and touch the calibration chain.
+
+### Added — the muon-cost chain gets its edge table, and a composed cost carries its competing readings (2026-08-28)
+`muon_cost.csv` holds the cost **nodes**; `openmucf/data/muon_cost_chain.csv` now holds the **edges**
+that join them — 8 rows, each moving exactly one axis, each carrying its own bias direction,
+evidence status and source locator, and the four that state a factor carrying its operating
+conditions with it. Two tables rather than more columns, for one reason: **a single conversion can
+carry competing values from two primaries**, and a column cannot hold two.
+- **The competing edge, which is the point.** `beam_kinetic -> electrical_minimal` is stated twice for
+  the same accelerator: Kelly, Hart & Rose (2021) adopt **0.18**, and Kovach et al. (2017) — the
+  primary they cite — state **18.3%**. Both are carried to the end; no mean is formed and neither is
+  preferred. Composing every path out of the open-access anchor row that uses **only sourced**
+  conversions therefore ends in a **set** of three terminal figures, printed as a set in
+  `MUON_COST.md`: **≥ 25.68**, **≥ 26.11** and **≥ 45.19 GeV** per negative muon *produced*. The
+  25.68 was previously recorded only as a note about what the unrounded figure would give; it is now
+  a terminal figure of the compilation, on the same footing as the 26.11, because the edge table can
+  hold both readings of one conversion.
+- **What the composition refuses to do.** `ChainValue.compose` / `.to_numeraire`, `compose_path` and
+  `enumerate_chain_paths` (`openmucf/mucost.py`) type the result rather than return a float: a path
+  through an unsourced or author-declared factor comes back as a **bound**, whose `render_value()`
+  raises `BasisError` instead of printing it as a value; and a path through a factor whose own authors
+  state that they do not know it is marked *direction unknown* and carries no bound marker at all,
+  because it is not one-sided. Each refusal is pinned by a test.
+- **Not one of the four stage advances a full chain needs is sourced by anybody.** `MUON_COST.md`'s
+  coverage table is derived from both tables at generation time rather than typed: of the 6
+  conversions a fully-sourced chain requires — 4 stage advances plus 2 numeraire changes out of
+  `beam_kinetic` — **2 carry a factor from a primary read here, and both are numeraire changes**.
+  The four unsourced links ship as explicit `absent` rows naming what would source them, rather than
+  as silence.
+- The stopping fraction is **deliberately not simulated**. A stopping fraction for negative muons in a
+  d-t target is a particle-transport result, and producing one here would turn a compilation of
+  published numbers into a model of our own; it is recorded as absent and left as a future
+  convergence point with simulation work.
+- `openmucf/data/muon_cost_chain.schema.json` declares the table, `datapackage.json` declares the
+  resource, and `MUON_COST_MANIFEST.json` pins the headlines derived from it. No node value moves.
+
 ### Changed — prose and locators re-derived against their sources; no published number moves (2026-08-28)
 Wording only: no shipped number or test outcome moves, and every generated document regenerates from
 its generator. Three CC-BY data files change text cells only — `muon_cost.csv` and
@@ -45,6 +126,33 @@ checked against the primary or the code it describes and rewritten to what that 
   skipped under jit). `tests/test_uq.py`'s breakeven test is renamed `..._under_prior_uncertainty` —
   only one of the six priors is measured — and this file's §2b bullet below now says the tier panel
   draws the other five inputs from their default boxes rather than holding them fixed.
+
+### Added — the test suite reports its own peak memory (2026-08-27)
+The weekly `slow` job runs three long MCMC gates in one process, and when a leg of it was lost on
+2026-08-24 — GitHub naming CPU/memory starvation as one thing that can cause that — no run, green or
+red, had ever recorded how much memory the suite used. `tests/conftest.py` now reports peak RSS at
+the end of every run, on every platform, with the platform-dependent units of `ru_maxrss` (kibibytes
+on Linux, **bytes on Darwin**) drilled on both paths in `tests/test_resource_report.py`. It is a
+report, not a gate: nothing fails on a memory figure.
+
+### Changed — the ledger's quantified claims are enumerated into a registry, and the false ones are retracted (2026-08-24 … 2026-08-27)
+`tests/test_ledger_claims.py` scans the shipped prose, data descriptors and figure text for lines
+that state a universal about the ledger, and `tests/ledger_claims_registry.tsv` requires each line it
+finds to be either **EXERCISED** — a named test fails when the claim is negated, which is stronger
+than a test merely mentioning it — or **REGISTERED** with the reason it was ruled true. What predates
+the cost-basis work may sit `UNREVIEWED`, under a ceiling that is monotone non-increasing. The
+deferral noted at the top of this release says what the scan does not see.
+- The enumeration was extended over the shipped documents, the data descriptors, `references.bib`,
+  the schema files and the matplotlib title/label/legend strings, taking the registry from **386 to
+  633** lines in this pass, and the sentences it surfaced were read against the tree rather than
+  against memory.
+- **The false ones were retracted, not softened.** "measured" was deleted from prior ranges and box
+  edges it is false of; "strict" was dropped where the code admits the bound; what the audit, the
+  manifest and the trust map are *said* to do was corrected to what they do; the shipped column
+  descriptions were rewritten to how the data actually has them; the neutrons-per-joule table was
+  given the basis its own tier medians have; and the notes describing primaries were repaired against
+  those primaries. Three statements standing in this same section were corrected in place.
+- **No published number moved.** Only the generated documents' input digests changed.
 
 ### Added — Kou–Chen 2026 cycle-closure criterion registered as machine-checked reproduction targets (2026-08-20)
 Sixteen `V_kouchenlawson_` rows in `openmucf/data/validation_targets.csv` register the published
@@ -595,6 +703,7 @@ provenance-clean and reproducible.
   ignorance-bound scenario B — **registered at this tag** (Zenodo DOI 10.5281/zenodo.21251512). Adds 20 forecast
   tests (**63 total**).
 
-[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.1.0
 [1.0.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.0.0

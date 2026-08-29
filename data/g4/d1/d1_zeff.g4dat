@@ -4,7 +4,7 @@
 #PROFILE      parity
 #SEAM         d1_nuclear_capture
 #TABLE        muon_zeff
-#GENERATOR    openmucf-g4 1.1.0
+#GENERATOR    openmucf-g4 1.2.0
 #SOURCEDIGEST a89c27519576989dc8c7b5b4ee0cd4f7cddfaf2b8d8ac8fd19b06be36bb7a1e6
 #SOURCESHA    8cc04f65977807f1848da7b958c421cd5e162f26
 #UNITS        value=dimensionless
