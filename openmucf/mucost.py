@@ -132,8 +132,9 @@ class ChainValue:
     ``statuses`` accumulates the ``evidence_status`` of every factor composed in, so the verdict is
     derived from provenance rather than asserted. The figure is a **value** only when it has reached
     :data:`TERMINAL_STAGE` *and* every composed factor is sourced; otherwise it is a **bound**, and
-    :meth:`render_value` refuses. Because every omitted or unsourced factor is <= 1, the bias is
-    always one-sided: the true cost can only be higher.
+    :meth:`render_value` refuses. Every factor the chain OMITS is <= 1, so an omission can only
+    understate the cost and the bound is one-sided; a factor a source states and calls arbitrary is
+    different in kind and leaves no direction to name (:attr:`direction_is_one_sided`).
     """
 
     value_GeV: float
@@ -157,19 +158,36 @@ class ChainValue:
         return bool(self.unsourced_statuses) or bool(self.missing_stages)
 
     @property
-    def bias_direction(self) -> str:
-        """The BOUND's type: ``'lower'`` for a bound, ``'none'`` otherwise -- never a symmetric interval.
+    def direction_is_one_sided(self) -> bool:
+        """False iff a factor whose own source disclaimed it has been COMPOSED into this figure.
 
-        The word names the bound, NOT the direction of the truth. Every factor this figure OMITS is
-        <= 1, so a lower bound understates the cost and the true value lies ABOVE the figure printed.
+        The distinction that matters for direction is not sourced-vs-unsourced, it is
+        omitted-vs-applied. A factor a chain leaves OUT is bounded above by 1, so omitting it can
+        only understate the cost -- that is a one-sided lower bound. A factor a source states, calls
+        arbitrary, and :meth:`compose` then divides by can put the figure above or below the truth,
+        because the true factor may lie either side of the stated one.
 
-        **Scope, and it is narrower than it looks.** That reasoning covers omitted factors. A factor
-        a source states, calls arbitrary, and :meth:`compose` then applies is different in kind: it
-        can put the figure above or below the truth, so a chain that composes one is not a one-sided
-        bound at all. This property cannot see the difference -- it reads statuses, not directions --
-        so where a figure is built from the edge table, :attr:`ChainPath.bias_direction` is the one
-        that answers, and it is the one a document may print a marker from.
+        ``author_declared_arbitrary`` is the one status that always means the second thing: it is
+        never added for an omission, only carried in by a factor actually applied. ``assumption`` can
+        mean either -- :meth:`MuonCost.chain_point` adds it for a qualifier the source never
+        established, which is an omission -- so it is not read here, and where a figure is built from
+        the edge table :attr:`ChainPath.bias_direction` remains the fuller answer: it knows which
+        edges were applied and carries each edge's own declared direction.
         """
+        return "author_declared_arbitrary" not in self.statuses
+
+    @property
+    def bias_direction(self) -> str:
+        """``'unknown'``, ``'lower'`` or ``'none'`` -- never a symmetric interval.
+
+        For a bound, the word names the BOUND's type and not the direction of the truth: every
+        factor this figure OMITS is <= 1, so a lower bound understates the cost and the true value
+        lies ABOVE the figure printed. Where a disclaimed factor has been composed in, there is no
+        such direction to name and the answer is ``'unknown'`` -- see
+        :attr:`direction_is_one_sided`.
+        """
+        if not self.direction_is_one_sided:
+            return "unknown"
         return "lower" if self.is_bound else "none"
 
     def why_bound(self) -> str:
@@ -182,8 +200,16 @@ class ChainValue:
         return "; ".join(why)
 
     def render(self, digits: int = 2) -> str:
-        """The figure with an explicit bound marker when it is one. Always safe to print."""
-        prefix = ">= " if self.is_bound else ""
+        """The figure with the marker its bias earns. Always safe to print.
+
+        ``>=`` is a claim, not decoration, so it is printed only for a figure that really is a
+        one-sided lower bound. A figure composed through a factor its own source calls arbitrary
+        gets no inequality at all.
+        """
+        bias = self.bias_direction
+        if bias == "unknown":
+            return f"{self.value_GeV:.{digits}f} GeV (direction unknown)"
+        prefix = ">= " if bias == "lower" else ""
         return f"{prefix}{self.value_GeV:.{digits}f} GeV"
 
     def render_value(self, digits: int = 2) -> str:
@@ -193,11 +219,18 @@ class ChainValue:
         merely discouraged, so a caller cannot quote an incomplete or unsourced chain as a result.
         """
         if self.is_bound:
+            tail = (
+                "Use render() -- a factor composed here is one its own source calls arbitrary, so "
+                "this figure is not a bound in either direction."
+                if not self.direction_is_one_sided
+                else (
+                    f"Use render() -- this is a one-sided '{self.bias_direction}' bound, so the "
+                    f"true cost can only be higher."
+                )
+            )
             raise BasisError(
                 f"refusing to render a bound as a value ({self.value_GeV:.{digits}f} GeV at stage "
-                f"'{self.stage}', numeraire '{self.numeraire}'): {self.why_bound()}. "
-                f"Use render() -- this is a one-sided '{self.bias_direction}' bound, so the true "
-                f"cost can only be higher."
+                f"'{self.stage}', numeraire '{self.numeraire}'): {self.why_bound()}. {tail}"
             )
         return f"{self.value_GeV:.{digits}f} GeV"
 

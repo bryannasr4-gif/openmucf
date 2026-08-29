@@ -1628,8 +1628,10 @@ def test_a_direction_unknown_path_is_never_printed_with_a_bound_marker(table, ch
     An OMITTED factor is bounded above by 1, so leaving it out can only understate the cost: that is
     a one-sided lower bound and prints with ">=". A factor a source states while saying it does not
     know the value can move the figure either way, so the same marker would be a false claim. The
-    edge carries the direction and the path reads it; ``ChainValue.bias_direction`` cannot see it,
-    which is precisely why ``ChainPath`` exists.
+    edge carries the direction and the path reads it. ``ChainValue`` reads the one thing statuses
+    alone can settle -- that a factor its own source disclaimed was composed IN -- so the two agree
+    here; ``ChainPath`` stays the fuller answer because it knows which edges were applied and
+    carries each one's own declared direction.
     """
     beam = table["kelly_hart_rose_2021"].chain_point()
     delivery = chain["delivery_kelly_eta_mu"]
@@ -1643,11 +1645,72 @@ def test_a_direction_unknown_path_is_never_printed_with_a_bound_marker(table, ch
     assert not through_arbitrary.render().startswith(">= ")
     assert through_arbitrary.render().endswith("(direction unknown)")
     assert "direction unknown: delivery_kelly_eta_mu" in through_arbitrary.why_bound()
-    # the underlying ChainValue still grades itself 'lower'; the two answer different questions and
-    # the path's answer is the one a document may print
-    assert through_arbitrary.value.bias_direction == "lower"
+    # the underlying ChainValue agrees, and that agreement is a fix rather than a coincidence: it
+    # used to grade this same figure 'lower' and print ">=", because it read only whether the figure
+    # was a bound at all. It now reads the one status that means a disclaimed factor was composed in.
+    assert through_arbitrary.value.bias_direction == "unknown"
+    assert not through_arbitrary.value.direction_is_one_sided
     with pytest.raises(BasisError, match=re.escape("refusing to render a figure graded 'unknown'")):
         through_arbitrary.render_value()
+
+
+def test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned(table, chain):
+    """``ChainEdge.apply_to`` returns a bare ChainValue, and that object must not overclaim.
+
+    The composition API has two public routes. ``compose_path`` returns a ``ChainPath``, which reads
+    each edge's own declared direction. ``apply_to`` returns the underlying ``ChainValue``, which
+    has only the statuses -- and for a factor whose own source calls it arbitrary that is enough to
+    know the figure is NOT a one-sided bound. Before this, that route printed ">= 9.40 GeV" and
+    refused with "the true cost can only be higher", both false of the same number the path renderer
+    correctly marked *direction unknown*.
+    """
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    arbitrary = chain["delivery_kelly_eta_mu"].apply_to(beam)
+    assert arbitrary.is_bound and not arbitrary.direction_is_one_sided
+    assert arbitrary.bias_direction == "unknown"
+    assert not arbitrary.render().startswith(">= ")
+    assert arbitrary.render().endswith("(direction unknown)")
+    with pytest.raises(BasisError) as exc:
+        arbitrary.render_value()
+    assert "not a bound in either direction" in str(exc.value)
+    assert "can only be higher" not in str(exc.value)
+    # the two routes now agree on the same figure, which is the point
+    path = mucost.compose_path(beam, [chain["delivery_kelly_eta_mu"]])
+    assert path.value.value_GeV == arbitrary.value_GeV
+    assert path.bias_direction == arbitrary.bias_direction == "unknown"
+    assert path.render() == arbitrary.render()
+
+    # ...and the marker is still EARNED where it is earned: a figure that only omits factors keeps
+    # its ">=", so this is a narrowing of the claim and not a blanket retreat from it
+    assert beam.direction_is_one_sided and beam.bias_direction == "lower"
+    assert beam.render().startswith(">= ")
+    sourced = chain["eta_acc_kovach_site"].apply_to(beam)
+    assert sourced.bias_direction == "lower" and sourced.render().startswith(">= ")
+    # an `assumption` status from an OMITTED qualifier is still one-sided: it is not read as a
+    # composed factor, which is the distinction direction_is_one_sided is scoped on
+    terminal = table["bertin_1987"].chain_point()
+    assert "assumption" in terminal.statuses and terminal.direction_is_one_sided
+
+
+def test_the_marker_sentence_is_derived_from_the_figures_it_describes(table, chain):
+    """The sentence explaining the `>=` must move with the markers, not assert one shape forever.
+
+    It is the one prose line left in the section that made a claim about every printed figure, and
+    the paragraph directly above it exists because that class of typed universal goes stale.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table, chain)
+    paths = gen.sourced_paths(table, chain)
+    assert sorted({p.bias_direction for p in paths}) == ["lower"]
+    assert "prints `>=` because it is a one-sided" in H["marker_clause"]
+    assert " ".join(H["marker_clause"].split()) in _normalized("MUON_COST.md")
+    # the other branches are reachable, not decoration: a fully sourced complete path renders
+    # plainly, and this is the sentence that would then be wrong if it were a literal
+    complete = mucost.ChainValue(
+        value_GeV=1.0, stage=mucost.TERMINAL_STAGE, numeraire=mucost.BEAM_KINETIC,
+        charge_basis="mu_minus", statuses=("primary",), provenance=("synthetic",),
+    )
+    assert mucost.compose_path(complete, []).bias_direction == "none"
 
 
 def test_the_edge_table_is_declared_in_the_data_package(chain):

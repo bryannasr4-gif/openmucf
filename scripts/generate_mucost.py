@@ -476,6 +476,29 @@ def build_headline(
             "it" if len(undirected) == 1 else "them",
         )
     H["blocked_clause"] = blocked_clause
+    # The marker sentence is derived for the same reason the coverage sentence is. "Each figure
+    # prints >= because it is a one-sided lower bound" is true of every published figure today and
+    # silently false the day one of them is not -- which is exactly the staleness the paragraph
+    # above it was built to retire.
+    printed_biases = sorted({p.bias_direction for p in paths})
+    if printed_biases == ["lower"]:
+        H["marker_clause"] = (
+            "Each figure above prints `>=` because it is a one-sided **lower** bound: every "
+            "conversion it omits is <= 1, so leaving it out can only understate the cost."
+        )
+    elif printed_biases == ["none"]:
+        H["marker_clause"] = (
+            "Each figure above prints as a plain value: its path reaches the terminal stage with "
+            "every conversion sourced, so nothing about it is a bound."
+        )
+    else:
+        H["marker_clause"] = (
+            "The figures above do not all carry the same marker ({}). A `>=` is a one-sided "
+            "**lower** bound -- every conversion that figure omits is <= 1, so leaving it out can "
+            "only understate the cost -- while a figure marked *direction unknown* is composed "
+            "through a factor its own authors call arbitrary and is bounded in neither "
+            "direction.".format(_join([f"`{b}`" for b in printed_biases]))
+        )
     competing = chain.competing()
     H["n_competing_conversions"] = str(len(competing))
     H["competing_clause"] = (
@@ -1020,9 +1043,8 @@ with their provenance -- never a mean, and never one of them singled out:
 
 {_sourced_path_table(sourced_paths(table, chain))}
 
-**Read the marker, and read what is missing.** Each figure above prints `>=` because it is a
-one-sided **lower** bound: every conversion it omits is <= 1, so leaving it out can only understate
-the cost. {H['blocked_clause']} The edge table carries every one of those conversions and the API
+**Read the marker, and read what is missing.** {H['marker_clause']}
+{H['blocked_clause']} The edge table carries every one of those conversions and the API
 will compose them, marking a result *direction unknown* wherever its edges cannot bound it -- which
 is how this compilation records a factor it may not publish a number from.
 """

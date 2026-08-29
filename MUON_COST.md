@@ -301,8 +301,7 @@ with their provenance -- never a mean, and never one of them singled out:
 | `eta_acc_kelly_psi_minimal` | `produced` / `electrical_minimal` | >= 26.11 GeV |
 | `eta_acc_kovach_site` | `produced` / `electrical_site` | >= 45.19 GeV |
 
-**Read the marker, and read what is missing.** Each figure above prints `>=` because it is a
-one-sided **lower** bound: every conversion it omits is <= 1, so leaving it out can only understate
-the cost. Beyond that, the chain could be continued with one conversion stated but not sourced: `delivery_kelly_eta_mu` (author_declared_arbitrary, bias `unknown`). None of the figures here is composed through it. `delivery_kelly_eta_mu` is not even one-sided: its own authors state they do not know the value, so a figure built through it could be too high or too low rather than bounded below. The edge table carries every one of those conversions and the API
+**Read the marker, and read what is missing.** Each figure above prints `>=` because it is a one-sided **lower** bound: every conversion it omits is <= 1, so leaving it out can only understate the cost.
+Beyond that, the chain could be continued with one conversion stated but not sourced: `delivery_kelly_eta_mu` (author_declared_arbitrary, bias `unknown`). None of the figures here is composed through it. `delivery_kelly_eta_mu` is not even one-sided: its own authors state they do not know the value, so a figure built through it could be too high or too low rather than bounded below. The edge table carries every one of those conversions and the API
 will compose them, marking a result *direction unknown* wherever its edges cannot bound it -- which
 is how this compilation records a factor it may not publish a number from.
