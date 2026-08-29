@@ -23,7 +23,7 @@ complete: `README.md`, `FINDINGS.md` and `NEUTRONOMICS.md` each state the tier s
 order-of-magnitude, mixed-basis observation, and `test_no_basis_class_spans_T1_and_T3` pins the
 reason — the design-study and operating-facility tiers share no basis class, so the quantity has
 no common denominator to be a ratio *of*. And the registry of quantified claims about the ledger
-grew from 386 to 821 enumerated lines while its `UNREVIEWED` ceiling ratcheted **83 → 82** — that
+grew from 386 to 836 enumerated lines while its `UNREVIEWED` ceiling ratcheted **83 → 82** — that
 ceiling is monotone non-increasing, so every line added since is one that was read and ruled.
 
 **What is deferred, named here rather than left for a reader to find.**
