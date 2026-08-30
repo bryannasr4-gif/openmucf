@@ -1,0 +1,40 @@
+# Example texts for the sentence-segmentation tables (tests/test_ledger_claims.py, G4).
+# Columns: kind <TAB> member <TAB> text
+# An ABBREVIATION row must stay ONE sentence under the shipped tables and split into two when its
+# member is removed from ABBREVIATIONS; an OPENER row must split into TWO and join into one when
+# its member is removed from SENTENCE_OPENERS. test_sentence_split_rules_are_exampled enforces
+# both directions and that every member of both tables owns a row, so a segmentation rule cannot
+# be deleted, or shadowed by a neighbour, without a test going red. These are synthetic texts
+# written for the fixture; they state nothing about the shipped ledger.
+ABBREVIATION	et al	Kelly et al. (2017) state the factor.
+ABBREVIATION	e.g	One source, e.g. Kelly, states it.
+ABBREVIATION	i.e	The last stage, i.e. Delivery, ends it.
+ABBREVIATION	eq	The bound follows eq. (1) of the note.
+ABBREVIATION	eqs	It follows eqs. (3) and (4) jointly.
+ABBREVIATION	fig	See fig. (2) for the spread there.
+ABBREVIATION	figs	See figs. (2) and (3) beside it.
+ABBREVIATION	sec	It is proved in sec. IV of the paper.
+ABBREVIATION	secs	It spans secs. II and III entirely.
+ABBREVIATION	ref	See ref. [12] for the digit itself.
+ABBREVIATION	refs	See refs. [3] and [4] for the rest.
+ABBREVIATION	vs	It is beam vs. Electrical accounting.
+ABBREVIATION	cf	The row agrees, cf. The note above.
+ABBREVIATION	ca	It lists ca. Twenty sources in all.
+ABBREVIATION	p	It is stated on p. V of the appendix.
+ABBREVIATION	pp	It spans pp. V-VII of the appendix.
+ABBREVIATION	no	It is row no. B7 of the table there.
+ABBREVIATION	nos	Rows nos. B3 and B4 are both barred.
+ABBREVIATION	approx	It needs approx. Twenty muons per run.
+ABBREVIATION	vol	It appears in vol. II of the series.
+ABBREVIATION	ch	It is derived in ch. IV of the text.
+ABBREVIATION	tab	The value sits in tab. III on its own.
+ABBREVIATION	ed	The 2nd ed. Springer printing has it.
+ABBREVIATION	eds	The eds. Smith and Jones both concur.
+OPENER	A-Z	It is one row. Every tier counts it.
+OPENER	"	It is one row. "Every tier counts it."
+OPENER	'	It is one row. 'Every tier counts it.'
+OPENER	`	It is one row. `tier` counts stand.
+OPENER	*	It is one row. *Every* tier counts it.
+OPENER	_	It is one row. _every_ tier counts it.
+OPENER	\(	It is one row. (Every tier counts it.)
+OPENER	\[	It is one row. [Every tier counts it.]

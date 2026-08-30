@@ -1,4 +1,4 @@
-"""Three guards over the *prose* that surrounds the muon-cost ledger.
+"""Four guards over the *prose* that surrounds the muon-cost ledger.
 
 None of them reads the ledger. They bind the sentences written *about* it, which no manifest,
 byte-diff or `provenance --check` can see: a manifest pins a value against the document that renders
@@ -16,8 +16,12 @@ every existing gate stays green.
   axis labels, legend labels, annotations -- from the generators that save one, and requires each
   string to carry a registry row. A figure is outside the byte-diff and outside G1's line surface,
   which is how a false label survived three sweeps.
+- **G4 :func:`test_wrapped_claims_registered`** enumerates the claim sentences that WRAP across
+  source lines. G1's unit is the single line, so a wrapped universal was keyed on whichever of its
+  lines matched by itself -- or on none of them -- and an edit to the other line re-keyed nothing.
+  G4 keys the whole sentence, so an edit to any of its lines is a registry diff.
 
-All three keep their bookkeeping in TSV files beside this one, keyed on the SHA-1 of the
+All four keep their bookkeeping in TSV files beside this one, keyed on the SHA-1 of the
 whitespace-normalized text -- the registries additionally on the path -- never on line number, which
 churns on every commit.
 
@@ -31,10 +35,14 @@ that happened to match no line of the tree could be removed in silence -- thirte
 from __future__ import annotations
 
 import ast
+import csv
 import hashlib
+import io
+import json
 import os
 import re
 import sys
+import tokenize
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -75,8 +83,8 @@ CLAIM_PATHS = (
     # green.
     "openmucf/data/bib_unresolved.txt",
     # This file. A guard that exempts itself is not a guard: this module's own prose is watched on
-    # the same terms as every other path here. The three TSV files beside it are not listed: they
-    # are this guard's own fixtures and bookkeeping (form examples, registry rows), not prose.
+    # the same terms as every other path here. The TSV files beside it are not listed: they are
+    # the guards' own fixtures and bookkeeping (form and split examples, registry rows), not prose.
     "tests/test_ledger_claims.py",
 )
 
@@ -89,7 +97,7 @@ CLAIM_PATHS = (
 #: and rules every line the form adds; `exact` entered that way (a shipped descriptor it hid was
 #: true, and had never been enumerable). Negation -- `not`, `cannot`, `\w+n't` -- is the measured
 #: residue: it states a universal ("does not depend on") that this table cannot see, and at
-#: 2026-08-30 it adds 322 lines, so it lands as its own change, read in full, not here.
+#: 2026-08-30 it adds 327 lines, so it lands as its own change, read in full, not here.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",
@@ -229,10 +237,12 @@ def test_quantified_claims_registered():
 
     This checks exactly what those two patterns match, line by line, over exactly those paths; a
     universal in any other form, split across lines, or written anywhere else is unchecked. Two such
-    forms are measured and registered rather than unknown: a universal stated by negation (`does
-    not depend on`), and a wrapped sentence whose quantifier and ledger word fall on different
-    rendered lines -- whether or not one of its lines happens to match on its own, since an edit to
-    the other line then re-keys nothing. It does not decide whether a matched claim is true:
+    forms are measured and stated rather than unknown: a universal stated by negation (`does not
+    depend on`), still queued as its own change; and a wrapped sentence, which G4
+    (:func:`test_wrapped_claims_registered`) now keys whole over :data:`SENTENCE_PATHS` -- in a
+    claim path not yet listed there, a wrapped sentence is still keyed at line granularity only,
+    and an edit to a line of it that matches nothing re-keys nothing. It does not decide whether a
+    matched claim is true:
     ``REGISTERED:`` records a judgement made by a person and its substance is not machine-checked,
     so that layer is exactly as strong as the reviewer, and ``EXERCISED:`` names a test, checked for
     existence rather than for strength.
@@ -665,14 +675,447 @@ def test_every_shipped_figure_is_named_by_a_generator():
             assert (FIGURE_DIR / name).is_file(), f"{rel} names figures/{name}, which does not exist"
 
 
+# --------------------------------------------------------------------------------------------------
+# G4 -- claim sentences wrapped across source lines
+# --------------------------------------------------------------------------------------------------
+
+#: The paths G4 reads: a stated subset of :data:`CLAIM_PATHS`, because the sentence layer lands in
+#: two packs that each read and rule every sentence they enumerate (the same stopping rule the form
+#: tables are admitted under). This tuple is the first pack's coverage; the second pack extends it
+#: to every claim path a sentence can wrap in, after which it must equal :data:`CLAIM_PATHS` minus
+#: the :data:`UNWRAPPABLE_SUFFIXES` files. Until then, a wrapped claim in an unlisted path is keyed
+#: at line granularity only (G1), and the CHANGELOG names the gap.
+SENTENCE_PATHS = (
+    "CHANGELOG.md",
+    "scripts/generate_mucost.py",
+    "MUON_COST.md",
+    "tests/test_ledger_claims.py",
+    "README.md",
+    "paper/paper.md",
+    "ADOPTERS.md",
+    "openmucf/data/bib_unresolved.txt",
+)
+
+#: File types no sentence can wrap in. A JSON string value cannot hold a raw newline by grammar; a
+#: quoted CSV cell could, so :func:`test_unwrappable_paths_cannot_wrap` MEASURES that none does --
+#: the exclusion is checked on every run, never assumed.
+UNWRAPPABLE_SUFFIXES = (".json", ".csv")
+
+#: Tokens after which ``.`` does not end a sentence. Hand-kept, so each member owns a JOIN example
+#: in ``sentence_split_examples.tsv`` that flips to a split when the member is removed
+#: (:func:`test_sentence_split_rules_are_exampled`) -- a member cannot die in silence.
+ABBREVIATIONS = (
+    "et al", "e.g", "i.e", "eq", "eqs", "fig", "figs", "sec", "secs", "ref", "refs", "vs", "cf",
+    "ca", "p", "pp", "no", "nos", "approx", "vol", "ch", "tab", "ed", "eds",
+)
+
+#: What may open the sentence after a split, as character-class fragments: an uppercase letter, a
+#: quote, a backtick, markdown emphasis, a bracket. A digit or a lowercase letter deliberately may
+#: NOT: the halves stay joined, and a join can only over-enumerate (one more row to rule) -- it can
+#: never hide a universal, where a false split can.
+SENTENCE_OPENERS = ("A-Z", '"', "'", "`", "*", "_", r"\(", r"\[")
+
+SPLIT_EXAMPLES = Path(__file__).with_name("sentence_split_examples.tsv")
+SENTENCE_REGISTRY = Path(__file__).with_name("sentence_claims_registry.tsv")
+#: Nothing predates this layer: every wrapped sentence it enumerates is read when it enters.
+SENTENCE_CLAIMS_UNREVIEWED_CEILING = 0
+
+
+def build_splitter(abbrevs: tuple[str, ...] = ABBREVIATIONS,
+                   openers: tuple[str, ...] = SENTENCE_OPENERS) -> re.Pattern[str]:
+    """The one place the two segmentation tables become a pattern (:func:`build_pattern`'s shape).
+
+    The abbreviation lookbehinds are case-insensitive (``(?i:...)`` -- `Eq. (1)` and `eq. (1)` are
+    the same citation); the opener class is case-sensitive, or ``A-Z`` would swallow every letter.
+    """
+    guard = "".join(rf"(?<!\b(?i:{re.escape(a)})\.)" for a in abbrevs)
+    return re.compile(rf"(?<=[.!?]){guard}\s+(?=[{''.join(openers)}])")
+
+
+SPLITTER = build_splitter()
+
+#: Leading markup a rendered line carries that its sentence does not: blockquote, heading, list
+#: bullet, table pipe, a numbered-list prefix.
+_MARKUP = re.compile(r"^\s*(?:[>#*\-|]+\s*|\d+\.\s+)*")
+_STRING_PREFIX = re.compile(r"^[rRbBuUfF]{0,2}")
+
+#: A prose unit: (source line number, that line's text) pairs, in order.
+_Unit = list[tuple[int, str]]
+
+
+def _string_body(raw: str) -> str:
+    """A string token's content as the SOURCE spells it: prefix and quotes stripped, nothing else
+    interpreted -- an escape or an f-string ``{field}`` reads exactly as a reader of the file reads
+    it, which is also what G1 hashes."""
+    body = _STRING_PREFIX.sub("", raw, count=1)
+    for delim in ('"""', "'''", '"', "'"):
+        if body.startswith(delim) and body.endswith(delim) and len(body) >= 2 * len(delim):
+            return body[len(delim):-len(delim)]
+    return body
+
+
+def _py_units(src: str) -> list[_Unit]:
+    """String literals (f-strings included, implicit concatenation grouped) and comment runs."""
+    offsets = [0]
+    for line in src.splitlines(keepends=True):
+        offsets.append(offsets[-1] + len(line))
+
+    def segment(start: tuple[int, int], end: tuple[int, int]) -> str:
+        return src[offsets[start[0] - 1] + start[1]:offsets[end[0] - 1] + end[1]]
+
+    tokens = list(tokenize.generate_tokens(io.StringIO(src).readline))
+    strings: list[tuple[tuple[int, int], tuple[int, int], str]] = []
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok.type == tokenize.STRING:
+            strings.append((tok.start, tok.end, tok.string))
+        elif tok.type == tokenize.FSTRING_START:  # one f-string is many tokens on 3.12: re-slice it
+            depth, j = 1, i + 1
+            while depth:
+                if tokens[j].type == tokenize.FSTRING_START:
+                    depth += 1
+                elif tokens[j].type == tokenize.FSTRING_END:
+                    depth -= 1
+                j += 1
+            strings.append((tok.start, tokens[j - 1].end, segment(tok.start, tokens[j - 1].end)))
+            i = j
+            continue
+        i += 1
+    grouped: list[list[tuple[tuple[int, int], tuple[int, int], str]]] = []
+    for item in strings:
+        if grouped and not segment(grouped[-1][-1][1], item[0]).strip():
+            grouped[-1].append(item)  # implicit concatenation: only whitespace between the tokens
+        else:
+            grouped.append([item])
+    units: list[_Unit] = []
+    for group in grouped:
+        unit: _Unit = []
+        for (lineno, _col), _end, raw in group:
+            body = _string_body(raw).replace("\\\n", "")  # a continuation joins its two lines
+            unit.extend((lineno + k, part) for k, part in enumerate(body.split("\n")))
+        units.append(unit)
+    block: _Unit = []
+    last = -2
+    for tok in tokens:
+        if tok.type != tokenize.COMMENT:
+            continue
+        if tok.start[0] != last + 1 and block:
+            units.append(block)
+            block = []
+        block.append((tok.start[0], re.sub(r"^#+:?", "", tok.string).strip()))
+        last = tok.start[0]
+    if block:
+        units.append(block)
+    return units
+
+
+def _text_units(src: str, *, strip_markup: bool, skip_fences: bool) -> list[_Unit]:
+    """Blank-line-delimited blocks; a code fence delimits like a blank line and its body is code."""
+    units: list[_Unit] = []
+    block: _Unit = []
+    fenced = False
+    for lineno, line in enumerate([*src.splitlines(), ""], 1):
+        if skip_fences and line.lstrip().startswith("```"):
+            fenced = not fenced
+            line = ""
+        if fenced or not line.strip():
+            if block:
+                units.append(block)
+            block = []
+            continue
+        if line.lstrip().startswith("|"):  # a table row stands alone -- before the markup strip
+            if block:                      # eats its leading pipe and it would join its neighbours
+                units.append(block)
+            block = []
+            units.append([(lineno, _MARKUP.sub("", line, count=1) if strip_markup else line)])
+            continue
+        block.append((lineno, _MARKUP.sub("", line, count=1) if strip_markup else line))
+    if block:
+        units.append(block)
+    return units
+
+
+def prose_units(rel: str, src: str) -> list[_Unit]:
+    """What G4 reads from one file, by type. Everything else in the file is code or data, which
+    stays with G1's line surface."""
+    if rel.endswith(".py"):
+        return _py_units(src)
+    if rel.endswith(".bib"):
+        return _text_units(src, strip_markup=False, skip_fences=False)
+    if rel.endswith(UNWRAPPABLE_SUFFIXES):
+        return []
+    return _text_units(src, strip_markup=True, skip_fences=True)
+
+
+def split_sentences(unit: _Unit, splitter: re.Pattern[str] = SPLITTER) -> list[tuple[str, list[int]]]:
+    """(whitespace-normalized sentence, source lines it touches) for one prose unit.
+
+    Within a unit, a line with no alphanumeric character (a ``===`` rule, a lone ``}``) breaks a
+    paragraph the way a blank line does, and a ``|``-led table row stands alone -- a table states
+    its claims per row. A sentence never crosses a paragraph break.
+    """
+    paragraphs: list[_Unit] = []
+    current: _Unit = []
+    for lineno, line in unit:
+        if not re.search(r"[A-Za-z0-9]", line):
+            if current:
+                paragraphs.append(current)
+            current = []
+        elif line.lstrip().startswith("|"):
+            if current:
+                paragraphs.append(current)
+            paragraphs.append([(lineno, _MARKUP.sub("", line, count=1))])
+            current = []
+        else:
+            current.append((lineno, line))
+    if current:
+        paragraphs.append(current)
+    out: list[tuple[str, list[int]]] = []
+    for para in paragraphs:
+        joined = ""
+        spans: list[tuple[int, int, int]] = []
+        for lineno, line in para:
+            if joined:
+                joined += " "
+            start = len(joined)
+            joined += line
+            spans.append((start, len(joined), lineno))
+        prev = 0
+        for bound in [m.end() for m in splitter.finditer(joined)] + [len(joined)]:
+            seg = joined[prev:bound]
+            lo = prev + (len(seg) - len(seg.lstrip()))
+            hi = prev + len(seg.rstrip())
+            text = _normalize(seg)
+            if text:
+                out.append((text, sorted({n for a, b, n in spans if a < hi and b > lo})))
+            prev = bound
+    return out
+
+
+def _prose_sentences(paths: tuple[str, ...], root: Path) -> list[tuple[str, int, str, str, int]]:
+    """(path, first source line, sha1, normalized text, source-line count) for EVERY sentence."""
+    out: list[tuple[str, int, str, str, int]] = []
+    for rel in paths:
+        src = (root / rel).read_text(encoding="utf-8")
+        for unit in prose_units(rel, src):
+            for text, lines in split_sentences(unit):
+                out.append((rel, lines[0], claim_sha1(text), text, len(lines)))
+    return out
+
+
+def enumerate_wrapped_claims(
+    paths: tuple[str, ...] = SENTENCE_PATHS,
+    root: Path = REPO,
+    strong: re.Pattern[str] = STRONG,
+    ledger: re.Pattern[str] = LEDGER,
+) -> list[tuple[str, int, str, str]]:
+    """(path, first line, sha1, text) for every wrapped claim sentence, in file then line order."""
+    out: list[tuple[str, int, str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for rel, lineno, sha, text, nlines in _prose_sentences(paths, root):
+        if nlines >= 2 and strong.search(text) and ledger.search(text) and (rel, sha) not in seen:
+            seen.add((rel, sha))
+            out.append((rel, lineno, sha, text))
+    return out
+
+
+def test_wrapped_claims_registered():
+    """Claim sentences wrapping across source lines carry a registry row keyed on the WHOLE sentence.
+
+    **The enumerator, stated in full -- this is the whole definition of what gets caught.** Over the
+    paths in :data:`SENTENCE_PATHS`, prose units are extracted per file type: for ``.py``, every
+    string literal and f-string as its RAW source text (prefix and quotes stripped, escapes and
+    ``{field}`` expressions exactly as the file spells them, implicitly concatenated neighbours
+    taken as one unit) plus every run of consecutive ``#`` comment lines; for ``.bib``, every
+    blank-line-delimited block; for ``.md``/``.txt``, every blank-line-delimited block outside
+    fenced code, leading markup stripped. Inside a unit, a line with no alphanumeric character
+    breaks a paragraph and a ``|``-led table row stands alone. Units are cut into sentences by
+    :data:`SPLITTER`, built from :data:`ABBREVIATIONS` and :data:`SENTENCE_OPENERS` -- both tables
+    exampled and drilled by :func:`test_sentence_split_rules_are_exampled`. A sentence touching two
+    or more source lines whose text matches both G1 patterns is keyed by its path and the SHA-1 of
+    its whitespace-normalized text. The test fails on an unregistered sentence, a stale row, and
+    any ``UNREVIEWED`` row at all (the ceiling is zero: nothing predates this layer).
+
+    What this closes: under G1 alone a wrapped claim was keyed on whichever of its lines matched by
+    itself -- or on none of them -- so an edit to the OTHER line, the one carrying the quantifier,
+    flipped the claim with no registry diff. That is the v1.2.0 disclosure.
+
+    Unchecked, measured and stated rather than approximated: a claim path not yet in
+    :data:`SENTENCE_PATHS` (the second pack's work, named in the CHANGELOG); code outside string
+    literals and comments; a sentence assembled around a runtime value (``"..." + x + "..."`` is
+    cut at each literal boundary); an abbreviation outside :data:`ABBREVIATIONS` false-splits
+    (journal names and initials in reference notes -- at this head, zero such splits hide a claim,
+    measured by joining each such pair and re-matching); an unterminated line followed by a
+    capitalised one joins into a single coarser key (over-enumeration, never an escape); and
+    ``.json``/``.csv`` files, where nothing can wrap -- :func:`test_unwrappable_paths_cannot_wrap`
+    measures exactly that. It does not decide whether a claim is true: ``REGISTERED:`` records a
+    person's judgement and is as strong as its reviewer.
+    """
+    claims = enumerate_wrapped_claims()
+    registry = _read_registry(SENTENCE_REGISTRY)
+    enumerated = {(p, s) for p, _, s, _ in claims}
+    missing = [(p, n, s, t) for p, n, s, t in claims if (p, s) not in registry]
+    detail = "\n".join(f"  {s} {p}:{n} {t}" for p, n, s, t in missing)
+    assert not missing, (
+        f"unregistered wrapped claim sentence(s) -- add a row to {SENTENCE_REGISTRY.name}:\n{detail}"
+    )
+    _check_registry(registry, enumerated, SENTENCE_CLAIMS_UNREVIEWED_CEILING, SENTENCE_REGISTRY.name)
+
+
+def _read_split_examples() -> list[tuple[str, str, str]]:
+    rows: list[tuple[str, str, str]] = []
+    for raw in SPLIT_EXAMPLES.read_text(encoding="utf-8").splitlines():
+        if not raw.strip() or raw.startswith("#"):
+            continue
+        parts = raw.split("\t")
+        assert len(parts) == 3, f"split example row must have 3 tab-separated fields: {raw!r}"
+        kind, member, text = parts
+        assert kind in ("ABBREVIATION", "OPENER"), f"kind must be ABBREVIATION or OPENER: {raw!r}"
+        rows.append((kind, member, text))
+    return rows
+
+
+def test_sentence_split_rules_are_exampled():
+    """Every segmentation-table member owns an example that flips when the member is removed.
+
+    An ABBREVIATION example must stay ONE sentence under the shipped tables and become two with its
+    member removed; an OPENER example must split into two and become one. So a member deleted from
+    either table, or shadowed into irrelevance, turns a fixture row red -- the same discipline
+    :func:`test_guard_forms_are_exampled` applies to the form tables, because a hand-kept list
+    whose members can die in silence is the exact hole G1 closed.
+    """
+    owned: set[tuple[str, str]] = set()
+    for kind, member, text in _read_split_examples():
+        table = ABBREVIATIONS if kind == "ABBREVIATION" else SENTENCE_OPENERS
+        assert member in table, f"{kind} example names a member not in its table: {member!r}"
+        n_full = len(split_sentences([(1, text)]))
+        without = tuple(m for m in table if m != member)
+        reduced = (build_splitter(abbrevs=without) if kind == "ABBREVIATION"
+                   else build_splitter(openers=without))
+        n_reduced = len(split_sentences([(1, text)], splitter=reduced))
+        if kind == "ABBREVIATION":
+            assert n_full == 1, f"{text!r} must stay one sentence under the shipped tables"
+            assert n_reduced == 2, f"removing abbreviation {member!r} does not split {text!r}"
+        else:
+            assert n_full == 2, f"{text!r} must split under the shipped tables"
+            assert n_reduced == 1, f"removing opener {member!r} does not join {text!r}"
+        owned.add((kind, member))
+    for kind, table in (("ABBREVIATION", ABBREVIATIONS), ("OPENER", SENTENCE_OPENERS)):
+        missing = [m for m in table if (kind, m) not in owned]
+        assert not missing, f"{kind} members with no example row in {SPLIT_EXAMPLES.name}: {missing}"
+
+
+def test_unwrappable_paths_cannot_wrap():
+    """The file types G4 skips really cannot hold a wrapped sentence -- measured, every run.
+
+    A JSON string value cannot carry a raw newline by grammar; a quoted CSV cell can, so every cell
+    of every claim-path CSV is checked. If this test ever fails, the fix is to bring the file into
+    :data:`SENTENCE_PATHS`, not to loosen the check. And G4 must narrow G1's surface, never invent
+    one: every sentence path is a claim path, and none is of an unwrappable type.
+    """
+    assert set(SENTENCE_PATHS) <= set(CLAIM_PATHS)
+    assert not any(rel.endswith(UNWRAPPABLE_SUFFIXES) for rel in SENTENCE_PATHS)
+
+    def assert_single_line(node: object, rel: str) -> None:
+        if isinstance(node, str):
+            assert "\n" not in node, f"{rel}: a JSON string value wraps -- add it to SENTENCE_PATHS"
+        elif isinstance(node, dict):
+            for key, value in node.items():
+                assert_single_line(key, rel)
+                assert_single_line(value, rel)
+        elif isinstance(node, list):
+            for value in node:
+                assert_single_line(value, rel)
+
+    for rel in CLAIM_PATHS:
+        if rel.endswith(".json"):
+            assert_single_line(json.loads((REPO / rel).read_text(encoding="utf-8")), rel)
+        elif rel.endswith(".csv"):
+            for row in csv.reader(io.StringIO((REPO / rel).read_text(encoding="utf-8"))):
+                for cell in row:
+                    assert "\n" not in cell, f"{rel}: a CSV cell wraps -- add it to SENTENCE_PATHS"
+
+
+def test_wrapped_universal_is_enumerated(tmp_path):
+    """The drill: a universal split across two lines is keyed; its single-line twin, a fenced
+    block and a pair of table rows are not; an abbreviation does not cut a sentence in half; and
+    each ``.py`` prose kind (docstring, comment run, implicit concatenation) is read."""
+    (tmp_path / "a.txt").write_text(
+        "Every single\nledger row is pinned.\n\nEvery ledger row is pinned on one line.\n\n"
+        "```\nEvery fenced\nledger row is code.\n```\n\n"
+        "| Every tabled ledger row | stands |\n| alone on its line | too |\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "b.py").write_text(
+        '"""Every single\nledger row is exercised."""\n\n'
+        "# Each anchor listed here\n# never drifts.\n"
+        'X = ("Every wrapped tier obeys "\n     "eq. (1) of the note.")\n',
+        encoding="utf-8",
+    )
+    got = {(p, t) for p, _, _, t in enumerate_wrapped_claims(paths=("a.txt", "b.py"), root=tmp_path)}
+    assert ("a.txt", "Every single ledger row is pinned.") in got
+    assert ("b.py", "Every single ledger row is exercised.") in got
+    assert ("b.py", "Each anchor listed here never drifts.") in got
+    assert ("b.py", "Every wrapped tier obeys eq. (1) of the note.") in got, (
+        "the abbreviation join failed: `eq. (1)` split the sentence and hid the universal"
+    )
+    assert not any("on one line" in t for _, t in got), "a single-line sentence is not wrapped"
+    assert not any("fenced" in t for _, t in got), "a fenced block is code, not prose"
+    assert not any("tabled" in t for _, t in got), "a table row is a single-line unit, never wrapped"
+
+
+def test_deleting_a_form_stales_sentence_rows():
+    """A G1 form deletion is visible through this layer too: its sentence rows go stale.
+
+    For every form whose removal shrinks the wrapped enumeration, the registry check must fail on
+    the rows left behind; and at least one form must shrink it, else the drill is inert. Extraction
+    runs once -- the predicate re-applied per form is the same conjunction the enumerator uses,
+    asserted identical on the full tables first.
+    """
+    registry = _read_registry(SENTENCE_REGISTRY)
+    sentences = _prose_sentences(SENTENCE_PATHS, REPO)
+
+    def wrapped(strong: re.Pattern[str], ledger: re.Pattern[str]) -> set[tuple[str, str]]:
+        return {(rel, sha) for rel, _, sha, text, nlines in sentences
+                if nlines >= 2 and strong.search(text) and ledger.search(text)}
+
+    base = wrapped(STRONG, LEDGER)
+    assert base == {(p, s) for p, _, s, _ in enumerate_wrapped_claims()}
+    shrank = 0
+    for side, forms in (("STRONG", STRONG_FORMS), ("LEDGER", LEDGER_FORMS)):
+        for form in forms:
+            without = build_pattern(tuple(f for f in forms if f != form))
+            reduced = (wrapped(without, LEDGER) if side == "STRONG"
+                       else wrapped(STRONG, without))
+            if reduced == base:
+                continue
+            shrank += 1
+            stale = False
+            try:
+                _check_registry(registry, reduced, SENTENCE_CLAIMS_UNREVIEWED_CEILING,
+                                SENTENCE_REGISTRY.name)
+            except AssertionError:
+                stale = True
+            assert stale, (
+                f"removing {side} form {form!r} shrinks the wrapped enumeration but leaves no "
+                f"stale sentence row"
+            )
+    assert shrank, "no form's deletion changes the wrapped enumeration -- the drill is inert"
+
+
 if __name__ == "__main__":
-    # python tests/test_ledger_claims.py            -> the G1 registry skeleton (all UNREVIEWED)
-    # python tests/test_ledger_claims.py --figures  -> the G3 registry skeleton
-    # python tests/test_ledger_claims.py --patterns -> the two compiled G1 patterns
+    # python tests/test_ledger_claims.py             -> the G1 registry skeleton (all UNREVIEWED)
+    # python tests/test_ledger_claims.py --figures   -> the G3 registry skeleton
+    # python tests/test_ledger_claims.py --sentences -> the G4 registry skeleton
+    # python tests/test_ledger_claims.py --patterns  -> the two compiled G1 patterns
     if "--patterns" in sys.argv:
         print(f"STRONG = {STRONG.pattern}\nLEDGER = {LEDGER.pattern}")
     elif "--figures" in sys.argv:
         for _p, _s in sorted({(_p, _s) for _p, _n, _s, _t in enumerate_figure_text()}):
+            print(f"{_s}\t{_p}\tUNREVIEWED")
+    elif "--sentences" in sys.argv:
+        for _p, _s in sorted({(_p, _s) for _p, _n, _s, _t in enumerate_wrapped_claims()}):
             print(f"{_s}\t{_p}\tUNREVIEWED")
     else:
         for _p, _s in sorted({(_p, _s) for _p, _n, _s, _t in enumerate_claims()}):
