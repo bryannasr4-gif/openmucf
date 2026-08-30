@@ -1,0 +1,88 @@
+# Example sentences for the claim guard's form tables (tests/test_ledger_claims.py).
+# Columns: side <TAB> form <TAB> example
+# Every form in STRONG_FORMS / LEDGER_FORMS must own at least one row here; the named form alone
+# must match its example, no other form on the same side may, and the example must also match the
+# other side (it is a claim as the enumerator defines one). test_guard_forms_are_exampled enforces
+# all of that, and test_deleting_any_form_breaks_its_example drills each form's removal. These are
+# synthetic sentences written for the fixture; they state nothing about the shipped ledger.
+STRONG	every	Every row carries a locator.
+STRONG	all	All rows carry a locator.
+STRONG	each	Each row is pinned to its primary.
+STRONG	none	None of the rows is a bound.
+STRONG	never	A row is never composed through an arbitrary factor.
+STRONG	always	The tier median is always taken over the same rows.
+STRONG	only	Only one row states its useful fraction.
+STRONG	sole	The sole pinned row of its tier is the design study.
+STRONG	solely	The figure rests solely on the ledger's own rows.
+STRONG	exactly	Exactly three rows are electrical.
+STRONG	exact	The locator is exact for the row.
+STRONG	unique	The row's numeraire is unique within its tier.
+STRONG	uniquely	The chain point is uniquely determined by the row.
+STRONG	neither	Neither row reaches the terminal stage.
+STRONG	any	Any row may be read off the ledger.
+STRONG	entire	The entire ledger is read at load time.
+STRONG	without\s+exception	Rows are pinned without exception.
+STRONG	no	No row is a mean of two readings.
+STRONG	nothing	Nothing in the ledger is fitted.
+LEDGER	row	Every row carries a locator.
+LEDGER	rows	All rows carry a locator.
+LEDGER	tier	Every tier is listed.
+LEDGER	tiers	All tiers are listed.
+LEDGER	cell	No cell is hand-typed.
+LEDGER	cells	All cells are regenerated.
+LEDGER	anchor	Every anchor is read from the primary.
+LEDGER	anchors	All anchors are read from the primary.
+LEDGER	source	Each source is cited with a locator.
+LEDGER	sources	All sources are cited.
+LEDGER	basis	The basis is never mixed.
+LEDGER	bases	No two bases are averaged.
+LEDGER	numeraire	Every numeraire is declared.
+LEDGER	numeraires	All numeraires are declared.
+LEDGER	stage	Every stage is named.
+LEDGER	stages	All stages are named.
+LEDGER	ledger	The entire ledger is read.
+LEDGER	ledgers	All ledgers are read.
+LEDGER	entry	Every entry resolves.
+LEDGER	entries	All entries resolve.
+LEDGER	chain	The chain is never composed twice.
+LEDGER	chains	No two chains share a factor.
+LEDGER	headline	The headline is never a mean.
+LEDGER	headlines	All headlines are derived.
+LEDGER	manifest	Every manifest is regenerated.
+LEDGER	manifests	All manifests are regenerated.
+LEDGER	bibkey	Every bibkey resolves.
+LEDGER	bibkeys	All bibkeys resolve.
+LEDGER	evidence_status	Every evidence_status is validated.
+LEDGER	charge_basis	Every charge_basis is validated.
+LEDGER	bound	No bound is printed plainly.
+LEDGER	bounds	All bounds are one-sided.
+LEDGER	cost	The cost is never averaged.
+LEDGER	costs	All costs are per muon.
+LEDGER	value	No value is preferred.
+LEDGER	values	All values are read from the primary.
+LEDGER	figure	Every figure is composed.
+LEDGER	figures	All figures are composed.
+LEDGER	quotient	The quotient is never rounded.
+LEDGER	quotients	All quotients are stated.
+LEDGER	denominator	Every denominator is stated.
+LEDGER	denominators	All denominators are stated.
+LEDGER	problem	No problem is hidden.
+LEDGER	problems	All problems are recorded.
+LEDGER	contract	The contract is never relaxed.
+LEDGER	contracts	All contracts are drilled.
+LEDGER	claim	Every claim is ruled.
+LEDGER	claims	All claims are ruled.
+LEDGER	number	No number is tuned.
+LEDGER	numbers	All numbers are read from the primary.
+LEDGER	ratio	No ratio is formed.
+LEDGER	ratios	All ratios are disclosed.
+LEDGER	spread	The spread is never a measurement.
+LEDGER	spreads	All spreads are disclosed.
+LEDGER	aggregate	Every aggregate is disclosed.
+LEDGER	aggregates	All aggregates are disclosed.
+LEDGER	median	No median is blended.
+LEDGER	medians	All medians are disclosed.
+LEDGER	box	Every box is declared.
+LEDGER	boxes	All boxes are declared.
+LEDGER	edge	Every edge is cited.
+LEDGER	edges	All edges are cited.

@@ -10,6 +10,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed -- the claim guard: forms made deletable-only-in-the-open, three lexical holes closed, and the figures brought inside it (2026-08-29)
+
+The v1.2.0 notes named the claim guard's blind spots as a v1.3.0 deferral. This is the first of the
+changes that close them, and it widens the guard rather than loosening it.
+
+- **The two patterns are now built from form tables, and every form is exampled and drilled.**
+  `tests/test_ledger_claims.py` used to hold `STRONG` and `LEDGER` as two hand-written alternations,
+  and a form that happened to match no line of the tree could be deleted with nothing going red --
+  thirteen of them could be, `headlines` among them, the very form a drill had forced in. The patterns
+  are now built from `STRONG_FORMS` and `LEDGER_FORMS`; `tests/ledger_claims_examples.tsv` holds one
+  sentence per form; `test_guard_forms_are_exampled` requires each form to be atomic, to own an
+  example, and to be the only form on its side that matches it; and
+  `test_deleting_any_form_breaks_its_example` removes each form in turn and requires its example to
+  stop being a claim. A form can still be removed -- in a two-place diff that a reader sees.
+- **Three lexical holes closed, every line they add read and ruled.** `exact` joins `STRONG`
+  (5 lines; the `datapackage.json` descriptor it hid is true of all 14 rows of that resource). The
+  plurals of `ledger`, `manifest`, `quotient` and `denominator` join `LEDGER` (1 line -- the Kovach
+  et al. (2017) note in `references.bib`, checked clause by clause against the paper: eq. (1),
+  the 10.4 % and 18.3 % denominators, the four subsystem draws). The ledger's own aggregate nouns --
+  `ratio`, `spread`, `aggregate`, `median`, `box`, `edge`, with their plurals -- join `LEDGER`
+  (71 lines, most of them the edge table's and the prior boxes' own prose). The registry grows
+  856 -> 967 rows (144 EXERCISED / 743 REGISTERED / 80 UNREVIEWED); nothing landed UNREVIEWED and
+  the cap is unchanged at 80.
+- **Figure text is a guarded surface (G3).** A false label once shipped inside a tracked PNG through
+  three sweeps because nothing on the chain read a figure. `test_figure_text_registered` now
+  enumerates every string literal, f-string template or module constant passed to a matplotlib text
+  call (`set_title`, `set_xlabel`, `annotate`, `text`, ... and any `label=`/`title=` keyword) in
+  every generator that calls `savefig` under `scripts/` and `openmucf/` -- 46 strings across 5
+  generators -- and requires each to carry a ruled row in `tests/figure_text_registry.tsv`, with an
+  UNREVIEWED cap of zero. `test_every_shipped_figure_is_named_by_a_generator` ties each
+  `figures/*.png` to a generator. Text assembled from data at run time is outside G3 and the test
+  says so.
+
+### Fixed
+- **`figures/twin_bias.png` renders its disclosure in full.** The right-hand title is set on two
+  lines, so "(NOT a detector prediction)" no longer runs past the figure edge. `TWIN_AUDIT.md` and
+  `TWIN_MANIFEST.json` are byte-identical; only the PNG changed.
+
+### Still deferred to v1.3.0, re-measured
+- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` now enumerates **293**
+  further lines (the v1.2.0 notes said "about 223"; the edge table and the Bertin re-typing added
+  prose since). It lands as its own change, every line read. One correction to the v1.2.0 wording:
+  the form `n't` cannot match inside a word-boundary alternation (no boundary precedes the `n` of
+  `don't`), so the form that will land is `\w+n't`.
+- **A universal split across rendered lines.** Measured, not estimated: **134** wrapped sentences in
+  the guarded paths match the patterns when joined while none of their lines matches alone (126 once
+  this change's forms are counted). The closure is a sentence layer over exactly those wrapped
+  sentences, so nothing the line layer already keys gets a second row; it lands as its own change.
+
 ## [1.2.0] - 2026-08-29
 
 **What this release is.** v1.2.0 finishes the muon-cost axis. `openmucf/data/muon_cost.csv` holds

@@ -1,0 +1,55 @@
+# Registry of the text the shipped figures render. Produced by the enumerator in
+# tests/test_ledger_claims.py (python tests/test_ledger_claims.py --figures); see
+# test_figure_text_registered for its exact definition.
+# Columns: sha1(whitespace-normalized string) <TAB> generator path <TAB> status
+# status is EXERCISED:<test node id> | REGISTERED:<reason>; UNREVIEWED is capped at zero here,
+# because every figure string was composed by this project and is read before it ships.
+# REGISTERED means the string was read and judged by a person; the note says what it was checked
+# against. A string with a {} field is an f-string template: the field's value comes from data at
+# run time and the ruling covers the fixed text around it.
+1f3bf9a4c6556d526aec750e352865485cc9b476	scripts/generate_calibration.py	REGISTERED: legend label of the omega_s_eff = omega_s0(1-R) histogram; that product is what the likelihood observes (calibrate.OBS omega_s_eff_obs), so it is the constrained combination, as CALIBRATION.md states.
+3a7aab3b5837b1b0e2423fc268ab5c6034a2eac5	scripts/generate_calibration.py	REGISTERED: the vertical line sits at calibrate.OBS["omega_s_eff_obs"] = 0.45, the measured effective sticking in percent (Petitjean/Breunlich), so the label names the observation the chain is fitted to.
+a047334bc86fb2ce79f7b8dd9a093a2d94a84502	scripts/generate_calibration.py	REGISTERED: x-axis of the (omega_s0, R) joint panel; the chain samples omega_s0 in percent (calibrate.py's OBS and priors are stated in %).
+ac2a36be2c47873aae84aa8deeec4732d764511d	scripts/generate_calibration.py	REGISTERED: legend label of the R marginal; CALIBRATION.md records R's posterior width as support-dependent under the weak prior (the split is not pinned), which is what "poorly constrained" states.
+c48afe25837e6e301f988ec385cf58d705b9279f	scripts/generate_calibration.py	REGISTERED: title of the joint panel with the posterior omega_s0-R correlation filled from the chain; the ridge is the degeneracy CALIBRATION.md reports (corr 0.83-0.92 across the prior sweep).
+c56ec4bef1cd43c796711c09fd6a08c8b1b95845	scripts/generate_calibration.py	REGISTERED: axis label naming the reactivation parameter R of the same model; no claim.
+e4effebbc2c91390984c37b3985d41512fcbf7b8	scripts/generate_calibration.py	REGISTERED: title restating the calibration finding CALIBRATION.md carries -- the product omega_s0(1-R) is pinned by the likelihood while omega_s0 and R separately are not.
+f32b67c7e26342af42efabc674d441dca0a281c5	scripts/generate_calibration.py	REGISTERED: generic x-axis label of the marginals panel; no claim.
+0f8d17866876032cf0ba4ccd5401bea9b836685d	scripts/generate_findings.py	REGISTERED: title with the output name filled; the panel plots uq.sobol_indices total-order indices for that output.
+11369b1ea3e7757c2406e466797ef9c4a4c9d739	scripts/generate_findings.py	REGISTERED: title of the Q_net panel; uq.q_net is the net-electrical gain the section propagates.
+2994bc4722896a39b239442475061f837ac9337b	scripts/generate_findings.py	REGISTERED: axis label, the unit of X_mu; no claim.
+40bb99caa29668b91a32b7609970feb5c119f155	scripts/generate_findings.py	REGISTERED: section 2's propagation over the liquid-density ranges (the lambda_c_liquid row and the R box widened around R_col); "liquid ranges" is the section's own scoping.
+4a18eeec1a11fdb42f069c6131987263ea5f3f2d	scripts/generate_findings.py	REGISTERED: axis label; no claim.
+64809343ddb7863e0bf58d8ab1020efe6c697ea2	scripts/generate_findings.py	REGISTERED: axis label, the total-order Sobol index; no claim.
+7e74dba808a7a05ee2084016a797a903f12163c5	scripts/generate_findings.py	REGISTERED: Jones et al. PRL 56 (1986) p.591 report an average of 150 fusions per muon in a liquefied d-t target at c_t = 0.3 -- the same reading FINDINGS.md section 2 carries; "average" is the paper's word.
+90b231c0d322eb5527670dba8e2c81d59e3f68a2	scripts/generate_findings.py	REGISTERED: the axvspan covers uq_priors.csv's R row (0.20, 0.45), whose provenance note says the box is widened around the 0.35 +- 0.05 model value -- model-derived, not measured.
+9721d4e6b93dca3765c4d6a00dbe8da795a8703a	scripts/generate_findings.py	REGISTERED: legend label of the propagated X_mu median line, filled from the Monte-Carlo sample it is drawn on.
+a1957b0cf1ebac5879174fc2d369625b9271a57f	scripts/generate_findings.py	REGISTERED: title of the breakeven panel; FINDINGS.md section 3 asks the same requirement-form question and answers it with R >= 0.77 / R_X >= 0.64.
+b9373442e7f2c88a1121337f331be85c8b32179a	scripts/generate_findings.py	REGISTERED: axis label; no claim.
+c04241156a9394052865de9b5b0b2e547bb24f6e	scripts/generate_findings.py	REGISTERED: legend label of the vertical line at Q_net = 1 in the net-electrical panel.
+c56ec4bef1cd43c796711c09fd6a08c8b1b95845	scripts/generate_findings.py	REGISTERED: axis label naming the reactivation parameter R of the same model; no claim.
+cdfe498f7c94d1cacae795a139b9aecf51aac83d	scripts/generate_findings.py	REGISTERED: the horizontal line at X_mu = 500 is the fusions-per-muon > 500 projection of arXiv:2605.26432 (2026) that README.md cites; "claim" is the figure's word for that projection.
+e86f6e305c1449e6807f4ecdcb7d578daae4aef2	scripts/generate_findings.py	REGISTERED: legend label per breakeven-frontier curve, filled with that curve's lambda_c.
+184557fa868fc00ba4eafec3bc89e08b1780e7b9	scripts/generate_frontier.py	REGISTERED: X_MU_TARGETS = [150.0, 284.0, 500.0] in the same module; the quoted phrase is FRONTIER.md's own framing.
+53471d4b5adef1d70f4e3241b7240ddbe956e290	scripts/generate_frontier.py	REGISTERED: FRONTIER.md's curves are closed-form (the module docstring and _headline say so); the cloud is the numpyro NUTS chain with omega_s0_prior=("normal", 0.857, 0.03), the Kamimura value in percent; "requirement form, not a verdict" is the document's stated reading.
+6af5bc7c633914afc4d17c5ea50a08412f1ddd0b	scripts/generate_frontier.py	REGISTERED: the horizontal line at R_col, the collisional reactivation FRONTIER.md attributes to Kou-Chen eq.(33) and prints as H["R_col"].
+736bfd509db07368abd1444a1b1dc90ffaed9ede	scripts/generate_frontier.py	REGISTERED: the horizontal line at the posterior mean of R under the Kamimura prior, filled from that chain.
+7e4f3c1f59d08743bf6755853881efffcef5da72	scripts/generate_frontier.py	REGISTERED: uq_priors.csv's lambda_c row is the one measured prior (the liquid anchor band); the shaded band is its (low, high).
+7ff2d341de48f0ab4a365046d5216e096935160f	scripts/generate_frontier.py	REGISTERED: axis label; "required" is FRONTIER.md's requirement form (the R a target X_mu demands).
+bcc2919b39bcaaa9e70b939bc39cac7362ab7876	scripts/generate_frontier.py	REGISTERED: axis label with unit; no claim.
+e93d10e582023453335afde55dad6ad551f222bb	scripts/generate_frontier.py	REGISTERED: legend label per frontier curve, filled from X_MU_TARGETS in the same module.
+fc63e94f2756a44c1520e9b63cb3ebbf9b3ff0f8	scripts/generate_frontier.py	REGISTERED: the scatter is the numpyro NUTS chain run under the informative Kamimura omega_s0 prior, ("normal", 0.857, 0.03) in the same module's run_mcmc call.
+1e9df98fd710735784ec92d1fbcff0c3c3c1cbb1	scripts/generate_mucost.py	REGISTERED: "mixed basis" is the framing MUON_COST.md and README.md give the tier spread (tests/test_mucost.py::test_tier_spread_is_about_three_orders_of_magnitude_on_mixed_bases), and T1/T3 are the design-study and operating-facility tiers the title names.
+532bdf4c92439ac9c5bee6e99fd940406df04e7b	scripts/generate_mucost.py	REGISTERED: the DISARMAMENT caption; README.md carries the same sentence, and "unvalidated" is the ledger's own coverage finding (no fully sourced chain, MUON_COST.md).
+bf45208fe490a5e58816b24108f18659ec9e8d1a	scripts/generate_mucost.py	REGISTERED: build_figure plots only rows with numeraire == BEAM_KINETIC on a log axis (the filter and set_yscale in its body), which is what the label says.
+c20701315f92723618824c215c0640764efd9900	scripts/generate_mucost.py	REGISTERED: tick label; T2 is the demonstrated-technology tier, named the same way in MUON_COST.md.
+d8b94880b37cb89795a22789e59be58a6c185850	scripts/generate_mucost.py	REGISTERED: tick label; T1 is the design-study tier, named the same way in MUON_COST.md's tier tables.
+f8b196562aaa314c5042d3d3ef568b37c57c62de	scripts/generate_mucost.py	REGISTERED: tick label; T3 is the operating-facility tier, named the same way in MUON_COST.md.
+1f4d1db331542509fa65344f1fc2af873bcc6c43	scripts/generate_twin_audit.py	REGISTERED: legend label per density, filled from PHIS.
+2f47598da8bee627d86915c323e55c7a7d752ce1	scripts/generate_twin_audit.py	REGISTERED: axis label; TWIN_AUDIT.md's bias tables are in percent, as the label says.
+7352634a992f50cff6f0e8dae68030bfb12dcd19	scripts/generate_twin_audit.py	REGISTERED: TWIN_AUDIT.md's header states the same scope -- physics-level, synthetic-only, the idealized estimator on the model's own synthetic truth.
+7d1b1b9c19c5f920895d41f349cb116ced27d89f	scripts/generate_twin_audit.py	REGISTERED: TWIN_AUDIT.md section 3 states the bands are the FC-001 card-interval envelope and NOT a detector prediction; the title is set on two lines since 2026-08-29 so the disclosure survives rendering (it was cut at the figure edge before).
+9ee50a1ea7d4410c3599be592ef2474c168bddb2	scripts/generate_twin_audit.py	REGISTERED: axis label; no claim.
+a8bcdcb47016385394c0194b1ea243bee2aa0f91	scripts/generate_twin_audit.py	REGISTERED: the panel plots exp(-lambda t), a normalized fuel-component disappearance curve, per TWIN_AUDIT.md section 3.
+e38722b193804a3ffc68e5ac56cc5d7ed92dd625	scripts/generate_twin_audit.py	REGISTERED: axis label; no claim.
+f0850ff9dd0fe034f7efb0d293d2224323c348aa	scripts/generate_twin_audit.py	REGISTERED: legend label per fit-window start, filled from T_MINS.
