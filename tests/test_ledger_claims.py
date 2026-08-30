@@ -97,7 +97,7 @@ CLAIM_PATHS = (
 #: and rules every line the form adds; `exact` entered that way (a shipped descriptor it hid was
 #: true, and had never been enumerable). Negation -- `not`, `cannot`, `\w+n't` -- is the measured
 #: residue: it states a universal ("does not depend on") that this table cannot see, and at
-#: 2026-08-30 it adds 327 lines, so it lands as its own change, read in full, not here.
+#: 2026-08-30 it adds 335 lines, so it lands as its own change, read in full, not here.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",
@@ -109,7 +109,10 @@ STRONG_FORMS = (
 #: nothing here. The aggregate nouns -- `ratio`, `spread`, `aggregate`, `median`, `box`, `edge` and
 #: their plurals -- entered after a drill landed "the published ratio never overstates the spread"
 #: in a watched path and the suite stayed green; the plurals of `ledger`, `manifest`, `quotient` and
-#: `denominator` entered with them. Same admission rule as :data:`STRONG_FORMS`.
+#: `denominator` entered with them. `sentence` and `sentences` entered 2026-08-30 (as a pair, the
+#: plural precedent) after this repository's own release note stated its coverage universal --
+#: "wrapped sentences, every one read and ruled" -- in words no form here matched, so the claim
+#: was editable with every guard green. Same admission rule as :data:`STRONG_FORMS`.
 LEDGER_FORMS = (
     "row", "rows", "tier", "tiers", "cell", "cells", "anchor", "anchors", "source", "sources",
     "basis", "bases", "numeraire", "numeraires", "stage", "stages", "ledger", "ledgers",
@@ -118,7 +121,7 @@ LEDGER_FORMS = (
     "value", "values", "figure", "figures", "quotient", "quotients", "denominator", "denominators",
     "problem", "problems", "contract", "contracts", "claim", "claims", "number", "numbers",
     "ratio", "ratios", "spread", "spreads", "aggregate", "aggregates", "median", "medians",
-    "box", "boxes", "edge", "edges",
+    "box", "boxes", "edge", "edges", "sentence", "sentences",
 )
 
 
@@ -784,16 +787,24 @@ def _py_units(src: str) -> list[_Unit]:
         i += 1
     grouped: list[list[tuple[tuple[int, int], tuple[int, int], str]]] = []
     for item in strings:
-        if grouped and not segment(grouped[-1][-1][1], item[0]).strip():
-            grouped[-1].append(item)  # implicit concatenation: only whitespace between the tokens
+        gap = segment(grouped[-1][-1][1], item[0]) if grouped else "+"
+        # implicit concatenation: nothing but whitespace and comments between the tokens. An
+        # interposed comment must not cut a wrapped claim in two (found in review); an operator,
+        # a comma or any statement text in the gap keeps the tokens separate units.
+        if not re.sub(r"#[^\n]*", "", gap).strip():
+            grouped[-1].append(item)
         else:
             grouped.append([item])
     units: list[_Unit] = []
     for group in grouped:
         unit: _Unit = []
         for (lineno, _col), _end, raw in group:
-            body = _string_body(raw).replace("\\\n", "")  # a continuation joins its two lines
-            unit.extend((lineno + k, part) for k, part in enumerate(body.split("\n")))
+            # a backslash-newline continuation keeps one entry per SOURCE line (the backslash
+            # dropped), so a claim wrapped by continuation still spans its lines -- joining them
+            # collapsed such a claim to one line and hid it from BOTH layers (found in review)
+            parts = _string_body(raw).split("\n")
+            unit.extend((lineno + k, part[:-1] if part.endswith("\\") else part)
+                        for k, part in enumerate(parts))
         units.append(unit)
     block: _Unit = []
     last = -2
@@ -1050,7 +1061,9 @@ def test_wrapped_universal_is_enumerated(tmp_path):
     (tmp_path / "b.py").write_text(
         '"""Every single\nledger row is exercised."""\n\n'
         "# Each anchor listed here\n# never drifts.\n"
-        'X = ("Every wrapped tier obeys "\n     "eq. (1) of the note.")\n',
+        'X = ("Every wrapped tier obeys "\n     "eq. (1) of the note.")\n'
+        'Y = "Every continued \\\ntier is pinned."\n'
+        'Z = ("Every commented "  # a note\n     "tier is keyed.")\n',
         encoding="utf-8",
     )
     got = {(p, t) for p, _, _, t in enumerate_wrapped_claims(paths=("a.txt", "b.py"), root=tmp_path)}
@@ -1059,6 +1072,12 @@ def test_wrapped_universal_is_enumerated(tmp_path):
     assert ("b.py", "Each anchor listed here never drifts.") in got
     assert ("b.py", "Every wrapped tier obeys eq. (1) of the note.") in got, (
         "the abbreviation join failed: `eq. (1)` split the sentence and hid the universal"
+    )
+    assert ("b.py", "Every continued tier is pinned.") in got, (
+        "a backslash continuation collapsed the claim to one line and hid it"
+    )
+    assert ("b.py", "Every commented tier is keyed.") in got, (
+        "an interposed comment cut the wrapped claim in two"
     )
     assert not any("on one line" in t for _, t in got), "a single-line sentence is not wrapped"
     assert not any("fenced" in t for _, t in got), "a fenced block is code, not prose"

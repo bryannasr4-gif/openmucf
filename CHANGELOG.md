@@ -31,9 +31,19 @@ sentence can wrap in; the second pack, already scoped, extends it to the remaini
   form deletion goes red through this layer's stale rows too. `.json` and `.csv` claim paths are
   excluded because nothing in them can wrap -- a property `test_unwrappable_paths_cannot_wrap`
   measures on every run rather than assumes.
-- **Covered now: 315 wrapped sentences, every one read and ruled, none UNREVIEWED**, across
+- **Covered now: 322 wrapped sentences, every one read and ruled, none UNREVIEWED**, across
   CHANGELOG.md, scripts/generate_mucost.py, MUON_COST.md, tests/test_ledger_claims.py, README.md,
   paper/paper.md, ADOPTERS.md and openmucf/data/bib_unresolved.txt.
+- **Two forms enter the line guard on this change's own escape.** The coverage bullet above first
+  stated its universal -- wrapped sentences, every one read and ruled -- in words no `LEDGER` form
+  matched, so that claim was editable with every guard green. `sentence` and `sentences` join
+  `LEDGER_FORMS` (a pair, the plural precedent), each with its fixture row, and every line and
+  sentence the pair adds is read and ruled with the rest.
+- **Wrapped arithmetic is now a named gap, not an unknown.** The G2 arithmetic guard matches one
+  line at a time, so a written-out statement that wraps across two rendered lines is outside it.
+  Four such statements exist at this head (in MUON_COST.md, SYSTEMS.md, openmucf/systems.py and
+  scripts/generate_systems.py); each was recomputed by hand on 2026-08-30 and all four hold.
+  Closing the gap is registered for a later change, not done here.
 - **A published count is corrected: 731 -> 592.** The prototype behind the earlier figure walked an
   f-string and its fragments twice, compared f-string text carrying `{}` against source lines
   carrying the field expression (so 79 single-line strings counted as wrapped), and joined whole
@@ -80,7 +90,7 @@ changes that close them, and it widens the guard rather than loosening it.
   `TWIN_MANIFEST.json` are byte-identical; only the PNG changed.
 
 ### Still deferred to v1.3.0, re-measured
-- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **327** further
+- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **335** further
   lines at this head (the v1.2.0 notes said "about 223" at theirs; the edge table, the Bertin
   re-typing, and the guard changes' own forms and prose added lines since). It lands as its own
   change, every line read. One correction to the v1.2.0 wording:
