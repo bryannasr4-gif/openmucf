@@ -788,10 +788,10 @@ def _py_units(src: str) -> list[_Unit]:
     grouped: list[list[tuple[tuple[int, int], tuple[int, int], str]]] = []
     for item in strings:
         gap = segment(grouped[-1][-1][1], item[0]) if grouped else "+"
-        # implicit concatenation: nothing but whitespace and comments between the tokens. An
-        # interposed comment must not cut a wrapped claim in two (found in review); an operator,
-        # a comma or any statement text in the gap keeps the tokens separate units.
-        if not re.sub(r"#[^\n]*", "", gap).strip():
+        # implicit concatenation: nothing but whitespace, comments and explicit line joins between
+        # the tokens. An interposed comment or a backslash-newline must not cut a wrapped claim in
+        # two; an operator, a comma or any statement text in the gap keeps the tokens separate.
+        if not re.sub(r"#[^\n]*|\\\n", "", gap).strip():
             grouped[-1].append(item)
         else:
             grouped.append([item])
@@ -801,7 +801,9 @@ def _py_units(src: str) -> list[_Unit]:
         for (lineno, _col), _end, raw in group:
             # a backslash-newline continuation keeps one entry per SOURCE line (the backslash
             # dropped), so a claim wrapped by continuation still spans its lines -- joining them
-            # collapsed such a claim to one line and hid it from BOTH layers (found in review)
+            # collapsed such a claim to one line and hid it from BOTH layers. The strip fires on
+            # ANY line-final backslash, so an escaped or raw-string backslash there would lose
+            # one character; none exists in the claim paths, and matching is unaffected.
             parts = _string_body(raw).split("\n")
             unit.extend((lineno + k, part[:-1] if part.endswith("\\") else part)
                         for k, part in enumerate(parts))
@@ -955,7 +957,10 @@ def test_wrapped_claims_registered():
     Unchecked, measured and stated rather than approximated: a claim path not yet in
     :data:`SENTENCE_PATHS` (the second pack's work, named in the CHANGELOG); code outside string
     literals and comments; a sentence assembled around a runtime value (``"..." + x + "..."`` is
-    cut at each literal boundary); an abbreviation outside :data:`ABBREVIATIONS` false-splits
+    cut at each literal boundary); a continuation that splits a WORD (the halves rejoin
+    space-separated, so a form split mid-word is unmatched) and a line-final escaped or raw
+    backslash (read as a continuation and dropped) -- neither exists in these paths at this
+    head; an abbreviation outside :data:`ABBREVIATIONS` false-splits
     (journal names and initials in reference notes -- at this head, zero such splits hide a claim,
     measured by joining each such pair and re-matching); an unterminated line followed by a
     capitalised one joins into a single coarser key (over-enumeration, never an escape); and
@@ -1063,7 +1068,8 @@ def test_wrapped_universal_is_enumerated(tmp_path):
         "# Each anchor listed here\n# never drifts.\n"
         'X = ("Every wrapped tier obeys "\n     "eq. (1) of the note.")\n'
         'Y = "Every continued \\\ntier is pinned."\n'
-        'Z = ("Every commented "  # a note\n     "tier is keyed.")\n',
+        'Z = ("Every commented "  # a note\n     "tier is keyed.")\n'
+        'W = "Every joined " \\\n    "tier holds one row."\n',
         encoding="utf-8",
     )
     got = {(p, t) for p, _, _, t in enumerate_wrapped_claims(paths=("a.txt", "b.py"), root=tmp_path)}
@@ -1078,6 +1084,9 @@ def test_wrapped_universal_is_enumerated(tmp_path):
     )
     assert ("b.py", "Every commented tier is keyed.") in got, (
         "an interposed comment cut the wrapped claim in two"
+    )
+    assert ("b.py", "Every joined tier holds one row.") in got, (
+        "an explicit line join between concatenated strings cut the claim in two"
     )
     assert not any("on one line" in t for _, t in got), "a single-line sentence is not wrapped"
     assert not any("fenced" in t for _, t in got), "a fenced block is code, not prose"

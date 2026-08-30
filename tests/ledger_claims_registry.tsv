@@ -41,7 +41,6 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 3fd19904649a3f2f0e1518b2362a033ecc1644ad	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 405640f04bd4a3aa11dd650ad938e1f05d874295	CHANGELOG.md	REGISTERED: history checkable from scripts/generate_findings.py's git log -- the axvline label read "record ~150 (high-T/c_t, outside liquid box)" until f15c358 (2026-08-26) replaced it with a Jones-attributed label and cc87d5c gave that label the paper's word, average, after three claim sweeps over the prose had left it untouched; "nothing on the chain read a figure" is what this entry's G3 changes, and the Makefile's audit list still names no PNG.
 433c16627ea4c37ef6cb6f3d466096b0881f38b8	CHANGELOG.md	REGISTERED: a line of the 2026-08-29 entry; matches the shipped test's invariants (one example sentence per form).
-4521670b6a3dacae5b4023c1334d177adaca36be	CHANGELOG.md	REGISTERED: this entry's own coverage claim; the count and the none-UNREVIEWED state are re-derived from sentence_claims_registry.tsv at this head, and the count line is a fixed point converged before merge.
 45a53e4ffa6b6f757d8ab7adac347464bbbf0493	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 49443f6be9392fe3a3a620c5f14e2c62c74daa9e	CHANGELOG.md	UNREVIEWED
 4a2a2acb69fc274f7548505d37935f91c2c0b52e	CHANGELOG.md	UNREVIEWED
@@ -52,6 +51,7 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 5b9650eb77251f1d791f29e39ba4460f2d810c7f	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 5fa1efb48af59ac8203c621d5cb6192f80f5ab43	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 60e0f80e740d30071c66833b2d550bd843dbdb41	CHANGELOG.md	REGISTERED: git log -S'25.68' over the whole history returns exactly three commits -- 2f9f068 and 28eb8f7, which introduce it only as the note about what recomputing on the unrounded 0.183 would give, and 0c8c0a5, the edge-table pack that makes it a terminal figure of MUON_COST.md's coverage table. The 'previously only a note' claim is that history, not a recollection.
+65cfa41a0ba0db102d67d08866f1f1f0dafaeeb6	CHANGELOG.md	REGISTERED: this entry's own coverage claim; the count and the none-UNREVIEWED state are re-derived from sentence_claims_registry.tsv at this head, and the count line is a fixed point converged before merge.
 66bfad040d377363f4026b398378e502fad33e5b	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 682a26186d1510fc853bb55d901c46c3fcdc1d1c	CHANGELOG.md	REGISTERED: rewritten 2026-08-28 to drop the unsourced 'record' descriptor; X_mu = 113 is calibrate.OBS['xmu_obs'], the V_petitjean_Xmu target, as the line says, and scripts/generate_neutronomics.py imports it from there
 69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	UNREVIEWED
@@ -832,12 +832,13 @@ fc29c4cd1375ac15d26663b5a0f84bdfd5cc38be	scripts/generate_neutronomics.py	REGIST
 3c7eeb54e3a8c7b3c49ba53543edfeb4a687f634	tests/test_ledger_claims.py	REGISTERED: documentation of STRONG_FORMS; build_pattern is the anchoring construction and test_guard_forms_are_exampled the atomicity and example check.
 3c85221dacbe83035345991d447a5bc426780aa9	tests/test_ledger_claims.py	REGISTERED: a line of _string_body's docstring; matches the function (prefix and quotes stripped, nothing interpreted).
 3c955f50e7a7b23d04b678e8ccb1830bbef276dd	tests/test_ledger_claims.py	REGISTERED: a line of the module docstring's G4 bullet; the whole-sentence key is enumerate_wrapped_claims' definition.
+3d25a4f2feeb23cd778203d56acb6f7a9bfb1711	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
 43b43cb9c4fa810b41821408d5f069e046a24217	tests/test_ledger_claims.py	REGISTERED: _check_registry docstring; the four checks are the four blocks of its body.
 48aa563047d28d37856c11fbcb471113fc127d36	tests/test_ledger_claims.py	REGISTERED: the unwrappable test's docstring line; the measurement it promises is the test body.
 4b32ef74ec46fde7f21bb9ecb88a63ac6ae38430	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
-57a3559569e01e86152a31fbaa9f44e18987e4e3	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
 5919edea1d88cffd44b278aa17b7f7c26e3bf868	tests/test_ledger_claims.py	REGISTERED: assert message; states nothing about the ledger.
 60f9f03e566290dd3dba569bdd4c9b917ff2f93e	tests/test_ledger_claims.py	REGISTERED: a line of the G4 test docstring; matches the cap-zero constant.
+660ddd234fac0c951ebcd325fc9e0786ca29d155	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
 6794a85a2424020ff4f69aa56d84bc048874a5ca	tests/test_ledger_claims.py	REGISTERED: FIGURE_TEXT_UNREVIEWED_CEILING is 0 on the line below, and figure_text_registry.tsv carries no UNREVIEWED row.
 68416cb913720fdcc288d68e52b34f23bb35e4ca	tests/test_ledger_claims.py	REGISTERED: assert message inside test_guard_forms_are_exampled; states nothing about the ledger.
 6a61935338b2d2a8cb3ccf6bf48f45ed80b6617c	tests/test_ledger_claims.py	REGISTERED: documentation of the guard itself; none of the three enumerators opens muon_cost.csv as data -- G1 reads CLAIM_PATHS as text, G2 walks text files, G3 parses generators.
@@ -849,6 +850,7 @@ fc29c4cd1375ac15d26663b5a0f84bdfd5cc38be	scripts/generate_neutronomics.py	REGIST
 838d74ee8001e42cf533636cbef28f52bfc59cc0	tests/test_ledger_claims.py	REGISTERED: a line of the opener comment; joins over-enumerate (a ruling) and never hide, the reason for the conservative direction.
 8768e88006a2f633d71ad794375b241704f0d3b1	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
 8a6f0b6e442631aa12ef0713b1eb78ca2bda56cd	tests/test_ledger_claims.py	REGISTERED: documentation of LEDGER_FORMS; each noun it names, with its plural, is present in the table below it.
+8c855b370b5551d8aeb5624553561e42390976f3	tests/test_ledger_claims.py	REGISTERED: describes the continuation handling as shipped; the escaped/raw line-final-backslash exception is stated beside it and absent from the claim paths.
 8ffb413a034282d9b8bfeaebca52d69c927fd5b8	tests/test_ledger_claims.py	REGISTERED: enumerate_figure_text docstring; the key is claim_sha1 of the string, whose _normalize collapses a newline to a space.
 9099c6ace01fc467a6e2dbf0b9e86a36b520e067	tests/test_ledger_claims.py	REGISTERED: a line of the UNWRAPPABLE_SUFFIXES comment; the grammar fact and the measuring test it names.
 926ae20580132ff783ca085310b5b600efc001e5	tests/test_ledger_claims.py	REGISTERED: assert message inside test_guard_forms_are_exampled; states nothing about the ledger.
@@ -865,6 +867,7 @@ ae9dcbf18bdf3450293a708347d54a251496c3ca	tests/test_ledger_claims.py	REGISTERED:
 aeb69646f7bf87e8f28b80924c303376fe7b4ca7	tests/test_ledger_claims.py	REGISTERED: a line of the admission record; the attested escape is the release note's coverage bullet.
 afbd62c6435519cbbcf76f382aa195b3f63cd63c	tests/test_ledger_claims.py	REGISTERED: comment in the guard's own path list recording why a path is watched; it states nothing about the shipped ledger
 afe047f41a15e67368a57e391cefb33d35229743	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal (the synthetic b.py docstring), not a claim about the shipped ledger.
+b4873cbf75f6d9ca78fd6f4c1d14fa02d816ce42	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
 b760a18187f8b917be0f8c6a5e5ff5ae688acd0b	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
 bf5d85c8602baadcd34ea4e66e698bafe10727c8	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
 bff82b6915b0b87c22de2860f668545dfe66076b	tests/test_ledger_claims.py	REGISTERED: a line of the UNWRAPPABLE_SUFFIXES comment; the test named measures the exclusion every run.

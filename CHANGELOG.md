@@ -31,7 +31,7 @@ sentence can wrap in; the second pack, already scoped, extends it to the remaini
   form deletion goes red through this layer's stale rows too. `.json` and `.csv` claim paths are
   excluded because nothing in them can wrap -- a property `test_unwrappable_paths_cannot_wrap`
   measures on every run rather than assumes.
-- **Covered now: 322 wrapped sentences, every one read and ruled, none UNREVIEWED**, across
+- **Covered now: 323 wrapped sentences, every one read and ruled, none UNREVIEWED**, across
   CHANGELOG.md, scripts/generate_mucost.py, MUON_COST.md, tests/test_ledger_claims.py, README.md,
   paper/paper.md, ADOPTERS.md and openmucf/data/bib_unresolved.txt.
 - **Two forms enter the line guard on this change's own escape.** The coverage bullet above first
@@ -41,14 +41,16 @@ sentence can wrap in; the second pack, already scoped, extends it to the remaini
   sentence the pair adds is read and ruled with the rest.
 - **Wrapped arithmetic is now a named gap, not an unknown.** The G2 arithmetic guard matches one
   line at a time, so a written-out statement that wraps across two rendered lines is outside it.
-  Four such statements exist at this head (in MUON_COST.md, SYSTEMS.md, openmucf/systems.py and
-  scripts/generate_systems.py); each was recomputed by hand on 2026-08-30 and all four hold.
+  Five such statements exist at this head, across four files (MUON_COST.md carries two;
+  SYSTEMS.md, openmucf/systems.py and scripts/generate_systems.py one each); each was recomputed
+  by hand on 2026-08-30 and all five hold.
   Closing the gap is registered for a later change, not done here.
 - **A published count is corrected: 731 -> 592.** The prototype behind the earlier figure walked an
   f-string and its fragments twice, compared f-string text carrying `{}` against source lines
   carrying the field expression (so 79 single-line strings counted as wrapped), and joined whole
   JSON/CSV files and markdown tables into pseudo-sentences. Re-derived on raw source slices with
-  line spans, the same tree that the prototype counted at 731 holds 592 wrapped matching sentences.
+  line spans, the same tree that the prototype counted at 731 holds 596 wrapped matching sentences
+  under the guard as it ships here (592 before `sentence` and `sentences` entered).
 
 ### Changed -- the claim guard: forms made deletable-only-in-the-open, three lexical holes closed, and the figures brought inside it (2026-08-29)
 
@@ -100,7 +102,7 @@ changes that close them, and it widens the guard rather than loosening it.
   yet.** G4 above keys the whole wrapped sentence, so this deferral now names a smaller hole than
   the one v1.2.0 disclosed: in openmucf/mucost.py, tests/test_mucost.py,
   scripts/generate_findings.py, FINDINGS.md, scripts/generate_neutronomics.py, NEUTRONOMICS.md and
-  openmucf/data/references.bib -- 301 wrapped matching sentences at this head -- a wrapped claim
+  openmucf/data/references.bib -- 303 wrapped matching sentences at this head -- a wrapped claim
   is still keyed at line granularity only, and an edit to the line of it that matches nothing
   re-keys nothing. The second pack reads and rules them, after which `SENTENCE_PATHS` must equal
   every claim path a sentence can wrap in and a test asserts the equality.
