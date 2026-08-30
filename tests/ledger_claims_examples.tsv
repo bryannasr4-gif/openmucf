@@ -6,6 +6,8 @@
 # all of that, and test_deleting_any_form_breaks_its_example drills each form's removal. These are
 # synthetic sentences written for the fixture; they state nothing about the shipped ledger.
 STRONG	every	Every row carries a locator.
+LEDGER	sentence	Every wrapped sentence is keyed whole.
+LEDGER	sentences	All split sentences are joined first.
 STRONG	all	All rows carry a locator.
 STRONG	each	Each row is pinned to its primary.
 STRONG	none	None of the rows is a bound.

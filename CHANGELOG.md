@@ -10,6 +10,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the claim guard's sentence layer (G4), first pack (2026-08-30)
+
+The v1.2.0 notes disclosed that a universal whose quantifier and subject fall on different rendered
+lines escaped the claim guard. This change closes that hole for eight of the fifteen prose paths a
+sentence can wrap in; the second pack, already scoped, extends it to the remaining seven.
+
+- **A wrapped claim sentence is keyed WHOLE.** `test_wrapped_claims_registered` cuts prose into
+  units per file type -- string literals and comment runs read by token for `.py` (raw source text,
+  so the guard hashes exactly what a reader of the file sees), blank-line-delimited blocks for
+  `.md`/`.txt`/`.bib`, table rows standing alone, fenced code excluded -- splits the units into
+  sentences, and requires every sentence that touches two or more source lines and matches both G1
+  patterns to carry a ruled row in `tests/sentence_claims_registry.tsv`, with an UNREVIEWED cap of
+  ZERO. An edit to ANY line of a wrapped claim now re-keys it -- including the line that matches
+  nothing on its own, the exact edit that used to change a quantifier with no registry diff.
+- **The segmentation is exampled and drilled the way the form tables are.** The 24 protected
+  abbreviations (`eq.`, `et al.`, `p.`, ...) and 8 sentence-opener classes live in tables whose
+  every member owns a fixture row in `tests/sentence_split_examples.tsv` that flips when the member
+  is removed; a universal split across two lines is drilled end-to-end on synthetic files; and a G1
+  form deletion goes red through this layer's stale rows too. `.json` and `.csv` claim paths are
+  excluded because nothing in them can wrap -- a property `test_unwrappable_paths_cannot_wrap`
+  measures on every run rather than assumes.
+- **Covered now: 325 wrapped sentences, every one read and ruled, none UNREVIEWED**, across
+  CHANGELOG.md, scripts/generate_mucost.py, MUON_COST.md, tests/test_ledger_claims.py, README.md,
+  paper/paper.md, ADOPTERS.md and openmucf/data/bib_unresolved.txt.
+- **Two forms enter the line guard on this change's own escape.** The coverage bullet above first
+  stated its universal -- wrapped sentences, every one read and ruled -- in words no `LEDGER` form
+  matched, so that claim was editable with every guard green. `sentence` and `sentences` join
+  `LEDGER_FORMS` (a pair, the plural precedent), each with its fixture row, and every line and
+  sentence the pair adds is read and ruled with the rest.
+- **Wrapped arithmetic is now a named gap, not an unknown.** The G2 arithmetic guard matches one
+  line at a time, so a written-out statement that wraps across two rendered lines is outside it.
+  Five such statements exist at this head, across four files (MUON_COST.md carries two;
+  SYSTEMS.md, openmucf/systems.py and scripts/generate_systems.py one each); each was recomputed
+  by hand on 2026-08-30 and all five values hold.
+  Closing the gap is registered for a later change, not done here.
+- **A published count is corrected: 731 -> 592.** The prototype behind the earlier figure walked an
+  f-string and its fragments twice, compared f-string text carrying `{}` against source lines
+  carrying the field expression (so 79 single-line strings counted as wrapped), and joined whole
+  JSON/CSV files and markdown tables into pseudo-sentences. Re-derived on raw source slices with
+  line spans, the same tree that the prototype counted at 731 holds exactly 596 wrapped matching
+  sentences under the guard as it ships here (592 before `sentence` and `sentences` entered).
+
 ### Changed -- the claim guard: forms made deletable-only-in-the-open, three lexical holes closed, and the figures brought inside it (2026-08-29)
 
 The v1.2.0 notes named the claim guard's blind spots as a v1.3.0 deferral. This is the first of the
@@ -50,22 +92,20 @@ changes that close them, and it widens the guard rather than loosening it.
   `TWIN_MANIFEST.json` are byte-identical; only the PNG changed.
 
 ### Still deferred to v1.3.0, re-measured
-- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **322** further
+- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **335** further
   lines at this head (the v1.2.0 notes said "about 223" at theirs; the edge table, the Bertin
-  re-typing, and this change's own forms and prose added lines since). It lands as its own
+  re-typing, and the guard changes' own forms and prose added lines since). It lands as its own
   change, every line read. One correction to the v1.2.0 wording:
   the form `n't` cannot match inside a word-boundary alternation (no boundary precedes the `n` of
   `don't`), so the form that will land is `\w+n't`.
-- **A universal split across rendered lines.** A prototype sentence layer over the guarded paths
-  counts **731** wrapped sentences at this head that match the patterns when joined and lie in
-  no single line (a figure that moves by about 3 % with the choice of prose unit).
-  Some of those are already keyed through one of their lines and some are seen by nothing; a
-  window heuristic puts the second group between about 70 and 220, so that split is not yet a
-  measurement and is not published as one. The closure keys the whole wrapped sentence, so that
-  an edit to either of its lines re-keys it -- including the line that does not match on its
-  own, which today can change a quantifier with no registry diff. How the layer de-duplicates
-  against the line layer is the next change's first decision, and the guard remains a floor
-  until it lands.
+- **A universal split across rendered lines -- the seven paths the sentence layer does not read
+  yet.** G4 above keys the whole wrapped sentence, so this deferral now names a smaller hole than
+  the one v1.2.0 disclosed: in openmucf/mucost.py, tests/test_mucost.py,
+  scripts/generate_findings.py, FINDINGS.md, scripts/generate_neutronomics.py, NEUTRONOMICS.md and
+  openmucf/data/references.bib -- 303 wrapped matching sentences at this head -- a wrapped claim
+  is still keyed at line granularity only, and an edit to the line of it that matches nothing
+  re-keys nothing. The second pack reads and rules them, after which `SENTENCE_PATHS` must equal
+  every claim path a sentence can wrap in and a test asserts the equality.
 
 ## [1.2.0] - 2026-08-29
 
