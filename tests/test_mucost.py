@@ -195,9 +195,12 @@ def test_tier_spread_is_about_three_orders_of_magnitude_on_mixed_bases(table):
     the T3 and T1 medians differ by about three orders of magnitude. It is NOT a same-basis ratio --
     ``test_no_basis_class_spans_T1_and_T3`` proves no accounting stage is even shared between the two
     tiers, so the quantity has no common denominator to be a ratio *of*. The numeric check is kept
-    (deleting it would drop the only guard on the spread) but deliberately loosened to an
-    order-of-magnitude band, because a tight bound would once again be pinning a precision the bases
-    do not support.
+    as the one assert that states the order of magnitude directly -- the medians are pinned
+    exactly in ``test_aggregates_are_numeraire_restricted``, and the T3/T1 quotient to one decimal
+    in ``test_no_aggregate_admits_a_mu_plus_only_row`` and
+    ``test_published_tier_ratio_is_bound_to_the_ledger`` -- but it is deliberately loosened to an
+    order-of-magnitude band, because a tight bound would once again be pinning a precision the
+    bases do not support.
     """
     m1 = table.tier_median("T1-design-study")
     m3 = table.tier_median("T3-operating-facility")
