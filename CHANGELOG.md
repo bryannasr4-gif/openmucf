@@ -41,7 +41,8 @@ changes that close them, and it widens the guard rather than loosening it.
   generators -- and requires each to carry a ruled row in `tests/figure_text_registry.tsv`, with an
   UNREVIEWED cap of zero. `test_every_shipped_figure_is_named_by_a_generator` ties each
   `figures/*.png` to a generator. Text assembled from data at run time is outside G3 and the test
-  says so.
+  says so -- the point labels of `figures/muon_cost_gap.png`, drawn from the ledger's own label
+  table, are in that set.
 
 ### Fixed
 - **`figures/twin_bias.png` renders its disclosure in full.** The right-hand title is set on two
@@ -54,10 +55,15 @@ changes that close them, and it widens the guard rather than loosening it.
   prose since). It lands as its own change, every line read. One correction to the v1.2.0 wording:
   the form `n't` cannot match inside a word-boundary alternation (no boundary precedes the `n` of
   `don't`), so the form that will land is `\w+n't`.
-- **A universal split across rendered lines.** Measured, not estimated: **134** wrapped sentences in
-  the guarded paths match the patterns when joined while none of their lines matches alone (126 once
-  this change's forms are counted). The closure is a sentence layer over exactly those wrapped
-  sentences, so nothing the line layer already keys gets a second row; it lands as its own change.
+- **A universal split across rendered lines.** A prototype sentence layer over the guarded paths
+  counts **671** wrapped sentences that match the patterns when joined and lie in no single line.
+  Some of those are already keyed through one of their lines and some are seen by nothing; a
+  window heuristic puts the second group between about 70 and 220, so that split is not yet a
+  measurement and is not published as one. The closure keys the whole wrapped sentence, so that
+  an edit to either of its lines re-keys it -- including the line that does not match on its
+  own, which today can change a quantifier with no registry diff. How the layer de-duplicates
+  against the line layer is the next change's first decision, and the guard remains a floor
+  until it lands.
 
 ## [1.2.0] - 2026-08-29
 

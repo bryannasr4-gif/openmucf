@@ -231,7 +231,8 @@ def test_quantified_claims_registered():
     universal in any other form, split across lines, or written anywhere else is unchecked. Two such
     forms are measured and registered rather than unknown: a universal stated by negation (`does
     not depend on`), and a wrapped sentence whose quantifier and ledger word fall on different
-    lines with neither line matching alone. It does not decide whether a matched claim is true:
+    rendered lines -- whether or not one of its lines happens to match on its own, since an edit to
+    the other line then re-keys nothing. It does not decide whether a matched claim is true:
     ``REGISTERED:`` records a judgement made by a person and its substance is not machine-checked,
     so that layer is exactly as strong as the reviewer, and ``EXERCISED:`` names a test, checked for
     existence rather than for strength.
@@ -302,7 +303,7 @@ def test_deleting_any_form_breaks_its_example():
             own = [ex for s, f, ex in examples if s == side and f == form]
             assert own, f"{side} form {form!r} has no example to drill"
             for example in own:
-                assert other.search(example)
+                assert other.search(example), f"{example!r} is not a claim on the other side"
                 assert not without.search(example), (
                     f"removing {side} form {form!r} leaves {example!r} still enumerated -- another "
                     f"form covers it, so its deletion would be silent"
@@ -468,10 +469,40 @@ FIGURE_TEXT_CALLS = frozenset({
     "annotate", "text", "figtext", "set_xticklabels", "set_yticklabels", "legend",
 })
 #: keyword arguments, on any call, whose string value is drawn into a figure (`plot(label=...)`,
-#: `axvline(label=...)`, `legend(title=...)`). Any call is admitted rather than a list of plotting
-#: methods: over-enumerating a string that turns out not to reach a figure costs one registry row,
-#: while a maintained method list is one more table that can lose a member in silence.
-FIGURE_TEXT_KWARGS = frozenset({"label", "title", "xlabel", "ylabel"})
+#: `axvline(label=...)`, `legend(title=...)`, and the text calls' own first parameters passed by
+#: name: `annotate(text=)`, `text(s=)`, `suptitle(t=)`, `set_xticks(labels=)`). Any call is
+#: admitted rather than a list of plotting methods: over-enumerating a string that turns out not
+#: to reach a figure costs one registry row. Both tables above are still hand-kept lists, so each
+#: member owns a snippet in :data:`FIGURE_TEXT_EXAMPLES` that the extractor must find through that
+#: member alone -- the same discipline as the G1 form tables, enforced by
+#: :func:`test_figure_text_calls_are_exampled`.
+FIGURE_TEXT_KWARGS = frozenset({"label", "title", "xlabel", "ylabel", "text", "s", "t", "labels"})
+#: ``(table, member, snippet)``: one snippet per member of the two tables above, each yielding
+#: exactly the string ``"probe"`` through that member and nothing once the member is removed.
+FIGURE_TEXT_EXAMPLES = (
+    ("call", "set_title", 'ax.set_title("probe")'),
+    ("call", "set_xlabel", 'ax.set_xlabel("probe")'),
+    ("call", "set_ylabel", 'ax.set_ylabel("probe")'),
+    ("call", "set_label", 'colorbar.set_label("probe")'),
+    ("call", "suptitle", 'fig.suptitle("probe")'),
+    ("call", "title", 'plt.title("probe")'),
+    ("call", "xlabel", 'plt.xlabel("probe")'),
+    ("call", "ylabel", 'plt.ylabel("probe")'),
+    ("call", "annotate", 'ax.annotate("probe", (0, 0))'),
+    ("call", "text", 'ax.text(0, 0, "probe")'),
+    ("call", "figtext", 'fig.figtext(0, 0, "probe")'),
+    ("call", "set_xticklabels", 'ax.set_xticklabels(["probe"])'),
+    ("call", "set_yticklabels", 'ax.set_yticklabels(["probe"])'),
+    ("call", "legend", 'ax.legend(["probe"])'),
+    ("kwarg", "label", 'ax.plot(x, y, label="probe")'),
+    ("kwarg", "title", 'ax.legend(title="probe")'),
+    ("kwarg", "xlabel", 'ax.set(xlabel="probe")'),
+    ("kwarg", "ylabel", 'ax.set(ylabel="probe")'),
+    ("kwarg", "text", 'ax.annotate(text="probe", xy=(0, 0))'),
+    ("kwarg", "s", 'ax.text(0, 0, s="probe")'),
+    ("kwarg", "t", 'fig.suptitle(t="probe")'),
+    ("kwarg", "labels", 'ax.set_xticks([0], labels=["probe"])'),
+)
 FIGURE_DIR = REPO / "figures"
 FIGURE_TEXT_REGISTRY = Path(__file__).with_name("figure_text_registry.tsv")
 #: A figure string is composed, not inherited: nothing predates this guard, so nothing is deferred.
@@ -487,9 +518,21 @@ def figure_generators() -> list[str]:
     """
     out = []
     for rel in _walk(REPO / "scripts", (".py",)) + _walk(REPO / "openmucf", (".py",)):
-        if "savefig(" in (REPO / rel).read_text(encoding="utf-8"):
+        src = (REPO / rel).read_text(encoding="utf-8")
+        # the substring is a cheap pre-filter; the AST decides, so a comment that merely mentions
+        # savefig( does not make a module a generator
+        if "savefig(" in src and any(
+            isinstance(n, ast.Call) and _call_name(n) == "savefig" for n in ast.walk(ast.parse(src))
+        ):
             out.append(rel)
     return sorted(out)
+
+
+def _call_name(node: ast.Call) -> str:
+    func = node.func
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return func.id if isinstance(func, ast.Name) else ""
 
 
 def _string_values(node: ast.AST, consts: dict[str, str]) -> list[str]:
@@ -528,24 +571,55 @@ def enumerate_figure_text() -> list[tuple[str, int, str, str]]:
     out: list[tuple[str, int, str, str]] = []
     for rel in figure_generators():
         tree = ast.parse((REPO / rel).read_text(encoding="utf-8"))
-        consts = _module_string_constants(tree)
-        found: list[tuple[int, str]] = []
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            func = node.func
-            name = func.attr if isinstance(func, ast.Attribute) else (
-                func.id if isinstance(func, ast.Name) else ""
-            )
-            if name in FIGURE_TEXT_CALLS:
-                for a in node.args:
-                    found.extend((node.lineno, s) for s in _string_values(a, consts))
-            for kw in node.keywords:
-                if kw.arg in FIGURE_TEXT_KWARGS:
-                    found.extend((node.lineno, s) for s in _string_values(kw.value, consts))
-        for lineno, s in sorted(found):
+        for lineno, s in _figure_text_in(tree, _module_string_constants(tree)):
             out.append((rel, lineno, claim_sha1(s), _normalize(s)))
     return out
+
+
+def _figure_text_in(
+    tree: ast.AST,
+    consts: dict[str, str],
+    calls: frozenset[str] = FIGURE_TEXT_CALLS,
+    kwargs: frozenset[str] = FIGURE_TEXT_KWARGS,
+) -> list[tuple[int, str]]:
+    """(lineno, raw string) for every figure-text string in one parsed module, sorted."""
+    found: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if _call_name(node) in calls:
+            for a in node.args:
+                found.extend((node.lineno, s) for s in _string_values(a, consts))
+        for kw in node.keywords:
+            if kw.arg in kwargs:
+                found.extend((node.lineno, s) for s in _string_values(kw.value, consts))
+    return sorted(found)
+
+
+def test_figure_text_calls_are_exampled():
+    """Every member of the two G3 tables owns a snippet the extractor reads through it alone.
+
+    The tables are hand-kept lists, which is the shape of hole the G1 form tables just closed: a
+    member that no shipped generator happens to use could be deleted with every guard green. Each
+    snippet must yield exactly ``"probe"`` with the tables as shipped and nothing with its member
+    removed, and every member must own at least one snippet.
+    """
+    owned: set[tuple[str, str]] = set()
+    for table, member, snippet in FIGURE_TEXT_EXAMPLES:
+        pool = FIGURE_TEXT_CALLS if table == "call" else FIGURE_TEXT_KWARGS
+        assert member in pool, f"{table} example names a member that is not in the table: {member!r}"
+        tree = ast.parse(snippet)
+        assert [s for _, s in _figure_text_in(tree, {})] == ["probe"], f"{snippet!r} did not yield probe"
+        without = pool - {member}
+        reduced = (
+            _figure_text_in(tree, {}, calls=without) if table == "call"
+            else _figure_text_in(tree, {}, kwargs=without)
+        )
+        assert reduced == [], f"{snippet!r} still yields text without {table} member {member!r}"
+        owned.add((table, member))
+    for table, pool in (("call", FIGURE_TEXT_CALLS), ("kwarg", FIGURE_TEXT_KWARGS)):
+        unexampled = sorted(m for m in pool if (table, m) not in owned)
+        assert not unexampled, f"{table} members with no snippet in FIGURE_TEXT_EXAMPLES: {unexampled}"
 
 
 def test_figure_text_registered():
@@ -554,9 +628,12 @@ def test_figure_text_registered():
     Over :func:`figure_generators`, every string literal (or f-string template, or module constant)
     passed positionally to a call in :data:`FIGURE_TEXT_CALLS` or by a keyword in
     :data:`FIGURE_TEXT_KWARGS` is keyed by the generator's path and the SHA-1 of its
-    whitespace-normalized text. It checks exactly those strings: a label built from data at run time,
-    a ``matplotlib.text.Text`` set through any other call, or a figure written by a module outside
-    ``scripts/`` and ``openmucf/`` is unchecked. It does not decide whether a label is true; the
+    whitespace-normalized text. It checks exactly those strings. Unchecked, and stated rather than
+    approximated: text built from data at run time (``LABELS[key]`` -- the point labels of
+    ``figures/muon_cost_gap.png`` are drawn that way), a string reached through an alias or
+    ``getattr``, through ``*args``, through ``+`` concatenation or a local variable bound to a
+    literal, a ``matplotlib.text.Text`` set through any other call, and a figure written by a module
+    outside ``scripts/`` and ``openmucf/``. It does not decide whether a label is true; the
     ``REGISTERED:`` reason records what was checked against, and is as strong as its reviewer.
     """
     strings = enumerate_figure_text()
