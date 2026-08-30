@@ -745,6 +745,15 @@ _STRING_PREFIX = re.compile(r"^[rRbBuUfF]{0,2}")
 #: A prose unit: (source line number, that line's text) pairs, in order.
 _Unit = list[tuple[int, str]]
 
+#: On 3.12+ an f-string is many tokens (FSTRING_START .. FSTRING_END) and is re-sliced from the
+#: source whole; before 3.12 the attribute does not exist and an f-string is one STRING token
+#: whose raw text already IS the source slice, so the STRING branch yields the same hashed text
+#: by construction -- and the committed registry makes that mechanical rather than argued: an
+#: interpreter that enumerated even one key differently fails the registry checks, so the CI
+#: matrix's oldest job is itself the cross-version equality measurement.
+_FSTRING_START = getattr(tokenize, "FSTRING_START", None)
+_FSTRING_END = getattr(tokenize, "FSTRING_END", None)
+
 
 def _string_body(raw: str) -> str:
     """A string token's content as the SOURCE spells it: prefix and quotes stripped, nothing else
@@ -773,12 +782,12 @@ def _py_units(src: str) -> list[_Unit]:
         tok = tokens[i]
         if tok.type == tokenize.STRING:
             strings.append((tok.start, tok.end, tok.string))
-        elif tok.type == tokenize.FSTRING_START:  # one f-string is many tokens on 3.12: re-slice it
-            depth, j = 1, i + 1
+        elif _FSTRING_START is not None and tok.type == _FSTRING_START:
+            depth, j = 1, i + 1  # one f-string is many tokens on 3.12+: re-slice it whole
             while depth:
-                if tokens[j].type == tokenize.FSTRING_START:
+                if tokens[j].type == _FSTRING_START:
                     depth += 1
-                elif tokens[j].type == tokenize.FSTRING_END:
+                elif tokens[j].type == _FSTRING_END:
                     depth -= 1
                 j += 1
             strings.append((tok.start, tokens[j - 1].end, segment(tok.start, tokens[j - 1].end)))
