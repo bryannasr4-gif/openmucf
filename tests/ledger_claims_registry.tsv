@@ -15,6 +15,7 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 0095e47b5aa503f76bde8ed3e46d105bb405dc52	CHANGELOG.md	UNREVIEWED
 013a14b4cd173bf45f254506259ae6b9a6f3ec9f	CHANGELOG.md	REGISTERED: aggregate_rows is the single filter behind tier_median, aggregate_values and panel_tier_boxes (mucost.py), which tests/test_mucost.py::test_deleting_a_barred_row_changes_no_aggregate drills; the spread and ratio are formed from those medians, so they read it too.
 0484e8c48f26a53d84ceb098bd89675c713abb32	CHANGELOG.md	EXERCISED: tests/test_mucost.py::test_no_basis_class_spans_T1_and_T3
+0f414e19d1bba0d93c9e4aca728d2a858bdfb545	CHANGELOG.md	REGISTERED: this entry's own coverage claim; the count and the none-UNREVIEWED state are re-derived from sentence_claims_registry.tsv at this head, and the count line is a fixed point converged before merge.
 0f9b0d29d0aaafd4138704d5daaea837224667b8	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 0feb6f2db8be66909911a2c2be6a77fde6b6bb0e	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 11bb8386e381fd359bbdfec4964278c2ec2f2686	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
@@ -51,7 +52,6 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 5b9650eb77251f1d791f29e39ba4460f2d810c7f	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 5fa1efb48af59ac8203c621d5cb6192f80f5ab43	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 60e0f80e740d30071c66833b2d550bd843dbdb41	CHANGELOG.md	REGISTERED: git log -S'25.68' over the whole history returns exactly three commits -- 2f9f068 and 28eb8f7, which introduce it only as the note about what recomputing on the unrounded 0.183 would give, and 0c8c0a5, the edge-table pack that makes it a terminal figure of MUON_COST.md's coverage table. The 'previously only a note' claim is that history, not a recollection.
-65cfa41a0ba0db102d67d08866f1f1f0dafaeeb6	CHANGELOG.md	REGISTERED: this entry's own coverage claim; the count and the none-UNREVIEWED state are re-derived from sentence_claims_registry.tsv at this head, and the count line is a fixed point converged before merge.
 66bfad040d377363f4026b398378e502fad33e5b	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 682a26186d1510fc853bb55d901c46c3fcdc1d1c	CHANGELOG.md	REGISTERED: rewritten 2026-08-28 to drop the unsourced 'record' descriptor; X_mu = 113 is calibrate.OBS['xmu_obs'], the V_petitjean_Xmu target, as the line says, and scripts/generate_neutronomics.py imports it from there
 69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	UNREVIEWED
@@ -72,6 +72,7 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	UNREVIEWED
 84660229ef16ae68e59524979b3eeb5b2b2497b6	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 84e446ab955a7a9794845df5da59d07f212c1229	CHANGELOG.md	REGISTERED: read against the branch diff and the audit chain's byte diff when written; the regenerated .md documents differ in wording only, the manifests in input digests and the figure in bytes, and every test that passed before the change passes after it
+896d9c8fe3c841cf3dd17afceb217a920b25763d	CHANGELOG.md	REGISTERED: this entry's residual-gap claim; the five wrapped statements were re-derived at this head by an emphasis-stripped adjacent-line scan and each recomputes (a sixth scan hit joins two unrelated code lines and is not a written-out statement).
 8b08e657b1d2b5ecf29c659409c7eab6733804dd	CHANGELOG.md	UNREVIEWED
 8bd6861b333936a7d7f225faa46952b89871d3a7	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 8cd0ca88bc8194fa0e669cb5553ce44039689983	CHANGELOG.md	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker

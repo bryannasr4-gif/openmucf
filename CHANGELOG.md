@@ -31,7 +31,7 @@ sentence can wrap in; the second pack, already scoped, extends it to the remaini
   form deletion goes red through this layer's stale rows too. `.json` and `.csv` claim paths are
   excluded because nothing in them can wrap -- a property `test_unwrappable_paths_cannot_wrap`
   measures on every run rather than assumes.
-- **Covered now: 323 wrapped sentences, every one read and ruled, none UNREVIEWED**, across
+- **Covered now: 325 wrapped sentences, every one read and ruled, none UNREVIEWED**, across
   CHANGELOG.md, scripts/generate_mucost.py, MUON_COST.md, tests/test_ledger_claims.py, README.md,
   paper/paper.md, ADOPTERS.md and openmucf/data/bib_unresolved.txt.
 - **Two forms enter the line guard on this change's own escape.** The coverage bullet above first
@@ -43,14 +43,14 @@ sentence can wrap in; the second pack, already scoped, extends it to the remaini
   line at a time, so a written-out statement that wraps across two rendered lines is outside it.
   Five such statements exist at this head, across four files (MUON_COST.md carries two;
   SYSTEMS.md, openmucf/systems.py and scripts/generate_systems.py one each); each was recomputed
-  by hand on 2026-08-30 and all five hold.
+  by hand on 2026-08-30 and all five values hold.
   Closing the gap is registered for a later change, not done here.
 - **A published count is corrected: 731 -> 592.** The prototype behind the earlier figure walked an
   f-string and its fragments twice, compared f-string text carrying `{}` against source lines
   carrying the field expression (so 79 single-line strings counted as wrapped), and joined whole
   JSON/CSV files and markdown tables into pseudo-sentences. Re-derived on raw source slices with
-  line spans, the same tree that the prototype counted at 731 holds 596 wrapped matching sentences
-  under the guard as it ships here (592 before `sentence` and `sentences` entered).
+  line spans, the same tree that the prototype counted at 731 holds exactly 596 wrapped matching
+  sentences under the guard as it ships here (592 before `sentence` and `sentences` entered).
 
 ### Changed -- the claim guard: forms made deletable-only-in-the-open, three lexical holes closed, and the figures brought inside it (2026-08-29)
 

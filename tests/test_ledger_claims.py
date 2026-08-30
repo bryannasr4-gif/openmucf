@@ -959,8 +959,9 @@ def test_wrapped_claims_registered():
     literals and comments; a sentence assembled around a runtime value (``"..." + x + "..."`` is
     cut at each literal boundary); a continuation that splits a WORD (the halves rejoin
     space-separated, so a form split mid-word is unmatched) and a line-final escaped or raw
-    backslash (read as a continuation and dropped) -- neither exists in these paths at this
-    head; an abbreviation outside :data:`ABBREVIATIONS` false-splits
+    backslash (dropped by the line-final backslash strip, so the hashed text loses one
+    character) -- neither exists in these paths at this head; an abbreviation outside
+    :data:`ABBREVIATIONS` false-splits
     (journal names and initials in reference notes -- at this head, zero such splits hide a claim,
     measured by joining each such pair and re-matching); an unterminated line followed by a
     capitalised one joins into a single coarser key (over-enumeration, never an escape); and
