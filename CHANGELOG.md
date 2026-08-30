@@ -31,7 +31,7 @@ changes that close them, and it widens the guard rather than loosening it.
   the 10.4 % and 18.3 % denominators, the four subsystem draws). The ledger's own aggregate nouns --
   `ratio`, `spread`, `aggregate`, `median`, `box`, `edge`, with their plurals -- join `LEDGER`
   (71 lines, most of them the edge table's and the prior boxes' own prose). The registry grows
-  856 -> 967 rows (144 EXERCISED / 743 REGISTERED / 80 UNREVIEWED); nothing landed UNREVIEWED and
+  856 -> 968 rows (144 EXERCISED / 744 REGISTERED / 80 UNREVIEWED); nothing landed UNREVIEWED and
   the cap is unchanged at 80.
 - **Figure text is a guarded surface (G3).** A false label once shipped inside a tracked PNG through
   three sweeps because nothing on the chain read a figure. `test_figure_text_registered` now
@@ -50,13 +50,15 @@ changes that close them, and it widens the guard rather than loosening it.
   `TWIN_MANIFEST.json` are byte-identical; only the PNG changed.
 
 ### Still deferred to v1.3.0, re-measured
-- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` now enumerates **293**
-  further lines (the v1.2.0 notes said "about 223"; the edge table and the Bertin re-typing added
-  prose since). It lands as its own change, every line read. One correction to the v1.2.0 wording:
+- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **322** further
+  lines at this head (the v1.2.0 notes said "about 223" at theirs; the edge table, the Bertin
+  re-typing, and this change's own forms and prose added lines since). It lands as its own
+  change, every line read. One correction to the v1.2.0 wording:
   the form `n't` cannot match inside a word-boundary alternation (no boundary precedes the `n` of
   `don't`), so the form that will land is `\w+n't`.
 - **A universal split across rendered lines.** A prototype sentence layer over the guarded paths
-  counts **671** wrapped sentences that match the patterns when joined and lie in no single line.
+  counts **730** wrapped sentences at this head that match the patterns when joined and lie in
+  no single line.
   Some of those are already keyed through one of their lines and some are seen by nothing; a
   window heuristic puts the second group between about 70 and 220, so that split is not yet a
   measurement and is not published as one. The closure keys the whole wrapped sentence, so that
