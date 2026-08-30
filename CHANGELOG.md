@@ -31,7 +31,7 @@ changes that close them, and it widens the guard rather than loosening it.
   the 10.4 % and 18.3 % denominators, the four subsystem draws). The ledger's own aggregate nouns --
   `ratio`, `spread`, `aggregate`, `median`, `box`, `edge`, with their plurals -- join `LEDGER`
   (71 lines, most of them the edge table's and the prior boxes' own prose). The registry grows
-  856 -> 968 rows (144 EXERCISED / 744 REGISTERED / 80 UNREVIEWED); nothing landed UNREVIEWED and
+  856 -> 969 rows (144 EXERCISED / 745 REGISTERED / 80 UNREVIEWED); nothing landed UNREVIEWED and
   the cap is unchanged at 80.
 - **Figure text is a guarded surface (G3).** A false label once shipped inside a tracked PNG through
   three sweeps because nothing on the chain read a figure. `test_figure_text_registered` now
@@ -57,8 +57,8 @@ changes that close them, and it widens the guard rather than loosening it.
   the form `n't` cannot match inside a word-boundary alternation (no boundary precedes the `n` of
   `don't`), so the form that will land is `\w+n't`.
 - **A universal split across rendered lines.** A prototype sentence layer over the guarded paths
-  counts **730** wrapped sentences at this head that match the patterns when joined and lie in
-  no single line.
+  counts **731** wrapped sentences at this head that match the patterns when joined and lie in
+  no single line (a figure that moves by about 3 % with the choice of prose unit).
   Some of those are already keyed through one of their lines and some are seen by nothing; a
   window heuristic puts the second group between about 70 and 220, so that split is not yet a
   measurement and is not published as one. The closure keys the whole wrapped sentence, so that
