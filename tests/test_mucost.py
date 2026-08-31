@@ -297,7 +297,8 @@ def test_no_headline_number_depends_on_an_arbitrary_row(table):
 
     Every manifest-pinned headline string is recomputed from sourced ledger rows only. Here we assert
     the complement directly: composing the arbitrary eta_mu produces a figure that appears NOWHERE in
-    the committed document, in any rendering.
+    the committed document at the two precisions checked here (two decimals and one) -- every other
+    rendering of it is unchecked.
     """
     gen = _load_generator()
     H = gen.build_headline(table)
@@ -1018,11 +1019,13 @@ def _write_csv(path, header: list[str], row: dict[str, str]) -> None:
 def test_loader_lists_every_problem_including_unparseable_numbers(tmp_path):
     """The loader's contract -- one raise listing EVERY problem -- exercised, not read.
 
-    Four numeric columns were converted outside the accumulating block, so a single unparseable cell
-    raised a bare ``float()``/``int()`` error that listed nothing and hid every other fault in the
-    file. Reading ``errors.append`` and the closing ``raise`` passes this contract; one bad float
-    fails it, which is why it is fed one here for each column at once, alongside an unrelated enum
-    error that must survive into the same message.
+    Three numeric columns (``recapture_factor``, ``normalized_GeV_per_mu``, ``eta_mu_assumption``)
+    were converted outside the accumulating block, so a single unparseable cell in one of them raised
+    a bare ``float()`` error that listed nothing and hid every other fault in the file; ``year`` and
+    ``eta_acc_assumption`` were converted inside the row constructor's ``try`` and surfaced only as a
+    generic parse error. Reading ``errors.append`` and the closing ``raise`` passes this contract;
+    one bad number fails it, which is why every one of those five columns is fed one here at once,
+    alongside an unrelated enum error that must survive into the same message.
     """
     header = list(csv.reader([MUON_COST_CSV.read_text(encoding="utf-8").splitlines()[0]]))[0]
     bad = tmp_path / "bad.csv"

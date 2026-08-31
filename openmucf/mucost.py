@@ -1163,11 +1163,13 @@ class ChainPath:
     """A composed sequence of edges, its terminal figure, and which way that figure can be wrong.
 
     :attr:`bias_direction` is the reason this class exists rather than a bare
-    :class:`ChainValue`. ``ChainValue.bias_direction`` grades a figure by whether it is a bound at
-    all, and every factor a chain OMITS is bounded above by 1, so an omission can only understate the
-    cost. A factor a source states but calls arbitrary is different in kind: it can move the figure
-    either way, so a path through it is not a one-sided bound and must not be printed with a ">="
-    marker. Only the edges know that, so only a path can answer it.
+    :class:`ChainValue`. Every factor a chain OMITS is bounded above by 1, so an omission can only
+    understate the cost; a factor a source states but calls arbitrary is different in kind: it can
+    move the figure either way, so a path through it is not a one-sided bound and must not be
+    printed with a ">=" marker. ``ChainValue.bias_direction`` reads only its statuses -- enough to
+    see that a factor its own source disclaimed was composed in, not which edge it was or what
+    direction that edge declares -- while a path knows WHICH edges were applied and reads each
+    edge's own ``bias_direction``, so the path's answer is the fuller one.
     """
 
     start: ChainValue

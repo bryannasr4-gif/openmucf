@@ -9,7 +9,7 @@ below is reproduced by the shipped code and the auto-generated
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 278 tests: 275 in the default run (274 pass, 1 skipped-blocked), 3 slow deselected; run the slow twin coverage with `pytest -m slow`
+pytest                 # 463 tests: 460 in the default run (459 pass, 1 skipped-blocked), 3 slow deselected; run the slow twin coverage with `pytest -m slow`
 ```
 
 ## 1. Load the validated FAIR rate ledger
