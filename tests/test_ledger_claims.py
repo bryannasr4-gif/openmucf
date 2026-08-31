@@ -97,7 +97,7 @@ CLAIM_PATHS = (
 #: and rules every line the form adds; `exact` entered that way (a shipped descriptor it hid was
 #: true, and had never been enumerable). Negation -- `not`, `cannot`, `\w+n't` -- is the measured
 #: residue: it states a universal ("does not depend on") that this table cannot see, and at
-#: 2026-08-30 it adds 343 lines, so it lands as its own change, read in full, not here.
+#: 2026-08-30 it adds 342 lines, so it lands as its own change, read in full, not here.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",

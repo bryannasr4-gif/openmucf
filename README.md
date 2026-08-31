@@ -41,7 +41,7 @@ shared substrate:
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 463 tests: 460 in the default run (459 pass, 1 skipped-blocked), 3 slow deselected
+pytest                 # 464 tests: 461 in the default run (460 pass, 1 skipped-blocked), 3 slow deselected
 pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 seeded MCMC fits)
 ```
 Verified platforms: Linux CI (py3.11/3.12/3.13), Windows x64 (py3.12), and **macOS arm64 / Apple Silicon

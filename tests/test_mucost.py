@@ -1741,6 +1741,42 @@ def test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned(table,
     assert "assumption" in terminal.statuses and terminal.direction_is_one_sided
 
 
+def test_an_arbitrary_factor_grades_the_path_unknown_by_every_route(table, chain):
+    """The class docstring's rule, enforced: a figure carrying an ``author_declared_arbitrary``
+    status prints no ``>=`` whichever way the status arrived -- an edge its source declares
+    ``lower`` (legal for the loader, which requires only sourced <=> ``none``), a row typed that way
+    composed through sourced edges, or the shipped ``eta_mu`` composed in through
+    ``ChainValue.compose`` and wrapped in a path with no edge at all. ``ChainPath.bias_direction``
+    used to read only its edges' declarations and ``is_bound``, so the first two printed the marker
+    and the third did with no edge to blame.
+    """
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    kovach = chain["eta_acc_kovach_site"]
+    # 1. an arbitrary edge its source declares 'lower'
+    arbitrary_lower = dataclasses.replace(chain["delivery_kelly_eta_mu"], bias_direction="lower")
+    p1 = mucost.compose_path(beam, [arbitrary_lower])
+    assert p1.bias_direction == "unknown" and not p1.render().startswith(">= ")
+    # 2. a row typed arbitrary, composed through a sourced edge that declares 'none'
+    typed = dataclasses.replace(
+        table["kelly_hart_rose_2021"], evidence_status="author_declared_arbitrary"
+    ).chain_point()
+    assert kovach.is_sourced and kovach.bias_direction == "none"
+    p2 = mucost.compose_path(typed, [kovach])
+    assert p2.bias_direction == "unknown" and not p2.render().startswith(">= ")
+    # 3. the shipped eta_mu composed in, then a path with no edge at all
+    kelly = table["kelly_hart_rose_2021"]
+    composed = beam.compose(
+        kelly.eta_mu_assumption, "stopped_useful_in_dt", kelly.eta_mu_evidence_status, "eta_mu"
+    )
+    p3 = mucost.compose_path(composed, [])
+    assert p3.edges == () and p3.bias_direction == "unknown"
+    assert p3.render().endswith("(direction unknown)")
+    with pytest.raises(BasisError, match=re.escape("refusing to render a figure graded 'unknown'")):
+        p3.render_value()
+    # ...and the marker is still earned where it is earned: a sourced partial path keeps its '>='
+    assert mucost.compose_path(beam, [kovach]).render().startswith(">= ")
+
+
 def test_the_marker_sentence_is_derived_from_the_figures_it_describes(table, chain):
     """The sentence explaining the `>=` must move with the markers, not assert one shape forever.
 

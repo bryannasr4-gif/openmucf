@@ -1168,14 +1168,13 @@ class ChainPath:
     move the figure either way, so a path through it is not a one-sided bound and must not be
     printed with a ">=" marker. ``ChainValue.bias_direction`` reads only its statuses -- enough to
     see that a factor its own source disclaimed was composed in, not which edge it was or what
-    direction that edge declares -- while a path reads each applied edge's own declared
-    ``bias_direction``. The two agree on any path through an arbitrary factor declared ``unknown``
-    (the committed table's one such edge is); where a source declares ``lower`` for a factor it
-    calls arbitrary, or ``unknown`` for a factor it merely assumes, the path carries that
-    declaration and the value cannot -- the loader requires only that a sourced factor declare
-    ``none`` and an unsourced one ``lower`` or ``unknown``; and where the starting row is itself
-    typed ``author_declared_arbitrary``, the value reads that status while the path, which reads
-    its edges' declarations and whether the figure is a bound, does not.
+    direction that edge declares -- and :attr:`bias_direction` here reads those statuses AND each
+    applied edge's own declared ``bias_direction``, so an arbitrary factor reaching the figure by
+    any route -- a row typed ``author_declared_arbitrary``, an edge carrying that status whatever
+    direction its source declares, or a factor composed in through :meth:`ChainValue.compose` --
+    grades the path ``'unknown'`` and it prints no marker. The edge declarations add one thing the
+    statuses cannot see: an edge merely assumed but declared ``unknown`` withholds the marker here
+    that the bare value would print.
     """
 
     start: ChainValue
@@ -1188,8 +1187,9 @@ class ChainPath:
 
     @property
     def bias_direction(self) -> str:
-        """``'unknown'`` if any edge is, else ``'lower'`` if the figure is a bound, else ``'none'``."""
-        if any(e.bias_direction == "unknown" for e in self.edges):
+        """``'unknown'`` if the figure carries a factor its own source disclaimed or any edge
+        declares ``'unknown'``; else ``'lower'`` if the figure is a bound, else ``'none'``."""
+        if not self.value.direction_is_one_sided or any(e.bias_direction == "unknown" for e in self.edges):
             return "unknown"
         return "lower" if self.value.is_bound else "none"
 
