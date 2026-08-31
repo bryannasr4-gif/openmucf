@@ -1169,11 +1169,11 @@ class ChainPath:
     printed with a ">=" marker. ``ChainValue.bias_direction`` reads only its statuses -- enough to
     see that a factor its own source disclaimed was composed in, not which edge it was or what
     direction that edge declares -- while a path reads each applied edge's own declared
-    ``bias_direction``. The two agree wherever an arbitrary factor is declared ``unknown`` (the
-    committed table's one such edge is); where a source declares a direction for a factor it calls
-    arbitrary, or declares none for a factor it merely assumes, the path carries that declaration
-    and the value cannot -- the loader requires only that a sourced factor declare ``none`` and an
-    unsourced one ``lower`` or ``unknown``.
+    ``bias_direction``. The two agree on any path through an arbitrary factor declared ``unknown``
+    (the committed table's one such edge is); where a source declares ``lower`` for a factor it
+    calls arbitrary, or ``unknown`` for a factor it merely assumes, the path carries that
+    declaration and the value cannot -- the loader requires only that a sourced factor declare
+    ``none`` and an unsourced one ``lower`` or ``unknown``.
     """
 
     start: ChainValue

@@ -97,7 +97,7 @@ CLAIM_PATHS = (
 #: and rules every line the form adds; `exact` entered that way (a shipped descriptor it hid was
 #: true, and had never been enumerable). Negation -- `not`, `cannot`, `\w+n't` -- is the measured
 #: residue: it states a universal ("does not depend on") that this table cannot see, and at
-#: 2026-08-30 it adds 340 lines, so it lands as its own change, read in full, not here.
+#: 2026-08-30 it adds 342 lines, so it lands as its own change, read in full, not here.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",
@@ -978,7 +978,9 @@ def test_wrapped_claims_registered():
     character) -- neither exists in these paths at this head; an abbreviation outside
     :data:`ABBREVIATIONS` false-splits
     (journal names and initials in reference notes -- at this head, zero such splits hide a claim,
-    measured by joining each such pair and re-matching); an unterminated line followed by a
+    measured by joining each such pair and re-matching, every capitalised token before a split
+    boundary being a candidate, with no whitespace anchor and no length cap); an unterminated
+    line followed by a
     capitalised one joins into a single coarser key (over-enumeration, never an escape); and
     ``.json``/``.csv`` files, where nothing can wrap -- :func:`test_unwrappable_paths_cannot_wrap`
     measures exactly that. It does not decide whether a claim is true: ``REGISTERED:`` records a
