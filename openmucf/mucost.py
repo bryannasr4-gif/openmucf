@@ -1173,7 +1173,9 @@ class ChainPath:
     (the committed table's one such edge is); where a source declares ``lower`` for a factor it
     calls arbitrary, or ``unknown`` for a factor it merely assumes, the path carries that
     declaration and the value cannot -- the loader requires only that a sourced factor declare
-    ``none`` and an unsourced one ``lower`` or ``unknown``.
+    ``none`` and an unsourced one ``lower`` or ``unknown``; and where the starting row is itself
+    typed ``author_declared_arbitrary``, the value reads that status while the path, which reads
+    its edges' declarations and whether the figure is a bound, does not.
     """
 
     start: ChainValue

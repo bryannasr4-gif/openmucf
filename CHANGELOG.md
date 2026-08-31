@@ -76,9 +76,13 @@ the layer covers every claim path a sentence can wrap in and a test asserts that
 - **One stated rule found unenforced and left for its own change.** `ChainPath`'s docstring says
   a figure composed through a factor its own authors call arbitrary must not print `>=`; the edge
   loader requires only that an unsourced factor declare `lower` or `unknown`, so an
-  `author_declared_arbitrary` edge declared `lower` loads and a path through it prints the marker.
-  No committed edge does this (the one such edge declares `unknown`) and no test builds one;
-  closing it is a loader rule with its own drill, recorded here and not made in this change.
+  `author_declared_arbitrary` edge declared `lower` loads and a path through it prints the marker;
+  and a node row typed `author_declared_arbitrary` (a value the node schema lists and `load_muon_cost`
+  accepts) reaches the same marker with every edge sourced, because `ChainPath.bias_direction` reads
+  its edges' declarations and whether the figure is a bound, never the value's own statuses. No
+  committed edge or row does this (the one such edge declares `unknown`; no pinned row carries the
+  status) and no test builds either; closing it is a rule in `ChainPath.bias_direction` or in both
+  loaders, with its own drill, recorded here and not made in this change.
 - **Two forms enter the line guard on this change's own escape.** The coverage bullet above first
   stated its universal -- wrapped sentences, every one read and ruled -- in words no `LEDGER` form
   matched, so that claim was editable with every guard green. `sentence` and `sentences` join
@@ -137,7 +141,7 @@ changes that close them, and it widens the guard rather than loosening it.
   `TWIN_MANIFEST.json` are byte-identical; only the PNG changed.
 
 ### Still deferred to v1.3.0, re-measured
-- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **342** further
+- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **343** further
   lines at this head (the v1.2.0 notes said "about 223" at theirs; the edge table, the Bertin
   re-typing, and the guard changes' own forms and prose added lines since). It lands as its own
   change, every line read. One correction to the v1.2.0 wording:
