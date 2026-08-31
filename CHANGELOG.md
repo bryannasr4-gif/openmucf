@@ -84,7 +84,9 @@ the layer covers every claim path a sentence can wrap in and a test asserts that
   the three grades `unknown` and prints no marker, and
   `test_an_arbitrary_factor_grades_the_path_unknown_by_every_route` drills all three. No committed
   edge or row reached the marker (the one arbitrary edge declares `unknown`; no row carries the
-  status), so no published figure moves.
+  status), and no generator composes the `eta_mu` factor into a published figure (MUON_COST.md's
+  paths are built from `chain.sourced()` on a primary row), so no published figure moves -- the
+  document, its manifest and its figure regenerate byte-identical.
 - **Two forms enter the line guard on this change's own escape.** The coverage bullet above first
   stated its universal -- wrapped sentences, every one read and ruled -- in words no `LEDGER` form
   matched, so that claim was editable with every guard green. `sentence` and `sentences` join
