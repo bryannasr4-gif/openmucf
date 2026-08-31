@@ -38,3 +38,4 @@ OPENER	*	It is one row. *Every* tier counts it.
 OPENER	_	It is one row. _every_ tier counts it.
 OPENER	\(	It is one row. (Every tier counts it.)
 OPENER	\[	It is one row. [Every tier counts it.]
+ABBREVIATION	europhys	Bertin et al. price every produced muon at 7.8 GeV in Europhys. Lett. 4, 875 (1987).

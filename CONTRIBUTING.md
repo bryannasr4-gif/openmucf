@@ -33,7 +33,7 @@ published results.
 ## 2. Running the suite
 
 ```bash
-pytest                 # 278 tests: 275 in the default run (274 pass, 1 skipped-blocked), 3 slow deselected; the ledger loader raises on any provenance/schema problem
+pytest                 # 464 tests: 461 in the default run (460 pass, 1 skipped-blocked), 3 slow deselected; the ledger loader raises on any provenance/schema problem
 pytest -m slow         # the ~9-min twin interval-calibration coverage test (deselected by default + in CI)
 ruff check .           # lint (must be clean)
 ruff format .          # auto-format

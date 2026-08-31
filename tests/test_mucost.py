@@ -297,7 +297,8 @@ def test_no_headline_number_depends_on_an_arbitrary_row(table):
 
     Every manifest-pinned headline string is recomputed from sourced ledger rows only. Here we assert
     the complement directly: composing the arbitrary eta_mu produces a figure that appears NOWHERE in
-    the committed document, in any rendering.
+    the committed document at the two precisions checked here (two decimals and one) -- every other
+    rendering of it is unchecked.
     """
     gen = _load_generator()
     H = gen.build_headline(table)
@@ -1018,11 +1019,13 @@ def _write_csv(path, header: list[str], row: dict[str, str]) -> None:
 def test_loader_lists_every_problem_including_unparseable_numbers(tmp_path):
     """The loader's contract -- one raise listing EVERY problem -- exercised, not read.
 
-    Four numeric columns were converted outside the accumulating block, so a single unparseable cell
-    raised a bare ``float()``/``int()`` error that listed nothing and hid every other fault in the
-    file. Reading ``errors.append`` and the closing ``raise`` passes this contract; one bad float
-    fails it, which is why it is fed one here for each column at once, alongside an unrelated enum
-    error that must survive into the same message.
+    Three numeric columns (``recapture_factor``, ``normalized_GeV_per_mu``, ``eta_mu_assumption``)
+    were converted outside the accumulating block, so a single unparseable cell in one of them raised
+    a bare ``float()`` error that listed nothing and hid every other fault in the file; ``year`` and
+    ``eta_acc_assumption`` were converted inside the row constructor's ``try`` and surfaced only as a
+    generic parse error. Reading ``errors.append`` and the closing ``raise`` passes this contract;
+    one bad number fails it, which is why every one of those five columns is fed one here at once,
+    alongside an unrelated enum error that must survive into the same message.
     """
     header = list(csv.reader([MUON_COST_CSV.read_text(encoding="utf-8").splitlines()[0]]))[0]
     bad = tmp_path / "bad.csv"
@@ -1736,6 +1739,42 @@ def test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned(table,
     terminal = terminal_row.chain_point()
     assert terminal.stage == mucost.TERMINAL_STAGE and not terminal.missing_stages
     assert "assumption" in terminal.statuses and terminal.direction_is_one_sided
+
+
+def test_an_arbitrary_factor_grades_the_path_unknown_by_every_route(table, chain):
+    """The class docstring's rule, enforced: a figure carrying an ``author_declared_arbitrary``
+    status prints no ``>=`` whichever way the status arrived -- an edge its source declares
+    ``lower`` (legal for the loader, which requires only sourced <=> ``none``), a row typed that way
+    composed through sourced edges, or the shipped ``eta_mu`` composed in through
+    ``ChainValue.compose`` and wrapped in a path with no edge at all. ``ChainPath.bias_direction``
+    used to read only its edges' declarations and ``is_bound``, so the first two printed the marker
+    and the third did with no edge to blame.
+    """
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    kovach = chain["eta_acc_kovach_site"]
+    # 1. an arbitrary edge its source declares 'lower'
+    arbitrary_lower = dataclasses.replace(chain["delivery_kelly_eta_mu"], bias_direction="lower")
+    p1 = mucost.compose_path(beam, [arbitrary_lower])
+    assert p1.bias_direction == "unknown" and not p1.render().startswith(">= ")
+    # 2. a row typed arbitrary, composed through a sourced edge that declares 'none'
+    typed = dataclasses.replace(
+        table["kelly_hart_rose_2021"], evidence_status="author_declared_arbitrary"
+    ).chain_point()
+    assert kovach.is_sourced and kovach.bias_direction == "none"
+    p2 = mucost.compose_path(typed, [kovach])
+    assert p2.bias_direction == "unknown" and not p2.render().startswith(">= ")
+    # 3. the shipped eta_mu composed in, then a path with no edge at all
+    kelly = table["kelly_hart_rose_2021"]
+    composed = beam.compose(
+        kelly.eta_mu_assumption, "stopped_useful_in_dt", kelly.eta_mu_evidence_status, "eta_mu"
+    )
+    p3 = mucost.compose_path(composed, [])
+    assert p3.edges == () and p3.bias_direction == "unknown"
+    assert p3.render().endswith("(direction unknown)")
+    with pytest.raises(BasisError, match=re.escape("refusing to render a figure graded 'unknown'")):
+        p3.render_value()
+    # ...and the marker is still earned where it is earned: a sourced partial path keeps its '>='
+    assert mucost.compose_path(beam, [kovach]).render().startswith(">= ")
 
 
 def test_the_marker_sentence_is_derived_from_the_figures_it_describes(table, chain):

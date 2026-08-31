@@ -15,9 +15,10 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 0095e47b5aa503f76bde8ed3e46d105bb405dc52	CHANGELOG.md	UNREVIEWED
 013a14b4cd173bf45f254506259ae6b9a6f3ec9f	CHANGELOG.md	REGISTERED: aggregate_rows is the single filter behind tier_median, aggregate_values and panel_tier_boxes (mucost.py), which tests/test_mucost.py::test_deleting_a_barred_row_changes_no_aggregate drills; the spread and ratio are formed from those medians, so they read it too.
 0484e8c48f26a53d84ceb098bd89675c713abb32	CHANGELOG.md	EXERCISED: tests/test_mucost.py::test_no_basis_class_spans_T1_and_T3
-0f414e19d1bba0d93c9e4aca728d2a858bdfb545	CHANGELOG.md	REGISTERED: this entry's own coverage claim; the count and the none-UNREVIEWED state are re-derived from sentence_claims_registry.tsv at this head, and the count line is a fixed point converged before merge.
+0cf4f40d22f7b302db25b5cba1c83fe611c4d618	CHANGELOG.md	REGISTERED: this entry's own coverage claim; 640 is the sentence registry's row count at this head, equal to the enumeration, with no UNREVIEWED row.
 0f9b0d29d0aaafd4138704d5daaea837224667b8	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 0feb6f2db8be66909911a2c2be6a77fde6b6bb0e	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
+11145f0a70bd9fb0398a6ab3fc5b74b5d9e1c190	CHANGELOG.md	REGISTERED: a line of the rule record; delivery_kelly_eta_mu declares 'unknown' and the node rows carry evidence_status primary, derived_here or absent only.
 11bb8386e381fd359bbdfec4964278c2ec2f2686	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 14a49d607b76c750cdc8406ed24ff8a9cf582af4	CHANGELOG.md	REGISTERED: restates MUON_COST.md's coverage text, which is generated from both tables rather than typed and whose three terminal figures are pinned as MUON_COST_MANIFEST.json entries '>= 25.68 GeV', '>= 26.11 GeV' and '>= 45.19 GeV' and checked by openmucf.provenance --check. The set-not-mean rule is exercised by tests/test_mucost.py::test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean.
 14b371aeb2c5818e38654e6382bce002533a2dc4	CHANGELOG.md	REGISTERED: tests/conftest.py's module docstring states 'Reports only -- asserts nothing, gates nothing' and its hook only appends to the terminal summary; tests/test_resource_report.py asserts on the unit conversion and the formatted line, never on a measured memory figure.
@@ -25,7 +26,6 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 17f66464c372ba211cbf41c75663f525fc11e632	CHANGELOG.md	REGISTERED: the four manifests' `inputs` digests move in the same commit (FINDINGS, MUON_COST, NEUTRONOMICS from the two CSVs; MATERIALITY from the FINDINGS manifest) and no `entries` value does -- checked with git diff on the manifests and by openmucf.provenance --check
 18e9a3b017db25f7f0c5417c61127486d769baa0	CHANGELOG.md	REGISTERED: a line of this entry's admission bullet; the record matches the shipped tables and fixture rows.
 2092be5a6d519a56ab782e80bba60924acd54c7d	CHANGELOG.md	REGISTERED: this entry's own heading; checked against the branch diff when written -- the regenerated documents differ in wording and manifest input digests only, and the suite's pass count is unchanged
-220ec36f9c5077c08c21bcff79d5374f045627d6	CHANGELOG.md	REGISTERED: a line of this entry's deferral bullet; the equality obligation is the second pack's contract, subset asserted today.
 23de6bf2d07ffe7694141568642da452b22b1986	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 25284843c59ceef5a2d3963308d2b62dbfb50106	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 274acf18fb8c5fa2a178af560b76c52c4a695be1	CHANGELOG.md	REGISTERED: a line of this entry's admission bullet; the record matches the shipped tables and fixture rows.
@@ -43,6 +43,7 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 405640f04bd4a3aa11dd650ad938e1f05d874295	CHANGELOG.md	REGISTERED: history checkable from scripts/generate_findings.py's git log -- the axvline label read "record ~150 (high-T/c_t, outside liquid box)" until f15c358 (2026-08-26) replaced it with a Jones-attributed label and cc87d5c gave that label the paper's word, average, after three claim sweeps over the prose had left it untouched; "nothing on the chain read a figure" is what this entry's G3 changes, and the Makefile's audit list still names no PNG.
 433c16627ea4c37ef6cb6f3d466096b0881f38b8	CHANGELOG.md	REGISTERED: a line of the 2026-08-29 entry; matches the shipped test's invariants (one example sentence per form).
 45a53e4ffa6b6f757d8ab7adac347464bbbf0493	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+48c8cb829a1ec62b460b613d49f60f7f816c02c4	CHANGELOG.md	REGISTERED: a line of this entry's residue re-measurement: `europhys` is the 25th member of ABBREVIATIONS with its row in tests/sentence_split_examples.tsv, and 155 pairs with 0 straddles under the shipped tables.
 49443f6be9392fe3a3a620c5f14e2c62c74daa9e	CHANGELOG.md	UNREVIEWED
 4a2a2acb69fc274f7548505d37935f91c2c0b52e	CHANGELOG.md	UNREVIEWED
 4a52fbe43d1abb680841fe49b1601aa702c79083	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
@@ -55,13 +56,16 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 66bfad040d377363f4026b398378e502fad33e5b	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 682a26186d1510fc853bb55d901c46c3fcdc1d1c	CHANGELOG.md	REGISTERED: rewritten 2026-08-28 to drop the unsourced 'record' descriptor; X_mu = 113 is calibrate.OBS['xmu_obs'], the V_petitjean_Xmu target, as the line says, and scripts/generate_neutronomics.py imports it from there
 69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	UNREVIEWED
+6a5c6eafa1136de71d1af59340a1f113046316b7	CHANGELOG.md	REGISTERED: a line of this entry's account of the two changes; the equality is asserted by test_unwrappable_paths_cannot_wrap.
 6a6a8d42239c1769e216c931f6b35849b31d987c	CHANGELOG.md	REGISTERED: the three medians and the value were re-derived at this head and printed by the generator itself -- tier medians T1=4.85, T2=178, T3=4993, gap 1029.5x, and Bertin 7.80 -- identically before and after the CSV edit, and the regenerated manifests' entries blocks are byte-identical to the committed ones.
 6b83d87f1b78580841b781efef0fef247e24072b	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 6e9844c6d1af57dbc5a9f8ecd94846fcc07af654	CHANGELOG.md	UNREVIEWED
 6edbcbd2aeff85bef58c1ee57830a7dfae20ed3c	CHANGELOG.md	UNREVIEWED
+6f0974eae94e6ea0580f901ed7fc910b83ae88a6	CHANGELOG.md	REGISTERED: a line of the rule record; load_muon_cost_chain requires bias_direction 'none' iff the status is sourced, else 'lower' or 'unknown' (drilled by tests/test_mucost.py::test_bias_direction_must_agree_with_the_evidence_status).
 71da42c260f3e2c85cf15bc0e364b6307b2cf341	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 724bd28f81cbd0c07a1b1daaada4ad71fda424ec	CHANGELOG.md	UNREVIEWED
 78142cb643d865a2d6afe564de0c404e0eb97a0d	CHANGELOG.md	REGISTERED: the 'exactly one axis' half is exercised by tests/test_mucost.py::test_an_edge_moves_exactly_one_axis; the rest was read off openmucf/data/muon_cost_chain.csv at this release -- 8 rows, each with a non-empty bias_direction, evidence_status and source_locator. Registered rather than EXERCISED because the sentence is compound and only one of its clauses is what that test negates.
+78b5224d3779a76ae141338c7692021f004e71ef	CHANGELOG.md	REGISTERED: a line of the rule record; the body as it was read any(e.bias_direction == 'unknown') over the edges and value.is_bound only.
 7af9082d9d6183a4c811c292f7da617f7c8b3037	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 7b9340d07df799bc7595f05ab42eaf8be24add0d	CHANGELOG.md	REGISTERED: restates MUON_COST.md's generated coverage sentence, whose two figures are manifest-pinned and checked by openmucf.provenance --check -- MUON_COST_MANIFEST.json ids n_sourced_conversions (value 2) and n_absent_edges (value 4), both source_type 'derivation' from scripts/generate_mucost.py. The scope 'read here' is the document's own wording at MUON_COST.md:289 and is what keeps this off being a claim about the whole literature.
 7e180128a3694d3513998b47756c27ae395b6c16	CHANGELOG.md	UNREVIEWED
@@ -72,13 +76,16 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	UNREVIEWED
 84660229ef16ae68e59524979b3eeb5b2b2497b6	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 84e446ab955a7a9794845df5da59d07f212c1229	CHANGELOG.md	REGISTERED: read against the branch diff and the audit chain's byte diff when written; the regenerated .md documents differ in wording only, the manifests in input digests and the figure in bytes, and every test that passed before the change passes after it
+873db3462ef4dae4e1e17532cda8b61a3e19d7cb	CHANGELOG.md	EXERCISED: tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route
 896d9c8fe3c841cf3dd17afceb217a920b25763d	CHANGELOG.md	REGISTERED: this entry's residual-gap claim; the five wrapped statements were re-derived at this head by an emphasis-stripped adjacent-line scan and each recomputes (a sixth scan hit joins two unrelated code lines and is not a written-out statement).
 8b08e657b1d2b5ecf29c659409c7eab6733804dd	CHANGELOG.md	UNREVIEWED
 8bd6861b333936a7d7f225faa46952b89871d3a7	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 8cd0ca88bc8194fa0e669cb5553ce44039689983	CHANGELOG.md	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
+8d28daa3e39cbc7827565b07110e37661b5fd36a	CHANGELOG.md	REGISTERED: a line of this entry's diagnosis: CONTRIBUTING.md and the two docs pages are not in CLAIM_PATHS, and a line-guard pass over CONTRIBUTING.md matches 24 lines.
 8ec32e57189bee066f4a90d921804f59daea52f1	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 90af060e5a75c9308a5f134fc7955357b1a2afc1	CHANGELOG.md	REGISTERED: the counts are the registry's own, re-derived from tests/ledger_claims_registry.tsv at that entry's own head after this entry's own lines and the round-2 and round-3 corrections were ruled (969 rows: 144 EXERCISED / 745 REGISTERED / 80 UNREVIEWED), and LEDGER_CLAIMS_UNREVIEWED_CEILING is 80, unchanged.
 939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	UNREVIEWED
+94049a3cb272ae43d5a2bfcdde2cc3442b8a4bc5	CHANGELOG.md	REGISTERED: a line of this entry's found-and-deferred figure: the typed '~530-640' in scripts/generate_findings.py, rendered in FINDINGS.md section 3; the ledger band on the phi = 1.2 convention gives ~440-640.
 97d906681700899e0d60b11ef591a4c15c5356d3	CHANGELOG.md	REGISTERED: a line of this entry's drill bullet; matches test_sentence_split_rules_are_exampled.
 9898430ab4ac4b197cd718df52454a51660b329e	CHANGELOG.md	REGISTERED: a 2026-08-12 entry about DESIGN.md's sd-contraction audit band; "spread" here is that estimator's per-refit Monte-Carlo spread, not a ledger quantity, and the numbers are that entry's own historical measurement, restated nowhere this guard binds.
 98f1ee54e94ffb57387a634bc29c99bd757dd6bc	CHANGELOG.md	REGISTERED: continuation of the same entry -- the transfer is exact by construction because n/J divides by E_mu and nothing else in it depends on the tier; the mixed basis it inherits is the one MUON_COST.md declares for the tier spread.
@@ -86,6 +93,9 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 99a7c79000027d9724238f9a2f37568da679f745	CHANGELOG.md	REGISTERED: self-describing, checked against the module at this release -- tests/test_ledger_claims.py:169-179 requires every enumerated claim to carry a registry row whose status is UNREVIEWED or one of VALID_PREFIXES, and :195-198 caps the UNREVIEWED count. The sentence's own next clause states that UNREVIEWED exception, so the 'either/or' is not read as excluding it.
 9b30266980799306d53a02aa44e268bd7a03f8e1	CHANGELOG.md	REGISTERED:scoped to the CC-BY package's structure, and true of the diff it describes -- the three edits touch free-text note and description fields only; row count, every numeric cell, every unit, every boolean flag and every schema type declaration are unchanged
 9b58b2fcdd7221763ba87bcf3158ee99392bf273	CHANGELOG.md	REGISTERED: a line of this entry's G4 bullet; the cap-zero and re-keying statements match the shipped constant and key.
+9c25cefec3e6750f6a18db61c78390dfec451635	CHANGELOG.md	REGISTERED: a line of the rule record; sourced_paths in scripts/generate_mucost.py enumerates chain.sourced() from Kelly's primary row, and the audit chain regenerates MUON_COST.md byte-identical.
+9cccf070c504067518a1bf05115506888376a7b0	CHANGELOG.md	REGISTERED: a line of this entry's residue re-measurement: 0 line-final escaped or raw backslashes inside claim-path string tokens over the fifteen sentence paths, tokenized.
+9ce04e0806dd907b27a5b238b0f7aa054b1d4b8d	CHANGELOG.md	REGISTERED: a line of the rule record; the eta_mu factor is printed by scripts/generate_mucost.py (kelly_eta_mu) and composed by no generator.
 a0beaac77827e2a8ff66e3182caf0087995f62ac	CHANGELOG.md	REGISTERED: a line of this entry's admission bullet; the record matches the shipped tables and fixture rows.
 a83e8467f5865fcfa46d264eb7ed5909e7818962	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 aa11c6f87bdf68540da337796c835b8325ded361	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
@@ -118,6 +128,7 @@ efa1c59c2aa5b4d37a9377dedefddf6fa5d6bf5d	CHANGELOG.md	UNREVIEWED
 f37374c38727965c42ef6ddead18d5e6b0de78af	CHANGELOG.md	UNREVIEWED
 f53a5496601875532084e88ac54016c806409000	CHANGELOG.md	UNREVIEWED
 f706e6ccf7d4e4d844b6d90692ebc5a9c5927ed2	CHANGELOG.md	UNREVIEWED
+f854f9bb16ab6db3d95798320b5cdb9a00fd28be	CHANGELOG.md	REGISTERED: a line of this entry's residue re-measurement: the one straddle under the previous table is the Europhys. Lett. name in the Bertin1987 entry, references.bib lines 197-202.
 f947437f0b91b26da5b8cfe82e6f73340386d8d7	CHANGELOG.md	EXERCISED:tests/test_mucost.py::test_no_basis_class_spans_T1_and_T3
 fda83f5325b7df1f0e84f0b4b3d657f0cc3953d7	CHANGELOG.md	REGISTERED: FINDINGS.md's "Box-edge provenance" section prints every edge of the three boxes with what set it, and its T1 lower edge is the acceleron_2025 row at 3.0 GeV, the Acceleron 2025 slide value -- checked against the document.
 097cae0834a447d01f39b3d5fe92bc969d7912f6	FINDINGS.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
@@ -381,6 +392,7 @@ ef99f334b657badae77ae40681266edfdccf19cf	openmucf/data/references.bib	REGISTERED
 0578080af3f1c6b2e9cc3a1c563fc64a5fe41115	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 05942334ca5d1537eab238c1e0a7da1acaadb602	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_edge_table_loads_and_every_stated_factor_cites_a_primary
 05950276ed2590099365f6fd2299370b0b38e75d	openmucf/mucost.py	REGISTERED: continuation of the direction_is_one_sided docstring; ChainPath.bias_direction in the same module reads each applied edge's own bias_direction, which is the "declared direction" the sentence names -- checked in that property's body.
+05ac90a9f2aa77be39b56fe97a9f805554411fd1	openmucf/mucost.py	REGISTERED: a line of the ChainPath docstring; render() prints no '>=' for 'unknown', and an assumption edge declared 'unknown' is read by the path's edge loop and not by the value (direction_is_one_sided reads only author_declared_arbitrary).
 067da5e977807bef52bacbdabc7b1d1e0110ee22	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_to_numeraire_refuses_the_ways_it_must_and_carries_what_it_must
 067f4e1e4a3346d54dac8f16857743ae23a8177a	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 07c8664685b549fa70ffc0941d4c2de09409f306	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
@@ -389,6 +401,7 @@ ef99f334b657badae77ae40681266edfdccf19cf	openmucf/data/references.bib	REGISTERED
 0dbe479c33542207d2ffcc08229f2cf5bcb1a6aa	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 0dfbbe3402ec844a6c4b24da70e0b26a293ce98b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 0e6657fc104c07662859fbbaa1d3d4d4e749e1da	openmucf/mucost.py	REGISTERED: compose_path's body enforces the join (applies_to), the charge basis, the seen_ids and the seen_coords checks; the join, charge and appears-twice refusals are drilled by tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure, the return-to-a-coordinate refusal is enforced in the body but has no drill (no committed edge can produce it: numeraire edges only leave beam_kinetic and stage edges only advance).
+0f494d6351832c9e25598cd64b734f9141b76861	openmucf/mucost.py	REGISTERED: a line of the ChainPath docstring; the body reads self.value.direction_is_one_sided and each edge's bias_direction.
 0f72809e7a34b899c755a668309ff547ff7f32c7	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 0f73dd932cb58324abd85e4f836d10619ff03a7e	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
 10bb5072e39d24048fccee90c7be42c1e92f032b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
@@ -440,9 +453,9 @@ ef99f334b657badae77ae40681266edfdccf19cf	openmucf/data/references.bib	REGISTERED
 4b6773339dbb3e4ac6461f6fec3f8fb76a6f2d1b	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 4fba3deef7c7f1e377e8334400005ce12a4dfa11	openmucf/mucost.py	REGISTERED: code -- the fallback text for a path with zero edges inside a refusal message; states nothing about the ledger.
 5150940df5e0caca38e6a24bf4d8b70e032b81fa	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
-53b5ba1b7d5e20fb90ec9e5e21b45644d6acc9a0	openmucf/mucost.py	REGISTERED: ChainPath docstring; that only a path, which knows its edges, can grade direction is what tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned checks from the other side -- the bare ChainValue route must not overclaim, and the two routes must agree.
 54330d1f333e170b4e9bd473d2eee00ddfddbbfb	openmucf/mucost.py	UNREVIEWED
 592855e6eaeb5964ebfddb9182942afb85f8b1e0	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
+5ce65662382a3b6717ff0acb4ed9e528a78c1d86	openmucf/mucost.py	REGISTERED: a line of the bias_direction property's docstring; matches the two-clause condition and the is_bound fallthrough in the body.
 5f49943812ab6fbf241d10024851b9ba430af8b2	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 5fccbe0dfbfcd710a40da1fb46918176a97e522f	openmucf/mucost.py	REGISTERED: design rationale for the wildcard; the property it protects (an edge moves exactly one axis) is the loader's moves_stage/moves_num check, drilled by tests/test_mucost.py::test_an_edge_moves_exactly_one_axis.
 5fdfd9db45211ee70922232ba8133a0444a4c32c	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
@@ -466,6 +479,7 @@ ef99f334b657badae77ae40681266edfdccf19cf	openmucf/data/references.bib	REGISTERED
 7b06ecd264039cf3a18633cb2a28f6c077455f0d	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_bias_direction_must_agree_with_the_evidence_status
 7ecb457ab40e5850818d09e6395174e67a60d98d	openmucf/mucost.py	UNREVIEWED
 80b21c3100a7a29a32ffad17020787825353117c	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
+840c4f91f46cb045f7aaeca31a620cc4e8e18e53	openmucf/mucost.py	REGISTERED: a line of the ChainPath docstring; the omitted-factor premise is compose()'s precondition (a factor in (0, 1]) and the one-sided grading of a sourced partial path is asserted by tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker.
 84ecf9856a75268e3a1e9c46b050b853909d1385	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 850c4925a69bec8a64be2ff10385cd736a3301c6	openmucf/mucost.py	REGISTERED: BoxEdge.render's body is the check -- `self.value == 10.0**e` is exact float equality with no tolerance, and a non-decade value falls through to the plain format.
 860cd73fc3e4302b79e0c64d5b02ce4a58bf9aa6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
@@ -494,7 +508,6 @@ ab83126c1fb15fb69633dca9a5f62bcdea802923	openmucf/mucost.py	REGISTERED: read in 
 ab8f7a37d8e383b7a539468b58d7a1305ff75af3	openmucf/mucost.py	REGISTERED: same docstring; "at most once" is the seen_ids check (drilled: "appears twice"), "no path may return" is the seen_coords check in compose_path's body, undrilled because no committed edge can trigger it.
 add95ac110452033015bf5ac2291d88aff34ff2b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 af367718ed6fecbe4748cac48598ac8d9cdd7c7d	openmucf/mucost.py	REGISTERED: module comment recording why the edges are a second table rather than more columns; a design rationale, not a statement about any shipped number
-af728dc3f3c0a194cc82bf2418c1df5467d147dd	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
 b26c0be0060f8ddbfc332a4a1fe8d60f2e109e41	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 b27c45d335f9174b4c13311e84df980c21202198	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 b3ab279914ba2aa91325b13fc96d3a862bbbf03b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
@@ -517,12 +530,14 @@ d0dac49a61dba90ce42af3c9491f10e47901b76c	openmucf/mucost.py	EXERCISED: tests/tes
 d111df1d680a81ea70eeaa5ee76302c92e491d09	openmucf/mucost.py	REGISTERED: an indexing-policy statement, enforced by construction -- PANEL_ROW_LABELS is indexed strictly, so a missing label raises KeyError rather than rendering.
 d16c560fff0c1b108bf97697d8cd2b7881c2f761	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 d2495652d183b6b0cc46b35e30f5811c5ebba3d5	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
-d3f4976780161185399017ef5813c969214b9e3f	openmucf/mucost.py	REGISTERED: code, not prose -- Python's builtin any() implementing the docstring one line above; asserted by tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker (path.bias_direction == "unknown" through the arbitrary edge).
+d89c8a3fb6a0522c95284c68e7e932a0f874d1f6	openmucf/mucost.py	REGISTERED: code, not prose -- the property's condition, reading direction_is_one_sided and any() over the edges' declarations; drilled by tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route.
+deb8db58a6e687e718d1ed88a245f743d6b9cc28	openmucf/mucost.py	REGISTERED: a line of the ChainPath docstring; the three routes it names are drilled by tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route.
 e0d1b920a87749dff91ada4b059e1d43d476be04	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 e123dd3bd8f247bffd1a885d328dcc580e2403f4	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 e15b53a8f02266a057f5fb715103bd9c54126c10	openmucf/mucost.py	REGISTERED: loader comment naming the two halves of the absent-row rule enforced on the lines below it; both halves are drilled by tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 e2a0cac6806d1cc580c6d3860791fdc980a07ec4	openmucf/mucost.py	REGISTERED: same docstring; maximality is the walk's termination condition and the edge-set dedup is asserted by tests/test_mucost.py::test_composition_is_order_independent_which_is_why_paths_dedupe_by_edge_set, which also proves the commutativity the sentence rests on (bit-identical figure in either order).
 e4550bda2ca2861059d07821cb977271c5ba04e3	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
+e483b3b17379506b0e6d245abaa39bb9c6749ad1	openmucf/mucost.py	REGISTERED: a line of the bias_direction property's docstring; matches the two-clause condition in the body.
 e669b43f039f3275c49df7792dd280b72fbdfdf8	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 e829c9d709355a30dedebb05fffb5be3bd08858e	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 e8f070e95098ee35e2f7b61c0da4a4cc3754a7ec	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
@@ -535,7 +550,6 @@ f69637c35c15e3f5fdbe56c1536dd6cb53d09c6d	openmucf/mucost.py	EXERCISED:tests/test
 fa9b79c4f27f4adf308b8ae66a5b5769593592e3	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 fb8c7d3f58828a741b80fc08079b9c377b3c24c4	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
 fd80cef0a1d38db53153ee547b74500642d4f209	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean
-ff0f2376f4d714abfa09a0a27285f04963387ab3	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
 1d7cf942817f1116a86140d6f20b9509e065c2aa	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
 1ec0d2e8f3c1001aba2acddc1d98cda2255548db	paper/paper.md	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 2a669477f641be3b126774e260b4561ab6b519f9	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
@@ -590,7 +604,7 @@ fcd5c2c68c2718b505f5f56494ac37c32407bb40	paper/paper.md	UNREVIEWED
 978aa055368740dd2de644ca91c4e7dd4e8cec5f	scripts/generate_findings.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 97aa1dcd912ca5e83141b888a20d6183011e1fd3	scripts/generate_findings.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 9a8f73bd14dcb26361996fcb44bfe9b97866ddca	scripts/generate_findings.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
-a53f71852be1c76283dafe3b3d0dbd388414ba65	scripts/generate_findings.py	REGISTERED: a comment line on the derived-counts design (computed, never typed, agreement test-bound); this path's sentence layer lands in the second pack.
+a53f71852be1c76283dafe3b3d0dbd388414ba65	scripts/generate_findings.py	REGISTERED: a comment line on the derived-counts design (computed, never typed, agreement test-bound); the sentence layer reads this path too.
 a5e7f4c4f95d690137939f10bc98599f0197f28a	scripts/generate_findings.py	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 abfa86d648a7474d6d32c977fc48116c7087f24e	scripts/generate_findings.py	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 afe504080f38dca5810345b418ebb57b096c9f66	scripts/generate_findings.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
@@ -811,20 +825,20 @@ fc29c4cd1375ac15d26663b5a0f84bdfd5cc38be	scripts/generate_neutronomics.py	REGIST
 02a6e820f0c4f61ee865f5f1da6244cf6d438861	tests/test_ledger_claims.py	REGISTERED: a drill assertion naming its fixture sentence, not a claim about the shipped ledger.
 0d1ba5021078ac70e131837c7b06708f9361796a	tests/test_ledger_claims.py	REGISTERED: docstring of _figure_text_in; its body walks every Call node of the tree and returns the (lineno, string) pairs sorted, which is what the line says.
 0d8bcec1302f0e764b304a725b3fff9d95265494	tests/test_ledger_claims.py	REGISTERED: a drill assertion naming its fixture sentence, not a claim about the shipped ledger.
+12777b9685e94ada74c6a3bc4cf184536dd8bf19	tests/test_ledger_claims.py	REGISTERED: a line of the SENTENCE_PATHS comment; the equality it states is asserted by test_unwrappable_paths_cannot_wrap.
 1386b08de8a3b29e1ec228756c36974331da1c11	tests/test_ledger_claims.py	REGISTERED: the _prose_sentences docstring; matches its return contract.
-14806edb72159e05d074cb2684b925ee542dd2f0	tests/test_ledger_claims.py	REGISTERED: a line of the unwrappable test docstring; the subset assertions are in the test body.
 14ef68fd2126c4b896c9a64f5ef55a3b0b4bcae3	tests/test_ledger_claims.py	REGISTERED: docstring of test_guard_forms_are_exampled; the uniqueness check and the other-side match are asserts in its body.
 150f5ad0bd82b281755b396b9c167a73e11e56f5	tests/test_ledger_claims.py	REGISTERED: code -- Python's builtin any() over the generator sources; no claim.
 17e47e998c2a09038fa45858cae175686844b35e	tests/test_ledger_claims.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
-19b9287e4c503a38607fa847394d14e7219cf671	tests/test_ledger_claims.py	REGISTERED: a line of the SENTENCE_PATHS comment; the stopping rule and the two-pack contract as shipped.
 19e507fc5ad4ad42d5b6fa2fa852ea2c34a327d5	tests/test_ledger_claims.py	REGISTERED: documentation of FIGURE_TEXT_KWARGS; enumerate_figure_text reads those keywords on any call, as stated.
 201afe7e45953be764e58a240e661a5beaaa51d3	tests/test_ledger_claims.py	REGISTERED: an assert message; states nothing about the ledger.
 22204a9704fa4a12a11703157bb5f374724cde5d	tests/test_ledger_claims.py	REGISTERED: documentation of the G3 tables; that each member owns a snippet is what test_figure_text_calls_are_exampled asserts over FIGURE_TEXT_EXAMPLES, with the member removed as the drill.
-2523a5c3f6162ab4bc0d82051f4c26a1f7d90a52	tests/test_ledger_claims.py	REGISTERED: a line of the SENTENCE_PATHS comment; the two-pack contract, subset asserted by test_unwrappable_paths_cannot_wrap.
+2486396f5a68c3e17ec44df882934fdfa98ca0c1	tests/test_ledger_claims.py	REGISTERED: a line of the SENTENCE_PATHS comment; the sentence registry's ceiling of zero is what makes read-and-ruled a checked property rather than a promise.
 2b4b9ebd061c39440de48d292616c1e071dbd192	tests/test_ledger_claims.py	REGISTERED: an assertion-message line in the split-examples drill, not a claim about the ledger.
 2c52b96c6e5c8ec21f1c7af9a464dffe1979d298	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
 2fea97305d3aca376ec064a121065cf108c79d1e	tests/test_ledger_claims.py	REGISTERED: docstring of test_every_shipped_figure_is_named_by_a_generator; both directions are the two loops in its body.
 3285a5bdf8f084e69f93cf69602e0750758a2ce4	tests/test_ledger_claims.py	REGISTERED: part of G3's stated unchecked set; each item is outside what _figure_text_in and _string_values read (only the two tables' calls and keywords, only literal, template, list/tuple and module-constant values), and figure_generators walks only scripts/ and openmucf/.
+32c34c0af8f3f8bef42e75177ba2a020e02433e6	tests/test_ledger_claims.py	REGISTERED: the assertion message of the equality check in test_unwrappable_paths_cannot_wrap.
 336395c76bab4a23a237fbdcb87f57cf9356983c	tests/test_ledger_claims.py	REGISTERED: documentation of the enumerator; build_pattern is the only place a G1 pattern is compiled from the tables (G2's patterns are separate literals), and --patterns prints both.
 357d2dbad9781193e870069a2e271f45e3447281	tests/test_ledger_claims.py	REGISTERED: the quoted sentence is the drill that measured the escape (2026-08-25); each noun it uses is now in LEDGER_FORMS with an example row.
 36745f021aae50a9340815dcb6893a11219873a3	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
@@ -837,6 +851,7 @@ fc29c4cd1375ac15d26663b5a0f84bdfd5cc38be	scripts/generate_neutronomics.py	REGIST
 43b43cb9c4fa810b41821408d5f069e046a24217	tests/test_ledger_claims.py	REGISTERED: _check_registry docstring; the four checks are the four blocks of its body.
 48aa563047d28d37856c11fbcb471113fc127d36	tests/test_ledger_claims.py	REGISTERED: the unwrappable test's docstring line; the measurement it promises is the test body.
 4b32ef74ec46fde7f21bb9ecb88a63ac6ae38430	tests/test_ledger_claims.py	REGISTERED:documentation of the guard itself, in the file the registry now covers; read and judged when this registry was written
+54c5e35c46657642f380293e2c39d51c2f476f2d	tests/test_ledger_claims.py	REGISTERED: a line of the G1 docstring; matches SENTENCE_PATHS as shipped (15 paths) and the equality assertion in test_unwrappable_paths_cannot_wrap.
 5919edea1d88cffd44b278aa17b7f7c26e3bf868	tests/test_ledger_claims.py	REGISTERED: assert message; states nothing about the ledger.
 60f9f03e566290dd3dba569bdd4c9b917ff2f93e	tests/test_ledger_claims.py	REGISTERED: a line of the G4 test docstring; matches the cap-zero constant.
 660ddd234fac0c951ebcd325fc9e0786ca29d155	tests/test_ledger_claims.py	REGISTERED: a drill fixture literal or assertion inside test_wrapped_universal_is_enumerated, not a claim about the shipped ledger.
@@ -883,9 +898,9 @@ d1e0ed1724b7e2943461347da8e82340e5af74a8	tests/test_ledger_claims.py	REGISTERED:
 d30f7713a464a18aa99c5b528b7226727bfcdcd5	tests/test_ledger_claims.py	REGISTERED: the enumerate_wrapped_claims docstring; matches its return contract and ordering.
 d54f9d9e281cbd039a13e076438fece932d30eae	tests/test_ledger_claims.py	REGISTERED: a line of the G4 test docstring; the v1.2.0 disclosure this layer closes.
 d7d129accc40bd5bcc2246c67c44faef74ceb17b	tests/test_ledger_claims.py	REGISTERED: figure_generators docstring; its body walks scripts/ and openmucf/ and keeps the files containing "savefig(".
-daf816396ffd72f70918585ef61b98ff727ed54a	tests/test_ledger_claims.py	REGISTERED: a line of the updated G1 docstring; matches the shipped SENTENCE_PATHS state.
 e1e55605fc362fb144a6e14f6d690cbff332d2ad	tests/test_ledger_claims.py	REGISTERED: same comment; the atomicity check is the `"|" not in form` assert in test_guard_forms_are_exampled.
 e4be5d992f9ea8c4ecdc53ee6da635f122cb88fd	tests/test_ledger_claims.py	REGISTERED: history -- a hand-kept figure inventory (2026-08-26) counted generate_materiality.py, which has no savefig, and missed three text calls; the savefig derivation replaced it.
+ec6c34b6d960890de56129899f0ba7723ce526d2	tests/test_ledger_claims.py	REGISTERED: a line of the G4 residue list naming the straddle enumeration method; the measurement at this head is 155 pairs and 0 straddles.
 f479df6b6654454d52e7dcc48437fc94ddd5af46	tests/test_ledger_claims.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 f5c8077452d024f7e0cb5a3bad59c005fbe468ed	tests/test_ledger_claims.py	REGISTERED: a line of the unwrappable test docstring; the fix direction (bring the file in, never loosen).
 f8e814519fb6eadb5e260edd71c8fbc38cad5b2c	tests/test_ledger_claims.py	REGISTERED: docstring of test_figure_text_registered; the body requires a row for every string and passes ceiling 0 to _check_registry.
@@ -916,12 +931,15 @@ f8e814519fb6eadb5e260edd71c8fbc38cad5b2c	tests/test_ledger_claims.py	REGISTERED:
 2dbc5b78e2843db80824fa8fa4f7899a5b647e27	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 2dd9fd7a338ecfb7e056d6d11418dd7f106ee3b3	tests/test_mucost.py	EXERCISED:tests/test_mucost.py::test_bertin_is_counted_at_production
 2fd42360838de0b00832486e967eec145e1e5470	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+3196f50d17e9acc819f13c3e7948c8d455462f4c	tests/test_mucost.py	REGISTERED: a comment naming the drill's second case; the assertions follow it.
 3516c7c72f7dda6dcb84836323dc260e8b291e46	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 353645ae61139414705c9e245ad4cab557e8f6a7	tests/test_mucost.py	EXERCISED:tests/test_mucost.py::test_no_basis_class_spans_T1_and_T3
 3a90a1458b31f15601ef770972891d111dba4f92	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 3c51faf4b1ee7bf6244b24aaa72a13f45fe51d66	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 3cf00ad56cd4c33c355cb050726a51b0b881458c	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 42e5317f9fb4ce2d80ac96dc0aa175e678edc675	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+4662961f715a3169cea3d75e4f71a233b60403a4	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route
+46e787e10fe32c54375a868144af6e428dfd004e	tests/test_mucost.py	REGISTERED: a comment naming the drill's third case; the assertions follow it.
 46f4acd6d8e80a9f8213d763f1d6a02d23f21af2	tests/test_mucost.py	REGISTERED:assertion line of the test that asserts the property; the quantifier the enumerator matched is part of the identifier `mu_plus_only`
 486126ed846ab86304031907e6827bab865ed673	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 48a5e683d260e7f86e0711ddbcdd381f0594a99c	tests/test_mucost.py	REGISTERED: comment in the edge-id test; the spanning assert directly below it (delivery spans MUCF_CHAIN[1:]) and the edge list above it (one delivery edge, no 100% placeholder edge) are the check.
@@ -929,6 +947,7 @@ f8e814519fb6eadb5e260edd71c8fbc38cad5b2c	tests/test_ledger_claims.py	REGISTERED:
 4d22e063cdd30b263d2b9dbcd124737568edb39a	tests/test_mucost.py	UNREVIEWED
 5118b96878778828627a9989af0c81340a316276	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 58244487fd17b8f6645c9eb8a03e4c89e450495e	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+58e16620104871df198b07a85e20b4e450294343	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route
 59291d9eed280c4afed0e983a6b115e7347caf04	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 5a8d3404ec97c54a0dd7634476bd7866af9da303	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 5c0beafb046a372091bff30de0bdf817633a8dd4	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
@@ -970,6 +989,7 @@ f8e814519fb6eadb5e260edd71c8fbc38cad5b2c	tests/test_ledger_claims.py	REGISTERED:
 866ffa0e22d23e1b2465773a3fb48d83dd41594a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 868b7a60534fa4103e59fb8bf79e82c2d73e605f	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 870928b7fcef1bbb85be3818d2ef5a6765b8a667	tests/test_mucost.py	EXERCISED:tests/test_mucost.py::test_declared_edges_and_published_boxes_are_pinned
+875bd7a18852cdf1c2a27cdb701afe2b1655c358	tests/test_mucost.py	REGISTERED: history read from the loader before its accumulating conversions, where year and eta_acc_assumption were converted inside the MuonCost(...) try that appends a generic parse error.
 887b59124f5c11b4589e6396e6e78538e57c4105	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 8a12038953b8750bb37b18374104bb0391db855b	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 8c964e5386029e1077ac1eaf21588d934eeef45a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -992,6 +1012,7 @@ a5d9448607aa2142bf32d974d58e31fe977dc9e1	tests/test_mucost.py	EXERCISED: tests/t
 a60e5843e56fe633ef4a67f3c2a4121b626a15b4	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 a86b4abee14c74cb56cb9648bdd953eee02f7863	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 a99a1388bd180f2d4009352e559da2d4068f3071	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+aa89d7d249a3ea9eae896f2d107a059228f89371	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers
 aac6bddd59c757e2343fc200cdd4b014912d809d	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_declared_edges_and_published_boxes_are_pinned
 abb72443c94e2a280c36008247c981348427883c	tests/test_mucost.py	UNREVIEWED
 ad618fd51038d47b77d534ca9c590a84dffea4f7	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
@@ -1008,8 +1029,10 @@ c06bc10a91dde8d203fc0aadd49b7874d996a1e0	tests/test_mucost.py	REGISTERED: docstr
 c2d0a42f2c940555244afe26fc4270ec8796e364	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 c31bd2aaec64475b2055d7dd6eae7a3c3f37f254	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 c3ed2421f9bb38144b49158d9622aa8f89bcfa44	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+c5bfcdd7e4faeb05fb1c4ab6b916bd06d939ac7a	tests/test_mucost.py	REGISTERED: historical: measured on the property as it was, the first two routes printed the marker (the body read only the edges' declarations and is_bound).
 c8eee83310e2f316b896f135a662ff27b34f6ccc	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 cbfcf81d3d597e335aac6bc3a1963666795dbb4c	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+ccdce46a5ec80cd83cd1a6d3afc0d47685861c02	tests/test_mucost.py	REGISTERED: historical: measured on the property as it was, the zero-edge route printed '>= 9.40 GeV'.
 cdeb308dac7de5aa28babb0671abce0a3e723d66	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 cedde247d06316b2827fb3c4597d7cd52f1a5edb	tests/test_mucost.py	REGISTERED: a line of the convergence tripwire's message: the assert fires when the panel and ledger ratios converge, making the document's distinct-quantities sentence misleading -- the message states its own trigger.
 d00802cb973f32be14ab22b09d676d16b88b7970	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -1026,6 +1049,7 @@ e42164bbcd87785b515bf3ad609d0ddc73bcea09	tests/test_mucost.py	REGISTERED: descri
 e486739cba750125748b2f6e58c7aeb556eb64cd	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 e50cd262f5ecf0762c27b42f980f9742768ce207	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 e7223976c9d3d530bcf666a7bace0545960e37c0	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
+e9f7ec88495344dab33d539fe364a9e5c40dbb86	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route
 edeb3cc17b847fd3e0fb3a1b72517768a5688e5b	tests/test_mucost.py	EXERCISED:tests/test_mucost.py::test_bertin_is_counted_at_production
 f0cb78cc26ecd0b21ceec178a7c2a8a2cfd7aa2e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 f5ed349e9e31546b66ebf21baf90d21d89684b5d	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property

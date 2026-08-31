@@ -10,11 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added -- the claim guard's sentence layer (G4), first pack (2026-08-30)
+### Added -- the claim guard's sentence layer (G4), in two changes (2026-08-30)
 
 The v1.2.0 notes disclosed that a universal whose quantifier and subject fall on different rendered
-lines escaped the claim guard. This change closes that hole for eight of the fifteen prose paths a
-sentence can wrap in; the second pack, already scoped, extends it to the remaining seven.
+lines escaped the claim guard. Two changes close that hole: the first built the layer and read eight
+of the fifteen prose paths a sentence can wrap in; the second read the remaining seven, after which
+the layer covers every claim path a sentence can wrap in and a test asserts that equality.
 
 - **A wrapped claim sentence is keyed WHOLE.** `test_wrapped_claims_registered` cuts prose into
   units per file type -- string literals and comment runs read by token for `.py` (raw source text,
@@ -24,16 +25,68 @@ sentence can wrap in; the second pack, already scoped, extends it to the remaini
   patterns to carry a ruled row in `tests/sentence_claims_registry.tsv`, with an UNREVIEWED cap of
   ZERO. An edit to ANY line of a wrapped claim now re-keys it -- including the line that matches
   nothing on its own, the exact edit that used to change a quantifier with no registry diff.
-- **The segmentation is exampled and drilled the way the form tables are.** The 24 protected
+- **The segmentation is exampled and drilled the way the form tables are.** The 25 protected
   abbreviations (`eq.`, `et al.`, `p.`, ...) and 8 sentence-opener classes live in tables whose
   every member owns a fixture row in `tests/sentence_split_examples.tsv` that flips when the member
   is removed; a universal split across two lines is drilled end-to-end on synthetic files; and a G1
   form deletion goes red through this layer's stale rows too. `.json` and `.csv` claim paths are
   excluded because nothing in them can wrap -- a property `test_unwrappable_paths_cannot_wrap`
   measures on every run rather than assumes.
-- **Covered now: 325 wrapped sentences, every one read and ruled, none UNREVIEWED**, across
-  CHANGELOG.md, scripts/generate_mucost.py, MUON_COST.md, tests/test_ledger_claims.py, README.md,
-  paper/paper.md, ADOPTERS.md and openmucf/data/bib_unresolved.txt.
+- **Covered now: every claim path a sentence can wrap in -- 640 wrapped sentences at this head, every
+  one read and ruled, none UNREVIEWED.** The first change read CHANGELOG.md,
+  scripts/generate_mucost.py, MUON_COST.md, tests/test_ledger_claims.py, README.md, paper/paper.md,
+  ADOPTERS.md and openmucf/data/bib_unresolved.txt (325 sentences at its head); the second read
+  openmucf/mucost.py, tests/test_mucost.py, scripts/generate_findings.py, FINDINGS.md,
+  scripts/generate_neutronomics.py, NEUTRONOMICS.md and openmucf/data/references.bib (303 at the
+  head it started from), and `test_unwrappable_paths_cannot_wrap` now asserts that `SENTENCE_PATHS`
+  EQUALS the set of claim paths not of an unwrappable type, so a claim path cannot enter the line
+  guard without the sentence layer following it. The two residue measurements the layer's docstring
+  states were re-taken over all fifteen paths. No string token in a claim path ends a line with an
+  escaped or raw backslash or splits a word across a continuation. Under the abbreviation table as
+  it was, this tree holds 158 sentence pairs cut after a capitalised token outside the table (157
+  at the head this correction started from; naming the journal here added one), and exactly one of
+  them formed a claim when joined that neither half had: the `Europhys. Lett.` journal name inside
+  the Bertin et al. (1987) bibliography
+  entry, a bibliography artefact rather than a ledger claim, closed by admitting `europhys` as the
+  25th abbreviation with its own fixture row, after which 155 pairs remain and none straddles a
+  claim. (A first measurement anchored the token on whitespace and capped it at six characters,
+  reported 126 pairs and none, and missed that one on both counts.)
+- **Three docstrings corrected by the reading.** `ChainPath`'s docstring said only a path could tell
+  that a factor's own authors had disclaimed it, which `ChainValue.bias_direction` has read from its
+  statuses since the two routes were made to agree; it now says what each route can see.
+  `test_no_headline_number_depends_on_an_arbitrary_row` said the eta_mu-composed figure appears
+  nowhere "in any rendering" where its body checks two precisions; it now names the two and says
+  every other rendering is unchecked. `test_loader_lists_every_problem_including_unparseable_numbers`
+  said four numeric columns were once converted outside the accumulating block; the loader as it was
+  shows three there and two inside the row constructor's `try`, and the docstring now says so.
+- **Four hand-written pages carried a stale test count.** README.md, CONTRIBUTING.md,
+  docs/getting-started.md and docs/index.md said "278 tests: 275 in the default run"; the suite
+  collects 464 at this head (461 in the default run, 3 slow deselected), and the four lines now say
+  so. README.md's line matches no form of either guard; CONTRIBUTING.md and the two docs pages are
+  not claim paths at all -- CONTRIBUTING.md carries 24 lines the line guard would match and
+  docs/getting-started.md three, most of them rates-ledger prose the claim guard does not read and
+  the rest project-wide rules on sourcing, coding, licensing and generated documents. Whether those
+  pages should join the claim paths is recorded as an open question, not decided here.
+- **One typed figure found false and left for its own change.** FINDINGS.md section 3 says density
+  scaling at phi = 2.4 "would lift the decay-only cap to ~530-640"; the ledger's liquid band,
+  scaled from phi = 1.2 the way the adjacent computed cap is, gives ~440-640 -- the lower figure
+  mixes the two normalizations. The number is typed in the generator, so correcting it means a
+  regeneration and a manifest byte-diff of its own; it is recorded here and in the sentence's
+  registry reason, and not re-typed in this change.
+- **One stated rule found unenforced, and now enforced.** `ChainPath`'s docstring says a figure
+  composed through a factor its own authors call arbitrary must not print `>=`, but
+  `ChainPath.bias_direction` read only its edges' declarations and whether the figure was a bound,
+  so the marker was reachable three ways: an `author_declared_arbitrary` edge its source declares
+  `lower` (the edge loader requires only that an unsourced factor declare `lower` or `unknown`); a
+  node row typed `author_declared_arbitrary`, a value the node schema lists, composed through
+  sourced edges; and the shipped `eta_mu` composed in through `ChainValue.compose` and wrapped in a
+  path with no edge at all. The property now reads the value's own statuses as well, so each of
+  the three grades `unknown` and prints no marker, and
+  `test_an_arbitrary_factor_grades_the_path_unknown_by_every_route` drills all three. No committed
+  edge or row reached the marker (the one arbitrary edge declares `unknown`; no row carries the
+  status), and no generator composes the `eta_mu` factor into a published figure (MUON_COST.md's
+  paths are built from `chain.sourced()` on a primary row), so no published figure moves -- the
+  document, its manifest and its figure regenerate byte-identical.
 - **Two forms enter the line guard on this change's own escape.** The coverage bullet above first
   stated its universal -- wrapped sentences, every one read and ruled -- in words no `LEDGER` form
   matched, so that claim was editable with every guard green. `sentence` and `sentences` join
@@ -92,20 +145,12 @@ changes that close them, and it widens the guard rather than loosening it.
   `TWIN_MANIFEST.json` are byte-identical; only the PNG changed.
 
 ### Still deferred to v1.3.0, re-measured
-- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **335** further
+- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **342** further
   lines at this head (the v1.2.0 notes said "about 223" at theirs; the edge table, the Bertin
   re-typing, and the guard changes' own forms and prose added lines since). It lands as its own
   change, every line read. One correction to the v1.2.0 wording:
   the form `n't` cannot match inside a word-boundary alternation (no boundary precedes the `n` of
   `don't`), so the form that will land is `\w+n't`.
-- **A universal split across rendered lines -- the seven paths the sentence layer does not read
-  yet.** G4 above keys the whole wrapped sentence, so this deferral now names a smaller hole than
-  the one v1.2.0 disclosed: in openmucf/mucost.py, tests/test_mucost.py,
-  scripts/generate_findings.py, FINDINGS.md, scripts/generate_neutronomics.py, NEUTRONOMICS.md and
-  openmucf/data/references.bib -- 303 wrapped matching sentences at this head -- a wrapped claim
-  is still keyed at line granularity only, and an edit to the line of it that matches nothing
-  re-keys nothing. The second pack reads and rules them, after which `SENTENCE_PATHS` must equal
-  every claim path a sentence can wrap in and a test asserts the equality.
 
 ## [1.2.0] - 2026-08-29
 

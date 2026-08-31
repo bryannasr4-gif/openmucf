@@ -97,7 +97,7 @@ CLAIM_PATHS = (
 #: and rules every line the form adds; `exact` entered that way (a shipped descriptor it hid was
 #: true, and had never been enumerable). Negation -- `not`, `cannot`, `\w+n't` -- is the measured
 #: residue: it states a universal ("does not depend on") that this table cannot see, and at
-#: 2026-08-30 it adds 335 lines, so it lands as its own change, read in full, not here.
+#: 2026-08-30 it adds 342 lines, so it lands as its own change, read in full, not here.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",
@@ -242,10 +242,9 @@ def test_quantified_claims_registered():
     universal in any other form, split across lines, or written anywhere else is unchecked. Two such
     forms are measured and stated rather than unknown: a universal stated by negation (`does not
     depend on`), still queued as its own change; and a wrapped sentence, which G4
-    (:func:`test_wrapped_claims_registered`) now keys whole over :data:`SENTENCE_PATHS` -- in a
-    claim path not yet listed there, a wrapped sentence is still keyed at line granularity only,
-    and an edit to a line of it that matches nothing re-keys nothing. It does not decide whether a
-    matched claim is true:
+    (:func:`test_wrapped_claims_registered`) keys whole over every claim path a sentence can wrap
+    in (:data:`SENTENCE_PATHS`, asserted equal to the wrappable claim paths). It does not decide
+    whether a matched claim is true:
     ``REGISTERED:`` records a judgement made by a person and its substance is not machine-checked,
     so that layer is exactly as strong as the reviewer, and ``EXERCISED:`` names a test, checked for
     existence rather than for strength.
@@ -682,12 +681,12 @@ def test_every_shipped_figure_is_named_by_a_generator():
 # G4 -- claim sentences wrapped across source lines
 # --------------------------------------------------------------------------------------------------
 
-#: The paths G4 reads: a stated subset of :data:`CLAIM_PATHS`, because the sentence layer lands in
-#: two packs that each read and rule every sentence they enumerate (the same stopping rule the form
-#: tables are admitted under). This tuple is the first pack's coverage; the second pack extends it
-#: to every claim path a sentence can wrap in, after which it must equal :data:`CLAIM_PATHS` minus
-#: the :data:`UNWRAPPABLE_SUFFIXES` files. Until then, a wrapped claim in an unlisted path is keyed
-#: at line granularity only (G1), and the CHANGELOG names the gap.
+#: The paths G4 reads: every :data:`CLAIM_PATHS` entry a sentence can wrap in, i.e. all of them but
+#: the :data:`UNWRAPPABLE_SUFFIXES` files -- :func:`test_unwrappable_paths_cannot_wrap` asserts that
+#: EQUALITY, so a claim path cannot be added to G1 without this layer following it. The layer
+#: landed in two changes (the first eight paths, then the remaining seven) that each read and ruled
+#: every sentence they enumerated, the same stopping rule the form tables are admitted under; the
+#: order below is the order they entered.
 SENTENCE_PATHS = (
     "CHANGELOG.md",
     "scripts/generate_mucost.py",
@@ -697,6 +696,13 @@ SENTENCE_PATHS = (
     "paper/paper.md",
     "ADOPTERS.md",
     "openmucf/data/bib_unresolved.txt",
+    "openmucf/mucost.py",
+    "tests/test_mucost.py",
+    "scripts/generate_findings.py",
+    "FINDINGS.md",
+    "scripts/generate_neutronomics.py",
+    "NEUTRONOMICS.md",
+    "openmucf/data/references.bib",
 )
 
 #: File types no sentence can wrap in. A JSON string value cannot hold a raw newline by grammar; a
@@ -707,9 +713,10 @@ UNWRAPPABLE_SUFFIXES = (".json", ".csv")
 #: Tokens after which ``.`` does not end a sentence. Hand-kept, so each member owns a JOIN example
 #: in ``sentence_split_examples.tsv`` that flips to a split when the member is removed
 #: (:func:`test_sentence_split_rules_are_exampled`) -- a member cannot die in silence.
+#: ``europhys`` entered when a journal-name split was measured to hide a claim in ``references.bib``.
 ABBREVIATIONS = (
     "et al", "e.g", "i.e", "eq", "eqs", "fig", "figs", "sec", "secs", "ref", "refs", "vs", "cf",
-    "ca", "p", "pp", "no", "nos", "approx", "vol", "ch", "tab", "ed", "eds",
+    "ca", "p", "pp", "no", "nos", "approx", "vol", "ch", "tab", "ed", "eds", "europhys",
 )
 
 #: What may open the sentence after a split, as character-class fragments: an uppercase letter, a
@@ -963,16 +970,17 @@ def test_wrapped_claims_registered():
     itself -- or on none of them -- so an edit to the OTHER line, the one carrying the quantifier,
     flipped the claim with no registry diff. That is the v1.2.0 disclosure.
 
-    Unchecked, measured and stated rather than approximated: a claim path not yet in
-    :data:`SENTENCE_PATHS` (the second pack's work, named in the CHANGELOG); code outside string
-    literals and comments; a sentence assembled around a runtime value (``"..." + x + "..."`` is
+    Unchecked, measured and stated rather than approximated: code outside string literals and
+    comments; a sentence assembled around a runtime value (``"..." + x + "..."`` is
     cut at each literal boundary); a continuation that splits a WORD (the halves rejoin
     space-separated, so a form split mid-word is unmatched) and a line-final escaped or raw
     backslash (dropped by the line-final backslash strip, so the hashed text loses one
     character) -- neither exists in these paths at this head; an abbreviation outside
     :data:`ABBREVIATIONS` false-splits
     (journal names and initials in reference notes -- at this head, zero such splits hide a claim,
-    measured by joining each such pair and re-matching); an unterminated line followed by a
+    measured by joining each such pair and re-matching, every capitalised token before a split
+    boundary being a candidate, with no whitespace anchor and no length cap); an unterminated
+    line followed by a
     capitalised one joins into a single coarser key (over-enumeration, never an escape); and
     ``.json``/``.csv`` files, where nothing can wrap -- :func:`test_unwrappable_paths_cannot_wrap`
     measures exactly that. It does not decide whether a claim is true: ``REGISTERED:`` records a
@@ -1037,11 +1045,17 @@ def test_unwrappable_paths_cannot_wrap():
 
     A JSON string value cannot carry a raw newline by grammar; a quoted CSV cell can, so every cell
     of every claim-path CSV is checked. If this test ever fails, the fix is to bring the file into
-    :data:`SENTENCE_PATHS`, not to loosen the check. And G4 must narrow G1's surface, never invent
-    one: every sentence path is a claim path, and none is of an unwrappable type.
+    :data:`SENTENCE_PATHS`, not to loosen the check. And G4's surface is exactly G1's minus the
+    unwrappable files: :data:`SENTENCE_PATHS` must EQUAL the set of claim paths not of an
+    unwrappable type, so a claim path added to G1 without G4 following it fails here, and a path
+    of an unwrappable type cannot be listed.
     """
-    assert set(SENTENCE_PATHS) <= set(CLAIM_PATHS)
-    assert not any(rel.endswith(UNWRAPPABLE_SUFFIXES) for rel in SENTENCE_PATHS)
+    wrappable = {rel for rel in CLAIM_PATHS if not rel.endswith(UNWRAPPABLE_SUFFIXES)}
+    assert set(SENTENCE_PATHS) == wrappable, (
+        f"SENTENCE_PATHS must equal every wrappable claim path -- missing "
+        f"{sorted(wrappable - set(SENTENCE_PATHS))}, extra {sorted(set(SENTENCE_PATHS) - wrappable)}"
+    )
+    assert len(set(SENTENCE_PATHS)) == len(SENTENCE_PATHS), "SENTENCE_PATHS lists a path twice"
 
     def assert_single_line(node: object, rel: str) -> None:
         if isinstance(node, str):
