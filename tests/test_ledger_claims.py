@@ -97,7 +97,7 @@ CLAIM_PATHS = (
 #: and rules every line the form adds; `exact` entered that way (a shipped descriptor it hid was
 #: true, and had never been enumerable). Negation -- `not`, `cannot`, `\w+n't` -- is the measured
 #: residue: it states a universal ("does not depend on") that this table cannot see, and at
-#: 2026-08-30 it adds 335 lines, so it lands as its own change, read in full, not here.
+#: 2026-08-30 it adds 340 lines, so it lands as its own change, read in full, not here.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",
@@ -684,7 +684,7 @@ def test_every_shipped_figure_is_named_by_a_generator():
 #: The paths G4 reads: every :data:`CLAIM_PATHS` entry a sentence can wrap in, i.e. all of them but
 #: the :data:`UNWRAPPABLE_SUFFIXES` files -- :func:`test_unwrappable_paths_cannot_wrap` asserts that
 #: EQUALITY, so a claim path cannot be added to G1 without this layer following it. The layer
-#: landed in two packs (the first eight paths, then the remaining seven) that each read and ruled
+#: landed in two changes (the first eight paths, then the remaining seven) that each read and ruled
 #: every sentence they enumerated, the same stopping rule the form tables are admitted under; the
 #: order below is the order they entered.
 SENTENCE_PATHS = (
@@ -713,9 +713,10 @@ UNWRAPPABLE_SUFFIXES = (".json", ".csv")
 #: Tokens after which ``.`` does not end a sentence. Hand-kept, so each member owns a JOIN example
 #: in ``sentence_split_examples.tsv`` that flips to a split when the member is removed
 #: (:func:`test_sentence_split_rules_are_exampled`) -- a member cannot die in silence.
+#: ``europhys`` entered when a journal-name split was measured to hide a claim in ``references.bib``.
 ABBREVIATIONS = (
     "et al", "e.g", "i.e", "eq", "eqs", "fig", "figs", "sec", "secs", "ref", "refs", "vs", "cf",
-    "ca", "p", "pp", "no", "nos", "approx", "vol", "ch", "tab", "ed", "eds",
+    "ca", "p", "pp", "no", "nos", "approx", "vol", "ch", "tab", "ed", "eds", "europhys",
 )
 
 #: What may open the sentence after a split, as character-class fragments: an uppercase letter, a
