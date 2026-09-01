@@ -77,10 +77,10 @@ the layer covers every claim path a sentence can wrap in and a test asserts that
   docs/getting-started.md and docs/index.md said "278 tests: 275 in the default run"; the suite
   collects 464 at this head (461 in the default run, 3 slow deselected), and the four lines now say
   so. README.md's line matches no form of either guard; CONTRIBUTING.md and the two docs pages are
-  not claim paths at all -- CONTRIBUTING.md carries 24 lines the line guard would match and
-  docs/getting-started.md three, most of them rates-ledger prose the claim guard does not read and
-  the rest project-wide rules on sourcing, coding, licensing and generated documents. Whether those
-  pages should join the claim paths is recorded as an open question, not decided here.
+  not claim paths at all -- the lines in them the line guard would match are mostly rates-ledger
+  prose the claim guard does not read and the rest project-wide rules on sourcing, coding,
+  licensing and generated documents. Whether those pages should join the claim paths is recorded
+  as an open question, not decided here.
 - **One typed figure found false and left for its own change.** FINDINGS.md section 3 says density
   scaling at phi = 2.4 "would lift the decay-only cap to ~530-640"; the ledger's liquid band,
   scaled from phi = 1.2 the way the adjacent computed cap is, gives ~440-640 -- the lower figure
