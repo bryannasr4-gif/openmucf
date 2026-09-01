@@ -91,16 +91,18 @@ CLAIM_PATHS = (
 #: The universal and uniqueness forms. Each entry is one regex fragment, matched between ``\b``
 #: anchors, case-insensitively; :func:`test_guard_forms_are_exampled` requires it to be atomic (no
 #: top-level ``|``) and to own an example sentence that no other form here matches. Modals
-#: (`must`, `cannot`), ordinals and `both`/`identical`/`unchanged` are deliberately OUT: they are
+#: (`must`), ordinals and `both`/`identical`/`unchanged` are deliberately OUT: they are
 #: not quantifiers. A form is admitted only after a tracked line of this repository's own prose has
 #: been shown to state a universal the pattern missed because of it, and only in a change that reads
 #: and rules every line the form adds; `exact` entered that way (a shipped descriptor it hid was
-#: true, and had never been enumerable). Negation -- `not`, `cannot`, `\w+n't` -- is the measured
-#: residue: it states a universal ("does not depend on") that this table cannot see, and at
-#: 2026-08-30 it adds 342 lines, so it lands as its own change, read in full, not here.
+#: true, and had never been enumerable). Negation -- `not`, `cannot` and the contraction `\w+n't` --
+#: entered 2026-08-31 on the family's attested escape (`does not depend on`), every line it
+#: enumerates read and ruled as it landed; `\w+n't` matched nothing at admission and entered on
+#: the pair precedent, so a future contraction cannot land unenumerated.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",
+    "not", "cannot", r"\w+n't",
 )
 
 #: Words that make a sentence a claim about the ledger rather than about anything else. `bound` and
@@ -239,9 +241,8 @@ def test_quantified_claims_registered():
     :data:`LEDGER_CLAIMS_UNREVIEWED_CEILING`.
 
     This checks exactly what those two patterns match, line by line, over exactly those paths; a
-    universal in any other form, split across lines, or written anywhere else is unchecked. Two such
-    forms are measured and stated rather than unknown: a universal stated by negation (`does not
-    depend on`), still queued as its own change; and a wrapped sentence, which G4
+    universal in any other form, split across lines, or written anywhere else is unchecked. One such
+    form is measured and stated rather than unknown: a wrapped sentence, which G4
     (:func:`test_wrapped_claims_registered`) keys whole over every claim path a sentence can wrap
     in (:data:`SENTENCE_PATHS`, asserted equal to the wrappable claim paths). It does not decide
     whether a matched claim is true:
