@@ -15,8 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`not`, `cannot` and the contraction `\w+n't` join `STRONG`.** A universal stated by negation
   -- "does not depend on" -- was the guard's last measured lexical blind spot, disclosed in the
   v1.2.0 notes and re-measured in the notes below. The widening, together with the re-keying of the
-  lines this note and the guard's own prose change, adds <N_G1> rows to
-  `tests/ledger_claims_registry.tsv` and <N_G4> rows to `tests/sentence_claims_registry.tsv`. Every
+  lines this note and the guard's own prose change, adds 340 rows to
+  `tests/ledger_claims_registry.tsv` and 147 rows to `tests/sentence_claims_registry.tsv`. Every
   enumerated line and every enumerated wrapped sentence was read and ruled as it entered: no row
   landed UNREVIEWED, and neither ceiling moved.
 - **The contraction entered on the pair precedent.** `\w+n't` matches no line of the paths the
