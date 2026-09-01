@@ -392,25 +392,36 @@ ef99f334b657badae77ae40681266edfdccf19cf	openmucf/data/references.bib	REGISTERED
 0578080af3f1c6b2e9cc3a1c563fc64a5fe41115	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 05942334ca5d1537eab238c1e0a7da1acaadb602	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_edge_table_loads_and_every_stated_factor_cites_a_primary
 05950276ed2590099365f6fd2299370b0b38e75d	openmucf/mucost.py	REGISTERED: continuation of the direction_is_one_sided docstring; ChainPath.bias_direction in the same module reads each applied edge's own bias_direction, which is the "declared direction" the sentence names -- checked in that property's body.
+05aa45c86a65dc661f11a89cfa01786d5e7488ed	openmucf/mucost.py	REGISTERED: the reason string this method renders; checked against missing_stages, which returns the chain stages after the figure's own, so the text lists exactly what has not been reached.
 05ac90a9f2aa77be39b56fe97a9f805554411fd1	openmucf/mucost.py	REGISTERED: a line of the ChainPath docstring; render() prints no '>=' for 'unknown', and an assumption edge declared 'unknown' is read by the path's edge loop and not by the value (direction_is_one_sided reads only author_declared_arbitrary).
+062337e24761d1bc03e8ddf6e5c4ef11f9ba7500	openmucf/mucost.py	REGISTERED: checked against wallplug_lower_bound_GeV, which returns NaN for a row already counted in an electrical numeraire, so the bound is never carried across numeraires, and against OFF_CHAIN_STAGES.
 067da5e977807bef52bacbdabc7b1d1e0110ee22	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_to_numeraire_refuses_the_ways_it_must_and_carries_what_it_must
 067f4e1e4a3346d54dac8f16857743ae23a8177a	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 07c8664685b549fa70ffc0941d4c2de09409f306	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+0926a132d53c0cc9fd0e4db69e051febf79df7cb	openmucf/mucost.py	REGISTERED: the numeraire half of the attribution rule; checked against BEAM_KINETIC, the numeraire every box in this function is drawn in.
 093092933f551171bd7109485f5e30e6238ba1ce	openmucf/mucost.py	REGISTERED: rewritten in the 2026-08-24 claim sweep. What it states was re-derived against the tree when it was written, and the commit that changed it names the sibling sentence the wording came from.
 09fc900aee6eb07b89663a771df239d72f853cfa	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
+0c8dad255505e1c3d878b491cbb6d1275eee6949	openmucf/mucost.py	REGISTERED: checked against the returned sentence, which uses the verb the comment prescribes, and against the box construction, where a min/max support ends AT the largest admitted row, so an excluded larger figure is beyond the support rather than inside it.
 0dbe479c33542207d2ffcc08229f2cf5bcb1a6aa	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
+0dfa3d24671bcd0aa6e8ae8d2b219d3579f5b0e8	openmucf/mucost.py	REGISTERED: the message that ordering guard raises, naming both edges it received; checked against the branch it belongs to.
 0dfbbe3402ec844a6c4b24da70e0b26a293ce98b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 0e6657fc104c07662859fbbaa1d3d4d4e749e1da	openmucf/mucost.py	REGISTERED: compose_path's body enforces the join (applies_to), the charge basis, the seen_ids and the seen_coords checks; the join, charge and appears-twice refusals are drilled by tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure, the return-to-a-coordinate refusal is enforced in the body but has no drill (no committed edge can produce it: numeraire edges only leave beam_kinetic and stage edges only advance).
+0ede21f6e16fb25765c53a74dcba805a11f13c12	openmucf/mucost.py	REGISTERED: checked against the body and against load_muon_cost, which raises once its error list is non-empty, so a row whose integer cell failed to parse never reaches a returned table.
 0f494d6351832c9e25598cd64b734f9141b76861	openmucf/mucost.py	REGISTERED: a line of the ChainPath docstring; the body reads self.value.direction_is_one_sided and each edge's bias_direction.
 0f72809e7a34b899c755a668309ff547ff7f32c7	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 0f73dd932cb58324abd85e4f836d10619ff03a7e	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
 10bb5072e39d24048fccee90c7be42c1e92f032b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 12536c92eb76ff91736739ac57f56666170e9b70	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+12a809ff1ac9ffaece1c9c274d1006c5d1c3a47f	openmucf/mucost.py	REGISTERED: checked against BoxEdge and panel_tier_boxes, where every edge is either read off a named ledger row or is one of the three constants this dict declares, so there is no third provenance.
 131e5b1514733c645b466b84d76da34effb82ff6	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 147ae6b6f8499bd2937d5acd61fb9d4d3631ea4d	openmucf/mucost.py	UNREVIEWED
+149f8083ed074cf212bb1dddd35879dbee00281b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers
 15b6ff5bfde3f377eb9c724b9887f8cca494ca17	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+1676debff96b60f2a9ad4ad4d7df1fbbc31a9885	openmucf/mucost.py	REGISTERED: checked against ChainValue.is_bound, which is true when unsourced_statuses is non-empty or a stage is unreached, and against NON_SOURCED_STATUSES, whose three members are exactly the statuses named here.
+1909fc5d6a722c505079efa7498c990750c30e4c	openmucf/mucost.py	REGISTERED: checked against the branch below it, which requires the factor cell to have parsed before reporting it absent, so an unparseable factor is reported once as unparseable rather than also as missing.
 1abea9af6c14e70c5f2b569c0b4c14aaac5f14fc	openmucf/mucost.py	UNREVIEWED
 1b4569d2dfb052550b2ddd7e473c43dc459b48b1	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
+1b86dbf0d53ab2cf8184684c29d710d36533cc11	openmucf/mucost.py	REGISTERED: checked against ChainValue.render_value, which raises BasisError whenever is_bound rather than returning a formatted number.
 1b97e6b7d4a070a4be899590282292ed39b884de	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 1baede9fafebfbd4989edd410fd3e5e89ad83f21	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 1d0c64db0d1539071e5476e519b2f95131cd3136	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
@@ -418,20 +429,30 @@ ef99f334b657badae77ae40681266edfdccf19cf	openmucf/data/references.bib	REGISTERED
 1e3b320d77d1b1c8b34044603edfbab40a7b2c89	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 1e566535af516279d38d3f085a1df0adf7346863	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 1f0a40c65eb6486d5079566497610bf8bd128fe5	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_float_wallplug_path_cannot_disagree_with_the_typed_conversion
+1f4ca9b1b931794d583811384af252f5eeb219d4	openmucf/mucost.py	REGISTERED: checked against the rendering below, which interpolates each excluded row's own stage rather than a fixed word, and against test_the_t3_provenance_paragraph_is_derived_from_the_ledger, which asserts the retracted wording is absent from the whole document.
 1f5ed6e488836dbcf5c011d517a924c2b7befa1d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+1fd3bbe4843edccc4ac3602069bc3e47521201aa	openmucf/mucost.py	REGISTERED: the pinned-value half of the attribution rule -- an edge cannot carry a row's value if the row has none; checked against has_normalized and the message below it.
+201523a13631f374cbf3ce514a8b7a48c4bbe78f	openmucf/mucost.py	REGISTERED: checked against the edge table, which sources no conversion from a mixed-charge figure to a mu--only one, and against understates_stopped_in_dt_cost, which returns True for a mixed charge basis, i.e. grades the row an understatement.
 20383a43c65acc971aae4a9b52856086572f73bd	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
 20f279f6df5d4acbd5604bbc5692591e2fcdd158	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 21405bc7730c4e145fb2b95913a05068e0372edf	openmucf/mucost.py	REGISTERED: enumerate_chain_paths records a path only when no edge extends it (the walk's `if not extensions` branch), dedupes by frozenset of edge ids, and visits edges in table order, so the three properties hold by construction; the dedup is the one asserted by tests/test_mucost.py::test_composition_is_order_independent_which_is_why_paths_dedupe_by_edge_set.
+21e35755684a415a49d20f9efefe8f38c7474f0f	openmucf/mucost.py	REGISTERED: the node loader's cross-check of each source_bibkey against references.bib; checked against openmucf.rates.bibkeys, the same key set test_every_bibkey_resolves asserts every shipped row resolves in.
+22c771493eb1194bc0ad4aca38fa5dff56d4dc24	openmucf/mucost.py	REGISTERED: checked against ChainValue.direction_is_one_sided, whose body reads only the statuses tuple, and against ChainPath.bias_direction, which additionally inspects each applied edge.
 241a365656aa5cad0bf3dfe79d17d2c98b9100a2	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 24dcce11222eb42c40f79ff2585d9d9f819d6cae	openmucf/mucost.py	REGISTERED: a code comment scoping the causal claim the rendered clause makes (exclusion sets where the support ends, never the retracted 1e6 edge); the rendered sentence itself is bound to the committed document by test_the_t3_provenance_paragraph_is_derived_from_the_ledger.
 255e62d52f6246c7de8d2366ec1113c9364b05ae	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+25896b65a6f3c9aae159fecc621b787a24414f30	openmucf/mucost.py	REGISTERED: checked against VALID_EVIDENCE_STATUS, the union of the sourced and non-sourced status sets this module composes on, so a status outside it could never be graded.
 2618b9774a512014eb16b4953d422e0a1e9fb201	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 279c3ed2cbcbe477c9787e672d2acae85ece2564	openmucf/mucost.py	REGISTERED: comment on the wildcard constant, stating the physical reason the unmoved axis is 'any'; the rule it motivates is enforced by load_muon_cost_chain and drilled by tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
 27fbfaaa45d8dec68939ea7aac4dba420496f3dd	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 2857b6a2bb1b59a6ad63433ffaa2e3302a485281	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_float_wallplug_path_cannot_disagree_with_the_typed_conversion
+2a89702a5bcb5e3baef8708aed425332d63882b0	openmucf/mucost.py	REGISTERED: checked against ChainPath.bias_direction, which returns unknown when any applied edge declares that direction, while the bare value's own reading of an assumption status stays one-sided.
+2b59268f0f045a97652b7f421b8c49113ae37ed8	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+2cbd4c47643fa856f2040175a4bc6056f3b69a11	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
 2d3845ba1a7678e834e797236b87a02a1443f771	openmucf/mucost.py	REGISTERED: true of AGGREGATE_EXCLUDED_CHARGE_BASIS's sole member mu_plus_only; the in-code assertion two lines below fails the render if the set is ever widened past that wording.
 31834a0d13ed25d71a0285ac9df2f441afa2a4ed	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
 32c01d6484239d6933ed58cb3ff16cc4643e79a6	openmucf/mucost.py	REGISTERED: states why `mixed` is NOT excluded -- it counts mu+ and mu- together, so the shipped figure understates the mu--only cost. Keeping the row RAISES our own published tier ratio (1029.5x with it, 750.4x without), so it is kept on basis grounds rather than on what it does to that headline -- the account CHANGELOG.md gives of the same decision. A scope decision, recorded; test_music_is_mixed_charge pins the row it is about.
+33902d79dd4a98a23c7599c4f6cd58ec6ae0dd30	openmucf/mucost.py	REGISTERED: checked against the MuonCost fields, which carry an eta_acc figure but neither a target denominator nor that factor's evidence status, and against muon_cost_chain.csv, where both live per edge.
 33c30579c9bdf27a335df4f7cdc60870e8986cf1	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
 33de52468107673e7ff3bd10859881067c989524	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 33e31e89cfd427b517a3bf058b2c9cb5a18b9176	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
@@ -440,45 +461,64 @@ ef99f334b657badae77ae40681266edfdccf19cf	openmucf/data/references.bib	REGISTERED
 35c5f1bdf52238421b3ba5dce0de0ed2e47c825f	openmucf/mucost.py	REGISTERED: a code comment scoping the VERB the rendered clause uses -- a min/max support over the admitted rows ends at the largest of them, so an excluded row's figure is what the support would reach rather than overshoot; the rendered sentence itself is bound to the committed document by test_the_t3_provenance_paragraph_is_derived_from_the_ledger.
 36fd3ba3087c3414dca0cdece082105cc9b5e51c	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 37dcb7150572c223ce087cb0b389d7c6db0a6a1f	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
+3ba2dfb549bd444e0bc9a5c6a9771dcb51a60de2	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_loader_still_reports_a_good_row_with_one_bad_number
 3cfc4a27a6f9a93ae5bbc2d5365109f3c8c62950	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 3d319c24290fb3c1a93eb32895caed24dee34725	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 3d7b80de5683343130a42e71e44a3b4d0c698569	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_t3_provenance_paragraph_is_derived_from_the_ledger
+3dc16a8dc526780c25c66c1cac22b9c886135512	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
+3f76fcdbc0da74224b2714adb520c34cbaaec47d	openmucf/mucost.py	REGISTERED: checked against the loader, which leaves this field NaN only for a cell that is empty and reports an empty cell as an error unless the row is flagged needs_verification.
 442274206bddffdbefa68692fa26743b07ce1efc	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 449123999575c7cdbd39f7b85b99cdbcf67cb008	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
 466d603cf479564d7ed24cfe648899acd16c6d7e	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_to_numeraire_refuses_the_ways_it_must_and_carries_what_it_must
 473409c95160c18d63b9d1246fb8d74be1442d37	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_bias_direction_must_agree_with_the_evidence_status
 47f5f5b8584b5bc942145bb66a0f7c942fe25899	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_float_wallplug_path_cannot_disagree_with_the_typed_conversion
 4815274b30556de5b98721e8c619198a5c7c94ec	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+4870f37d6bad096ebc500e7d042163950e92889f	openmucf/mucost.py	REGISTERED: the current text was read and is what the comment requires -- the returned sentence names the largest admitted row and no constant; the arithmetic half was checked against panel_tier_boxes, whose T3 support is the admitted rows' own minimum and maximum.
 4b1aa8be9bb639fcec96516f0e03a5bb914013e0	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 4b6773339dbb3e4ac6461f6fec3f8fb76a6f2d1b	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+4cce6260a2220b0aca2ccb809b9d62728b7fb722	openmucf/mucost.py	REGISTERED: the refusal to render a membership sentence about an empty set of rows; checked against the raise below it, which names the box whose provenance would otherwise be stated about nothing.
+4e9c93855bee1e677458905083cb2534fc99074a	openmucf/mucost.py	REGISTERED: the EDGE loader's required-column check; checked against its own required list and against test_the_chain_schema_required_columns_are_pinned_and_enforced, which drills each column by name.
 4fba3deef7c7f1e377e8334400005ce12a4dfa11	openmucf/mucost.py	REGISTERED: code -- the fallback text for a path with zero edges inside a refusal message; states nothing about the ledger.
+50a36bce5bda732fb7956081dca414c48f6aa7f6	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
 5150940df5e0caca38e6a24bf4d8b70e032b81fa	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+528dd8aedbfd98ba134328811269027d8b3c6398	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_loader_rejects_bad_tier
 54330d1f333e170b4e9bd473d2eee00ddfddbbfb	openmucf/mucost.py	UNREVIEWED
+5542f9ca766608b1eb1cbde649676b4a5efda3b2	openmucf/mucost.py	REGISTERED: checked against OFF_CHAIN_STAGES and chain_point, which refuses a stopped-outside-fuel row a chain point at all; the incommensurability half is what is_basis_homogeneous exposes to a caller.
 592855e6eaeb5964ebfddb9182942afb85f8b1e0	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
+5cc7fc8456764bc2cb43ca9cf81f98eb5c355ff2	openmucf/mucost.py	REGISTERED: checked against the branch below it, which returns NaN for a row already in an electrical numeraire, and against test_kelly_wallplug_is_a_one_sided_bound, which asserts NaN for both shipped electrical rows.
 5ce65662382a3b6717ff0acb4ed9e528a78c1d86	openmucf/mucost.py	REGISTERED: a line of the bias_direction property's docstring; matches the two-clause condition and the is_bound fallthrough in the body.
+5ec3c00137a19c67c9b8156b2f89e3e12f7577d3	openmucf/mucost.py	REGISTERED: checked against direction_is_one_sided, whose body reads only the author-declared-arbitrary status and not the assumption one, and against ChainPath.bias_direction, which additionally reads each applied edge's declared direction.
 5f49943812ab6fbf241d10024851b9ba430af8b2	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 5fccbe0dfbfcd710a40da1fb46918176a97e522f	openmucf/mucost.py	REGISTERED: design rationale for the wildcard; the property it protects (an edge moves exactly one axis) is the loader's moves_stage/moves_num check, drilled by tests/test_mucost.py::test_an_edge_moves_exactly_one_axis.
 5fdfd9db45211ee70922232ba8133a0444a4c32c	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
 5fe383f4765b9c3eb0b1da222dabb4fd27aeef0a	openmucf/mucost.py	REGISTERED: defines the ANY wildcard; "any" here is the wildcard's reading on the axis an edge does not move, not a quantified claim about rows; the one-axis loader rule that gives it meaning is drilled both ways by tests/test_mucost.py::test_an_edge_moves_exactly_one_axis.
 631599677b8c934b25b0ddc26dc42612c964eb2e	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 63422a24dfe768e681f4615b38d96f26a8626cad	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+63fc85f7ebfdf4ad5601760ff16091caa444f81d	openmucf/mucost.py	REGISTERED: the walk's second skip, which prunes the same two joins ChainEdge.apply_to refuses rather than raising during enumeration; checked against those guards.
+645de2315bbaa7a30a6141b72cadf4525ec86c0d	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
 64600e211fa3f67ca39facb5569eb3210942b210	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+65f8eb878303987b948a0b6d4f99c8601f69b7ad	openmucf/mucost.py	REGISTERED: checked against the signature and body, which fix one numeraire and read only aggregate_values within it, so no median mixes the two kinds of energy.
 66c4880975dfe5c3d45c73ed6ecbd231988064b3	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 66ff0324c8311e1cf99ec6f11cd638b529ee113d	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
+68bf0b8c18f2878b3e4214956661f775bd80dc19	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_non_sourced_chain_renders_as_a_bound_not_a_value
 68ea443db9023e5a0b805a8a913f52a0aebec5e6	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 69254483bac527e551b9b2cf4f19ff1bcd7807cd	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
+699a1d05d80ae1d847425f4a581b5b71016b9448	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_to_numeraire_refuses_the_ways_it_must_and_carries_what_it_must
 6b9ef43a29c9016d472045d3b6bf8c64051f251d	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
+6d31971ec9c794387a7a69f3734f33243d6da1fe	openmucf/mucost.py	REGISTERED: checked against aggregate_rows, which filters on charge_basis, and against is_basis_homogeneous, which reads basis_class: with either cell empty neither question can be answered for that row.
 6f6fb186c5d85766e0e7c9772216f3ab38704798	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 6fb7dcc162ad14e63963e7328df19c28c6072a73	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 725cc5ebba27feca124508afaf0c695c83f1e257	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 76a4886ea07b222c917b5acd2dd09829af5bce85	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 76da6b31808b0e8420baac86aa28eb3ee86cf6ec	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_numeraires_is_tier_scoped
+773630a81cf67ecee95e9cb6dfe3568e345d8a82	openmucf/mucost.py	REGISTERED: checked against the loader, which compares each row's stage with the mapping this dict gives for its deprecated basis_class and reports a contradiction, so the alias cannot drift from the axis.
 778b6e690a45977bceaeec9e0e143773461d54a2	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 77c23545959c362963d0df9be2edd525b61d6b67	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 78c61d5f9366535858176c27ff96af364e4c083e	openmucf/mucost.py	REGISTERED: panel_t3_membership reads MuonCostTable.aggregate_rows(tier=T3) sorted by value and joins the labels -- no list is kept by hand -- and tests/test_mucost.py::test_the_t3_provenance_paragraph_is_derived_from_the_ledger pins the rendered clause.
 7b06ecd264039cf3a18633cb2a28f6c077455f0d	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_bias_direction_must_agree_with_the_evidence_status
 7ecb457ab40e5850818d09e6395174e67a60d98d	openmucf/mucost.py	UNREVIEWED
 80b21c3100a7a29a32ffad17020787825353117c	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
+8294f5a6ae071f2abb675cd69f2c2203339a74a3	openmucf/mucost.py	REGISTERED: checked against the class -- rows_in_numeraire, normalized_values, basis_classes and stages all keep an excluded row while aggregate_rows drops it -- and against test_no_aggregate_admits_a_mu_plus_only_row.
 840c4f91f46cb045f7aaeca31a620cc4e8e18e53	openmucf/mucost.py	REGISTERED: a line of the ChainPath docstring; the omitted-factor premise is compose()'s precondition (a factor in (0, 1]) and the one-sided grading of a sourced partial path is asserted by tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker.
 84ecf9856a75268e3a1e9c46b050b853909d1385	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 850c4925a69bec8a64be2ff10385cd736a3301c6	openmucf/mucost.py	REGISTERED: BoxEdge.render's body is the check -- `self.value == 10.0**e` is exact float equality with no tolerance, and a non-decade value falls through to the plain format.
@@ -486,36 +526,56 @@ ef99f334b657badae77ae40681266edfdccf19cf	openmucf/data/references.bib	REGISTERED
 8679eb72b557cf48d93576a79718552017fd8c47	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 8caf53c2bfb0bd427b4b12d47e27971c363a5d39	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_the_chain_schema_required_columns_are_pinned_and_enforced
 8cc5e0bc9854ef7ba9bde1316c2853c458f03e3f	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+8e5ded19f06344950ef01be457f6a9c089f58ded	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_loader_still_reports_a_good_row_with_one_bad_number
 8eadf38836bd190eb18131b622f389514ba3e60b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
 8f2d93bf4c95ef6c5342fdc6506ef19316eca56d	openmucf/mucost.py	REGISTERED: comment on the wildcard constant, stating the physical reason the unmoved axis is 'any'; the rule it motivates is enforced by load_muon_cost_chain and drilled by tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
+8f4b50210902683cdb05939ccab7e4fcaafab1b8	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
 905fb1066cc51d305de2e1af23bb6a62fd27a90a	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 90c3d65e131a3231822ef10ebc48552ec844b8dc	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 915543bd0b114cdd24692dd670b8cfffc2bf1756	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+91a69c577e47ebd93a75419b64f97cfaec047052	openmucf/mucost.py	REGISTERED: the branch that limits the row-attribution rules to edges actually read off a row; checked against _DECLARED_EDGES, the three constants for which no row exists to compare against.
+91b32e1f70677599ecb67c91d4e0e13435107ec8	openmucf/mucost.py	REGISTERED: the ordering guard: a prior box must be a genuine interval before it can be a support; checked against the box construction directly above it.
+91dd4b2656bf6cc4d72fee0e2be9d099d79ceb1a	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers
+93d174e78a4fdea59f949633064bcb01e6566d40	openmucf/mucost.py	REGISTERED: the refusal compose raises when asked to advance to a stage outside MUCF_CHAIN; checked against that constant and against the branch immediately above the message.
 99ec64643192bb9b78a8f505aae3493aff302a78	openmucf/mucost.py	UNREVIEWED
 9cc5da77a33ae17156f1be76537542bd331b6daf	openmucf/mucost.py	UNREVIEWED
 9d326aecc41c4359493cd3c22a8f647cd0d5c184	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_bias_direction_must_agree_with_the_evidence_status
 9d3bdeaf815b0b56e8a5748fdf02a7d6a507efe7	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_bound_message_names_the_bound_not_the_direction_of_the_truth
 9d543cd07d7b067a66f45f1d854693eeae584e66	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 9e3abf4501878a1769dcc444bfd122affaaacc0b	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+9f076fc42150ae39c1b23bd5daec55e4e64842c6	openmucf/mucost.py	REGISTERED: the guard that enforces the comment above it; checked against the shipped CSV, where every pinned row carries both cells.
 9f45aab59e829eaa8c439ee3718d3e77653496cc	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
 a00f0d04bca10bf24b856d6375f305db003ca714	openmucf/mucost.py	REGISTERED: the empty-exclusion branch's text, emitted only when rows_excluded_from_aggregates(T3) is empty; unreachable against today's ledger and true by the branch condition when reached.
+a2278481f744a87bc27bd4f162fa39f00290040d	openmucf/mucost.py	REGISTERED: checked against this property's own body, which is a function of basis_class and charge_basis alone and therefore makes no statement about a second numeraire, and against wallplug_lower_bound_GeV's refusal for a non-beam-kinetic row.
 a25a4b3f33f8cba9a5f46c3af70b9b5ca45178fb	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 a2e6086ec6f46ea80841947c9cc9a25a435117da	openmucf/mucost.py	REGISTERED: competing() keeps only coordinates with more than one factor-bearing edge (`len(v) > 1` in its body); the set-not-mean rule the docstring states is drilled by tests/test_mucost.py::test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean.
+a34084bd59a615cf37821a922fe068df9c4d381f	openmucf/mucost.py	REGISTERED: checked against the body below it, which raises BasisError instead of returning a string whenever the figure is a bound, and against test_a_non_sourced_chain_renders_as_a_bound_not_a_value.
 a613efb0c7703fdfa020c03c952490c5e28c50d6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+a69b119c92625d96414be96818eb6f88e15068ce	openmucf/mucost.py	REGISTERED: checked against the method, which medians whatever stages the tier happens to hold, and against test_no_basis_class_spans_T1_and_T3, which asserts the two tiers share no basis class at all.
 ab5dfb7db7f91c2e51c8aa86dee559522a591f19	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 ab75ccb3f9e2c9738e27df922d51ed907163a783	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 ab83126c1fb15fb69633dca9a5f62bcdea802923	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 ab8f7a37d8e383b7a539468b58d7a1305ff75af3	openmucf/mucost.py	REGISTERED: same docstring; "at most once" is the seen_ids check (drilled: "appears twice"), "no path may return" is the seen_coords check in compose_path's body, undrilled because no committed edge can trigger it.
+ada5a122090a8cdbc5e78b62e4be58f8e8d36208	openmucf/mucost.py	REGISTERED: checked against the loader, which requires useful_fraction_sourced to be stated at the terminal stage, and against the branch below, which adds the assumption status that keeps such a figure a bound.
 add95ac110452033015bf5ac2291d88aff34ff2b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+ae330ab2d0440b50fe44d85b04119303cc457d5c	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
 af367718ed6fecbe4748cac48598ac8d9cdd7c7d	openmucf/mucost.py	REGISTERED: module comment recording why the edges are a second table rather than more columns; a design rationale, not a statement about any shipped number
+b07cf91c0466b630bb4567b463b17f51b88228bc	openmucf/mucost.py	REGISTERED: checked against the rule the message states and against the shipped CSV, where every pinned row carries both axes and the only row without them is the unpinned needs_verification one.
+b1d8319806feb9ce5a891e1c263b51603511bf49	openmucf/mucost.py	REGISTERED: checked against the two rules the body enforces and against test_no_box_edge_is_set_by_a_barred_row, whose negative control shows the containment rule, not the attribution rule, is the one that catches the box this replaced.
 b26c0be0060f8ddbfc332a4a1fe8d60f2e109e41	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 b27c45d335f9174b4c13311e84df980c21202198	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
 b3ab279914ba2aa91325b13fc96d3a862bbbf03b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
 b3b5975fd541857b6a745d315fd519edb4debdd1	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
+b5a38dce8eb51d490fac23bbb6524aa8e4e77bda	openmucf/mucost.py	REGISTERED: checked against the body, which appends the failure and returns NaN instead of raising, which is what lets the loader report every faulty column of a row rather than the first.
+b71b6ace3122edb8a29366fb963beb72dd023100	openmucf/mucost.py	REGISTERED: checked against the shipped edge table, which carries two rival readings of one conversion, and against test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean, which shows both survive as separate figures.
+b75e80519d9a9217fe1bfcf7df8bbffa9df11b82	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
+b7eb4b71e8663ea49eff49e1263f420cf48e70e6	openmucf/mucost.py	REGISTERED: checked against VALID_CHARGE_BASIS, whose members are exactly the bases the aggregate filter and the lower-bound property read.
 bb82e8201ddbef20e3a13cedda04f7086d34a819	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+bc3ae9bc499d0dbf944b30ade4f42ffd0b81a3f7	openmucf/mucost.py	REGISTERED: the scope instruction the property's own signature supports: it reads no numeraire, so a caller who carried its answer across numeraires would be adding a claim the code does not make; checked against the body.
 bc53eda44b93a7359339957f6f57d6aef0c88acf	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
 bd65d26c5619b08df3b575c912bb0a1e5feecbbd	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers
 bf82765342e46f11f1ded711e2aee86e47205161	openmucf/mucost.py	UNREVIEWED
+bf96c760a4331a5fff45513fd37600096ea19de4	openmucf/mucost.py	REGISTERED: checked against the MuonCost dataclass, which carries stage and numeraire as independent fields, and against MUCF_CHAIN, whose five entries are the stage axis this sentence lists.
 c159768f8435e57b72d2b17f8da18427808b2dd1	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 c173b17b33a87ba37672ae4094710e73f9f3736b	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
 c485a217c86dc1f9a8c65872d3bc20d26308c7f1	openmucf/mucost.py	REGISTERED:signature or statement line; the quantifier the enumerator matched is Python's `None`, not a claim about the ledger
@@ -530,7 +590,9 @@ d0dac49a61dba90ce42af3c9491f10e47901b76c	openmucf/mucost.py	EXERCISED: tests/tes
 d111df1d680a81ea70eeaa5ee76302c92e491d09	openmucf/mucost.py	REGISTERED: an indexing-policy statement, enforced by construction -- PANEL_ROW_LABELS is indexed strictly, so a missing label raises KeyError rather than rendering.
 d16c560fff0c1b108bf97697d8cd2b7881c2f761	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 d2495652d183b6b0cc46b35e30f5811c5ebba3d5	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+d72221bfde3e56820a6c50f864dcc5a7a7d8a296	openmucf/mucost.py	REGISTERED: checked against ChainPath.bias_direction, which grades such a path unknown, and against ChainPath.render, which emits no inequality for that grade.
 d89c8a3fb6a0522c95284c68e7e932a0f874d1f6	openmucf/mucost.py	REGISTERED: code, not prose -- the property's condition, reading direction_is_one_sided and any() over the edges' declarations; drilled by tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route.
+d8af388c9f0ece829296f8713d036273ee0d2b64	openmucf/mucost.py	REGISTERED: the edge loader's cross-check of each source_bibkey against references.bib; checked against the shipped edge table, whose eight rows all cite keys that resolve, and against the same bibkey set the node loader uses.
 deb8db58a6e687e718d1ed88a245f743d6b9cc28	openmucf/mucost.py	REGISTERED: a line of the ChainPath docstring; the three routes it names are drilled by tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route.
 e0d1b920a87749dff91ada4b059e1d43d476be04	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 e123dd3bd8f247bffd1a885d328dcc580e2403f4	openmucf/mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
@@ -540,16 +602,28 @@ e4550bda2ca2861059d07821cb977271c5ba04e3	openmucf/mucost.py	REGISTERED:code comm
 e483b3b17379506b0e6d245abaa39bb9c6749ad1	openmucf/mucost.py	REGISTERED: a line of the bias_direction property's docstring; matches the two-clause condition in the body.
 e669b43f039f3275c49df7792dd280b72fbdfdf8	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 e829c9d709355a30dedebb05fffb5be3bd08858e	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+e867c79154557b34b8b406b52623306cb497c3be	openmucf/mucost.py	REGISTERED: checked against the two constants directly below the comment -- MUCF_CHAIN carries no wall-plug entry and VALID_NUMERAIRE carries both electrical denominators.
 e8f070e95098ee35e2f7b61c0da4a4cc3754a7ec	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+eb9ea1cfd1d2108d56a9d7d3bb6ec5c59603a372	openmucf/mucost.py	REGISTERED: the residual guard for a stage that is neither a chain stage nor a declared off-chain one; checked against VALID_STAGE, which the loader enforces, so this branch is reachable only from a row built by hand rather than loaded.
 ebce009b41b63ba02e2679d137bf9df7aae5d414	openmucf/mucost.py	REGISTERED:code comment recording a design choice; states nothing about the shipped ledger that any document publishes
 ebddb27f1a1a56a124ed0586793874eef073f32d	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+efe795ac0d29d2d5dca39ae0dfe5f86c55368905	openmucf/mucost.py	REGISTERED: the message that branch raises; checked against MUCF_CHAIN, the tuple whose membership it reports on.
+f113bc7b408d29f5b22fbe2cd2de54f4b8d31918	openmucf/mucost.py	REGISTERED: checked against the two constants it distinguishes -- VALID_NUMERAIRE holds both electrical denominators and MUCF_CHAIN holds neither -- and against ChainValue.to_numeraire, which changes the numeraire without advancing the stage.
 f1e124e21bf33f41896c3e8751973d285d660596	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
+f2e872df5c44f6954da7f04f57204aa2ce49ab10	openmucf/mucost.py	REGISTERED: checked against the aggregation surface, where every number computed across rows is restricted to one numeraire, and against the shipped CSV, where the eta_acc conversion appears as separate electrical rows rather than folded into a beam-kinetic one.
 f2fcd65b703f34fec68cd93ea6bc13b1d20eeeb8	openmucf/mucost.py	UNREVIEWED
+f330e38867a2f6a116dddc92917702b075ee9655	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
 f557d6ed467b013c229b7dcf3c82030ad26577e6	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 f69637c35c15e3f5fdbe56c1536dd6cb53d09c6d	openmucf/mucost.py	EXERCISED:tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
+f77fc02aedd7ab3ad5225025831476217db32ffa	openmucf/mucost.py	REGISTERED: the walk's first skip -- an edge already on the path, or one carrying no factor, cannot extend it; checked against has_factor and against the four absent edges in the shipped table, whose factor cells are empty.
+f782a4756cb067ec20b7a6bf6f0c40c0c3b6f79a	openmucf/mucost.py	REGISTERED: checked against the body, which returns NaN in each of the three cases it lists -- no stated eta_acc, no pinned value, and a row not counted in beam_kinetic.
 fa9b79c4f27f4adf308b8ae66a5b5769593592e3	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+fab2c6fd1806171fe6b65ebce2c2cb61c8bee259	openmucf/mucost.py	REGISTERED: the value half of the attribution rule, which requires the edge to carry the row's own number; checked against test_no_box_edge_is_set_by_a_barred_row, which asserts that equality on the shipped boxes.
+fafbc6447e80a57edbe6ec2c8132f5ef756b0b7e	openmucf/mucost.py	REGISTERED: checked against the shipped CSV, whose pinned rows carry more than one basis_class and more than one charge_basis, and against test_bases_are_heterogeneous_and_declared, which asserts the table is not basis-homogeneous.
 fb8c7d3f58828a741b80fc08079b9c377b3c24c4	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
 fd80cef0a1d38db53153ee547b74500642d4f209	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean
+fe4f7701b6edd89137039e96d3f0a33cfed756c4	openmucf/mucost.py	REGISTERED: checked against the shipped CSV, which holds beam-kinetic and two electrical numeraires at once, and against the method, which delegates to rows_in_numeraire so no list it returns can span them.
+fefb1300fd61c5d5387e52dda09895faa424402e	openmucf/mucost.py	EXERCISED: tests/test_mucost.py::test_an_absent_edge_carries_no_number_and_refuses_to_compose
 1d7cf942817f1116a86140d6f20b9509e065c2aa	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
 1ec0d2e8f3c1001aba2acddc1d98cda2255548db	paper/paper.md	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 2a669477f641be3b126774e260b4561ab6b519f9	paper/paper.md	REGISTERED:summary sentence restating MUON_COST.md's own basis disclosure; reviewed at that document
@@ -908,8 +982,13 @@ f8e814519fb6eadb5e260edd71c8fbc38cad5b2c	tests/test_ledger_claims.py	REGISTERED:
 03027c7dbfacd0c690a6cb5fdbd3ff3c35fc559a	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 066a2476ab79febb99a4422e22b8bbfb2903397c	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 06e8d1d7f12ff6cb4d4faf50ecdda2d4d8c43696	tests/test_mucost.py	REGISTERED: a line of the coverage-test docstring: the counts are recomputed from the tables and compared, which is that test's body.
+070ab51ae9501cb0e1b122bcf6247592bb022275	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_generated_edge_section_says_what_stops_the_chain
+096f1cdc88962b8218eaf03f310abb3062a89e03	tests/test_mucost.py	REGISTERED: the closing clause of the same docstring, explaining why the numeric check is a band; checked against the body, which asserts a two-decade band rather than a tight bound.
+0a43b3d39b7d8c96732457e512e276d0267a9545	tests/test_mucost.py	REGISTERED: checked against openmucf/data/muon_cost_chain.csv, whose factor_lo and factor_hi cells are empty on all eight committed edges, and against the body, which drills the bracket rules on a synthetic edge instead.
 0b42f9562f8bf43fd6c145c33b70ba78e0d3b772	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+0ba21b2b53937c20f6d940809d78671a996447ad	tests/test_mucost.py	REGISTERED: checked against the body, which asserts every off-chain row reports False for understating the stopped-in-fuel cost and that asking it for a chain point raises.
 0bf3823745c24b96762be15182a14e8c6a3a5a2b	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+0edcb1f78d2ce85492dd6842c357efa6cb0a8463	tests/test_mucost.py	REGISTERED: a synthetic row carrying one unparseable number beside two enum faults; it states nothing about the ledger, and the three complaints it must produce are asserted immediately below it.
 0f3c9f258e06cafe9443b28b31cfc5621810bed7	tests/test_mucost.py	REGISTERED: the half of the sentence that is about the DOCUMENT was checked in the document: MUON_COST.md's Headline reads 'basis classes shared between the two tiers: **none**', and MUON_COST_MANIFEST.json's shared_classes entry pins that exact wording, verified by python -m openmucf.provenance --check MUON_COST_MANIFEST.json.
 111a4916c0f6778116ab4abd0e6f58a91050d8c4	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 125ba8541eb5d3f7c0242482ec5be52d40eef40a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -917,48 +996,78 @@ f8e814519fb6eadb5e260edd71c8fbc38cad5b2c	tests/test_ledger_claims.py	REGISTERED:
 14b9bd25ad971f2a20906464eaada32d3acda181	tests/test_mucost.py	REGISTERED: same docstring, stating the drill's own limit -- a later aggregate is covered only if added to it; a scope statement, checked against the three surfaces the body enumerates.
 18c091cced682cbd0fa278844abbb3c8ddd1bdc4	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 1a2a21aa6b1d058263d74bdd451e0123b0ed6fb7	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+1d1ec8bb4bc9dfccd36f43ab5dd1bd6279e765c1	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_lower_bound_universal_is_scoped_to_the_rows_it_reaches
 1d4c418e76a448142b0be9541c20c94d322f0c19	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 1ef7de72cfdd96147677a47b69ab913bd882f52f	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 1f666ad676fd74af2b8806da2c336ce9f5f9f48e	tests/test_mucost.py	UNREVIEWED
+20774dbfbb9e114471926a1dac2665e9daa4ade6	tests/test_mucost.py	REGISTERED: checked that the count and the uniqueness claim this forbids here are rendered by scripts/generate_mucost.py into MUON_COST.md and bound to the ledger by test_exactly_one_cost_source_states_a_beam_to_electrical_conversion, so the docstring restates neither.
 22dc61bf6c9b4813c108c5f7395b3bfc248c23a2	tests/test_mucost.py	REGISTERED: docstring of test_tier_spread_is_about_three_orders_of_magnitude_on_mixed_bases; the guards it names were found by a fresh search over tests/test_mucost.py for the tier medians and their quotient (2026-08-30): the exact medians in test_aggregates_are_numeraire_restricted, the one-decimal quotient in test_no_aggregate_admits_a_mu_plus_only_row and in test_published_tier_ratio_is_bound_to_the_ledger, and the band in this function -- five asserts in four functions, all named.
+234c667e60c8c5fb5c9a05d3758168faa40e1a21	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_derived_electrical_rows_are_pure_numeraire_conversions
 23a4c1842c9cefdee0e365f5203062ae4ffc802e	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+242ea5fad7129370333ecd0944b3e2280df620c4	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_compose_path_refuses_every_join_that_would_misrepresent_the_figure
 2545bc77df2b56f69eefab04ffa9c30d6437dffa	tests/test_mucost.py	UNREVIEWED
+25dcd79a2e465d9f291a2a90600dbd3e03e692b7	tests/test_mucost.py	REGISTERED: checked against the assertion two lines below, which compares the T3 box edges' VALUES to the minimum and maximum of the admitted rows' normalized values, so an edge relabelled to another row cannot satisfy it.
 26e1c484ae464f7ccf615d7deb9224402f3afe30	tests/test_mucost.py	UNREVIEWED
 27837199d5ad2a87471806f2815b9ecaf8ec2a82	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 27bc87aec5074938ce6ae96263825e04ec8e96f3	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+27ca94d1c03087f508f956801a4e71ba551007ab	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
+2844c8e87d7de77b9606bcbeac38fae34dd66872	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_to_numeraire_refuses_the_ways_it_must_and_carries_what_it_must
 2934d8c10319a4db0ab0af12d3a5acef7f7c9035	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
+2b765a804acd2a11d227e14642c2d715903a5352	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_numeraires_is_tier_scoped
+2c54da812f01b5587ac2f899342b5eef36ab2662	tests/test_mucost.py	REGISTERED: checked against the block the comment introduces, which builds a complete, fully-sourced synthetic chain figure and renders it as a plain number, so the refusals above it are not vacuous.
 2cf5c7f982e273d1e2c9d61114c3fb81fb85b0d0	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+2d3131f3b831d74559b3abeea8f0c6d72cb592bf	tests/test_mucost.py	REGISTERED: checked against the assertion below it, which searches the whole whitespace-normalized FINDINGS.md for the retracted wording rather than one section of it.
 2dbc5b78e2843db80824fa8fa4f7899a5b647e27	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 2dd9fd7a338ecfb7e056d6d11418dd7f106ee3b3	tests/test_mucost.py	EXERCISED:tests/test_mucost.py::test_bertin_is_counted_at_production
 2fd42360838de0b00832486e967eec145e1e5470	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 3196f50d17e9acc819f13c3e7948c8d455462f4c	tests/test_mucost.py	REGISTERED: a comment naming the drill's second case; the assertions follow it.
+33b1f79b5103e5faf581c55f275c61d955a6f6f7	tests/test_mucost.py	REGISTERED: this loop's first filter: a row with no normalized value, or a stage off mucost.MUCF_CHAIN, has no chain point; checked against those attributes, and the closing assertion requires the loop to have produced at least one path.
 3516c7c72f7dda6dcb84836323dc260e8b291e46	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 353645ae61139414705c9e245ad4cab557e8f6a7	tests/test_mucost.py	EXERCISED:tests/test_mucost.py::test_no_basis_class_spans_T1_and_T3
+35fbb8edb6b17884e137ee316d22d745e92b3cdf	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_generated_edge_section_says_what_stops_the_chain
+362117721db620a3e1f83f067dd217574fa5a766	tests/test_mucost.py	REGISTERED: a synthetic bad row built in the test to isolate the tier-enum error; it states nothing about the ledger, and the refusal it must trigger is asserted by the pytest.raises(match="bad tier") below it.
 3a90a1458b31f15601ef770972891d111dba4f92	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+3b333e41d31de4daf4e0418a625ff4c0252c0e1b	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_no_aggregate_admits_a_mu_plus_only_row
+3b47a209d14c7ca4dfdf499f2752553116aa5018	tests/test_mucost.py	REGISTERED: both halves checked -- the order-of-magnitude half is the band assertion in this test's own body, and the "not a same-basis ratio" half is what test_no_basis_class_spans_T1_and_T3 proves by asserting the two tiers share no basis class.
+3b6f72cc93d6e4b061268d73bbf05fd2fb9c25fc	tests/test_mucost.py	REGISTERED: the three ways are present in the body and were read there -- the excluded row is named and still in the table, recharging an admitted row moves the median and shrinks the box, and recharging the excluded row back reproduces the figures that used to ship.
 3c51faf4b1ee7bf6244b24aaa72a13f45fe51d66	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 3cf00ad56cd4c33c355cb050726a51b0b881458c	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+3f2f20bc3366ed4c5d754495144f2443317f64d7	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers
+3fafb9ed23e61c5a6fcafdeba0df6c5b52953953	tests/test_mucost.py	REGISTERED: checked against the body, which compares each rendered membership clause with table.aggregate_rows in both directions -- every admitted row named, every excluded row absent.
+421829449473fdd341f8c3a5968914af4400a019	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_music_is_mixed_charge
 42e5317f9fb4ce2d80ac96dc0aa175e678edc675	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 4662961f715a3169cea3d75e4f71a233b60403a4	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route
+46e4bac93f1728de52d84525915f09f9349948f7	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_a_non_sourced_chain_renders_as_a_bound_not_a_value
 46e787e10fe32c54375a868144af6e428dfd004e	tests/test_mucost.py	REGISTERED: a comment naming the drill's third case; the assertions follow it.
 46f4acd6d8e80a9f8213d763f1d6a02d23f21af2	tests/test_mucost.py	REGISTERED:assertion line of the test that asserts the property; the quantifier the enumerator matched is part of the identifier `mu_plus_only`
 486126ed846ab86304031907e6827bab865ed673	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 48a5e683d260e7f86e0711ddbcdd381f0594a99c	tests/test_mucost.py	REGISTERED: comment in the edge-id test; the spanning assert directly below it (delivery spans MUCF_CHAIN[1:]) and the edge list above it (one delivery edge, no 100% placeholder edge) are the check.
 4a116ddc83959013d73bf5287ecc9d825b9d5131	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+4b6aa0ce0ad3c45c1944a32c8465cdcf3722856c	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_loader_lists_every_problem_including_unparseable_numbers
 4d22e063cdd30b263d2b9dbcd124737568edb39a	tests/test_mucost.py	UNREVIEWED
+50c07ff94f6b058ca4e8b0d7053a1b0dd3af0234	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_kelly_wallplug_is_a_one_sided_bound
+50fb3a479fd0351264819acabd74ddfc2d2148ee	tests/test_mucost.py	REGISTERED: checked against the assertion it introduces, which requires the "empty" complaint to be absent from a report about a cell that holds an unparseable value rather than nothing.
 5118b96878778828627a9989af0c81340a316276	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+513ffaf509107c1832e7d3acbeb7d9c7d2a06a31	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_csv_is_structurally_well_formed
+525fa432b2c011685c8992e202b5f9f75313bd2d	tests/test_mucost.py	REGISTERED: checked against the refusal below it, which requires the loader to reject a control edge whose status claims a stated factor while the factor cell is empty.
 58244487fd17b8f6645c9eb8a03e4c89e450495e	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 58e16620104871df198b07a85e20b4e450294343	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route
 59291d9eed280c4afed0e983a6b115e7347caf04	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 5a8d3404ec97c54a0dd7634476bd7866af9da303	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+5ac36e88284a6169cb9c3df8a806962329194648	tests/test_mucost.py	REGISTERED: checked against the two assertions below it, which require FINDINGS.md to say the exclusion RAISES the T3 median and require the recomputed T3 median to sit above the pre-exclusion figure.
 5c0beafb046a372091bff30de0bdf817633a8dd4	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 5d2cae1cc1345bb078c61712c541bf4742a95d28	tests/test_mucost.py	REGISTERED: docstring of test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned; ChainPath.bias_direction reads each edge's bias_direction (mucost.py), and the body asserts the two routes agree on the arbitrary edge.
 5d56fb2e26103dd0966100732f92765448d9b2e7	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 6012be1a60127968d621c45f1113c43568a5864c	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 602869a923a9dae278283209efc438b6eb3d938d	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+6113ae0bb9549b31557460750ec9887a81d0b9ad	tests/test_mucost.py	REGISTERED: the current half is asserted below (the bare-value route is not one-sided and prints no marker); the figure the sentence quotes was checked arithmetically against the two tables -- Kelly's beam row through the 0.50 delivery edge -- so what changed is the marker, not the number.
 647dd9d3a63eceae3a3923d364ce162c8004b25b	tests/test_mucost.py	REGISTERED: assert message inside test_the_chain_coverage_sentence_is_derived_from_the_two_tables; "no edge at all" is the failure text for a stage link with an empty edge list.
+6558d1b50e08e41c995784802be94dfde7ccb5a2	tests/test_mucost.py	REGISTERED: checked against the body, which rebuilds the coverage sentence from the node and edge tables and then requires it to appear verbatim in the committed MUON_COST.md.
 65d9e62310a95ab3ec65c62b020405fe08342c27	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+65e004739f596fff6da63fbd72686e294b602db1	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_hand_written_docs_restate_the_ledger_correctly
 662c2f195fbf65130e186c94bece617bd64b0964	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 664c0dc597ff090aab88b8c8ff9e41239b509f67	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+671c3e0808a0cc10da58a2b7d7e92b94660a33ce	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_no_headline_number_depends_on_an_arbitrary_row
 6964f6d85c76bb39adefeba2996c3502f54de073	tests/test_mucost.py	UNREVIEWED
 6a72d356ae4f92c2d002f4698ab669ea5eb9fc8c	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 6bd1dd76f59f082cb6a30a6c9f0f787e369eba79	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
@@ -968,23 +1077,34 @@ f8e814519fb6eadb5e260edd71c8fbc38cad5b2c	tests/test_ledger_claims.py	REGISTERED:
 6d78377e51e5c227774ba78f33e81ba1e9f084de	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 6d7e14b7aa594cf0f0b8a4e1fbbf926c09b18264	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 6e85c9764c8497adc5063225b4ad39c5c8951af9	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_deleting_a_barred_row_changes_no_aggregate
+6f23665931dd26943cff0b28d905ad5317f26285	tests/test_mucost.py	REGISTERED: checked against the assertions below it, which show an omitted-factor figure and a sourced edge both still earning the one-sided marker, so the change is a narrowing rather than a removal.
+6f99250c836ce4e6d8b4d0beded58969b02d4fe3	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_published_tier_ratio_is_bound_to_the_ledger
 703c22b65f5fa8889a23653ae932d4331bd4e1a5	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 7148627ebeee24bb9f53382aaee8d156fdc04986	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 71794a8d1bacee8bad4fe37d4ab7df735113c935	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 71bcf4e4c9cc0437d6f654c1cd43f39edb078ab6	tests/test_mucost.py	UNREVIEWED
+7278b67fb22da3411dfd0fb6dc24339f833a5be7	tests/test_mucost.py	REGISTERED: this loop's second filter, which does not skip a non-composable charge basis but routes it to its own refusal on the lines below; checked against mucost.COMPOSABLE_CHARGE_BASIS.
+75cd248c4c3e0e4f27bd8e0a98e95185ad859e29	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_an_unsourced_path_is_a_bound_and_a_fully_sourced_synthetic_one_is_not
 7623a1a763256730909ca18c23491a5400c03c00	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 762c4143158774f1ae27897b012be4c02fd0a570	tests/test_mucost.py	REGISTERED: same docstring; the history it tells (the prior box was an aggregate nobody had listed) is the T3 1e6 edge recorded in the CHANGELOG's PSI HIMB entry and FINDINGS.md's T3 paragraph.
+76bef4345ec0ad4b33f7594c7218bcecb4425864	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_loader_still_reports_a_good_row_with_one_bad_number
 77a05df87e93a728e0739c2e833a9b5617590543	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_declared_edges_and_published_boxes_are_pinned
 79c283c13a30f73b5a825c4989356283491c8e0d	tests/test_mucost.py	REGISTERED: docstring of test_deleting_a_barred_row_changes_no_aggregate, whose body deletes the barred row and asserts tier_median, aggregate_values and panel_tier_boxes are unchanged -- the invariant the line names.
 7a699d53e33b4f17fb9fad16f722f9cc1324ace2	tests/test_mucost.py	REGISTERED: docstring of test_a_stated_interval_must_bracket_its_factor; factor_lo and factor_hi read empty on all 8 committed edges of muon_cost_chain.csv (read 2026-08-29), and the bracket rules are drilled on a synthetic edge in the body.
 7b8c2025661799ac21bbff3b187861e0785dbf5e	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+7b8e1d4bf08210dbe33e524c6f8791161296c062	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_no_headline_number_depends_on_an_arbitrary_row
 7be94ac56c422584dbcb01289eedb8181a920ddc	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+7d1ff477ece2bd1d0863877694aa8f2147475446	tests/test_mucost.py	REGISTERED: checked against the body, which computes the panel ratio, the box-midpoint ratio and the ledger ratio separately and asserts the first two agree while the first and third do not.
 7d3e7c1a5ed69c6f25e256a535dab61e9fa9df7b	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 7d6123c67ca8a3d183c8468b40a14e97c9e75289	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+7e35d7bfd3613b7cdbe663189a23372a336e1902	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 80e90a9b44315bd561337b8ca3ba256c92d96cfa	tests/test_mucost.py	UNREVIEWED
+81721da2561d6223c4ea7e6565000059166e6ff5	tests/test_mucost.py	REGISTERED: checked against the lines below it, which convert the same row to the other electrical denominator and require the two values to be equal, so only the label differs.
 817a39706adf76d40df07c35a44e27361be0603e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+82eb658262c015871582055d7250122ccadfc1d7	tests/test_mucost.py	REGISTERED: labels the drill below it, which composes past the numeraire and then requires the same numeraire edge to be refused with "does not join here".
 83959a001c3a0bcd5c173a259d19029efa601de9	tests/test_mucost.py	REGISTERED: docstring of test_tier_panel_deterministic; its body reads the boxes from mucost.panel_tier_boxes and no box literal remains in the test -- the literals live in test_declared_edges_and_published_boxes_are_pinned.
 85e944eb869724c4f6d44d0315d4165ffdfe00ad	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+8601a85d0bf0f9b422d3215a6bfa9112df255631	tests/test_mucost.py	REGISTERED: checked against the body and against test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned -- a figure that only omits factors renders with the one-sided marker, one carrying an author-declared-arbitrary factor renders as direction unknown.
 864336e2a9b05b7053b10b9839fc93693f123931	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 866ffa0e22d23e1b2465773a3fb48d83dd41594a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 868b7a60534fa4103e59fb8bf79e82c2d73e605f	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -993,21 +1113,28 @@ f8e814519fb6eadb5e260edd71c8fbc38cad5b2c	tests/test_ledger_claims.py	REGISTERED:
 887b59124f5c11b4589e6396e6e78538e57c4105	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 8a12038953b8750bb37b18374104bb0391db855b	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 8c964e5386029e1077ac1eaf21588d934eeef45a	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+8c9a6ea52b571ffce8c71dd5dd77f6632f770539	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_to_numeraire_refuses_the_ways_it_must_and_carries_what_it_must
 8d3347c428d08e877277e79b5129103de5243f69	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_declared_edges_and_published_boxes_are_pinned
 8e18e2a19665963ca6944874597bf29a88b69a6d	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 8e33d884565b7e5e367d8c6a18b977cbb21e38b7	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+8f3e334f7fdb67429cfef7f0a85b150c5b45b007	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_to_numeraire_refuses_the_ways_it_must_and_carries_what_it_must
 8fb72fe1df224bedc01c5c606a8b46cf415f0f58	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
+92ee75866c311787e9d0d030fe155200a58ec111	tests/test_mucost.py	REGISTERED: checked against the assertion in the body, which takes the leading bibkey of each carrier row and requires it to be the cost source, so a supporting denominator citation later in the same cell does not count.
+93ab3105cb3a2e0190411b866c384878c9d2093d	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_marker_sentence_is_derived_from_the_figures_it_describes
+9411d99a9cc8b1c9e7ca09eff9c89553abd79897	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned
 94c156a165cc2d0d813f0ce879d3bbfe2207fc28	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 951aadb15b0ef745703005f56e11398b92bcbb1b	tests/test_mucost.py	REGISTERED: measured over the shipped ledger -- the set of stages carried by pinned rows is produced, transported and stopped_other_target, so TERMINAL_STAGE (stopped_useful_in_dt) is carried by no pinned row; git log -S dates the re-typing that emptied it to this pass.
 95b12dd0543136bc9dfaff070cf0064d18448b9b	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 9797c296d607e33a4e2da051ddb2d4e28de23176	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 97daa62bb9a9b4328ab0bfe2d617a1a067b70ebe	tests/test_mucost.py	REGISTERED: code -- Python's builtin all() skipping fully-sourced paths inside the loop the comment above it describes; no claim.
 991bfc6068d5bcbbd3d07f63f539540439b63291	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+99bb4d1d6bae73edd6efb84745b88de05b45cad0	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_no_committed_path_reaches_a_figure_this_ledger_may_render_as_a_value
 9c661b6d76607da4fac9868d0f62abc1da7fb072	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 9c999d9a8f1eb7ceb92f4eb441f4f3d36f406e17	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 9d2b34a710eaf3b8603a78e225f055773f156797	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 a10ee4031447ec559265c028666a5ee4b2c31ea7	tests/test_mucost.py	UNREVIEWED
 a4b9e0d37b0333c5d13bae0845ee4639e5bc6e90	tests/test_mucost.py	REGISTERED: comment inside the arbitrary-figure test; the loop below it enumerates every path enumerate_chain_paths builds from every composable pinned row and asserts no unsourced-path figure reaches the document -- the comment describes exactly that loop.
+a5343b1a0214dd537e6245d39db173d9fd7f945d	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_loader_still_reports_a_good_row_with_one_bad_number
 a5d9448607aa2142bf32d974d58e31fe977dc9e1	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_t3_provenance_paragraph_is_derived_from_the_ledger
 a60e5843e56fe633ef4a67f3c2a4121b626a15b4	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 a86b4abee14c74cb56cb9648bdd953eee02f7863	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
@@ -1018,41 +1145,67 @@ abb72443c94e2a280c36008247c981348427883c	tests/test_mucost.py	UNREVIEWED
 ad618fd51038d47b77d534ca9c590a84dffea4f7	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 b10befbaf5a01934522acd8f6013e36daa46b701	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 b22c4a3f9b4f76f91144c71cc2ffd1c7c59f3a54	tests/test_mucost.py	UNREVIEWED
+b8f2c34abad86973e2309e86c3e8103133c9efee	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_no_basis_class_spans_T1_and_T3
 b90147f691ecd8c831c4597b800794fe7e47dfe6	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_t3_provenance_paragraph_is_derived_from_the_ledger
 b9a14e311cd5a56c5a2de6b4cca42406922c4541	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+ba4285d71e99438c0231a06dfe907ba4801c8912	tests/test_mucost.py	REGISTERED: the count half was checked against the ledger -- three rows carry an eta_acc, asserted in test_exactly_one_cost_source_states_a_beam_to_electrical_conversion -- so "more than one" holds; the rest of the sentence is a scope rule for this docstring, not a claim about the rows.
 bac9a6267a1f3f465b154da670c3af4e7ad8ba38	tests/test_mucost.py	REGISTERED: comment in test_relabelling_moved_no_committed_value; the reader's check it describes is the assert directly below it, two_sig(printed T1/T3) == two_sig(panel_ratio).
 bc0efeecbd1a1d6195b6030e3176ff3abf440d0b	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 bcab1d60c861dbc2b504264767b946ffb9469ca6	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 bd590101c3f82e2b910cac15f8a7c8a929796a54	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+bfb33e537f9616140bfe01f7e705f9b87e8aee80	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_bases_are_heterogeneous_and_declared
 bfc94a2a9f2e61f4bf69ba755b07df787f7959c5	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+c013208405cdb2545bf885b3ab7a69550d012115	tests/test_mucost.py	REGISTERED: checked against test_no_committed_path_reaches_a_figure_this_ledger_may_render_as_a_value, which asserts every path over the committed edges is a bound, so a positive assertion on that table would indeed be false; the positive half here runs on edges built in the test.
 c06bc10a91dde8d203fc0aadd49b7874d996a1e0	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+c1e158cdce4148bb0ca85b5b1b8ed063db9f1c71	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_median_membership_sentence_is_derived_from_the_ledger
 c2d0a42f2c940555244afe26fc4270ec8796e364	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 c31bd2aaec64475b2055d7dd6eae7a3c3f37f254	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
 c3ed2421f9bb38144b49158d9622aa8f89bcfa44	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+c4685285509875da749ffcebc904739dc1251af1	tests/test_mucost.py	REGISTERED: a cell of the synthetic control edge this module builds; the cell's statement about itself is true -- the edge is constructed here and never read from openmucf/data/muon_cost_chain.csv.
 c5bfcdd7e4faeb05fb1c4ab6b916bd06d939ac7a	tests/test_mucost.py	REGISTERED: historical: measured on the property as it was, the first two routes printed the marker (the body read only the edges' declarations and is_bound).
 c8eee83310e2f316b896f135a662ff27b34f6ccc	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 cbfcf81d3d597e335aac6bc3a1963666795dbb4c	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+ccca5fc9b0f198d207177d267b634a674cdd3386	tests/test_mucost.py	REGISTERED: the quoted string was checked in the file the sentence names: datapackage.json contains "NOT a single common basis" exactly once, so a substring ban on it would fail on correct text, which is why the list below is a wording regression guard.
 ccdce46a5ec80cd83cd1a6d3afc0d47685861c02	tests/test_mucost.py	REGISTERED: historical: measured on the property as it was, the zero-edge route printed '>= 9.40 GeV'.
+cd79b2e9e3161b51d25943ae801e850223905857	tests/test_mucost.py	REGISTERED: checked against the negative control at the end of the same test, which asserts the historical box does contain a barred row, so the containment rule it drills is not vacuous.
+cdb9f81bdb8b263713f5f86f1ff87a57c3ac4d38	tests/test_mucost.py	REGISTERED: labels the drill below it, which advances the stage and then requires the same stage edge to be refused with "does not join here".
 cdeb308dac7de5aa28babb0671abce0a3e723d66	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 cedde247d06316b2827fb3c4597d7cd52f1a5edb	tests/test_mucost.py	REGISTERED: a line of the convergence tripwire's message: the assert fires when the panel and ledger ratios converge, making the document's distinct-quantities sentence misleading -- the message states its own trigger.
 d00802cb973f32be14ab22b09d676d16b88b7970	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+d15b4cb356e429c3bfc165ac3dcd2c9598939caf	tests/test_mucost.py	REGISTERED: labels the drill below it, which relabels the edge's charge basis to mixed and requires the refusal "may not enter a muCF chain".
+d1ac27faba58ea439317a5dfb3cd3072d71a4662	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_relabelling_moved_no_committed_value
 d2d41e74f6a6136b91f3aeba828f10cce105ebe9	tests/test_mucost.py	REGISTERED: assert message of the negative control in test_no_box_edge_is_set_by_a_barred_row; the historical box (2.3e3, 1e6) is the one FINDINGS.md's T3 paragraph records.
+d37ac1fe73b6ed98167ede5e4790223df6cb74f9	tests/test_mucost.py	REGISTERED: checked against the body, which deletes the barred row from a copy of the table and requires tier_median, aggregate_values and panel_tier_boxes to be identical on both, which is the property stated rather than a list of named aggregates.
 d49e09565bc582967745323d5f8499db5ea16ee2	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+d6333f0b73d41388c7b560aa6a22379d5e6fca73	tests/test_mucost.py	REGISTERED: checked against the assertion below it, which requires the converted figure to still be a bound and lists the four stages it has not reached.
 d66075b6419e9db645b0a63db8a7288ce2f22ab0	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 d8943a33385ce437d003c2c37a6a235e3bd07ae0	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 db0e9dfe9063b66b23812ab00e89491a89c3f72e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+db9a18e1cce9ae60139f386d923ed4946fb9a47a	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_no_box_edge_is_set_by_a_barred_row
 dd4151077c39ce4f401ebb8a2af556fd2d5bbe7d	tests/test_mucost.py	EXERCISED:tests/test_mucost.py::test_an_edge_moves_exactly_one_axis
 dd613416aae91bcfcdb24cc15df0218f084542a7	tests/test_mucost.py	REGISTERED: the claim is about this test's own construction -- that the terminal-stage row is built rather than borrowed. Checked by reading the five lines below it, which call dataclasses.replace on the ledger row instead of indexing a shipped terminal-stage row.
+ded78646901e300e86cd4cf4c119947804c86c06	tests/test_mucost.py	REGISTERED: checked against the body, which requires the wildcard on whichever axis an edge does not move, for both edge kinds.
 e0a0c4e9bef433fccffe6cae6f10120098a928fa	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 e0d4e25181a3cb7277df086cb6729bbde0bc5ed2	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
+e2cea84233f2109639794b62ae4739fb1013b4ea	tests/test_mucost.py	REGISTERED: checked against the body, where both exclusion sets are computed from the loaded table -- off-chain by stage, mu+-only by charge basis -- and neither is a typed list of source ids.
+e3853b0099147e5c48d61f07a04d2a95b5d8b868	tests/test_mucost.py	REGISTERED: the loop's second filter: a chain point whose charge basis is outside mucost.COMPOSABLE_CHARGE_BASIS cannot open a path; checked against that constant, whose refusal is drilled in test_no_committed_path_reaches_a_figure_this_ledger_may_render_as_a_value.
+e40bd87c30cd08d998389887a8156eed2e34d3a1	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_every_bibkey_resolves
 e42164bbcd87785b515bf3ad609d0ddc73bcea09	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 e486739cba750125748b2f6e58c7aeb556eb64cd	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep and ruled LOOSE -- defensible under a scope the line does not itself state. Registered rather than rewritten: the sweep rewrote the homes whose unstated scope was load-bearing.
 e50cd262f5ecf0762c27b42f980f9742768ce207	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+e53e7a543606582a7ce7a858f56226175e30c302	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_relabelling_moved_no_committed_value
+e596d307d1882d8afc96cc2437a255960e49774a	tests/test_mucost.py	REGISTERED: the three bindings this sentence promises are the three assertions that follow it -- panel ratio against midpoint ratio, panel ratio not equal to the ledger ratio, and both printed figures found in the committed FINDINGS.md.
 e7223976c9d3d530bcf666a7bace0545960e37c0	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 e9f7ec88495344dab33d539fe364a9e5c40dbb86	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_an_arbitrary_factor_grades_the_path_unknown_by_every_route
 edeb3cc17b847fd3e0fb3a1b72517768a5688e5b	tests/test_mucost.py	EXERCISED:tests/test_mucost.py::test_bertin_is_counted_at_production
+ee4b8c0aed0df1b2da5ba7e3ad7bebba50ed6a96	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_a_direction_unknown_path_is_never_printed_with_a_bound_marker
 f0cb78cc26ecd0b21ceec178a7c2a8a2cfd7aa2e	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+f255cc7d4daa524c00e784f6041689fee107be3d	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_bound_message_names_the_bound_not_the_direction_of_the_truth
 f5ed349e9e31546b66ebf21baf90d21d89684b5d	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 f86dfbdbdb90aac82cd4734cb39fdc1246eaeffb	tests/test_mucost.py	REGISTERED: docstring or comment of the test on the same lines, which asserts the property
 f95bf598c306e244544810343928ba31a8502769	tests/test_mucost.py	REGISTERED: describes what the guard in the same function does; the guard itself is the check, and it is drilled -- recharging a row moves the aggregate and reds the box rules.
 fabfdb03dad659773df0f2dcdeaf99045869bbae	tests/test_mucost.py	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
+fd5168a71aa60a21c1df30271391cf6d3303a226	tests/test_mucost.py	REGISTERED: the comment states why the two assertions below it exist; checked against them -- they recompute the conservative cycle demand and critical fraction from the generator's own constants, so a constant moving reds this test rather than the sentence that attributes the digits to the source.
+fdd69a6c8b70127a002d28bbd6a3bda7cebf8ca3	tests/test_mucost.py	REGISTERED: checked against the four assertions below it, which show T2 homogeneous with a single numeraire and T1 homogeneous while holding more than one, which is the gap the comment says basis_class alone leaves.
+fe09ae44a3e4cceba77ab87141ad8be911bfeb39	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_hand_written_docs_restate_the_ledger_correctly
+fe89507c3b46f5ee5763e6ea35ec1ef7ac9c2987	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean
