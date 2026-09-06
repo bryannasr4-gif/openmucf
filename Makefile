@@ -1,4 +1,4 @@
-.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics design audit all
+.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics design g4conformance audit all
 
 install:
 	pip install -e ".[dev]"
@@ -106,6 +106,12 @@ design:
 g4data:
 	python scripts/generate_g4data.py
 
+# The conformance corpus: one malformed-or-edge .g4dat per error code, per ordering rule and per
+# tie-break, with the reference implementation's verdict for each in expected.tsv. Generated, so
+# it is rebuilt and byte-diffed like everything else here rather than hand-maintained.
+g4conformance:
+	python scripts/generate_g4dat_conformance.py
+
 # Reproducibility gate: regenerate the deterministic docs and fail if they drift from what's committed.
 # CALIBRATION.md and the FC-001 card payload (forecasts/FC-001-mufuse.json) are MCMC-derived and are NOT
 # exact-diffed here; instead the card is checked for hash-consistency and FORECASTS.md (rendered
@@ -114,11 +120,12 @@ g4data:
 # IS exact-diffed; the slow twin coverage MCMC (tests/test_twin_coverage.py) is a `slow` test, never here.
 # MATERIALITY.md is deterministic (one-at-a-time channel toggles through the v1 ODE, no MCMC) and IS
 # exact-diffed; its forward-UQ CI-width scale reference is read from the byte-stable FINDINGS_MANIFEST.json.
-audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics g4data
+audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics g4data g4conformance
 	python scripts/generate_forecast.py --audit
 	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json NEUTRONOMICS_MANIFEST.json DESIGN_MANIFEST.json
-	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/geant4_add_dataset.snippet
+	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/geant4_add_dataset.snippet tests/fixtures/g4dat_conformance
 	python scripts/generate_g4data.py --audit
+	python scripts/generate_g4dat_conformance.py --audit
 	python scripts/generate_calibration.py --audit
 	python scripts/generate_design.py --audit
 	@echo "audit OK: docs match committed; manifests verified; FC-001 card hash-consistent; NUTS docs tolerance-audited"

@@ -1,0 +1,16 @@
+#GRAMMAR      1.0
+#DATASET      G4MuonicData
+#VERSION      0.0.0-conformance
+#PROFILE      parity
+#SEAM         d1_nuclear_capture
+#TABLE        conformance_case
+#GENERATOR    openmucf-g4 conformance
+#SOURCEDIGEST 6c1d6cedf276ea3fd7486a212fd62b32fbb9ecaa4dea70545486737199dd24ed
+#SOURCESHA    5500404c3c99e02ef45882a956e67c3ac9b6615b
+#UNITS        value=1e6/s unc=1e6/s
+#COLUMNS      Z A value unc
+#VALIDITY     Z:listed A:listed
+1 1 1.5 0.1
+2 3 2.5 0.2
+6 12 3.5 0.3
+#END
