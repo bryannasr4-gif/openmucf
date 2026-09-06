@@ -978,6 +978,127 @@ def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
 
 
 # --------------------------------------------------------------------------------------------
+# T-67, T-68 -- the oracle's hexfloat grammar, and the two digest implementations
+# --------------------------------------------------------------------------------------------
+
+
+def oracle_hex_fields() -> list[str]:
+    """Every value field of the committed oracle that is written as a hexfloat, as WRITTEN.
+
+    The four non-finite spellings are excluded because they are not hexfloats: the degenerate block
+    compares them by classification and never parses them as hex. Everything else in the file --
+    subset rows, `ZEFF` rows, `ZEFFCLAMP` rows, and the `RATE` rows whose value is finite -- is a
+    hexfloat and is subject to the grammar.
+    """
+    producer = oracle_producer()
+    raw = read_oracle()["raw"]
+    fields = [value for _, _, value in raw["subset"]]
+    fields += [value for _, value in raw["zeff"]]
+    fields += [
+        line.split()[-1]
+        for line in raw["degenerate"]
+        if line.split()[-1] not in producer.NON_FINITE_FIELDS
+    ]
+    return fields
+
+
+def test_t67_every_oracle_hexfloat_obeys_the_grammar_and_re_renders_to_its_own_bytes(tmp_path):
+    """The spelling of a value is part of the artifact, and here is the rule it obeys.
+
+    A hex reader is far more permissive than the producer that wrote these bytes. `float.fromhex`
+    accepts `infinity`, `1.5p+3`, `0x1.5p3`, `0x1.5p+03`, `0x0.3p+5` and `0x1.50p+3` -- six
+    spellings a C `%a` never prints. Three of them are caught by the grammar and three only by
+    requiring the field to re-render to itself, so a validator implementing one half accepts files
+    this producer cannot emit. Both halves are asserted here over every committed field, and both
+    halves are then shown to be load-bearing on the six.
+
+    The second half of the test is `read_sweep`'s side of the same rule: a harvest carrying a
+    duplicate row, an upper-case field, a blank line or `infinity` must be rejected by a NAMED error
+    that says which line. Each of those four was once silent -- skipped, or accepted last-wins, or
+    handed to a parser that took it.
+    """
+    producer = oracle_producer()
+    fields = oracle_hex_fields()
+    assert fields, "the oracle carries no hexfloat fields"
+    for value in fields:
+        assert producer.hexfloat_problem(value) is None, value
+        assert producer.HEXFLOAT.match(value), value
+        assert producer.canonical_hex(float.fromhex(value)) == value, value
+
+    # The six respellings, split by which half rejects them -- named, so a change that quietly
+    # widened the grammar to cover the last three would fail here rather than pass more.
+    by_grammar = ("infinity", "1.5p+3", "0x1.5p3")
+    by_re_render = ("0x1.5p+03", "0x0.3p+5", "0x1.50p+3")
+    for spelling in by_grammar:
+        assert producer.HEXFLOAT.match(spelling) is None, spelling
+        assert producer.hexfloat_problem(spelling) is not None, spelling
+    for spelling in by_re_render:
+        assert producer.HEXFLOAT.match(spelling), f"{spelling} should pass the grammar"
+        assert producer.canonical_hex(float.fromhex(spelling)) != spelling, spelling
+        assert producer.hexfloat_problem(spelling) is not None, spelling
+
+    # `read_sweep`'s side of the same rule, on crafted harvests. Each rejection must be the NAMED
+    # error and must carry `path:line`: "somewhere in this file" is what these four replaced.
+    size = len(extraction().zeff) - 1
+    tail = [f"ZEFF {z} 0x1p+0" for z in range(size + 1)]
+    good = "1 1 0x1p+0"
+    for label, rows in {
+        "duplicate_row": [good, good],
+        "upper_case": ["1 1 0X1P+0"],
+        "blank_line": [good, ""],
+        "infinity": ["1 1 infinity"],
+    }.items():
+        harvest = tmp_path / f"{label}.txt"
+        harvest.write_text("\n".join(rows + tail) + "\n", encoding="ascii", newline="\n")
+        with pytest.raises(producer.SweepFormatError) as raised:
+            producer.read_sweep(harvest, size)
+        # The offending row is the last one given in each case, so its line number is len(rows).
+        assert f"{harvest}:{len(rows)}:" in str(raised.value), (label, str(raised.value))
+
+
+def test_t68_the_two_digest_implementations_agree_with_the_compiled_oracle():
+    """Three independent computations of one 64-hex number, required to be the same number.
+
+    `d1.sweep_digest` walks the box and hashes the doubles it evaluates. `build_oracle.sweep_digest`
+    hashes the hexfloat STRINGS a harvest carries. The oracle's `fullsweep_sha256` came out of a
+    Geant4-linked binary. IB-07 asked what compares the first two; this does, and pins both to the
+    third, so the C++ validator's digest has a value to reproduce rather than a description.
+
+    The strings on the Python side are rendered by `canonical_hex`, which makes this a test of the
+    renderer as well: a renderer that lost a digit would produce a different double and a different
+    digest here, not a cosmetic difference.
+    """
+    producer = oracle_producer()
+    found = extraction()
+    model = reference_model(found)
+    oracle = read_oracle()
+
+    rates = {
+        (z, a): producer.canonical_hex(d1.capture_rate(z, a, found.capture_records, model))
+        for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1)
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1)
+    }
+    from_strings = producer.sweep_digest(rates)
+    from_values = d1.sweep_digest(found.capture_records, model)
+    assert from_strings == from_values, (
+        "the two digest implementations disagree; one of them is not hashing what it claims to hash"
+    )
+    assert from_strings == oracle["header"]["fullsweep_sha256"]
+
+    # Drill: the traversal order is part of the digest's definition, not a detail. Hashing exactly
+    # the same doubles with A outermost must give a different answer, or "row-major, Z ascending
+    # outermost" would be an unenforced sentence in the header and a validator could pick either.
+    transposed = hashlib.sha256()
+    for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+        for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+            transposed.update(struct.pack(">d", float.fromhex(rates[z, a])))
+    assert transposed.hexdigest() != from_strings, (
+        "the digest does not depend on the traversal order, so the header's 'Z ascending outermost' "
+        "clause is not being enforced by anything"
+    )
+
+
+# --------------------------------------------------------------------------------------------
 # T-43..T-47, T-53..T-55, T-57, T-58 -- the shipped dataset against the source it claims
 # --------------------------------------------------------------------------------------------
 

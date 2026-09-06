@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import math
 import re
 import struct
 import sys
@@ -72,6 +73,71 @@ DEGENERATE_RULE = (
 )
 
 
+#: The hexfloat grammar every finite value field in the oracle obeys, stated once for both
+#: consumers -- this script and the C++ validator. Measured against glibc's ``%a``, which prints
+#: ``0x0p+0`` for zero, ``0x1p+0``, ``-0x1.ed122246be01p-26`` and the subnormal
+#: ``0x0.0000000000001p-1022``: a lower-case ``0x``, one leading digit that is ``0`` or ``1``, an
+#: optional fraction of at most thirteen hex digits, and an exponent whose sign is always written.
+HEXFLOAT = re.compile(r"^-?0x[01](\.[0-9a-f]{1,13})?p[+-][0-9]+$")
+#: The four spellings a value field may carry INSTEAD of a hexfloat. They are not parsed as hex and
+#: are compared by classification, so they are exempt from the grammar rather than failing it.
+NON_FINITE_FIELDS = frozenset({"nan", "-nan", "inf", "-inf"})
+
+
+class SweepFormatError(ValueError):
+    """A harvest line this reader will not accept, named by ``path:line``.
+
+    A distinct type, not ``SystemExit``: the same rules are applied by the test suite to crafted
+    inputs, and a check that can only be observed by watching a process exit is a check nothing can
+    drill. ``main`` turns it back into an exit, so the command-line behaviour is unchanged.
+    """
+
+
+def canonical_hex(x: float) -> str:
+    """``x`` in the one spelling the grammar admits -- a shortest-hex ``%a``.
+
+    Python's ``float.hex()`` pads the fraction to thirteen digits (``1.0`` becomes
+    ``0x1.0000000000000p+0``) while C's ``%a`` prints the shortest form (``0x1p+0``), so this is a
+    reimplementation rather than a wrapper. It exists because the grammar alone is not enough: three
+    of the six respellings a hex reader silently accepts -- ``0x1.5p+03``, ``0x0.3p+5``,
+    ``0x1.50p+3`` -- match the grammar and denote values the harvest never printed that way. Requiring
+    a field to re-render to its own bytes is what rejects them, and it is the half a validator that
+    only pattern-matched would be missing.
+    """
+    if x == 0.0:
+        # `float.hex()` gives `0x0.0p+0`; `%a` gives `0x0p+0`. The sign of zero is preserved because
+        # it is preserved in the bytes the digest is taken over.
+        return "-0x0p+0" if math.copysign(1.0, x) < 0.0 else "0x0p+0"
+    spelling = x.hex()
+    sign, rest = ("-", spelling[1:]) if spelling.startswith("-") else ("", spelling)
+    mantissa, exponent = rest.split("p")
+    lead, fraction = mantissa[2:].split(".")
+    fraction = fraction.rstrip("0")
+    digits = lead + ("." + fraction if fraction else "")
+    return f"{sign}0x{digits}p{exponent}"
+
+
+def hexfloat_problem(value: str) -> str | None:
+    """Why ``value`` is not a canonical hexfloat, or ``None`` if it is.
+
+    Two halves, and both are load-bearing. The grammar rejects ``infinity``, ``1.5p+3`` and
+    ``0x1.5p3``; the re-render rejects ``0x1.5p+03``, ``0x0.3p+5`` and ``0x1.50p+3``, which the
+    grammar accepts. A reader with only one half accepts three spellings the producer cannot emit.
+    """
+    if HEXFLOAT.match(value) is None:
+        return (
+            f"{value!r} is not a canonical hexfloat: a value field is '[-]0x<0|1>[.<up to 13 hex "
+            f"digits>]p<+|-><exponent>', lower case, with the exponent sign always written"
+        )
+    rendered = canonical_hex(float.fromhex(value))
+    if rendered != value:
+        return (
+            f"{value!r} denotes a value whose canonical spelling is {rendered!r}; the harvest prints "
+            f"the shortest form, so this respelling is one no driver produced"
+        )
+    return None
+
+
 def comment(text: str = "") -> str:
     """A header comment line: ``#`` alone when empty, ``# `` plus the text otherwise."""
     return f"# {text}".rstrip()
@@ -95,31 +161,59 @@ def read_sweep(path: Path, zeff_size: int) -> tuple[dict[tuple[int, int], str], 
     run leaves exactly the shape that looks complete -- a full sweep box and a short ``ZEFF`` tail.
     The header this file goes on to write says the ``ZEFF`` rows pin the clamp "at both ends", which
     a truncated tail would make false while every value in it stayed correct.
+
+    Every rejection names ``path:line`` and raises :class:`SweepFormatError`. Four of them were once
+    silent: a blank line was skipped, a duplicate row overwrote its twin last-wins, an upper-case
+    field and ``infinity`` were both handed to ``float.fromhex``, which accepts them. Each of those
+    turns a half-written or hand-edited harvest into an oracle nobody can tell from a real one.
     """
     rates: dict[tuple[int, int], str] = {}
     zeff: dict[int, str] = {}
     for number, line in enumerate(path.read_text("ascii").splitlines(), 1):
         fields = line.split()
+        # A blank line is NOT skipped. The driver prints one row per line and no blank ones, so a
+        # blank line means the file was concatenated, truncated or edited -- and skipping it is how
+        # a short harvest could reach the coverage check looking merely incomplete rather than wrong.
         if not fields:
-            continue
+            raise SweepFormatError(
+                f"{path}:{number}: blank line inside the harvest. The driver prints one row per "
+                f"line and no blank lines, so this file was edited, truncated or concatenated."
+            )
         # Name the bad line. A bare IndexError out of a three-line parser sends a maintainer looking
         # for a bug in this script when what they have is a truncated or half-written harvest.
         if len(fields) != 3:
-            raise SystemExit(
+            raise SweepFormatError(
                 f"{path}:{number}: expected 3 fields, got {len(fields)}: {line!r}. A harvest line is "
                 f"'Z A hexfloat' or 'ZEFF Z hexfloat'; this file is truncated or not a harvest."
             )
+        problem = hexfloat_problem(fields[2])
+        if problem is not None:
+            raise SweepFormatError(f"{path}:{number}: {problem}")
         if fields[0] == "ZEFF":
-            zeff[int(fields[1])] = fields[2]
+            key = int(fields[1])
+            if key in zeff:
+                raise SweepFormatError(
+                    f"{path}:{number}: 'ZEFF {key}' appears twice. A duplicate used to overwrite its "
+                    f"twin last-wins, so a harvest carrying two different values for one Z produced "
+                    f"an oracle that recorded one of them and said nothing about the other."
+                )
+            zeff[key] = fields[2]
         else:
-            rates[int(fields[0]), int(fields[1])] = fields[2]
+            pair = (int(fields[0]), int(fields[1]))
+            if pair in rates:
+                raise SweepFormatError(
+                    f"{path}:{number}: the sweep row {pair} appears twice. A duplicate used to "
+                    f"overwrite its twin last-wins, so the digest silently depended on which copy "
+                    f"came last in the file."
+                )
+            rates[pair] = fields[2]
     expected = {
         (z, a)
         for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1)
         for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1)
     }
     if set(rates) != expected:
-        raise SystemExit(
+        raise SweepFormatError(
             f"{path} does not cover the sweep box: {len(rates)} rows against {len(expected)} "
             f"expected. The oracle's digest is defined over the whole box, so a partial harvest "
             f"cannot produce one."
@@ -131,7 +225,7 @@ def read_sweep(path: Path, zeff_size: int) -> tuple[dict[tuple[int, int], str], 
     if set(zeff) != expected_zeff:
         missing = sorted(expected_zeff - set(zeff))
         extra = sorted(set(zeff) - expected_zeff)
-        raise SystemExit(
+        raise SweepFormatError(
             f"{path}: the ZEFF section must cover Z 0..{zeff_size} ({len(expected_zeff)} rows) to "
             f"pin the clamp at both ends; got {len(zeff)} rows, missing {missing}, unexpected "
             f"{extra}. The driver prints these last, so a short tail here means the harvest was "
@@ -259,6 +353,16 @@ def check_degenerate(path: Path, driver: Path) -> list[str]:
     problem = degenerate_block_problem(lines)
     if problem:
         raise SystemExit(f"{path}: {problem}")
+    # The same grammar the sweep obeys, applied to every value field that is not one of the four
+    # non-finite spellings. Those four are exempt because they are compared by classification and
+    # never parsed as hex; everything else must be a hexfloat that re-renders to its own bytes.
+    for number, line in enumerate(lines, 1):
+        value = line.split()[-1]
+        if value in NON_FINITE_FIELDS:
+            continue
+        problem = hexfloat_problem(value)
+        if problem is not None:
+            raise SweepFormatError(f"{path}:{number}: {problem}")
     if harvested_rates != declared_rates or harvested_clamps != declared_clamps:
         raise SystemExit(
             f"{path} does not carry the probes {driver.name} harvests. Rate probes: got "
@@ -395,7 +499,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-o", "--output", type=Path, help="write here instead of stdout")
     args = parser.parse_args(argv)
 
-    text = render(args.sweep, args.degenerate, args.build, args.source, args.driver_degenerate)
+    # A malformed harvest is a user-facing failure, not a traceback: the message already names
+    # `path:line` and what it expected, so exit with it exactly as every other rejection here does.
+    try:
+        text = render(args.sweep, args.degenerate, args.build, args.source, args.driver_degenerate)
+    except SweepFormatError as exc:
+        raise SystemExit(str(exc)) from None
     if args.output:
         args.output.write_text(text, encoding="ascii", newline="\n")
     else:
