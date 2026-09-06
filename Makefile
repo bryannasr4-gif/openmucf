@@ -106,9 +106,9 @@ design:
 g4data:
 	python scripts/generate_g4data.py
 
-# The conformance corpus: one malformed-or-edge .g4dat per error code, per ordering rule and per
-# tie-break, with the reference implementation's verdict for each in expected.tsv. Generated, so
-# it is rebuilt and byte-diffed like everything else here rather than hand-maintained.
+# The conformance corpus: a malformed-or-edge dataset file per error code, per ordering rule and
+# per tie-break, with the reference implementation's verdict for each in expected.tsv. Generated,
+# so it is rebuilt and byte-diffed like everything else here rather than hand-maintained.
 g4conformance:
 	python scripts/generate_g4dat_conformance.py
 
