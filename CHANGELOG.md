@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the claim guard reads a universal stated by negation (2026-08-31)
+
+- **`not`, `cannot` and the contraction `\w+n't` join `STRONG`.** A universal stated by negation
+  -- "does not depend on" -- was the guard's last measured lexical blind spot, disclosed in the
+  v1.2.0 notes. The widening, together with the re-keying of the
+  lines this note and the guard's own prose change, adds 340 rows to
+  `tests/ledger_claims_registry.tsv` and 147 rows to `tests/sentence_claims_registry.tsv`. Every
+  enumerated line and every enumerated wrapped sentence was read and ruled as it entered: no row
+  landed UNREVIEWED, and neither ceiling moved.
+- **The contraction entered on the pair precedent.** `\w+n't` matches no line of the paths the
+  guard reads and no wrapped sentence of them at this head; it is in the table anyway,
+  and the deletion drill keeps it there.
+- This retires the negation item the v1.2.0 notes deferred to v1.3.0.
+
 ### Added -- the claim guard's sentence layer (G4), in two changes (2026-08-30)
 
 The v1.2.0 notes disclosed that a universal whose quantifier and subject fall on different rendered
@@ -63,10 +77,10 @@ the layer covers every claim path a sentence can wrap in and a test asserts that
   docs/getting-started.md and docs/index.md said "278 tests: 275 in the default run"; the suite
   collects 464 at this head (461 in the default run, 3 slow deselected), and the four lines now say
   so. README.md's line matches no form of either guard; CONTRIBUTING.md and the two docs pages are
-  not claim paths at all -- CONTRIBUTING.md carries 24 lines the line guard would match and
-  docs/getting-started.md three, most of them rates-ledger prose the claim guard does not read and
-  the rest project-wide rules on sourcing, coding, licensing and generated documents. Whether those
-  pages should join the claim paths is recorded as an open question, not decided here.
+  not claim paths at all -- the lines in them the line guard would match are mostly rates-ledger
+  prose the claim guard does not read and the rest project-wide rules on sourcing, coding,
+  licensing and generated documents. Whether those pages should join the claim paths is recorded
+  as an open question, not decided here.
 - **One typed figure found false and left for its own change.** FINDINGS.md section 3 says density
   scaling at phi = 2.4 "would lift the decay-only cap to ~530-640"; the ledger's liquid band,
   scaled from phi = 1.2 the way the adjacent computed cap is, gives ~440-640 -- the lower figure
@@ -143,14 +157,6 @@ changes that close them, and it widens the guard rather than loosening it.
 - **`figures/twin_bias.png` renders its disclosure in full.** The right-hand title is set on two
   lines, so "(NOT a detector prediction)" no longer runs past the figure edge. `TWIN_AUDIT.md` and
   `TWIN_MANIFEST.json` are byte-identical; only the PNG changed.
-
-### Still deferred to v1.3.0, re-measured
-- **Negation.** Adding `not`, `cannot` and the contraction to `STRONG` enumerates **342** further
-  lines at this head (the v1.2.0 notes said "about 223" at theirs; the edge table, the Bertin
-  re-typing, and the guard changes' own forms and prose added lines since). It lands as its own
-  change, every line read. One correction to the v1.2.0 wording:
-  the form `n't` cannot match inside a word-boundary alternation (no boundary precedes the `n` of
-  `don't`), so the form that will land is `\w+n't`.
 
 ## [1.2.0] - 2026-08-29
 

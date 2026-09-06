@@ -26,6 +26,9 @@ STRONG	entire	The entire ledger is read at load time.
 STRONG	without\s+exception	Rows are pinned without exception.
 STRONG	no	No row is a mean of two readings.
 STRONG	nothing	Nothing in the ledger is fitted.
+STRONG	not	The cost is not a prediction.
+STRONG	cannot	A row cannot span two tiers.
+STRONG	\w+n't	The ledger doesn't drift.
 LEDGER	row	Every row carries a locator.
 LEDGER	rows	All rows carry a locator.
 LEDGER	tier	Every tier is listed.
