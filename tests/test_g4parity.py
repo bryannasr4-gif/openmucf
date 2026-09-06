@@ -978,6 +978,49 @@ def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
 
 
 # --------------------------------------------------------------------------------------------
+# T-76 -- every shipped table sits beside its provenance file
+# --------------------------------------------------------------------------------------------
+
+
+def test_t76_every_shipped_table_ships_beside_its_provenance_file():
+    """A `.g4dat` under `data/` without its `.prov.json`, or the reverse, is a half-shipped dataset.
+
+    E009 binds Layer 1 to Layer 2 by a digest over the Layer-2 bytes, so a `.g4dat` published
+    without its sibling carries a `#SOURCEDIGEST` nothing can check -- the one rejection that needs
+    both files becomes unreachable, and the dataset's provenance claim goes with it. The reverse is
+    just as bad in a different way: a Layer-2 document describing a table that is not there.
+
+    Both directions, over `data/**` by rglob rather than over a list, because a list is the thing
+    that goes stale when a seam is added. The malformed fixtures live outside `data/` by
+    construction, so they are not swept up by this.
+    """
+    data = REPO / "data"
+    tables = sorted(data.rglob("*.g4dat"))
+    documents = sorted(data.rglob("*.prov.json"))
+    assert tables and documents, "no shipped dataset files were found at all"
+
+    # `.prov.json` carries TWO suffixes, so `Path.stem` leaves a trailing `.prov` on it and pairing
+    # on `stem` silently matches nothing. Strip the whole extension by name instead.
+    def paired(path: pathlib.Path, extension: str) -> pathlib.Path:
+        base = path.name.removesuffix(".prov.json").removesuffix(".g4dat")
+        return path.with_name(base + extension)
+
+    orphan_tables = [p for p in tables if not paired(p, ".prov.json").exists()]
+    orphan_documents = [p for p in documents if not paired(p, ".g4dat").exists()]
+    assert not orphan_tables, (
+        "shipped table(s) with no provenance file beside them, so their '#SOURCEDIGEST' can never "
+        f"be checked: {[p.relative_to(REPO).as_posix() for p in orphan_tables]}"
+    )
+    assert not orphan_documents, (
+        "provenance file(s) describing a table that is not shipped: "
+        f"{[p.relative_to(REPO).as_posix() for p in orphan_documents]}"
+    )
+    # The pairing is a bijection on base names, so the two sweeps above cannot both pass on a
+    # directory where one name is doing double duty.
+    assert {paired(p, "") for p in tables} == {paired(p, "") for p in documents}
+
+
+# --------------------------------------------------------------------------------------------
 # T-67, T-68 -- the oracle's hexfloat grammar, and the two digest implementations
 # --------------------------------------------------------------------------------------------
 
