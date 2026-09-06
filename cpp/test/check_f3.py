@@ -1,0 +1,86 @@
+"""V-13 -- compare the F-3 producer's figures with the ones ``DATASET_D1.md`` states.
+
+The document's figures are read from its F-3 block by pattern, never typed here. With ``--exact``
+(the compiler family the document's own measurement names) all five must agree; without it the
+check passes on the premise the finding rests on -- that a contracted build moves the expression at
+all -- and prints the figures it saw. A producer that skipped for want of FMA is a skip that is
+printed, and ``--require-fma`` turns it into a failure on the platforms that must not skip.
+
+Standard library only.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+DOCUMENT_FIGURES = re.compile(
+    r"(\d+) points \| (\d+) differ \| (\d+) differ by more than 1 ulp \| max (\d+) ulp at "
+    r"\(Z=(\d+), A=(\d+)\)"
+)
+PRODUCER_LINE = re.compile(
+    r"^F3 cxx=(\S+) points=(\d+) differ=(\d+) over1ulp=(\d+) max_ulp=(\d+) at=\((-?\d+),(-?\d+)\) "
+    r"max_rel=(\S+)$"
+)
+SKIPPED_PREFIX = "F3 SKIPPED"
+
+
+def document_figures(document: Path) -> tuple[int, int, int, int, int, int]:
+    """(points, differ, over 1 ulp, max ulp, Z, A) from the document's F-3 block -- exactly one match."""
+    matches = DOCUMENT_FIGURES.findall(document.read_text("utf-8"))
+    if len(matches) != 1:
+        raise SystemExit(
+            f"V-13 FAIL {document} carries {len(matches)} F-3 figure lines, expected exactly one"
+        )
+    points, differ, over_one, max_ulp, z, a = matches[0]
+    return int(points), int(differ), int(over_one), int(max_ulp), int(z), int(a)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--producer-output", type=Path, required=True, help="the line g4muonicdata_f3 wrote")
+    parser.add_argument("--document", type=Path, required=True, help="DATASET_D1.md")
+    parser.add_argument(
+        "--exact", action="store_true", help="require all five figures to equal the document's"
+    )
+    parser.add_argument("--require-fma", action="store_true", help="a producer skip is a failure")
+    args = parser.parse_args(argv)
+
+    line = args.producer_output.read_text("utf-8").strip()
+    if line.startswith(SKIPPED_PREFIX):
+        if args.require_fma:
+            print(f"V-13 FAIL {line} (this platform must not skip)")
+            return 1
+        print(f"V-13 SKIPPED {line}")
+        return 0
+    match = PRODUCER_LINE.match(line)
+    if match is None:
+        print(f"V-13 FAIL unrecognised producer output: {line!r}")
+        return 1
+    cxx = match.group(1)
+    seen = tuple(int(match.group(i)) for i in range(2, 8))
+    stated = document_figures(args.document)
+    figures = (
+        f"cxx={cxx} points={seen[0]} differ={seen[1]} over1ulp={seen[2]} max_ulp={seen[3]} "
+        f"at=(Z={seen[4]}, A={seen[5]}) max_rel={match.group(8)}"
+    )
+    if args.exact:
+        if seen != stated:
+            print(
+                f"V-13 FAIL exact {figures}; the document states points={stated[0]} differ={stated[1]} "
+                f"over1ulp={stated[2]} max_ulp={stated[3]} at=(Z={stated[4]}, A={stated[5]})"
+            )
+            return 1
+        print(f"V-13 PASS exact {figures}")
+        return 0
+    if seen[1] == 0:
+        print(f"V-13 FAIL premise {figures}; no point moved, so the contracted build did not differ")
+        return 1
+    print(f"V-13 PASS premise {figures}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
