@@ -41,6 +41,9 @@ from openmucf.g4.sources import d1_nuclear_capture as d1
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 VENDORED = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonMinusBoundDecay.cc"
+#: The second compiled-in copy of the same two tables, vendored beside the first (F-S3-2).
+HELPER = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonicAtomHelper.cc"
+VENDORED_README = REPO / "third_party" / "geant4" / "README.md"
 D1DIR = REPO / "data" / "g4" / "d1"
 ORACLE = D1DIR / "d1_gp_sweep.oracle"
 
@@ -116,15 +119,21 @@ def extraction() -> d1.D1Extraction:
     return d1.load(VENDORED)
 
 
-def independently_counted_records(text: str) -> int:
+def independently_counted_records(
+    text: str, declaration: str = "static const capRate capRates"
+) -> int:
     """Count `{...}` groups in the `capRates[]` body by brace depth alone -- no record pattern.
 
     Deliberately a *different* method from the extractor's: the extractor matches records with a
     regex and proves completeness by residue, this walks the body character by character and counts
     depth transitions. If a regex ever stopped early, these two would disagree, which is the whole
     point of not reusing the extractor's own machinery here.
+
+    `declaration` is the text the scan anchors on, because the two compiled-in copies spell the same
+    array two ways (`static const` and `constexpr`); the counting method itself is identical, which
+    is what makes the two counts comparable.
     """
-    start = text.index("static const capRate capRates")
+    start = text.index(declaration)
     opening = text.index("{", text.index("=", start))
     depth, count, index = 0, 0, opening
     while index < len(text):
@@ -196,6 +205,155 @@ def test_t42_every_count_is_derived_from_the_vendored_source():
         "A test or a module asserting a literal re-creates the bug that recorded this table's "
         "record count as its maximum Z."
     )
+
+
+# --------------------------------------------------------------------------------------------
+# T-69, T-70 -- the two compiled-in copies: identical tables, one deliberately different clamp
+# --------------------------------------------------------------------------------------------
+
+
+def compare_copies(a: d1.D1Extraction, b: d1.D1Extraction) -> list[str]:
+    """Every way two extractions of the same compiled-in tables disagree, named one at a time.
+
+    A boolean would say "the copies differ" and leave a maintainer to find where. The thing this
+    comparison exists to catch -- one of Geant4's two copies of the table updated and the other not
+    -- shows up as a handful of rows out of hundreds, so every message names the record's `(Z, A)`
+    or the array index rather than reporting a count.
+
+    The clamp coefficient is deliberately *not* excluded here: F-S3-2 is a real difference between
+    the two copies, and a comparison that swallowed it would be asserting something false. The
+    caller states which coefficients it expects to differ.
+    """
+    # `strict=False` throughout: a length difference is REPORTED above rather than raised, so
+    # the caller gets every disagreeing row and the count, not one exception on the first.
+    problems: list[str] = []
+
+    if len(a.capture_records) != len(b.capture_records):
+        problems.append(
+            f"capture record count: {len(a.capture_records)} vs {len(b.capture_records)}"
+        )
+    for index, (left, right) in enumerate(zip(a.capture_records, b.capture_records, strict=False)):
+        if left != right:
+            problems.append(f"capture record {index} (Z, A)={left[:2]}: {left} vs {right}")
+    literals = zip(a.capture_literals, b.capture_literals, strict=False)
+    for index, (left_text, right_text) in enumerate(literals):
+        if left_text != right_text:
+            key = a.capture_records[index][:2]
+            problems.append(f"capture literal {index} (Z, A)={key}: {left_text} vs {right_text}")
+
+    if len(a.zeff) != len(b.zeff):
+        problems.append(f"effective-charge count: {len(a.zeff)} vs {len(b.zeff)}")
+    for index, (left_value, right_value) in enumerate(zip(a.zeff, b.zeff, strict=False)):
+        if left_value != right_value:
+            problems.append(f"zeff[{index}]: {left_value} vs {right_value}")
+    for index, (left_text, right_text) in enumerate(zip(a.zeff_literals, b.zeff_literals, strict=False)):
+        if left_text != right_text:
+            problems.append(f"zeff literal [{index}]: {left_text!r} vs {right_text!r}")
+
+    if a.zeff_max_z != b.zeff_max_z:
+        problems.append(f"maxZ: {a.zeff_max_z} vs {b.zeff_max_z}")
+
+    return problems
+
+
+def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_only_in_the_clamp():
+    """Geant4 compiles the capture and effective-charge tables in twice; here is what that costs.
+
+    `G4MuonMinusBoundDecay.cc` and `G4MuonicAtomHelper.cc` carry the same `capRates[]` and the same
+    `zeff[]`, written in two dialects a decade apart. This test reads both with the same extractor
+    -- parameterised only by declaration shape -- and requires them to agree element for element.
+    That is what makes the dataset's provenance claim about "Geant4's compiled-in table" well
+    defined: there are two copies, and they hold the same data.
+
+    Where they do *not* agree is the clamp applied before indexing `zeff`, and that difference is
+    pinned here rather than smoothed over: BoundDecay clamps `Z` into `[1, maxZ]`, the helper into
+    `[0, maxZ]`, so for `Z <= 0` one returns `zeff[1]` and the other `zeff[0]`. The shipped dataset
+    reproduces BoundDecay's behaviour; a reader is entitled to know the other copy exists and does
+    something else at the edge.
+    """
+    helper = d1.load_helper(HELPER)
+    bd = extraction()
+
+    problems = compare_copies(helper, bd)
+    assert not problems, (
+        "the two compiled-in copies of the capture/effective-charge tables no longer agree; "
+        "one of them was updated upstream and the other was not: " + "; ".join(problems)
+    )
+    # The comparison is only worth anything if it walked a non-empty table.
+    assert helper.capture_records and helper.zeff
+
+    # Every fallback coefficient is the same source text in both copies -- except the clamp, which
+    # is the one place F-S3-2 says they genuinely differ. Both sides are read from the sources.
+    for name in d1.FALLBACK_NAMES:
+        if name == "zmin":
+            continue
+        assert helper.coefficients[name] == bd.coefficients[name], name
+    assert helper.coefficients["zmin"] != bd.coefficients["zmin"], (
+        "the two copies now clamp Z the same way; F-S3-2 recorded them as differing, and a "
+        "registered finding that stopped being true must be re-ruled, not silently dropped"
+    )
+
+    # And the clamp difference as source text, so the finding names statements and not just values.
+    helper_text = re.sub(r"\s+", " ", HELPER.read_text("ascii"))
+    bd_text = re.sub(r"\s+", " ", VENDORED.read_text("ascii"))
+    assert "std::max(std::min(ZZ, maxZ), 1)" in bd_text
+    assert "if (Z < 0)" not in bd_text
+    assert "if (Z < 0) { Z = 0; }" in helper_text
+    assert "if (Z > G4int(maxZ)) { Z = maxZ; }" in helper_text
+    assert "std::max(std::min(" not in helper_text
+
+    # T-42's brace-depth recount, on the second copy's own declaration spelling: the helper's parse
+    # is proved complete the same independent way the first copy's is.
+    assert len(helper.capture_records) == independently_counted_records(
+        HELPER.read_text("ascii"), "constexpr capRate capRates"
+    )
+
+    # The pins the README publishes for the second file are computed from the file, never typed.
+    data = HELPER.read_bytes()
+    assert b"\r" not in data, (
+        "the checkout rewrote the vendored helper's line endings: check that .gitattributes still "
+        "carries `third_party/geant4/** -text`"
+    )
+    blob = git_blob_id(data)
+    digest = hashlib.sha256(data).hexdigest()
+    assert blob == d1.HELPER_BLOB_ID
+    assert digest == d1.HELPER_SHA256
+    readme = VENDORED_README.read_text("utf-8")
+    assert "v11.4.2/G4MuonicAtomHelper.cc" in readme
+    assert blob in readme
+    assert digest in readme
+    # Computed outside the f-string on purpose: a backslash inside an f-string expression is a
+    # syntax error before Python 3.12, and the CI matrix still runs 3.11.
+    line_count = data.count(b"\n")
+    assert f"{len(data)} bytes, {line_count} lines" in readme
+
+
+def test_t70_mutation_drill_a_moved_digit_in_the_second_copy_is_named(tmp_path):
+    """Drill for T-69: change one rate in the helper and the comparison must say which record.
+
+    Two halves, because two guards have to hold. The comparison must *find* the change and name the
+    `(Z, A)` it belongs to -- a comparison that reported "the copies differ" would have passed a
+    truncated parse just as happily. And `load_helper` must refuse the mutated bytes outright,
+    naming the pin they no longer match, so the failure a maintainer sees is "this is not upstream's
+    file" rather than an unexplained table mismatch.
+    """
+    bd = extraction()
+    original = HELPER.read_text("ascii")
+    rate_literal = bd.capture_literals[0][0]
+    z, a = bd.capture_records[0][:2]
+
+    mutated = original.replace(rate_literal, rate_literal + "1", 1)
+    assert mutated != original, "the drill did not change the source it was pointed at"
+
+    problems = compare_copies(d1.extract(mutated, d1.HELPER), bd)
+    assert problems, "a moved digit in the second copy went unnoticed"
+    assert any(f"(Z, A)={(z, a)}" in problem for problem in problems), problems
+
+    corrupted = tmp_path / "G4MuonicAtomHelper.cc"
+    corrupted.write_bytes(mutated.encode("ascii"))
+    with pytest.raises(d1.SourceExtractionError) as raised:
+        d1.load_helper(corrupted)
+    assert d1.HELPER_BLOB_ID in str(raised.value)
 
 
 def test_t50_every_fallback_coefficient_occurs_verbatim_in_the_source():
