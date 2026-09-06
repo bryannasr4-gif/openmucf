@@ -20,8 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enumerated line and every enumerated wrapped sentence was read and ruled as it entered: no row
   landed UNREVIEWED, and neither ceiling moved.
 - **The contraction entered on the pair precedent.** `\w+n't` matches no line of the paths the
-  guard reads and no wrapped sentence of them at this head; it is in the table anyway, so a
-  contraction written later cannot land unenumerated, and the deletion drill keeps it there.
+  guard reads and no wrapped sentence of them at this head; it is in the table anyway,
+  and the deletion drill keeps it there.
 - This retires the negation item the v1.2.0 notes deferred to v1.3.0.
 
 ### Added -- the claim guard's sentence layer (G4), in two changes (2026-08-30)

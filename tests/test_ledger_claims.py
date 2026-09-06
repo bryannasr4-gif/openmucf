@@ -98,7 +98,7 @@ CLAIM_PATHS = (
 #: true, and had never been enumerable). Negation -- `not`, `cannot` and the contraction `\w+n't` --
 #: entered 2026-08-31 on the family's attested escape (`does not depend on`), every line it
 #: enumerates read and ruled as it landed; `\w+n't` matched nothing at admission and entered on
-#: the pair precedent, so a future contraction cannot land unenumerated.
+#: the pair precedent.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",
