@@ -1,0 +1,15 @@
+#GRAMMAR      1.0
+#DATASET      G4MuonicData
+#VERSION      1.0.0
+#PROFILE      evaluated
+#SEAM         d1_nuclear_capture
+#TABLE        nuclear_capture_rate
+#GENERATOR    openmucf-g4 1.1.0
+#SOURCEDIGEST 1111111111111111111111111111111111111111111111111111111111111111
+#UNITS        rate=1e6/s
+#COLUMNS      Z A value unc
+#VALIDITY     Z:1-94 A:natural_and_listed
+ 1   1 1.5 0.25
+ 6  12 2,5 0.5
+29  63 3.5 0.75
+#END

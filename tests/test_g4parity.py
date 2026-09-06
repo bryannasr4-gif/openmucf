@@ -41,6 +41,9 @@ from openmucf.g4.sources import d1_nuclear_capture as d1
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 VENDORED = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonMinusBoundDecay.cc"
+#: The second compiled-in copy of the same two tables, vendored beside the first.
+HELPER = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonicAtomHelper.cc"
+VENDORED_README = REPO / "third_party" / "geant4" / "README.md"
 D1DIR = REPO / "data" / "g4" / "d1"
 ORACLE = D1DIR / "d1_gp_sweep.oracle"
 
@@ -116,15 +119,21 @@ def extraction() -> d1.D1Extraction:
     return d1.load(VENDORED)
 
 
-def independently_counted_records(text: str) -> int:
+def independently_counted_records(
+    text: str, declaration: str = "static const capRate capRates"
+) -> int:
     """Count `{...}` groups in the `capRates[]` body by brace depth alone -- no record pattern.
 
     Deliberately a *different* method from the extractor's: the extractor matches records with a
     regex and proves completeness by residue, this walks the body character by character and counts
     depth transitions. If a regex ever stopped early, these two would disagree, which is the whole
     point of not reusing the extractor's own machinery here.
+
+    `declaration` is the text the scan anchors on, because the two compiled-in copies spell the same
+    array two ways (`static const` and `constexpr`); the counting method itself is identical, which
+    is what makes the two counts comparable.
     """
-    start = text.index("static const capRate capRates")
+    start = text.index(declaration)
     opening = text.index("{", text.index("=", start))
     depth, count, index = 0, 0, opening
     while index < len(text):
@@ -196,6 +205,155 @@ def test_t42_every_count_is_derived_from_the_vendored_source():
         "A test or a module asserting a literal re-creates the bug that recorded this table's "
         "record count as its maximum Z."
     )
+
+
+# --------------------------------------------------------------------------------------------
+# T-69, T-70 -- the two compiled-in copies: identical tables, one deliberately different clamp
+# --------------------------------------------------------------------------------------------
+
+
+def compare_copies(a: d1.D1Extraction, b: d1.D1Extraction) -> list[str]:
+    """Every way two extractions of the same compiled-in tables disagree, named one at a time.
+
+    A boolean would say "the copies differ" and leave a maintainer to find where. The thing this
+    comparison exists to catch -- one of Geant4's two copies of the table updated and the other not
+    -- shows up as a handful of rows out of hundreds, so every message names the record's `(Z, A)`
+    or the array index rather than reporting a count.
+
+    The clamp coefficient is deliberately *not* excluded here: it is a real difference between
+    the two copies, and a comparison that swallowed it would be asserting something false. The
+    caller states which coefficients it expects to differ.
+    """
+    # `strict=False` throughout: a length difference is REPORTED above rather than raised, so
+    # the caller gets every disagreeing row and the count, not one exception on the first.
+    problems: list[str] = []
+
+    if len(a.capture_records) != len(b.capture_records):
+        problems.append(
+            f"capture record count: {len(a.capture_records)} vs {len(b.capture_records)}"
+        )
+    for index, (left, right) in enumerate(zip(a.capture_records, b.capture_records, strict=False)):
+        if left != right:
+            problems.append(f"capture record {index} (Z, A)={left[:2]}: {left} vs {right}")
+    literals = zip(a.capture_literals, b.capture_literals, strict=False)
+    for index, (left_text, right_text) in enumerate(literals):
+        if left_text != right_text:
+            key = a.capture_records[index][:2]
+            problems.append(f"capture literal {index} (Z, A)={key}: {left_text} vs {right_text}")
+
+    if len(a.zeff) != len(b.zeff):
+        problems.append(f"effective-charge count: {len(a.zeff)} vs {len(b.zeff)}")
+    for index, (left_value, right_value) in enumerate(zip(a.zeff, b.zeff, strict=False)):
+        if left_value != right_value:
+            problems.append(f"zeff[{index}]: {left_value} vs {right_value}")
+    for index, (left_text, right_text) in enumerate(zip(a.zeff_literals, b.zeff_literals, strict=False)):
+        if left_text != right_text:
+            problems.append(f"zeff literal [{index}]: {left_text!r} vs {right_text!r}")
+
+    if a.zeff_max_z != b.zeff_max_z:
+        problems.append(f"maxZ: {a.zeff_max_z} vs {b.zeff_max_z}")
+
+    return problems
+
+
+def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_only_in_the_clamp():
+    """Geant4 compiles the capture and effective-charge tables in twice; here is what that costs.
+
+    `G4MuonMinusBoundDecay.cc` and `G4MuonicAtomHelper.cc` carry the same `capRates[]` and the same
+    `zeff[]`, written in two dialects. This test reads both with the same extractor
+    -- parameterised only by declaration shape -- and requires them to agree element for element.
+    That is what makes the dataset's provenance claim about "Geant4's compiled-in table" well
+    defined: there are two copies, and they hold the same data.
+
+    Where they do *not* agree is the clamp applied before indexing `zeff`, and that difference is
+    pinned here rather than smoothed over: BoundDecay clamps `Z` into `[1, maxZ]`, the helper into
+    `[0, maxZ]`, so for `Z <= 0` one returns `zeff[1]` and the other `zeff[0]`. The shipped dataset
+    reproduces BoundDecay's behaviour; a reader is entitled to know the other copy exists and does
+    something else at the edge.
+    """
+    helper = d1.load_helper(HELPER)
+    bd = extraction()
+
+    problems = compare_copies(helper, bd)
+    assert not problems, (
+        "the two compiled-in copies of the capture/effective-charge tables no longer agree; "
+        "one of them was updated upstream and the other was not: " + "; ".join(problems)
+    )
+    # The comparison is only worth anything if it walked a non-empty table.
+    assert helper.capture_records and helper.zeff
+
+    # Every fallback coefficient is the same source text in both copies -- except the clamp, which
+    # is the one place they genuinely differ. Both sides are read from the sources.
+    for name in d1.FALLBACK_NAMES:
+        if name == "zmin":
+            continue
+        assert helper.coefficients[name] == bd.coefficients[name], name
+    assert helper.coefficients["zmin"] != bd.coefficients["zmin"], (
+        "the two copies now clamp Z the same way"
+    )
+
+    # And the clamp difference as source text.
+    helper_text = re.sub(r"\s+", " ", HELPER.read_text("ascii"))
+    bd_text = re.sub(r"\s+", " ", VENDORED.read_text("ascii"))
+    assert "std::max(std::min(ZZ, maxZ), 1)" in bd_text
+    assert "if (Z < 0)" not in bd_text
+    assert "if (Z < 0) { Z = 0; }" in helper_text
+    assert "if (Z > G4int(maxZ)) { Z = maxZ; }" in helper_text
+    assert "std::max(std::min(" not in helper_text
+
+    # T-42's brace-depth recount, on the second copy's own declaration spelling: the helper's parse
+    # is proved complete the same independent way the first copy's is.
+    assert len(helper.capture_records) == independently_counted_records(
+        HELPER.read_text("ascii"), "constexpr capRate capRates"
+    )
+
+    # The pins the README publishes for the second file are computed from the file, never typed.
+    data = HELPER.read_bytes()
+    assert b"\r" not in data, (
+        "the checkout rewrote the vendored helper's line endings: check that .gitattributes still "
+        "carries `third_party/geant4/** -text`"
+    )
+    blob = git_blob_id(data)
+    digest = hashlib.sha256(data).hexdigest()
+    assert blob == d1.HELPER_BLOB_ID
+    assert digest == d1.HELPER_SHA256
+    readme = VENDORED_README.read_text("utf-8")
+    assert "v11.4.2/G4MuonicAtomHelper.cc" in readme
+    assert blob in readme
+    assert digest in readme
+    # Computed outside the f-string on purpose: a backslash inside an f-string expression is a
+    # syntax error before Python 3.12, and the CI matrix still runs 3.11.
+    line_count = data.count(b"\n")
+    assert f"{len(data)} bytes, {line_count} lines" in readme
+    assert {p.name for p in HELPER.parent.glob("*.cc")} == {VENDORED.name, HELPER.name}
+
+
+def test_t70_mutation_drill_a_moved_digit_in_the_second_copy_is_named(tmp_path):
+    """Drill for T-69: change one rate in the helper and the comparison must say which record.
+
+    Two halves, because two guards have to hold. The comparison must *find* the change and name the
+    `(Z, A)` it belongs to -- a comparison that reported "the copies differ" would have passed a
+    truncated parse just as happily. And `load_helper` must refuse the mutated bytes outright,
+    naming the pin they no longer match, so the failure a maintainer sees is "this is not upstream's
+    file" rather than an unexplained table mismatch.
+    """
+    bd = extraction()
+    original = HELPER.read_text("ascii")
+    rate_literal = bd.capture_literals[0][0]
+    z, a = bd.capture_records[0][:2]
+
+    mutated = original.replace(rate_literal, rate_literal + "1", 1)
+    assert mutated != original, "the drill did not change the source it was pointed at"
+
+    problems = compare_copies(d1.extract(mutated, d1.HELPER), bd)
+    assert problems, "a moved digit in the second copy went unnoticed"
+    assert any(f"(Z, A)={(z, a)}" in problem for problem in problems), problems
+
+    corrupted = tmp_path / "G4MuonicAtomHelper.cc"
+    corrupted.write_bytes(mutated.encode("ascii"))
+    with pytest.raises(d1.SourceExtractionError) as raised:
+        d1.load_helper(corrupted)
+    assert d1.HELPER_BLOB_ID in str(raised.value)
 
 
 def test_t50_every_fallback_coefficient_occurs_verbatim_in_the_source():
@@ -817,6 +975,170 @@ def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
     assert below and above, "the clamp probes must cover both ends"
     assert {model.muon_zeff(z) for z in below} == {found.zeff[model.zmin]}
     assert {model.muon_zeff(z) for z in above} == {found.zeff[model.zmax]}
+
+
+# --------------------------------------------------------------------------------------------
+# T-76 -- every shipped table sits beside its provenance file
+# --------------------------------------------------------------------------------------------
+
+
+def test_t76_every_shipped_table_ships_beside_its_provenance_file():
+    """A `.g4dat` under `data/` without its `.prov.json`, or the reverse, is a half-shipped dataset.
+
+    E009 binds Layer 1 to Layer 2 by a digest over the Layer-2 bytes, so a `.g4dat` published
+    without its sibling carries a `#SOURCEDIGEST` nothing can check -- the one rejection that needs
+    both files becomes unreachable, and the dataset's provenance claim goes with it. The reverse is
+    just as bad in a different way: a Layer-2 document describing a table that is not there.
+
+    Both directions, over `data/**` by rglob rather than over a list, because a list is the thing
+    that goes stale when a seam is added. The malformed fixtures live outside `data/` by
+    construction, so they are not swept up by this.
+    """
+    data = REPO / "data"
+    tables = sorted(data.rglob("*.g4dat"))
+    documents = sorted(data.rglob("*.prov.json"))
+    assert tables and documents, "no shipped dataset files were found at all"
+
+    # `.prov.json` carries TWO suffixes, so `Path.stem` leaves a trailing `.prov` on it and pairing
+    # on `stem` silently matches nothing. Strip the whole extension by name instead.
+    def paired(path: pathlib.Path, extension: str) -> pathlib.Path:
+        base = path.name.removesuffix(".prov.json").removesuffix(".g4dat")
+        return path.with_name(base + extension)
+
+    orphan_tables = [p for p in tables if not paired(p, ".prov.json").exists()]
+    orphan_documents = [p for p in documents if not paired(p, ".g4dat").exists()]
+    assert not orphan_tables, (
+        "shipped table(s) with no provenance file beside them, so their '#SOURCEDIGEST' can never "
+        f"be checked: {[p.relative_to(REPO).as_posix() for p in orphan_tables]}"
+    )
+    assert not orphan_documents, (
+        "provenance file(s) describing a table that is not shipped: "
+        f"{[p.relative_to(REPO).as_posix() for p in orphan_documents]}"
+    )
+    # The pairing is a bijection on base names, so the two sweeps above cannot both pass on a
+    # directory where one name is doing double duty.
+    assert {paired(p, "") for p in tables} == {paired(p, "") for p in documents}
+
+
+# --------------------------------------------------------------------------------------------
+# T-67, T-68 -- the oracle's hexfloat grammar, and the two digest implementations
+# --------------------------------------------------------------------------------------------
+
+
+def oracle_hex_fields() -> list[str]:
+    """Every value field of the committed oracle that is written as a hexfloat, as WRITTEN.
+
+    The four non-finite spellings are excluded because they are not hexfloats: the degenerate block
+    compares them by classification and never parses them as hex. Everything else in the file --
+    subset rows, `ZEFF` rows, `ZEFFCLAMP` rows, and the `RATE` rows whose value is finite -- is a
+    hexfloat and is subject to the grammar.
+    """
+    producer = oracle_producer()
+    raw = read_oracle()["raw"]
+    fields = [value for _, _, value in raw["subset"]]
+    fields += [value for _, value in raw["zeff"]]
+    fields += [
+        line.split()[-1]
+        for line in raw["degenerate"]
+        if line.split()[-1] not in producer.NON_FINITE_FIELDS
+    ]
+    return fields
+
+
+def test_t67_every_oracle_hexfloat_obeys_the_grammar_and_re_renders_to_its_own_bytes(tmp_path):
+    """The spelling of a value is part of the artifact, and here is the rule it obeys.
+
+    A hex reader is far more permissive than the producer that wrote these bytes. `float.fromhex`
+    accepts `infinity`, `1.5p+3`, `0x1.5p3`, `0x1.5p+03`, `0x0.3p+5` and `0x1.50p+3` -- six
+    spellings a C `%a` never prints. Three of them are caught by the grammar and three only by
+    requiring the field to re-render to itself, so a validator implementing one half accepts files
+    this producer cannot emit. Both halves are asserted here over every committed field, and both
+    halves are then shown to be load-bearing on the six.
+
+    The second half of the test is `read_sweep`'s side of the same rule: a harvest carrying a
+    duplicate row, an upper-case field, a blank line or `infinity` must be rejected by a NAMED error
+    that says which line. Each of those four was once silent -- skipped, or accepted last-wins, or
+    handed to a parser that took it.
+    """
+    producer = oracle_producer()
+    fields = oracle_hex_fields()
+    assert fields, "the oracle carries no hexfloat fields"
+    for value in fields:
+        assert producer.hexfloat_problem(value) is None, value
+        assert producer.HEXFLOAT.match(value), value
+        assert producer.canonical_hex(float.fromhex(value)) == value, value
+
+    # The six respellings, split by which half rejects them -- named, so a change that quietly
+    # widened the grammar to cover the last three would fail here rather than pass more.
+    by_grammar = ("infinity", "1.5p+3", "0x1.5p3")
+    by_re_render = ("0x1.5p+03", "0x0.3p+5", "0x1.50p+3")
+    for spelling in by_grammar:
+        assert producer.HEXFLOAT.match(spelling) is None, spelling
+        assert producer.hexfloat_problem(spelling) is not None, spelling
+    for spelling in by_re_render:
+        assert producer.HEXFLOAT.match(spelling), f"{spelling} should pass the grammar"
+        assert producer.canonical_hex(float.fromhex(spelling)) != spelling, spelling
+        assert producer.hexfloat_problem(spelling) is not None, spelling
+
+    # `read_sweep`'s side of the same rule, on crafted harvests. Each rejection must be the NAMED
+    # error and must carry `path:line`: "somewhere in this file" is what these four replaced.
+    size = len(extraction().zeff) - 1
+    tail = [f"ZEFF {z} 0x1p+0" for z in range(size + 1)]
+    good = "1 1 0x1p+0"
+    for label, rows in {
+        "duplicate_row": [good, good],
+        "upper_case": ["1 1 0X1P+0"],
+        "blank_line": [good, ""],
+        "infinity": ["1 1 infinity"],
+    }.items():
+        harvest = tmp_path / f"{label}.txt"
+        harvest.write_text("\n".join(rows + tail) + "\n", encoding="ascii", newline="\n")
+        with pytest.raises(producer.SweepFormatError) as raised:
+            producer.read_sweep(harvest, size)
+        # The offending row is the last one given in each case, so its line number is len(rows).
+        assert f"{harvest}:{len(rows)}:" in str(raised.value), (label, str(raised.value))
+
+
+def test_t68_the_two_digest_implementations_agree_with_the_compiled_oracle():
+    """Three independent computations of one 64-hex number, required to be the same number.
+
+    `d1.sweep_digest` walks the box and hashes the doubles it evaluates. `build_oracle.sweep_digest`
+    hashes the hexfloat STRINGS a harvest carries. The oracle's `fullsweep_sha256` came out of a
+    Geant4-linked binary. This test compares the first two and pins both to the
+    third, so the C++ validator's digest has a value to reproduce rather than a description.
+
+    The strings on the Python side are rendered by `canonical_hex`, which makes this a test of the
+    renderer as well: a renderer that lost a digit would produce a different double and a different
+    digest here, not a cosmetic difference.
+    """
+    producer = oracle_producer()
+    found = extraction()
+    model = reference_model(found)
+    oracle = read_oracle()
+
+    rates = {
+        (z, a): producer.canonical_hex(d1.capture_rate(z, a, found.capture_records, model))
+        for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1)
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1)
+    }
+    from_strings = producer.sweep_digest(rates)
+    from_values = d1.sweep_digest(found.capture_records, model)
+    assert from_strings == from_values, (
+        "the two digest implementations disagree; one of them is not hashing what it claims to hash"
+    )
+    assert from_strings == oracle["header"]["fullsweep_sha256"]
+
+    # Drill: the traversal order is part of the digest's definition, not a detail. Hashing exactly
+    # the same doubles with A outermost must give a different answer, or "row-major, Z ascending
+    # outermost" would be an unenforced sentence in the header and a validator could pick either.
+    transposed = hashlib.sha256()
+    for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+        for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+            transposed.update(struct.pack(">d", float.fromhex(rates[z, a])))
+    assert transposed.hexdigest() != from_strings, (
+        "the digest does not depend on the traversal order, so the header's 'Z ascending outermost' "
+        "clause is not being enforced by anything"
+    )
 
 
 # --------------------------------------------------------------------------------------------
