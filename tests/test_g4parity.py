@@ -292,7 +292,7 @@ def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_only_in_
         "the two copies now clamp Z the same way"
     )
 
-    # And the clamp difference as source text, so the finding names statements and not just values.
+    # And the clamp difference as source text.
     helper_text = re.sub(r"\s+", " ", HELPER.read_text("ascii"))
     bd_text = re.sub(r"\s+", " ", VENDORED.read_text("ascii"))
     assert "std::max(std::min(ZZ, maxZ), 1)" in bd_text
