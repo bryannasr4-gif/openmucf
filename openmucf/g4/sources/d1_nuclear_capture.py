@@ -247,8 +247,8 @@ _COEFFICIENT_ANCHORS: tuple[tuple[str, str], ...] = (
 class SourceCopy(NamedTuple):
     """Where one upstream file writes the capture table, the effective charges and the fallback.
 
-    Geant4 compiles the same two tables into two independent translation units, written a decade
-    apart in two dialects: ``G4MuonMinusBoundDecay.cc`` uses ``static const``, the newer
+    Geant4 compiles the same two tables into two independent translation units, written in two
+    dialects: ``G4MuonMinusBoundDecay.cc`` uses ``static const``, the newer
     ``G4MuonicAtomHelper.cc`` uses ``constexpr``. Parameterising the extractor by declaration shape
     rather than forking it is what lets one comparison prove the two arrays are the same data --
     and what makes the one place they genuinely differ, the clamp each applies before indexing

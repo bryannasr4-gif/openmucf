@@ -260,7 +260,7 @@ def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_only_in_
     """Geant4 compiles the capture and effective-charge tables in twice; here is what that costs.
 
     `G4MuonMinusBoundDecay.cc` and `G4MuonicAtomHelper.cc` carry the same `capRates[]` and the same
-    `zeff[]`, written in two dialects a decade apart. This test reads both with the same extractor
+    `zeff[]`, written in two dialects. This test reads both with the same extractor
     -- parameterised only by declaration shape -- and requires them to agree element for element.
     That is what makes the dataset's provenance claim about "Geant4's compiled-in table" well
     defined: there are two copies, and they hold the same data.
