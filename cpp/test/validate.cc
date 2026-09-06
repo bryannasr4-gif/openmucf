@@ -521,11 +521,7 @@ void CheckDiscovery(Report& report, const std::string& expectation, const std::s
   }
   if (expectation == "empty") {
     if (value == nullptr) {
-#if defined(_WIN32)
-      report.Skipped("V-12", std::string("empty: the environment delivered no ") + kVariable + " at all (an empty value does not survive on this platform), so the empty-string case is not observable here");
-#else
       report.Fail("V-12", std::string("empty: ") + kVariable + " is unset, the case needs it set to the empty string");
-#endif
       return;
     }
     if (std::strlen(value) != 0) { report.Fail("V-12", std::string("empty: ") + kVariable + " is not empty: " + Quote(value)); return; }
