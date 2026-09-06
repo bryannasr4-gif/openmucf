@@ -193,8 +193,8 @@ jobs:
     # refuses a binary whose floating-point arithmetic is contracted; the validator then reproduces
     # the committed oracle from its own evaluation, runs the conformance corpus verdict for verdict,
     # and on GCC/Clang measures the contraction finding the dataset documentation states. One entry
-    # per platform forces the istringstream number-parsing path, so both compiled paths run
-    # everywhere; the labels are explicit because a `-latest` label silently moves the compiler set.
+    # per platform forces the istringstream number-parsing path; the labels are explicit because a
+    # `-latest` label silently moves the compiler set.
     strategy:
       fail-fast: false
       matrix:
