@@ -164,7 +164,7 @@ jobs:
         run: python examples/quickstart.py
 
   types:
-    # Static type check. BLOCKING: `mypy openmucf --ignore-missing-imports` must be clean. It was
+    # Static type check. BLOCKING: `mypy openmucf cpp/tools --ignore-missing-imports` must be clean. It was
     # masked with `continue-on-error: true` while the package carried a standing 6-error set; that set
     # is fixed (real annotations, no blanket suppressions), so the mask is gone and a new type error
     # now fails the build instead of being reported and ignored.
@@ -184,7 +184,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: mypy
-        run: mypy openmucf --ignore-missing-imports
+        run: mypy openmucf cpp/tools --ignore-missing-imports
 
   paper:
     # JOSS paper artifact. BLOCKING: paper/paper.md must compile to paper.pdf before merge.
