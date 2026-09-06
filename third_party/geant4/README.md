@@ -1,7 +1,7 @@
 # Vendored Geant4 source
 
-This directory holds **one unmodified file** from the Geant4 toolkit, together with the Geant4
-Software License it is distributed under.
+This directory holds **unmodified files** from the Geant4 toolkit, together with the Geant4
+Software License they are distributed under.
 
 > This product includes software developed by Members of the Geant4 Collaboration
 > ( http://cern.ch/geant4 ).
@@ -12,6 +12,7 @@ Software License it is distributed under.
 |---|---|
 | `LICENSE` | Geant4 Software License v1.0, verbatim |
 | `v11.4.2/G4MuonMinusBoundDecay.cc` | the upstream source file, **byte-for-byte unmodified** |
+| `v11.4.2/G4MuonicAtomHelper.cc` | the upstream source file carrying the second compiled-in copy of the same capture and effective-charge tables, **byte-for-byte unmodified** |
 
 `G4MuonMinusBoundDecay.cc` carries Geant4's compiled-in muon-capture data: a 90-record
 `{Z, A, cRate, cRErr}` table, a 101-value effective-charge (`zeff`) table, and the
@@ -36,6 +37,10 @@ here rather than from the generated file.
 | **git blob id** | `29bd73719cd619de34ef83ca5ca076ceadf1cc5a` |
 | sha256 | `860dcdb53167c6437484b12c05ac1ab2eae4a6a52886af83fcf4394611882813` |
 | size | 16312 bytes, 451 lines |
+| `G4MuonicAtomHelper.cc` upstream path | `source/particles/management/src/G4MuonicAtomHelper.cc` |
+| `G4MuonicAtomHelper.cc` **git blob id** | `98935195538c67c24ad1229c6064c8da05c9e7e2` |
+| `G4MuonicAtomHelper.cc` sha256 | `038a13afafdb23a7a34648659a066359fbaec13c73d0ab31954512c3702ff463` |
+| `G4MuonicAtomHelper.cc` size | 13669 bytes, 387 lines |
 
 **The blob id is the load-bearing pin.** It is upstream's own object name for these exact bytes, so
 a third party can verify this copy against the Geant4 repository without cloning Geant4 and without
