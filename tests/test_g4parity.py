@@ -41,7 +41,7 @@ from openmucf.g4.sources import d1_nuclear_capture as d1
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 VENDORED = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonMinusBoundDecay.cc"
-#: The second compiled-in copy of the same two tables, vendored beside the first (F-S3-2).
+#: The second compiled-in copy of the same two tables, vendored beside the first.
 HELPER = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonicAtomHelper.cc"
 VENDORED_README = REPO / "third_party" / "geant4" / "README.md"
 D1DIR = REPO / "data" / "g4" / "d1"
@@ -220,7 +220,7 @@ def compare_copies(a: d1.D1Extraction, b: d1.D1Extraction) -> list[str]:
     -- shows up as a handful of rows out of hundreds, so every message names the record's `(Z, A)`
     or the array index rather than reporting a count.
 
-    The clamp coefficient is deliberately *not* excluded here: F-S3-2 is a real difference between
+    The clamp coefficient is deliberately *not* excluded here: it is a real difference between
     the two copies, and a comparison that swallowed it would be asserting something false. The
     caller states which coefficients it expects to differ.
     """
@@ -283,14 +283,13 @@ def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_only_in_
     assert helper.capture_records and helper.zeff
 
     # Every fallback coefficient is the same source text in both copies -- except the clamp, which
-    # is the one place F-S3-2 says they genuinely differ. Both sides are read from the sources.
+    # is the one place they genuinely differ. Both sides are read from the sources.
     for name in d1.FALLBACK_NAMES:
         if name == "zmin":
             continue
         assert helper.coefficients[name] == bd.coefficients[name], name
     assert helper.coefficients["zmin"] != bd.coefficients["zmin"], (
-        "the two copies now clamp Z the same way; F-S3-2 recorded them as differing, and a "
-        "registered finding that stopped being true must be re-ruled, not silently dropped"
+        "the two copies now clamp Z the same way"
     )
 
     # And the clamp difference as source text, so the finding names statements and not just values.
@@ -1104,7 +1103,7 @@ def test_t68_the_two_digest_implementations_agree_with_the_compiled_oracle():
 
     `d1.sweep_digest` walks the box and hashes the doubles it evaluates. `build_oracle.sweep_digest`
     hashes the hexfloat STRINGS a harvest carries. The oracle's `fullsweep_sha256` came out of a
-    Geant4-linked binary. IB-07 asked what compares the first two; this does, and pins both to the
+    Geant4-linked binary. This test compares the first two and pins both to the
     third, so the C++ validator's digest has a value to reproduce rather than a description.
 
     The strings on the Python side are rendered by `canonical_hex`, which makes this a test of the
