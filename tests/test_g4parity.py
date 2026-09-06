@@ -325,6 +325,7 @@ def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_only_in_
     # syntax error before Python 3.12, and the CI matrix still runs 3.11.
     line_count = data.count(b"\n")
     assert f"{len(data)} bytes, {line_count} lines" in readme
+    assert {p.name for p in HELPER.parent.glob("*.cc")} == {VENDORED.name, HELPER.name}
 
 
 def test_t70_mutation_drill_a_moved_digit_in_the_second_copy_is_named(tmp_path):
