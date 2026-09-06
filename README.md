@@ -216,4 +216,4 @@ repository" button from it). Archived on Zenodo — cite the exact release **v1.
 ## License
 - **Code** — the `openmucf/` package, `scripts/`, tests, and all software: **Apache-2.0** (see [`LICENSE`](LICENSE)).
 - **Data** — the rate ledger `openmucf/data/*` and the generated data docs: **CC-BY-4.0** (see [`LICENSE-DATA`](LICENSE-DATA)), so the compiled, provenance-tagged rates can be reused and cited with attribution.
-- **Third party** — `third_party/geant4/` holds one unmodified Geant4 source file, redistributed under the **Geant4 Software License v1.0** ([`third_party/geant4/LICENSE`](third_party/geant4/LICENSE)). Those terms apply to that directory only.
+- **Third party** — `third_party/geant4/` holds unmodified Geant4 source files, redistributed under the **Geant4 Software License v1.0** ([`third_party/geant4/LICENSE`](third_party/geant4/LICENSE)). Those terms apply to that directory only.
