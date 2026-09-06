@@ -172,7 +172,7 @@ jobs:
     #
     # Known limit, stated rather than implied: this is mypy's DEFAULT mode, which does not check the
     # bodies of unannotated functions. Adding --check-untyped-defs today reports 3 further errors
-    # (formation.py:104, frontier.py:166, frontier.py:167) that this gate does not see. Tightening to
+    # that this gate does not see. Tightening to
     # that flag is a separate, deliberate change -- it widens what must be fixed, so it is not
     # smuggled in here.
     runs-on: ubuntu-latest
@@ -192,7 +192,7 @@ jobs:
     # platform the dataset is meant to be read on. BLOCKING: the first step probes the toolchain and
     # refuses a binary whose floating-point arithmetic is contracted; the validator then reproduces
     # the committed oracle from its own evaluation, runs the conformance corpus verdict for verdict,
-    # and on GCC/Clang measures the contraction finding the dataset documentation states. One entry
+    # and on GCC/Clang measures how far a contracted build moves the same expression. One entry
     # per platform forces the istringstream number-parsing path; the labels are explicit because a
     # `-latest` label silently moves the compiler set.
     strategy:
