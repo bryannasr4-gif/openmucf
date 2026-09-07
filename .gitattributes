@@ -24,6 +24,9 @@ data/g4/* -text
 # the example, and this checkout has `core.autocrlf=true`, so without this line a fresh clone would
 # rewrite the digested Layer-2 bytes.
 data/g4/d1/* -text
+# The Geant4 patches: their added-file hunks are the reader's LF bytes and a test compares them
+# byte-for-byte against cpp/include and cpp/src, so a checkout must not rewrite their line endings.
+cpp/patches/*.patch -text
 # The vendored upstream source: its IDENTITY is its bytes. The dataset pins it by its upstream git
 # blob id, which is a hash of exactly these bytes, so a checkout that rewrote its line endings would
 # break the pin and with it the entire parity chain -- and would do so silently on Windows only.
