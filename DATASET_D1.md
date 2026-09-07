@@ -417,7 +417,16 @@ another primary carries that primary's locator and copy, and a row the audit lea
 carries its evidence in place of a locator. Second, this is a resolution audit, not an
 evaluation: no shipped value was compared to the primary for correctness, and none was altered.
 
-## 7. Licensing
+## 7. Consuming the dataset from Geant4
+
+`cpp/patches/` carries a patch against the Geant4 revision named above that adds the reader to Geant4
+and lets both compiled-in copies of the capture tables consult this dataset after an explicit opt-in,
+with the default behaviour left untouched. A second, separate patch registers the dataset so that
+Geant4 resolves it under `GEANT4_DATA_DIR`; without it, an exported `G4MUONICDATA` is the only route.
+`cpp/patches/README.md` states what the patches change, how the dataset is found at run time, and
+what a patched build was measured to do.
+
+## 8. Licensing
 
 The values are derived from Geant4 source redistributed under the Geant4 Software License v1.0; see
 `third_party/geant4/`, whose terms apply to that directory. The dataset files themselves are

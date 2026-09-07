@@ -14,6 +14,8 @@ digest is a check anyone can run.
 |---|---|
 | `harvest_d1.cc` | `GetMuonCaptureRate(Z, A)` over Z 1..120 × A 1..300, then `GetMuonZeff(Z)` for Z 0..101 |
 | `harvest_d1_degenerate.cc` | the inputs the sweep excludes: `Z = 0`, `A = 0`, `Z < 0`, and the `zeff` clamp at both ends |
+| `harvest_d1_overlay.cc` | `harvest_d1.cc` with the dataset opt-in switched on, through the same compiled-in copy, `G4MuonMinusBoundDecay`; built against a Geant4 install carrying `cpp/patches/` |
+| `harvest_helper_overlay.cc` | the same sweep and opt-in through the second compiled-in copy, `G4MuonicAtomHelper`; built against a Geant4 install carrying `cpp/patches/` |
 
 The second driver exists because the oracle commits those rows, and a committed harvested artifact
 whose producing driver is not committed is exactly the reproducibility hole vendoring the source was
