@@ -148,7 +148,7 @@ new file mode 100755
 index 0000000000..149b5476ec
 --- /dev/null
 +++ b/source/global/management/src/G4MuonicDataOverlay.cc
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,108 @@
 +// G4MuonicDataOverlay -- implementation. See the header for what this class is for.
 +#include "G4MuonicDataOverlay.hh"
 +
@@ -194,8 +194,7 @@ index 0000000000..149b5476ec
 +  if (found == nullptr) {
 +    Fatal("G4MuonicData001",
 +          "G4MuonicDataTable::Enable() was called but no dataset directory was found: G4MUONICDATA "
-+          "is unset and the dataset is not registered in dataset_definitions[] at this Geant4 "
-+          "revision, so GEANT4_DATA_DIR cannot resolve it. Export G4MUONICDATA=<directory holding "
++          "is unset and GEANT4_DATA_DIR resolved none. Export G4MUONICDATA=<directory holding "
 +          "the *.g4dat files>.");
 +    return nullptr;
 +  }
