@@ -1056,9 +1056,15 @@ def test_t67_every_oracle_hexfloat_obeys_the_grammar_and_re_renders_to_its_own_b
     halves are then shown to be load-bearing on the six.
 
     The second half of the test is `read_sweep`'s side of the same rule: a harvest carrying a
-    duplicate row, an upper-case field, a blank line or `infinity` must be rejected by a NAMED error
-    that says which line. Each of those four was once silent -- skipped, or accepted last-wins, or
-    handed to a parser that took it.
+    duplicate row, an upper-case field, a blank line, `infinity` or a duplicate `ZEFF` row must be
+    rejected by a NAMED error that says which line. Each of the first four was once silent --
+    skipped, or accepted last-wins, or handed to a parser that took it. The third half is
+    `check_degenerate`'s: the committed degenerate block with one value respelled must be rejected
+    by the re-render rule, naming the line.
+
+    The respellings are DERIVED from one committed field, not typed: a typed sextet pins six
+    strings nobody re-reads, while spellings built from a field the oracle actually carries stay
+    tied to the grammar they exercise.
     """
     producer = oracle_producer()
     fields = oracle_hex_fields()
@@ -1068,10 +1074,29 @@ def test_t67_every_oracle_hexfloat_obeys_the_grammar_and_re_renders_to_its_own_b
         assert producer.HEXFLOAT.match(value), value
         assert producer.canonical_hex(float.fromhex(value)) == value, value
 
-    # The six respellings, split by which half rejects them -- named, so a change that quietly
-    # widened the grammar to cover the last three would fail here rather than pass more.
-    by_grammar = ("infinity", "1.5p+3", "0x1.5p3")
-    by_re_render = ("0x1.5p+03", "0x0.3p+5", "0x1.50p+3")
+    def trailing_zero(spelling: str) -> str:
+        """`0x1p+e` -> `0x1.0p+e`, `0x1.<m>p+e` -> `0x1.<m>0p+e`: same value, a spelling %a never prints."""
+        mantissa, exponent = spelling[2:].split("p")
+        digits = mantissa[2:] if "." in mantissa else ""
+        return f"0x1.{digits}0p{exponent}"
+
+    # The six respellings, derived from the first `ZEFF` field with room for one more mantissa digit,
+    # split by which half rejects them -- named, so a change that quietly widened the grammar to
+    # cover the re-render three would fail here rather than pass more.
+    raw = read_oracle()["raw"]
+    derivable = re.compile(r"^0x1(\.[0-9a-f]{1,12})?p\+[0-9]+$")
+    field = next(value for _, value in raw["zeff"] if derivable.match(value))
+    mantissa = field[2 : field.index("p")]
+    mantissa_digits = mantissa[2:] if "." in mantissa else ""
+    exponent = int(field[field.index("p+") + 2 :])
+    by_grammar = ("infinity", field[2:], field.replace("p+", "p"))
+    by_re_render = (
+        field.replace("p+", "p+0"),
+        trailing_zero(field),
+        f"0x0.1{mantissa_digits}p+{exponent + 4}",
+    )
+    for spelling in by_grammar[1:] + by_re_render:
+        assert float.fromhex(spelling) == float.fromhex(field), (spelling, field)
     for spelling in by_grammar:
         assert producer.HEXFLOAT.match(spelling) is None, spelling
         assert producer.hexfloat_problem(spelling) is not None, spelling
@@ -1081,7 +1106,7 @@ def test_t67_every_oracle_hexfloat_obeys_the_grammar_and_re_renders_to_its_own_b
         assert producer.hexfloat_problem(spelling) is not None, spelling
 
     # `read_sweep`'s side of the same rule, on crafted harvests. Each rejection must be the NAMED
-    # error and must carry `path:line`: "somewhere in this file" is what these four replaced.
+    # error and must carry `path:line`: "somewhere in this file" is what these replaced.
     size = len(extraction().zeff) - 1
     tail = [f"ZEFF {z} 0x1p+0" for z in range(size + 1)]
     good = "1 1 0x1p+0"
@@ -1090,6 +1115,7 @@ def test_t67_every_oracle_hexfloat_obeys_the_grammar_and_re_renders_to_its_own_b
         "upper_case": ["1 1 0X1P+0"],
         "blank_line": [good, ""],
         "infinity": ["1 1 infinity"],
+        "duplicate_zeff": [good, "ZEFF 0 0x1p+0", "ZEFF 0 0x1p+0"],
     }.items():
         harvest = tmp_path / f"{label}.txt"
         harvest.write_text("\n".join(rows + tail) + "\n", encoding="ascii", newline="\n")
@@ -1097,6 +1123,25 @@ def test_t67_every_oracle_hexfloat_obeys_the_grammar_and_re_renders_to_its_own_b
             producer.read_sweep(harvest, size)
         # The offending row is the last one given in each case, so its line number is len(rows).
         assert f"{harvest}:{len(rows)}:" in str(raised.value), (label, str(raised.value))
+
+    # `check_degenerate`'s side: the driver's declared probes verbatim, except one `ZEFFCLAMP` value
+    # respelled with a trailing mantissa zero -- grammar-valid and non-canonical, so it reaches the
+    # re-render loop rather than the per-line shape rule -- rejected by name, `path:line`.
+    block = list(raw["degenerate"])
+    index = next(
+        i
+        for i, line in enumerate(block)
+        if line.startswith("ZEFFCLAMP ") and derivable.match(line.split()[-1])
+    )
+    original = block[index].split()[-1]
+    respelled = trailing_zero(original)
+    assert float.fromhex(respelled) == float.fromhex(original)
+    block[index] = block[index][: -len(original)] + respelled
+    degenerate = tmp_path / "degenerate.txt"
+    degenerate.write_text("\n".join(block) + "\n", encoding="ascii", newline="\n")
+    with pytest.raises(producer.SweepFormatError) as raised:
+        producer.check_degenerate(degenerate, REPO / "cpp" / "tools" / "harvest_d1_degenerate.cc")
+    assert f"{degenerate}:{index + 1}:" in str(raised.value), str(raised.value)
 
 
 def test_t68_the_two_digest_implementations_agree_with_the_compiled_oracle():

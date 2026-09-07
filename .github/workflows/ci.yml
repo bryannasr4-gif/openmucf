@@ -164,14 +164,15 @@ jobs:
         run: python examples/quickstart.py
 
   types:
-    # Static type check. BLOCKING: `mypy openmucf cpp/tools --ignore-missing-imports` must be clean. It was
-    # masked with `continue-on-error: true` while the package carried a standing 6-error set; that set
-    # is fixed (real annotations, no blanket suppressions), so the mask is gone and a new type error
-    # now fails the build instead of being reported and ignored.
+    # Static type check. BLOCKING: `mypy openmucf cpp/tools cpp/test --ignore-missing-imports` must be
+    # clean (cpp/test holds the C++ validator's Python helper, checked here so it never sits outside the
+    # type gate). It was masked with `continue-on-error: true` while the package carried a standing
+    # 6-error set; that set is fixed (real annotations, no blanket suppressions), so the mask is gone and
+    # a new type error now fails the build instead of being reported and ignored.
     #
     # Known limit, stated rather than implied: this is mypy's DEFAULT mode, which does not check the
     # bodies of unannotated functions. Adding --check-untyped-defs today reports 3 further errors
-    # (formation.py:104, frontier.py:166, frontier.py:167) that this gate does not see. Tightening to
+    # that this gate does not see. Tightening to
     # that flag is a separate, deliberate change -- it widens what must be fixed, so it is not
     # smuggled in here.
     runs-on: ubuntu-latest
@@ -184,7 +185,52 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: mypy
-        run: mypy openmucf cpp/tools --ignore-missing-imports
+        run: mypy openmucf cpp/tools cpp/test --ignore-missing-imports
+
+  cpp:
+    # The C++ reader and its standalone validator (cpp/test, no Geant4), built and run on every
+    # platform the dataset is meant to be read on. BLOCKING: the first step probes the toolchain and
+    # refuses a binary whose floating-point arithmetic is contracted; the validator then reproduces
+    # the committed oracle from its own evaluation, runs the conformance corpus verdict for verdict,
+    # and on GCC/Clang measures how far a contracted build moves the same expression. One entry
+    # per platform forces the istringstream number-parsing path; the labels are explicit because a
+    # `-latest` label silently moves the compiler set.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04,  cxx: g++,        stream: "OFF" }
+          - { os: ubuntu-24.04,  cxx: g++,        stream: "ON" }
+          - { os: ubuntu-24.04,  cxx: clang++-18, stream: "OFF" }
+          - { os: macos-15,      cxx: clang++,    stream: "OFF" }
+          - { os: macos-15,      cxx: clang++,    stream: "ON" }
+          - { os: windows-2025,  cxx: cl,         stream: "OFF" }
+          - { os: windows-2025,  cxx: cl,         stream: "ON" }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      # Same reason as the `test` job's locale step: the validator runs the corpus once more under a
+      # comma-decimal LC_ALL on Linux, and fails that run itself if the locale is absent.
+      - name: Install a comma-decimal locale
+        if: runner.os == 'Linux'
+        run: |
+          sudo locale-gen de_DE.UTF-8
+          sudo update-locale
+          locale -a | grep -i 'de_DE'
+      - name: Select the compiler
+        if: runner.os == 'Linux'
+        run: echo "CXX=${{ matrix.cxx }}" >> "$GITHUB_ENV"
+      - name: Toolchain probe (compiler version, __cpp_lib_to_chars, contraction detector)
+        run: cmake -S cpp/test -B build-probe -DCMAKE_BUILD_TYPE=Release -DG4MUONICDATA_PROBE_ONLY=ON && cmake --build build-probe --config Release && ctest --test-dir build-probe -C Release -V
+      - name: Configure
+        run: cmake -S cpp/test -B build -DCMAKE_BUILD_TYPE=Release -DG4MUONICDATA_FORCE_STREAM_PARSER=${{ matrix.stream }}
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Validate (dataset, conformance corpus, oracle, F-3 producer)
+        run: ctest --test-dir build -C Release -V
 
   paper:
     # JOSS paper artifact. BLOCKING: paper/paper.md must compile to paper.pdf before merge.
