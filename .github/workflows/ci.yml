@@ -189,12 +189,12 @@ jobs:
 
   cpp:
     # The C++ reader and its standalone validator (cpp/test, no Geant4), built and run on every
-    # platform the dataset is meant to be read on. BLOCKING: the first step probes the toolchain and
-    # refuses a binary whose floating-point arithmetic is contracted; the validator then reproduces
-    # the committed oracle from its own evaluation, runs the conformance corpus verdict for verdict,
-    # and on GCC/Clang measures how far a contracted build moves the same expression. One entry
-    # per platform forces the istringstream number-parsing path; the labels are explicit because a
-    # `-latest` label silently moves the compiler set.
+    # platform the dataset is meant to be read on. BLOCKING: the `Toolchain probe` step, run before
+    # the validator is configured, refuses a binary whose floating-point arithmetic is contracted;
+    # the validator then reproduces the committed oracle from its own evaluation, runs the
+    # conformance corpus verdict for verdict, and on GCC/Clang measures how far a contracted build
+    # moves the same expression. One entry per platform forces the istringstream number-parsing
+    # path; the labels are explicit because a `-latest` label silently moves the compiler set.
     strategy:
       fail-fast: false
       matrix:

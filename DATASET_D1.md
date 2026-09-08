@@ -122,8 +122,7 @@ They are **fit residuals over the points the fit was made against**, not a valid
 an arbitrary `(Z, A)`, and in particular not for the neutron-rich region where F-1 shows the formula
 fails outright. And they belong to **that paper's own fit**, whereas the coefficients this dataset
 declares are the ones the upstream source attributes to Goulard and Primakoff, PRC 10 (1974) 2034 —
-the same functional form, and no derivation of either from the other is
-asserted anywhere. The dataset declares no uncertainty on fallback values at all, so these remain
+the same functional form. The dataset declares no uncertainty on fallback values at all, so these remain
 the only published indication of scale there is, and they should be read as a floor rather than as
 an error bar.
 

@@ -671,14 +671,7 @@ reference implementation's archive has been byte-identical on Windows/x86-64, Li
 macOS/arm64; a consumer that needs to prove two archives carry the same data should compare the
 members, not the compressed bytes.
 
-## 9. Not included in this release
-
-The **C++ reader and its standalone validation application** are specified here (sections 5 and 6)
-but are not part of this release; they are stated now precisely so that the reader, when written,
-cannot get them wrong by accident. Everything else this document specifies -- the grammar, the
-Layer-2 schema, the error codes, the archive, and the generator that produces all of them -- ships.
-
-### Attribution
+## 9. Attribution
 
 > This product includes software developed by Members of the Geant4 Collaboration
 > ( http://cern.ch/geant4 ).
