@@ -38,7 +38,7 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 
 #: The documents under the check. Every other public document is out of its reach and says nothing
 #: this check would vouch for.
-PROSE_PATHS = ("DATASET_D1.md", "README.md", "cpp/tools/README.md")
+PROSE_PATHS = ("DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md")
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
 

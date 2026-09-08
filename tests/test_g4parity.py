@@ -1576,9 +1576,13 @@ def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
         try:
             path.write_bytes(_flip_one_digit(original))
             result = audit()
-            assert result.returncode != 0, f"corrupting {path.name} did not fail the audit"
+            assert result.returncode != 0, (
+                f"corrupting {path.name} did not fail the audit; the Layer-2 file is rebuilt from "
+                f"{d1.AUDIT_RELPATH}: check that file first"
+            )
             assert path.name in result.stdout + result.stderr, (
-                f"the audit failed but never named {path.name}: {result.stdout}{result.stderr}"
+                f"the audit failed but never named {path.name}: {result.stdout}{result.stderr}; "
+                f"the Layer-2 file is rebuilt from {d1.AUDIT_RELPATH}: check that file first"
             )
         finally:
             path.write_bytes(original)
