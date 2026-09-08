@@ -17,9 +17,8 @@ digest is a check anyone can run.
 | `harvest_d1_overlay.cc` | `harvest_d1.cc` with the dataset opt-in switched on, through the same compiled-in copy, `G4MuonMinusBoundDecay`; built against a Geant4 install carrying `cpp/patches/` |
 | `harvest_helper_overlay.cc` | the same sweep and opt-in through the second compiled-in copy, `G4MuonicAtomHelper`; built against a Geant4 install carrying `cpp/patches/` |
 
-The second driver exists because the oracle commits those rows, and a committed harvested artifact
-whose producing driver is not committed is exactly the reproducibility hole vendoring the source was
-meant to close. It is also where the degenerate probe set is *declared*: `build_oracle.py` and the
+`harvest_d1_degenerate.cc` exists because the oracle commits those rows. It is also where the
+degenerate probe set is *declared*: `build_oracle.py` and the
 test suite both read the probes back out of this driver rather than restating them, so the oracle's
 degenerate block is checked against the code that produced it. They are separate because the sweep must stay a clean numeric box: the
 degenerate inputs return non-finite values, a NaN has no single bit pattern to hash, and folding
