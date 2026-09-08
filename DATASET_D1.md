@@ -151,8 +151,7 @@ than a hope.
 **`zeff[0]` ships and is unreachable through `G4MuonMinusBoundDecay`.** The array holds 101 entries
 and its first is `0.`, but `G4MuonMinusBoundDecay::GetMuonZeff` clamps its argument into `[1, 100]`
 before indexing, so element 0 can never be returned. The second compiled-in copy,
-`G4MuonicAtomHelper::GetMuonZeff`, clamps differently and can return it; the clamp is the one
-statement in which the two vendored copies differ, and `tests/test_g4parity.py` holds them to that.
+`G4MuonicAtomHelper::GetMuonZeff`, clamps differently and can return it.
 It is shipped anyway, because "101/101 bit-identical" means the array *as declared*, and a
 dataset that silently dropped an element it claims to reproduce would be a worse artifact than one
 that ships it with a disclosure. Its Layer-2 row says so.

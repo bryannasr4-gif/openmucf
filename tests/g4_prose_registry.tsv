@@ -69,7 +69,6 @@
 77f914bf30329d0e11982c57eaa419f2c578e763	DATASET_D1.md	REGISTERED: 208 -- the nuclide label Pb-208
 78e43af2624d5d47000aa0b12ee21027791f0f4b	DATASET_D1.md	REGISTERED: ³, ⁴ -- the nuclide labels ³He and ⁴He
 7d1e41b17c4e5bddcdd7fd5c9500fab810ad1585	DATASET_D1.md	REGISTERED: 10 -- the atomic number where the primary's Table IV starts, as the paper labels it; T-63 uses the same boundary as its selector between the Table III and Table IV halves
-80406616e22802a3193c6f9b39496e410f813c7e	DATASET_D1.md	REGISTERED: two -- the two vendored copies, both read by T-69
 811ccd8f21ca093d05a97582464156333185a6d5	DATASET_D1.md	REGISTERED: 50, 8 -- quoted from the primary's abstract ('in 50 elements plus 8 isotopes'), which this repository does not redistribute; the sentence marks it as the paper's count of its own measurements
 81b7e60cb61b9cd488226104b8884fefbcbc30bd	DATASET_D1.md	REGISTERED: 56, 55 -- the atomic numbers of barium and caesium; the effective charges beside them are pinned (29.99 in tests/test_g4prose.py, 29.75 by T-63)
 851c7bb53ac84e8a4592b6edbf36c4579bca72ca	DATASET_D1.md	REGISTERED: Two, one -- 'Two different sources' are the primary and the NIST table the paragraph names; 'only one of them' is a pronoun
@@ -108,7 +107,6 @@ d4bcb381e591baac7a8b47d5f7ae143680140b08	DATASET_D1.md	REGISTERED: 207 -- the ma
 da0b41de49206eb821ffbd22707ad51601e368b5	DATASET_D1.md	REGISTERED: 0 -- the sign threshold in 'λ_c ≤ 0'
 de4d5a9031a47b7cac0c45a34aa70d2d65e32c23	DATASET_D1.md	REGISTERED: 81, 82, 83 -- atomic numbers labelling the primary's printed entries; the three printed values are held to the shipped array by the pins in tests/test_g4prose.py
 e0ddb7618ccb7acacc358c07e7971bf5526c16b8	DATASET_D1.md	REGISTERED: 1 -- the ulp threshold in 'differ by more than 1 ulp', the definition of the third figure; it is literal text in check_f3.py's DOCUMENT_FIGURES pattern, so a changed threshold stops V-13 matching this block
-e24c10413504a3a7ea802139b09a90c71a71aa28	DATASET_D1.md	REGISTERED: one -- 'the one statement in which the two vendored copies differ': T-69 asserts exactly that difference, the clamp text of each copy
 e4c269e481f3be64357a37dfa2cf06cd60b89cd2	DATASET_D1.md	REGISTERED: Three -- three of the four unsettled rows, the key-ambiguous ones the next line names; the four is pinned on this line
 e5b78431a945b57e20a2f14fc8924fc86444fd0a	DATASET_D1.md	REGISTERED: one -- 'at least one record', a determiner
 e731e53128d166b0c7ee9c7113bb41a8ae866cf0	DATASET_D1.md	REGISTERED: 92, 236 -- the fourth unsettled key (92, 236), a row of isotope_audit.csv
