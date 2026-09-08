@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the dataset read from C++ and from inside Geant4 (2026-09-08)
+
+- **A C++17 reader, `G4MuonicDataTable`, under `cpp/include` and `cpp/src`, built on the standard library alone.** It implements the grammar `FORMAT_SPEC.md` states, with the specified error codes, reporting order and locale-independent parsing of floats.
+- **A standalone validator under `cpp/test`, built without Geant4.** It reproduces the committed oracle from its own evaluation, runs the conformance corpus verdict for verdict, and refuses to run when its own arithmetic is contracted; the `cpp` CI job builds and runs it on Linux, macOS and Windows.
+- **An overlay for Geant4 `v11.4.2` under `cpp/patches`.** Behind an explicit opt-in, both compiled-in copies of the muon-capture tables consult the dataset; with the opt-in off, a patched build's output was measured bit-identical to an unpatched build's, and `cpp/patches/README.md` describes the evidence.
+- **A coverage check over the dataset documents.** `tests/test_g4prose.py` admits a numeric or spelled token in `DATASET_D1.md`, `README.md`, `CHANGELOG.md`, the `cpp` READMEs and `third_party/geant4/README.md` through a computed pin, a class row with a written reason, or a ruled registry row, and fails otherwise.
+
 ### Added -- the claim guard reads a universal stated by negation (2026-08-31)
 
 - **`not`, `cannot` and the contraction `\w+n't` join `STRONG`.** A universal stated by negation
