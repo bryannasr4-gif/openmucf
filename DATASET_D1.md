@@ -86,8 +86,8 @@ lambda = t1 * zeff2 * zeff2 * (r2 * r2) * (1.0 - (1.0 - xmu) * mix) *
 in units of ns⁻¹. For a table hit the rate is instead `value / 1000`, since `value` is in µs⁻¹
 (`1e6/s`) and Geant4's internal time unit is the nanosecond.
 
-**The evaluation order is normative, not stylistic.** Multiplication and addition associate **left
-to right**, `2 * (A - Z)` is *integer* arithmetic before it meets the double, and the bracket groups
+**The evaluation order is normative, not stylistic.** `2 * (A - Z)` is *integer* arithmetic before
+it meets the double, and the bracket groups
 as `((a2ze*b0a + 1.0) - (a2ze-1.0)*b0b) - ((X*b0c)/(4A))`. Floating-point addition and multiplication
 are not associative, so a re-grouped evaluation is a *different function*, and the bit-parity claim
 below is a claim about this one.
@@ -122,7 +122,7 @@ They are **fit residuals over the points the fit was made against**, not a valid
 an arbitrary `(Z, A)`, and in particular not for the neutron-rich region where F-1 shows the formula
 fails outright. And they belong to **that paper's own fit**, whereas the coefficients this dataset
 declares are the ones the upstream source attributes to Goulard and Primakoff, PRC 10 (1974) 2034 —
-the same functional form, but not the same numbers, and no derivation of either from the other is
+the same functional form, and no derivation of either from the other is
 asserted anywhere. The dataset declares no uncertainty on fallback values at all, so these remain
 the only published indication of scale there is, and they should be read as a floor rather than as
 an error bar.
@@ -148,9 +148,12 @@ over the sorted order at every point of a 36000-point box. The canonical order i
 "sorted by Z", so the early exit fires at the same Z; the test is what makes that an argument rather
 than a hope.
 
-**`zeff[0]` ships and is unreachable.** The array holds 101 entries and its first is `0.`, but
-`GetMuonZeff` clamps its argument into `[1, 100]` before indexing, so element 0 can never be
-returned. It is shipped anyway, because "101/101 bit-identical" means the array *as declared*, and a
+**`zeff[0]` ships and is unreachable through `G4MuonMinusBoundDecay`.** The array holds 101 entries
+and its first is `0.`, but `G4MuonMinusBoundDecay::GetMuonZeff` clamps its argument into `[1, 100]`
+before indexing, so element 0 can never be returned. The second compiled-in copy,
+`G4MuonicAtomHelper::GetMuonZeff`, clamps differently and can return it; the clamp is the one
+statement in which the two vendored copies differ, and `tests/test_g4parity.py` holds them to that.
+It is shipped anyway, because "101/101 bit-identical" means the array *as declared*, and a
 dataset that silently dropped an element it claims to reproduce would be a worse artifact than one
 that ships it with a disclosure. Its Layer-2 row says so.
 
@@ -196,9 +199,9 @@ thresholds reported above for iron or lead, so it cannot settle bound-ness acros
 measurement — the per-Z threshold — stands; the reachability claim is withdrawn as **unsupported**,
 rather than answered in either direction, and is
 registered as a question for whichever layer of this program next carries evaluated nuclear data.
-What is certain either way is the hydrogen case, since ³H is stable enough to be a routine target.
 
-Read at the two call sites, the consequences are not cosmetic. Where `lambda = lambdac + lambdad`
+Read at the two call sites, `G4MuonMinusBoundDecay::ApplyYourself` and
+`G4MuonicAtomHelper::ConstructMuonicAtom`, the consequences are not cosmetic. Where `lambda = lambdac + lambdad`
 and the capture branch is `G4UniformRand()*lambda < lambdac`, a small negative λ_c means the capture
 branch can **never** be taken — capture is silently disabled rather than made rare. For the **5407**
 swept points where λ_c is negative *and* exceeds the free-muon decay rate (4.5517e−04 ns⁻¹) in
@@ -211,7 +214,7 @@ for any A; `A = 0` returns +inf; `Z = -1, A = 12` returns −5.947382e−07 — 
 entirely plausible-looking. Nothing in the source rejects any of these. A value that looks like a
 rate but is not one is worse than an error, because it propagates. This dataset's model therefore
 declares its domain (Z ≥ 1, A ≥ 1) and requires a conforming consumer to report a domain error
-there; the difference between that and what Geant4 does is the finding.
+there; the difference between that and what `G4MuonMinusBoundDecay` does is the finding.
 
 **F-3 — the fallback is not reproducible across builds, and this is the most consequential finding
 here.** Compiling the identical expression twice on one machine, in one translation unit:

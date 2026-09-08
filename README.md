@@ -4,7 +4,6 @@
 
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-274%2F275%20(Linux%20%2B%20Windows%20%2B%20macOS%20arm64)-brightgreen.svg)
 ![Status](https://img.shields.io/badge/status-v1%20open%20infrastructure%20%2B%20honest%20findings-blue.svg)
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
@@ -41,7 +40,7 @@ shared substrate:
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 464 tests: 461 in the default run (460 pass, 1 skipped-blocked), 3 slow deselected
+pytest                 # the default run deselects the slow marker; pytest -m slow runs it
 pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 seeded MCMC fits)
 ```
 Verified platforms: Linux CI (py3.11/3.12/3.13), Windows x64 (py3.12), and **macOS arm64 / Apple Silicon
