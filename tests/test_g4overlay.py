@@ -29,6 +29,7 @@ import pathlib
 import re
 
 import pytest
+import test_g4parity as parity
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 PATCHES = REPO / "cpp" / "patches"
@@ -89,6 +90,10 @@ class FilePatch:
     old_path: bytes  # the `---` operand: b"a/<path>" or b"/dev/null"
     new_path: bytes  # the `+++` operand: b"b/<path>"
     hunks: list[Hunk]
+    #: The `index <old>..<new>` operands: git's abbreviated blob ids of the file before and after
+    #: the hunks, as the patch itself declares them; an added file's `old` is all zeros.
+    index_old: bytes = b""
+    index_new: bytes = b""
 
 
 _HUNK = re.compile(rb"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
@@ -143,6 +148,9 @@ def parse_patch(raw: bytes) -> list[FilePatch]:
         if line.startswith(b"+++ "):
             current.new_path = line[4:]
             continue
+        if line.startswith(b"index "):
+            current.index_old, _, current.index_new = line[6:].split(b" ")[0].partition(b"..")
+            continue
         match = _HUNK.match(line)
         if match:
             old_start, old_count, new_start, new_count = (
@@ -155,7 +163,7 @@ def parse_patch(raw: bytes) -> list[FilePatch]:
             current.hunks.append(hunk)
             remaining_old, remaining_new = old_count, new_count
             continue
-        # `index ...`, `new file mode ...` and any other header line: ignored.
+        # `new file mode ...` and any other header line: ignored.
     for file in files:
         for h in file.hunks:
             olds = sum(1 for marker, _, _ in h.lines if marker != b"+")
@@ -287,6 +295,52 @@ def test_t72_the_registration_patch_adds_exactly_the_snippets_entry():
     assert added == expected
 
 
+def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_declares():
+    """Each `index <old>..<new>` line is git's own name for the file's bytes before and after the
+    hunks. The pin is on the whole post-image, so a hunk that dropped an added line together with
+    its count -- which the hunk arithmetic cannot see -- moves the blob id and fails here.
+
+    An added file rebuilds from nothing to `new`; a seam file's vendored copy is `old` and its
+    patched copy is `new`. The upstream files this repository does not vendor (`sources.cmake`,
+    `G4DatasetDefinitions.cmake`) have no `old` bytes to rebuild from, so for them only the shape of
+    the declaration is held: a non-zero `old`, and a `new` that differs from it.
+    """
+    not_rebuilt: set[str] = set()
+    for patch in (BEHAVIOUR, REGISTRATION):
+        for path, file in sorted(by_new_path(parse_patch(patch.read_bytes())).items()):
+            assert re.fullmatch(rb"[0-9a-f]{7,40}", file.index_old), (path, file.index_old)
+            assert re.fullmatch(rb"[0-9a-f]{7,40}", file.index_new), (path, file.index_new)
+            new = file.index_new.decode()
+            if file.old_path == b"/dev/null":
+                assert file.index_old.strip(b"0") == b"", (path, file.index_old)
+                assert parity.git_blob_id(apply_file_patch(file, b"")).startswith(new), path
+            elif path in SEAMS:
+                vendored = SEAMS[path].read_bytes()
+                assert parity.git_blob_id(vendored).startswith(file.index_old.decode()), path
+                assert parity.git_blob_id(apply_file_patch(file, vendored)).startswith(new), path
+            else:
+                assert file.index_old.strip(b"0") != b"", (path, file.index_old)
+                assert file.index_new != file.index_old, path
+                not_rebuilt.add(path)
+    assert not_rebuilt == {"source/global/management/sources.cmake", REGISTRATION_PATH}
+
+
+def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touches():
+    """The vendored README's `upstream path` cells are the seam paths, read from its table by the
+    row labels: the BoundDecay cell is the reference module's `UPSTREAM_PATH`, the helper cell is
+    the `SEAMS` key whose vendored copy is the helper, and together they are the paths the
+    behaviour patch's seam hunks touch.
+    """
+    text = parity.VENDORED_README.read_text("utf-8")
+    bound_decay = re.findall(r"^\| upstream path \| `([^`]+)` \|$", text, re.M)
+    helper = re.findall(r"^\| `G4MuonicAtomHelper\.cc` upstream path \| `([^`]+)` \|$", text, re.M)
+    assert len(bound_decay) == 1 and len(helper) == 1, (bound_decay, helper)
+    assert bound_decay[0] == parity.d1.UPSTREAM_PATH
+    helper_key = next(path for path, vendored in SEAMS.items() if vendored == parity.HELPER)
+    assert helper[0] == helper_key
+    assert {bound_decay[0], helper[0]} == set(SEAMS)
+
+
 # T-73 -- the drill, and the README's numbers
 # -------------------------------------------
 
@@ -308,6 +362,25 @@ def test_t73_drill_an_altered_context_line_is_refused_by_name():
         apply_file_patch(file, vendored.read_bytes())
     assert hunk.header.decode() in str(raised.value), raised.value
     assert path in str(raised.value), raised.value
+
+
+def test_t73_drill_a_dropped_added_line_with_its_count_is_refused_by_the_blob_pin():
+    """Drop the last added line of the reader's `.cc` hunk and lower the hunk's count to match: the
+    hunk arithmetic still balances and the applier still succeeds, so nothing before the blob pin
+    notices -- and the rebuilt file no longer names the blob the `index` line declares.
+    """
+    files = by_new_path(parse_patch(BEHAVIOUR.read_bytes()))
+    path = next(p for p in READER if p.endswith(".cc"))
+    file = files[path]
+    declared = file.index_new.decode()
+    assert parity.git_blob_id(apply_file_patch(file, b"")).startswith(declared)
+    hunk = file.hunks[-1]
+    index = max(i for i, (marker, _, _) in enumerate(hunk.lines) if marker == b"+")
+    del hunk.lines[index]
+    hunk.new_count -= 1
+    rebuilt = apply_file_patch(file, b"")
+    assert rebuilt, "the drill emptied the file"
+    assert not parity.git_blob_id(rebuilt).startswith(declared)
 
 
 def test_t73_the_readme_states_no_digest_literal_and_no_foreign_number():
