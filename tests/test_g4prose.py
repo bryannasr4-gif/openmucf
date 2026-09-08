@@ -1,4 +1,4 @@
-"""T-74/T-75 -- every number in the dataset documents is computed from shipped data or listed with a reason.
+"""T-74/T-75.
 
 `tests/test_g4parity.py` pins the counts it knows how to compute (T-63), and its docstring says what
 that leaves open: a pin table is not a census, so a number nobody thought to pin drifts unwatched.
