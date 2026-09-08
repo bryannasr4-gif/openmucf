@@ -42,9 +42,9 @@ here rather than from the generated file.
 | `G4MuonicAtomHelper.cc` sha256 | `038a13afafdb23a7a34648659a066359fbaec13c73d0ab31954512c3702ff463` |
 | `G4MuonicAtomHelper.cc` size | 13669 bytes, 387 lines |
 
-**The blob id is the load-bearing pin.** It is upstream's own object name for these exact bytes, so
-a third party can verify this copy against the Geant4 repository without cloning Geant4 and without
-trusting us — and it is computable in three lines of `hashlib`, with no `git` binary:
+**The blob ids are the load-bearing pins.** Each is upstream's own object name for those exact
+bytes, so a third party can verify each copy against the Geant4 repository without cloning Geant4
+and without trusting us — and each is computable in three lines of `hashlib`, with no `git` binary:
 
 ```python
 import hashlib, pathlib
@@ -53,17 +53,17 @@ print(hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest())
 # 29bd73719cd619de34ef83ca5ca076ceadf1cc5a
 ```
 
-The sha256 is recorded alongside it because SHA-1 is a **provenance pin** here, not a security
+A sha256 is recorded alongside each because SHA-1 is a **provenance pin** here, not a security
 control, and saying so is cheaper than defending it later.
 
-`.gitattributes` marks `third_party/geant4/** -text`. That line is load-bearing: the file's identity
-*is* its bytes, so a checkout with `core.autocrlf` set would rewrite them and break both pins.
-`tests/test_g4parity.py` asserts the vendored bytes contain no `\r`, so a deleted attribute names
-its own cause instead of surfacing as an unexplained hash mismatch.
+`.gitattributes` marks `third_party/geant4/** -text`. That line is load-bearing: each file's
+identity *is* its bytes, so a checkout with `core.autocrlf` set would rewrite them and break the
+pins. `tests/test_g4parity.py` asserts the vendored bytes contain no `\r`, so a deleted attribute
+names its own cause instead of surfacing as an unexplained hash mismatch.
 
 ## Re-pinning a future release
 
-Overwriting this file in place is **forbidden**: it would destroy the evidence that the previously
+Overwriting these files in place is **forbidden**: it would destroy the evidence that the previously
 published dataset was faithful to the version it claimed. A new upstream revision gets a new
 `third_party/geant4/<tag>/` directory, a new `#SOURCESHA` in the generated dataset, and a written
 record of what moved.

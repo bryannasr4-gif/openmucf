@@ -78,7 +78,7 @@ That last line is not bookkeeping. Compiling the **identical** Goulard–Primako
 contraction enabled — which is the compiler default wherever FMA exists, including the *baseline*
 ISA on aarch64 — moves the result by up to **2980 ulp**, with 14668 of the 36000 swept points
 differing. Geant4's own build sets no `-ffp-contract` flag, so two conforming Geant4 builds of one
-source compute different muon capture rates: physically negligible at ~7e-13 relative, formally
+source compute different muon capture rates: physically negligible, formally
 fatal to any unqualified "bit-identical" claim.
 
 Consequences, all of which the dataset already carries:

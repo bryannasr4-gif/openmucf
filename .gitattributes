@@ -10,7 +10,7 @@ openmucf/data/yamashita_kino_fig3a.png binary
 tests/fixtures/g4dat_bad/*.g4dat -text
 # The generated conformance corpus, for the same reason and one more: members of it carry a byte
 # outside the format's set on purpose, and a checkout that rewrote one would change which error
-# code that file raises -- silently, and on one platform only.
+# code that file raises -- silently.
 tests/fixtures/g4dat_conformance/* -text
 # The shipped dataset: byte-exact artifacts, for three separate reasons. example.prov.json is the
 # byte range #SOURCEDIGEST is computed over, so a CRLF checkout would change its digest; example.g4dat
@@ -27,8 +27,8 @@ data/g4/d1/* -text
 # The Geant4 patches: their added-file hunks are the reader's LF bytes and a test compares them
 # byte-for-byte against cpp/include and cpp/src, so a checkout must not rewrite their line endings.
 cpp/patches/*.patch -text
-# The vendored upstream source: its IDENTITY is its bytes. The dataset pins it by its upstream git
-# blob id, which is a hash of exactly these bytes, so a checkout that rewrote its line endings would
-# break the pin and with it the entire parity chain -- and would do so silently on Windows only.
-# tests/test_g4parity.py asserts the file carries no CR, so deleting this line names its own cause.
+# The vendored upstream sources: each one's IDENTITY is its bytes. Each is pinned by its upstream
+# git blob id, which is a hash of exactly those bytes, so a checkout that rewrote its line endings
+# would break the pin and with it the entire parity chain -- and would do so silently.
+# tests/test_g4parity.py asserts each file carries no CR, so deleting this line names its own cause.
 third_party/geant4/** -text

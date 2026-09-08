@@ -1,9 +1,10 @@
 """V-13 -- compare the F-3 producer's figures with the ones ``DATASET_D1.md`` states.
 
 The document's figures are read from its F-3 block by pattern, never typed here. With ``--exact``
-(the compiler family the document's own measurement names) all five must agree; without it the
-check passes on the premise the finding rests on -- that a contracted build moves the expression at
-all -- and prints the figures it saw. A producer that skipped for want of FMA is a skip that is
+(the compiler family the document's own measurement names) all five must agree, and the maximum
+relative difference must agree to the two figures the document prints; without it the check passes
+on the premise the finding rests on -- that a contracted build moves the expression at all -- and
+prints the figures it saw. A producer that skipped for want of FMA is a skip that is
 printed, and ``--require-fma`` turns it into a failure on the platforms that must not skip.
 ``cpp/tools/README.md`` restates three of the figures; with ``--readme`` they must equal the
 document's, and so, under ``--exact``, the producer's.
@@ -27,6 +28,7 @@ PRODUCER_LINE = re.compile(
     r"max_rel=(\S+)$"
 )
 README_FIGURES = re.compile(r"up to \*\*(\d+) ulp\*\*, with (\d+) of the (\d+) swept points")
+DOCUMENT_MAX_REL = re.compile(r"maximum relative difference (\d(?:\.\d+)?e-\d+)")
 SKIPPED_PREFIX = "F3 SKIPPED"
 
 
@@ -39,6 +41,17 @@ def document_figures(document: Path) -> tuple[int, int, int, int, int, int]:
         )
     points, differ, over_one, max_ulp, z, a = matches[0]
     return int(points), int(differ), int(over_one), int(max_ulp), int(z), int(a)
+
+
+def document_max_rel(document: Path) -> str:
+    """The maximum relative difference the document's F-3 block states, as printed -- exactly one match."""
+    matches = DOCUMENT_MAX_REL.findall(document.read_text("utf-8"))
+    if len(matches) != 1:
+        raise SystemExit(
+            f"V-13 FAIL {document} carries {len(matches)} maximum-relative-difference lines, "
+            "expected exactly one"
+        )
+    return matches[0]
 
 
 def readme_figures(readme: Path) -> tuple[int, int, int]:
@@ -66,6 +79,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     stated = document_figures(args.document)
+    stated_rel = document_max_rel(args.document)
     restated = ""
     if args.readme is not None:
         readme = readme_figures(args.readme)
@@ -95,6 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         f"cxx={cxx} points={seen[0]} differ={seen[1]} over1ulp={seen[2]} max_ulp={seen[3]} "
         f"at=(Z={seen[4]}, A={seen[5]}) max_rel={match.group(8)}{restated}"
     )
+    document_rel = f" document max_rel={stated_rel}"
     if args.exact:
         if seen != stated:
             print(
@@ -102,12 +117,17 @@ def main(argv: list[str] | None = None) -> int:
                 f"over1ulp={stated[2]} max_ulp={stated[3]} at=(Z={stated[4]}, A={stated[5]})"
             )
             return 1
-        print(f"V-13 PASS exact {figures}")
+        # To the two figures the document prints: the producer writes more, and a different build
+        # of the same compiler family moves the trailing ones.
+        if f"{float(match.group(8)):.1e}" != f"{float(stated_rel):.1e}":
+            print(f"V-13 FAIL exact {figures}; the document states max_rel={stated_rel}")
+            return 1
+        print(f"V-13 PASS exact {figures}{document_rel}")
         return 0
     if seen[1] == 0:
         print(f"V-13 FAIL premise {figures}; no point moved, so the contracted build did not differ")
         return 1
-    print(f"V-13 PASS premise {figures}")
+    print(f"V-13 PASS premise {figures}{document_rel}")
     return 0
 
 

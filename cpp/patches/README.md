@@ -17,13 +17,18 @@ each function consults the table; a key the table lacks
 falls through to that function's compiled-in code, so the fallback formula is reproduced as it is,
 including the negative rates the dataset's documentation registers.
 
-Discovery follows the `G4FindDataDir` lookup Geant4 provides: an exported `G4MUONICDATA`, or, once the
-dataset is registered, the entry under `GEANT4_DATA_DIR`. If neither resolves a directory, the first lookup
-raises a fatal `G4Exception` naming both `G4MUONICDATA` and `GEANT4_DATA_DIR`; if a directory is
-found but a file in it fails validation, the exception carries the reader's error code and line.
+Discovery follows the `G4FindDataDir` lookup Geant4 provides: an exported `G4MUONICDATA`, or, once
+the dataset is registered, the entry under `GEANT4_DATA_DIR` or, when that variable is unset or
+names no directory, under the default system paths `G4FindDataDir` searches next. If none resolves a
+directory, the first lookup raises a fatal `G4Exception` naming both `G4MUONICDATA` and
+`GEANT4_DATA_DIR`; if a directory is found but a file in it fails validation, the exception carries
+the reader's error code and line.
 `g4-v11.4.2-register-dataset.patch` is separate and serves the registered mode only: it appends the
 dataset's `geant4_add_dataset` entry to `G4DatasetDefinitions.cmake`, so a build carrying it resolves
-the dataset under `GEANT4_DATA_DIR` with no variable exported.
+the dataset under `GEANT4_DATA_DIR` with no variable exported. That mode looks for the dataset under
+a `<FILENAME><VERSION>` directory, and the archive the generator builds is flat — its members sit at
+the archive root rather than under such a directory — so the registered mode was measured with the
+dataset's files copied into a directory of that name.
 
 The evidence that a patched build behaves as stated — with the opt-in off, application runs and a
 harvest whose whole output is bit-identical to an unpatched build's; with the opt-in on, the

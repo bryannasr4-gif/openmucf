@@ -1,6 +1,7 @@
 // The toolchain probe: compiler identity, the floating-point `from_chars` feature macro, the
-// number-parsing path this build compiled, and the contraction detector. It is the CI job's first
-// step and refuses (non-zero exit) when the binary's own arithmetic is contracted.
+// number-parsing path this build compiled, and the contraction detector. The `cpp` CI job's
+// `Toolchain probe` step builds and runs it before the validator is configured; it refuses
+// (non-zero exit) when the binary's own arithmetic is contracted.
 
 #include <charconv>
 #include <cstdio>

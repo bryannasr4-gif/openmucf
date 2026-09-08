@@ -1,4 +1,4 @@
-"""T-74/T-75.
+"""T-74/T-75, T-78/T-79.
 
 `tests/test_g4parity.py` pins the counts it knows how to compute (T-63), and its docstring says what
 that leaves open: a pin table is not a census, so a number nobody thought to pin drifts unwatched.
@@ -18,6 +18,11 @@ one of three doors, tried in order:
 Anything else fails, naming file, line, token and the line. Nothing is excluded for sitting in a
 code span or a fenced block: the F-3 block is data. The drills in T-75 plant an unpinned digit and a
 spelled-number decoy in in-memory copies and require the failure to name them.
+
+Door 3 is then walked the other way (T-78): every file a registry reason names must resolve to one
+file of the tree, and every figure a reason types must stand verbatim in the ruled line or in a
+file the reason names -- a reason may point at a number, never restate one unchecked. T-79 drills
+that with a missing home, an ambiguous one and a figure no home carries.
 """
 
 from __future__ import annotations
@@ -27,6 +32,7 @@ import fnmatch
 import functools
 import hashlib
 import importlib.util
+import os
 import pathlib
 import re
 import subprocess
@@ -38,7 +44,10 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 
 #: The documents under the check. Every other public document is out of its reach and says nothing
 #: this check would vouch for.
-PROSE_PATHS = ("DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md")
+PROSE_PATHS = (
+    "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
+    "third_party/geant4/README.md", "cpp/patches/README.md",
+)
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
 
@@ -167,6 +176,8 @@ def pin_table() -> list[Pin]:
                      document_figures.pattern, tuple(range(1, document_figures.groups + 1))))
     table.append(Pin("F-3 figures, the harvest tooling's restatement", "cpp/tools/README.md",
                      readme_figures.pattern, tuple(range(1, readme_figures.groups + 1))))
+    table.append(Pin("F-3 maximum relative difference, the document's line", "DATASET_D1.md",
+                     check_f3.DOCUMENT_MAX_REL.pattern, (1,)))
     table.extend(internal_pins(pins, check_f3))
     return table
 
@@ -212,6 +223,16 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
     # microsecond, which is what `value / 1000` divides by.
     per_microsecond = d1.MICROSECOND
     assert per_microsecond == int(per_microsecond)
+    # The vendored README's size cells are the bytes and newlines of the vendored files themselves.
+    vendored_readme = "third_party/geant4/README.md"
+    bd = parity.VENDORED.read_bytes()
+    hp = parity.HELPER.read_bytes()
+    # The error codes the format defines are the codes its specification names, and the reference
+    # implementation raises the same set; the changelog's spelled count is held to it.
+    codes_specified = set(re.findall(r"\bE0\d\d\b", (REPO / "FORMAT_SPEC.md").read_text("utf-8")))
+    codes_raised = set(re.findall(r"\bE0\d\d\b", (REPO / "openmucf" / "g4" / "spec.py").read_text("utf-8")))
+    assert codes_specified == codes_raised, sorted(codes_specified ^ codes_raised)
+    error_codes = len(codes_specified)
     return [
         Pin("F-3 maximum restated in section 2", "DATASET_D1.md",
             r"changes it by up to (\d+) ulp", (1,), max_ulp),
@@ -288,6 +309,20 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
             r"over Z \d+\.\.\d+ × A (\d+)\.\.\d+", (1,), d1.SWEEP_A_MIN),
         Pin("harvest box, A upper bound", "cpp/tools/README.md",
             r"over Z \d+\.\.\d+ × A \d+\.\.(\d+)", (1,), d1.SWEEP_A_MAX),
+        Pin("capture record count, the vendored README", vendored_readme,
+            r"a (\d+)-record", (1,), records),
+        Pin("effective-charge entries, the vendored README", vendored_readme,
+            r"a (\d+)-value effective-charge", (1,), zeff_entries),
+        Pin("vendored BoundDecay size, bytes", vendored_readme,
+            r"\| size \| (\d+) bytes, \d+ lines \|", (1,), len(bd)),
+        Pin("vendored BoundDecay size, lines", vendored_readme,
+            r"\| size \| \d+ bytes, (\d+) lines \|", (1,), bd.count(b"\n")),
+        Pin("vendored helper size, bytes", vendored_readme,
+            r"\| `G4MuonicAtomHelper\.cc` size \| (\d+) bytes, \d+ lines \|", (1,), len(hp)),
+        Pin("vendored helper size, lines", vendored_readme,
+            r"\| `G4MuonicAtomHelper\.cc` size \| \d+ bytes, (\d+) lines \|", (1,), hp.count(b"\n")),
+        Pin("error codes the format defines, the changelog's count", "CHANGELOG.md",
+            r"\*\*(\w+) exact error codes\*\*", (1,), error_codes),
     ]
 
 
@@ -457,6 +492,113 @@ def check_registry_form(registry: dict[tuple[str, str], str]) -> list[str]:
 
 
 # --------------------------------------------------------------------------------------------
+# Door 3, walked -- a reason's homes resolve, and the figures it types are carried (T-78)
+# --------------------------------------------------------------------------------------------
+
+HOME_SUFFIXES = "md|py|csv|json|tsv|bib|txt|cc|hh|yml|yaml|toml|snippet|oracle|g4dat|cmake|patch|ipynb|mac"
+#: A file name in a reason: path segments of word characters, `.`, `+` and `-`, ending in one of
+#: the suffixes above, optionally followed by `:<line>`, and not glued to a longer path or word.
+HOME = re.compile(r"(?<![\w/.+-])((?:[\w.+-]+/)*[\w.+-]+\.(?:" + HOME_SUFFIXES + r"))(?::\d+)?(?![\w/])")
+_PRUNED_DIRS = {"dist", "__pycache__", "htmlcov", "node_modules"}
+_SUPERSCRIPTS = "⁰¹²³⁴⁵⁶⁷⁸⁹"
+
+
+def _walked(directory: str) -> bool:
+    """Directories no tracked file lives in are pruned: `.git`, virtual environments, build trees,
+    tool caches, egg metadata and the usual output directories."""
+    return not (
+        directory == ".git"
+        or directory.startswith(".venv")
+        or directory.startswith("build")
+        or directory.endswith("_cache")
+        or directory.endswith(".egg-info")
+        or directory in _PRUNED_DIRS
+    )
+
+
+@functools.lru_cache(maxsize=1)
+def tree_files() -> tuple[str, ...]:
+    """Every file under the repository as a POSIX path relative to it, pruned by `_walked`. In a
+    fresh clone this is `git ls-files`; walking rather than asking git keeps the check free of a
+    `git` binary, like the blob computation in `test_g4parity.py`."""
+    out: list[str] = []
+    for root, dirs, files in os.walk(REPO):
+        dirs[:] = sorted(d for d in dirs if _walked(d))
+        for name in sorted(files):
+            out.append((pathlib.Path(root) / name).relative_to(REPO).as_posix())
+    return tuple(out)
+
+
+def resolve_home(name: str, files: tuple[str, ...]) -> str | None:
+    """`name` when it is a file of the tree; else the one file whose path ends in `/name`; else
+    `None` -- for a name no file carries and, alike, for one that several files carry."""
+    if name in files:
+        return name
+    hits = [path for path in files if path.endswith("/" + name)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def figure_present(token: str, text: str) -> bool:
+    """`token` occurs in `text` as a whole figure: a superscript run bounded by non-superscripts, a
+    digit run bounded by neither digit nor `.` (so `56` is not found inside `56.7`), or a spelled
+    number as a whole word, case-insensitively."""
+    if token[0] in _SUPERSCRIPTS:
+        pattern = f"(?<![{_SUPERSCRIPTS}])" + re.escape(token) + f"(?![{_SUPERSCRIPTS}])"
+        flags = 0
+    elif token[0].isdigit():
+        pattern = r"(?<![\d.])" + re.escape(token) + r"(?![\d.])"
+        flags = 0
+    else:
+        pattern = r"\b" + re.escape(token) + r"\b"
+        flags = re.IGNORECASE
+    return re.search(pattern, text, flags) is not None
+
+
+def check_registry_homes(
+    registry: dict[tuple[str, str], str], texts: dict[str, str], classes: list[ClassRow]
+) -> list[str]:
+    """For every row: each file name its reason gives resolves to one file of the tree, and each
+    figure its reason types -- a token `tokenize` finds that the row does not rule and no class
+    admits -- stands verbatim in the ruled line or in a file the reason names. A figure carried by
+    neither is a restatement nothing checks, and is named."""
+    files = tree_files()
+    lines_by_key: dict[tuple[str, str], str] = {}
+    for path, text in texts.items():
+        for line in text.splitlines():
+            lines_by_key.setdefault((path, claim_sha1(line)), line)
+    cache: dict[str, str] = {}
+
+    def home_text(rel: str) -> str:
+        if rel not in cache:
+            cache[rel] = (REPO / rel).read_text(encoding="utf-8", errors="replace")
+        return cache[rel]
+
+    problems: list[str] = []
+    for (path, sha), status in sorted(registry.items()):
+        _, ruled, reason = status_tokens(status)
+        ruled_lower = {t.lower() for t in ruled}
+        homes: list[str] = []
+        for match in HOME.finditer(reason):
+            home = resolve_home(match.group(1), files)
+            if home is None:
+                problems.append(f"{sha} {path}: names a home that does not resolve: {match.group(1)}")
+            else:
+                homes.append(home)
+        line = lines_by_key.get((path, sha), "")
+        for token in tokenize(path, reason):
+            if token.text.lower() in ruled_lower:
+                continue
+            if class_admitting(token, reason, classes) is not None:
+                continue
+            if figure_present(token.text, line):
+                continue
+            if any(figure_present(token.text, home_text(home)) for home in homes):
+                continue
+            problems.append(f"{sha} {path}: types {token.text}, carried by no home it names")
+    return problems
+
+
+# --------------------------------------------------------------------------------------------
 # The check
 # --------------------------------------------------------------------------------------------
 
@@ -542,8 +684,10 @@ def check_tree(
     pins = pin_table()
     _, pin_problems = pin_spans(texts, pins)
     registry = read_registry()
-    misses, problems = unadmitted(texts, pins, read_classes(), registry)
-    return misses, check_registry_form(registry) + problems, pin_problems
+    classes = read_classes()
+    misses, problems = unadmitted(texts, pins, classes, registry)
+    problems = check_registry_form(registry) + problems + check_registry_homes(registry, texts, classes)
+    return misses, problems, pin_problems
 
 
 # --------------------------------------------------------------------------------------------
@@ -675,6 +819,64 @@ def test_t75_the_enumerator_prints_nothing_on_the_tree():
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout == "", result.stdout
+
+
+def test_t75_drill_check_f3_refuses_a_document_whose_relative_difference_disagrees_at_two_figures(tmp_path):
+    """A producer line built from the live document's own figures passes `--exact`; the same line
+    with its relative difference doubled is refused -- so the figure is compared, not only printed."""
+    check_f3 = _load_check_f3()
+    document = REPO / "DATASET_D1.md"
+    points, differ, over_one, max_ulp, z, a = check_f3.document_figures(document)
+    rel = check_f3.document_max_rel(document)
+    producer = tmp_path / "f3_output.txt"
+
+    def run(max_rel: str) -> int:
+        producer.write_text(
+            f"F3 cxx=GNU points={points} differ={differ} over1ulp={over_one} max_ulp={max_ulp} "
+            f"at=({z},{a}) max_rel={max_rel}\n", "utf-8",
+        )
+        return check_f3.main(["--producer-output", str(producer), "--document", str(document), "--exact"])
+
+    assert run(rel) == 0
+    assert run(f"{float(rel) * 2:.3e}") == 1
+
+
+# --------------------------------------------------------------------------------------------
+# T-78 -- the registry reasons, walked; T-79 -- its drill
+# --------------------------------------------------------------------------------------------
+
+
+def test_t78_every_registry_reason_resolves_its_homes_and_types_no_figure_they_do_not_carry():
+    problems = check_registry_homes(read_registry(), tree_texts(), read_classes())
+    assert not problems, "\n".join(problems)
+
+
+def test_t79_drill_a_reason_naming_a_missing_home_an_ambiguous_home_or_an_unfound_figure_is_named():
+    """Three one-row copies of the registry, each planted with one defect the walk must name: a
+    file no tree carries, a bare name several files carry (picked from the tree, never typed), and
+    the spelled decoy T-75 also uses. The unplanted row passes first, so each failure is the plant's.
+    """
+    texts = tree_texts()
+    classes = read_classes()
+    key, status = next((k, s) for k, s in sorted(read_registry().items()) if s != "UNREVIEWED")
+    assert check_registry_homes({key: status}, texts, classes) == []
+
+    missing = "benchmarks/nonexistent.json"
+    assert resolve_home(missing, tree_files()) is None
+    problems = check_registry_homes({key: status + f" (see {missing})"}, texts, classes)
+    assert problems and all(missing in p and "does not resolve" in p for p in problems), problems
+
+    files = tree_files()
+    ambiguous = sorted(
+        name for name in {path.rsplit("/", 1)[-1] for path in files if "/" in path}
+        if name not in files and sum(path.endswith("/" + name) for path in files) > 1
+    )
+    assert ambiguous, "no bare file name has several homes -- the drill has nothing to plant"
+    problems = check_registry_homes({key: status + " " + ambiguous[0]}, texts, classes)
+    assert problems and all(ambiguous[0] in p and "does not resolve" in p for p in problems), problems
+
+    problems = check_registry_homes({key: status + " ninety-one"}, texts, classes)
+    assert problems == [f"{key[1]} {key[0]}: types ninety-one, carried by no home it names"], problems
 
 
 # --------------------------------------------------------------------------------------------
