@@ -10,7 +10,9 @@ dataset behind an explicit opt-in.
 Build and run the validator from the repository root:
 
 ```sh
-cmake -S cpp/test -B build && cmake --build build && ctest --test-dir build --output-on-failure
+cmake -S cpp/test -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
 ```
 
 CI builds and runs it on Linux, macOS and Windows. How a reader finds the dataset at run time is
