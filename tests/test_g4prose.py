@@ -2,8 +2,8 @@
 
 `tests/test_g4parity.py` pins the counts it knows how to compute (T-63), and its docstring says what
 that leaves open: a pin table is not a census, so a number nobody thought to pin drifts unwatched.
-This file closes the complement. It enumerates every numeric token and every spelled number in the
-documents named by `PROSE_PATHS` and admits each one only through one of three doors, tried in
+This file closes the complement. It enumerates every numeric token and every spelled number `_WORDS` lists
+in the documents named by `PROSE_PATHS` and admits each one only through one of three doors, tried in
 order:
 
 1. **a pin** -- the token lies inside the captured group of a pattern whose value is computed at
@@ -80,7 +80,7 @@ class Token:
 
 
 def tokenize(path: str, text: str) -> list[Token]:
-    """Every numeric token and spelled number in `text`, in file order."""
+    """Every numeric token and spelled number `_WORDS` lists in `text`, in file order."""
     out: list[Token] = []
     for lineno, line in enumerate(text.splitlines(), 1):
         found = [(m.start(), m.group()) for m in NUMERIC.finditer(line)]
