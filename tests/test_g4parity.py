@@ -277,7 +277,7 @@ def compare_copies(a: d1.D1Extraction, b: d1.D1Extraction) -> list[str]:
     return problems
 
 
-def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_only_in_the_clamp():
+def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_in_the_clamp():
     """Geant4 compiles the capture and effective-charge tables in twice; here is what that costs.
 
     `G4MuonMinusBoundDecay.cc` and `G4MuonicAtomHelper.cc` carry the same `capRates[]` and the same
