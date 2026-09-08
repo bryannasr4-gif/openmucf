@@ -2,9 +2,9 @@
 
 `tests/test_g4parity.py` pins the counts it knows how to compute (T-63), and its docstring says what
 that leaves open: a pin table is not a census, so a number nobody thought to pin drifts unwatched.
-This file closes the complement. It enumerates every numeric token and every spelled number `_WORDS` lists
-in the documents named by `PROSE_PATHS` and admits each one only through one of three doors, tried in
-order:
+This file closes the complement. It enumerates, in the documents named by `PROSE_PATHS`, every
+numeric token and every word `_WORDS` lists (the spelled numbers), and admits each one only through
+one of three doors, tried in order:
 
 1. **a pin** -- the token lies inside the captured group of a pattern whose value is computed at
    run time (T-63's tables, the F-3 figures `cpp/test/check_f3.py` reads, and `INTERNAL_PINS`
@@ -38,7 +38,7 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 
 #: The documents under the check. Every other public document is out of its reach and says nothing
 #: this check would vouch for.
-PROSE_PATHS = ("DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md")
+PROSE_PATHS = ("DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md")
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
 
@@ -57,7 +57,7 @@ VALID_PREFIXES = ("EXERCISED:", "REGISTERED:")
 
 NUMERIC = re.compile(r"[0-9][0-9,.]*[0-9]|[0-9]|[⁰¹²³⁴⁵⁶⁷⁸⁹]+")
 _WORDS = [
-    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
     "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen",
     "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
     "hundred", "thousand", "million",
@@ -128,7 +128,9 @@ class Pin:
     pattern: str
     groups: tuple[int, ...]
     #: The value the captured group must state, when this file is the one asserting it; `None`
-    #: for a pattern whose value another test already asserts (T-63, `check_f3.py`).
+    #: for a pattern whose value another test already asserts (T-63, `check_f3.py`) --
+    #: `check_f3.py`'s document-to-producer comparison runs only where a producer exists
+    #: (`f3_check`, Linux x86-64 in CI); its README-to-document comparison is repeated here.
     expected: object = None
     #: Decimal places the document rounds `expected` to; `None` compares as an integer count.
     places: int | None = None
@@ -153,6 +155,7 @@ def pin_table() -> list[Pin]:
         ("DATASET_D1.md", pins.claims),
         ("DATASET_D1.md", pins.rounded),
         ("CHANGELOG.md", pins.changelog_claims),
+        ("CHANGELOG.md", pins.changelog_rounded),
         ("README.md", pins.readme_claims),
         ("cpp/tools/README.md", pins.tools_readme_claims),
     ):
@@ -189,6 +192,9 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
     """Restatements of computed values that T-63's tables do not reach. Every `expected` is a value
     another module computed at run time; this list adds patterns, never numbers."""
     figures = check_f3.document_figures(REPO / "DATASET_D1.md")
+    assert check_f3.readme_figures(REPO / "cpp" / "tools" / "README.md") == (
+        figures[3], figures[1], figures[0]
+    ), "cpp/tools/README.md restates F-3 figures the dataset document does not state"
     max_ulp = figures[3]
     d1 = parity.d1
     records = _computed(pins, "capture record count, section 1")
@@ -202,8 +208,8 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
     zeff_81 = _rounded(pins, "the effective charge at Z=81")
     zeff_82 = _rounded(pins, "the effective charge at Z=82")
     zeff_83 = _rounded(pins, "the effective charge at Z=83")
-    # The unit conversion the document states is the module's own constant: microseconds per
-    # nanosecond, which is what `value / 1000` divides by.
+    # The unit conversion the document states is the module's own constant: nanoseconds per
+    # microsecond, which is what `value / 1000` divides by.
     per_microsecond = d1.MICROSECOND
     assert per_microsecond == int(per_microsecond)
     return [
@@ -227,7 +233,7 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
             r'because "(\d+)/\d+ bit-identical" means', (1,), zeff_entries),
         Pin("effective-charge entries, the array as declared, denominator", "DATASET_D1.md",
             r'because "\d+/(\d+) bit-identical" means', (1,), zeff_entries),
-        Pin("microseconds per nanosecond, the table-hit conversion", "DATASET_D1.md",
+        Pin("nanoseconds per microsecond, the table-hit conversion", "DATASET_D1.md",
             r"the rate is instead `value / (\d+)`", (1,), int(per_microsecond)),
         Pin("named elements without a separated-isotope record, F-6", "DATASET_D1.md",
             r"The (\w+) exceptions are instructive", (1,), named - carrying),
@@ -261,6 +267,11 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
             r"\*\*The (\w+) unsettled rows say so with an empty locator", (1,), open_rows),
         Pin("F-3 maximum, the README's restatement", "README.md",
             r"moves by up to \*\*(\d+) ulp\*\* between two conforming", (1,), max_ulp),
+        Pin("F-3 maximum, the changelog's restatement", "CHANGELOG.md",
+            r"moves by up to \*\*(\d+) ulp\*\* between two conforming", (1,), max_ulp),
+        Pin("maximum ulp over the diagnostic subset, the README's phrase", "README.md",
+            r"points at (zero) ulp", (1,),
+            _computed(pins, "maximum ulp over the diagnostic subset")),
         Pin("sweep box, Z lower bound, section 4", "DATASET_D1.md",
             r"over \*\*Z ∈ \[(\d+),\d+\] × A ∈ \[\d+,\d+\] = \d+ points\*\*", (1,), d1.SWEEP_Z_MIN),
         Pin("sweep box, Z upper bound, section 4", "DATASET_D1.md",
@@ -540,7 +551,7 @@ def check_tree(
 # --------------------------------------------------------------------------------------------
 
 
-def test_t74_every_number_in_the_dataset_documents_is_computed_or_listed_with_a_reason():
+def test_t74_every_number_in_the_documents_prose_paths_names_is_computed_or_listed_with_a_reason():
     misses, problems, pin_problems = check_tree()
     assert not pin_problems, "\n".join(
         f"{p.pin.path}: {p.pin.what}: {p.detail} -- pattern {p.pin.pattern!r}" for p in pin_problems
@@ -574,20 +585,28 @@ def test_t75_drill_a_spelled_number_decoy_is_named():
 def test_t75_drill_an_unpinned_digit_beside_a_pinned_one_is_named():
     texts = tree_texts()
     original = texts["cpp/tools/README.md"]
-    assert original.count("2980 ulp") == 1
+    # The pinned figure is read from the file through the F-3 checker, never typed here.
+    max_ulp = _load_check_f3().readme_figures(REPO / "cpp" / "tools" / "README.md")[0]
+    assert original.count(f"{max_ulp} ulp") == 1
     # Beside the pin, as the attack states it: the figure pattern itself then no longer matches
     # and every figure on the line surfaces, the decoy among them.
-    texts["cpp/tools/README.md"] = original.replace("2980 ulp", "2980 ulp and 2981 ulp")
-    lineno = next(i for i, line in enumerate(original.splitlines(), 1) if "2980 ulp" in line)
+    texts["cpp/tools/README.md"] = original.replace(
+        f"{max_ulp} ulp", f"{max_ulp} ulp and {max_ulp + 1} ulp"
+    )
+    lineno = next(
+        i for i, line in enumerate(original.splitlines(), 1) if f"{max_ulp} ulp" in line
+    )
     misses, _ = _drill(texts)
-    assert ("cpp/tools/README.md", lineno, "2981") in {
+    assert ("cpp/tools/README.md", lineno, str(max_ulp + 1)) in {
         (m.token.path, m.token.lineno, m.token.text) for m in misses
     }
     # Past the pin's span, so the pin still matches: the decoy is then the only new failure.
-    texts["cpp/tools/README.md"] = original.replace("swept points", "swept points and 2981 ulp", 1)
+    texts["cpp/tools/README.md"] = original.replace(
+        "swept points", f"swept points and {max_ulp + 1} ulp", 1
+    )
     misses, _ = _drill(texts)
     assert [(m.token.path, m.token.lineno, m.token.text) for m in misses] == [
-        ("cpp/tools/README.md", lineno, "2981")
+        ("cpp/tools/README.md", lineno, str(max_ulp + 1))
     ], [str(m) for m in misses]
 
 

@@ -1,3 +1,333 @@
+0032b28b0319bb63c6eca30a0971435c1c09aaa8	CHANGELOG.md	REGISTERED: ³ -- the mass number of ³H, a nuclide label
+009098a8f63fe14a74690f3f029cb443a12a4820	CHANGELOG.md	REGISTERED: two -- 'from two primaries', 'hold two': competing values of one conversion
+0095e47b5aa503f76bde8ed3e46d105bb405dc52	CHANGELOG.md	REGISTERED: 1, one -- the contraction formula `1 - s_j/S` with one shared denominator, as openmucf/design.py states it
+00e16d10f22ff5bd0f7cb55cf562c71104124026	CHANGELOG.md	REGISTERED: Two, eight -- the two changes the entry describes, and the paths the first read: a split of the fifteen entries of `SENTENCE_PATHS` in tests/test_ledger_claims.py
+011cd6ccd3d4b729fb0da1d5746b2593b769ea59	CHANGELOG.md	REGISTERED: 731, 592 -- the corrected count and the figure it replaced: dated counts of the sentence registry
+01e4d67babdfcdb97b7e3aba48677c073ebf65fb	CHANGELOG.md	REGISTERED: 0.01 -- `AUDIT_ATOL_FLOOR` in scripts/generate_design.py
+01ef349d03a4f4e98ab74fba54e77c307d2501d0	CHANGELOG.md	REGISTERED: two -- the two default-off factors the parenthesis enumerates
+0224712ada90845352de3a7e80d90ee72f051abf	CHANGELOG.md	REGISTERED: 3, 5 -- the superseded fixed 3 pp and 5 % bands, as DESIGN.md's audit section records them
+02bc74079b56de0bdaf1db6410c5e41b9eae5fb6	CHANGELOG.md	REGISTERED: 856, 140 -- the ledger-claims registry's rows and its EXERCISED rows at this release: dated counts
+0535db050f8d79a9d8ea748cdb8238e8eb99450a	CHANGELOG.md	REGISTERED: one -- 'producing one here', a pronoun
+0577e27dd2e6d42d006d937462a5668db59f8e38	CHANGELOG.md	REGISTERED: 0.14, 0.015, 2.84, 32, 0.139, 15 -- the `omega_tt` value and uncertainty openmucf/data/rates.csv ships, and the JINR preprint's figures as the `BomTT2005` note in openmucf/data/references.bib records them
+072c57186ec91659b3239eddd4f0a1190dda2ba1	CHANGELOG.md	REGISTERED: two -- the two published numbers the next sentences name
+09bcc38e6a900187246f8392ca3d18dfd2e755e6	CHANGELOG.md	REGISTERED: 2.2 -- FORMAT_SPEC.md's section 2.2, a pointer
+0a9a8528fc568bfa935c8c7a875c5e599690ccfb	CHANGELOG.md	REGISTERED: 2000, 136 -- `AUDIT_ESS_FLOOR` in scripts/generate_calibration.py and the converged realizations its sizing comment counts
+0b729a8d5416fb3805820bf451fc2873bbc11f11	CHANGELOG.md	REGISTERED: one -- 'the one term', the denominator's error
+0b8d11e6b6efac2dc25e91d002ac4c756758f715	CHANGELOG.md	REGISTERED: 20.4 -- Kou & Chen's useful-energy convention, MUON_COST.md's cycle-closure table row
+0be561600f53acee69d6560c11be0c944b55e5a1	CHANGELOG.md	REGISTERED: 0.35, 0.94, two -- the R_col and total-R figures FINDINGS.md section 3 prints, two successive factors
+0c623f480581b5db8a3dffe517f16ddd50260e90	CHANGELOG.md	REGISTERED: 0.18 -- Kelly, Hart & Rose's adopted efficiency, `eta_acc_kelly_psi_minimal` in openmucf/data/muon_cost_chain.csv
+0ca95ff9772a0d413ebb86dc32368411e6eb6fb1	CHANGELOG.md	REGISTERED: 4.39, 07, 5.25, 05, 5, 3 -- the T3 median Q_net before and after, and the orders-of-magnitude fall retracted to about three, as FINDINGS.md's section-2b amendment prints them
+0cf4f40d22f7b302db25b5cba1c83fe611c4d618	CHANGELOG.md	REGISTERED: 640 -- the wrapped sentences the layer enumerated at this entry's date, a count the sentence states 'at this head'
+0cfaf0c352c1750df8557d1ddf7d76aa02bb3626	CHANGELOG.md	REGISTERED: 1.6, 1.7, 0.011 -- the base chain's sd error and its shift of `ose_C1`, as openmucf/design.py's docstring and tests/test_design_audit.py's comment record them
+0e15f5d303b8c683836d4c3711595e48adafe2e5	CHANGELOG.md	REGISTERED: 5497.5, 4993, 1133.5, 1029.5 -- MUON_COST.md's T3 median and tier ratio before and after, as its own correction note prints them
+0fe1b7b2678dbd0148116df29d1b0f69bc357f58	CHANGELOG.md	REGISTERED: zero -- 'zero numeric change to any shipped result', the v1.1.0 notes' statement
+0ff9b07bdf7ef2c7e02a4419e03f13fff98b6746	CHANGELOG.md	EXERCISED: Sixteen -- tests/test_koucheng2026.py::test_every_registered_row_is_exercised
+11145f0a70bd9fb0398a6ab3fc5b74b5d9e1c190	CHANGELOG.md	REGISTERED: one -- the one arbitrary edge, `delivery_kelly_eta_mu` in openmucf/data/muon_cost_chain.csv
+118a097b7e6e5ee82d6824f0c87ee8ccf3ac9075	CHANGELOG.md	REGISTERED: 14, one -- '14 MeV neutron source', NEUTRONOMICS.md's section-1 heading; 'one basis'
+11ec0dc0895c73919a07f95ad42072cf5c1def19	CHANGELOG.md	REGISTERED: one -- 'The one dominant', a description
+124c92e2447a6f1e3f72086bf60c814ebf767f89	CHANGELOG.md	REGISTERED: 18.3, 25.68, 26.11 -- MUON_COST.md's two electrical figures on the minimal-subsystem denominator, unrounded and rounded
+144910243a4ac1ea1abd96a20ae92f5b57308852	CHANGELOG.md	REGISTERED: two -- 'a two-place diff', an idiom
+14b01095f1ea4509fe85b0e59c8a94b67508ac81	CHANGELOG.md	REGISTERED: 2 -- the conversions carrying a factor from a primary, as MUON_COST.md's chain-coverage sentence counts them
+151fbe3bf215ca516c7610320a00f4bd8fd6e003	CHANGELOG.md	REGISTERED: one -- 'added one' and 'exactly one of': the pair the journal name added and the one that straddled a claim
+1555255b60ecaf8f5b436a382d6965e6955df664	CHANGELOG.md	REGISTERED: 5.6 -- the Kamimura chain's red rate under the superseded band, as this entry records that dated sweep
+16147e0c3ed787a87adafc92429ac24e839d6840	CHANGELOG.md	REGISTERED: Two -- the two derived rows, `kelly_electrical_minimal` and `kelly_electrical_site` in openmucf/data/muon_cost.csv
+166694b2ee8c28810c2d15cb3ca660d245be0f34	CHANGELOG.md	REGISTERED: three, one -- NEUTRONOMICS.md's three tier-separated rows, one per tier
+1692412415eccee5b9faea4677b78192595d0feb	CHANGELOG.md	REGISTERED: 6, 1, 0 -- the scoreboard as the v1.0.0 notes recorded it, superseded by the v1.2.0 class-tiered scoreboard entry
+16a4586dc2d0bd6f22d4a5a18fb60517f052acb9	CHANGELOG.md	REGISTERED: 4 -- the figures as the v1.0.0 notes recorded them, superseded by the figures later releases added
+17b650d6d1fa411b82af5fe867adc5116386b644	CHANGELOG.md	REGISTERED: one -- 'the committed one', a pronoun
+17c1b200f212d0a9c0708c09f2fee91fb756b94d	CHANGELOG.md	REGISTERED: one -- 'this one', the pass
+17f2a3242e8ffd01066752920116735c499a90ba	CHANGELOG.md	REGISTERED: three -- the three Yamashita rows VALIDATION.md's summary counts as one test
+18e9a3b017db25f7f0c5417c61127486d769baa0	CHANGELOG.md	REGISTERED: one -- 'every one', a pronoun
+191e23cf84ca251427354529feb05dff8698cbcf	CHANGELOG.md	REGISTERED: 43 -- the spallation comparison, '~43 MeV of beam per neutron' as NEUTRONOMICS.md prints it
+1b8efcbf8566f7602b2635cadbdba61e4f2a5386	CHANGELOG.md	REGISTERED: 126, one -- what the first measurement reported and the one pair it missed, as this entry records that superseded measurement
+1c383bf05d7c10eecb203facd120663ce9879b60	CHANGELOG.md	REGISTERED: ³, 1, 4, 3, 0.18, 0.6 -- the nuclide label ³He; the helium levels c_He = 1e-4 and 1e-3 MATERIALITY.md tabulates; its bracket-size sentence (<= ~0.18, under ~0.6%)
+1f7c21cd3756264c9c317bbb2f678f7d41f8c294	CHANGELOG.md	REGISTERED: 20, 1 -- the replicate base chains, `AUDIT_EIG_REPLICATES` in scripts/generate_design.py, seeds 1..20 as its comment states; DESIGN.md prints 20
+2087cb71dddadd0ad2a82add96ce66e1c597f4df	CHANGELOG.md	REGISTERED: 0.14, 13.9 -- `omega_tt` = 0.14 in openmucf/data/rates.csv and the corroborating 13.9(1.5)% its row notes
+211d9f1db07f859b3f9c1de54568e433884d7ba7	CHANGELOG.md	REGISTERED: 112.6, 156.5, 10 -- Kou–Chen's published yields and the ±10% tolerance, benchmarks/kou-chen-2026.json
+21e9a7aa2e064a5d45a6d256cabd4cfb925e831c	CHANGELOG.md	REGISTERED: 1 -- the line the plural forms added, a dated count
+23d0f7b3fb05e61bb744af95870fc8035c5341be	CHANGELOG.md	REGISTERED: two -- the two changes this heading's entry enumerates
+2511a37a08845683561e23a54442f437d06ca4b6	CHANGELOG.md	REGISTERED: two -- the two residue measurements the next sentences restate
+252b4d0c4119a09f620085ed5c0c5d9b686f70e1	CHANGELOG.md	REGISTERED: one, Three -- VALIDATION.md's summary counts the three Yamashita rows as one test; the three targets the sentence goes on to enumerate
+2549797c3f2079da2b8397dde96fc60fef23dd99	CHANGELOG.md	REGISTERED: Three -- the three docstrings the bullet enumerates
+26046f17acd231b8e75294b2be8518dd26d20bf2	CHANGELOG.md	REGISTERED: Three -- the three strings the bullet enumerates
+262ff315cf126a3eb3ffba30913e9d43d0f2131c	CHANGELOG.md	REGISTERED: two -- 'two closed forms', what the rows compare
+263bc8b8d5f915695d70750662d308ac7dec0318	CHANGELOG.md	REGISTERED: two -- the findings this dated entry introduced, F-6 and F-7 by the dataset document's numbering; the live total is T-63's 'findings in total' pin at the entry's close
+26704d38b19c5458cbc9a5f111eaddc8fb72ca1c	CHANGELOG.md	REGISTERED: 14 -- the rows of openmucf/data/yamashita_kino_lc_T.csv
+26a1c36d3d3864eb0ebc218f6a9068923e55ce32	CHANGELOG.md	REGISTERED: 20 -- the mcse band, `AUDIT_RTOL_ESS_MCSE` in scripts/generate_calibration.py
+2771e921ba711f4be80499441c82e74b25781c3c	CHANGELOG.md	REGISTERED: 1.31, 1.45 -- the engine ratio openmucf/validate.py states, and the ~1.45 under-read the v1.2.0 re-anchoring entry supersedes
+29f591c874dabebae6a6a5e75c6fb1fa8d3dd810	CHANGELOG.md	REGISTERED: one -- 'the committed one', a pronoun
+2a7909358e8e3794a9f4308f005664c786326345	CHANGELOG.md	REGISTERED: 1.1.0, 1.0.0 -- the two release headings below, this file's own sections
+2a7dec974924ee6bcda568857f2a8c6d569ccbd9	CHANGELOG.md	REGISTERED: three, five -- the inputs the equal-relative box runs past and the other inputs the tier panel draws from their default boxes, as this entry describes FINDINGS.md's sections 1b and 2b; openmucf/data/uq_priors.csv has six rows
+2b351664f71d4f5793ad1ca0ef8fd7f3251b2205	CHANGELOG.md	REGISTERED: two -- 'The two', the layers
+2ccf2666c4f67f39d81feec7bfb47665c77fad54	CHANGELOG.md	REGISTERED: 636, 80 -- the ledger-claims registry's REGISTERED and UNREVIEWED rows at this release: dated counts
+2dc4e924b06f410bca40c50ab33b81e9f6083352	CHANGELOG.md	REGISTERED: 98, 2 -- the forecast card's registered cells at this entry's date, a dated count; the Monte-Carlo band is `MC_RTOL` in tests/test_forecast.py
+2ea189b2f95b51e43ab402dfab9e69cd7a90df39	CHANGELOG.md	REGISTERED: 3 -- the three accumulators of the v1 state vector
+2eaea33c129a57c549ef0e37e620e30446ec5e7d	CHANGELOG.md	REGISTERED: 464, 461, 3, four -- the suite count at this entry's date, as the four pages were made to say: a dated count
+2f5b237120b0006db7812fbbbbbc81f247f4a476	CHANGELOG.md	REGISTERED: 7.1, 9, 0.423 -- the Fujiwara 2000 resonance peak, `lambda_dtmu_peak` in openmucf/data/rates.csv and the peak openmucf/formation.py declares
+2fc057902fe5c80670d7a5021d2f49ed2b435a46	CHANGELOG.md	REGISTERED: 0.0 -- the `lambda_ttmu` placeholder openmucf/data/rates.csv ships
+304d626a3f087236dfb730250780d6e437372983	CHANGELOG.md	REGISTERED: zero -- 'a misleading zero bracket', a description
+30953f446b4e7a6863377a45c1c5022150ac9618	CHANGELOG.md	REGISTERED: 92, 80, 94 -- the UNREVIEWED cap's path across this release; `LEDGER_CLAIMS_UNREVIEWED_CEILING` in tests/test_ledger_claims.py is its current value
+30af5fbcb12d734d1ee6bb8d481f14648f7e7e9d	CHANGELOG.md	REGISTERED: 1 -- 'η=1', FINDINGS.md's section-1c structural bracket
+3317fdd313ce213a9dc4752e957342e92a732203	CHANGELOG.md	REGISTERED: fifteen, seven -- `SENTENCE_PATHS` in tests/test_ledger_claims.py, fifteen entries, and the seven the second change read
+340980a3db9a6acac0b905f37b19178be5b23fdf	CHANGELOG.md	REGISTERED: 1.2, 300 -- the section-2b box's operating point, phi=1.2 and 300 K as FINDINGS.md prints them, and the superseded parenthesis quoted
+34456b76858fa4a2fcd580616188bbe2524a739f	CHANGELOG.md	REGISTERED: 158, 157 -- sentence pairs cut after a capitalised token, measured at this entry's head and at the head before it: dated counts
+369b13573681f6cf33c1ceb30056ed32e9ed9c76	CHANGELOG.md	REGISTERED: 5, 14 -- the lines the `exact` form added and the rows of the data-package resource its descriptor covers: counts at this entry's date
+36dcd45e2bdec46c25441033194e9ebd6f8d4e8c	CHANGELOG.md	REGISTERED: 1, 8 -- '~1e8', the room-temperature anchor openmucf/formation.py's thermal-scale comment names
+36f99cd1d863babaa3f3046d042eed23cd5a5712	CHANGELOG.md	REGISTERED: one -- 'one-sided', the ledger's declared bias direction
+376fca4682b1073b43642edeb91815c2cde0570c	CHANGELOG.md	REGISTERED: three -- the three terminal figures the next line names
+3907f551a01ca6540dcf71695e4f9a4f116b857b	CHANGELOG.md	REGISTERED: two -- 'on two lines', how the title is set
+39b6e2a055770e44502eb6dafbd37d479b70bea0	CHANGELOG.md	REGISTERED: 200 -- the realization sweep's size, as scripts/generate_design.py's preamble records it
+3bb76bb345ef18d447d5355057101150c8dab0be	CHANGELOG.md	REGISTERED: 6, 5, 1, three -- VALIDATION.md's summary line: 6 pass, 5 fail, 1 deferred; the three Yamashita rows
+3bc8afdfe1805de0134de640da5267badd8ad3ca	CHANGELOG.md	REGISTERED: two -- the two compiler configurations of one source the sentence names
+3dc5c41f7069804263e4b952e5229d378278ac40	CHANGELOG.md	REGISTERED: one -- 'at one condition', where the preprint's values hold
+3e945260060937ff5227a412de7eaa8c84a709d5	CHANGELOG.md	REGISTERED: one -- 'one thing', a pronoun
+3f2bd43656bd43151aa8ef10df1176152dc5e889	CHANGELOG.md	REGISTERED: 1029.5 -- MUON_COST.md's tier ratio
+403f7e61503319c2d8b676e616dabf2ad5cd4af6	CHANGELOG.md	REGISTERED: two -- the two CSVs the sentence names
+405640f04bd4a3aa11dd650ad938e1f05d874295	CHANGELOG.md	REGISTERED: three -- the three sweeps the sentence recalls
+408c28e11259831a69ad7a49297f94aa8284a474	CHANGELOG.md	REGISTERED: 1, 6 -- '1e6 GeV', the superseded T3 support FINDINGS.md's section-2b amendment records
+40a26157a846eb73e5d1eeb8a3eea58dfc5cc62f	CHANGELOG.md	REGISTERED: 8, two -- the locale name `de_DE.UTF-8` that .github/workflows/ci.yml installs, an identifier; 'the other two' platforms
+41b8fcab5837ae78037d7802483b5045d0811757	CHANGELOG.md	REGISTERED: 20, ²²⁵ -- Parisi & Rutkowski's headline yield, as scripts/parisi_ac225.py's docstring quotes it; the nuclide label ²²⁵Ac
+43fe06eda1465ceae8a5fe83f74a4329a07bc2af	CHANGELOG.md	REGISTERED: 42.95, 15 -- DESIGN.md's C4 inclusion sentence: the best-cell contraction and the pre-registered threshold
+444586872b831025a21b227c646a1240df78057c	CHANGELOG.md	REGISTERED: five, 10, ⁵ -- the other five inputs of openmucf/data/uq_priors.csv beside E_mu, and the '~10⁵×' fall FINDINGS.md's section-2b amendment records as retracted
+44793c4cd95a020d9f440bde533effbca325c91b	CHANGELOG.md	REGISTERED: two -- the two normalizations the figure mixes
+452b35ef6ccbea23cc0d1014411b08e0bbf6e250	CHANGELOG.md	REGISTERED: 0.000 -- the V1 gate's relative difference as the v1.0.0 notes recorded it
+4598f6c304d76521e521d14a13298622f1bb1d03	CHANGELOG.md	REGISTERED: 1.283, 08, 1.413 -- NEUTRONOMICS.md's T3 row, 1.413e+08 n/J today; 1.283e+08 is the value this entry moved it from
+462036442e69dc17030823a18ab29a168771e2d1	CHANGELOG.md	REGISTERED: ²²⁵ -- the mass number of ²²⁵Ac, a nuclide label
+468f9fbcef962bac6854e5914f7e9ace8cbb4c07	CHANGELOG.md	REGISTERED: 25 -- the entries of `ABBREVIATIONS` in tests/test_ledger_claims.py
+4876358a2279f03f75a56629ee3dd5f7f6ecceb3	CHANGELOG.md	REGISTERED: five -- the five findings this entry enumerates, F-1 to F-5 by the dataset document's numbering, as registered on the dated entry below; the live count of unsettled findings is T-63's 'findings that are defects' pin on the entry's closing sentence
+489e6c6ed730da47866cc050a541ba3d741fa8c6	CHANGELOG.md	REGISTERED: ³ -- the mass number in d³He, a nuclide label
+48c8cb829a1ec62b460b613d49f60f7f816c02c4	CHANGELOG.md	REGISTERED: 25, 155 -- the 25th entry of `ABBREVIATIONS` in tests/test_ledger_claims.py, and the pairs remaining after it: a dated count
+4939155cf07f1cbf362dec3ff9be89d6a2470104	CHANGELOG.md	REGISTERED: 1.31 -- the engine ratio, as openmucf/validate.py states it (VALIDATION.md prints 1.3)
+493955acdcce64ab86b7d4d576b3e34471221726	CHANGELOG.md	REGISTERED: six -- the character cap of the first, superseded measurement the parenthesis describes
+49550be3b89e246f89b6e097785a7351c2b7f1a9	CHANGELOG.md	REGISTERED: three -- the three `muon_cost.csv` note fields the sentence names
+49fff1cc5ddce15adaf3fe79f08a550cfaadd9d4	CHANGELOG.md	REGISTERED: three -- the three statements the retraction applies to, enumerated below
+4a2a2acb69fc274f7548505d37935f91c2c0b52e	CHANGELOG.md	REGISTERED: 0.013, two -- DESIGN.md's C1 band, and the two SE components combined in quadrature
+4afef317e5c8d5b9915bebf2cc882b95d17f78f9	CHANGELOG.md	REGISTERED: one -- 'one-for-one', the retracted phrase quoted
+4b5ff77fe3d1cf4d1b26b07a0a8d616cfd0e205b	CHANGELOG.md	REGISTERED: 4, 0.01, 3 -- the band construction: `AUDIT_K_SIGMA` and `AUDIT_ATOL_FLOOR` in scripts/generate_design.py, against the conventional 3 sigma its comment weighs
+4bd198fa85e80c50fdf7dabcc392c548f61f651b	CHANGELOG.md	REGISTERED: thirteen -- the forms found removable at this entry's date, a dated count
+4dd7461485e4046efaaeacc22d2d39146020f835	CHANGELOG.md	REGISTERED: 63 -- the test count as the v1.0.0 notes recorded it
+5047d49f26259ed89582d8a40ad9a1bd01272493	CHANGELOG.md	REGISTERED: 7.8, 1.8 -- Bertin et al. (1987) Table II's value and uncertainty, the `bertin_1987` row of openmucf/data/muon_cost.csv
+521f1316de0d06426c07f802045acdabef4d8ca4	CHANGELOG.md	REGISTERED: one -- 'one comparable reference basis'
+5360292c1962b75744e369dee723454affe96695	CHANGELOG.md	REGISTERED: 731, 596 -- the prototype's figure and the wrapped sentences at that tree: dated counts
+54f5be277a1d022f194fa476133b16c443b9c24d	CHANGELOG.md	REGISTERED: 10.4, 18.3, four -- the Kovach et al. (2017) efficiencies openmucf/data/muon_cost_chain.csv carries as 0.104 and 0.183, and the four subsystem draws the note read in that paper
+552405559eef6d18dcb1784ee8dc3752222d2516	CHANGELOG.md	REGISTERED: 30, 800, 300 -- the ±30% lambda_c(800 K)/lambda_c(300 K) clause, VALIDATION.md's V_yamashita_ratio row
+56434901b5bef7064b2a51d725a2e56eb542e2e0	CHANGELOG.md	REGISTERED: 2024 -- '2024 global supply', the year of the supply figure scripts/parisi_ac225.py cites
+5739358de1cfdb88d15182d4082de159c7a0a287	CHANGELOG.md	REGISTERED: 1.2, 2.0, 2.4 -- `PHI_GRID` in tests/test_forecast.py, the card's pre-registered density grid
+58520b4ea95051c21ba599c25fa22ac363c1a614	CHANGELOG.md	REGISTERED: 633 -- the sentence registry's row count after this pass, dated
+5875225109546ed6cc58eef5d45345c33e8aead8	CHANGELOG.md	REGISTERED: 1, 9, one -- 'atol 1e-9', the reduction gate in tests/test_cycle_channels.py; 'one-channel-one-home', docs/accounting.md's title
+58bd557531f9eddd075048e19c776ee86adf1c1d	CHANGELOG.md	REGISTERED: 113 -- the measured Petitjean yield NEUTRONOMICS.md prints as X_mu = 113
+597ffda7bc9fc9093a0b10e7cfff9121029990f8	CHANGELOG.md	REGISTERED: two -- the two facility denominators, `electrical_minimal` and `electrical_site`
+5988f26d58f7bcb18a5d1a35506c041ac3b4e005	CHANGELOG.md	REGISTERED: One -- 'One-at-a-time', MATERIALITY.md's toggle rule
+5afd568f9cc2bdefa4639157d892c85830120ac1	CHANGELOG.md	REGISTERED: one -- 'every one', a pronoun
+5b0efa8edce084b2597fbdc629cc591646283f7e	CHANGELOG.md	REGISTERED: one -- 'one each', the files the parenthesis enumerates
+5b96247fa797ae8308f82bff72b57480cfddde7c	CHANGELOG.md	REGISTERED: 1, two -- '1-based line number', a convention; 'two implementations', the reporting-order rule's subjects
+5c73ecf5714992a5cbe3e8782047a6e9f6c4d3f5	CHANGELOG.md	REGISTERED: Two, 2026 -- the two reproduction cases; and the year in the case name `kou-chen-2026`, an identifier
+5e49a697a3aa14bde913b4703667ba4929032fba	CHANGELOG.md	REGISTERED: two, 18 -- the two denominators, Kelly's adopted 18% as MUON_COST.md states it; 'two-figure' rounding
+5e54fd0595a6d4caed2649154aefc09c9b5df0b1	CHANGELOG.md	REGISTERED: four -- the four rows per family (L_mu, N_L, omega_crit, G_mu) among the sixteen `V_kouchenlawson_` rows of openmucf/data/validation_targets.csv
+5e8367a9a4b6816d5fb8ef99040d90436b999b5f	CHANGELOG.md	REGISTERED: 30, 0.5, 7 -- the low-T grid-convergence figures as the v1.1.0 notes recorded them; openmucf/formation.py's grid comment records the same doubling test
+5f5b2fbcf4d50d22aa664b677b9242379c420863	CHANGELOG.md	REGISTERED: one -- 'a released one', a pronoun
+60e0f80e740d30071c66833b2d550bd843dbdb41	CHANGELOG.md	REGISTERED: 25.68 -- MUON_COST.md's electrical figure on the unrounded Kovach denominator
+60ef6aaf5d1d2903fc0ad29d113ca348d3910b45	CHANGELOG.md	REGISTERED: four -- the openmucf/data/muon_cost_chain.csv rows carrying a `factor` value
+610d209d84e8caea3ed579b900b4882ca4887953	CHANGELOG.md	REGISTERED: two -- the two routes `ChainPath`'s docstring compares
+613bc6f1aeb6a1868fab030a04ba98bcf8a67197	CHANGELOG.md	REGISTERED: 0.18, 2367, 3946 -- SYSTEMS.md's self-correction finding: the PSI-measured eta_acc and the breakeven before and after
+6179d70ed9a348f6cc415f13fe05572018d4d637	CHANGELOG.md	REGISTERED: Four -- the four pages the sentence names
+65f377375c87321dda8171ce22d60104dc7cf6e1	CHANGELOG.md	REGISTERED: one -- 'this one', the release
+665819f6f32a528203becd95de7cfb1debc2b7bb	CHANGELOG.md	REGISTERED: 1, 3 -- the tier labels T1 and T3 inside the test name `test_no_basis_class_spans_T1_and_T3`
+66bfad040d377363f4026b398378e502fad33e5b	CHANGELOG.md	REGISTERED: one -- 'every one', a pronoun
+678cabdf4156a263aefe205b1932d6cf279d7cf6	CHANGELOG.md	REGISTERED: one -- 'as one test', VALIDATION.md's summary line
+67ef71ee822a96458b8d11d861678a7f34facd4d	CHANGELOG.md	REGISTERED: Three -- the three corrected statements the section's later bullets carry
+6890d6047a9fbecb4f5c802ded7aa2705b4c5206	CHANGELOG.md	REGISTERED: two -- the primary's two capture tables, as DATASET_D1.md's F-4 reading describes them
+692ce47c118737307a72393c05acc66c4bce4d37	CHANGELOG.md	REGISTERED: 82 -- Z=82, the lead shell closure the effective-charge step sits near: a label, not a shipped value
+69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	REGISTERED: 20, 17 -- '~20×/~17× low', the Faifman1989 rows' notes in VALIDATION.md
+6a48a2cb23b82f498f9729488fb0a233ea7f6f54	CHANGELOG.md	REGISTERED: one -- 'more than one record', 'Every one': pronouns
+6a6a8d42239c1769e216c931f6b35849b31d987c	CHANGELOG.md	REGISTERED: 7.80, 4.85, 178, 4993 -- MUON_COST.md's Bertin figure and its three tier medians
+6e9844c6d1af57dbc5a9f8ecd94846fcc07af654	CHANGELOG.md	REGISTERED: 8, 64 -- `n_synth` before and after; DESIGN.md prints n_synth=64
+6eef3a6d34f3ee5fd412ce14d0907370e9cd2c9f	CHANGELOG.md	REGISTERED: 43 -- the test count as the v1.0.0 notes recorded it
+6f8ad5c08d2e8b6bab07e336f6cd9edc07a14092	CHANGELOG.md	REGISTERED: 4.4, 1.6 -- the noise's relative and absolute spread across cells, as scripts/generate_design.py's preamble records it
+70f35e24f6ab4e6e850dc8dfcf4ff109a0ef7d71	CHANGELOG.md	REGISTERED: One -- the one rule the bullet describes
+724bd28f81cbd0c07a1b1daaada4ad71fda424ec	CHANGELOG.md	REGISTERED: 12 -- the cells the design audit gates, as scripts/generate_design.py's comment states
+72a4dd77ccdc2fe90db6ebc8cb1d09824f26bb37	CHANGELOG.md	REGISTERED: 147 -- the rows the sentence layer added to tests/sentence_claims_registry.tsv at this entry's date, a count stated at that head
+737a6c3dae3ac2a4e64542795a03c3a3b3eeadd6	CHANGELOG.md	REGISTERED: 80 -- `LEDGER_CLAIMS_UNREVIEWED_CEILING` in tests/test_ledger_claims.py
+7465c3258bbd35ca8d379f85fe85aae483e28951	CHANGELOG.md	REGISTERED: 4.70, 5, 14, 6 -- Kelly's figures and their section numbers as the `kelly_hart_rose_2021` locator in openmucf/data/muon_cost.csv cites them: 4.70 GeV/muon at his Sec.5 item (a), Q_elec=14% at his sec.6
+75222e5ff9c94f282f29a2a44a61e5f81a8d355e	CHANGELOG.md	REGISTERED: 0.3 -- the tritium fraction of Jones's target, as the `Jones1986` note in openmucf/data/references.bib and benchmarks/jones-1986.json record it
+7644298f40a5b9e8eb669af9e328faa3b03bcdd3	CHANGELOG.md	REGISTERED: two -- the two hand-written alternations the patterns used to be
+76f9c6701d2bb3b7b2ced64c70c3f9cad2bb1b6c	CHANGELOG.md	REGISTERED: 2, 10 -- the `E_mu_GeV` box of openmucf/data/uq_priors.csv, 2.0 to 10.0
+78142cb643d865a2d6afe564de0c404e0eb97a0d	CHANGELOG.md	REGISTERED: 8, one -- the rows of openmucf/data/muon_cost_chain.csv, each moving one axis
+78895069380733dff7c73705e882f0477eb14b3a	CHANGELOG.md	REGISTERED: two -- the two docs pages the sentence names
+78b65a040a611e4a63f61837fad083e2291e7e7c	CHANGELOG.md	REGISTERED: 10, 3 -- the retracted phrase '10^3 gap', quoted
+7a0dc17e3cf9b82f38a014ac71bf6f82189031e8	CHANGELOG.md	REGISTERED: two -- 'across two rendered lines', a wrapped statement
+7ace70f1eae791a5b0bafca41cf1d6c3704ddbe2	CHANGELOG.md	REGISTERED: 200, 95 -- the replicas and the credible level of tests/test_twin_coverage.py::test_interval_calibration_200_replicas
+7af9082d9d6183a4c811c292f7da617f7c8b3037	CHANGELOG.md	REGISTERED: two, one -- the two box rules the parenthesis states; 'containing one', a pronoun
+7b9340d07df799bc7595f05ab42eaf8be24add0d	CHANGELOG.md	REGISTERED: one, four -- 'Not one of the four stage advances', MUON_COST.md's chain-coverage sentence
+7bc77965fff0b2b9f31267830af1a00c3f51e2c0	CHANGELOG.md	REGISTERED: 1986 -- the year in the case name `jones-1986`, an identifier
+7bf8506f8445fbbbd9d0821ebb9b6a26802b11c1	CHANGELOG.md	REGISTERED: 10, ²²⁶, ¹² -- the paper's feedstock and muon rate as scripts/parisi_ac225.py's docstring quotes them; the nuclide label ²²⁶Ra
+7dadbd8d71d63a96911521b76275d5f494afc5fa	CHANGELOG.md	REGISTERED: 17 -- the `%.17g` format `format_float` in openmucf/g4/spec.py renders with
+7e180128a3694d3513998b47756c27ae395b6c16	CHANGELOG.md	REGISTERED: 300 -- the 300 K anchor openmucf/formation.py's `_CALIB` re-derivation preserves
+7f72bb46326019ebcf5469a16af275ac32a68506	CHANGELOG.md	REGISTERED: 10, ³ -- '~10³× better', the sealed-tube comparison NEUTRONOMICS.md prints as ~10^3
+8156e275586c281bbaa227636db96b386c1b167a	CHANGELOG.md	REGISTERED: zero -- 'a zero-prior-mass basin', a description of the unbounded prior
+8195a0fe08a835b9ce227c74d2a5225484419a8f	CHANGELOG.md	REGISTERED: two -- 'across two lines', the split the drill plants
+823dd180751a0554ed06ccc8f65348ef22ff06f6	CHANGELOG.md	REGISTERED: two -- the two tests that asserted bit-identity unconditionally, as this entry counted them
+8330e097bfcb09bdfaa0e6af048e6ddf8647b5c7	CHANGELOG.md	REGISTERED: three -- the three lexical holes the heading's entry enumerates
+83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	REGISTERED: 0 -- the value `strtod` returns under a comma-decimal locale, a quoted behaviour
+8543b706b8f456f13468d425b5721af167e4d947	CHANGELOG.md	REGISTERED: One -- the one typed figure the bullet describes
+85fad9d836eb4288862264d0e92a4e87bd212b1e	CHANGELOG.md	REGISTERED: 6, 4, 2 -- the conversions a fully-sourced chain requires, as MUON_COST.md's chain-coverage sentence counts them
+8619b55cb48e3d1ca975c2e035df1a7fbe500688	CHANGELOG.md	REGISTERED: 4.1, 1, ³ -- MODEL_SPEC.md's section 4.1; the '<1%' analytic-vs-ODE gate in tests/test_cycle_channels.py; the nuclide label ³He
+88bc13795c9374a427b87d4ba4439723f32fc673	CHANGELOG.md	REGISTERED: 18.3, 10.4 -- Kovach et al. (2017)'s two efficiencies, 0.183 and 0.104 in openmucf/data/muon_cost_chain.csv
+896d9c8fe3c841cf3dd17afceb217a920b25763d	CHANGELOG.md	REGISTERED: five -- the five statements recomputed by hand on the date the sentence gives
+899258421ec6e1323919936ce6fd5a23ed132187	CHANGELOG.md	REGISTERED: one -- 'one-sided', an idiom
+8ad698fa920fbef4f8c9403fe2071cddaaabb0e4	CHANGELOG.md	REGISTERED: Two -- the two gate names kept, as this entry counted them
+8e0d04585a090955b1e68138505af89a25c4bc36	CHANGELOG.md	REGISTERED: 1 -- 'eq. (1)', an equation number in Kovach et al. (2017)
+8f2ef86c19cb0ccdb24c734588b18118abff0f1f	CHANGELOG.md	REGISTERED: 4, 20, 0.383 -- the 4-sigma design point, the pass cost and the rejected absolute band, as scripts/generate_design.py's preamble records them
+8f65ef674f8d945f334deb315828dee60b1c6952	CHANGELOG.md	REGISTERED: one -- 'one-sided brackets', MATERIALITY.md's framing
+8f71482f4874d28401503e15cde358569afb7c39	CHANGELOG.md	REGISTERED: 1, 4 -- '<1e-4', the conservation gate as the v1.0.0 notes recorded it, since tightened by tests/test_cycle.py::test_conservation_tightened
+906cc094804c3d8aa264ac8930c8b589713035e7	CHANGELOG.md	REGISTERED: 3 -- 'figure-3', Kelly's figure number
+90af060e5a75c9308a5f134fc7955357b1a2afc1	CHANGELOG.md	REGISTERED: 856, 969, 144, 745, 80 -- the ledger-claims registry's row counts before and after this entry, by status: dated counts
+916fb28a9b842c3a4abe772f7bafc296003b0ba6	CHANGELOG.md	REGISTERED: 7, 1, 0 -- the scoreboard as the v1.1.0 notes recorded it, superseded by the v1.2.0 class-tiered scoreboard entry
+91a34dd40ab60fab6c26bc9ebf9e740e27cc9f7c	CHANGELOG.md	REGISTERED: 71 -- the lines the aggregate nouns added, a dated count
+92769a38974ed591203c07c49242deb6d652115f	CHANGELOG.md	REGISTERED: Twelve, three, 4.70 -- the rows of openmucf/data/muon_cost.csv and its three tiers, and Kelly's `kelly_hart_rose_2021` value
+928ac5e5c44470da944ae6a3eb647ce60977d9df	CHANGELOG.md	REGISTERED: 1 -- '(1−R)', the closed form's factor, openmucf/analytic.py
+92cacda373d8a75dd37604e203695871db8f71f5	CHANGELOG.md	REGISTERED: Three, 1.92, 8 -- the three rows the bullet names, and `lambda_dhe3` = 1.92e8 in openmucf/data/rates.csv
+939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	REGISTERED: 7 -- '~7 decades', the rate span openmucf/_jaxcfg.py states as the reason float64 is mandatory
+93fa8a9c690ffbd35d7bd69ea45e3147b30d605b	CHANGELOG.md	REGISTERED: 0.62 -- the Sobol total-order index for R, FINDINGS.md's sensitivity table (0.620)
+94049a3cb272ae43d5a2bfcdde2cc3442b8a4bc5	CHANGELOG.md	REGISTERED: 2.4, 530, 640 -- FINDINGS.md section 3's sentence, quoted: phi=2.4 and ~530-640
+955c04f7f4180bf9d397f5c2e2c33bddeaa5fb00	CHANGELOG.md	REGISTERED: three, two -- where the loader converts its numeric columns, three outside and two inside the row constructor, as the corrected docstring says
+959b72c5dc19be7a806a4c28f0436ea3d2894015	CHANGELOG.md	REGISTERED: 223 -- negated universals outside the pattern, an approximate count at this release's date
+95b9603fd06ad8074765829ef65bf7f987a5f4dc	CHANGELOG.md	REGISTERED: one -- 'one-sided', a cell class
+95c26bb5076e4fd731a68e5e652fed057ecde939	CHANGELOG.md	REGISTERED: one -- 'one conversion', both readings of it
+961c4439e31ab603afc9cc213958c634479fcca1	CHANGELOG.md	REGISTERED: 278, 275 -- the stale test count the four pages carried, quoted
+966aa2480f2a214e724bb06e796813d19a6dc3cf	CHANGELOG.md	REGISTERED: two -- the two precisions the docstring's body checks
+972c9685037005403cc9b529f8ed2671c989956a	CHANGELOG.md	REGISTERED: 113, two -- the measured Petitjean yield NEUTRONOMICS.md prints as X_mu = 113, and the two occurrences the next line locates
+987cbcad0306298b29f18f93ce7ce21d15395c8f	CHANGELOG.md	REGISTERED: one -- 'every one', a pronoun
+9898430ab4ac4b197cd718df52454a51660b329e	CHANGELOG.md	REGISTERED: 4, 18 -- the per-refit spread at n_synth=8, as scripts/generate_design.py's preamble records it
+98d0f95f90bd247896e0484c4e2338986ff09901	CHANGELOG.md	REGISTERED: 1, 31, 37 -- `ddof=1` as scripts/generate_design.py states, and the manifest's entry count before and after at this entry's date
+99b702d5ee97fce2c248916054a22c1903bf0ef2	CHANGELOG.md	EXERCISED: 16 -- tests/test_koucheng2026.py::test_every_registered_row_is_exercised
+9b3eb9e4661deb77285db6bb2614a6b7f0fcc065	CHANGELOG.md	REGISTERED: two -- the `absent` rows whose notes name the study type that would source them, as this entry counted them
+9b5164d79bb9f3ffed11108dec449dd416fa60f9	CHANGELOG.md	REGISTERED: 0.84 -- the omega_s0/R correlation as the v1.0.0 notes recorded it; CALIBRATION.md's legacy-box row prints 0.84, its widened-box headline 0.91
+9b58b2fcdd7221763ba87bcf3158ee99392bf273	CHANGELOG.md	REGISTERED: ZERO -- `SENTENCE_CLAIMS_UNREVIEWED_CEILING` in tests/test_ledger_claims.py
+9b67d39dbaffe7e5081a36f8bbcf2cff08aa9be8	CHANGELOG.md	REGISTERED: 284.09, 2367.42 -- SYSTEMS.md's G-legacy breakeven anchors
+9bbccb85ac488d753b65ff620f915a3399af408c	CHANGELOG.md	REGISTERED: 5, 49.5 -- the superseded band's false-alarm rate, as scripts/generate_design.py's preamble records it
+9cccf070c504067518a1bf05115506888376a7b0	CHANGELOG.md	REGISTERED: fifteen -- `SENTENCE_PATHS` in tests/test_ledger_claims.py, fifteen entries
+9e40493a339c324fc857234b30e5852ef35011fa	CHANGELOG.md	REGISTERED: 25.68, 26.11, 45.19 -- MUON_COST.md's electrical figures per negative muon produced
+9e58684280ea611c0c2f5df4b983816710477202	CHANGELOG.md	REGISTERED: 18.3 -- Kovach et al. (2017)'s efficiency, `eta_acc_kovach_minimal` = 0.183 in openmucf/data/muon_cost_chain.csv
+a08c5031c2980ac019a47e024a7068752d2b1dca	CHANGELOG.md	REGISTERED: Five, four, two -- wrapped arithmetic statements and the files carrying them at this entry's date, a count the sentence states 'at this head'
+a1d8627fa416a75f014f3159671a6eb850593035	CHANGELOG.md	REGISTERED: three -- the three routes to the marker the sentence enumerates
+a28f89f487dc60ca4643ad2597127de239ee1b2c	CHANGELOG.md	REGISTERED: two -- the two patterns, `STRONG` and `LEDGER`
+a297dfdfd1158dab76458be032289a8618c2511b	CHANGELOG.md	REGISTERED: 200, 400, 600, 800, 30 -- VALIDATION.md's V_yamashita_curve row: the four temperatures, ±30% per point, the 800 K point a registered expected-FAIL
+a2f02a20014865a980ada39b631b7cd70c99bf47	CHANGELOG.md	REGISTERED: 150, 284 -- the energy ladder's record and scientific-breakeven rungs, SYSTEMS.md's X_mu rows
+a3fe0377e98ca44a0160b42203d31afac8589856	CHANGELOG.md	REGISTERED: 6.10, 34.5 -- the worst cell's noise and the smallest relative constant that would cover it, as scripts/generate_design.py's preamble records them
+a402f82bc3eaff179b458396a8379d5d6860b7c2	CHANGELOG.md	REGISTERED: 0.18, 0.104, 0.183 -- the three conversion factors in openmucf/data/muon_cost_chain.csv, as MUON_COST.md's edge table prints them
+a44029fc41b404096f3ec5135681af2644e6c80b	CHANGELOG.md	REGISTERED: three -- 'three ways', the split the sentence enumerates
+a6f9c417976ed61107a58b6958da9cf2c8b078b9	CHANGELOG.md	REGISTERED: 82, two -- Z=82, the lead shell closure the effective-charge step sits near: a label, not a shipped value; 'the last two' of the five findings this entry enumerates, F-1 to F-5 by the dataset document's numbering, as registered on the dated entry below
+a75c120a01e20a27d433f228a0b1396902d839ea	CHANGELOG.md	REGISTERED: three -- the three routes the named test drills
+a79800efd8bd766ee7f3760e6c361f6051ef96ac	CHANGELOG.md	REGISTERED: One, 8 -- one registry; and the result ids `openmucf.validate` exposed at v1.1.0, as those notes recorded them
+a81d9bc0705aedafa9c3c55bf8166103ed93cf2c	CHANGELOG.md	REGISTERED: 0.11.1 -- the jax version the dev extra caps below, `jax<0.11.1` in pyproject.toml
+a83e8467f5865fcfa46d264eb7ed5909e7818962	CHANGELOG.md	REGISTERED: 10, ⁵ -- the '~10⁵' figure FINDINGS.md's section-2b amendment records as retracted
+a83f68b219613154e0da78a54a8f4d137941a156	CHANGELOG.md	REGISTERED: five -- the other five inputs of openmucf/data/uq_priors.csv, beside E_mu
+a9681d9b52a73827806d8c4c1991f886b043419c	CHANGELOG.md	REGISTERED: four -- MATERIALITY.md's four operating points, OP-A to OP-D
+aa269bf9402a7bc5a296bb5a0854bb93dfffaafa	CHANGELOG.md	REGISTERED: 81.8, 9200, 11000 -- the arm64 reproduction's worst margin and its `min ess` reading, dated; scripts/generate_calibration.py's floor comment records the 81.8% reading
+ab268656bb3ad48cbcd539cfb3878eab0c6cd722	CHANGELOG.md	REGISTERED: 3 -- the '±3 pp' figure DESIGN.md's audit section records as superseded
+ad5ebe1c0e4e98c4a2d14895bbd74fef90e3f330	CHANGELOG.md	REGISTERED: three -- the three defects the section's bullets enumerate
+aed454da419a461e12a744422306e89931333b63	CHANGELOG.md	REGISTERED: 26.11 -- MUON_COST.md's electrical figure on Kelly's adopted denominator
+aee47676241aa84f089c45863a5a24951869b464	CHANGELOG.md	REGISTERED: 1, 5, 4 -- the `eta_dtmu` interval openmucf/data/rates.csv ships as asym_interval 1.0 to 5.0, and the Gaussian ±4 it replaced
+af12a5812dfedce0f1ff2e2de25aa5c158391d22	CHANGELOG.md	REGISTERED: 20.5, 2.6, 20, 0.2, 564, 400 -- the reproduction's landing value and its offsets from the headline, as this entry recorded them; the P_fus and supply-ratio cross-checks are held to their bands by tests/test_parisi.py
+af7453d323da8fc138e080525ac629b3512a5310	CHANGELOG.md	REGISTERED: 1.39 -- the mcse inflation at the floor, as scripts/generate_calibration.py's floor comment states
+b04c548c7cceac32be622b826d2800dcda6d6771	CHANGELOG.md	REGISTERED: 26.0 -- the primary-derived useful energy, MUON_COST.md's cycle-closure table row
+b13eed5421b281767e3868e9ab4336f8b6cf2d1c	CHANGELOG.md	REGISTERED: 1.45, 800, 300, 2.358 -- the earlier under-read this entry supersedes, and the digitized ratio lambda_c(800 K)/lambda_c(300 K) VALIDATION.md's V_yamashita_ratio row prints
+b1970caeb9df7b903fb6d925ddd4f990b91c52b9	CHANGELOG.md	REGISTERED: 340 -- the rows the sentence layer added to tests/ledger_claims_registry.tsv at this entry's date, a count stated at that head
+b323b5d25cf0a8c2c545f7b38c0d23cb822075d8	CHANGELOG.md	REGISTERED: one -- 'one seed', a property of a single realization
+b4c8b82b7fc8ded93b4fccd60227f343688cb01d	CHANGELOG.md	REGISTERED: 592 -- the count before `sentence` and `sentences` entered the guard, dated
+b6c8da5ca75a49b6e2e5696f88178a1337b99ac5	CHANGELOG.md	REGISTERED: 14 -- '14 MeV/n sources', NEUTRONOMICS.md's section-2 heading
+b7f02bd198a116b3bd525a8d23d833761ac8774f	CHANGELOG.md	REGISTERED: four -- the column count the superseded docstring stated
+b83951e00800486d8ca003e68ffe287c70bd9a70	CHANGELOG.md	REGISTERED: four -- the `absent` rows of openmucf/data/muon_cost_chain.csv
+b89004f254504d8b8ea6ccc437b5fa9ba32ce6a1	CHANGELOG.md	REGISTERED: two -- 'two-exponential', the estimator's form
+b895311285bab83f9797af0cf364f0aee1f8e3c5	CHANGELOG.md	REGISTERED: one, 1986 -- 'one notes cell'; and the year in `benchmarks/jones-1986.json`, an identifier
+b8dbdcaab9802b536754000d6c27a64ffe410aee	CHANGELOG.md	REGISTERED: zero -- `FIGURE_TEXT_UNREVIEWED_CEILING` in tests/test_ledger_claims.py
+b98e8e88898a9f587757cf2b58f5959981f38ec9	CHANGELOG.md	REGISTERED: 3606, 0.77, 4683 -- Kelly's printed digits and their quotient as SYSTEMS.md's G-Kelly section states them
+ba9152303ed441073e959d3a53348a9f0fe77797	CHANGELOG.md	REGISTERED: 1 -- '1/E_μ', the inverse proportionality NEUTRONOMICS.md states
+bb15d2a04dad46b89b598817dece65b87ec7420e	CHANGELOG.md	REGISTERED: Five -- the five findings this sentence itself enumerates, F-1 to F-5 by the dataset document's numbering, as registered on the dated entry below; the live count of unsettled findings is T-63's 'findings that are defects' pin on the entry's closing sentence
+bc0d7ce0f6d4d26899d20e8f96b855bac1dd56b1	CHANGELOG.md	REGISTERED: 7, 1, 0 -- the scoreboard as the v1.1.0 notes recorded it, superseded by the v1.2.0 class-tiered scoreboard entry
+bd0bdc10a82520e5f600c186181c56fc457bdd60	CHANGELOG.md	REGISTERED: zero -- the identically-zero `zero_eig` cell, as DESIGN.md's zero-EIG item describes it
+bed5c12139fc9daff3e75a9c5013be0e49634dce	CHANGELOG.md	REGISTERED: two -- the two columns, `stage` and its deprecated alias
+bf08d1f916dd777b883ef93e98682e3849be3ebc	CHANGELOG.md	REGISTERED: Two -- the two forms the bullet adds
+bff2d0037b47593aaf9098a7e3fe3ac74f87a5a7	CHANGELOG.md	REGISTERED: one -- the one `needs_verification` row of openmucf/data/muon_cost.csv
+c0f7600a7d0e01946fd883f35282bed3fcb819ea	CHANGELOG.md	REGISTERED: 7.7, 18.6, 0.30, 22.6, 84.3 -- detection power at a 0.30-bit shift, rejected band against measured band, as scripts/generate_design.py's preamble records it
+c1bf9b6f52e54e0e93411ced8eaec3bfb45d67af	CHANGELOG.md	REGISTERED: 10, 4 -- the rejected band's conservatism against the 4-sigma design point, as scripts/generate_design.py's preamble records it
+c2c606338704d137bd585fb617fac196e0bec6d5	CHANGELOG.md	REGISTERED: one -- 'on one architecture', a description
+c2f8acea5ede01c6d0d328ad05578ad7f26c8334	CHANGELOG.md	EXERCISED: sixteen -- tests/test_koucheng2026.py::test_every_registered_row_is_exercised
+c384f5837d17a2b2d5974d9384be2c73a8659fde	CHANGELOG.md	REGISTERED: one, 1986 -- 'one cell each'; and the year in the benchmark file name `benchmarks/jones-1986.json`, an identifier
+c3a235e87dd8f3649dbe443d2b77b194ac0d5cc3	CHANGELOG.md	REGISTERED: 10, ³ -- the retracted phrase '10³ gap', quoted; FINDINGS.md's section-2b amendment records it as retracted
+c3dd34704896dc3c4c9b54faf7401f755df040d4	CHANGELOG.md	REGISTERED: sixteen -- the error codes E001 to E016 FORMAT_SPEC.md defines; openmucf/g4/spec.py raises each as a literal at its site, and no table computes the count
+c4949e9de29d66d4da29175bd0fb8f219790e579	CHANGELOG.md	REGISTERED: Two, one -- the two data files, nodes and edges; 'for one reason', an idiom
+c523161f940b687dcfc485d2ac74dcf4fdf83f09	CHANGELOG.md	REGISTERED: 0.84 -- the omega_s0/R correlation CALIBRATION.md's legacy-box row prints (its widened-box headline is 0.91)
+c52b21f104e914771dbc252226b68c30a5db3660	CHANGELOG.md	REGISTERED: 10, ³ -- the retracted phrase '10³ gap', quoted
+c5e3d37109b142070c9abd49e1aac09044550e32	CHANGELOG.md	REGISTERED: 386 -- the sentence registry's row count before this pass, dated
+c62f067bd535ee99723a7d64476588694f84c09e	CHANGELOG.md	REGISTERED: 5 -- 'η=5', FINDINGS.md's section-1c structural bracket
+c6aa87eed81ee44f0e9dfba37d0426ea1fa529ba	CHANGELOG.md	REGISTERED: 24.8, one -- DESIGN.md's audit section states the 24.8 sigma; 'the one arm64 EIG flag', a single event
+c6e051aca7a5908a703e01e05ad69d6b4840ea1d	CHANGELOG.md	REGISTERED: one -- 'a beam-kinetic one', a pronoun
+c7a491128b9b1587fed37a87f4bb773c49e4e271	CHANGELOG.md	REGISTERED: three -- 'three orders of magnitude', the separation scripts/generate_calibration.py's floor comment states
+c85facd21334f4134835ba5efd55c94525bacb64	CHANGELOG.md	REGISTERED: one -- 'one-shot', an idiom
+c9a631dd3c13c58ab89430b00211add71002c8a2	CHANGELOG.md	REGISTERED: Three -- the three CC-BY data files the sentence names
+ca0ee91d6a60a9a891619d99c431cdc9d975216f	CHANGELOG.md	REGISTERED: one -- 'one example', a row per form in tests/ledger_claims_examples.tsv
+ca972f3aa3bc8ac7960554f3e750b30f734eeeb2	CHANGELOG.md	REGISTERED: 15.7, 14 -- Kelly's electrical gain at his Table-1 point, 15.69% in SYSTEMS.md's X_mu=150 row, against the 14% headline SYSTEMS.md's G-Kelly section names
+caf5a6dd443124e4cbef5d7505c1ed9ed2d2c4c2	CHANGELOG.md	REGISTERED: 1 -- the closed form's numerator, openmucf/analytic.py
+cb0b136dcab6b855b2bb3655a8437cd176a8cf7d	CHANGELOG.md	REGISTERED: 0.77, 0.64 -- the R and R_X requirements docs/getting-started.md prints
+cb22a5e5f157a178db674b0b276147c1e25e853b	CHANGELOG.md	REGISTERED: four, sixteen -- the four G_mu rows and the sixteen `V_kouchenlawson_` rows of openmucf/data/validation_targets.csv; tests/test_koucheng2026.py::test_every_registered_row_is_exercised asserts the sixteen
+cbcbe38ba4ac67155808e30a8b728cbdfa292e84	CHANGELOG.md	REGISTERED: one -- 'one line at a time', how the arithmetic guard matches
+cbe0a41471fa8d8917f4e1b2c88c8b66fa6395e2	CHANGELOG.md	REGISTERED: two -- 'two or more source lines', the wrapping condition the sentence guard applies
+cda42aaadeadadf6b7dcd627c0395c3f2515ebc1	CHANGELOG.md	REGISTERED: 1, 0.557, 0.45 -- '(1−R_col)', the formula; the effective sticking against its band, as VALIDATION.md's V_petitjean rows and openmucf/data/validation_targets.csv record them
+ce8bf816c1f332ea3e79ccc2a422484bba82e130	CHANGELOG.md	REGISTERED: 1 -- '<1%', the G-T1 tolerance TWIN_AUDIT.md's disappearance gate states
+cecb150055a581901915a99ec58d7ba60f464ea4	CHANGELOG.md	REGISTERED: one -- 'one rendered line at a time', how the line guard matches
+cf1029d26128732b2ead8559ef67827f556e3f7a	CHANGELOG.md	REGISTERED: Three -- the three rate-ledger rows the bullet enumerates
+cf7471bfc7a5473c5f61e4e7441d08b64456f74d	CHANGELOG.md	REGISTERED: 1986 -- the year in the benchmark case name `jones-1986`, an identifier
+d04f7c3c548ab2eafd8731c1cfb39b51e62ddc54	CHANGELOG.md	REGISTERED: 0.30 -- the v1 default eta_acc SYSTEMS.md's self-correction finding names
+d0c20777b736d86e487a71bdd4ab4cd6da92dfe9	CHANGELOG.md	REGISTERED: two -- 'the other two' statements
+d45b3c707aea27d18eeed0c9ae22c479c9a3a291	CHANGELOG.md	REGISTERED: zero -- 'zero numeric change', the v1.1.0 notes' statement about the ledger loader
+d53eec10c05354eb751e093a864e188a25097247	CHANGELOG.md	REGISTERED: 46, 5 -- figure-text strings and the generators carrying them at this entry's date: dated counts
+d77fcc48c655f5d5aa1cc792e64508024f6a7fab	CHANGELOG.md	REGISTERED: 1, 14, 0.77 -- '~1e-14', the closed-form-vs-solver agreement as this entry recorded it (FRONTIER.md's consistency gate states < 1e-9 relative, locked by tests/test_frontier.py), and the R >= 0.77 requirement FRONTIER.md prints
+d7886a188607288856b058688cd324441b05d13c	CHANGELOG.md	REGISTERED: 0.5 -- 'c_t=0.5', the Fig. 3a panel scripts/digitize_yamashita_fig3a.py reads
+d7bb6e6abc39ddc8e49f5501d8a9fc5f46ad7571	CHANGELOG.md	REGISTERED: 5 -- the superseded relative constant, as DESIGN.md's audit section records it
+d8cdaa7730a1de2bc56f28f487158ce70ba10cf1	CHANGELOG.md	REGISTERED: 8 -- the entries of `SENTENCE_OPENERS` in tests/test_ledger_claims.py
+db1eb055ab498ac5539ae1b8821d8149ac11ca04	CHANGELOG.md	REGISTERED: 5, 12 -- the cells that failed on the first other-architecture run, as scripts/generate_design.py's preamble records it
+dd273092273680d58f8c448b96467884c859225c	CHANGELOG.md	REGISTERED: two -- the two byte-identity assertions the bullet describes
+dd9bbfd2fd5c23b9406e40dc33f335b7ab7d94b4	CHANGELOG.md	REGISTERED: 5 -- the superseded relative constant, as DESIGN.md's audit section records it
+e0f50cf1474fad9957fa148a5eba658d154099d0	CHANGELOG.md	REGISTERED: Three -- the three lexical holes the bullet enumerates
+e218061e9f9519b7d7aa499e24dda387e6d0dd69	CHANGELOG.md	REGISTERED: 2367 -- the net-electrical breakeven at the v1 default eta_acc, as SYSTEMS.md's self-correction finding restates it
+e2609569503d85f919f79cc0d2c5482fc56dfa6b	CHANGELOG.md	REGISTERED: 0.555, 0.12, 0.60 -- the simulated false alarm and the chosen regime, as scripts/generate_design.py's preamble records them; DESIGN.md prints 0.555%
+e52ddcb95b7eb96af3b7157dc3aa4a4c30fbc04d	CHANGELOG.md	REGISTERED: 500, 0, 1.45, 0.77 -- FINDINGS.md section 3: P(X_mu > 500) = 0.0% at liquid density, and the R >= 0.77 requirement
+e55d79ea8d6fac72603c6d4429f3fb4062d2766f	CHANGELOG.md	REGISTERED: 6, 3 -- the v1 state vector's six components, indices 0..5 as openmucf/cycle.py's index comment records them, three of them dynamical
+e5cfd57c5792cbf2af5144a93d1fa8260528eec6	CHANGELOG.md	REGISTERED: 2.3, 3, 1, 6, 2286, 6002 -- the T3 prior before ('Uniform(2.3e3, 1e6)') and after, as FINDINGS.md's section-2b amendment prints them
+e5eccfda833ed81773d753adeadad508d998151d	CHANGELOG.md	REGISTERED: 0.088, 92, 1.48 -- the arm64 flag's place in the seed-perturbation distribution, as scripts/generate_design.py's preamble records it
+e6bac5e5c9d5cae5e18fb96d744ab6efe701ae46	CHANGELOG.md	REGISTERED: one, six -- the priors of openmucf/data/uq_priors.csv, six rows, one of them measured
+e774abca1368264c85adf8d1cd42e2b9a92d7113	CHANGELOG.md	REGISTERED: 2.09, 2.62, 2.235, 30 -- the ratio's band and solid-line value as openmucf/validate.py states them, and the ±30% tolerance of VALIDATION.md's V_yamashita_ratio row
+e89b8dd6eb02325be6f4e8570d0ec48289a7b801	CHANGELOG.md	REGISTERED: 3, 1 -- the superseded fixed band and the '±1–3 pp' floor quoted from docs/xray_feasibility.md, as scripts/generate_design.py's preamble records them
+e89eb94cb5f89405e88737f41f7b6f1f9fb6b35c	CHANGELOG.md	REGISTERED: 325 -- the sentences the first change read at its head, a dated count
+e8a6e3f04d282a50e508a049359d5642544ec52d	CHANGELOG.md	REGISTERED: two -- the two other boxes the blockquote names
+e97157b21021a9da9f345ab51d5fd58e018453ce	CHANGELOG.md	REGISTERED: 3885, 11398, 2.0, two -- the two regimes' `min ess` ranges, as scripts/generate_calibration.py's floor comment records them
+ea174f8ea268469d1707edea406526336e0824ff	CHANGELOG.md	REGISTERED: 4 -- '4σ', `AUDIT_K_SIGMA` in scripts/generate_design.py
+ea95ebee4da6d07a2288b09971d53c6d401c3b5c	CHANGELOG.md	REGISTERED: 79 -- single-line strings the prototype miscounted, a dated count
+ebd9f7b7b45d15fb6a048888078c9dbebc8442ae	CHANGELOG.md	REGISTERED: three -- the three rows the bullet enumerates
+ebf11564956263e61a2865d8d35296dd96cee64c	CHANGELOG.md	REGISTERED: Two -- the two layers, Layer 1 and Layer 2
+ede2ec63bfde48973508a65ade7f139b5ceb6f25	CHANGELOG.md	REGISTERED: 20 -- the forecast tests as the v1.0.0 notes recorded them
+eea6042f30043b06abe6a0e0f988e17f4fb5c033	CHANGELOG.md	REGISTERED: ³ -- the mass number of ³He, a nuclide label
+f1603e2ffed2ef735382a283185db8a885a79d1e	CHANGELOG.md	REGISTERED: three, one -- the three `slow`-marked tests the weekly job runs in one process
+f1b5d66480badda8965bf9aec143f9a1d5dd7df0	CHANGELOG.md	REGISTERED: one -- 'one-sided', a floor
+f37374c38727965c42ef6ddead18d5e6b0de78af	CHANGELOG.md	REGISTERED: 13, 9, 4 -- openmucf/data/rates.csv's rows by status as the v1.0.0 notes recorded them, superseded by the rows later releases added
+f4441b224c4add6bc3198dc9e959a6eca50c3da9	CHANGELOG.md	REGISTERED: 20 -- the mcse band, `AUDIT_RTOL_ESS_MCSE` in scripts/generate_calibration.py
+f47945360efb7d12865f35e08d23003fd07e38ad	CHANGELOG.md	REGISTERED: 0.042, 0.068, 1.40, 6.10 -- the per-cell realization noise, as scripts/generate_design.py's preamble records it
+f5071755fc8809013c151d952d29e4fcf4328345	CHANGELOG.md	REGISTERED: 1.2, 440, 640 -- this entry's own re-scaling of the liquid band from phi = 1.2, recorded as a found-false figure left for its own change; FINDINGS.md section 3 still prints ~530-640
+f58ae742f67f1e6312da3366e99af9ac7e2324ce	CHANGELOG.md	REGISTERED: 112.6, 114.5, 156.5, 160.3, 113, 130.5 -- VALIDATION.md's Kou–Chen and Petitjean rows, observed and predicted
+f5e9f72c8c0e82f7edadc3b4d828efbb9c1738dc	CHANGELOG.md	REGISTERED: 100, 3.0 -- the chain-seed sweep and the weak chain's red rate under the superseded band, as this entry records that dated sweep; scripts/generate_calibration.py's floor comment cites the same 100-realization sweep
+f65671923b273805532c2a7a8cb08d3ae3289fd8	CHANGELOG.md	REGISTERED: 10 -- openmucf/data/validation_targets.csv's rows as the v1.0.0 notes recorded them, superseded by the targets later releases added
+f797f4285fc68b4df2ca9e7c70a09ef4afbaedcf	CHANGELOG.md	REGISTERED: one -- 'one row per record', the audit file's shape
+f7d612df95cb3cbad8c104fba6672f1288aba9f6	CHANGELOG.md	REGISTERED: 4.70 -- Kelly's quoted GeV per muon, the `kelly_hart_rose_2021` row of openmucf/data/muon_cost.csv
+f90be05c918b917a354bbddfbc4fec4f5f619413	CHANGELOG.md	REGISTERED: three -- the three grades, `unknown` among them
+f936ec3d3ee24c289d62515adb2f4423be97b52b	CHANGELOG.md	REGISTERED: 300, 1.45, 100 -- the anchor and the warning's bounds, `phi > 1.45 or T < 100 K` in openmucf/formation.py
+fb613a50d5d23802662428482c364568ccf745e4	CHANGELOG.md	REGISTERED: 150, 4, 20 -- Jones et al. (1986)'s quoted result, as the `Jones1986` note in openmucf/data/references.bib records it
+fb6b01ffb1e64d0e070f0aaa39196aa9395b3cba	CHANGELOG.md	REGISTERED: Two -- the two loss channels openmucf/cycle.py adds, ttμ and ³He
+fb793049104af1e756baa100ca02d29f98e978f4	CHANGELOG.md	REGISTERED: one -- 'only with one', an argument
+fdd584496bd9393ca6d8f88c721b4dbf4a97a97a	CHANGELOG.md	REGISTERED: 303 -- the sentences the second change read at its head, a dated count
+fe853e3961402d99955d84a81c88ffeb93261243	CHANGELOG.md	REGISTERED: 0.0 -- the `lambda_ttmu` value openmucf/data/rates.csv ships
+fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two tests', the pins the sentence refers to, as this entry counted them
 006c4972c69a88d12c186a64835f4c668b7b333f	DATASET_D1.md	REGISTERED: 0 -- 'Z = 0', the index of the array's first entry; the count on this line is T-63's pin
 00b9749e2d4eb0147e94d9551c287c04a511fbc1	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of those rows')
 0451d3e3c319d700b6bf6ab4cea8499d6426a1aa	DATASET_D1.md	REGISTERED: 233, 235, 238, 236 -- the uranium nuclide labels U-233, U-235, U-238 and U-236: the three the primary's table carries and the one it does not, read from the paper
