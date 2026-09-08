@@ -6,7 +6,7 @@ check passes on the premise the finding rests on -- that a contracted build move
 all -- and prints the figures it saw. A producer that skipped for want of FMA is a skip that is
 printed, and ``--require-fma`` turns it into a failure on the platforms that must not skip.
 ``cpp/tools/README.md`` restates three of the figures; with ``--readme`` they must equal the
-document's on every platform, and so, under ``--exact``, the producer's.
+document's, and so, under ``--exact``, the producer's.
 
 Standard library only.
 """

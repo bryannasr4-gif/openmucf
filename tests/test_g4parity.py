@@ -1778,7 +1778,7 @@ class DocumentPins:
 
 
 def document_pins() -> DocumentPins:
-    """Counts published in `DATASET_D1.md`, `CHANGELOG.md` and `README.md` are pinned to the
+    """Counts are pinned to the
     shipped data.
 
     This is the guard the D1 chain was missing, and its absence was measured rather than supposed:
