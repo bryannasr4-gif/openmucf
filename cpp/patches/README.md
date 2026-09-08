@@ -13,7 +13,7 @@ only inserts.
 The lookup is off by default: nothing in the patch calls `G4MuonicDataTable::Enable()`, and until an
 application does so before its first capture-rate call, the four functions run exactly their
 unpatched code after one boolean test — no lookup, no file access, no message. With the opt-in on,
-each function first applies its own clamp, as before, then consults the table; a key the table lacks
+each function consults the table; a key the table lacks
 falls through to that function's compiled-in code, so the fallback formula is reproduced as it is,
 including the negative rates the dataset's documentation registers.
 

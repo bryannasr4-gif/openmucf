@@ -5,7 +5,7 @@ prove the compiler turned those decimal literals into the doubles we think it di
 Python reference implementation reproduces the compiled function. C++ does not even *require* a
 correctly-rounded decimal literal ([lex.fcon]).
 
-These two drivers close that gap by measurement, once. The measurement is then committed as
+These drivers close that gap by measurement, once. The measurement is then committed as
 `data/g4/d1/d1_gp_sweep.oracle`, so CI can check the parity claim on every platform **with no Geant4
 present** — because the Python reference reproduces the compiled library exactly, the committed
 digest is a check anyone can run.
