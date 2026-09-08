@@ -26,6 +26,7 @@ set(G4MUONICDATA_DATASET_DIR "${G4MUONICDATA_REPO_ROOT}/data/g4/d1")
 set(G4MUONICDATA_ORACLE "${G4MUONICDATA_DATASET_DIR}/d1_gp_sweep.oracle")
 set(G4MUONICDATA_CONFORMANCE_DIR "${G4MUONICDATA_REPO_ROOT}/tests/fixtures/g4dat_conformance")
 set(G4MUONICDATA_DOCUMENT "${G4MUONICDATA_REPO_ROOT}/DATASET_D1.md")
+set(G4MUONICDATA_TOOLS_README "${G4MUONICDATA_REPO_ROOT}/cpp/tools/README.md")
 
 if(G4MUONICDATA_FORCE_STREAM_PARSER)
   add_compile_definitions(G4MUONICDATA_FORCE_STREAM_PARSER)
@@ -159,7 +160,7 @@ if(G4MUONICDATA_GNU_LIKE)
     add_test(NAME f3_check
              COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/check_f3.py"
                      --producer-output "${G4MUONICDATA_F3_OUTPUT}" --document "${G4MUONICDATA_DOCUMENT}"
-                     ${G4MUONICDATA_F3_CHECK_FLAGS})
+                     --readme "${G4MUONICDATA_TOOLS_README}" ${G4MUONICDATA_F3_CHECK_FLAGS})
     set_tests_properties(f3_check PROPERTIES DEPENDS f3_produce)
   else()
     # Registered as a failure, not omitted: a missing interpreter must not read as a passing check.

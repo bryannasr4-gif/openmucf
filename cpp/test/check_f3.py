@@ -5,6 +5,8 @@ The document's figures are read from its F-3 block by pattern, never typed here.
 check passes on the premise the finding rests on -- that a contracted build moves the expression at
 all -- and prints the figures it saw. A producer that skipped for want of FMA is a skip that is
 printed, and ``--require-fma`` turns it into a failure on the platforms that must not skip.
+``cpp/tools/README.md`` restates three of the figures; with ``--readme`` they must equal the
+document's on every platform, and so, under ``--exact``, the producer's.
 
 Standard library only.
 """
@@ -24,6 +26,7 @@ PRODUCER_LINE = re.compile(
     r"^F3 cxx=(\S+) points=(\d+) differ=(\d+) over1ulp=(\d+) max_ulp=(\d+) at=\((-?\d+),(-?\d+)\) "
     r"max_rel=(\S+)$"
 )
+README_FIGURES = re.compile(r"up to \*\*(\d+) ulp\*\*, with (\d+) of the (\d+) swept points")
 SKIPPED_PREFIX = "F3 SKIPPED"
 
 
@@ -38,6 +41,17 @@ def document_figures(document: Path) -> tuple[int, int, int, int, int, int]:
     return int(points), int(differ), int(over_one), int(max_ulp), int(z), int(a)
 
 
+def readme_figures(readme: Path) -> tuple[int, int, int]:
+    """(max ulp, differ, points) from the harvest tooling's restatement -- exactly one match."""
+    matches = README_FIGURES.findall(readme.read_text("utf-8"))
+    if len(matches) != 1:
+        raise SystemExit(
+            f"V-13 FAIL {readme} restates the F-3 figures {len(matches)} times, expected exactly once"
+        )
+    max_ulp, differ, points = matches[0]
+    return int(max_ulp), int(differ), int(points)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--producer-output", type=Path, required=True, help="the line g4muonicdata_f3 wrote")
@@ -46,7 +60,23 @@ def main(argv: list[str] | None = None) -> int:
         "--exact", action="store_true", help="require all five figures to equal the document's"
     )
     parser.add_argument("--require-fma", action="store_true", help="a producer skip is a failure")
+    parser.add_argument(
+        "--readme", type=Path, help="cpp/tools/README.md, whose restated figures must equal the document's"
+    )
     args = parser.parse_args(argv)
+
+    stated = document_figures(args.document)
+    restated = ""
+    if args.readme is not None:
+        readme = readme_figures(args.readme)
+        if readme != (stated[3], stated[1], stated[0]):
+            print(
+                f"V-13 FAIL {args.readme} restates max_ulp={readme[0]} differ={readme[1]} "
+                f"points={readme[2]}; the document states max_ulp={stated[3]} differ={stated[1]} "
+                f"points={stated[0]}"
+            )
+            return 1
+        restated = f" readme max_ulp={readme[0]} differ={readme[1]} points={readme[2]}"
 
     line = args.producer_output.read_text("utf-8").strip()
     if line.startswith(SKIPPED_PREFIX):
@@ -61,10 +91,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     cxx = match.group(1)
     seen = tuple(int(match.group(i)) for i in range(2, 8))
-    stated = document_figures(args.document)
     figures = (
         f"cxx={cxx} points={seen[0]} differ={seen[1]} over1ulp={seen[2]} max_ulp={seen[3]} "
-        f"at=(Z={seen[4]}, A={seen[5]}) max_rel={match.group(8)}"
+        f"at=(Z={seen[4]}, A={seen[5]}) max_rel={match.group(8)}{restated}"
     )
     if args.exact:
         if seen != stated:

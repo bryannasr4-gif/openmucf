@@ -1757,7 +1757,23 @@ def _stated(text: str) -> int:
     return int(cleaned.replace(",", "").replace(" ", "").replace(" ", ""))
 
 
-def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
+@dataclasses.dataclass(frozen=True)
+class DocumentPins:
+    """The collapsed documents and the pin tables checked against them, as `document_pins` built
+    them -- so the prose coverage check can reuse every pattern without restating one."""
+
+    doc: str
+    changelog: str
+    readme: str
+    tools_readme: str
+    claims: list
+    rounded: list
+    changelog_claims: list
+    readme_claims: list
+    tools_readme_claims: list
+
+
+def document_pins() -> DocumentPins:
     """Counts published in `DATASET_D1.md`, `CHANGELOG.md` and `README.md` are pinned to the
     shipped data.
 
@@ -2164,6 +2180,16 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
          r"negative capture rates on \d+ of those (\d+) points", swept),
     ]
 
+    # `cpp/tools/README.md` restates the sweep size beside the contraction figures that only a
+    # compiled producer can check (cpp/test/check_f3.py); the size is the one number there this
+    # file computes.
+    tools_readme = " ".join(
+        (REPO / "cpp" / "tools" / "README.md").read_text(encoding="utf-8").split()
+    )
+    tools_readme_claims = [
+        ("swept points, harvest tooling", r"with \d+ of the (\d+) swept points", swept),
+    ]
+
     for what, pattern, value, places in rounded:
         hits = re.findall(pattern, doc)
         assert len(hits) == 1, (
@@ -2179,6 +2205,7 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     for where, text, rows in (
         ("CHANGELOG.md", changelog, changelog_claims),
         ("README.md", readme, readme_claims),
+        ("cpp/tools/README.md", tools_readme, tools_readme_claims),
     ):
         for what, pattern, expected in rows:
             hits = re.findall(pattern, text)
@@ -2288,6 +2315,11 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
         f"declared directive says [{model.zmin}, {model.zmax}]"
     )
 
+    # F-1 names its two call sites by the vendored files' own identifiers; both must still exist
+    # in the copies the dataset is measured against.
+    assert "ApplyYourself(" in VENDORED.read_text("ascii")
+    assert "ConstructMuonicAtom(" in HELPER.read_text("ascii")
+
     # F-4's gap list is the evidence for its set equality, so it is checked as a set rather than as
     # a string: the document writes runs as ranges, and how it spells them is not the claim.
     gap_text = re.search(r"the same gaps at Z = (.+?)\. That is a set equality", doc)
@@ -2317,3 +2349,13 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
             f"DATASET_D1.md F-7 says the first negative A at Z={stated_z} is {stated_a}; the sweep "
             f"says {first_negative.get(stated_z)}"
         )
+
+    return DocumentPins(
+        doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
+        tools_readme_claims,
+    )
+
+
+def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
+    """Every pin table `document_pins` builds is checked as it is built; this test is that run."""
+    document_pins()

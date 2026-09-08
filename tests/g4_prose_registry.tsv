@@ -1,0 +1,165 @@
+006c4972c69a88d12c186a64835f4c668b7b333f	DATASET_D1.md	REGISTERED: 0 -- 'Z = 0', the index of the array's first entry; the count on this line is T-63's pin
+00b9749e2d4eb0147e94d9551c287c04a511fbc1	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of those rows')
+0451d3e3c319d700b6bf6ab4cea8499d6426a1aa	DATASET_D1.md	REGISTERED: 233, 235, 238, 236 -- the uranium nuclide labels U-233, U-235, U-238 and U-236: the three the primary's table carries and the one it does not, read from the paper
+0606f58e0b1a635c213fdff53d2251e23197e461	DATASET_D1.md	REGISTERED: Two, one -- 'Two conforming builds of one source': the two compiler configurations the block above names
+068cd8df0a8614508372df63da64b7e16de54ed0	DATASET_D1.md	REGISTERED: 82, 245, 208 -- restates F-1's threshold at Z=82 (245), which T-63 holds to the sweep where F-1 lists it; 208 is the nuclide label Pb-208
+086519d0f5677ec6369fd28e742346a1362c3d45	DATASET_D1.md	REGISTERED: 3.5, 13 -- the F-3 producer's printed maximum relative difference (max_rel in the line g4muonicdata_f3 writes); check_f3.py prints it beside the five figures it compares but does not compare it
+08d607c6141ee5264c60c6778cc0d17b493126f8	DATASET_D1.md	REGISTERED: 0 -- the degenerate input 'Z = 0', a probe harvest_d1_degenerate.cc declares and T-52 classifies (NaN)
+0d5b9cc28ee5bb23ed50a0018f7cf039088a8132	DATASET_D1.md	EXERCISED: 92, 238, 233, 235, 236 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
+10693800bf575a6bab2c0e414333145592c98b17	DATASET_D1.md	REGISTERED: one -- 'more than one capture record': the earlier rule's threshold, stated as that rule
+1309e7402a3f8dd54d108f79cfaa3061b4e1147e	DATASET_D1.md	REGISTERED: one -- 'From one file': the single vendored source file the line names; T-40 pins it and T-69 the second copy
+1586c84d2861de25bf2b0777bd600b9af8812cb1	DATASET_D1.md	REGISTERED: one -- a pronoun ('this one')
+188a011c8fcde489a83cca828a4b97deac5e0f1e	DATASET_D1.md	REGISTERED: 59, three, 30.53 -- the praseodymium row as the primary prints it ('59(30.53)'), quoted, and its position on the page ('three rows further down'), read off the page image as F-4 describes; the paper is not redistributed
+19dfef9048847801a2cb644f72aef658e3beff06	DATASET_D1.md	REGISTERED: 0, 1, 12, 5.947382, 07 -- 'A = 0' and 'Z = -1, A = 12' are probes harvest_d1_degenerate.cc declares and T-52 classifies (+inf, negative); the printed value at (-1, 12) is read on this line by T-63 and held to the reference implementation
+1a7c9f7ea7ff563785dc871effeb57c7d989587f	DATASET_D1.md	REGISTERED: ³ -- the nuclide label ³H
+1ba356e6bb4f0c7212769eb48eff02fa44d938b0	DATASET_D1.md	REGISTERED: 0 -- 'zeff[0]' the array index and '0.' the element's value as declared; T-44 holds every effective charge to the source literal and T-63 pins the array length on this line
+1e2b53d1fc37facfbde8fcdc314f90eef8804312	DATASET_D1.md	REGISTERED: Three, one -- three of the four unsettled rows appear in the list above and one does not; the four is pinned on this line and the next sentence names the one
+1edcb2763a9bdb737e505221307e045e469d9a75	DATASET_D1.md	EXERCISED: 2.870050, 08 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
+1ff0224d276b6205e5c8b8344bea4c5c4fff98a7	DATASET_D1.md	REGISTERED: 2, 1.0, 4 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
+217616f9afea206866d9a71fd01fcd8e0dd6facb	DATASET_D1.md	REGISTERED: one -- 'one mass number away': the difference between the 207 and 208 named above
+22235f1bb4755273c93e54eeca9ea357423dce00	DATASET_D1.md	REGISTERED: 1 -- the numerator of the lifetime '1/(lambdac + lambdad)', the vendored helper's own expression (G4MuonicAtomHelper.cc)
+228e3ded7575e72b06d0638bd70d5e49b4ad7089	DATASET_D1.md	REGISTERED: 119, 30, 66, 32, 72 -- the nuclide label Sn-119 and the record keys (30, 66) and (32, 72), rows of isotope_audit.csv whose evidence field states the mass-number comparison
+231bc7bec79b1da7e953829f8b8047cb606a01c6	DATASET_D1.md	REGISTERED: one, 0 -- 'every one' is a pronoun; the two zeros are the bit-identity T-48 asserts over the sweep's digest and T-49 over the diagnostic subset (a matching digest is 0 mismatches and 0 ulp)
+23edd526835fcfbc5a07ac5b8dc631fc858ab80a	DATASET_D1.md	REGISTERED: two -- 'the two ways a row can be false': the two cases the paragraph defines
+26fabfd840f86dbc142e9e99303178299afbb001	DATASET_D1.md	REGISTERED: 1 -- the declared domain bounds Z ≥ 1 and A ≥ 1: the model contract this dataset declares; they are the sweep box's lower bounds, which section 4's box pins to d1.SWEEP_Z_MIN and d1.SWEEP_A_MIN, and T-52 asserts every degenerate probe lies outside them
+271a208a589d9e07dc14cd819540293ed8bc8e51	DATASET_D1.md	REGISTERED: 1, 6 -- '1e6/s', the definition of the µs⁻¹ unit the table values carry; a unit, not a measurement
+280bf07023b0403dc1a52ac5cc1c8f6c0b2843b1	DATASET_D1.md	REGISTERED: 82 -- the atomic number of lead, naming the shell closure
+29152a7aec3148ba8e108093e270e1e7b9616759	DATASET_D1.md	REGISTERED: two, 56 -- 'the two' the same two rows; 56 is barium's atomic number
+2b36778223957b952b2a52f83b946cc19df822f5	DATASET_D1.md	REGISTERED: Two, one -- 'Two tests' are T-46 (the multiset) and T-47 (the lookup), which the sentence describes; 'one compares' is a pronoun
+2cdde4700b05ba44d283ecd0188bc2ad53109a91	DATASET_D1.md	REGISTERED: two -- 'the two sources the source comment carves them out to': the hydrogen and helium papers section 1 names
+30f426d52b58cdfc262f0eb52c030b1faa1e430a	DATASET_D1.md	REGISTERED: 17, 35, 24, 52, 92, 236 -- the three keys the primary fails to establish, rows of isotope_audit.csv; their count on this line is T-63's pin
+353f50e5aae23f2f604bf758a0d6868a5be10dab	DATASET_D1.md	REGISTERED: 77 -- the primary's reference number, continued from 'reference' at the end of the previous line
+3637d3221db97429f0889539d396786d1eecca1d	DATASET_D1.md	REGISTERED: 6 -- the withdrawn earlier claim's threshold ('Z ≳ 6'), quoted as the statement this paragraph retracts
+384fe02efde48525b9711595c81d837ed070d8e1	DATASET_D1.md	REGISTERED: 92, 238, 12.592, 0.035, 233, 14.27, 0.15, two -- the Z=92 records quoted as the vendored source declares them; their values ship in d1_capture.g4dat, which T-43 holds to the source literals, and their order is the stated-order check T-63 makes on the previous line; 'the two records' counts the remaining A values of that order
+3bb35b9b823f57e204542d37f4b7fb2fef9815d7	DATASET_D1.md	REGISTERED: 94 -- the earlier design note's wrong figure, quoted as history; T-63 pins the second '94' on this line to the table's maximum Z
+3c0c53f954a3230e790142cb5132513f2b6b4a4d	DATASET_D1.md	REGISTERED: 0.5 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
+3e85331cc979ddd4049f03ddc6e5ab87105e1257	DATASET_D1.md	REGISTERED: two, one -- 'the two copies' are the preprint and the published article; 'the one that must move' is a pronoun
+3e9f6294734fb92c5112c233aea266548af0aa51	DATASET_D1.md	REGISTERED: 1, 100, 0 -- the clamp bounds are read on this line by T-63 and held to the declared directive's zmin and zmax; 0 is the index the clamp excludes
+3eaf4386759956decb28ee753f0857c317a3f701	DATASET_D1.md	REGISTERED: one -- a pronoun ('a clamped or corrected one')
+3f4de501d48b82152976c834f0ae32a5d636726a	DATASET_D1.md	REGISTERED: one -- a pronoun ('exactly one of them'), not a count of anything shipped
+3fabf3f74aec34a2080d9d85166900d1cdf71306	DATASET_D1.md	REGISTERED: two -- 'two printed entries': the natural-composition and separated-isotope entries the paragraph describes
+40d4dbe7dc26388337aa5e0d67fd10b972a7d9c2	DATASET_D1.md	REGISTERED: one -- a pronoun ('than one that ships it')
+426a4e658b756e046c49662a3c76cf5c23447ecc	DATASET_D1.md	REGISTERED: two, one -- 'two differing rates at one Z': the earlier rule's premise
+4506ae2554dc5494f67d4e3299c539cca5e036ad	DATASET_D1.md	REGISTERED: 56 -- the array index of the barium row; the value is T-63's pin
+4610fc31aa24685e8d0c00bd17d4946cbd01849e	DATASET_D1.md	REGISTERED: 0 -- the sign threshold in 'λ_c < 0'; the two counts on this line are T-63 pins
+474bbcf3dd45ca61c79db39f6d1492a5f31dcf90	DATASET_D1.md	REGISTERED: Three, 17, 35, 24, 52, 38, 88 -- the three unsettled keys the primary prints ambiguously, (17, 35), (24, 52) and (38, 88): rows of isotope_audit.csv carrying needs_verification: true; with (92, 236) they are the four T-63 pins
+48f22a5ee3b8ffbdb6eb0e9074d8077c45aace45	DATASET_D1.md	REGISTERED: two -- 'the two overlap': the same two uncertainties
+494e3e23ae36c7a4959a592a7a4d96d0dd0af1c0	DATASET_D1.md	REGISTERED: two -- the two qualifications the next sentences state
+4964991c4124ecdd79c8de6e7c937f5aa943d484	DATASET_D1.md	REGISTERED: 57 -- the atomic number of lanthanum; its effective charge on the previous line is T-63's pin
+4989a7739ceb7644b9c3b6c757fdc01d2c0a2ddd	DATASET_D1.md	REGISTERED: two -- the same two statements, referred back to
+49faed848a85357acba9e0d638fbf361c9b43943	DATASET_D1.md	REGISTERED: 1 -- the declared domain bounds, restated from section 2
+4a805b0a8cbfea117a4cf0204be495afe7afbcb7	DATASET_D1.md	REGISTERED: one, two, three -- 'which one' is a pronoun; 'two of those three' counts the keys named in the previous sentence (Cl and Sr, of Cl, Cr and Sr)
+4e466ae19befef2183c91ffd7deb30493a344f26	DATASET_D1.md	REGISTERED: two -- 'The two are independent': the two uncertainties the paragraph contrasts
+5815a8304074ea0bdf962b20d9d1b036631a87fb	DATASET_D1.md	REGISTERED: 8, 16, 12 -- the record key (8, 16) and the nuclide labels C-12 and O-16
+5ad604c3c36eec0101bb2796c2823b2af1efa56e	DATASET_D1.md	EXERCISED: 0.03, 0.25, 3.24, 875, 9, 2.663, 5, 75704, 1, 100 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
+5b7061db8200e990d8a21b2c744ae195ca4ddaf9	DATASET_D1.md	REGISTERED: one -- 'one reimplements': the second of those two tests (T-47)
+5b90195cd9df198474f520259270bffb88f7e636	DATASET_D1.md	REGISTERED: 4.1, 30, 5.6, 58 -- the primary's own Table V fit figures, quoted from the paper (TRI-PP-87-5, p. 29), which this repository does not redistribute; the sentence labels them as the paper's and the next lines qualify them
+5ba4e34c554009712687347c7d9ae2e243dfad9d	DATASET_D1.md	REGISTERED: two -- the two tables (III and IV) named on the previous line
+5e0a1ccc928fef81837da59786453e4b270cd14a	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
+612001eaad9f2b438b367045ea7c78d5a4dcb624	DATASET_D1.md	REGISTERED: three -- the three papers section 1 names in the previous paragraph (Suzuki, Measday & Roalsvig 1987; Phys. Rev. Lett. 99 (2007) 032002; Measday's 2001 review), a count of listed items
+6773aa6ab1b3a9acdc8c235bb1991cff0cfdea5a	DATASET_D1.md	REGISTERED: one -- a pronoun ('one that carries')
+67fdf6eaa1f02258dda0bf49e079d49c5564741d	DATASET_D1.md	REGISTERED: Two -- 'Two limits': the two the paragraph states ('First', 'Second')
+689c40fe1e4037b3f5c58cb94d18de2128291d1f	DATASET_D1.md	REGISTERED: one -- 'on one machine, in one translation unit': the setting of the measurement F-3's block reports
+6a44591ac63a782da2e99047289d486a8133c3cb	DATASET_D1.md	REGISTERED: one -- a pronoun ('to one built')
+6a58ce3d7836cf4a5643290a681f283127352dbf	DATASET_D1.md	REGISTERED: two -- 'the two questions': value source and flag source, as in section 1
+6b2648761e8374345926e163a4681aa3def16a60	DATASET_D1.md	REGISTERED: Two -- the section's two disclosures, its two bold paragraphs
+6f42566782d5e30ac841bef29b1111928b94e8e5	DATASET_D1.md	REGISTERED: one -- 'at least one typographical error', the one this paragraph establishes
+6fd018b607bbdebc16c7fcc782ba3c9c680a2c58	DATASET_D1.md	REGISTERED: One, 59, 29.99 -- 'One measured fact' is a determiner; '59(29.99)' is the barium row as the primary prints it, quoted; its value is the shipped zeff[56] T-63 pins at the end of this paragraph and its printed Z is the misprint the paragraph establishes
+759de0727d543d278610fc837dcbf7c58f82a6e9	DATASET_D1.md	REGISTERED: one, two -- 'this one' is a pronoun; 'the two' the two hazards the paragraph contrasts
+77f914bf30329d0e11982c57eaa419f2c578e763	DATASET_D1.md	REGISTERED: 208 -- the nuclide label Pb-208
+78e43af2624d5d47000aa0b12ee21027791f0f4b	DATASET_D1.md	REGISTERED: ³, ⁴ -- the nuclide labels ³He and ⁴He
+7d1e41b17c4e5bddcdd7fd5c9500fab810ad1585	DATASET_D1.md	REGISTERED: 10 -- the atomic number where the primary's Table IV starts, as the paper labels it; T-63 uses the same boundary as its selector between the Table III and Table IV halves
+811ccd8f21ca093d05a97582464156333185a6d5	DATASET_D1.md	REGISTERED: 50, 8 -- quoted from the primary's abstract ('in 50 elements plus 8 isotopes'), which this repository does not redistribute; the sentence marks it as the paper's count of its own measurements
+81b7e60cb61b9cd488226104b8884fefbcbc30bd	DATASET_D1.md	REGISTERED: 56, 55 -- the atomic numbers of barium and caesium; the effective charges beside them are pinned (29.99 in tests/test_g4prose.py, 29.75 by T-63)
+851c7bb53ac84e8a4592b6edbf36c4579bca72ca	DATASET_D1.md	REGISTERED: Two, one -- 'Two different sources' are the primary and the NIST table the paragraph names; 'only one of them' is a pronoun
+8a095a16d997cc6d395b1885a928735f4ca87286	DATASET_D1.md	REGISTERED: one -- 'one row per record': the audit's shape, which T-59 asserts (every capture record exactly once)
+8de9cfee1916ed9cf8ddd69745a67ffdaeefc5e9	DATASET_D1.md	REGISTERED: 92, 236 -- the fourth unsettled key (92, 236), a row of isotope_audit.csv
+8efaeb5287c2781a3b2d21fd8da5447aec715b38	DATASET_D1.md	REGISTERED: four -- the four coefficients a consumer 'handed only the coefficients' would hold (b0a, b0b, b0c, t1), contrasted with the eight inputs T-63 pins on this line; a rhetorical count of named items
+94eb7dd453a66a0385ede99bfaee87db65526066	DATASET_D1.md	REGISTERED: 13, 18, 6, 12 -- the nuclide labels C-13 and O-18 as the primary lists them, and the record key (6, 12)
+98efd43a81e32d9986b2c57a1b90c68441f6a5a4	DATASET_D1.md	REGISTERED: 0, 3, 1, 6 -- 'λ_c < 0' is the sign threshold; the first-negative-A thresholds that begin here are read by T-63 across this line and the next and held to the sweep
+990e2316ea54f2bedf8a04cc16dfa511cc87eb85	DATASET_D1.md	REGISTERED: three -- 'the three ways it differs': the three bullets that follow, each a T-63 pin
+99bd714b9cb75871b8d1cc5b34ae4c334bad9f1f	DATASET_D1.md	REGISTERED: one -- a pronoun ('is also one')
+9c9075f748f010857bd814f245a137fc79866b5d	DATASET_D1.md	REGISTERED: 38, 88 -- the strontium record's key (38, 88) and the nuclide label Sr-88; the key is a row of isotope_audit.csv, which T-59 covers record by record
+a11b54149e780f3a8b134852b2722541c8db2b45	DATASET_D1.md	REGISTERED: 208 -- the nuclide label Pb-208; its abundance on this line is T-63's rounded pin
+a645c7fb6432acd2a5922f6d1448904b1597d710	DATASET_D1.md	REGISTERED: 1.0, 4 -- the bracket grouping restates the listing's constants (same standing as the listing's constants)
+a7e99bbe4ad4965a5a82ce201d71d3154bc3b616	DATASET_D1.md	REGISTERED: 17, 35, 24, 52, 38, 88 -- the three unsettled keys the primary prints ambiguously, (17, 35), (24, 52) and (38, 88): rows of isotope_audit.csv carrying needs_verification: true; with (92, 236) they are the four T-63 pins
+aadc671f7a45b1b4fe1e4b400be24d64082061be	DATASET_D1.md	EXERCISED: 36, 43, 44, 54, 61, 63 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
+ab9750e52d38aefeaef17b1ebba56512719ab720	DATASET_D1.md	REGISTERED: 59 -- praseodymium's atomic number
+abe2c04cef2caaf68c3bbd18f9102d70c11e074a	DATASET_D1.md	REGISTERED: 162.500 -- dysprosium's standard atomic weight as the NIST composition table prints it; no shipped file carries it (T-63's docstring names this tie as having no shipped source)
+ad7c731c60624f27f1b55a22d05a1d730fc49b52	DATASET_D1.md	REGISTERED: 236 -- the nuclide label U-236
+af66ad1a53057c07199193bb08939d83354c65d8	DATASET_D1.md	REGISTERED: one -- a pronoun ('supply one')
+b0642f3fe777272542bf2446805d2a2f09e7b1e2	DATASET_D1.md	REGISTERED: one -- a pronoun ('is not one')
+b0c4dd5c2583fe53f742aff3590694a7a378b363	DATASET_D1.md	REGISTERED: two -- 'F-7's two extremes': the two abundance figures F-7 states, both T-63 rounded pins
+b5b0e3f320918dfc6bbba4fc80efd9e7a2bbb4d0	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
+b690ec645d62c9e3336911ae04e8f66ed9411870	DATASET_D1.md	REGISTERED: two -- the two call sites in the vendored sources where a negative λ_c is consumed (the capture branch of G4MuonMinusBoundDecay, the lifetime in G4MuonicAtomHelper); both files are vendored and read by T-69
+b82cb98fa0f011df6f49345625c4fface9c61cba	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
+b9c026ba92d1d9336eb23004e4c78b43e37719ae	DATASET_D1.md	REGISTERED: 59, two, one -- praseodymium's atomic number; 'two elements' the two rows the paragraph names; 'one of the two' a pronoun
+bd3339b41019bbdec9e20e46b4ad5ea9f6b2f331	DATASET_D1.md	REGISTERED: 2 -- the integer factor of the expression's '2 * (A - Z)', restated from the listing above (same standing as the listing's constants)
+c140a5aa4dc7c5205b54dc62807188fc8dcd8a82	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of them')
+c4dda9d0a27fc91fce60f523df94edad8a426d94	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of direct interest')
+c61c6838f360bf94b90121b25cc3a564c04facaa	DATASET_D1.md	EXERCISED: 4.5517, 04 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
+cc6b36664dd95368be6b8ba38fc625316a23110c	DATASET_D1.md	EXERCISED: 3, 1, 6, 2, 8 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
+cd19a56336e994d5acf68db2ea9def9bdb659954	DATASET_D1.md	REGISTERED: 66, 163 -- the record key (66, 163), a row of isotope_audit.csv
+cef628ee2e20c94a7b742c9288548f5dabba2c23	DATASET_D1.md	REGISTERED: one -- a pronoun ('every one of them')
+d1f6b6d7a74659d63a5d9477cc0a8dc23b3abec6	DATASET_D1.md	REGISTERED: two -- 'The two are not in conflict': the two counts just contrasted
+d2661a8f4733a1d0d0ac88d56cbe4770dddee6e0	DATASET_D1.md	REGISTERED: 81 -- the atomic number of the step T-63 pins on this line (+0.40)
+d26a40699f8f40029131a14ef29150b87649d0ac	DATASET_D1.md	REGISTERED: 69, 71, 75, 78, 84, 89, 91, one -- the gap runs continue the list T-63 reads from the previous line and holds to the shipped table as a set; 'every one' is a pronoun
+d4bcb381e591baac7a8b47d5f7ae143680140b08	DATASET_D1.md	REGISTERED: 207 -- the mass number the table keys lead at: the record (82, 207) of the shipped table
+da0b41de49206eb821ffbd22707ad51601e368b5	DATASET_D1.md	REGISTERED: 0 -- the sign threshold in 'λ_c ≤ 0'
+de4d5a9031a47b7cac0c45a34aa70d2d65e32c23	DATASET_D1.md	REGISTERED: 81, 82, 83 -- atomic numbers labelling the primary's printed entries; the three printed values are held to the shipped array by the pins in tests/test_g4prose.py
+e0ddb7618ccb7acacc358c07e7971bf5526c16b8	DATASET_D1.md	REGISTERED: 1 -- the ulp threshold in 'differ by more than 1 ulp', the definition of the third figure; it is literal text in check_f3.py's DOCUMENT_FIGURES pattern, so a changed threshold stops V-13 matching this block
+e4c269e481f3be64357a37dfa2cf06cd60b89cd2	DATASET_D1.md	REGISTERED: Three -- three of the four unsettled rows, the key-ambiguous ones the next line names; the four is pinned on this line
+e5b78431a945b57e20a2f14fc8924fc86444fd0a	DATASET_D1.md	REGISTERED: one -- 'at least one record', a determiner
+e731e53128d166b0c7ee9c7113bb41a8ae866cf0	DATASET_D1.md	REGISTERED: 92, 236 -- the fourth unsettled key (92, 236), a row of isotope_audit.csv
+e8cf6442b39d798f73df0551b2e4d914afd1ff06	DATASET_D1.md	REGISTERED: 38, 88 -- the strontium key (38, 88) and its Z
+f03c5a1ccf97a52ae30ca7f318dbe9122f9a98a7	DATASET_D1.md	REGISTERED: two -- the two statements the sentence goes on to name (a model failure; a data limitation)
+f2d9fb4a3e4588204ebac632779abf5c6577a748	DATASET_D1.md	REGISTERED: one -- a determiner ('the one property')
+f4da520ddd8bb26a7b8b3f073e14c765ed41d74e	DATASET_D1.md	REGISTERED: one -- a pronoun ('this one names it')
+f5d7b0e8a5e2f734db24f64959f0996046e93aee	DATASET_D1.md	REGISTERED: 81, 82, 83 -- atomic numbers labelling the two descents; the effective charges beside them are pinned to the shipped array (T-63's rounded figures, and tests/test_g4prose.py for the second descent's start)
+f80d9d12bccad3370cb99ed85a97abeca67bac49	DATASET_D1.md	REGISTERED: 2, 8, 3, 17, 6, 23, 77, 26, 245, 82, ³ -- the F-1 thresholds, read by T-63 and held to the sweep; ³ is the nuclide label ³H
+fa4e454cf7376988fd9aea2dbc833169f0203cf3	DATASET_D1.md	REGISTERED: two -- the two provenance questions the sentence itself names (where the value came from, what established the flag)
+fb75dedfb605f98897d95fabd58e54396f759b86	DATASET_D1.md	REGISTERED: one -- a pronoun ('a bare one')
+ff75fbe4536b0ca4aee71784da448e67d0842e07	DATASET_D1.md	REGISTERED: 62, 150, 50, 119 -- the record keys (62, 150) and (50, 119) and the nuclide labels Sm-150 and Sn-119; the abundances beside them are T-63's rounded pins, read from the audit rows of those keys
+ffc3c5a1946f281e75d9b37faa273d9194edbd01	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of the four'); the four is pinned on this line
+0ccdf0a1a697580b0dcf6641da9f8d632e79d931	README.md	REGISTERED: 225 -- the nuclide label Ac-225
+11eca2c304568f729867dead4a32bb3a18259e9c	README.md	EXERCISED: 284 -- tests/test_energy.py::test_scientific_breakeven_is_284
+2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H
+2644b85674db8095734e7faa12c83ef6f8d3dbaf	README.md	REGISTERED: 464, 461, 460, 1, 3 -- a hand-written test-collection count that no shipped data derives and no test reads
+2d71ec87b4dc7c1ee4c3e123f2b41f9fde467306	README.md	REGISTERED: one -- 'one-off', an adjective
+3130be08714748b5864be19c6126fc77084b4f22	README.md	REGISTERED: 114, 1, 0.557 -- '~114' as on the previous line; '(1-R_col)' is the complement in the pushforward's formula; 0.557% is the effective sticking the V_kouchen_base target's conditions state (openmucf/data/validation_targets.csv)
+468ee2cf3a0429b1232cdb37cf5f51db663b55d0	README.md	REGISTERED: 0.94, 3, 8 -- restates FINDINGS.md's requirements form (R = 0.94 at λ_c = 3e8), regenerated and byte-diffed by make audit; the README's copy is read by no test
+4995d88bb00dd9c30dc88555a7be48f3726c4bd6	README.md	REGISTERED: 2024 -- a calendar year, the date of the work plan the sentence names
+4f93b378289692f936136db69faead577a670026	README.md	REGISTERED: two -- 'two conforming compiler configurations': the two builds F-3 compares, both named in its block
+58a4ccff88cd73dca6a97c620a4029be6dc88dc7	README.md	REGISTERED: 1 -- the '1' of ω_s0(1−R), the closed form's complement: algebra, not data
+5f92d3269e9e96abc73385adefb4f9ab4eabf560	README.md	REGISTERED: 0.30, 0.18 -- restates SYSTEMS.md ('Our v1 default eta_acc = 0.30 ... PSI-measured value is 0.18'), regenerated and byte-diffed by make audit; the README's copy is read by no test
+610c71cf49f298c421dd5e330935e9c269d9859e	README.md	REGISTERED: two -- 'two-layer': the format's two layers, Layer 1 and Layer 2 of FORMAT_SPEC.md
+61eb74d1dde6030fdfe3e03a6b7fbe7391cb9778	README.md	REGISTERED: one -- 'one-sided', an adjective
+775a6626f0e08ce0bb18b4573fc5d8f1babb7238	README.md	REGISTERED: 5, 10, ³, 2.3, 6 -- the facility-tier rows of MUON_COST.md (mu2e, COMET, MuSIC) to one significant figure, each marked '~'; MUON_COST.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
+790683e1e9128c01d8c3ad7a91b92bf6a25b3fc8	README.md	REGISTERED: 114 -- the quickstart's printed yield, approximate ('~'); the same closed-form quantity is the V_kouchen_base reproduction target (112.6, ±10%) that tests/test_validate.py exercises
+81bddc9a1e881b7b578c506254fbde8391b45bc8	README.md	REGISTERED: one -- a pronoun ('would stop being one')
+8fc88f1f2b7e724850647ec04161945f31c7778b	README.md	REGISTERED: 500, 2 -- figures quoted from the cited preprint (arXiv:2605.26432), attributed to it on the line
+9488c4cd9ae9844f8bd7714150d98ef09805b654	README.md	REGISTERED: 0.62 -- restates FINDINGS.md's Sobol table (S_T for R, 0.620 ± 0.017), regenerated and byte-diffed by make audit; the README's copy is read by no test
+98611b4f3468050f7c52d4b977e32d986943b181	README.md	REGISTERED: 9, 200 -- '~9-min' is the slow run's measured wall time, approximate; 200 is _N_REPLICAS of tests/test_twin_coverage.py::test_interval_calibration_200_replicas, the run this comment describes
+9c761e0371dcf898f0a500d2a89d9659bb704c76	README.md	REGISTERED: one, 0.77 -- 'one tier row at a time' is a determiner; R ≥ 0.77 restates FINDINGS.md section 3; this line is registered as a citability judgement in tests/ledger_claims_registry.tsv (same sha1)
+9ceb46b67d5a650fe07bc909d7201423ffd9f64c	README.md	REGISTERED: 300, 1.2, 0.5 -- the quickstart's example inputs: T = 300 K and φ = 1.2 are the liquid operating point openmucf/validate.py anchors, c_t = 0.5 the equal-mixture condition the V_kouchen_base target states (openmucf/data/validation_targets.csv)
+aeb9e6f372250953b1ebf62990b25131becd153b	README.md	REGISTERED: 1.45, 300, 0.8, 41, 44, 30, one, 100 -- the RED tier's scope figures: φ > 1.45, 300 K and T < 100 K are the model's declared support (openmucf/formation.py's scope warning fires at phi > ~1.45 or T < 100 K), corr ≈ +0.8 and the −41% to −44% Yamashita–Kino comparison with its ±30% band come from CALIBRATION.md and VALIDATION.md (V_yamashita_ratio), 'one-shot' is an adjective; this line is registered in tests/ledger_claims_registry.tsv (same sha1)
+b736087fced7a2674b74873238369844de0c1d79	README.md	REGISTERED: two, 300 -- 'two published summary statistics' are the calibration's inputs (CALIBRATION.md); 300 K is the liquid anchor temperature openmucf/validate.py uses; this line is registered in tests/ledger_claims_registry.tsv (same sha1)
+ba94c913e68cc0b6a69bfd650b9e0ccc7d7ac484	README.md	REGISTERED: 2367, 3946 -- restates SYSTEMS.md ('~2367 -> ~3946'), regenerated and byte-diffed by make audit; the README's copy is read by no test
+c0283ac0861ab81992b2ee5574ef6bdece8e47b9	README.md	REGISTERED: 15 -- '≈15%' restates MATERIALITY.md's combined deferred-channel headroom, approximate; MATERIALITY.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
+c096165f0e067e86f013389bc0aed417754a91bf	README.md	REGISTERED: 1.2, 2.0, 2.4 -- the density grid the FC-001 card declares (forecasts/FC-001-mufuse.json)
+d66c88be3e3715e14925371ba87697d9284bd61a	README.md	REGISTERED: 1.45, 500, 0 -- restates FINDINGS.md's breakeven falsification (P(X_μ > 500) = 0 at φ ≤ ~1.45), regenerated and byte-diffed by make audit; the README's copy is read by no test
+d9e3e02c10dd9ef8af1ee14eede527877be40a02	README.md	REGISTERED: 2026 -- a calendar year, the date of the events the sentence names
+d9f517f6502a717007c151cd39c7f6241d85d0d8	README.md	REGISTERED: one -- 'one comparable basis', a determiner
+dbb9e1a79d7a06bde4c0b7b0f642cf53eb9b4629	README.md	REGISTERED: three -- 'about three orders of magnitude': the FINDINGS.md section-2b panel's spread, as this line's row in tests/ledger_claims_registry.tsv records (same line, same sha1)
+e1045f568d23c0126c0a5b9ce8fd8e2c41c3a895	README.md	REGISTERED: 0.8 -- restates CALIBRATION.md's posterior correlation, approximate ('≈'); CALIBRATION.md is an MCMC document make audit tolerance-checks; the README's copy is read by no test
+e135582b361a8683daf3471df59c0b1910172fdd	README.md	REGISTERED: 2.4, 0.77 -- restates FINDINGS.md's requirements form (DAC φ = 2.4; R ≥ 0.77), regenerated and byte-diffed by make audit; the README's copy is read by no test
+e33e5752ca4b536672e29c25dee76c4fedc50b7c	README.md	REGISTERED: 2367 -- the net-electrical breakeven EnergyChain().breakeven_xmu_net() prints, approximate; tests/test_energy.py::test_net_electrical_breakeven_is_much_harder bounds it from below and SYSTEMS.md, regenerated by make audit, restates it
+e3fd28cba23d87ba142c75fac3c3fb4a855bb8d9	README.md	REGISTERED: 6, 5, 1 -- restates the summary line of VALIDATION.md ('6 pass ... 5 fail ... 1 deferred'), which make validate generates and make audit byte-diffs; this comment is read by no test
+e52326badfd61270409743256330b494a0f4e7ef	README.md	REGISTERED: 4.70, 10, ³ -- restates MUON_COST.md's anchor row (Kelly, Hart & Rose: 4.70 GeV/muon) and the order of magnitude between its tiers ('~10³×'); MUON_COST.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
+f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
+37a429d48aa30b8e4ec5448de067bb6f2ff5f46b	cpp/tools/README.md	REGISTERED: 0..101 -- the zeff loop bounds of harvest_d1.cc ('for (int Z = 0; Z <= 101; ++Z)'), one past the array's last index so both clamp ends are probed: a driver-declared range, not a count of the array, whose length T-63 pins
+428527ab685b42bd21053c757a3581a2f4721b31	cpp/tools/README.md	REGISTERED: 7, 13 -- '~7e-13' is an order-of-magnitude bound: the maximum ulp difference pinned on the previous line times the double's relative spacing bound 2⁻⁵²; the producer's measured maximum relative difference is the F-3 block's figure in DATASET_D1.md, below this bound
+557684388c44d59ed7c3818ad62ebcc08278e5f5	cpp/tools/README.md	REGISTERED: two -- 'exactly two things': the two computations the sentence goes on to name (the digest, the diagnostic-subset selection)
+9196923f60d9fbddd3dc3370dd0d04b2e4b08f96	cpp/tools/README.md	REGISTERED: 0 -- the degenerate probe inputs harvest_d1_degenerate.cc declares (Z = 0, A = 0, Z < 0), which T-52 reads back from the driver and holds the oracle's degenerate block to
+f1d04da00f8c3dd4297a7fb675e3cdde5460f8b0	cpp/tools/README.md	REGISTERED: one -- a pronoun ('the committed one')
+fd250c90cc595d332c9a6d8d094c4f25c7e16609	cpp/tools/README.md	REGISTERED: two, one -- 'two conforming Geant4 builds of one source': the two compiler configurations the F-3 measurement compares
