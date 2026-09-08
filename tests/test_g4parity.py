@@ -64,6 +64,27 @@ def git_blob_id(data: bytes) -> str:
     """
     return hashlib.sha1(b"blob %d\0" % len(data) + data, usedforsecurity=False).hexdigest()
 
+def _ulp_distance(x: float, y: float) -> int:
+    """How many representable doubles lie between `x` and `y`: the binary64 bit patterns, with the
+    negative half reflected so they order as numbers, differenced. `-0.0` and `0.0` are nowhere
+    apart, and a negative rate sits the right distance from its neighbours."""
+
+    def ordered(v: float) -> int:
+        bits = struct.unpack(">q", struct.pack(">d", v))[0]
+        return bits if bits >= 0 else -0x8000000000000000 - bits
+
+    return abs(ordered(x) - ordered(y))
+
+
+def subset_max_ulp(found: d1.D1Extraction, model: d1.GoulardPrimakoff, oracle: dict) -> int:
+    """The largest ulp distance between the reference evaluation and the compiled oracle over the
+    oracle's diagnostic subset -- the loop T-49 runs, reduced to the figure the documents state."""
+    assert oracle["subset"], "the oracle carries no diagnostic subset"
+    return max(
+        _ulp_distance(d1.capture_rate(z, a, found.capture_records, model), expected)
+        for (z, a), expected in oracle["subset"].items()
+    )
+
 
 # --------------------------------------------------------------------------------------------
 # T-40..T-41 -- the vendored upstream is the pinned upstream, and its bytes survived the checkout
@@ -282,8 +303,8 @@ def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_only_in_
     # The comparison is only worth anything if it walked a non-empty table.
     assert helper.capture_records and helper.zeff
 
-    # Every fallback coefficient is the same source text in both copies -- except the clamp, which
-    # is the one place they genuinely differ. Both sides are read from the sources.
+    # Every fallback coefficient is the same source text in both copies -- except the clamp. Both
+    # sides are read from the sources.
     for name in d1.FALLBACK_NAMES:
         if name == "zmin":
             continue
@@ -894,6 +915,29 @@ def test_t49_the_diagnostic_subset_agrees_to_zero_ulp():
     unreachable = found.zeff[0]
     assert unreachable != oracle["zeff"][0] == found.zeff[model.zmin]
     assert unreachable not in {model.muon_zeff(z) for z in range(-5, len(found.zeff) + 20)}
+
+
+def test_t77_ulp_distance_counts_representable_doubles_and_the_subset_maximum_moves_with_a_perturbed_row():
+    """The figure the documents state as "maximum N ulp" is computed, not copied, so the computation
+    is drilled: the distance counts neighbouring doubles on either side of one, across the sign at
+    zero, and the subset maximum moves the moment one oracle row is nudged to its neighbouring
+    double."""
+    assert _ulp_distance(1.0, math.nextafter(1.0, 2.0)) == 1
+    assert _ulp_distance(-1.0, math.nextafter(-1.0, 0.0)) == 1
+    assert _ulp_distance(0.0, -0.0) == 0
+    smallest = math.nextafter(0.0, 1.0)
+    assert _ulp_distance(-smallest, smallest) == 2
+
+    found = extraction()
+    model = reference_model(found)
+    oracle = read_oracle()
+    assert subset_max_ulp(found, model, oracle) == 0
+
+    perturbed = dict(oracle)
+    perturbed["subset"] = dict(oracle["subset"])
+    key = min(perturbed["subset"])
+    perturbed["subset"][key] = math.nextafter(perturbed["subset"][key], math.inf)
+    assert subset_max_ulp(found, model, perturbed) == 1
 
 
 def test_t52_degenerate_inputs_reproduce_the_recorded_classification():
@@ -1748,7 +1792,7 @@ SYMBOL_Z = {
 
 #: Counts the document spells in words rather than digits.
 NUMBER_WORDS = {
-    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
     "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12,
 }
 
@@ -1775,13 +1819,11 @@ class DocumentPins:
     changelog_claims: list
     readme_claims: list
     tools_readme_claims: list
+    changelog_rounded: list
 
 
 def document_pins() -> DocumentPins:
-    """Counts are pinned to the
-    shipped data.
-
-    This is the guard the D1 chain was missing, and its absence was measured rather than supposed:
+    """This is the guard the D1 chain was missing, and its absence was measured rather than supposed:
     nothing in this repository read `DATASET_D1.md`, so a falsified count in it passed the entire
     battery, the byte-diff audit included. Counting claims in that document have shipped wrong --
     each a number updated to match a rewrite instead of re-derived from the data it describes -- and
@@ -1975,6 +2017,8 @@ def document_pins() -> DocumentPins:
         zmin=int(coefficients["zmin"]), zmax=int(coefficients["zmax"]),
         zeff=tuple(found.zeff),
     )
+    oracle = read_oracle()
+    max_ulp_subset = subset_max_ulp(found, model, oracle)
     swept = negative = negative_past_decay = table_hits = 0
     first_negative: dict[int, int] = {}
     for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
@@ -2162,6 +2206,10 @@ def document_pins() -> DocumentPins:
         ("fallback constants declared",
          r"carrying all (\w+) of the constants it needs", len(found.fallback_coefficients)),
         ("findings in total", r"settled questions\*\*, not (\w+) defects", findings),
+        ("findings the primary settled, the dated headline",
+         r"\*\*(\w+) registered findings are settled and \w+ are new\*\*", settled_findings),
+        ("maximum ulp over the diagnostic subset",
+         r"every one bit-for-bit, maximum (\d+) ulp", max_ulp_subset),
     ]
 
     # `README.md` is the third copy of these numbers and the one a reader meets first. Its G4
@@ -2223,12 +2271,21 @@ def document_pins() -> DocumentPins:
                 f"{where} is wrong, not this test."
             )
 
-    changelog_pct = re.search(r"is ([\d.]+) % of the natural element", changelog)
-    assert changelog_pct, "CHANGELOG.md no longer states the extreme abundance where this test reads it"
-    assert float(changelog_pct.group(1)) == round(_pct((62, 150), "Sm-150"), 1), (
-        f"CHANGELOG.md states {changelog_pct.group(1)} % for the extreme natural abundance; the "
-        f"audit says {_pct((62, 150), 'Sm-150')}"
-    )
+    changelog_rounded = [
+        ("extreme natural abundance", r"is ([\d.]+) % of the natural element",
+         _pct((62, 150), "Sm-150"), 1),
+    ]
+    for what, pattern, value, places in changelog_rounded:
+        hits = re.findall(pattern, changelog)
+        assert len(hits) == 1, (
+            f"CHANGELOG.md: the anchor for {what} matched {len(hits)} times, expected exactly one. "
+            f"Pattern: {pattern!r}"
+        )
+        expected = round(value, places) if places else float(round(value))
+        assert float(hits[0]) == expected, (
+            f"CHANGELOG.md states {hits[0]!r} for {what}; the audit says {value}, which rounds to "
+            f"{expected} at {places} decimal place(s)."
+        )
 
     # The one physical constant the document prints. Derived from the vendored source above, so
     # this pins the printed value rather than trusting it.
@@ -2356,7 +2413,7 @@ def document_pins() -> DocumentPins:
 
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
-        tools_readme_claims,
+        tools_readme_claims, changelog_rounded,
     )
 
 
