@@ -1,4 +1,4 @@
-// g4muonicdata_validate -- the standalone validator (no Geant4): checks V-01 .. V-12 over the D1
+// g4muonicdata_validate -- the standalone validator (no Geant4): checks V-00 .. V-12 over the D1
 // dataset directory, the conformance corpus and the committed oracle.
 //
 //   g4muonicdata_validate <dataset-dir> --oracle <file> --conformance <dir>
@@ -38,6 +38,9 @@ using Error = G4MuonicDataTable::Error;
 const char* const kVariable = "G4MUONICDATA";
 const char* const kCaptureTable = "nuclear_capture_rate";
 const char* const kZeffTable = "muon_zeff";
+// A check whose PASS detail counts rows refuses to pass over none: an empty corpus or an oracle
+// section with no rows is a run that checked nothing, and prints this instead of PASS.
+const char* const kNoRows = "rows=0: a check over no rows is not a pass";
 
 struct Report {
   bool failed = false;
@@ -560,10 +563,9 @@ int Run(int argc, char** argv) {
   const char* locale = std::setlocale(LC_ALL, "");
   Report report;
   if (locale == nullptr) {
-    std::printf("locale=(null)\n");
     report.Fail("V-00", "setlocale(LC_ALL, \"\") returned null: the requested locale is not installed");
   } else {
-    std::printf("locale=%s\n", locale);
+    report.Pass("V-00", std::string("locale=") + locale);
   }
 
   std::string dataset, oracle_path, conformance, expectation;
@@ -609,19 +611,20 @@ int Run(int argc, char** argv) {
     report.Fail("V-03", Quote(dataset) + ": " + error.what());
   }
 
-  // V-04 -- E009 over each loaded table's Layer-2 sibling.
+  // V-04 -- E009 over each loaded table's Layer-2 sibling. Exactly one line: FAIL on any digest
+  // mismatch; else SKIPPED naming every table without a sibling and the digests of those checked;
+  // else PASS.
   if (!loaded) {
     report.Fail("V-04", "dataset not loaded");
   } else {
-    std::string detail;
-    bool ok = true, any_skipped = false;
+    std::string detail, skipped;
+    bool ok = true;
     for (const char* name : {kCaptureTable, kZeffTable}) {
       const Table* table = tables.Find(name);
       const std::string sibling = SiblingPath(table->file);
       std::string sibling_bytes;
       if (sibling.empty() || !ReadBytes(sibling, sibling_bytes)) {
-        report.Skipped("V-04", std::string("(no Layer-2 sibling) ") + std::filesystem::path(table->file).stem().string());
-        any_skipped = true;
+        skipped += (skipped.empty() ? "" : ", ") + std::filesystem::path(table->file).stem().string();
         continue;
       }
       Verdict verdict;
@@ -633,7 +636,8 @@ int Run(int argc, char** argv) {
       }
     }
     if (!ok) report.Fail("V-04", detail);
-    else if (!any_skipped) report.Pass("V-04", detail);
+    else if (!skipped.empty()) report.Skipped("V-04", "(no Layer-2 sibling) " + skipped + (detail.empty() ? "" : "; checked: " + detail));
+    else report.Pass("V-04", detail);
   }
 
   // V-05 -- the conformance corpus, verdict for verdict.
@@ -666,6 +670,8 @@ int Run(int argc, char** argv) {
     }
     if (!problems.empty()) {
       report.Fail("V-05", std::to_string(problems.size()) + " problem(s); first: " + problems.front());
+    } else if (agreed == 0) {
+      report.Fail("V-05", kNoRows);
     } else {
       report.Pass("V-05", "rows=" + std::to_string(agreed) + " agree on (code, line)");
     }
@@ -677,6 +683,13 @@ int Run(int argc, char** argv) {
   const bool oracle_ok = oracle_problems.empty();
   if (!oracle_ok) {
     report.Fail("V-06", std::to_string(oracle_problems.size()) + " problem(s); first: " + oracle_problems.front());
+  } else if (oracle.subset.empty() || oracle.zeff.empty() || oracle.rates.empty() || oracle.clamps.empty()) {
+    std::string empty;
+    if (oracle.subset.empty()) empty += " subset";
+    if (oracle.zeff.empty()) empty += " zeff";
+    if (oracle.rates.empty()) empty += " rate";
+    if (oracle.clamps.empty()) empty += " clamp";
+    report.Fail("V-06", std::string(kNoRows) + ":" + empty);
   } else {
     report.Pass("V-06", "hex fields re-render identically: subset=" + std::to_string(oracle.subset.size()) + " zeff=" + std::to_string(oracle.zeff.size()) +
                             " rate=" + std::to_string(oracle.rates.size()) + " clamp=" + std::to_string(oracle.clamps.size()) + "; renderer shapes verified");
@@ -736,6 +749,7 @@ int Run(int argc, char** argv) {
       }
     }
     if (mismatches) report.Fail("V-08", std::to_string(mismatches) + " row(s) differ, max " + std::to_string(worst) + " ulp; first: " + first);
+    else if (oracle.subset.empty()) report.Fail("V-08", kNoRows);
     else report.Pass("V-08", "rows=" + std::to_string(oracle.subset.size()) + " max_ulp=0");
   }
 
@@ -753,6 +767,7 @@ int Run(int argc, char** argv) {
       }
     }
     if (mismatches) report.Fail(id, std::to_string(mismatches) + " row(s) differ; first: " + first);
+    else if (rows.empty()) report.Fail(id, kNoRows);
     else report.Pass(id, "rows=" + std::to_string(rows.size()) + " maxZ=" + std::to_string(model.max_z) + " max_ulp=0");
   };
   check_clamp("V-09", oracle.zeff);
@@ -767,6 +782,7 @@ int Run(int argc, char** argv) {
       echo += " (" + std::to_string(row.z) + "," + std::to_string(row.a) + ")=" + row.classification;
     }
     if (wrong) report.Fail("V-10", std::to_string(wrong) + " probe(s) evaluated instead of reporting a domain error;" + echo);
+    else if (oracle.rates.empty()) report.Fail("V-10", kNoRows);
     else report.Pass("V-10", "probes=" + std::to_string(oracle.rates.size()) + " all report a domain error; Geant4 returns:" + echo);
   }
 

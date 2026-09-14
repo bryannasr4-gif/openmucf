@@ -127,6 +127,18 @@ add_test(NAME validate_discovery_invalid
          COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${CMAKE_BINARY_DIR}/discovery_invalid"
                  $<TARGET_FILE:g4muonicdata_validate> ${G4MUONICDATA_VALIDATE_ARGS} --expect-env invalid)
 
+# A check over no rows is not a pass: the validator over the shipped dataset, with the conformance
+# corpus and the oracle pointed at a fixture that carries zero rows (an empty `expected.tsv`; the
+# shipped oracle's header lines only). Every check whose PASS detail counts rows must print FAIL,
+# and because each check prints exactly one line the two expressions below say exactly that.
+set(G4MUONICDATA_ZERO_ROWS_DIR "${G4MUONICDATA_REPO_ROOT}/tests/fixtures/g4dat_zero_rows")
+add_test(NAME validate_zero_rows
+         COMMAND g4muonicdata_validate "${G4MUONICDATA_DATASET_DIR}"
+                 --oracle "${G4MUONICDATA_ZERO_ROWS_DIR}/d1_gp_sweep.oracle" --conformance "${G4MUONICDATA_ZERO_ROWS_DIR}")
+set_tests_properties(validate_zero_rows PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-11 FAIL rows=0"
+  FAIL_REGULAR_EXPRESSION "V-05 PASS;V-06 PASS;V-08 PASS;V-09 PASS;V-10 PASS;V-11 PASS;V-05 SKIPPED;V-06 SKIPPED;V-08 SKIPPED;V-09 SKIPPED;V-10 SKIPPED;V-11 SKIPPED")
+
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
 # enabled (and FMA on x86-64), and the figures compared with the document.
 if(G4MUONICDATA_GNU_LIKE)
