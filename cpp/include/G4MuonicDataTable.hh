@@ -17,9 +17,13 @@
 
 class G4MuonicDataTable {
  public:
+  // The profile a consumer reads through unless it names another; its files require `#SOURCESHA`
+  // (E013).
+  static constexpr const char* kParityProfile = "parity";
+
   // A rejection. `code` is one of E001-E016 for a Layer-1 violation, or empty for a dataset-level
-  // problem that has no single line (no `.g4dat` file in the directory, a table name repeated
-  // across files, a directory that cannot be read, or an unset discovery variable).
+  // problem that has no single line (no `.g4dat` file in the directory, a `#PROFILE` / `#TABLE`
+  // pair repeated across files, a directory that cannot be read, or an unset discovery variable).
   struct Error {
     std::string code;
     int line = 0;
@@ -36,8 +40,9 @@ class G4MuonicDataTable {
       // Every other column, in `#COLUMNS` order.
       std::vector<double> floats;
     };
-    std::string name;  // the `#TABLE` value
-    std::string file;  // the path the table was read from, or the name given to Parse()
+    std::string profile;  // the `#PROFILE` value
+    std::string name;     // the `#TABLE` value
+    std::string file;     // the path the table was read from, or the name given to Parse()
     std::vector<std::pair<std::string, std::string>> directives;  // in file order, no leading '#'
     std::vector<std::string> columns;
     std::vector<Record> records;  // ascending by `keys` (E015), unique (E008)
@@ -45,11 +50,16 @@ class G4MuonicDataTable {
     const std::string* Directive(const std::string& keyword) const;
     // Binary search over the sorted records; nullptr when the key is absent.
     const Record* Lookup(const std::vector<long>& key) const;
+    // Lookup(key), and when that misses on a two-key table, the natural-composition row a table
+    // under `A:natural_and_listed` carries for the same `Z` (FORMAT_SPEC.md section 6); a
+    // single-key table is exact only.
+    const Record* LookupNatural(const std::vector<long>& key) const;
   };
 
   // Parse every regular file named `*.g4dat` in `directory`, in bytewise-sorted file-name order.
   // Throws Error: with a code and line for a Layer-1 violation in one file, or code-less when the
-  // directory holds no such file, is not a directory, or two files declare the same `#TABLE`.
+  // directory holds no such file, is not a directory, or two files declare the same `#PROFILE` and
+  // `#TABLE`.
   static G4MuonicDataTable Load(const std::string& directory);
 
   // Parse one document from its bytes. `name` is only used to label the resulting table.
@@ -57,10 +67,12 @@ class G4MuonicDataTable {
   // order of FORMAT_SPEC.md section 4.
   static G4MuonicDataTable Parse(const std::string& bytes, const std::string& name);
 
-  // The table whose `#TABLE` value is `table_name`, or nullptr.
-  const Table* Find(const std::string& table_name) const;
+  // The table whose `#PROFILE` and `#TABLE` values are these, or nullptr.
+  const Table* Find(const std::string& profile, const std::string& table_name) const;
   // Every table, in load order (exactly one after Parse()).
   const std::vector<Table>& Tables() const { return tables_; }
+  // The distinct `#PROFILE` values among the tables, bytewise sorted.
+  std::vector<std::string> Profiles() const;
 
   // Overlay opt-in: a plain process-wide flag. Nothing in this reader consults it; it exists so a
   // consumer that falls through to compiled-in values can make that fall-through explicit.

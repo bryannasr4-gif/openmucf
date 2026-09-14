@@ -36,6 +36,9 @@ e016_sourcedigest_upper_case.g4dat	E016	8
 ok_digest_match.g4dat	OK	0
 ok_leading_plus.g4dat	OK	0
 ok_min_subnormal.g4dat	OK	0
+ok_natural_row_under_listed.g4dat	OK	0
+ok_natural_row_under_natural_and_listed.g4dat	OK	0
+ok_natural_row_under_parity.g4dat	OK	0
 ok_trailing_whitespace_on_a_record.g4dat	OK	0
 ok_zero_with_a_huge_negative_exponent.g4dat	OK	0
 stray_comment.g4dat	E001	10

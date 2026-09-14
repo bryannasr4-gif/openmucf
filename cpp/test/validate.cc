@@ -1,5 +1,5 @@
-// g4muonicdata_validate -- the standalone validator (no Geant4): checks V-00 .. V-12 over the D1
-// dataset directory, the conformance corpus and the committed oracle.
+// g4muonicdata_validate -- the standalone validator (no Geant4): checks V-00 .. V-12, V-14 and V-15
+// over the D1 dataset directory, the conformance corpus and the committed oracle.
 //
 //   g4muonicdata_validate <dataset-dir> --oracle <file> --conformance <dir>
 //                         [--expect-env found|unset|empty|invalid]
@@ -9,6 +9,7 @@
 // `{code}: {text} (line {n})`. A missing or unreadable input path is a named FAIL on the check
 // that needed it, never an exception out of main and never a skip.
 
+#include <algorithm>
 #include <clocale>
 #include <cstdint>
 #include <cstdio>
@@ -404,8 +405,8 @@ struct Model {
 
 // Empty on success, else why the model cannot be built.
 std::string BuildModel(const G4MuonicDataTable& tables, Model& model) {
-  model.capture = tables.Find(kCaptureTable);
-  model.zeff_table = tables.Find(kZeffTable);
+  model.capture = tables.Find(G4MuonicDataTable::kParityProfile, kCaptureTable);
+  model.zeff_table = tables.Find(G4MuonicDataTable::kParityProfile, kZeffTable);
   if (!model.capture) return std::string("no table ") + Quote(kCaptureTable);
   if (!model.zeff_table) return std::string("no table ") + Quote(kZeffTable);
   const std::string* fallback = model.capture->Directive("FALLBACK");
@@ -507,7 +508,7 @@ void CheckDiscovery(Report& report, const std::string& expectation, const std::s
   const std::string seen = "outcome " + std::to_string(r.outcome);
   if (expectation == "found") {
     if (r.outcome != 1) { report.Fail("V-12", "found: expected outcome 1, got " + seen + ": " + r.error.what()); return; }
-    if (!r.tables.Find(kCaptureTable) || !r.tables.Find(kZeffTable)) { report.Fail("V-12", "found: outcome 1 but a table is missing"); return; }
+    if (!r.tables.Find(G4MuonicDataTable::kParityProfile, kCaptureTable) || !r.tables.Find(G4MuonicDataTable::kParityProfile, kZeffTable)) { report.Fail("V-12", "found: outcome 1 but a table is missing"); return; }
     report.Pass("V-12", "found: outcome 1, both tables loaded from " + Quote(value ? value : ""));
     (void)dataset;
     return;
@@ -597,8 +598,8 @@ int Run(int argc, char** argv) {
   bool loaded = false;
   try {
     tables = G4MuonicDataTable::Load(dataset);
-    const Table* capture = tables.Find(kCaptureTable);
-    const Table* zeff = tables.Find(kZeffTable);
+    const Table* capture = tables.Find(G4MuonicDataTable::kParityProfile, kCaptureTable);
+    const Table* zeff = tables.Find(G4MuonicDataTable::kParityProfile, kZeffTable);
     if (!capture || !zeff) {
       report.Fail("V-03", std::string("loaded ") + Quote(dataset) + " but " + (capture ? kZeffTable : kCaptureTable) + " is missing");
     } else {
@@ -619,7 +620,7 @@ int Run(int argc, char** argv) {
     std::string detail, skipped;
     bool ok = true;
     for (const char* name : {kCaptureTable, kZeffTable}) {
-      const Table* table = tables.Find(name);
+      const Table* table = tables.Find(G4MuonicDataTable::kParityProfile, name);
       const std::string sibling = SiblingPath(table->file);
       std::string sibling_bytes;
       if (sibling.empty() || !ReadBytes(sibling, sibling_bytes)) {
@@ -792,6 +793,73 @@ int Run(int argc, char** argv) {
     report.Skipped("V-12", "(--expect-env not given)");
   } else {
     CheckDiscovery(report, expectation, dataset, expected, expected_loaded);
+  }
+
+  // V-14 -- the profile set: every table any profile carries is also carried by parity. Exactly
+  // one line: the first offending table, else PASS naming the profiles and the (profile, table)
+  // pair count.
+  if (!loaded) {
+    report.Fail("V-14", "dataset not loaded");
+  } else {
+    bool ok = true;
+    for (const Table& t : tables.Tables()) {
+      if (t.profile == G4MuonicDataTable::kParityProfile) continue;
+      if (tables.Find(G4MuonicDataTable::kParityProfile, t.name) != nullptr) continue;
+      report.Fail("V-14", "'#PROFILE " + t.profile + "' carries '#TABLE " + t.name + "' (" + FileName(t.file) + ") that parity does not");
+      ok = false;
+      break;
+    }
+    if (ok) {
+      std::string joined;
+      for (const std::string& profile : tables.Profiles()) joined += (joined.empty() ? "" : ",") + profile;
+      report.Pass("V-14", "profiles=" + joined + " pairs=" + std::to_string(tables.Tables().size()));
+    }
+  }
+
+  // V-15 -- the natural-composition row: an `A = 0` record is admissible only under a `#VALIDITY`
+  // that assigns `A:natural_and_listed`, and parity carries none. `#VALIDITY` is decomposed here,
+  // by the consumer, as whitespace-separated NAME:RANGE assignments (FORMAT_SPEC.md section 2.2).
+  // Exactly one line: the first offending table, else PASS with the table and natural-row counts.
+  if (!loaded) {
+    report.Fail("V-15", "dataset not loaded");
+  } else {
+    bool ok = true;
+    std::size_t natural_rows = 0;
+    for (const Table& t : tables.Tables()) {
+      const std::string* validity = t.Directive("VALIDITY");
+      std::map<std::string, std::string> assignments;
+      for (const std::string& token : SplitWhitespace(validity ? *validity : std::string())) {
+        const std::size_t colon = token.find(':');
+        if (colon == std::string::npos || colon == 0 || colon + 1 == token.size()) {
+          report.Fail("V-15", Quote(FileName(t.file)) + " #VALIDITY assignment " + Quote(token) + " is not NAME:RANGE");
+          ok = false;
+          break;
+        }
+        assignments[token.substr(0, colon)] = token.substr(colon + 1);
+      }
+      if (!ok) break;
+      const bool has_z = std::find(t.columns.begin(), t.columns.end(), "Z") != t.columns.end();
+      const bool has_a = std::find(t.columns.begin(), t.columns.end(), "A") != t.columns.end();
+      if (!has_z || !has_a) continue;
+      std::size_t count = 0;
+      for (const Table::Record& record : t.records) {
+        if (record.keys.size() == 2 && record.keys[1] == 0) ++count;
+      }
+      if (count == 0) continue;
+      if (t.profile == G4MuonicDataTable::kParityProfile) {
+        report.Fail("V-15", "under parity: " + Quote(FileName(t.file)) + " carries " + std::to_string(count) + " A = 0 row(s)");
+        ok = false;
+        break;
+      }
+      const auto range = assignments.find("A");
+      if (range == assignments.end() || range->second != "natural_and_listed") {
+        report.Fail("V-15", "under A:" + (range == assignments.end() ? std::string("absent") : range->second) + ": " + Quote(FileName(t.file)) + " carries " + std::to_string(count) + " A = 0 row(s)");
+        ok = false;
+        break;
+      }
+      natural_rows += count;
+    }
+    if (ok) report.Pass("V-15", "tables=" + std::to_string(tables.Tables().size()) + " natural_rows=" + std::to_string(natural_rows));
   }
 
   return report.failed ? 1 : 0;

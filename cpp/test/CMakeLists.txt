@@ -154,6 +154,76 @@ set_tests_properties(validate_zero_rows PROPERTIES
   PASS_REGULAR_EXPRESSION "V-11 FAIL rows=0"
   FAIL_REGULAR_EXPRESSION "V-05 PASS;V-06 PASS;V-08 PASS;V-09 PASS;V-10 PASS;V-11 PASS;V-05 SKIPPED;V-06 SKIPPED;V-08 SKIPPED;V-09 SKIPPED;V-10 SKIPPED;V-11 SKIPPED")
 
+# One oracle section empty at a time: each fixture carries the shipped header, the first row of
+# every OTHER section, and `#END`, so V-06's FAIL names exactly the one empty section (the
+# trailing newline in the expression is what excludes a second name).
+foreach(section IN ITEMS subset zeff rate clamp)
+  add_test(NAME validate_zero_rows_${section}
+           COMMAND g4muonicdata_validate "${G4MUONICDATA_DATASET_DIR}"
+                   --oracle "${G4MUONICDATA_ZERO_ROWS_DIR}/zero_${section}.oracle" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+  set_tests_properties(validate_zero_rows_${section} PROPERTIES
+    PASS_REGULAR_EXPRESSION "V-06 FAIL rows=0: a check over no rows is not a pass: ${section}\n")
+endforeach()
+
+# V-03's pair rule, V-14 and V-15 over directories assembled at configure time from the shipped
+# dataset and corpus members copied under the name the case needs (configure_file COPYONLY copies
+# the bytes; file(COPY) keeps the shipped names).
+set(G4MUONICDATA_SHIPPED_FILES
+    "${G4MUONICDATA_DATASET_DIR}/d1_capture.g4dat" "${G4MUONICDATA_DATASET_DIR}/d1_capture.prov.json"
+    "${G4MUONICDATA_DATASET_DIR}/d1_zeff.g4dat" "${G4MUONICDATA_DATASET_DIR}/d1_zeff.prov.json")
+
+# A second profile of the capture table, carrying one natural-composition row under
+# A:natural_and_listed: both tables of parity plus the evaluated file load, and both checks pass.
+set(G4MUONICDATA_PROFILES_TWO "${CMAKE_BINARY_DIR}/profiles_two")
+file(REMOVE_RECURSE "${G4MUONICDATA_PROFILES_TWO}")
+file(COPY ${G4MUONICDATA_SHIPPED_FILES} DESTINATION "${G4MUONICDATA_PROFILES_TWO}")
+configure_file("${G4MUONICDATA_CONFORMANCE_DIR}/ok_natural_row_under_natural_and_listed.g4dat"
+               "${G4MUONICDATA_PROFILES_TWO}/d1_capture.evaluated.g4dat" COPYONLY)
+add_test(NAME validate_two_profiles
+         COMMAND g4muonicdata_validate "${G4MUONICDATA_PROFILES_TWO}"
+                 --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_two_profiles PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-14 PASS profiles=evaluated,parity pairs=3\nV-15 PASS tables=3 natural_rows=1\n")
+
+# Two files declaring the same (#PROFILE, #TABLE) pair: the shipped capture file under a second
+# name. The reader refuses the directory and names both files.
+set(G4MUONICDATA_PROFILES_SAME_PAIR "${CMAKE_BINARY_DIR}/profiles_same_pair")
+file(REMOVE_RECURSE "${G4MUONICDATA_PROFILES_SAME_PAIR}")
+file(COPY ${G4MUONICDATA_SHIPPED_FILES} DESTINATION "${G4MUONICDATA_PROFILES_SAME_PAIR}")
+configure_file("${G4MUONICDATA_DATASET_DIR}/d1_capture.g4dat"
+               "${G4MUONICDATA_PROFILES_SAME_PAIR}/d1_capture_copy.g4dat" COPYONLY)
+add_test(NAME validate_same_pair
+         COMMAND g4muonicdata_validate "${G4MUONICDATA_PROFILES_SAME_PAIR}"
+                 --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_same_pair PROPERTIES
+  PASS_REGULAR_EXPRESSION "the pair '#PROFILE parity' / '#TABLE nuclear_capture_rate' is declared by both")
+
+# A natural-composition row under A:listed, in a second profile: V-15 names the range.
+set(G4MUONICDATA_PROFILES_NATURAL_UNDER_LISTED "${CMAKE_BINARY_DIR}/profiles_natural_under_listed")
+file(REMOVE_RECURSE "${G4MUONICDATA_PROFILES_NATURAL_UNDER_LISTED}")
+file(COPY ${G4MUONICDATA_SHIPPED_FILES} DESTINATION "${G4MUONICDATA_PROFILES_NATURAL_UNDER_LISTED}")
+configure_file("${G4MUONICDATA_CONFORMANCE_DIR}/ok_natural_row_under_listed.g4dat"
+               "${G4MUONICDATA_PROFILES_NATURAL_UNDER_LISTED}/d1_capture.evaluated.g4dat" COPYONLY)
+add_test(NAME validate_natural_row_under_listed
+         COMMAND g4muonicdata_validate "${G4MUONICDATA_PROFILES_NATURAL_UNDER_LISTED}"
+                 --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_natural_row_under_listed PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-15 FAIL under A:listed")
+
+# A natural-composition row in the parity capture table itself (the corpus member as the capture
+# file, beside the shipped zeff pair): V-15 refuses it under parity whatever #VALIDITY says.
+set(G4MUONICDATA_PROFILES_NATURAL_IN_PARITY "${CMAKE_BINARY_DIR}/profiles_natural_in_parity")
+file(REMOVE_RECURSE "${G4MUONICDATA_PROFILES_NATURAL_IN_PARITY}")
+file(COPY "${G4MUONICDATA_DATASET_DIR}/d1_zeff.g4dat" "${G4MUONICDATA_DATASET_DIR}/d1_zeff.prov.json"
+     DESTINATION "${G4MUONICDATA_PROFILES_NATURAL_IN_PARITY}")
+configure_file("${G4MUONICDATA_CONFORMANCE_DIR}/ok_natural_row_under_parity.g4dat"
+               "${G4MUONICDATA_PROFILES_NATURAL_IN_PARITY}/d1_capture.g4dat" COPYONLY)
+add_test(NAME validate_natural_row_in_parity
+         COMMAND g4muonicdata_validate "${G4MUONICDATA_PROFILES_NATURAL_IN_PARITY}"
+                 --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_natural_row_in_parity PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-15 FAIL under parity")
+
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
 # enabled (and FMA on x86-64), and the figures compared with the document.
 if(G4MUONICDATA_GNU_LIKE)

@@ -421,6 +421,7 @@ b0642f3fe777272542bf2446805d2a2f09e7b1e2	DATASET_D1.md	REGISTERED: one -- a pron
 b0c4dd5c2583fe53f742aff3590694a7a378b363	DATASET_D1.md	REGISTERED: two -- 'F-7's two extremes': the two abundance figures F-7 states, both T-63 rounded pins
 b5b0e3f320918dfc6bbba4fc80efd9e7a2bbb4d0	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
 b82cb98fa0f011df6f49345625c4fface9c61cba	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
+b933ce6f6e0cef16732fccb7d30b3c70dcb3b753	DATASET_D1.md	REGISTERED: two -- 'the two tables': the shipped capture and zeff tables, which T-84 loads as exactly two parity keys
 b9c026ba92d1d9336eb23004e4c78b43e37719ae	DATASET_D1.md	REGISTERED: 59, two, one -- praseodymium's atomic number; 'two elements' the two rows the paragraph names; 'one of the two' a pronoun
 c140a5aa4dc7c5205b54dc62807188fc8dcd8a82	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of them')
 c4dda9d0a27fc91fce60f523df94edad8a426d94	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of direct interest')

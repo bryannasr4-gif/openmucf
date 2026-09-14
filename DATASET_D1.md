@@ -424,9 +424,11 @@ evaluation: no shipped value was compared to the primary for correctness, and no
 and lets both compiled-in copies of the capture tables consult this dataset after an explicit opt-in,
 with the default behaviour left untouched. A second, separate patch registers the dataset so that
 Geant4 resolves it under `GEANT4_DATA_DIR`; without it, an exported `G4MUONICDATA` is the only route.
-The generator packs these files, with a `README` and a `History`, into `G4MuonicData.<version>.tar.gz`,
-which unpacks to the `G4MuonicData<version>` directory the registered mode looks for; `<version>` is
-the `#VERSION` both tables carry.
+The generator builds `G4MuonicData.<version>.tar.gz` in memory from the two tables, their provenance
+files, a `README` and a `History`, and the registration snippet carries that archive's MD5; the archive
+unpacks to the `G4MuonicData<version>` directory the registered mode looks for, and `<version>` is the
+`#VERSION` both tables carry. The patched build looks values up through the `parity` profile only; a
+table that another profile carries in its own file is parsed and checked but never consulted.
 `cpp/patches/README.md` states what the patches change, how the dataset is found at run time, and
 what a patched build was measured to do.
 

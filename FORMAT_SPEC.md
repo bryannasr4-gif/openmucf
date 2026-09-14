@@ -517,6 +517,13 @@ A reader must therefore distinguish three outcomes and never confuse them:
 3. dataset found but unreadable or failing validation -- report the error code and line from
    section 4, not a generic failure.
 
+A directory may hold several files that declare one `#TABLE`, one per `#PROFILE`: a reader keys its
+tables by the pair (`#PROFILE`, `#TABLE`), never by file name, and rejects a directory in which two
+files declare the same pair. A consumer names the profile it reads through; `parity` is the default. A key the selected profile has
+no record for falls through to the consumer's compiled-in value, never to another profile.
+`precedence` (section 3) ranks sources within one file; selecting a profile is the only rule that
+spans files, and `#FALLBACK` is the last rung of every profile.
+
 ---
 
 ## 6. Rules for C and C++ readers
@@ -568,6 +575,11 @@ Two further requirements follow from section 2:
   before diagnosing anything later in the file (section 2.7).
 - The reader must not accept a comma decimal separator under any locale. The grammar has exactly one
   numeric syntax and it is the C-locale one.
+
+**The natural-composition row.** Under `#VALIDITY` with `A:natural_and_listed`, a record with `A = 0`
+is the row for the element's natural composition, and a lookup for (Z, A) that finds no exact record
+reads (Z, 0) before it gives up. Under `A:listed` no record has `A = 0`; Layer 1 does not decompose
+`#VALIDITY` (section 2.2), so the rule binds the consumer and its validator, not the parser.
 
 **Line length is not bounded by this format**, and deliberately carries no error code: a dataset is
 a generated, audited artifact of at most a few hundred rows, not untrusted network input, so a

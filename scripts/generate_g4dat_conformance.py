@@ -302,6 +302,45 @@ CASES: tuple[Case, ...] = (
             SIBLING_BYTES,
         ),
     ),
+    # -- the natural-composition row: Layer 1 does not decompose #VALIDITY, so every one of these
+    # is OK to the reader; which of them a consumer may accept is the consumer's rule (V-15 and the
+    # reference implementation's natural_rows), and these members are its fixtures. The profile is
+    # `evaluated` where the row must be admissible, and parity -- with the template's #SOURCESHA --
+    # where it must not be.
+    Case(
+        "ok_natural_row_under_natural_and_listed",
+        lambda ls: _encode(
+            _record(
+                _set(
+                    _set(_set(_drop(ls, "SOURCESHA"), "PROFILE", "evaluated"), "TABLE", "nuclear_capture_rate"),
+                    "VALIDITY",
+                    "Z:listed A:natural_and_listed",
+                ),
+                0,
+                "1 0 1.5 0.1",
+            )
+        ),
+    ),
+    Case(
+        "ok_natural_row_under_listed",
+        lambda ls: _encode(
+            _record(
+                _set(_set(_drop(ls, "SOURCESHA"), "PROFILE", "evaluated"), "TABLE", "nuclear_capture_rate"),
+                0,
+                "1 0 1.5 0.1",
+            )
+        ),
+    ),
+    Case(
+        "ok_natural_row_under_parity",
+        lambda ls: _encode(
+            _record(
+                _set(_set(ls, "TABLE", "nuclear_capture_rate"), "VALIDITY", "Z:listed A:natural_and_listed"),
+                0,
+                "1 0 1.5 0.1",
+            )
+        ),
+    ),
 )
 
 
