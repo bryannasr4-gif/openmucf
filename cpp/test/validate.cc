@@ -585,7 +585,6 @@ int Run(int argc, char** argv) {
   // V-01 -- the contraction self-test runs before anything else.
   if (ContractionDetected()) {
     report.Fail("V-01", std::string("contracted=YES; ") + ContractionMessage());
-    std::printf("%s\n", ContractionMessage());
     return 1;
   }
   report.Pass("V-01", "contracted=NO");

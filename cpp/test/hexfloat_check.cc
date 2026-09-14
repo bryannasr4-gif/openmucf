@@ -1,7 +1,7 @@
 // The hexfloat parser's subnormal path, exercised on every platform the validator builds on.
 //
 // The committed oracle carries no subnormal field, so until this check existed the branch of
-// `hexfloat.hh` that parses and renders `0x0.<hex>p-1022` ran under no test. Each field below is one
+// `hexfloat.hh` that parses `0x0.<hex>p-1022` ran under no test. Each field below is one
 // of the grammar's own spellings (`cpp/tools/build_oracle.py`, `hexfloat.hh`): the smallest and the
 // largest subnormal, a negative subnormal, the smallest normal, and the two zeros. For each: the
 // whole rule (`hexfloat::Problem`) accepts it, `hexfloat::Canonical` renders it back to the same
