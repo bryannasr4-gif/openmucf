@@ -1,3 +1,6 @@
 # sweep             Z 1..120 x A 1..300 = 36000 points, row-major, Z ascending outermost
 # fullsweep_sha256  8d8728ef1e27f240b2ed52618c0d10a1de7b52404d5e8f49a4aa16ac5e5307a5
+1 1 0x1.853b3dc3afed9p-21
+ZEFF 0 0x1p+0
+ZEFFCLAMP -5 0x1p+0
 #END
