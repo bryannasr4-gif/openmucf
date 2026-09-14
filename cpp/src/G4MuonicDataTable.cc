@@ -268,6 +268,7 @@ const G4MuonicDataTable::Table::Record* G4MuonicDataTable::Table::LookupNatural(
 }
 
 void G4MuonicDataTable::Enable() { g_enabled = true; }
+void G4MuonicDataTable::Disable() { g_enabled = false; }
 bool G4MuonicDataTable::IsEnabled() { return g_enabled; }
 
 std::string G4MuonicDataTable::ParserPath() {

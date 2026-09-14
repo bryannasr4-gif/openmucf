@@ -1,10 +1,10 @@
 // harvest_d1.cc with the dataset opt-in switched on, through the second compiled-in copy:
 // G4MuonicAtomHelper, built against a Geant4 install carrying the overlay patch.
 #include "G4MuonicAtomHelper.hh"
-#include "G4MuonicDataTable.hh"
+#include "G4HadronicParameters.hh"
 #include <cstdio>
 int main() {
-  G4MuonicDataTable::Enable();
+  G4HadronicParameters::Instance()->SetEnableMuonicData(true);
   for (int Z = 1; Z <= 120; ++Z)
     for (int A = 1; A <= 300; ++A)
       std::printf("%d %d %a\n", Z, A, G4MuonicAtomHelper::GetMuonCaptureRate(Z, A));

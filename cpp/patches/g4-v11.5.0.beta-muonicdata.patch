@@ -158,7 +158,7 @@ index e292ef656b..834b59d915 100644
      G4MuonDecayChannelWithSpin.cc
      G4MuonRadiativeDecayChannelWithSpin.cc
 diff --git a/source/particles/management/src/G4MuonicAtomHelper.cc b/source/particles/management/src/G4MuonicAtomHelper.cc
-index 9893519553..190d0597f6 100644
+index 8c2c37a99c..175593d136 100644
 --- a/source/particles/management/src/G4MuonicAtomHelper.cc
 +++ b/source/particles/management/src/G4MuonicAtomHelper.cc
 @@ -38,6 +38,7 @@
@@ -178,8 +178,8 @@ index 9893519553..190d0597f6 100644
 +  }
  
    std::size_t nCapRates = sizeof(capRates) / sizeof(capRates[0]);
-   for (std::size_t j = 0; j < nCapRates; ++j) {
-@@ -280,6 +284,9 @@ G4double G4MuonicAtomHelper::GetMuonZeff(G4int Z)
+   for (std::size_t j = 0; j < nCapRates; ++j)
+@@ -286,6 +290,9 @@ G4double G4MuonicAtomHelper::GetMuonZeff(G4int Z)
      Z = maxZ;
    }
  
@@ -961,29 +961,29 @@ index 0000000000..3ed962e43b
 +  return profiles;
 +}
 diff --git a/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc b/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
-index 29bd73719c..58b048466a 100644
+index ff95c000f2..2eea7b1ab8 100644
 --- a/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
 +++ b/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
-@@ -60,6 +60,7 @@
- #include "G4NeutrinoMu.hh"
- #include "G4AntiNeutrinoE.hh"
- #include "G4Log.hh"
+@@ -61,6 +61,7 @@
+ #include "G4SystemOfUnits.hh"
+ #include "G4ThreeVector.hh"
+ #include "Randomize.hh"
 +#include "G4MuonicDataOverlay.hh"
  
  //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
  
-@@ -295,6 +296,9 @@ G4double G4MuonMinusBoundDecay::GetMuonCaptureRate(G4int Z, G4int A)
-   };
+@@ -235,6 +236,9 @@ G4double G4MuonMinusBoundDecay::GetMuonCaptureRate(G4int Z, G4int A)
+     {93, 237, 13.58, 0.18},     {94, 239, 13.90, 0.20},    {94, 242, 12.86, 0.19}};
  
    G4double lambda = -1.;
 +  if (G4MuonicDataTable::IsEnabled()) {
 +    if (const G4double* v = G4MuonicDataOverlay::Rate(Z, A)) return *v / microsecond;
 +  }
  
-   size_t nCapRates = sizeof(capRates)/sizeof(capRates[0]);
-   for (size_t j = 0; j < nCapRates; ++j) {
-@@ -358,6 +362,9 @@ G4double G4MuonMinusBoundDecay::GetMuonZeff(G4int ZZ)
-        34.84,34.94,35.05,35.16,35.25,35.36,35.46,35.57,35.67,35.78 };
+   size_t nCapRates = sizeof(capRates) / sizeof(capRates[0]);
+   for (size_t j = 0; j < nCapRates; ++j)
+@@ -296,6 +300,9 @@ G4double G4MuonMinusBoundDecay::GetMuonZeff(G4int ZZ)
+     34.84, 34.94, 35.05, 35.16, 35.25, 35.36, 35.46, 35.57, 35.67, 35.78};
  
    G4int Z = std::max(std::min(ZZ, maxZ), 1);
 +  if (G4MuonicDataTable::IsEnabled()) {
@@ -993,21 +993,21 @@ index 29bd73719c..58b048466a 100644
  }
  
 diff --git a/source/processes/hadronic/util/include/G4HadronicParameters.hh b/source/processes/hadronic/util/include/G4HadronicParameters.hh
-index 09d22d476d..f30a1e5459 100644
+index 2d051de924..13b8df95db 100644
 --- a/source/processes/hadronic/util/include/G4HadronicParameters.hh
 +++ b/source/processes/hadronic/util/include/G4HadronicParameters.hh
-@@ -159,6 +159,10 @@ class G4HadronicParameters {
-     void SetEnableNUDEX( G4bool val );
+@@ -159,6 +159,10 @@ class G4HadronicParameters
+     void SetEnableNUDEX(G4bool val);
      // NUDEX gamma de-excitation is enabled/disabled.
  
 +    inline G4bool EnableMuonicData() const;
-+    void SetEnableMuonicData( G4bool val );
++    void SetEnableMuonicData(G4bool val);
 +    // Muonic-atom capture dataset (G4MuonicData) lookup is enabled/disabled.
 +
      inline const G4String& GetTypeTablePT() const;
-     void SetTypeTablePT( const G4String& typeTablePT );
+     void SetTypeTablePT(const G4String& typeTablePT);
      // Specify the type of PT table - between  "calendf"  and  "njoy"  for
-@@ -253,6 +257,7 @@ class G4HadronicParameters {
+@@ -253,6 +257,7 @@ class G4HadronicParameters
      G4bool fEnableIntegralElasticXS = true;
      G4bool fEnableDiffDissociationForBGreater10 = false;
      G4bool fEnableNUDEX = false;
@@ -1015,19 +1015,20 @@ index 09d22d476d..f30a1e5459 100644
      G4bool fNeutronGeneral = false;
      G4bool fChargeExchange = false;
      G4bool fBinaryDebug = false;
-@@ -364,6 +369,10 @@ inline G4bool G4HadronicParameters::EnableNUDEX() const {
+@@ -389,6 +394,11 @@ inline G4bool G4HadronicParameters::EnableNUDEX() const
    return fEnableNUDEX;
  }
  
-+inline G4bool G4HadronicParameters::EnableMuonicData() const {
++inline G4bool G4HadronicParameters::EnableMuonicData() const
++{
 +  return fEnableMuonicData;
 +}
 +
- inline const G4String& G4HadronicParameters::GetTypeTablePT() const {
+ inline const G4String& G4HadronicParameters::GetTypeTablePT() const
+ {
    return fTypeTablePT;
- }
 diff --git a/source/processes/hadronic/util/src/G4HadronicParameters.cc b/source/processes/hadronic/util/src/G4HadronicParameters.cc
-index 9a16ede106..67086bcf13 100644
+index 5046e3461b..25eff10fb3 100644
 --- a/source/processes/hadronic/util/src/G4HadronicParameters.cc
 +++ b/source/processes/hadronic/util/src/G4HadronicParameters.cc
 @@ -37,6 +37,7 @@
@@ -1035,22 +1036,24 @@ index 9a16ede106..67086bcf13 100644
  
  #include "G4HadronicParameters.hh"
 +#include "G4MuonicDataTable.hh"
- #include <CLHEP/Units/PhysicalConstants.h>
+ 
  #include "G4ApplicationState.hh"
- #include "G4StateManager.hh"
-@@ -395,6 +396,15 @@ void G4HadronicParameters::SetEnableNUDEX( G4bool val ) {
- } 
+ #include "G4AutoLock.hh"
+@@ -459,6 +460,17 @@ void G4HadronicParameters::SetEnableNUDEX(G4bool val)
+   if (!IsLocked()) fEnableNUDEX = val;
+ }
  
- 
-+void G4HadronicParameters::SetEnableMuonicData( G4bool val ) {
-+  if ( ! IsLocked() ) {
++void G4HadronicParameters::SetEnableMuonicData(G4bool val)
++{
++  if (!IsLocked()) {
 +    fEnableMuonicData = val;
-+    if ( val ) G4MuonicDataTable::Enable();
-+    else G4MuonicDataTable::Disable();
++    if (val)
++      G4MuonicDataTable::Enable();
++    else
++      G4MuonicDataTable::Disable();
 +  }
 +}
 +
-+
- void G4HadronicParameters::SetTypeTablePT( const G4String& typeTablePT ) {
-   if ( ! IsLocked() ) fTypeTablePT = typeTablePT;
- }
+ void G4HadronicParameters::SetTypeTablePT(const G4String& typeTablePT)
+ {
+   if (!IsLocked()) fTypeTablePT = typeTablePT;

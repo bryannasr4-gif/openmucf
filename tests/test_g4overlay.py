@@ -1,19 +1,22 @@
 """T-72, T-73 -- the Geant4 overlay patches: do they still say what the repository says?
 
-`cpp/patches/g4-v11.4.2-muonicdata.patch` is where the reader meets Geant4. It adds the reader to
-Geant4's own tree and inserts a lookup into the two compiled-in copies of the muon-capture tables.
-Two things about it can rot silently: the reader it carries can drift from `cpp/include` + `cpp/src`
-(the repository's copy is the one every other test exercises), and its context lines can drift from
-the vendored upstream files it was cut against (then it no longer applies where it claims to).
-Neither needs Geant4 to check, so both are checked here, on every platform, in ordinary CI.
+`cpp/patches/g4-v11.4.2-muonicdata.patch` and `cpp/patches/g4-v11.5.0.beta-muonicdata.patch` are
+where the reader meets Geant4, one patch family per revision the overlay targets. Each adds the
+reader to Geant4's own tree, adds the opt-in boolean to `G4HadronicParameters`, and inserts a
+lookup into the two compiled-in copies of the muon-capture tables. Two things about a family can
+rot silently: the reader it carries can drift from `cpp/include` + `cpp/src` (the repository's
+copy is the one every other test exercises), and its context lines can drift from the vendored
+upstream files it was cut against (then it no longer applies where it claims to). Neither needs
+Geant4 to check, so both are checked here, for both families, on every platform, in ordinary CI.
 
 What each test here is actually for:
 
 * **T-72** -- the patch parses as a unified diff, touches exactly the declared set of files, applies
   (with a zero-fuzz applier written here, not `git apply`, so the check is the same on every
-  runner) to the vendored copies of the two seam files without deleting a line of them, and the
-  two reader files it adds equal the repository's byte for byte. The registration patch touches
-  only the dataset-definitions file and adds exactly the committed snippet's entry.
+  runner) to the vendored copies of the two seam files without deleting a line of any file that
+  existed before it, and the two reader files it adds equal the repository's byte for byte. The
+  registration patch touches only the dataset-definitions file and adds exactly the committed
+  snippet's entry.
 * **T-73** -- the drill: alter one context line and the applier must refuse, naming the hunk; and
   the patch README states the sweep digest by reference, never as a literal, and carries no
   digit-bearing token the patches themselves do not.
@@ -33,40 +36,68 @@ import test_g4parity as parity
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 PATCHES = REPO / "cpp" / "patches"
-BEHAVIOUR = PATCHES / "g4-v11.4.2-muonicdata.patch"
-REGISTRATION = PATCHES / "g4-v11.4.2-register-dataset.patch"
 README = PATCHES / "README.md"
-VENDORED = REPO / "third_party" / "geant4" / "v11.4.2"
 SNIPPET = REPO / "data" / "g4" / "d1" / "geant4_add_dataset.snippet"
 
+#: The two patch families, keyed by the upstream tag each was cut against: the behaviour patch,
+#: the registration patch, and the directory holding that tag's vendored seam files.
+FAMILIES: dict[str, tuple[pathlib.Path, pathlib.Path, pathlib.Path]] = {
+    tag: (
+        PATCHES / f"g4-{tag}-muonicdata.patch",
+        PATCHES / f"g4-{tag}-register-dataset.patch",
+        REPO / "third_party" / "geant4" / tag,
+    )
+    for tag in (parity.d1.UPSTREAM_TAG, parity.BETA_TAG)
+}
+#: Every patch of every family, in tag order -- what the README's digit-bearing tokens are held to.
+ALL_PATCHES = [patch for tag in sorted(FAMILIES) for patch in FAMILIES[tag][:2]]
+
 #: The files the behaviour patch is declared to touch, as a literal set: two reader files and one
-#: glue file added to Geant4's global-management module, that module's source list, and the two
-#: seam files. A count would let a dropped file and an added file cancel out.
+#: glue file added to Geant4's particle-management module, that module's source list, the two
+#: seam files, and the two files of `G4HadronicParameters` that gain the opt-in. A count would let
+#: a dropped file and an added file cancel out.
 BEHAVIOUR_PATHS = frozenset(
     {
-        "source/global/management/include/G4MuonicDataOverlay.hh",
-        "source/global/management/include/G4MuonicDataTable.hh",
-        "source/global/management/sources.cmake",
-        "source/global/management/src/G4MuonicDataOverlay.cc",
-        "source/global/management/src/G4MuonicDataTable.cc",
+        "source/particles/management/include/G4MuonicDataOverlay.hh",
+        "source/particles/management/include/G4MuonicDataTable.hh",
+        "source/particles/management/sources.cmake",
         "source/particles/management/src/G4MuonicAtomHelper.cc",
+        "source/particles/management/src/G4MuonicDataOverlay.cc",
+        "source/particles/management/src/G4MuonicDataTable.cc",
         "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc",
+        "source/processes/hadronic/util/include/G4HadronicParameters.hh",
+        "source/processes/hadronic/util/src/G4HadronicParameters.cc",
     }
 )
 #: The one source list among them, derived from the declared set rather than re-typed; unpacking
 #: a one-element tuple asserts there is exactly one.
 (SOURCES_CMAKE,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/sources.cmake"))
-#: The two seam files, and the vendored copy each one's hunks must apply to.
-SEAMS = {
-    "source/particles/management/src/G4MuonicAtomHelper.cc": VENDORED / "G4MuonicAtomHelper.cc",
-    "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc": VENDORED / "G4MuonMinusBoundDecay.cc",
+#: The two `G4HadronicParameters` files, likewise derived: this repository vendors neither, so
+#: only the shape of their `index` declaration is held (see the blob test).
+HADRONIC_PARAMETERS = frozenset(p for p in BEHAVIOUR_PATHS if "/G4HadronicParameters." in p)
+assert len(HADRONIC_PARAMETERS) == 2, HADRONIC_PARAMETERS
+#: Per family: the two seam files, and the vendored copy of that tag each one's hunks must apply to.
+SEAMS: dict[str, dict[str, pathlib.Path]] = {
+    tag: {
+        "source/particles/management/src/G4MuonicAtomHelper.cc": vendored / "G4MuonicAtomHelper.cc",
+        "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc": (
+            vendored / "G4MuonMinusBoundDecay.cc"
+        ),
+    }
+    for tag, (_, _, vendored) in FAMILIES.items()
 }
-#: The two reader files the patch adds, and the repository file each must equal.
-READER = {
-    "source/global/management/include/G4MuonicDataTable.hh": REPO / "cpp/include/G4MuonicDataTable.hh",
-    "source/global/management/src/G4MuonicDataTable.cc": REPO / "cpp/src/G4MuonicDataTable.cc",
+#: Per family: the two reader files the patch adds, and the repository file each must equal --
+#: the same two files for both families, since the reader does not depend on the revision.
+READER: dict[str, dict[str, pathlib.Path]] = {
+    tag: {
+        "source/particles/management/include/G4MuonicDataTable.hh": REPO / "cpp/include/G4MuonicDataTable.hh",
+        "source/particles/management/src/G4MuonicDataTable.cc": REPO / "cpp/src/G4MuonicDataTable.cc",
+    }
+    for tag in FAMILIES
 }
 REGISTRATION_PATH = "cmake/Modules/G4DatasetDefinitions.cmake"
+
+family = pytest.mark.parametrize("tag", sorted(FAMILIES))
 
 
 # A unified-diff applier -- zero fuzz, bytes in, bytes out
@@ -251,18 +282,27 @@ def check_readme_numbers(readme: pathlib.Path, patches: list[pathlib.Path]) -> N
 # ---------------------------------------------------------------------------------------
 
 
-def test_t72_the_behaviour_patch_touches_exactly_the_declared_files():
-    files = by_new_path(parse_patch(BEHAVIOUR.read_bytes()))
+@family
+def test_t72_the_behaviour_patch_touches_exactly_the_declared_files(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
     assert set(files) == BEHAVIOUR_PATHS
 
 
-def test_t72_the_seam_hunks_apply_to_the_vendored_files_and_delete_nothing():
-    files = by_new_path(parse_patch(BEHAVIOUR.read_bytes()))
-    for path, vendored in SEAMS.items():
-        file = files[path]
+@family
+def test_t72_the_seam_hunks_apply_to_the_vendored_files_and_delete_nothing(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    # Every file that existed before the patch -- the seams, the source list, the two
+    # `G4HadronicParameters` files -- is only ever added to: not one `-` line anywhere.
+    for path, file in sorted(files.items()):
+        if file.old_path == b"/dev/null":
+            continue
         assert file.old_path == b"a/" + path.encode(), file.old_path
         removed = [content for hunk in file.hunks for marker, content, _ in hunk.lines if marker == b"-"]
         assert not removed, f"{path}: the patch deletes {removed}"
+    for path, vendored in SEAMS[tag].items():
+        file = files[path]
         original = vendored.read_bytes()
         patched = apply_file_patch(file, original)
         added = sum(1 for hunk in file.hunks for marker, _, _ in hunk.lines if marker == b"+")
@@ -270,9 +310,11 @@ def test_t72_the_seam_hunks_apply_to_the_vendored_files_and_delete_nothing():
         assert len(split_lines(patched)) == len(split_lines(original)) + added
 
 
-def test_t72_the_added_reader_files_equal_the_repository_copies_byte_for_byte():
-    files = by_new_path(parse_patch(BEHAVIOUR.read_bytes()))
-    for path, repo_file in READER.items():
+@family
+def test_t72_the_added_reader_files_equal_the_repository_copies_byte_for_byte(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    for path, repo_file in READER[tag].items():
         file = files[path]
         assert file.old_path == b"/dev/null", f"{path} is not added as a new file"
         added = apply_file_patch(file, b"")
@@ -282,13 +324,17 @@ def test_t72_the_added_reader_files_equal_the_repository_copies_byte_for_byte():
         assert added == expected, f"{path} differs from {repo_file.name}"
 
 
-def test_t72_neither_patch_carries_a_carriage_return():
-    check_no_carriage_return(BEHAVIOUR)
-    check_no_carriage_return(REGISTRATION)
+@family
+def test_t72_neither_patch_carries_a_carriage_return(tag: str):
+    behaviour, registration, _ = FAMILIES[tag]
+    check_no_carriage_return(behaviour)
+    check_no_carriage_return(registration)
 
 
-def test_t72_the_registration_patch_adds_exactly_the_snippets_entry():
-    files = by_new_path(parse_patch(REGISTRATION.read_bytes()))
+@family
+def test_t72_the_registration_patch_adds_exactly_the_snippets_entry(tag: str):
+    _, registration, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(registration.read_bytes()))
     assert set(files) == {REGISTRATION_PATH}
     file = files[REGISTRATION_PATH]
     markers = {marker for hunk in file.hunks for marker, _, _ in hunk.lines}
@@ -298,18 +344,22 @@ def test_t72_the_registration_patch_adds_exactly_the_snippets_entry():
     assert added == expected
 
 
-def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_declares():
+@family
+def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_declares(tag: str):
     """Each `index <old>..<new>` line is git's own name for the file's bytes before and after the
     hunks. The pin is on the whole post-image, so a hunk that dropped an added line together with
     its count -- which the hunk arithmetic cannot see -- moves the blob id and fails here.
 
     An added file rebuilds from nothing to `new`; a seam file's vendored copy is `old` and its
     patched copy is `new`. The upstream files this repository does not vendor (`sources.cmake`,
-    `G4DatasetDefinitions.cmake`) have no `old` bytes to rebuild from, so for them only the shape of
-    the declaration is held: a non-zero `old`, and a `new` that differs from it.
+    `G4DatasetDefinitions.cmake`, the two `G4HadronicParameters` files) have no `old` bytes to
+    rebuild from, so for them only the shape of the declaration is held: a non-zero `old`, and a
+    `new` that differs from it.
     """
+    behaviour, registration, _ = FAMILIES[tag]
+    seams = SEAMS[tag]
     not_rebuilt: set[str] = set()
-    for patch in (BEHAVIOUR, REGISTRATION):
+    for patch in (behaviour, registration):
         for path, file in sorted(by_new_path(parse_patch(patch.read_bytes())).items()):
             assert re.fullmatch(rb"[0-9a-f]{7,40}", file.index_old), (path, file.index_old)
             assert re.fullmatch(rb"[0-9a-f]{7,40}", file.index_new), (path, file.index_new)
@@ -317,45 +367,50 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
             if file.old_path == b"/dev/null":
                 assert file.index_old.strip(b"0") == b"", (path, file.index_old)
                 assert parity.git_blob_id(apply_file_patch(file, b"")).startswith(new), path
-            elif path in SEAMS:
-                vendored = SEAMS[path].read_bytes()
+            elif path in seams:
+                vendored = seams[path].read_bytes()
                 assert parity.git_blob_id(vendored).startswith(file.index_old.decode()), path
                 assert parity.git_blob_id(apply_file_patch(file, vendored)).startswith(new), path
             else:
                 assert file.index_old.strip(b"0") != b"", (path, file.index_old)
                 assert file.index_new != file.index_old, path
                 not_rebuilt.add(path)
-    assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH}
+    assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH} | HADRONIC_PARAMETERS
 
 
 def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touches():
     """The vendored README's `upstream path` cells are the seam paths, read from its table by the
     row labels: the BoundDecay cell is the reference module's `UPSTREAM_PATH`, the helper cell is
     the `SEAMS` key whose vendored copy is the helper, and together they are the paths the
-    behaviour patch's seam hunks touch.
+    behaviour patch's seam hunks touch. The rows read are the `v11.4.2` table's; the beta family
+    touches the same two paths, which the path-set test above holds for both.
     """
+    seams = SEAMS[parity.d1.UPSTREAM_TAG]
     text = parity.VENDORED_README.read_text("utf-8")
     bound_decay = re.findall(r"^\| upstream path \| `([^`]+)` \|$", text, re.M)
     helper = re.findall(r"^\| `G4MuonicAtomHelper\.cc` upstream path \| `([^`]+)` \|$", text, re.M)
     assert len(bound_decay) == 1 and len(helper) == 1, (bound_decay, helper)
     assert bound_decay[0] == parity.d1.UPSTREAM_PATH
-    helper_key = next(path for path, vendored in SEAMS.items() if vendored == parity.HELPER)
+    helper_key = next(path for path, vendored in seams.items() if vendored == parity.HELPER)
     assert helper[0] == helper_key
-    assert {bound_decay[0], helper[0]} == set(SEAMS)
+    assert {bound_decay[0], helper[0]} == set(seams)
+    assert set(seams) == set(SEAMS[parity.BETA_TAG])
 
 
 # T-73 -- the drill, and the README's numbers
 # -------------------------------------------
 
 
-def test_t73_drill_an_altered_context_line_is_refused_by_name():
+@family
+def test_t73_drill_an_altered_context_line_is_refused_by_name(tag: str):
     """Alter one context line of a seam hunk in memory: the applier must raise, naming that hunk.
 
     This is what separates an applier from a path matcher: a checker that only compared the `+++`
     set would pass a patch cut against some other revision of the same file names.
     """
-    files = by_new_path(parse_patch(BEHAVIOUR.read_bytes()))
-    path, vendored = next(iter(sorted(SEAMS.items())))
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    path, vendored = next(iter(sorted(SEAMS[tag].items())))
     file = files[path]
     hunk = file.hunks[-1]
     index = next(i for i, (marker, _, _) in enumerate(hunk.lines) if marker == b" ")
@@ -367,13 +422,15 @@ def test_t73_drill_an_altered_context_line_is_refused_by_name():
     assert path in str(raised.value), raised.value
 
 
-def test_t73_drill_a_dropped_added_line_with_its_count_is_refused_by_the_blob_pin():
+@family
+def test_t73_drill_a_dropped_added_line_with_its_count_is_refused_by_the_blob_pin(tag: str):
     """Drop the last added line of the reader's `.cc` hunk and lower the hunk's count to match: the
     hunk arithmetic still balances and the applier still succeeds, so nothing before the blob pin
     notices -- and the rebuilt file no longer names the blob the `index` line declares.
     """
-    files = by_new_path(parse_patch(BEHAVIOUR.read_bytes()))
-    path = next(p for p in READER if p.endswith(".cc"))
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    path = next(p for p in READER[tag] if p.endswith(".cc"))
     file = files[path]
     declared = file.index_new.decode()
     assert parity.git_blob_id(apply_file_patch(file, b"")).startswith(declared)
@@ -387,20 +444,22 @@ def test_t73_drill_a_dropped_added_line_with_its_count_is_refused_by_the_blob_pi
 
 
 def test_t73_the_readme_states_no_digest_literal_and_no_foreign_number():
-    check_readme_numbers(README, [BEHAVIOUR, REGISTRATION])
+    check_readme_numbers(README, ALL_PATCHES)
 
 
-def test_t73_drill_a_carriage_return_and_a_planted_number_are_caught(tmp_path):
+@family
+def test_t73_drill_a_carriage_return_and_a_planted_number_are_caught(tag: str, tmp_path):
     """The two README/patch guards, each shown to fire on a corrupted temporary copy."""
-    patch_copy = tmp_path / BEHAVIOUR.name
-    patch_copy.write_bytes(BEHAVIOUR.read_bytes().replace(b"\n", b"\r\n", 1))
+    behaviour, registration, _ = FAMILIES[tag]
+    patch_copy = tmp_path / behaviour.name
+    patch_copy.write_bytes(behaviour.read_bytes().replace(b"\n", b"\r\n", 1))
     with pytest.raises(AssertionError, match="CR byte"):
         check_no_carriage_return(patch_copy)
 
     readme_copy = tmp_path / README.name
     planted = "36000"
-    assert planted not in BEHAVIOUR.read_bytes().decode("latin-1")
-    assert planted not in REGISTRATION.read_bytes().decode("latin-1")
+    for patch in ALL_PATCHES:
+        assert planted not in patch.read_bytes().decode("latin-1"), patch.name
     readme_copy.write_text(README.read_text("utf-8") + f"\nThe sweep has {planted} points.\n", "utf-8")
     with pytest.raises(AssertionError, match=planted):
-        check_readme_numbers(readme_copy, [BEHAVIOUR, REGISTRATION])
+        check_readme_numbers(readme_copy, [behaviour, registration])
