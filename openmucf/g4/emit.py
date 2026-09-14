@@ -1,8 +1,10 @@
 """openmucf.g4.emit -- the shipping artifacts: a deterministic archive and its registration snippet.
 
-A dataset is shipped as one gzipped tar archive holding the Layer-1 ``.g4dat`` files and the Layer-2
-``*.prov.json`` files they were generated from. This module builds that archive, checksums it, and
-writes the ``geant4_add_dataset(...)`` block a build system needs in order to register it.
+A dataset is shipped as one gzipped tar archive whose members -- the Layer-1 ``.g4dat`` files, the
+Layer-2 ``*.prov.json`` files they were generated from, and a generated ``README`` and ``History`` --
+all sit under one top-level directory named as Geant4's dataset machinery expects after unpacking.
+This module builds that archive, checksums it, and writes the ``geant4_add_dataset(...)`` block a
+build system needs in order to register it.
 
 **Determinism is the whole point.** A tar entry carries an mtime, a uid/gid, a user/group name and a
 permission bits field; a gzip container carries an mtime and, if you let it, the source filename.
@@ -31,13 +33,17 @@ import gzip
 import hashlib
 import io
 import tarfile
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 __all__ = [
     "ARCHIVE_EXTENSION",
     "add_dataset_snippet",
+    "archive_name",
     "build_tarball",
+    "dataset_directory",
     "gzip_header",
+    "history_member",
+    "readme_member",
     "tarball_md5",
 ]
 
@@ -53,41 +59,71 @@ _EPOCH = 0
 _MAX_MEMBER_NAME = 100
 
 
-def build_tarball(members: Mapping[str, bytes]) -> bytes:
-    """Build a deterministic ``.tar.gz`` from ``{member name: exact bytes}``.
+def dataset_directory(name: str, version: str) -> str:
+    """The directory a Geant4 dataset unpacks to: ``DIRECTORY = NAME + VERSION``, per the rule at
+    ``cmake/Modules/G4InstallData.cmake`` lines 234-235 of Geant4 v11.4.2."""
+    return f"{name}{version}"
+
+
+def archive_name(filename: str, version: str) -> str:
+    """The packed dataset's file name: ``FILE = FILENAME.VERSION.EXTENSION``, per the rule at
+    ``cmake/Modules/G4InstallData.cmake`` line 230 of Geant4 v11.4.2."""
+    return f"{filename}.{version}.{ARCHIVE_EXTENSION}"
+
+
+def build_tarball(members: Mapping[str, bytes], *, directory: str) -> bytes:
+    """Build a deterministic ``.tar.gz`` from ``{file name: exact bytes}``, every member stored as
+    ``directory/file name``.
 
     The same mapping always produces the same bytes on the same zlib: entries are written in sorted
-    name order, every metadata field is pinned, and the gzip container carries neither a timestamp
-    nor a source filename.
+    stored-name order, every metadata field is pinned, and the gzip container carries neither a
+    timestamp nor a source filename.
     """
+    # Exactly one directory component, and it is this one (``FORMAT_SPEC.md`` section 8): the
+    # archive unpacks to ``directory`` and nothing else, and no directory-entry member is written
+    # -- an unpacker creates the directory from the members' paths. A separator in either the
+    # directory or a file name would be a different layout, not a longer name. The ASCII rule is
+    # stated for its message, honestly: the length check below already rejects a non-ASCII name,
+    # but as a ``UnicodeEncodeError`` from ``str.encode`` rather than as a statement about archive
+    # names. No determinism channel was ever open here -- that check has always run first -- and
+    # saying otherwise would be claiming a fix for a hole that did not exist.
+    if (
+        not directory
+        or "/" in directory
+        or "\\" in directory
+        or directory in (".", "..")
+        or not directory.isascii()
+    ):
+        raise ValueError(
+            f"archive directory {directory!r} must be a non-empty US-ASCII name, with no path "
+            "separator and not a dot entry"
+        )
+    stored: dict[str, bytes] = {}
     for name in sorted(members):
-        # The archive is FLAT (``FORMAT_SPEC.md`` section 8), so a separator of either kind is a
-        # different layout, not a longer name. The ASCII rule is stated for its message, honestly:
-        # the length check below already rejects a non-ASCII name, but as a ``UnicodeEncodeError``
-        # from ``str.encode`` rather than as a statement about archive names. No determinism channel
-        # was ever open here -- that check has always run first -- and saying otherwise would be
-        # claiming a fix for a hole that did not exist.
         if not name or "/" in name or "\\" in name:
             raise ValueError(
-                f"archive member name {name!r} must be a plain flat name, with no path separator"
+                f"archive member name {name!r} must be a plain file name, with no path separator"
             )
         if not name.isascii():
             raise ValueError(
                 f"archive member name {name!r} must be US-ASCII; a non-ASCII name is encoded with the "
                 "builder's filesystem encoding and would make the archive machine-dependent"
             )
-        if len(name.encode("ascii")) > _MAX_MEMBER_NAME:
+        path = f"{directory}/{name}"
+        if len(path.encode("ascii")) > _MAX_MEMBER_NAME:
             raise ValueError(
-                f"archive member name {name!r} exceeds the {_MAX_MEMBER_NAME}-byte ustar limit; a "
+                f"archive member name {path!r} exceeds the {_MAX_MEMBER_NAME}-byte ustar limit; a "
                 "longer name needs an extension header whose bytes are not version-stable"
             )
+        stored[path] = members[name]
 
     raw = io.BytesIO()
     # USTAR explicitly: the default format has changed across Python versions, and the archive's
-    # bytes must not depend on which interpreter built it.
+    # bytes must not depend on which interpreter built it. Every stored name fits the ustar name
+    # field, so the header's ``prefix`` field stays empty.
     with tarfile.open(fileobj=raw, mode="w", format=tarfile.USTAR_FORMAT) as archive:
-        for name in sorted(members):
-            payload = members[name]
+        for name in sorted(stored):
+            payload = stored[name]
             info = tarfile.TarInfo(name)
             info.size = len(payload)
             info.mtime = _EPOCH
@@ -137,6 +173,60 @@ def tarball_md5(archive: bytes) -> str:
     return hashlib.md5(archive, usedforsecurity=False).hexdigest()
 
 
+#: The attribution notice of ``FORMAT_SPEC.md`` section 9, line for line without the quote prefix.
+_NOTICE_LINES = (
+    "This product includes software developed by Members of the Geant4 Collaboration",
+    "( http://cern.ch/geant4 ).",
+)
+
+#: One archive table: ``(layer1_name, layer2_name, table, profile, seam, rows)`` -- the Layer-1
+#: member's file name, its Layer-2 sibling's, the ``#TABLE``, ``#PROFILE`` and ``#SEAM`` values
+#: and the record count. Everything ``README`` and ``History`` say comes from these and the
+#: dataset's name and version; nothing about the machine or the moment that built the archive.
+TableEntry = tuple[str, str, str, str, str, int]
+
+
+def _ascii_member(lines: Sequence[str]) -> bytes:
+    """LF-joined, trailing newline, US-ASCII -- a member's bytes are a function of its lines."""
+    return ("\n".join(lines) + "\n").encode("ascii")
+
+
+def readme_member(*, name: str, version: str, files: Sequence[TableEntry]) -> bytes:
+    """The ``README`` member, in the shape of the ``README`` a Geant4 dataset directory carries:
+    the directory's name, what reads the files, the file list, and the attribution notice."""
+    lines = [
+        dataset_directory(name, version),
+        "",
+        "The data in this directory are read by G4MuonicDataTable: each .g4dat file is one table "
+        "in the G4MuonicData format, and its .prov.json sibling is the per-row provenance whose "
+        "SHA-256 the table's #SOURCEDIGEST names.",
+        "FORMAT_SPEC.md in the openmucf repository states the format.",
+        "",
+        "The following files can be found here:",
+    ]
+    for layer1, layer2, table, profile, seam, rows in files:
+        lines.append(f"  - {layer1}: #TABLE {table}, #PROFILE {profile}, #SEAM {seam}, {rows} records")
+        lines.append(f"  - {layer2}: Layer 2 for {layer1}")
+    lines.append("  - README: this file")
+    lines.append("  - History: the version this directory carries and its tables")
+    lines.append("")
+    lines.extend(_NOTICE_LINES)
+    return _ascii_member(lines)
+
+
+def history_member(*, name: str, version: str, files: Sequence[TableEntry]) -> bytes:
+    """The ``History`` member: one entry, the version this archive carries, and its tables.
+
+    One entry only, because the generator has no source for what earlier versions carried; the
+    repository's ``CHANGELOG.md`` is the history across versions.
+    """
+    title = f"History for {name} files:"
+    lines = [title, "-" * len(title), "", version]
+    for layer1, _layer2, table, profile, _seam, rows in files:
+        lines.append(f"  {layer1}: #TABLE {table}, #PROFILE {profile}, {rows} records")
+    return _ascii_member(lines)
+
+
 def add_dataset_snippet(
     *,
     name: str,
@@ -154,16 +244,14 @@ def add_dataset_snippet(
     from the archive it describes.
 
     The header comment is part of the artifact on purpose: a snippet found on its own must say that
-    its names are provisional and that the archive it checksums is flat.
+    its names are provisional.
     """
     lines = [
         "# Generated by scripts/generate_g4data.py -- do not edit by hand.",
         "# Paste into cmake/Modules/G4DatasetDefinitions.cmake to register the dataset.",
         "#",
         "# Provisional: the dataset name and the environment variable are placeholders (see",
-        "# FORMAT_SPEC.md), and the archive is FLAT -- its members sit at the archive root rather",
-        "# than under a <FILENAME><VERSION> directory. Fixing the installed layout is part of",
-        "# registration, not of the format, and is deliberately not decided here.",
+        "# FORMAT_SPEC.md).",
         "geant4_add_dataset(",
         f"  NAME      {name}",
         f"  VERSION   {version}",

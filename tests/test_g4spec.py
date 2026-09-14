@@ -1113,9 +1113,12 @@ def test_t35_archive_is_deterministic():
     attributed to the DEFLATE stream (a zlib build difference) rather than to this code.
     """
     members = example_members()
-    first = emit.build_tarball(members)
-    assert first == emit.build_tarball(members)
-    assert first == emit.build_tarball(dict(reversed(list(members.items()))))  # insertion order
+    directory = emit.dataset_directory("Example", "1.2.3")
+    first = emit.build_tarball(members, directory=directory)
+    assert first == emit.build_tarball(members, directory=directory)
+    assert first == emit.build_tarball(  # insertion order
+        dict(reversed(list(members.items()))), directory=directory
+    )
 
     header = emit.gzip_header(first)
     assert header["mtime"] == 0, "the gzip container is stamped with the build time"
@@ -1127,25 +1130,38 @@ def test_t35_archive_is_deterministic():
         path.write_bytes(first)
         with tarfile.open(path) as archive:
             entries = archive.getmembers()
-        assert [entry.name for entry in entries] == sorted(members)  # sorted, and nothing else
+        # Sorted, every one under the dataset directory, and nothing else: no directory-entry
+        # member, which an unpacker does not need and which would add bytes to checksum.
+        assert [entry.name for entry in entries] == [f"{directory}/{n}" for n in sorted(members)]
         for entry in entries:
+            assert not entry.isdir(), entry.name
             assert (entry.mtime, entry.uid, entry.gid, entry.uname, entry.gname) == (0, 0, 0, "", "")
             assert entry.mode == 0o644
     assert len(emit.tarball_md5(first)) == 32
 
-    # Member names are flat and ASCII. A separator would silently produce a nested archive where
-    # section 8 promises a flat one; the ASCII rule is about the MESSAGE, since the ustar length
-    # check already rejects a non-ASCII name, as a UnicodeEncodeError rather than as a statement
-    # about archive names.
+    # Exactly one directory component, and it is the one given: a separator in the directory or
+    # in a file name would silently produce a deeper archive where section 8 promises one level;
+    # a dot entry would unpack somewhere other than the dataset directory. The ASCII rule is about
+    # the MESSAGE, since the ustar length check already rejects a non-ASCII name, as a
+    # UnicodeEncodeError rather than as a statement about archive names.
+    for bad in ("", "a/b", "a\\b", ".", ".."):
+        with pytest.raises(ValueError, match="directory"):
+            emit.build_tarball(members, directory=bad)
     for bad in ("sub/dir.g4dat", "sub\\dir.g4dat", ""):
-        with pytest.raises(ValueError, match="flat name"):
-            emit.build_tarball({bad: b"x"})
+        with pytest.raises(ValueError, match="file name"):
+            emit.build_tarball({bad: b"x"}, directory=directory)
     # Matched on the MESSAGE, not on the type: UnicodeEncodeError IS a ValueError, so a bare
     # `pytest.raises(ValueError)` here passed before the ASCII guard existed and pinned nothing.
     with pytest.raises(ValueError, match="US-ASCII"):
-        emit.build_tarball({"examplé.g4dat": b"x"})
+        emit.build_tarball({"examplé.g4dat": b"x"}, directory=directory)
     with pytest.raises(ValueError, match="ustar"):
-        emit.build_tarball({"n" * 101: b"x"})
+        emit.build_tarball({"n" * 101: b"x"}, directory=directory)
+    # The limit is on the STORED name, directory and separator included: a file name that fits on
+    # its own but overflows once prefixed is the case a check on the bare name would miss.
+    overflow = "n" * (101 - len(f"{directory}/"))
+    assert len(overflow) < 101 and len(f"{directory}/{overflow}") == 101
+    with pytest.raises(ValueError, match="ustar"):
+        emit.build_tarball({overflow: b"x"}, directory=directory)
 
     # The ustar rows of section 8, asserted against the real bytes rather than only written down.
     # Each of these has a legal alternative that a different writer picks, and each changes the MD5.
@@ -1156,6 +1172,10 @@ def test_t35_archive_is_deterministic():
     assert header[148:156].endswith(b"\x00 ") and len(header[148:156]) == 8  # 6 octal, NUL, space
     assert header[329:345] == b"\x00" * 16, "devmajor/devminor must be NUL, not octal zero"
     assert header[156:157] == b"0", "typeflag must be '0', not the equally legal NUL spelling"
+    # The stored name fits the name field, so the prefix field (offsets 345-500) is never used; a
+    # writer that split the directory into it would be a different, equally legal, archive.
+    assert header[345:500] == b"\x00" * 155, "the ustar prefix field must stay empty"
+    assert header[:100].rstrip(b"\x00") == f"{directory}/{sorted(members)[0]}".encode("ascii")
     assert len(decompressed) % 10240 == 0 and decompressed.endswith(b"\x00" * 1024)
 
 
@@ -1169,12 +1189,17 @@ def test_t36_source_digest_survives_a_round_trip_through_the_filesystem():
     disk, re-hash -- and then do the same with a text-mode copy and require E009.
     """
     members = example_members()
-    archive = emit.build_tarball(members)
+    directory = emit.dataset_directory("Example", "1.2.3")
+    archive = emit.build_tarball(members, directory=directory)
 
     with tempfile.TemporaryDirectory() as scratch:
-        root = pathlib.Path(scratch)
+        scratch_root = pathlib.Path(scratch)
         with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
-            opened.extractall(root, filter="data")
+            opened.extractall(scratch_root, filter="data")
+        # Unpacking creates exactly the dataset directory, and every member sits inside it.
+        assert [p.name for p in scratch_root.iterdir()] == [directory]
+        root = scratch_root / directory
+        assert sorted(p.name for p in root.iterdir()) == sorted(members)
 
         layer1 = spec.parse((root / "example.g4dat").read_bytes().decode("ascii"))
         from_disk = (root / "example.prov.json").read_bytes()
@@ -1319,3 +1344,60 @@ def test_t39_the_generator_reads_layer_2_as_bytes():
     assert "read_text" not in source and "open(" not in source
     # The write side of the same rule, on the generated artifacts.
     assert "write_bytes" in source and "write_text" not in source
+
+
+# --------------------------------------------------------------------------------------------
+# T-81 -- the README and History members are pure functions of their arguments
+# --------------------------------------------------------------------------------------------
+
+
+def quoted_block_after(document: pathlib.Path, heading: str) -> list[str]:
+    """The first run of `> ` lines after `heading`, with the quote prefix stripped -- read from the
+    document, never typed here, so a change to the notice fails the test that quotes it."""
+    lines = document.read_text("utf-8").splitlines()
+    block: list[str] = []
+    for line in lines[lines.index(heading) + 1 :]:
+        if line.startswith("> "):
+            block.append(line[2:])
+        elif block:
+            break
+    assert block, f"no quoted block follows {heading!r} in {document.name}"
+    return block
+
+
+def test_t81_readme_and_history_members_are_pure_functions_of_their_arguments():
+    """Section 8's promise for the two generated members: nothing about the machine or the moment.
+
+    Two calls give the same bytes; the bytes are ASCII and LF-terminated; every argument the
+    template renders appears; the attribution notice is the one section 9 states, read from the
+    document; and neither a year nor the generator's own version leaks in -- the two channels
+    through which a dataset README usually records who built it and when.
+    """
+    files = [
+        ("alpha.g4dat", "alpha.prov.json", "table_alpha", "parity", "seam_alpha", 7),
+        ("beta.g4dat", "beta.prov.json", "table_beta", "evaluated", "seam_beta", 12),
+    ]
+    name, version = "Synthetic", "3.4.5"
+    rendered: dict[str, str] = {}
+    for label, render in (("README", emit.readme_member), ("History", emit.history_member)):
+        first = render(name=name, version=version, files=files)
+        assert first == render(name=name, version=version, files=files)
+        text = first.decode("ascii")  # raises on any non-ASCII byte
+        assert "\r" not in text and text.endswith("\n"), label
+        assert re.search(r"\b(19|20)\d\d\b", text) is None, f"{label} carries a year"
+        assert openmucf.__version__ not in text, f"{label} carries the generator version"
+        assert name in text and version in text, label
+        rendered[label] = text
+
+    readme, history = rendered["README"], rendered["History"]
+    assert readme.startswith(emit.dataset_directory(name, version) + "\n")
+    for layer1, layer2, table, profile, seam, rows in files:
+        for token in (layer1, layer2, table, profile, seam, f"{rows} records"):
+            assert token in readme, token
+        for token in (layer1, table, profile, f"{rows} records"):
+            assert token in history, token
+    notice = quoted_block_after(REPO / "FORMAT_SPEC.md", "## 9. Attribution")
+    assert len(notice) == 2, notice
+    for line in notice:
+        assert line in readme.splitlines(), line
+    assert history.splitlines()[0] == f"History for {name} files:"
