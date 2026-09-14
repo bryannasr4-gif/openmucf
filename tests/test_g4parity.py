@@ -2520,3 +2520,69 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     declared = re.search(r"^\s*MD5SUM\s+([0-9a-f]{32})$", snippet, re.MULTILINE)
     assert declared, snippet
     assert emit.tarball_md5(archive) == declared.group(1)
+
+
+# ---------------------------------------------------------------------------------------
+# T-85..T-86 -- the natural-row corpus members, and the zero-rows oracle fixtures
+# ---------------------------------------------------------------------------------------
+
+
+def test_t85_natural_row_corpus_members_and_the_shipped_tables():
+    """The three corpus members that carry an `A = 0` record are OK to Layer 1 (their expected.tsv
+    rows, read here), and the consumer's rule sorts them: admissible under `A:natural_and_listed`,
+    refused under `A:listed`; the shipped parity tables carry no natural row at all."""
+    corpus = REPO / "tests" / "fixtures" / "g4dat_conformance"
+    expected = {}
+    for line in (corpus / "expected.tsv").read_bytes().decode("ascii").splitlines():
+        member, code, _line = line.split("\t")
+        expected[member] = code
+    members = {
+        suffix: corpus / f"ok_natural_row_under_{suffix}.g4dat"
+        for suffix in ("natural_and_listed", "listed", "parity")
+    }
+    for path in members.values():
+        assert path.is_file(), path
+        assert expected[path.name] == "OK", (path.name, expected[path.name])
+
+    def table(path):
+        return spec.parse(path.read_bytes().decode("ascii"))
+
+    assert spec.natural_rows(table(members["natural_and_listed"])) == 1
+    assert spec.natural_rows(table(members["parity"])) == 1
+    with pytest.raises(ValueError, match="natural_and_listed"):
+        spec.natural_rows(table(members["listed"]))
+
+    for layer1, layer2 in ((CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2)):
+        shipped, _document = committed(layer1, layer2)
+        assert spec.natural_rows(shipped) == 0, layer1.name
+
+
+def test_t86_zero_rows_fixtures_are_copies_of_shipped_oracle_lines():
+    """Every line of every zero-rows fixture is `#END`, the shipped oracle's `# sweep` or
+    `# fullsweep_sha256` line byte for byte, or a row present verbatim in the shipped oracle; and
+    the per-section census is what each fixture's name says."""
+    shipped = (D1DIR / "d1_gp_sweep.oracle").read_bytes().split(b"\n")
+    header = {line for line in shipped if line.startswith((b"# sweep ", b"# fullsweep_sha256 "))}
+    assert len(header) == 2, header
+    rows = {line for line in shipped if line and not line.startswith(b"#")}
+    assert rows
+
+    def section(line: bytes) -> str:
+        for prefix, name in ((b"ZEFFCLAMP ", "ZEFFCLAMP"), (b"ZEFF ", "ZEFF"), (b"RATE ", "RATE")):
+            if line.startswith(prefix):
+                return name
+        return "subset"
+
+    by_fixture = {"subset": "subset", "zeff": "ZEFF", "rate": "RATE", "clamp": "ZEFFCLAMP"}
+    fixtures = REPO / "tests" / "fixtures" / "g4dat_zero_rows"
+    cases = [("d1_gp_sweep", None), *((f"zero_{key}", name) for key, name in by_fixture.items())]
+    for stem, empty in cases:
+        raw = (fixtures / f"{stem}.oracle").read_bytes()
+        assert b"\r" not in raw and raw.endswith(b"\n"), stem
+        census = dict.fromkeys(by_fixture.values(), 0)
+        for line in raw.split(b"\n")[:-1]:
+            assert line == b"#END" or line in header or line in rows, (stem, line)
+            if line in rows:
+                census[section(line)] += 1
+        wanted = {name: (0 if empty is None or name == empty else 1) for name in census}
+        assert census == wanted, (stem, census)

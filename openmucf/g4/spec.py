@@ -24,11 +24,23 @@ Standard library only, and no import of the kinetics modules (enforced by test, 
 from __future__ import annotations
 
 import math
+import os
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
-__all__ = ["G4DatFormatError", "G4DatTable", "format_float", "parse", "render", "validate"]
+__all__ = [
+    "G4DatFormatError",
+    "G4DatTable",
+    "format_float",
+    "load_directory",
+    "natural_rows",
+    "parse",
+    "render",
+    "validate",
+    "validity_assignments",
+]
 
 #: Version of the *format* this module implements (``#GRAMMAR``), distinct from a dataset's
 #: ``#VERSION``. A reader must reject a major it does not know (E010); any minor of a known major
@@ -67,6 +79,10 @@ INTEGER_MIN = 0
 INTEGER_MAX = 9999
 ALLOWED_SEAMS = ("d1_nuclear_capture", "d2_atomic_capture", "d3_transitions", "d4_mucf_cycle")
 PARITY_PROFILE = "parity"
+#: The ``A`` range of ``#VALIDITY`` under which a record with ``A = 0`` -- the element's
+#: natural-composition row -- is admissible (``FORMAT_SPEC.md`` section 6). A consumer's rule, not
+#: the parser's: Layer 1 does not decompose ``#VALIDITY``.
+A_NATURAL_AND_LISTED = "natural_and_listed"
 END_MARKER = "#END"
 #: The terminator's keyword. Deliberately NOT in :data:`DIRECTIVE_ORDER`: ``#END`` is not a
 #: directive, and letting the directive machinery diagnose it is what made ``#END x`` report two
@@ -772,3 +788,83 @@ def render(table: G4DatTable) -> str:
     lines += [" ".join(cell.rjust(width) for cell, width in zip(row, widths, strict=True)) for row in cells]
     lines.append(END_MARKER)
     return "\n".join(lines) + "\n"
+
+
+# --------------------------------------------------------------------------------------------
+# the consumer's side: #VALIDITY decomposed, the natural-composition row, a directory of tables
+# --------------------------------------------------------------------------------------------
+
+
+def validity_assignments(table: G4DatTable) -> dict[str, str]:
+    """The ``#VALIDITY`` value decomposed by its sub-grammar (``FORMAT_SPEC.md`` section 2.2).
+
+    Whitespace-separated ``NAME:RANGE`` assignments, split at the first ``:``; ``NAME`` is a column-
+    name token and ``RANGE`` is non-empty. This binds the consumer, not the reader -- :func:`parse`
+    and :func:`validate` take the value as one string -- so a malformed value is a ``ValueError``
+    here rather than a section-4 code.
+    """
+    assignments: dict[str, str] = {}
+    for token in _split_fields(table.directives.get("VALIDITY", "")):
+        name, colon, range_ = token.partition(":")
+        if not colon or not name or not range_:
+            raise ValueError(f"'#VALIDITY' assignment {token!r} is not NAME:RANGE")
+        if not _COLUMN_NAME_PATTERN.match(name):
+            raise ValueError(
+                f"'#VALIDITY' assignment {token!r}: NAME is not a ^[A-Za-z_][A-Za-z0-9_]*$ token"
+            )
+        if name in assignments:
+            raise ValueError(f"'#VALIDITY' assigns {name!r} twice")
+        assignments[name] = range_
+    return assignments
+
+
+def natural_rows(table: G4DatTable) -> int:
+    """The number of records with ``A == 0``: the natural-composition rows (``FORMAT_SPEC.md``
+    section 6). ``0`` for a table that declares no ``A`` column.
+
+    Raises ``ValueError`` when such records exist and the table's ``#VALIDITY`` does not assign
+    ``A:natural_and_listed``: under any other range no record may carry ``A = 0``.
+    """
+    columns = _split_fields(table.directives.get("COLUMNS", ""))
+    if "A" not in columns:
+        return 0
+    index = columns.index("A")
+    count = sum(1 for record in table.records if record[index] == 0)
+    if count:
+        range_ = validity_assignments(table).get("A")
+        if range_ != A_NATURAL_AND_LISTED:
+            raise ValueError(
+                f"{count} record(s) with A = 0 under 'A:{range_ if range_ is not None else 'absent'}': "
+                f"a natural-composition row is admissible only under 'A:{A_NATURAL_AND_LISTED}'"
+            )
+    return count
+
+
+def load_directory(directory: str | os.PathLike[str]) -> dict[tuple[str, str], G4DatTable]:
+    """Every regular ``*.g4dat`` file in ``directory``, parsed, keyed by (``#PROFILE``, ``#TABLE``).
+
+    Files are read in bytewise-sorted name order and decoded as ASCII. A directory may hold one
+    file per profile of a table; two files declaring the same pair are a ``ValueError`` naming both,
+    and a directory with no such file is a ``ValueError`` too. The mirror of the C++ reader's
+    ``Load``.
+    """
+    path = Path(directory)
+    files = sorted(
+        (p for p in path.iterdir() if p.is_file() and p.name.endswith(".g4dat")),
+        key=lambda p: p.name.encode("utf-8", "surrogateescape"),
+    )
+    if not files:
+        raise ValueError(f"dataset directory {str(path)!r} holds no *.g4dat file")
+    tables: dict[tuple[str, str], G4DatTable] = {}
+    declared_by: dict[tuple[str, str], Path] = {}
+    for file in files:
+        table = parse(file.read_bytes().decode("ascii"))
+        key = (table.directives["PROFILE"], table.directives["TABLE"])
+        if key in tables:
+            raise ValueError(
+                f"the pair '#PROFILE {key[0]}' / '#TABLE {key[1]}' is declared by both "
+                f"'{declared_by[key]}' and '{file}'"
+            )
+        tables[key] = table
+        declared_by[key] = file
+    return tables

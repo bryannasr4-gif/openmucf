@@ -1401,3 +1401,72 @@ def test_t81_readme_and_history_members_are_pure_functions_of_their_arguments():
     for line in notice:
         assert line in readme.splitlines(), line
     assert history.splitlines()[0] == f"History for {name} files:"
+
+
+# --------------------------------------------------------------------------------------------
+# T-83..T-84 -- the #VALIDITY sub-grammar, the natural-composition row, a directory keyed by pair
+# --------------------------------------------------------------------------------------------
+
+D1DIR = REPO / "data" / "g4" / "d1"
+CONFORMANCE = REPO / "tests" / "fixtures" / "g4dat_conformance"
+
+
+def test_t83_validity_assignments_and_natural_rows():
+    """`#VALIDITY` decomposes as NAME:RANGE assignments, and an `A = 0` record is admissible only
+    under `A:natural_and_listed` -- in `natural_rows` and, through it, in `check_against_table`."""
+    assert spec.validity_assignments(make_table()) == {"Z": "1-94", "A": "natural_and_listed"}
+    for bad in ("Z1-94", "Z:", ":listed", "1Z:listed", "Z:1 Z:2"):
+        with pytest.raises(ValueError):
+            spec.validity_assignments(make_table(VALIDITY=bad))
+
+    with_natural = ((1, 0, 0.5, 0.1), *RECORDS)
+    assert spec.natural_rows(make_table(records=with_natural)) == 1
+    with pytest.raises(ValueError, match="natural_and_listed"):
+        spec.natural_rows(make_table(records=with_natural, VALIDITY="Z:1-94 A:listed"))
+    assert spec.natural_rows(make_table(COLUMNS="Z value unc", records=((1, 0.5, 0.1),))) == 0
+    assert spec.natural_rows(make_table()) == 0
+
+    # The Layer-2 check refuses the same table, with a document that matches it row for row: the
+    # rejection is the natural-row rule, not the one-for-one rule.
+    listed = make_table(records=with_natural, VALIDITY="Z:1-94 A:listed")
+    rows = make_document().rows
+    matching = make_document(rows={"1-0": rows["1-1"], **rows})
+    assert provenance.check_against_table(make_table(records=with_natural), matching) is None
+    with pytest.raises(ValueError, match="natural_and_listed"):
+        provenance.check_against_table(listed, matching)
+
+
+def test_t84_load_directory_keys_tables_by_profile_and_table(tmp_path):
+    """The reference mirror of the C++ `Load`: one file per (profile, table) pair, both named on a
+    repeat, and a second profile of a table beside the shipped pair loads as a third key."""
+    assert set(spec.load_directory(D1DIR)) == {
+        ("parity", "nuclear_capture_rate"),
+        ("parity", "muon_zeff"),
+    }
+    shipped = sorted(D1DIR.glob("*.g4dat"))
+    assert shipped
+
+    duplicated = tmp_path / "same_pair"
+    duplicated.mkdir()
+    for path in shipped:
+        (duplicated / path.name).write_bytes(path.read_bytes())
+    capture = D1DIR / "d1_capture.g4dat"
+    (duplicated / "d1_capture_copy.g4dat").write_bytes(capture.read_bytes())
+    with pytest.raises(ValueError, match="declared by both"):
+        spec.load_directory(duplicated)
+
+    two_profiles = tmp_path / "two_profiles"
+    two_profiles.mkdir()
+    for path in shipped:
+        (two_profiles / path.name).write_bytes(path.read_bytes())
+    member = CONFORMANCE / "ok_natural_row_under_natural_and_listed.g4dat"
+    (two_profiles / "d1_capture.evaluated.g4dat").write_bytes(member.read_bytes())
+    tables = spec.load_directory(two_profiles)
+    assert len(tables) == 3
+    assert ("evaluated", "nuclear_capture_rate") in tables
+    assert spec.natural_rows(tables[("evaluated", "nuclear_capture_rate")]) == 1
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(ValueError, match="no [*].g4dat"):
+        spec.load_directory(empty)

@@ -37,6 +37,7 @@ from .spec import (
     G4DatTable,
     _canonical_lines,  # the one line map, shared rather than reimplemented here
     _split_fields,  # and the one field splitter, for the same reason
+    natural_rows,
 )
 
 __all__ = [
@@ -312,6 +313,11 @@ def check_against_table(table: G4DatTable, document: ProvDocument) -> None:
             raise ValueError(
                 f"Layer-2 {field_name} {ours!r} does not match Layer-1 '#{directive}' {theirs!r}"
             )
+
+    # A natural-composition row (`A = 0`) is admissible only under `A:natural_and_listed`; a table
+    # that carries one under another range is refused here as well, so the shipped package -- not
+    # only the standalone validator -- holds the rule.
+    natural_rows(table)
 
     # Section 3's "one object per Layer-1 record", enforced in the shipped package rather than in a
     # build script -- the same reason check_canonical_bytes() lives here. A row set that has drifted
