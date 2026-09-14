@@ -53,6 +53,9 @@ BEHAVIOUR_PATHS = frozenset(
         "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc",
     }
 )
+#: The one source list among them, derived from the declared set rather than re-typed; unpacking
+#: a one-element tuple asserts there is exactly one.
+(SOURCES_CMAKE,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/sources.cmake"))
 #: The two seam files, and the vendored copy each one's hunks must apply to.
 SEAMS = {
     "source/particles/management/src/G4MuonicAtomHelper.cc": VENDORED / "G4MuonicAtomHelper.cc",
@@ -322,7 +325,7 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
                 assert file.index_old.strip(b"0") != b"", (path, file.index_old)
                 assert file.index_new != file.index_old, path
                 not_rebuilt.add(path)
-    assert not_rebuilt == {"source/global/management/sources.cmake", REGISTRATION_PATH}
+    assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH}
 
 
 def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touches():

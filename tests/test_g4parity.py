@@ -131,6 +131,49 @@ def test_t41_vendored_source_has_no_carriage_returns():
 
 
 # --------------------------------------------------------------------------------------------
+# T-80 -- the vendored README's pins are the values computed from the vendored bytes
+# --------------------------------------------------------------------------------------------
+
+
+def test_t80_the_vendored_readme_pins_are_computed_from_the_vendored_bytes():
+    """Every pin cell of `third_party/geant4/README.md`, read from its table by row label, equals
+    the value computed from the vendored file it describes: the BoundDecay blob id, sha256 and
+    size, the helper's size, and the blob id the fenced example prints as its own comment. T-40
+    and T-69 hold the module's pins to the bytes; until this test nothing held the README's copy of
+    the BoundDecay pins or the example's comment, so a re-pin would have left them stale and read
+    by no check. The size cell is compared the way T-69 already compares the helper's: bytes, and
+    newline count as the line count.
+    """
+    readme = VENDORED_README.read_text("utf-8")
+
+    def cell(label: str) -> str:
+        hits = re.findall(rf"^\| {label} \| `?([^`|]+?)`? \|$", readme, re.M)
+        assert len(hits) == 1, f"row {label!r}: {hits}"
+        return hits[0]
+
+    data = VENDORED.read_bytes()
+    assert cell(r"\*\*git blob id\*\*") == d1.UPSTREAM_BLOB_ID, (
+        "the BoundDecay `git blob id` cell is not the blob id of the vendored bytes"
+    )
+    assert cell("sha256") == d1.UPSTREAM_SHA256, (
+        "the BoundDecay `sha256` cell is not the sha256 of the vendored bytes"
+    )
+    line_count = data.count(b"\n")
+    assert cell("size") == f"{len(data)} bytes, {line_count} lines", (
+        "the BoundDecay `size` cell is not the vendored file's byte and newline count"
+    )
+    helper = HELPER.read_bytes()
+    helper_lines = helper.count(b"\n")
+    assert cell(r"`G4MuonicAtomHelper\.cc` size") == f"{len(helper)} bytes, {helper_lines} lines", (
+        "the helper `size` cell is not the vendored helper's byte and newline count"
+    )
+    comments = re.findall(r"^# ([0-9a-f]{40})$", readme, re.M)
+    assert comments == [d1.UPSTREAM_BLOB_ID], (
+        f"the fenced example's `# <hex>` comment line is not the vendored blob id: {comments}"
+    )
+
+
+# --------------------------------------------------------------------------------------------
 # T-42, T-50, T-51 -- the extraction: derived counts, verbatim coefficients, a live directive
 # --------------------------------------------------------------------------------------------
 
