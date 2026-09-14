@@ -12,6 +12,10 @@ tests/fixtures/g4dat_bad/*.g4dat -text
 # outside the format's set on purpose, and a checkout that rewrote one would change which error
 # code that file raises -- silently.
 tests/fixtures/g4dat_conformance/* -text
+# The zero-rows fixture the validator's `validate_zero_rows` test reads: the oracle's line splitter
+# takes `#END` literally, so a checkout that appended a CR would turn the fixture into a different
+# oracle grammar failure than the one the test is about.
+tests/fixtures/g4dat_zero_rows/* -text
 # The shipped dataset: byte-exact artifacts, for three separate reasons. example.prov.json is the
 # byte range #SOURCEDIGEST is computed over, so a CRLF checkout would change its digest; example.g4dat
 # is LF-only by the format's own rule (E006); and both, plus the snippet, are regenerated and

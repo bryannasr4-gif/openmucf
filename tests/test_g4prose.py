@@ -20,9 +20,10 @@ code span or a fenced block: the F-3 block is data. The drills in T-75 plant an 
 spelled-number decoy in in-memory copies and require the failure to name them.
 
 Door 3 is then walked the other way (T-78): every file a registry reason names must resolve to one
-file of the tree, and every figure a reason types must stand verbatim in the ruled line or in a
-file the reason names -- a reason may point at a number, never restate one unchecked. T-79 drills
-that with a missing home, an ambiguous one and a figure no home carries.
+file of the tree, and every figure a reason types must stand verbatim in the ruled line or, for a
+digit or superscript figure, in a file the reason names -- a reason may point at a number, never
+restate one unchecked, and a spelled figure is prose that no home vouches for. T-79 drills that
+with a missing home, an ambiguous one, a figure no home carries and a spelled figure a home does.
 """
 
 from __future__ import annotations
@@ -559,8 +560,11 @@ def check_registry_homes(
 ) -> list[str]:
     """For every row: each file name its reason gives resolves to one file of the tree, and each
     figure its reason types -- a token `tokenize` finds that the row does not rule and no class
-    admits -- stands verbatim in the ruled line or in a file the reason names. A figure carried by
-    neither is a restatement nothing checks, and is named."""
+    admits -- stands verbatim in the ruled line or, when it begins with a digit or a superscript,
+    in a file the reason names. A spelled figure is admitted by the ruled set or the ruled line
+    only: a home's prose carries small spelled numbers by accident (`one`, `two`, `three` occur in
+    nearly every document), so a home vouches for nothing spelled. A figure carried by neither is
+    a restatement nothing checks, and is named."""
     files = tree_files()
     lines_by_key: dict[tuple[str, str], str] = {}
     for path, text in texts.items():
@@ -592,7 +596,9 @@ def check_registry_homes(
                 continue
             if figure_present(token.text, line):
                 continue
-            if any(figure_present(token.text, home_text(home)) for home in homes):
+            if (token.text[0].isdigit() or token.text[0] in _SUPERSCRIPTS) and any(
+                figure_present(token.text, home_text(home)) for home in homes
+            ):
                 continue
             problems.append(f"{sha} {path}: types {token.text}, carried by no home it names")
     return problems
@@ -852,9 +858,11 @@ def test_t78_every_registry_reason_resolves_its_homes_and_types_no_figure_they_d
 
 
 def test_t79_drill_a_reason_naming_a_missing_home_an_ambiguous_home_or_an_unfound_figure_is_named():
-    """Three one-row copies of the registry, each planted with one defect the walk must name: a
-    file no tree carries, a bare name several files carry (picked from the tree, never typed), and
-    the spelled decoy T-75 also uses. The unplanted row passes first, so each failure is the plant's.
+    """Four one-row copies of the registry, each planted with one defect the walk must name: a
+    file no tree carries, a bare name several files carry (picked from the tree, never typed),
+    the spelled decoy T-75 also uses, and a spelled figure that a named home's text carries but
+    the ruled line does not (picked from that home's text, never typed) -- the case the home
+    branch used to admit. The unplanted row passes first, so each failure is the plant's.
     """
     texts = tree_texts()
     classes = read_classes()
@@ -877,6 +885,29 @@ def test_t79_drill_a_reason_naming_a_missing_home_an_ambiguous_home_or_an_unfoun
 
     problems = check_registry_homes({key: status + " ninety-one"}, texts, classes)
     assert problems == [f"{key[1]} {key[0]}: types ninety-one, carried by no home it names"], problems
+
+    # (d) The first row naming a resolvable home, and the first spelled number of `_WORDS` that
+    # home's text carries as a whole word while neither the ruled line, the ruled set nor the reason
+    # itself does: appended to the reason, it must be named exactly like the decoy.
+    lines_by_key = {
+        (path, claim_sha1(line)): line for path, text in texts.items() for line in text.splitlines()
+    }
+    planted = next(
+        (k, s, word)
+        for k, s in sorted(read_registry().items())
+        if s != "UNREVIEWED"
+        for home in [resolve_home(m.group(1), files) for m in HOME.finditer(status_tokens(s)[2])]
+        if home is not None
+        for word in _WORDS
+        if figure_present(word, (REPO / home).read_text(encoding="utf-8", errors="replace"))
+        and not figure_present(word, lines_by_key.get(k, ""))
+        and word not in {t.lower() for t in status_tokens(s)[1]}
+        and not figure_present(word, s)
+    )
+    key_d, status_d, word = planted
+    assert check_registry_homes({key_d: status_d}, texts, classes) == []
+    problems = check_registry_homes({key_d: status_d + " " + word}, texts, classes)
+    assert problems == [f"{key_d[1]} {key_d[0]}: types {word}, carried by no home it names"], problems
 
 
 # --------------------------------------------------------------------------------------------

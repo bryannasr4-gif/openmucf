@@ -13,6 +13,13 @@
 cmake_minimum_required(VERSION 3.16)
 project(g4muonicdata_validator LANGUAGES CXX)
 
+# A multi-config generator (Visual Studio, Xcode) chooses the configuration at build time and never
+# reads CMAKE_BUILD_TYPE; naming the value here is what stops CMake from reporting it as a
+# manually-specified variable the project did not use, on every command line that passes it.
+if(CMAKE_CONFIGURATION_TYPES AND DEFINED CMAKE_BUILD_TYPE)
+  message(STATUS "multi-config generator: CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} is not used; the configuration is chosen at build time with --config")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -73,6 +80,14 @@ if(G4MUONICDATA_PROBE_ONLY)
   return()
 endif()
 
+# The hexfloat parser's subnormal path, which no committed oracle field reaches: the grammar's own
+# spellings of the subnormal boundary values, parsed, re-rendered and compared bit for bit with a
+# reference std::ldexp builds. Standard library only; both parser paths through the FORCE_STREAM
+# option.
+add_executable(g4muonicdata_hexfloat_check hexfloat_check.cc)
+g4muonicdata_target_options(g4muonicdata_hexfloat_check)
+add_test(NAME hexfloat_roundtrip COMMAND g4muonicdata_hexfloat_check)
+
 # The conforming GP kernel: the only translation unit that evaluates the model, contraction off.
 add_library(gp_kernel_off OBJECT gp_kernel.cc)
 target_link_libraries(gp_kernel_off PRIVATE g4muonicdatatable)
@@ -126,6 +141,18 @@ file(COPY "${G4MUONICDATA_CONFORMANCE_DIR}/${G4MUONICDATA_INVALID_MEMBER}" DESTI
 add_test(NAME validate_discovery_invalid
          COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${CMAKE_BINARY_DIR}/discovery_invalid"
                  $<TARGET_FILE:g4muonicdata_validate> ${G4MUONICDATA_VALIDATE_ARGS} --expect-env invalid)
+
+# A check over no rows is not a pass: the validator over the shipped dataset, with the conformance
+# corpus and the oracle pointed at a fixture that carries zero rows (an empty `expected.tsv`; the
+# shipped oracle's header lines only). Every check whose PASS detail counts rows must print FAIL,
+# and because each check prints exactly one line the two expressions below say exactly that.
+set(G4MUONICDATA_ZERO_ROWS_DIR "${G4MUONICDATA_REPO_ROOT}/tests/fixtures/g4dat_zero_rows")
+add_test(NAME validate_zero_rows
+         COMMAND g4muonicdata_validate "${G4MUONICDATA_DATASET_DIR}"
+                 --oracle "${G4MUONICDATA_ZERO_ROWS_DIR}/d1_gp_sweep.oracle" --conformance "${G4MUONICDATA_ZERO_ROWS_DIR}")
+set_tests_properties(validate_zero_rows PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-11 FAIL rows=0"
+  FAIL_REGULAR_EXPRESSION "V-05 PASS;V-06 PASS;V-08 PASS;V-09 PASS;V-10 PASS;V-11 PASS;V-05 SKIPPED;V-06 SKIPPED;V-08 SKIPPED;V-09 SKIPPED;V-10 SKIPPED;V-11 SKIPPED")
 
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
 # enabled (and FMA on x86-64), and the figures compared with the document.

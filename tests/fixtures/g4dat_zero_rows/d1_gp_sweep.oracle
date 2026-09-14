@@ -1,0 +1,41 @@
+# G4MuonicData D1 -- compiled-Geant4 oracle for the nuclear-capture seam
+#
+# HARVESTED, not generated. These values came out of a Geant4-linked binary; nothing in this
+# repository can produce them, which is exactly why comparing the Python reference
+# implementation against them is evidence and not a tautology. `make g4data` does not rewrite
+# this file and `make audit` does not byte-diff it -- "regenerate and compare" is undefined for
+# a harvested input. It is protected instead by re-derivation: tests/test_g4parity.py recomputes
+# every value here in Python and compares, which is a stronger check than re-reading bytes.
+#
+# upstream_commit   8cc04f65977807f1848da7b958c421cd5e162f26
+# upstream_path     source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
+# upstream_blob     29bd73719cd619de34ef83ca5ca076ceadf1cc5a
+# driver            cpp/tools/harvest_d1.cc
+# driver_degenerate cpp/tools/harvest_d1_degenerate.cc
+#
+# The build is part of the measurement, not a footnote: the identical expression compiled with
+# floating-point contraction enabled returns results up to thousands of ulp away, so a parity
+# claim that does not name its build says nothing. See cpp/tools/README.md and DATASET_D1.md.
+# build             Ubuntu 26.04 (WSL2), x86_64, g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,
+#                   Geant4 11.4.2 RelWithDebInfo (-O2 -g -DNDEBUG), no -ffp-contract setting,
+#                   FMA absent from the baseline ISA so contraction is impossible
+#
+# sweep             Z 1..120 x A 1..300 = 36000 points, row-major, Z ascending outermost
+# digest_rule       sha256 over the concatenated big-endian IEEE-754 binary64 bytes of
+#                   rate(Z, A), in that order. Bytes rather than text: unambiguous in both
+#                   languages, with no formatting degrees of freedom.
+# fullsweep_sha256  8d8728ef1e27f240b2ed52618c0d10a1de7b52404d5e8f49a4aa16ac5e5307a5
+#
+# The subset below exists so that a digest mismatch is DIAGNOSABLE -- a bare hash tells a
+# maintainer nothing about what moved. It is chosen by rule, not by taste: every table hit,
+# every Z's first negative A (which is the negative-rate finding's own evidence, so the fixture
+# and the finding are the same data), and the corners of the sweep box.
+# subset            193 points = 90 table hits + 100 first-negative + 4 corners, deduplicated
+# columns           Z A rate_hexfloat   (compare on PARSED values, never on these strings)
+#
+# zeff              Z 0..101, pinning the clamp at both ends
+#
+# degenerate        excluded from the sweep and from the digest: these return non-finite
+#                   values, and a NaN has no single bit pattern to hash. Compared by
+#                   CLASSIFICATION rather than by value. Registered as a finding, not fixed.
+#END
