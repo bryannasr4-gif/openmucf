@@ -1,18 +1,23 @@
 # Geant4 patches — reading the dataset from inside Geant4
 
-`g4-v11.4.2-muonicdata.patch` lets Geant4 read the `G4MuonicData` dataset: it adds the repository's
-reader (`G4MuonicDataTable`, byte for byte the files under `cpp/include` and `cpp/src`) and one glue
-file (`G4MuonicDataOverlay`) to the `G4globman` module, lists them in that module's `sources.cmake`,
-and inserts a table lookup into the four functions, in two files, that carry the compiled-in
+`g4-v11.4.2-muonicdata.patch` and `g4-v11.5.0.beta-muonicdata.patch` let Geant4 read the
+`G4MuonicData` dataset, each cut against the pristine tree of the revision its name carries: the
+patch adds the repository's reader (`G4MuonicDataTable`, byte for byte the files under
+`cpp/include` and `cpp/src`) and one glue file (`G4MuonicDataOverlay`) to the `G4partman` module,
+lists them in that module's `sources.cmake`, adds one boolean to `G4HadronicParameters`, and
+inserts a table lookup into the four functions, in two files, that carry the compiled-in
 muon-capture tables: `G4MuonMinusBoundDecay::GetMuonCaptureRate` and `::GetMuonZeff`, and
 `G4MuonicAtomHelper::GetMuonCaptureRate` and `::GetMuonZeff`. It applies with `git apply` (the patch
-carries the usual `a/` and `b/` prefixes) to Geant4 `v11.4.2` at the revision the dataset's
-`#SOURCESHA` directive names, and it changes no existing line of either seam file — every hunk there
-only inserts.
+carries the usual `a/` and `b/` prefixes) to the tag its name carries — the dataset's `#SOURCESHA`
+names the `v11.4.2` revision, and a test over the vendored copies under `third_party/` proves that
+the tables compiled into `v11.5.0.beta` are the same — and it changes no existing line of any file
+it touches: every hunk in an existing file only inserts.
 
-The lookup is off by default: nothing in the patch calls `G4MuonicDataTable::Enable()`, and until an
-application does so before its first capture-rate call, the four functions run exactly their
-unpatched code after one boolean test — no lookup, no file access, no message. With the opt-in on,
+The lookup is off by default: the boolean the patch adds to `G4HadronicParameters` starts `false`,
+its setter is the only caller of `G4MuonicDataTable::Enable()`, and until an application sets it —
+one line before its physics list is built: `SetEnableMuonicData(true)` on the `G4HadronicParameters`
+singleton — the four functions run exactly their unpatched code after one boolean test — no lookup,
+no file access, no message. With the opt-in on,
 each function consults the table; a key the table lacks
 falls through to that function's compiled-in code, so the fallback formula is reproduced as it is,
 including the negative rates the dataset's documentation registers.
@@ -23,8 +28,9 @@ names no directory, under the default system paths `G4FindDataDir` searches next
 directory, the first lookup raises a fatal `G4Exception` naming both `G4MUONICDATA` and
 `GEANT4_DATA_DIR`; if a directory is found but a file in it fails validation, the exception carries
 the reader's error code and line.
-`g4-v11.4.2-register-dataset.patch` is separate and serves the registered mode only: it appends the
-dataset's `geant4_add_dataset` entry to `G4DatasetDefinitions.cmake`, so a build carrying it resolves
+`g4-v11.4.2-register-dataset.patch` and `g4-v11.5.0.beta-register-dataset.patch` are separate and
+serve the registered mode only: each appends the dataset's `geant4_add_dataset` entry to
+`G4DatasetDefinitions.cmake`, so a build carrying it resolves
 the dataset under `GEANT4_DATA_DIR` with no variable exported. That mode looks for the dataset under
 a `<NAME><VERSION>` directory, which is the directory the archive unpacks to.
 
@@ -34,3 +40,8 @@ harvested sweep reproducing the digest recorded by the oracle file beside the da
 (`cpp/tools/README.md` describes it), through both compiled-in copies and in both discovery modes —
 is kept outside this repository. That digest is stated here by reference to the oracle file, never
 as a literal, and a test holds this file to that.
+
+The patches modify Geant4 source and are offered under the Geant4 Software License, the `LICENSE`
+file beside the vendored sources under `third_party/`, whose clause 4 applies to a published
+modification; the repository's own files, the reader and the dataset among them, stay under the
+licences the repository's `LICENSE` and `LICENSE-DATA` state.

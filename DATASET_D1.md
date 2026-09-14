@@ -4,9 +4,9 @@
 > ( http://cern.ch/geant4 ).
 
 `data/g4/d1/` is the first `G4MuonicData` dataset carrying real content. It is a **parity** dataset:
-its only claim is that it reproduces the muon-capture data compiled into Geant4 v11.4.2
-bit-for-bit. It evaluates nothing, recommends nothing, and corrects nothing — including where the
-upstream data looks wrong. Section 5 carries seven findings: **five** defects it reproduces rather
+its only claim is that it reproduces the muon-capture data compiled into Geant4 v11.4.2 — and, by a
+test over the vendored copies, identically into v11.5.0.beta — bit-for-bit. It evaluates nothing,
+recommends nothing, and corrects nothing — including where the upstream data looks wrong. Section 5 carries seven findings: **five** defects it reproduces rather
 than corrects, and **two** questions about the upstream data that reading the primary literature has
 since settled.
 
@@ -420,7 +420,8 @@ evaluation: no shipped value was compared to the primary for correctness, and no
 
 ## 7. Consuming the dataset from Geant4
 
-`cpp/patches/` carries a patch against the Geant4 revision named above that adds the reader to Geant4
+`cpp/patches/` carries a patch against each of the two Geant4 revisions named above, `v11.4.2` and
+`v11.5.0.beta`, that adds the reader to Geant4
 and lets both compiled-in copies of the capture tables consult this dataset after an explicit opt-in,
 with the default behaviour left untouched. A second, separate patch registers the dataset so that
 Geant4 resolves it under `GEANT4_DATA_DIR`; without it, an exported `G4MUONICDATA` is the only route.
@@ -429,6 +430,8 @@ files, a `README` and a `History`, and the registration snippet carries that arc
 unpacks to the `G4MuonicData<version>` directory the registered mode looks for, and `<version>` is the
 `#VERSION` both tables carry. The patched build looks values up through the `parity` profile only; a
 table that another profile carries in its own file is parsed and checked but never consulted.
+An application opts in with one line before its physics list is built,
+`G4HadronicParameters::Instance()->SetEnableMuonicData(true);`, as `cpp/patches/README.md` states.
 `cpp/patches/README.md` states what the patches change, how the dataset is found at run time, and
 what a patched build was measured to do.
 
