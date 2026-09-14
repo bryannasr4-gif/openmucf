@@ -404,8 +404,8 @@ struct Model {
 
 // Empty on success, else why the model cannot be built.
 std::string BuildModel(const G4MuonicDataTable& tables, Model& model) {
-  model.capture = tables.Find(kCaptureTable);
-  model.zeff_table = tables.Find(kZeffTable);
+  model.capture = tables.Find(G4MuonicDataTable::kParityProfile, kCaptureTable);
+  model.zeff_table = tables.Find(G4MuonicDataTable::kParityProfile, kZeffTable);
   if (!model.capture) return std::string("no table ") + Quote(kCaptureTable);
   if (!model.zeff_table) return std::string("no table ") + Quote(kZeffTable);
   const std::string* fallback = model.capture->Directive("FALLBACK");
@@ -507,7 +507,7 @@ void CheckDiscovery(Report& report, const std::string& expectation, const std::s
   const std::string seen = "outcome " + std::to_string(r.outcome);
   if (expectation == "found") {
     if (r.outcome != 1) { report.Fail("V-12", "found: expected outcome 1, got " + seen + ": " + r.error.what()); return; }
-    if (!r.tables.Find(kCaptureTable) || !r.tables.Find(kZeffTable)) { report.Fail("V-12", "found: outcome 1 but a table is missing"); return; }
+    if (!r.tables.Find(G4MuonicDataTable::kParityProfile, kCaptureTable) || !r.tables.Find(G4MuonicDataTable::kParityProfile, kZeffTable)) { report.Fail("V-12", "found: outcome 1 but a table is missing"); return; }
     report.Pass("V-12", "found: outcome 1, both tables loaded from " + Quote(value ? value : ""));
     (void)dataset;
     return;
@@ -597,8 +597,8 @@ int Run(int argc, char** argv) {
   bool loaded = false;
   try {
     tables = G4MuonicDataTable::Load(dataset);
-    const Table* capture = tables.Find(kCaptureTable);
-    const Table* zeff = tables.Find(kZeffTable);
+    const Table* capture = tables.Find(G4MuonicDataTable::kParityProfile, kCaptureTable);
+    const Table* zeff = tables.Find(G4MuonicDataTable::kParityProfile, kZeffTable);
     if (!capture || !zeff) {
       report.Fail("V-03", std::string("loaded ") + Quote(dataset) + " but " + (capture ? kZeffTable : kCaptureTable) + " is missing");
     } else {
@@ -619,7 +619,7 @@ int Run(int argc, char** argv) {
     std::string detail, skipped;
     bool ok = true;
     for (const char* name : {kCaptureTable, kZeffTable}) {
-      const Table* table = tables.Find(name);
+      const Table* table = tables.Find(G4MuonicDataTable::kParityProfile, name);
       const std::string sibling = SiblingPath(table->file);
       std::string sibling_bytes;
       if (sibling.empty() || !ReadBytes(sibling, sibling_bytes)) {

@@ -40,7 +40,6 @@ const int kDirectiveCount = static_cast<int>(sizeof(kDirectiveOrder) / sizeof(kD
 const char* const kAllowedSeams[] = {
     "d1_nuclear_capture", "d2_atomic_capture", "d3_transitions", "d4_mucf_cycle",
 };
-const char* const kParityProfile = "parity";
 const char* const kEndMarker = "#END";
 const char* const kSupportedGrammarMajor = "1";
 const long kIntegerMin = 0;
@@ -259,6 +258,13 @@ const G4MuonicDataTable::Table::Record* G4MuonicDataTable::Table::Lookup(
                              [](const Record& r, const std::vector<long>& k) { return r.keys < k; });
   if (it == records.end() || it->keys != key) return nullptr;
   return &*it;
+}
+
+const G4MuonicDataTable::Table::Record* G4MuonicDataTable::Table::LookupNatural(
+    const std::vector<long>& key) const {
+  if (const Record* exact = Lookup(key)) return exact;
+  if (key.size() == 2) return Lookup({key[0], 0});
+  return nullptr;
 }
 
 void G4MuonicDataTable::Enable() { g_enabled = true; }
@@ -570,6 +576,7 @@ G4MuonicDataTable G4MuonicDataTable::Parse(const std::string& bytes, const std::
     }
   }
 
+  if (const std::string* profile_value = table.Directive("PROFILE")) table.profile = *profile_value;
   if (const std::string* table_name = table.Directive("TABLE")) table.name = *table_name;
   G4MuonicDataTable result;
   result.tables_.push_back(std::move(table));
@@ -606,7 +613,8 @@ G4MuonicDataTable G4MuonicDataTable::Load(const std::string& directory) {
     return a.filename().string() < b.filename().string();
   });
   G4MuonicDataTable result;
-  std::map<std::string, std::string> table_files;
+  // Keyed by the (`#PROFILE`, `#TABLE`) pair: a directory may hold one file per profile of a table.
+  std::map<std::pair<std::string, std::string>, std::string> table_files;
   for (const fs::path& path : files) {
     // Binary mode, always: text mode on Windows would strip CR before the E006 check sees it.
     std::ifstream in(path, std::ios::binary);
@@ -614,19 +622,29 @@ G4MuonicDataTable G4MuonicDataTable::Load(const std::string& directory) {
     const std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     G4MuonicDataTable one = Parse(bytes, path.string());
     Table& table = one.tables_.front();
-    auto seen = table_files.find(table.name);
+    const std::pair<std::string, std::string> pair{table.profile, table.name};
+    auto seen = table_files.find(pair);
     if (seen != table_files.end()) {
-      throw Error{"", 0, "'#TABLE " + table.name + "' is declared by both " + Quote(seen->second) + " and " + Quote(path.string())};
+      throw Error{"", 0, "the pair '#PROFILE " + table.profile + "' / '#TABLE " + table.name + "' is declared by both " + Quote(seen->second) + " and " + Quote(path.string())};
     }
-    table_files[table.name] = path.string();
+    table_files[pair] = path.string();
     result.tables_.push_back(std::move(table));
   }
   return result;
 }
 
-const G4MuonicDataTable::Table* G4MuonicDataTable::Find(const std::string& table_name) const {
+const G4MuonicDataTable::Table* G4MuonicDataTable::Find(const std::string& profile, const std::string& table_name) const {
   for (const Table& table : tables_) {
-    if (table.name == table_name) return &table;
+    if (table.profile == profile && table.name == table_name) return &table;
   }
   return nullptr;
+}
+
+std::vector<std::string> G4MuonicDataTable::Profiles() const {
+  std::vector<std::string> profiles;
+  for (const Table& table : tables_) {
+    if (std::find(profiles.begin(), profiles.end(), table.profile) == profiles.end()) profiles.push_back(table.profile);
+  }
+  std::sort(profiles.begin(), profiles.end());
+  return profiles;
 }

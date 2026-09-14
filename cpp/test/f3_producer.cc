@@ -156,8 +156,8 @@ int main(int argc, char** argv) {
   }
   try {
     const G4MuonicDataTable tables = G4MuonicDataTable::Load(dataset);
-    const G4MuonicDataTable::Table* capture = tables.Find("nuclear_capture_rate");
-    const G4MuonicDataTable::Table* zeff_table = tables.Find("muon_zeff");
+    const G4MuonicDataTable::Table* capture = tables.Find(G4MuonicDataTable::kParityProfile, "nuclear_capture_rate");
+    const G4MuonicDataTable::Table* zeff_table = tables.Find(G4MuonicDataTable::kParityProfile, "muon_zeff");
     if (!capture || !zeff_table) { std::fprintf(stderr, "dataset lacks nuclear_capture_rate or muon_zeff\n"); return 1; }
     GpCoefficients c;
     if (!LoadCoefficients(*capture, c)) { std::fprintf(stderr, "cannot parse #FALLBACK\n"); return 1; }

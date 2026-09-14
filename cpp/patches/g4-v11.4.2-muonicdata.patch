@@ -33,10 +33,10 @@ index 0000000000..76e6fe51da
 +#endif
 diff --git a/source/global/management/include/G4MuonicDataTable.hh b/source/global/management/include/G4MuonicDataTable.hh
 new file mode 100755
-index 0000000000..a29444bc6b
+index 0000000000..0462a436c0
 --- /dev/null
 +++ b/source/global/management/include/G4MuonicDataTable.hh
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,96 @@
 +// G4MuonicDataTable -- a standard-library-only C++17 reader for the Layer-1 `.g4dat` grammar.
 +//
 +// This is the C++ counterpart of `openmucf/g4/spec.py`, the reference implementation of
@@ -56,9 +56,13 @@ index 0000000000..a29444bc6b
 +
 +class G4MuonicDataTable {
 + public:
++  // The profile a consumer reads through unless it names another; its files require `#SOURCESHA`
++  // (E013).
++  static constexpr const char* kParityProfile = "parity";
++
 +  // A rejection. `code` is one of E001-E016 for a Layer-1 violation, or empty for a dataset-level
-+  // problem that has no single line (no `.g4dat` file in the directory, a table name repeated
-+  // across files, a directory that cannot be read, or an unset discovery variable).
++  // problem that has no single line (no `.g4dat` file in the directory, a `#PROFILE` / `#TABLE`
++  // pair repeated across files, a directory that cannot be read, or an unset discovery variable).
 +  struct Error {
 +    std::string code;
 +    int line = 0;
@@ -75,8 +79,9 @@ index 0000000000..a29444bc6b
 +      // Every other column, in `#COLUMNS` order.
 +      std::vector<double> floats;
 +    };
-+    std::string name;  // the `#TABLE` value
-+    std::string file;  // the path the table was read from, or the name given to Parse()
++    std::string profile;  // the `#PROFILE` value
++    std::string name;     // the `#TABLE` value
++    std::string file;     // the path the table was read from, or the name given to Parse()
 +    std::vector<std::pair<std::string, std::string>> directives;  // in file order, no leading '#'
 +    std::vector<std::string> columns;
 +    std::vector<Record> records;  // ascending by `keys` (E015), unique (E008)
@@ -84,11 +89,16 @@ index 0000000000..a29444bc6b
 +    const std::string* Directive(const std::string& keyword) const;
 +    // Binary search over the sorted records; nullptr when the key is absent.
 +    const Record* Lookup(const std::vector<long>& key) const;
++    // Lookup(key), and when that misses on a two-key table, the natural-composition row a table
++    // under `A:natural_and_listed` carries for the same `Z` (FORMAT_SPEC.md section 6); a
++    // single-key table is exact only.
++    const Record* LookupNatural(const std::vector<long>& key) const;
 +  };
 +
 +  // Parse every regular file named `*.g4dat` in `directory`, in bytewise-sorted file-name order.
 +  // Throws Error: with a code and line for a Layer-1 violation in one file, or code-less when the
-+  // directory holds no such file, is not a directory, or two files declare the same `#TABLE`.
++  // directory holds no such file, is not a directory, or two files declare the same `#PROFILE` and
++  // `#TABLE`.
 +  static G4MuonicDataTable Load(const std::string& directory);
 +
 +  // Parse one document from its bytes. `name` is only used to label the resulting table.
@@ -96,10 +106,12 @@ index 0000000000..a29444bc6b
 +  // order of FORMAT_SPEC.md section 4.
 +  static G4MuonicDataTable Parse(const std::string& bytes, const std::string& name);
 +
-+  // The table whose `#TABLE` value is `table_name`, or nullptr.
-+  const Table* Find(const std::string& table_name) const;
++  // The table whose `#PROFILE` and `#TABLE` values are these, or nullptr.
++  const Table* Find(const std::string& profile, const std::string& table_name) const;
 +  // Every table, in load order (exactly one after Parse()).
 +  const std::vector<Table>& Tables() const { return tables_; }
++  // The distinct `#PROFILE` values among the tables, bytewise sorted.
++  std::vector<std::string> Profiles() const;
 +
 +  // Overlay opt-in: a plain process-wide flag. Nothing in this reader consults it; it exists so a
 +  // consumer that falls through to compiled-in values can make that fall-through explicit.
@@ -145,7 +157,7 @@ index 749b0c5c72..6ab794a73a 100644
      G4PhysicsLinearVector.cc
 diff --git a/source/global/management/src/G4MuonicDataOverlay.cc b/source/global/management/src/G4MuonicDataOverlay.cc
 new file mode 100755
-index 0000000000..a874f571a4
+index 0000000000..e5aee3b559
 --- /dev/null
 +++ b/source/global/management/src/G4MuonicDataOverlay.cc
 @@ -0,0 +1,108 @@
@@ -209,9 +221,9 @@ index 0000000000..a874f571a4
 +  }
 +  const char* const names[] = {"nuclear_capture_rate", "muon_zeff"};
 +  for (const char* name : names) {
-+    const G4MuonicDataTable::Table* table = loaded->dataset.Find(name);
++    const G4MuonicDataTable::Table* table = loaded->dataset.Find(G4MuonicDataTable::kParityProfile, name);
 +    if (table == nullptr) {
-+      Fatal("G4MuonicData003", "dataset at " + dir + " lacks #TABLE " + name);
++      Fatal("G4MuonicData003", "dataset at " + dir + " lacks #TABLE " + name + " under #PROFILE " + G4MuonicDataTable::kParityProfile);
 +      delete loaded;
 +      return nullptr;
 +    }
@@ -247,7 +259,7 @@ index 0000000000..a874f571a4
 +const G4double* G4MuonicDataOverlay::Rate(G4int Z, G4int A) {
 +  const LoadedDataset* loaded = Dataset();
 +  if (loaded == nullptr) return nullptr;
-+  const G4MuonicDataTable::Table::Record* record = loaded->capture->Lookup({Z, A});
++  const G4MuonicDataTable::Table::Record* record = loaded->capture->LookupNatural({Z, A});
 +  return record == nullptr ? nullptr : &record->floats[loaded->capture_value];
 +}
 +
@@ -259,10 +271,10 @@ index 0000000000..a874f571a4
 +}
 diff --git a/source/global/management/src/G4MuonicDataTable.cc b/source/global/management/src/G4MuonicDataTable.cc
 new file mode 100755
-index 0000000000..fa6b959bef
+index 0000000000..e885d32642
 --- /dev/null
 +++ b/source/global/management/src/G4MuonicDataTable.cc
-@@ -0,0 +1,632 @@
+@@ -0,0 +1,650 @@
 +// G4MuonicDataTable -- see the header. Every rule below is stated in FORMAT_SPEC.md and mirrored
 +// from `openmucf/g4/spec.py`, whose verdicts the conformance corpus records; where the two can be
 +// read differently, this file follows spec.py.
@@ -305,7 +317,6 @@ index 0000000000..fa6b959bef
 +const char* const kAllowedSeams[] = {
 +    "d1_nuclear_capture", "d2_atomic_capture", "d3_transitions", "d4_mucf_cycle",
 +};
-+const char* const kParityProfile = "parity";
 +const char* const kEndMarker = "#END";
 +const char* const kSupportedGrammarMajor = "1";
 +const long kIntegerMin = 0;
@@ -524,6 +535,13 @@ index 0000000000..fa6b959bef
 +                             [](const Record& r, const std::vector<long>& k) { return r.keys < k; });
 +  if (it == records.end() || it->keys != key) return nullptr;
 +  return &*it;
++}
++
++const G4MuonicDataTable::Table::Record* G4MuonicDataTable::Table::LookupNatural(
++    const std::vector<long>& key) const {
++  if (const Record* exact = Lookup(key)) return exact;
++  if (key.size() == 2) return Lookup({key[0], 0});
++  return nullptr;
 +}
 +
 +void G4MuonicDataTable::Enable() { g_enabled = true; }
@@ -835,6 +853,7 @@ index 0000000000..fa6b959bef
 +    }
 +  }
 +
++  if (const std::string* profile_value = table.Directive("PROFILE")) table.profile = *profile_value;
 +  if (const std::string* table_name = table.Directive("TABLE")) table.name = *table_name;
 +  G4MuonicDataTable result;
 +  result.tables_.push_back(std::move(table));
@@ -871,7 +890,8 @@ index 0000000000..fa6b959bef
 +    return a.filename().string() < b.filename().string();
 +  });
 +  G4MuonicDataTable result;
-+  std::map<std::string, std::string> table_files;
++  // Keyed by the (`#PROFILE`, `#TABLE`) pair: a directory may hold one file per profile of a table.
++  std::map<std::pair<std::string, std::string>, std::string> table_files;
 +  for (const fs::path& path : files) {
 +    // Binary mode, always: text mode on Windows would strip CR before the E006 check sees it.
 +    std::ifstream in(path, std::ios::binary);
@@ -879,21 +899,31 @@ index 0000000000..fa6b959bef
 +    const std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 +    G4MuonicDataTable one = Parse(bytes, path.string());
 +    Table& table = one.tables_.front();
-+    auto seen = table_files.find(table.name);
++    const std::pair<std::string, std::string> pair{table.profile, table.name};
++    auto seen = table_files.find(pair);
 +    if (seen != table_files.end()) {
-+      throw Error{"", 0, "'#TABLE " + table.name + "' is declared by both " + Quote(seen->second) + " and " + Quote(path.string())};
++      throw Error{"", 0, "the pair '#PROFILE " + table.profile + "' / '#TABLE " + table.name + "' is declared by both " + Quote(seen->second) + " and " + Quote(path.string())};
 +    }
-+    table_files[table.name] = path.string();
++    table_files[pair] = path.string();
 +    result.tables_.push_back(std::move(table));
 +  }
 +  return result;
 +}
 +
-+const G4MuonicDataTable::Table* G4MuonicDataTable::Find(const std::string& table_name) const {
++const G4MuonicDataTable::Table* G4MuonicDataTable::Find(const std::string& profile, const std::string& table_name) const {
 +  for (const Table& table : tables_) {
-+    if (table.name == table_name) return &table;
++    if (table.profile == profile && table.name == table_name) return &table;
 +  }
 +  return nullptr;
++}
++
++std::vector<std::string> G4MuonicDataTable::Profiles() const {
++  std::vector<std::string> profiles;
++  for (const Table& table : tables_) {
++    if (std::find(profiles.begin(), profiles.end(), table.profile) == profiles.end()) profiles.push_back(table.profile);
++  }
++  std::sort(profiles.begin(), profiles.end());
++  return profiles;
 +}
 diff --git a/source/particles/management/src/G4MuonicAtomHelper.cc b/source/particles/management/src/G4MuonicAtomHelper.cc
 index 9893519553..190d0597f6 100644
