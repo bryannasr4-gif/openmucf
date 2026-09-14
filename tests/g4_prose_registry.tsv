@@ -346,7 +346,7 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 1ff0224d276b6205e5c8b8344bea4c5c4fff98a7	DATASET_D1.md	REGISTERED: 2, 1.0, 4 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
 214df6945545141f7e6e56505698ce49349669f5	DATASET_D1.md	REGISTERED: 2 -- the integer factor of the expression's '2 * (A - Z)', restated from the listing above (same standing as the listing's constants)
 217616f9afea206866d9a71fd01fcd8e0dd6facb	DATASET_D1.md	REGISTERED: one -- 'one mass number away'
-22235f1bb4755273c93e54eeca9ea357423dce00	DATASET_D1.md	REGISTERED: 1 -- the numerator of the lifetime '1/(lambdac + lambdad)', the vendored helper's own expression (G4MuonicAtomHelper.cc)
+22235f1bb4755273c93e54eeca9ea357423dce00	DATASET_D1.md	REGISTERED: 1 -- the numerator of the lifetime '1/(lambdac + lambdad)', the vendored helper's own expression (v11.4.2/G4MuonicAtomHelper.cc)
 228e3ded7575e72b06d0638bd70d5e49b4ad7089	DATASET_D1.md	REGISTERED: 119, 30, 66, 32, 72 -- the nuclide label Sn-119 and the record keys (30, 66) and (32, 72), rows of isotope_audit.csv whose evidence field states the mass-number comparison
 231bc7bec79b1da7e953829f8b8047cb606a01c6	DATASET_D1.md	REGISTERED: one, 0 -- 'every one' is a pronoun; the zeros are the bit-identity T-48 asserts over the sweep's digest and T-49 over the diagnostic subset (a matching digest is 0 mismatches and 0 ulp)
 23edd526835fcfbc5a07ac5b8dc631fc858ab80a	DATASET_D1.md	REGISTERED: two -- 'the two ways a row can be false': the two cases the paragraph defines
