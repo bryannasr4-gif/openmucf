@@ -1144,7 +1144,7 @@ def test_t35_archive_is_deterministic():
     # a dot entry would unpack somewhere other than the dataset directory. The ASCII rule is about
     # the MESSAGE, since the ustar length check already rejects a non-ASCII name, as a
     # UnicodeEncodeError rather than as a statement about archive names.
-    for bad in ("", "a/b", "a\\b", ".", ".."):
+    for bad in ("", "a/b", "a\\b", ".", "..", "examplé"):
         with pytest.raises(ValueError, match="directory"):
             emit.build_tarball(members, directory=bad)
     for bad in ("sub/dir.g4dat", "sub\\dir.g4dat", ""):

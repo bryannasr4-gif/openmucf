@@ -639,7 +639,7 @@ Every field that would otherwise leak the builder is pinned:
 | tar | `uname`, `gname` | empty, empty |
 | tar | `mode` | `0644` |
 | tar | typeflag | the byte `'0'` (`0x30`), not NUL — both spell "regular file" and readers accept either, but they are different bytes and change the header checksum |
-| tar | member name | `<NAME><VERSION>/<file>` -- exactly one directory component, the directory `geant4_add_dataset` unpacks the archive to (Geant4's `<NAME><VERSION>`); the whole stored name US-ASCII and at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable); no directory-entry member; the ustar `prefix` field empty |
+| tar | member name | `<NAME><VERSION>/<file>` -- exactly one directory component, the directory Geant4's dataset machinery expects after unpacking (Geant4's `<NAME><VERSION>`); the whole stored name US-ASCII and at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable); no directory-entry member; the ustar `prefix` field empty |
 | tar | magic + version | `ustar\0` then `00` (bytes 257-264 of each header block) |
 | tar | numeric field encoding | zero-padded octal, NUL-terminated, filling the field: `mode`/`uid`/`gid` as 7 digits + NUL (`0000644`, `0000000`), `size`/`mtime` as 11 digits + NUL |
 | tar | header checksum | **six octal digits, then NUL, then space** — not seven digits, and not digits + space + NUL. Computed per POSIX: the unsigned sum of all 512 header bytes **with the checksum field itself taken as eight spaces** |
