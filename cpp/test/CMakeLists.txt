@@ -13,6 +13,13 @@
 cmake_minimum_required(VERSION 3.16)
 project(g4muonicdata_validator LANGUAGES CXX)
 
+# A multi-config generator (Visual Studio, Xcode) chooses the configuration at build time and never
+# reads CMAKE_BUILD_TYPE; naming the value here is what stops CMake from reporting it as a
+# manually-specified variable the project did not use, on every command line that passes it.
+if(CMAKE_CONFIGURATION_TYPES AND DEFINED CMAKE_BUILD_TYPE)
+  message(STATUS "multi-config generator: CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} is not used; the configuration is chosen at build time with --config")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -72,6 +79,14 @@ add_test(NAME probe COMMAND g4muonicdata_probe)
 if(G4MUONICDATA_PROBE_ONLY)
   return()
 endif()
+
+# The hexfloat parser's subnormal path, which no committed oracle field reaches: the grammar's own
+# spellings of the subnormal boundary values, parsed, re-rendered and compared bit for bit with a
+# reference std::ldexp builds. Standard library only; both parser paths through the FORCE_STREAM
+# option.
+add_executable(g4muonicdata_hexfloat_check hexfloat_check.cc)
+g4muonicdata_target_options(g4muonicdata_hexfloat_check)
+add_test(NAME hexfloat_roundtrip COMMAND g4muonicdata_hexfloat_check)
 
 # The conforming GP kernel: the only translation unit that evaluates the model, contraction off.
 add_library(gp_kernel_off OBJECT gp_kernel.cc)
