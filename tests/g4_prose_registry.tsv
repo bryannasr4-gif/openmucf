@@ -51,7 +51,7 @@
 2549797c3f2079da2b8397dde96fc60fef23dd99	CHANGELOG.md	REGISTERED: Three -- the three docstrings the bullet enumerates
 26046f17acd231b8e75294b2be8518dd26d20bf2	CHANGELOG.md	REGISTERED: Three -- the three strings the bullet enumerates
 262ff315cf126a3eb3ffba30913e9d43d0f2131c	CHANGELOG.md	REGISTERED: two -- 'two closed forms', what the rows compare
-263bc8b8d5f915695d70750662d308ac7dec0318	CHANGELOG.md	REGISTERED: two -- the findings this dated entry introduced, F-6 and F-7 by the dataset document's numbering; the live total is T-63's 'findings in total' pin at the entry's close
+263bc8b8d5f915695d70750662d308ac7dec0318	CHANGELOG.md	REGISTERED: Two, two -- the two findings this dated entry records as settled, F-4 and F-5 by the dataset document's numbering, and the two it introduced, F-6 and F-7; the live counts are T-63's 'findings the primary settled' and 'findings in total' pins at the entry's close
 26704d38b19c5458cbc9a5f111eaddc8fb72ca1c	CHANGELOG.md	REGISTERED: 14 -- the rows of openmucf/data/yamashita_kino_lc_T.csv
 26a1c36d3d3864eb0ebc218f6a9068923e55ce32	CHANGELOG.md	REGISTERED: 20 -- the mcse band, `AUDIT_RTOL_ESS_MCSE` in scripts/generate_calibration.py
 2771e921ba711f4be80499441c82e74b25781c3c	CHANGELOG.md	REGISTERED: 1.31, 1.45 -- the engine ratio openmucf/validate.py states, and the ~1.45 under-read the v1.2.0 re-anchoring entry supersedes

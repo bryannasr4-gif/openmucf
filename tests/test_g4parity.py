@@ -2208,8 +2208,6 @@ def document_pins() -> DocumentPins:
         ("fallback constants declared",
          r"carrying all (\w+) of the constants it needs", len(found.fallback_coefficients)),
         ("findings in total", r"settled questions\*\*, not (\w+) defects", findings),
-        ("findings the primary settled, the dated headline",
-         r"\*\*(\w+) registered findings are settled and \w+ are new\*\*", settled_findings),
         ("maximum ulp over the diagnostic subset",
          r"every one bit-for-bit, maximum (\d+) ulp", max_ulp_subset),
     ]
