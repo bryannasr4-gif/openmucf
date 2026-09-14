@@ -519,8 +519,7 @@ A reader must therefore distinguish three outcomes and never confuse them:
 
 A directory may hold several files that declare one `#TABLE`, one per `#PROFILE`: a reader keys its
 tables by the pair (`#PROFILE`, `#TABLE`), never by file name, and rejects a directory in which two
-files declare the same pair. A consumer names the profile it reads through; `parity` is the default,
-and every table that any profile carries is also carried by `parity`. A key the selected profile has
+files declare the same pair. A consumer names the profile it reads through; `parity` is the default. A key the selected profile has
 no record for falls through to the consumer's compiled-in value, never to another profile.
 `precedence` (section 3) ranks sources within one file; selecting a profile is the only rule that
 spans files, and `#FALLBACK` is the last rung of every profile.
