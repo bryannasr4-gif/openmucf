@@ -2,14 +2,12 @@
 # Paste into cmake/Modules/G4DatasetDefinitions.cmake to register the dataset.
 #
 # Provisional: the dataset name and the environment variable are placeholders (see
-# FORMAT_SPEC.md), and the archive is FLAT -- its members sit at the archive root rather
-# than under a <FILENAME><VERSION> directory. Fixing the installed layout is part of
-# registration, not of the format, and is deliberately not decided here.
+# FORMAT_SPEC.md).
 geant4_add_dataset(
   NAME      G4MuonicData
   VERSION   0.0.0-example
   FILENAME  G4MuonicData
   EXTENSION tar.gz
   ENVVAR    G4MUONICDATA
-  MD5SUM    2e367e628aff850a55bc3565ab76cecf
+  MD5SUM    e1610d9854b53bbf164bc8da9616f28d
   )

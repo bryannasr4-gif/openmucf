@@ -593,7 +593,8 @@ Layer-1 directives they mirror. Layer 2 has no line numbers, so its schema viola
 `ValueError`; `E009` is the one code that spans both layers.
 
 `openmucf/g4/emit.py` is the reference implementation of section 8: `build_tarball()`,
-`gzip_header()`, `tarball_md5()` and `add_dataset_snippet()`.
+`gzip_header()`, `tarball_md5()`, `add_dataset_snippet()`, `dataset_directory()`, `archive_name()`,
+`readme_member()` and `history_member()`.
 
 Guarantees, each covered by a test:
 
@@ -620,9 +621,10 @@ line number to report; `E014` is raised by `validate()` and `parse()`, which hav
 
 ## 8. The archive
 
-A dataset ships as **one gzipped tar archive** holding the Layer-1 `.g4dat` files and the Layer-2
-`*.prov.json` files they were generated from -- the extension Geant4's dataset machinery expects
-(`EXTENSION tar.gz`). The archive is **a pure function of its members**: nothing about the machine
+A dataset ships as **one gzipped tar archive** holding the Layer-1 `.g4dat` files, the Layer-2
+`*.prov.json` files they were generated from, and a generated `README` and `History` -- with the
+extension Geant4's dataset machinery expects (`EXTENSION tar.gz`). The archive is **a pure function
+of its members**: nothing about the machine
 that built it may appear in its bytes, or the artifact cannot be checksummed once and shipped, and a
 reader cannot reproduce it to check our work.
 
@@ -637,7 +639,7 @@ Every field that would otherwise leak the builder is pinned:
 | tar | `uname`, `gname` | empty, empty |
 | tar | `mode` | `0644` |
 | tar | typeflag | the byte `'0'` (`0x30`), not NUL — both spell "regular file" and readers accept either, but they are different bytes and change the header checksum |
-| tar | member name | a **flat US-ASCII name** -- no path separator, no `./` prefix, no directory component -- at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable) |
+| tar | member name | `<NAME><VERSION>/<file>` -- exactly one directory component, the directory Geant4's dataset machinery expects after unpacking (Geant4's `<NAME><VERSION>`); the whole stored name US-ASCII and at most **100 bytes** (a longer name forces a GNU/PAX extension header whose bytes are not writer-stable); no directory-entry member; the ustar `prefix` field empty |
 | tar | magic + version | `ustar\0` then `00` (bytes 257-264 of each header block) |
 | tar | numeric field encoding | zero-padded octal, NUL-terminated, filling the field: `mode`/`uid`/`gid` as 7 digits + NUL (`0000644`, `0000000`), `size`/`mtime` as 11 digits + NUL |
 | tar | header checksum | **six octal digits, then NUL, then space** — not seven digits, and not digits + space + NUL. Computed per POSIX: the unsigned sum of all 512 header bytes **with the checksum field itself taken as eight spaces** |
@@ -648,9 +650,15 @@ Every field that would otherwise leak the builder is pinned:
 | gzip | compression level | `9` with the **default strategy** and the default memory level, and therefore `XFL` = `2` (a different strategy can change `XFL`, and does change the stream) |
 | gzip | `OS` byte | **255** (unknown) — *not* `3`, which is what a Unix `gzip(1)` writes |
 
-The members sit at the **archive root** (a flat archive), and the checksum in the registration
-snippet is the **MD5 of the archive's bytes** -- MD5 because that is what `geant4_add_dataset`'s
-`MD5SUM` field is: a download-integrity check against corruption, not a security boundary.
+The members sit under one top-level directory named `<NAME><VERSION>`, the directory Geant4's
+dataset machinery expects after unpacking `<FILENAME>.<VERSION>.tar.gz`, and the checksum in the
+registration snippet is the **MD5 of the archive's bytes** -- MD5 because that is what
+`geant4_add_dataset`'s `MD5SUM` field is: a download-integrity check against corruption, not a
+security boundary.
+
+`README` and `History` are pure functions of the Layer-2 documents and the member names -- the
+dataset, its version, each table's name, profile, seam and record count, and the attribution notice
+of section 9 -- and carry nothing about the machine or the moment that built the archive.
 
 **The encoding rows matter as much as the value rows**, and they are where a reimplementation goes
 wrong: the numeric-field encoding, the checksum encoding, `devmajor`/`devminor`, the 10240-byte

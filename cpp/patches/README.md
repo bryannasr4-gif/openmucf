@@ -26,9 +26,7 @@ the reader's error code and line.
 `g4-v11.4.2-register-dataset.patch` is separate and serves the registered mode only: it appends the
 dataset's `geant4_add_dataset` entry to `G4DatasetDefinitions.cmake`, so a build carrying it resolves
 the dataset under `GEANT4_DATA_DIR` with no variable exported. That mode looks for the dataset under
-a `<FILENAME><VERSION>` directory, and the archive the generator builds is flat — its members sit at
-the archive root rather than under such a directory — so the registered mode was measured with the
-dataset's files copied into a directory of that name.
+a `<NAME><VERSION>` directory, which is the directory the archive unpacks to.
 
 The evidence that a patched build behaves as stated — with the opt-in off, application runs and a
 harvest whose whole output is bit-identical to an unpatched build's; with the opt-in on, the

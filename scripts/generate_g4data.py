@@ -75,9 +75,10 @@ D1_ZEFF_LAYER2 = D1DIR / "d1_zeff.prov.json"
 D1_SNIPPET_PATH = D1DIR / "geant4_add_dataset.snippet"
 VENDORED_PATH = ROOT / d1src.VENDORED_RELPATH
 
-#: First build carrying content: plainly distinct from the example's `0.0.0-example`, and below
-#: 1.0.0 because D1 alone is not the dataset.
-D1_VERSION = "0.1.0"
+#: The version moves with the archive: this one packs the members under the dataset directory
+#: Geant4 unpacks to and adds the generated `README` and `History`. Plainly distinct from the
+#: example's `0.0.0-example`, and below 1.0.0 because D1 alone is not the dataset.
+D1_VERSION = "0.2.0"
 D1_SEAM = "d1_nuclear_capture"
 #: The release we actually read -- we vendored it. NOT the papers Geant4 cites: those are carried as
 #: quoted upstream text in `conditions`, because citing a paper this project has not opened would be
@@ -333,6 +334,7 @@ def build_d1_artifacts() -> tuple[dict[Path, bytes], bytes]:
 
     members: dict[str, bytes] = {}
     artifacts: dict[Path, bytes] = {}
+    files: list[emit.TableEntry] = []
     for layer1_path, layer2_path, document, build in (
         (D1_CAPTURE_LAYER1, D1_CAPTURE_LAYER2, build_capture_document(found), build_capture_table),
         (D1_ZEFF_LAYER1, D1_ZEFF_LAYER2, build_zeff_document(found), build_zeff_table),
@@ -347,8 +349,24 @@ def build_d1_artifacts() -> tuple[dict[Path, bytes], bytes]:
         artifacts[layer2_path] = raw
         members[layer1_path.name] = layer1
         members[layer2_path.name] = raw
+        files.append(
+            (
+                layer1_path.name,
+                layer2_path.name,
+                table.directives["TABLE"],
+                document.profile,
+                document.seam,
+                len(document.rows),
+            )
+        )
 
-    archive = emit.build_tarball(members)
+    # README and History are archive members only, like the archive itself: pure functions of the
+    # Layer-2 documents and the member names, so nothing about them needs a committed copy.
+    members["README"] = emit.readme_member(name=DATASET_NAME, version=D1_VERSION, files=files)
+    members["History"] = emit.history_member(name=DATASET_NAME, version=D1_VERSION, files=files)
+    archive = emit.build_tarball(
+        members, directory=emit.dataset_directory(DATASET_NAME, D1_VERSION)
+    )
     snippet = emit.add_dataset_snippet(
         name=DATASET_NAME,
         version=D1_VERSION,
@@ -417,7 +435,29 @@ def build_example_artifacts() -> tuple[dict[Path, bytes], bytes]:
     raw, document = load_layer2()
     table = build_table(raw, document)
     layer1 = spec.render(table).encode("ascii")
-    archive = emit.build_tarball({LAYER1_PATH.name: layer1, LAYER2_PATH.name: raw})
+    files: list[emit.TableEntry] = [
+        (
+            LAYER1_PATH.name,
+            LAYER2_PATH.name,
+            TABLE_NAME,
+            document.profile,
+            document.seam,
+            len(document.rows),
+        )
+    ]
+    members = {
+        LAYER1_PATH.name: layer1,
+        LAYER2_PATH.name: raw,
+        "README": emit.readme_member(
+            name=document.dataset, version=document.version, files=files
+        ),
+        "History": emit.history_member(
+            name=document.dataset, version=document.version, files=files
+        ),
+    }
+    archive = emit.build_tarball(
+        members, directory=emit.dataset_directory(document.dataset, document.version)
+    )
     snippet = emit.add_dataset_snippet(
         name=document.dataset,
         version=document.version,
@@ -434,10 +474,14 @@ def build_example_artifacts() -> tuple[dict[Path, bytes], bytes]:
 
 
 def build_artifacts() -> tuple[dict[Path, bytes], dict[str, bytes]]:
-    """Every committed artifact of both builds, plus each build's archive keyed by name."""
+    """Every committed artifact of both builds, plus each build's archive keyed by its file name."""
     example, example_archive = build_example_artifacts()
     d1, d1_archive = build_d1_artifacts()
-    return {**example, **d1}, {"example": example_archive, "d1": d1_archive}
+    _, example_document = load_layer2()
+    return {**example, **d1}, {
+        emit.archive_name(example_document.dataset, example_document.version): example_archive,
+        emit.archive_name(DATASET_NAME, D1_VERSION): d1_archive,
+    }
 
 
 def _write(artifacts: dict[Path, bytes], directory: Path) -> None:
@@ -459,10 +503,7 @@ def regenerate() -> None:
     for path in artifacts:
         print(f"wrote {path.relative_to(ROOT).as_posix()}")
     for name, archive in archives.items():
-        print(
-            f"archive {name}.{emit.ARCHIVE_EXTENSION} (not committed): "
-            f"{len(archive)} bytes, md5={emit.tarball_md5(archive)}"
-        )
+        print(f"archive {name} (not committed): {len(archive)} bytes, md5={emit.tarball_md5(archive)}")
 
 
 def audit() -> None:

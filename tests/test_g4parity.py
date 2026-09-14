@@ -24,6 +24,7 @@ import ast
 import dataclasses
 import hashlib
 import importlib.util
+import io
 import json
 import math
 import pathlib
@@ -31,12 +32,13 @@ import re
 import struct
 import subprocess
 import sys
+import tarfile
 
 import pytest
 
 import openmucf
 from openmucf import rates
-from openmucf.g4 import provenance, sources, spec
+from openmucf.g4 import emit, provenance, sources, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -2463,3 +2465,58 @@ def document_pins() -> DocumentPins:
 def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
     """Every pin table `document_pins` builds is checked as it is built; this test is that run."""
     document_pins()
+
+
+# --------------------------------------------------------------------------------------------
+# T-82 -- the shipped D1 archive unpacks to the dataset directory, with README and History
+# --------------------------------------------------------------------------------------------
+
+
+def generator_module():
+    """`scripts/generate_g4data.py`, loaded by path -- `scripts/` is a directory, not a package."""
+    module_spec = importlib.util.spec_from_file_location("generate_g4data", GENERATOR)
+    assert module_spec and module_spec.loader, GENERATOR
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    return module
+
+
+def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_history():
+    """What the archive the snippet checksums actually holds, opened rather than described.
+
+    Every member sits under the one directory Geant4's dataset machinery expects after unpacking,
+    no member is a directory entry, every stored name fits the ustar name field, the README carries
+    the attribution notice DATASET_D1.md states and each table's record count as the committed
+    Layer-2 file holds it, the History names the dataset and its version, and the archive's MD5
+    is the MD5SUM the committed snippet declares.
+    """
+    generator = generator_module()
+    _, archive = generator.build_d1_artifacts()
+    directory = emit.dataset_directory(generator.DATASET_NAME, generator.D1_VERSION)
+    committed = [CAPTURE_LAYER1.name, CAPTURE_LAYER2.name, ZEFF_LAYER1.name, ZEFF_LAYER2.name]
+    with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
+        entries = opened.getmembers()
+        names = [entry.name for entry in entries]
+        assert names == sorted(f"{directory}/{x}" for x in committed + ["README", "History"])
+        assert not any(entry.isdir() for entry in entries), names
+        assert all(len(name.encode("ascii")) <= 100 for name in names), names  # ustar name field
+        readme = opened.extractfile(f"{directory}/README").read().decode("ascii")
+        history = opened.extractfile(f"{directory}/History").read().decode("ascii")
+
+    notice = [
+        line[2:] for line in (REPO / "DATASET_D1.md").read_text("utf-8").splitlines()[:8]
+        if line.startswith("> ")
+    ]
+    assert len(notice) == 2, notice
+    for line in notice:
+        assert line in readme.splitlines(), line
+    for layer2 in (CAPTURE_LAYER2, ZEFF_LAYER2):
+        document = provenance.from_json_obj(json.loads(layer2.read_bytes().decode("ascii")))
+        assert f"{len(document.rows)} records" in readme, layer2.name
+    assert history.splitlines()[0] == f"History for {generator.DATASET_NAME} files:"
+    assert generator.D1_VERSION in history
+
+    snippet = (D1DIR / "geant4_add_dataset.snippet").read_text("ascii")
+    declared = re.search(r"^\s*MD5SUM\s+([0-9a-f]{32})$", snippet, re.MULTILINE)
+    assert declared, snippet
+    assert emit.tarball_md5(archive) == declared.group(1)
