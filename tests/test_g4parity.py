@@ -2266,46 +2266,8 @@ def document_pins() -> DocumentPins:
     # The cross-check between the two capture profiles (T-91), derived from the two shipped files.
     crosscheck_pairs = mizuno_parity_pairs()
     crosscheck_disagreements = [pair for pair in crosscheck_pairs if not pair["agrees"]]
-    changelog_claims = [
-        ("records checked", r"Every one of the (\d+) records has now been checked", len(audit)),
-        ("rows the old rule disagrees with", r"on (\d+) of the \d+ records", len(disagree)),
-        ("records the old rule was applied to", r"on \d+ of the (\d+) records", len(audit)),
-        ("rows the old rule under-called", r"\*\*(\d+)\*\* it called unresolved", len(under_called)),
-        ("rows the primary flatly contradicts",
-         r"\*\*(\d+)\*\* it called resolved that the primary flatly", len(contradicted)),
-        ("rows the primary fails to establish",
-         r"and \*\*(\d+)\*\* it called resolved that the primary does not", len(unestablished)),
-        ("settled rows", r"\*\*(\d+) records are settled", len(settled)),
-        ("isotope_resolved true", r"(\d+) are established isotope-resolved", len(trues)),
-        ("natural-composition rows",
-         r"(\d+) are established to rest on a \*\*natural", len(natural)),
-        ("open rows", r"The (\d+) that remain open", len(unsettled)),
-        ("distinct Z", r"span exactly the same (\d+) Z", len(zs)),
-        ("rows where the key is a label", r"a target specification\*\* on (\d+) records",
-         len(natural)),
-        ("findings that are defects", r"ships \*\*(\w+) defects", findings - settled_findings),
-        ("findings the primary settled", r"defects and (\w+) settled questions", settled_findings),
-        ("capture record count", r"a (\d+)-record `\{Z, A, rate, error\}` table",
-         len(found.capture_records)),
-        ("effective-charge record count", r"a (\d+)-value effective-charge table",
-         len(zeff_table.records)),
-        ("swept points returning a negative rate",
-         r"negative capture rates on (\d+) of \d+ fallback points", negative),
-        ("swept points in total, fallback",
-         r"negative capture rates on \d+ of (\d+) fallback points", swept),
-        ("swept points harvested", r"harvested (\d+) `\(Z, A\)` points", swept),
-        ("distinct Z, attribution headline",
-         r"The (\d+)-distinct-Z attribution reconciles", len(zs)),
-        ("distinct Z, superseded finding",
-         r"reconcile with the table's (\d+) distinct Z", len(zs)),
-        ("Layer-1 record lines unchanged",
-         r"All (\d+) Layer-1 record lines are unchanged", len(found.capture_records)),
-        ("fallback constants declared",
-         r"carrying all (\w+) of the constants it needs", len(found.fallback_coefficients)),
-        ("findings in total", r"settled questions\*\*, not (\w+) defects", findings),
-        ("maximum ulp over the diagnostic subset",
-         r"every one bit-for-bit, maximum (\d+) ulp", max_ulp_subset),
-    ]
+    # Released lines are held by dated registry rows; only `[Unreleased]` lines may be pinned live.
+    changelog_claims: list = []
     # A string the changelog states about a shipped file, read from that file: the dataset version
     # the entry names is the `#VERSION` the committed capture table carries.
     shipped_version = re.search(r"^#VERSION\s+(\S+)$", CAPTURE_LAYER1.read_text("ascii"), re.M)
@@ -2333,6 +2295,7 @@ def document_pins() -> DocumentPins:
          r"negative capture rates on (\d+) of those \d+ points", negative),
         ("swept points in total, restated",
          r"negative capture rates on \d+ of those (\d+) points", swept),
+        ("maximum ulp over the diagnostic subset", r"points at (zero) ulp", max_ulp_subset),
     ]
 
     # `cpp/tools/README.md` restates the sweep size beside the contraction figures that only a
