@@ -1757,7 +1757,7 @@ def test_t58_the_generator_version_is_coupled_to_every_dataset_it_stamped():
 
 
 # --------------------------------------------------------------------------------------------
-# T-59..T-62 -- the isotope audit: the one hand-authored input, and what it is allowed to claim
+# T-59..T-62 -- the isotope audit: what it is allowed to claim
 # --------------------------------------------------------------------------------------------
 
 #: The copies of a paper this project distinguishes. A locator that does not say WHICH copy was

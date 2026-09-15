@@ -22,7 +22,7 @@ byte range ``#SOURCEDIGEST`` is taken over, and ``--audit`` verifies that on the
 The D1 directory also carries a **second profile of the capture table**, ``mizuno2025``, generated
 the same way from two committed transcriptions of a primary's printed tables
 (``openmucf.g4.sources.mizuno2025`` states what they hold and refuses what they must not). Those two
-CSV files are the one hand-authored input of that profile, as the isotope audit is of the parity one.
+CSV files are the one hand-authored input of that profile.
 
 Audit wiring: every generated artifact below joins ``make audit``'s ``git diff --exit-code`` list.
 The ``.tar.gz`` archives are **not** committed -- they are build products whose determinism is

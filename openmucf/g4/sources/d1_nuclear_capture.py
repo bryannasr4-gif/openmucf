@@ -714,7 +714,7 @@ def sweep_digest(
 
 
 # --------------------------------------------------------------------------------------------
-# the isotope audit -- the one hand-authored input in this chain
+# the isotope audit
 # --------------------------------------------------------------------------------------------
 
 #: Where the audit lives, relative to the repository root.
