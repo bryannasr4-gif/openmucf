@@ -2684,7 +2684,7 @@ def test_t87_the_beta_tables_equal_the_v11_4_2_tables_field_by_field(copy: d1.So
 def test_t87_the_beta_bound_decay_reproduces_the_oracle_digest():
     """The reference implementation, fed the beta BoundDecay's records, effective charges and
     fallback coefficients, reproduces the full-sweep digest the oracle harvested from the v11.4.2
-    build -- the parity claim carried across the revision boundary by computation."""
+    build."""
     beta, _ = beta_pair(d1.BOUND_DECAY)
     coefficients = beta.coefficients
     model = d1.GoulardPrimakoff(
