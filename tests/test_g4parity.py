@@ -56,7 +56,7 @@ ORACLE = D1DIR / "d1_gp_sweep.oracle"
 UPSTREAM_BLOB_ID = "29bd73719cd619de34ef83ca5ca076ceadf1cc5a"
 UPSTREAM_SHA256 = "860dcdb53167c6437484b12c05ac1ab2eae4a6a52886af83fcf4394611882813"
 
-#: The same two files at the later tag upstream reviews against, vendored beside the v11.4.2
+#: The same two files at the later tag, vendored beside the v11.4.2
 #: copies as evidence and never as a source: nothing D1 ships is generated from them. Each pin is
 #: upstream's own object name for the bytes at that tag's commit, verifiable the same way.
 BETA_TAG = "v11.5.0.beta"
@@ -2684,8 +2684,7 @@ def test_t87_the_beta_tables_equal_the_v11_4_2_tables_field_by_field(copy: d1.So
 def test_t87_the_beta_bound_decay_reproduces_the_oracle_digest():
     """The reference implementation, fed the beta BoundDecay's records, effective charges and
     fallback coefficients, reproduces the full-sweep digest the oracle harvested from the v11.4.2
-    build -- the parity claim carried across the revision boundary by computation, not by the
-    field comparison alone."""
+    build -- the parity claim carried across the revision boundary by computation."""
     beta, _ = beta_pair(d1.BOUND_DECAY)
     coefficients = beta.coefficients
     model = d1.GoulardPrimakoff(

@@ -80,8 +80,7 @@ names its own cause instead of surfacing as an unexplained hash mismatch.
 Overwriting these files in place is **forbidden**: it would destroy the evidence that the previously
 published dataset was faithful to the version it claimed. A new upstream revision gets a new
 `third_party/geant4/<tag>/` directory, a new `#SOURCESHA` in the generated dataset, and a written
-record of what moved. `v11.5.0.beta/` is such a directory whose tables a test proves equal to
-`v11.4.2/`'s, so the dataset's `#SOURCESHA` stays at the revision it was generated from.
+record of what moved.
 
 ## Licensing
 

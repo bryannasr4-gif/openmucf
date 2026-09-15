@@ -488,7 +488,7 @@ e3fd28cba23d87ba142c75fac3c3fb4a855bb8d9	README.md	REGISTERED: 6, 5, 1 -- restat
 e52326badfd61270409743256330b494a0f4e7ef	README.md	REGISTERED: 4.70, 10, ³ -- restates MUON_COST.md's anchor row (Kelly, Hart & Rose: 4.70 GeV/muon) and the order of magnitude between its tiers ('~10³×'); MUON_COST.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
 f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
 21ffeec98e1eab90e7c9b55fc3e79d25073d0a52	cpp/patches/README.md	REGISTERED: one -- the single call the sentence quotes, SetEnableMuonicData(true)
-7adbc79d41e9978fcb2c79814f8ae1f02434411b	cpp/patches/README.md	REGISTERED: one -- the boolean the patch adds to G4HadronicParameters; T-72 pins the patch's path set
+7adbc79d41e9978fcb2c79814f8ae1f02434411b	cpp/patches/README.md	REGISTERED: one -- the boolean the patch adds to G4HadronicParameters
 b34ea2c8e8e45b54a22c9945647b28f929cdec4e	cpp/patches/README.md	REGISTERED: four, one -- the functions listed at the top of this file, and the opt-in test each patched function makes before its own code
 feeaf5a1a26f0e87989f5e3944db5dff503e0412	cpp/patches/README.md	REGISTERED: one -- the glue file the sentence names, G4MuonicDataOverlay
 ffc9ecfeb990967e9d6d644890750f0754208e1a	cpp/patches/README.md	REGISTERED: four, two -- the functions and files the sentence itself lists by name; T-72 pins the patch's path set
