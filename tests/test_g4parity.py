@@ -1575,6 +1575,7 @@ def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
                 assert row.needs_verification is not read, key
                 assert not established, key
                 z = int(key)
+                assert read is (z in zeff_audit), key
                 assert row.unc_type == (
                     "estimate" if z in zeff_audit and zeff_audit[z].underlined else "table"
                 ), key
