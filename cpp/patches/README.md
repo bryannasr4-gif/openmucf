@@ -40,8 +40,3 @@ harvested sweep reproducing the digest recorded by the oracle file beside the da
 (`cpp/tools/README.md` describes it), through both compiled-in copies and in both discovery modes —
 is kept outside this repository. That digest is stated here by reference to the oracle file, never
 as a literal, and a test holds this file to that.
-
-The patches modify Geant4 source and are offered under the Geant4 Software License, the `LICENSE`
-file beside the vendored sources under `third_party/`, whose clause 4 applies to a published
-modification; the repository's own files, the reader and the dataset among them, stay under the
-licences the repository's `LICENSE` and `LICENSE-DATA` state.
