@@ -1319,7 +1319,7 @@ CAPTURE_LAYER1 = D1DIR / "d1_capture.g4dat"
 CAPTURE_LAYER2 = D1DIR / "d1_capture.prov.json"
 ZEFF_LAYER1 = D1DIR / "d1_zeff.g4dat"
 ZEFF_LAYER2 = D1DIR / "d1_zeff.prov.json"
-#: The capture table's second profile, named by the profile as FORMAT_SPEC.md section 5 states.
+#: The capture table's second profile, named by the profile.
 MIZUNO_LAYER1 = D1DIR / f"d1_capture.{mizuno2025.PROFILE}.g4dat"
 MIZUNO_LAYER2 = D1DIR / f"d1_capture.{mizuno2025.PROFILE}.prov.json"
 GENERATOR = REPO / "scripts" / "generate_g4data.py"
