@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed -- the capture rows the audit had left open (2026-09-15)
+
+- **The capture rows the audit had left open are compared with every Total Capture Rate cell the
+  primary prints at their Z** (`data/g4/d1/capture_rate_cells.csv`): a test derives each verdict
+  at the primary's printed precision and holds `isotope_audit.csv` to it; the chlorine record is
+  settled as the separated isotope the primary lists, and the others stay open with the
+  comparison recorded in their `evaluation_method`.
+
 ### Added -- the effective-charge audit (2026-09-15)
 
 - **Every effective-charge cell the primary prints is a committed row**
@@ -23,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transcriptions of Table 1 and Table 3 of Mizuno et al.**
   Enriched and mononuclidic nuclides are keyed by mass number and natural-composition targets by
   `A = 0` under `A:natural_and_listed`, and every value is carried as the primary prints it.
-  `DATASET_D1.md` section 9 lists the pairs. The change moves
+  The change moves
   the dataset's `#VERSION` to 0.3.0.
 - **The dataset archive in Geant4's layout**: it unpacks to the `G4MuonicData<version>` directory
   and carries generated `README` and `History` members (T-81, T-82).

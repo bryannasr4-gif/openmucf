@@ -1921,6 +1921,10 @@ class DocumentPins:
     #: `(what, pattern, expected_string)` rows of `CHANGELOG.md` whose value is a string read from
     #: a shipped file rather than a count.
     string_claims: list
+    #: Section 6's comparison table, one `(what, pattern, expected_row)` per capture row the audit
+    #: leaves open, the compiled-in literals against every printed cell at its Z; the whole row is
+    #: the pinned span.
+    open_row_comparisons: list
 
 
 def document_pins() -> DocumentPins:
@@ -2182,7 +2186,7 @@ def document_pins() -> DocumentPins:
         ("rows the primary flatly contradicts",
          r"\* \*\*(\d+)\*\* the primary flatly contradicts", len(contradicted)),
         ("rows the primary fails to establish",
-         r"\* \*\*(\d+)\*\* — `\(\d+, \d+\)`, `\(\d+, \d+\)`, `\(\d+, \d+\)` — where the primary",
+         r"\* \*\*(\d+)\*\* — (?:`\(\d+, \d+\)`,? )+— where the primary",
          len(unestablished)),
         ("elements the primary's sentence names", r"Of the (\w+) the sentence names", len(named)),
         ("named elements carrying a separated-isotope record",
@@ -2375,6 +2379,43 @@ def document_pins() -> DocumentPins:
             "section 9's table; the document is wrong, not this test"
         )
 
+    # Section 6's comparison table: one row per capture row the audit leaves open, pinned whole --
+    # the compiled-in literals as the vendored source prints them, every cell the primary prints at
+    # that Z as the committed transcription prints it, and the outcome the comparison derives.
+    blocks = d1.cells_by_z(capture_cells())
+    literals = {
+        (z, a): literal
+        for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
+    }
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    open_row_comparisons = []
+    for z, a in sorted(unsettled):
+        matches = d1.printed_matches(*values[(z, a)], blocks[z])
+        literal_value, literal_unc = literals[(z, a)]
+        row_text = (
+            f"| ({z}, {a}) | {literal_value} +- {literal_unc} | {d1.render_cells(blocks[z])} | "
+            f"{d1.render_outcome(matches)} |"
+        )
+        open_row_comparisons.append((
+            f"comparison row: the open record ({z}, {a}) against the printed cells at Z={z}",
+            "(" + re.escape(row_text) + ")",
+            row_text,
+        ))
+    for what, pattern, expected_row in open_row_comparisons:
+        assert re.findall(pattern, doc) == [expected_row], (
+            f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
+            "section 6's table; the document is wrong, not this test"
+        )
+    # The bullet that lists the rows the primary fails to establish names exactly those keys, in
+    # ascending order: the count above is pinned, and so is the list.
+    listed = re.search(r"\* \*\*\d+\*\* — ((?:`\(\d+, \d+\)`,? )+)— where the primary", doc)
+    assert listed, "DATASET_D1.md no longer lists the rows the primary fails to establish"
+    listed_keys = [(int(z), int(a)) for z, a in re.findall(r"\((\d+), (\d+)\)", listed.group(1))]
+    assert listed_keys == sorted(unestablished), (
+        f"DATASET_D1.md lists {listed_keys} as the rows the primary fails to establish; the audit "
+        f"derives {sorted(unestablished)}"
+    )
+
     changelog_rounded = [
         ("extreme natural abundance", r"is ([\d.]+) % of the natural element",
          _pct((62, 150), "Sm-150"), 1),
@@ -2518,6 +2559,7 @@ def document_pins() -> DocumentPins:
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
         tools_readme_claims, changelog_rounded, crosscheck_rows, string_claims,
+        open_row_comparisons,
     )
 
 
@@ -3311,3 +3353,121 @@ def test_t96_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate,
     path.write_bytes(mutated.encode("utf-8"))
     with pytest.raises(d1.CaptureCellsError, match=re.escape(message)):
         d1.load_capture_cells(path)
+
+
+# --------------------------------------------------------------------------------------------
+# T-97 -- the capture rows the audit had left open, decided by comparison with the printed cells
+# --------------------------------------------------------------------------------------------
+
+
+def check_open_row_verdicts(
+    audit: dict[tuple[int, int], d1.IsotopeAuditRow],
+    cells: tuple[d1.CaptureCellRow, ...],
+    document: provenance.ProvDocument,
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """The comparison rule as a check: every capture row whose flag the listing alone cannot settle
+    is compared, value and uncertainty, with every cell the primary prints at its Z at the primary's
+    printed precision; one equal cell settles it to that entry, any other count leaves it open, and
+    the audit, the shipped Layer 2 and the block of cells must all say so. Returns
+    `(by_value, unsettled)`; raises `AssertionError` where they disagree."""
+    found = extraction()
+    blocks = d1.cells_by_z(cells)
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    literals = {
+        (z, a): literal
+        for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
+    }
+    by_value = sorted(
+        key for key, finding in audit.items()
+        if key[0] in blocks and d1.decided_by_value(key, finding.evidence, blocks[key[0]])
+    )
+    unsettled = sorted(key for key, finding in audit.items() if not finding.settled)
+    # (a) every unsettled row is decided here, and every block of cells decides at least one row.
+    assert set(unsettled) <= set(by_value), sorted(set(unsettled) - set(by_value))
+    for z in blocks:
+        assert any(key[0] == z for key in by_value), f"the cells at Z={z} decide no row"
+    print(f"\ndecided by value: {by_value}")
+    open_by_value = set()
+    for key in by_value:
+        z, a = key
+        finding = audit[key]
+        block = blocks[z]
+        matches = d1.printed_matches(*values[key], block)
+        literal_value, literal_unc = literals[key]
+        # (b) one equal cell is a settled row, to exactly that cell's entry; otherwise open.
+        assert (len(matches) == 1) is finding.settled, (key, d1.render_outcome(matches))
+        if finding.settled:
+            (match,) = matches
+            assert finding.locator == match.locator, key
+            assert finding.copy_read == match.copy_read, key
+            assert finding.isotope_resolved is d1.is_separated_label(match.label), key
+            if d1.is_separated_label(match.label):
+                assert finding.evidence.startswith(
+                    "the primary lists the separated isotope " + match.label
+                ), key
+        row = document.rows[f"{z}-{a}"]
+        assert row.needs_verification is not finding.settled, key
+        assert row.evaluation_method.endswith(
+            d1.render_comparison(z, literal_value, literal_unc, block, matches)
+        ), key
+        # (c) a record whose A no printed label carries can equal a cell of another nuclide; that
+        # is a finding to register under its own name, never a row to settle here.
+        printed_as = {
+            int(cell.label.split("-")[1]) for cell in block if d1.is_separated_label(cell.label)
+        }
+        if a not in printed_as:
+            assert len(matches) != 1, (
+                f"{key} carries no printed label of its A yet equals exactly one cell, "
+                f"{d1.render_cell(matches[0]) if matches else ''}: a registration is needed"
+            )
+        if len(matches) != 1:
+            open_by_value.add(key)
+        print(
+            f"  {key}: parity {literal_value} +- {literal_unc}, matches "
+            f"{[d1.render_cell(match) for match in matches]}, verdict {d1.render_outcome(matches)}"
+        )
+    # (d) the open rows are exactly the decided-by-value rows no single cell equals.
+    assert set(unsettled) == open_by_value, (sorted(unsettled), sorted(open_by_value))
+    return by_value, unsettled
+
+
+def test_t97_every_open_capture_row_is_decided_by_comparison_with_the_printed_cells():
+    """The rule the chapter states as a command over the shipped audit, cells and Layer 2; and the
+    document tabulates exactly the rows that stay open."""
+    _, document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    by_value, unsettled = check_open_row_verdicts(audit_rows(), capture_cells(), document)
+    assert by_value, "no row is decided by value; the check above was vacuous"
+    assert len(document_pins().open_row_comparisons) == len(unsettled)
+
+
+def test_t97_drill_a_settled_row_whose_cell_moves_in_its_last_digit_is_caught(tmp_path):
+    """Take the one cell a settled decided-by-value row equals -- found by label from the shipped
+    files, not typed -- and alter its last printed digit in a temporary copy of the cells file: the
+    row then equals no cell while the audit still says settled, and the check fails on it."""
+    audit = audit_rows()
+    cells = capture_cells()
+    _, document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    by_value, _ = check_open_row_verdicts(audit, cells, document)
+    settled = [key for key in by_value if audit[key].settled]
+    assert settled, "no decided-by-value row is settled; the drill has nothing to alter"
+    z, a = settled[0]
+    found = extraction()
+    values = {(z_, a_): (value, unc) for z_, a_, value, unc in found.capture_records}
+    (match,) = d1.printed_matches(*values[(z, a)], d1.cells_by_z(cells)[z])
+    text = CAPTURE_CELLS.read_bytes().decode("ascii")
+    lines = text.split("\n")
+    hits = [
+        index for index, line in enumerate(lines[1:], start=1)
+        if line.split(",")[:2] == [str(match.z), match.label]
+        and line.split(",")[3:5] == [match.rate, match.rate_unc]
+    ]
+    assert len(hits) == 1, hits
+    cells_ = lines[hits[0]].split(",")
+    cells_[3] = match.rate[:-1] + str((int(match.rate[-1]) + 1) % 10)
+    lines[hits[0]] = ",".join(cells_)
+    mutated = "\n".join(lines)
+    assert mutated != text
+    path = tmp_path / CAPTURE_CELLS.name
+    path.write_bytes(mutated.encode("ascii"))
+    with pytest.raises(AssertionError):
+        check_open_row_verdicts(audit, d1.load_capture_cells(path), document)

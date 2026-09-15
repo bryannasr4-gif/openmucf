@@ -199,11 +199,57 @@ def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument
     hydrogen = _quote_upstream(found.capture_comment_lines, "Hydrogen")
     helium = _quote_upstream(found.capture_comment_lines, "Helium")
 
+    # The primary's printed cells at the Z of every row the audit had left open. A row the listing
+    # alone cannot settle is decided by comparing its compiled-in value with those cells, and the
+    # comparison travels in the row whichever way it came out.
+    cells = d1src.load_capture_cells(ROOT / d1src.CAPTURE_CELLS_RELPATH)
+    blocks = d1src.cells_by_z(cells)
+    orphan_blocks = sorted(set(blocks) - {z for z, _ in audit})
+    if orphan_blocks:
+        raise SystemExit(
+            f"g4data build FAILED: the printed cells carry a block at Z {orphan_blocks} with no "
+            "audit key; a block nothing is compared with has no reason to be shipped"
+        )
+    uncovered = sorted({z for (z, _), finding in audit.items() if not finding.settled} - set(blocks))
+    if uncovered:
+        raise SystemExit(
+            f"g4data build FAILED: an unsettled audit row at Z {uncovered} has no block of printed "
+            "cells to be compared with"
+        )
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    literals = {
+        (z, a): literal
+        for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
+    }
+
     rows = {}
     for (z, a, _, _), line in zip(found.capture_records, found.capture_lines, strict=True):
         upstream = {1: hydrogen, 2: helium}.get(z, general)
         finding = audit[(z, a)]
         template = CAPTURE_METHOD_SETTLED if finding.settled else CAPTURE_METHOD_UNSETTLED
+        method = template.format(evidence=finding.evidence)
+        if z in blocks and d1src.decided_by_value((z, a), finding.evidence, blocks[z]):
+            matches = d1src.printed_matches(*values[(z, a)], blocks[z])
+            # The audit's finding must be the comparison's outcome, never a flag beside it: one
+            # equal cell settles the row to that entry, any other count leaves it open.
+            if (len(matches) == 1) is not finding.settled:
+                raise SystemExit(
+                    f"g4data build FAILED: the audit row ({z}, {a}) is "
+                    f"{'settled' if finding.settled else 'open'} but the compiled-in value equals "
+                    f"{d1src.render_outcome(matches)} of the primary's printed cells at Z={z}"
+                )
+            if finding.settled and (
+                finding.locator != matches[0].locator
+                or finding.copy_read != matches[0].copy_read
+                or finding.isotope_resolved is not d1src.is_separated_label(matches[0].label)
+            ):
+                raise SystemExit(
+                    f"g4data build FAILED: the audit row ({z}, {a}) is settled to a locator, copy "
+                    f"or flag other than the one printed cell it equals, {matches[0]!r}"
+                )
+            method = method + " " + d1src.render_comparison(
+                z, *literals[(z, a)], blocks[z], matches
+            )
         rows[f"{z}-{a}"] = provenance.ProvRow(
             source_bibkey=D1_BIBKEY,
             source_locator=_isotope_locator(line, finding),
@@ -219,7 +265,7 @@ def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument
             validity_range=(
                 f"Z={z} A={a}; outside the listed keys the {d1src.FALLBACK_MODEL} fallback applies"
             ),
-            evaluation_method=template.format(evidence=finding.evidence),
+            evaluation_method=method,
             # Upstream says "weighted average of the two most precise measurements"; asserting a
             # single source would be a claim this project cannot make.
             single_source=False,

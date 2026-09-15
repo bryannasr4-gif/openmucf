@@ -61,13 +61,21 @@ __all__ = [
     "ZeffAuditRow",
     "agrees_at_printed_precision",
     "capture_rate",
+    "cells_by_z",
     "check_helper_pins",
+    "decided_by_value",
     "extract",
+    "is_separated_label",
     "load",
     "load_capture_cells",
     "load_helper",
     "load_isotope_audit",
     "load_zeff_audit",
+    "printed_matches",
+    "render_cell",
+    "render_cells",
+    "render_comparison",
+    "render_outcome",
     "parse_fallback_directive",
     "render_fallback_directive",
     "sweep_digest",
@@ -1062,3 +1070,88 @@ def agrees_at_printed_precision(shipped: float, printed: str) -> bool:
     primary never made."""
     quantum = decimal.Decimal(printed)
     return decimal.Decimal(repr(shipped)).quantize(quantum) == quantum
+
+
+def cells_by_z(cells: Sequence[CaptureCellRow]) -> dict[int, tuple[CaptureCellRow, ...]]:
+    """The cells grouped by ``z``, each block in file order."""
+    blocks: dict[int, list[CaptureCellRow]] = {}
+    for cell in cells:
+        blocks.setdefault(cell.z, []).append(cell)
+    return {z: tuple(block) for z, block in blocks.items()}
+
+
+def is_separated_label(label: str) -> bool:
+    """True for a separated-isotope label: symbol, hyphen, mass number."""
+    return _SEPARATED_LABEL.fullmatch(label) is not None
+
+
+def decided_by_value(
+    key: tuple[int, int], evidence: str, block: Sequence[CaptureCellRow]
+) -> bool:
+    """Whether a capture record's flag is decided by comparing its value with the printed cells.
+
+    True on the two shapes the isotope audit cannot settle from the listing alone: the primary
+    prints a natural-composition entry AND a separated isotope of the record's ``A``, and ``A`` is
+    also the ``round(Ar)`` the audit's evidence states -- so the key names either entry; or no
+    printed label at that Z carries the record's ``A`` at all.
+    """
+    _, a = key
+    labels = [cell.label for cell in block]
+    separated = {int(label.split("-")[1]) for label in labels if is_separated_label(label)}
+    natural = any(not is_separated_label(label) for label in labels)
+    stated = re.search(r"round\(Ar\)=(\d+)", evidence)
+    collision = natural and a in separated and stated is not None and int(stated.group(1)) == a
+    absent = a not in separated
+    return collision or absent
+
+
+def printed_matches(
+    value: float, unc: float, block: Sequence[CaptureCellRow]
+) -> tuple[CaptureCellRow, ...]:
+    """The cells of a block whose rate AND uncertainty the compiled-in pair equals at the
+    primary's printed precision."""
+    return tuple(
+        cell for cell in block
+        if agrees_at_printed_precision(value, cell.rate)
+        and agrees_at_printed_precision(unc, cell.rate_unc)
+    )
+
+
+def render_cell(cell: CaptureCellRow) -> str:
+    """One cell as the primary prints it: label, value, uncertainty, the parentheses when the
+    primary prints them, and the ``Refs.`` cell in brackets."""
+    pair = f"{cell.rate} +- {cell.rate_unc}"
+    if cell.bracketed:
+        pair = f"({pair})"
+    return f"{cell.label} {pair} [{cell.refs}]"
+
+
+def render_cells(block: Sequence[CaptureCellRow]) -> str:
+    return "; ".join(render_cell(cell) for cell in block)
+
+
+def render_outcome(matches: Sequence[CaptureCellRow]) -> str:
+    """How many cells the compiled-in pair equals, named."""
+    if len(matches) == 1:
+        return f"the {matches[0].label} cell alone"
+    if not matches:
+        return "no cell"
+    return f"the {len(matches)} cells {', '.join(cell.label for cell in matches)}"
+
+
+def render_comparison(
+    z: int,
+    literal_value: str,
+    literal_unc: str,
+    block: Sequence[CaptureCellRow],
+    matches: Sequence[CaptureCellRow],
+) -> str:
+    """The comparison clause a decided-by-value row carries in its ``evaluation_method``: every
+    cell the primary prints at this Z, and which of them the compiled-in literals equal."""
+    locator = "; ".join(dict.fromkeys(cell.locator for cell in block))
+    copy_read = "; ".join(dict.fromkeys(cell.copy_read for cell in block))
+    return (
+        f"Compared with every Total Capture Rate cell the primary prints at Z={z} ({locator} "
+        f"[copy read: {copy_read}]): {render_cells(block)}; the compiled-in {literal_value} +- "
+        f"{literal_unc} equals {render_outcome(matches)} at the primary's printed precision."
+    )

@@ -24,6 +24,7 @@ consumer chooses by name rather than by hoping.
 | `d1_gp_sweep.oracle` | a harvested bit-parity fixture (section 4) |
 | `isotope_audit.csv` | the isotope-resolution audit against the primary literature (section 6) |
 | `zeff_audit.csv` | every `Z(Z_eff)` cell of the primary's Tables III and IV as printed, with the cells it underlines (section 5, F-5) |
+| `capture_rate_cells.csv` | every Total Capture Rate cell the primary prints at the Z of a capture row the audit had left open, as printed (section 6) |
 | `geant4_add_dataset.snippet` | the registration block, with the archive's MD5 |
 
 Both tables carry `#PROFILE parity` and `#SOURCESHA 8cc04f65977807f1848da7b958c421cd5e162f26`,
@@ -295,14 +296,11 @@ the first group is evidence about the model.
 What makes it land here is which elements those are. Of the nine the sentence names, **seven carry at
 least one record this audit establishes as a separated isotope** — Cl, Cr, Ni, Cu, Br, U and Pu. The
 two exceptions are instructive rather than incidental. **Ca** appears once, as a natural-composition
-record. **Sr** appears once too, and it is one of the four records this dataset **cannot settle** —
+record. **Sr** appears once too, and it is one of the three records this dataset **cannot settle** —
 `(38, 88)`, where the primary prints both natural Sr and Sr-88 and the key matches either.
 
-Sharper still: **all four of the records this dataset cannot settle sit at elements this sentence
-names.** Three of them — `(17, 35)` Cl, `(24, 52)` Cr and `(38, 88)` Sr — are rows where the primary
-prints *both* a natural-composition entry and a separated isotope of that mass number, so the key
-cannot say which one the record reproduces; and two of those three, Cl and Sr, are named in the half
-of the sentence that doubts the separated-isotope *experiment*. The fourth, `(92, 236)` U, is open
+Sharper still: **all three of the records this dataset cannot settle sit at elements this sentence
+names.** `(92, 236)` U is open
 for an unrelated reason — the primary's table carries no U-236 row at all — and U is named in the
 model half, where the complaint is about the formula rather than about the data.
 
@@ -312,7 +310,7 @@ a row because the *key* fails to distinguish two printed entries; the primary do
 directions: **Cr** carries exactly the same key ambiguity yet sits in the half of the sentence that
 uses its experiments as evidence *against* the formula, while **Cu** and **Br** carry the primary's
 doubt and are settled here as separated isotopes with no ambiguity at all. What is true is narrower
-and still worth saying: the two overlap at Cl and Sr, and they overlap because a separated-isotope
+and still worth saying: the two overlap at Sr, and they overlap because a separated-isotope
 entry can only be there to be ambiguous with where separated-isotope work was done — which is also
 where these authors had something to say about isotopic effects.
 
@@ -356,8 +354,8 @@ draw.
 **In this release the capture flags are established from the primary literature, row by row.** Each
 of the 90 records was checked against the paper its own value is attributed to — the capture table
 to Suzuki, Measday & Roalsvig (1987), hydrogen and helium to the two sources the source comment
-carves them out to. **86 of the 90 are settled and carry `needs_verification: false`; 4 are not and
-still carry `true`.** Of the settled rows, **45 are `isotope_resolved: true`**: 23 because the
+carves them out to. **87 of the 90 are settled and carry `needs_verification: false`; 3 are not and
+still carry `true`.** Of the settled rows, **46 are `isotope_resolved: true`**: 24 because the
 primary lists a separated isotope with that mass number, 19 because the element is mononuclidic and
 so a natural-composition target *is* a single nuclide, and 3 — the hydrogen and helium records —
 because the sources the table carves them out to describe an isotopically distinct target
@@ -384,32 +382,39 @@ line, because that is where the *value* comes from and the two questions must no
 audit is shipped as `data/g4/d1/isotope_audit.csv` — one row per record, hand-authored, reviewable
 and diffable.
 
-**The four unsettled rows say so with an empty locator, and they are worth naming.** Three —
-`(17, 35)`, `(24, 52)` and `(38, 88)` — sit where the primary lists *both* a natural-composition
-entry and a separated isotope of that mass number, and where the mass number is also the rounded
-standard atomic weight, so the key alone cannot say which entry the record reproduces. The fourth,
-`(92, 236)`, is a record whose nuclide the primary's table does not contain at all: it carries
-U-233, U-235 and U-238 and no U-236. Deciding these needs a value-level comparison against the
-primary, which is a later stage's work; this dataset reports them open rather than guessing.
+**The three unsettled rows say so with an empty locator, and they are worth naming.**
+The rows the audit had left open were compared with every Total Capture Rate cell the primary
+prints at their Z in Table IV, at the primary's printed precision, from a committed transcription
+of those cells (`data/g4/d1/capture_rate_cells.csv` — with the primary's parentheses, whose
+footnote reads *"Numbers are not given in original reference"*, and its `Refs.` column); a row
+whose value and uncertainty equal a printed cell and no other is settled to that entry, which is
+how the chlorine record became `isotope_resolved`, and the rows no cell equals stay open with the
+comparison recorded in their `evaluation_method`:
+
+| record | compiled-in value +- unc | Total Capture Rate cells the primary prints at this Z | equal at the printed precision |
+|---|---|---|---|
+| (24, 52) | 3.465 +- 0.026 | Cr 3.24 +- 0.08 [39]; Cr 3.33 +- 0.06 [48]; Cr 3.472 +- 0.031 [*]; Cr-50 3.825 +- 0.05 [72]; Cr-52 3.452 +- 0.047 [72]; Cr-53 3.297 +- 0.045 [72]; Cr-54 3.057 +- 0.042 [72]; Cr-nat 3.444 +- 0.047 [72] | no cell |
+| (38, 88) | 6.93 +- 0.12 | Sr 7.25 +- 0.14 [48]; Sr 7.02 +- 0.14 [*]; Sr-88 6.61 +- 0.27 [48] | no cell |
+| (92, 236) | 13.90 +- 0.40 | U-233 (15.8 +- 0.9) [61f]; U-233 (14.23 +- 0.15) [70f]; U-235 (14.9 +- 0.6) [61f]; U-235 (14.7 +- 1.0) [60f]; U-235 (12.9 +- 0.4) [62f]; U-235 (13.3 +- 0.2) [57f]; U-235 (13.36 +- 0.12) [70f]; U-235 13.58 +- 0.12 [25f]; U-238 (13.1 +- 0.5) [61f]; U-238 (12.9 +- 0.5) [60f]; U-238 (12.8 +- 0.2) [62f]; U-238 (12.60 +- 0.04) [66f]; U-238 (12.46 +- 0.09) [57f]; U-238 (12.50 +- 0.10) [70f]; U-238 (12.4 +- 0.4) [71f]; U-238 12.57 +- 0.07 [25f] | no cell |
 
 **What changed, and why the previous rule was not enough.** The earlier release derived the flag
 mechanically: `true` if and only if the row's Z carried more than one capture record. Its soundness
 argument was about the *Z* — two differing rates at one Z do show the underlying data distinguishes
 isotopes — and it was then applied to each *row* of that Z, which does not follow, since one of
 those rows can still be the natural-composition entry. The audited flag differs from that rule on
-**28 of the 90 records**, and the three ways it differs are not the same claim:
+**27 of the 90 records**, and the three ways it differs are not the same claim:
 
 * **23** the rule called unresolved that the primary establishes as resolved.
 * **2** the primary flatly contradicts: it lists "C" and "C-13", and "O" and "O-18", so `(6, 12)`
   and `(8, 16)` are natural carbon and natural oxygen, not C-12 and O-16.
-* **3** — `(17, 35)`, `(24, 52)`, `(92, 236)` — where the primary does not contradict the rule but
+* **2** — `(24, 52)`, `(92, 236)` — where the primary does not contradict the rule but
   **fails to establish the question it was answering**, so the flag falls back to "not established"
   and `needs_verification` stays `true`. Counting these as "the rule was wrong" would overstate it;
   counting them as agreement would hide an open question.
 
-Three of the four unsettled rows appear in that list and one does not, which is not an oversight:
+Two of the three unsettled rows appear in that list and one does not, which is not an oversight:
 `(38, 88)` is the only capture record at Z=38, so the old rule called it unresolved as well, and
-rule and audited flag agree. The four open rows and the 28 disagreements are different sets and do
+rule and audited flag agree. The three open rows and the 27 disagreements are different sets and do
 not line up row for row.
 
 The `zeff` rows remain `false` throughout, as a fact rather than a default: an effective charge is a
