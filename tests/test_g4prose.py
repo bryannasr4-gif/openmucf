@@ -228,6 +228,8 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
     vendored_readme = "third_party/geant4/README.md"
     bd = parity.VENDORED.read_bytes()
     hp = parity.HELPER.read_bytes()
+    beta_bd = parity.BETA_BOUND_DECAY.read_bytes()
+    beta_hp = parity.BETA_HELPER.read_bytes()
     # The error codes the format defines are the codes its specification names, and the reference
     # implementation raises the same set; the changelog's spelled count is held to it.
     codes_specified = set(re.findall(r"\bE0\d\d\b", (REPO / "FORMAT_SPEC.md").read_text("utf-8")))
@@ -322,6 +324,18 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
             r"\| `G4MuonicAtomHelper\.cc` size \| (\d+) bytes, \d+ lines \|", (1,), len(hp)),
         Pin("vendored helper size, lines", vendored_readme,
             r"\| `G4MuonicAtomHelper\.cc` size \| \d+ bytes, (\d+) lines \|", (1,), hp.count(b"\n")),
+        Pin("vendored beta BoundDecay size, bytes", vendored_readme,
+            r"\| `v11\.5\.0\.beta/G4MuonMinusBoundDecay\.cc` size \| (\d+) bytes, \d+ lines \|",
+            (1,), len(beta_bd)),
+        Pin("vendored beta BoundDecay size, lines", vendored_readme,
+            r"\| `v11\.5\.0\.beta/G4MuonMinusBoundDecay\.cc` size \| \d+ bytes, (\d+) lines \|",
+            (1,), beta_bd.count(b"\n")),
+        Pin("vendored beta helper size, bytes", vendored_readme,
+            r"\| `v11\.5\.0\.beta/G4MuonicAtomHelper\.cc` size \| (\d+) bytes, \d+ lines \|",
+            (1,), len(beta_hp)),
+        Pin("vendored beta helper size, lines", vendored_readme,
+            r"\| `v11\.5\.0\.beta/G4MuonicAtomHelper\.cc` size \| \d+ bytes, (\d+) lines \|",
+            (1,), beta_hp.count(b"\n")),
         Pin("error codes the format defines, the changelog's count", "CHANGELOG.md",
             r"\*\*(\w+) exact error codes\*\*", (1,), error_codes),
     ]

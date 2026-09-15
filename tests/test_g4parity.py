@@ -56,6 +56,23 @@ ORACLE = D1DIR / "d1_gp_sweep.oracle"
 UPSTREAM_BLOB_ID = "29bd73719cd619de34ef83ca5ca076ceadf1cc5a"
 UPSTREAM_SHA256 = "860dcdb53167c6437484b12c05ac1ab2eae4a6a52886af83fcf4394611882813"
 
+#: The same two files at the later tag, vendored beside the v11.4.2
+#: copies as evidence and never as a source: nothing D1 ships is generated from them. Each pin is
+#: upstream's own object name for the bytes at that tag's commit, verifiable the same way.
+BETA_TAG = "v11.5.0.beta"
+BETA_COMMIT = "f3d5293d384757b8a228a099898b2b87cfa4023c"
+BETA_DIR = REPO / "third_party" / "geant4" / BETA_TAG
+BETA_BOUND_DECAY = BETA_DIR / VENDORED.name
+BETA_HELPER = BETA_DIR / HELPER.name
+BETA_BLOB_IDS = {
+    VENDORED.name: "ff95c000f2cc3f6cfd6b835bade304e05af9feb5",
+    HELPER.name: "8c2c37a99cdb3effd3ce7f1898488ad75f82b3fd",
+}
+BETA_SHA256S = {
+    VENDORED.name: "bb925829e0acaa7fa3efd4560d954dd2f58f344fd155cdb3ce2554bd77539288",
+    HELPER.name: "d020924b759ad1149cf74e2955eeffede84bc55c8be4ffb364385cc803720e2a",
+}
+
 
 def git_blob_id(data: bytes) -> str:
     """Git's object name for ``data`` as a blob: ``sha1("blob <len>\\0" + data)``.
@@ -140,11 +157,11 @@ def test_t41_vendored_source_has_no_carriage_returns():
 def test_t80_the_vendored_readme_pins_are_computed_from_the_vendored_bytes():
     """Every pin cell of `third_party/geant4/README.md`, read from its table by row label, equals
     the value computed from the vendored file it describes: the BoundDecay blob id, sha256 and
-    size, the helper's size, and the blob id the fenced example prints as its own comment. T-40
-    and T-69 hold the module's pins to the bytes; until this test nothing held the README's copy of
-    the BoundDecay pins or the example's comment, so a re-pin would have left them stale and read
-    by no check. The size cell is compared the way T-69 already compares the helper's: bytes, and
-    newline count as the line count.
+    size, the helper's size, the blob id the fenced example prints as its own comment, and, in the
+    second table, the beta tag's commit and each beta copy's blob id, sha256 and size. T-40 and
+    T-69 hold the module's pins to the bytes; this test holds the README's copies and the
+    example's comment to the same bytes. The size cell is compared the way T-69 already compares
+    the helper's: bytes, and newline count as the line count.
     """
     readme = VENDORED_README.read_text("utf-8")
 
@@ -152,6 +169,23 @@ def test_t80_the_vendored_readme_pins_are_computed_from_the_vendored_bytes():
         hits = re.findall(rf"^\| {label} \| `?([^`|]+?)`? \|$", readme, re.M)
         assert len(hits) == 1, f"row {label!r}: {hits}"
         return hits[0]
+
+    assert cell(re.escape(f"`{BETA_TAG}` commit")) == BETA_COMMIT, (
+        "the beta `commit` cell is not the pinned beta commit"
+    )
+    for name, beta_path in ((VENDORED.name, BETA_BOUND_DECAY), (HELPER.name, BETA_HELPER)):
+        beta = beta_path.read_bytes()
+        beta_lines = beta.count(b"\n")
+        label = re.escape(f"`{BETA_TAG}/{name}`")
+        assert cell(label + r" \*\*git blob id\*\*") == git_blob_id(beta), (
+            f"the beta {name} `git blob id` cell is not the blob id of the vendored beta bytes"
+        )
+        assert cell(label + " sha256") == hashlib.sha256(beta).hexdigest(), (
+            f"the beta {name} `sha256` cell is not the sha256 of the vendored beta bytes"
+        )
+        assert cell(label + " size") == f"{len(beta)} bytes, {beta_lines} lines", (
+            f"the beta {name} `size` cell is not the vendored beta file's byte and newline count"
+        )
 
     data = VENDORED.read_bytes()
     assert cell(r"\*\*git blob id\*\*") == d1.UPSTREAM_BLOB_ID, (
@@ -2586,3 +2620,110 @@ def test_t86_zero_rows_fixtures_are_copies_of_shipped_oracle_lines():
                 census[section(line)] += 1
         wanted = {name: (0 if empty is None or name == empty else 1) for name in census}
         assert census == wanted, (stem, census)
+
+
+# --------------------------------------------------------------------------------------------
+# T-87, T-88 -- the v11.5.0.beta copies: upstream's bytes, carrying the same tables as v11.4.2
+# --------------------------------------------------------------------------------------------
+
+#: The `D1Extraction` fields that are source positions, not content. The beta re-sorted its
+#: include blocks, so every position is free to move while every table stays where it is.
+POSITION_FIELDS = frozenset({"capture_lines", "zeff_lines"})
+
+
+def assert_same_tables(found: d1.D1Extraction, reference: d1.D1Extraction) -> None:
+    """Every `D1Extraction` field but the source positions, compared one at a time and named.
+
+    Field by field, so a failure says which table moved -- `capture_records`, `zeff`, a comment
+    line, a fallback coefficient -- rather than that two large records differ somewhere.
+    """
+    for field in dataclasses.fields(d1.D1Extraction):
+        if field.name in POSITION_FIELDS:
+            continue
+        left, right = getattr(found, field.name), getattr(reference, field.name)
+        assert left == right, f"{field.name} differs between the two vendored copies"
+
+
+def beta_pair(copy: d1.SourceCopy) -> tuple[d1.D1Extraction, d1.D1Extraction]:
+    """`(beta, v11.4.2)` extractions of one compiled-in copy, each straight from its vendored file."""
+    paths = {d1.BOUND_DECAY.name: (BETA_BOUND_DECAY, VENDORED), d1.HELPER.name: (BETA_HELPER, HELPER)}
+    beta_path, reference_path = paths[copy.name]
+    return (
+        d1.extract(beta_path.read_text("ascii"), copy),
+        d1.extract(reference_path.read_text("ascii"), copy),
+    )
+
+
+@pytest.mark.parametrize("path", [BETA_BOUND_DECAY, BETA_HELPER], ids=lambda p: p.name)
+def test_t87_the_beta_copies_are_the_pinned_upstream_blobs(path: pathlib.Path):
+    """Each beta copy is upstream's file at the beta commit, proven by upstream's own object name,
+    with the sha256 recorded alongside and no CR byte -- the same three guards T-40 and T-41 put
+    on the v11.4.2 copies, so the beta directory holds exactly the two pinned files."""
+    data = path.read_bytes()
+    assert b"\r" not in data, (
+        "the checkout rewrote the vendored beta file's line endings: check that .gitattributes "
+        "still carries `third_party/geant4/** -text`"
+    )
+    assert git_blob_id(data) == BETA_BLOB_IDS[path.name], (
+        "the vendored beta file is not the pinned upstream blob at the beta commit"
+    )
+    assert hashlib.sha256(data).hexdigest() == BETA_SHA256S[path.name]
+    assert {p.name for p in BETA_DIR.iterdir() if p.is_file()} == set(BETA_BLOB_IDS)
+
+
+@pytest.mark.parametrize("copy", [d1.BOUND_DECAY, d1.HELPER], ids=lambda c: c.name)
+def test_t87_the_beta_tables_equal_the_v11_4_2_tables_field_by_field(copy: d1.SourceCopy):
+    """The tables compiled into the beta are the tables compiled into v11.4.2: every extracted
+    field but the source positions is equal, for both compiled-in copies. This is what lets the
+    dataset's `#SOURCESHA` stay at the revision it was generated from while the overlay targets
+    both revisions."""
+    beta, reference = beta_pair(copy)
+    assert_same_tables(beta, reference)
+
+
+def test_t87_the_beta_bound_decay_reproduces_the_oracle_digest():
+    """The reference implementation, fed the beta BoundDecay's records, effective charges and
+    fallback coefficients, reproduces the full-sweep digest the oracle harvested from the v11.4.2
+    build."""
+    beta, _ = beta_pair(d1.BOUND_DECAY)
+    coefficients = beta.coefficients
+    model = d1.GoulardPrimakoff(
+        b0a=float(coefficients["b0a"]), b0b=float(coefficients["b0b"]),
+        b0c=float(coefficients["b0c"]), t1=float(coefficients["t1"]),
+        xmu_coeff=float(coefficients["xmu_coeff"]), mix=float(coefficients["mix"]),
+        zmin=int(coefficients["zmin"]), zmax=int(coefficients["zmax"]),
+        zeff=tuple(beta.zeff),
+    )
+    expected = read_oracle()["header"]["fullsweep_sha256"]
+    assert re.fullmatch(r"[0-9a-f]{64}", expected), expected
+    assert d1.sweep_digest(beta.capture_records, model) == expected
+
+
+def _mutated_on_line(text: str, lineno: int, literal: str) -> str:
+    """`text` with the first occurrence of `literal` on line `lineno` given one more digit."""
+    lines = text.split("\n")
+    assert literal in lines[lineno - 1], (lineno, literal)
+    lines[lineno - 1] = lines[lineno - 1].replace(literal, literal + "1", 1)
+    return "\n".join(lines)
+
+
+def test_t88_drill_a_changed_beta_capture_rate_is_named_as_capture_records():
+    """Alter one `capRates` literal of the beta text in memory: the field comparison must fail,
+    and name `capture_records` -- the table the change belongs to, not a later field."""
+    beta, reference = beta_pair(d1.BOUND_DECAY)
+    text = BETA_BOUND_DECAY.read_text("ascii")
+    mutated = _mutated_on_line(text, beta.capture_lines[0], beta.capture_literals[0][0])
+    assert mutated != text
+    with pytest.raises(AssertionError, match=r"\Acapture_records differs"):
+        assert_same_tables(d1.extract(mutated, d1.BOUND_DECAY), reference)
+
+
+def test_t88_drill_a_changed_beta_zeff_is_named_as_zeff():
+    """Alter one `zeff` literal of the beta text in memory: the field comparison must fail, and
+    name `zeff` -- with every capture field still equal, so the name is the changed table's."""
+    beta, reference = beta_pair(d1.BOUND_DECAY)
+    text = BETA_BOUND_DECAY.read_text("ascii")
+    mutated = _mutated_on_line(text, beta.zeff_lines[0], beta.zeff_literals[0])
+    assert mutated != text
+    with pytest.raises(AssertionError, match=r"\Azeff differs"):
+        assert_same_tables(d1.extract(mutated, d1.BOUND_DECAY), reference)

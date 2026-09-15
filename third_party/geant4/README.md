@@ -13,6 +13,8 @@ Software License they are distributed under.
 | `LICENSE` | Geant4 Software License v1.0, verbatim |
 | `v11.4.2/G4MuonMinusBoundDecay.cc` | the upstream source file, **byte-for-byte unmodified** |
 | `v11.4.2/G4MuonicAtomHelper.cc` | the upstream source file carrying the second compiled-in copy of the same capture and effective-charge tables, **byte-for-byte unmodified** |
+| `v11.5.0.beta/G4MuonMinusBoundDecay.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified**; its tables are proved equal to the `v11.4.2` copy's by `tests/test_g4parity.py` |
+| `v11.5.0.beta/G4MuonicAtomHelper.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified**; its tables are proved equal to the `v11.4.2` copy's by `tests/test_g4parity.py` |
 
 `G4MuonMinusBoundDecay.cc` carries Geant4's compiled-in muon-capture data: a 90-record
 `{Z, A, cRate, cRErr}` table, a 101-value effective-charge (`zeff`) table, and the
@@ -55,6 +57,18 @@ print(hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest())
 
 A sha256 is recorded alongside each because SHA-1 is a **provenance pin** here, not a security
 control, and saying so is cheaper than defending it later.
+
+## The pins — v11.5.0.beta
+
+| Fact | Value |
+|---|---|
+| `v11.5.0.beta` commit | `f3d5293d384757b8a228a099898b2b87cfa4023c` |
+| `v11.5.0.beta/G4MuonMinusBoundDecay.cc` **git blob id** | `ff95c000f2cc3f6cfd6b835bade304e05af9feb5` |
+| `v11.5.0.beta/G4MuonMinusBoundDecay.cc` sha256 | `bb925829e0acaa7fa3efd4560d954dd2f58f344fd155cdb3ce2554bd77539288` |
+| `v11.5.0.beta/G4MuonMinusBoundDecay.cc` size | 15642 bytes, 396 lines |
+| `v11.5.0.beta/G4MuonicAtomHelper.cc` **git blob id** | `8c2c37a99cdb3effd3ce7f1898488ad75f82b3fd` |
+| `v11.5.0.beta/G4MuonicAtomHelper.cc` sha256 | `d020924b759ad1149cf74e2955eeffede84bc55c8be4ffb364385cc803720e2a` |
+| `v11.5.0.beta/G4MuonicAtomHelper.cc` size | 13695 bytes, 397 lines |
 
 `.gitattributes` marks `third_party/geant4/** -text`. That line is load-bearing: each file's
 identity *is* its bytes, so a checkout with `core.autocrlf` set would rewrite them and break the

@@ -74,9 +74,11 @@ class G4MuonicDataTable {
   // The distinct `#PROFILE` values among the tables, bytewise sorted.
   std::vector<std::string> Profiles() const;
 
-  // Overlay opt-in: a plain process-wide flag. Nothing in this reader consults it; it exists so a
-  // consumer that falls through to compiled-in values can make that fall-through explicit.
+  // Overlay opt-in: a plain process-wide flag, set and cleared by a consumer. Nothing in this
+  // reader consults it; it exists so a consumer that falls through to compiled-in values can make
+  // that fall-through explicit.
   static void Enable();
+  static void Disable();
   static bool IsEnabled();
 
   // FORMAT_SPEC.md 2.3 rules 4-5 and section 6, for one float-column field. Returns "" and sets

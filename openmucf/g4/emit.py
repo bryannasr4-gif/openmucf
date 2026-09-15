@@ -67,7 +67,7 @@ def dataset_directory(name: str, version: str) -> str:
 
 def archive_name(filename: str, version: str) -> str:
     """The packed dataset's file name: ``FILE = FILENAME.VERSION.EXTENSION``, per the rule at
-    ``cmake/Modules/G4InstallData.cmake`` line 230 of Geant4 v11.4.2."""
+    ``cmake/Modules/G4InstallData.cmake`` lines 229-230 of Geant4 v11.4.2."""
     return f"{filename}.{version}.{ARCHIVE_EXTENSION}"
 
 
