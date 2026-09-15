@@ -5,7 +5,7 @@
 #SEAM         d1_nuclear_capture
 #TABLE        nuclear_capture_rate
 #GENERATOR    openmucf-g4 1.2.0
-#SOURCEDIGEST 3bc14a00822de9710d1dac0efd7a497f2676a04322087e2c970e537068e40eda
+#SOURCEDIGEST ef512c3374468fdcf72cb853f0e558647a33b8c12f49a27f688bd955fdfa37fd
 #UNITS        value=1e6/s unc=1e6/s
 #COLUMNS      Z A value unc
 #VALIDITY     Z:12-47 A:natural_and_listed

@@ -352,9 +352,6 @@ MIZUNO_METHOD = (
     "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its "
     "measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here"
 )
-#: A key this file does not carry is a miss, and the reader's rule for a miss is the compiled-in
-#: table; the file declares no `#FALLBACK` of its own.
-MIZUNO_FALLTHROUGH = "a key this profile does not carry falls through to the compiled-in table"
 MIZUNO_COPY = "copy read: arXiv:2501.05897v2 HTML; the journal version is unread"
 
 
@@ -369,10 +366,6 @@ def _mizuno_conditions(row: mizsrc.Table3Row, printed: tuple[mizsrc.Table1Row, .
         parts.append(f'Table 1 row: "{r.form}", lifetime {r.lifetime_ns}({r.lifetime_unc_ns}) ns')
     if row.note:
         parts.append(f'Table 3 footnote: "{row.note}"')
-    parts.append(
-        'the printed uncertainty is the "Total" column of Table 2, "Systematic breakdown of the '
-        'uncertainty"'
-    )
     parts.append(MIZUNO_COPY)
     return "; ".join(parts)
 
@@ -386,11 +379,9 @@ def build_mizuno_capture_document(found: mizsrc.Mizuno2025Extraction) -> provena
         rows[f"{row.z}-{row.a}"] = provenance.ProvRow(
             source_bibkey=mizsrc.BIBKEY,
             source_locator=f"{row.locator} [copy read: {row.copy_read}]",
-            # The primary's own label for its printed +- is the "Total" of its uncertainty
-            # breakdown, quoted in `conditions`: an experimental uncertainty, so `exp`.
             unc_type="exp",
             conditions=_mizuno_conditions(row, printed),
-            validity_range=f"{where}; {MIZUNO_FALLTHROUGH}",
+            validity_range=f"{where}",
             evaluation_method=MIZUNO_METHOD,
             # Derived from the primary's own comparison column: a target it prints no earlier
             # lifetime for is one it alone has measured.
@@ -416,8 +407,7 @@ def build_mizuno_capture_document(found: mizsrc.Mizuno2025Extraction) -> provena
 
 def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) -> spec.G4DatTable:
     """Layer 1 for the ``mizuno2025`` capture table: the printed decimals, records ascending by
-    ``(Z, A)``. No ``#SOURCESHA`` (the file reproduces no upstream revision) and no ``#FALLBACK``
-    (a miss falls through to the compiled-in table by the reader's rule)."""
+    ``(Z, A)``. No ``#SOURCESHA`` (the file reproduces no upstream revision) and no ``#FALLBACK``."""
     z_values = sorted({row.z for row in found.table3})
     directives = {
         "GRAMMAR": spec.GRAMMAR_VERSION,
