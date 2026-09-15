@@ -2723,7 +2723,8 @@ def beta_pair(copy: d1.SourceCopy) -> tuple[d1.D1Extraction, d1.D1Extraction]:
 def test_t87_the_beta_copies_are_the_pinned_upstream_blobs(path: pathlib.Path):
     """Each beta copy is upstream's file at the beta commit, proven by upstream's own object name,
     with the sha256 recorded alongside and no CR byte -- the same three guards T-40 and T-41 put
-    on the v11.4.2 copies, so the beta directory holds exactly the two pinned files."""
+    on the v11.4.2 BoundDecay copy and T-69 puts on the v11.4.2 helper copy, so the beta directory
+    holds exactly the two pinned files."""
     data = path.read_bytes()
     assert b"\r" not in data, (
         "the checkout rewrote the vendored beta file's line endings: check that .gitattributes "
