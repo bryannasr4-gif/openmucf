@@ -37,6 +37,7 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 1b5ffa7747e45682bd46a6847544a93d438e010d	CHANGELOG.md	REGISTERED: checked against VALID_NUMERAIRE and MUCF_CHAIN, which hold the electrical denominators and the five chain stages respectively, so the code the entry describes types wall-plug as a numeraire.
 1d8fd6bb9c6f47eaa9e08b20dd8ceec35faf95da	CHANGELOG.md	EXERCISED: tests/test_ledger_claims.py::test_unwrappable_paths_cannot_wrap
 2092be5a6d519a56ab782e80bba60924acd54c7d	CHANGELOG.md	REGISTERED: this entry's own heading; checked against the branch diff when written -- the regenerated documents differ in wording and manifest input digests only, and the suite's pass count is unchanged
+2230981652f7f2e2896294d13b50fb7040462219	CHANGELOG.md	EXERCISED: tests/test_g4parity.py::test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row
 23de6bf2d07ffe7694141568642da452b22b1986	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 25284843c59ceef5a2d3963308d2b62dbfb50106	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
 274acf18fb8c5fa2a178af560b76c52c4a695be1	CHANGELOG.md	REGISTERED: a line of this entry's admission bullet; the record matches the shipped tables and fixture rows.
@@ -77,7 +78,6 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	UNREVIEWED
 6a5c6eafa1136de71d1af59340a1f113046316b7	CHANGELOG.md	REGISTERED: a line of this entry's account of the two changes; the equality is asserted by test_unwrappable_paths_cannot_wrap.
 6a6a8d42239c1769e216c931f6b35849b31d987c	CHANGELOG.md	REGISTERED: the three medians and the value were re-derived at this head and printed by the generator itself -- tier medians T1=4.85, T2=178, T3=4993, gap 1029.5x, and Bertin 7.80 -- identically before and after the CSV edit, and the regenerated manifests' entries blocks are byte-identical to the committed ones.
-6a6b45dfcb52bc7456ad2d97e0596c4caacc23fb	CHANGELOG.md	EXERCISED: tests/test_g4parity.py::test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row
 6b83d87f1b78580841b781efef0fef247e24072b	CHANGELOG.md	REGISTERED: changelog narrative for the charge-basis aggregate correction; every number it states is recomputed by tests/test_mucost.py and every claim about the documents is asserted against the committed bytes there. Read and judged against the tree when written.
 6e9844c6d1af57dbc5a9f8ecd94846fcc07af654	CHANGELOG.md	UNREVIEWED
 6edbcbd2aeff85bef58c1ee57830a7dfae20ed3c	CHANGELOG.md	UNREVIEWED

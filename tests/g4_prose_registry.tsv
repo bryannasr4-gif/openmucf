@@ -45,6 +45,7 @@
 2087cb71dddadd0ad2a82add96ce66e1c597f4df	CHANGELOG.md	REGISTERED: 0.14, 13.9 -- `omega_tt` = 0.14 in openmucf/data/rates.csv and the corroborating 13.9(1.5)% its row notes
 211d9f1db07f859b3f9c1de54568e433884d7ba7	CHANGELOG.md	REGISTERED: 112.6, 156.5, 10 -- Kou–Chen's published yields and the ±10% tolerance, benchmarks/kou-chen-2026.json
 21e9a7aa2e064a5d45a6d256cabd4cfb925e831c	CHANGELOG.md	REGISTERED: 1 -- the line the plural forms added, a dated count
+2230981652f7f2e2896294d13b50fb7040462219	CHANGELOG.md	REGISTERED: 0 -- `A = 0`, the key a natural-composition target carries under A:natural_and_listed; T-92 holds every such record of the shipped file
 23d0f7b3fb05e61bb744af95870fc8035c5341be	CHANGELOG.md	REGISTERED: two -- the two changes this heading's entry enumerates
 2511a37a08845683561e23a54442f437d06ca4b6	CHANGELOG.md	REGISTERED: two -- the two residue measurements the next sentences restate
 252b4d0c4119a09f620085ed5c0c5d9b686f70e1	CHANGELOG.md	REGISTERED: one, Three -- VALIDATION.md's summary counts the three Yamashita rows as one test; the three targets the sentence goes on to enumerate
@@ -141,7 +142,6 @@
 69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	REGISTERED: 20, 17 -- '~20×/~17× low', the Faifman1989 rows' notes in VALIDATION.md
 6a48a2cb23b82f498f9729488fb0a233ea7f6f54	CHANGELOG.md	REGISTERED: one -- 'more than one record', 'Every one': pronouns
 6a6a8d42239c1769e216c931f6b35849b31d987c	CHANGELOG.md	REGISTERED: 7.80, 4.85, 178, 4993 -- MUON_COST.md's Bertin figure and its tier medians
-6a6b45dfcb52bc7456ad2d97e0596c4caacc23fb	CHANGELOG.md	REGISTERED: 0 -- `A = 0`, the key a natural-composition target carries under A:natural_and_listed; T-92 holds every such record of the shipped file
 6e9844c6d1af57dbc5a9f8ecd94846fcc07af654	CHANGELOG.md	REGISTERED: 8, 64 -- `n_synth` before and after; DESIGN.md prints n_synth=64
 6eef3a6d34f3ee5fd412ce14d0907370e9cd2c9f	CHANGELOG.md	REGISTERED: 43 -- the test count as the v1.0.0 notes recorded it
 6f8ad5c08d2e8b6bab07e336f6cd9edc07a14092	CHANGELOG.md	REGISTERED: 4.4, 1.6 -- the noise's relative and absolute spread across cells, as scripts/generate_design.py's preamble records it

@@ -2305,12 +2305,6 @@ def document_pins() -> DocumentPins:
         ("findings in total", r"settled questions\*\*, not (\w+) defects", findings),
         ("maximum ulp over the diagnostic subset",
          r"every one bit-for-bit, maximum (\d+) ulp", max_ulp_subset),
-        ("pairs on which the second capture profile differs from the compiled-in table",
-         r"differs from the compiled-in table on (\d+) of the \d+ keys both carry",
-         len(crosscheck_disagreements)),
-        ("pairs the cross-check between the two capture profiles forms",
-         r"differs from the compiled-in table on \d+ of the (\d+) keys both carry",
-         len(crosscheck_pairs)),
     ]
     # A string the changelog states about a shipped file, read from that file: the dataset version
     # the entry names is the `#VERSION` the committed capture table carries.

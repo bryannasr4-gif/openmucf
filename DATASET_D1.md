@@ -456,11 +456,11 @@ Table 1 rows, marked there by a footnote that the row's provenance quotes.
 
 The keys follow the primary's labels. An enriched isotope or a mononuclidic element is keyed by its
 mass number and is `isotope_resolved`; a natural-composition target is keyed by `A = 0`, which the
-table admits with `A:natural_and_listed`, and is not. A key this profile does not carry falls
-through to the compiled-in table: the file declares no `#FALLBACK`, and, because it reproduces no
+table admits with `A:natural_and_listed`, and is not.
+The file declares no `#FALLBACK`, and, because it reproduces no
 upstream revision, no `#SOURCESHA`.
 
-**Where the profiles disagree.** For every key both profiles carry, the value and its uncertainty
+**Where the profiles disagree.** The value and its uncertainty
 were compared at the primary's printed precision, a natural-composition key against the compiled-in
 row of that element. The test suite derives from the shipped files the pairs whose value or
 uncertainty differs and requires this table to list exactly those pairs, the `parity` cells as the

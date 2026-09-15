@@ -15,9 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A second profile of the capture table, `d1_capture.mizuno2025.g4dat`, generated from committed
   transcriptions of Table 1 and Table 3 of Mizuno et al., Phys. Rev. C **112**, 024307 (2025).**
   Enriched and mononuclidic nuclides are keyed by mass number and natural-composition targets by
-  `A = 0` under `A:natural_and_listed`, and every value is carried as the primary prints it. At the
-  primary's printed precision the profile differs from the compiled-in table on 6 of
-  the 6 keys both carry, and `DATASET_D1.md` section 9 lists the pairs. The change moves
+  `A = 0` under `A:natural_and_listed`, and every value is carried as the primary prints it.
+  `DATASET_D1.md` section 9 lists the pairs. The change moves
   the dataset's `#VERSION` to 0.3.0.
 - **The dataset archive in Geant4's layout**: it unpacks to the `G4MuonicData<version>` directory
   and carries generated `README` and `History` members (T-81, T-82).
