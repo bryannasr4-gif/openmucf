@@ -40,6 +40,7 @@ import openmucf
 from openmucf import rates
 from openmucf.g4 import emit, provenance, sources, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
+from openmucf.g4.sources import mizuno2025
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 VENDORED = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonMinusBoundDecay.cc"
@@ -1317,6 +1318,9 @@ CAPTURE_LAYER1 = D1DIR / "d1_capture.g4dat"
 CAPTURE_LAYER2 = D1DIR / "d1_capture.prov.json"
 ZEFF_LAYER1 = D1DIR / "d1_zeff.g4dat"
 ZEFF_LAYER2 = D1DIR / "d1_zeff.prov.json"
+#: The capture table's second profile, named by the profile as FORMAT_SPEC.md section 5 states.
+MIZUNO_LAYER1 = D1DIR / f"d1_capture.{mizuno2025.PROFILE}.g4dat"
+MIZUNO_LAYER2 = D1DIR / f"d1_capture.{mizuno2025.PROFILE}.prov.json"
 GENERATOR = REPO / "scripts" / "generate_g4data.py"
 
 
@@ -1686,7 +1690,9 @@ def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
     artifacts = sorted(D1DIR.glob("d1_*.g4dat")) + sorted(D1DIR.glob("*.prov.json")) + [
         D1DIR / "geant4_add_dataset.snippet"
     ]
-    assert len(artifacts) == 5, [p.name for p in artifacts]
+    # The files found on disk are exactly the ones the generator writes: a generated file the
+    # globs miss, or a stray file they catch, would make this drill prove less than it claims.
+    assert set(artifacts) == set(generator_module().build_d1_artifacts()[0]), [p.name for p in artifacts]
 
     def audit() -> subprocess.CompletedProcess:
         return subprocess.run(
@@ -2527,7 +2533,8 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     generator = generator_module()
     _, archive = generator.build_d1_artifacts()
     directory = emit.dataset_directory(generator.DATASET_NAME, generator.D1_VERSION)
-    committed = [CAPTURE_LAYER1.name, CAPTURE_LAYER2.name, ZEFF_LAYER1.name, ZEFF_LAYER2.name]
+    pairs = ((CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2), (MIZUNO_LAYER1, MIZUNO_LAYER2))
+    committed = [path.name for pair in pairs for path in pair]
     with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
         entries = opened.getmembers()
         names = [entry.name for entry in entries]
@@ -2544,9 +2551,12 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     assert len(notice) == 2, notice
     for line in notice:
         assert line in readme.splitlines(), line
-    for layer2 in (CAPTURE_LAYER2, ZEFF_LAYER2):
+    for layer1, layer2 in pairs:
         document = provenance.from_json_obj(json.loads(layer2.read_bytes().decode("ascii")))
-        assert f"{len(document.rows)} records" in readme, layer2.name
+        # On the README line that names THIS table's file, not anywhere in the document: two
+        # tables with the same count would otherwise vouch for each other.
+        (line,) = [text for text in readme.splitlines() if text.startswith(f"  - {layer1.name}:")]
+        assert line.endswith(f", {len(document.rows)} records"), line
     assert history.splitlines()[0] == f"History for {generator.DATASET_NAME} files:"
     assert generator.D1_VERSION in history
 
@@ -2781,8 +2791,6 @@ def test_t89_drill_a_token_dropped_from_either_cell_is_refused():
 # T-90 -- the mizuno2025 transcriptions: every structural rule of the loader fires on a fixture
 # --------------------------------------------------------------------------------------------
 
-from openmucf.g4.sources import mizuno2025  # noqa: E402
-
 MIZUNO_TABLE1 = REPO / mizuno2025.TABLE1_RELPATH
 MIZUNO_TABLE3 = REPO / mizuno2025.TABLE3_RELPATH
 
@@ -2869,3 +2877,70 @@ def test_t90_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, which, 
     paths[which].write_bytes(mutated.encode("utf-8"))
     with pytest.raises(mizuno2025.Mizuno2025Error, match=re.escape(message)):
         mizuno2025.load(paths[1], paths[3])
+
+
+# --------------------------------------------------------------------------------------------
+# T-92 -- what the mizuno2025 profile is allowed to claim, asserted row by row on the shipped pair
+# --------------------------------------------------------------------------------------------
+
+
+def test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row():
+    """The second capture profile's Layer 1 and Layer 2, against the transcriptions they were built
+    from: the printed decimals are the records, and every provenance field is what the profile's
+    rules say -- no upstream revision claimed, no fallback declared, every value read from the
+    primary itself, and the key scheme carrying the isotope disclosure."""
+    table, document = committed(MIZUNO_LAYER1, MIZUNO_LAYER2)
+    found = mizuno_extraction()
+    assert table.directives["PROFILE"] == mizuno2025.PROFILE == document.profile
+    assert "SOURCESHA" not in table.directives
+    assert "FALLBACK" not in table.directives
+    assert document.precedence == (mizuno2025.PROFILE,)
+    assert document.version == table.directives["VERSION"]
+    assert spec.validity_assignments(table)["A"] == spec.A_NATURAL_AND_LISTED
+    assert spec.natural_rows(table) == sum(1 for row in found.table3 if row.a == 0)
+    assert spec.natural_rows(table) > 0
+
+    by_key = {row.key: row for row in found.table3}
+    assert len(table.records) == len(by_key)
+    for z, a, value, unc in table.records:
+        printed = by_key[(int(z), int(a))]
+        # The record is the printed decimal, round-tripped through %.17g and nothing else.
+        assert value == float(printed.rate) and unc == float(printed.rate_unc), (z, a)
+
+    assert set(document.rows) == {f"{z}-{a}" for z, a in by_key}
+    for key, row in document.rows.items():
+        z, a = (int(part) for part in key.split("-"))
+        printed = by_key[(z, a)]
+        targets = found.table1_rows(printed.nuclide)
+        assert row.source_library == mizuno2025.PROFILE, key
+        assert row.source_bibkey == mizuno2025.BIBKEY, key
+        assert row.unc_type == "exp", key
+        assert row.evaluation_id == f"{mizuno2025.PROFILE}-table3", key
+        assert row.recommendation == "", key
+        assert row.needs_verification is False, key
+        assert row.isotope_resolved is (a != 0), key
+        assert "Table 3" in row.source_locator and "arxiv-html" in row.source_locator, key
+        assert row.source_locator == f"{printed.locator} [copy read: {printed.copy_read}]", key
+        assert row.single_source is (not any(r.has_suzuki_value for r in targets)), key
+        assert ("natural composition" in row.validity_range) is (a == 0), key
+        assert row.validity_range.startswith(f"Z={z} "), key
+        assert ("footnote" in row.conditions) is bool(printed.note), key
+        for target in targets:
+            lifetime = f"{target.lifetime_ns}({target.lifetime_unc_ns}) ns"
+            assert f'"{target.form}", lifetime {lifetime}' in row.conditions, key
+        assert "not re-derived" in row.evaluation_method, key
+
+
+def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_every_table():
+    """The Python mirror of the reader's directory rule over the shipped dataset: every file is
+    its own (profile, table) pair, `parity` carries every table any profile carries, and only
+    the second capture profile carries natural-composition rows."""
+    tables = spec.load_directory(D1DIR)
+    files = sorted(path.name for path in D1DIR.glob("*.g4dat"))
+    assert len(tables) == len(files), (sorted(tables), files)
+    for profile, name in tables:
+        assert (spec.PARITY_PROFILE, name) in tables, (profile, name)
+    assert {profile for profile, _ in tables} == {spec.PARITY_PROFILE, mizuno2025.PROFILE}
+    for (profile, _name), table in tables.items():
+        natural = spec.natural_rows(table)
+        assert (natural > 0) is (profile == mizuno2025.PROFILE), (profile, natural)

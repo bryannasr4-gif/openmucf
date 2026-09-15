@@ -100,9 +100,12 @@ def build_tarball(members: Mapping[str, bytes], *, directory: str) -> bytes:
         )
     stored: dict[str, bytes] = {}
     for name in sorted(members):
-        if not name or "/" in name or "\\" in name:
+        # A dot entry is a path, not a file name: `directory/.` and `directory/..` would unpack
+        # onto the directory itself or its parent, breaking the one-component rule from inside.
+        if not name or "/" in name or "\\" in name or name in (".", ".."):
             raise ValueError(
-                f"archive member name {name!r} must be a plain file name, with no path separator"
+                f"archive member name {name!r} must be a plain file name, with no path separator "
+                "and not a dot entry"
             )
         if not name.isascii():
             raise ValueError(
@@ -197,9 +200,9 @@ def readme_member(*, name: str, version: str, files: Sequence[TableEntry]) -> by
     lines = [
         dataset_directory(name, version),
         "",
-        "The data in this directory are read by G4MuonicDataTable: each .g4dat file is one table "
-        "in the G4MuonicData format, and its .prov.json sibling is the per-row provenance whose "
-        "SHA-256 the table's #SOURCEDIGEST names.",
+        "G4MuonicDataTable reads the .g4dat files in this directory: each is one table in the "
+        "G4MuonicData format, and its .prov.json sibling is the per-row provenance whose SHA-256 "
+        "the table's #SOURCEDIGEST names.",
         "FORMAT_SPEC.md in the openmucf repository states the format.",
         "",
         "The following files can be found here:",

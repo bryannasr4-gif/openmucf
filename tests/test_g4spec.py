@@ -1077,6 +1077,7 @@ def test_t34_import_fence():
         "emit.py",
         "sources/__init__.py",
         "sources/d1_nuclear_capture.py",
+        "sources/mizuno2025.py",
     }
 
     # A layout invariant that is currently satisfied with exactly one space to spare, and that a
@@ -1147,7 +1148,8 @@ def test_t35_archive_is_deterministic():
     for bad in ("", "a/b", "a\\b", ".", "..", "examplé"):
         with pytest.raises(ValueError, match="directory"):
             emit.build_tarball(members, directory=bad)
-    for bad in ("sub/dir.g4dat", "sub\\dir.g4dat", ""):
+    # A dot entry as a member is a path onto the directory or its parent, not a file in it.
+    for bad in ("sub/dir.g4dat", "sub\\dir.g4dat", "", ".", ".."):
         with pytest.raises(ValueError, match="file name"):
             emit.build_tarball({bad: b"x"}, directory=directory)
     # Matched on the MESSAGE, not on the type: UnicodeEncodeError IS a ValueError, so a bare
@@ -1442,6 +1444,7 @@ def test_t84_load_directory_keys_tables_by_profile_and_table(tmp_path):
     assert set(spec.load_directory(D1DIR)) == {
         ("parity", "nuclear_capture_rate"),
         ("parity", "muon_zeff"),
+        ("mizuno2025", "nuclear_capture_rate"),
     }
     shipped = sorted(D1DIR.glob("*.g4dat"))
     assert shipped
@@ -1462,7 +1465,7 @@ def test_t84_load_directory_keys_tables_by_profile_and_table(tmp_path):
     member = CONFORMANCE / "ok_natural_row_under_natural_and_listed.g4dat"
     (two_profiles / "d1_capture.evaluated.g4dat").write_bytes(member.read_bytes())
     tables = spec.load_directory(two_profiles)
-    assert len(tables) == 3
+    assert len(tables) == len(shipped) + 1
     assert ("evaluated", "nuclear_capture_rate") in tables
     assert spec.natural_rows(tables[("evaluated", "nuclear_capture_rate")]) == 1
 

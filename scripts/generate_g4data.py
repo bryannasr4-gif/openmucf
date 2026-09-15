@@ -19,6 +19,11 @@ build time, every time -- so "bit-for-bit" is a property of this script rather t
 what somebody typed once. Layer 2 is still the source of truth in the sense that matters: it is the
 byte range ``#SOURCEDIGEST`` is taken over, and ``--audit`` verifies that on the COMMITTED pair.
 
+The D1 directory also carries a **second profile of the capture table**, ``mizuno2025``, generated
+the same way from two committed transcriptions of a primary's printed tables
+(``openmucf.g4.sources.mizuno2025`` states what they hold and refuses what they must not). Those two
+CSV files are the one hand-authored input of that profile, as the isotope audit is of the parity one.
+
 Audit wiring: every generated artifact below joins ``make audit``'s ``git diff --exit-code`` list.
 The ``.tar.gz`` archives are **not** committed -- they are build products whose determinism is
 proven by test rather than by a stored copy -- but their MD5s are written into the snippets, because
@@ -32,6 +37,7 @@ evidence; it is guarded by re-derivation in ``tests/test_g4parity.py`` instead o
 from __future__ import annotations
 
 import filecmp
+import functools
 import json
 import sys
 import tempfile
@@ -40,6 +46,7 @@ from pathlib import Path
 import openmucf
 from openmucf.g4 import emit, provenance, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1src
+from openmucf.g4.sources import mizuno2025 as mizsrc
 
 ROOT = Path(__file__).resolve().parents[1]
 G4DIR = ROOT / "data" / "g4"
@@ -74,11 +81,18 @@ D1_ZEFF_LAYER1 = D1DIR / "d1_zeff.g4dat"
 D1_ZEFF_LAYER2 = D1DIR / "d1_zeff.prov.json"
 D1_SNIPPET_PATH = D1DIR / "geant4_add_dataset.snippet"
 VENDORED_PATH = ROOT / d1src.VENDORED_RELPATH
+#: The second capture profile: a table generated from two committed transcriptions of a primary
+#: rather than from a vendored source, shipped beside the parity pair under the profile's name.
+D1_MIZUNO_LAYER1 = D1DIR / f"d1_capture.{mizsrc.PROFILE}.g4dat"
+D1_MIZUNO_LAYER2 = D1DIR / f"d1_capture.{mizsrc.PROFILE}.prov.json"
+MIZUNO_TABLE1_PATH = ROOT / mizsrc.TABLE1_RELPATH
+MIZUNO_TABLE3_PATH = ROOT / mizsrc.TABLE3_RELPATH
 
-#: The version moves with the archive: this one packs the members under the dataset directory
-#: Geant4 unpacks to and adds the generated `README` and `History`. Plainly distinct from the
+#: The version moves with the archive: this one adds the capture table's second profile as a pair
+#: of members beside the parity pair, and the previous one packed the members under the dataset
+#: directory Geant4 unpacks to with the generated `README` and `History`. Plainly distinct from the
 #: example's `0.0.0-example`, and below 1.0.0 because D1 alone is not the dataset.
-D1_VERSION = "0.2.0"
+D1_VERSION = "0.3.0"
 D1_SEAM = "d1_nuclear_capture"
 #: The release we actually read -- we vendored it. NOT the papers Geant4 cites: those are carried as
 #: quoted upstream text in `conditions`, because citing a paper this project has not opened would be
@@ -328,19 +342,131 @@ def build_zeff_table(found: d1src.D1Extraction, digest: str) -> spec.G4DatTable:
     return spec.G4DatTable(directives=directives, records=records)
 
 
+# --------------------------------------------------------------------------------------------
+# D1 -- the mizuno2025 capture profile, from two committed transcriptions of the primary
+# --------------------------------------------------------------------------------------------
+
+#: The primary's own account of the printed value, in one template shared by every row: the rate is
+#: carried as printed, and how the primary obtained it is stated in its terms, never re-derived.
+MIZUNO_METHOD = (
+    "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its "
+    "measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here"
+)
+#: A key this file does not carry is a miss, and the reader's rule for a miss is the compiled-in
+#: table; the file declares no `#FALLBACK` of its own.
+MIZUNO_FALLTHROUGH = "a key this profile does not carry falls through to the compiled-in table"
+MIZUNO_COPY = "copy read: arXiv:2501.05897v2 HTML; the journal version is unread"
+
+
+def _mizuno_conditions(row: mizsrc.Table3Row, printed: tuple[mizsrc.Table1Row, ...]) -> str:
+    """Quoted fragments of the primary and its printed cells for this nuclide, by rule per row."""
+    huff = ", ".join(sorted({r.huff_factor for r in printed}))
+    parts = [
+        'Table 1 caption: "Huff factor (Q) taken from Ref [4]"',
+        f"printed Q for this target: {huff}",
+    ]
+    for r in printed:
+        parts.append(f'Table 1 row: "{r.form}", lifetime {r.lifetime_ns}({r.lifetime_unc_ns}) ns')
+    if row.note:
+        parts.append(f'Table 3 footnote: "{row.note}"')
+    parts.append(
+        'the printed uncertainty is the "Total" column of Table 2, "Systematic breakdown of the '
+        'uncertainty"'
+    )
+    parts.append(MIZUNO_COPY)
+    return "; ".join(parts)
+
+
+def build_mizuno_capture_document(found: mizsrc.Mizuno2025Extraction) -> provenance.ProvDocument:
+    """Layer 2 for the ``mizuno2025`` capture table: one row per Table-3 record, every field by rule."""
+    rows = {}
+    for row in found.table3:
+        printed = found.table1_rows(row.nuclide)
+        where = f"Z={row.z} natural composition" if row.a == 0 else f"Z={row.z} A={row.a}"
+        rows[f"{row.z}-{row.a}"] = provenance.ProvRow(
+            source_bibkey=mizsrc.BIBKEY,
+            source_locator=f"{row.locator} [copy read: {row.copy_read}]",
+            # The primary's own label for its printed +- is the "Total" of its uncertainty
+            # breakdown, quoted in `conditions`: an experimental uncertainty, so `exp`.
+            unc_type="exp",
+            conditions=_mizuno_conditions(row, printed),
+            validity_range=f"{where}; {MIZUNO_FALLTHROUGH}",
+            evaluation_method=MIZUNO_METHOD,
+            # Derived from the primary's own comparison column: a target it prints no earlier
+            # lifetime for is one it alone has measured.
+            single_source=not any(r.has_suzuki_value for r in printed),
+            # Every value is read from the primary itself, and its locator names the table.
+            needs_verification=False,
+            recommendation="",
+            evaluation_id=f"{mizsrc.PROFILE}-table3",
+            source_library=mizsrc.PROFILE,
+            # The key scheme IS the disclosure: an enriched or mononuclidic nuclide by its mass
+            # number, a natural-composition target by A = 0.
+            isotope_resolved=row.a != 0,
+        )
+    return provenance.ProvDocument(
+        dataset=DATASET_NAME,
+        version=D1_VERSION,
+        profile=mizsrc.PROFILE,
+        seam=D1_SEAM,
+        precedence=(mizsrc.PROFILE,),
+        rows=rows,
+    )
+
+
+def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) -> spec.G4DatTable:
+    """Layer 1 for the ``mizuno2025`` capture table: the printed decimals, records ascending by
+    ``(Z, A)``. No ``#SOURCESHA`` (the file reproduces no upstream revision) and no ``#FALLBACK``
+    (a miss falls through to the compiled-in table by the reader's rule)."""
+    z_values = sorted({row.z for row in found.table3})
+    directives = {
+        "GRAMMAR": spec.GRAMMAR_VERSION,
+        "DATASET": DATASET_NAME,
+        "VERSION": D1_VERSION,
+        "PROFILE": mizsrc.PROFILE,
+        "SEAM": D1_SEAM,
+        "TABLE": D1_CAPTURE_TABLE,
+        "GENERATOR": f"openmucf-g4 {openmucf.__version__}",
+        "SOURCEDIGEST": digest,
+        "UNITS": "value=1e6/s unc=1e6/s",
+        "COLUMNS": "Z A value unc",
+        # `natural_and_listed`: the enriched and mononuclidic nuclides by their mass number, the
+        # natural-composition targets by A = 0.
+        "VALIDITY": f"Z:{z_values[0]}-{z_values[-1]} A:{spec.A_NATURAL_AND_LISTED}",
+    }
+    records = tuple(
+        sorted(
+            ((row.z, row.a, float(row.rate), float(row.rate_unc)) for row in found.table3),
+            key=lambda record: (record[0], record[1]),
+        )
+    )
+    return spec.G4DatTable(directives=directives, records=records)
+
+
 def build_d1_artifacts() -> tuple[dict[Path, bytes], bytes]:
     """The committed D1 artifacts keyed by path, plus the archive they describe (not committed)."""
     found = d1src.load(VENDORED_PATH)  # checks the upstream pins before anything is generated
+    mizuno = mizsrc.load(MIZUNO_TABLE1_PATH, MIZUNO_TABLE3_PATH)
 
     members: dict[str, bytes] = {}
     artifacts: dict[Path, bytes] = {}
     files: list[emit.TableEntry] = []
     for layer1_path, layer2_path, document, build in (
-        (D1_CAPTURE_LAYER1, D1_CAPTURE_LAYER2, build_capture_document(found), build_capture_table),
-        (D1_ZEFF_LAYER1, D1_ZEFF_LAYER2, build_zeff_document(found), build_zeff_table),
+        (
+            D1_CAPTURE_LAYER1, D1_CAPTURE_LAYER2, build_capture_document(found),
+            functools.partial(build_capture_table, found),
+        ),
+        (
+            D1_ZEFF_LAYER1, D1_ZEFF_LAYER2, build_zeff_document(found),
+            functools.partial(build_zeff_table, found),
+        ),
+        (
+            D1_MIZUNO_LAYER1, D1_MIZUNO_LAYER2, build_mizuno_capture_document(mizuno),
+            functools.partial(build_mizuno_capture_table, mizuno),
+        ),
     ):
         raw = provenance.document_bytes(document)
-        table = build(found, provenance.source_digest(raw))
+        table = build(provenance.source_digest(raw))
         spec.validate(table)
         provenance.check_against_table(table, document)
         provenance.check_source_digest(table, raw)
@@ -517,6 +643,7 @@ def audit() -> None:
         (LAYER1_PATH, LAYER2_PATH),
         (D1_CAPTURE_LAYER1, D1_CAPTURE_LAYER2),
         (D1_ZEFF_LAYER1, D1_ZEFF_LAYER2),
+        (D1_MIZUNO_LAYER1, D1_MIZUNO_LAYER2),
     )
     for layer1_path, layer2_path in pairs:
         try:
