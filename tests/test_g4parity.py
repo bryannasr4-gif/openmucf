@@ -1494,6 +1494,7 @@ EXPECTED_CONDITION_TAILS = frozenset({
     "never reads cRErr.",
     "No uncertainty is published upstream and this table carries no unc column, so unc_type is "
     "table.",
+    "No uncertainty is published upstream and this table carries no unc column.",
     "No uncertainty is published upstream and this table carries no unc column, so unc_type is "
     "table. This entry is UNREACHABLE through GetMuonZeff, which clamps Z into [1, 100] before "
     "indexing. It ships because the dataset reproduces the array as declared, and silently dropping "
@@ -1546,6 +1547,7 @@ def is_upstream_verbatim(text: str, comment_lines: tuple[str, ...]) -> bool:
 def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
     """What a `parity` profile is allowed to claim, asserted row by row on both tables."""
     found = extraction()
+    zeff_audit = d1.load_zeff_audit(REPO / d1.ZEFF_AUDIT_RELPATH)
     tables = (
         (CAPTURE_LAYER1, CAPTURE_LAYER2, found.capture_comment_lines),
         (ZEFF_LAYER1, ZEFF_LAYER2, found.zeff_comment_lines),
@@ -1564,19 +1566,24 @@ def test_t53_parity_profile_layer2_invariants_hold_on_every_row():
             assert row.source_bibkey == "geant4_v11_4_2", key
             # A parity profile reproduces; it does not recommend. That much is unconditional.
             assert row.recommendation == "", key
-            # `needs_verification` is no longer unconditional on the capture table: a row settled
+            # `needs_verification` is no longer unconditional on either table: a row settled
             # by a primary read carries false, and the locator's second clause is what says so.
-            # The two must agree on every row, or one of them is decoration. On the zeff table
-            # nothing has been settled, so the original blanket invariant still holds there.
+            # The two must agree on every row, or one of them is decoration.
             established = "; isotope_resolved established by " in row.source_locator
             if layer2_path == ZEFF_LAYER2:
-                assert row.needs_verification is True, key
+                read = "; printed cell read in " in row.source_locator
+                assert row.needs_verification is not read, key
                 assert not established, key
+                z = int(key)
+                assert read is (z in zeff_audit), key
+                assert row.unc_type == (
+                    "estimate" if z in zeff_audit and zeff_audit[z].underlined else "table"
+                ), key
             else:
                 assert row.needs_verification is not established, key
+                assert row.unc_type == "table", key
             # Upstream says "weighted average of the two most precise measurements".
             assert row.single_source is False, key
-            assert row.unc_type == "table", key
             # The locator must resolve in THIS repository, at a real line of the vendored file.
             assert row.source_locator.startswith(d1.VENDORED_RELPATH + ":"), key
             line = int(row.source_locator.split(":")[1].split()[0])
@@ -1750,7 +1757,7 @@ def test_t58_the_generator_version_is_coupled_to_every_dataset_it_stamped():
 
 
 # --------------------------------------------------------------------------------------------
-# T-59..T-62 -- the isotope audit: the one hand-authored input, and what it is allowed to claim
+# T-59..T-62 -- the isotope audit: what it is allowed to claim
 # --------------------------------------------------------------------------------------------
 
 #: The copies of a paper this project distinguishes. A locator that does not say WHICH copy was
@@ -2266,46 +2273,8 @@ def document_pins() -> DocumentPins:
     # The cross-check between the two capture profiles (T-91), derived from the two shipped files.
     crosscheck_pairs = mizuno_parity_pairs()
     crosscheck_disagreements = [pair for pair in crosscheck_pairs if not pair["agrees"]]
-    changelog_claims = [
-        ("records checked", r"Every one of the (\d+) records has now been checked", len(audit)),
-        ("rows the old rule disagrees with", r"on (\d+) of the \d+ records", len(disagree)),
-        ("records the old rule was applied to", r"on \d+ of the (\d+) records", len(audit)),
-        ("rows the old rule under-called", r"\*\*(\d+)\*\* it called unresolved", len(under_called)),
-        ("rows the primary flatly contradicts",
-         r"\*\*(\d+)\*\* it called resolved that the primary flatly", len(contradicted)),
-        ("rows the primary fails to establish",
-         r"and \*\*(\d+)\*\* it called resolved that the primary does not", len(unestablished)),
-        ("settled rows", r"\*\*(\d+) records are settled", len(settled)),
-        ("isotope_resolved true", r"(\d+) are established isotope-resolved", len(trues)),
-        ("natural-composition rows",
-         r"(\d+) are established to rest on a \*\*natural", len(natural)),
-        ("open rows", r"The (\d+) that remain open", len(unsettled)),
-        ("distinct Z", r"span exactly the same (\d+) Z", len(zs)),
-        ("rows where the key is a label", r"a target specification\*\* on (\d+) records",
-         len(natural)),
-        ("findings that are defects", r"ships \*\*(\w+) defects", findings - settled_findings),
-        ("findings the primary settled", r"defects and (\w+) settled questions", settled_findings),
-        ("capture record count", r"a (\d+)-record `\{Z, A, rate, error\}` table",
-         len(found.capture_records)),
-        ("effective-charge record count", r"a (\d+)-value effective-charge table",
-         len(zeff_table.records)),
-        ("swept points returning a negative rate",
-         r"negative capture rates on (\d+) of \d+ fallback points", negative),
-        ("swept points in total, fallback",
-         r"negative capture rates on \d+ of (\d+) fallback points", swept),
-        ("swept points harvested", r"harvested (\d+) `\(Z, A\)` points", swept),
-        ("distinct Z, attribution headline",
-         r"The (\d+)-distinct-Z attribution reconciles", len(zs)),
-        ("distinct Z, superseded finding",
-         r"reconcile with the table's (\d+) distinct Z", len(zs)),
-        ("Layer-1 record lines unchanged",
-         r"All (\d+) Layer-1 record lines are unchanged", len(found.capture_records)),
-        ("fallback constants declared",
-         r"carrying all (\w+) of the constants it needs", len(found.fallback_coefficients)),
-        ("findings in total", r"settled questions\*\*, not (\w+) defects", findings),
-        ("maximum ulp over the diagnostic subset",
-         r"every one bit-for-bit, maximum (\d+) ulp", max_ulp_subset),
-    ]
+    # Released lines are held by dated registry rows; only `[Unreleased]` lines may be pinned live.
+    changelog_claims: list = []
     # A string the changelog states about a shipped file, read from that file: the dataset version
     # the entry names is the `#VERSION` the committed capture table carries.
     shipped_version = re.search(r"^#VERSION\s+(\S+)$", CAPTURE_LAYER1.read_text("ascii"), re.M)
@@ -2333,6 +2302,7 @@ def document_pins() -> DocumentPins:
          r"negative capture rates on (\d+) of those \d+ points", negative),
         ("swept points in total, restated",
          r"negative capture rates on \d+ of those (\d+) points", swept),
+        ("maximum ulp over the diagnostic subset", r"points at (zero) ulp", max_ulp_subset),
     ]
 
     # `cpp/tools/README.md` restates the sweep size beside the contraction figures that only a
@@ -3096,3 +3066,170 @@ def test_t91_drill_agreement_is_decided_at_the_printed_digits():
     assert not agrees_at_printed_precision(0.4823, "0.4856")
     assert not agrees_at_printed_precision(0.03, "0.08")
     assert not agrees_at_printed_precision(0.0015, "0.009")
+
+
+# --------------------------------------------------------------------------------------------
+# T-93 -- the effective-charge audit: the shipped file loads, and each loader rule refuses its fixture
+# --------------------------------------------------------------------------------------------
+
+ZEFF_AUDIT = REPO / d1.ZEFF_AUDIT_RELPATH
+
+
+def zeff_audit_rows() -> dict[int, d1.ZeffAuditRow]:
+    return d1.load_zeff_audit(ZEFF_AUDIT)
+
+
+def _line(text: str, index: int, mutate) -> str:
+    """The text with line `index` (0 = the header, 1 = the first data line) replaced."""
+    lines = text.split("\n")
+    lines[index] = mutate(lines[index])
+    return "\n".join(lines)
+
+
+def _cell(index: int, value: str):
+    """A line mutation that sets column `index` to `value`."""
+    def mutate(line: str) -> str:
+        cells = line.split(",")
+        cells[index] = value
+        return ",".join(cells)
+    return mutate
+
+
+def _swap_first_two_data_lines(text: str) -> str:
+    lines = text.split("\n")
+    lines[1], lines[2] = lines[2], lines[1]
+    return "\n".join(lines)
+
+
+#: (label, mutation of the file's text, message the loader must give). Each row is one rule of
+#: `load_zeff_audit`; fixtures are cut from the shipped file's own lines, so no cell is typed here.
+ZEFF_AUDIT_DRILLS = [
+    ("a CR byte", lambda t: t.replace("\n", "\r\n", 1), "contains CR"),
+    ("a non-ASCII byte", lambda t: _line(t, 1, lambda l: l.replace("preprint", "préprint")),
+     "is not ASCII"),
+    ("the header renamed", lambda t: _line(t, 0, lambda l: l.replace("printed_z,", "printed,", 1)),
+     "header is"),
+    ("a non-integer Z", lambda t: _line(t, 1, _cell(0, "H")), "must be integers"),
+    ("a non-integer printed_z", lambda t: _line(t, 1, _cell(1, "H")), "must be integers"),
+    ("a printed_zeff without a point", lambda t: _line(t, 1, _cell(2, "1")),
+     "digits, a point and digits"),
+    ("an underlined outside true/false", lambda t: _line(t, 1, _cell(3, "yes")),
+     "must be 'true' or 'false'"),
+    ("an empty locator", lambda t: _line(t, 1, _cell(4, "")), "locator and a copy_read"),
+    ("an empty copy_read", lambda t: _line(t, 1, _cell(5, "")), "locator and a copy_read"),
+    ("a duplicate Z", lambda t: _line(t, 2, _cell(0, t.split("\n")[1].split(",")[0])), "duplicate Z"),
+    ("rows not ascending in Z", _swap_first_two_data_lines, "strictly ascending in Z"),
+    ("no rows", lambda t: t.split("\n")[0] + "\n", "carries no rows"),
+]
+
+
+def test_t93_the_shipped_effective_charge_audit_loads_and_every_row_names_a_table_page_and_copy():
+    """The committed file passes every rule; each row is keyed by its own Z, names one of the
+    primary's two tables and a page, and names a copy this project distinguishes."""
+    audit = zeff_audit_rows()
+    assert audit, "an empty audit would make every check below vacuous"
+    assert list(audit) == sorted(audit)
+    for z, row in audit.items():
+        assert row.z == z
+        assert re.search(r"\bTable (III|IV)\b", row.locator), (z, row.locator)
+        assert re.search(r"\bp\.\d+", row.locator), (z, row.locator)
+        assert row.copy_read in KNOWN_COPIES, (z, row.copy_read)
+
+
+@pytest.mark.parametrize("label, mutate, message", ZEFF_AUDIT_DRILLS, ids=[d[0] for d in ZEFF_AUDIT_DRILLS])
+def test_t93_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate, message):
+    """Corrupt the audit in one way, in a temporary copy; the loader must refuse it with the rule's
+    own message. The unmutated copy loads, so the message is the rule's."""
+    text = ZEFF_AUDIT.read_bytes().decode("ascii")
+    path = tmp_path / ZEFF_AUDIT.name
+    path.write_bytes(text.encode("ascii"))
+    d1.load_zeff_audit(path)  # the copy loads before the mutation
+    mutated = mutate(text)
+    assert mutated != text, label
+    path.write_bytes(mutated.encode("utf-8"))
+    with pytest.raises(d1.ZeffAuditError, match=re.escape(message)):
+        d1.load_zeff_audit(path)
+
+
+# --------------------------------------------------------------------------------------------
+# T-94 -- every printed cell equals the shipped value, a misprinted Z is localized by its duplicate,
+#         and the audit's coverage is the document's coverage, derived twice
+# --------------------------------------------------------------------------------------------
+
+
+def test_t94_every_printed_effective_charge_cell_equals_the_shipped_value_and_covers_the_documented_set():
+    """(a) The printed cell is the shipped double at the primary's own precision -- exact decimal
+    equality, since the compiled-in table was transcribed from these cells. (b) A row whose printed
+    Z is not its element's Z is a misprint the table itself localizes: the printed Z is some other
+    row's Z, so the same Z is printed twice and the element column decides. (c) The set of Z the
+    audit covers is computed a second way -- as `document_pins` derives `zeff_covered`, from the
+    capture table's Z set -- and the two derivations are compared, never restated; the per-table
+    split is compared the same way. (d) The counts are printed, not asserted."""
+    audit = zeff_audit_rows()
+    found = extraction()
+    zeff_table, _ = committed(ZEFF_LAYER1, ZEFF_LAYER2)
+    shipped = {int(z): value for z, value in zeff_table.records}
+
+    for z, row in audit.items():
+        assert z in shipped, z
+        assert decimal.Decimal(row.printed_zeff) == decimal.Decimal(repr(shipped[z])), (
+            z, row.printed_zeff, shipped[z]
+        )
+
+    misprinted = {z: row.printed_z for z, row in audit.items() if row.printed_z != z}
+    for z, printed_z in misprinted.items():
+        assert printed_z in audit, (z, printed_z)
+        assert audit[printed_z].printed_z == printed_z, (z, printed_z)
+
+    zs = sorted({z for z, _ in {(z, a) for z, a, _, _ in found.capture_records}})
+    zeff_covered = {int(z) for z, _ in zeff_table.records if int(z) in zs}
+    zeff_covered_iv = {z for z in zeff_covered if z >= 10}
+    zeff_covered_iii = zeff_covered - zeff_covered_iv
+    assert set(audit) == zeff_covered
+    in_iii = {z for z, row in audit.items() if "Table III" in row.locator}
+    in_iv = {z for z, row in audit.items() if "Table IV" in row.locator}
+    assert in_iii == zeff_covered_iii
+    assert in_iv == zeff_covered_iv
+    assert in_iii.isdisjoint(in_iv)
+    print(
+        f"\nzeff audit: covered {len(audit)} split {len(in_iii)} (Table III) / {len(in_iv)} "
+        f"(Table IV); misprinted Z {sorted(misprinted.items())}"
+    )
+
+
+# --------------------------------------------------------------------------------------------
+# T-95 -- the estimate marks in the shipped Layer 2 are the underlined cells of the audit, counted
+#         on both sides; a copy with one mark flipped is caught
+# --------------------------------------------------------------------------------------------
+
+
+def estimate_rows(layer2_path: pathlib.Path) -> set[str]:
+    """The keys of the rows a Layer-2 file marks `unc_type: estimate`, read from its bytes."""
+    document = provenance.from_json_obj(json.loads(layer2_path.read_bytes().decode("ascii")))
+    return {key for key, row in document.rows.items() if row.unc_type == "estimate"}
+
+
+def test_t95_the_estimate_marks_are_the_underlined_cells_counted_on_both_sides():
+    audit = zeff_audit_rows()
+    underlined = {str(z) for z, row in audit.items() if row.underlined}
+    estimates = estimate_rows(ZEFF_LAYER2)
+    print(f"\nestimate {len(estimates)} underlined {len(underlined)}")
+    assert len(estimates) == len(underlined)
+    assert estimates == underlined
+
+
+def test_t95_drill_a_copy_with_one_estimate_flipped_is_caught(tmp_path):
+    """Flip exactly one `estimate` to `table` in a copy of the shipped file: the count on the
+    Layer-2 side drops by one and the identity above fails on it."""
+    audit = zeff_audit_rows()
+    underlined = {str(z) for z, row in audit.items() if row.underlined}
+    text = ZEFF_LAYER2.read_bytes().decode("ascii")
+    marker = '"unc_type": "estimate"'
+    assert text.count(marker) == len(underlined)
+    flipped = text.replace(marker, '"unc_type": "table"', 1)
+    assert flipped != text
+    copy = tmp_path / ZEFF_LAYER2.name
+    copy.write_bytes(flipped.encode("ascii"))
+    estimates = estimate_rows(copy)
+    assert len(estimates) == len(underlined) - 1
+    assert estimates != underlined

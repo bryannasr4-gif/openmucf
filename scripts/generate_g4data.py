@@ -22,7 +22,7 @@ byte range ``#SOURCEDIGEST`` is taken over, and ``--audit`` verifies that on the
 The D1 directory also carries a **second profile of the capture table**, ``mizuno2025``, generated
 the same way from two committed transcriptions of a primary's printed tables
 (``openmucf.g4.sources.mizuno2025`` states what they hold and refuses what they must not). Those two
-CSV files are the one hand-authored input of that profile, as the isotope audit is of the parity one.
+CSV files are the one hand-authored input of that profile.
 
 Audit wiring: every generated artifact below joins ``make audit``'s ``git diff --exit-code`` list.
 The ``.tar.gz`` archives are **not** committed -- they are build products whose determinism is
@@ -252,14 +252,42 @@ def build_zeff_document(found: d1src.D1Extraction) -> provenance.ProvDocument:
     )
     coefficients = found.coefficients
     zmin, zmax = int(coefficients["zmin"]), int(coefficients["zmax"])
+    # The printed cells of the primary's two tables, read off the page images and committed. A row
+    # the audit covers was read against the primary; a row it does not cover is left as it was.
+    audit = d1src.load_zeff_audit(ROOT / d1src.ZEFF_AUDIT_RELPATH)
+    for z in audit:
+        if not 0 <= z < len(found.zeff):
+            raise SystemExit(
+                f"zeff audit row Z={z} is not an index of the upstream zeff array; the audit "
+                "names a cell this table does not carry"
+            )
 
     rows = {}
     for z, line in enumerate(found.zeff_lines):
         unreachable = z < zmin or z > zmax
+        cell = audit.get(z)
+        underlined = cell is not None and cell.underlined
+        # An underlined cell is the primary's own estimate mark. The tail after the quotation then
+        # stops before the clause that names the uncertainty type: `unc_type` carries the fact, the
+        # audit row carries the mark, and the locator's second clause says where it was read.
         conditions = (
             f'quoted from the upstream source comment: "{upstream}". No uncertainty is published '
-            "upstream and this table carries no unc column, so unc_type is table."
+            "upstream and this table carries no unc column"
+            + ("." if underlined else ", so unc_type is table.")
         )
+        locator = _locator(line)
+        method = ZEFF_METHOD
+        if cell is not None:
+            locator += f"; printed cell read in {cell.locator} [copy read: {cell.copy_read}]"
+            method += (
+                f" The printed cell {cell.printed_z}({cell.printed_zeff}) was read from the "
+                "primary and equals this value."
+            )
+            if cell.printed_z != z:
+                method += (
+                    f" The primary prints it against Z {cell.printed_z}, a Z it prints a second "
+                    "time on that element's own row; the element column decides."
+                )
         if unreachable:
             conditions += (
                 f" This entry is UNREACHABLE through GetMuonZeff, which clamps Z into [{zmin}, "
@@ -269,17 +297,19 @@ def build_zeff_document(found: d1src.D1Extraction) -> provenance.ProvDocument:
             )
         rows[str(z)] = provenance.ProvRow(
             source_bibkey=D1_BIBKEY,
-            source_locator=_locator(line),
-            unc_type="table",
+            source_locator=locator,
+            unc_type="estimate" if underlined else "table",
             conditions=conditions,
             validity_range=(
                 f"Z={z}; unreachable, the clamp maps it to Z={zmin}"
                 if unreachable
                 else f"Z={z}; GetMuonZeff clamps its argument into [{zmin}, {zmax}] before indexing"
             ),
-            evaluation_method=ZEFF_METHOD,
+            evaluation_method=method,
             single_source=False,
-            needs_verification=True,
+            # False on exactly the rows the audit read against the primary; the locator's second
+            # clause is the machine-checkable statement of which rows those are.
+            needs_verification=cell is None,
             recommendation="",
             evaluation_id=_evaluation_id("zeff"),
             source_library=D1_SOURCE_LIBRARY,

@@ -23,6 +23,7 @@ consumer chooses by name rather than by hoping.
 | `d1_capture.prov.json`, `d1_zeff.prov.json` | Layer 2: per-row provenance for every record |
 | `d1_gp_sweep.oracle` | a harvested bit-parity fixture (section 4) |
 | `isotope_audit.csv` | the isotope-resolution audit against the primary literature (section 6) |
+| `zeff_audit.csv` | every `Z(Z_eff)` cell of the primary's Tables III and IV as printed, with the cells it underlines (section 5, F-5) |
 | `geant4_add_dataset.snippet` | the registration block, with the archive's MD5 |
 
 Both tables carry `#PROFILE parity` and `#SOURCESHA 8cc04f65977807f1848da7b958c421cd5e162f26`,
@@ -280,6 +281,11 @@ the table demonstrably contains at least one typographical error in its Z column
 than settles the prior that the lead-region step is also one. Geant4 read that row correctly:
 `zeff[56] = 29.99`.
 
+The per-cell match is committed: `data/g4/d1/zeff_audit.csv` carries every `Z(Z_eff)` cell of both
+tables as printed, with the barium row under the Z its element column gives it, a test holds each
+cell to the shipped value, and the cells the primary underlines — its table note reads
+*"When underlined it is an estimate"* — carry `unc_type: estimate` in `d1_zeff.prov.json`.
+
 **F-6 — the declared fallback is documented, by the primary, to mispredict isotopic effects.** See
 section 2 for the quotation and for the distinction it draws: **Ca, Cr, Ni, U and Pu** are where the
 formula is reported to over-predict the isotopic spread, while **Cu, Sr, Br and Cl** are where the
@@ -407,8 +413,7 @@ rule and audited flag agree. The four open rows and the 28 disagreements are dif
 not line up row for row.
 
 The `zeff` rows remain `false` throughout, as a fact rather than a default: an effective charge is a
-per-Z quantity, so there is no isotope for it to be resolved to. Their `needs_verification` stays
-`true`.
+per-Z quantity, so there is no isotope for it to be resolved to.
 
 **Two limits on all of the above, stated plainly.** First, what was read is the TRIUMF preprint
 TRI-PP-87-5 (January 1987), a scanned copy, not the published article; every locator for a row

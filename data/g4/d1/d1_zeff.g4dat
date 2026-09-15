@@ -5,7 +5,7 @@
 #SEAM         d1_nuclear_capture
 #TABLE        muon_zeff
 #GENERATOR    openmucf-g4 1.2.0
-#SOURCEDIGEST dad889224616181244941edb453f4510b385f1e2dcb1db0709066786e23db19a
+#SOURCEDIGEST ab30ef7ade0cfcbcf139503bb94c18d5d7df5ba40500b5079df68aeb4488d830
 #SOURCESHA    8cc04f65977807f1848da7b958c421cd5e162f26
 #UNITS        value=dimensionless
 #COLUMNS      Z value
