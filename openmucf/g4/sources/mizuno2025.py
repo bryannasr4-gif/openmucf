@@ -1,7 +1,7 @@
 """The ``mizuno2025`` profile's input: two transcriptions of Mizuno et al. (2025), Tables 1 and 3.
 
 Unlike the ``parity`` profile, whose every number is parsed out of a vendored source file, this
-profile rests on two files a human typed from the primary's tables -- so, as with the isotope audit,
+profile rests on two files typed from the primary's tables -- so, as with the isotope audit,
 the structural invariants are the whole of the protection available, and every one of them is
 enforced here rather than trusted:
 
