@@ -2971,13 +2971,7 @@ def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_eve
 # --------------------------------------------------------------------------------------------
 
 
-def agrees_at_printed_precision(shipped: float, printed: str) -> bool:
-    """`shipped` equals the printed decimal once quantized to the printed digits: the shortest
-    round-trip decimal of the double, rounded to the precision the primary prints, is the printed
-    string. A comparison at more digits than the primary prints would be a claim about digits the
-    primary never made."""
-    quantum = decimal.Decimal(printed)
-    return decimal.Decimal(repr(shipped)).quantize(quantum) == quantum
+agrees_at_printed_precision = d1.agrees_at_printed_precision
 
 
 def mizuno_parity_pairs() -> list[dict]:
@@ -3102,7 +3096,7 @@ def _swap_first_two_data_lines(text: str) -> str:
 
 
 #: (label, mutation of the file's text, message the loader must give). Each row is one rule of
-#: `load_zeff_audit`; fixtures are cut from the shipped file's own lines, so no cell is typed here.
+#: `load_zeff_audit`; fixtures are cut from the shipped file's own lines.
 ZEFF_AUDIT_DRILLS = [
     ("a CR byte", lambda t: t.replace("\n", "\r\n", 1), "contains CR"),
     ("a non-ASCII byte", lambda t: _line(t, 1, lambda l: l.replace("preprint", "préprint")),
@@ -3233,3 +3227,87 @@ def test_t95_drill_a_copy_with_one_estimate_flipped_is_caught(tmp_path):
     estimates = estimate_rows(copy)
     assert len(estimates) == len(underlined) - 1
     assert estimates != underlined
+
+
+# --------------------------------------------------------------------------------------------
+# T-96 -- the printed capture cells: the shipped file loads, and each loader rule refuses its fixture
+# --------------------------------------------------------------------------------------------
+
+CAPTURE_CELLS = REPO / d1.CAPTURE_CELLS_RELPATH
+
+
+def capture_cells() -> tuple[d1.CaptureCellRow, ...]:
+    return d1.load_capture_cells(CAPTURE_CELLS)
+
+
+def _first_data_cell(text: str, index: int) -> str:
+    return text.split("\n")[1].split(",")[index]
+
+
+#: (label, mutation of the file's text, message the loader must give). Each row is one rule of
+#: `load_capture_cells`; fixtures are cut from the shipped file's own lines.
+CAPTURE_CELLS_DRILLS = [
+    ("a CR byte", lambda t: t.replace("\n", "\r\n", 1), "contains CR"),
+    ("a non-ASCII byte", lambda t: _line(t, 1, lambda l: l.replace("preprint", "préprint")),
+     "is not ASCII"),
+    ("a quote byte", lambda t: _line(t, 1, lambda l: l.replace("preprint", '"preprint"')),
+     "contains a quote byte"),
+    ("the header renamed", lambda t: _line(t, 0, lambda l: l.replace("rate_unc,", "unc,", 1)),
+     "header is"),
+    ("a line with a tenth cell", lambda t: _line(t, 1, lambda l: l + ","), "exactly 9 cells"),
+    ("a line with eight cells", lambda t: _line(t, 1, lambda l: l.rsplit(",", 1)[0]),
+     "exactly 9 cells"),
+    ("a non-integer Z", lambda t: _line(t, 1, _cell(0, _first_data_cell(t, 1))),
+     "must be an integer"),
+    ("a label outside its grammar", lambda t: _line(t, 1, _cell(1, _first_data_cell(t, 7))),
+     "label must be"),
+    ("a rate without a point", lambda t: _line(t, 1, _cell(3, _first_data_cell(t, 0))),
+     "digits, a point and digits"),
+    ("a rate_unc without a point", lambda t: _line(t, 1, _cell(4, _first_data_cell(t, 0))),
+     "digits, a point and digits"),
+    ("a refs outside its grammar", lambda t: _line(t, 1, _cell(6, _first_data_cell(t, 1))),
+     "refs must be"),
+    ("a dagger outside true/false", lambda t: _line(t, 1, _cell(2, _first_data_cell(t, 1))),
+     "dagger must be 'true' or 'false'"),
+    ("a bracketed outside true/false", lambda t: _line(t, 1, _cell(5, _first_data_cell(t, 1))),
+     "bracketed must be 'true' or 'false'"),
+    ("an empty locator", lambda t: _line(t, 1, _cell(7, "")), "locator and a copy_read"),
+    ("an empty copy_read", lambda t: _line(t, 1, _cell(8, "")), "locator and a copy_read"),
+    ("a block split in two", lambda t: _line(t, 2, _cell(0, t.split("\n")[-2].split(",")[0])),
+     "not contiguous"),
+    ("blocks not ascending in Z",
+     lambda t: "\n".join([t.split("\n")[0], t.split("\n")[-2]] + t.split("\n")[1:-2] + [""]),
+     "strictly ascending in Z"),
+    ("a duplicate cell", lambda t: _line(t, 2, lambda l: t.split("\n")[1]), "duplicate cell"),
+    ("no rows", lambda t: t.split("\n")[0] + "\n", "carries no rows"),
+]
+
+
+def test_t96_the_shipped_capture_cells_load_and_every_row_names_its_element_table_page_and_copy():
+    """The committed file passes every rule; each row's Z is the atomic number of the element its
+    label names, its locator names the primary's Table IV and a page, and it names a copy this
+    project distinguishes."""
+    cells = capture_cells()
+    assert cells, "an empty cells file would make every check below vacuous"
+    for cell in cells:
+        assert cell.z == SYMBOL_Z[cell.label.split("-")[0]], (cell.z, cell.label)
+        assert re.search(r"\bTable IV\b", cell.locator), (cell.z, cell.locator)
+        assert re.search(r"\bp\.\d+", cell.locator), (cell.z, cell.locator)
+        assert cell.copy_read in KNOWN_COPIES, (cell.z, cell.copy_read)
+
+
+@pytest.mark.parametrize(
+    "label, mutate, message", CAPTURE_CELLS_DRILLS, ids=[d[0] for d in CAPTURE_CELLS_DRILLS]
+)
+def test_t96_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate, message):
+    """Corrupt the cells file in one way, in a temporary copy; the loader must refuse it with the
+    rule's own message. The unmutated copy loads, so the message is the rule's."""
+    text = CAPTURE_CELLS.read_bytes().decode("ascii")
+    path = tmp_path / CAPTURE_CELLS.name
+    path.write_bytes(text.encode("ascii"))
+    d1.load_capture_cells(path)  # the copy loads before the mutation
+    mutated = mutate(text)
+    assert mutated != text, label
+    path.write_bytes(mutated.encode("utf-8"))
+    with pytest.raises(d1.CaptureCellsError, match=re.escape(message)):
+        d1.load_capture_cells(path)

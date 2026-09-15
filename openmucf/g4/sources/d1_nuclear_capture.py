@@ -30,6 +30,7 @@ Standard library only, and no import of the kinetics modules.
 from __future__ import annotations
 
 import csv
+import decimal
 import hashlib
 import re
 import struct
@@ -42,6 +43,10 @@ __all__ = [
     "AUDIT_COLUMNS",
     "AUDIT_RELPATH",
     "BOUND_DECAY",
+    "CAPTURE_CELLS_COLUMNS",
+    "CAPTURE_CELLS_RELPATH",
+    "CaptureCellRow",
+    "CaptureCellsError",
     "D1Extraction",
     "GoulardPrimakoff",
     "HELPER",
@@ -54,10 +59,12 @@ __all__ = [
     "ZEFF_AUDIT_COLUMNS",
     "ZEFF_AUDIT_RELPATH",
     "ZeffAuditRow",
+    "agrees_at_printed_precision",
     "capture_rate",
     "check_helper_pins",
     "extract",
     "load",
+    "load_capture_cells",
     "load_helper",
     "load_isotope_audit",
     "load_zeff_audit",
@@ -910,3 +917,148 @@ def load_zeff_audit(path: Path) -> dict[int, ZeffAuditRow]:
     if not rows:
         raise ZeffAuditError(f"{path.name} carries no rows")
     return rows
+
+
+# --------------------------------------------------------------------------------------------
+# the printed capture cells -- every Total Capture Rate cell of the primary at the Z of a capture
+# row the isotope audit had left open, and the comparison that decides those rows by value
+# --------------------------------------------------------------------------------------------
+
+#: Where the cells live, relative to the repository root.
+CAPTURE_CELLS_RELPATH = "data/g4/d1/capture_rate_cells.csv"
+#: Its columns, in order. The header must match exactly, for the audits' reason.
+CAPTURE_CELLS_COLUMNS = (
+    "Z", "label", "dagger", "rate", "rate_unc", "bracketed", "refs", "locator", "copy_read",
+)
+#: An element-column label as the primary prints it, without the dagger: the element symbol,
+#: optionally followed by a mass number or ``nat``.
+_CELL_LABEL = re.compile(r"^[A-Z][a-z]?(?:-(?:[0-9]+|nat))?$")
+#: A ``Refs.`` cell as printed: a reference number with an optional letter, or the asterisk.
+_CELL_REFS = re.compile(r"^(?:[0-9]+[a-z]?|\*)$")
+#: A separated-isotope label: symbol, hyphen, mass number.
+_SEPARATED_LABEL = re.compile(r"^[A-Z][a-z]?-[0-9]+$")
+
+
+@dataclass(frozen=True)
+class CaptureCellRow:
+    """One Total Capture Rate cell of the primary, read off the rendered page image.
+
+    ``label`` is the element-column label of the group the cell sits in, carried down for the
+    group's continuation rows; ``dagger`` says whether the primary prints that label with its
+    dagger mark. ``rate`` and ``rate_unc`` are kept as printed, strings, so the precision the
+    primary states travels with the value; ``bracketed`` says whether the primary prints the cell
+    in parentheses, and ``refs`` is the ``Refs.`` cell as printed.
+    """
+
+    z: int
+    label: str
+    dagger: bool
+    rate: str
+    rate_unc: str
+    bracketed: bool
+    refs: str
+    locator: str
+    copy_read: str
+
+
+class CaptureCellsError(RuntimeError):
+    """The cells file is malformed. Raised with the row named, never swallowed."""
+
+
+def _cell_bool(text: str | None, column: str, where: str) -> bool:
+    if text not in ("true", "false"):
+        raise CaptureCellsError(f"{where}: {column} must be 'true' or 'false', got {text!r}")
+    return text == "true"
+
+
+def load_capture_cells(path: Path) -> tuple[CaptureCellRow, ...]:
+    """Parse the cells file, in file order.
+
+    As unforgiving as the two audit loaders, and stricter where they were found lenient: a line
+    with the wrong number of cells, a quote byte, a label or a reference outside its grammar, a
+    block that is not contiguous or not in ascending Z, and a duplicate cell are each refused.
+    """
+    raw = path.read_bytes()
+    if b"\r" in raw:
+        raise CaptureCellsError(f"{path.name} contains CR; the file is committed LF-only")
+    if b'"' in raw:
+        raise CaptureCellsError(f"{path.name} contains a quote byte; no cell is quoted")
+    try:
+        text = raw.decode("ascii")
+    except UnicodeDecodeError as exc:
+        raise CaptureCellsError(f"{path.name} is not ASCII: {exc}") from None
+
+    reader = csv.DictReader(text.splitlines())
+    if tuple(reader.fieldnames or ()) != CAPTURE_CELLS_COLUMNS:
+        raise CaptureCellsError(
+            f"{path.name} header is {tuple(reader.fieldnames or ())!r}, expected "
+            f"{CAPTURE_CELLS_COLUMNS!r}"
+        )
+
+    rows: list[CaptureCellRow] = []
+    seen: set[tuple[int, str, str, str, str]] = set()
+    blocks: list[int] = []
+    for number, record in enumerate(reader, start=2):
+        where = f"{path.name} line {number}"
+        if None in record or any(value is None for value in record.values()):
+            raise CaptureCellsError(
+                f"{where}: every line carries exactly {len(CAPTURE_CELLS_COLUMNS)} cells"
+            )
+        try:
+            z = int(record["Z"])
+        except ValueError:
+            raise CaptureCellsError(f"{where}: Z must be an integer") from None
+        label = record["label"]
+        if not _CELL_LABEL.fullmatch(label):
+            raise CaptureCellsError(
+                f"{where}: label must be a symbol, optionally -<A> or -nat, got {label!r}"
+            )
+        rate, rate_unc = record["rate"], record["rate_unc"]
+        if not _PRINTED_ZEFF.fullmatch(rate) or not _PRINTED_ZEFF.fullmatch(rate_unc):
+            raise CaptureCellsError(
+                f"{where}: rate and rate_unc must be digits, a point and digits, got "
+                f"{rate!r} and {rate_unc!r}"
+            )
+        refs = record["refs"]
+        if not _CELL_REFS.fullmatch(refs):
+            raise CaptureCellsError(
+                f"{where}: refs must be a number with an optional letter, or *, got {refs!r}"
+            )
+        row = CaptureCellRow(
+            z=z,
+            label=label,
+            dagger=_cell_bool(record["dagger"], "dagger", where),
+            rate=rate,
+            rate_unc=rate_unc,
+            bracketed=_cell_bool(record["bracketed"], "bracketed", where),
+            refs=refs,
+            locator=record["locator"],
+            copy_read=record["copy_read"],
+        )
+        if not row.locator or not row.copy_read:
+            raise CaptureCellsError(f"{where}: every row must carry a locator and a copy_read")
+        if not blocks or blocks[-1] != z:
+            if z in blocks:
+                raise CaptureCellsError(f"{where}: the rows at Z {z} are not contiguous")
+            if blocks and z < blocks[-1]:
+                raise CaptureCellsError(
+                    f"{where}: blocks must be strictly ascending in Z, got {z} after {blocks[-1]}"
+                )
+            blocks.append(z)
+        key = (z, label, rate, rate_unc, refs)
+        if key in seen:
+            raise CaptureCellsError(f"{where}: duplicate cell {key!r}")
+        seen.add(key)
+        rows.append(row)
+    if not rows:
+        raise CaptureCellsError(f"{path.name} carries no rows")
+    return tuple(rows)
+
+
+def agrees_at_printed_precision(shipped: float, printed: str) -> bool:
+    """`shipped` equals the printed decimal once quantized to the printed digits: the shortest
+    round-trip decimal of the double, rounded to the precision the primary prints, is the printed
+    string. A comparison at more digits than the primary prints would be a claim about digits the
+    primary never made."""
+    quantum = decimal.Decimal(printed)
+    return decimal.Decimal(repr(shipped)).quantize(quantum) == quantum
