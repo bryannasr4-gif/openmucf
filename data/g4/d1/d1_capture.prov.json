@@ -120,14 +120,14 @@
     "17-35": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary lists BOTH natural Cl and the separated isotope Cl-35; A=35 is also round(Ar)=35, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.25. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true.",
-      "isotope_resolved": false,
-      "needs_verification": true,
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists the separated isotope Cl-35; A=35 is also round(Ar)=35 and the primary lists natural Cl too, and the compiled-in value equals the Cl-35 cell alone at the printed precision (capture_rate_cells.csv). Compared with every Total Capture Rate cell the primary prints at Z=17 (Suzuki 1987 (TRI-PP-87-5) Table IV p.25 [copy read: preprint-scan]): Cl 1.39 +- 0.09 [39]; Cl 1.333 +- 0.006 [*]; Cl-35 1.80 +- 0.05 [86]; Cl-37 1.25 +- 0.05 [86]; Cl-nat 1.64 +- 0.08 [86]; the compiled-in 1.800 +- 0.050 equals the Cl-35 cell alone at the primary's printed precision.",
+      "isotope_resolved": true,
+      "needs_verification": false,
       "recommendation": "",
       "single_source": false,
       "source_bibkey": "geant4_v11_4_2",
       "source_library": "geant4-compiled-in",
-      "source_locator": "third_party/geant4/v11.4.2/G4MuonMinusBoundDecay.cc:226 (upstream git blob 29bd73719cd619de34ef83ca5ca076ceadf1cc5a)",
+      "source_locator": "third_party/geant4/v11.4.2/G4MuonMinusBoundDecay.cc:226 (upstream git blob 29bd73719cd619de34ef83ca5ca076ceadf1cc5a); isotope_resolved established by Suzuki 1987 (TRI-PP-87-5) Table IV p.25 [copy read: preprint-scan]",
       "unc_type": "table",
       "validity_range": "Z=17 A=35; outside the listed keys the goulard_primakoff fallback applies"
     },
@@ -274,7 +274,7 @@
     "24-52": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary lists BOTH natural Cr and the separated isotope Cr-52; A=52 is also round(Ar)=52, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.25. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true.",
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary lists BOTH natural Cr and the separated isotope Cr-52; A=52 is also round(Ar)=52, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.25. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true. Compared with every Total Capture Rate cell the primary prints at Z=24 (Suzuki 1987 (TRI-PP-87-5) Table IV p.25 [copy read: preprint-scan]): Cr 3.24 +- 0.08 [39]; Cr 3.33 +- 0.06 [48]; Cr 3.472 +- 0.031 [*]; Cr-50 3.825 +- 0.05 [72]; Cr-52 3.452 +- 0.047 [72]; Cr-53 3.297 +- 0.045 [72]; Cr-54 3.057 +- 0.042 [72]; Cr-nat 3.444 +- 0.047 [72]; the compiled-in 3.465 +- 0.026 equals no cell at the primary's printed precision.",
       "isotope_resolved": false,
       "needs_verification": true,
       "recommendation": "",
@@ -554,7 +554,7 @@
     "38-88": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary lists BOTH natural Sr and the separated isotope Sr-88; A=88 is also round(Ar)=88, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.26. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true.",
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary lists BOTH natural Sr and the separated isotope Sr-88; A=88 is also round(Ar)=88, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.26. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true. Compared with every Total Capture Rate cell the primary prints at Z=38 (Suzuki 1987 (TRI-PP-87-5) Table IV p.26 [copy read: preprint-scan]): Sr 7.25 +- 0.14 [48]; Sr 7.02 +- 0.14 [*]; Sr-88 6.61 +- 0.27 [48]; the compiled-in 6.93 +- 0.12 equals no cell at the primary's printed precision.",
       "isotope_resolved": false,
       "needs_verification": true,
       "recommendation": "",
@@ -1198,7 +1198,7 @@
     "92-236": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary carries U-233, U-235, U-238 at Z=92 but no U-236 -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.28. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true.",
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary carries U-233, U-235, U-238 at Z=92 but no U-236 -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.28. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true. Compared with every Total Capture Rate cell the primary prints at Z=92 (Suzuki 1987 (TRI-PP-87-5) Table IV p.28 [copy read: preprint-scan]): U-233 (15.8 +- 0.9) [61f]; U-233 (14.23 +- 0.15) [70f]; U-235 (14.9 +- 0.6) [61f]; U-235 (14.7 +- 1.0) [60f]; U-235 (12.9 +- 0.4) [62f]; U-235 (13.3 +- 0.2) [57f]; U-235 (13.36 +- 0.12) [70f]; U-235 13.58 +- 0.12 [25f]; U-238 (13.1 +- 0.5) [61f]; U-238 (12.9 +- 0.5) [60f]; U-238 (12.8 +- 0.2) [62f]; U-238 (12.60 +- 0.04) [66f]; U-238 (12.46 +- 0.09) [57f]; U-238 (12.50 +- 0.10) [70f]; U-238 (12.4 +- 0.4) [71f]; U-238 12.57 +- 0.07 [25f]; the compiled-in 13.90 +- 0.40 equals no cell at the primary's printed precision.",
       "isotope_resolved": false,
       "needs_verification": true,
       "recommendation": "",

@@ -1835,8 +1835,7 @@ def test_t61_settled_rows_say_settled_and_unsettled_rows_still_say_open():
 def test_t62_every_primary_the_audit_cites_resolves_in_the_bibliography():
     """Nothing enters the audit that is not in `references.bib` with a DOI or a URL to reach it.
 
-    The same discipline the ledger's CSVs already carry, applied to the one file here a human
-    typed. The match is on the bibkey the audit's locator names, so a locator citing a paper
+    The match is on the bibkey the audit's locator names, so a locator citing a paper
     nobody added to the bibliography fails rather than passing as free text.
     """
     bib_text = (REPO / "openmucf" / "data" / "references.bib").read_text("utf-8")
@@ -1921,6 +1920,10 @@ class DocumentPins:
     #: `(what, pattern, expected_string)` rows of `CHANGELOG.md` whose value is a string read from
     #: a shipped file rather than a count.
     string_claims: list
+    #: Section 6's comparison table, one `(what, pattern, expected_row)` per capture row the audit
+    #: leaves open, the compiled-in literals against every printed cell at its Z; the whole row is
+    #: the pinned span.
+    open_row_comparisons: list
 
 
 def document_pins() -> DocumentPins:
@@ -2182,7 +2185,7 @@ def document_pins() -> DocumentPins:
         ("rows the primary flatly contradicts",
          r"\* \*\*(\d+)\*\* the primary flatly contradicts", len(contradicted)),
         ("rows the primary fails to establish",
-         r"\* \*\*(\d+)\*\* — `\(\d+, \d+\)`, `\(\d+, \d+\)`, `\(\d+, \d+\)` — where the primary",
+         r"\* \*\*(\d+)\*\* — (?:`\(\d+, \d+\)`,? )+— where the primary",
          len(unestablished)),
         ("elements the primary's sentence names", r"Of the (\w+) the sentence names", len(named)),
         ("named elements carrying a separated-isotope record",
@@ -2375,6 +2378,43 @@ def document_pins() -> DocumentPins:
             "section 9's table; the document is wrong, not this test"
         )
 
+    # Section 6's comparison table: one row per capture row the audit leaves open, pinned whole --
+    # the compiled-in literals as the vendored source prints them, every cell the primary prints at
+    # that Z as the committed transcription prints it, and the outcome the comparison derives.
+    blocks = d1.cells_by_z(capture_cells())
+    literals = {
+        (z, a): literal
+        for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
+    }
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    open_row_comparisons = []
+    for z, a in sorted(unsettled):
+        matches = d1.printed_matches(*values[(z, a)], blocks[z])
+        literal_value, literal_unc = literals[(z, a)]
+        row_text = (
+            f"| ({z}, {a}) | {literal_value} +- {literal_unc} | {d1.render_cells(blocks[z])} | "
+            f"{d1.render_outcome(matches)} |"
+        )
+        open_row_comparisons.append((
+            f"comparison row: the open record ({z}, {a}) against the printed cells at Z={z}",
+            "(" + re.escape(row_text) + ")",
+            row_text,
+        ))
+    for what, pattern, expected_row in open_row_comparisons:
+        assert re.findall(pattern, doc) == [expected_row], (
+            f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
+            "section 6's table; the document is wrong, not this test"
+        )
+    # The bullet that lists the rows the primary fails to establish names exactly those keys, in
+    # ascending order: the count above is pinned, and so is the list.
+    listed = re.search(r"\* \*\*\d+\*\* — ((?:`\(\d+, \d+\)`,? )+)— where the primary", doc)
+    assert listed, "DATASET_D1.md no longer lists the rows the primary fails to establish"
+    listed_keys = [(int(z), int(a)) for z, a in re.findall(r"\((\d+), (\d+)\)", listed.group(1))]
+    assert listed_keys == sorted(unestablished), (
+        f"DATASET_D1.md lists {listed_keys} as the rows the primary fails to establish; the audit "
+        f"derives {sorted(unestablished)}"
+    )
+
     changelog_rounded = [
         ("extreme natural abundance", r"is ([\d.]+) % of the natural element",
          _pct((62, 150), "Sm-150"), 1),
@@ -2518,6 +2558,7 @@ def document_pins() -> DocumentPins:
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
         tools_readme_claims, changelog_rounded, crosscheck_rows, string_claims,
+        open_row_comparisons,
     )
 
 
@@ -2971,13 +3012,7 @@ def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_eve
 # --------------------------------------------------------------------------------------------
 
 
-def agrees_at_printed_precision(shipped: float, printed: str) -> bool:
-    """`shipped` equals the printed decimal once quantized to the printed digits: the shortest
-    round-trip decimal of the double, rounded to the precision the primary prints, is the printed
-    string. A comparison at more digits than the primary prints would be a claim about digits the
-    primary never made."""
-    quantum = decimal.Decimal(printed)
-    return decimal.Decimal(repr(shipped)).quantize(quantum) == quantum
+agrees_at_printed_precision = d1.agrees_at_printed_precision
 
 
 def mizuno_parity_pairs() -> list[dict]:
@@ -3102,7 +3137,7 @@ def _swap_first_two_data_lines(text: str) -> str:
 
 
 #: (label, mutation of the file's text, message the loader must give). Each row is one rule of
-#: `load_zeff_audit`; fixtures are cut from the shipped file's own lines, so no cell is typed here.
+#: `load_zeff_audit`; fixtures are cut from the shipped file's own lines.
 ZEFF_AUDIT_DRILLS = [
     ("a CR byte", lambda t: t.replace("\n", "\r\n", 1), "contains CR"),
     ("a non-ASCII byte", lambda t: _line(t, 1, lambda l: l.replace("preprint", "préprint")),
@@ -3233,3 +3268,205 @@ def test_t95_drill_a_copy_with_one_estimate_flipped_is_caught(tmp_path):
     estimates = estimate_rows(copy)
     assert len(estimates) == len(underlined) - 1
     assert estimates != underlined
+
+
+# --------------------------------------------------------------------------------------------
+# T-96 -- the printed capture cells: the shipped file loads, and each loader rule refuses its fixture
+# --------------------------------------------------------------------------------------------
+
+CAPTURE_CELLS = REPO / d1.CAPTURE_CELLS_RELPATH
+
+
+def capture_cells() -> tuple[d1.CaptureCellRow, ...]:
+    return d1.load_capture_cells(CAPTURE_CELLS)
+
+
+def _first_data_cell(text: str, index: int) -> str:
+    return text.split("\n")[1].split(",")[index]
+
+
+#: (label, mutation of the file's text, message the loader must give). Each row is one rule of
+#: `load_capture_cells`; fixtures are cut from the shipped file's own lines.
+CAPTURE_CELLS_DRILLS = [
+    ("a CR byte", lambda t: t.replace("\n", "\r\n", 1), "contains CR"),
+    ("a non-ASCII byte", lambda t: _line(t, 1, lambda l: l.replace("preprint", "préprint")),
+     "is not ASCII"),
+    ("a quote byte", lambda t: _line(t, 1, lambda l: l.replace("preprint", '"preprint"')),
+     "contains a quote byte"),
+    ("the header renamed", lambda t: _line(t, 0, lambda l: l.replace("rate_unc,", "unc,", 1)),
+     "header is"),
+    ("a line with a tenth cell", lambda t: _line(t, 1, lambda l: l + ","), "exactly 9 cells"),
+    ("a line with eight cells", lambda t: _line(t, 1, lambda l: l.rsplit(",", 1)[0]),
+     "exactly 9 cells"),
+    ("a non-integer Z", lambda t: _line(t, 1, _cell(0, _first_data_cell(t, 1))),
+     "must be an integer"),
+    ("a label outside its grammar", lambda t: _line(t, 1, _cell(1, _first_data_cell(t, 7))),
+     "label must be"),
+    ("a rate without a point", lambda t: _line(t, 1, _cell(3, _first_data_cell(t, 0))),
+     "digits, a point and digits"),
+    ("a rate_unc without a point", lambda t: _line(t, 1, _cell(4, _first_data_cell(t, 0))),
+     "digits, a point and digits"),
+    ("a refs outside its grammar", lambda t: _line(t, 1, _cell(6, _first_data_cell(t, 1))),
+     "refs must be"),
+    ("a dagger outside true/false", lambda t: _line(t, 1, _cell(2, _first_data_cell(t, 1))),
+     "dagger must be 'true' or 'false'"),
+    ("a bracketed outside true/false", lambda t: _line(t, 1, _cell(5, _first_data_cell(t, 1))),
+     "bracketed must be 'true' or 'false'"),
+    ("an empty locator", lambda t: _line(t, 1, _cell(7, "")), "locator and a copy_read"),
+    ("an empty copy_read", lambda t: _line(t, 1, _cell(8, "")), "locator and a copy_read"),
+    ("a block split in two", lambda t: _line(t, 2, _cell(0, t.split("\n")[-2].split(",")[0])),
+     "not contiguous"),
+    ("blocks not ascending in Z",
+     lambda t: "\n".join([t.split("\n")[0], t.split("\n")[-2]] + t.split("\n")[1:-2] + [""]),
+     "strictly ascending in Z"),
+    ("a duplicate cell", lambda t: _line(t, 2, lambda l: t.split("\n")[1]), "duplicate cell"),
+    ("no rows", lambda t: t.split("\n")[0] + "\n", "carries no rows"),
+]
+
+
+def test_t96_the_shipped_capture_cells_load_and_every_row_names_its_element_table_page_and_copy():
+    """The committed file passes every rule; each row's Z is the atomic number of the element its
+    label names, its locator names the primary's Table IV and a page, and it names a copy this
+    project distinguishes."""
+    cells = capture_cells()
+    assert cells, "an empty cells file would make every check below vacuous"
+    for cell in cells:
+        assert cell.z == SYMBOL_Z[cell.label.split("-")[0]], (cell.z, cell.label)
+        assert re.search(r"\bTable IV\b", cell.locator), (cell.z, cell.locator)
+        assert re.search(r"\bp\.\d+", cell.locator), (cell.z, cell.locator)
+        assert cell.copy_read in KNOWN_COPIES, (cell.z, cell.copy_read)
+
+
+@pytest.mark.parametrize(
+    "label, mutate, message", CAPTURE_CELLS_DRILLS, ids=[d[0] for d in CAPTURE_CELLS_DRILLS]
+)
+def test_t96_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate, message):
+    """Corrupt the cells file in one way, in a temporary copy; the loader must refuse it with the
+    rule's own message. The unmutated copy loads, so the message is the rule's."""
+    text = CAPTURE_CELLS.read_bytes().decode("ascii")
+    path = tmp_path / CAPTURE_CELLS.name
+    path.write_bytes(text.encode("ascii"))
+    d1.load_capture_cells(path)  # the copy loads before the mutation
+    mutated = mutate(text)
+    assert mutated != text, label
+    path.write_bytes(mutated.encode("utf-8"))
+    with pytest.raises(d1.CaptureCellsError, match=re.escape(message)):
+        d1.load_capture_cells(path)
+
+
+# --------------------------------------------------------------------------------------------
+# T-97 -- the capture rows the audit had left open, decided by comparison with the printed cells
+# --------------------------------------------------------------------------------------------
+
+
+def check_open_row_verdicts(
+    audit: dict[tuple[int, int], d1.IsotopeAuditRow],
+    cells: tuple[d1.CaptureCellRow, ...],
+    document: provenance.ProvDocument,
+) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
+    """The comparison rule as a check: every capture row whose flag the listing alone cannot settle
+    is compared, value and uncertainty, with every cell the primary prints at its Z at the primary's
+    printed precision; one equal cell settles it to that entry, any other count leaves it open, and
+    the audit, the shipped Layer 2 and the block of cells must all say so. Returns
+    `(by_value, unsettled)`; raises `AssertionError` where they disagree."""
+    found = extraction()
+    blocks = d1.cells_by_z(cells)
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    literals = {
+        (z, a): literal
+        for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
+    }
+    by_value = sorted(
+        key for key, finding in audit.items()
+        if key[0] in blocks and d1.decided_by_value(key, finding.evidence, blocks[key[0]])
+    )
+    unsettled = sorted(key for key, finding in audit.items() if not finding.settled)
+    # (a) every unsettled row is decided here, and every block of cells decides at least one row.
+    assert set(unsettled) <= set(by_value), sorted(set(unsettled) - set(by_value))
+    for z in blocks:
+        assert any(key[0] == z for key in by_value), f"the cells at Z={z} decide no row"
+    print(f"\ndecided by value: {by_value}")
+    open_by_value = set()
+    for key in by_value:
+        z, a = key
+        finding = audit[key]
+        block = blocks[z]
+        matches = d1.printed_matches(*values[key], block)
+        literal_value, literal_unc = literals[key]
+        # (b) one equal cell is a settled row, to exactly that cell's entry; otherwise open.
+        assert (len(matches) == 1) is finding.settled, (key, d1.render_outcome(matches))
+        if finding.settled:
+            (match,) = matches
+            assert finding.locator == match.locator, key
+            assert finding.copy_read == match.copy_read, key
+            assert finding.isotope_resolved is d1.is_separated_label(match.label), key
+            if d1.is_separated_label(match.label):
+                assert finding.evidence.startswith(
+                    "the primary lists the separated isotope " + match.label
+                ), key
+        row = document.rows[f"{z}-{a}"]
+        assert row.needs_verification is not finding.settled, key
+        assert row.evaluation_method.endswith(
+            d1.render_comparison(z, literal_value, literal_unc, block, matches)
+        ), key
+        # (c) a record whose A no printed label carries can equal a cell of another nuclide; that
+        # is a finding to register under its own name, never a row to settle here.
+        printed_as = {
+            int(cell.label.split("-")[1]) for cell in block if d1.is_separated_label(cell.label)
+        }
+        if a not in printed_as:
+            assert len(matches) != 1, (
+                f"{key} carries no printed label of its A yet equals exactly one cell, "
+                f"{d1.render_cell(matches[0]) if matches else ''}: a registration is needed"
+            )
+        if len(matches) != 1:
+            open_by_value.add(key)
+        print(
+            f"  {key}: parity {literal_value} +- {literal_unc}, matches "
+            f"{[d1.render_cell(match) for match in matches]}, verdict {d1.render_outcome(matches)}"
+        )
+    # (d) the open rows are exactly the decided-by-value rows no single cell equals.
+    assert set(unsettled) == open_by_value, (sorted(unsettled), sorted(open_by_value))
+    return by_value, unsettled
+
+
+def test_t97_every_open_capture_row_is_decided_by_comparison_with_the_printed_cells():
+    """The rule the chapter states as a command over the shipped audit, cells and Layer 2; and the
+    document tabulates exactly the rows that stay open."""
+    _, document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    by_value, unsettled = check_open_row_verdicts(audit_rows(), capture_cells(), document)
+    assert by_value, "no row is decided by value; the check above was vacuous"
+    assert len(document_pins().open_row_comparisons) == len(unsettled)
+
+
+def test_t97_drill_a_settled_row_whose_cell_moves_in_its_last_digit_is_caught(tmp_path):
+    """Take the one cell a settled decided-by-value row equals -- found by label from the shipped
+    files, not typed -- and alter its last printed digit in a temporary copy of the cells file: the
+    row then equals no cell while the audit still says settled, and the check fails on it."""
+    audit = audit_rows()
+    cells = capture_cells()
+    _, document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    by_value, _ = check_open_row_verdicts(audit, cells, document)
+    settled = [key for key in by_value if audit[key].settled]
+    assert settled, "no decided-by-value row is settled; the drill has nothing to alter"
+    z, a = settled[0]
+    found = extraction()
+    values = {(z_, a_): (value, unc) for z_, a_, value, unc in found.capture_records}
+    (match,) = d1.printed_matches(*values[(z, a)], d1.cells_by_z(cells)[z])
+    text = CAPTURE_CELLS.read_bytes().decode("ascii")
+    lines = text.split("\n")
+    hits = [
+        index for index, line in enumerate(lines[1:], start=1)
+        if line.split(",")[:2] == [str(match.z), match.label]
+        and line.split(",")[3:5] == [match.rate, match.rate_unc]
+    ]
+    assert len(hits) == 1, hits
+    cells_ = lines[hits[0]].split(",")
+    cells_[3] = match.rate[:-1] + str((int(match.rate[-1]) + 1) % 10)
+    lines[hits[0]] = ",".join(cells_)
+    mutated = "\n".join(lines)
+    assert mutated != text
+    path = tmp_path / CAPTURE_CELLS.name
+    path.write_bytes(mutated.encode("ascii"))
+    with pytest.raises(AssertionError):
+        check_open_row_verdicts(audit, d1.load_capture_cells(path), document)

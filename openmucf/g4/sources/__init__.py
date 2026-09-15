@@ -3,7 +3,7 @@
 A ``parity`` profile claims to reproduce some other implementation's compiled-in numbers
 bit-for-bit. The only way to make that claim checkable is to derive the dataset **from the upstream
 source text itself**, at build time, every time -- so this package parses vendored upstream files
-and hands the generator records it read rather than records anybody typed.
+and hands the generator records it read.
 
 Two rules govern everything here, and both exist because the alternative silently produces a dataset
 that is wrong in a way no test notices:

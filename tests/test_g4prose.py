@@ -170,6 +170,7 @@ def pin_table() -> list[Pin]:
         ("cpp/tools/README.md", pins.tools_readme_claims),
         ("DATASET_D1.md", pins.crosscheck_rows),
         ("CHANGELOG.md", pins.string_claims),
+        ("DATASET_D1.md", pins.open_row_comparisons),
     ):
         for row in rows:
             table.append(Pin(row[0], path, row[1], (1,)))
@@ -268,7 +269,13 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
         Pin("mononuclidic route, section 6 restated", "DATASET_D1.md",
             r"the (\d+) mononuclidic calls above", (1,), _computed(pins, "mononuclidic route")),
         Pin("open rows, section 6 closing sentence", "DATASET_D1.md",
-            r"Three of the (\w+) unsettled rows appear in that list", (1,), open_rows),
+            r"\w+ of the (\w+) unsettled rows appear in that list", (1,), open_rows),
+        Pin("unsettled rows inside the disagreement list", "DATASET_D1.md",
+            r"(\w+) of the \w+ unsettled rows appear in that list", (1,),
+            _computed(pins, "rows the primary fails to establish")),
+        Pin("unsettled rows outside the disagreement list", "DATASET_D1.md",
+            r"unsettled rows appear in that list and (\w+) does not", (1,),
+            open_rows - _computed(pins, "rows the primary fails to establish")),
         Pin("open rows, against the disagreements", "DATASET_D1.md",
             r"The (\w+) open rows and the \d+ disagreements", (1,), open_rows),
         Pin("rows the old rule disagrees with, restated", "DATASET_D1.md",

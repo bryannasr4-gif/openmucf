@@ -20,7 +20,7 @@ Z,A,isotope_resolved,evidence,locator,copy_read
 14,28,false,"the primary lists natural Si only, so the value rests on a natural-composition target; Si-28 is 92.22% of natural Si",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
 15,31,true,the primary lists natural P; P is mononuclidic (P-31 = 100% of the natural element),Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
 16,32,false,"the primary lists natural S only, so the value rests on a natural-composition target; S-32 is 94.99% of natural S",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
-17,35,false,"the primary lists BOTH natural Cl and the separated isotope Cl-35; A=35 is also round(Ar)=35, so the key does not identify which entry this record reproduces -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.25",,
+17,35,true,"the primary lists the separated isotope Cl-35; A=35 is also round(Ar)=35 and the primary lists natural Cl too, and the compiled-in value equals the Cl-35 cell alone at the printed precision (capture_rate_cells.csv)",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
 17,37,true,the primary lists the separated isotope Cl-37,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
 18,40,false,"the primary lists natural Ar only, so the value rests on a natural-composition target; Ar-40 is 99.60% of natural Ar",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
 19,39,false,"the primary lists natural K only, so the value rests on a natural-composition target; K-39 is 93.26% of natural K",Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan

@@ -21,7 +21,7 @@ Software License they are distributed under.
 Goulard–Primakoff analytic fallback used for every `(Z, A)` the table does not list. The
 `G4MuonicData` D1 dataset in `data/g4/d1/` is generated **from this file** — the record counts, the
 values and the fallback coefficients are all parsed out of it at build time by
-`openmucf/g4/sources/d1_nuclear_capture.py`, and nothing in that chain is transcribed by hand.
+`openmucf/g4/sources/d1_nuclear_capture.py`.
 
 Vendoring it is what makes the parity claim checkable by someone who has neither a Geant4 checkout
 nor a Geant4 build: `make g4data` regenerates the dataset from these bytes, `make audit` byte-diffs
