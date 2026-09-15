@@ -51,12 +51,16 @@ __all__ = [
     "IsotopeAuditRow",
     "SourceCopy",
     "SourceExtractionError",
+    "ZEFF_AUDIT_COLUMNS",
+    "ZEFF_AUDIT_RELPATH",
+    "ZeffAuditRow",
     "capture_rate",
     "check_helper_pins",
     "extract",
     "load",
     "load_helper",
     "load_isotope_audit",
+    "load_zeff_audit",
     "parse_fallback_directive",
     "render_fallback_directive",
     "sweep_digest",
@@ -807,4 +811,105 @@ def load_isotope_audit(path: Path) -> dict[tuple[int, int], IsotopeAuditRow]:
         rows[(z, a)] = row
     if not rows:
         raise IsotopeAuditError(f"{path.name} carries no rows")
+    return rows
+
+
+# --------------------------------------------------------------------------------------------
+# the effective-charge audit -- every printed Z(Zeff) cell of the primary's two tables
+# --------------------------------------------------------------------------------------------
+
+#: Where the audit lives, relative to the repository root.
+ZEFF_AUDIT_RELPATH = "data/g4/d1/zeff_audit.csv"
+#: Its columns, in order. The header must match exactly, for the isotope audit's reason: a reordered
+#: or renamed column is a silent re-interpretation of hand-entered data.
+ZEFF_AUDIT_COLUMNS = ("Z", "printed_z", "printed_zeff", "underlined", "locator", "copy_read")
+#: A printed effective charge: digits, a point, digits. Carried as the string the primary prints,
+#: trailing zeros included, because the printed precision is part of what was read.
+_PRINTED_ZEFF = re.compile(r"[0-9]+\.[0-9]+")
+
+
+@dataclass(frozen=True)
+class ZeffAuditRow:
+    """One printed ``Z(Zeff)`` cell of the primary, read off the rendered page image.
+
+    ``z`` is the element's atomic number -- the element column decides it -- and ``printed_z`` is
+    the Z the primary prints beside the cell; the two differ on exactly the rows the primary
+    misprints. ``printed_zeff`` is kept as printed, a string, so the precision the primary states
+    travels with the value. ``underlined`` is the primary's own estimate mark on the cell.
+    """
+
+    z: int
+    printed_z: int
+    printed_zeff: str
+    underlined: bool
+    locator: str
+    copy_read: str
+
+
+class ZeffAuditError(RuntimeError):
+    """The effective-charge audit is malformed. Raised with the row named, never swallowed."""
+
+
+def load_zeff_audit(path: Path) -> dict[int, ZeffAuditRow]:
+    """Parse the effective-charge audit, refusing anything a generator could carry into shipped bytes.
+
+    As unforgiving as :func:`load_isotope_audit`, for the same reason: this file was read off page
+    images by a person, so its structural invariants are the whole of the protection available.
+    Rows are keyed by ``z`` and must arrive strictly ascending in it, so the file has one order.
+    """
+    raw = path.read_bytes()
+    if b"\r" in raw:
+        raise ZeffAuditError(f"{path.name} contains CR; the audit is committed LF-only")
+    try:
+        text = raw.decode("ascii")
+    except UnicodeDecodeError as exc:
+        raise ZeffAuditError(f"{path.name} is not ASCII: {exc}") from None
+
+    reader = csv.DictReader(text.splitlines())
+    if tuple(reader.fieldnames or ()) != ZEFF_AUDIT_COLUMNS:
+        raise ZeffAuditError(
+            f"{path.name} header is {tuple(reader.fieldnames or ())!r}, expected "
+            f"{ZEFF_AUDIT_COLUMNS!r}"
+        )
+
+    rows: dict[int, ZeffAuditRow] = {}
+    previous: int | None = None
+    for number, record in enumerate(reader, start=2):
+        where = f"{path.name} line {number}"
+        try:
+            z, printed_z = int(record["Z"]), int(record["printed_z"])
+        except (TypeError, ValueError):
+            raise ZeffAuditError(f"{where}: Z and printed_z must be integers") from None
+        printed_zeff = record["printed_zeff"]
+        if not isinstance(printed_zeff, str) or not _PRINTED_ZEFF.fullmatch(printed_zeff):
+            raise ZeffAuditError(
+                f"{where}: printed_zeff must be digits, a point and digits, got {printed_zeff!r}"
+            )
+        underlined = record["underlined"]
+        if underlined not in ("true", "false"):
+            raise ZeffAuditError(
+                f"{where}: underlined must be 'true' or 'false', got {underlined!r}"
+            )
+        row = ZeffAuditRow(
+            z=z,
+            printed_z=printed_z,
+            printed_zeff=printed_zeff,
+            underlined=underlined == "true",
+            locator=record["locator"] or "",
+            copy_read=record["copy_read"] or "",
+        )
+        # A cell that was read has a page it was read on and a copy it was read from; a row
+        # without either is a value with nothing behind it.
+        if not row.locator or not row.copy_read:
+            raise ZeffAuditError(f"{where}: every row must carry a locator and a copy_read")
+        if z in rows:
+            raise ZeffAuditError(f"{where}: duplicate Z {z}")
+        if previous is not None and z <= previous:
+            raise ZeffAuditError(
+                f"{where}: rows must be strictly ascending in Z, got {z} after {previous}"
+            )
+        rows[z] = row
+        previous = z
+    if not rows:
+        raise ZeffAuditError(f"{path.name} carries no rows")
     return rows

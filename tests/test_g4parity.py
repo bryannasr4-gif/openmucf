@@ -3059,3 +3059,86 @@ def test_t91_drill_agreement_is_decided_at_the_printed_digits():
     assert not agrees_at_printed_precision(0.4823, "0.4856")
     assert not agrees_at_printed_precision(0.03, "0.08")
     assert not agrees_at_printed_precision(0.0015, "0.009")
+
+
+# --------------------------------------------------------------------------------------------
+# T-93 -- the effective-charge audit: the shipped file loads, and each loader rule refuses its fixture
+# --------------------------------------------------------------------------------------------
+
+ZEFF_AUDIT = REPO / d1.ZEFF_AUDIT_RELPATH
+
+
+def zeff_audit_rows() -> dict[int, d1.ZeffAuditRow]:
+    return d1.load_zeff_audit(ZEFF_AUDIT)
+
+
+def _line(text: str, index: int, mutate) -> str:
+    """The text with line `index` (0 = the header, 1 = the first data line) replaced."""
+    lines = text.split("\n")
+    lines[index] = mutate(lines[index])
+    return "\n".join(lines)
+
+
+def _cell(index: int, value: str):
+    """A line mutation that sets column `index` to `value`."""
+    def mutate(line: str) -> str:
+        cells = line.split(",")
+        cells[index] = value
+        return ",".join(cells)
+    return mutate
+
+
+def _swap_first_two_data_lines(text: str) -> str:
+    lines = text.split("\n")
+    lines[1], lines[2] = lines[2], lines[1]
+    return "\n".join(lines)
+
+
+#: (label, mutation of the file's text, message the loader must give). Each row is one rule of
+#: `load_zeff_audit`; fixtures are cut from the shipped file's own lines, so no cell is typed here.
+ZEFF_AUDIT_DRILLS = [
+    ("a CR byte", lambda t: t.replace("\n", "\r\n", 1), "contains CR"),
+    ("a non-ASCII byte", lambda t: _line(t, 1, lambda l: l.replace("preprint", "préprint")),
+     "is not ASCII"),
+    ("the header renamed", lambda t: _line(t, 0, lambda l: l.replace("printed_z,", "printed,", 1)),
+     "header is"),
+    ("a non-integer Z", lambda t: _line(t, 1, _cell(0, "H")), "must be integers"),
+    ("a non-integer printed_z", lambda t: _line(t, 1, _cell(1, "H")), "must be integers"),
+    ("a printed_zeff without a point", lambda t: _line(t, 1, _cell(2, "1")),
+     "digits, a point and digits"),
+    ("an underlined outside true/false", lambda t: _line(t, 1, _cell(3, "yes")),
+     "must be 'true' or 'false'"),
+    ("an empty locator", lambda t: _line(t, 1, _cell(4, "")), "locator and a copy_read"),
+    ("an empty copy_read", lambda t: _line(t, 1, _cell(5, "")), "locator and a copy_read"),
+    ("a duplicate Z", lambda t: _line(t, 2, _cell(0, t.split("\n")[1].split(",")[0])), "duplicate Z"),
+    ("rows not ascending in Z", _swap_first_two_data_lines, "strictly ascending in Z"),
+    ("no rows", lambda t: t.split("\n")[0] + "\n", "carries no rows"),
+]
+
+
+def test_t93_the_shipped_effective_charge_audit_loads_and_every_row_names_a_table_page_and_copy():
+    """The committed file passes every rule; each row is keyed by its own Z, names one of the
+    primary's two tables and a page, and names a copy this project distinguishes."""
+    audit = zeff_audit_rows()
+    assert audit, "an empty audit would make every check below vacuous"
+    assert list(audit) == sorted(audit)
+    for z, row in audit.items():
+        assert row.z == z
+        assert re.search(r"\bTable (III|IV)\b", row.locator), (z, row.locator)
+        assert re.search(r"\bp\.\d+", row.locator), (z, row.locator)
+        assert row.copy_read in KNOWN_COPIES, (z, row.copy_read)
+
+
+@pytest.mark.parametrize("label, mutate, message", ZEFF_AUDIT_DRILLS, ids=[d[0] for d in ZEFF_AUDIT_DRILLS])
+def test_t93_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate, message):
+    """Corrupt the audit in one way, in a temporary copy; the loader must refuse it with the rule's
+    own message. The unmutated copy loads, so the message is the rule's."""
+    text = ZEFF_AUDIT.read_bytes().decode("ascii")
+    path = tmp_path / ZEFF_AUDIT.name
+    path.write_bytes(text.encode("ascii"))
+    d1.load_zeff_audit(path)  # the copy loads before the mutation
+    mutated = mutate(text)
+    assert mutated != text, label
+    path.write_bytes(mutated.encode("utf-8"))
+    with pytest.raises(d1.ZeffAuditError, match=re.escape(message)):
+        d1.load_zeff_audit(path)
