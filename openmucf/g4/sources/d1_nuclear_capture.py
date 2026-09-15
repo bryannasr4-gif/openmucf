@@ -759,9 +759,7 @@ def _audit_bool(text: str, where: str) -> bool:
 def load_isotope_audit(path: Path) -> dict[tuple[int, int], IsotopeAuditRow]:
     """Parse the audit, refusing anything a generator could otherwise carry into shipped bytes.
 
-    The checks are deliberately unforgiving. This is the only file in the D1 chain a human typed,
-    so it is the only one where a mistake cannot be caught by comparing against the vendored
-    source -- which makes the structural invariants the whole of the protection available.
+    The checks are deliberately unforgiving.
     """
     raw = path.read_bytes()
     if b"\r" in raw:
@@ -851,10 +849,9 @@ class ZeffAuditError(RuntimeError):
 
 
 def load_zeff_audit(path: Path) -> dict[int, ZeffAuditRow]:
-    """Parse the effective-charge audit, refusing anything a generator could carry into shipped bytes.
+    """Parse the effective-charge audit.
 
-    As unforgiving as :func:`load_isotope_audit`, for the same reason: this file was read off page
-    images by a person, so its structural invariants are the whole of the protection available.
+    As unforgiving as :func:`load_isotope_audit`.
     Rows are keyed by ``z`` and must arrive strictly ascending in it, so the file has one order.
     """
     raw = path.read_bytes()
