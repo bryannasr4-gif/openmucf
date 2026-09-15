@@ -400,7 +400,6 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 811ccd8f21ca093d05a97582464156333185a6d5	DATASET_D1.md	REGISTERED: 50, 8 -- quoted from the primary's abstract ('in 50 elements plus 8 isotopes'), which this repository does not redistribute; the sentence marks it as the paper's count of its own measurements
 81b7e60cb61b9cd488226104b8884fefbcbc30bd	DATASET_D1.md	REGISTERED: 56, 55 -- the atomic numbers of barium and caesium; the effective charges beside them are pinned (29.99 in tests/test_g4prose.py, 29.75 by T-63)
 851c7bb53ac84e8a4592b6edbf36c4579bca72ca	DATASET_D1.md	REGISTERED: Two, one -- 'Two different sources' are the primary and the NIST table the paragraph names; 'only one of them' is a pronoun
-896efd9c98609486ecfe842c25e3ae23ee8b38ff	DATASET_D1.md	REGISTERED: two -- the revisions the sentence itself names, v11.4.2 and v11.5.0.beta
 8a095a16d997cc6d395b1885a928735f4ca87286	DATASET_D1.md	REGISTERED: one -- 'one row per record': the audit's shape, which T-59 asserts (every capture record exactly once)
 8de9cfee1916ed9cf8ddd69745a67ffdaeefc5e9	DATASET_D1.md	REGISTERED: 92, 236 -- the fourth unsettled key (92, 236), a row of isotope_audit.csv
 8efaeb5287c2781a3b2d21fd8da5447aec715b38	DATASET_D1.md	REGISTERED: four -- the four coefficients a consumer 'handed only the coefficients' would hold (b0a, b0b, b0c, t1), contrasted with the eight inputs T-63 pins on this line; a rhetorical count of named items
@@ -411,6 +410,7 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 99bd714b9cb75871b8d1cc5b34ae4c334bad9f1f	DATASET_D1.md	REGISTERED: one -- a pronoun ('is also one')
 9c9075f748f010857bd814f245a137fc79866b5d	DATASET_D1.md	REGISTERED: 38, 88 -- the strontium record's key (38, 88) and the nuclide label Sr-88; the key is a row of isotope_audit.csv, which T-59 covers record by record
 a11b54149e780f3a8b134852b2722541c8db2b45	DATASET_D1.md	REGISTERED: 208 -- the nuclide label Pb-208; its abundance on this line is T-63's rounded pin
+a288c6546812f98bd570866fe2b7112da1815b3d	DATASET_D1.md	REGISTERED: two -- the revisions the sentence itself names, v11.4.2 and v11.5.0.beta
 a645c7fb6432acd2a5922f6d1448904b1597d710	DATASET_D1.md	REGISTERED: 1.0, 4 -- the bracket grouping restates the listing's constants (same standing as the listing's constants)
 a7e99bbe4ad4965a5a82ce201d71d3154bc3b616	DATASET_D1.md	REGISTERED: 17, 35, 24, 52, 38, 88 -- the unsettled keys the primary prints ambiguously, (17, 35), (24, 52) and (38, 88): rows of isotope_audit.csv carrying needs_verification: true; with (92, 236) they are the T-63 pins
 aadc671f7a45b1b4fe1e4b400be24d64082061be	DATASET_D1.md	EXERCISED: 36, 43, 44, 54, 61, 63 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
