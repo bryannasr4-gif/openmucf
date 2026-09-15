@@ -1,0 +1,123 @@
+{
+  "dataset": "G4MuonicData",
+  "precedence": [
+    "mizuno2025"
+  ],
+  "profile": "mizuno2025",
+  "rows": {
+    "12-0": {
+      "conditions": "Table 1 caption: \"Huff factor (Q) taken from Ref [4]\"; printed Q for this target: 0.995; Table 1 row: \"Self-supported plate\", lifetime 1065.5(2.0) ns; copy read: arXiv:2501.05897v2 HTML; the journal version is unread",
+      "evaluation_id": "mizuno2025-table3",
+      "evaluation_method": "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here",
+      "isotope_resolved": false,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": false,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "mizuno2025",
+      "source_locator": "Table 3, Exp. column [copy read: arxiv-html]",
+      "unc_type": "exp",
+      "validity_range": "Z=12 natural composition"
+    },
+    "13-27": {
+      "conditions": "Table 1 caption: \"Huff factor (Q) taken from Ref [4]\"; printed Q for this target: 0.993; Table 1 row: \"Self-supported plate\", lifetime 863.7(1.0) ns; Table 1 row: \"Plate in case\", lifetime 862.5(8.1) ns; Table 3 footnote: \"Average of two experimental data in Table 1.\"; copy read: arXiv:2501.05897v2 HTML; the journal version is unread",
+      "evaluation_id": "mizuno2025-table3",
+      "evaluation_method": "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": false,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "mizuno2025",
+      "source_locator": "Table 3, Exp. column [copy read: arxiv-html]",
+      "unc_type": "exp",
+      "validity_range": "Z=13 A=27"
+    },
+    "14-0": {
+      "conditions": "Table 1 caption: \"Huff factor (Q) taken from Ref [4]\"; printed Q for this target: 0.992; Table 1 row: \"Self-supported plate\", lifetime 751.6(1.0) ns; Table 1 row: \"Powder in case\", lifetime 749.8(2.8) ns; Table 3 footnote: \"Average of two experimental data in Table 1.\"; copy read: arXiv:2501.05897v2 HTML; the journal version is unread",
+      "evaluation_id": "mizuno2025-table3",
+      "evaluation_method": "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here",
+      "isotope_resolved": false,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": false,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "mizuno2025",
+      "source_locator": "Table 3, Exp. column [copy read: arxiv-html]",
+      "unc_type": "exp",
+      "validity_range": "Z=14 natural composition"
+    },
+    "14-28": {
+      "conditions": "Table 1 caption: \"Huff factor (Q) taken from Ref [4]\"; printed Q for this target: 0.992; Table 1 row: \"Powder in case\", lifetime 743.9(5.0) ns; copy read: arXiv:2501.05897v2 HTML; the journal version is unread",
+      "evaluation_id": "mizuno2025-table3",
+      "evaluation_method": "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "mizuno2025",
+      "source_locator": "Table 3, Exp. column [copy read: arxiv-html]",
+      "unc_type": "exp",
+      "validity_range": "Z=14 A=28"
+    },
+    "14-29": {
+      "conditions": "Table 1 caption: \"Huff factor (Q) taken from Ref [4]\"; printed Q for this target: 0.992; Table 1 row: \"Powder in case\", lifetime 794.2(3.5) ns; copy read: arXiv:2501.05897v2 HTML; the journal version is unread",
+      "evaluation_id": "mizuno2025-table3",
+      "evaluation_method": "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "mizuno2025",
+      "source_locator": "Table 3, Exp. column [copy read: arxiv-html]",
+      "unc_type": "exp",
+      "validity_range": "Z=14 A=29"
+    },
+    "14-30": {
+      "conditions": "Table 1 caption: \"Huff factor (Q) taken from Ref [4]\"; printed Q for this target: 0.992; Table 1 row: \"Small pieces in case\", lifetime 859.0(2.7) ns; copy read: arXiv:2501.05897v2 HTML; the journal version is unread",
+      "evaluation_id": "mizuno2025-table3",
+      "evaluation_method": "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "mizuno2025",
+      "source_locator": "Table 3, Exp. column [copy read: arxiv-html]",
+      "unc_type": "exp",
+      "validity_range": "Z=14 A=30"
+    },
+    "25-55": {
+      "conditions": "Table 1 caption: \"Huff factor (Q) taken from Ref [4]\"; printed Q for this target: 0.976; Table 1 row: \"Chippings in case\", lifetime 230.3(4.5) ns; copy read: arXiv:2501.05897v2 HTML; the journal version is unread",
+      "evaluation_id": "mizuno2025-table3",
+      "evaluation_method": "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": false,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "mizuno2025",
+      "source_locator": "Table 3, Exp. column [copy read: arxiv-html]",
+      "unc_type": "exp",
+      "validity_range": "Z=25 A=55"
+    },
+    "47-0": {
+      "conditions": "Table 1 caption: \"Huff factor (Q) taken from Ref [4]\"; printed Q for this target: 0.925; Table 1 row: \"Plate in case\", lifetime 87.0(0.5) ns; copy read: arXiv:2501.05897v2 HTML; the journal version is unread",
+      "evaluation_id": "mizuno2025-table3",
+      "evaluation_method": "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here",
+      "isotope_resolved": false,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": false,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "mizuno2025",
+      "source_locator": "Table 3, Exp. column [copy read: arxiv-html]",
+      "unc_type": "exp",
+      "validity_range": "Z=47 natural composition"
+    }
+  },
+  "seam": "d1_nuclear_capture",
+  "version": "0.3.0"
+}

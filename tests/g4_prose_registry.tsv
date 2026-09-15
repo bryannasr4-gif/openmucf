@@ -45,6 +45,7 @@
 2087cb71dddadd0ad2a82add96ce66e1c597f4df	CHANGELOG.md	REGISTERED: 0.14, 13.9 -- `omega_tt` = 0.14 in openmucf/data/rates.csv and the corroborating 13.9(1.5)% its row notes
 211d9f1db07f859b3f9c1de54568e433884d7ba7	CHANGELOG.md	REGISTERED: 112.6, 156.5, 10 -- Kou–Chen's published yields and the ±10% tolerance, benchmarks/kou-chen-2026.json
 21e9a7aa2e064a5d45a6d256cabd4cfb925e831c	CHANGELOG.md	REGISTERED: 1 -- the line the plural forms added, a dated count
+2230981652f7f2e2896294d13b50fb7040462219	CHANGELOG.md	REGISTERED: 0 -- `A = 0`, the key a natural-composition target carries under A:natural_and_listed; T-92 holds every such record of the shipped file
 23d0f7b3fb05e61bb744af95870fc8035c5341be	CHANGELOG.md	REGISTERED: two -- the two changes this heading's entry enumerates
 2511a37a08845683561e23a54442f437d06ca4b6	CHANGELOG.md	REGISTERED: two -- the two residue measurements the next sentences restate
 252b4d0c4119a09f620085ed5c0c5d9b686f70e1	CHANGELOG.md	REGISTERED: one, Three -- VALIDATION.md's summary counts the three Yamashita rows as one test; the three targets the sentence goes on to enumerate
@@ -184,6 +185,7 @@
 90af060e5a75c9308a5f134fc7955357b1a2afc1	CHANGELOG.md	REGISTERED: 856, 969, 144, 745, 80 -- the ledger-claims registry's row counts before and after this entry, by status: dated counts
 916fb28a9b842c3a4abe772f7bafc296003b0ba6	CHANGELOG.md	REGISTERED: 7, 1, 0 -- the scoreboard as the v1.1.0 notes recorded it, superseded by the v1.2.0 class-tiered scoreboard entry
 91a34dd40ab60fab6c26bc9ebf9e740e27cc9f7c	CHANGELOG.md	REGISTERED: 71 -- the lines the aggregate nouns added, a dated count
+925a4df91f93cc6ab47b6a062b821792e1572d1c	CHANGELOG.md	REGISTERED: 0 -- `(Z, 0)`, the natural-composition rung of the reader's lookup, held by V-15 and T-92
 92769a38974ed591203c07c49242deb6d652115f	CHANGELOG.md	REGISTERED: Twelve, three, 4.70 -- the rows of openmucf/data/muon_cost.csv and its three tiers, and Kelly's `kelly_hart_rose_2021` value
 928ac5e5c44470da944ae6a3eb647ce60977d9df	CHANGELOG.md	REGISTERED: 1 -- '(1−R)', the closed form's factor, openmucf/analytic.py
 92cacda373d8a75dd37604e203695871db8f71f5	CHANGELOG.md	REGISTERED: Three, 1.92, 8 -- the three rows the bullet names, and `lambda_dhe3` = 1.92e8 in openmucf/data/rates.csv
@@ -423,8 +425,8 @@ b0642f3fe777272542bf2446805d2a2f09e7b1e2	DATASET_D1.md	REGISTERED: one -- a pron
 b0c4dd5c2583fe53f742aff3590694a7a378b363	DATASET_D1.md	REGISTERED: two -- 'F-7's two extremes': the two abundance figures F-7 states, both T-63 rounded pins
 b5b0e3f320918dfc6bbba4fc80efd9e7a2bbb4d0	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
 b82cb98fa0f011df6f49345625c4fface9c61cba	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
-b933ce6f6e0cef16732fccb7d30b3c70dcb3b753	DATASET_D1.md	REGISTERED: two -- 'the two tables': the shipped capture and zeff tables, which T-84 loads as exactly two parity keys
 b9c026ba92d1d9336eb23004e4c78b43e37719ae	DATASET_D1.md	REGISTERED: 59, two, one -- praseodymium's atomic number; 'two elements' the two rows the paragraph names; 'one of the two' a pronoun
+bc61cb2f9feff543f5c04f19bd25d1a46353d13a	DATASET_D1.md	REGISTERED: 0 -- `A = 0`, the key a natural-composition target carries under A:natural_and_listed; T-92 holds every such record of the shipped file
 c140a5aa4dc7c5205b54dc62807188fc8dcd8a82	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of them')
 c4dda9d0a27fc91fce60f523df94edad8a426d94	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of direct interest')
 c61c6838f360bf94b90121b25cc3a564c04facaa	DATASET_D1.md	EXERCISED: 4.5517, 04 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts

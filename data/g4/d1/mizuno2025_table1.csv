@@ -1,0 +1,11 @@
+nuclide,form,size_mm,weight_g,time_h,huff_factor,lifetime_ns,lifetime_unc_ns,suzuki_lifetime_ns,suzuki_lifetime_unc_ns,rate,rate_unc,locator,copy_read
+28Si,Powder in case,ϕ15.0×2.8,0.500,2.02,0.992,743.9,5.0,,,0.893,0.009,Table 1,arxiv-html
+29Si,Powder in case,ϕ15.0×2.8,0.500,2.05,0.992,794.2,3.5,,,0.808,0.006,Table 1,arxiv-html
+30Si,Small pieces in case,ϕ15.0×2.8,0.500,2.10,0.992,859.0,2.7,,,0.713,0.004,Table 1,arxiv-html
+natSi,Self-supported plate,ϕ50×1.96,9.00,1.45,0.992,751.6,1.0,756.0,1.0,0.8790,0.0018,Table 1,arxiv-html
+natSi,Powder in case,ϕ15.0×2.8,0.550,1.06,0.992,749.8,2.8,756.0,1.0,0.882,0.005,Table 1,arxiv-html
+natMg,Self-supported plate,50×50×2.0,8.54,0.43,0.995,1065.5,2.0,1067.2,2.0,0.4856,0.0018,Table 1,arxiv-html
+27Al,Self-supported plate,50×50×2.0,13.6,0.98,0.993,863.7,1.0,864.0,1.0,0.7059,0.0013,Table 1,arxiv-html
+27Al,Plate in case,ϕ14.8×1.0,0.451,0.94,0.993,862.5,8.1,864.0,1.0,0.707,0.011,Table 1,arxiv-html
+55Mn,Chippings in case,ϕ15.0×2.0,2.127,0.49,0.976,230.3,4.5,232.5,2.0,3.90,0.08,Table 1,arxiv-html
+natAg,Plate in case,ϕ14.8×0.3,0.544,2.87,0.925,87.0,0.5,87.0,1.5,11.07,0.07,Table 1,arxiv-html

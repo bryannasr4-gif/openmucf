@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the capture table's second profile, `mizuno2025` (2026-09-15)
+
+- **A second profile of the capture table, `d1_capture.mizuno2025.g4dat`, generated from committed
+  transcriptions of Table 1 and Table 3 of Mizuno et al.**
+  Enriched and mononuclidic nuclides are keyed by mass number and natural-composition targets by
+  `A = 0` under `A:natural_and_listed`, and every value is carried as the primary prints it.
+  `DATASET_D1.md` section 9 lists the pairs. The change moves
+  the dataset's `#VERSION` to 0.3.0.
+- **The dataset archive in Geant4's layout**: it unpacks to the `G4MuonicData<version>` directory
+  and carries generated `README` and `History` members (T-81, T-82).
+- **The reader keyed by profile**: tables are keyed by (`#PROFILE`, `#TABLE`), and a lookup falls
+  from `(Z, A)` to the `(Z, 0)` rung (V-14, V-15).
+- **The `G4HadronicParameters` opt-in**, with a behaviour patch and a registration patch cut for
+  each Geant4 revision the overlay serves (T-72).
+
 ### Added -- the dataset read from C++ and from inside Geant4 (2026-09-08)
 
 - **A C++17 reader, `G4MuonicDataTable`, under `cpp/include` and `cpp/src`, built on the standard

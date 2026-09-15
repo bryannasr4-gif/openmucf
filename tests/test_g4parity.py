@@ -22,6 +22,7 @@ Three disciplines run through every test here, because the claim is only as good
 
 import ast
 import dataclasses
+import decimal
 import hashlib
 import importlib.util
 import io
@@ -40,6 +41,7 @@ import openmucf
 from openmucf import rates
 from openmucf.g4 import emit, provenance, sources, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
+from openmucf.g4.sources import mizuno2025
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 VENDORED = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonMinusBoundDecay.cc"
@@ -1317,6 +1319,9 @@ CAPTURE_LAYER1 = D1DIR / "d1_capture.g4dat"
 CAPTURE_LAYER2 = D1DIR / "d1_capture.prov.json"
 ZEFF_LAYER1 = D1DIR / "d1_zeff.g4dat"
 ZEFF_LAYER2 = D1DIR / "d1_zeff.prov.json"
+#: The capture table's second profile, named by the profile.
+MIZUNO_LAYER1 = D1DIR / f"d1_capture.{mizuno2025.PROFILE}.g4dat"
+MIZUNO_LAYER2 = D1DIR / f"d1_capture.{mizuno2025.PROFILE}.prov.json"
 GENERATOR = REPO / "scripts" / "generate_g4data.py"
 
 
@@ -1686,7 +1691,9 @@ def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
     artifacts = sorted(D1DIR.glob("d1_*.g4dat")) + sorted(D1DIR.glob("*.prov.json")) + [
         D1DIR / "geant4_add_dataset.snippet"
     ]
-    assert len(artifacts) == 5, [p.name for p in artifacts]
+    # The files found on disk are exactly the ones the generator writes: a generated file the
+    # globs miss, or a stray file they catch, would make this drill prove less than it claims.
+    assert set(artifacts) == set(generator_module().build_d1_artifacts()[0]), [p.name for p in artifacts]
 
     def audit() -> subprocess.CompletedProcess:
         return subprocess.run(
@@ -1901,6 +1908,12 @@ class DocumentPins:
     readme_claims: list
     tools_readme_claims: list
     changelog_rounded: list
+    #: Section 9's cross-check table, one `(what, pattern, expected_row)` per row the two capture
+    #: profiles disagree on; the whole row is the pinned span.
+    crosscheck_rows: list
+    #: `(what, pattern, expected_string)` rows of `CHANGELOG.md` whose value is a string read from
+    #: a shipped file rather than a count.
+    string_claims: list
 
 
 def document_pins() -> DocumentPins:
@@ -2250,6 +2263,9 @@ def document_pins() -> DocumentPins:
     # a count has already shipped wrong once: its account of the old rule's failures survived a
     # round after the dataset document's had been corrected.
     changelog = " ".join((REPO / "CHANGELOG.md").read_text(encoding="utf-8").split())
+    # The cross-check between the two capture profiles (T-91), derived from the two shipped files.
+    crosscheck_pairs = mizuno_parity_pairs()
+    crosscheck_disagreements = [pair for pair in crosscheck_pairs if not pair["agrees"]]
     changelog_claims = [
         ("records checked", r"Every one of the (\d+) records has now been checked", len(audit)),
         ("rows the old rule disagrees with", r"on (\d+) of the \d+ records", len(disagree)),
@@ -2289,6 +2305,14 @@ def document_pins() -> DocumentPins:
         ("findings in total", r"settled questions\*\*, not (\w+) defects", findings),
         ("maximum ulp over the diagnostic subset",
          r"every one bit-for-bit, maximum (\d+) ulp", max_ulp_subset),
+    ]
+    # A string the changelog states about a shipped file, read from that file: the dataset version
+    # the entry names is the `#VERSION` the committed capture table carries.
+    shipped_version = re.search(r"^#VERSION\s+(\S+)$", CAPTURE_LAYER1.read_text("ascii"), re.M)
+    assert shipped_version, "the committed capture table declares no #VERSION"
+    string_claims = [
+        ("the dataset version the entry names",
+         r"moves the dataset's `#VERSION` to (\d+\.\d+\.\d+)", shipped_version.group(1)),
     ]
 
     # `README.md` is the third copy of these numbers and the one a reader meets first. Its G4
@@ -2349,6 +2373,37 @@ def document_pins() -> DocumentPins:
                 f"{where} states {hits[0]!r} for {what}; the shipped data says {expected}. "
                 f"{where} is wrong, not this test."
             )
+
+    for what, pattern, expected_string in string_claims:
+        assert re.findall(pattern, changelog) == [expected_string], (
+            f"CHANGELOG.md: {what}: expected exactly one match of {pattern!r} stating "
+            f"{expected_string!r}, found {re.findall(pattern, changelog)}"
+        )
+
+    # Section 9's cross-check table: one row per pair on which the two capture profiles disagree
+    # at the primary's printed precision, each row pinned whole -- the parity cells as the vendored
+    # source prints them, the other profile's cells as its transcription prints them -- so every
+    # digit in the table is the derived one and a row the derivation does not produce has no pin.
+    crosscheck_rows = []
+    for pair in crosscheck_disagreements:
+        z, a_mizuno = pair["mizuno"]
+        _, a_parity = pair["parity"]
+        parity_value, parity_unc = pair["parity_literal"]
+        printed_value, printed_unc = pair["printed"]
+        row_text = (
+            f"| {z} | {a_mizuno} | {a_parity} | {parity_value} ± {parity_unc} | "
+            f"{printed_value} ± {printed_unc} | {pair['locator']} |"
+        )
+        crosscheck_rows.append((
+            f"cross-check row: {mizuno2025.PROFILE} ({z}, {a_mizuno}) against parity ({z}, {a_parity})",
+            "(" + re.escape(row_text) + ")",
+            row_text,
+        ))
+    for what, pattern, expected_row in crosscheck_rows:
+        assert re.findall(pattern, doc) == [expected_row], (
+            f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
+            "section 9's table; the document is wrong, not this test"
+        )
 
     changelog_rounded = [
         ("extreme natural abundance", r"is ([\d.]+) % of the natural element",
@@ -2492,7 +2547,7 @@ def document_pins() -> DocumentPins:
 
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
-        tools_readme_claims, changelog_rounded,
+        tools_readme_claims, changelog_rounded, crosscheck_rows, string_claims,
     )
 
 
@@ -2527,7 +2582,8 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     generator = generator_module()
     _, archive = generator.build_d1_artifacts()
     directory = emit.dataset_directory(generator.DATASET_NAME, generator.D1_VERSION)
-    committed = [CAPTURE_LAYER1.name, CAPTURE_LAYER2.name, ZEFF_LAYER1.name, ZEFF_LAYER2.name]
+    pairs = ((CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2), (MIZUNO_LAYER1, MIZUNO_LAYER2))
+    committed = [path.name for pair in pairs for path in pair]
     with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
         entries = opened.getmembers()
         names = [entry.name for entry in entries]
@@ -2544,9 +2600,12 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     assert len(notice) == 2, notice
     for line in notice:
         assert line in readme.splitlines(), line
-    for layer2 in (CAPTURE_LAYER2, ZEFF_LAYER2):
+    for layer1, layer2 in pairs:
         document = provenance.from_json_obj(json.loads(layer2.read_bytes().decode("ascii")))
-        assert f"{len(document.rows)} records" in readme, layer2.name
+        # On the README line that names THIS table's file, not anywhere in the document: two
+        # tables with the same count would otherwise vouch for each other.
+        (line,) = [text for text in readme.splitlines() if text.startswith(f"  - {layer1.name}:")]
+        assert line.endswith(f", {len(document.rows)} records"), line
     assert history.splitlines()[0] == f"History for {generator.DATASET_NAME} files:"
     assert generator.D1_VERSION in history
 
@@ -2658,7 +2717,8 @@ def beta_pair(copy: d1.SourceCopy) -> tuple[d1.D1Extraction, d1.D1Extraction]:
 def test_t87_the_beta_copies_are_the_pinned_upstream_blobs(path: pathlib.Path):
     """Each beta copy is upstream's file at the beta commit, proven by upstream's own object name,
     with the sha256 recorded alongside and no CR byte -- the same three guards T-40 and T-41 put
-    on the v11.4.2 copies, so the beta directory holds exactly the two pinned files."""
+    on the v11.4.2 BoundDecay copy and T-69 puts on the v11.4.2 helper copy, so the beta directory
+    holds exactly the two pinned files."""
     data = path.read_bytes()
     assert b"\r" not in data, (
         "the checkout rewrote the vendored beta file's line endings: check that .gitattributes "
@@ -2727,3 +2787,312 @@ def test_t88_drill_a_changed_beta_zeff_is_named_as_zeff():
     assert mutated != text
     with pytest.raises(AssertionError, match=r"\Azeff differs"):
         assert_same_tables(d1.extract(mutated, d1.BOUND_DECAY), reference)
+
+
+# --------------------------------------------------------------------------------------------
+# T-89 -- the Layer-2 vocabularies have one home: the specification's cells restate the package's
+# --------------------------------------------------------------------------------------------
+
+FORMAT_SPEC = REPO / "FORMAT_SPEC.md"
+
+
+def layer2_vocabulary_cells(text: str) -> dict[str, tuple[str, ...]]:
+    """The backticked tokens in the value cell of each per-row field row of `FORMAT_SPEC.md`
+    section 3, keyed by field name -- read from the section's own table, never from memory."""
+    start = text.index("\n## 3. ")
+    end = text.index("\n## 4. ", start)
+    section = text[start:end]
+    cells: dict[str, tuple[str, ...]] = {}
+    for line in section.splitlines():
+        match = re.match(r"^\| `(\w+)` \| (?:string|bool) \| (.*) \|$", line)
+        if match:
+            cells[match.group(1)] = tuple(re.findall(r"`([^`]*)`", match.group(2)))
+    return cells
+
+
+def test_t89_the_specifications_vocabulary_cells_are_exactly_the_packages_tuples():
+    """`source_library` and `unc_type` each have two homes -- `provenance.py`'s tuple and the
+    specification's table cell -- and a token added to one and not the other is a value the
+    reference implementation accepts and the specification does not admit, or the reverse. The
+    cell is held to the tuple, in order, so neither home can drift."""
+    cells = layer2_vocabulary_cells(FORMAT_SPEC.read_text("utf-8"))
+    assert cells["source_library"] == provenance.SOURCE_LIBRARIES
+    assert cells["unc_type"] == provenance.UNC_TYPES
+
+
+def test_t89_drill_a_token_dropped_from_either_cell_is_refused():
+    """Drop the last token from each cell of an in-memory copy of the specification: the cell no
+    longer equals the tuple, and the check names the field by failing on it."""
+    text = FORMAT_SPEC.read_text("utf-8")
+    for field, vocabulary in (
+        ("source_library", provenance.SOURCE_LIBRARIES),
+        ("unc_type", provenance.UNC_TYPES),
+    ):
+        last = f", `{vocabulary[-1]}`"
+        row = next(line for line in text.splitlines() if line.startswith(f"| `{field}` |"))
+        assert row.count(last) == 1, (field, row)
+        mutated = text.replace(row, row.replace(last, ""), 1)
+        assert mutated != text
+        assert layer2_vocabulary_cells(mutated)[field] == vocabulary[:-1]
+        assert layer2_vocabulary_cells(mutated)[field] != vocabulary
+
+
+# --------------------------------------------------------------------------------------------
+# T-90 -- the mizuno2025 transcriptions: every structural rule of the loader fires on a fixture
+# --------------------------------------------------------------------------------------------
+
+MIZUNO_TABLE1 = REPO / mizuno2025.TABLE1_RELPATH
+MIZUNO_TABLE3 = REPO / mizuno2025.TABLE3_RELPATH
+
+
+def mizuno_extraction() -> mizuno2025.Mizuno2025Extraction:
+    return mizuno2025.load(MIZUNO_TABLE1, MIZUNO_TABLE3)
+
+
+def _replace_once(text: str, old: str, new: str) -> str:
+    assert text.count(old) == 1, (old, text.count(old))
+    return text.replace(old, new, 1)
+
+
+def _first_data_line(text: str) -> str:
+    return text.split("\n")[1]
+
+
+#: (label, which file, mutation of that file's text, message the loader must give). Each row is
+#: one rule of `mizuno2025.load`; the shipped files pass every one (the first test below).
+MIZUNO_DRILLS = [
+    ("table 1 header renamed", 1, lambda t: _replace_once(t, "huff_factor", "huff"), "header is"),
+    ("table 3 header reordered", 3, lambda t: _replace_once(t, "Z,A,", "A,Z,"), "header is"),
+    ("a CR byte", 1, lambda t: t.replace("\n", "\r\n", 1), "contains CR"),
+    ("a non-ASCII cell outside size_mm", 1,
+     lambda t: _replace_once(t, "Powder in case,\u03d515.0\u00d72.8,0.500,2.02",
+                             "Powder in c\u00e2se,\u03d515.0\u00d72.8,0.500,2.02"),
+     "must be ASCII"),
+    ("a non-decimal rate", 3, lambda t: _replace_once(t, ",0.893,", ",0.893x,"), "decimal number"),
+    ("a non-decimal weight", 1, lambda t: _replace_once(t, ",9.00,", ",9.00g,"), "decimal number"),
+    ("a non-integer Z", 3, lambda t: _replace_once(t, "\n47,0,", "\nAg,0,"), "must be integers"),
+    ("a duplicate key", 3, lambda t: _replace_once(t, "\n14,29,", "\n14,28,"), "duplicate key"),
+    ("a label only in table 1", 1, lambda t: _replace_once(t, "\n55Mn,", "\n55mn,"), "labels differ"),
+    ("a label only in table 3", 3, lambda t: _replace_once(t, ",natAg,", ",natag,"), "labels differ"),
+    ("an averaged row without its footnote", 3,
+     lambda t: _replace_once(t, ",natSi,0.8794,0.0018,Average of two experimental data in Table 1.,",
+                             ",natSi,0.8794,0.0018,,"),
+     "note is empty"),
+    ("a single-row value that differs from table 1", 3,
+     lambda t: _replace_once(t, ",28Si,0.893,0.009,", ",28Si,0.894,0.009,"), "string for string"),
+    ("a single-row uncertainty that differs from table 1", 3,
+     lambda t: _replace_once(t, ",55Mn,3.90,0.08,", ",55Mn,3.90,0.09,"), "string for string"),
+    ("a footnote on a single-row nuclide", 3,
+     lambda t: _replace_once(t, ",natMg,0.4856,0.0018,,", ",natMg,0.4856,0.0018,averaged,"),
+     "note is set"),
+    ("an empty locator", 3,
+     lambda t: _replace_once(t, ',"Table 3, Exp. column",arxiv-html\n12,', ",,arxiv-html\n12,"),
+     "carry a locator"),
+    ("an empty copy_read", 1,
+     lambda t: _replace_once(t, "0.893,0.009,Table 1,arxiv-html", "0.893,0.009,Table 1,"),
+     "carry a copy_read"),
+    ("one Suzuki cell without the other", 1,
+     lambda t: _replace_once(t, ",756.0,1.0,0.882,", ",756.0,,0.882,"), "present or absent together"),
+    ("no rows", 3, lambda t: t.split("\n")[0] + "\n", "carries no rows"),
+]
+
+
+def test_t90_the_shipped_transcriptions_load_and_the_two_tables_name_one_set_of_nuclides():
+    """The committed files pass every rule; Table 3 has one row per nuclide label of Table 1 and
+    every Table-1 row of a nuclide is reachable from its Table-3 row -- counts derived, not typed."""
+    found = mizuno_extraction()
+    labels = {row.nuclide for row in found.table1}
+    order = [r.nuclide for r in found.table1].index
+    assert [row.nuclide for row in found.table3] == sorted(labels, key=order)
+    assert sum(len(found.table1_rows(row.nuclide)) for row in found.table3) == len(found.table1)
+    assert len(set(found.keys)) == len(found.table3)
+    for row in found.table3:
+        printed = found.table1_rows(row.nuclide)
+        assert (len(printed) >= 2) == bool(row.note), row.nuclide
+        assert all(r.locator and r.copy_read for r in printed)
+        assert row.locator and row.copy_read
+
+
+@pytest.mark.parametrize("label, which, mutate, message", MIZUNO_DRILLS, ids=[d[0] for d in MIZUNO_DRILLS])
+def test_t90_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, which, mutate, message):
+    """Corrupt one transcription in one way, in a temporary copy of both files; the loader must
+    refuse it with the rule's own message. The unmutated copy loads, so the message is the rule's."""
+    texts = {1: MIZUNO_TABLE1.read_bytes().decode("utf-8"), 3: MIZUNO_TABLE3.read_bytes().decode("utf-8")}
+    paths = {n: tmp_path / p.name for n, p in ((1, MIZUNO_TABLE1), (3, MIZUNO_TABLE3))}
+    for n, text in texts.items():
+        paths[n].write_bytes(text.encode("utf-8"))
+    mizuno2025.load(paths[1], paths[3])  # the copies load before the mutation
+    mutated = mutate(texts[which])
+    assert mutated != texts[which], label
+    paths[which].write_bytes(mutated.encode("utf-8"))
+    with pytest.raises(mizuno2025.Mizuno2025Error, match=re.escape(message)):
+        mizuno2025.load(paths[1], paths[3])
+
+
+# --------------------------------------------------------------------------------------------
+# T-92 -- what the mizuno2025 profile is allowed to claim, asserted row by row on the shipped pair
+# --------------------------------------------------------------------------------------------
+
+
+def test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row():
+    """The second capture profile's Layer 1 and Layer 2, against the transcriptions they were built
+    from: the printed decimals are the records, and every provenance field is what the profile's
+    rules say -- no upstream revision claimed, no fallback declared, every value read from the
+    primary itself, and the key scheme carrying the isotope disclosure."""
+    table, document = committed(MIZUNO_LAYER1, MIZUNO_LAYER2)
+    found = mizuno_extraction()
+    assert table.directives["PROFILE"] == mizuno2025.PROFILE == document.profile
+    assert "SOURCESHA" not in table.directives
+    assert "FALLBACK" not in table.directives
+    assert document.precedence == (mizuno2025.PROFILE,)
+    assert document.version == table.directives["VERSION"]
+    assert spec.validity_assignments(table)["A"] == spec.A_NATURAL_AND_LISTED
+    assert spec.natural_rows(table) == sum(1 for row in found.table3 if row.a == 0)
+    assert spec.natural_rows(table) > 0
+
+    by_key = {row.key: row for row in found.table3}
+    assert len(table.records) == len(by_key)
+    for z, a, value, unc in table.records:
+        printed = by_key[(int(z), int(a))]
+        # The record is the printed decimal, round-tripped through %.17g and nothing else.
+        assert value == float(printed.rate) and unc == float(printed.rate_unc), (z, a)
+
+    assert set(document.rows) == {f"{z}-{a}" for z, a in by_key}
+    for key, row in document.rows.items():
+        z, a = (int(part) for part in key.split("-"))
+        printed = by_key[(z, a)]
+        targets = found.table1_rows(printed.nuclide)
+        assert row.source_library == mizuno2025.PROFILE, key
+        assert row.source_bibkey == mizuno2025.BIBKEY, key
+        assert row.unc_type == "exp", key
+        assert row.evaluation_id == f"{mizuno2025.PROFILE}-table3", key
+        assert row.recommendation == "", key
+        assert row.needs_verification is False, key
+        assert row.isotope_resolved is (a != 0), key
+        assert "Table 3" in row.source_locator and "arxiv-html" in row.source_locator, key
+        assert row.source_locator == f"{printed.locator} [copy read: {printed.copy_read}]", key
+        assert row.single_source is (not any(r.has_suzuki_value for r in targets)), key
+        assert ("natural composition" in row.validity_range) is (a == 0), key
+        assert row.validity_range.startswith(f"Z={z} "), key
+        assert ("footnote" in row.conditions) is bool(printed.note), key
+        for target in targets:
+            lifetime = f"{target.lifetime_ns}({target.lifetime_unc_ns}) ns"
+            assert f'"{target.form}", lifetime {lifetime}' in row.conditions, key
+        assert "not re-derived" in row.evaluation_method, key
+
+
+def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_every_table():
+    """The Python mirror of the reader's directory rule over the shipped dataset: every file is
+    its own (profile, table) pair, `parity` carries every table any profile carries, and only
+    the second capture profile carries natural-composition rows."""
+    tables = spec.load_directory(D1DIR)
+    files = sorted(path.name for path in D1DIR.glob("*.g4dat"))
+    assert len(tables) == len(files), (sorted(tables), files)
+    for profile, name in tables:
+        assert (spec.PARITY_PROFILE, name) in tables, (profile, name)
+    assert {profile for profile, _ in tables} == {spec.PARITY_PROFILE, mizuno2025.PROFILE}
+    for (profile, _name), table in tables.items():
+        natural = spec.natural_rows(table)
+        assert (natural > 0) is (profile == mizuno2025.PROFILE), (profile, natural)
+
+
+# --------------------------------------------------------------------------------------------
+# T-91 -- the two capture profiles compared key by key, at the primary's printed precision
+# --------------------------------------------------------------------------------------------
+
+
+def agrees_at_printed_precision(shipped: float, printed: str) -> bool:
+    """`shipped` equals the printed decimal once quantized to the printed digits: the shortest
+    round-trip decimal of the double, rounded to the precision the primary prints, is the printed
+    string. A comparison at more digits than the primary prints would be a claim about digits the
+    primary never made."""
+    quantum = decimal.Decimal(printed)
+    return decimal.Decimal(repr(shipped)).quantize(quantum) == quantum
+
+
+def mizuno_parity_pairs() -> list[dict]:
+    """The partner map between the `mizuno2025` keys and the `parity` records, and how each pair
+    compares. A `(Z, A != 0)` key partners the parity record at `(Z, A)` when there is one; a
+    `(Z, 0)` key partners every parity record at that Z whose Layer-2 row is not isotope-resolved,
+    the compiled-in row that carries the element's natural-composition value under an isotope
+    label. Both sides are read from the shipped files; nothing here is typed."""
+    found = extraction()
+    _, parity_document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    mizuno = mizuno_extraction()
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    literals = {
+        (z, a): literal
+        for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
+    }
+    pairs = []
+    for row in mizuno.table3:
+        if row.a != 0:
+            partners = [(row.z, row.a)] if (row.z, row.a) in values else []
+        else:
+            partners = sorted(
+                (z, a) for (z, a) in values
+                if z == row.z and not parity_document.rows[f"{z}-{a}"].isotope_resolved
+            )
+        for z, a in partners:
+            value, unc = values[(z, a)]
+            value_agrees = agrees_at_printed_precision(value, row.rate)
+            unc_agrees = agrees_at_printed_precision(unc, row.rate_unc)
+            pairs.append({
+                "mizuno": (row.z, row.a),
+                "parity": (z, a),
+                "parity_literal": literals[(z, a)],
+                "printed": (row.rate, row.rate_unc),
+                "locator": row.locator,
+                "value_agrees": value_agrees,
+                "unc_agrees": unc_agrees,
+                "agrees": value_agrees and unc_agrees,
+            })
+    # Ascending by the profile's own key, then by the partner's: the order the document tabulates.
+    return sorted(pairs, key=lambda pair: (pair["mizuno"], pair["parity"]))
+
+
+def test_t91_the_two_capture_profiles_are_compared_key_by_key_and_the_document_lists_the_disagreements():
+    """The partner map has the shape the key scheme implies -- every natural-composition key
+    partners exactly one compiled-in row, the enriched silicon isotopes partner the one compiled-in
+    silicon row or nothing -- and the pairs whose value or uncertainty differ at the printed
+    precision are printed here and are exactly the rows section 9 of DATASET_D1.md tabulates."""
+    pairs = mizuno_parity_pairs()
+    mizuno = mizuno_extraction()
+    partners: dict[tuple[int, int], list[tuple[int, int]]] = {}
+    for pair in pairs:
+        partners.setdefault(pair["mizuno"], []).append(pair["parity"])
+    natural = [row.key for row in mizuno.table3 if row.a == 0]
+    assert natural, "the profile carries no natural-composition key"
+    for key in natural:
+        assert len(partners.get(key, [])) == 1, (key, partners.get(key))
+    # The primary's natural silicon and its enriched Si-28 both meet the one compiled-in silicon
+    # row, which carries the isotope label; Si-29 and Si-30 meet nothing.
+    assert partners[(14, 0)] == [(14, 28)]
+    assert partners[(14, 28)] == [(14, 28)]
+    assert partners.get((14, 29), []) == [] and partners.get((14, 30), []) == []
+    assert {pair["mizuno"] for pair in pairs} | {(14, 29), (14, 30)} == set(mizuno.keys)
+
+    disagreements = [pair for pair in pairs if not pair["agrees"]]
+    print(f"\ncross-check: {len(disagreements)} of {len(pairs)} pair(s) differ at the printed precision")
+    for pair in pairs:
+        parity_value, parity_unc = pair["parity_literal"]
+        printed_value, printed_unc = pair["printed"]
+        print(
+            f"  {mizuno2025.PROFILE} {pair['mizuno']} vs parity {pair['parity']}: "
+            f"parity {parity_value} +- {parity_unc}, printed {printed_value} +- {printed_unc}; "
+            f"value {'equal' if pair['value_agrees'] else 'differs'}, "
+            f"unc {'equal' if pair['unc_agrees'] else 'differs'}"
+        )
+    assert len(document_pins().crosscheck_rows) == len(disagreements)
+
+
+def test_t91_drill_agreement_is_decided_at_the_printed_digits():
+    """A double that rounds to the printed decimal agrees; one off in the last printed digit, or
+    printed to fewer digits than it differs at, does not -- for values and uncertainties alike."""
+    assert agrees_at_printed_precision(0.4823, "0.4823")
+    assert agrees_at_printed_precision(3.8999999999999999, "3.90")
+    assert agrees_at_printed_precision(0.48234, "0.4823")
+    assert not agrees_at_printed_precision(0.48236, "0.4823")
+    assert not agrees_at_printed_precision(0.4823, "0.4856")
+    assert not agrees_at_printed_precision(0.03, "0.08")
+    assert not agrees_at_printed_precision(0.0015, "0.009")
