@@ -56,7 +56,9 @@ __all__ = [
 
 #: Where a row's value came from. ``geant4-compiled-in`` is a first-class library: reproducing what
 #: a transport code does today is an evaluation like any other, and saying so is the honest label.
-SOURCE_LIBRARIES = ("geant4-compiled-in", "suzuki1987", "iwamoto2025", "jendl-mund", "openmucf")
+SOURCE_LIBRARIES = (
+    "geant4-compiled-in", "suzuki1987", "iwamoto2025", "jendl-mund", "openmucf", "mizuno2025",
+)
 #: Same vocabulary as the rate ledger's schema.
 UNC_TYPES = ("stat", "exp", "theory", "theory-spread", "model", "table", "estimate", "exact")
 RECOMMENDATIONS = ("recommended", "superseded", "")

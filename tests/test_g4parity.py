@@ -2727,3 +2727,51 @@ def test_t88_drill_a_changed_beta_zeff_is_named_as_zeff():
     assert mutated != text
     with pytest.raises(AssertionError, match=r"\Azeff differs"):
         assert_same_tables(d1.extract(mutated, d1.BOUND_DECAY), reference)
+
+
+# --------------------------------------------------------------------------------------------
+# T-89 -- the Layer-2 vocabularies have one home: the specification's cells restate the package's
+# --------------------------------------------------------------------------------------------
+
+FORMAT_SPEC = REPO / "FORMAT_SPEC.md"
+
+
+def layer2_vocabulary_cells(text: str) -> dict[str, tuple[str, ...]]:
+    """The backticked tokens in the value cell of each per-row field row of `FORMAT_SPEC.md`
+    section 3, keyed by field name -- read from the section's own table, never from memory."""
+    start = text.index("\n## 3. ")
+    end = text.index("\n## 4. ", start)
+    section = text[start:end]
+    cells: dict[str, tuple[str, ...]] = {}
+    for line in section.splitlines():
+        match = re.match(r"^\| `(\w+)` \| (?:string|bool) \| (.*) \|$", line)
+        if match:
+            cells[match.group(1)] = tuple(re.findall(r"`([^`]*)`", match.group(2)))
+    return cells
+
+
+def test_t89_the_specifications_vocabulary_cells_are_exactly_the_packages_tuples():
+    """`source_library` and `unc_type` each have two homes -- `provenance.py`'s tuple and the
+    specification's table cell -- and a token added to one and not the other is a value the
+    reference implementation accepts and the specification does not admit, or the reverse. The
+    cell is held to the tuple, in order, so neither home can drift."""
+    cells = layer2_vocabulary_cells(FORMAT_SPEC.read_text("utf-8"))
+    assert cells["source_library"] == provenance.SOURCE_LIBRARIES
+    assert cells["unc_type"] == provenance.UNC_TYPES
+
+
+def test_t89_drill_a_token_dropped_from_either_cell_is_refused():
+    """Drop the last token from each cell of an in-memory copy of the specification: the cell no
+    longer equals the tuple, and the check names the field by failing on it."""
+    text = FORMAT_SPEC.read_text("utf-8")
+    for field, vocabulary in (
+        ("source_library", provenance.SOURCE_LIBRARIES),
+        ("unc_type", provenance.UNC_TYPES),
+    ):
+        last = f", `{vocabulary[-1]}`"
+        row = next(line for line in text.splitlines() if line.startswith(f"| `{field}` |"))
+        assert row.count(last) == 1, (field, row)
+        mutated = text.replace(row, row.replace(last, ""), 1)
+        assert mutated != text
+        assert layer2_vocabulary_cells(mutated)[field] == vocabulary[:-1]
+        assert layer2_vocabulary_cells(mutated)[field] != vocabulary
