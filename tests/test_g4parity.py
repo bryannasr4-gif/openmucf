@@ -22,6 +22,7 @@ Three disciplines run through every test here, because the claim is only as good
 
 import ast
 import dataclasses
+import decimal
 import hashlib
 import importlib.util
 import io
@@ -1907,6 +1908,12 @@ class DocumentPins:
     readme_claims: list
     tools_readme_claims: list
     changelog_rounded: list
+    #: Section 9's cross-check table, one `(what, pattern, expected_row)` per row the two capture
+    #: profiles disagree on; the whole row is the pinned span.
+    crosscheck_rows: list
+    #: `(what, pattern, expected_string)` rows of `CHANGELOG.md` whose value is a string read from
+    #: a shipped file rather than a count.
+    string_claims: list
 
 
 def document_pins() -> DocumentPins:
@@ -2256,6 +2263,9 @@ def document_pins() -> DocumentPins:
     # a count has already shipped wrong once: its account of the old rule's failures survived a
     # round after the dataset document's had been corrected.
     changelog = " ".join((REPO / "CHANGELOG.md").read_text(encoding="utf-8").split())
+    # The cross-check between the two capture profiles (T-91), derived from the two shipped files.
+    crosscheck_pairs = mizuno_parity_pairs()
+    crosscheck_disagreements = [pair for pair in crosscheck_pairs if not pair["agrees"]]
     changelog_claims = [
         ("records checked", r"Every one of the (\d+) records has now been checked", len(audit)),
         ("rows the old rule disagrees with", r"on (\d+) of the \d+ records", len(disagree)),
@@ -2295,6 +2305,20 @@ def document_pins() -> DocumentPins:
         ("findings in total", r"settled questions\*\*, not (\w+) defects", findings),
         ("maximum ulp over the diagnostic subset",
          r"every one bit-for-bit, maximum (\d+) ulp", max_ulp_subset),
+        ("pairs on which the second capture profile differs from the compiled-in table",
+         r"differs from the compiled-in table on (\d+) of the \d+ keys both carry",
+         len(crosscheck_disagreements)),
+        ("pairs the cross-check between the two capture profiles forms",
+         r"differs from the compiled-in table on \d+ of the (\d+) keys both carry",
+         len(crosscheck_pairs)),
+    ]
+    # A string the changelog states about a shipped file, read from that file: the dataset version
+    # the entry names is the `#VERSION` the committed capture table carries.
+    shipped_version = re.search(r"^#VERSION\s+(\S+)$", CAPTURE_LAYER1.read_text("ascii"), re.M)
+    assert shipped_version, "the committed capture table declares no #VERSION"
+    string_claims = [
+        ("the dataset version the entry names",
+         r"moves the dataset's `#VERSION` to (\d+\.\d+\.\d+)", shipped_version.group(1)),
     ]
 
     # `README.md` is the third copy of these numbers and the one a reader meets first. Its G4
@@ -2355,6 +2379,37 @@ def document_pins() -> DocumentPins:
                 f"{where} states {hits[0]!r} for {what}; the shipped data says {expected}. "
                 f"{where} is wrong, not this test."
             )
+
+    for what, pattern, expected_string in string_claims:
+        assert re.findall(pattern, changelog) == [expected_string], (
+            f"CHANGELOG.md: {what}: expected exactly one match of {pattern!r} stating "
+            f"{expected_string!r}, found {re.findall(pattern, changelog)}"
+        )
+
+    # Section 9's cross-check table: one row per pair on which the two capture profiles disagree
+    # at the primary's printed precision, each row pinned whole -- the parity cells as the vendored
+    # source prints them, the other profile's cells as its transcription prints them -- so every
+    # digit in the table is the derived one and a row the derivation does not produce has no pin.
+    crosscheck_rows = []
+    for pair in crosscheck_disagreements:
+        z, a_mizuno = pair["mizuno"]
+        _, a_parity = pair["parity"]
+        parity_value, parity_unc = pair["parity_literal"]
+        printed_value, printed_unc = pair["printed"]
+        row_text = (
+            f"| {z} | {a_mizuno} | {a_parity} | {parity_value} ± {parity_unc} | "
+            f"{printed_value} ± {printed_unc} | {pair['locator']} |"
+        )
+        crosscheck_rows.append((
+            f"cross-check row: {mizuno2025.PROFILE} ({z}, {a_mizuno}) against parity ({z}, {a_parity})",
+            "(" + re.escape(row_text) + ")",
+            row_text,
+        ))
+    for what, pattern, expected_row in crosscheck_rows:
+        assert re.findall(pattern, doc) == [expected_row], (
+            f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
+            "section 9's table; the document is wrong, not this test"
+        )
 
     changelog_rounded = [
         ("extreme natural abundance", r"is ([\d.]+) % of the natural element",
@@ -2498,7 +2553,7 @@ def document_pins() -> DocumentPins:
 
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
-        tools_readme_claims, changelog_rounded,
+        tools_readme_claims, changelog_rounded, crosscheck_rows, string_claims,
     )
 
 
@@ -2944,3 +2999,105 @@ def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_eve
     for (profile, _name), table in tables.items():
         natural = spec.natural_rows(table)
         assert (natural > 0) is (profile == mizuno2025.PROFILE), (profile, natural)
+
+
+# --------------------------------------------------------------------------------------------
+# T-91 -- the two capture profiles compared key by key, at the primary's printed precision
+# --------------------------------------------------------------------------------------------
+
+
+def agrees_at_printed_precision(shipped: float, printed: str) -> bool:
+    """`shipped` equals the printed decimal once quantized to the printed digits: the shortest
+    round-trip decimal of the double, rounded to the precision the primary prints, is the printed
+    string. A comparison at more digits than the primary prints would be a claim about digits the
+    primary never made."""
+    quantum = decimal.Decimal(printed)
+    return decimal.Decimal(repr(shipped)).quantize(quantum) == quantum
+
+
+def mizuno_parity_pairs() -> list[dict]:
+    """The partner map between the `mizuno2025` keys and the `parity` records, and how each pair
+    compares. A `(Z, A != 0)` key partners the parity record at `(Z, A)` when there is one; a
+    `(Z, 0)` key partners every parity record at that Z whose Layer-2 row is not isotope-resolved,
+    the compiled-in row that carries the element's natural-composition value under an isotope
+    label. Both sides are read from the shipped files; nothing here is typed."""
+    found = extraction()
+    _, parity_document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
+    mizuno = mizuno_extraction()
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    literals = {
+        (z, a): literal
+        for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
+    }
+    pairs = []
+    for row in mizuno.table3:
+        if row.a != 0:
+            partners = [(row.z, row.a)] if (row.z, row.a) in values else []
+        else:
+            partners = sorted(
+                (z, a) for (z, a) in values
+                if z == row.z and not parity_document.rows[f"{z}-{a}"].isotope_resolved
+            )
+        for z, a in partners:
+            value, unc = values[(z, a)]
+            value_agrees = agrees_at_printed_precision(value, row.rate)
+            unc_agrees = agrees_at_printed_precision(unc, row.rate_unc)
+            pairs.append({
+                "mizuno": (row.z, row.a),
+                "parity": (z, a),
+                "parity_literal": literals[(z, a)],
+                "printed": (row.rate, row.rate_unc),
+                "locator": row.locator,
+                "value_agrees": value_agrees,
+                "unc_agrees": unc_agrees,
+                "agrees": value_agrees and unc_agrees,
+            })
+    # Ascending by the profile's own key, then by the partner's: the order the document tabulates.
+    return sorted(pairs, key=lambda pair: (pair["mizuno"], pair["parity"]))
+
+
+def test_t91_the_two_capture_profiles_are_compared_key_by_key_and_the_document_lists_the_disagreements():
+    """The partner map has the shape the key scheme implies -- every natural-composition key
+    partners exactly one compiled-in row, the enriched silicon isotopes partner the one compiled-in
+    silicon row or nothing -- and the pairs whose value or uncertainty differ at the printed
+    precision are printed here and are exactly the rows section 9 of DATASET_D1.md tabulates."""
+    pairs = mizuno_parity_pairs()
+    mizuno = mizuno_extraction()
+    partners: dict[tuple[int, int], list[tuple[int, int]]] = {}
+    for pair in pairs:
+        partners.setdefault(pair["mizuno"], []).append(pair["parity"])
+    natural = [row.key for row in mizuno.table3 if row.a == 0]
+    assert natural, "the profile carries no natural-composition key"
+    for key in natural:
+        assert len(partners.get(key, [])) == 1, (key, partners.get(key))
+    # The primary's natural silicon and its enriched Si-28 both meet the one compiled-in silicon
+    # row, which carries the isotope label; Si-29 and Si-30 meet nothing.
+    assert partners[(14, 0)] == [(14, 28)]
+    assert partners[(14, 28)] == [(14, 28)]
+    assert partners.get((14, 29), []) == [] and partners.get((14, 30), []) == []
+    assert {pair["mizuno"] for pair in pairs} | {(14, 29), (14, 30)} == set(mizuno.keys)
+
+    disagreements = [pair for pair in pairs if not pair["agrees"]]
+    print(f"\ncross-check: {len(disagreements)} of {len(pairs)} pair(s) differ at the printed precision")
+    for pair in pairs:
+        parity_value, parity_unc = pair["parity_literal"]
+        printed_value, printed_unc = pair["printed"]
+        print(
+            f"  {mizuno2025.PROFILE} {pair['mizuno']} vs parity {pair['parity']}: "
+            f"parity {parity_value} +- {parity_unc}, printed {printed_value} +- {printed_unc}; "
+            f"value {'equal' if pair['value_agrees'] else 'differs'}, "
+            f"unc {'equal' if pair['unc_agrees'] else 'differs'}"
+        )
+    assert len(document_pins().crosscheck_rows) == len(disagreements)
+
+
+def test_t91_drill_agreement_is_decided_at_the_printed_digits():
+    """A double that rounds to the printed decimal agrees; one off in the last printed digit, or
+    printed to fewer digits than it differs at, does not -- for values and uncertainties alike."""
+    assert agrees_at_printed_precision(0.4823, "0.4823")
+    assert agrees_at_printed_precision(3.8999999999999999, "3.90")
+    assert agrees_at_printed_precision(0.48234, "0.4823")
+    assert not agrees_at_printed_precision(0.48236, "0.4823")
+    assert not agrees_at_printed_precision(0.4823, "0.4856")
+    assert not agrees_at_printed_precision(0.03, "0.08")
+    assert not agrees_at_printed_precision(0.0015, "0.009")

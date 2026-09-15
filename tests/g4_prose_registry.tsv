@@ -141,6 +141,7 @@
 69a77f36f934ac7030dac9931a2a8df5ca3b8378	CHANGELOG.md	REGISTERED: 20, 17 -- '~20×/~17× low', the Faifman1989 rows' notes in VALIDATION.md
 6a48a2cb23b82f498f9729488fb0a233ea7f6f54	CHANGELOG.md	REGISTERED: one -- 'more than one record', 'Every one': pronouns
 6a6a8d42239c1769e216c931f6b35849b31d987c	CHANGELOG.md	REGISTERED: 7.80, 4.85, 178, 4993 -- MUON_COST.md's Bertin figure and its tier medians
+6a6b45dfcb52bc7456ad2d97e0596c4caacc23fb	CHANGELOG.md	REGISTERED: 0 -- `A = 0`, the key a natural-composition target carries under A:natural_and_listed; T-92 holds every such record of the shipped file
 6e9844c6d1af57dbc5a9f8ecd94846fcc07af654	CHANGELOG.md	REGISTERED: 8, 64 -- `n_synth` before and after; DESIGN.md prints n_synth=64
 6eef3a6d34f3ee5fd412ce14d0907370e9cd2c9f	CHANGELOG.md	REGISTERED: 43 -- the test count as the v1.0.0 notes recorded it
 6f8ad5c08d2e8b6bab07e336f6cd9edc07a14092	CHANGELOG.md	REGISTERED: 4.4, 1.6 -- the noise's relative and absolute spread across cells, as scripts/generate_design.py's preamble records it
@@ -184,6 +185,7 @@
 90af060e5a75c9308a5f134fc7955357b1a2afc1	CHANGELOG.md	REGISTERED: 856, 969, 144, 745, 80 -- the ledger-claims registry's row counts before and after this entry, by status: dated counts
 916fb28a9b842c3a4abe772f7bafc296003b0ba6	CHANGELOG.md	REGISTERED: 7, 1, 0 -- the scoreboard as the v1.1.0 notes recorded it, superseded by the v1.2.0 class-tiered scoreboard entry
 91a34dd40ab60fab6c26bc9ebf9e740e27cc9f7c	CHANGELOG.md	REGISTERED: 71 -- the lines the aggregate nouns added, a dated count
+925a4df91f93cc6ab47b6a062b821792e1572d1c	CHANGELOG.md	REGISTERED: 0 -- `(Z, 0)`, the natural-composition rung of the reader's lookup, held by V-15 and T-92
 92769a38974ed591203c07c49242deb6d652115f	CHANGELOG.md	REGISTERED: Twelve, three, 4.70 -- the rows of openmucf/data/muon_cost.csv and its three tiers, and Kelly's `kelly_hart_rose_2021` value
 928ac5e5c44470da944ae6a3eb647ce60977d9df	CHANGELOG.md	REGISTERED: 1 -- '(1−R)', the closed form's factor, openmucf/analytic.py
 92cacda373d8a75dd37604e203695871db8f71f5	CHANGELOG.md	REGISTERED: Three, 1.92, 8 -- the three rows the bullet names, and `lambda_dhe3` = 1.92e8 in openmucf/data/rates.csv
@@ -423,8 +425,8 @@ b0642f3fe777272542bf2446805d2a2f09e7b1e2	DATASET_D1.md	REGISTERED: one -- a pron
 b0c4dd5c2583fe53f742aff3590694a7a378b363	DATASET_D1.md	REGISTERED: two -- 'F-7's two extremes': the two abundance figures F-7 states, both T-63 rounded pins
 b5b0e3f320918dfc6bbba4fc80efd9e7a2bbb4d0	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
 b82cb98fa0f011df6f49345625c4fface9c61cba	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
-b933ce6f6e0cef16732fccb7d30b3c70dcb3b753	DATASET_D1.md	REGISTERED: two -- 'the two tables': the shipped capture and zeff tables, which T-84 loads as exactly two parity keys
 b9c026ba92d1d9336eb23004e4c78b43e37719ae	DATASET_D1.md	REGISTERED: 59, two, one -- praseodymium's atomic number; 'two elements' the two rows the paragraph names; 'one of the two' a pronoun
+bc61cb2f9feff543f5c04f19bd25d1a46353d13a	DATASET_D1.md	REGISTERED: 0 -- `A = 0`, the key a natural-composition target carries under A:natural_and_listed; T-92 holds every such record of the shipped file
 c140a5aa4dc7c5205b54dc62807188fc8dcd8a82	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of them')
 c4dda9d0a27fc91fce60f523df94edad8a426d94	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of direct interest')
 c61c6838f360bf94b90121b25cc3a564c04facaa	DATASET_D1.md	EXERCISED: 4.5517, 04 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts

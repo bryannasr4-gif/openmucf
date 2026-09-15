@@ -168,6 +168,8 @@ def pin_table() -> list[Pin]:
         ("CHANGELOG.md", pins.changelog_rounded),
         ("README.md", pins.readme_claims),
         ("cpp/tools/README.md", pins.tools_readme_claims),
+        ("DATASET_D1.md", pins.crosscheck_rows),
+        ("CHANGELOG.md", pins.string_claims),
     ):
         for row in rows:
             table.append(Pin(row[0], path, row[1], (1,)))

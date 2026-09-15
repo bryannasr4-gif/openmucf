@@ -423,12 +423,12 @@ evaluation: no shipped value was compared to the primary for correctness, and no
 `cpp/patches/` carries a patch against each of the two Geant4 revisions, `v11.4.2` and
 `v11.5.0.beta`, that adds the reader to Geant4
 and lets both compiled-in copies of the capture tables consult this dataset after an explicit opt-in,
-with the default behaviour left untouched. A second, separate patch registers the dataset so that
+with the default behaviour left untouched. A separate registration patch for each revision registers the dataset so that
 Geant4 resolves it under `GEANT4_DATA_DIR`; without it, an exported `G4MUONICDATA` is the only route.
-The generator builds `G4MuonicData.<version>.tar.gz` in memory from the two tables, their provenance
+The generator builds `G4MuonicData.<version>.tar.gz` in memory from every table file, their provenance
 files, a `README` and a `History`, and the registration snippet carries that archive's MD5; the archive
 unpacks to the `G4MuonicData<version>` directory the registered mode looks for, and `<version>` is the
-`#VERSION` both tables carry. The patched build looks values up through the `parity` profile only; a
+`#VERSION` every table carries. The patched build looks values up through the `parity` profile only; a
 table that another profile carries in its own file is parsed and checked but never consulted.
 An application opts in with one line before its physics list is built,
 `G4HadronicParameters::Instance()->SetEnableMuonicData(true);`, as `cpp/patches/README.md` states.
@@ -440,3 +440,40 @@ what a patched build was measured to do.
 The values are derived from Geant4 source redistributed under the Geant4 Software License v1.0; see
 `third_party/geant4/`, whose terms apply to that directory. The dataset files themselves are
 CC-BY-4.0 and the toolchain is Apache-2.0, as for the rest of this repository.
+
+## 9. A second profile of the capture table — `mizuno2025`
+
+Sections 1–8 describe the `parity` tables; this section describes a third file in the same
+directory, `d1_capture.mizuno2025.g4dat` with its `d1_capture.mizuno2025.prov.json`, which carries
+the capture table under `#PROFILE mizuno2025`. Its values are the muon capture rates that Mizuno et
+al., Phys. Rev. C **112**, 024307 (2025), doi 10.1103/vl7z-rzp8, arXiv:2501.05897 print in the
+`Exp.` column of their Table 3, read from committed transcriptions of that paper's Table 1 and
+Table 3 that ship in the same directory. Every value is carried as the primary prints it: the
+primary computes each rate from its measured lifetime by its Eq. (3) with the Huff factors it takes
+from Suzuki, Measday & Roalsvig (1987), and nothing is re-derived here. Where the primary measured
+a nuclide on more than a single target, its Table 3 value is the primary's own average of its
+Table 1 rows, marked there by a footnote that the row's provenance quotes.
+
+The keys follow the primary's labels. An enriched isotope or a mononuclidic element is keyed by its
+mass number and is `isotope_resolved`; a natural-composition target is keyed by `A = 0`, which the
+table admits with `A:natural_and_listed`, and is not. A key this profile does not carry falls
+through to the compiled-in table: the file declares no `#FALLBACK`, and, because it reproduces no
+upstream revision, no `#SOURCESHA`.
+
+**Where the profiles disagree.** For every key both profiles carry, the value and its uncertainty
+were compared at the primary's printed precision, a natural-composition key against the compiled-in
+row of that element. The test suite derives from the shipped files the pairs whose value or
+uncertainty differs and requires this table to list exactly those pairs, the `parity` cells as the
+vendored source prints them and the `mizuno2025` cells as the transcription prints them:
+
+| Z | A (mizuno2025) | A (parity) | parity value ± unc | mizuno2025 value ± unc | locator |
+|---|---|---|---|---|---|
+| 12 | 0 | 24 | 0.4823 ± 0.0013 | 0.4856 ± 0.0018 | Table 3, Exp. column |
+| 13 | 27 | 27 | 0.6985 ± 0.0012 | 0.7059 ± 0.0013 | Table 3, Exp. column |
+| 14 | 0 | 28 | 0.8656 ± 0.0015 | 0.8794 ± 0.0018 | Table 3, Exp. column |
+| 14 | 28 | 28 | 0.8656 ± 0.0015 | 0.893 ± 0.009 | Table 3, Exp. column |
+| 25 | 55 | 55 | 3.900 ± 0.030 | 3.90 ± 0.08 | Table 3, Exp. column |
+| 47 | 0 | 107 | 10.869 ± 0.095 | 11.07 ± 0.07 | Table 3, Exp. column |
+
+No value in either profile is altered by the comparison. The copy read is the arXiv v2 HTML; the
+journal version is unread.
