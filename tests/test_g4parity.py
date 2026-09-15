@@ -2775,3 +2775,97 @@ def test_t89_drill_a_token_dropped_from_either_cell_is_refused():
         assert mutated != text
         assert layer2_vocabulary_cells(mutated)[field] == vocabulary[:-1]
         assert layer2_vocabulary_cells(mutated)[field] != vocabulary
+
+
+# --------------------------------------------------------------------------------------------
+# T-90 -- the mizuno2025 transcriptions: every structural rule of the loader fires on a fixture
+# --------------------------------------------------------------------------------------------
+
+from openmucf.g4.sources import mizuno2025  # noqa: E402
+
+MIZUNO_TABLE1 = REPO / mizuno2025.TABLE1_RELPATH
+MIZUNO_TABLE3 = REPO / mizuno2025.TABLE3_RELPATH
+
+
+def mizuno_extraction() -> mizuno2025.Mizuno2025Extraction:
+    return mizuno2025.load(MIZUNO_TABLE1, MIZUNO_TABLE3)
+
+
+def _replace_once(text: str, old: str, new: str) -> str:
+    assert text.count(old) == 1, (old, text.count(old))
+    return text.replace(old, new, 1)
+
+
+def _first_data_line(text: str) -> str:
+    return text.split("\n")[1]
+
+
+#: (label, which file, mutation of that file's text, message the loader must give). Each row is
+#: one rule of `mizuno2025.load`; the shipped files pass every one (the first test below).
+MIZUNO_DRILLS = [
+    ("table 1 header renamed", 1, lambda t: _replace_once(t, "huff_factor", "huff"), "header is"),
+    ("table 3 header reordered", 3, lambda t: _replace_once(t, "Z,A,", "A,Z,"), "header is"),
+    ("a CR byte", 1, lambda t: t.replace("\n", "\r\n", 1), "contains CR"),
+    ("a non-ASCII cell outside size_mm", 1,
+     lambda t: _replace_once(t, "Powder in case,\u03d515.0\u00d72.8,0.500,2.02",
+                             "Powder in c\u00e2se,\u03d515.0\u00d72.8,0.500,2.02"),
+     "must be ASCII"),
+    ("a non-decimal rate", 3, lambda t: _replace_once(t, ",0.893,", ",0.893x,"), "decimal number"),
+    ("a non-decimal weight", 1, lambda t: _replace_once(t, ",9.00,", ",9.00g,"), "decimal number"),
+    ("a non-integer Z", 3, lambda t: _replace_once(t, "\n47,0,", "\nAg,0,"), "must be integers"),
+    ("a duplicate key", 3, lambda t: _replace_once(t, "\n14,29,", "\n14,28,"), "duplicate key"),
+    ("a label only in table 1", 1, lambda t: _replace_once(t, "\n55Mn,", "\n55mn,"), "labels differ"),
+    ("a label only in table 3", 3, lambda t: _replace_once(t, ",natAg,", ",natag,"), "labels differ"),
+    ("an averaged row without its footnote", 3,
+     lambda t: _replace_once(t, ",natSi,0.8794,0.0018,Average of two experimental data in Table 1.,",
+                             ",natSi,0.8794,0.0018,,"),
+     "note is empty"),
+    ("a single-row value that differs from table 1", 3,
+     lambda t: _replace_once(t, ",28Si,0.893,0.009,", ",28Si,0.894,0.009,"), "string for string"),
+    ("a single-row uncertainty that differs from table 1", 3,
+     lambda t: _replace_once(t, ",55Mn,3.90,0.08,", ",55Mn,3.90,0.09,"), "string for string"),
+    ("a footnote on a single-row nuclide", 3,
+     lambda t: _replace_once(t, ",natMg,0.4856,0.0018,,", ",natMg,0.4856,0.0018,averaged,"),
+     "note is set"),
+    ("an empty locator", 3,
+     lambda t: _replace_once(t, ',"Table 3, Exp. column",arxiv-html\n12,', ",,arxiv-html\n12,"),
+     "carry a locator"),
+    ("an empty copy_read", 1,
+     lambda t: _replace_once(t, "0.893,0.009,Table 1,arxiv-html", "0.893,0.009,Table 1,"),
+     "carry a copy_read"),
+    ("one Suzuki cell without the other", 1,
+     lambda t: _replace_once(t, ",756.0,1.0,0.882,", ",756.0,,0.882,"), "present or absent together"),
+    ("no rows", 3, lambda t: t.split("\n")[0] + "\n", "carries no rows"),
+]
+
+
+def test_t90_the_shipped_transcriptions_load_and_the_two_tables_name_one_set_of_nuclides():
+    """The committed files pass every rule; Table 3 has one row per nuclide label of Table 1 and
+    every Table-1 row of a nuclide is reachable from its Table-3 row -- counts derived, not typed."""
+    found = mizuno_extraction()
+    labels = {row.nuclide for row in found.table1}
+    order = [r.nuclide for r in found.table1].index
+    assert [row.nuclide for row in found.table3] == sorted(labels, key=order)
+    assert sum(len(found.table1_rows(row.nuclide)) for row in found.table3) == len(found.table1)
+    assert len(set(found.keys)) == len(found.table3)
+    for row in found.table3:
+        printed = found.table1_rows(row.nuclide)
+        assert (len(printed) >= 2) == bool(row.note), row.nuclide
+        assert all(r.locator and r.copy_read for r in printed)
+        assert row.locator and row.copy_read
+
+
+@pytest.mark.parametrize("label, which, mutate, message", MIZUNO_DRILLS, ids=[d[0] for d in MIZUNO_DRILLS])
+def test_t90_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, which, mutate, message):
+    """Corrupt one transcription in one way, in a temporary copy of both files; the loader must
+    refuse it with the rule's own message. The unmutated copy loads, so the message is the rule's."""
+    texts = {1: MIZUNO_TABLE1.read_bytes().decode("utf-8"), 3: MIZUNO_TABLE3.read_bytes().decode("utf-8")}
+    paths = {n: tmp_path / p.name for n, p in ((1, MIZUNO_TABLE1), (3, MIZUNO_TABLE3))}
+    for n, text in texts.items():
+        paths[n].write_bytes(text.encode("utf-8"))
+    mizuno2025.load(paths[1], paths[3])  # the copies load before the mutation
+    mutated = mutate(texts[which])
+    assert mutated != texts[which], label
+    paths[which].write_bytes(mutated.encode("utf-8"))
+    with pytest.raises(mizuno2025.Mizuno2025Error, match=re.escape(message)):
+        mizuno2025.load(paths[1], paths[3])
