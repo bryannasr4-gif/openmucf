@@ -86,8 +86,7 @@ design:
 #                               (no MCMC/solver), byte-stable on every platform.
 #   d1_*.g4dat, d1_*.prov.json -- BOTH layers generated from the vendored upstream Geant4 source
 #                               (third_party/geant4/), parsed at build time. Pure deterministic text
-#                               and byte-stable on every platform. Nothing here is hand-authored, so
-#                               a drift in these bytes means the extraction or the source moved.
+#                               and byte-stable on every platform.
 #   geant4_add_dataset.snippet -- deterministic text EXCEPT for one field: MD5SUM is the MD5 of the
 #                               archive, i.e. of a gzip DEFLATE stream. zlib does not guarantee
 #                               byte-identical compressed output across builds, so this line is

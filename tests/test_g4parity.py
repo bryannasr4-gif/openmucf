@@ -1835,8 +1835,7 @@ def test_t61_settled_rows_say_settled_and_unsettled_rows_still_say_open():
 def test_t62_every_primary_the_audit_cites_resolves_in_the_bibliography():
     """Nothing enters the audit that is not in `references.bib` with a DOI or a URL to reach it.
 
-    The same discipline the ledger's CSVs already carry, applied to the one file here a human
-    typed. The match is on the bibkey the audit's locator names, so a locator citing a paper
+    The match is on the bibkey the audit's locator names, so a locator citing a paper
     nobody added to the bibliography fails rather than passing as free text.
     """
     bib_text = (REPO / "openmucf" / "data" / "references.bib").read_text("utf-8")

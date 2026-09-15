@@ -14,15 +14,14 @@ read back out of that file.
 
 **The D1 build** (``data/g4/d1/``) carries real data and claims something falsifiable: that every
 muon-capture record and every effective charge in it is bit-for-bit what Geant4 v11.4.2 compiles in.
-Nothing about it is hand-authored. Both layers are generated from the vendored upstream source, at
+Both layers are generated from the vendored upstream source, at
 build time, every time -- so "bit-for-bit" is a property of this script rather than a claim about
 what somebody typed once. Layer 2 is still the source of truth in the sense that matters: it is the
 byte range ``#SOURCEDIGEST`` is taken over, and ``--audit`` verifies that on the COMMITTED pair.
 
 The D1 directory also carries a **second profile of the capture table**, ``mizuno2025``, generated
 the same way from two committed transcriptions of a primary's printed tables
-(``openmucf.g4.sources.mizuno2025`` states what they hold and refuses what they must not). Those two
-CSV files are the one hand-authored input of that profile.
+(``openmucf.g4.sources.mizuno2025`` states what they hold and refuses what they must not).
 
 Audit wiring: every generated artifact below joins ``make audit``'s ``git diff --exit-code`` list.
 The ``.tar.gz`` archives are **not** committed -- they are build products whose determinism is

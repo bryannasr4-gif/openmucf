@@ -8,8 +8,7 @@ with the exact float literals they were written as, the effective-charge (``zeff
 constant the Goulard-Primakoff fallback needs. It is **structural**: it anchors on declarations and
 brace-matches to their ends. It never uses a line number to find anything, because a parser keyed to
 line numbers keeps parsing at the next upstream release and silently extracts the wrong thing, while
-a parser keyed to declarations either finds them or fails loudly. Nothing here is transcribed: a
-number typed by a human anywhere in this chain would be a defect.
+a parser keyed to declarations either finds them or fails loudly.
 
 **The reference implementation** evaluates the same function Geant4 compiles -- table lookup with
 Geant4's own early-exit scan, Goulard-Primakoff otherwise -- and it is bit-exact against the

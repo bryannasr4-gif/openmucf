@@ -38,8 +38,8 @@ upstream **git blob id** `29bd73719cd619de34ef83ca5ca076ceadf1cc5a` — upstream
 those exact bytes, so you can check the copy against `github.com/Geant4/geant4` without cloning
 Geant4 and without trusting us.
 
-Every number in this dataset is **parsed out of that file at build time**. No count and no value is
-transcribed: `make g4data` re-derives all of them, `make audit` byte-diffs the result, and the test
+Every number in this dataset is **parsed out of that file at build time**.
+`make g4data` re-derives all of them, `make audit` byte-diffs the result, and the test
 suite forbids the record counts from appearing as literals anywhere in the extraction code. This
 matters more than it sounds. An earlier design note for this project recorded the capture table as
 having "94 entries"; 94 is the maximum *Z*. The table has 90 records spanning 74 distinct Z. A
@@ -57,8 +57,7 @@ Those three papers have since been read, for the isotope audit of section 6 and 
 they are now in the bibliography. Where a row's `isotope_resolved` flag rests on one of them, its
 `source_locator` names the paper, the table and the page in a second, clearly labelled clause, and
 records which copy was read. So the two provenance questions stay separate: the first clause of a
-locator says where the **value** came from, the second says what established the **flag**. Rows the
-primaries do not settle carry no second clause and keep `needs_verification: true`.
+locator says where the **value** came from, the second says what established the **flag**.
 
 ## 2. The `goulard_primakoff` model contract
 
