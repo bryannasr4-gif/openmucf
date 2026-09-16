@@ -24,6 +24,24 @@ from pathlib import Path
 PROFILE = "mizuno2025"
 #: The bibliography key of the primary both tables are read from.
 BIBKEY = "Mizuno2025"
+#: Every row's `evaluation_method`: what it quotes of the primary's account of its Table 3 `Exp.`
+#: column -- the value as printed, obtained by the primary's Eq. (3) with a Huff factor from its
+#: Ref. [4] -- and that nothing is re-derived here.
+METHOD = (
+    "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its "
+    "measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here"
+)
+#: The same account for a nuclide the primary measured on more than one target: its Table 3 value
+#: carries the footnote quoted here, and the average behind it is the primary's, never ours.
+METHOD_AVERAGED = (
+    'capture rate as the primary prints it (Table 3, Exp. column, with its footnote "{note}"): the '
+    "primary computes each Table 1 rate from its measured lifetime by its Eq. (3) with a Huff factor "
+    "from its Ref. [4]; the average is the primary's; not re-derived here"
+)
+#: The copy of the primary both transcriptions were read from, quoted in every row's `conditions`.
+COPY = "copy read: arXiv:2501.05897v2 HTML; the journal version is unread"
+#: Table 1's caption, quoted in every row's `conditions`.
+TABLE1_CAPTION = 'Table 1 caption: "Huff factor (Q) taken from Ref [4]"'
 TABLE1_RELPATH = "data/g4/d1/mizuno2025_table1.csv"
 TABLE3_RELPATH = "data/g4/d1/mizuno2025_table3.csv"
 #: The columns of each file, in order. The header must match exactly: a reordered or renamed column
@@ -185,10 +203,7 @@ def load_table3(path: Path) -> tuple[Table3Row, ...]:
             raise Mizuno2025Error(
                 f"{where}: Z and A must be integers as printed, without sign or leading zero"
             )
-        try:
-            z, a = int(record["Z"]), int(record["A"])
-        except ValueError:
-            raise Mizuno2025Error(f"{where}: Z and A must be integers") from None
+        z, a = int(record["Z"]), int(record["A"])
         for column in TABLE3_NUMERIC:
             _decimal(record[column], where, column)
         if (z, a) in seen:

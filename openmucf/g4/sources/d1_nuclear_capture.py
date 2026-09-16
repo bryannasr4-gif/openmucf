@@ -1099,7 +1099,8 @@ def decided_by_value(
     separated = {int(label.split("-")[1]) for label in labels if is_separated_label(label)}
     natural = any(not is_separated_label(label) for label in labels)
     stated = re.search(r"round\(Ar\)=(\d+)", evidence)
-    collision = natural and a in separated and stated is not None and int(stated.group(1)) == a
+    # No `a in separated` conjunct: when `a` is not a separated label, `absent` is already true.
+    collision = natural and stated is not None and int(stated.group(1)) == a
     absent = a not in separated
     return collision or absent
 

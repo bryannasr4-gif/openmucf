@@ -422,27 +422,16 @@ def build_zeff_table(found: d1src.D1Extraction, digest: str) -> spec.G4DatTable:
 # D1 -- the mizuno2025 capture profile, from two committed transcriptions of the primary
 # --------------------------------------------------------------------------------------------
 
-#: The primary's own account of the printed value, in one template shared by every row: the rate is
-#: carried as printed, and how the primary obtained it is stated in its terms, never re-derived.
-MIZUNO_METHOD = (
-    "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its "
-    "measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here"
-)
-#: The same account for a nuclide the primary measured on more than one target: its Table 3 value
-#: carries the footnote quoted here, and the average behind it is the primary's, never ours.
-MIZUNO_METHOD_AVERAGED = (
-    'capture rate as the primary prints it (Table 3, Exp. column, with its footnote "{note}"): the '
-    "primary computes each Table 1 rate from its measured lifetime by its Eq. (3) with a Huff factor "
-    "from its Ref. [4]; the average is the primary's; not re-derived here"
-)
-MIZUNO_COPY = "copy read: arXiv:2501.05897v2 HTML; the journal version is unread"
+# The provenance text every row quotes -- the primary's account of its printed value, its Table 1
+# caption and the copy read -- lives beside the transcription it describes (`mizsrc.METHOD`,
+# `mizsrc.METHOD_AVERAGED`, `mizsrc.TABLE1_CAPTION`, `mizsrc.COPY`).
 
 
 def _mizuno_conditions(row: mizsrc.Table3Row, printed: tuple[mizsrc.Table1Row, ...]) -> str:
     """Quoted fragments of the primary and its printed cells for this nuclide, by rule per row."""
     huff = ", ".join(sorted({r.huff_factor for r in printed}))
     parts = [
-        'Table 1 caption: "Huff factor (Q) taken from Ref [4]"',
+        mizsrc.TABLE1_CAPTION,
         f"printed Q for this target: {huff}",
     ]
     for r in printed:
@@ -451,7 +440,7 @@ def _mizuno_conditions(row: mizsrc.Table3Row, printed: tuple[mizsrc.Table1Row, .
         )
     if row.note:
         parts.append(f'Table 3 footnote: "{row.note}"')
-    parts.append(MIZUNO_COPY)
+    parts.append(mizsrc.COPY)
     return "; ".join(parts)
 
 
@@ -468,7 +457,7 @@ def build_mizuno_capture_document(found: mizsrc.Mizuno2025Extraction) -> provena
             conditions=_mizuno_conditions(row, printed),
             validity_range=f"{where}",
             evaluation_method=(
-                MIZUNO_METHOD_AVERAGED.format(note=row.note) if row.note else MIZUNO_METHOD
+                mizsrc.METHOD_AVERAGED.format(note=row.note) if row.note else mizsrc.METHOD
             ),
             # Derived from the primary's own comparison column: a target it prints no earlier
             # lifetime for is one it alone has measured.
