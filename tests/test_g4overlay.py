@@ -76,6 +76,11 @@ BEHAVIOUR_PATHS = frozenset(
 #: only the shape of their `index` declaration is held (see the blob test).
 HADRONIC_PARAMETERS = frozenset(p for p in BEHAVIOUR_PATHS if "/G4HadronicParameters." in p)
 assert len(HADRONIC_PARAMETERS) == 2, HADRONIC_PARAMETERS
+#: The two glue files, likewise derived: the same bytes in both families, and the one place the
+#: profile variable is read.
+GLUE = frozenset(p for p in BEHAVIOUR_PATHS if "/G4MuonicDataOverlay." in p)
+assert len(GLUE) == 2, GLUE
+(GLUE_CC,) = tuple(p for p in GLUE if p.endswith(".cc"))
 #: Per family: the two seam files, and the vendored copy of that tag each one's hunks must apply to.
 SEAMS: dict[str, dict[str, pathlib.Path]] = {
     tag: {
@@ -458,6 +463,27 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
                 not_rebuilt.add(path)
     assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH} | HADRONIC_PARAMETERS
     assert not_rebuilt == set(PRISTINE_INDEX_OLD[tag]), sorted(PRISTINE_INDEX_OLD[tag])
+
+
+def test_t72_the_glue_files_are_identical_across_families_and_read_the_profile_variable():
+    """The glue `.hh` and `.cc`, rebuilt from each family's added-file hunks, are byte-identical
+    across the two families -- the glue does not depend on the revision -- and the `.cc` reads
+    `G4MUONICDATA_PROFILE` at exactly one place and raises the profile error code at exactly one.
+    """
+    rebuilt: dict[str, dict[str, bytes]] = {}
+    for tag in sorted(FAMILIES):
+        behaviour, _, _ = FAMILIES[tag]
+        files = by_new_path(parse_patch(behaviour.read_bytes()))
+        rebuilt[tag] = {}
+        for path in sorted(GLUE):
+            assert files[path].old_path == b"/dev/null", (tag, path)
+            rebuilt[tag][path] = apply_file_patch(files[path], b"")
+    first, second = sorted(rebuilt)
+    for path in sorted(GLUE):
+        assert rebuilt[first][path] == rebuilt[second][path], f"{path} differs between {first} and {second}"
+    glue_cc = rebuilt[first][GLUE_CC]
+    assert glue_cc.count(b'std::getenv("G4MUONICDATA_PROFILE")') == 1, glue_cc.count(b"G4MUONICDATA_PROFILE")
+    assert glue_cc.count(b'"G4MuonicData004"') == 1, glue_cc.count(b"G4MuonicData004")
 
 
 @family

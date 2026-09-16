@@ -34,6 +34,7 @@ import struct
 import subprocess
 import sys
 import tarfile
+from collections.abc import Sequence
 
 import pytest
 
@@ -3609,3 +3610,106 @@ def test_t97_drill_a_settled_row_whose_cell_moves_in_its_last_digit_is_caught(tm
     path.write_bytes(mutated.encode("ascii"))
     with pytest.raises(AssertionError):
         check_open_row_verdicts(audit, d1.load_capture_cells(path), document)
+
+
+# --------------------------------------------------------------------------------------------
+# T-99 -- the profile sweep predicted: which keys a second profile moves, and to what
+# --------------------------------------------------------------------------------------------
+
+
+def profile_sweep_diff(
+    profile_values: dict[tuple[int, int], float],
+    parity_records: Sequence[tuple[int, int, float, float]],
+    model: d1.GoulardPrimakoff,
+) -> list[tuple[int, int, float, float]]:
+    """The rows of the sweep box where a patched build reading through a profile returns a
+    different double from the `parity` sweep: `(Z, A, parity value, profile value)`.
+
+    The profile resolves a key the way the reader's `LookupNatural` does -- the exact `(Z, A)`
+    record, else the `(Z, 0)` record, else nothing -- and a resolved value goes through the same
+    `value / microsecond` expression the seam runs, here as the reference model's table branch
+    fed one record. An unresolved key falls through to the compiled-in code, which is the parity
+    value, so it never differs.
+    """
+    rows: list[tuple[int, int, float, float]] = []
+    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            parity_value = d1.capture_rate(z, a, parity_records, model)
+            if (z, a) in profile_values:
+                value = profile_values[(z, a)]
+            elif (z, 0) in profile_values:
+                value = profile_values[(z, 0)]
+            else:
+                continue
+            profile_value = d1.capture_rate(z, a, [(z, a, value, 0.0)], model)
+            if struct.pack(">d", parity_value) != struct.pack(">d", profile_value):
+                rows.append((z, a, parity_value, profile_value))
+    return rows
+
+
+def profile_capture_values(layer1_path: pathlib.Path) -> dict[tuple[int, int], float]:
+    """`{(Z, A): value}` of one shipped capture file, parsed by the format module."""
+    table = spec.parse(layer1_path.read_bytes().decode("ascii"))
+    columns = table.directives["COLUMNS"].split()
+    z_index, a_index, value_index = columns.index("Z"), columns.index("A"), columns.index("value")
+    return {(int(r[z_index]), int(r[a_index])): float(r[value_index]) for r in table.records}
+
+
+def predicted_profile_sweep(profile_layer1: pathlib.Path) -> list[tuple[int, int, float, float]]:
+    """The predicted rows for one profile file against the shipped `parity` side."""
+    found = extraction()
+    return profile_sweep_diff(
+        profile_capture_values(profile_layer1), found.capture_records, reference_model(found)
+    )
+
+
+def test_t99_the_second_profile_moves_exactly_the_keys_it_resolves():
+    """Over the shipped `mizuno2025` file: every differing key is one the profile resolves; every
+    T-91 pair whose value differs at the printed precision has its parity key among them; every
+    swept A of a Z with a `(Z, 0)` row is resolved; and the directory holds no `muon_zeff` under
+    that profile, so its effective charges fall through unchanged."""
+    profile_values = profile_capture_values(MIZUNO_LAYER1)
+    rows = predicted_profile_sweep(MIZUNO_LAYER1)
+    assert rows, "the second profile moves no key"
+    differing = {(z, a) for z, a, _, _ in rows}
+    resolved = {
+        (z, a)
+        for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1)
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1)
+        if (z, a) in profile_values or (z, 0) in profile_values
+    }
+    assert differing <= resolved, sorted(differing - resolved)
+    for pair in mizuno_parity_pairs():
+        if not pair["value_agrees"]:
+            assert pair["parity"] in differing, pair
+    natural = sorted(z for z, a in profile_values if a == 0)
+    assert natural, "the profile carries no natural-composition row"
+    for z in natural:
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            assert (z, a) in resolved, (z, a)
+    tables = spec.load_directory(D1DIR)
+    assert (mizuno2025.PROFILE, "muon_zeff") not in tables, sorted(tables)
+    assert (spec.PARITY_PROFILE, "muon_zeff") in tables, sorted(tables)
+    print(f"\n{mizuno2025.PROFILE}: {len(rows)} differing key(s); no muon_zeff table under that profile")
+    for z, a, parity_value, profile_value in rows[:3] + rows[-3:]:
+        print(f"  {z} {a} {parity_value.hex()} {profile_value.hex()}")
+
+
+def test_t99_drill_a_dropped_natural_row_loses_exactly_that_elements_rows():
+    """The profile map without its `(12, 0)` entry -- found from the shipped file, not typed --
+    loses exactly the rows at Z = 12, which are non-empty, and nothing else moves."""
+    profile_values = profile_capture_values(MIZUNO_LAYER1)
+    natural_z = 12
+    assert (natural_z, 0) in profile_values, sorted(profile_values)
+    assert [a for z, a in profile_values if z == natural_z] == [0]
+    found = extraction()
+    model = reference_model(found)
+    full = profile_sweep_diff(profile_values, found.capture_records, model)
+    without = profile_sweep_diff(
+        {key: value for key, value in profile_values.items() if key != (natural_z, 0)},
+        found.capture_records,
+        model,
+    )
+    lost = [row for row in full if row[0] == natural_z]
+    assert lost, f"no row at Z = {natural_z} to lose"
+    assert without == [row for row in full if row[0] != natural_z]
