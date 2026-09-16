@@ -3032,6 +3032,8 @@ def test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row():
         assert ("footnote" in row.conditions) is bool(printed.note), key
         # The averaged rows' method names the primary's footnote; no other row's does.
         assert ("footnote" in row.evaluation_method) is bool(printed.note), key
+        if printed.note:
+            assert printed.note in row.evaluation_method, key
         for target in targets:
             assert (
                 f'"{target.form}", lifetime {target.lifetime_ns} ns, '
