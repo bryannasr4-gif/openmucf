@@ -2,7 +2,7 @@
 // V-14 / V-15 case is built from. `LookupNatural` returns the exact record when the table carries
 // one; when it does not, and the key has two parts, it falls to the `(Z, 0)` record a table under
 // `A:natural_and_listed` carries for that `Z`; and it returns nothing where no such record exists --
-// a `Z` without one, every parity table, and a single-key table (FORMAT_SPEC.md section 6).
+// a `Z` without one, and a single-key table (FORMAT_SPEC.md section 6).
 //
 // Every key below is derived from the loaded tables -- the `(Z, 0)` record found by its key, a mass
 // number no record carries built as one more than the largest at that `Z` -- so nothing is typed.

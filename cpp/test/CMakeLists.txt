@@ -187,7 +187,7 @@ set_tests_properties(validate_two_profiles PROPERTIES
 
 # The reader's natural-composition rung, called over the same directory: an exact hit wins, a mass
 # number no record carries falls to the (Z, 0) record under A:natural_and_listed, and a Z without
-# one -- every parity table, and a single-key table -- resolves nothing. Every key is derived from
+# one resolves nothing. Every key is derived from
 # the loaded tables.
 add_executable(g4muonicdata_lookup_check lookup_check.cc)
 target_link_libraries(g4muonicdata_lookup_check PRIVATE g4muonicdatatable)
