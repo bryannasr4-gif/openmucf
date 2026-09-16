@@ -185,6 +185,15 @@ add_test(NAME validate_two_profiles
 set_tests_properties(validate_two_profiles PROPERTIES
   PASS_REGULAR_EXPRESSION "V-14 PASS profiles=evaluated,parity pairs=3\nV-15 PASS tables=3 natural_rows=1\n")
 
+# The reader's natural-composition rung, called over the same directory: an exact hit wins, a mass
+# number no record carries falls to the (Z, 0) record under A:natural_and_listed, and a Z without
+# one -- every parity table, and a single-key table -- resolves nothing. Every key is derived from
+# the loaded tables.
+add_executable(g4muonicdata_lookup_check lookup_check.cc)
+target_link_libraries(g4muonicdata_lookup_check PRIVATE g4muonicdatatable)
+g4muonicdata_target_options(g4muonicdata_lookup_check)
+add_test(NAME lookup_natural COMMAND g4muonicdata_lookup_check "${G4MUONICDATA_PROFILES_TWO}")
+
 # Two files declaring the same (#PROFILE, #TABLE) pair: the shipped capture file under a second
 # name. The reader refuses the directory and names both files.
 set(G4MUONICDATA_PROFILES_SAME_PAIR "${CMAKE_BINARY_DIR}/profiles_same_pair")
@@ -223,6 +232,44 @@ add_test(NAME validate_natural_row_in_parity
                  --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
 set_tests_properties(validate_natural_row_in_parity PROPERTIES
   PASS_REGULAR_EXPRESSION "V-15 FAIL under parity")
+
+# A second profile carrying a table parity does not: the shipped pair plus the format example,
+# whose (#PROFILE evaluated, #TABLE format_example) has no parity partner. V-14 names the table
+# and the file.
+set(G4MUONICDATA_PROFILE_WITHOUT_PARITY "${CMAKE_BINARY_DIR}/profile_without_parity")
+file(REMOVE_RECURSE "${G4MUONICDATA_PROFILE_WITHOUT_PARITY}")
+file(COPY ${G4MUONICDATA_SHIPPED_FILES} "${G4MUONICDATA_REPO_ROOT}/data/g4/example.g4dat"
+     DESTINATION "${G4MUONICDATA_PROFILE_WITHOUT_PARITY}")
+add_test(NAME validate_profile_without_parity
+         COMMAND g4muonicdata_validate "${G4MUONICDATA_PROFILE_WITHOUT_PARITY}"
+                 --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_profile_without_parity PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-14 FAIL '#PROFILE evaluated' carries '#TABLE format_example' [(]example.g4dat[)] that parity does not\n")
+
+# The #VALIDITY sub-grammar's two refusals. Each directory is derived at configure time from the
+# two-profile case above: the shipped pair, plus the corpus member with its `A:natural_and_listed`
+# assignment replaced by the text the case needs -- one stated replacement of a committed member,
+# so no second copy of the member is committed.
+function(g4muonicdata_validity_case name replacement expected)
+  set(dir "${CMAKE_BINARY_DIR}/${name}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_SHIPPED_FILES} DESTINATION "${dir}")
+  file(READ "${G4MUONICDATA_CONFORMANCE_DIR}/ok_natural_row_under_natural_and_listed.g4dat" member)
+  string(FIND "${member}" "A:natural_and_listed" at)
+  if(at EQUAL -1)
+    message(FATAL_ERROR "ok_natural_row_under_natural_and_listed.g4dat does not assign A:natural_and_listed")
+  endif()
+  string(REPLACE "A:natural_and_listed" "${replacement}" member "${member}")
+  file(WRITE "${dir}/d1_capture.evaluated.g4dat" "${member}")
+  add_test(NAME ${name}
+           COMMAND g4muonicdata_validate "${dir}"
+                   --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+  set_tests_properties(${name} PROPERTIES PASS_REGULAR_EXPRESSION "${expected}")
+endfunction()
+g4muonicdata_validity_case(validate_validity_without_range "A"
+  "V-15 FAIL 'd1_capture.evaluated.g4dat' #VALIDITY assignment 'A' is not NAME:RANGE\n")
+g4muonicdata_validity_case(validate_validity_assigned_twice "A:listed A:natural_and_listed"
+  "V-15 FAIL 'd1_capture.evaluated.g4dat' #VALIDITY assigns 'A' twice\n")
 
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
 # enabled (and FMA on x86-64), and the figures compared with the document.

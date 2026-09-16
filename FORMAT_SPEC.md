@@ -146,7 +146,8 @@ from inventing three different splittings of the same bytes.
 
 Every `NAME` used in `#UNITS` should be a `#COLUMNS` name; a unit for a column that does not exist
 is a producer bug, and a consumer may report it as one. `#VALIDITY` names need not be columns
-(`A:natural_and_listed` describes a selection rule, not a column range).
+(`A:natural_and_listed` describes a selection rule, not a column range). A `NAME` is assigned at
+most once; a consumer that decomposes `#VALIDITY` refuses a repeated `NAME`.
 
 **A `#FALLBACK` model name means whatever the dataset's own documentation says it means**, and that
 documentation must state the formula **and its evaluation order**. This is not pedantry: floating
