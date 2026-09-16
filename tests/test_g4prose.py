@@ -172,6 +172,7 @@ def pin_table() -> list[Pin]:
         ("DATASET_D1.md", pins.crosscheck_unpartnered),
         ("CHANGELOG.md", pins.string_claims),
         ("DATASET_D1.md", pins.open_row_comparisons),
+        ("DATASET_D1.md", pins.settled_by_value),
     ):
         for row in rows:
             table.append(Pin(row[0], path, row[1], (1,)))

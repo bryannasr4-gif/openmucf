@@ -6,10 +6,9 @@
 `data/g4/d1/` is the first `G4MuonicData` dataset carrying real content. Its `parity` tables make
 one claim: that they reproduce the muon-capture data compiled into Geant4 `v11.4.2` and
 `v11.5.0.beta` bit-for-bit, on the builds section 4 names. They evaluate nothing, recommend nothing,
-and correct nothing — including where the
-upstream data looks wrong. Section 5 carries seven findings: **five** defects it reproduces rather
-than corrects, and **two** questions about the upstream data that reading the primary literature has
-since settled.
+and correct nothing — including where the upstream data looks wrong. Section 5 carries seven
+findings: **five** defects it reproduces rather than corrects, and **two** questions about the
+upstream data that reading the primary literature has since settled.
 
 That restraint is the design. A parity profile is the fixed point everything else is measured
 against: if the dataset and the transport code disagree, exactly one of them has changed, and you
@@ -39,7 +38,7 @@ upstream **git blob id** `29bd73719cd619de34ef83ca5ca076ceadf1cc5a` — upstream
 those exact bytes, so you can check the copy against `github.com/Geant4/geant4` without cloning
 Geant4 and without trusting us.
 
-Every number in this dataset is **parsed out of that file at build time**.
+Every number in the `parity` tables is **parsed out of that file at build time**.
 `make g4data` re-derives all of them, `make audit` byte-diffs the result, and the test
 suite forbids the record counts from appearing as literals anywhere in the extraction code. This
 matters more than it sounds. An earlier design note for this project recorded the capture table as
@@ -171,7 +170,7 @@ negative A, and the corners of the box — so a mismatch says *which points* mov
 that something did. Because Python reproduces the sweep exactly, the digest is verifiable **with no
 Geant4 present**, on every platform, in ordinary CI.
 
-**A parity claim is a claim about a named build**, and this one names it: Ubuntu 26.04 (WSL2),
+**A parity claim is a claim about a named build**, and this one names it: Ubuntu 26.04 LTS (WSL2),
 x86_64, `g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0`, Geant4 11.4.2 `RelWithDebInfo` (`-O2 -g -DNDEBUG`),
 no `-ffp-contract` setting, FMA absent from the baseline ISA. F-3 explains why that qualifier is not
 decoration.
@@ -307,9 +306,8 @@ record. **Sr** appears once too, and it is one of the three records this dataset
 `(38, 88)`, where the primary prints both natural Sr and Sr-88 and the key matches either.
 
 Sharper still: **all three of the records this dataset cannot settle sit at elements this sentence
-names.** `(92, 236)` U is open
-for an unrelated reason — the primary's table carries no U-236 row at all — and U is named in the
-model half, where the complaint is about the formula rather than about the data.
+names.** `(92, 236)` U is open — the primary's table carries no U-236 row at all — and U is named in
+the model half, where the complaint is about the formula rather than about the data.
 
 **Those are not the same uncertainty, and saying so would overstate it.** This dataset cannot settle
 a row because the *key* fails to distinguish two printed entries; the primary doubts the
@@ -363,9 +361,10 @@ of the 90 records was checked against the paper its own value is attributed to �
 to Suzuki, Measday & Roalsvig (1987), hydrogen and helium to the two sources the source comment
 carves them out to. **87 of the 90 are settled and carry `needs_verification: false`; 3 are not and
 still carry `true`.** Of the settled rows, **46 are `isotope_resolved: true`**: 24 because the
-primary lists a separated isotope with that mass number, 19 because the element is mononuclidic and
-so a natural-composition target *is* a single nuclide, and 3 — the hydrogen and helium records —
-because the sources the table carves them out to describe an isotopically distinct target
+primary lists a separated isotope with that mass number (the `(17, 35)` record among them settled to
+that entry by the comparison below), 19 because the element is mononuclidic and so a
+natural-composition target *is* a single nuclide, and 3 — the hydrogen and helium records — because
+the sources the table carves them out to describe an isotopically distinct target
 (deuterium-depleted protium; ³He and ⁴He tabulated as separate nuclides). The remaining **41 are
 `false` as an established finding**, because the primary shows the value rests on a
 natural-composition element (F-7).
@@ -395,7 +394,7 @@ prints at their Z in Table IV, at the primary's printed precision, from a commit
 of those cells (`data/g4/d1/capture_rate_cells.csv` — with the primary's parentheses, whose
 footnote reads *"Numbers are not given in original reference"*, and its `Refs.` column); a row
 whose value and uncertainty equal a printed cell and no other is settled to that entry, which is
-how the chlorine record became `isotope_resolved`, and the rows no cell equals stay open with the
+how the `(17, 35)` record became `isotope_resolved`, and the rows no cell equals stay open with the
 comparison recorded in their `evaluation_method`:
 
 | record | compiled-in value +- unc | Total Capture Rate cells the primary prints at this Z | equal at the printed precision |

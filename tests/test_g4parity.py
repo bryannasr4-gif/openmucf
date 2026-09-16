@@ -1929,6 +1929,10 @@ class DocumentPins:
     #: leaves open, the compiled-in literals against every printed cell at its Z; the whole row is
     #: the pinned span.
     open_row_comparisons: list
+    #: Section 6's two sentences naming the one record the value comparison settled, `(what,
+    #: pattern, expected_key)` rows whose expected string is that record's key as the document
+    #: writes it, derived from the audit and the cells.
+    settled_by_value: list
 
 
 def document_pins() -> DocumentPins:
@@ -2287,9 +2291,26 @@ def document_pins() -> DocumentPins:
     # the entry names is the `#VERSION` the committed capture table carries.
     shipped_version = re.search(r"^#VERSION\s+(\S+)$", CAPTURE_LAYER1.read_text("ascii"), re.M)
     assert shipped_version, "the committed capture table declares no #VERSION"
+    # The one record the value comparison settled: the settled audit row `decided_by_value` decides,
+    # derived from the audit and the printed cells. Every sentence naming it carries this key.
+    blocks = d1.cells_by_z(capture_cells())
+    settled_by_value_keys = sorted(
+        key for key, finding in audit.items()
+        if finding.settled and key[0] in blocks
+        and d1.decided_by_value(key, finding.evidence, blocks[key[0]])
+    )
+    assert len(settled_by_value_keys) == 1, (
+        "the sentences below name one record settled by the comparison; if this count moves, the "
+        f"document is rewritten, not this test: {settled_by_value_keys}"
+    )
+    ((settled_z, settled_a),) = settled_by_value_keys
+    key_text = f"`({settled_z}, {settled_a})`"
     string_claims = [
         ("the dataset version the entry names",
          r"moves the dataset's `#VERSION` to (\d+\.\d+\.\d+)", shipped_version.group(1)),
+        ("the record the value comparison settled",
+         r"the (`\(\d+, \d+\)`) record is settled as the separated isotope the primary lists",
+         key_text),
     ]
 
     # `README.md` is the third copy of these numbers and the one a reader meets first. Its G4
@@ -2401,7 +2422,6 @@ def document_pins() -> DocumentPins:
     # Section 6's comparison table: one row per capture row the audit leaves open, pinned whole --
     # the compiled-in literals as the vendored source prints them, every cell the primary prints at
     # that Z as the committed transcription prints it, and the outcome the comparison derives.
-    blocks = d1.cells_by_z(capture_cells())
     literals = {
         (z, a): literal
         for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
@@ -2424,6 +2444,19 @@ def document_pins() -> DocumentPins:
         assert re.findall(pattern, doc) == [expected_row], (
             f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
             "section 6's table; the document is wrong, not this test"
+        )
+    # Section 6's two sentences that name the record the comparison settled, each exactly once.
+    settled_by_value = [
+        ("the record the value comparison settled, among the separated-isotope route",
+         r"\(the (`\(\d+, \d+\)`) record among them settled to that entry by the comparison below\)",
+         key_text),
+        ("the record the value comparison settled, the comparison's own sentence",
+         r"which is how the (`\(\d+, \d+\)`) record became `isotope_resolved`", key_text),
+    ]
+    for what, pattern, expected_key in settled_by_value:
+        assert re.findall(pattern, doc) == [expected_key], (
+            f"DATASET_D1.md: {what}: {expected_key} must appear exactly once as "
+            f"{pattern!r}; the document is wrong, not this test"
         )
     # The bullet that lists the rows the primary fails to establish names exactly those keys, in
     # ascending order: the count above is pinned, and so is the list.
@@ -2578,7 +2611,7 @@ def document_pins() -> DocumentPins:
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
         tools_readme_claims, changelog_rounded, crosscheck_rows, crosscheck_unpartnered,
-        string_claims, open_row_comparisons,
+        string_claims, open_row_comparisons, settled_by_value,
     )
 
 

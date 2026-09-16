@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The capture rows the audit had left open are compared with every Total Capture Rate cell the
   primary prints at their Z** (`data/g4/d1/capture_rate_cells.csv`): a test derives each verdict
-  at the primary's printed precision and holds `isotope_audit.csv` to it; the chlorine record is
+  at the primary's printed precision and holds `isotope_audit.csv` to it; the `(17, 35)` record is
   settled as the separated isotope the primary lists, and the others stay open with the
   comparison recorded in their `evaluation_method`.
 
