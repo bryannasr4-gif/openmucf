@@ -3007,9 +3007,15 @@ def test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row():
         assert ("natural composition" in row.validity_range) is (a == 0), key
         assert row.validity_range.startswith(f"Z={z} "), key
         assert ("footnote" in row.conditions) is bool(printed.note), key
+        # The averaged rows' method names the primary's footnote; no other row's does.
+        assert ("footnote" in row.evaluation_method) is bool(printed.note), key
         for target in targets:
-            lifetime = f"{target.lifetime_ns}({target.lifetime_unc_ns}) ns"
-            assert f'"{target.form}", lifetime {lifetime}' in row.conditions, key
+            assert (
+                f'"{target.form}", lifetime {target.lifetime_ns} ns, '
+                f"uncertainty {target.lifetime_unc_ns} ns"
+            ) in row.conditions, key
+            # No parenthesised uncertainty survives: the notation is this profile's, not the primary's.
+            assert f"({target.lifetime_unc_ns})" not in row.conditions, key
         assert "not re-derived" in row.evaluation_method, key
 
 
