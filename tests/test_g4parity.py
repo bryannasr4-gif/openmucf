@@ -2,8 +2,8 @@
 
 ``tests/test_g4spec.py`` tests the *format*. This file tests the one **dataset** that claims to
 reproduce something: `data/g4/d1/`, which asserts that every muon-capture record and every effective
-charge it ships is bit-for-bit what Geant4 v11.4.2 compiles in, and that the Goulard-Primakoff
-fallback it declares evaluates to the same doubles the compiled library returns.
+charge its `parity` tables ship is bit-for-bit what Geant4 v11.4.2 compiles in, and that the
+Goulard-Primakoff fallback it declares evaluates to the same doubles the compiled library returns.
 
 Three disciplines run through every test here, because the claim is only as good as they are:
 
@@ -3713,3 +3713,52 @@ def test_t99_drill_a_dropped_natural_row_loses_exactly_that_elements_rows():
     lost = [row for row in full if row[0] == natural_z]
     assert lost, f"no row at Z = {natural_z} to lose"
     assert without == [row for row in full if row[0] != natural_z]
+
+
+# --------------------------------------------------------------------------------------------
+# T-100 -- the revisions the dataset's headline names are builds its section 4 names
+# --------------------------------------------------------------------------------------------
+
+DATASET_DOCUMENT = REPO / "DATASET_D1.md"
+_REVISION = re.compile(r"\bv?(11\.\d+\.\d+(?:\.beta)?)\b")
+
+
+def revision_tokens(text: str) -> set[str]:
+    """Every Geant4 revision token in `text`, without its `v`: `11.4.2`, `11.5.0.beta`."""
+    return {m.group(1) for m in _REVISION.finditer(text)}
+
+
+def headline_and_section4(text: str) -> tuple[str, str]:
+    """The document's headline (everything before its first section) and its section 4."""
+    headline = text.split("\n## ", 1)[0]
+    section4 = text.split("\n## 4.", 1)[1].split("\n## 5.", 1)[0]
+    return headline, section4
+
+
+def check_headline_revisions(text: str) -> None:
+    """The headline names exactly the two vendored revisions, and section 4 names every one of
+    them -- a parity claim is a claim about a named build, so a revision the headline claims
+    parity with must be a build section 4 describes."""
+    headline, section4 = headline_and_section4(text)
+    assert revision_tokens(headline) == {d1.UPSTREAM_TAG[1:], BETA_TAG[1:]}, revision_tokens(headline)
+    assert revision_tokens(headline) <= revision_tokens(section4), (
+        revision_tokens(headline) - revision_tokens(section4)
+    )
+
+
+def test_t100_the_revisions_the_headline_names_are_builds_section_4_names():
+    check_headline_revisions(DATASET_DOCUMENT.read_bytes().replace(b"\r\n", b"\n").decode("utf-8"))
+
+
+def test_t100_drill_a_section_4_that_names_no_beta_build_is_caught():
+    """Section 4 with every line naming the beta removed: the headline still claims parity with
+    it, and the check fails on exactly that revision."""
+    text = DATASET_DOCUMENT.read_bytes().replace(b"\r\n", b"\n").decode("utf-8")
+    check_headline_revisions(text)
+    head, rest = text.split("\n## 4.", 1)
+    section4, tail = rest.split("\n## 5.", 1)
+    kept = [line for line in section4.split("\n") if BETA_TAG[1:] not in line]
+    assert len(kept) < len(section4.split("\n")), "section 4 names the beta on no line"
+    mutated = head + "\n## 4." + "\n".join(kept) + "\n## 5." + tail
+    with pytest.raises(AssertionError, match=re.escape(BETA_TAG[1:])):
+        check_headline_revisions(mutated)

@@ -17,22 +17,24 @@ The lookup is off by default: the boolean the patch adds to `G4HadronicParameter
 its setter is the only caller of `G4MuonicDataTable::Enable()`, and until an application sets it —
 one line before its physics list is built: `SetEnableMuonicData(true)` on the `G4HadronicParameters`
 singleton — the four functions run exactly their unpatched code after one boolean test — no lookup,
-no file access, no message. With the opt-in on,
-each function consults the table; a key the table lacks
-falls through to that function's compiled-in code, so the fallback formula is reproduced as it is,
-including the negative rates the dataset's documentation registers.
+no file access, no message. With the opt-in on, each function consults the table; a key the table
+lacks falls through to that function's compiled-in code, so the fallback formula is reproduced as it
+is, including the negative rates the dataset's documentation registers.
 
 Discovery follows the `G4FindDataDir` lookup Geant4 provides: an exported `G4MUONICDATA`, or, once
 the dataset is registered, the entry under `GEANT4_DATA_DIR` or, when that variable is unset or
 names no directory, under the default system paths `G4FindDataDir` searches next. If none resolves a
 directory, the first lookup raises a fatal `G4Exception` naming both `G4MUONICDATA` and
 `GEANT4_DATA_DIR`; if a directory is found but a file in it fails validation, the exception carries
-the reader's error code and line.
-`g4-v11.4.2-register-dataset.patch` and `g4-v11.5.0.beta-register-dataset.patch` are separate and
-serve the registered mode only: each appends the dataset's `geant4_add_dataset` entry to
-`G4DatasetDefinitions.cmake`, so a build carrying it resolves
-the dataset under `GEANT4_DATA_DIR` with no variable exported. That mode looks for the dataset under
-a `<NAME><VERSION>` directory, which is the directory the archive unpacks to.
+the reader's error code and line. A patched build looks values up through one profile: the one
+`G4MUONICDATA_PROFILE` names, or `parity` when the variable is unset or empty, and a token no file
+in the directory carries raises a fatal `G4Exception` naming the variable and the profiles present.
+A table the named profile carries no file for is treated like a key it lacks: the function's
+compiled-in code runs. `g4-v11.4.2-register-dataset.patch` and
+`g4-v11.5.0.beta-register-dataset.patch` are separate and serve the registered mode only: each
+appends the dataset's `geant4_add_dataset` entry to `G4DatasetDefinitions.cmake`, so a build
+carrying it resolves the dataset under `GEANT4_DATA_DIR` with no variable exported. That mode looks
+for the dataset under a `<NAME><VERSION>` directory, which is the directory the archive unpacks to.
 
 The evidence that a patched build behaves as stated — with the opt-in off, application runs and a
 harvest whose whole output is bit-identical to an unpatched build's; with the opt-in on, the
@@ -40,3 +42,6 @@ harvested sweep reproducing the digest recorded by the oracle file beside the da
 (`cpp/tools/README.md` describes it), through both compiled-in copies and in both discovery modes —
 is kept outside this repository. That digest is stated here by reference to the oracle file, never
 as a literal, and a test holds this file to that.
+A patched build was also measured with the second profile the dataset ships named: its harvest
+differed from the `parity` harvest on exactly the keys that profile resolves to a different value,
+and on no effective charge.

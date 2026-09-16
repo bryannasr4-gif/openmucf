@@ -17,4 +17,4 @@ ctest --test-dir build -C Release --output-on-failure
 
 CI builds and runs it on Linux, macOS and Windows. How a reader finds the dataset at run time is
 specified in `FORMAT_SPEC.md` section 5 and the rules for C and C++ readers in section 6; the opt-in
-is described in `cpp/patches/README.md`.
+and the profile selection are described in `cpp/patches/README.md`.

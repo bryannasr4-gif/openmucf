@@ -345,6 +345,7 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 00b9749e2d4eb0147e94d9551c287c04a511fbc1	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of those rows')
 0606f58e0b1a635c213fdff53d2251e23197e461	DATASET_D1.md	REGISTERED: Two, one -- 'Two conforming builds of one source': the two compiler configurations the block above names
 068cd8df0a8614508372df63da64b7e16de54ed0	DATASET_D1.md	REGISTERED: 82, 245, 208 -- restates F-1's threshold at Z=82 (245), which T-63 holds to the sweep where F-1 lists it; 208 is the nuclide label Pb-208
+07c7fb64250ec6b088eee6bbe7b1e7ea0b98c6cf	DATASET_D1.md	REGISTERED: one -- 'one claim', the count of claims the `parity` tables make: the sentence states it
 08d607c6141ee5264c60c6778cc0d17b493126f8	DATASET_D1.md	REGISTERED: 0 -- the degenerate input 'Z = 0', a probe harvest_d1_degenerate.cc declares and T-52 classifies (NaN)
 0d5b9cc28ee5bb23ed50a0018f7cf039088a8132	DATASET_D1.md	EXERCISED: 92, 238, 233, 235, 236 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
 1010d24e3d632555df9878545ea3a9f1fe2945a9	DATASET_D1.md	REGISTERED: 0 -- the index the clamp excludes
@@ -411,6 +412,7 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 7d1e41b17c4e5bddcdd7fd5c9500fab810ad1585	DATASET_D1.md	REGISTERED: 10 -- the atomic number where the primary's Table IV starts, as the paper labels it; T-63 uses the same boundary as its selector between the Table III and Table IV halves
 811ccd8f21ca093d05a97582464156333185a6d5	DATASET_D1.md	REGISTERED: 50, 8 -- quoted from the primary's abstract ('in 50 elements plus 8 isotopes'), which this repository does not redistribute; the sentence marks it as the paper's count of its own measurements
 81b7e60cb61b9cd488226104b8884fefbcbc30bd	DATASET_D1.md	REGISTERED: 56, 55 -- the atomic numbers of barium and caesium; the effective charges beside them are pinned (29.99 in tests/test_g4prose.py, 29.75 by T-63)
+82d46e521044efc8076b773582d23f3e0e3923d5	DATASET_D1.md	REGISTERED: one -- 'one profile' and 'the one `G4MUONICDATA_PROFILE` names': the single profile a patched build reads through, and a pronoun for it
 851c7bb53ac84e8a4592b6edbf36c4579bca72ca	DATASET_D1.md	REGISTERED: Two, one -- 'Two different sources' are the primary and the NIST table the paragraph names; 'only one of them' is a pronoun
 8a095a16d997cc6d395b1885a928735f4ca87286	DATASET_D1.md	REGISTERED: one -- 'one row per record': the audit's shape, which T-59 asserts (every capture record exactly once)
 8ce3f7f04aa72b411d1afff36be22b5403632c8e	DATASET_D1.md	REGISTERED: two -- 'the two overlap': the same two uncertainties
@@ -419,6 +421,7 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 94eb7dd453a66a0385ede99bfaee87db65526066	DATASET_D1.md	REGISTERED: 13, 18, 6, 12 -- the nuclide labels C-13 and O-18 as the primary lists them, and the record key (6, 12)
 98efd43a81e32d9986b2c57a1b90c68441f6a5a4	DATASET_D1.md	REGISTERED: 0, 3, 1, 6 -- 'λ_c < 0' is the sign threshold; the first-negative-A thresholds that begin here are read by T-63 across this line and the next and held to the sweep
 99bd714b9cb75871b8d1cc5b34ae4c334bad9f1f	DATASET_D1.md	REGISTERED: one -- a pronoun ('is also one')
+9c6ea1a65feb92219413e6cbdbd3b705fb625144	DATASET_D1.md	REGISTERED: one -- 'the one the model above reproduces', a pronoun for the fallback expression
 9c9075f748f010857bd814f245a137fc79866b5d	DATASET_D1.md	REGISTERED: 38, 88 -- the strontium record's key (38, 88) and the nuclide label Sr-88; the key is a row of isotope_audit.csv, which T-59 covers record by record
 a11b54149e780f3a8b134852b2722541c8db2b45	DATASET_D1.md	REGISTERED: 208 -- the nuclide label Pb-208; its abundance on this line is T-63's rounded pin
 a288c6546812f98bd570866fe2b7112da1815b3d	DATASET_D1.md	REGISTERED: two -- the revisions the sentence itself names, v11.4.2 and v11.5.0.beta
@@ -496,6 +499,7 @@ e52326badfd61270409743256330b494a0f4e7ef	README.md	REGISTERED: 4.70, 10, ³ -- r
 f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
 21ffeec98e1eab90e7c9b55fc3e79d25073d0a52	cpp/patches/README.md	REGISTERED: one -- the single call the sentence quotes, SetEnableMuonicData(true)
 7adbc79d41e9978fcb2c79814f8ae1f02434411b	cpp/patches/README.md	REGISTERED: one -- the boolean the patch adds to G4HadronicParameters
+82324d86d7255b34522c6cb597776eae01c06e17	cpp/patches/README.md	REGISTERED: one -- 'one profile' and 'the one `G4MUONICDATA_PROFILE` names': the single profile a patched build reads through, and a pronoun for it
 b34ea2c8e8e45b54a22c9945647b28f929cdec4e	cpp/patches/README.md	REGISTERED: four, one -- the functions listed at the top of this file, and the opt-in test each patched function makes before its own code
 feeaf5a1a26f0e87989f5e3944db5dff503e0412	cpp/patches/README.md	REGISTERED: one -- the glue file the sentence names, G4MuonicDataOverlay
 ffc9ecfeb990967e9d6d644890750f0754208e1a	cpp/patches/README.md	REGISTERED: four, two -- the functions and files the sentence itself lists by name; T-72 pins the patch's path set

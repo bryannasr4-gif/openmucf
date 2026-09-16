@@ -1,11 +1,12 @@
-# D1 — nuclear capture, `parity` profile
+# D1 — nuclear capture
 
 > This product includes software developed by Members of the Geant4 Collaboration
 > ( http://cern.ch/geant4 ).
 
-`data/g4/d1/` is the first `G4MuonicData` dataset carrying real content. It is a **parity** dataset:
-its only claim is that it reproduces the muon-capture data compiled into Geant4 v11.4.2
-bit-for-bit. It evaluates nothing, recommends nothing, and corrects nothing — including where the
+`data/g4/d1/` is the first `G4MuonicData` dataset carrying real content. Its `parity` tables make
+one claim: that they reproduce the muon-capture data compiled into Geant4 `v11.4.2` and
+`v11.5.0.beta` bit-for-bit, on the builds section 4 names. They evaluate nothing, recommend nothing,
+and correct nothing — including where the
 upstream data looks wrong. Section 5 carries seven findings: **five** defects it reproduces rather
 than corrects, and **two** questions about the upstream data that reading the primary literature has
 since settled.
@@ -174,6 +175,13 @@ Geant4 present**, on every platform, in ordinary CI.
 x86_64, `g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0`, Geant4 11.4.2 `RelWithDebInfo` (`-O2 -g -DNDEBUG`),
 no `-ffp-contract` setting, FMA absent from the baseline ISA. F-3 explains why that qualifier is not
 decoration.
+
+The second build the patches serve is named the same way: Ubuntu 26.04 LTS (WSL2), x86_64,
+`g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0`, Geant4 `v11.5.0.beta` `RelWithDebInfo` (`-O2 -g -DNDEBUG`),
+no `-ffp-contract` setting, FMA absent from the baseline ISA; the full sweep through its patched
+library, with the opt-in on and `G4MUONICDATA_PROFILE` unset, reproduced the digest
+`d1_gp_sweep.oracle` records, and a test holds the fallback expression compiled into that revision
+token-identical to the one the model above reproduces.
 
 ## 5. Findings — registered, disclosed, and deliberately not fixed
 
@@ -437,8 +445,9 @@ Geant4 resolves it under `GEANT4_DATA_DIR`; without it, an exported `G4MUONICDAT
 The generator builds `G4MuonicData.<version>.tar.gz` in memory from every table file, their provenance
 files, a `README` and a `History`, and the registration snippet carries that archive's MD5; the archive
 unpacks to the `G4MuonicData<version>` directory the registered mode looks for, and `<version>` is the
-`#VERSION` every table carries. The patched build looks values up through the `parity` profile only; a
-table that another profile carries in its own file is parsed and checked but never consulted.
+`#VERSION` every table carries. The patched build looks values up through one profile — the one
+`G4MUONICDATA_PROFILE` names, or `parity` when the variable is unset or empty — and never through
+another; `cpp/patches/README.md` states what a token no file carries does.
 An application opts in with one line before its physics list is built,
 `G4HadronicParameters::Instance()->SetEnableMuonicData(true);`, as `cpp/patches/README.md` states.
 `cpp/patches/README.md` states what the patches change, how the dataset is found at run time, and

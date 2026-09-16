@@ -27,7 +27,7 @@ BIBKEY = "Mizuno2025"
 TABLE1_RELPATH = "data/g4/d1/mizuno2025_table1.csv"
 TABLE3_RELPATH = "data/g4/d1/mizuno2025_table3.csv"
 #: The columns of each file, in order. The header must match exactly: a reordered or renamed column
-#: is a silent re-interpretation of hand-entered data.
+#: is a silent re-interpretation of transcribed data.
 TABLE1_COLUMNS = (
     "nuclide", "form", "size_mm", "weight_g", "time_h", "huff_factor", "lifetime_ns",
     "lifetime_unc_ns", "suzuki_lifetime_ns", "suzuki_lifetime_unc_ns", "rate", "rate_unc",
