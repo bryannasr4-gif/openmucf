@@ -43,5 +43,4 @@ harvested sweep reproducing the digest recorded by the oracle file beside the da
 is kept outside this repository. That digest is stated here by reference to the oracle file, never
 as a literal, and a test holds this file to that.
 A patched build was also measured with the second profile the dataset ships named: its harvest
-differed from the `parity` harvest on exactly the keys that profile resolves to a different value,
-and on no effective charge.
+differed from the `parity` harvest on exactly the keys that profile resolves to a different value.

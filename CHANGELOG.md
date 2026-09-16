@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **A patched build selects the profile it reads through with `G4MUONICDATA_PROFILE`**: `parity`
   when the variable is unset or empty, and a fatal `G4Exception` naming the variable and the
-  profiles present for a token no file carries (T-72).
+  profiles present for a token no file carries.
 
 ### Changed -- the capture rows the audit had left open (2026-09-15)
 
