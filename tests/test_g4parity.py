@@ -2,8 +2,8 @@
 
 ``tests/test_g4spec.py`` tests the *format*. This file tests the one **dataset** that claims to
 reproduce something: `data/g4/d1/`, which asserts that every muon-capture record and every effective
-charge it ships is bit-for-bit what Geant4 v11.4.2 compiles in, and that the Goulard-Primakoff
-fallback it declares evaluates to the same doubles the compiled library returns.
+charge its `parity` tables ship is bit-for-bit what Geant4 v11.4.2 compiles in, and that the
+Goulard-Primakoff fallback it declares evaluates to the same doubles the compiled library returns.
 
 Three disciplines run through every test here, because the claim is only as good as they are:
 
@@ -34,6 +34,7 @@ import struct
 import subprocess
 import sys
 import tarfile
+from collections.abc import Sequence
 
 import pytest
 
@@ -2775,7 +2776,7 @@ def test_t87_the_beta_tables_equal_the_v11_4_2_tables_field_by_field(copy: d1.So
     assert_same_tables(beta, reference)
 
 
-def test_t87_the_beta_bound_decay_reproduces_the_oracle_digest():
+def test_t87_the_reference_model_fed_the_beta_values_reproduces_the_oracle_digest():
     """The reference implementation, fed the beta BoundDecay's records, effective charges and
     fallback coefficients, reproduces the full-sweep digest the oracle harvested from the v11.4.2
     build."""
@@ -2821,6 +2822,87 @@ def test_t88_drill_a_changed_beta_zeff_is_named_as_zeff():
     assert mutated != text
     with pytest.raises(AssertionError, match=r"\Azeff differs"):
         assert_same_tables(d1.extract(mutated, d1.BOUND_DECAY), reference)
+
+
+# --------------------------------------------------------------------------------------------
+# T-98 -- the fallback expression compiled into the beta is token-identical to the v11.4.2 one
+# --------------------------------------------------------------------------------------------
+
+#: The identifiers the Goulard-Primakoff block must carry: the coefficients T-87 extracts, and
+#: the rate the block assigns. Their presence is what proves the regex found the block and not a
+#: fragment of it.
+FALLBACK_IDENTIFIERS = ("b0a", "b0b", "b0c", "t1", "lambda")
+#: The v11.4.2 copy and the beta copy of each compiled-in file, by file name.
+FALLBACK_COPIES: dict[str, tuple[pathlib.Path, pathlib.Path]] = {
+    VENDORED.name: (VENDORED, BETA_BOUND_DECAY),
+    HELPER.name: (HELPER, BETA_HELPER),
+}
+
+
+def fallback_expression_tokens(text: str) -> list[str]:
+    """The tokens of the Goulard-Primakoff block of one source text: from the `G4double b0a`
+    declaration through the `lambda = t1 ...;` statement, comments stripped, tokenised as
+    identifiers, numeric literals and single punctuation characters. Whitespace and comments are
+    the only things the tokenisation forgets, so two copies with equal token lists compile the
+    same expression tree and the same association -- what T-87's coefficient extraction does not
+    reach."""
+    stripped = re.sub(r"//[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", text, flags=re.S))
+    match = re.search(r"G4double\s+b0a\b.*?lambda\s*=\s*t1\b.*?;", stripped, flags=re.S)
+    assert match is not None, "no `G4double b0a` ... `lambda = t1 ...;` block in the text"
+    return re.findall(r"[A-Za-z_]\w*|\d+\.?\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?|\S", match.group(0))
+
+
+def assert_same_tokens(found: list[str], expected: list[str]) -> None:
+    """Equal token lists, or a message with the first differing index and the tokens around it."""
+    for index, (left, right) in enumerate(zip(found, expected, strict=False)):
+        if left != right:
+            lo, hi = max(index - 3, 0), index + 4
+            raise AssertionError(
+                f"token {index} differs: found {left!r}, expected {right!r}; "
+                f"found {found[lo:hi]}, expected {expected[lo:hi]}"
+            )
+    assert len(found) == len(expected), (
+        f"token lists differ in length at index {min(len(found), len(expected))}: "
+        f"{len(found)} found, {len(expected)} expected"
+    )
+
+
+@pytest.mark.parametrize("name", sorted(FALLBACK_COPIES))
+def test_t98_the_fallback_expression_is_token_identical_across_the_vendored_revisions(name: str):
+    """For each compiled-in copy, the beta's Goulard-Primakoff block tokenises to exactly the
+    v11.4.2 block's tokens, and both carry the coefficient and rate identifiers."""
+    reference, beta = FALLBACK_COPIES[name]
+    expected = fallback_expression_tokens(reference.read_text("ascii"))
+    found = fallback_expression_tokens(beta.read_text("ascii"))
+    for identifier in FALLBACK_IDENTIFIERS:
+        assert identifier in expected, (name, identifier)
+        assert identifier in found, (name, identifier)
+    assert_same_tokens(found, expected)
+
+
+#: (label, old, new): one edit each to the beta text, in memory, that changes the expression
+#: tree, the association or a literal factor while leaving every extracted coefficient in place.
+T98_PROBES = [
+    ("association", "t1 * zeff2 * zeff2", "t1 * (zeff2 * zeff2)"),
+    ("2 * (A - Z) -> 3 * (A - Z)", "2 * (A - Z)", "3 * (A - Z)"),
+    ("A * 4 -> A * 5", "G4double(A * 4)", "G4double(A * 5)"),
+    ("(r2 * r2) -> (r2 * r2 * r2)", "(r2 * r2)", "(r2 * r2 * r2)"),
+]
+
+
+@pytest.mark.parametrize("name", sorted(FALLBACK_COPIES))
+def test_t98_drill_each_expression_edit_is_named(name: str):
+    """Each probe applied to the beta text one at a time fails the token comparison with the
+    first differing token named; the unedited beta text passes."""
+    reference, beta = FALLBACK_COPIES[name]
+    expected = fallback_expression_tokens(reference.read_text("ascii"))
+    text = beta.read_text("ascii")
+    assert_same_tokens(fallback_expression_tokens(text), expected)
+    for label, old, new in T98_PROBES:
+        assert text.count(old) == 1, (name, label, text.count(old))
+        with pytest.raises(AssertionError, match=r"token \d+ differs|differ in length") as raised:
+            assert_same_tokens(fallback_expression_tokens(text.replace(old, new, 1)), expected)
+        print(f"{name} {label}: {raised.value}")
 
 
 # --------------------------------------------------------------------------------------------
@@ -3528,3 +3610,155 @@ def test_t97_drill_a_settled_row_whose_cell_moves_in_its_last_digit_is_caught(tm
     path.write_bytes(mutated.encode("ascii"))
     with pytest.raises(AssertionError):
         check_open_row_verdicts(audit, d1.load_capture_cells(path), document)
+
+
+# --------------------------------------------------------------------------------------------
+# T-99 -- the profile sweep predicted: which keys a second profile moves, and to what
+# --------------------------------------------------------------------------------------------
+
+
+def profile_sweep_diff(
+    profile_values: dict[tuple[int, int], float],
+    parity_records: Sequence[tuple[int, int, float, float]],
+    model: d1.GoulardPrimakoff,
+) -> list[tuple[int, int, float, float]]:
+    """The rows of the sweep box where a patched build reading through a profile returns a
+    different double from the `parity` sweep: `(Z, A, parity value, profile value)`.
+
+    The profile resolves a key the way the reader's `LookupNatural` does -- the exact `(Z, A)`
+    record, else the `(Z, 0)` record, else nothing -- and a resolved value goes through the same
+    `value / microsecond` expression the seam runs, here as the reference model's table branch
+    fed one record. An unresolved key falls through to the compiled-in code, which is the parity
+    value, so it never differs.
+    """
+    rows: list[tuple[int, int, float, float]] = []
+    for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1):
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            parity_value = d1.capture_rate(z, a, parity_records, model)
+            if (z, a) in profile_values:
+                value = profile_values[(z, a)]
+            elif (z, 0) in profile_values:
+                value = profile_values[(z, 0)]
+            else:
+                continue
+            profile_value = d1.capture_rate(z, a, [(z, a, value, 0.0)], model)
+            if struct.pack(">d", parity_value) != struct.pack(">d", profile_value):
+                rows.append((z, a, parity_value, profile_value))
+    return rows
+
+
+def profile_capture_values(layer1_path: pathlib.Path) -> dict[tuple[int, int], float]:
+    """`{(Z, A): value}` of one shipped capture file, parsed by the format module."""
+    table = spec.parse(layer1_path.read_bytes().decode("ascii"))
+    columns = table.directives["COLUMNS"].split()
+    z_index, a_index, value_index = columns.index("Z"), columns.index("A"), columns.index("value")
+    return {(int(r[z_index]), int(r[a_index])): float(r[value_index]) for r in table.records}
+
+
+def predicted_profile_sweep(profile_layer1: pathlib.Path) -> list[tuple[int, int, float, float]]:
+    """The predicted rows for one profile file against the shipped `parity` side."""
+    found = extraction()
+    return profile_sweep_diff(
+        profile_capture_values(profile_layer1), found.capture_records, reference_model(found)
+    )
+
+
+def test_t99_the_second_profile_moves_exactly_the_keys_it_resolves():
+    """Over the shipped `mizuno2025` file: every differing key is one the profile resolves; every
+    T-91 pair whose value differs at the printed precision has its parity key among them; every
+    swept A of a Z with a `(Z, 0)` row is resolved; and the directory holds no `muon_zeff` under
+    that profile, so its effective charges fall through unchanged."""
+    profile_values = profile_capture_values(MIZUNO_LAYER1)
+    rows = predicted_profile_sweep(MIZUNO_LAYER1)
+    assert rows, "the second profile moves no key"
+    differing = {(z, a) for z, a, _, _ in rows}
+    resolved = {
+        (z, a)
+        for z in range(d1.SWEEP_Z_MIN, d1.SWEEP_Z_MAX + 1)
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1)
+        if (z, a) in profile_values or (z, 0) in profile_values
+    }
+    assert differing <= resolved, sorted(differing - resolved)
+    for pair in mizuno_parity_pairs():
+        if not pair["value_agrees"]:
+            assert pair["parity"] in differing, pair
+    natural = sorted(z for z, a in profile_values if a == 0)
+    assert natural, "the profile carries no natural-composition row"
+    for z in natural:
+        for a in range(d1.SWEEP_A_MIN, d1.SWEEP_A_MAX + 1):
+            assert (z, a) in resolved, (z, a)
+    tables = spec.load_directory(D1DIR)
+    assert (mizuno2025.PROFILE, "muon_zeff") not in tables, sorted(tables)
+    assert (spec.PARITY_PROFILE, "muon_zeff") in tables, sorted(tables)
+    print(f"\n{mizuno2025.PROFILE}: {len(rows)} differing key(s); no muon_zeff table under that profile")
+    for z, a, parity_value, profile_value in rows[:3] + rows[-3:]:
+        print(f"  {z} {a} {parity_value.hex()} {profile_value.hex()}")
+
+
+def test_t99_drill_a_dropped_natural_row_loses_exactly_that_elements_rows():
+    """The profile map without its `(12, 0)` entry -- found from the shipped file, not typed --
+    loses exactly the rows at Z = 12, which are non-empty, and nothing else moves."""
+    profile_values = profile_capture_values(MIZUNO_LAYER1)
+    natural_z = 12
+    assert (natural_z, 0) in profile_values, sorted(profile_values)
+    assert [a for z, a in profile_values if z == natural_z] == [0]
+    found = extraction()
+    model = reference_model(found)
+    full = profile_sweep_diff(profile_values, found.capture_records, model)
+    without = profile_sweep_diff(
+        {key: value for key, value in profile_values.items() if key != (natural_z, 0)},
+        found.capture_records,
+        model,
+    )
+    lost = [row for row in full if row[0] == natural_z]
+    assert lost, f"no row at Z = {natural_z} to lose"
+    assert without == [row for row in full if row[0] != natural_z]
+
+
+# --------------------------------------------------------------------------------------------
+# T-100 -- the revisions the dataset's headline names are builds its section 4 names
+# --------------------------------------------------------------------------------------------
+
+DATASET_DOCUMENT = REPO / "DATASET_D1.md"
+_REVISION = re.compile(r"\bv?(11\.\d+\.\d+(?:\.beta)?)\b")
+
+
+def revision_tokens(text: str) -> set[str]:
+    """Every Geant4 revision token in `text`, without its `v`: `11.4.2`, `11.5.0.beta`."""
+    return {m.group(1) for m in _REVISION.finditer(text)}
+
+
+def headline_and_section4(text: str) -> tuple[str, str]:
+    """The document's headline (everything before its first section) and its section 4."""
+    headline = text.split("\n## ", 1)[0]
+    section4 = text.split("\n## 4.", 1)[1].split("\n## 5.", 1)[0]
+    return headline, section4
+
+
+def check_headline_revisions(text: str) -> None:
+    """The headline names exactly the two vendored revisions, and section 4 names every one of
+    them -- a parity claim is a claim about a named build, so a revision the headline claims
+    parity with must be a build section 4 describes."""
+    headline, section4 = headline_and_section4(text)
+    assert revision_tokens(headline) == {d1.UPSTREAM_TAG[1:], BETA_TAG[1:]}, revision_tokens(headline)
+    assert revision_tokens(headline) <= revision_tokens(section4), (
+        revision_tokens(headline) - revision_tokens(section4)
+    )
+
+
+def test_t100_the_revisions_the_headline_names_are_builds_section_4_names():
+    check_headline_revisions(DATASET_DOCUMENT.read_bytes().replace(b"\r\n", b"\n").decode("utf-8"))
+
+
+def test_t100_drill_a_section_4_that_names_no_beta_build_is_caught():
+    """Section 4 with every line naming the beta removed: the headline still claims parity with
+    it, and the check fails on exactly that revision."""
+    text = DATASET_DOCUMENT.read_bytes().replace(b"\r\n", b"\n").decode("utf-8")
+    check_headline_revisions(text)
+    head, rest = text.split("\n## 4.", 1)
+    section4, tail = rest.split("\n## 5.", 1)
+    kept = [line for line in section4.split("\n") if BETA_TAG[1:] not in line]
+    assert len(kept) < len(section4.split("\n")), "section 4 names the beta on no line"
+    mutated = head + "\n## 4." + "\n".join(kept) + "\n## 5." + tail
+    with pytest.raises(AssertionError, match=re.escape(BETA_TAG[1:])):
+        check_headline_revisions(mutated)

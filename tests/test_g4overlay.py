@@ -76,6 +76,11 @@ BEHAVIOUR_PATHS = frozenset(
 #: only the shape of their `index` declaration is held (see the blob test).
 HADRONIC_PARAMETERS = frozenset(p for p in BEHAVIOUR_PATHS if "/G4HadronicParameters." in p)
 assert len(HADRONIC_PARAMETERS) == 2, HADRONIC_PARAMETERS
+#: The two glue files, likewise derived: the same bytes in both families, and the one place the
+#: profile variable is read.
+GLUE = frozenset(p for p in BEHAVIOUR_PATHS if "/G4MuonicDataOverlay." in p)
+assert len(GLUE) == 2, GLUE
+(GLUE_CC,) = tuple(p for p in GLUE if p.endswith(".cc"))
 #: Per family: the two seam files, and the vendored copy of that tag each one's hunks must apply to.
 SEAMS: dict[str, dict[str, pathlib.Path]] = {
     tag: {
@@ -96,6 +101,35 @@ READER: dict[str, dict[str, pathlib.Path]] = {
     for tag in FAMILIES
 }
 REGISTRATION_PATH = "cmake/Modules/G4DatasetDefinitions.cmake"
+#: Per tag: the upstream files this repository does not vendor, and git's own object name for each
+#: at that tag's commit (`git rev-parse HEAD:<path>` on the pristine tree the patches were cut
+#: against). These are pins, copied from that command's output: the `index` old id every patch
+#: declares for such a file must be a prefix of one of them, or the patch was cut against other
+#: bytes than the tag its name carries. What stays unheld is the post-image of such a file -- with
+#: no `old` bytes to rebuild from, its `new` id is only required to differ.
+PRISTINE_INDEX_OLD: dict[str, dict[str, str]] = {
+    parity.d1.UPSTREAM_TAG: {
+        "source/particles/management/sources.cmake": "e292ef656be716180f409eb8f0501246b42e1722",
+        "source/processes/hadronic/util/include/G4HadronicParameters.hh": (
+            "09d22d476dc9f2a66d6af7e29e41b25fb2000533"
+        ),
+        "source/processes/hadronic/util/src/G4HadronicParameters.cc": (
+            "9a16ede106332b4c1bcb1e82c66aa04a6b729b2a"
+        ),
+        "cmake/Modules/G4DatasetDefinitions.cmake": "64feb989558c65a71ff33d6cdeb16cbc06944205",
+    },
+    parity.BETA_TAG: {
+        "source/particles/management/sources.cmake": "e292ef656be716180f409eb8f0501246b42e1722",
+        "source/processes/hadronic/util/include/G4HadronicParameters.hh": (
+            "2d051de924af8ef3da06fb6445a957ca4fa50e52"
+        ),
+        "source/processes/hadronic/util/src/G4HadronicParameters.cc": (
+            "5046e3461bf69940b23ea59a524b17efef31b0fa"
+        ),
+        "cmake/Modules/G4DatasetDefinitions.cmake": "fa46fc1956104cd857b3ab3e4bb0f30cb2474ecc",
+    },
+}
+assert set(PRISTINE_INDEX_OLD) == set(FAMILIES), sorted(PRISTINE_INDEX_OLD)
 
 family = pytest.mark.parametrize("tag", sorted(FAMILIES))
 
@@ -278,6 +312,57 @@ def check_readme_numbers(readme: pathlib.Path, patches: list[pathlib.Path]) -> N
     assert not foreign, f"README tokens the patches do not carry: {foreign}"
 
 
+#: The one added line of `G4HadronicParameters.hh` that declares the opt-in member and its default.
+MEMBER_FALSE = b"G4bool fEnableMuonicData = false;"
+
+
+def added_lines(file: FilePatch) -> list[tuple[Hunk, bytes]]:
+    """Every `+` line of every hunk of one file, with the hunk it belongs to."""
+    return [(hunk, content) for hunk in file.hunks for marker, content, _ in hunk.lines if marker == b"+"]
+
+
+def check_opt_in_shape(tag: str, files: dict[str, FilePatch]) -> None:
+    """The opt-in as the patch README states it, over the `+` lines of the pre-existing files:
+    `G4HadronicParameters.hh` gains exactly one line whose content is the member declared `false`;
+    `G4MuonicDataTable::Enable()` is called from exactly one added line across every pre-existing
+    file, in `G4HadronicParameters.cc`, in a hunk that adds a `SetEnableMuonicData(` line above it.
+    Every message names the family, so a drill on one family says which."""
+    (header,) = tuple(p for p in HADRONIC_PARAMETERS if p.endswith(".hh"))
+    (source,) = tuple(p for p in HADRONIC_PARAMETERS if p.endswith(".cc"))
+    members = [content.strip() for _, content in added_lines(files[header])]
+    assert members.count(MEMBER_FALSE) == 1, (
+        f"{tag}: {header} adds the member `false` {members.count(MEMBER_FALSE)} times"
+    )
+    callers = [
+        (path, hunk)
+        for path, file in sorted(files.items())
+        if file.old_path != b"/dev/null"
+        for hunk, content in added_lines(file)
+        if b"G4MuonicDataTable::Enable()" in content
+    ]
+    assert len(callers) == 1, (
+        f"{tag}: G4MuonicDataTable::Enable() is called from {len(callers)} added line(s): "
+        f"{[(path, hunk.header.decode()) for path, hunk in callers]}"
+    )
+    ((path, hunk),) = callers
+    assert path == source, f"{tag}: the only caller of Enable() is in {path}, not {source}"
+    added = [content for _, content in added_lines(FilePatch(b"", b"", [hunk]))]
+    index = next(i for i, content in enumerate(added) if b"G4MuonicDataTable::Enable()" in content)
+    assert any(b"SetEnableMuonicData(" in content for content in added[:index]), (
+        f"{tag}: no added `SetEnableMuonicData(` line precedes the Enable() call in hunk "
+        f"{hunk.header.decode()}"
+    )
+
+
+def check_pristine_pin(tag: str, path: str, file: FilePatch, pins: dict[str, dict[str, str]]) -> None:
+    """The `index` old id of a file this repository does not vendor is a prefix of the pinned
+    object name of that file on the pristine tree of `tag`; the message names the path."""
+    pristine = pins[tag][path]
+    assert pristine.startswith(file.index_old.decode()), (
+        f"{tag}: {path} declares index old {file.index_old.decode()}, the pristine tree holds {pristine}"
+    )
+
+
 # T-72 -- the behaviour patch and the registration patch say what the repository says
 # ---------------------------------------------------------------------------------------
 
@@ -353,8 +438,9 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
     An added file rebuilds from nothing to `new`; a seam file's vendored copy is `old` and its
     patched copy is `new`. The upstream files this repository does not vendor (`sources.cmake`,
     `G4DatasetDefinitions.cmake`, the two `G4HadronicParameters` files) have no `old` bytes to
-    rebuild from, so for them only the shape of the declaration is held: a non-zero `old`, and a
-    `new` that differs from it.
+    rebuild from: for them the declared `old` is held to the object name `PRISTINE_INDEX_OLD` pins
+    for that file on the tag's pristine tree, and a `new` that differs from it is required. What
+    stays unheld is the post-image of such a file -- nothing here rebuilds it.
     """
     behaviour, registration, _ = FAMILIES[tag]
     seams = SEAMS[tag]
@@ -372,10 +458,40 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
                 assert parity.git_blob_id(vendored).startswith(file.index_old.decode()), path
                 assert parity.git_blob_id(apply_file_patch(file, vendored)).startswith(new), path
             else:
-                assert file.index_old.strip(b"0") != b"", (path, file.index_old)
+                check_pristine_pin(tag, path, file, PRISTINE_INDEX_OLD)
                 assert file.index_new != file.index_old, path
                 not_rebuilt.add(path)
     assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH} | HADRONIC_PARAMETERS
+    assert not_rebuilt == set(PRISTINE_INDEX_OLD[tag]), sorted(PRISTINE_INDEX_OLD[tag])
+
+
+def test_t72_the_glue_files_are_identical_across_families_and_read_the_profile_variable():
+    """The glue `.hh` and `.cc`, rebuilt from each family's added-file hunks, are byte-identical
+    across the two families -- the glue does not depend on the revision -- and the `.cc` reads
+    `G4MUONICDATA_PROFILE` at exactly one place and raises the profile error code at exactly one.
+    """
+    rebuilt: dict[str, dict[str, bytes]] = {}
+    for tag in sorted(FAMILIES):
+        behaviour, _, _ = FAMILIES[tag]
+        files = by_new_path(parse_patch(behaviour.read_bytes()))
+        rebuilt[tag] = {}
+        for path in sorted(GLUE):
+            assert files[path].old_path == b"/dev/null", (tag, path)
+            rebuilt[tag][path] = apply_file_patch(files[path], b"")
+    first, second = sorted(rebuilt)
+    for path in sorted(GLUE):
+        assert rebuilt[first][path] == rebuilt[second][path], f"{path} differs between {first} and {second}"
+    glue_cc = rebuilt[first][GLUE_CC]
+    assert glue_cc.count(b'std::getenv("G4MUONICDATA_PROFILE")') == 1, glue_cc.count(b"G4MUONICDATA_PROFILE")
+    assert glue_cc.count(b'"G4MuonicData004"') == 1, glue_cc.count(b"G4MuonicData004")
+
+
+@family
+def test_t72_the_opt_in_starts_false_and_its_setter_is_the_only_caller_of_enable(tag: str):
+    """The sentence of the patch README that the opt-in is off by default and its setter is the
+    only caller of `G4MuonicDataTable::Enable()`, held to the behaviour patch's own `+` lines."""
+    behaviour, _, _ = FAMILIES[tag]
+    check_opt_in_shape(tag, by_new_path(parse_patch(behaviour.read_bytes())))
 
 
 def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touches():
@@ -394,7 +510,6 @@ def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touche
     helper_key = next(path for path, vendored in seams.items() if vendored == parity.HELPER)
     assert helper[0] == helper_key
     assert {bound_decay[0], helper[0]} == set(seams)
-    assert set(seams) == set(SEAMS[parity.BETA_TAG])
 
 
 # T-73 -- the drill, and the README's numbers
@@ -445,6 +560,59 @@ def test_t73_drill_a_dropped_added_line_with_its_count_is_refused_by_the_blob_pi
 
 def test_t73_the_readme_states_no_digest_literal_and_no_foreign_number():
     check_readme_numbers(README, ALL_PATCHES)
+
+
+@family
+def test_t73_drill_a_dropped_member_default_and_a_second_enable_caller_are_refused_by_family(tag: str):
+    """Two in-memory corruptions of the behaviour patch, each refused with the family named: the
+    `+` line declaring the member `false` removed (with the hunk's count lowered so the
+    arithmetic still balances), and a second `+` line calling `G4MuonicDataTable::Enable()`
+    planted in a seam hunk."""
+    behaviour, _, _ = FAMILIES[tag]
+    (header,) = tuple(p for p in HADRONIC_PARAMETERS if p.endswith(".hh"))
+
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    check_opt_in_shape(tag, files)
+    hunk = next(
+        hunk
+        for hunk in files[header].hunks
+        for marker, content, _ in hunk.lines
+        if marker == b"+" and content.strip() == MEMBER_FALSE
+    )
+    index = next(
+        i for i, (_, content, _) in enumerate(hunk.lines) if content.strip() == MEMBER_FALSE
+    )
+    del hunk.lines[index]
+    hunk.new_count -= 1
+    with pytest.raises(AssertionError, match=re.escape(tag)) as raised:
+        check_opt_in_shape(tag, files)
+    assert "0 times" in str(raised.value), raised.value
+
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    path, _ = next(iter(sorted(SEAMS[tag].items())))
+    seam_hunk = files[path].hunks[-1]
+    seam_hunk.lines.append((b"+", b"  G4MuonicDataTable::Enable();", True))
+    seam_hunk.new_count += 1
+    with pytest.raises(AssertionError, match=re.escape(tag)) as raised:
+        check_opt_in_shape(tag, files)
+    assert "2 added line(s)" in str(raised.value), raised.value
+
+
+@family
+def test_t73_drill_an_altered_pristine_pin_is_refused_by_path(tag: str):
+    """One pinned pristine object name altered in its first hex digit -- inside the abbreviated
+    prefix the patch declares -- so the pin check fails and names that path, for every file the
+    pin covers."""
+    behaviour, registration, _ = FAMILIES[tag]
+    files: dict[str, FilePatch] = {}
+    for patch in (behaviour, registration):
+        files.update(by_new_path(parse_patch(patch.read_bytes())))
+    for path, pinned in sorted(PRISTINE_INDEX_OLD[tag].items()):
+        check_pristine_pin(tag, path, files[path], PRISTINE_INDEX_OLD)
+        altered = ("0" if pinned[0] != "0" else "1") + pinned[1:]
+        pins = {tag: {**PRISTINE_INDEX_OLD[tag], path: altered}}
+        with pytest.raises(AssertionError, match=re.escape(path)):
+            check_pristine_pin(tag, path, files[path], pins)
 
 
 @family

@@ -13,7 +13,8 @@ three rows of invented numbers have no other origin -- and everything Layer 1 de
 read back out of that file.
 
 **The D1 build** (``data/g4/d1/``) carries real data and claims something falsifiable: that every
-muon-capture record and every effective charge in it is bit-for-bit what Geant4 v11.4.2 compiles in.
+muon-capture record and every effective charge in its `parity` tables is bit-for-bit what Geant4
+v11.4.2 compiles in.
 Both layers are generated from the vendored upstream source, at
 build time, every time -- so "bit-for-bit" is a property of this script rather than a claim about
 what somebody typed once. Layer 2 is still the source of truth in the sense that matters: it is the

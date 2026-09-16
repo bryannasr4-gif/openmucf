@@ -13,8 +13,8 @@ Software License they are distributed under.
 | `LICENSE` | Geant4 Software License v1.0, verbatim |
 | `v11.4.2/G4MuonMinusBoundDecay.cc` | the upstream source file, **byte-for-byte unmodified** |
 | `v11.4.2/G4MuonicAtomHelper.cc` | the upstream source file carrying the second compiled-in copy of the same capture and effective-charge tables, **byte-for-byte unmodified** |
-| `v11.5.0.beta/G4MuonMinusBoundDecay.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified**; its tables are proved equal to the `v11.4.2` copy's by `tests/test_g4parity.py` |
-| `v11.5.0.beta/G4MuonicAtomHelper.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified**; its tables are proved equal to the `v11.4.2` copy's by `tests/test_g4parity.py` |
+| `v11.5.0.beta/G4MuonMinusBoundDecay.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified** — evidence, not a second source: nothing in `data/g4/d1/` is generated from it, and `tests/test_g4parity.py` proves its tables and its fallback expression equal the `v11.4.2` copy's |
+| `v11.5.0.beta/G4MuonicAtomHelper.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified** — evidence, not a second source: nothing in `data/g4/d1/` is generated from it, and `tests/test_g4parity.py` proves its tables and its fallback expression equal the `v11.4.2` copy's |
 
 `G4MuonMinusBoundDecay.cc` carries Geant4's compiled-in muon-capture data: a 90-record
 `{Z, A, cRate, cRErr}` table, a 101-value effective-charge (`zeff`) table, and the
