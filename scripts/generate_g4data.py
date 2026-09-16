@@ -427,6 +427,13 @@ MIZUNO_METHOD = (
     "capture rate as the primary prints it (Table 3, Exp. column): the primary computes it from its "
     "measured lifetime by its Eq. (3) with a Huff factor from its Ref. [4]; not re-derived here"
 )
+#: The same account for a nuclide the primary measured on more than one target: its Table 3 value
+#: carries the footnote quoted here, and the average behind it is the primary's, never ours.
+MIZUNO_METHOD_AVERAGED = (
+    'capture rate as the primary prints it (Table 3, Exp. column, with its footnote "{note}"): the '
+    "primary computes each Table 1 rate from its measured lifetime by its Eq. (3) with a Huff factor "
+    "from its Ref. [4]; the average is the primary's; not re-derived here"
+)
 MIZUNO_COPY = "copy read: arXiv:2501.05897v2 HTML; the journal version is unread"
 
 
@@ -438,7 +445,9 @@ def _mizuno_conditions(row: mizsrc.Table3Row, printed: tuple[mizsrc.Table1Row, .
         f"printed Q for this target: {huff}",
     ]
     for r in printed:
-        parts.append(f'Table 1 row: "{r.form}", lifetime {r.lifetime_ns}({r.lifetime_unc_ns}) ns')
+        parts.append(
+            f'Table 1 row: "{r.form}", lifetime {r.lifetime_ns} ns, uncertainty {r.lifetime_unc_ns} ns'
+        )
     if row.note:
         parts.append(f'Table 3 footnote: "{row.note}"')
     parts.append(MIZUNO_COPY)
@@ -457,7 +466,9 @@ def build_mizuno_capture_document(found: mizsrc.Mizuno2025Extraction) -> provena
             unc_type="exp",
             conditions=_mizuno_conditions(row, printed),
             validity_range=f"{where}",
-            evaluation_method=MIZUNO_METHOD,
+            evaluation_method=(
+                MIZUNO_METHOD_AVERAGED.format(note=row.note) if row.note else MIZUNO_METHOD
+            ),
             # Derived from the primary's own comparison column: a target it prints no earlier
             # lifetime for is one it alone has measured.
             single_source=not any(r.has_suzuki_value for r in printed),

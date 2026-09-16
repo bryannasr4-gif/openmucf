@@ -1,9 +1,7 @@
 """The ``mizuno2025`` profile's input: two transcriptions of Mizuno et al. (2025), Tables 1 and 3.
 
 Unlike the ``parity`` profile, whose every number is parsed out of a vendored source file, this
-profile rests on two files typed from the primary's tables -- so, as with the isotope audit,
-the structural invariants are the whole of the protection available, and every one of them is
-enforced here rather than trusted:
+profile rests on two files typed from the primary's tables:
 
 * Table 1 is transcribed row for row as printed, one row per target, and a nuclide the primary
   measured on two targets has two rows.
@@ -18,8 +16,9 @@ states and ``tests/test_g4spec.py`` enforces.
 from __future__ import annotations
 
 import csv
+import re
 from dataclasses import dataclass
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from pathlib import Path
 
 PROFILE = "mizuno2025"
@@ -43,6 +42,11 @@ TABLE3_NUMERIC = ("rate", "rate_unc")
 #: The one column the primary prints with characters outside US-ASCII (a diameter sign and a
 #: multiplication sign in the target dimensions); every other cell of both files is ASCII.
 TABLE1_NON_ASCII = ("size_mm",)
+#: A printed numeric cell: digits, a point and digits, the form every numeric cell of both tables
+#: takes -- no sign, exponent, underscore or space.
+_PRINTED_DECIMAL = re.compile(r"[0-9]+\.[0-9]+")
+#: A printed key: an unsigned integer without a leading zero (``A`` may also be the literal ``0``).
+_PRINTED_INTEGER = re.compile(r"[1-9][0-9]*")
 
 
 class Mizuno2025Error(RuntimeError):
@@ -142,14 +146,17 @@ def _read(
 
 
 def _decimal(text: str, where: str, column: str) -> Decimal:
-    try:
-        return Decimal(text)
-    except InvalidOperation:
-        raise Mizuno2025Error(f"{where}: {column} must be a decimal number, got {text!r}") from None
+    if not _PRINTED_DECIMAL.fullmatch(text):
+        raise Mizuno2025Error(f"{where}: {column} must be digits, a point and digits, got {text!r}")
+    value = Decimal(text)
+    if value <= 0:
+        raise Mizuno2025Error(f"{where}: {column} must be greater than zero, got {text!r}")
+    return value
 
 
 def load_table1(path: Path) -> tuple[Table1Row, ...]:
-    """Parse Table 1's transcription, refusing anything the generator could carry into shipped bytes."""
+    """Parse Table 1's transcription: every numeric cell digits, a point and digits above zero, and
+    the two Suzuki cells present or absent together."""
     rows = []
     for where, record in _read(path, TABLE1_COLUMNS, TABLE1_NON_ASCII):
         for column in TABLE1_NUMERIC:
@@ -171,6 +178,13 @@ def load_table3(path: Path) -> tuple[Table3Row, ...]:
     rows: list[Table3Row] = []
     seen: dict[tuple[int, int], str] = {}
     for where, record in _read(path, TABLE3_COLUMNS, ()):
+        if not (
+            _PRINTED_INTEGER.fullmatch(record["Z"])
+            and (record["A"] == "0" or _PRINTED_INTEGER.fullmatch(record["A"]))
+        ):
+            raise Mizuno2025Error(
+                f"{where}: Z and A must be integers as printed, without sign or leading zero"
+            )
         try:
             z, a = int(record["Z"]), int(record["A"])
         except ValueError:

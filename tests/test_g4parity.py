@@ -1917,6 +1917,10 @@ class DocumentPins:
     #: Section 9's cross-check table, one `(what, pattern, expected_row)` per row the two capture
     #: profiles disagree on; the whole row is the pinned span.
     crosscheck_rows: list
+    #: Section 9's account of the keys the cross-check never compares: one `(what, pattern,
+    #: expected_string)` row when the `mizuno2025` profile carries a key no `parity` record
+    #: partners, its expected string the sorted keys as the document lists them; empty otherwise.
+    crosscheck_unpartnered: list
     #: `(what, pattern, expected_string)` rows of `CHANGELOG.md` whose value is a string read from
     #: a shipped file rather than a count.
     string_claims: list
@@ -2378,6 +2382,25 @@ def document_pins() -> DocumentPins:
             "section 9's table; the document is wrong, not this test"
         )
 
+    # The keys the cross-check never compares: every `mizuno2025` key the partner map covers no
+    # pair for, derived from the same two shipped files, and section 9 must name exactly those.
+    unpartnered = sorted(set(mizuno_extraction().keys) - {pair["mizuno"] for pair in crosscheck_pairs})
+    unpartnered_keys = [f"`{z}-{a}`" for z, a in unpartnered]
+    if len(unpartnered_keys) > 1:
+        text = ", ".join(unpartnered_keys[:-1]) + " and " + unpartnered_keys[-1]
+    else:
+        text = "".join(unpartnered_keys)
+    crosscheck_unpartnered = [(
+        "cross-check: the keys no parity record partners",
+        "partner nothing and are not compared are (" + re.escape(text) + r")\.",
+        text,
+    )] if unpartnered else []
+    for what, pattern, expected_row in crosscheck_unpartnered:
+        assert re.findall(pattern, doc) == [expected_row], (
+            f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
+            "section 9's table; the document is wrong, not this test"
+        )
+
     # Section 6's comparison table: one row per capture row the audit leaves open, pinned whole --
     # the compiled-in literals as the vendored source prints them, every cell the primary prints at
     # that Z as the committed transcription prints it, and the outcome the comparison derives.
@@ -2557,8 +2580,8 @@ def document_pins() -> DocumentPins:
 
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
-        tools_readme_claims, changelog_rounded, crosscheck_rows, string_claims,
-        open_row_comparisons,
+        tools_readme_claims, changelog_rounded, crosscheck_rows, crosscheck_unpartnered,
+        string_claims, open_row_comparisons,
     )
 
 
@@ -2879,9 +2902,30 @@ MIZUNO_DRILLS = [
      lambda t: _replace_once(t, "Powder in case,\u03d515.0\u00d72.8,0.500,2.02",
                              "Powder in c\u00e2se,\u03d515.0\u00d72.8,0.500,2.02"),
      "must be ASCII"),
-    ("a non-decimal rate", 3, lambda t: _replace_once(t, ",0.893,", ",0.893x,"), "decimal number"),
-    ("a non-decimal weight", 1, lambda t: _replace_once(t, ",9.00,", ",9.00g,"), "decimal number"),
+    ("a non-decimal rate", 3, lambda t: _replace_once(t, ",0.893,", ",0.893x,"),
+     "digits, a point and digits"),
+    ("a non-decimal weight", 1, lambda t: _replace_once(t, ",9.00,", ",9.00g,"),
+     "digits, a point and digits"),
+    ("a minus sign before a rate", 3, lambda t: _replace_once(t, ",0.893,", ",-0.893,"),
+     "digits, a point and digits"),
+    ("a plus sign before a rate", 3, lambda t: _replace_once(t, ",0.893,", ",+0.893,"),
+     "digits, a point and digits"),
+    ("an underscore inside a rate", 3, lambda t: _replace_once(t, ",0.8794,", ",0.87_94,"),
+     "digits, a point and digits"),
+    ("a leading space before a rate", 3, lambda t: _replace_once(t, ",0.808,", ", 0.808,"),
+     "digits, a point and digits"),
+    ("an exponent in a rate", 3, lambda t: _replace_once(t, ",0.713,", ",7.13e-1,"),
+     "digits, a point and digits"),
+    ("a weight without a point", 1, lambda t: _replace_once(t, ",9.00,", ",9,"),
+     "digits, a point and digits"),
+    ("NaN as a lifetime", 1, lambda t: _replace_once(t, ",743.9,5.0,", ",NaN,5.0,"),
+     "digits, a point and digits"),
+    ("an exponent in a Suzuki cell", 1,
+     lambda t: _replace_once(t, ",756.0,1.0,0.882,", ",756.0,1e0,0.882,"), "digits, a point and digits"),
+    ("a zero uncertainty", 3, lambda t: _replace_once(t, ",0.009,", ",0.000,"), "greater than zero"),
     ("a non-integer Z", 3, lambda t: _replace_once(t, "\n47,0,", "\nAg,0,"), "must be integers"),
+    ("a signed Z", 3, lambda t: _replace_once(t, "\n47,0,", "\n+47,0,"), "must be integers"),
+    ("a leading zero in A", 3, lambda t: _replace_once(t, "\n14,28,", "\n14,028,"), "must be integers"),
     ("a duplicate key", 3, lambda t: _replace_once(t, "\n14,29,", "\n14,28,"), "duplicate key"),
     ("a label only in table 1", 1, lambda t: _replace_once(t, "\n55Mn,", "\n55mn,"), "labels differ"),
     ("a label only in table 3", 3, lambda t: _replace_once(t, ",natAg,", ",natag,"), "labels differ"),
@@ -2986,9 +3030,17 @@ def test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row():
         assert ("natural composition" in row.validity_range) is (a == 0), key
         assert row.validity_range.startswith(f"Z={z} "), key
         assert ("footnote" in row.conditions) is bool(printed.note), key
+        # The averaged rows' method names the primary's footnote; no other row's does.
+        assert ("footnote" in row.evaluation_method) is bool(printed.note), key
+        if printed.note:
+            assert printed.note in row.evaluation_method, key
         for target in targets:
-            lifetime = f"{target.lifetime_ns}({target.lifetime_unc_ns}) ns"
-            assert f'"{target.form}", lifetime {lifetime}' in row.conditions, key
+            assert (
+                f'"{target.form}", lifetime {target.lifetime_ns} ns, '
+                f"uncertainty {target.lifetime_unc_ns} ns"
+            ) in row.conditions, key
+            # No parenthesised uncertainty survives: the notation is this profile's, not the primary's.
+            assert f"({target.lifetime_unc_ns})" not in row.conditions, key
         assert "not re-derived" in row.evaluation_method, key
 
 
@@ -3078,7 +3130,13 @@ def test_t91_the_two_capture_profiles_are_compared_key_by_key_and_the_document_l
     assert {pair["mizuno"] for pair in pairs} | {(14, 29), (14, 30)} == set(mizuno.keys)
 
     disagreements = [pair for pair in pairs if not pair["agrees"]]
+    unpartnered = sorted(set(mizuno.keys) - {p["mizuno"] for p in pairs})
+    pins = document_pins()
+    assert pins.crosscheck_unpartnered and pins.crosscheck_unpartnered[0][2] == " and ".join(
+        f"`{z}-{a}`" for z, a in unpartnered
+    )
     print(f"\ncross-check: {len(disagreements)} of {len(pairs)} pair(s) differ at the printed precision")
+    print(f"  {mizuno2025.PROFILE} keys no parity record partners (not compared): {unpartnered}")
     for pair in pairs:
         parity_value, parity_unc = pair["parity_literal"]
         printed_value, printed_unc = pair["printed"]
@@ -3088,7 +3146,7 @@ def test_t91_the_two_capture_profiles_are_compared_key_by_key_and_the_document_l
             f"value {'equal' if pair['value_agrees'] else 'differs'}, "
             f"unc {'equal' if pair['unc_agrees'] else 'differs'}"
         )
-    assert len(document_pins().crosscheck_rows) == len(disagreements)
+    assert len(pins.crosscheck_rows) == len(disagreements)
 
 
 def test_t91_drill_agreement_is_decided_at_the_printed_digits():
