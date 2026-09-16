@@ -1917,6 +1917,10 @@ class DocumentPins:
     #: Section 9's cross-check table, one `(what, pattern, expected_row)` per row the two capture
     #: profiles disagree on; the whole row is the pinned span.
     crosscheck_rows: list
+    #: Section 9's account of the keys the cross-check never compares: one `(what, pattern,
+    #: expected_string)` row when the `mizuno2025` profile carries a key no `parity` record
+    #: partners, its expected string the sorted keys as the document lists them; empty otherwise.
+    crosscheck_unpartnered: list
     #: `(what, pattern, expected_string)` rows of `CHANGELOG.md` whose value is a string read from
     #: a shipped file rather than a count.
     string_claims: list
@@ -2378,6 +2382,25 @@ def document_pins() -> DocumentPins:
             "section 9's table; the document is wrong, not this test"
         )
 
+    # The keys the cross-check never compares: every `mizuno2025` key the partner map covers no
+    # pair for, derived from the same two shipped files, and section 9 must name exactly those.
+    unpartnered = sorted(set(mizuno_extraction().keys) - {pair["mizuno"] for pair in crosscheck_pairs})
+    unpartnered_keys = [f"`{z}-{a}`" for z, a in unpartnered]
+    if len(unpartnered_keys) > 1:
+        text = ", ".join(unpartnered_keys[:-1]) + " and " + unpartnered_keys[-1]
+    else:
+        text = "".join(unpartnered_keys)
+    crosscheck_unpartnered = [(
+        "cross-check: the keys no parity record partners",
+        "partner nothing and are not compared are (" + re.escape(text) + r")\.",
+        text,
+    )] if unpartnered else []
+    for what, pattern, expected_row in crosscheck_unpartnered:
+        assert re.findall(pattern, doc) == [expected_row], (
+            f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
+            "section 9's table; the document is wrong, not this test"
+        )
+
     # Section 6's comparison table: one row per capture row the audit leaves open, pinned whole --
     # the compiled-in literals as the vendored source prints them, every cell the primary prints at
     # that Z as the committed transcription prints it, and the outcome the comparison derives.
@@ -2557,8 +2580,8 @@ def document_pins() -> DocumentPins:
 
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
-        tools_readme_claims, changelog_rounded, crosscheck_rows, string_claims,
-        open_row_comparisons,
+        tools_readme_claims, changelog_rounded, crosscheck_rows, crosscheck_unpartnered,
+        string_claims, open_row_comparisons,
     )
 
 
@@ -3105,7 +3128,13 @@ def test_t91_the_two_capture_profiles_are_compared_key_by_key_and_the_document_l
     assert {pair["mizuno"] for pair in pairs} | {(14, 29), (14, 30)} == set(mizuno.keys)
 
     disagreements = [pair for pair in pairs if not pair["agrees"]]
+    unpartnered = sorted(set(mizuno.keys) - {p["mizuno"] for p in pairs})
+    pins = document_pins()
+    assert pins.crosscheck_unpartnered and pins.crosscheck_unpartnered[0][2] == " and ".join(
+        f"`{z}-{a}`" for z, a in unpartnered
+    )
     print(f"\ncross-check: {len(disagreements)} of {len(pairs)} pair(s) differ at the printed precision")
+    print(f"  {mizuno2025.PROFILE} keys no parity record partners (not compared): {unpartnered}")
     for pair in pairs:
         parity_value, parity_unc = pair["parity_literal"]
         printed_value, printed_unc = pair["printed"]
@@ -3115,7 +3144,7 @@ def test_t91_the_two_capture_profiles_are_compared_key_by_key_and_the_document_l
             f"value {'equal' if pair['value_agrees'] else 'differs'}, "
             f"unc {'equal' if pair['unc_agrees'] else 'differs'}"
         )
-    assert len(document_pins().crosscheck_rows) == len(disagreements)
+    assert len(pins.crosscheck_rows) == len(disagreements)
 
 
 def test_t91_drill_agreement_is_decided_at_the_printed_digits():

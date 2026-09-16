@@ -471,7 +471,10 @@ upstream revision, no `#SOURCESHA`.
 
 **Where the profiles disagree.** The value and its uncertainty
 were compared at the primary's printed precision, a natural-composition key against the compiled-in
-row of that element. The test suite derives from the shipped files the pairs whose value or
+row of that element.
+An enriched-isotope key partners the `parity` record at its `(Z, A)` or nothing; the keys that
+partner nothing and are not compared are `14-29` and `14-30`.
+The test suite derives from the shipped files the pairs whose value or
 uncertainty differs and requires this table to list exactly those pairs, the `parity` cells as the
 vendored source prints them and the `mizuno2025` cells as the transcription prints them:
 
