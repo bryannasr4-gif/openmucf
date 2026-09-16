@@ -260,7 +260,18 @@ function(g4muonicdata_validity_case name replacement expected)
     message(FATAL_ERROR "ok_natural_row_under_natural_and_listed.g4dat does not assign A:natural_and_listed")
   endif()
   string(REPLACE "A:natural_and_listed" "${replacement}" member "${member}")
-  file(WRITE "${dir}/d1_capture.evaluated.g4dat" "${member}")
+  # file(WRITE) opens its output in text mode and writes CRLF on Windows, which the LF-only format
+  # refuses (E006); configure_file with NEWLINE_STYLE LF writes LF on every platform. @ONLY leaves
+  # the bytes alone provided the member carries no @ and no #cmakedefine, which is checked here.
+  foreach(marker IN ITEMS "@" "#cmakedefine")
+    string(FIND "${member}" "${marker}" at)
+    if(NOT at EQUAL -1)
+      message(FATAL_ERROR "ok_natural_row_under_natural_and_listed.g4dat carries '${marker}', which configure_file would rewrite")
+    endif()
+  endforeach()
+  file(WRITE "${CMAKE_BINARY_DIR}/${name}.member.in" "${member}")
+  configure_file("${CMAKE_BINARY_DIR}/${name}.member.in" "${dir}/d1_capture.evaluated.g4dat"
+                 @ONLY NEWLINE_STYLE LF)
   add_test(NAME ${name}
            COMMAND g4muonicdata_validate "${dir}"
                    --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
