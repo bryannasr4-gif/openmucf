@@ -85,7 +85,8 @@ design:
 #   example.g4dat            -- pure deterministic text rendered from the hand-authored Layer-2 file
 #                               (no MCMC/solver), byte-stable on every platform.
 #   d1_*.g4dat, d1_*.prov.json -- BOTH layers generated from the vendored upstream Geant4 source
-#                               (third_party/geant4/), parsed at build time. Pure deterministic text
+#                               (third_party/geant4/) and the CSV files committed beside them
+#                               (data/g4/d1/*.csv), parsed at build time. Pure deterministic text
 #                               and byte-stable on every platform.
 #   geant4_add_dataset.snippet -- deterministic text EXCEPT for one field: MD5SUM is the MD5 of the
 #                               archive, i.e. of a gzip DEFLATE stream. zlib does not guarantee

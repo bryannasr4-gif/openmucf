@@ -146,7 +146,8 @@ from inventing three different splittings of the same bytes.
 
 Every `NAME` used in `#UNITS` should be a `#COLUMNS` name; a unit for a column that does not exist
 is a producer bug, and a consumer may report it as one. `#VALIDITY` names need not be columns
-(`A:natural_and_listed` describes a selection rule, not a column range).
+(`A:natural_and_listed` describes a selection rule, not a column range). A `NAME` is assigned at
+most once; a consumer that decomposes `#VALIDITY` refuses a repeated `NAME`.
 
 **A `#FALLBACK` model name means whatever the dataset's own documentation says it means**, and that
 documentation must state the formula **and its evaluation order**. This is not pedantry: floating
@@ -503,7 +504,7 @@ upstream change to Geant4 itself.
 
 **Mode 2 -- unregistered, explicit environment variable.** For a dataset that is not in
 `dataset_definitions[]`, an explicitly exported `G4MUONICDATA=/path/to/dataset` is the **only** way
-to find it. At v11.4.2 `geant4.sh` exports no per-dataset `G4*DATA` variables at all -- only
+to find it. At both revisions `geant4.sh` exports no per-dataset `G4*DATA` variables at all -- only
 `GEANT4_DATA_DIR` -- so nothing else will resolve it.
 
 **Every early adopter hits mode 2**, because mode 1 does not exist until an upstream merge. Anything

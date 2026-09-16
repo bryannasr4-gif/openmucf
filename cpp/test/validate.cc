@@ -818,8 +818,9 @@ int Run(int argc, char** argv) {
 
   // V-15 -- the natural-composition row: an `A = 0` record is admissible only under a `#VALIDITY`
   // that assigns `A:natural_and_listed`, and parity carries none. `#VALIDITY` is decomposed here,
-  // by the consumer, as whitespace-separated NAME:RANGE assignments (FORMAT_SPEC.md section 2.2).
-  // Exactly one line: the first offending table, else PASS with the table and natural-row counts.
+  // by the consumer, as whitespace-separated NAME:RANGE assignments (FORMAT_SPEC.md section 2.2);
+  // a NAME assigned twice is refused, as the reference refuses it. Exactly one line: the first
+  // offending table, else PASS with the table and natural-row counts.
   if (!loaded) {
     report.Fail("V-15", "dataset not loaded");
   } else {
@@ -835,7 +836,13 @@ int Run(int argc, char** argv) {
           ok = false;
           break;
         }
-        assignments[token.substr(0, colon)] = token.substr(colon + 1);
+        const std::string name = token.substr(0, colon);
+        if (assignments.count(name) != 0) {
+          report.Fail("V-15", Quote(FileName(t.file)) + " #VALIDITY assigns " + Quote(name) + " twice");
+          ok = false;
+          break;
+        }
+        assignments[name] = token.substr(colon + 1);
       }
       if (!ok) break;
       const bool has_z = std::find(t.columns.begin(), t.columns.end(), "Z") != t.columns.end();

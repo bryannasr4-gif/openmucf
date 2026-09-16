@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The capture rows the audit had left open are compared with every Total Capture Rate cell the
   primary prints at their Z** (`data/g4/d1/capture_rate_cells.csv`): a test derives each verdict
-  at the primary's printed precision and holds `isotope_audit.csv` to it; the chlorine record is
+  at the primary's printed precision and holds `isotope_audit.csv` to it; the `(17, 35)` record is
   settled as the separated isotope the primary lists, and the others stay open with the
   comparison recorded in their `evaluation_method`.
 
@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The dataset archive in Geant4's layout**: it unpacks to the `G4MuonicData<version>` directory
   and carries generated `README` and `History` members (T-81, T-82).
 - **The reader keyed by profile**: tables are keyed by (`#PROFILE`, `#TABLE`), and a lookup falls
-  from `(Z, A)` to the `(Z, 0)` rung (V-14, V-15).
+  from `(Z, A)` to the `(Z, 0)` rung.
 - **The `G4HadronicParameters` opt-in**, with a behaviour patch and a registration patch cut for
   each Geant4 revision the overlay serves (T-72).
 

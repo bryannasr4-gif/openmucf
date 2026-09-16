@@ -1929,6 +1929,10 @@ class DocumentPins:
     #: leaves open, the compiled-in literals against every printed cell at its Z; the whole row is
     #: the pinned span.
     open_row_comparisons: list
+    #: Section 6's two sentences naming the one record the value comparison settled, `(what,
+    #: pattern, expected_key)` rows whose expected string is that record's key as the document
+    #: writes it, derived from the audit and the cells.
+    settled_by_value: list
 
 
 def document_pins() -> DocumentPins:
@@ -2287,9 +2291,26 @@ def document_pins() -> DocumentPins:
     # the entry names is the `#VERSION` the committed capture table carries.
     shipped_version = re.search(r"^#VERSION\s+(\S+)$", CAPTURE_LAYER1.read_text("ascii"), re.M)
     assert shipped_version, "the committed capture table declares no #VERSION"
+    # The one record the value comparison settled: the settled audit row `decided_by_value` decides,
+    # derived from the audit and the printed cells. Every sentence naming it carries this key.
+    blocks = d1.cells_by_z(capture_cells())
+    settled_by_value_keys = sorted(
+        key for key, finding in audit.items()
+        if finding.settled and key[0] in blocks
+        and d1.decided_by_value(key, finding.evidence, blocks[key[0]])
+    )
+    assert len(settled_by_value_keys) == 1, (
+        "the sentences below name one record settled by the comparison; if this count moves, the "
+        f"document is rewritten, not this test: {settled_by_value_keys}"
+    )
+    ((settled_z, settled_a),) = settled_by_value_keys
+    key_text = f"`({settled_z}, {settled_a})`"
     string_claims = [
         ("the dataset version the entry names",
          r"moves the dataset's `#VERSION` to (\d+\.\d+\.\d+)", shipped_version.group(1)),
+        ("the record the value comparison settled",
+         r"the (`\(\d+, \d+\)`) record is settled as the separated isotope the primary lists",
+         key_text),
     ]
 
     # `README.md` is the third copy of these numbers and the one a reader meets first. Its G4
@@ -2386,11 +2407,7 @@ def document_pins() -> DocumentPins:
     # The keys the cross-check never compares: every `mizuno2025` key the partner map covers no
     # pair for, derived from the same two shipped files, and section 9 must name exactly those.
     unpartnered = sorted(set(mizuno_extraction().keys) - {pair["mizuno"] for pair in crosscheck_pairs})
-    unpartnered_keys = [f"`{z}-{a}`" for z, a in unpartnered]
-    if len(unpartnered_keys) > 1:
-        text = ", ".join(unpartnered_keys[:-1]) + " and " + unpartnered_keys[-1]
-    else:
-        text = "".join(unpartnered_keys)
+    text = unpartnered_keys_text(unpartnered)
     crosscheck_unpartnered = [(
         "cross-check: the keys no parity record partners",
         "partner nothing and are not compared are (" + re.escape(text) + r")\.",
@@ -2399,13 +2416,12 @@ def document_pins() -> DocumentPins:
     for what, pattern, expected_row in crosscheck_unpartnered:
         assert re.findall(pattern, doc) == [expected_row], (
             f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
-            "section 9's table; the document is wrong, not this test"
+            "section 9; the document is wrong, not this test"
         )
 
     # Section 6's comparison table: one row per capture row the audit leaves open, pinned whole --
     # the compiled-in literals as the vendored source prints them, every cell the primary prints at
     # that Z as the committed transcription prints it, and the outcome the comparison derives.
-    blocks = d1.cells_by_z(capture_cells())
     literals = {
         (z, a): literal
         for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
@@ -2428,6 +2444,19 @@ def document_pins() -> DocumentPins:
         assert re.findall(pattern, doc) == [expected_row], (
             f"DATASET_D1.md: {what}: the derived row {expected_row!r} must appear exactly once in "
             "section 6's table; the document is wrong, not this test"
+        )
+    # Section 6's two sentences that name the record the comparison settled, each exactly once.
+    settled_by_value = [
+        ("the record the value comparison settled, among the separated-isotope route",
+         r"\(the (`\(\d+, \d+\)`) record among them settled to that entry by the comparison below\)",
+         key_text),
+        ("the record the value comparison settled, the comparison's own sentence",
+         r"which is how the (`\(\d+, \d+\)`) record became `isotope_resolved`", key_text),
+    ]
+    for what, pattern, expected_key in settled_by_value:
+        assert re.findall(pattern, doc) == [expected_key], (
+            f"DATASET_D1.md: {what}: {expected_key} must appear exactly once as "
+            f"{pattern!r}; the document is wrong, not this test"
         )
     # The bullet that lists the rows the primary fails to establish names exactly those keys, in
     # ascending order: the count above is pinned, and so is the list.
@@ -2582,7 +2611,7 @@ def document_pins() -> DocumentPins:
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
         tools_readme_claims, changelog_rounded, crosscheck_rows, crosscheck_unpartnered,
-        string_claims, open_row_comparisons,
+        string_claims, open_row_comparisons, settled_by_value,
     )
 
 
@@ -3111,7 +3140,7 @@ def test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row():
         assert row.single_source is (not any(r.has_suzuki_value for r in targets)), key
         assert ("natural composition" in row.validity_range) is (a == 0), key
         assert row.validity_range.startswith(f"Z={z} "), key
-        assert ("footnote" in row.conditions) is bool(printed.note), key
+        assert (f'Table 3 footnote: "{printed.note}"' in row.conditions) is bool(printed.note), key
         # The averaged rows' method names the primary's footnote; no other row's does.
         assert ("footnote" in row.evaluation_method) is bool(printed.note), key
         if printed.note:
@@ -3123,7 +3152,10 @@ def test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row():
             ) in row.conditions, key
             # No parenthesised uncertainty survives: the notation is this profile's, not the primary's.
             assert f"({target.lifetime_unc_ns})" not in row.conditions, key
-        assert "not re-derived" in row.evaluation_method, key
+        assert row.evaluation_method == (
+            mizuno2025.METHOD_AVERAGED.format(note=printed.note) if printed.note else mizuno2025.METHOD
+        ), key
+        assert mizuno2025.TABLE1_CAPTION in row.conditions and mizuno2025.COPY in row.conditions, key
 
 
 def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_every_table():
@@ -3147,6 +3179,15 @@ def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_eve
 
 
 agrees_at_printed_precision = d1.agrees_at_printed_precision
+
+
+def unpartnered_keys_text(keys: Sequence[tuple[int, int]]) -> str:
+    """The keys no `parity` record partners, as section 9 lists them: each `Z-A` in backticks, a
+    comma-separated run with `and` before the last. The one home of that rendering."""
+    texts = [f"`{z}-{a}`" for z, a in keys]
+    if len(texts) > 1:
+        return ", ".join(texts[:-1]) + " and " + texts[-1]
+    return "".join(texts)
 
 
 def mizuno_parity_pairs() -> list[dict]:
@@ -3214,8 +3255,8 @@ def test_t91_the_two_capture_profiles_are_compared_key_by_key_and_the_document_l
     disagreements = [pair for pair in pairs if not pair["agrees"]]
     unpartnered = sorted(set(mizuno.keys) - {p["mizuno"] for p in pairs})
     pins = document_pins()
-    assert pins.crosscheck_unpartnered and pins.crosscheck_unpartnered[0][2] == " and ".join(
-        f"`{z}-{a}`" for z, a in unpartnered
+    assert pins.crosscheck_unpartnered and pins.crosscheck_unpartnered[0][2] == unpartnered_keys_text(
+        unpartnered
     )
     print(f"\ncross-check: {len(disagreements)} of {len(pairs)} pair(s) differ at the printed precision")
     print(f"  {mizuno2025.PROFILE} keys no parity record partners (not compared): {unpartnered}")
@@ -3576,7 +3617,13 @@ def test_t97_every_open_capture_row_is_decided_by_comparison_with_the_printed_ce
     _, document = committed(CAPTURE_LAYER1, CAPTURE_LAYER2)
     by_value, unsettled = check_open_row_verdicts(audit_rows(), capture_cells(), document)
     assert by_value, "no row is decided by value; the check above was vacuous"
-    assert len(document_pins().open_row_comparisons) == len(unsettled)
+    # (e) the rows section 6's table carries, read from the document itself -- the only table whose
+    # rows open with a parenthesised key -- are exactly the rows the audit leaves open.
+    tabulated = sorted(
+        (int(z), int(a))
+        for z, a in re.findall(r"\| \((\d+), (\d+)\) \| \S+ \+- \S+ \| ", document_pins().doc)
+    )
+    assert tabulated == unsettled, (tabulated, unsettled)
 
 
 def test_t97_drill_a_settled_row_whose_cell_moves_in_its_last_digit_is_caught(tmp_path):
@@ -3610,6 +3657,92 @@ def test_t97_drill_a_settled_row_whose_cell_moves_in_its_last_digit_is_caught(tm
     path.write_bytes(mutated.encode("ascii"))
     with pytest.raises(AssertionError):
         check_open_row_verdicts(audit, d1.load_capture_cells(path), document)
+
+
+# --------------------------------------------------------------------------------------------
+# T-101 -- each conjunct of the comparison rule decides a block derived from the shipped files
+# --------------------------------------------------------------------------------------------
+
+
+def test_t101_each_conjunct_of_the_comparison_rule_decides_a_derived_block():
+    """Every input is the shipped audit, cells and extraction; every block below is derived from
+    them by one stated change. (a) the uncertainty conjunct of `printed_matches`: the one cell the
+    settled decided-by-value row equals, its uncertainty moved by one unit in its last printed digit,
+    is no longer a match. (b) the collision shape of `decided_by_value`: an open key whose block
+    carries a natural label and a separated label of its A, and whose evidence states `round(Ar)`
+    equal to A, is decided; with the stated `round(Ar)` moved off A, or with every natural label
+    removed from the block, it is not. (c) the absent shape: an open key whose A no separated label
+    carries is decided, with or without a `round(Ar)` clause in its evidence."""
+    audit = audit_rows()
+    blocks = d1.cells_by_z(capture_cells())
+    found = extraction()
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    by_value = sorted(
+        key for key, finding in audit.items()
+        if key[0] in blocks and d1.decided_by_value(key, finding.evidence, blocks[key[0]])
+    )
+
+    def separated_labels(block):
+        return {int(cell.label.split("-")[1]) for cell in block if d1.is_separated_label(cell.label)}
+
+    # (a)
+    settled = [key for key in by_value if audit[key].settled]
+    assert len(settled) == 1, settled
+    (key,) = settled
+    z, a = key
+    (match,) = d1.printed_matches(*values[key], blocks[z])
+    printed_unc = decimal.Decimal(match.rate_unc)
+    one_unit = decimal.Decimal(1).scaleb(printed_unc.as_tuple().exponent)
+    bumped = dataclasses.replace(match, rate_unc=str(printed_unc + one_unit))
+    assert bumped.rate == match.rate and bumped.rate_unc != match.rate_unc
+    block = tuple(bumped if cell is match else cell for cell in blocks[z])
+    assert d1.printed_matches(*values[key], block) == ()
+
+    # (b)
+    collisions = [
+        key for key, finding in audit.items()
+        if not finding.settled and key[0] in blocks
+        and any(not d1.is_separated_label(cell.label) for cell in blocks[key[0]])
+        and key[1] in separated_labels(blocks[key[0]])
+        and f"round(Ar)={key[1]}" in finding.evidence
+    ]
+    assert collisions, "no open key carries a natural label, a separated label of its A and round(Ar)=A"
+    for key in collisions:
+        z, a = key
+        evidence = audit[key].evidence
+        assert d1.decided_by_value(key, evidence, blocks[z]), key
+        moved = evidence.replace(f"round(Ar)={a}", f"round(Ar)={a + 1}")
+        assert moved != evidence
+        assert not d1.decided_by_value(key, moved, blocks[z]), key
+        without_natural = tuple(cell for cell in blocks[z] if d1.is_separated_label(cell.label))
+        assert without_natural != blocks[z]
+        assert not d1.decided_by_value(key, evidence, without_natural), key
+
+    # (c)
+    absent = [
+        key for key, finding in audit.items()
+        if not finding.settled and key[0] in blocks and key[1] not in separated_labels(blocks[key[0]])
+    ]
+    assert absent, "no open key has an A no separated label carries"
+    for key in absent:
+        evidence = audit[key].evidence
+        assert d1.decided_by_value(key, evidence, blocks[key[0]]), key
+        stripped = re.sub(r"round\(Ar\)=\d+", "", evidence)
+        assert d1.decided_by_value(key, stripped, blocks[key[0]]), key
+
+
+# --------------------------------------------------------------------------------------------
+# T-102 -- the unpartnered keys render from one home
+# --------------------------------------------------------------------------------------------
+
+
+def test_t102_the_unpartnered_keys_render_from_one_home():
+    """`unpartnered_keys_text` is the one rendering both `document_pins` and T-91 compare the document
+    against; drill keys, at one, two and three keys."""
+    assert unpartnered_keys_text([(1, 2)]) == "`1-2`"
+    assert unpartnered_keys_text([(1, 2), (3, 4)]) == "`1-2` and `3-4`"
+    assert unpartnered_keys_text([(1, 2), (3, 4), (5, 6)]) == "`1-2`, `3-4` and `5-6`"
+    assert unpartnered_keys_text([]) == ""
 
 
 # --------------------------------------------------------------------------------------------
