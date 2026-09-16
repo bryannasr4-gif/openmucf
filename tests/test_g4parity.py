@@ -2775,7 +2775,7 @@ def test_t87_the_beta_tables_equal_the_v11_4_2_tables_field_by_field(copy: d1.So
     assert_same_tables(beta, reference)
 
 
-def test_t87_the_beta_bound_decay_reproduces_the_oracle_digest():
+def test_t87_the_reference_model_fed_the_beta_values_reproduces_the_oracle_digest():
     """The reference implementation, fed the beta BoundDecay's records, effective charges and
     fallback coefficients, reproduces the full-sweep digest the oracle harvested from the v11.4.2
     build."""
@@ -2821,6 +2821,87 @@ def test_t88_drill_a_changed_beta_zeff_is_named_as_zeff():
     assert mutated != text
     with pytest.raises(AssertionError, match=r"\Azeff differs"):
         assert_same_tables(d1.extract(mutated, d1.BOUND_DECAY), reference)
+
+
+# --------------------------------------------------------------------------------------------
+# T-98 -- the fallback expression compiled into the beta is token-identical to the v11.4.2 one
+# --------------------------------------------------------------------------------------------
+
+#: The identifiers the Goulard-Primakoff block must carry: the coefficients T-87 extracts, and
+#: the rate the block assigns. Their presence is what proves the regex found the block and not a
+#: fragment of it.
+FALLBACK_IDENTIFIERS = ("b0a", "b0b", "b0c", "t1", "lambda")
+#: The v11.4.2 copy and the beta copy of each compiled-in file, by file name.
+FALLBACK_COPIES: dict[str, tuple[pathlib.Path, pathlib.Path]] = {
+    VENDORED.name: (VENDORED, BETA_BOUND_DECAY),
+    HELPER.name: (HELPER, BETA_HELPER),
+}
+
+
+def fallback_expression_tokens(text: str) -> list[str]:
+    """The tokens of the Goulard-Primakoff block of one source text: from the `G4double b0a`
+    declaration through the `lambda = t1 ...;` statement, comments stripped, tokenised as
+    identifiers, numeric literals and single punctuation characters. Whitespace and comments are
+    the only things the tokenisation forgets, so two copies with equal token lists compile the
+    same expression tree and the same association -- what T-87's coefficient extraction does not
+    reach."""
+    stripped = re.sub(r"//[^\n]*", " ", re.sub(r"/\*.*?\*/", " ", text, flags=re.S))
+    match = re.search(r"G4double\s+b0a\b.*?lambda\s*=\s*t1\b.*?;", stripped, flags=re.S)
+    assert match is not None, "no `G4double b0a` ... `lambda = t1 ...;` block in the text"
+    return re.findall(r"[A-Za-z_]\w*|\d+\.?\d*(?:[eE][-+]?\d+)?|\.\d+(?:[eE][-+]?\d+)?|\S", match.group(0))
+
+
+def assert_same_tokens(found: list[str], expected: list[str]) -> None:
+    """Equal token lists, or a message with the first differing index and the tokens around it."""
+    for index, (left, right) in enumerate(zip(found, expected, strict=False)):
+        if left != right:
+            lo, hi = max(index - 3, 0), index + 4
+            raise AssertionError(
+                f"token {index} differs: found {left!r}, expected {right!r}; "
+                f"found {found[lo:hi]}, expected {expected[lo:hi]}"
+            )
+    assert len(found) == len(expected), (
+        f"token lists differ in length at index {min(len(found), len(expected))}: "
+        f"{len(found)} found, {len(expected)} expected"
+    )
+
+
+@pytest.mark.parametrize("name", sorted(FALLBACK_COPIES))
+def test_t98_the_fallback_expression_is_token_identical_across_the_vendored_revisions(name: str):
+    """For each compiled-in copy, the beta's Goulard-Primakoff block tokenises to exactly the
+    v11.4.2 block's tokens, and both carry the coefficient and rate identifiers."""
+    reference, beta = FALLBACK_COPIES[name]
+    expected = fallback_expression_tokens(reference.read_text("ascii"))
+    found = fallback_expression_tokens(beta.read_text("ascii"))
+    for identifier in FALLBACK_IDENTIFIERS:
+        assert identifier in expected, (name, identifier)
+        assert identifier in found, (name, identifier)
+    assert_same_tokens(found, expected)
+
+
+#: (label, old, new): one edit each to the beta text, in memory, that changes the expression
+#: tree, the association or a literal factor while leaving every extracted coefficient in place.
+T98_PROBES = [
+    ("association", "t1 * zeff2 * zeff2", "t1 * (zeff2 * zeff2)"),
+    ("2 * (A - Z) -> 3 * (A - Z)", "2 * (A - Z)", "3 * (A - Z)"),
+    ("A * 4 -> A * 5", "G4double(A * 4)", "G4double(A * 5)"),
+    ("(r2 * r2) -> (r2 * r2 * r2)", "(r2 * r2)", "(r2 * r2 * r2)"),
+]
+
+
+@pytest.mark.parametrize("name", sorted(FALLBACK_COPIES))
+def test_t98_drill_each_expression_edit_is_named(name: str):
+    """Each probe applied to the beta text one at a time fails the token comparison with the
+    first differing token named; the unedited beta text passes."""
+    reference, beta = FALLBACK_COPIES[name]
+    expected = fallback_expression_tokens(reference.read_text("ascii"))
+    text = beta.read_text("ascii")
+    assert_same_tokens(fallback_expression_tokens(text), expected)
+    for label, old, new in T98_PROBES:
+        assert text.count(old) == 1, (name, label, text.count(old))
+        with pytest.raises(AssertionError, match=r"token \d+ differs|differ in length") as raised:
+            assert_same_tokens(fallback_expression_tokens(text.replace(old, new, 1)), expected)
+        print(f"{name} {label}: {raised.value}")
 
 
 # --------------------------------------------------------------------------------------------
