@@ -523,8 +523,8 @@ tables by the pair (`#PROFILE`, `#TABLE`), never by file name, and rejects a dir
 files declare the same pair. A consumer names the profile it reads through; `parity` is the default. A key the selected profile has
 no record for — neither the exact (Z, A) nor, under `A:natural_and_listed`, the (Z, 0) row of
 section 6 — falls through to the consumer's compiled-in value, never to another profile.
-`precedence` (section 3) ranks sources within one file; selecting a profile is the only rule that
-spans files, and a `#FALLBACK`, where a file declares one, is the last rung of its profile.
+`precedence` (section 3) ranks sources within one file;
+a `#FALLBACK`, where a file declares one, is the last rung of its profile.
 
 ---
 
