@@ -40,8 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the dataset's `#VERSION` to 0.3.0.
 - **The dataset archive in Geant4's layout**: it unpacks to the `G4MuonicData<version>` directory
   and carries generated `README` and `History` members (T-81, T-82).
-- **The reader keyed by profile**: tables are keyed by (`#PROFILE`, `#TABLE`), and a lookup falls
-  from `(Z, A)` to the `(Z, 0)` rung.
+- **The reader keyed by profile**: tables are keyed by (`#PROFILE`, `#TABLE`).
 - **The `G4HadronicParameters` opt-in**, with a behaviour patch and a registration patch cut for
   each Geant4 revision the overlay serves (T-72).
 
