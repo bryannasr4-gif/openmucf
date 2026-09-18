@@ -1078,6 +1078,7 @@ def test_t34_import_fence():
         "sources/__init__.py",
         "sources/d1_nuclear_capture.py",
         "sources/mizuno2025.py",
+        "sources/mudirac130.py",
     }
 
     # A layout invariant that is currently satisfied with exactly one space to spare, and that a

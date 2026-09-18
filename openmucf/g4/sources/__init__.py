@@ -26,7 +26,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-__all__ = ["bibkeys", "d1_nuclear_capture", "mizuno2025"]
+__all__ = ["bibkeys", "d1_nuclear_capture", "mizuno2025", "mudirac130"]
 
 #: A BibTeX entry key, as ``openmucf.rates.bibkeys()`` reads them.
 _BIBKEY_PATTERN = re.compile(r"@\w+\{([^,]+),")

@@ -28,6 +28,9 @@ data/g4/* -text
 # the example, and this checkout has `core.autocrlf=true`, so without this line a fresh clone would
 # rewrite the digested Layer-2 bytes.
 data/g4/d1/* -text
+# The D3 build, for the same reasons: its CSV inputs are parsed by loaders that refuse CR, and its
+# Layer-2 files are digested byte ranges, so a checkout must not rewrite them.
+data/g4/d3/* -text
 # The Geant4 patches: their added-file hunks are the reader's LF bytes and a test compares them
 # byte-for-byte against cpp/include and cpp/src, so a checkout must not rewrite their line endings.
 cpp/patches/*.patch -text
