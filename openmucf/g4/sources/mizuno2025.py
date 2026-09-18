@@ -24,7 +24,7 @@ from pathlib import Path
 PROFILE = "mizuno2025"
 #: The bibliography key of the primary both tables are read from.
 BIBKEY = "Mizuno2025"
-#: Every row's `evaluation_method`: what it quotes of the primary's account of its Table 3 `Exp.`
+#: `evaluation_method`: what it quotes of the primary's account of its Table 3 `Exp.`
 #: column -- the value as printed, obtained by the primary's Eq. (3) with a Huff factor from its
 #: Ref. [4] -- and that nothing is re-derived here.
 METHOD = (
