@@ -57,7 +57,7 @@ Fermi parameter c that MuDirac computes by default, and prints its radius beside
 which that value is not real.
 It also drops every member whose mass number is below the one from which that default depends on
 the radius: MuDirac then sets c from the mass number alone, the radius passed does not shape the
-charge distribution, and moving it could not give an uncertainty.
+charge distribution.
 An element whose most abundant isotope is dropped has no natural-composition row, so a lookup for
 it falls through to the values compiled into Geant4.
 
@@ -164,6 +164,5 @@ Every gated row is listed below; the table is generated from `validation.csv`.
 ## 5. Findings
 
 - The rows outside tolerance are this comparison's registered disagreements; none is fitted away.
-- The dropped member of section 3 is a limit of the fixed settings, not of the input data.
 - The members whose bundled rms radius differs from the IAEA table are printed by the generator
   and passed as bundled.

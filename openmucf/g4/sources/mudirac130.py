@@ -737,7 +737,7 @@ _PRECISION = 50
 
 
 class DerivationError(Mudirac130Error):
-    """A run's printed states and lines do not give binding energies within their print precision."""
+    """A run's printed states and lines do not give binding energies."""
 
 
 def half_unit_6sig(text: str) -> Decimal:
