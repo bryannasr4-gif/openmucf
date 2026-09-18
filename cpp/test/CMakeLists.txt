@@ -29,8 +29,17 @@ option(G4MUONICDATA_PROBE_ONLY "Build and register only the toolchain probe" OFF
 option(G4MUONICDATA_DRILL_CONTRACTION "Omit -ffp-contract=off from every target (drill)" OFF)
 
 get_filename_component(G4MUONICDATA_REPO_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
-set(G4MUONICDATA_DATASET_DIR "${G4MUONICDATA_REPO_ROOT}/data/g4/d1")
-set(G4MUONICDATA_ORACLE "${G4MUONICDATA_DATASET_DIR}/d1_gp_sweep.oracle")
+set(G4MUONICDATA_D1_DIR "${G4MUONICDATA_REPO_ROOT}/data/g4/d1")
+set(G4MUONICDATA_D3_DIR "${G4MUONICDATA_REPO_ROOT}/data/g4/d3")
+set(G4MUONICDATA_ORACLE "${G4MUONICDATA_D1_DIR}/d1_gp_sweep.oracle")
+# The dataset the validator reads: every Layer-1 and Layer-2 member of the D1 and D3 directories,
+# copied into one directory at configure time, as the archive installs them side by side.
+set(G4MUONICDATA_DATASET_DIR "${CMAKE_BINARY_DIR}/dataset")
+file(REMOVE_RECURSE "${G4MUONICDATA_DATASET_DIR}")
+file(GLOB G4MUONICDATA_DATASET_MEMBERS
+     "${G4MUONICDATA_D1_DIR}/*.g4dat" "${G4MUONICDATA_D1_DIR}/*.prov.json"
+     "${G4MUONICDATA_D3_DIR}/*.g4dat" "${G4MUONICDATA_D3_DIR}/*.prov.json")
+file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${G4MUONICDATA_DATASET_DIR}")
 set(G4MUONICDATA_CONFORMANCE_DIR "${G4MUONICDATA_REPO_ROOT}/tests/fixtures/g4dat_conformance")
 set(G4MUONICDATA_DOCUMENT "${G4MUONICDATA_REPO_ROOT}/DATASET_D1.md")
 set(G4MUONICDATA_TOOLS_README "${G4MUONICDATA_REPO_ROOT}/cpp/tools/README.md")
@@ -169,8 +178,8 @@ endforeach()
 # dataset and corpus members copied under the name the case needs (configure_file COPYONLY copies
 # the bytes; file(COPY) keeps the shipped names).
 set(G4MUONICDATA_SHIPPED_FILES
-    "${G4MUONICDATA_DATASET_DIR}/d1_capture.g4dat" "${G4MUONICDATA_DATASET_DIR}/d1_capture.prov.json"
-    "${G4MUONICDATA_DATASET_DIR}/d1_zeff.g4dat" "${G4MUONICDATA_DATASET_DIR}/d1_zeff.prov.json")
+    "${G4MUONICDATA_D1_DIR}/d1_capture.g4dat" "${G4MUONICDATA_D1_DIR}/d1_capture.prov.json"
+    "${G4MUONICDATA_D1_DIR}/d1_zeff.g4dat" "${G4MUONICDATA_D1_DIR}/d1_zeff.prov.json")
 
 # A second profile of the capture table, carrying one natural-composition row under
 # A:natural_and_listed: both tables of parity plus the evaluated file load, and both checks pass.
@@ -199,7 +208,7 @@ add_test(NAME lookup_natural COMMAND g4muonicdata_lookup_check "${G4MUONICDATA_P
 set(G4MUONICDATA_PROFILES_SAME_PAIR "${CMAKE_BINARY_DIR}/profiles_same_pair")
 file(REMOVE_RECURSE "${G4MUONICDATA_PROFILES_SAME_PAIR}")
 file(COPY ${G4MUONICDATA_SHIPPED_FILES} DESTINATION "${G4MUONICDATA_PROFILES_SAME_PAIR}")
-configure_file("${G4MUONICDATA_DATASET_DIR}/d1_capture.g4dat"
+configure_file("${G4MUONICDATA_D1_DIR}/d1_capture.g4dat"
                "${G4MUONICDATA_PROFILES_SAME_PAIR}/d1_capture_copy.g4dat" COPYONLY)
 add_test(NAME validate_same_pair
          COMMAND g4muonicdata_validate "${G4MUONICDATA_PROFILES_SAME_PAIR}"
@@ -223,7 +232,7 @@ set_tests_properties(validate_natural_row_under_listed PROPERTIES
 # file, beside the shipped zeff pair): V-15 refuses it under parity whatever #VALIDITY says.
 set(G4MUONICDATA_PROFILES_NATURAL_IN_PARITY "${CMAKE_BINARY_DIR}/profiles_natural_in_parity")
 file(REMOVE_RECURSE "${G4MUONICDATA_PROFILES_NATURAL_IN_PARITY}")
-file(COPY "${G4MUONICDATA_DATASET_DIR}/d1_zeff.g4dat" "${G4MUONICDATA_DATASET_DIR}/d1_zeff.prov.json"
+file(COPY "${G4MUONICDATA_D1_DIR}/d1_zeff.g4dat" "${G4MUONICDATA_D1_DIR}/d1_zeff.prov.json"
      DESTINATION "${G4MUONICDATA_PROFILES_NATURAL_IN_PARITY}")
 configure_file("${G4MUONICDATA_CONFORMANCE_DIR}/ok_natural_row_under_parity.g4dat"
                "${G4MUONICDATA_PROFILES_NATURAL_IN_PARITY}/d1_capture.g4dat" COPYONLY)

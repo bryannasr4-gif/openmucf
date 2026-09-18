@@ -361,7 +361,7 @@ into a reader cannot.
 | `needs_verification` | bool | true if the digit or locator is not yet pinned from the primary text |
 | `recommendation` | string | `recommended`, `superseded`, or empty |
 | `evaluation_id` | string | identifies *which* evaluation this row belongs to |
-| `source_library` | string | `geant4-compiled-in`, `suzuki1987`, `iwamoto2025`, `jendl-mund`, `openmucf`, `mizuno2025` |
+| `source_library` | string | `geant4-compiled-in`, `suzuki1987`, `iwamoto2025`, `jendl-mund`, `openmucf`, `mizuno2025`, `mudirac130` |
 | `isotope_resolved` | bool | **disclosure**: is this row an isotope-resolved value, or an element value carrying an isotope label? |
 
 The first nine field names are identical to those used by this project's rate ledger

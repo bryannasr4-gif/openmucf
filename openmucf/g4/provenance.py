@@ -58,6 +58,7 @@ __all__ = [
 #: a transport code does today is an evaluation like any other, and saying so is the honest label.
 SOURCE_LIBRARIES = (
     "geant4-compiled-in", "suzuki1987", "iwamoto2025", "jendl-mund", "openmucf", "mizuno2025",
+    "mudirac130",
 )
 #: Same vocabulary as the rate ledger's schema.
 UNC_TYPES = ("stat", "exp", "theory", "theory-spread", "model", "table", "estimate", "exact")
@@ -316,8 +317,9 @@ def check_against_table(table: G4DatTable, document: ProvDocument) -> None:
                 f"Layer-2 {field_name} {ours!r} does not match Layer-1 '#{directive}' {theirs!r}"
             )
 
-    # A natural-composition row (`A = 0`) is admissible only under `A:natural_and_listed`; a table
-    # that carries one under another range is refused here as well, so the shipped package -- not
+    # A natural-composition row (`A = 0`) is admissible only under an `A` range of
+    # `A_NATURAL_ROW_RANGES`; a table that carries one under another range is refused here as
+    # well, so the shipped package -- not
     # only the standalone validator -- holds the rule.
     natural_rows(table)
 

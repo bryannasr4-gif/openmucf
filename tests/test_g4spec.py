@@ -1426,6 +1426,14 @@ def test_t83_validity_assignments_and_natural_rows():
     assert spec.natural_rows(make_table(records=with_natural)) == 1
     with pytest.raises(ValueError, match="natural_and_listed"):
         spec.natural_rows(make_table(records=with_natural, VALIDITY="Z:1-94 A:listed"))
+    # Every token of the natural-row ranges admits the row, and the refusal names each of them.
+    assert spec.A_MOST_ABUNDANT_AND_LISTED in spec.A_NATURAL_ROW_RANGES
+    for token in spec.A_NATURAL_ROW_RANGES:
+        assert spec.natural_rows(make_table(records=with_natural, VALIDITY=f"Z:1-94 A:{token}")) == 1
+    with pytest.raises(ValueError) as refused:
+        spec.natural_rows(make_table(records=with_natural, VALIDITY="Z:1-94 A:listed"))
+    for token in (spec.A_NATURAL_AND_LISTED, spec.A_MOST_ABUNDANT_AND_LISTED):
+        assert f"'A:{token}'" in str(refused.value), token
     assert spec.natural_rows(make_table(COLUMNS="Z value unc", records=((1, 0.5, 0.1),))) == 0
     assert spec.natural_rows(make_table()) == 0
 
