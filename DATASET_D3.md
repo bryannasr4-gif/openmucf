@@ -27,9 +27,8 @@ natural-composition rows.
 The input set is every (Z, A) with Z from 1 through 92 that MuDirac's bundled
 `nuclear_radii.dat` lists.
 Every run uses the same keywords: `nuclear_model: FERMI2`, `uehling_correction: TRUE`,
-`reduced_mass: TRUE`, `optimise_fermi_parameters: FALSE`, `fermi_t: 2.3`, and `radius:` set
-explicitly to the value `nuclear_radii.dat` bundles; no `electronic_config` is given, so the atom
-carries no electrons, and every other keyword is at its documented default.
+`reduced_mass: TRUE`, `optimise_fermi_parameters: FALSE`, `fermi_t: 2.3`; no `electronic_config` is given, so the atom
+carries no electrons.
 MuDirac's keyword documentation attributes its default radii to Angeli and Marinova (2013).
 The inputs are committed as `mudirac_inputs.csv`, and what MuDirac printed as `mudirac_runs.csv`,
 `mudirac_states.csv`, `mudirac_lines.csv` and `mudirac_nmax_check.csv`; `scripts/mudirac_d3.py`
@@ -40,8 +39,7 @@ The tables are rebuilt from the committed CSV files by `scripts/generate_g4data.
 byte-compared by its audit; MuDirac itself is not run in CI, and cross-compiler reproducibility of
 its output is not claimed.
 The tables are derived from the printed line energies by exact decimal sums anchored on the printed
-energy of the outermost circular state, and the derivation raises unless every derived energy lies
-within the print precision of its own printed state energy and every cross line closes.
+energy of the outermost circular state.
 `value` and `e<n>` come from the `base` run; `unc` and `u<n>` are the absolute change of the same
 quantity in the `rsig` run, whose rms radius is moved by its uncertainty in the IAEA charge-radii
 table (`charge_radii.csv`), and propagate nothing else.
