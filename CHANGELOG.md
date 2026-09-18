@@ -28,8 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Every effective-charge cell the primary prints is a committed row**
   (`data/g4/d1/zeff_audit.csv`): a test holds each printed cell to the shipped value, the cells the
-  primary underlines carry `unc_type: estimate`, and every row the primary prints carries
-  `needs_verification: false`.
+  primary underlines carry `unc_type: estimate`.
 
 ### Added (2026-09-15)
 
