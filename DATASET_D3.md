@@ -45,6 +45,8 @@ within the print precision of its own printed state energy and every cross line 
 `value` and `e<n>` come from the `base` run; `unc` and `u<n>` are the absolute change of the same
 quantity in the `rsig` run, whose rms radius is moved by its uncertainty in the IAEA charge-radii
 table (`charge_radii.csv`), and propagate nothing else.
+Where that change is below the precision MuDirac prints, the cell is 0: the radius does not move the
+value at that precision, which does not make the value exact.
 Where the bundled rms radius and that table's value differ at the fourth decimal, the generator
 prints the member; neither value is edited.
 
