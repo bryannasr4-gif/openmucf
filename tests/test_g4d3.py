@@ -354,17 +354,28 @@ def test_t104_drill_the_derivation_refuses_a_moved_line_a_moved_header_and_a_mis
         md.derive_bindings(run, missing, lines)
 
 
-def test_t104_the_keep_rule_drops_exactly_the_member_whose_default_fermi_c_is_not_real():
-    """Re-derived from the committed run table, comparison file and printed outputs: one member is
-    dropped, for the reason its sphere radius gives no real default Fermi parameter c, and no kept
-    member of the square-root range lies below that radius."""
+def test_t104_the_dropped_set_is_the_two_computed_classes_and_the_shipped_tables_hold_neither():
+    """Re-derived from the committed inputs, run table and printed outputs: the members whose default
+    Fermi parameter c is set by the mass number alone and the members whose sphere radius gives no
+    real default c are dropped, each with its own reason, and no other member is; no row of either
+    shipped table has a mass number below the square-root range."""
     out = md.load_outputs(REPO)
     dropped = md.drop_reasons(out)
+    expected = {}
+    for row in out.inputs:
+        if md.fermi2_c_from_a(row):
+            expected[row.nuclide] = md.DROP_FERMI2_FROM_A
+        elif md.fermi2_c_not_real(row):
+            expected[row.nuclide] = md.DROP_FERMI2_C
+    assert dropped == expected
+    light = [
+        (layer1.name, key) for layer1 in (KSHELL_LAYER1, LEVELS_LAYER1)
+        for key in _records(spec.parse(layer1.read_bytes().decode("ascii")))
+        if 0 < key[1] < md.FERMI2_SQRT_FROM_A
+    ]
+    assert light == []
     below = [row for row in out.inputs if md.fermi2_c_not_real(row)]
     threshold = md.fermi2_c_threshold(md.FERMI_T)
-    assert [row.nuclide for row in below] == list(dropped)
-    assert set(dropped.values()) == {md.DROP_FERMI2_C}
-    assert len(dropped) == 1
     for row in below:
         assert md.keep_failures(out, row)
         print(f"\ndropped: Z={row.z} A={row.a} sphere radius {row.radius_fm} fm below {threshold!r} fm; "
@@ -373,13 +384,17 @@ def test_t104_the_keep_rule_drops_exactly_the_member_whose_default_fermi_c_is_no
 
 
 def test_t104_drill_a_failed_run_of_another_member_is_dropped_with_its_clause(tmp_path):
+    out = md.load_outputs(REPO)
+    before = md.drop_reasons(out)
+    row = next(row for row in out.inputs if row.nuclide not in before)
+    line = next(line for line in _lines(RUNS.read_bytes().decode("ascii"))
+                if line.startswith(md.run_id(row, "base") + ","))
     root = _data_copy(tmp_path)
     runs = root / md.RUNS_RELPATH
-    runs.write_bytes(_replace_once(runs.read_bytes().decode("ascii"), NL + _R1 + NL,
-                                   NL + "H1_base,1,1,base,0,5" + NL).encode("ascii"))
+    runs.write_bytes(_replace_once(runs.read_bytes().decode("ascii"), NL + line + NL,
+                                   NL + line[: line.rindex(",")] + ",5" + NL).encode("ascii"))
     dropped = md.drop_reasons(md.load_outputs(root))
-    assert dropped[(1, 1)] == "base rc=0 err_bytes=5"
-    assert len(dropped) == 2
+    assert dropped == {**before, row.nuclide: "base rc=0 err_bytes=5"}
 
 
 # --------------------------------------------------------------------------------------------
@@ -702,7 +717,8 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("the hydrogen-like bound in percent", path, r"lies within (\d+) % of the same state", (1,),
          int(md.NMAX_BOUND * 100)),
         ("the dropped member", path, r"The generator drops `([A-Z][a-z]?\d+)`", (1,),
-         "".join(md.run_id(inputs[key], "base")[: -len("_base")] for key in dropped)),
+         "".join(md.run_id(inputs[key], "base")[: -len("_base")] for key, reason in dropped.items()
+                 if reason == md.DROP_FERMI2_C)),
         ("the tolerance factor", path, r"The tolerance is (\d+) times", (1,), md.TOL_FACTOR),
         ("the model's own uncertainty", path, r"is set to (\d+) by decision", (1,), md.SIGMA_CALC),
         ("the size floor", path, r"multiplied by (\d+\.\d+) \(the `r101` runs", (1,), str(md.SIZE_FLOOR)),

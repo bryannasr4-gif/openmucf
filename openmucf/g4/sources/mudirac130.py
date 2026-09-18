@@ -539,6 +539,11 @@ LINE_HALF_UNIT = Decimal("0.0000005")
 DROP_FERMI2_C = "FERMI2 default c not real: sphere radius below sqrt(7/3)*pi*t/(4 ln 3) at t = fermi_t"
 #: The lowest mass number for which MuDirac's documented default c is the square-root form.
 FERMI2_SQRT_FROM_A = 5
+#: Why a member is dropped when MuDirac's documented default c is set by its mass number alone.
+DROP_FERMI2_FROM_A = (
+    "FERMI2 default c set by the mass number alone (A below FERMI2_SQRT_FROM_A): the radius does not "
+    "shape the charge distribution, so unc would not propagate its uncertainty"
+)
 
 
 @dataclass(frozen=True)
@@ -829,6 +834,10 @@ def fermi2_c_threshold(fermi_t: str) -> float:
     return math.sqrt(7.0 / 3.0) * math.pi * float(fermi_t) / (4.0 * math.log(3.0))
 
 
+def fermi2_c_from_a(row: InputRow) -> bool:
+    return row.a < FERMI2_SQRT_FROM_A
+
+
 def fermi2_c_not_real(row: InputRow) -> bool:
     return row.a >= FERMI2_SQRT_FROM_A and float(row.radius_fm) < fermi2_c_threshold(row.fermi_t_fm)
 
@@ -866,10 +875,15 @@ def keep_failures(out: Outputs, row: InputRow) -> list[str]:
 
 
 def drop_reasons(out: Outputs) -> dict[tuple[int, int], str]:
-    """``{(Z, A): reason}`` of every member the keep rule drops. The reason is DROP_FERMI2_C when the
-    member's default Fermi parameter is not real at its sphere radius, else the failed clauses."""
+    """``{(Z, A): reason}`` of every member dropped. Two classes are computed from the inputs: a member
+    whose default Fermi parameter is set by its mass number alone is dropped with DROP_FERMI2_FROM_A
+    whether or not it fails the keep rule; a member the keep rule drops has DROP_FERMI2_C when its
+    default Fermi parameter is not real at its sphere radius, else the failed clauses."""
     reasons = {}
     for row in out.inputs:
+        if fermi2_c_from_a(row):
+            reasons[row.nuclide] = DROP_FERMI2_FROM_A
+            continue
         failures = keep_failures(out, row)
         if failures:
             reasons[row.nuclide] = DROP_FERMI2_C if fermi2_c_not_real(row) else "; ".join(failures)
