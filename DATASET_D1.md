@@ -38,10 +38,7 @@ upstream **git blob id** `29bd73719cd619de34ef83ca5ca076ceadf1cc5a` — upstream
 those exact bytes, so you can check the copy against `github.com/Geant4/geant4` without cloning
 Geant4 and without trusting us.
 
-Every number in the `parity` tables is **parsed out of that file at build time**.
-`make g4data` re-derives all of them, `make audit` byte-diffs the result, and the test
-suite forbids the record counts from appearing as literals anywhere in the extraction code. This
-matters more than it sounds. An earlier design note for this project recorded the capture table as
+An earlier design note for this project recorded the capture table as
 having "94 entries"; 94 is the maximum *Z*. The table has 90 records spanning 74 distinct Z. A
 number written down once is a number that drifts.
 
