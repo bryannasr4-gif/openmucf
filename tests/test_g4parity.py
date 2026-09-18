@@ -1935,6 +1935,15 @@ class DocumentPins:
     settled_by_value: list
 
 
+def zeff_covered_split(zs, zeff_table) -> tuple[set[int], set[int], set[int]]:
+    """The effective-charge entries at the capture table's Z, and their split between the
+    primary's Table III and Table IV: `(covered, in Table III, in Table IV)`. One expression,
+    called by `document_pins` and by T-94, so the two derivations cannot drift apart."""
+    covered = {int(z) for z, _ in zeff_table.records if int(z) in zs}
+    covered_iv = {z for z in covered if z >= 10}
+    return covered, covered - covered_iv, covered_iv
+
+
 def document_pins() -> DocumentPins:
     """This is the guard the D1 chain was missing, and its absence was measured rather than supposed:
     nothing in this repository read `DATASET_D1.md`, so a falsified count in it passed the entire
@@ -2043,9 +2052,7 @@ def document_pins() -> DocumentPins:
     # fallback branch -- which the vendored comment's own "and if not present from" makes false.
     # So the covered set is the whole Z set F-4's equality is against, and because the document
     # now states the split between the two tables, both halves are pinned as well.
-    zeff_covered = {int(z) for z, _ in zeff_table.records if int(z) in zs}
-    zeff_covered_iv = {z for z in zeff_covered if z >= 10}
-    zeff_covered_iii = zeff_covered - zeff_covered_iv
+    zeff_covered, zeff_covered_iii, zeff_covered_iv = zeff_covered_split(zs, zeff_table)
     zeff_uncovered = len(zeff_table.records) - len(zeff_covered)
 
     # Section 3's re-ordering disclosure, both halves. "Misplaced record" is an adjacent descent;
@@ -3375,12 +3382,12 @@ def test_t93_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate,
 
 def test_t94_every_printed_effective_charge_cell_equals_the_shipped_value_and_covers_the_documented_set():
     """(a) The printed cell is the shipped double at the primary's own precision -- exact decimal
-    equality, since the compiled-in table was transcribed from these cells. (b) A row whose printed
-    Z is not its element's Z is a misprint the table itself localizes: the printed Z is some other
-    row's Z, so the same Z is printed twice and the element column decides. (c) The set of Z the
-    audit covers is computed a second way -- as `document_pins` derives `zeff_covered`, from the
-    capture table's Z set -- and the two derivations are compared, never restated; the per-table
-    split is compared the same way. (d) The counts are printed, not asserted."""
+    equality, since the compiled-in table was transcribed from these cells. (b) The rows whose printed
+    Z is not their element's Z are exactly the misprint the document names: its Z, printed Z and
+    printed value are read from `DATASET_D1.md`'s sentence, never typed here. (c) The set of Z the
+    audit covers is computed a second way -- by `zeff_covered_split`, the helper `document_pins`
+    calls, from the capture table's Z set -- and the two derivations are compared, never
+    restated; the per-table split is compared the same way. (d) The counts are printed, not asserted."""
     audit = zeff_audit_rows()
     found = extraction()
     zeff_table, _ = committed(ZEFF_LAYER1, ZEFF_LAYER2)
@@ -3393,14 +3400,16 @@ def test_t94_every_printed_effective_charge_cell_equals_the_shipped_value_and_co
         )
 
     misprinted = {z: row.printed_z for z, row in audit.items() if row.printed_z != z}
-    for z, printed_z in misprinted.items():
-        assert printed_z in audit, (z, printed_z)
-        assert audit[printed_z].printed_z == printed_z, (z, printed_z)
+    document = (REPO / "DATASET_D1.md").read_text("utf-8")
+    ((printed_z, printed_zeff),) = re.findall(
+        r'prints the barium row as \*\*"(\d+)\(([\d.]+)\)"\*\*', document
+    )
+    (barium,) = re.findall(r"barium is Z = (\d+)", document)
+    assert misprinted == {int(barium): int(printed_z)}, (misprinted, barium, printed_z)
+    assert audit[int(barium)].printed_zeff == printed_zeff, (barium, printed_zeff)
 
     zs = sorted({z for z, _ in {(z, a) for z, a, _, _ in found.capture_records}})
-    zeff_covered = {int(z) for z, _ in zeff_table.records if int(z) in zs}
-    zeff_covered_iv = {z for z in zeff_covered if z >= 10}
-    zeff_covered_iii = zeff_covered - zeff_covered_iv
+    zeff_covered, zeff_covered_iii, zeff_covered_iv = zeff_covered_split(zs, zeff_table)
     assert set(audit) == zeff_covered
     in_iii = {z for z, row in audit.items() if "Table III" in row.locator}
     in_iv = {z for z, row in audit.items() if "Table IV" in row.locator}
