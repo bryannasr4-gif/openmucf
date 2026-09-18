@@ -461,7 +461,6 @@ fa4e454cf7376988fd9aea2dbc833169f0203cf3	DATASET_D1.md	REGISTERED: two -- the tw
 fb75dedfb605f98897d95fabd58e54396f759b86	DATASET_D1.md	REGISTERED: one -- a pronoun ('a bare one')
 ff75fbe4536b0ca4aee71784da448e67d0842e07	DATASET_D1.md	REGISTERED: 62, 150, 50, 119 -- the record keys (62, 150) and (50, 119) and the nuclide labels Sm-150 and Sn-119; the abundances beside them are T-63's rounded pins, read from the audit rows of those keys
 7a3d05bb1c1b3364e73a2a5a2a3b06e05e2401f4	DATASET_D3.md	REGISTERED: one -- 'below the one from which', a pronoun
-90a9d657a6da59b4f806274a910cf1a0845c0cba	DATASET_D3.md	REGISTERED: 0 -- the value an `unc` or `u<n>` cell holds when the `rsig` change is below the precision MuDirac prints
 0ccdf0a1a697580b0dcf6641da9f8d632e79d931	README.md	REGISTERED: 225 -- the nuclide label Ac-225
 11eca2c304568f729867dead4a32bb3a18259e9c	README.md	EXERCISED: 284 -- tests/test_energy.py::test_scientific_breakeven_is_284
 2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H
