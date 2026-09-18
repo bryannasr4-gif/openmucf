@@ -19,7 +19,7 @@ the nuclides checked when the settings were fixed.
 Each table has a row for every kept (Z, A) and, for each element whose most abundant isotope in
 MuDirac's `abundant.dat` is kept, a natural-composition row that carries that isotope's values
 under `#VALIDITY` `A:most_abundant_and_listed`.
-Of the 895 members of the input set, 894 are kept, and the tables carry 83
+Of the 895 members of the input set, 889 are kept, and the tables carry 81
 natural-composition rows.
 
 ## 2. How the values are made
@@ -57,6 +57,11 @@ same state in the run that treats the atom as hydrogen-like from that shell up
 The generator drops `He8`, the only member whose sphere radius gives no real value of the
 Fermi parameter c that MuDirac computes by default, and prints its radius beside the radius below
 which that value is not real.
+It also drops every member whose mass number is below the one from which that default depends on
+the radius: MuDirac then sets c from the mass number alone, the radius passed does not shape the
+charge distribution, and moving it could not give an uncertainty.
+An element whose most abundant isotope is dropped has no natural-composition row, so a lookup for
+it falls through to the values compiled into Geant4.
 
 ## 4. Comparison with measured energies
 
