@@ -37,7 +37,6 @@ b88d05bb2aca9c0f43716cfe5e43d760ca57fc72	ADOPTERS.md	REGISTERED: a citability ju
 1b5ffa7747e45682bd46a6847544a93d438e010d	CHANGELOG.md	REGISTERED: checked against VALID_NUMERAIRE and MUCF_CHAIN, which hold the electrical denominators and the five chain stages respectively, so the code the entry describes types wall-plug as a numeraire.
 1d8fd6bb9c6f47eaa9e08b20dd8ceec35faf95da	CHANGELOG.md	EXERCISED: tests/test_ledger_claims.py::test_unwrappable_paths_cannot_wrap
 2092be5a6d519a56ab782e80bba60924acd54c7d	CHANGELOG.md	REGISTERED: this entry's own heading; checked against the branch diff when written -- the regenerated documents differ in wording and manifest input digests only, and the suite's pass count is unchanged
-21a4215b11dbb3e5ae0560d92bbdb77ab0948ff0	CHANGELOG.md	EXERCISED:tests/test_g4parity.py::test_t95_the_estimate_marks_are_the_underlined_cells_counted_on_both_sides
 2230981652f7f2e2896294d13b50fb7040462219	CHANGELOG.md	EXERCISED: tests/test_g4parity.py::test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row
 23de6bf2d07ffe7694141568642da452b22b1986	CHANGELOG.md	REGISTERED:changelog narrative describing work already at this head; reviewed against the tree when this registry was written
 25284843c59ceef5a2d3963308d2b62dbfb50106	CHANGELOG.md	REGISTERED: read in the 2026-08-23/24 claim sweep, which enumerated this path's claim surface and re-derived each line against the tree; this one came back true as written.
