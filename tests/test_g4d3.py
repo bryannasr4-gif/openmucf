@@ -214,3 +214,164 @@ def test_t103_the_radius_disagreements_are_listed_and_left_as_bundled():
         (row,) = [r for r in rows if r.nuclide == (z, a)]
         assert row.radius_fm and row.iaea_rms_fm == table and bundled != table
     print(f"\nbundled rms against the charge-radii table at 4 decimals, differing: {listed}")
+
+
+def test_t103_the_run_table_lists_exactly_the_rendered_inputs():
+    """The committed run table holds one row per input the committed kinds render, in their order,
+    and every row names a rendered run."""
+    rows = md.load_inputs(INPUTS)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    rendered = md.expected_runs(rows, set(md.gated_nuclides(cells)))
+    runs = md.load_runs(REPO / md.RUNS_RELPATH)
+    assert [(r.run, r.z, r.a, r.kind) for r in runs.values()] == rendered
+    assert len(runs) == len(rendered)
+    print(f"\nrun table rows {len(runs)} = rendered inputs {len(rendered)}")
+
+
+# --------------------------------------------------------------------------------------------
+# T-104 -- the printed outputs and the keep rule
+# --------------------------------------------------------------------------------------------
+
+RUNS = REPO / md.RUNS_RELPATH
+STATES = REPO / md.STATES_RELPATH
+LINES = REPO / md.LINES_RELPATH
+NMAX = REPO / md.NMAX_RELPATH
+_R1 = "H1_base,1,1,base,0,0"
+_S1 = "H1_base,1,1,base,K1,1,0,1,-2530.37,9.49672e+07"
+_L1 = "H1_base,1,1,base,K1-L2,1898.185553,116589628776.002548"
+_N1 = "1,1,6,P10,-70.2398,-70.2398"
+
+OUTPUT_DRILLS = [
+    (RUNS, md.load_runs, "a carriage return", lambda t: t.replace(NL, "\r" + NL, 1),
+     md.CarriageReturnError, "contains CR"),
+    (RUNS, md.load_runs, "a renamed column", lambda t: _replace_once(t, "rc,err_bytes", "rc,err"),
+     md.HeaderError, "header is"),
+    (RUNS, md.load_runs, "an unknown kind", lambda t: _replace_once(t, NL + _R1, NL + "H1_base,1,1,bass,0,0"),
+     md.CellError, "kind 'bass'"),
+    (RUNS, md.load_runs, "a run named for another kind",
+     lambda t: _replace_once(t, NL + _R1, NL + "H1_rsig,1,1,base,0,0"), md.CellError, "does not name"),
+    (RUNS, md.load_runs, "an error size that is not a count",
+     lambda t: _replace_once(t, NL + _R1, NL + "H1_base,1,1,base,0,missing"),
+     md.CellError, "must be integers"),
+    (RUNS, md.load_runs, "a duplicated run", lambda t: _repeat_line(t, 1),
+     md.DuplicateKeyError, "duplicate run"),
+    (RUNS, md.load_runs, "rows out of order", lambda t: _swap_lines(t, 1),
+     md.OrderError, "ordered by (Z, A, kind)"),
+    (RUNS, md.load_runs, "no rows", lambda t: _lines(t)[0] + NL, md.EmptyError, "carries no rows"),
+    (STATES, md.load_states, "a state of a kind whose states are not committed",
+     lambda t: _replace_once(t, NL + _S1, NL + _S1.replace(",base,", ",ideal6,")),
+     md.CellError, "kind 'ideal6'"),
+    (STATES, md.load_states, "a state that is not an orbit",
+     lambda t: _replace_once(t, NL + _S1, NL + _S1.replace(",K1,", ",1s,")), md.CellError, "IUPAC orbit"),
+    (STATES, md.load_states, "an energy in another form",
+     lambda t: _replace_once(t, NL + _S1, NL + _S1.replace(",-2530.37,", ",-2530.37 eV,")),
+     md.CellError, "printed number"),
+    (STATES, md.load_states, "a duplicated state", lambda t: _repeat_line(t, 1),
+     md.DuplicateKeyError, "duplicate state"),
+    (STATES, md.load_states, "rows out of order", lambda t: _swap_lines(t, 1),
+     md.OrderError, "ordered by (Z, A, kind, orbit)"),
+    (LINES, md.load_lines, "a line at other decimals",
+     lambda t: _replace_once(t, NL + _L1, NL + _L1.replace(",1898.185553,", ",1898.18555,")),
+     md.CellError, "six decimals"),
+    (LINES, md.load_lines, "a line that is not orbit to orbit",
+     lambda t: _replace_once(t, NL + _L1, NL + _L1.replace(",K1-L2,", ",Ka1,")), md.CellError, "orbit-orbit"),
+    (LINES, md.load_lines, "a duplicated line", lambda t: _repeat_line(t, 1),
+     md.DuplicateKeyError, "duplicate line"),
+    (NMAX, md.load_nmax, "a shell outside the checked range",
+     lambda t: _replace_once(t, NL + _N1, NL + _N1.replace("1,1,6,P10,", "1,1,5,P10,")),
+     md.CellError, "not a checked circular state"),
+    (NMAX, md.load_nmax, "an energy in another form",
+     lambda t: _replace_once(t, NL + _N1, NL + "1,1,6,P10,-70.2398,n/a"), md.CellError, "printed number"),
+    (NMAX, md.load_nmax, "a duplicated row", lambda t: _repeat_line(t, 1),
+     md.DuplicateKeyError, "duplicate row"),
+    (NMAX, md.load_nmax, "rows out of order", lambda t: _swap_lines(t, 1),
+     md.OrderError, "ordered by (Z, A, n, orbit)"),
+]
+
+
+@pytest.mark.parametrize("source, loader, label, mutate, error, message", OUTPUT_DRILLS,
+                         ids=[f"{d[0].stem}-{d[2]}" for d in OUTPUT_DRILLS])
+def test_t104_drill_each_outputs_rule_refuses_its_fixture(
+    tmp_path, source, loader, label, mutate, error, message
+):
+    _drill(tmp_path, source, mutate, error, message, loader)
+
+
+def _data_copy(tmp_path) -> pathlib.Path:
+    """A copy of the committed D3 files under ``tmp_path``, at their relative paths."""
+    target = tmp_path / md.D3_RELDIR
+    target.mkdir(parents=True)
+    for path in D3DIR.glob("*.csv"):
+        (target / path.name).write_bytes(path.read_bytes())
+    return tmp_path
+
+
+def test_t104_drill_a_run_table_missing_a_rendered_run_is_refused(tmp_path):
+    root = _data_copy(tmp_path)
+    md.load_outputs(root)
+    runs = root / md.RUNS_RELPATH
+    lines = _lines(runs.read_bytes().decode("ascii"))
+    runs.write_bytes(NL.join(lines[:1] + lines[2:]).encode("ascii"))
+    with pytest.raises(md.CellError, match="does not list exactly the implied runs"):
+        md.load_outputs(root)
+
+
+def test_t104_the_derivation_holds_on_the_base_and_rsig_runs_of_every_kept_member():
+    out = md.load_outputs(REPO)
+    dropped = md.drop_reasons(out)
+    checked = 0
+    for row in out.inputs:
+        if row.nuclide in dropped:
+            continue
+        for kind in ("base", "rsig"):
+            run = md.run_id(row, kind)
+            bindings = md.derive_bindings(run, out.headers[run], out.lines[run])
+            assert set(bindings) == set(md.chain_states())
+            checked += 1
+    print(f"\nderivation checked on {checked} runs of {len(out.inputs) - len(dropped)} kept members")
+
+
+def test_t104_drill_the_derivation_refuses_a_moved_line_a_moved_header_and_a_missing_state():
+    out = md.load_outputs(REPO)
+    run = md.run_id(out.inputs[0], "base")
+    headers, lines = dict(out.headers[run]), dict(out.lines[run])
+    md.derive_bindings(run, headers, lines)
+    moved = dict(lines)
+    moved["K1-L3"] = format(float(lines["K1-L3"]) + 1e-5, ".6f")
+    with pytest.raises(md.DerivationError, match="cross line"):
+        md.derive_bindings(run, headers, moved)
+    shifted = dict(headers)
+    shifted["K1"] = format(float(headers["K1"]) - 0.1, ".2f")
+    with pytest.raises(md.DerivationError, match="from its printed header"):
+        md.derive_bindings(run, shifted, lines)
+    missing = {state: text for state, text in headers.items() if state != "L2"}
+    with pytest.raises(md.DerivationError, match="no printed header for L2"):
+        md.derive_bindings(run, missing, lines)
+
+
+def test_t104_the_keep_rule_drops_exactly_the_member_whose_default_fermi_c_is_not_real():
+    """Re-derived from the committed run table, comparison file and printed outputs: one member is
+    dropped, for the reason its sphere radius gives no real default Fermi parameter c, and no kept
+    member of the square-root range lies below that radius."""
+    out = md.load_outputs(REPO)
+    dropped = md.drop_reasons(out)
+    below = [row for row in out.inputs if md.fermi2_c_not_real(row)]
+    threshold = md.fermi2_c_threshold(md.FERMI_T)
+    assert [row.nuclide for row in below] == list(dropped)
+    assert set(dropped.values()) == {md.DROP_FERMI2_C}
+    assert len(dropped) == 1
+    for row in below:
+        assert md.keep_failures(out, row)
+        print(f"\ndropped: Z={row.z} A={row.a} sphere radius {row.radius_fm} fm below {threshold!r} fm; "
+              f"{md.keep_failures(out, row)}")
+    print(f"members {len(out.inputs)} kept {len(out.inputs) - len(dropped)} dropped {len(dropped)}")
+
+
+def test_t104_drill_a_failed_run_of_another_member_is_dropped_with_its_clause(tmp_path):
+    root = _data_copy(tmp_path)
+    runs = root / md.RUNS_RELPATH
+    runs.write_bytes(_replace_once(runs.read_bytes().decode("ascii"), NL + _R1 + NL,
+                                   NL + "H1_base,1,1,base,0,5" + NL).encode("ascii"))
+    dropped = md.drop_reasons(md.load_outputs(root))
+    assert dropped[(1, 1)] == "base rc=0 err_bytes=5"
+    assert len(dropped) == 2

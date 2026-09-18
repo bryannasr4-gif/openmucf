@@ -21,7 +21,7 @@ import hashlib
 import math
 import re
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from pathlib import Path
 
 PROFILE = "mudirac130"
@@ -349,14 +349,14 @@ def build_inputs(radii: bytes, abundant: bytes, iaea: bytes) -> tuple[InputRow, 
     for line in radii.decode("ascii").splitlines():
         if line.startswith("#") or not line.strip():
             continue
-        z, a, radius = line.split()
-        bundled[(int(z), int(a))] = radius
+        z_text, a_text, radius = line.split()
+        bundled[(int(z_text), int(a_text))] = radius
     most: dict[int, int] = {}
     for line in abundant.decode("ascii").splitlines():
         if line.startswith("#") or not line.strip():
             continue
-        z, a = line.split()
-        most[int(z)] = int(a)
+        z_text, a_text = line.split()
+        most[int(z_text)] = int(a_text)
     table = {(int(r["z"]), int(r["a"])): r for r in csv.DictReader(iaea.decode("ascii").splitlines())}
     rows = []
     for (z, a), radius in sorted(bundled.items()):
@@ -513,3 +513,415 @@ def mudirac_argv(binary: str, infile: str) -> list[str]:
     """The one command line a run uses: the binary and its input file, never a second argument --
     the second argument is the only route by which MuDirac reads measured energies."""
     return [binary, infile]
+
+
+# --------------------------------------------------------------------------------------------
+# the printed outputs
+# --------------------------------------------------------------------------------------------
+
+RUNS_COLUMNS = ("run", "Z", "A", "kind", "rc", "err_bytes")
+STATES_COLUMNS = ("run", "Z", "A", "kind", "state", "n", "l", "s", "binding_eV", "total_eV")
+LINES_COLUMNS = ("run", "Z", "A", "kind", "line", "delta_e_eV", "w12_per_s")
+NMAX_COLUMNS = ("Z", "A", "n", "state", "full_binding_eV", "ideal_binding_eV")
+
+_ORBIT = re.compile(r"[K-Z][0-9]+")
+_COUNT = re.compile(r"0|[1-9][0-9]*")
+_SIGNED_COUNT = re.compile(r"0|-?[1-9][0-9]*")
+#: A state energy as MuDirac prints it: six significant digits, in either %g form.
+_PRINTED = re.compile(r"-?[0-9]+(\.[0-9]+)?(e[+-][0-9]+)?")
+#: A line energy as MuDirac prints it at the precision the inputs request.
+_LINE_ENERGY = re.compile(r"[0-9]+\.[0-9]{6}")
+#: Half a unit of the last decimal a line energy is printed with, in eV.
+LINE_HALF_UNIT = Decimal("0.0000005")
+#: Why a nuclide the keep rule refuses is dropped, when its failure is that the Fermi parameter c
+#: MuDirac computes by default from the sphere radius is not a real number.
+DROP_FERMI2_C = "FERMI2 default c not real: sphere radius below sqrt(7/3)*pi*t/(4 ln 3) at t = fermi_t"
+#: The lowest mass number for which MuDirac's documented default c is the square-root form.
+FERMI2_SQRT_FROM_A = 5
+
+
+@dataclass(frozen=True)
+class RunRow:
+    run: str
+    z: int
+    a: int
+    kind: str
+    rc: int
+    err_bytes: int
+
+    @property
+    def clean(self) -> bool:
+        return self.rc == 0 and self.err_bytes == 0
+
+
+@dataclass(frozen=True)
+class NmaxRow:
+    z: int
+    a: int
+    n: int
+    state: str
+    full: str
+    ideal: str
+
+
+@dataclass(frozen=True)
+class Outputs:
+    """The committed run table, printed state headers, printed lines and hydrogen-like comparison."""
+
+    inputs: tuple[InputRow, ...]
+    runs: dict[str, RunRow]
+    #: ``{run: {orbit: printed header energy E}}`` of every base, rsig and r101 run.
+    headers: dict[str, dict[str, str]]
+    #: ``{run: {line: printed transition energy}}`` of the same runs.
+    lines: dict[str, dict[str, str]]
+    nmax: tuple[NmaxRow, ...]
+
+
+def _orbit_order(state: str) -> tuple[int, int]:
+    return (ord(state[0]), int(state[1:]))
+
+
+def _run_key(z: int, a: int, kind: str) -> tuple[int, int, int]:
+    return (z, a, COMMITTED_KINDS.index(kind))
+
+
+def _nuclide_kind(where: str, r: dict[str, str], kinds: tuple[str, ...]) -> tuple[int, int, str]:
+    z, a = integer(r["Z"], where, "Z"), integer(r["A"], where, "A")
+    if r["kind"] not in kinds:
+        raise CellError(f"{where}: kind {r['kind']!r} is not one of {kinds!r}")
+    return z, a, r["kind"]
+
+
+def load_runs(path: Path) -> dict[str, RunRow]:
+    """Parse ``mudirac_runs.csv``: one row per committed run, ordered by (Z, A, kind order)."""
+    out: dict[str, RunRow] = {}
+    previous: tuple[int, int, int] | None = None
+    for where, r in read_rows(path, RUNS_COLUMNS):
+        z, a, kind = _nuclide_kind(where, r, COMMITTED_KINDS)
+        if not r["run"].endswith(f"{a}_{kind}"):
+            raise CellError(f"{where}: run {r['run']!r} does not name A={a} and kind {kind}")
+        if not _SIGNED_COUNT.fullmatch(r["rc"]) or not _COUNT.fullmatch(r["err_bytes"]):
+            raise CellError(
+                f"{where}: rc and err_bytes must be integers, got {r['rc']!r}, {r['err_bytes']!r}"
+            )
+        if r["run"] in out:
+            raise DuplicateKeyError(f"{where}: duplicate run {r['run']!r}")
+        order = _run_key(z, a, kind)
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, kind)")
+        previous = order
+        out[r["run"]] = RunRow(r["run"], z, a, kind, int(r["rc"]), int(r["err_bytes"]))
+    return out
+
+
+def load_states(path: Path) -> dict[str, dict[str, str]]:
+    """Parse ``mudirac_states.csv``: printed header energies, by run then orbit, ordered."""
+    out: dict[str, dict[str, str]] = {}
+    previous: tuple[int, int, int, int, int] | None = None
+    for where, r in read_rows(path, STATES_COLUMNS):
+        z, a, kind = _nuclide_kind(where, r, PRINTED_KINDS)
+        if not _ORBIT.fullmatch(r["state"]):
+            raise CellError(f"{where}: state must be an IUPAC orbit, got {r['state']!r}")
+        for column in ("n", "l", "s"):
+            if not _SIGNED_COUNT.fullmatch(r[column]):
+                raise CellError(f"{where}: {column} must be an integer, got {r[column]!r}")
+        for column in ("binding_eV", "total_eV"):
+            if not _PRINTED.fullmatch(r[column]):
+                raise CellError(f"{where}: {column} must be a printed number, got {r[column]!r}")
+        if r["state"] in out.get(r["run"], {}):
+            raise DuplicateKeyError(f"{where}: duplicate state {r['run']} {r['state']}")
+        order = (*_run_key(z, a, kind), *_orbit_order(r["state"]))
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, kind, orbit)")
+        previous = order
+        out.setdefault(r["run"], {})[r["state"]] = r["binding_eV"]
+    return out
+
+
+def load_lines(path: Path) -> dict[str, dict[str, str]]:
+    """Parse ``mudirac_lines.csv``: printed line energies, by run then line, runs ordered."""
+    out: dict[str, dict[str, str]] = {}
+    previous: tuple[int, int, int] | None = None
+    for where, r in read_rows(path, LINES_COLUMNS):
+        z, a, kind = _nuclide_kind(where, r, PRINTED_KINDS)
+        if not _LINE.fullmatch(r["line"]):
+            raise CellError(f"{where}: line must be orbit-orbit, got {r['line']!r}")
+        if not _LINE_ENERGY.fullmatch(r["delta_e_eV"]):
+            raise CellError(f"{where}: delta_e_eV must be printed with six decimals, got {r['delta_e_eV']!r}")
+        if not _UNSIGNED_DECIMAL.fullmatch(r["w12_per_s"]):
+            raise CellError(f"{where}: w12_per_s must be a printed decimal, got {r['w12_per_s']!r}")
+        if r["line"] in out.get(r["run"], {}):
+            raise DuplicateKeyError(f"{where}: duplicate line {r['run']} {r['line']}")
+        order = _run_key(z, a, kind)
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, kind)")
+        previous = order
+        out.setdefault(r["run"], {})[r["line"]] = r["delta_e_eV"]
+    return out
+
+
+def load_nmax(path: Path) -> tuple[NmaxRow, ...]:
+    """Parse ``mudirac_nmax_check.csv``: both circular states of every checked shell, per member."""
+    out: list[NmaxRow] = []
+    previous: tuple[int, int, int, int, int] | None = None
+    for where, r in read_rows(path, NMAX_COLUMNS):
+        z, a, n = integer(r["Z"], where, "Z"), integer(r["A"], where, "A"), integer(r["n"], where, "n")
+        if not IDEAL_FROM <= n <= N_MAX or r["state"] not in circular_orbits(n):
+            raise CellError(f"{where}: shell {n} state {r['state']!r} is not a checked circular state")
+        for column in ("full_binding_eV", "ideal_binding_eV"):
+            if r[column] and not _PRINTED.fullmatch(r[column]):
+                raise CellError(f"{where}: {column} must be empty or a printed number, got {r[column]!r}")
+        order = (z, a, n, *_orbit_order(r["state"]))
+        if previous is not None and order == previous:
+            raise DuplicateKeyError(f"{where}: duplicate row ({z}, {a}, {r['state']})")
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, n, orbit)")
+        previous = order
+        out.append(NmaxRow(z, a, n, r["state"], r["full_binding_eV"], r["ideal_binding_eV"]))
+    return tuple(out)
+
+
+def expected_runs(
+    inputs: tuple[InputRow, ...], validation: set[tuple[int, int]]
+) -> list[tuple[str, int, int, str]]:
+    """Every committed run the input set implies, ``(run, Z, A, kind)``, in the run table's order."""
+    return [(run_id(row, kind), row.z, row.a, kind) for row in inputs for kind in run_kinds(row, validation)]
+
+
+def load_outputs(root: Path) -> Outputs:
+    """Every committed output CSV, cross-checked against the input set: the run table holds exactly
+    the runs the inputs imply, every printed-kind run's states and lines belong to a listed run, and
+    the hydrogen-like comparison covers every member's checked shells."""
+    root = Path(root)
+    inputs = load_inputs(root / INPUTS_RELPATH)
+    cells, _origins = load_validation(root / CELLS_RELPATH, root / ORIGIN_RELPATH)
+    runs = load_runs(root / RUNS_RELPATH)
+    expected = expected_runs(inputs, set(gated_nuclides(cells)))
+    listed = [(r.run, r.z, r.a, r.kind) for r in runs.values()]
+    if listed != expected:
+        missing = sorted(set(expected) - set(listed))[:3]
+        extra = sorted(set(listed) - set(expected))[:3]
+        raise CellError(f"{Path(RUNS_RELPATH).name} does not list exactly the implied runs: "
+                        f"missing {missing}, unexpected {extra}")
+    headers = load_states(root / STATES_RELPATH)
+    lines = load_lines(root / LINES_RELPATH)
+    for name, table in ((STATES_RELPATH, headers), (LINES_RELPATH, lines)):
+        stray = sorted(run for run in table if run not in runs or runs[run].kind not in PRINTED_KINDS)
+        if stray:
+            raise CellError(
+                f"{Path(name).name} carries runs the run table does not list as printed: {stray[:3]}"
+            )
+    nmax = load_nmax(root / NMAX_RELPATH)
+    keys = [(r.z, r.a, r.n, r.state) for r in nmax]
+    implied = [(row.z, row.a, n, state) for row in inputs for n in range(IDEAL_FROM, N_MAX + 1)
+               for state in circular_orbits(n)]
+    if keys != implied:
+        raise CellError(
+            f"{Path(NMAX_RELPATH).name} does not hold both circular states of every checked shell"
+        )
+    return Outputs(inputs, runs, headers, lines, nmax)
+
+
+# --------------------------------------------------------------------------------------------
+# the derivation of the tables from the printed strings
+# --------------------------------------------------------------------------------------------
+
+#: Enough digits that no quotient below is rounded before its final conversion to a float.
+_PRECISION = 50
+
+
+class DerivationError(Mudirac130Error):
+    """A run's printed states and lines do not give binding energies within their print precision."""
+
+
+def half_unit_6sig(text: str) -> Decimal:
+    """Half a unit of the sixth significant digit of a printed state energy."""
+    return Decimal(5) * Decimal(10) ** (Decimal(text).adjusted() - 6)
+
+
+def upper_chain_lines() -> list[str]:
+    """The lines from orbit 2l+1 of shell n to orbit 2l+3 of shell n+1, from K1 outward."""
+    return [f"{orbit(n, True)}-{orbit(n + 1, True)}" for n in range(1, N_MAX)]
+
+
+def lower_chain_lines() -> list[str]:
+    """The lines from orbit 2l of shell n to orbit 2l+2 of shell n+1, from K1 outward."""
+    return [f"{orbit(n, False)}-{orbit(n + 1, False)}" for n in range(1, N_MAX)]
+
+
+def cross_lines() -> list[str]:
+    """The lines from orbit 2l+1 of shell n to orbit 2l+2 of shell n+1, n = 2 .. N_MAX - 1."""
+    return [f"{orbit(n, True)}-{orbit(n + 1, False)}" for n in range(2, N_MAX)]
+
+
+def chain_states() -> list[str]:
+    """Every circular orbit of shells 1 .. N_MAX, from K1 outward."""
+    return [state for n in range(1, N_MAX + 1) for state in circular_orbits(n)]
+
+
+def header_bound(header: str, anchor: str) -> Decimal:
+    """How far a derived binding energy may lie from its printed header: half a sixth-digit unit of
+    the header and of the anchor, plus half a printed unit for each line summed along the chain."""
+    return half_unit_6sig(header) + half_unit_6sig(anchor) + 2 * N_MAX * LINE_HALF_UNIT
+
+
+def derive_bindings(run: str, headers: dict[str, str], lines: dict[str, str]) -> dict[str, Decimal]:
+    """Positive binding energies (eV) of every circular orbit of one run, from its printed strings.
+
+    Anchor: orbit 2l+1 of shell N_MAX, B = -(its header). Upper orbits downward by adding each
+    printed line; lower orbits outward from K1 by subtracting each. Raises unless every derived
+    energy lies within ``header_bound`` of its own header and every cross line closes within the
+    rounding of the lines summed around it.
+    """
+    for state in chain_states():
+        if state not in headers:
+            raise DerivationError(f"{run}: no printed header for {state}")
+    for line in upper_chain_lines() + lower_chain_lines() + cross_lines():
+        if line not in lines:
+            raise DerivationError(f"{run}: no printed line {line}")
+    anchor = orbit(N_MAX, True)
+    with localcontext() as context:
+        context.prec = _PRECISION
+        b: dict[str, Decimal] = {anchor: -Decimal(headers[anchor])}
+        for n in range(N_MAX - 1, 0, -1):
+            lower, upper = orbit(n, True), orbit(n + 1, True)
+            b[lower] = b[upper] + Decimal(lines[f"{lower}-{upper}"])
+        for n in range(1, N_MAX):
+            lower, upper = orbit(n, False), orbit(n + 1, False)
+            b[upper] = b[lower] - Decimal(lines[f"{lower}-{upper}"])
+        for state in chain_states():
+            gap = abs(b[state] + Decimal(headers[state]))
+            if gap > header_bound(headers[state], headers[anchor]):
+                raise DerivationError(f"{run}: derived {state} lies {gap} eV from its printed header")
+        closure = (2 * N_MAX + 1) * LINE_HALF_UNIT
+        for line in cross_lines():
+            lower, upper = line.split("-")
+            residual = abs(b[lower] - b[upper] - Decimal(lines[line]))
+            if residual > closure:
+                raise DerivationError(f"{run}: cross line {line} closes to {residual} eV")
+    return b
+
+
+def level_mean(b: dict[str, Decimal], n: int) -> Decimal:
+    """The (2j+1)-weighted mean binding energy (eV) of the circular state of shell ``n`` >= 2."""
+    ell = n - 1
+    with localcontext() as context:
+        context.prec = _PRECISION
+        return (2 * ell * b[orbit(n, False)] + (2 * ell + 2) * b[orbit(n, True)]) / (4 * ell + 2)
+
+
+def quantities(b: dict[str, Decimal]) -> tuple[Decimal, tuple[Decimal, ...]]:
+    """``(K, (e2 .. e<N_MAX>))`` in keV: the 1s binding energy and each circular level's mean."""
+    with localcontext() as context:
+        context.prec = _PRECISION
+        return b["K1"] / 1000, tuple(level_mean(b, n) / 1000 for n in range(2, N_MAX + 1))
+
+
+# --------------------------------------------------------------------------------------------
+# which nuclides the tables keep
+# --------------------------------------------------------------------------------------------
+
+
+def fermi2_c_threshold(fermi_t: str) -> float:
+    """The sphere radius (fm) below which MuDirac's documented default Fermi parameter
+    c = sqrt(R^2 - 7/3 (pi t / (4 ln 3))^2) is not a real number."""
+    return math.sqrt(7.0 / 3.0) * math.pi * float(fermi_t) / (4.0 * math.log(3.0))
+
+
+def fermi2_c_not_real(row: InputRow) -> bool:
+    return row.a >= FERMI2_SQRT_FROM_A and float(row.radius_fm) < fermi2_c_threshold(row.fermi_t_fm)
+
+
+def keep_failures(out: Outputs, row: InputRow) -> list[str]:
+    """Every clause of the keep rule ``row`` fails; empty when it is kept.
+
+    The base, rsig and hydrogen-like runs exit 0 with an empty error file; for every checked shell
+    both circular states of the base run lie within NMAX_BOUND (relative) of the hydrogen-like run's;
+    the derivation holds on the base and rsig runs.
+    """
+    failures = []
+    for kind in ("base", "rsig", *IDEAL_KINDS):
+        run = out.runs[run_id(row, kind)]
+        if not run.clean:
+            failures.append(f"{kind} rc={run.rc} err_bytes={run.err_bytes}")
+    for check in out.nmax:
+        if check.z != row.z or check.a != row.a:
+            continue
+        if not check.full or not check.ideal:
+            failures.append(f"shell {check.n} {check.state} header missing")
+            continue
+        with localcontext() as context:
+            context.prec = _PRECISION
+            relative = abs(Decimal(check.full) - Decimal(check.ideal)) / abs(Decimal(check.ideal))
+        if relative >= NMAX_BOUND:
+            failures.append(f"shell {check.n} {check.state} differs from hydrogen-like by {relative:.6f}")
+    for kind in ("base", "rsig"):
+        name = run_id(row, kind)
+        try:
+            derive_bindings(name, out.headers.get(name, {}), out.lines.get(name, {}))
+        except DerivationError as error:
+            failures.append(str(error))
+    return failures
+
+
+def drop_reasons(out: Outputs) -> dict[tuple[int, int], str]:
+    """``{(Z, A): reason}`` of every member the keep rule drops. The reason is DROP_FERMI2_C when the
+    member's default Fermi parameter is not real at its sphere radius, else the failed clauses."""
+    reasons = {}
+    for row in out.inputs:
+        failures = keep_failures(out, row)
+        if failures:
+            reasons[row.nuclide] = DROP_FERMI2_C if fermi2_c_not_real(row) else "; ".join(failures)
+    return reasons
+
+
+# --------------------------------------------------------------------------------------------
+# the two tables
+# --------------------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class TableRow:
+    """One (Z, A) row of both tables; ``carries`` is the isotope an A = 0 row copies (else A)."""
+
+    z: int
+    a: int
+    carries: int
+    k: float
+    k_unc: float
+    levels: tuple[float, ...]
+    level_uncs: tuple[float, ...]
+
+
+def table_rows(out: Outputs) -> tuple[list[TableRow], dict[tuple[int, int], str]]:
+    """The rows both tables carry, ascending by (Z, A), and the dropped members with their reasons.
+
+    Every kept member gives its (Z, A) row; the (Z, 0) row of a Z copies the row of the isotope the
+    abundance file names for it, when that isotope is kept.
+    """
+    dropped = drop_reasons(out)
+    isotopes: list[TableRow] = []
+    for row in out.inputs:
+        if row.nuclide in dropped:
+            continue
+        base, moved = (derive_bindings(run_id(row, kind), out.headers[run_id(row, kind)],
+                                       out.lines[run_id(row, kind)]) for kind in ("base", "rsig"))
+        k, levels = quantities(base)
+        k_moved, levels_moved = quantities(moved)
+        isotopes.append(TableRow(
+            row.z, row.a, row.a, float(k), float(abs(k_moved - k)),
+            tuple(float(e) for e in levels),
+            tuple(float(abs(m - e)) for m, e in zip(levels_moved, levels, strict=True)),
+        ))
+    most: dict[int, int] = {}
+    for row in out.inputs:
+        if most.setdefault(row.z, row.most_abundant) != row.most_abundant:
+            raise CellError(f"Z={row.z} names two most abundant isotopes")
+    kept = {(r.z, r.a): r for r in isotopes}
+    rows = list(isotopes)
+    for z, a in sorted(most.items()):
+        if (z, a) in kept:
+            r = kept[(z, a)]
+            rows.append(TableRow(z, 0, a, r.k, r.k_unc, r.levels, r.level_uncs))
+    rows.sort(key=lambda r: (r.z, r.a))
+    return rows, dropped

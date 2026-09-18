@@ -99,7 +99,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         print(f"  {run} rc={rc} err_bytes={err}")
 
 
-def _state_headers(directory: Path) -> dict[str, tuple[str, str, str, str, str]]:
+def _state_headers(directory: Path) -> dict[str, tuple[str, ...]]:
     """``{orbit: (n, l, s, E, E + mc^2)}`` from every state file of one run, as printed."""
     out = {}
     for path in directory.iterdir():
