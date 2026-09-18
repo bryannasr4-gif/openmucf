@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the D3 energy tables (2026-09-18)
+
+- **The D3 tables of the `mudirac130` profile, `k_shell_energy` and `level_energy`**
+  (`data/g4/d3/`), generated from the MuDirac inputs and printed outputs committed beside them.
+  The change moves the dataset's `#VERSION` to 0.4.0.
+
 ### Added -- profile selection in the overlay (2026-09-15)
 
 - **A patched build selects the profile it reads through with `G4MUONICDATA_PROFILE`**: `parity`
@@ -36,8 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transcriptions of Table 1 and Table 3 of Mizuno et al.**
   Enriched and mononuclidic nuclides are keyed by mass number and natural-composition targets by
   `A = 0` under `A:natural_and_listed`, and every value is carried as the primary prints it.
-  The change moves
-  the dataset's `#VERSION` to 0.3.0.
 - **The dataset archive in Geant4's layout**: it unpacks to the `G4MuonicData<version>` directory
   and carries generated `README` and `History` members (T-81, T-82).
 - **The reader keyed by profile**: tables are keyed by (`#PROFILE`, `#TABLE`).

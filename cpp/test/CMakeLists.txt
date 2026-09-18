@@ -291,6 +291,80 @@ g4muonicdata_validity_case(validate_validity_without_range "A"
 g4muonicdata_validity_case(validate_validity_assigned_twice "A:listed A:natural_and_listed"
   "V-15 FAIL 'd1_capture.evaluated.g4dat' #VALIDITY assigns 'A' twice\n")
 
+# The D3 energy tables of the mudirac130 profile: V-14 over a seam parity carries no table in, and
+# V-15 and V-16 over the two tables. Every directory below is assembled at configure time from the
+# shipped D1 pair and the shipped D3 files; a changed member is one stated edit of a shipped file.
+set(G4MUONICDATA_D3_KSHELL "${G4MUONICDATA_D3_DIR}/d3_kshell.mudirac130.g4dat")
+set(G4MUONICDATA_D3_LEVELS "${G4MUONICDATA_D3_DIR}/d3_levels.mudirac130.g4dat")
+foreach(member IN ITEMS "${G4MUONICDATA_D3_KSHELL}" "${G4MUONICDATA_D3_LEVELS}")
+  if(NOT EXISTS "${member}")
+    message(FATAL_ERROR "the D3 case needs ${member}, which is not in the tree")
+  endif()
+endforeach()
+
+# Write `text` as `name` in `dir`, LF on every platform (see g4muonicdata_validity_case above).
+function(g4muonicdata_write_member dir name text)
+  foreach(marker IN ITEMS "@" "#cmakedefine")
+    string(FIND "${text}" "${marker}" at)
+    if(NOT at EQUAL -1)
+      message(FATAL_ERROR "${name} carries '${marker}', which configure_file would rewrite")
+    endif()
+  endforeach()
+  file(WRITE "${CMAKE_BINARY_DIR}/${name}.in" "${text}")
+  configure_file("${CMAKE_BINARY_DIR}/${name}.in" "${dir}/${name}" @ONLY NEWLINE_STYLE LF)
+endfunction()
+
+# The full shipped set: every profile, V-14 naming all three, V-16 passing over mudirac130.
+add_test(NAME validate_d3_profiles COMMAND g4muonicdata_validate ${G4MUONICDATA_VALIDATE_ARGS})
+set_tests_properties(validate_d3_profiles PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-14 PASS profiles=mizuno2025,mudirac130,parity pairs=[0-9]+\nV-15 PASS [^\n]*\nV-16 PASS profiles=mudirac130 keys=[0-9]+\n"
+  FAIL_REGULAR_EXPRESSION " FAIL ")
+
+# The level table without its first record: the key sets differ, and V-16 names the first key.
+set(dir "${CMAKE_BINARY_DIR}/d3_key_sets_differ")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_SHIPPED_FILES} "${G4MUONICDATA_D3_KSHELL}" DESTINATION "${dir}")
+file(READ "${G4MUONICDATA_D3_LEVELS}" levels)
+string(REGEX MATCH "\n[^#\n][^\n]*\n" first_record "${levels}")
+if(first_record STREQUAL "")
+  message(FATAL_ERROR "d3_levels.mudirac130.g4dat has no record line")
+endif()
+string(FIND "${levels}" "${first_record}" at)
+string(LENGTH "${first_record}" length)
+string(SUBSTRING "${levels}" 0 ${at} head)
+math(EXPR rest_at "${at} + ${length} - 1")
+string(SUBSTRING "${levels}" ${rest_at} -1 tail)
+g4muonicdata_write_member("${dir}" "d3_levels.mudirac130.g4dat" "${head}${tail}")
+add_test(NAME validate_d3_key_sets_differ
+         COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_d3_key_sets_differ PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-16 FAIL '#PROFILE mudirac130': k_shell_energy and level_energy differ first at key [0-9]+-[0-9]+ [(]carried by k_shell_energy only[)]\n")
+
+# The k-shell table alone beside the D1 pair: V-16 names the missing table.
+set(dir "${CMAKE_BINARY_DIR}/d3_one_table")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_SHIPPED_FILES} "${G4MUONICDATA_D3_KSHELL}" DESTINATION "${dir}")
+add_test(NAME validate_d3_one_table
+         COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_d3_one_table PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-16 FAIL '#PROFILE mudirac130' carries '#TABLE k_shell_energy' but not '#TABLE level_energy'\n")
+
+# The k-shell table's A = 0 rows under A:listed: V-15 names the range.
+set(dir "${CMAKE_BINARY_DIR}/d3_natural_under_listed")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_SHIPPED_FILES} "${G4MUONICDATA_D3_LEVELS}" DESTINATION "${dir}")
+file(READ "${G4MUONICDATA_D3_KSHELL}" kshell)
+string(FIND "${kshell}" " A:most_abundant_and_listed\n" at)
+if(at EQUAL -1)
+  message(FATAL_ERROR "d3_kshell.mudirac130.g4dat does not assign A:most_abundant_and_listed")
+endif()
+string(REPLACE " A:most_abundant_and_listed\n" " A:listed\n" kshell "${kshell}")
+g4muonicdata_write_member("${dir}" "d3_kshell.mudirac130.g4dat" "${kshell}")
+add_test(NAME validate_d3_natural_under_listed
+         COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_d3_natural_under_listed PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-15 FAIL under A:listed: 'd3_kshell.mudirac130.g4dat' carries [0-9]+ A = 0 row")
+
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
 # enabled (and FMA on x86-64), and the figures compared with the document.
 if(G4MUONICDATA_GNU_LIKE)

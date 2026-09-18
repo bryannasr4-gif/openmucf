@@ -1696,12 +1696,13 @@ def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
     each one and check the alarm sounds -- an artifact accidentally left off the list, or one whose
     regeneration silently reproduces the corruption, passes every other test in this file.
     """
+    d3dir = REPO / "data" / "g4" / "d3"
     artifacts = sorted(D1DIR.glob("d1_*.g4dat")) + sorted(D1DIR.glob("*.prov.json")) + [
         D1DIR / "geant4_add_dataset.snippet"
-    ]
+    ] + sorted(d3dir.glob("d3_*.g4dat")) + sorted(d3dir.glob("*.prov.json"))
     # The files found on disk are exactly the ones the generator writes: a generated file the
     # globs miss, or a stray file they catch, would make this drill prove less than it claims.
-    assert set(artifacts) == set(generator_module().build_d1_artifacts()[0]), [p.name for p in artifacts]
+    assert set(artifacts) == set(generator_module().build_dataset_artifacts()[0]), [p.name for p in artifacts]
 
     def audit() -> subprocess.CompletedProcess:
         return subprocess.run(
@@ -2651,9 +2652,13 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     is the MD5SUM the committed snippet declares.
     """
     generator = generator_module()
-    _, archive = generator.build_d1_artifacts()
-    directory = emit.dataset_directory(generator.DATASET_NAME, generator.D1_VERSION)
-    pairs = ((CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2), (MIZUNO_LAYER1, MIZUNO_LAYER2))
+    _, archive = generator.build_dataset_artifacts()
+    directory = emit.dataset_directory(generator.DATASET_NAME, generator.DATASET_VERSION)
+    pairs = (
+        (CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2), (MIZUNO_LAYER1, MIZUNO_LAYER2),
+        (generator.D3_KSHELL_LAYER1, generator.D3_KSHELL_LAYER2),
+        (generator.D3_LEVELS_LAYER1, generator.D3_LEVELS_LAYER2),
+    )
     committed = [path.name for pair in pairs for path in pair]
     with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
         entries = opened.getmembers()
@@ -2678,7 +2683,7 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
         (line,) = [text for text in readme.splitlines() if text.startswith(f"  - {layer1.name}:")]
         assert line.endswith(f", {len(document.rows)} records"), line
     assert history.splitlines()[0] == f"History for {generator.DATASET_NAME} files:"
-    assert generator.D1_VERSION in history
+    assert generator.DATASET_VERSION in history
 
     snippet = (D1DIR / "geant4_add_dataset.snippet").read_text("ascii")
     declared = re.search(r"^\s*MD5SUM\s+([0-9a-f]{32})$", snippet, re.MULTILINE)

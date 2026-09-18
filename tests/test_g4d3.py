@@ -6,11 +6,14 @@ Every count here is derived at run time from the committed files; none is writte
 
 from __future__ import annotations
 
+import json
 import pathlib
 import re
+from decimal import Decimal, localcontext
 
 import pytest
 
+from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import mudirac130 as md
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -375,3 +378,186 @@ def test_t104_drill_a_failed_run_of_another_member_is_dropped_with_its_clause(tm
     dropped = md.drop_reasons(md.load_outputs(root))
     assert dropped[(1, 1)] == "base rc=0 err_bytes=5"
     assert len(dropped) == 2
+
+
+# --------------------------------------------------------------------------------------------
+# T-105 -- the two tables, re-derived by an independent route
+# --------------------------------------------------------------------------------------------
+
+KSHELL_LAYER1 = D3DIR / f"d3_kshell.{md.PROFILE}.g4dat"
+KSHELL_LAYER2 = D3DIR / f"d3_kshell.{md.PROFILE}.prov.json"
+LEVELS_LAYER1 = D3DIR / f"d3_levels.{md.PROFILE}.g4dat"
+LEVELS_LAYER2 = D3DIR / f"d3_levels.{md.PROFILE}.prov.json"
+_CARRIES = re.compile(r"^Z=([1-9][0-9]*) A=0 [(]carries A=([1-9][0-9]*)[)]$")
+
+
+def _shipped(layer1: pathlib.Path, layer2: pathlib.Path):
+    table = spec.parse(layer1.read_bytes().decode("ascii"))
+    document = provenance.from_json_obj(json.loads(layer2.read_bytes().decode("ascii")))
+    return table, document
+
+
+def _records(table) -> dict[tuple[int, int], tuple]:
+    return {(record[0], record[1]): tuple(record[2:]) for record in table.records}
+
+
+def _carried(document) -> dict[tuple[int, int], int]:
+    """``{(Z, A): the isotope the row's values belong to}``, read from each row's validity range."""
+    out = {}
+    for key, row in document.rows.items():
+        z, a = (int(part) for part in key.split("-"))
+        match = _CARRIES.match(row.validity_range)
+        out[(z, a)] = int(match.group(2)) if a == 0 else a
+        assert (a == 0) is bool(match), (key, row.validity_range)
+    return out
+
+
+def _header_binding(headers: dict[str, str], state: str) -> Decimal:
+    return -Decimal(headers[state])
+
+
+def _header_bound(headers: dict[str, str], state: str) -> Decimal:
+    return md.header_bound(headers[state], headers[md.orbit(md.N_MAX, True)])
+
+
+def _from_headers(headers: dict[str, str]) -> list[tuple[Decimal, Decimal]]:
+    """``[(quantity, bound)]`` in keV for K then e2 .. e<N_MAX>, from the printed state headers alone:
+    each quantity with the largest distance the derivation may put between it and this value."""
+    with localcontext() as context:
+        context.prec = 50
+        out = [(_header_binding(headers, "K1") / 1000, _header_bound(headers, "K1") / 1000)]
+        for n in range(2, md.N_MAX + 1):
+            ell = n - 1
+            lower, upper = md.orbit(n, False), md.orbit(n, True)
+            mean = (2 * ell * _header_binding(headers, lower)
+                    + (2 * ell + 2) * _header_binding(headers, upper)) / (4 * ell + 2)
+            bound = max(_header_bound(headers, lower), _header_bound(headers, upper))
+            out.append((mean / 1000, bound / 1000))
+    return out
+
+
+def _within(value: float, expected: Decimal, bound: Decimal) -> bool:
+    """``value`` (as shipped, a double) within ``bound`` of ``expected``, allowing the double's own
+    rounding of a decimal quotient."""
+    shipped = Decimal(repr(value))
+    return abs(shipped - expected) <= bound + abs(expected) * Decimal("1e-15")
+
+
+def test_t105_every_value_and_unc_lies_within_the_header_precision_of_the_state_headers():
+    out = md.load_outputs(REPO)
+    inputs = {row.nuclide: row for row in out.inputs}
+    kshell, kshell_doc = _shipped(KSHELL_LAYER1, KSHELL_LAYER2)
+    levels, levels_doc = _shipped(LEVELS_LAYER1, LEVELS_LAYER2)
+    k_records, level_records = _records(kshell), _records(levels)
+    carried = _carried(kshell_doc)
+    assert carried == _carried(levels_doc)
+    checked = 0
+    for (z, a), (value, unc) in k_records.items():
+        source = inputs[(z, carried[(z, a)])]
+        base = _from_headers(out.headers[md.run_id(source, "base")])
+        moved = _from_headers(out.headers[md.run_id(source, "rsig")])
+        shipped = [value, *level_records[(z, a)][: md.N_MAX - 1]]
+        shipped_unc = [unc, *level_records[(z, a)][md.N_MAX - 1 :]]
+        assert len(shipped) == len(shipped_unc) == len(base) == md.N_MAX
+        for got, got_unc, (quantity, bound), (quantity_moved, bound_moved) in zip(
+            shipped, shipped_unc, base, moved, strict=True
+        ):
+            assert _within(got, quantity, bound), ((z, a), got, quantity, bound)
+            assert _within(got_unc, abs(quantity_moved - quantity), bound + bound_moved), (
+                (z, a), got_unc
+            )
+            checked += 1
+    print(f"\nvalues and uncs checked against the headers: {checked} of {len(k_records)} rows")
+
+
+def test_t105_natural_rows_equal_their_carried_isotope_and_both_tables_share_one_key_set():
+    """V-16's Python mirror, the (Z, 0) copy rule, and the kept set: the key set is every kept
+    member plus a (Z, 0) row for each Z whose most abundant isotope is kept."""
+    out = md.load_outputs(REPO)
+    kshell, kshell_doc = _shipped(KSHELL_LAYER1, KSHELL_LAYER2)
+    levels, _ = _shipped(LEVELS_LAYER1, LEVELS_LAYER2)
+    k_records, level_records = _records(kshell), _records(levels)
+    assert set(k_records) == set(level_records)
+    dropped = md.drop_reasons(out)
+    kept = {row.nuclide for row in out.inputs if row.nuclide not in dropped}
+    most = {row.z: row.most_abundant for row in out.inputs}
+    natural = {(z, 0) for z, a in most.items() if (z, a) in kept}
+    assert set(k_records) == kept | natural
+    for key, carries in _carried(kshell_doc).items():
+        if key[1] == 0:
+            assert carries == most[key[0]]
+            assert k_records[key] == k_records[(key[0], carries)], key
+            assert level_records[key] == level_records[(key[0], carries)], key
+    print(f"\nkeys {len(k_records)}: kept members {len(kept)}, natural rows {len(natural)}")
+
+
+def test_t105_layer1_directives_and_layer2_invariants_hold_on_every_row():
+    out = md.load_outputs(REPO)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    inputs = {row.nuclide: row for row in out.inputs}
+    for layer1, layer2, name in ((KSHELL_LAYER1, KSHELL_LAYER2, md.K_TABLE),
+                                 (LEVELS_LAYER1, LEVELS_LAYER2, md.LEVEL_TABLE)):
+        table, document = _shipped(layer1, layer2)
+        spec.validate(table)
+        provenance.check_against_table(table, document)
+        provenance.check_source_digest(table, layer2.read_bytes())
+        directives = table.directives
+        assert (directives["PROFILE"], directives["SEAM"]) == (md.PROFILE, md.SEAM)
+        assert directives["TABLE"] == name
+        assert "FALLBACK" not in directives and "SOURCESHA" not in directives
+        assert spec.validity_assignments(table)["A"] == spec.A_MOST_ABUNDANT_AND_LISTED
+        columns = directives["COLUMNS"].split()
+        assert set(directives["UNITS"].split()) == {f"{column}=keV" for column in columns[2:]}
+        if name == md.LEVEL_TABLE:
+            shells = range(2, md.N_MAX + 1)
+            assert columns == ["Z", "A", *(f"e{n}" for n in shells), *(f"u{n}" for n in shells)]
+        assert document.precedence == (md.PROFILE,)
+        carried = _carried(document)
+        for key, row in document.rows.items():
+            z, a = (int(part) for part in key.split("-"))
+            source = inputs[(z, carried[(z, a)])]
+            rendered = md.render_input(source, "base", md.extra_lines(cells, source.nuclide))
+            assert row.source_bibkey == md.BIBKEY
+            assert row.unc_type == "model"
+            expected = f"MuDirac {md.MUDIRAC_VERSION} input: " + "; ".join(rendered.splitlines())
+            assert row.conditions == expected
+            assert row.conditions.count("optimise_fermi_parameters: FALSE") == 1
+            assert (row.single_source, row.needs_verification, row.recommendation) == (False, False, "")
+            assert row.evaluation_id == row.source_library == md.PROFILE
+            assert row.isotope_resolved is (a != 0)
+            assert md.run_id(source, "base") in row.source_locator
+            assert md.run_id(source, "rsig") in row.source_locator
+            assert md.run_id(source, "rsig") in row.evaluation_method
+            assert (" A = 0 row carries the values of " in row.evaluation_method) is (a == 0), key
+            if a == 0:
+                assert f"A={carried[(z, a)]}," in row.evaluation_method, key
+            else:
+                assert row.validity_range == f"Z={z} A={a}"
+
+
+def test_t105_the_widened_parity_rule_holds_over_the_assembled_dataset(tmp_path):
+    """The Python mirror of V-14 over one directory holding every D1 and D3 member: every table
+    another profile carries in a seam parity carries a table in is carried by parity too; the D3
+    tables sit in a seam parity carries no table in, so the unscoped rule would refuse them."""
+    for source in (REPO / "data" / "g4" / "d1", D3DIR):
+        for path in [*source.glob("*.g4dat"), *source.glob("*.prov.json")]:
+            (tmp_path / path.name).write_bytes(path.read_bytes())
+    tables = spec.load_directory(tmp_path)
+    parity_seams = {
+        t.directives["SEAM"] for (profile, _), t in tables.items() if profile == spec.PARITY_PROFILE
+    }
+    for (profile, name), table in tables.items():
+        if table.directives["SEAM"] in parity_seams:
+            assert (spec.PARITY_PROFILE, name) in tables, (profile, name)
+    unscoped = sorted(
+        (profile, name) for profile, name in tables if (spec.PARITY_PROFILE, name) not in tables
+    )
+    assert unscoped == [(md.PROFILE, md.K_TABLE), (md.PROFILE, md.LEVEL_TABLE)]
+    assert md.SEAM not in parity_seams
+
+
+def test_t105_no_d3_file_carries_a_carriage_return():
+    files = sorted(D3DIR.iterdir())
+    assert files
+    for path in files:
+        assert b"\r" not in path.read_bytes(), path.name
