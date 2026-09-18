@@ -61,7 +61,7 @@ which that value is not real.
 ## 4. Comparison with measured energies
 
 `validation.csv` compares the model with the transition energies transcribed from Fricke et al.
-(1995), Tables IIIA and IIIB, and from Saito et al. (2025), Table III, each as printed
+(1995), Tables IIIA and IIIB, and from Saito et al. (2025), Tables III and IV, each as printed
 (`validation_cells.csv`).
 The Fricke values were read from page images of the journal copy.
 Each uncertainty carries its source's own label: `statistical` (Table IIIA), `statistical and fit`
