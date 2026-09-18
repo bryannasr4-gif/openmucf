@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import math
 import re
 from dataclasses import dataclass
@@ -925,3 +926,89 @@ def table_rows(out: Outputs) -> tuple[list[TableRow], dict[tuple[int, int], str]
             rows.append(TableRow(z, 0, a, r.k, r.k_unc, r.levels, r.level_uncs))
     rows.sort(key=lambda r: (r.z, r.a))
     return rows, dropped
+
+
+# --------------------------------------------------------------------------------------------
+# the comparison with the measured transition energies
+# --------------------------------------------------------------------------------------------
+
+VALIDATION_COLUMNS = (
+    "source", "Z", "A", "transition", "quantity", "measured_keV", "unc_keV", "unc_label", "tol_keV",
+    "model_keV", "residual_keV", "dE_sigma_keV", "dE_1pct_keV", "label", "within", "npol_keV",
+    "radius_origin", "gated", "reason", "locator",
+)
+#: The comparison labels: a row whose model value moves by at least a third of its tolerance when
+#: the radius moves (by its uncertainty, or by the SIZE_FLOOR factor) is size-dominated.
+SIZE_DOMINATED = "size-dominated"
+WEAKLY_SENSITIVE = "weakly sensitive"
+
+
+def _decimal_text(value: Decimal) -> str:
+    return format(value, "f")
+
+
+def line_energy_kev(out: Outputs, row: InputRow, kind: str, line: str) -> Decimal:
+    """The printed energy of ``line`` in ``row``'s run of ``kind``, in keV. Raises when MuDirac did
+    not print that line for that run."""
+    run = run_id(row, kind)
+    printed = out.lines.get(run, {})
+    if line not in printed:
+        raise CellError(f"{run} printed no line {line}")
+    return Decimal(printed[line]) / 1000
+
+
+def validation_rows(
+    out: Outputs, cells: tuple[Cell, ...], origins: dict[tuple[int, int], RadiusOrigin]
+) -> list[dict[str, str]]:
+    """One row per transcribed cell, in the transcription's order: the measured value, the tolerance
+    TOL_FACTOR * sqrt(sigma**2 + SIGMA_CALC**2), and on a gated row the model value, the residual,
+    the model's shift when the radius moves, the label and whether the residual is within tolerance.
+    Nothing is altered for lying outside tolerance."""
+    inputs = {row.nuclide: row for row in out.inputs}
+    rows = []
+    for cell in cells:
+        sigma = Decimal(cell.unc_kev)
+        with localcontext() as context:
+            context.prec = _PRECISION
+            tol = TOL_FACTOR * (sigma * sigma + Decimal(SIGMA_CALC) ** 2).sqrt()
+        row = {
+            "source": cell.source, "Z": str(cell.z), "A": str(cell.a), "transition": cell.transition,
+            "quantity": cell.quantity, "measured_keV": cell.value_kev, "unc_keV": cell.unc_kev,
+            "unc_label": cell.unc_label, "tol_keV": _decimal_text(tol), "model_keV": "",
+            "residual_keV": "", "dE_sigma_keV": "", "dE_1pct_keV": "", "label": "", "within": "",
+            "npol_keV": cell.npol_kev,
+            "radius_origin": origins[cell.nuclide].origin if cell.nuclide in origins else "",
+            "gated": "true" if cell.gated else "false", "reason": cell.reason, "locator": cell.locator,
+        }
+        if cell.gated:
+            member = inputs[cell.nuclide]
+            model = line_energy_kev(out, member, "base", cell.quantity)
+            residual = model - Decimal(cell.value_kev)
+            d_sigma = line_energy_kev(out, member, "rsig", cell.quantity) - model
+            d_floor = line_energy_kev(out, member, "r101", cell.quantity) - model
+            size = max(abs(d_sigma), abs(d_floor)) >= tol / 3
+            row.update({
+                "model_keV": _decimal_text(model), "residual_keV": _decimal_text(residual),
+                "dE_sigma_keV": _decimal_text(d_sigma), "dE_1pct_keV": _decimal_text(d_floor),
+                "label": SIZE_DOMINATED if size else WEAKLY_SENSITIVE,
+                "within": "true" if abs(residual) <= tol else "false",
+            })
+        rows.append(row)
+    return rows
+
+
+def render_validation(rows: list[dict[str, str]]) -> bytes:
+    """``validation.csv``: LF, ASCII, the header then one row per transcribed cell."""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\n")
+    writer.writerow(VALIDATION_COLUMNS)
+    for row in rows:
+        writer.writerow([row[column] for column in VALIDATION_COLUMNS])
+    return buffer.getvalue().encode("ascii")
+
+
+def build_validation(root: Path) -> bytes:
+    """The comparison file from the committed files under ``root`` alone."""
+    root = Path(root)
+    cells, origins = load_validation(root / CELLS_RELPATH, root / ORIGIN_RELPATH)
+    return render_validation(validation_rows(load_outputs(root), cells, origins))

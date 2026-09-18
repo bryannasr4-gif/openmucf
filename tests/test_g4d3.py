@@ -6,6 +6,8 @@ Every count here is derived at run time from the committed files; none is writte
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 import pathlib
 import re
@@ -561,3 +563,79 @@ def test_t105_no_d3_file_carries_a_carriage_return():
     assert files
     for path in files:
         assert b"\r" not in path.read_bytes(), path.name
+
+
+# --------------------------------------------------------------------------------------------
+# T-106 -- the comparison with the measured transition energies, re-derived
+# --------------------------------------------------------------------------------------------
+
+VALIDATION = REPO / md.VALIDATION_RELPATH
+
+
+def _committed_validation() -> list[dict[str, str]]:
+    text = VALIDATION.read_bytes().decode("ascii")
+    assert "\r" not in text
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def test_t106_every_gated_quantity_is_a_line_its_base_run_printed():
+    out = md.load_outputs(REPO)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    inputs = {row.nuclide: row for row in out.inputs}
+    for cell in cells:
+        if cell.gated:
+            for kind in ("base", "rsig", "r101"):
+                assert cell.quantity in out.lines[md.run_id(inputs[cell.nuclide], kind)], (cell, kind)
+
+
+def test_t106_the_comparison_file_equals_an_arithmetic_rederivation():
+    """Every column recomputed here from the transcription and the printed lines, with the
+    tolerance three printed standard deviations and no model term."""
+    out = md.load_outputs(REPO)
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    inputs = {row.nuclide: row for row in out.inputs}
+    committed = _committed_validation()
+    assert len(committed) == len(cells)
+    assert list(committed[0]) == list(md.VALIDATION_COLUMNS)
+    assert md.TOL_FACTOR == 3 and md.SIGMA_CALC == 0
+
+    def printed(cell, kind):
+        return Decimal(out.lines[md.run_id(inputs[cell.nuclide], kind)][cell.quantity]) / 1000
+
+    for cell, row in zip(cells, committed, strict=True):
+        sigma = Decimal(cell.unc_kev)
+        tol = 3 * sigma
+        assert Decimal(row["tol_keV"]) == tol, row
+        assert (row["source"], int(row["Z"]), int(row["A"]), row["transition"]) == (
+            cell.source, cell.z, cell.a, cell.transition)
+        assert (row["measured_keV"], row["unc_keV"], row["npol_keV"]) == (
+            cell.value_kev, cell.unc_kev, cell.npol_kev)
+        assert row["radius_origin"] == (origins[cell.nuclide].origin if cell.nuclide in origins else "")
+        derived = ("model_keV", "residual_keV", "dE_sigma_keV", "dE_1pct_keV", "label", "within")
+        if not cell.gated:
+            assert row["gated"] == "false" and row["reason"] == cell.reason
+            assert all(row[column] == "" for column in derived), row
+            continue
+        model = printed(cell, "base")
+        residual = model - Decimal(cell.value_kev)
+        d_sigma, d_floor = printed(cell, "rsig") - model, printed(cell, "r101") - model
+        assert Decimal(row["model_keV"]) == model
+        assert Decimal(row["residual_keV"]) == residual
+        assert Decimal(row["dE_sigma_keV"]) == d_sigma
+        assert Decimal(row["dE_1pct_keV"]) == d_floor
+        sized = max(abs(d_sigma), abs(d_floor)) * 3 >= tol
+        assert row["label"] == ("size-dominated" if sized else "weakly sensitive"), row
+        assert row["within"] == ("true" if abs(residual) <= tol else "false"), row
+    assert VALIDATION.read_bytes() == md.build_validation(REPO)
+
+
+def test_t106_every_gated_measurement_outside_tolerance_carries_its_printed_npol_when_fricke_prints_one():
+    committed = _committed_validation()
+    gated = [row for row in committed if row["gated"] == "true"]
+    outside = [row for row in gated if row["within"] == "false"]
+    for row in outside:
+        if row["source"] == "Fricke1995":
+            assert row["npol_keV"], row
+    weakly = [row for row in gated if row["label"] == "weakly sensitive"]
+    print(f"\ngated {len(gated)} within {len(gated) - len(outside)} outside {len(outside)}; "
+          f"weakly sensitive {len(weakly)} (within {sum(r['within'] == 'true' for r in weakly)})")

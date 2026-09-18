@@ -519,6 +519,9 @@ D3_KSHELL_LAYER1 = D3DIR / f"d3_kshell.{md.PROFILE}.g4dat"
 D3_KSHELL_LAYER2 = D3DIR / f"d3_kshell.{md.PROFILE}.prov.json"
 D3_LEVELS_LAYER1 = D3DIR / f"d3_levels.{md.PROFILE}.g4dat"
 D3_LEVELS_LAYER2 = D3DIR / f"d3_levels.{md.PROFILE}.prov.json"
+#: The comparison with the measured transition energies: generated and byte-diffed, not an
+#: archive member.
+D3_VALIDATION = ROOT / md.VALIDATION_RELPATH
 #: What each table's value columns are, as the per-row method text names them.
 D3_QUANTITY = {
     md.K_TABLE: "The 1s1/2 binding energy in keV is",
@@ -708,6 +711,7 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
         md5=emit.tarball_md5(archive),
     )
     artifacts[D1_SNIPPET_PATH] = snippet.encode("ascii")
+    artifacts[D3_VALIDATION] = md.build_validation(ROOT)
     return artifacts, archive
 
 
