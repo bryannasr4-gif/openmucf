@@ -161,6 +161,7 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `openmucf/g4/`, `FORMAT_SPEC.md` | the `G4MuonicData` external-data format: `.g4dat` grammar, Layer-2 provenance schema, deterministic archive |
 | `openmucf/g4/sources/`, `third_party/geant4/`, `cpp/tools/` | structural extractors for the vendored upstream source, the pinned source itself, and the harvest drivers |
 | `data/g4/d1/`, `DATASET_D1.md` | the D1 nuclear-capture dataset in `parity` mode + its findings (see below) |
+| `data/g4/d3/`, `DATASET_D3.md` | the D3 muonic energy tables of the `mudirac130` profile, their MuDirac inputs and outputs, and their comparison with measured energies |
 | `openmucf/data/` | `rates.csv`, `validation_targets.csv`, `references.bib`, schema |
 | `forecasts/`, `FORECASTS.md` | pre-registered, hash-stamped forecast cards (FC-001) + protocol + registry table |
 | `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + mixed-basis tier spread, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
@@ -189,6 +190,9 @@ that returns **negative capture rates on 6325 of those 36000 points** (³H among
 negative rate silently disables capture entirely), non-finite returns at degenerate inputs with no
 coded rejection, and a fallback whose result moves by up to **2980 ulp** between two conforming
 compiler configurations of the same source. See [`DATASET_D1.md`](DATASET_D1.md).
+
+`data/g4/d3/` adds muonic energy tables of a `mudirac130` profile, generated from committed MuDirac
+inputs and printed outputs; see [`DATASET_D3.md`](DATASET_D3.md).
 
 > This product includes software developed by Members of the Geant4 Collaboration
 > ( http://cern.ch/geant4 ).

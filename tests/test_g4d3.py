@@ -639,3 +639,121 @@ def test_t106_every_gated_measurement_outside_tolerance_carries_its_printed_npol
     weakly = [row for row in gated if row["label"] == "weakly sensitive"]
     print(f"\ngated {len(gated)} within {len(gated) - len(outside)} outside {len(outside)}; "
           f"weakly sensitive {len(weakly)} (within {sum(r['within'] == 'true' for r in weakly)})")
+
+
+# --------------------------------------------------------------------------------------------
+# T-107 -- the document: its comparison table is the generated block, and every number it states
+# is pinned to the value the module or the committed files give
+# --------------------------------------------------------------------------------------------
+
+DOCUMENT = REPO / "DATASET_D3.md"
+
+
+def _document_text() -> str:
+    """The document as text, its line ends normalized (a Windows checkout writes CRLF)."""
+    return DOCUMENT.read_bytes().decode("utf-8").replace("\r\n", "\n")
+
+
+#: A numeric token as the prose check tokenizes one.
+_NUMERIC = re.compile(r"[0-9][0-9,.]*[0-9]|[0-9]")
+
+
+def _row_pattern(line: str) -> tuple[str, tuple[int, ...]]:
+    """A pattern matching ``line`` whitespace-collapsed, with every numeric token a group."""
+    collapsed = " ".join(line.split())
+    parts, groups, at = [], [], 0
+    for index, match in enumerate(_NUMERIC.finditer(collapsed), start=1):
+        parts.append(re.escape(collapsed[at:match.start()]))
+        parts.append(f"({re.escape(match.group())})")
+        groups.append(index)
+        at = match.end()
+    parts.append(re.escape(collapsed[at:]))
+    return "".join(parts), tuple(groups)
+
+
+def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """``(what, path, pattern, groups, expected)`` for every number `DATASET_D3.md` states: one row
+    per comparison-table row (every numeric token a group, its value the generated block's), and
+    one per count or constant of the prose, `expected` read from the module or the committed files.
+    Patterns match the whitespace-collapsed document."""
+    out = md.load_outputs(REPO)
+    rows, dropped = md.table_rows(out)
+    kept = sum(1 for row in rows if row.a != 0)
+    inputs = {row.nuclide: row for row in out.inputs}
+    zs = sorted({row.z for row in out.inputs})
+    validation = _committed_validation()
+    gated = [row for row in validation if row["gated"] == "true"]
+    within = [row for row in gated if row["within"] == "true"]
+    weak = [row for row in gated if row["label"] == md.WEAKLY_SENSITIVE]
+    path = "DATASET_D3.md"
+    pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
+        ("the generator's version", path, r"computed by MuDirac (\d+\.\d+\.\d+)", (1,), md.MUDIRAC_VERSION),
+        ("the highest shell of the chain", path, r"The chain ends at shell (\d+),", (1,), md.N_MAX),
+        ("members of the input set", path, r"Of the (\d+) members of the input set", (1,), len(out.inputs)),
+        ("kept members", path, r"members of the input set, (\d+) are kept", (1,), kept),
+        ("natural-composition rows", path, r"the tables carry (\d+) natural-composition rows", (1,),
+         len(rows) - kept),
+        ("the lowest Z of the input set", path, r"with Z from (\d+) through \d+", (1,), zs[0]),
+        ("the highest Z of the input set", path, r"with Z from \d+ through (\d+)", (1,), zs[-1]),
+        ("the skin thickness of every run", path, r"`fermi_t: (\d+\.\d+)`", (1,), md.FERMI_T),
+        ("the lowest checked shell", path, r"circular state of shells (\d+) through \d+", (1,),
+         md.IDEAL_FROM),
+        ("the highest checked shell", path, r"circular state of shells \d+ through (\d+)", (1,), md.N_MAX),
+        ("the hydrogen-like bound in percent", path, r"lies within (\d+) % of the same state", (1,),
+         int(md.NMAX_BOUND * 100)),
+        ("the dropped member", path, r"The generator drops `([A-Z][a-z]?\d+)`", (1,),
+         "".join(md.run_id(inputs[key], "base")[: -len("_base")] for key in dropped)),
+        ("the tolerance factor", path, r"The tolerance is (\d+) times", (1,), md.TOL_FACTOR),
+        ("the model's own uncertainty", path, r"is set to (\d+) by decision", (1,), md.SIGMA_CALC),
+        ("the size floor", path, r"multiplied by (\d+\.\d+) \(the `r101` runs", (1,), str(md.SIZE_FLOOR)),
+        ("gated rows", path, r"Of the (\d+) gated rows", (1,), len(gated)),
+        ("gated rows within tolerance", path, r"gated rows, (\d+) lie within tolerance", (1,), len(within)),
+        ("gated rows outside tolerance", path, r"lie within tolerance and (\d+) outside it", (1,),
+         len(gated) - len(within)),
+        ("weakly sensitive gated rows", path,
+         r"outside it; (\d+) of the gated rows are weakly sensitive", (1,), len(weak)),
+        ("weakly sensitive rows within tolerance", path, r"and (\d+) of those lie within tolerance", (1,),
+         sum(row["within"] == "true" for row in weak)),
+    ]
+    table = md.render_validation_table(validation).splitlines()[2:]
+    for number, line in enumerate(table, start=1):
+        pattern, groups = _row_pattern(line)
+        pins.append((f"comparison table row {number}", path, pattern, groups, None))
+    return pins
+
+
+def test_t107_the_comparison_table_is_the_generated_block():
+    block = md.render_validation_table(_committed_validation())
+    text = _document_text()
+    assert text.count(block) == 1
+
+
+def _pin_problems(text: str) -> list[str]:
+    collapsed = " ".join(text.split())
+    problems = []
+    for what, _path, pattern, _groups, expected in document_pins():
+        hits = list(re.finditer(pattern, collapsed))
+        if len(hits) != 1:
+            problems.append(f"{what}: matched {len(hits)} times")
+        elif expected is not None and hits[0].group(1) != str(expected):
+            problems.append(f"{what}: states {hits[0].group(1)}, the committed files give {expected}")
+    return problems
+
+
+def test_t107_every_pin_matches_once_and_states_its_value():
+    assert not _pin_problems(_document_text())
+    print(f"\ndocument pins: {len(document_pins())}")
+
+
+def test_t107_drill_a_changed_count_and_a_changed_table_cell_are_refused():
+    text = _document_text()
+    gated = sum(row["gated"] == "true" for row in _committed_validation())
+    stated = f"Of the {gated} gated rows"
+    mutated = _replace_once(text, stated, f"Of the {gated + 1} gated rows")
+    assert any(problem.startswith("gated rows: states") for problem in _pin_problems(mutated))
+    block = md.render_validation_table(_committed_validation())
+    row = block.splitlines()[2]
+    cell = row.split(" | ")[5]
+    changed = _replace_once(text, row, row.replace(f" | {cell} | ", f" | {cell}1 | ", 1))
+    assert changed.count(block) == 0
+    assert any(problem.startswith("comparison table row 1:") for problem in _pin_problems(changed))

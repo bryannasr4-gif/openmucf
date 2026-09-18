@@ -1012,3 +1012,27 @@ def build_validation(root: Path) -> bytes:
     root = Path(root)
     cells, origins = load_validation(root / CELLS_RELPATH, root / ORIGIN_RELPATH)
     return render_validation(validation_rows(load_outputs(root), cells, origins))
+
+
+#: The columns of the document's comparison table, each a column of ``validation.csv``.
+TABLE_COLUMNS = (
+    ("source", "source"), ("Z", "Z"), ("A", "A"), ("transition", "transition"), ("line", "quantity"),
+    ("measured (keV)", "measured_keV"), ("sigma (keV)", "unc_keV"), ("model (keV)", "model_keV"),
+    ("residual (keV)", "residual_keV"), ("tol (keV)", "tol_keV"), ("label", "label"),
+    ("within", "within"), ("NPol (keV)", "npol_keV"),
+)
+
+
+def render_validation_table(rows: list[dict[str, str]]) -> str:
+    """The document's comparison table: one Markdown row per gated row of ``validation.csv``, in its
+    order, every cell copied from the file."""
+    lines = [
+        "| " + " | ".join(title for title, _ in TABLE_COLUMNS) + " |",
+        "|" + "---|" * len(TABLE_COLUMNS),
+    ]
+    for row in rows:
+        if row["gated"] != "true":
+            continue
+        cells = [f"`{row[column]}`" if column == "quantity" else row[column] for _, column in TABLE_COLUMNS]
+        lines.append("| " + " | ".join(cells) + " |")
+    return "\n".join(lines) + "\n"
