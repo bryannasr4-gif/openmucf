@@ -137,3 +137,80 @@ def test_t106_drill_an_origin_file_that_misses_a_gated_nuclide_is_refused(tmp_pa
     md.load_radius_origins(copy)
     with pytest.raises(md.CellError, match="the gated nuclides of"):
         md.load_validation(CELLS, copy)
+
+
+# --------------------------------------------------------------------------------------------
+# T-103 -- the MuDirac inputs
+# --------------------------------------------------------------------------------------------
+
+INPUTS = REPO / md.INPUTS_RELPATH
+_I1 = "1,1,H,0.8783,0.0086,1.133880424324658,2.3,1,0.8783,"
+
+INPUT_DRILLS = [
+    ("a carriage return", lambda t: t.replace(NL, "\r" + NL, 1),
+     md.CarriageReturnError, "contains CR"),
+    ("a renamed column", lambda t: _replace_once(t, "most_abundant,", "abundant,"),
+     md.HeaderError, "header is"),
+    ("a lower-case symbol", lambda t: _replace_once(t, NL + _I1, NL + _I1.replace(",H,", ",h,")),
+     md.CellError, "element symbol"),
+    ("an rms radius the sphere radius does not imply",
+     lambda t: _replace_once(t, NL + _I1, NL + _I1.replace(",H,0.8783,", ",H,0.8784,")),
+     md.CellError, "rms_fm is not radius_fm"),
+    ("another skin thickness", lambda t: _replace_once(t, NL + _I1, NL + _I1.replace(",2.3,", ",2.30,")),
+     md.CellError, "fermi_t_fm must be"),
+    ("another source", lambda t: t.replace("; charge_radii.csv", "; charge-radii.csv", 1),
+     md.CellError, "source must name"),
+    ("a duplicated key", lambda t: _repeat_line(t, 1),
+     md.DuplicateKeyError, "duplicate key"),
+    ("rows out of order", lambda t: _swap_lines(t, 1),
+     md.OrderError, "ascending by (Z, A)"),
+    ("no rows", lambda t: _lines(t)[0] + NL,
+     md.EmptyError, "carries no rows"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", INPUT_DRILLS, ids=[d[0] for d in INPUT_DRILLS])
+def test_t103_drill_each_inputs_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, INPUTS, mutate, error, message, md.load_inputs)
+
+
+def test_t103_a_source_file_off_its_pin_is_refused():
+    with pytest.raises(md.Mudirac130Error, match="nuclear_radii.dat is blob"):
+        md.build_inputs(b"1 1 1.0\n", b"", b"")
+
+
+def test_t103_every_input_is_fit_free_and_every_run_has_one_argument():
+    """Every input a committed kind renders carries the fit keyword exactly once and set FALSE, the
+    fixed settings, the chain, and on a validation nuclide every gated line the chain lacks; the
+    command line holds the input file and nothing else."""
+    rows = md.load_inputs(INPUTS)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    validation = set(md.gated_nuclides(cells))
+    chain = md.chain_lines()
+    rendered = 0
+    for row in rows:
+        extra = md.extra_lines(cells, row.nuclide)
+        for kind in md.run_kinds(row, validation):
+            text = md.render_input(row, kind, extra)
+            rendered += 1
+            assert text.count("optimise_fermi_parameters") == 1, (row, kind)
+            assert "optimise_fermi_parameters: FALSE\n" in text, (row, kind)
+            xr = next(line for line in text.splitlines() if line.startswith("xr_lines: "))
+            specs = xr[len("xr_lines: "):].split(",")
+            assert specs[: len(md.chain_specs())] == md.chain_specs()
+            assert specs[len(md.chain_specs()):] == ([] if kind in md.IDEAL_KINDS else extra)
+            assert not set(extra) & chain
+    for row in rows:
+        gated = {cell.quantity for cell in cells if cell.gated and cell.nuclide == row.nuclide}
+        assert gated <= chain | set(md.extra_lines(cells, row.nuclide)), row
+    assert md.mudirac_argv("mudirac", "X1_base.in") == ["mudirac", "X1_base.in"]
+    print(f"\nrendered inputs: {rendered} over {len(rows)} members; validation nuclides {len(validation)}")
+
+
+def test_t103_the_radius_disagreements_are_listed_and_left_as_bundled():
+    rows = md.load_inputs(INPUTS)
+    listed = md.radius_disagreements(rows)
+    for z, a, bundled, table in listed:
+        (row,) = [r for r in rows if r.nuclide == (z, a)]
+        assert row.radius_fm and row.iaea_rms_fm == table and bundled != table
+    print(f"\nbundled rms against the charge-radii table at 4 decimals, differing: {listed}")
