@@ -1,5 +1,5 @@
-// g4muonicdata_validate -- the standalone validator (no Geant4): checks V-00 .. V-12, V-14 and V-15
-// over the D1 dataset directory, the conformance corpus and the committed oracle.
+// g4muonicdata_validate -- the standalone validator (no Geant4): checks V-00 .. V-12 and V-14 .. V-16
+// over the dataset directory, the conformance corpus and the committed oracle.
 //
 //   g4muonicdata_validate <dataset-dir> --oracle <file> --conformance <dir>
 //                         [--expect-env found|unset|empty|invalid]
@@ -39,6 +39,10 @@ using Error = G4MuonicDataTable::Error;
 const char* const kVariable = "G4MUONICDATA";
 const char* const kCaptureTable = "nuclear_capture_rate";
 const char* const kZeffTable = "muon_zeff";
+const char* const kKShellTable = "k_shell_energy";
+const char* const kLevelTable = "level_energy";
+// The `A` ranges under which a record may carry `A = 0` (FORMAT_SPEC.md section 6).
+const char* const kNaturalRowRanges[] = {"natural_and_listed", "most_abundant_and_listed"};
 // A check whose PASS detail counts rows refuses to pass over none: an empty corpus or an oracle
 // section with no rows is a run that checked nothing, and prints this instead of PASS.
 const char* const kNoRows = "rows=0: a check over no rows is not a pass";
@@ -795,15 +799,23 @@ int Run(int argc, char** argv) {
     CheckDiscovery(report, expectation, dataset, expected, expected_loaded);
   }
 
-  // V-14 -- the profile set: every table any profile carries is also carried by parity. Exactly
-  // one line: the first offending table, else PASS naming the profiles and the (profile, table)
-  // pair count.
+  // V-14 -- the profile set: in every seam in which parity carries a table, every table any
+  // profile carries is also carried by parity; a seam in which parity carries no table is not
+  // held. Exactly one line: the first offending table, else PASS naming the profiles and the
+  // (profile, table) pair count.
   if (!loaded) {
     report.Fail("V-14", "dataset not loaded");
   } else {
     bool ok = true;
+    std::set<std::string> parity_seams;
+    for (const Table& t : tables.Tables()) {
+      const std::string* seam = t.Directive("SEAM");
+      if (t.profile == G4MuonicDataTable::kParityProfile && seam != nullptr) parity_seams.insert(*seam);
+    }
     for (const Table& t : tables.Tables()) {
       if (t.profile == G4MuonicDataTable::kParityProfile) continue;
+      const std::string* seam = t.Directive("SEAM");
+      if (seam == nullptr || parity_seams.count(*seam) == 0) continue;
       if (tables.Find(G4MuonicDataTable::kParityProfile, t.name) != nullptr) continue;
       report.Fail("V-14", "'#PROFILE " + t.profile + "' carries '#TABLE " + t.name + "' (" + FileName(t.file) + ") that parity does not");
       ok = false;
@@ -817,7 +829,7 @@ int Run(int argc, char** argv) {
   }
 
   // V-15 -- the natural-composition row: an `A = 0` record is admissible only under a `#VALIDITY`
-  // that assigns `A:natural_and_listed`, and parity carries none. `#VALIDITY` is decomposed here,
+  // that assigns `A` one of kNaturalRowRanges, and parity carries none. `#VALIDITY` is decomposed here,
   // by the consumer, as whitespace-separated NAME:RANGE assignments (FORMAT_SPEC.md section 2.2);
   // a NAME assigned twice is refused, as the reference refuses it. Exactly one line: the first
   // offending table, else PASS with the table and natural-row counts.
@@ -859,7 +871,9 @@ int Run(int argc, char** argv) {
         break;
       }
       const auto range = assignments.find("A");
-      if (range == assignments.end() || range->second != "natural_and_listed") {
+      const bool admitted = range != assignments.end() &&
+                            std::find(std::begin(kNaturalRowRanges), std::end(kNaturalRowRanges), range->second) != std::end(kNaturalRowRanges);
+      if (!admitted) {
         report.Fail("V-15", "under A:" + (range == assignments.end() ? std::string("absent") : range->second) + ": " + Quote(FileName(t.file)) + " carries " + std::to_string(count) + " A = 0 row(s)");
         ok = false;
         break;
@@ -867,6 +881,43 @@ int Run(int argc, char** argv) {
       natural_rows += count;
     }
     if (ok) report.Pass("V-15", "tables=" + std::to_string(tables.Tables().size()) + " natural_rows=" + std::to_string(natural_rows));
+  }
+
+  // V-16 -- the D3 energy tables of one profile describe one set of nuclides: every profile that
+  // carries `k_shell_energy` or `level_energy` carries both, with equal (Z, A) key sets. Exactly one
+  // line: the first profile that breaks it, naming the first differing key, else PASS naming the
+  // profiles and their key count (`profiles=none` when no profile carries either table).
+  if (!loaded) {
+    report.Fail("V-16", "dataset not loaded");
+  } else {
+    bool ok = true;
+    std::string joined;
+    std::size_t keys = 0;
+    for (const std::string& profile : tables.Profiles()) {
+      const Table* kshell = tables.Find(profile, kKShellTable);
+      const Table* levels = tables.Find(profile, kLevelTable);
+      if (kshell == nullptr && levels == nullptr) continue;
+      if (kshell == nullptr || levels == nullptr) {
+        report.Fail("V-16", "'#PROFILE " + profile + "' carries '#TABLE " + (kshell ? kKShellTable : kLevelTable) + "' but not '#TABLE " + (kshell ? kLevelTable : kKShellTable) + "'");
+        ok = false;
+        break;
+      }
+      std::set<std::vector<long>> kshell_keys, level_keys;
+      for (const Table::Record& record : kshell->records) kshell_keys.insert(record.keys);
+      for (const Table::Record& record : levels->records) level_keys.insert(record.keys);
+      if (kshell_keys != level_keys) {
+        std::vector<std::vector<long>> differing;
+        std::set_symmetric_difference(kshell_keys.begin(), kshell_keys.end(), level_keys.begin(), level_keys.end(), std::back_inserter(differing));
+        std::string key;
+        for (long part : differing.front()) key += (key.empty() ? "" : "-") + std::to_string(part);
+        report.Fail("V-16", "'#PROFILE " + profile + "': " + kKShellTable + " and " + kLevelTable + " differ first at key " + key + " (carried by " + (kshell_keys.count(differing.front()) ? kKShellTable : kLevelTable) + " only)");
+        ok = false;
+        break;
+      }
+      joined += (joined.empty() ? "" : ",") + profile;
+      keys += kshell_keys.size();
+    }
+    if (ok) report.Pass("V-16", "profiles=" + (joined.empty() ? std::string("none") : joined) + (joined.empty() ? std::string() : " keys=" + std::to_string(keys)));
   }
 
   return report.failed ? 1 : 0;

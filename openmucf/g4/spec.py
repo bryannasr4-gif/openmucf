@@ -83,6 +83,11 @@ PARITY_PROFILE = "parity"
 #: natural-composition row -- is admissible (``FORMAT_SPEC.md`` section 6). A consumer's rule, not
 #: the parser's: Layer 1 does not decompose ``#VALIDITY``.
 A_NATURAL_AND_LISTED = "natural_and_listed"
+#: The ``A`` range under which the ``A = 0`` row carries the values the same table lists for the
+#: element's most abundant isotope (``FORMAT_SPEC.md`` section 6).
+A_MOST_ABUNDANT_AND_LISTED = "most_abundant_and_listed"
+#: Every ``A`` range under which a record may carry ``A = 0``.
+A_NATURAL_ROW_RANGES = (A_NATURAL_AND_LISTED, A_MOST_ABUNDANT_AND_LISTED)
 END_MARKER = "#END"
 #: The terminator's keyword. Deliberately NOT in :data:`DIRECTIVE_ORDER`: ``#END`` is not a
 #: directive, and letting the directive machinery diagnose it is what made ``#END x`` report two
@@ -822,8 +827,8 @@ def natural_rows(table: G4DatTable) -> int:
     """The number of records with ``A == 0``: the natural-composition rows (``FORMAT_SPEC.md``
     section 6). ``0`` for a table that declares no ``A`` column.
 
-    Raises ``ValueError`` when such records exist and the table's ``#VALIDITY`` does not assign
-    ``A:natural_and_listed``: under any other range no record may carry ``A = 0``.
+    Raises ``ValueError`` when such records exist and the table's ``#VALIDITY`` assigns ``A`` none of
+    :data:`A_NATURAL_ROW_RANGES`: under any other range no record may carry ``A = 0``.
     """
     columns = _split_fields(table.directives.get("COLUMNS", ""))
     if "A" not in columns:
@@ -832,10 +837,11 @@ def natural_rows(table: G4DatTable) -> int:
     count = sum(1 for record in table.records if record[index] == 0)
     if count:
         range_ = validity_assignments(table).get("A")
-        if range_ != A_NATURAL_AND_LISTED:
+        if range_ not in A_NATURAL_ROW_RANGES:
+            admissible = " or ".join(f"'A:{token}'" for token in A_NATURAL_ROW_RANGES)
             raise ValueError(
                 f"{count} record(s) with A = 0 under 'A:{range_ if range_ is not None else 'absent'}': "
-                f"a natural-composition row is admissible only under 'A:{A_NATURAL_AND_LISTED}'"
+                f"a natural-composition row is admissible only under {admissible}"
             )
     return count
 

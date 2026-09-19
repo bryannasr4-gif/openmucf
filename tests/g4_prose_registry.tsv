@@ -322,7 +322,6 @@ eea6042f30043b06abe6a0e0f988e17f4fb5c033	CHANGELOG.md	REGISTERED: ³ -- the mass
 efa1c59c2aa5b4d37a9377dedefddf6fa5d6bf5d	CHANGELOG.md	REGISTERED: 90 -- 90: Layer-1 record lines unchanged, as this dated entry recorded it (a released line, held by this row and not re-derived)
 f1603e2ffed2ef735382a283185db8a885a79d1e	CHANGELOG.md	REGISTERED: three, one -- the three `slow`-marked tests the weekly job runs in one process
 f1b5d66480badda8965bf9aec143f9a1d5dd7df0	CHANGELOG.md	REGISTERED: one -- 'one-sided', a floor
-f2dd5b4556f36fb744e4ef8d6878da70f9f4a6d7	CHANGELOG.md	REGISTERED: 0 -- `(Z, 0)`, the natural-composition rung of the reader's lookup, held by the `lookup_natural` ctest in cpp/test/lookup_check.cc and by T-99
 f37374c38727965c42ef6ddead18d5e6b0de78af	CHANGELOG.md	REGISTERED: 13, 9, 4 -- openmucf/data/rates.csv's rows by status as the v1.0.0 notes recorded them, superseded by the rows later releases added
 f4441b224c4add6bc3198dc9e959a6eca50c3da9	CHANGELOG.md	REGISTERED: 20 -- the mcse band, `AUDIT_RTOL_ESS_MCSE` in scripts/generate_calibration.py
 f47945360efb7d12865f35e08d23003fd07e38ad	CHANGELOG.md	REGISTERED: 0.042, 0.068, 1.40, 6.10 -- the per-cell realization noise, as scripts/generate_design.py's preamble records it
@@ -461,6 +460,7 @@ f93e626000d5060a5bb131ba0df7ada3d7b9d035	DATASET_D1.md	REGISTERED: 0, 1, 100 -- 
 fa4e454cf7376988fd9aea2dbc833169f0203cf3	DATASET_D1.md	REGISTERED: two -- the two provenance questions the sentence itself names (where the value came from, what established the flag)
 fb75dedfb605f98897d95fabd58e54396f759b86	DATASET_D1.md	REGISTERED: one -- a pronoun ('a bare one')
 ff75fbe4536b0ca4aee71784da448e67d0842e07	DATASET_D1.md	REGISTERED: 62, 150, 50, 119 -- the record keys (62, 150) and (50, 119) and the nuclide labels Sm-150 and Sn-119; the abundances beside them are T-63's rounded pins, read from the audit rows of those keys
+7a3d05bb1c1b3364e73a2a5a2a3b06e05e2401f4	DATASET_D3.md	REGISTERED: one -- 'below the one from which', a pronoun
 0ccdf0a1a697580b0dcf6641da9f8d632e79d931	README.md	REGISTERED: 225 -- the nuclide label Ac-225
 11eca2c304568f729867dead4a32bb3a18259e9c	README.md	EXERCISED: 284 -- tests/test_energy.py::test_scientific_breakeven_is_284
 2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H

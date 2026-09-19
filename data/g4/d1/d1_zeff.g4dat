@@ -1,11 +1,11 @@
 #GRAMMAR      1.0
 #DATASET      G4MuonicData
-#VERSION      0.3.0
+#VERSION      0.4.0
 #PROFILE      parity
 #SEAM         d1_nuclear_capture
 #TABLE        muon_zeff
 #GENERATOR    openmucf-g4 1.2.0
-#SOURCEDIGEST ab30ef7ade0cfcbcf139503bb94c18d5d7df5ba40500b5079df68aeb4488d830
+#SOURCEDIGEST 0b273cc4e3882c5ec06d21de6e31ff1a82213ad1f83d805f017cf7da771c8dfb
 #SOURCESHA    8cc04f65977807f1848da7b958c421cd5e162f26
 #UNITS        value=dimensionless
 #COLUMNS      Z value

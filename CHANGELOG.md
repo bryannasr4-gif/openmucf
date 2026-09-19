@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the D3 energy tables (2026-09-18)
+
+- **The D3 tables of the `mudirac130` profile, `k_shell_energy` and `level_energy`**
+  (`data/g4/d3/`), generated from the MuDirac inputs and printed outputs committed beside them.
+  The change moves the dataset's `#VERSION` to 0.4.0.
+  The comparison with the transition energies Fricke et al. (1995) and Saito et al. (2025) print
+  is generated as `data/g4/d3/validation.csv` and tabulated in `DATASET_D3.md`, with a tolerance
+  fixed before the comparison and every row outside it listed, not altered.
+  The validator gains V-16, which requires a profile carrying either D3 table to carry both with
+  equal (Z, A) key sets, and admits the natural-composition row under the new `#VALIDITY` token
+  `A:most_abundant_and_listed`.
+
 ### Added -- profile selection in the overlay (2026-09-15)
 
 - **A patched build selects the profile it reads through with `G4MUONICDATA_PROFILE`**: `parity`
@@ -28,8 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Every effective-charge cell the primary prints is a committed row**
   (`data/g4/d1/zeff_audit.csv`): a test holds each printed cell to the shipped value, the cells the
-  primary underlines carry `unc_type: estimate`, and every row the primary prints carries
-  `needs_verification: false`.
+  primary underlines carry `unc_type: estimate`.
 
 ### Added (2026-09-15)
 
@@ -37,12 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transcriptions of Table 1 and Table 3 of Mizuno et al.**
   Enriched and mononuclidic nuclides are keyed by mass number and natural-composition targets by
   `A = 0` under `A:natural_and_listed`, and every value is carried as the primary prints it.
-  The change moves
-  the dataset's `#VERSION` to 0.3.0.
 - **The dataset archive in Geant4's layout**: it unpacks to the `G4MuonicData<version>` directory
   and carries generated `README` and `History` members (T-81, T-82).
-- **The reader keyed by profile**: tables are keyed by (`#PROFILE`, `#TABLE`), and a lookup falls
-  from `(Z, A)` to the `(Z, 0)` rung.
+- **The reader keyed by profile**: tables are keyed by (`#PROFILE`, `#TABLE`).
 - **The `G4HadronicParameters` opt-in**, with a behaviour patch and a registration patch cut for
   each Geant4 revision the overlay serves (T-72).
 

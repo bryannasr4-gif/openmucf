@@ -361,7 +361,7 @@ into a reader cannot.
 | `needs_verification` | bool | true if the digit or locator is not yet pinned from the primary text |
 | `recommendation` | string | `recommended`, `superseded`, or empty |
 | `evaluation_id` | string | identifies *which* evaluation this row belongs to |
-| `source_library` | string | `geant4-compiled-in`, `suzuki1987`, `iwamoto2025`, `jendl-mund`, `openmucf`, `mizuno2025` |
+| `source_library` | string | `geant4-compiled-in`, `suzuki1987`, `iwamoto2025`, `jendl-mund`, `openmucf`, `mizuno2025`, `mudirac130` |
 | `isotope_resolved` | bool | **disclosure**: is this row an isotope-resolved value, or an element value carrying an isotope label? |
 
 The first nine field names are identical to those used by this project's rate ledger
@@ -521,10 +521,11 @@ A reader must therefore distinguish three outcomes and never confuse them:
 A directory may hold several files that declare one `#TABLE`, one per `#PROFILE`: a reader keys its
 tables by the pair (`#PROFILE`, `#TABLE`), never by file name, and rejects a directory in which two
 files declare the same pair. A consumer names the profile it reads through; `parity` is the default. A key the selected profile has
-no record for — neither the exact (Z, A) nor, under `A:natural_and_listed`, the (Z, 0) row of
+no record for — neither the exact (Z, A) nor, under `A:natural_and_listed` or
+`A:most_abundant_and_listed`, the (Z, 0) row of
 section 6 — falls through to the consumer's compiled-in value, never to another profile.
-`precedence` (section 3) ranks sources within one file; selecting a profile is the only rule that
-spans files, and a `#FALLBACK`, where a file declares one, is the last rung of its profile.
+`precedence` (section 3) ranks sources within one file;
+a `#FALLBACK`, where a file declares one, is the last rung of its profile.
 
 ---
 
@@ -580,11 +581,13 @@ Two further requirements follow from section 2:
 
 **The natural-composition row.** Under `#VALIDITY` with `A:natural_and_listed`, a record with `A = 0`
 is the row for the element's natural composition, and a lookup for (Z, A) that finds no exact record
-reads (Z, 0) before it gives up. Under `A:listed` no record has `A = 0`; Layer 1 does not decompose
+reads (Z, 0) before it gives up. Under `A:most_abundant_and_listed` a record with `A = 0` carries
+the values the same table lists for the element's most abundant isotope, and a lookup reads it by
+the same rung. Under `A:listed` no record has `A = 0`; Layer 1 does not decompose
 `#VALIDITY` (section 2.2), so the rule binds the consumer and its validator, not the parser.
 
 **Line length is not bounded by this format**, and deliberately carries no error code: a dataset is
-a generated, audited artifact of at most a few hundred rows, not untrusted network input, so a
+a generated, audited artifact, not untrusted network input, so a
 resource cap would buy nothing and add a seventeenth code. A reader that must run in a fixed memory
 budget should impose its own limit and report it as its own error, not as one of these.
 

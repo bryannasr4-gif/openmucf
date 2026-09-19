@@ -39,6 +39,7 @@ import re
 import subprocess
 import sys
 
+import test_g4d3 as d3
 import test_g4parity as parity
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
@@ -47,7 +48,7 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 #: this check would vouch for.
 PROSE_PATHS = (
     "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
-    "third_party/geant4/README.md", "cpp/patches/README.md",
+    "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md",
 )
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
@@ -185,6 +186,9 @@ def pin_table() -> list[Pin]:
     table.append(Pin("F-3 maximum relative difference, the document's line", "DATASET_D1.md",
                      check_f3.DOCUMENT_MAX_REL.pattern, (1,)))
     table.extend(internal_pins(pins, check_f3))
+    # The D3 document's pins, as its own test module builds them.
+    for what, path, pattern, groups, expected in d3.document_pins():
+        table.append(Pin(what, path, pattern, groups, expected))
     return table
 
 
@@ -304,9 +308,6 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
             r"moves by up to \*\*(\d+) ulp\*\* between two conforming", (1,), max_ulp),
         Pin("F-3 maximum, the changelog's restatement", "CHANGELOG.md",
             r"moves by up to \*\*(\d+) ulp\*\* between two conforming", (1,), max_ulp),
-        Pin("maximum ulp over the diagnostic subset, the README's phrase", "README.md",
-            r"points at (zero) ulp", (1,),
-            _computed(pins, "maximum ulp over the diagnostic subset")),
         Pin("sweep box, Z lower bound, section 4", "DATASET_D1.md",
             r"over \*\*Z ∈ \[(\d+),\d+\] × A ∈ \[\d+,\d+\] = \d+ points\*\*", (1,), d1.SWEEP_Z_MIN),
         Pin("sweep box, Z upper bound, section 4", "DATASET_D1.md",
@@ -379,7 +380,9 @@ def pin_spans(
         if pin.expected is not None:
             stated: object
             expected: object
-            if pin.places is None:
+            if isinstance(pin.expected, str):
+                stated, expected = hit.group(1), pin.expected
+            elif pin.places is None:
                 stated, expected = parity._stated(hit.group(1)), pin.expected
             else:
                 stated, expected = float(hit.group(1)), round(float(pin.expected), pin.places)

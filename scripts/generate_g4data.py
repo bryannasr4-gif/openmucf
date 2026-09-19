@@ -47,6 +47,7 @@ import openmucf
 from openmucf.g4 import emit, provenance, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1src
 from openmucf.g4.sources import mizuno2025 as mizsrc
+from openmucf.g4.sources import mudirac130 as md
 
 ROOT = Path(__file__).resolve().parents[1]
 G4DIR = ROOT / "data" / "g4"
@@ -88,11 +89,11 @@ D1_MIZUNO_LAYER2 = D1DIR / f"d1_capture.{mizsrc.PROFILE}.prov.json"
 MIZUNO_TABLE1_PATH = ROOT / mizsrc.TABLE1_RELPATH
 MIZUNO_TABLE3_PATH = ROOT / mizsrc.TABLE3_RELPATH
 
-#: The version moves with the archive: this one adds the capture table's second profile as a pair
-#: of members beside the parity pair, and the previous one packed the members under the dataset
-#: directory Geant4 unpacks to with the generated `README` and `History`. Plainly distinct from the
-#: example's `0.0.0-example`, and below 1.0.0 because D1 alone is not the dataset.
-D1_VERSION = "0.3.0"
+#: The version moves with the archive: this one adds the two D3 energy tables of the mudirac130
+#: profile as members beside the D1 pairs, the previous one the capture table's second profile.
+#: Plainly distinct from the example's `0.0.0-example`, and below 1.0.0 because D1 and D3 alone
+#: are not the dataset.
+DATASET_VERSION = "0.4.0"
 D1_SEAM = "d1_nuclear_capture"
 #: The release we actually read -- we vendored it. NOT the papers Geant4 cites: those are carried as
 #: quoted upstream text in `conditions`, because citing a paper this project has not opened would be
@@ -281,7 +282,7 @@ def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument
         )
     return provenance.ProvDocument(
         dataset=DATASET_NAME,
-        version=D1_VERSION,
+        version=DATASET_VERSION,
         profile=spec.PARITY_PROFILE,
         seam=D1_SEAM,
         # A one-entry ordering, which is the honest ranking of a file carrying exactly one library.
@@ -364,7 +365,7 @@ def build_zeff_document(found: d1src.D1Extraction) -> provenance.ProvDocument:
         )
     return provenance.ProvDocument(
         dataset=DATASET_NAME,
-        version=D1_VERSION,
+        version=DATASET_VERSION,
         profile=spec.PARITY_PROFILE,
         seam=D1_SEAM,
         precedence=(D1_SOURCE_LIBRARY,),
@@ -378,7 +379,7 @@ def build_capture_table(found: d1src.D1Extraction, digest: str) -> spec.G4DatTab
     directives = {
         "GRAMMAR": spec.GRAMMAR_VERSION,
         "DATASET": DATASET_NAME,
-        "VERSION": D1_VERSION,
+        "VERSION": DATASET_VERSION,
         "PROFILE": spec.PARITY_PROFILE,
         "SEAM": D1_SEAM,
         "TABLE": D1_CAPTURE_TABLE,
@@ -403,7 +404,7 @@ def build_zeff_table(found: d1src.D1Extraction, digest: str) -> spec.G4DatTable:
     directives = {
         "GRAMMAR": spec.GRAMMAR_VERSION,
         "DATASET": DATASET_NAME,
-        "VERSION": D1_VERSION,
+        "VERSION": DATASET_VERSION,
         "PROFILE": spec.PARITY_PROFILE,
         "SEAM": D1_SEAM,
         "TABLE": D1_ZEFF_TABLE,
@@ -473,7 +474,7 @@ def build_mizuno_capture_document(found: mizsrc.Mizuno2025Extraction) -> provena
         )
     return provenance.ProvDocument(
         dataset=DATASET_NAME,
-        version=D1_VERSION,
+        version=DATASET_VERSION,
         profile=mizsrc.PROFILE,
         seam=D1_SEAM,
         precedence=(mizsrc.PROFILE,),
@@ -488,7 +489,7 @@ def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) 
     directives = {
         "GRAMMAR": spec.GRAMMAR_VERSION,
         "DATASET": DATASET_NAME,
-        "VERSION": D1_VERSION,
+        "VERSION": DATASET_VERSION,
         "PROFILE": mizsrc.PROFILE,
         "SEAM": D1_SEAM,
         "TABLE": D1_CAPTURE_TABLE,
@@ -509,10 +510,145 @@ def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) 
     return spec.G4DatTable(directives=directives, records=records)
 
 
-def build_d1_artifacts() -> tuple[dict[Path, bytes], bytes]:
-    """The committed D1 artifacts keyed by path, plus the archive they describe (not committed)."""
+# --------------------------------------------------------------------------------------------
+# D3 -- the mudirac130 energy tables, from the committed MuDirac inputs and printed outputs
+# --------------------------------------------------------------------------------------------
+
+D3DIR = ROOT / md.D3_RELDIR
+D3_KSHELL_LAYER1 = D3DIR / f"d3_kshell.{md.PROFILE}.g4dat"
+D3_KSHELL_LAYER2 = D3DIR / f"d3_kshell.{md.PROFILE}.prov.json"
+D3_LEVELS_LAYER1 = D3DIR / f"d3_levels.{md.PROFILE}.g4dat"
+D3_LEVELS_LAYER2 = D3DIR / f"d3_levels.{md.PROFILE}.prov.json"
+#: The comparison with the measured transition energies: generated and byte-diffed, not an
+#: archive member.
+D3_VALIDATION = ROOT / md.VALIDATION_RELPATH
+#: What each table's value columns are, as the per-row method text names them.
+D3_QUANTITY = {
+    md.K_TABLE: "The 1s1/2 binding energy in keV is",
+    md.LEVEL_TABLE: (
+        "Each e<n> is the (2j+1)-weighted mean binding energy in keV of the two circular states of "
+        "shell n,"
+    ),
+}
+D3_METHOD = (
+    "{quantity} derived from the line energies MuDirac printed for run {base} by exact decimal sums "
+    "anchored on the printed header of the outermost circular state, each derived energy checked "
+    "against its own printed header."
+)
+D3_UNC = (
+    "unc is the absolute change of the same quantity in run {rsig}, whose rms radius is moved by its "
+    "charge-radii table uncertainty; nothing else is propagated."
+)
+D3_NATURAL = "This A = 0 row carries the values of A={a}, the isotope MuDirac's abundance file names for Z={z}."
+
+
+def _d3_rows(out: md.Outputs) -> list[md.TableRow]:
+    rows, _dropped = md.table_rows(out)
+    return rows
+
+
+def build_d3_document(out: md.Outputs, table_name: str) -> provenance.ProvDocument:
+    """Layer 2 for one D3 table: one row per record, every field by rule from the committed files."""
+    inputs = {row.nuclide: row for row in out.inputs}
+    cells, _origins = md.load_validation(ROOT / md.CELLS_RELPATH, ROOT / md.ORIGIN_RELPATH)
+    rows = {}
+    for record in _d3_rows(out):
+        source = inputs[(record.z, record.carries)]
+        base, rsig = md.run_id(source, "base"), md.run_id(source, "rsig")
+        rendered = md.render_input(source, "base", md.extra_lines(cells, source.nuclide))
+        method = D3_METHOD.format(quantity=D3_QUANTITY[table_name], base=base) + " " + D3_UNC.format(rsig=rsig)
+        if record.a == 0:
+            method += " " + D3_NATURAL.format(a=record.carries, z=record.z)
+        rows[f"{record.z}-{record.a}"] = provenance.ProvRow(
+            source_bibkey=md.BIBKEY,
+            source_locator=(
+                f"runs {base} and {rsig}: their rows of {md.STATES_RELPATH} and {md.LINES_RELPATH}, "
+                f"inputs rendered from {md.INPUTS_RELPATH}"
+            ),
+            unc_type="model",
+            conditions=f"MuDirac {md.MUDIRAC_VERSION} input: " + "; ".join(rendered.splitlines()),
+            validity_range=(
+                f"Z={record.z} A=0 (carries A={record.carries})" if record.a == 0
+                else f"Z={record.z} A={record.a}"
+            ),
+            evaluation_method=method,
+            single_source=False,
+            needs_verification=False,
+            recommendation="",
+            evaluation_id=md.PROFILE,
+            source_library=md.PROFILE,
+            isotope_resolved=record.a != 0,
+        )
+    return provenance.ProvDocument(
+        dataset=DATASET_NAME,
+        version=DATASET_VERSION,
+        profile=md.PROFILE,
+        seam=md.SEAM,
+        precedence=(md.PROFILE,),
+        rows=rows,
+    )
+
+
+def _d3_directives(out: md.Outputs, table_name: str, digest: str, units: str, columns: str) -> dict[str, str]:
+    z_values = sorted({record.z for record in _d3_rows(out)})
+    return {
+        "GRAMMAR": spec.GRAMMAR_VERSION,
+        "DATASET": DATASET_NAME,
+        "VERSION": DATASET_VERSION,
+        "PROFILE": md.PROFILE,
+        "SEAM": md.SEAM,
+        "TABLE": table_name,
+        "GENERATOR": f"openmucf-g4 {openmucf.__version__}",
+        "SOURCEDIGEST": digest,
+        "UNITS": units,
+        "COLUMNS": columns,
+        "VALIDITY": f"Z:{z_values[0]}-{z_values[-1]} A:{spec.A_MOST_ABUNDANT_AND_LISTED}",
+    }
+
+
+def build_d3_kshell_table(out: md.Outputs, digest: str) -> spec.G4DatTable:
+    """Layer 1 for ``k_shell_energy``: records ascending by ``(Z, A)``."""
+    directives = _d3_directives(out, md.K_TABLE, digest, "value=keV unc=keV", "Z A value unc")
+    records = tuple((r.z, r.a, r.k, r.k_unc) for r in _d3_rows(out))
+    return spec.G4DatTable(directives=directives, records=records)
+
+
+def build_d3_levels_table(out: md.Outputs, digest: str) -> spec.G4DatTable:
+    """Layer 1 for ``level_energy``: e2 .. e<N_MAX> then their uncertainties, ascending by ``(Z, A)``."""
+    shells = range(2, md.N_MAX + 1)
+    names = [f"e{n}" for n in shells] + [f"u{n}" for n in shells]
+    directives = _d3_directives(
+        out, md.LEVEL_TABLE, digest, " ".join(f"{name}=keV" for name in names), "Z A " + " ".join(names)
+    )
+    records = tuple((r.z, r.a, *r.levels, *r.level_uncs) for r in _d3_rows(out))
+    return spec.G4DatTable(directives=directives, records=records)
+
+
+def d3_summary(out: md.Outputs) -> list[str]:
+    """What the D3 build kept and dropped, and the members whose bundled radius the charge-radii
+    table prints differently -- printed by the regeneration and by the audit."""
+    rows, dropped = md.table_rows(out)
+    isotopes = sum(1 for r in rows if r.a != 0)
+    lines = [f"d3: members {len(out.inputs)} kept {isotopes} dropped {len(dropped)} natural rows {len(rows) - isotopes}"]
+    inputs = {row.nuclide: row for row in out.inputs}
+    for (z, a), reason in dropped.items():
+        row = inputs[(z, a)]
+        lines.append(
+            f"d3: dropped Z={z} A={a}: {reason} (sphere radius {row.radius_fm} fm, threshold "
+            f"{md.fermi2_c_threshold(row.fermi_t_fm)!r} fm)"
+            if reason == md.DROP_FERMI2_C else f"d3: dropped Z={z} A={a}: {reason}"
+        )
+    for z, a, bundled, table in md.radius_disagreements(out.inputs):
+        lines.append(f"d3: bundled rms radius differs from the charge-radii table at 4 decimals: Z={z} A={a} {bundled} vs {table}")
+    return lines
+
+
+def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
+    """The committed D1 and D3 artifacts keyed by path, plus the archive they describe (not
+    committed)."""
     found = d1src.load(VENDORED_PATH)  # checks the upstream pins before anything is generated
     mizuno = mizsrc.load(MIZUNO_TABLE1_PATH, MIZUNO_TABLE3_PATH)
+    outputs = md.load_outputs(ROOT)
 
     members: dict[str, bytes] = {}
     artifacts: dict[Path, bytes] = {}
@@ -529,6 +665,14 @@ def build_d1_artifacts() -> tuple[dict[Path, bytes], bytes]:
         (
             D1_MIZUNO_LAYER1, D1_MIZUNO_LAYER2, build_mizuno_capture_document(mizuno),
             functools.partial(build_mizuno_capture_table, mizuno),
+        ),
+        (
+            D3_KSHELL_LAYER1, D3_KSHELL_LAYER2, build_d3_document(outputs, md.K_TABLE),
+            functools.partial(build_d3_kshell_table, outputs),
+        ),
+        (
+            D3_LEVELS_LAYER1, D3_LEVELS_LAYER2, build_d3_document(outputs, md.LEVEL_TABLE),
+            functools.partial(build_d3_levels_table, outputs),
         ),
     ):
         raw = provenance.document_bytes(document)
@@ -554,19 +698,20 @@ def build_d1_artifacts() -> tuple[dict[Path, bytes], bytes]:
 
     # README and History are archive members only, like the archive itself: pure functions of the
     # Layer-2 documents and the member names, so nothing about them needs a committed copy.
-    members["README"] = emit.readme_member(name=DATASET_NAME, version=D1_VERSION, files=files)
-    members["History"] = emit.history_member(name=DATASET_NAME, version=D1_VERSION, files=files)
+    members["README"] = emit.readme_member(name=DATASET_NAME, version=DATASET_VERSION, files=files)
+    members["History"] = emit.history_member(name=DATASET_NAME, version=DATASET_VERSION, files=files)
     archive = emit.build_tarball(
-        members, directory=emit.dataset_directory(DATASET_NAME, D1_VERSION)
+        members, directory=emit.dataset_directory(DATASET_NAME, DATASET_VERSION)
     )
     snippet = emit.add_dataset_snippet(
         name=DATASET_NAME,
-        version=D1_VERSION,
+        version=DATASET_VERSION,
         filename=DATASET_NAME,
         envvar=DATASET_ENVVAR,
         md5=emit.tarball_md5(archive),
     )
     artifacts[D1_SNIPPET_PATH] = snippet.encode("ascii")
+    artifacts[D3_VALIDATION] = md.build_validation(ROOT)
     return artifacts, archive
 
 
@@ -668,11 +813,11 @@ def build_example_artifacts() -> tuple[dict[Path, bytes], bytes]:
 def build_artifacts() -> tuple[dict[Path, bytes], dict[str, bytes]]:
     """Every committed artifact of both builds, plus each build's archive keyed by its file name."""
     example, example_archive = build_example_artifacts()
-    d1, d1_archive = build_d1_artifacts()
+    d1, d1_archive = build_dataset_artifacts()
     _, example_document = load_layer2()
     return {**example, **d1}, {
         emit.archive_name(example_document.dataset, example_document.version): example_archive,
-        emit.archive_name(DATASET_NAME, D1_VERSION): d1_archive,
+        emit.archive_name(DATASET_NAME, DATASET_VERSION): d1_archive,
     }
 
 
@@ -696,6 +841,8 @@ def regenerate() -> None:
         print(f"wrote {path.relative_to(ROOT).as_posix()}")
     for name, archive in archives.items():
         print(f"archive {name} (not committed): {len(archive)} bytes, md5={emit.tarball_md5(archive)}")
+    for line in d3_summary(md.load_outputs(ROOT)):
+        print(line)
 
 
 def audit() -> None:
@@ -710,6 +857,8 @@ def audit() -> None:
         (D1_CAPTURE_LAYER1, D1_CAPTURE_LAYER2),
         (D1_ZEFF_LAYER1, D1_ZEFF_LAYER2),
         (D1_MIZUNO_LAYER1, D1_MIZUNO_LAYER2),
+        (D3_KSHELL_LAYER1, D3_KSHELL_LAYER2),
+        (D3_LEVELS_LAYER1, D3_LEVELS_LAYER2),
     )
     for layer1_path, layer2_path in pairs:
         try:
@@ -758,6 +907,8 @@ def audit() -> None:
         + ", ".join(f"{name} md5={emit.tarball_md5(archive)}" for name, archive in archives.items())
         + ")"
     )
+    for line in d3_summary(md.load_outputs(ROOT)):
+        print(line)
 
 
 def main(argv: list[str] | None = None) -> None:

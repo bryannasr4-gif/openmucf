@@ -31,8 +31,9 @@ IMPORT_TO_DISTRIBUTION = {"PIL": "pillow"}
 # name, so a test that exercises the hooks in it reads to the static scan below like a third-party
 # import that nothing declares. Listing it here fixes that misclassification; it exempts no actual
 # distribution, because there is no package named `conftest` in any dependency table.
-# `test_g4parity` is the same case: tests/test_g4prose.py imports it by name to reuse its pin tables.
-FIRST_PARTY = {"openmucf", "conftest", "test_g4parity"}
+# `test_g4parity` and `test_g4d3` are the same case: tests/test_g4prose.py imports each by name to
+# reuse its pin tables.
+FIRST_PARTY = {"openmucf", "conftest", "test_g4parity", "test_g4d3"}
 
 LAZY = (
     "calibrate",

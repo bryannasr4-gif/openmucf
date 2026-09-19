@@ -80,7 +80,7 @@ design:
 	python scripts/generate_design.py
 
 # The G4MuonicData datasets: the format example (data/g4/) and the D1 parity build (data/g4/d1/).
-# All seven generated artifacts join the audit git-diff list below, but they are NOT all the same
+# All generated artifacts join the audit git-diff list below, but they are NOT all the same
 # kind of artifact and the differences matter:
 #   example.g4dat            -- pure deterministic text rendered from the hand-authored Layer-2 file
 #                               (no MCMC/solver), byte-stable on every platform.
@@ -88,6 +88,8 @@ design:
 #                               (third_party/geant4/) and the CSV files committed beside them
 #                               (data/g4/d1/*.csv), parsed at build time. Pure deterministic text
 #                               and byte-stable on every platform.
+#   d3_*.g4dat, d3_*.prov.json -- both layers regenerated from the committed CSVs of data/g4/d3/;
+#                               pure deterministic text, byte-stable on every platform.
 #   geant4_add_dataset.snippet -- deterministic text EXCEPT for one field: MD5SUM is the MD5 of the
 #                               archive, i.e. of a gzip DEFLATE stream. zlib does not guarantee
 #                               byte-identical compressed output across builds, so this line is
@@ -123,7 +125,7 @@ g4conformance:
 audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics g4data g4conformance
 	python scripts/generate_forecast.py --audit
 	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json NEUTRONOMICS_MANIFEST.json DESIGN_MANIFEST.json
-	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/d1_capture.mizuno2025.g4dat data/g4/d1/d1_capture.mizuno2025.prov.json data/g4/d1/mizuno2025_table1.csv data/g4/d1/mizuno2025_table3.csv data/g4/d1/zeff_audit.csv data/g4/d1/capture_rate_cells.csv data/g4/d1/geant4_add_dataset.snippet tests/fixtures/g4dat_conformance
+	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/d1_capture.mizuno2025.g4dat data/g4/d1/d1_capture.mizuno2025.prov.json data/g4/d1/mizuno2025_table1.csv data/g4/d1/mizuno2025_table3.csv data/g4/d1/zeff_audit.csv data/g4/d1/capture_rate_cells.csv data/g4/d1/geant4_add_dataset.snippet data/g4/d3 tests/fixtures/g4dat_conformance
 	python scripts/generate_g4data.py --audit
 	python scripts/generate_g4dat_conformance.py --audit
 	python scripts/generate_calibration.py --audit
