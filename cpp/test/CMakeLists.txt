@@ -320,6 +320,20 @@ set_tests_properties(validate_d3_profiles PROPERTIES
   PASS_REGULAR_EXPRESSION "V-14 PASS profiles=mizuno2025,mudirac130,parity pairs=[0-9]+\nV-15 PASS [^\n]*\nV-16 PASS profiles=mudirac130 keys=[0-9]+\n"
   FAIL_REGULAR_EXPRESSION " FAIL ")
 
+# The assembled dataset with one byte appended to the level table's Layer-2 file: V-04 checks
+# every loaded table's sibling, so it fails and names that table.
+set(dir "${CMAKE_BINARY_DIR}/d3_digest_mismatch")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+if(NOT EXISTS "${dir}/d3_levels.mudirac130.prov.json")
+  message(FATAL_ERROR "the digest case needs d3_levels.mudirac130.prov.json in the assembled dataset")
+endif()
+file(APPEND "${dir}/d3_levels.mudirac130.prov.json" " ")
+add_test(NAME validate_d3_digest_mismatch
+         COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_d3_digest_mismatch PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-04 FAIL [^\n]*level_energy")
+
 # The level table without its first record: the key sets differ, and V-16 names the first key.
 set(dir "${CMAKE_BINARY_DIR}/d3_key_sets_differ")
 file(REMOVE_RECURSE "${dir}")
