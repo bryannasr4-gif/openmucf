@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the D3 energies in the overlay (2026-09-19)
+
+- **With the opt-in on and `G4MUONICDATA_PROFILE=mudirac130`, a patched Geant4 reads the D3
+  tables**: `G4EmCaptureCascade` takes its K energy and the energies of the shells above it up to
+  the chain's last from them, and `G4MuonicAtomHelper::GetKShellEnergy` its K energy from the
+  natural-composition row, or from the member's row in a new form taking the mass number, which the
+  muonic atom's construction and decay now call.
+
+### Fixed -- the D3 uncertainty cells (2026-09-19)
+
+- **Each `unc` and `u<n>` cell is measured with the energy of the outermost circular state held
+  fixed and is never below the most by which the rounding of the printed line energies can move
+  it**, and the dataset's `#VERSION` becomes 0.4.1.
+  `data/g4/d3/validation.csv` and `DATASET_D3.md` also carry, for context, the residual of the
+  energy Geant4's own cascade emits for each compared line.
+  The validator's V-04 now checks the Layer-2 digest of every table it loads, not only the parity
+  pair.
+
 ### Added -- the D3 energy tables (2026-09-18)
 
 - **The D3 tables of the `mudirac130` profile, `k_shell_energy` and `level_energy`**

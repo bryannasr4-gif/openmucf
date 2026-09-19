@@ -61,7 +61,7 @@ which that value is not real.
 It also drops every member whose mass number is below the one from which that default depends on
 the radius: MuDirac then sets c from the mass number alone.
 An element whose most abundant isotope is dropped has no natural-composition row, so a lookup for
-it falls through to the values compiled into Geant4.
+it falls through to Geant4's compiled-in code.
 
 ## 4. Comparison with measured energies
 
@@ -173,3 +173,18 @@ Every gated row is listed below; the table is generated from `validation.csv`.
 - The rows outside tolerance are this comparison's registered disagreements; none is fitted away.
 - The members whose bundled rms radius differs from the IAEA table are printed by the generator
   and passed as bundled.
+
+## 6. In Geant4
+
+With the opt-in on and `G4MUONICDATA_PROFILE=mudirac130`, a patched Geant4's muonic cascade
+(`G4EmCaptureCascade`) takes the K energy, and the energy of every shell above it up to the chain's
+last, from these tables (the member's row, else its element's natural-composition row), and keeps
+its hydrogen-like formula for the shells above those, and its branching and random draws, unchanged.
+`G4MuonicAtomHelper::GetKShellEnergy` reads the natural-composition row, and the form of it that
+also takes the mass number reads the member's row, for the muonic atom's mass and for the bound
+energy its decay passes on.
+The energy the cascade deposits, which Geant4 passes on as the muon's binding energy to decay in
+orbit and to nuclear capture, is the sum of the energies it emitted, and so moves with the table's
+K energy.
+With the opt-in off, or under a profile carrying no D3 table, the cascade and K-energy harvests of
+Geant4 v11.4.2 and v11.5.0.beta are bit-identical to those of unpatched builds.

@@ -930,6 +930,12 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("weakly sensitive rows within tolerance", path, r"and (\d+) of those lie within tolerance", (1,),
          sum(row["within"] == "true" for row in weak)),
     ]
+    # The changelog's entry for this dataset version names the version the shipped D3 tables carry.
+    kshell_table = (D3DIR / "d3_kshell.mudirac130.g4dat").read_text("ascii")
+    shipped = re.search(r"^#VERSION\s+(\S+)$", kshell_table, re.M)
+    assert shipped, "the committed k-shell table declares no #VERSION"
+    pins.append(("the dataset version the D3 fix moves to", "CHANGELOG.md",
+                 r"the dataset's `#VERSION` becomes (\d+\.\d+\.\d+)", (1,), shipped.group(1)))
     table = md.render_validation_table(validation).splitlines()[2:]
     for number, line in enumerate(table, start=1):
         pattern, groups = _row_pattern(line)
@@ -943,10 +949,13 @@ def test_t107_the_comparison_table_is_the_generated_block():
     assert text.count(block) == 1
 
 
-def _pin_problems(text: str) -> list[str]:
+def _pin_problems(text: str, path: str = "DATASET_D3.md") -> list[str]:
+    """Every pin of ``path`` that ``text``, that file's content, does not state exactly once."""
     collapsed = " ".join(text.split())
     problems = []
-    for what, _path, pattern, _groups, expected in document_pins():
+    for what, pin_path, pattern, _groups, expected in document_pins():
+        if pin_path != path:
+            continue
         hits = list(re.finditer(pattern, collapsed))
         if len(hits) != 1:
             problems.append(f"{what}: matched {len(hits)} times")
@@ -957,6 +966,9 @@ def _pin_problems(text: str) -> list[str]:
 
 def test_t107_every_pin_matches_once_and_states_its_value():
     assert not _pin_problems(_document_text())
+    changelog = (REPO / "CHANGELOG.md").read_bytes().decode("utf-8")
+    assert not _pin_problems(changelog, "CHANGELOG.md")
+    assert {pin[1] for pin in document_pins()} == {"DATASET_D3.md", "CHANGELOG.md"}
     print(f"\ndocument pins: {len(document_pins())}")
 
 
