@@ -47,8 +47,7 @@ struct AccessPrivate {
 template struct AccessPrivate<CascadeLevels, &G4EmCaptureCascade::fLevelEnergy>;
 
 void HarvestD3() {
-  // G4NucleiProperties caches six particle masses from the particle table, and every physics list
-  // constructs those particles, so the harness must too. Without them, a key with Z equal to A
+  // G4NucleiProperties caches six particle masses from the particle table. Without them, a key with Z equal to A
   // outside its mass tables gets a nuclear mass of zero.
   G4Proton::Proton(); G4Neutron::Neutron(); G4Deuteron::Deuteron();
   G4Triton::Triton(); G4Alpha::Alpha(); G4He3::He3();

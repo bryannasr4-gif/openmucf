@@ -180,7 +180,7 @@ With the opt-in on and `G4MUONICDATA_PROFILE=mudirac130`, a patched Geant4's muo
 last, from these tables (the member's row, else its element's natural-composition row), and keeps
 its hydrogen-like formula for the shells above those, and its branching and random draws, unchanged.
 `G4MuonicAtomHelper::GetKShellEnergy` reads the natural-composition row, and the form of it that
-also takes the mass number reads the member's row, for the muonic atom's mass and for the bound
+also takes the mass number reads the member's row, else its element's natural-composition row, for the muonic atom's mass and for the bound
 energy its decay passes on.
 The energy the cascade deposits, which Geant4 passes on as the muon's binding energy to decay in
 orbit and to nuclear capture, is the sum of the energies it emitted, and so moves with the table's
