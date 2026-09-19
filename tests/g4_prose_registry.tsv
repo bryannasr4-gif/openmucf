@@ -95,6 +95,7 @@
 43fe06eda1465ceae8a5fe83f74a4329a07bc2af	CHANGELOG.md	REGISTERED: 42.95, 15 -- DESIGN.md's C4 inclusion sentence: the best-cell contraction and the pre-registered threshold
 444586872b831025a21b227c646a1240df78057c	CHANGELOG.md	REGISTERED: five, 10, ⁵ -- the other five inputs of openmucf/data/uq_priors.csv beside E_mu, and the '~10⁵×' fall FINDINGS.md's section-2b amendment records as retracted
 44793c4cd95a020d9f440bde533effbca325c91b	CHANGELOG.md	REGISTERED: two -- the two normalizations the figure mixes
+44df0d8a9615702fefe9324b0079eab54637d3b2	CHANGELOG.md	REGISTERED: 0.4.0 -- the dataset version this dated entry moved the dataset to, as the entry recorded it (a dated line, held by this row and not re-derived)
 452b35ef6ccbea23cc0d1014411b08e0bbf6e250	CHANGELOG.md	REGISTERED: 0.000 -- the V1 gate's relative difference as the v1.0.0 notes recorded it
 4598f6c304d76521e521d14a13298622f1bb1d03	CHANGELOG.md	REGISTERED: 1.283, 08, 1.413 -- NEUTRONOMICS.md's T3 row, 1.413e+08 n/J today; 1.283e+08 is the value this entry moved it from
 462036442e69dc17030823a18ab29a168771e2d1	CHANGELOG.md	REGISTERED: ²²⁵ -- the mass number of ²²⁵Ac, a nuclide label

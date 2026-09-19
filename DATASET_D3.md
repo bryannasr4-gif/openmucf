@@ -42,7 +42,10 @@ The tables are derived from the printed line energies by exact decimal sums anch
 energy of the outermost circular state.
 `value` and `e<n>` come from the `base` run; `unc` and `u<n>` are the absolute change of the same
 quantity in the `rsig` run, whose rms radius is moved by its uncertainty in the IAEA charge-radii
-table (`charge_radii.csv`), and propagate nothing else.
+table (`charge_radii.csv`), measured through the printed line energies with the energy of the
+outermost circular state held fixed, and propagate nothing else.
+No `unc` or `u<n>` cell is below 0.000000014 keV, the most by which the rounding of the printed
+line energies can move such a change; a smaller change ships as that floor.
 Where the bundled rms radius and that table's value differ at the fourth decimal, the generator
 prints the member; neither value is edited.
 

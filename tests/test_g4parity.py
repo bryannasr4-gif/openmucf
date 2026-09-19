@@ -2295,10 +2295,6 @@ def document_pins() -> DocumentPins:
     crosscheck_disagreements = [pair for pair in crosscheck_pairs if not pair["agrees"]]
     # Released lines are held by dated registry rows; only `[Unreleased]` lines may be pinned live.
     changelog_claims: list = []
-    # A string the changelog states about a shipped file, read from that file: the dataset version
-    # the entry names is the `#VERSION` the committed capture table carries.
-    shipped_version = re.search(r"^#VERSION\s+(\S+)$", CAPTURE_LAYER1.read_text("ascii"), re.M)
-    assert shipped_version, "the committed capture table declares no #VERSION"
     # The one record the value comparison settled: the settled audit row `decided_by_value` decides,
     # derived from the audit and the printed cells. Every sentence naming it carries this key.
     blocks = d1.cells_by_z(capture_cells())
@@ -2314,8 +2310,6 @@ def document_pins() -> DocumentPins:
     ((settled_z, settled_a),) = settled_by_value_keys
     key_text = f"`({settled_z}, {settled_a})`"
     string_claims = [
-        ("the dataset version the entry names",
-         r"moves the dataset's `#VERSION` to (\d+\.\d+\.\d+)", shipped_version.group(1)),
         ("the record the value comparison settled",
          r"the (`\(\d+, \d+\)`) record is settled as the separated isotope the primary lists",
          key_text),

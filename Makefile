@@ -79,7 +79,8 @@ neutronomics:
 design:
 	python scripts/generate_design.py
 
-# The G4MuonicData datasets: the format example (data/g4/) and the D1 parity build (data/g4/d1/).
+# The G4MuonicData datasets: the format example (data/g4/), the D1 parity build (data/g4/d1/) and
+# the D3 tables (data/g4/d3/).
 # All generated artifacts join the audit git-diff list below, but they are NOT all the same
 # kind of artifact and the differences matter:
 #   example.g4dat            -- pure deterministic text rendered from the hand-authored Layer-2 file

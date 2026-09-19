@@ -354,6 +354,35 @@ def test_t104_drill_the_derivation_refuses_a_moved_line_a_moved_header_and_a_mis
         md.derive_bindings(run, missing, lines)
 
 
+def test_t104_drill_a_header_just_past_its_bound_is_refused_and_one_just_inside_passes():
+    """K1's header moved to exactly `header_bound` plus half a printed line unit from its derived
+    value is refused; moved to `header_bound` minus that half unit, the derivation holds. Both
+    moved headers keep the original's magnitude, so the bound they are held to is the same."""
+    out = md.load_outputs(REPO)
+    dropped = md.drop_reasons(out)
+    row = next(row for row in out.inputs if row.nuclide not in dropped)
+    run = md.run_id(row, "base")
+    headers, lines = dict(out.headers[run]), dict(out.lines[run])
+    derived = md.derive_bindings(run, headers, lines)
+    anchor = headers[md.orbit(md.N_MAX, True)]
+    bound = md.header_bound(headers["K1"], anchor)
+    # The bound is no looser than its docstring reads off the printed strings: half a printed unit
+    # of the header and of the anchor, plus half a printed line unit per line of a chain it allows.
+    stated = (_half_unit(headers["K1"]) + _half_unit(anchor)
+              + 2 * md.N_MAX * _line_half_unit(lines))
+    assert bound <= stated, (bound, stated)
+    with localcontext() as context:
+        context.prec = 50
+        outside = format(-(derived["K1"] + bound + md.LINE_HALF_UNIT), "f")
+        inside = format(-(derived["K1"] + bound - md.LINE_HALF_UNIT), "f")
+    for text in (outside, inside):
+        assert Decimal(text).adjusted() == Decimal(headers["K1"]).adjusted()
+        assert md.header_bound(text, anchor) == bound
+    with pytest.raises(md.DerivationError, match="derived K1 lies"):
+        md.derive_bindings(run, {**headers, "K1": outside}, lines)
+    md.derive_bindings(run, {**headers, "K1": inside}, lines)
+
+
 def test_t104_the_dropped_set_is_the_two_computed_classes_and_the_shipped_tables_hold_neither():
     """Re-derived from the committed inputs, run table and printed outputs: the members whose default
     Fermi parameter c is set by the mass number alone and the members whose sphere radius gives no
@@ -433,23 +462,81 @@ def _header_binding(headers: dict[str, str], state: str) -> Decimal:
     return -Decimal(headers[state])
 
 
-def _header_bound(headers: dict[str, str], state: str) -> Decimal:
-    return md.header_bound(headers[state], headers[md.orbit(md.N_MAX, True)])
+def _half_unit(text: str) -> Decimal:
+    """Half a unit of the last digit ``text`` prints, read off the printed string itself."""
+    return Decimal(5) * Decimal(10) ** (Decimal(text).as_tuple().exponent - 1)
 
 
-def _from_headers(headers: dict[str, str]) -> list[tuple[Decimal, Decimal]]:
+def _line_half_unit(lines: dict[str, str]) -> Decimal:
+    """The largest half unit among a run's printed line energies."""
+    return max(_half_unit(text) for text in lines.values())
+
+
+#: The most printed lines the derivation sums to reach any circular state from the anchor: every
+#: upper-chain line down to K1, then every lower-chain line out again.
+_MOST_LINES = 2 * (md.N_MAX - 1)
+
+
+def _header_bound(headers: dict[str, str], lines: dict[str, str], state: str) -> Decimal:
+    """How far a derived binding energy may lie from its printed header, written here from the
+    printed strings: half a printed unit of the header and of the anchor, plus half a printed line
+    unit for each line summed."""
+    anchor = headers[md.orbit(md.N_MAX, True)]
+    return _half_unit(headers[state]) + _half_unit(anchor) + _MOST_LINES * _line_half_unit(lines)
+
+
+def _from_headers(headers: dict[str, str], lines: dict[str, str]) -> list[tuple[Decimal, Decimal]]:
     """``[(quantity, bound)]`` in keV for K then e2 .. e<N_MAX>, from the printed state headers alone:
     each quantity with the largest distance the derivation may put between it and this value."""
     with localcontext() as context:
         context.prec = 50
-        out = [(_header_binding(headers, "K1") / 1000, _header_bound(headers, "K1") / 1000)]
+        out = [(_header_binding(headers, "K1") / 1000, _header_bound(headers, lines, "K1") / 1000)]
         for n in range(2, md.N_MAX + 1):
             ell = n - 1
             lower, upper = md.orbit(n, False), md.orbit(n, True)
             mean = (2 * ell * _header_binding(headers, lower)
                     + (2 * ell + 2) * _header_binding(headers, upper)) / (4 * ell + 2)
-            bound = max(_header_bound(headers, lower), _header_bound(headers, upper))
+            bound = max(_header_bound(headers, lines, lower), _header_bound(headers, lines, upper))
             out.append((mean / 1000, bound / 1000))
+    return out
+
+
+def _floor(lines: dict[str, str]) -> Decimal:
+    """The least uncertainty a cell may carry, in keV, written here from the printed lines: a
+    change between two runs of a quantity that sums at most `_MOST_LINES` printed lines in each."""
+    return 2 * _MOST_LINES * _line_half_unit(lines) / 1000
+
+
+def _route_relative(lines: dict[str, str]) -> dict[str, tuple[Decimal, int]]:
+    """``{state: (binding energy relative to the anchor in eV, lines summed)}`` by a route other than
+    the generator's: upper orbits down from the anchor by the upper-chain lines, the lower orbit of
+    shell 2 from K1 by its line, and each lower orbit of shell n + 1 from the upper orbit of shell n
+    by the cross line."""
+    out = {md.orbit(md.N_MAX, True): (Decimal(0), 0)}
+    for n in range(md.N_MAX - 1, 0, -1):
+        lower, upper = md.orbit(n, True), md.orbit(n + 1, True)
+        energy, count = out[upper]
+        out[lower] = (energy + Decimal(lines[f"{lower}-{upper}"]), count + 1)
+    energy, count = out["K1"]
+    out[md.orbit(2, False)] = (energy - Decimal(lines[f"K1-{md.orbit(2, False)}"]), count + 1)
+    for n in range(2, md.N_MAX):
+        upper, lower = md.orbit(n, True), md.orbit(n + 1, False)
+        energy, count = out[upper]
+        out[lower] = (energy - Decimal(lines[f"{upper}-{lower}"]), count + 1)
+    return out
+
+
+def _route_quantities(lines: dict[str, str]) -> list[tuple[Decimal, int]]:
+    """``[(quantity in keV, lines summed)]`` for K then e2 .. e<N_MAX>, on the other route."""
+    with localcontext() as context:
+        context.prec = 50
+        rel = _route_relative(lines)
+        out = [(rel["K1"][0] / 1000, rel["K1"][1])]
+        for n in range(2, md.N_MAX + 1):
+            ell = n - 1
+            (low, low_count), (high, high_count) = rel[md.orbit(n, False)], rel[md.orbit(n, True)]
+            mean = (2 * ell * low + (2 * ell + 2) * high) / (4 * ell + 2)
+            out.append((mean / 1000, max(low_count, high_count)))
     return out
 
 
@@ -471,8 +558,10 @@ def test_t105_every_value_and_unc_lies_within_the_header_precision_of_the_state_
     checked = 0
     for (z, a), (value, unc) in k_records.items():
         source = inputs[(z, carried[(z, a)])]
-        base = _from_headers(out.headers[md.run_id(source, "base")])
-        moved = _from_headers(out.headers[md.run_id(source, "rsig")])
+        base_run, rsig_run = md.run_id(source, "base"), md.run_id(source, "rsig")
+        base = _from_headers(out.headers[base_run], out.lines[base_run])
+        moved = _from_headers(out.headers[rsig_run], out.lines[rsig_run])
+        floor = max(_floor(out.lines[base_run]), _floor(out.lines[rsig_run]))
         shipped = [value, *level_records[(z, a)][: md.N_MAX - 1]]
         shipped_unc = [unc, *level_records[(z, a)][md.N_MAX - 1 :]]
         assert len(shipped) == len(shipped_unc) == len(base) == md.N_MAX
@@ -480,11 +569,88 @@ def test_t105_every_value_and_unc_lies_within_the_header_precision_of_the_state_
             shipped, shipped_unc, base, moved, strict=True
         ):
             assert _within(got, quantity, bound), ((z, a), got, quantity, bound)
-            assert _within(got_unc, abs(quantity_moved - quantity), bound + bound_moved), (
+            assert _within(got_unc, abs(quantity_moved - quantity), bound + bound_moved + floor), (
                 (z, a), got_unc
             )
             checked += 1
     print(f"\nvalues and uncs checked against the headers: {checked} of {len(k_records)} rows")
+
+
+def test_t105_every_unc_is_floored_and_agrees_with_an_independent_route_within_its_rounding():
+    """Every shipped `unc` and `u<n>` re-derived by the other route, anchor-relative: each cell is at
+    least this test's floor, and lies within that floor plus the two routes' rounding bound of the
+    other route's change (floored the same way). The largest difference and the floor are printed:
+    the difference is the route noise, and it must lie below the floor."""
+    out = md.load_outputs(REPO)
+    inputs = {row.nuclide: row for row in out.inputs}
+    kshell, kshell_doc = _shipped(KSHELL_LAYER1, KSHELL_LAYER2)
+    levels, _ = _shipped(LEVELS_LAYER1, LEVELS_LAYER2)
+    k_records, level_records = _records(kshell), _records(levels)
+    carried = _carried(kshell_doc)
+    largest, floors, checked = Decimal(0), set(), 0
+    for (z, a), (_value, unc) in k_records.items():
+        source = inputs[(z, carried[(z, a)])]
+        base_lines = out.lines[md.run_id(source, "base")]
+        rsig_lines = out.lines[md.run_id(source, "rsig")]
+        half = max(_line_half_unit(base_lines), _line_half_unit(rsig_lines))
+        floor = max(_floor(base_lines), _floor(rsig_lines))
+        floors.add(floor)
+        shipped_unc = [unc, *level_records[(z, a)][md.N_MAX - 1 :]]
+        base, moved = _route_quantities(base_lines), _route_quantities(rsig_lines)
+        for got, (quantity, count), (quantity_moved, count_moved) in zip(
+            shipped_unc, base, moved, strict=True
+        ):
+            shipped = Decimal(repr(got))
+            assert shipped >= floor, ((z, a), got, floor)
+            expected = max(abs(quantity_moved - quantity), floor)
+            route_bound = (2 * _MOST_LINES + count + count_moved) * half / 1000
+            difference = abs(shipped - expected)
+            assert difference <= floor + route_bound + expected * Decimal("1e-15"), (
+                (z, a), got, expected, route_bound
+            )
+            largest = max(largest, difference)
+            checked += 1
+    (floor,) = floors
+    print(f"\nuncertainty cells checked on the other route: {checked}; largest route difference "
+          f"{largest} keV; floor {floor} keV")
+    assert largest < floor, (largest, floor)
+
+
+def test_t105_drill_a_moved_rsig_anchor_header_leaves_the_uncertainties_unchanged():
+    """The `rsig` anchor header of a member whose anchor prints the same in both runs, moved by one
+    printed unit: the absolute derivation's K moves with it, and the shipped uncertainties do not."""
+    out = md.load_outputs(REPO)
+    dropped = md.drop_reasons(out)
+    kshell, _ = _shipped(KSHELL_LAYER1, KSHELL_LAYER2)
+    levels, _ = _shipped(LEVELS_LAYER1, LEVELS_LAYER2)
+    k_records, level_records = _records(kshell), _records(levels)
+    anchor = md.orbit(md.N_MAX, True)
+    for row in out.inputs:
+        if row.nuclide in dropped:
+            continue
+        base_run, rsig_run = md.run_id(row, "base"), md.run_id(row, "rsig")
+        headers = out.headers[rsig_run]
+        if out.headers[base_run][anchor] != headers[anchor]:
+            continue
+        unit = 2 * _half_unit(headers[anchor])
+        for step in (unit, -unit):
+            moved_headers = dict(headers)
+            printed = Decimal(headers[anchor])
+            moved_headers[anchor] = str((printed + step).quantize(printed))
+            try:
+                moved = md.derive_bindings(rsig_run, moved_headers, out.lines[rsig_run])
+            except md.DerivationError:
+                continue
+            base = md.derive_bindings(base_run, out.headers[base_run], out.lines[base_run])
+            original = md.derive_bindings(rsig_run, headers, out.lines[rsig_run])
+            assert md.quantities(moved)[0] != md.quantities(original)[0]
+            unc, level_uncs = md.uncertainties(base, moved)
+            shipped = (k_records[row.nuclide][1], *level_records[row.nuclide][md.N_MAX - 1 :])
+            assert tuple(float(u) for u in (unc, *level_uncs)) == shipped, row.nuclide
+            print(f"\nZ={row.z} A={row.a}: rsig anchor {headers[anchor]} -> {moved_headers[anchor]}; "
+                  "uncertainties unchanged")
+            return
+    pytest.fail("no member with an equal anchor header derives with its rsig anchor moved")
 
 
 def test_t105_natural_rows_equal_their_carried_isotope_and_both_tables_share_one_key_set():
@@ -716,6 +882,8 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("the highest checked shell", path, r"circular state of shells \d+ through (\d+)", (1,), md.N_MAX),
         ("the hydrogen-like bound in percent", path, r"lies within (\d+) % of the same state", (1,),
          int(md.NMAX_BOUND * 100)),
+        ("the uncertainty floor", path, r"No `unc` or `u<n>` cell is below (\d+\.\d+) keV", (1,),
+         format(md.UNC_FLOOR_KEV, "f")),
         ("the dropped member", path, r"The generator drops `([A-Z][a-z]?\d+)`", (1,),
          "".join(md.run_id(inputs[key], "base")[: -len("_base")] for key, reason in dropped.items()
                  if reason == md.DROP_FERMI2_C)),

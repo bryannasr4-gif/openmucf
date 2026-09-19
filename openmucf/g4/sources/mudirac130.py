@@ -534,6 +534,14 @@ _PRINTED = re.compile(r"-?[0-9]+(\.[0-9]+)?(e[+-][0-9]+)?")
 _LINE_ENERGY = re.compile(r"[0-9]+\.[0-9]{6}")
 #: Half a unit of the last decimal a line energy is printed with, in eV.
 LINE_HALF_UNIT = Decimal("0.0000005")
+#: The least uncertainty a `unc` or `u<n>` cell carries, in keV: the most by which the rounding of
+#: the printed line energies can move a change measured through them. A quantity measured with the
+#: outermost circular state held fixed sums at most twice (N_MAX - 1) printed lines -- the
+#: N_MAX - 1 upper-chain lines down to K1, then the N_MAX - 1 lower-chain lines out again -- each
+#: within LINE_HALF_UNIT of the value MuDirac computed; a (2j+1) mean is a convex combination of two
+#: such sums and is bounded the same way; and the change is taken between two runs, each rounded
+#: independently.
+UNC_FLOOR_KEV = 4 * (N_MAX - 1) * LINE_HALF_UNIT / 1000
 #: Why a nuclide the keep rule refuses is dropped, when its failure is that the Fermi parameter c
 #: MuDirac computes by default from the sphere radius is not a real number.
 DROP_FERMI2_C = "FERMI2 default c not real: sphere radius below sqrt(7/3)*pi*t/(4 ln 3) at t = fermi_t"
@@ -823,6 +831,29 @@ def quantities(b: dict[str, Decimal]) -> tuple[Decimal, tuple[Decimal, ...]]:
         return b["K1"] / 1000, tuple(level_mean(b, n) / 1000 for n in range(2, N_MAX + 1))
 
 
+def relative(b: dict[str, Decimal]) -> dict[str, Decimal]:
+    """Every state's binding energy (eV) minus the anchor's: what the printed lines alone give, with
+    the energy of the outermost circular state held fixed, so the anchor's printed header drops out."""
+    anchor = b[orbit(N_MAX, True)]
+    with localcontext() as context:
+        context.prec = _PRECISION
+        return {state: energy - anchor for state, energy in b.items()}
+
+
+def uncertainties(
+    base: dict[str, Decimal], moved: dict[str, Decimal]
+) -> tuple[Decimal, tuple[Decimal, ...]]:
+    """``(unc, (u2 .. u<N_MAX>))`` in keV: the absolute change of each quantity between the base and
+    the moved run, both measured relative to the anchor, and never less than UNC_FLOOR_KEV."""
+    k, levels = quantities(relative(base))
+    k_moved, levels_moved = quantities(relative(moved))
+    with localcontext() as context:
+        context.prec = _PRECISION
+        return max(abs(k_moved - k), UNC_FLOOR_KEV), tuple(
+            max(abs(m - e), UNC_FLOOR_KEV) for m, e in zip(levels_moved, levels, strict=True)
+        )
+
+
 # --------------------------------------------------------------------------------------------
 # which nuclides the tables keep
 # --------------------------------------------------------------------------------------------
@@ -922,11 +953,11 @@ def table_rows(out: Outputs) -> tuple[list[TableRow], dict[tuple[int, int], str]
         base, moved = (derive_bindings(run_id(row, kind), out.headers[run_id(row, kind)],
                                        out.lines[run_id(row, kind)]) for kind in ("base", "rsig"))
         k, levels = quantities(base)
-        k_moved, levels_moved = quantities(moved)
+        k_unc, level_uncs = uncertainties(base, moved)
         isotopes.append(TableRow(
-            row.z, row.a, row.a, float(k), float(abs(k_moved - k)),
+            row.z, row.a, row.a, float(k), float(k_unc),
             tuple(float(e) for e in levels),
-            tuple(float(abs(m - e)) for m, e in zip(levels_moved, levels, strict=True)),
+            tuple(float(u) for u in level_uncs),
         ))
     most: dict[int, int] = {}
     for row in out.inputs:
