@@ -91,12 +91,16 @@ SEAMS: dict[str, dict[str, pathlib.Path]] = {
     }
     for tag, (_, _, vendored) in FAMILIES.items()
 }
-#: Per family: the two reader files the patch adds, and the repository file each must equal --
-#: the same two files for both families, since the reader does not depend on the revision.
+#: Per family: the reader and glue files the patch adds, and the repository file each must equal --
+#: the same files for both families, since neither the reader nor the glue depends on the revision.
 READER: dict[str, dict[str, pathlib.Path]] = {
     tag: {
         "source/particles/management/include/G4MuonicDataTable.hh": REPO / "cpp/include/G4MuonicDataTable.hh",
         "source/particles/management/src/G4MuonicDataTable.cc": REPO / "cpp/src/G4MuonicDataTable.cc",
+        "source/particles/management/include/G4MuonicDataOverlay.hh": (
+            REPO / "cpp/include/G4MuonicDataOverlay.hh"
+        ),
+        "source/particles/management/src/G4MuonicDataOverlay.cc": REPO / "cpp/src/G4MuonicDataOverlay.cc",
     }
     for tag in FAMILIES
 }
