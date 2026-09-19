@@ -64,6 +64,7 @@ NMAX_RELPATH = f"{D3_RELDIR}/mudirac_nmax_check.csv"
 CELLS_RELPATH = f"{D3_RELDIR}/validation_cells.csv"
 ORIGIN_RELPATH = f"{D3_RELDIR}/validation_radius_origin.csv"
 VALIDATION_RELPATH = f"{D3_RELDIR}/validation.csv"
+GEANT4_LEVELS_RELPATH = f"{D3_RELDIR}/geant4_cascade_levels.csv"
 
 #: The run kinds whose results are committed, in their order: the bundled radius, the rms radius
 #: moved by its uncertainty, the rms radius times SIZE_FLOOR (validation nuclides only), and one
@@ -996,13 +997,105 @@ def table_rows(out: Outputs) -> tuple[list[TableRow], dict[tuple[int, int], str]
 
 
 # --------------------------------------------------------------------------------------------
+# the level energies Geant4's own muonic cascade uses, kept for context beside the comparison
+# --------------------------------------------------------------------------------------------
+
+GEANT4_LEVELS_COLUMNS = ("Z", "A", "n", "level_MeV")
+#: The levels `G4EmCaptureCascade` carries, `fLevelEnergy[0]` through `fLevelEnergy[13]`; a row's `n`
+#: is the index plus one, the shell whose energy the cascade holds there.
+CASCADE_LEVELS = 14
+#: A positive normal double as C's ``%a`` prints it.
+_HEXFLOAT = re.compile(r"0x1(?:\.[0-9a-f]+)?p[+-][0-9]+")
+
+
+def render_geant4_levels(harvest_text: str, nuclides: list[tuple[int, int]]) -> bytes:
+    """``geant4_cascade_levels.csv`` from the output of ``cpp/tools/harvest_d3.cc``: for each of
+    ``nuclides``, ascending, the CASCADE_LEVELS level energies its ``C`` line prints, each the ``%a``
+    token verbatim, in MeV. Every other line is passed over. Raises when a nuclide has no ``C`` line
+    or two, or a level is not a ``%a`` token."""
+    wanted = set(nuclides)
+    found: dict[tuple[int, int], list[str]] = {}
+    for number, line in enumerate(harvest_text.split("\n"), start=1):
+        fields = line.split(" ")
+        if fields[0] != "C":
+            continue
+        where = f"harvest line {number}"
+        key = (integer(fields[1], where, "Z"), integer(fields[2], where, "A"))
+        if key not in wanted:
+            continue
+        if key in found:
+            raise DuplicateKeyError(f"{where}: a second C line for (Z, A) = {key}")
+        levels = fields[3:3 + CASCADE_LEVELS]
+        if len(levels) != CASCADE_LEVELS or not all(_HEXFLOAT.fullmatch(token) for token in levels):
+            raise CellError(
+                f"{where}: {CASCADE_LEVELS} level energies printed with %a expected after Z and A"
+            )
+        found[key] = levels
+    missing = sorted(wanted - set(found))
+    if missing:
+        raise CellError(f"the harvest has no C line for {missing}")
+    rows = [",".join(GEANT4_LEVELS_COLUMNS)]
+    for z, a in sorted(found):
+        rows += [f"{z},{a},{n},{token}" for n, token in enumerate(found[(z, a)], start=1)]
+    return ("\n".join(rows) + "\n").encode("ascii")
+
+
+def load_geant4_levels(path: Path) -> dict[tuple[int, int], tuple[float, ...]]:
+    """Parse ``geant4_cascade_levels.csv``: ``{(Z, A): (level 1, ..., level CASCADE_LEVELS)}`` in MeV,
+    each read exactly from its ``%a`` token. Rows ascend by (Z, A, n), and n runs 1 through
+    CASCADE_LEVELS for every nuclide."""
+    out: dict[tuple[int, int], list[float]] = {}
+    previous: tuple[int, int, int] | None = None
+    for where, r in read_rows(path, GEANT4_LEVELS_COLUMNS):
+        z, a, n = integer(r["Z"], where, "Z"), integer(r["A"], where, "A"), integer(r["n"], where, "n")
+        if not _HEXFLOAT.fullmatch(r["level_MeV"]):
+            raise CellError(
+                f"{where}: level_MeV must be a positive double printed with %a, got {r['level_MeV']!r}"
+            )
+        key = (z, a, n)
+        if previous is not None and key == previous:
+            raise DuplicateKeyError(f"{where}: duplicate row for (Z, A, n) = {key}")
+        if previous is not None and key < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, n)")
+        levels = out.setdefault((z, a), [])
+        if n != len(levels) + 1 or n > CASCADE_LEVELS:
+            raise CellError(f"{where}: n runs 1 through {CASCADE_LEVELS} for every (Z, A), got n = {n}")
+        levels.append(float.fromhex(r["level_MeV"]))
+        previous = key
+    short = sorted(key for key, levels in out.items() if len(levels) != CASCADE_LEVELS)
+    if short:
+        raise CellError(
+            f"{Path(path).name}: n runs 1 through {CASCADE_LEVELS} for every (Z, A); {short} stop short"
+        )
+    return {key: tuple(levels) for key, levels in out.items()}
+
+
+def line_shells(line: str) -> tuple[int, int]:
+    """The (lower, upper) shells of a line in MuDirac's IUPAC spelling: K is shell 1, L shell 2, ..."""
+    lower, upper = (ord(orbit[0]) - ord("K") + 1 for orbit in line.split("-"))
+    if not lower < upper:
+        raise CellError(f"line {line!r} does not go from a lower to a higher shell")
+    return lower, upper
+
+
+def geant4_line_kev(levels: tuple[float, ...], line: str) -> Decimal:
+    """The photon Geant4's cascade emits between the two shells of ``line`` -- the difference of its
+    two level energies, taken in doubles as the cascade takes it -- in keV, at nine decimals."""
+    lower, upper = line_shells(line)
+    photon = levels[lower - 1] - levels[upper - 1]
+    with localcontext() as context:
+        context.prec = 1000
+        return (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+
+
+# --------------------------------------------------------------------------------------------
 # the comparison with the measured transition energies
 # --------------------------------------------------------------------------------------------
 
 VALIDATION_COLUMNS = (
     "source", "Z", "A", "transition", "quantity", "measured_keV", "unc_keV", "unc_label", "tol_keV",
     "model_keV", "residual_keV", "dE_sigma_keV", "dE_1pct_keV", "label", "within", "npol_keV",
-    "radius_origin", "gated", "reason", "locator",
+    "radius_origin", "gated", "reason", "locator", "geant4_keV", "geant4_residual_keV",
 )
 #: The comparison labels: a row whose model value moves by at least a third of its tolerance when
 #: the radius moves (by its uncertainty, or by the SIZE_FLOOR factor) is size-dominated.
@@ -1025,12 +1118,20 @@ def line_energy_kev(out: Outputs, row: InputRow, kind: str, line: str) -> Decima
 
 
 def validation_rows(
-    out: Outputs, cells: tuple[Cell, ...], origins: dict[tuple[int, int], RadiusOrigin]
+    out: Outputs, cells: tuple[Cell, ...], origins: dict[tuple[int, int], RadiusOrigin],
+    geant4_levels: dict[tuple[int, int], tuple[float, ...]],
 ) -> list[dict[str, str]]:
     """One row per transcribed cell, in the transcription's order: the measured value, the tolerance
     TOL_FACTOR * sqrt(sigma**2 + SIGMA_CALC**2), and on a gated row the model value, the residual,
     the model's shift when the radius moves, the label and whether the residual is within tolerance.
-    Nothing is altered for lying outside tolerance."""
+    Nothing is altered for lying outside tolerance. For context, a gated row also carries the energy
+    Geant4's own cascade emits between the line's two shells and its difference from the measured
+    value; the label and the tolerance test use MuDirac's residual alone."""
+    if set(geant4_levels) != set(gated_nuclides(cells)):
+        raise CellError(
+            f"{Path(GEANT4_LEVELS_RELPATH).name} names {sorted(geant4_levels)}, "
+            f"the gated nuclides are {gated_nuclides(cells)}"
+        )
     inputs = {row.nuclide: row for row in out.inputs}
     rows = []
     for cell in cells:
@@ -1046,6 +1147,7 @@ def validation_rows(
             "npol_keV": cell.npol_kev,
             "radius_origin": origins[cell.nuclide].origin if cell.nuclide in origins else "",
             "gated": "true" if cell.gated else "false", "reason": cell.reason, "locator": cell.locator,
+            "geant4_keV": "", "geant4_residual_keV": "",
         }
         if cell.gated:
             member = inputs[cell.nuclide]
@@ -1059,6 +1161,11 @@ def validation_rows(
                 "dE_sigma_keV": _decimal_text(d_sigma), "dE_1pct_keV": _decimal_text(d_floor),
                 "label": SIZE_DOMINATED if size else WEAKLY_SENSITIVE,
                 "within": "true" if abs(residual) <= tol else "false",
+            })
+            geant4 = geant4_line_kev(geant4_levels[cell.nuclide], cell.quantity)
+            row.update({
+                "geant4_keV": _decimal_text(geant4),
+                "geant4_residual_keV": _decimal_text(geant4 - Decimal(cell.value_kev)),
             })
         rows.append(row)
     return rows
@@ -1078,14 +1185,16 @@ def build_validation(root: Path) -> bytes:
     """The comparison file from the committed files under ``root`` alone."""
     root = Path(root)
     cells, origins = load_validation(root / CELLS_RELPATH, root / ORIGIN_RELPATH)
-    return render_validation(validation_rows(load_outputs(root), cells, origins))
+    geant4_levels = load_geant4_levels(root / GEANT4_LEVELS_RELPATH)
+    return render_validation(validation_rows(load_outputs(root), cells, origins, geant4_levels))
 
 
 #: The columns of the document's comparison table, each a column of ``validation.csv``.
 TABLE_COLUMNS = (
     ("source", "source"), ("Z", "Z"), ("A", "A"), ("transition", "transition"), ("line", "quantity"),
     ("measured (keV)", "measured_keV"), ("sigma (keV)", "unc_keV"), ("model (keV)", "model_keV"),
-    ("residual (keV)", "residual_keV"), ("tol (keV)", "tol_keV"), ("label", "label"),
+    ("residual (keV)", "residual_keV"), ("Geant4 residual (keV)", "geant4_residual_keV"),
+    ("tol (keV)", "tol_keV"), ("label", "label"),
     ("within", "within"), ("NPol (keV)", "npol_keV"),
 )
 

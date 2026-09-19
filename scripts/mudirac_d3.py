@@ -4,12 +4,15 @@
     python3 scripts/mudirac_d3.py write --kind K --dir D
     python3 scripts/mudirac_d3.py run --mudirac BIN --dir D --jobs N
     python3 scripts/mudirac_d3.py collect --dir D [D ...] --out data/g4/d3
+    python3 scripts/mudirac_d3.py geant4-levels --harvest H --out data/g4/d3/geant4_cascade_levels.csv
 
 `inputs` checks the three pinned source files and writes ``mudirac_inputs.csv``. `write` renders one
 ``<run>/<run>.in`` per member for one run kind. `run` runs MuDirac once per input with exactly one
 argument, the input file, and records each exit status and ``.err`` size in ``D/runs.tsv``. `collect`
 reads the run directories of the committed kinds and writes the run table, every printed state header,
 every printed line and the hydrogen-like comparison of the checked shells, each in a fixed order.
+`geant4-levels` reads the output of ``cpp/tools/harvest_d3.cc`` on a Geant4 build without the
+overlay and writes the cascade's level energies for every gated validation nuclide.
 
 The generator itself is not run by the test suite or the audit: its committed outputs are the input
 of record, and ``scripts/generate_g4data.py`` builds the D3 tables from them. This script imports
@@ -173,6 +176,14 @@ def cmd_collect(args: argparse.Namespace) -> None:
         print(f"wrote {Path(relpath).name}: {len(table) - 1} rows")
 
 
+def cmd_geant4_levels(args: argparse.Namespace) -> None:
+    _rows, cells = _inputs_and_cells()
+    nuclides = md.gated_nuclides(cells)
+    payload = md.render_geant4_levels(Path(args.harvest).read_bytes().decode("ascii"), nuclides)
+    Path(args.out).write_bytes(payload)
+    print(f"wrote {args.out}: {len(nuclides)} nuclides")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -191,8 +202,12 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("collect")
     p.add_argument("--dir", required=True, nargs="+")
     p.add_argument("--out", required=True)
+    p = sub.add_parser("geant4-levels")
+    p.add_argument("--harvest", required=True)
+    p.add_argument("--out", required=True)
     args = parser.parse_args(argv)
-    {"inputs": cmd_inputs, "write": cmd_write, "run": cmd_run, "collect": cmd_collect}[args.command](args)
+    {"inputs": cmd_inputs, "write": cmd_write, "run": cmd_run, "collect": cmd_collect,
+     "geant4-levels": cmd_geant4_levels}[args.command](args)
 
 
 if __name__ == "__main__":

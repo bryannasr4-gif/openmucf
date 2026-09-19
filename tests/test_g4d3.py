@@ -14,6 +14,7 @@ import re
 from decimal import Decimal, localcontext
 
 import pytest
+import test_g4parity as parity
 
 from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import mudirac130 as md
@@ -774,8 +775,10 @@ def test_t106_every_gated_quantity_is_a_line_its_base_run_printed():
 
 def test_t106_the_comparison_file_equals_an_arithmetic_rederivation():
     """Every column recomputed here from the transcription and the printed lines, with the
-    tolerance three printed standard deviations and no model term."""
+    tolerance three printed standard deviations and no model term; the two Geant4 columns from the
+    committed cascade levels, the photon between the line's two shells taken in doubles."""
     out = md.load_outputs(REPO)
+    geant4 = md.load_geant4_levels(GEANT4_LEVELS)
     cells, origins = md.load_validation(CELLS, ORIGIN)
     inputs = {row.nuclide: row for row in out.inputs}
     committed = _committed_validation()
@@ -795,7 +798,8 @@ def test_t106_the_comparison_file_equals_an_arithmetic_rederivation():
         assert (row["measured_keV"], row["unc_keV"], row["npol_keV"]) == (
             cell.value_kev, cell.unc_kev, cell.npol_kev)
         assert row["radius_origin"] == (origins[cell.nuclide].origin if cell.nuclide in origins else "")
-        derived = ("model_keV", "residual_keV", "dE_sigma_keV", "dE_1pct_keV", "label", "within")
+        derived = ("model_keV", "residual_keV", "dE_sigma_keV", "dE_1pct_keV", "label", "within",
+                   "geant4_keV", "geant4_residual_keV")
         if not cell.gated:
             assert row["gated"] == "false" and row["reason"] == cell.reason
             assert all(row[column] == "" for column in derived), row
@@ -810,7 +814,30 @@ def test_t106_the_comparison_file_equals_an_arithmetic_rederivation():
         sized = max(abs(d_sigma), abs(d_floor)) * 3 >= tol
         assert row["label"] == ("size-dominated" if sized else "weakly sensitive"), row
         assert row["within"] == ("true" if abs(residual) <= tol else "false"), row
+        shells = ["KLMNOPQRSTUVWXYZ".index(orbit[0]) + 1 for orbit in cell.quantity.split("-")]
+        photon = geant4[cell.nuclide][min(shells) - 1] - geant4[cell.nuclide][max(shells) - 1]
+        with localcontext() as context:
+            context.prec = 1000
+            photon_kev = (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+        assert Decimal(row["geant4_keV"]) == photon_kev, row
+        assert Decimal(row["geant4_residual_keV"]) == photon_kev - Decimal(cell.value_kev), row
     assert VALIDATION.read_bytes() == md.build_validation(REPO)
+
+
+def test_t106_the_geant4_columns_move_neither_the_label_nor_the_tolerance_test():
+    """Context only: with every Geant4 level doubled, the Geant4 columns change and nothing else."""
+    out = md.load_outputs(REPO)
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    geant4 = md.load_geant4_levels(GEANT4_LEVELS)
+    doubled = {key: tuple(2 * level for level in levels) for key, levels in geant4.items()}
+    rows = md.validation_rows(out, cells, origins, geant4)
+    moved = md.validation_rows(out, cells, origins, doubled)
+    context = ("geant4_keV", "geant4_residual_keV")
+    gated = [i for i, row in enumerate(rows) if row["gated"] == "true"]
+    assert gated and all(rows[i]["geant4_keV"] != moved[i]["geant4_keV"] for i in gated)
+    for row, other in zip(rows, moved, strict=True):
+        assert {k: v for k, v in row.items() if k not in context} == {
+            k: v for k, v in other.items() if k not in context}
 
 
 def test_t106_every_gated_measurement_outside_tolerance_carries_its_printed_npol_when_fricke_prints_one():
@@ -945,3 +972,109 @@ def test_t107_drill_a_changed_count_and_a_changed_table_cell_are_refused():
     changed = _replace_once(text, row, row.replace(f" | {cell} | ", f" | {cell}1 | ", 1))
     assert changed.count(block) == 0
     assert any(problem.startswith("comparison table row 1:") for problem in _pin_problems(changed))
+
+
+# --------------------------------------------------------------------------------------------
+# T-110 -- the level energies Geant4's own cascade uses, beside the comparison
+# --------------------------------------------------------------------------------------------
+
+GEANT4_LEVELS = REPO / md.GEANT4_LEVELS_RELPATH
+
+
+def cascade_k_energies(zs: list[int], literals: list[str]) -> dict[int, float]:
+    """``fKLevelEnergy`` as the vendored cascade's constructor fills it, re-computed here by its own
+    expression over its compiled-in table: the listed Z take their literal, the Z between two listed
+    ones the interpolation of energy over Z squared."""
+    energies = [float(token) for token in literals]
+    k = {0: 0.0, 1: energies[0]}
+    idx = 1
+    for i in range(1, len(zs)):
+        z1, z2 = zs[idx], zs[i]
+        if z1 + 1 < z2:
+            dz = float(z2 - z1)
+            y1 = energies[idx] / float(z1 * z1)
+            y2 = energies[i] / float(z2 * z2)
+            for z in range(z1 + 1, z2):
+                k[z] = (y1 + (y2 - y1) * (z - z1) / dz) * z * z
+        k[z2] = energies[i]
+        idx = i
+    return k
+
+
+def test_t110_the_cascade_levels_are_the_vendored_cascades_for_every_gated_nuclide():
+    levels = md.load_geant4_levels(GEANT4_LEVELS)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    assert sorted(levels) == md.gated_nuclides(cells)
+    cascade = parity.D3_SEAM_DIRS[parity.d1.UPSTREAM_TAG] / parity.CASCADE_NAME
+    text = cascade.read_text("ascii")
+    assert f"fLevelEnergy[{md.CASCADE_LEVELS - 1}]" in text and f"i<{md.CASCADE_LEVELS}" in text
+    kshell = cascade_k_energies(*parity.k_table(text, parity.CASCADE_NAME))
+    top = max(kshell)
+    for (z, a), row in levels.items():
+        assert len(row) == md.CASCADE_LEVELS
+        assert all(upper < lower for lower, upper in zip(row, row[1:], strict=False)), (z, a)
+        assert row[0] == kshell[min(z, top)], (z, a, row[0].hex(), kshell[min(z, top)].hex())
+        e = 4 * row[1]
+        for n in range(2, md.CASCADE_LEVELS + 1):
+            assert e / float(n * n) == row[n - 1], (z, a, n)
+    print(f"\ncascade levels: {len(levels)} gated nuclides, {md.CASCADE_LEVELS} levels each")
+
+
+def _harvest_from_levels() -> str:
+    """A harvest whose C lines carry the committed levels of every gated nuclide."""
+    rows = GEANT4_LEVELS.read_bytes().decode("ascii").split(NL)[1:-1]
+    tokens: dict[tuple[int, int], list[str]] = {}
+    for row in rows:
+        z, a, _n, level = row.split(",")
+        tokens.setdefault((int(z), int(a)), []).append(level)
+    lines = ["K 1 0x1p-1"]
+    lines += [f"C {z} {a} " + " ".join(levels) + " 1 e:0x1p-1 edep 0x1p-1"
+              for (z, a), levels in tokens.items()]
+    return NL.join(lines) + NL
+
+
+def test_t110_the_committed_file_is_what_the_renderer_writes_from_a_harvest():
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    harvest = _harvest_from_levels()
+    assert md.render_geant4_levels(harvest, md.gated_nuclides(cells)) == GEANT4_LEVELS.read_bytes()
+
+
+def test_t110_drill_a_missing_a_repeated_and_a_malformed_c_line_are_refused():
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    nuclides = md.gated_nuclides(cells)
+    harvest = _harvest_from_levels()
+    first = next(line for line in harvest.split(NL) if line.startswith("C "))
+    drills = [
+        (harvest.replace(first + NL, ""), md.CellError, "no C line for"),
+        (harvest + first + NL, md.DuplicateKeyError, "a second C line"),
+        (harvest.replace(first, first.replace(" 0x", " 0.", 1)), md.CellError, "printed with %a"),
+    ]
+    for mutated, error, message in drills:
+        assert mutated != harvest
+        with pytest.raises(error, match=re.escape(message)):
+            md.render_geant4_levels(mutated, nuclides)
+
+
+_GL = "21,45,1,"
+GEANT4_LEVELS_DRILLS = [
+    ("a carriage return", lambda t: t.replace(NL, "\r" + NL, 1), md.CarriageReturnError, "contains CR"),
+    ("a non-ASCII byte", lambda t: t.replace(NL + _GL, NL + "21,45,1·", 1),
+     md.NonAsciiError, "outside US-ASCII"),
+    ("a renamed column", lambda t: _replace_once(t, "n,level_MeV", "n,level"), md.HeaderError, "header is"),
+    ("a signed Z", lambda t: _replace_once(t, NL + _GL, NL + "+21,45,1,"),
+     md.CellError, "Z must be an integer"),
+    ("a level in decimal", lambda t: NL.join([*_lines(t)[:1], _GL + "1.1", *_lines(t)[2:]]),
+     md.CellError, "positive double printed with %a"),
+    ("a missing level", lambda t: NL.join([*_lines(t)[:2], *_lines(t)[3:]]),
+     md.CellError, "got n = 3"),
+    ("a nuclide stopping short", lambda t: NL.join([*_lines(t)[:-2], ""]), md.CellError, "stop short"),
+    ("a duplicated row", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate row"),
+    ("rows out of order", lambda t: _swap_lines(t, md.CASCADE_LEVELS), md.OrderError, "ordered by (Z, A, n)"),
+    ("no rows", lambda t: _lines(t)[0] + NL, md.EmptyError, "carries no rows"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", GEANT4_LEVELS_DRILLS,
+                         ids=[d[0] for d in GEANT4_LEVELS_DRILLS])
+def test_t110_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, GEANT4_LEVELS, mutate, error, message, md.load_geant4_levels)
