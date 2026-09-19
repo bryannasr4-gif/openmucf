@@ -16,6 +16,8 @@ digest is a check anyone can run.
 | `harvest_d1_degenerate.cc` | the inputs the sweep excludes: `Z = 0`, `A = 0`, `Z < 0`, and the `zeff` clamp at both ends |
 | `harvest_d1_overlay.cc` | `harvest_d1.cc` with the dataset opt-in switched on, through the same compiled-in copy, `G4MuonMinusBoundDecay`; built against a Geant4 install carrying `cpp/patches/` |
 | `harvest_helper_overlay.cc` | the same sweep and opt-in through the second compiled-in copy, `G4MuonicAtomHelper`; built against a Geant4 install carrying `cpp/patches/` |
+| `harvest_d3.cc` | `G4MuonicAtomHelper::GetKShellEnergy(Z)` for every Z of the same box, then a `G4EmCaptureCascade` capture at a fixed seed for every (Z, A) of the box with A ≥ Z: the cascade's level energies, the particles it emits with their energies, and the energy it deposits |
+| `harvest_d3_overlay.cc` | `harvest_d3.cc` with the dataset opt-in switched on, then `GetKShellEnergy(Z, A)`, the form that takes the mass number, over the same keys; built against a Geant4 install carrying `cpp/patches/` |
 
 `harvest_d1_degenerate.cc` exists because the oracle commits those rows. It is also where the
 degenerate probe set is *declared*: `build_oracle.py` and the
@@ -32,6 +34,10 @@ g++ -O2 harvest_d1.cc            -o harvest_d1            $(geant4-config --cfla
 g++ -O2 harvest_d1_degenerate.cc -o harvest_d1_degenerate $(geant4-config --cflags --libs)
 ./harvest_d1 > sweep.txt
 ./harvest_d1_degenerate > degenerate.txt
+g++ -O2 harvest_d3.cc            -o harvest_d3            $(geant4-config --cflags --libs)
+./harvest_d3 > d3.txt
+# harvest_d3_overlay.cc includes harvest_d3.cc and needs an install carrying cpp/patches/
+g++ -O2 harvest_d3_overlay.cc    -o harvest_d3_overlay    $(geant4-config --cflags --libs)
 ```
 
 Values are printed with `%a` — the exact hexadecimal float — so nothing is lost to decimal
