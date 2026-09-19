@@ -2,8 +2,9 @@
 
 `cpp/patches/g4-v11.4.2-muonicdata.patch` and `cpp/patches/g4-v11.5.0.beta-muonicdata.patch` are
 where the reader meets Geant4, one patch family per revision the overlay targets. Each adds the
-reader to Geant4's own tree, adds the opt-in boolean to `G4HadronicParameters`, and inserts a
-lookup into the two compiled-in copies of the muon-capture tables. Two things about a family can
+reader and its glue to Geant4's own tree, adds the opt-in boolean to `G4HadronicParameters`, and
+inserts lookups into the two compiled-in copies of the muon-capture tables, the muonic cascade and
+the helper's K energy. Two things about a family can
 rot silently: the reader it carries can drift from `cpp/include` + `cpp/src` (the repository's
 copy is the one every other test exercises), and its context lines can drift from the vendored
 upstream files it was cut against (then it no longer applies where it claims to). Neither needs
@@ -13,8 +14,9 @@ What each test here is actually for:
 
 * **T-72** -- the patch parses as a unified diff, touches exactly the declared set of files, applies
   (with a zero-fuzz applier written here, not `git apply`, so the check is the same on every
-  runner) to the vendored copies of the two seam files without deleting a line of any file that
-  existed before it, and the two reader files it adds equal the repository's byte for byte. The
+  runner) to the vendored copies of the seam files without deleting a line of any file that
+  existed before it but the two call lines it changes, and the reader and glue files it adds equal
+  the repository's byte for byte. The
   registration patch touches only the dataset-definitions file and adds exactly the committed
   snippet's entry.
 * **T-73** -- the drill: alter one context line and the applier must refuse, naming the hunk; and
@@ -52,23 +54,43 @@ FAMILIES: dict[str, tuple[pathlib.Path, pathlib.Path, pathlib.Path]] = {
 #: Every patch of every family, in tag order -- what the README's digit-bearing tokens are held to.
 ALL_PATCHES = [patch for tag in sorted(FAMILIES) for patch in FAMILIES[tag][:2]]
 
-#: The files the behaviour patch is declared to touch, as a literal set: two reader files and one
-#: glue file added to Geant4's particle-management module, that module's source list, the two
-#: seam files, and the two files of `G4HadronicParameters` that gain the opt-in. A count would let
-#: a dropped file and an added file cancel out.
+#: The files the behaviour patch is declared to touch, as a literal set: two reader files and two
+#: glue files added to Geant4's particle-management module, that module's source list, the seam
+#: files and the helper's header, and the two files of `G4HadronicParameters` that gain the opt-in.
+#: A count would let a dropped file and an added file cancel out.
 BEHAVIOUR_PATHS = frozenset(
     {
+        "source/particles/management/include/G4MuonicAtomHelper.hh",
         "source/particles/management/include/G4MuonicDataOverlay.hh",
         "source/particles/management/include/G4MuonicDataTable.hh",
         "source/particles/management/sources.cmake",
         "source/particles/management/src/G4MuonicAtomHelper.cc",
         "source/particles/management/src/G4MuonicDataOverlay.cc",
         "source/particles/management/src/G4MuonicDataTable.cc",
+        "source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc",
         "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc",
+        "source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc",
         "source/processes/hadronic/util/include/G4HadronicParameters.hh",
         "source/processes/hadronic/util/src/G4HadronicParameters.cc",
     }
 )
+#: The helper's header, which gains the two-argument K-energy declaration; not vendored, so its
+#: `index` old id is held to a pin like the other upstream files this repository does not carry.
+(HELPER_HH,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/G4MuonicAtomHelper.hh"))
+#: The cascade, the one file the D3 lookups are inserted into besides the helper.
+(CASCADE,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/G4EmCaptureCascade.cc"))
+#: The two existing lines the patch changes: each call of the one-argument K energy that has the
+#: muonic atom's base ion in scope, which now passes its mass number. Old call, new call, by path.
+CALL_SITES: dict[str, tuple[bytes, bytes]] = {
+    "source/particles/management/src/G4MuonicAtomHelper.cc": (
+        b"GetKShellEnergy(G4double(Z))", b"GetKShellEnergy(G4double(Z), A)"
+    ),
+    "source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc": (
+        b"GetKShellEnergy(Zd)", b"GetKShellEnergy(Zd, baseion->GetAtomicMass())"
+    ),
+}
+#: The cascade's branching block, which no added line may touch.
+BRANCHING_TOKENS = (b"G4UniformRand", b"nLevel", b"pGamma", b"AddNewParticle")
 #: The one source list among them, derived from the declared set rather than re-typed; unpacking
 #: a one-element tuple asserts there is exactly one.
 (SOURCES_CMAKE,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/sources.cmake"))
@@ -81,13 +103,18 @@ assert len(HADRONIC_PARAMETERS) == 2, HADRONIC_PARAMETERS
 GLUE = frozenset(p for p in BEHAVIOUR_PATHS if "/G4MuonicDataOverlay." in p)
 assert len(GLUE) == 2, GLUE
 (GLUE_CC,) = tuple(p for p in GLUE if p.endswith(".cc"))
-#: Per family: the two seam files, and the vendored copy of that tag each one's hunks must apply to.
+#: Per family: the seam files, and the vendored copy of that tag each one's hunks must apply to --
+#: the two compiled-in copies of the capture tables, the cascade and the decay process.
 SEAMS: dict[str, dict[str, pathlib.Path]] = {
     tag: {
         "source/particles/management/src/G4MuonicAtomHelper.cc": vendored / "G4MuonicAtomHelper.cc",
         "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc": (
             vendored / "G4MuonMinusBoundDecay.cc"
         ),
+        **{
+            parity.D3_SEAM_UPSTREAM_PATHS[name]: vendored / name
+            for name in (parity.CASCADE_NAME, parity.DECAY_NAME)
+        },
     }
     for tag, (_, _, vendored) in FAMILIES.items()
 }
@@ -113,6 +140,9 @@ REGISTRATION_PATH = "cmake/Modules/G4DatasetDefinitions.cmake"
 #: no `old` bytes to rebuild from, its `new` id is only required to differ.
 PRISTINE_INDEX_OLD: dict[str, dict[str, str]] = {
     parity.d1.UPSTREAM_TAG: {
+        "source/particles/management/include/G4MuonicAtomHelper.hh": (
+            "e2973354ebca8d77c7b5f79437f9ecae966ea67b"
+        ),
         "source/particles/management/sources.cmake": "e292ef656be716180f409eb8f0501246b42e1722",
         "source/processes/hadronic/util/include/G4HadronicParameters.hh": (
             "09d22d476dc9f2a66d6af7e29e41b25fb2000533"
@@ -123,6 +153,9 @@ PRISTINE_INDEX_OLD: dict[str, dict[str, str]] = {
         "cmake/Modules/G4DatasetDefinitions.cmake": "64feb989558c65a71ff33d6cdeb16cbc06944205",
     },
     parity.BETA_TAG: {
+        "source/particles/management/include/G4MuonicAtomHelper.hh": (
+            "fa725ef8f191973e39555eefd8062afaaab9d285"
+        ),
         "source/particles/management/sources.cmake": "e292ef656be716180f409eb8f0501246b42e1722",
         "source/processes/hadronic/util/include/G4HadronicParameters.hh": (
             "2d051de924af8ef3da06fb6445a957ca4fa50e52"
@@ -378,25 +411,73 @@ def test_t72_the_behaviour_patch_touches_exactly_the_declared_files(tag: str):
     assert set(files) == BEHAVIOUR_PATHS
 
 
-@family
-def test_t72_the_seam_hunks_apply_to_the_vendored_files_and_delete_nothing(tag: str):
-    behaviour, _, _ = FAMILIES[tag]
-    files = by_new_path(parse_patch(behaviour.read_bytes()))
-    # Every file that existed before the patch -- the seams, the source list, the two
-    # `G4HadronicParameters` files -- is only ever added to: not one `-` line anywhere.
+def check_deletions(files: dict[str, FilePatch]) -> None:
+    """Every file that existed before the patch -- the seams, the helper's header, the source list,
+    the two `G4HadronicParameters` files -- is only ever added to, except a `CALL_SITES` file: its
+    one `-` line holds its old call exactly once, and the hunk that removes it adds exactly that line
+    with the call replaced. Every message names the path."""
     for path, file in sorted(files.items()):
         if file.old_path == b"/dev/null":
             continue
         assert file.old_path == b"a/" + path.encode(), file.old_path
-        removed = [content for hunk in file.hunks for marker, content, _ in hunk.lines if marker == b"-"]
-        assert not removed, f"{path}: the patch deletes {removed}"
+        removed = [
+            (hunk, content) for hunk in file.hunks for marker, content, _ in hunk.lines if marker == b"-"
+        ]
+        if path not in CALL_SITES:
+            assert not removed, f"{path}: the patch deletes {[content for _, content in removed]}"
+            continue
+        old, new = CALL_SITES[path]
+        assert len(removed) == 1, f"{path}: the patch deletes {len(removed)} line(s), not only its call line"
+        ((hunk, content),) = removed
+        assert content.count(old) == 1, f"{path}: the deleted line does not hold {old!r} once: {content!r}"
+        added = [line for marker, line, _ in hunk.lines if marker == b"+"]
+        assert added == [content.replace(old, new)], (
+            f"{path}: hunk {hunk.header.decode()} adds {added}, not the call line with {new!r}"
+        )
+
+
+@family
+def test_t72_the_seam_hunks_apply_to_the_vendored_files_and_delete_only_the_call_lines(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    check_deletions(files)
     for path, vendored in SEAMS[tag].items():
         file = files[path]
         original = vendored.read_bytes()
         patched = apply_file_patch(file, original)
         added = sum(1 for hunk in file.hunks for marker, _, _ in hunk.lines if marker == b"+")
+        removed = sum(1 for hunk in file.hunks for marker, _, _ in hunk.lines if marker == b"-")
         assert added > 0, f"{path}: the patch adds nothing"
-        assert len(split_lines(patched)) == len(split_lines(original)) + added
+        assert len(split_lines(patched)) == len(split_lines(original)) + added - removed
+
+
+@family
+def test_t72_the_helper_header_adds_exactly_the_two_argument_declaration(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    added = [content for _, content in added_lines(files[HELPER_HH]) if content.strip()]
+    assert added == [b"    static G4double GetKShellEnergy(G4double Z, G4int A);"], added
+
+
+def check_cascade_lookups(tag: str, files: dict[str, FilePatch]) -> None:
+    """The cascade's `+` lines carry the k-shell and the level lookup once each, and no added line of
+    any pre-existing file carries a token of the cascade's branching block."""
+    added = [content for _, content in added_lines(files[CASCADE])]
+    for call in (b"G4MuonicDataOverlay::KShell(Z, A)", b"G4MuonicDataOverlay::Levels(Z, A,"):
+        hits = sum(content.count(call) for content in added)
+        assert hits == 1, f"{tag}: {CASCADE} adds {call!r} {hits} times"
+    for path, file in sorted(files.items()):
+        if file.old_path == b"/dev/null":
+            continue
+        for _, content in added_lines(file):
+            tokens = [token for token in BRANCHING_TOKENS if token in content]
+            assert not tokens, f"{tag}: {path} adds a line carrying {tokens}: {content!r}"
+
+
+@family
+def test_t72_the_cascade_adds_both_lookups_once_and_no_branching_token(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    check_cascade_lookups(tag, by_new_path(parse_patch(behaviour.read_bytes())))
 
 
 @family
@@ -441,7 +522,8 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
 
     An added file rebuilds from nothing to `new`; a seam file's vendored copy is `old` and its
     patched copy is `new`. The upstream files this repository does not vendor (`sources.cmake`,
-    `G4DatasetDefinitions.cmake`, the two `G4HadronicParameters` files) have no `old` bytes to
+    `G4DatasetDefinitions.cmake`, the helper's header, the two `G4HadronicParameters` files) have no
+    `old` bytes to
     rebuild from: for them the declared `old` is held to the object name `PRISTINE_INDEX_OLD` pins
     for that file on the tag's pristine tree, and a `new` that differs from it is required. What
     stays unheld is the post-image of such a file -- nothing here rebuilds it.
@@ -465,7 +547,7 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
                 check_pristine_pin(tag, path, file, PRISTINE_INDEX_OLD)
                 assert file.index_new != file.index_old, path
                 not_rebuilt.add(path)
-    assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH} | HADRONIC_PARAMETERS
+    assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH, HELPER_HH} | HADRONIC_PARAMETERS
     assert not_rebuilt == set(PRISTINE_INDEX_OLD[tag]), sorted(PRISTINE_INDEX_OLD[tag])
 
 
@@ -500,10 +582,10 @@ def test_t72_the_opt_in_starts_false_and_its_setter_is_the_only_caller_of_enable
 
 def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touches():
     """The vendored README's `upstream path` cells are the seam paths, read from its table by the
-    row labels: the BoundDecay cell is the reference module's `UPSTREAM_PATH`, the helper cell is
-    the `SEAMS` key whose vendored copy is the helper, and together they are the paths the
-    behaviour patch's seam hunks touch. The rows read are the `v11.4.2` table's; the beta family
-    touches the same two paths, which the path-set test above holds for both.
+    row labels: the BoundDecay cell is the reference module's `UPSTREAM_PATH`, the helper, cascade
+    and decay cells are the `SEAMS` keys whose vendored copies carry those names, and together they
+    are the paths the behaviour patch's seam hunks touch. The rows read are the `v11.4.2` table's;
+    the beta family touches the same paths, which the path-set test above holds for both.
     """
     seams = SEAMS[parity.d1.UPSTREAM_TAG]
     text = parity.VENDORED_README.read_text("utf-8")
@@ -513,7 +595,14 @@ def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touche
     assert bound_decay[0] == parity.d1.UPSTREAM_PATH
     helper_key = next(path for path, vendored in seams.items() if vendored == parity.HELPER)
     assert helper[0] == helper_key
-    assert {bound_decay[0], helper[0]} == set(seams)
+    others = []
+    for name in (parity.CASCADE_NAME, parity.DECAY_NAME):
+        cells = re.findall(rf"^\| `{re.escape(name)}` upstream path \| `([^`]+)` \|$", text, re.M)
+        assert len(cells) == 1, (name, cells)
+        key = next(path for path, vendored in seams.items() if vendored.name == name)
+        assert cells[0] == key, (name, cells[0], key)
+        others.append(cells[0])
+    assert {bound_decay[0], helper[0], *others} == set(seams)
 
 
 # T-73 -- the drill, and the README's numbers
@@ -600,6 +689,55 @@ def test_t73_drill_a_dropped_member_default_and_a_second_enable_caller_are_refus
     with pytest.raises(AssertionError, match=re.escape(tag)) as raised:
         check_opt_in_shape(tag, files)
     assert "2 added line(s)" in str(raised.value), raised.value
+
+
+@family
+def test_t73_drill_a_planted_deletion_and_a_changed_call_are_refused_by_path(tag: str):
+    """Two in-memory corruptions of the behaviour patch, each refused with the path named: a context
+    line of the cascade's hunk turned into a third `-` line (the hunk's count lowered so its
+    arithmetic still balances), and a call site whose added line passes other arguments."""
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    check_deletions(files)
+    hunk = files[CASCADE].hunks[-1]
+    index = next(i for i, (marker, _, _) in enumerate(hunk.lines) if marker == b" ")
+    _, content, has_newline = hunk.lines[index]
+    hunk.lines[index] = (b"-", content, has_newline)
+    hunk.new_count -= 1
+    with pytest.raises(AssertionError, match=re.escape(f"{CASCADE}: the patch deletes")):
+        check_deletions(files)
+
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    path = next(iter(sorted(CALL_SITES)))
+    old, new = CALL_SITES[path]
+    call_hunk = next(h for h in files[path].hunks for marker, _, _ in h.lines if marker == b"-")
+    at = next(i for i, (marker, _, _) in enumerate(call_hunk.lines) if marker == b"+")
+    marker, content, has_newline = call_hunk.lines[at]
+    call_hunk.lines[at] = (marker, content.replace(new, new.replace(b", A)", b", Z)")), has_newline)
+    with pytest.raises(AssertionError, match=re.escape(f"{path}: hunk")):
+        check_deletions(files)
+
+
+@family
+def test_t73_drill_an_added_branching_token_and_a_second_lookup_are_refused(tag: str):
+    """The cascade's lookups and the branching block, each corrupted in memory: an added line that
+    draws `G4UniformRand`, and the k-shell lookup added a second time -- each refused with the family
+    named."""
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    check_cascade_lookups(tag, files)
+    hunk = next(h for h in files[CASCADE].hunks for marker, _, _ in h.lines if marker == b"+")
+    hunk.lines.append((b"+", b"  G4double draw = G4UniformRand();", True))
+    hunk.new_count += 1
+    with pytest.raises(AssertionError, match=re.escape(f"{tag}: {CASCADE} adds a line carrying")):
+        check_cascade_lookups(tag, files)
+
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    hunk = next(h for h in files[CASCADE].hunks for marker, _, _ in h.lines if marker == b"+")
+    hunk.lines.append((b"+", b"  G4MuonicDataOverlay::KShell(Z, A);", True))
+    hunk.new_count += 1
+    with pytest.raises(AssertionError, match=re.escape(f"{tag}: {CASCADE} adds")):
+        check_cascade_lookups(tag, files)
 
 
 @family

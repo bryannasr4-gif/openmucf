@@ -51,8 +51,8 @@ class G4MuonicDataTable {
     // Binary search over the sorted records; nullptr when the key is absent.
     const Record* Lookup(const std::vector<long>& key) const;
     // Lookup(key), and when that misses on a two-key table, the natural-composition row a table
-    // under `A:natural_and_listed` carries for the same `Z` (FORMAT_SPEC.md section 6); a
-    // single-key table is exact only.
+    // under `A:natural_and_listed` or `A:most_abundant_and_listed` carries for the same `Z`
+    // (FORMAT_SPEC.md section 6); a single-key table is exact only.
     const Record* LookupNatural(const std::vector<long>& key) const;
   };
 

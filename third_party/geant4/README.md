@@ -15,6 +15,10 @@ Software License they are distributed under.
 | `v11.4.2/G4MuonicAtomHelper.cc` | the upstream source file carrying the second compiled-in copy of the same capture and effective-charge tables, **byte-for-byte unmodified** |
 | `v11.5.0.beta/G4MuonMinusBoundDecay.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified** — evidence, not a second source: nothing in `data/g4/d1/` is generated from it, and `tests/test_g4parity.py` proves its tables and its fallback expression equal the `v11.4.2` copy's |
 | `v11.5.0.beta/G4MuonicAtomHelper.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified** — evidence, not a second source: nothing in `data/g4/d1/` is generated from it, and `tests/test_g4parity.py` proves its tables and its fallback expression equal the `v11.4.2` copy's |
+| `v11.4.2/G4EmCaptureCascade.cc` | the upstream source file of the muonic-atom cascade, carrying a compiled-in K-shell energy table, **byte-for-byte unmodified** |
+| `v11.4.2/G4MuonicAtomDecay.cc` | the upstream source file of the muonic-atom decay process, **byte-for-byte unmodified** |
+| `v11.5.0.beta/G4EmCaptureCascade.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified** — evidence, not a source: `tests/test_g4parity.py` proves its K-shell energy table equals the `v11.4.2` copy's |
+| `v11.5.0.beta/G4MuonicAtomDecay.cc` | the same file at tag `v11.5.0.beta`, **byte-for-byte unmodified** — evidence, not a source: the file the `v11.5.0.beta` patch's decay hunk applies to, which `tests/test_g4overlay.py` checks |
 
 `G4MuonMinusBoundDecay.cc` carries Geant4's compiled-in muon-capture data: a 90-record
 `{Z, A, cRate, cRErr}` table, a 101-value effective-charge (`zeff`) table, and the
@@ -27,6 +31,10 @@ Vendoring it is what makes the parity claim checkable by someone who has neither
 nor a Geant4 build: `make g4data` regenerates the dataset from these bytes, `make audit` byte-diffs
 the result, and the tests in `tests/test_g4parity.py` re-derive every count and every value from
 here rather than from the generated file.
+
+`G4EmCaptureCascade.cc` and `G4MuonicAtomDecay.cc` are vendored because the D3 hunks of the patches
+under `cpp/patches/` apply to them, and `tests/test_g4overlay.py` applies those hunks to these copies.
+Nothing in `data/g4/d3/` is generated from either file.
 
 ## The pins
 
@@ -43,6 +51,14 @@ here rather than from the generated file.
 | `G4MuonicAtomHelper.cc` **git blob id** | `98935195538c67c24ad1229c6064c8da05c9e7e2` |
 | `G4MuonicAtomHelper.cc` sha256 | `038a13afafdb23a7a34648659a066359fbaec13c73d0ab31954512c3702ff463` |
 | `G4MuonicAtomHelper.cc` size | 13669 bytes, 387 lines |
+| `G4EmCaptureCascade.cc` upstream path | `source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc` |
+| `G4EmCaptureCascade.cc` **git blob id** | `f9d9d5497c0c08e918b9651dd78ef8343b95d3ab` |
+| `G4EmCaptureCascade.cc` sha256 | `ed0570b24189dc7d1a615f31a54d693cf29154e1675501c906bdbda6732957ab` |
+| `G4EmCaptureCascade.cc` size | 6415 bytes, 180 lines |
+| `G4MuonicAtomDecay.cc` upstream path | `source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc` |
+| `G4MuonicAtomDecay.cc` **git blob id** | `21f2fb116ce1be5c78194ee4782c784964875cf6` |
+| `G4MuonicAtomDecay.cc` sha256 | `b08c146a98630415bd1ae46469852091be3120f12515e1c6c16feb31c47fbd1b` |
+| `G4MuonicAtomDecay.cc` size | 23230 bytes, 631 lines |
 
 **The blob ids are the load-bearing pins.** Each is upstream's own object name for those exact
 bytes, so a third party can verify each copy against the Geant4 repository without cloning Geant4
@@ -69,6 +85,12 @@ control, and saying so is cheaper than defending it later.
 | `v11.5.0.beta/G4MuonicAtomHelper.cc` **git blob id** | `8c2c37a99cdb3effd3ce7f1898488ad75f82b3fd` |
 | `v11.5.0.beta/G4MuonicAtomHelper.cc` sha256 | `d020924b759ad1149cf74e2955eeffede84bc55c8be4ffb364385cc803720e2a` |
 | `v11.5.0.beta/G4MuonicAtomHelper.cc` size | 13695 bytes, 397 lines |
+| `v11.5.0.beta/G4EmCaptureCascade.cc` **git blob id** | `c7f628d9705fc471a5fa55650419614adebb46c5` |
+| `v11.5.0.beta/G4EmCaptureCascade.cc` sha256 | `d922c721b567845297b815f1c0fe6f696617ddd595745a90fbc1dd844f2c7d08` |
+| `v11.5.0.beta/G4EmCaptureCascade.cc` size | 6566 bytes, 181 lines |
+| `v11.5.0.beta/G4MuonicAtomDecay.cc` **git blob id** | `3393b875297bf9c7c2cd40ad0c77c7fa28858d35` |
+| `v11.5.0.beta/G4MuonicAtomDecay.cc` sha256 | `7aec94ae97d6f865408cd57be021d0f76cb3bd834be94efbe4987ddd889a8abd` |
+| `v11.5.0.beta/G4MuonicAtomDecay.cc` size | 23389 bytes, 673 lines |
 
 `.gitattributes` marks `third_party/geant4/** -text`. That line is load-bearing: each file's
 identity *is* its bytes, so a checkout with `core.autocrlf` set would rewrite them and break the

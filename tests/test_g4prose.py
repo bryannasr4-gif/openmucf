@@ -350,7 +350,23 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
             (1,), beta_hp.count(b"\n")),
         Pin("error codes the format defines, the changelog's count", "CHANGELOG.md",
             r"\*\*(\w+) exact error codes\*\*", (1,), error_codes),
+        *d3_seam_size_pins(vendored_readme),
     ]
+
+
+def d3_seam_size_pins(vendored_readme: str) -> list[Pin]:
+    """The vendored README's size cells of the cascade and decay copies: bytes and newlines of each
+    vendored file, the v11.4.2 rows labelled by file name and the beta rows by tag and file name."""
+    out = []
+    for tag, directory in parity.D3_SEAM_DIRS.items():
+        for name in sorted(parity.D3_SEAM_BLOB_IDS[tag]):
+            data = (directory / name).read_bytes()
+            label = re.escape(f"`{name}`" if tag == parity.d1.UPSTREAM_TAG else f"`{tag}/{name}`")
+            out.append(Pin(f"vendored {tag}/{name} size, bytes", vendored_readme,
+                           rf"\| {label} size \| (\d+) bytes, \d+ lines \|", (1,), len(data)))
+            out.append(Pin(f"vendored {tag}/{name} size, lines", vendored_readme,
+                           rf"\| {label} size \| \d+ bytes, (\d+) lines \|", (1,), data.count(b"\n")))
+    return out
 
 
 @dataclasses.dataclass(frozen=True)
