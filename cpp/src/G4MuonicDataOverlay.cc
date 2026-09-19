@@ -49,7 +49,7 @@ std::string UnitOf(const Table& table, const std::string& column) {
   const std::string prefix = column + "=";
   std::string::size_type start = 0;
   while (start < units->size()) {
-    std::string::size_type end = units->find(' ', start);
+    std::string::size_type end = units->find_first_of(" \t", start);
     if (end == std::string::npos) end = units->size();
     const std::string token = units->substr(start, end - start);
     if (token.compare(0, prefix.size(), prefix) == 0) return token.substr(prefix.size());

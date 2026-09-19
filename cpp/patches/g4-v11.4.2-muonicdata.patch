@@ -249,7 +249,7 @@ index 9893519553..b6689fad0e 100644
                                            G4double Xuser)
 diff --git a/source/particles/management/src/G4MuonicDataOverlay.cc b/source/particles/management/src/G4MuonicDataOverlay.cc
 new file mode 100644
-index 0000000000..813e04b899
+index 0000000000..107c61be3d
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicDataOverlay.cc
 @@ -0,0 +1,240 @@
@@ -304,7 +304,7 @@ index 0000000000..813e04b899
 +  const std::string prefix = column + "=";
 +  std::string::size_type start = 0;
 +  while (start < units->size()) {
-+    std::string::size_type end = units->find(' ', start);
++    std::string::size_type end = units->find_first_of(" \t", start);
 +    if (end == std::string::npos) end = units->size();
 +    const std::string token = units->substr(start, end - start);
 +    if (token.compare(0, prefix.size(), prefix) == 0) return token.substr(prefix.size());

@@ -537,6 +537,48 @@ g4muonicdata_overlay_case(overlay_no_e2
   QUERIES ${levels_args}
   PASS "G4Exception G4MuonicDataOverlay G4MuonicData003 [^\n]*d3_levels[^\n]*level_energy declares no column 'e2' [(]unit keV[)]")
 
+# The assembled dataset with every separating space of a multi-assignment #UNITS value replaced by
+# one tab, which the format allows: the glue reads each assignment the same, for the default
+# profile's D1 tables and for the D3 profile's tables.
+set(dir "${CMAKE_BINARY_DIR}/overlay_units_tab")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+set(tabbed_members "")
+foreach(member IN LISTS G4MUONICDATA_DATASET_MEMBERS)
+  if(NOT member MATCHES "[.]g4dat$")
+    continue()
+  endif()
+  get_filename_component(name "${member}" NAME)
+  file(READ "${member}" text)
+  string(REGEX MATCH "\n#UNITS +([^\n]*)\n" match "${text}")
+  if(match STREQUAL "")
+    message(FATAL_ERROR "${name} carries no #UNITS line")
+  endif()
+  set(value "${CMAKE_MATCH_1}")
+  if(value MATCHES " ")
+    string(REPLACE " " "\t" tabbed_value "${value}")
+    string(REPLACE "${value}" "${tabbed_value}" tabbed_match "${match}")
+    string(REPLACE "${match}" "${tabbed_match}" text "${text}")
+    g4muonicdata_write_member("${dir}" "${name}" "${text}")
+    list(APPEND tabbed_members "${name}")
+  endif()
+endforeach()
+foreach(name IN ITEMS d1_capture.g4dat d3_kshell.mudirac130.g4dat d3_levels.mudirac130.g4dat)
+  if(NOT name IN_LIST tabbed_members)
+    message(FATAL_ERROR "the tab case needs a multi-assignment #UNITS line in ${name}")
+  endif()
+endforeach()
+g4muonicdata_overlay_case(overlay_units_tab_default
+  ENV "G4MUONICDATA=${dir}" --unset=G4MUONICDATA_PROFILE
+  QUERIES ${capture_args} ${zeff_args}
+  PASS "RATE ${capture_key} -?0x[^\n]*\nZEFF ${zeff_key} -?0x[^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\n")
+g4muonicdata_overlay_case(overlay_units_tab_${d3_profile}
+  ENV "G4MUONICDATA=${dir}" "G4MUONICDATA_PROFILE=${d3_profile}"
+  QUERIES ${kshell_args} ${levels_args}
+  PASS "KSHELL ${kshell_key} 0x[^\n]*\nLEVELS ${kshell_key} ${level_count} 0x[^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\n")
+set_tests_properties(overlay_units_tab_default overlay_units_tab_${d3_profile} PROPERTIES
+  FAIL_REGULAR_EXPRESSION "MISMATCH|G4MuonicData003")
+
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
 # enabled (and FMA on x86-64), and the figures compared with the document.
 if(G4MUONICDATA_GNU_LIKE)
