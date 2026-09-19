@@ -90,6 +90,17 @@ ORIGIN_COLUMNS = ("Z", "A", "origin", "locator")
 #: centre of gravity, or the value is a hyperfine component (or a line its source says is split),
 #: which a model without hyperfine structure cannot test.
 UNGATED_REASONS = ("centroid", "hyperfine")
+#: The label each source table gives its printed uncertainty, keyed by the source and the table its
+#: locator leads with: Fricke's Table IIIA errors are statistical, its Table IIIB errors include the
+#: fit error, and Saito's tables state statistical and systematic uncertainties.
+UNC_LABELS = {
+    ("Fricke1995", "Table IIIA"): "statistical",
+    ("Fricke1995", "Table IIIB"): "statistical and fit",
+    ("Saito2025", "Table III"): "statistical and systematic",
+    ("Saito2025", "Table IV"): "statistical and systematic",
+}
+#: The table a locator leads with.
+_LOCATOR_TABLE = re.compile(r"Table (?:IIIA|IIIB|III|IV)(?![A-Za-z])")
 #: Where a validation nuclide's charge radius comes from, by the source's own tables.
 RADIUS_ORIGINS = ("muonic", "e-scattering", "other")
 
@@ -238,6 +249,18 @@ def load_cells(path: Path) -> tuple[Cell, ...]:
         for column in ("transition", "unc_label", "locator", "copy_read"):
             if not r[column]:
                 raise CellError(f"{where}: every row must carry a {column}")
+        table = _LOCATOR_TABLE.match(r["locator"])
+        table_name = table.group(0) if table else ""
+        label = UNC_LABELS.get((r["source"], table_name))
+        if label is None:
+            raise CellError(
+                f"{where}: locator {r['locator']!r} leads with no table of {r['source']} in UNC_LABELS"
+            )
+        if r["unc_label"] != label:
+            raise CellError(
+                f"{where}: unc_label {r['unc_label']!r} is not {label!r}, the label of {table_name} "
+                f"of {r['source']}"
+            )
         order = (VALIDATION_SOURCES.index(r["source"]), z, a)
         if previous is not None and order < previous:
             raise OrderError(f"{where}: rows are ordered by (source, Z, A)")
@@ -549,8 +572,7 @@ DROP_FERMI2_C = "FERMI2 default c not real: sphere radius below sqrt(7/3)*pi*t/(
 FERMI2_SQRT_FROM_A = 5
 #: Why a member is dropped when MuDirac's documented default c is set by its mass number alone.
 DROP_FERMI2_FROM_A = (
-    "FERMI2 default c set by the mass number alone (A below FERMI2_SQRT_FROM_A): the radius does not "
-    "shape the charge distribution, so unc would not propagate its uncertainty"
+    "FERMI2 default c set by the mass number alone (A below FERMI2_SQRT_FROM_A)"
 )
 
 

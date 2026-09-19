@@ -94,6 +94,9 @@ CELL_DRILLS = [
      md.CellError, "carries one of"),
     ("an empty locator", lambda t: _replace_once(t, 'centroid,"Table IIIA, p. 205, row 9Be"', "centroid,"),
      md.CellError, "carry a locator"),
+    ("a Table IIIA row relabelled",
+     lambda t: _replace_once(t, _U, _U.replace(",statistical,", ",statistical and fit,")),
+     md.CellError, "line 2: unc_label 'statistical and fit' is not 'statistical', the label of Table IIIA"),
     ("rows out of order", lambda t: _replace_once(t, NL + _U, NL + _U.replace(",4,9,", ",99,9,")),
      md.OrderError, "ordered by (source, Z, A)"),
     ("a duplicated key", lambda t: _repeat_line(t, 2),
@@ -868,7 +871,8 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     weak = [row for row in gated if row["label"] == md.WEAKLY_SENSITIVE]
     path = "DATASET_D3.md"
     pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
-        ("the generator's version", path, r"computed by MuDirac (\d+\.\d+\.\d+)", (1,), md.MUDIRAC_VERSION),
+        ("the generator's version", path, r"derived from the output of MuDirac (\d+\.\d+\.\d+)", (1,),
+         md.MUDIRAC_VERSION),
         ("the highest shell of the chain", path, r"The chain ends at shell (\d+),", (1,), md.N_MAX),
         ("members of the input set", path, r"Of the (\d+) members of the input set", (1,), len(out.inputs)),
         ("kept members", path, r"members of the input set, (\d+) are kept", (1,), kept),

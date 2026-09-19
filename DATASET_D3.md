@@ -5,7 +5,7 @@
 `data/g4/d3/` ships the tables `k_shell_energy` (`d3_kshell.mudirac130.g4dat`) and `level_energy`
 (`d3_levels.mudirac130.g4dat`) under `#PROFILE mudirac130` and `#SEAM d3_transitions`, each with its
 Layer-2 file.
-Every value is a positive binding energy in keV computed by MuDirac 1.3.0 (Sturniolo and
+Every `value` and `e<n>` cell is a positive binding energy in keV derived from the output of MuDirac 1.3.0 (Sturniolo and
 Hillier (2021); Liborio et al. (2026)), a Dirac-equation solver for muonic atoms released under the
 MIT License with the copyright held by the Science and Technology Facility Council, as its
 `LICENSE` reads.
@@ -51,7 +51,7 @@ prints the member; neither value is edited.
 
 ## 3. Which nuclides are kept
 
-A member is kept when its `base`, `rsig` and hydrogen-like runs exit cleanly with an empty error
+A member is kept only when its `base`, `rsig` and hydrogen-like runs exit cleanly with an empty error
 file, when each circular state of shells 6 through 8 lies within 1 % of the
 same state in the run that treats the atom as hydrogen-like from that shell up
 (`ideal_atom_minshell`), and when the derivation holds on its `base` and `rsig` runs.
@@ -59,8 +59,7 @@ The generator drops `He8`, the only member whose sphere radius gives no real val
 Fermi parameter c that MuDirac computes by default, and prints its radius beside the radius below
 which that value is not real.
 It also drops every member whose mass number is below the one from which that default depends on
-the radius: MuDirac then sets c from the mass number alone, the radius passed does not shape the
-charge distribution.
+the radius: MuDirac then sets c from the mass number alone.
 An element whose most abundant isotope is dropped has no natural-composition row, so a lookup for
 it falls through to the values compiled into Geant4.
 
@@ -87,8 +86,9 @@ and weakly sensitive otherwise; agreement on a size-dominated row is a consisten
 because the radius passed may itself come from muonic X-ray data (the column `radius_origin`).
 `centroid` marks a Table IIIA centre of gravity, and `hyperfine` a Table IIIB hyperfine component
 or a line Saito et al. describe as showing hyperfine splitting.
-Both are reported and not compared: the first because no model quantity was fixed for it before
-the comparison, the second because the keywords MuDirac documents include none for a hyperfine or
+Both are reported and not compared: the first because the explanation of Table IIIA names such a
+value the centre of gravity of the 2p → 1s transition and states no weighting for it, the second
+because the keywords MuDirac documents include none for a hyperfine or
 quadrupole interaction.
 Of the 67 gated rows, 26 lie within tolerance and 41 outside it; 16 of the gated
 rows are weakly sensitive, and 13 of those lie within tolerance.
