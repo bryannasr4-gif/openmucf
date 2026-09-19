@@ -14,6 +14,7 @@ import re
 from decimal import Decimal, localcontext
 
 import pytest
+import test_g4parity as parity
 
 from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import mudirac130 as md
@@ -94,6 +95,9 @@ CELL_DRILLS = [
      md.CellError, "carries one of"),
     ("an empty locator", lambda t: _replace_once(t, 'centroid,"Table IIIA, p. 205, row 9Be"', "centroid,"),
      md.CellError, "carry a locator"),
+    ("a Table IIIA row relabelled",
+     lambda t: _replace_once(t, _U, _U.replace(",statistical,", ",statistical and fit,")),
+     md.CellError, "line 2: unc_label 'statistical and fit' is not 'statistical', the label of Table IIIA"),
     ("rows out of order", lambda t: _replace_once(t, NL + _U, NL + _U.replace(",4,9,", ",99,9,")),
      md.OrderError, "ordered by (source, Z, A)"),
     ("a duplicated key", lambda t: _repeat_line(t, 2),
@@ -354,6 +358,35 @@ def test_t104_drill_the_derivation_refuses_a_moved_line_a_moved_header_and_a_mis
         md.derive_bindings(run, missing, lines)
 
 
+def test_t104_drill_a_header_just_past_its_bound_is_refused_and_one_just_inside_passes():
+    """K1's header moved to exactly `header_bound` plus half a printed line unit from its derived
+    value is refused; moved to `header_bound` minus that half unit, the derivation holds. Both
+    moved headers keep the original's magnitude, so the bound they are held to is the same."""
+    out = md.load_outputs(REPO)
+    dropped = md.drop_reasons(out)
+    row = next(row for row in out.inputs if row.nuclide not in dropped)
+    run = md.run_id(row, "base")
+    headers, lines = dict(out.headers[run]), dict(out.lines[run])
+    derived = md.derive_bindings(run, headers, lines)
+    anchor = headers[md.orbit(md.N_MAX, True)]
+    bound = md.header_bound(headers["K1"], anchor)
+    # The bound is no looser than its docstring reads off the printed strings: half a printed unit
+    # of the header and of the anchor, plus half a printed line unit per line of a chain it allows.
+    stated = (_half_unit(headers["K1"]) + _half_unit(anchor)
+              + 2 * md.N_MAX * _line_half_unit(lines))
+    assert bound <= stated, (bound, stated)
+    with localcontext() as context:
+        context.prec = 50
+        outside = format(-(derived["K1"] + bound + md.LINE_HALF_UNIT), "f")
+        inside = format(-(derived["K1"] + bound - md.LINE_HALF_UNIT), "f")
+    for text in (outside, inside):
+        assert Decimal(text).adjusted() == Decimal(headers["K1"]).adjusted()
+        assert md.header_bound(text, anchor) == bound
+    with pytest.raises(md.DerivationError, match="derived K1 lies"):
+        md.derive_bindings(run, {**headers, "K1": outside}, lines)
+    md.derive_bindings(run, {**headers, "K1": inside}, lines)
+
+
 def test_t104_the_dropped_set_is_the_two_computed_classes_and_the_shipped_tables_hold_neither():
     """Re-derived from the committed inputs, run table and printed outputs: the members whose default
     Fermi parameter c is set by the mass number alone and the members whose sphere radius gives no
@@ -433,23 +466,81 @@ def _header_binding(headers: dict[str, str], state: str) -> Decimal:
     return -Decimal(headers[state])
 
 
-def _header_bound(headers: dict[str, str], state: str) -> Decimal:
-    return md.header_bound(headers[state], headers[md.orbit(md.N_MAX, True)])
+def _half_unit(text: str) -> Decimal:
+    """Half a unit of the last digit ``text`` prints, read off the printed string itself."""
+    return Decimal(5) * Decimal(10) ** (Decimal(text).as_tuple().exponent - 1)
 
 
-def _from_headers(headers: dict[str, str]) -> list[tuple[Decimal, Decimal]]:
+def _line_half_unit(lines: dict[str, str]) -> Decimal:
+    """The largest half unit among a run's printed line energies."""
+    return max(_half_unit(text) for text in lines.values())
+
+
+#: The most printed lines the derivation sums to reach any circular state from the anchor: every
+#: upper-chain line down to K1, then every lower-chain line out again.
+_MOST_LINES = 2 * (md.N_MAX - 1)
+
+
+def _header_bound(headers: dict[str, str], lines: dict[str, str], state: str) -> Decimal:
+    """How far a derived binding energy may lie from its printed header, written here from the
+    printed strings: half a printed unit of the header and of the anchor, plus half a printed line
+    unit for each line summed."""
+    anchor = headers[md.orbit(md.N_MAX, True)]
+    return _half_unit(headers[state]) + _half_unit(anchor) + _MOST_LINES * _line_half_unit(lines)
+
+
+def _from_headers(headers: dict[str, str], lines: dict[str, str]) -> list[tuple[Decimal, Decimal]]:
     """``[(quantity, bound)]`` in keV for K then e2 .. e<N_MAX>, from the printed state headers alone:
     each quantity with the largest distance the derivation may put between it and this value."""
     with localcontext() as context:
         context.prec = 50
-        out = [(_header_binding(headers, "K1") / 1000, _header_bound(headers, "K1") / 1000)]
+        out = [(_header_binding(headers, "K1") / 1000, _header_bound(headers, lines, "K1") / 1000)]
         for n in range(2, md.N_MAX + 1):
             ell = n - 1
             lower, upper = md.orbit(n, False), md.orbit(n, True)
             mean = (2 * ell * _header_binding(headers, lower)
                     + (2 * ell + 2) * _header_binding(headers, upper)) / (4 * ell + 2)
-            bound = max(_header_bound(headers, lower), _header_bound(headers, upper))
+            bound = max(_header_bound(headers, lines, lower), _header_bound(headers, lines, upper))
             out.append((mean / 1000, bound / 1000))
+    return out
+
+
+def _floor(lines: dict[str, str]) -> Decimal:
+    """The least uncertainty a cell may carry, in keV, written here from the printed lines: a
+    change between two runs of a quantity that sums at most `_MOST_LINES` printed lines in each."""
+    return 2 * _MOST_LINES * _line_half_unit(lines) / 1000
+
+
+def _route_relative(lines: dict[str, str]) -> dict[str, tuple[Decimal, int]]:
+    """``{state: (binding energy relative to the anchor in eV, lines summed)}`` by a route other than
+    the generator's: upper orbits down from the anchor by the upper-chain lines, the lower orbit of
+    shell 2 from K1 by its line, and each lower orbit of shell n + 1 from the upper orbit of shell n
+    by the cross line."""
+    out = {md.orbit(md.N_MAX, True): (Decimal(0), 0)}
+    for n in range(md.N_MAX - 1, 0, -1):
+        lower, upper = md.orbit(n, True), md.orbit(n + 1, True)
+        energy, count = out[upper]
+        out[lower] = (energy + Decimal(lines[f"{lower}-{upper}"]), count + 1)
+    energy, count = out["K1"]
+    out[md.orbit(2, False)] = (energy - Decimal(lines[f"K1-{md.orbit(2, False)}"]), count + 1)
+    for n in range(2, md.N_MAX):
+        upper, lower = md.orbit(n, True), md.orbit(n + 1, False)
+        energy, count = out[upper]
+        out[lower] = (energy - Decimal(lines[f"{upper}-{lower}"]), count + 1)
+    return out
+
+
+def _route_quantities(lines: dict[str, str]) -> list[tuple[Decimal, int]]:
+    """``[(quantity in keV, lines summed)]`` for K then e2 .. e<N_MAX>, on the other route."""
+    with localcontext() as context:
+        context.prec = 50
+        rel = _route_relative(lines)
+        out = [(rel["K1"][0] / 1000, rel["K1"][1])]
+        for n in range(2, md.N_MAX + 1):
+            ell = n - 1
+            (low, low_count), (high, high_count) = rel[md.orbit(n, False)], rel[md.orbit(n, True)]
+            mean = (2 * ell * low + (2 * ell + 2) * high) / (4 * ell + 2)
+            out.append((mean / 1000, max(low_count, high_count)))
     return out
 
 
@@ -471,8 +562,10 @@ def test_t105_every_value_and_unc_lies_within_the_header_precision_of_the_state_
     checked = 0
     for (z, a), (value, unc) in k_records.items():
         source = inputs[(z, carried[(z, a)])]
-        base = _from_headers(out.headers[md.run_id(source, "base")])
-        moved = _from_headers(out.headers[md.run_id(source, "rsig")])
+        base_run, rsig_run = md.run_id(source, "base"), md.run_id(source, "rsig")
+        base = _from_headers(out.headers[base_run], out.lines[base_run])
+        moved = _from_headers(out.headers[rsig_run], out.lines[rsig_run])
+        floor = max(_floor(out.lines[base_run]), _floor(out.lines[rsig_run]))
         shipped = [value, *level_records[(z, a)][: md.N_MAX - 1]]
         shipped_unc = [unc, *level_records[(z, a)][md.N_MAX - 1 :]]
         assert len(shipped) == len(shipped_unc) == len(base) == md.N_MAX
@@ -480,11 +573,88 @@ def test_t105_every_value_and_unc_lies_within_the_header_precision_of_the_state_
             shipped, shipped_unc, base, moved, strict=True
         ):
             assert _within(got, quantity, bound), ((z, a), got, quantity, bound)
-            assert _within(got_unc, abs(quantity_moved - quantity), bound + bound_moved), (
+            assert _within(got_unc, abs(quantity_moved - quantity), bound + bound_moved + floor), (
                 (z, a), got_unc
             )
             checked += 1
     print(f"\nvalues and uncs checked against the headers: {checked} of {len(k_records)} rows")
+
+
+def test_t105_every_unc_is_floored_and_agrees_with_an_independent_route_within_its_rounding():
+    """Every shipped `unc` and `u<n>` re-derived by the other route, anchor-relative: each cell is at
+    least this test's floor, and lies within that floor plus the two routes' rounding bound of the
+    other route's change (floored the same way). The largest difference and the floor are printed:
+    the difference is the route noise, and it must lie below the floor."""
+    out = md.load_outputs(REPO)
+    inputs = {row.nuclide: row for row in out.inputs}
+    kshell, kshell_doc = _shipped(KSHELL_LAYER1, KSHELL_LAYER2)
+    levels, _ = _shipped(LEVELS_LAYER1, LEVELS_LAYER2)
+    k_records, level_records = _records(kshell), _records(levels)
+    carried = _carried(kshell_doc)
+    largest, floors, checked = Decimal(0), set(), 0
+    for (z, a), (_value, unc) in k_records.items():
+        source = inputs[(z, carried[(z, a)])]
+        base_lines = out.lines[md.run_id(source, "base")]
+        rsig_lines = out.lines[md.run_id(source, "rsig")]
+        half = max(_line_half_unit(base_lines), _line_half_unit(rsig_lines))
+        floor = max(_floor(base_lines), _floor(rsig_lines))
+        floors.add(floor)
+        shipped_unc = [unc, *level_records[(z, a)][md.N_MAX - 1 :]]
+        base, moved = _route_quantities(base_lines), _route_quantities(rsig_lines)
+        for got, (quantity, count), (quantity_moved, count_moved) in zip(
+            shipped_unc, base, moved, strict=True
+        ):
+            shipped = Decimal(repr(got))
+            assert shipped >= floor, ((z, a), got, floor)
+            expected = max(abs(quantity_moved - quantity), floor)
+            route_bound = (2 * _MOST_LINES + count + count_moved) * half / 1000
+            difference = abs(shipped - expected)
+            assert difference <= floor + route_bound + expected * Decimal("1e-15"), (
+                (z, a), got, expected, route_bound
+            )
+            largest = max(largest, difference)
+            checked += 1
+    (floor,) = floors
+    print(f"\nuncertainty cells checked on the other route: {checked}; largest route difference "
+          f"{largest} keV; floor {floor} keV")
+    assert largest < floor, (largest, floor)
+
+
+def test_t105_drill_a_moved_rsig_anchor_header_leaves_the_uncertainties_unchanged():
+    """The `rsig` anchor header of a member whose anchor prints the same in both runs, moved by one
+    printed unit: the absolute derivation's K moves with it, and the shipped uncertainties do not."""
+    out = md.load_outputs(REPO)
+    dropped = md.drop_reasons(out)
+    kshell, _ = _shipped(KSHELL_LAYER1, KSHELL_LAYER2)
+    levels, _ = _shipped(LEVELS_LAYER1, LEVELS_LAYER2)
+    k_records, level_records = _records(kshell), _records(levels)
+    anchor = md.orbit(md.N_MAX, True)
+    for row in out.inputs:
+        if row.nuclide in dropped:
+            continue
+        base_run, rsig_run = md.run_id(row, "base"), md.run_id(row, "rsig")
+        headers = out.headers[rsig_run]
+        if out.headers[base_run][anchor] != headers[anchor]:
+            continue
+        unit = 2 * _half_unit(headers[anchor])
+        for step in (unit, -unit):
+            moved_headers = dict(headers)
+            printed = Decimal(headers[anchor])
+            moved_headers[anchor] = str((printed + step).quantize(printed))
+            try:
+                moved = md.derive_bindings(rsig_run, moved_headers, out.lines[rsig_run])
+            except md.DerivationError:
+                continue
+            base = md.derive_bindings(base_run, out.headers[base_run], out.lines[base_run])
+            original = md.derive_bindings(rsig_run, headers, out.lines[rsig_run])
+            assert md.quantities(moved)[0] != md.quantities(original)[0]
+            unc, level_uncs = md.uncertainties(base, moved)
+            shipped = (k_records[row.nuclide][1], *level_records[row.nuclide][md.N_MAX - 1 :])
+            assert tuple(float(u) for u in (unc, *level_uncs)) == shipped, row.nuclide
+            print(f"\nZ={row.z} A={row.a}: rsig anchor {headers[anchor]} -> {moved_headers[anchor]}; "
+                  "uncertainties unchanged")
+            return
+    pytest.fail("no member with an equal anchor header derives with its rsig anchor moved")
 
 
 def test_t105_natural_rows_equal_their_carried_isotope_and_both_tables_share_one_key_set():
@@ -605,8 +775,10 @@ def test_t106_every_gated_quantity_is_a_line_its_base_run_printed():
 
 def test_t106_the_comparison_file_equals_an_arithmetic_rederivation():
     """Every column recomputed here from the transcription and the printed lines, with the
-    tolerance three printed standard deviations and no model term."""
+    tolerance three printed standard deviations and no model term; the two Geant4 columns from the
+    committed cascade levels, the photon between the line's two shells taken in doubles."""
     out = md.load_outputs(REPO)
+    geant4 = md.load_geant4_levels(GEANT4_LEVELS)
     cells, origins = md.load_validation(CELLS, ORIGIN)
     inputs = {row.nuclide: row for row in out.inputs}
     committed = _committed_validation()
@@ -626,7 +798,8 @@ def test_t106_the_comparison_file_equals_an_arithmetic_rederivation():
         assert (row["measured_keV"], row["unc_keV"], row["npol_keV"]) == (
             cell.value_kev, cell.unc_kev, cell.npol_kev)
         assert row["radius_origin"] == (origins[cell.nuclide].origin if cell.nuclide in origins else "")
-        derived = ("model_keV", "residual_keV", "dE_sigma_keV", "dE_1pct_keV", "label", "within")
+        derived = ("model_keV", "residual_keV", "dE_sigma_keV", "dE_1pct_keV", "label", "within",
+                   "geant4_keV", "geant4_residual_keV")
         if not cell.gated:
             assert row["gated"] == "false" and row["reason"] == cell.reason
             assert all(row[column] == "" for column in derived), row
@@ -641,7 +814,30 @@ def test_t106_the_comparison_file_equals_an_arithmetic_rederivation():
         sized = max(abs(d_sigma), abs(d_floor)) * 3 >= tol
         assert row["label"] == ("size-dominated" if sized else "weakly sensitive"), row
         assert row["within"] == ("true" if abs(residual) <= tol else "false"), row
+        shells = ["KLMNOPQRSTUVWXYZ".index(orbit[0]) + 1 for orbit in cell.quantity.split("-")]
+        photon = geant4[cell.nuclide][min(shells) - 1] - geant4[cell.nuclide][max(shells) - 1]
+        with localcontext() as context:
+            context.prec = 1000
+            photon_kev = (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+        assert Decimal(row["geant4_keV"]) == photon_kev, row
+        assert Decimal(row["geant4_residual_keV"]) == photon_kev - Decimal(cell.value_kev), row
     assert VALIDATION.read_bytes() == md.build_validation(REPO)
+
+
+def test_t106_the_geant4_columns_move_neither_the_label_nor_the_tolerance_test():
+    """Context only: with every Geant4 level doubled, the Geant4 columns change and nothing else."""
+    out = md.load_outputs(REPO)
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    geant4 = md.load_geant4_levels(GEANT4_LEVELS)
+    doubled = {key: tuple(2 * level for level in levels) for key, levels in geant4.items()}
+    rows = md.validation_rows(out, cells, origins, geant4)
+    moved = md.validation_rows(out, cells, origins, doubled)
+    context = ("geant4_keV", "geant4_residual_keV")
+    gated = [i for i, row in enumerate(rows) if row["gated"] == "true"]
+    assert gated and all(rows[i]["geant4_keV"] != moved[i]["geant4_keV"] for i in gated)
+    for row, other in zip(rows, moved, strict=True):
+        assert {k: v for k, v in row.items() if k not in context} == {
+            k: v for k, v in other.items() if k not in context}
 
 
 def test_t106_every_gated_measurement_outside_tolerance_carries_its_printed_npol_when_fricke_prints_one():
@@ -702,7 +898,8 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     weak = [row for row in gated if row["label"] == md.WEAKLY_SENSITIVE]
     path = "DATASET_D3.md"
     pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
-        ("the generator's version", path, r"computed by MuDirac (\d+\.\d+\.\d+)", (1,), md.MUDIRAC_VERSION),
+        ("the generator's version", path, r"derived from the output of MuDirac (\d+\.\d+\.\d+)", (1,),
+         md.MUDIRAC_VERSION),
         ("the highest shell of the chain", path, r"The chain ends at shell (\d+),", (1,), md.N_MAX),
         ("members of the input set", path, r"Of the (\d+) members of the input set", (1,), len(out.inputs)),
         ("kept members", path, r"members of the input set, (\d+) are kept", (1,), kept),
@@ -716,6 +913,8 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("the highest checked shell", path, r"circular state of shells \d+ through (\d+)", (1,), md.N_MAX),
         ("the hydrogen-like bound in percent", path, r"lies within (\d+) % of the same state", (1,),
          int(md.NMAX_BOUND * 100)),
+        ("the uncertainty floor", path, r"No `unc` or `u<n>` cell is below (\d+\.\d+) keV", (1,),
+         format(md.UNC_FLOOR_KEV, "f")),
         ("the dropped member", path, r"The generator drops `([A-Z][a-z]?\d+)`", (1,),
          "".join(md.run_id(inputs[key], "base")[: -len("_base")] for key, reason in dropped.items()
                  if reason == md.DROP_FERMI2_C)),
@@ -731,6 +930,12 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("weakly sensitive rows within tolerance", path, r"and (\d+) of those lie within tolerance", (1,),
          sum(row["within"] == "true" for row in weak)),
     ]
+    # The changelog's entry for this dataset version names the version the shipped D3 tables carry.
+    kshell_table = (D3DIR / "d3_kshell.mudirac130.g4dat").read_text("ascii")
+    shipped = re.search(r"^#VERSION\s+(\S+)$", kshell_table, re.M)
+    assert shipped, "the committed k-shell table declares no #VERSION"
+    pins.append(("the dataset version the D3 fix moves to", "CHANGELOG.md",
+                 r"the dataset's `#VERSION` becomes (\d+\.\d+\.\d+)", (1,), shipped.group(1)))
     table = md.render_validation_table(validation).splitlines()[2:]
     for number, line in enumerate(table, start=1):
         pattern, groups = _row_pattern(line)
@@ -744,10 +949,13 @@ def test_t107_the_comparison_table_is_the_generated_block():
     assert text.count(block) == 1
 
 
-def _pin_problems(text: str) -> list[str]:
+def _pin_problems(text: str, path: str = "DATASET_D3.md") -> list[str]:
+    """Every pin of ``path`` that ``text``, that file's content, does not state exactly once."""
     collapsed = " ".join(text.split())
     problems = []
-    for what, _path, pattern, _groups, expected in document_pins():
+    for what, pin_path, pattern, _groups, expected in document_pins():
+        if pin_path != path:
+            continue
         hits = list(re.finditer(pattern, collapsed))
         if len(hits) != 1:
             problems.append(f"{what}: matched {len(hits)} times")
@@ -758,6 +966,9 @@ def _pin_problems(text: str) -> list[str]:
 
 def test_t107_every_pin_matches_once_and_states_its_value():
     assert not _pin_problems(_document_text())
+    changelog = (REPO / "CHANGELOG.md").read_bytes().decode("utf-8")
+    assert not _pin_problems(changelog, "CHANGELOG.md")
+    assert {pin[1] for pin in document_pins()} == {"DATASET_D3.md", "CHANGELOG.md"}
     print(f"\ndocument pins: {len(document_pins())}")
 
 
@@ -773,3 +984,109 @@ def test_t107_drill_a_changed_count_and_a_changed_table_cell_are_refused():
     changed = _replace_once(text, row, row.replace(f" | {cell} | ", f" | {cell}1 | ", 1))
     assert changed.count(block) == 0
     assert any(problem.startswith("comparison table row 1:") for problem in _pin_problems(changed))
+
+
+# --------------------------------------------------------------------------------------------
+# T-110 -- the level energies Geant4's own cascade uses, beside the comparison
+# --------------------------------------------------------------------------------------------
+
+GEANT4_LEVELS = REPO / md.GEANT4_LEVELS_RELPATH
+
+
+def cascade_k_energies(zs: list[int], literals: list[str]) -> dict[int, float]:
+    """``fKLevelEnergy`` as the vendored cascade's constructor fills it, re-computed here by its own
+    expression over its compiled-in table: the listed Z take their literal, the Z between two listed
+    ones the interpolation of energy over Z squared."""
+    energies = [float(token) for token in literals]
+    k = {0: 0.0, 1: energies[0]}
+    idx = 1
+    for i in range(1, len(zs)):
+        z1, z2 = zs[idx], zs[i]
+        if z1 + 1 < z2:
+            dz = float(z2 - z1)
+            y1 = energies[idx] / float(z1 * z1)
+            y2 = energies[i] / float(z2 * z2)
+            for z in range(z1 + 1, z2):
+                k[z] = (y1 + (y2 - y1) * (z - z1) / dz) * z * z
+        k[z2] = energies[i]
+        idx = i
+    return k
+
+
+def test_t110_the_cascade_levels_are_the_vendored_cascades_for_every_gated_nuclide():
+    levels = md.load_geant4_levels(GEANT4_LEVELS)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    assert sorted(levels) == md.gated_nuclides(cells)
+    cascade = parity.D3_SEAM_DIRS[parity.d1.UPSTREAM_TAG] / parity.CASCADE_NAME
+    text = cascade.read_text("ascii")
+    assert f"fLevelEnergy[{md.CASCADE_LEVELS - 1}]" in text and f"i<{md.CASCADE_LEVELS}" in text
+    kshell = cascade_k_energies(*parity.k_table(text, parity.CASCADE_NAME))
+    top = max(kshell)
+    for (z, a), row in levels.items():
+        assert len(row) == md.CASCADE_LEVELS
+        assert all(upper < lower for lower, upper in zip(row, row[1:], strict=False)), (z, a)
+        assert row[0] == kshell[min(z, top)], (z, a, row[0].hex(), kshell[min(z, top)].hex())
+        e = 4 * row[1]
+        for n in range(2, md.CASCADE_LEVELS + 1):
+            assert e / float(n * n) == row[n - 1], (z, a, n)
+    print(f"\ncascade levels: {len(levels)} gated nuclides, {md.CASCADE_LEVELS} levels each")
+
+
+def _harvest_from_levels() -> str:
+    """A harvest whose C lines carry the committed levels of every gated nuclide."""
+    rows = GEANT4_LEVELS.read_bytes().decode("ascii").split(NL)[1:-1]
+    tokens: dict[tuple[int, int], list[str]] = {}
+    for row in rows:
+        z, a, _n, level = row.split(",")
+        tokens.setdefault((int(z), int(a)), []).append(level)
+    lines = ["K 1 0x1p-1"]
+    lines += [f"C {z} {a} " + " ".join(levels) + " 1 e:0x1p-1 edep 0x1p-1"
+              for (z, a), levels in tokens.items()]
+    return NL.join(lines) + NL
+
+
+def test_t110_the_committed_file_is_what_the_renderer_writes_from_a_harvest():
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    harvest = _harvest_from_levels()
+    assert md.render_geant4_levels(harvest, md.gated_nuclides(cells)) == GEANT4_LEVELS.read_bytes()
+
+
+def test_t110_drill_a_missing_a_repeated_and_a_malformed_c_line_are_refused():
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    nuclides = md.gated_nuclides(cells)
+    harvest = _harvest_from_levels()
+    first = next(line for line in harvest.split(NL) if line.startswith("C "))
+    drills = [
+        (harvest.replace(first + NL, ""), md.CellError, "no C line for"),
+        (harvest + first + NL, md.DuplicateKeyError, "a second C line"),
+        (harvest.replace(first, first.replace(" 0x", " 0.", 1)), md.CellError, "printed with %a"),
+    ]
+    for mutated, error, message in drills:
+        assert mutated != harvest
+        with pytest.raises(error, match=re.escape(message)):
+            md.render_geant4_levels(mutated, nuclides)
+
+
+_GL = "21,45,1,"
+GEANT4_LEVELS_DRILLS = [
+    ("a carriage return", lambda t: t.replace(NL, "\r" + NL, 1), md.CarriageReturnError, "contains CR"),
+    ("a non-ASCII byte", lambda t: t.replace(NL + _GL, NL + "21,45,1·", 1),
+     md.NonAsciiError, "outside US-ASCII"),
+    ("a renamed column", lambda t: _replace_once(t, "n,level_MeV", "n,level"), md.HeaderError, "header is"),
+    ("a signed Z", lambda t: _replace_once(t, NL + _GL, NL + "+21,45,1,"),
+     md.CellError, "Z must be an integer"),
+    ("a level in decimal", lambda t: NL.join([*_lines(t)[:1], _GL + "1.1", *_lines(t)[2:]]),
+     md.CellError, "positive double printed with %a"),
+    ("a missing level", lambda t: NL.join([*_lines(t)[:2], *_lines(t)[3:]]),
+     md.CellError, "got n = 3"),
+    ("a nuclide stopping short", lambda t: NL.join([*_lines(t)[:-2], ""]), md.CellError, "stop short"),
+    ("a duplicated row", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate row"),
+    ("rows out of order", lambda t: _swap_lines(t, md.CASCADE_LEVELS), md.OrderError, "ordered by (Z, A, n)"),
+    ("no rows", lambda t: _lines(t)[0] + NL, md.EmptyError, "carries no rows"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", GEANT4_LEVELS_DRILLS,
+                         ids=[d[0] for d in GEANT4_LEVELS_DRILLS])
+def test_t110_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, GEANT4_LEVELS, mutate, error, message, md.load_geant4_levels)

@@ -2,8 +2,9 @@
 
 `cpp/patches/g4-v11.4.2-muonicdata.patch` and `cpp/patches/g4-v11.5.0.beta-muonicdata.patch` are
 where the reader meets Geant4, one patch family per revision the overlay targets. Each adds the
-reader to Geant4's own tree, adds the opt-in boolean to `G4HadronicParameters`, and inserts a
-lookup into the two compiled-in copies of the muon-capture tables. Two things about a family can
+reader and its glue to Geant4's own tree, adds the opt-in boolean to `G4HadronicParameters`, and
+inserts lookups into the two compiled-in copies of the muon-capture tables, the muonic cascade and
+the helper's K energy. Two things about a family can
 rot silently: the reader it carries can drift from `cpp/include` + `cpp/src` (the repository's
 copy is the one every other test exercises), and its context lines can drift from the vendored
 upstream files it was cut against (then it no longer applies where it claims to). Neither needs
@@ -13,8 +14,9 @@ What each test here is actually for:
 
 * **T-72** -- the patch parses as a unified diff, touches exactly the declared set of files, applies
   (with a zero-fuzz applier written here, not `git apply`, so the check is the same on every
-  runner) to the vendored copies of the two seam files without deleting a line of any file that
-  existed before it, and the two reader files it adds equal the repository's byte for byte. The
+  runner) to the vendored copies of the seam files without deleting a line of any file that
+  existed before it but the two call lines it changes, and the reader and glue files it adds equal
+  the repository's byte for byte. The
   registration patch touches only the dataset-definitions file and adds exactly the committed
   snippet's entry.
 * **T-73** -- the drill: alter one context line and the applier must refuse, naming the hunk; and
@@ -28,8 +30,10 @@ vendored sources, the snippet -- never typed as a number.
 from __future__ import annotations
 
 import dataclasses
+import math
 import pathlib
 import re
+import struct
 
 import pytest
 import test_g4parity as parity
@@ -52,23 +56,43 @@ FAMILIES: dict[str, tuple[pathlib.Path, pathlib.Path, pathlib.Path]] = {
 #: Every patch of every family, in tag order -- what the README's digit-bearing tokens are held to.
 ALL_PATCHES = [patch for tag in sorted(FAMILIES) for patch in FAMILIES[tag][:2]]
 
-#: The files the behaviour patch is declared to touch, as a literal set: two reader files and one
-#: glue file added to Geant4's particle-management module, that module's source list, the two
-#: seam files, and the two files of `G4HadronicParameters` that gain the opt-in. A count would let
-#: a dropped file and an added file cancel out.
+#: The files the behaviour patch is declared to touch, as a literal set: two reader files and two
+#: glue files added to Geant4's particle-management module, that module's source list, the seam
+#: files and the helper's header, and the two files of `G4HadronicParameters` that gain the opt-in.
+#: A count would let a dropped file and an added file cancel out.
 BEHAVIOUR_PATHS = frozenset(
     {
+        "source/particles/management/include/G4MuonicAtomHelper.hh",
         "source/particles/management/include/G4MuonicDataOverlay.hh",
         "source/particles/management/include/G4MuonicDataTable.hh",
         "source/particles/management/sources.cmake",
         "source/particles/management/src/G4MuonicAtomHelper.cc",
         "source/particles/management/src/G4MuonicDataOverlay.cc",
         "source/particles/management/src/G4MuonicDataTable.cc",
+        "source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc",
         "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc",
+        "source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc",
         "source/processes/hadronic/util/include/G4HadronicParameters.hh",
         "source/processes/hadronic/util/src/G4HadronicParameters.cc",
     }
 )
+#: The helper's header, which gains the two-argument K-energy declaration; not vendored, so its
+#: `index` old id is held to a pin like the other upstream files this repository does not carry.
+(HELPER_HH,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/G4MuonicAtomHelper.hh"))
+#: The cascade, the one file the D3 lookups are inserted into besides the helper.
+(CASCADE,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/G4EmCaptureCascade.cc"))
+#: The two existing lines the patch changes: each call of the one-argument K energy that has the
+#: muonic atom's base ion in scope, which now passes its mass number. Old call, new call, by path.
+CALL_SITES: dict[str, tuple[bytes, bytes]] = {
+    "source/particles/management/src/G4MuonicAtomHelper.cc": (
+        b"GetKShellEnergy(G4double(Z))", b"GetKShellEnergy(G4double(Z), A)"
+    ),
+    "source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc": (
+        b"GetKShellEnergy(Zd)", b"GetKShellEnergy(Zd, baseion->GetAtomicMass())"
+    ),
+}
+#: The cascade's branching block, which no added line may touch.
+BRANCHING_TOKENS = (b"G4UniformRand", b"nLevel", b"pGamma", b"AddNewParticle")
 #: The one source list among them, derived from the declared set rather than re-typed; unpacking
 #: a one-element tuple asserts there is exactly one.
 (SOURCES_CMAKE,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/sources.cmake"))
@@ -81,22 +105,31 @@ assert len(HADRONIC_PARAMETERS) == 2, HADRONIC_PARAMETERS
 GLUE = frozenset(p for p in BEHAVIOUR_PATHS if "/G4MuonicDataOverlay." in p)
 assert len(GLUE) == 2, GLUE
 (GLUE_CC,) = tuple(p for p in GLUE if p.endswith(".cc"))
-#: Per family: the two seam files, and the vendored copy of that tag each one's hunks must apply to.
+#: Per family: the seam files, and the vendored copy of that tag each one's hunks must apply to --
+#: the two compiled-in copies of the capture tables, the cascade and the decay process.
 SEAMS: dict[str, dict[str, pathlib.Path]] = {
     tag: {
         "source/particles/management/src/G4MuonicAtomHelper.cc": vendored / "G4MuonicAtomHelper.cc",
         "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc": (
             vendored / "G4MuonMinusBoundDecay.cc"
         ),
+        **{
+            parity.D3_SEAM_UPSTREAM_PATHS[name]: vendored / name
+            for name in (parity.CASCADE_NAME, parity.DECAY_NAME)
+        },
     }
     for tag, (_, _, vendored) in FAMILIES.items()
 }
-#: Per family: the two reader files the patch adds, and the repository file each must equal --
-#: the same two files for both families, since the reader does not depend on the revision.
+#: Per family: the reader and glue files the patch adds, and the repository file each must equal --
+#: the same files for both families, since neither the reader nor the glue depends on the revision.
 READER: dict[str, dict[str, pathlib.Path]] = {
     tag: {
         "source/particles/management/include/G4MuonicDataTable.hh": REPO / "cpp/include/G4MuonicDataTable.hh",
         "source/particles/management/src/G4MuonicDataTable.cc": REPO / "cpp/src/G4MuonicDataTable.cc",
+        "source/particles/management/include/G4MuonicDataOverlay.hh": (
+            REPO / "cpp/include/G4MuonicDataOverlay.hh"
+        ),
+        "source/particles/management/src/G4MuonicDataOverlay.cc": REPO / "cpp/src/G4MuonicDataOverlay.cc",
     }
     for tag in FAMILIES
 }
@@ -109,6 +142,9 @@ REGISTRATION_PATH = "cmake/Modules/G4DatasetDefinitions.cmake"
 #: no `old` bytes to rebuild from, its `new` id is only required to differ.
 PRISTINE_INDEX_OLD: dict[str, dict[str, str]] = {
     parity.d1.UPSTREAM_TAG: {
+        "source/particles/management/include/G4MuonicAtomHelper.hh": (
+            "e2973354ebca8d77c7b5f79437f9ecae966ea67b"
+        ),
         "source/particles/management/sources.cmake": "e292ef656be716180f409eb8f0501246b42e1722",
         "source/processes/hadronic/util/include/G4HadronicParameters.hh": (
             "09d22d476dc9f2a66d6af7e29e41b25fb2000533"
@@ -119,6 +155,9 @@ PRISTINE_INDEX_OLD: dict[str, dict[str, str]] = {
         "cmake/Modules/G4DatasetDefinitions.cmake": "64feb989558c65a71ff33d6cdeb16cbc06944205",
     },
     parity.BETA_TAG: {
+        "source/particles/management/include/G4MuonicAtomHelper.hh": (
+            "fa725ef8f191973e39555eefd8062afaaab9d285"
+        ),
         "source/particles/management/sources.cmake": "e292ef656be716180f409eb8f0501246b42e1722",
         "source/processes/hadronic/util/include/G4HadronicParameters.hh": (
             "2d051de924af8ef3da06fb6445a957ca4fa50e52"
@@ -374,25 +413,73 @@ def test_t72_the_behaviour_patch_touches_exactly_the_declared_files(tag: str):
     assert set(files) == BEHAVIOUR_PATHS
 
 
-@family
-def test_t72_the_seam_hunks_apply_to_the_vendored_files_and_delete_nothing(tag: str):
-    behaviour, _, _ = FAMILIES[tag]
-    files = by_new_path(parse_patch(behaviour.read_bytes()))
-    # Every file that existed before the patch -- the seams, the source list, the two
-    # `G4HadronicParameters` files -- is only ever added to: not one `-` line anywhere.
+def check_deletions(files: dict[str, FilePatch]) -> None:
+    """Every file that existed before the patch -- the seams, the helper's header, the source list,
+    the two `G4HadronicParameters` files -- is only ever added to, except a `CALL_SITES` file: its
+    one `-` line holds its old call exactly once, and the hunk that removes it adds exactly that line
+    with the call replaced. Every message names the path."""
     for path, file in sorted(files.items()):
         if file.old_path == b"/dev/null":
             continue
         assert file.old_path == b"a/" + path.encode(), file.old_path
-        removed = [content for hunk in file.hunks for marker, content, _ in hunk.lines if marker == b"-"]
-        assert not removed, f"{path}: the patch deletes {removed}"
+        removed = [
+            (hunk, content) for hunk in file.hunks for marker, content, _ in hunk.lines if marker == b"-"
+        ]
+        if path not in CALL_SITES:
+            assert not removed, f"{path}: the patch deletes {[content for _, content in removed]}"
+            continue
+        old, new = CALL_SITES[path]
+        assert len(removed) == 1, f"{path}: the patch deletes {len(removed)} line(s), not only its call line"
+        ((hunk, content),) = removed
+        assert content.count(old) == 1, f"{path}: the deleted line does not hold {old!r} once: {content!r}"
+        added = [line for marker, line, _ in hunk.lines if marker == b"+"]
+        assert added == [content.replace(old, new)], (
+            f"{path}: hunk {hunk.header.decode()} adds {added}, not the call line with {new!r}"
+        )
+
+
+@family
+def test_t72_the_seam_hunks_apply_to_the_vendored_files_and_delete_only_the_call_lines(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    check_deletions(files)
     for path, vendored in SEAMS[tag].items():
         file = files[path]
         original = vendored.read_bytes()
         patched = apply_file_patch(file, original)
         added = sum(1 for hunk in file.hunks for marker, _, _ in hunk.lines if marker == b"+")
+        removed = sum(1 for hunk in file.hunks for marker, _, _ in hunk.lines if marker == b"-")
         assert added > 0, f"{path}: the patch adds nothing"
-        assert len(split_lines(patched)) == len(split_lines(original)) + added
+        assert len(split_lines(patched)) == len(split_lines(original)) + added - removed
+
+
+@family
+def test_t72_the_helper_header_adds_exactly_the_two_argument_declaration(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    added = [content for _, content in added_lines(files[HELPER_HH]) if content.strip()]
+    assert added == [b"    static G4double GetKShellEnergy(G4double Z, G4int A);"], added
+
+
+def check_cascade_lookups(tag: str, files: dict[str, FilePatch]) -> None:
+    """The cascade's `+` lines carry the k-shell and the level lookup once each, and no added line of
+    any pre-existing file carries a token of the cascade's branching block."""
+    added = [content for _, content in added_lines(files[CASCADE])]
+    for call in (b"G4MuonicDataOverlay::KShell(Z, A)", b"G4MuonicDataOverlay::Levels(Z, A,"):
+        hits = sum(content.count(call) for content in added)
+        assert hits == 1, f"{tag}: {CASCADE} adds {call!r} {hits} times"
+    for path, file in sorted(files.items()):
+        if file.old_path == b"/dev/null":
+            continue
+        for _, content in added_lines(file):
+            tokens = [token for token in BRANCHING_TOKENS if token in content]
+            assert not tokens, f"{tag}: {path} adds a line carrying {tokens}: {content!r}"
+
+
+@family
+def test_t72_the_cascade_adds_both_lookups_once_and_no_branching_token(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    check_cascade_lookups(tag, by_new_path(parse_patch(behaviour.read_bytes())))
 
 
 @family
@@ -437,7 +524,8 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
 
     An added file rebuilds from nothing to `new`; a seam file's vendored copy is `old` and its
     patched copy is `new`. The upstream files this repository does not vendor (`sources.cmake`,
-    `G4DatasetDefinitions.cmake`, the two `G4HadronicParameters` files) have no `old` bytes to
+    `G4DatasetDefinitions.cmake`, the helper's header, the two `G4HadronicParameters` files) have no
+    `old` bytes to
     rebuild from: for them the declared `old` is held to the object name `PRISTINE_INDEX_OLD` pins
     for that file on the tag's pristine tree, and a `new` that differs from it is required. What
     stays unheld is the post-image of such a file -- nothing here rebuilds it.
@@ -461,7 +549,7 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
                 check_pristine_pin(tag, path, file, PRISTINE_INDEX_OLD)
                 assert file.index_new != file.index_old, path
                 not_rebuilt.add(path)
-    assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH} | HADRONIC_PARAMETERS
+    assert not_rebuilt == {SOURCES_CMAKE, REGISTRATION_PATH, HELPER_HH} | HADRONIC_PARAMETERS
     assert not_rebuilt == set(PRISTINE_INDEX_OLD[tag]), sorted(PRISTINE_INDEX_OLD[tag])
 
 
@@ -496,10 +584,10 @@ def test_t72_the_opt_in_starts_false_and_its_setter_is_the_only_caller_of_enable
 
 def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touches():
     """The vendored README's `upstream path` cells are the seam paths, read from its table by the
-    row labels: the BoundDecay cell is the reference module's `UPSTREAM_PATH`, the helper cell is
-    the `SEAMS` key whose vendored copy is the helper, and together they are the paths the
-    behaviour patch's seam hunks touch. The rows read are the `v11.4.2` table's; the beta family
-    touches the same two paths, which the path-set test above holds for both.
+    row labels: the BoundDecay cell is the reference module's `UPSTREAM_PATH`, the helper, cascade
+    and decay cells are the `SEAMS` keys whose vendored copies carry those names, and together they
+    are the paths the behaviour patch's seam hunks touch. The rows read are the `v11.4.2` table's;
+    the beta family touches the same paths, which the path-set test above holds for both.
     """
     seams = SEAMS[parity.d1.UPSTREAM_TAG]
     text = parity.VENDORED_README.read_text("utf-8")
@@ -509,7 +597,14 @@ def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touche
     assert bound_decay[0] == parity.d1.UPSTREAM_PATH
     helper_key = next(path for path, vendored in seams.items() if vendored == parity.HELPER)
     assert helper[0] == helper_key
-    assert {bound_decay[0], helper[0]} == set(seams)
+    others = []
+    for name in (parity.CASCADE_NAME, parity.DECAY_NAME):
+        cells = re.findall(rf"^\| `{re.escape(name)}` upstream path \| `([^`]+)` \|$", text, re.M)
+        assert len(cells) == 1, (name, cells)
+        key = next(path for path, vendored in seams.items() if vendored.name == name)
+        assert cells[0] == key, (name, cells[0], key)
+        others.append(cells[0])
+    assert {bound_decay[0], helper[0], *others} == set(seams)
 
 
 # T-73 -- the drill, and the README's numbers
@@ -599,6 +694,55 @@ def test_t73_drill_a_dropped_member_default_and_a_second_enable_caller_are_refus
 
 
 @family
+def test_t73_drill_a_planted_deletion_and_a_changed_call_are_refused_by_path(tag: str):
+    """Two in-memory corruptions of the behaviour patch, each refused with the path named: a context
+    line of the cascade's hunk turned into a third `-` line (the hunk's count lowered so its
+    arithmetic still balances), and a call site whose added line passes other arguments."""
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    check_deletions(files)
+    hunk = files[CASCADE].hunks[-1]
+    index = next(i for i, (marker, _, _) in enumerate(hunk.lines) if marker == b" ")
+    _, content, has_newline = hunk.lines[index]
+    hunk.lines[index] = (b"-", content, has_newline)
+    hunk.new_count -= 1
+    with pytest.raises(AssertionError, match=re.escape(f"{CASCADE}: the patch deletes")):
+        check_deletions(files)
+
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    path = next(iter(sorted(CALL_SITES)))
+    old, new = CALL_SITES[path]
+    call_hunk = next(h for h in files[path].hunks for marker, _, _ in h.lines if marker == b"-")
+    at = next(i for i, (marker, _, _) in enumerate(call_hunk.lines) if marker == b"+")
+    marker, content, has_newline = call_hunk.lines[at]
+    call_hunk.lines[at] = (marker, content.replace(new, new.replace(b", A)", b", Z)")), has_newline)
+    with pytest.raises(AssertionError, match=re.escape(f"{path}: hunk")):
+        check_deletions(files)
+
+
+@family
+def test_t73_drill_an_added_branching_token_and_a_second_lookup_are_refused(tag: str):
+    """The cascade's lookups and the branching block, each corrupted in memory: an added line that
+    draws `G4UniformRand`, and the k-shell lookup added a second time -- each refused with the family
+    named."""
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    check_cascade_lookups(tag, files)
+    hunk = next(h for h in files[CASCADE].hunks for marker, _, _ in h.lines if marker == b"+")
+    hunk.lines.append((b"+", b"  G4double draw = G4UniformRand();", True))
+    hunk.new_count += 1
+    with pytest.raises(AssertionError, match=re.escape(f"{tag}: {CASCADE} adds a line carrying")):
+        check_cascade_lookups(tag, files)
+
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    hunk = next(h for h in files[CASCADE].hunks for marker, _, _ in h.lines if marker == b"+")
+    hunk.lines.append((b"+", b"  G4MuonicDataOverlay::KShell(Z, A);", True))
+    hunk.new_count += 1
+    with pytest.raises(AssertionError, match=re.escape(f"{tag}: {CASCADE} adds")):
+        check_cascade_lookups(tag, files)
+
+
+@family
 def test_t73_drill_an_altered_pristine_pin_is_refused_by_path(tag: str):
     """One pinned pristine object name altered in its first hex digit -- inside the abbreviated
     prefix the patch declares -- so the pin check fails and names that path, for every file the
@@ -631,3 +775,371 @@ def test_t73_drill_a_carriage_return_and_a_planted_number_are_caught(tag: str, t
     readme_copy.write_text(README.read_text("utf-8") + f"\nThe sweep has {planted} points.\n", "utf-8")
     with pytest.raises(AssertionError, match=planted):
         check_readme_numbers(readme_copy, [behaviour, registration])
+
+
+# T-109 -- the D3 harvests: what a patched cascade and helper must emit, derived from the tables
+# ------------------------------------------------------------------------------------------------
+#
+# `cpp/tools/harvest_d3.cc` prints the helper's K energy per Z and one capture cascade per (Z, A);
+# `harvest_d3_overlay.cc` prints the same with the opt-in on, then the two-argument K energy. These
+# functions are what the evidence runs check those harvests with: with the profile unset, the
+# patched harvest equals the unpatched one.
+
+#: Geant4's keV in its internal energy unit (MeV), the double the glue multiplies a table value by.
+KEV = 1.0e-3
+#: The levels the cascade carries, `fLevelEnergy[0]` .. `fLevelEnergy[13]`.
+CASCADE_LEVELS = 14
+_HEX = r"-?0x[0-9a-f]+(?:\.[0-9a-f]+)?p[+-][0-9]+"
+_K_LINE = re.compile(rf"K ([1-9][0-9]*) ({_HEX})")
+_KA_LINE = re.compile(rf"KA ([1-9][0-9]*) ([1-9][0-9]*) ({_HEX})")
+_SECONDARY = re.compile(rf"([eg]):({_HEX})|([A-Za-z][A-Za-z0-9_+-]*)")
+
+
+class HarvestError(Exception):
+    """A harvest line outside the grammar the D3 drivers print."""
+
+
+@dataclasses.dataclass(frozen=True)
+class Cascade:
+    levels: tuple[float, ...]
+    #: ``(kind, kinetic energy)``: kind `e` or `g`, or another particle's name with energy None.
+    secondaries: tuple[tuple[str, float | None], ...]
+    edep: float
+
+
+@dataclasses.dataclass(frozen=True)
+class D3Harvest:
+    k: dict[int, float]
+    cascades: dict[tuple[int, int], Cascade]
+    ka: dict[tuple[int, int], float]
+
+
+def _bits(value: float) -> bytes:
+    return struct.pack(">d", value)
+
+
+def parse_d3_harvest(text: str) -> D3Harvest:
+    """Every line of a D3 harvest, strictly: `K`, `C` and `KA` lines only, each key once."""
+    k: dict[int, float] = {}
+    cascades: dict[tuple[int, int], Cascade] = {}
+    ka: dict[tuple[int, int], float] = {}
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    for number, line in enumerate(lines, 1):
+        match = _K_LINE.fullmatch(line)
+        if match:
+            z = int(match.group(1))
+            if z in k:
+                raise HarvestError(f"line {number}: K {z} repeated")
+            k[z] = float.fromhex(match.group(2))
+            continue
+        match = _KA_LINE.fullmatch(line)
+        if match:
+            key = (int(match.group(1)), int(match.group(2)))
+            if key in ka:
+                raise HarvestError(f"line {number}: KA {key} repeated")
+            ka[key] = float.fromhex(match.group(3))
+            continue
+        tokens = line.split(" ")
+        if tokens[0] != "C" or len(tokens) < 3 + CASCADE_LEVELS + 3:
+            raise HarvestError(f"line {number}: not a harvest line: {line[:80]!r}")
+        try:
+            key = (int(tokens[1]), int(tokens[2]))
+            head = tokens[3 : 3 + CASCADE_LEVELS]
+            if not all(re.fullmatch(_HEX, token) for token in head):
+                raise ValueError("a level is not a hexadecimal float")
+            count = int(tokens[3 + CASCADE_LEVELS])
+            start = 4 + CASCADE_LEVELS
+            if len(tokens) != start + count + 2 or tokens[start + count] != "edep":
+                raise ValueError(f"{count} secondaries then `edep <value>` expected")
+            if not re.fullmatch(_HEX, tokens[-1]):
+                raise ValueError("edep is not a hexadecimal float")
+            secondaries = []
+            for token in tokens[start : start + count]:
+                piece = _SECONDARY.fullmatch(token)
+                if not piece:
+                    raise ValueError(f"secondary {token!r}")
+                if piece.group(1):
+                    secondaries.append((piece.group(1), float.fromhex(piece.group(2))))
+                else:
+                    secondaries.append((piece.group(3), None))
+        except ValueError as error:
+            raise HarvestError(f"line {number}: {error}: {line[:80]!r}") from None
+        if key in cascades:
+            raise HarvestError(f"line {number}: C {key} repeated")
+        cascades[key] = Cascade(
+            tuple(float.fromhex(token) for token in head), tuple(secondaries), float.fromhex(tokens[-1])
+        )
+    return D3Harvest(k, cascades, ka)
+
+
+def level_path(key: tuple[int, int], cascade: Cascade) -> list[tuple[str, int, int]]:
+    """``[(kind, from, to)]``: the capture electron at level 13, each Auger electron one level down,
+    and each photon to the unique level below the current one whose difference equals its energy --
+    every electron's energy checked against its levels on the way."""
+    levels = cascade.levels
+    assert all(a > b for a, b in zip(levels, levels[1:], strict=False)), (
+        f"{key}: levels not strictly decreasing"
+    )
+    top = CASCADE_LEVELS - 1
+    first = cascade.secondaries[0] if cascade.secondaries else None
+    assert first is not None and first[0] == "e" and _bits(first[1]) == _bits(levels[top]), (
+        f"{key}: the first secondary is not the capture electron at level {top}"
+    )
+    path = [("e", top, top)]
+    current = top
+    for index, (kind, energy) in enumerate(cascade.secondaries[1:], 1):
+        assert energy is not None, f"{key}: secondary {index} is a {kind}"
+        if kind == "e":
+            below = current - 1
+            assert below >= 0 and _bits(energy) == _bits(levels[below] - levels[current]), (
+                f"{key}: electron {index} is not the Auger energy of level {current}"
+            )
+        else:
+            hits = [i for i in range(current) if _bits(levels[i] - levels[current]) == _bits(energy)]
+            assert len(hits) == 1, f"{key}: photon {index} matches levels {hits} below {current}"
+            below = hits[0]
+        path.append((kind, current, below))
+        current = below
+    return path
+
+
+def _resolve(table: dict[tuple[int, int], object], z: int, a: int):
+    """The record `LookupNatural` finds: the exact key, else (Z, 0), else None."""
+    return table.get((z, a), table.get((z, 0)))
+
+
+def check_unset(ref: D3Harvest, pat: D3Harvest) -> dict[str, int]:
+    """With the profile unset: every K and C value of the patched harvest equals the unpatched one
+    bitwise, and every two-argument K energy equals its Z's one-argument K energy."""
+    assert set(pat.k) == set(ref.k), sorted(set(pat.k) ^ set(ref.k))
+    for z in ref.k:
+        assert _bits(pat.k[z]) == _bits(ref.k[z]), f"K {z}: {pat.k[z]!r} vs {ref.k[z]!r}"
+    assert set(pat.cascades) == set(ref.cascades), "the cascade key sets differ"
+    for key, cascade in ref.cascades.items():
+        other = pat.cascades[key]
+        assert [_bits(v) for v in other.levels] == [_bits(v) for v in cascade.levels], f"C {key}: levels"
+        assert [(kind, None if e is None else _bits(e)) for kind, e in other.secondaries] == [
+            (kind, None if e is None else _bits(e)) for kind, e in cascade.secondaries
+        ], f"C {key}: secondaries"
+        assert _bits(other.edep) == _bits(cascade.edep), f"C {key}: edep"
+    assert not ref.ka, "the unpatched harvest carries KA lines"
+    assert set(pat.ka) == set(pat.cascades), "the KA keys are not the cascade keys"
+    for (z, a), value in pat.ka.items():
+        assert _bits(value) == _bits(pat.k[z]), f"KA {(z, a)}: {value!r} vs K {z} {pat.k[z]!r}"
+    return {"K": len(ref.k), "C": len(ref.cascades), "KA": len(pat.ka)}
+
+
+def check_profile(
+    ref: D3Harvest,
+    pat: D3Harvest,
+    kshell: dict[tuple[int, int], float],
+    levels: dict[tuple[int, int], tuple[float, ...]],
+) -> dict[str, object]:
+    """Under a profile carrying the D3 tables, per (Z, A): each table resolved as `LookupNatural`
+    resolves it; level 0 the k-shell value times keV, levels 1 .. count the level values times keV,
+    and every other level the unpatched one; the same particle types and the same level path as
+    the unpatched cascade, every patched energy its own levels' difference; each Z's K energy the
+    (Z, 0) value times keV, else the unpatched one; each two-argument K energy the resolved value
+    times keV, else the unpatched K energy of its Z; and wherever a k-shell record resolves, the
+    cascade's level 0 and the two-argument K energy are one double. Returns the counts, the Z with
+    no row and the Z with rows but no (Z, 0) row, and the measures of the seam."""
+    counts = {len(values) for values in levels.values()}
+    assert len(counts) == 1, counts
+    (count,) = counts
+    assert set(pat.k) == set(ref.k) and set(pat.cascades) == set(ref.cascades), "key sets differ"
+    for z, value in ref.k.items():
+        natural = kshell.get((z, 0))
+        expected = natural * KEV if natural is not None else value
+        assert _bits(pat.k[z]) == _bits(expected), f"K {z}: {pat.k[z]!r}, expected {expected!r}"
+    resolved_k = resolved_levels = equal_k = 0
+    worst_ref = worst_pat = (0, None)
+    photon = level0 = (0.0, None)
+    for key, before in ref.cascades.items():
+        z, a = key
+        after = pat.cascades[key]
+        k_value, level_values = _resolve(kshell, z, a), _resolve(levels, z, a)
+        expected = list(before.levels)
+        if k_value is not None:
+            expected[0] = k_value * KEV
+            resolved_k += 1
+        if level_values is not None:
+            for i in range(1, min(count, CASCADE_LEVELS - 1) + 1):
+                expected[i] = level_values[i - 1] * KEV
+            resolved_levels += 1
+        for i, (got, want) in enumerate(zip(after.levels, expected, strict=True)):
+            assert _bits(got) == _bits(want), f"C {key}: level {i} is {got!r}, the tables give {want!r}"
+        kinds = [kind for kind, _ in after.secondaries]
+        assert kinds == [kind for kind, _ in before.secondaries], f"C {key}: particle types differ"
+        path_before, path_after = level_path(key, before), level_path(key, after)
+        assert path_after == path_before, f"C {key}: level path differs"
+        want_ka = k_value * KEV if k_value is not None else ref.k[z]
+        assert _bits(pat.ka[key]) == _bits(want_ka), f"KA {key}: {pat.ka[key]!r}, expected {want_ka!r}"
+        if k_value is not None:
+            assert _bits(after.levels[0]) == _bits(pat.ka[key]), f"{key}: level 0 and KA differ"
+            equal_k += 1
+        for name, cascade in (("ref", before), ("pat", after)):
+            ulps = parity._ulp_distance(cascade.edep, cascade.levels[0])
+            if name == "ref" and ulps > worst_ref[0]:
+                worst_ref = (ulps, key)
+            if name == "pat" and ulps > worst_pat[0]:
+                worst_pat = (ulps, key)
+        seam_before = before.levels[7] - before.levels[8]
+        seam_after = after.levels[7] - after.levels[8]
+        change = abs(seam_after - seam_before) / seam_before
+        if change > photon[0]:
+            photon = (change, key)
+        change = abs(after.levels[0] - before.levels[0]) / before.levels[0]
+        if change > level0[0]:
+            level0 = (change, key)
+    assert set(pat.ka) == set(pat.cascades), "the KA keys are not the cascade keys"
+    zs = {z for z, _ in kshell}
+    return {
+        "keys": len(ref.cascades),
+        "resolved_k": resolved_k,
+        "resolved_levels": resolved_levels,
+        "level0_equals_ka": equal_k,
+        "no_row": sorted(set(range(1, max(zs) + 1)) - zs),
+        "rows_but_no_natural_row": sorted(z for z in zs if (z, 0) not in kshell),
+        "edep_vs_level0_max_ulps_ref": worst_ref,
+        "edep_vs_level0_max_ulps_pat": worst_pat,
+        "photon_9_to_8_max_relative_change": photon,
+        "level0_max_relative_change": level0,
+    }
+
+
+def load_d3_tables(kshell_path: pathlib.Path, levels_path: pathlib.Path):
+    """The two committed D3 tables as the checker wants them: ``{(Z, A): value}`` and
+    ``{(Z, A): (e2 .. eN)}``, the level columns read by name from `#COLUMNS`."""
+    from openmucf.g4 import spec
+
+    kshell_table = spec.parse(kshell_path.read_bytes().decode("ascii"))
+    level_table = spec.parse(levels_path.read_bytes().decode("ascii"))
+    k_columns = kshell_table.directives["COLUMNS"].split()
+    l_columns = level_table.directives["COLUMNS"].split()
+    value = k_columns.index("value")
+    e_columns = [i for i, name in enumerate(l_columns) if re.fullmatch(r"e[0-9]+", name)]
+    kshell = {(r[0], r[1]): r[value] for r in kshell_table.records}
+    levels = {(r[0], r[1]): tuple(r[i] for i in e_columns) for r in level_table.records}
+    return kshell, levels
+
+
+def _synthetic_harvests() -> tuple[str, str, dict, dict]:
+    """An unpatched and a patched harvest of one key, Z = 3 and A = 7, built here from levels and a
+    fixed level path, with the tables that turn the one into the other."""
+    z, a = 3, 7
+    e = 1.0e-2
+    before = [2.0e-2] + [e / float((i + 1) * (i + 1)) for i in range(1, CASCADE_LEVELS)]
+    kshell = {(z, 0): 21.5, (z, a): 21.5}
+    level_values = tuple(1.01 * e / float(n * n) / KEV for n in range(2, 9))
+    levels = {(z, 0): level_values, (z, a): level_values}
+    after = list(before)
+    after[0] = kshell[(z, a)] * KEV
+    for i in range(1, 8):
+        after[i] = level_values[i - 1] * KEV
+    steps = [("e", 13, 12), ("g", 12, 8), ("g", 8, 7), ("g", 7, 1), ("g", 1, 0)]
+
+    def render(values: list[float], ka: float | None) -> str:
+        secondaries = [f"e:{values[13].hex()}"]
+        edep = values[13]
+        for kind, top, below in steps:
+            energy = values[below] - values[top]
+            secondaries.append(f"{kind}:{energy.hex()}")
+            edep += energy
+        line = " ".join(["C", str(z), str(a), *(v.hex() for v in values), str(len(secondaries)),
+                         *secondaries, "edep", edep.hex()])
+        k = kshell[(z, 0)] * KEV if ka is not None else before[0]
+        text = f"K {z} {k.hex()}\n{line}\n"
+        if ka is not None:
+            text += f"KA {z} {a} {ka.hex()}\n"
+        return text
+
+    return render(before, None), render(after, kshell[(z, a)] * KEV), kshell, levels
+
+
+def test_t109_the_checker_passes_a_synthetic_patched_harvest_and_its_unset_counterpart():
+    ref_text, pat_text, kshell, levels = _synthetic_harvests()
+    ref, pat = parse_d3_harvest(ref_text), parse_d3_harvest(pat_text)
+    result = check_profile(ref, pat, kshell, levels)
+    assert (result["keys"], result["resolved_k"], result["level0_equals_ka"]) == (1, 1, 1)
+    unset = ref_text + "".join(f"KA {z} {a} {ref.k[z].hex()}\n" for z, a in ref.cascades)
+    assert check_unset(ref, parse_d3_harvest(unset)) == {"K": 1, "C": 1, "KA": 1}
+
+
+def _replace_token(text: str, old: str, new: str) -> str:
+    assert text.count(old) == 1, (old, text.count(old))
+    return text.replace(old, new)
+
+
+def test_t109_drill_a_photon_one_ulp_off_a_changed_type_a_moved_level_and_a_wrong_ka_are_named():
+    ref_text, pat_text, kshell, levels = _synthetic_harvests()
+    ref = parse_d3_harvest(ref_text)
+    cascade = parse_d3_harvest(pat_text).cascades[(3, 7)]
+    photon = cascade.secondaries[2][1]
+    off = math.nextafter(photon, math.inf)
+    drills = [
+        ("photon", _replace_token(pat_text, f"g:{photon.hex()}", f"g:{off.hex()}"),
+         "photon 2 matches levels []"),
+        ("type", _replace_token(pat_text, f"g:{photon.hex()}", f"e:{photon.hex()}"), "particle types differ"),
+        ("level 8",
+         _replace_token(pat_text, f" {cascade.levels[8].hex()} ", f" {(cascade.levels[8] * 2).hex()} "),
+         "level 8 is"),
+        ("KA", pat_text.replace("KA 3 7 ", "KA 3 7 -"), "KA (3, 7)"),
+    ]
+    for name, mutated, message in drills:
+        assert mutated != pat_text, name
+        with pytest.raises(AssertionError, match=re.escape(message)):
+            check_profile(ref, parse_d3_harvest(mutated), kshell, levels)
+
+
+def test_t109_drill_a_line_outside_the_grammar_is_refused_by_number():
+    ref_text, _, _, _ = _synthetic_harvests()
+    with pytest.raises(HarvestError, match="line 3"):
+        parse_d3_harvest(ref_text + "Geant4 says hello\n")
+
+
+# T-111 -- `G4NucleiProperties` reads six particle masses from the particle table; without them a
+# Z == A key outside its mass tables gets a nuclear mass of zero. `HarvestD3()` constructs them first.
+HARVEST_D3 = REPO / "cpp" / "tools" / "harvest_d3.cc"
+HARVEST_PARTICLES = ("G4Proton::Proton()", "G4Neutron::Neutron()", "G4Deuteron::Deuteron()",
+                     "G4Triton::Triton()", "G4Alpha::Alpha()", "G4He3::He3()")
+
+
+def particles_before_harvest(source: str) -> list[str]:
+    """Every constructor call missing from `HarvestD3()`'s body or placed after its first harvest."""
+    # A call inside a block or line comment is not a call: both are removed before the body is read.
+    source = re.sub("/[*].*?[*]/", "", source, flags=re.DOTALL)
+    source = re.sub("//.*", "", source)
+    head = "void HarvestD3() {"
+    assert source.count(head) == 1, head
+    start, depth, end = source.index(head) + len(head), 1, None
+    for end in range(start, len(source)):
+        depth += {"{": 1, "}": -1}.get(source[end], 0)
+        if depth == 0:
+            break
+    body = source[start:end]
+    marks = {mark: body.find(mark) for mark in ("new G4EmCaptureCascade", "GetKShellEnergy")}
+    assert depth == 0 and min(marks.values()) >= 0, (depth, marks)
+    problems = [f"{call} is not in HarvestD3()" for call in HARVEST_PARTICLES if call not in body]
+    return problems + [f"{call} comes after {mark}" for call in HARVEST_PARTICLES if call in body
+                       for mark, first in marks.items() if body.find(call) > first]
+
+
+def test_t111_the_d3_harvest_constructs_the_six_particles_before_it_harvests():
+    assert particles_before_harvest(HARVEST_D3.read_text(encoding="utf-8")) == []
+
+
+def test_t111_drill_deleting_any_one_constructor_call_is_refused_by_name():
+    source = HARVEST_D3.read_text(encoding="utf-8")
+    for call in HARVEST_PARTICLES:
+        assert source.count(call) == 1, call
+        assert particles_before_harvest(source.replace(call, "")) == [f"{call} is not in HarvestD3()"]
+
+
+def test_t111_drill_a_constructor_call_inside_a_comment_is_refused_by_name():
+    source = HARVEST_D3.read_text(encoding="utf-8")
+    for call in HARVEST_PARTICLES:
+        assert source.count(f"{call};") == 1, call
+        for mutated in (source.replace(call, f"/* {call} */"), source.replace(f"{call};", f"// {call};\n")):
+            assert particles_before_harvest(mutated) == [f"{call} is not in HarvestD3()"]

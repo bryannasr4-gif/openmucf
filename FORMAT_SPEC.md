@@ -494,7 +494,7 @@ generated from.
 A consumer inside Geant4 resolves data directories with `G4FindDataDir("G4MUONICDATA")` from
 `G4EnvironmentUtils.hh` (the sanctioned lookup since Geant4 11.1). That is necessary but **not
 sufficient to describe what users will experience**, because there are two distinct modes and they
-have very different prerequisites. Verified against Geant4 v11.4.2:
+have very different prerequisites. Verified against Geant4 v11.4.2 and v11.5.0.beta:
 
 **Mode 1 -- registered.** The dataset has an entry in `cmake/Modules/G4DatasetDefinitions.cmake`
 (`geant4_add_dataset(NAME ... VERSION ... FILENAME ... EXTENSION tar.gz ... ENVVAR ... MD5SUM ...)`),

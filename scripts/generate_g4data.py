@@ -89,11 +89,10 @@ D1_MIZUNO_LAYER2 = D1DIR / f"d1_capture.{mizsrc.PROFILE}.prov.json"
 MIZUNO_TABLE1_PATH = ROOT / mizsrc.TABLE1_RELPATH
 MIZUNO_TABLE3_PATH = ROOT / mizsrc.TABLE3_RELPATH
 
-#: The version moves with the archive: this one adds the two D3 energy tables of the mudirac130
-#: profile as members beside the D1 pairs, the previous one the capture table's second profile.
-#: Plainly distinct from the example's `0.0.0-example`, and below 1.0.0 because D1 and D3 alone
-#: are not the dataset.
-DATASET_VERSION = "0.4.0"
+#: The version moves with the archive: this one corrects the uncertainty cells of the two D3 energy
+#: tables, the previous one added those tables as members beside the D1 pairs. Plainly distinct
+#: from the example's `0.0.0-example`, and below 1.0.0 because D1 and D3 alone are not the dataset.
+DATASET_VERSION = "0.4.1"
 D1_SEAM = "d1_nuclear_capture"
 #: The release we actually read -- we vendored it. NOT the papers Geant4 cites: those are carried as
 #: quoted upstream text in `conditions`, because citing a paper this project has not opened would be
@@ -535,9 +534,13 @@ D3_METHOD = (
     "anchored on the printed header of the outermost circular state, each derived energy checked "
     "against its own printed header."
 )
+#: What each table's uncertainty columns are, by table: the column word, then one template.
+D3_UNC_COLUMN = {md.K_TABLE: "unc", md.LEVEL_TABLE: "Each u<n>"}
 D3_UNC = (
-    "unc is the absolute change of the same quantity in run {rsig}, whose rms radius is moved by its "
-    "charge-radii table uncertainty; nothing else is propagated."
+    "{column} is the absolute change of the same quantity in run {rsig}, whose rms radius is moved by "
+    "its charge-radii table uncertainty, measured through the printed line energies with the energy "
+    "of the outermost circular state held fixed, and never less than {floor} keV"
+    "; nothing else is propagated."
 )
 D3_NATURAL = "This A = 0 row carries the values of A={a}, the isotope MuDirac's abundance file names for Z={z}."
 
@@ -556,7 +559,9 @@ def build_d3_document(out: md.Outputs, table_name: str) -> provenance.ProvDocume
         source = inputs[(record.z, record.carries)]
         base, rsig = md.run_id(source, "base"), md.run_id(source, "rsig")
         rendered = md.render_input(source, "base", md.extra_lines(cells, source.nuclide))
-        method = D3_METHOD.format(quantity=D3_QUANTITY[table_name], base=base) + " " + D3_UNC.format(rsig=rsig)
+        method = D3_METHOD.format(quantity=D3_QUANTITY[table_name], base=base) + " " + D3_UNC.format(
+            column=D3_UNC_COLUMN[table_name], rsig=rsig, floor=format(md.UNC_FLOOR_KEV, "f")
+        )
         if record.a == 0:
             method += " " + D3_NATURAL.format(a=record.carries, z=record.z)
         rows[f"{record.z}-{record.a}"] = provenance.ProvRow(

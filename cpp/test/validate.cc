@@ -615,28 +615,30 @@ int Run(int argc, char** argv) {
     report.Fail("V-03", Quote(dataset) + ": " + error.what());
   }
 
-  // V-04 -- E009 over each loaded table's Layer-2 sibling. Exactly one line: FAIL on any digest
-  // mismatch; else SKIPPED naming every table without a sibling and the digests of those checked;
-  // else PASS.
+  // V-04 -- E009 over the Layer-2 sibling of every loaded table, in load order, each named by its
+  // profile and table. Exactly one line: FAIL on any digest mismatch; else SKIPPED naming every
+  // table without a sibling and the digests of those checked; else PASS.
   if (!loaded) {
     report.Fail("V-04", "dataset not loaded");
   } else {
     std::string detail, skipped;
     bool ok = true;
-    for (const char* name : {kCaptureTable, kZeffTable}) {
-      const Table* table = tables.Find(G4MuonicDataTable::kParityProfile, name);
-      const std::string sibling = SiblingPath(table->file);
+    for (const Table& table : tables.Tables()) {
+      const std::string label = "'#PROFILE " + table.profile + "' " + table.name;
+      const std::string sibling = SiblingPath(table.file);
       std::string sibling_bytes;
       if (sibling.empty() || !ReadBytes(sibling, sibling_bytes)) {
-        skipped += (skipped.empty() ? "" : ", ") + std::filesystem::path(table->file).stem().string();
+        skipped += (skipped.empty() ? "" : ", ") + label;
         continue;
       }
       Verdict verdict;
-      if (DigestMismatch(*table, sibling_bytes, verdict)) {
+      if (DigestMismatch(table, sibling_bytes, verdict)) {
         ok = false;
-        detail += (detail.empty() ? "" : "; ") + std::string(name) + ": " + verdict.what;
+        detail += (detail.empty() ? "" : "; ") + label + ": " + verdict.what;
       } else {
-        detail += (detail.empty() ? "" : "; ") + std::string(name) + " sha256(" + FileName(sibling) + ")=" + *table->Directive("SOURCEDIGEST");
+        const std::string* digest = table.Directive("SOURCEDIGEST");
+        detail += (detail.empty() ? "" : "; ") + label + " sha256(" + FileName(sibling) + ")=" +
+                  (digest ? *digest : std::string("(no #SOURCEDIGEST)"));
       }
     }
     if (!ok) report.Fail("V-04", detail);

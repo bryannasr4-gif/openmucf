@@ -5,6 +5,8 @@
 validator, the toolchain probe and the F-3 producer, none of which needs a Geant4 installation.
 The validator reads the D1 and D3 tables as a single dataset directory that CMake assembles at
 configure time from `data/g4/d1/` and `data/g4/d3/`.
+`include/` and `src/` also hold `G4MuonicDataOverlay`, the Geant4-facing glue the patches add, which
+`test/` compiles against stand-in Geant4 headers so its lookups run in CI without Geant4.
 `tools/` holds the Geant4-linked harvest drivers and `build_oracle.py`, the step between a harvest
 and the committed oracle. `patches/` is the overlay: the patches that let a Geant4 build read the
 dataset behind an explicit opt-in.

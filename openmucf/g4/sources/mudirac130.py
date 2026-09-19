@@ -64,6 +64,7 @@ NMAX_RELPATH = f"{D3_RELDIR}/mudirac_nmax_check.csv"
 CELLS_RELPATH = f"{D3_RELDIR}/validation_cells.csv"
 ORIGIN_RELPATH = f"{D3_RELDIR}/validation_radius_origin.csv"
 VALIDATION_RELPATH = f"{D3_RELDIR}/validation.csv"
+GEANT4_LEVELS_RELPATH = f"{D3_RELDIR}/geant4_cascade_levels.csv"
 
 #: The run kinds whose results are committed, in their order: the bundled radius, the rms radius
 #: moved by its uncertainty, the rms radius times SIZE_FLOOR (validation nuclides only), and one
@@ -90,6 +91,17 @@ ORIGIN_COLUMNS = ("Z", "A", "origin", "locator")
 #: centre of gravity, or the value is a hyperfine component (or a line its source says is split),
 #: which a model without hyperfine structure cannot test.
 UNGATED_REASONS = ("centroid", "hyperfine")
+#: The label each source table gives its printed uncertainty, keyed by the source and the table its
+#: locator leads with: Fricke's Table IIIA errors are statistical, its Table IIIB errors include the
+#: fit error, and Saito's tables state statistical and systematic uncertainties.
+UNC_LABELS = {
+    ("Fricke1995", "Table IIIA"): "statistical",
+    ("Fricke1995", "Table IIIB"): "statistical and fit",
+    ("Saito2025", "Table III"): "statistical and systematic",
+    ("Saito2025", "Table IV"): "statistical and systematic",
+}
+#: The table a locator leads with.
+_LOCATOR_TABLE = re.compile(r"Table (?:IIIA|IIIB|III|IV)(?![A-Za-z])")
 #: Where a validation nuclide's charge radius comes from, by the source's own tables.
 RADIUS_ORIGINS = ("muonic", "e-scattering", "other")
 
@@ -238,6 +250,18 @@ def load_cells(path: Path) -> tuple[Cell, ...]:
         for column in ("transition", "unc_label", "locator", "copy_read"):
             if not r[column]:
                 raise CellError(f"{where}: every row must carry a {column}")
+        table = _LOCATOR_TABLE.match(r["locator"])
+        table_name = table.group(0) if table else ""
+        label = UNC_LABELS.get((r["source"], table_name))
+        if label is None:
+            raise CellError(
+                f"{where}: locator {r['locator']!r} leads with no table of {r['source']} in UNC_LABELS"
+            )
+        if r["unc_label"] != label:
+            raise CellError(
+                f"{where}: unc_label {r['unc_label']!r} is not {label!r}, the label of {table_name} "
+                f"of {r['source']}"
+            )
         order = (VALIDATION_SOURCES.index(r["source"]), z, a)
         if previous is not None and order < previous:
             raise OrderError(f"{where}: rows are ordered by (source, Z, A)")
@@ -534,6 +558,13 @@ _PRINTED = re.compile(r"-?[0-9]+(\.[0-9]+)?(e[+-][0-9]+)?")
 _LINE_ENERGY = re.compile(r"[0-9]+\.[0-9]{6}")
 #: Half a unit of the last decimal a line energy is printed with, in eV.
 LINE_HALF_UNIT = Decimal("0.0000005")
+#: The least uncertainty a `unc` or `u<n>` cell carries, in keV. A quantity measured with the
+#: outermost circular state held fixed sums at most twice (N_MAX - 1) printed lines -- the
+#: N_MAX - 1 upper-chain lines down to K1, then the N_MAX - 1 lower-chain lines out again -- each
+#: within LINE_HALF_UNIT of the value MuDirac computed; a (2j+1) mean is a convex combination of two
+#: such sums and is bounded the same way; and the change is taken between two runs, each rounded
+#: independently.
+UNC_FLOOR_KEV = 4 * (N_MAX - 1) * LINE_HALF_UNIT / 1000
 #: Why a nuclide the keep rule refuses is dropped, when its failure is that the Fermi parameter c
 #: MuDirac computes by default from the sphere radius is not a real number.
 DROP_FERMI2_C = "FERMI2 default c not real: sphere radius below sqrt(7/3)*pi*t/(4 ln 3) at t = fermi_t"
@@ -541,8 +572,7 @@ DROP_FERMI2_C = "FERMI2 default c not real: sphere radius below sqrt(7/3)*pi*t/(
 FERMI2_SQRT_FROM_A = 5
 #: Why a member is dropped when MuDirac's documented default c is set by its mass number alone.
 DROP_FERMI2_FROM_A = (
-    "FERMI2 default c set by the mass number alone (A below FERMI2_SQRT_FROM_A): the radius does not "
-    "shape the charge distribution, so unc would not propagate its uncertainty"
+    "FERMI2 default c set by the mass number alone (A below FERMI2_SQRT_FROM_A)"
 )
 
 
@@ -823,6 +853,29 @@ def quantities(b: dict[str, Decimal]) -> tuple[Decimal, tuple[Decimal, ...]]:
         return b["K1"] / 1000, tuple(level_mean(b, n) / 1000 for n in range(2, N_MAX + 1))
 
 
+def relative(b: dict[str, Decimal]) -> dict[str, Decimal]:
+    """Every state's binding energy (eV) minus the anchor's: what the printed lines alone give, with
+    the energy of the outermost circular state held fixed, so the anchor's printed header drops out."""
+    anchor = b[orbit(N_MAX, True)]
+    with localcontext() as context:
+        context.prec = _PRECISION
+        return {state: energy - anchor for state, energy in b.items()}
+
+
+def uncertainties(
+    base: dict[str, Decimal], moved: dict[str, Decimal]
+) -> tuple[Decimal, tuple[Decimal, ...]]:
+    """``(unc, (u2 .. u<N_MAX>))`` in keV: the absolute change of each quantity between the base and
+    the moved run, both measured relative to the anchor, and never less than UNC_FLOOR_KEV."""
+    k, levels = quantities(relative(base))
+    k_moved, levels_moved = quantities(relative(moved))
+    with localcontext() as context:
+        context.prec = _PRECISION
+        return max(abs(k_moved - k), UNC_FLOOR_KEV), tuple(
+            max(abs(m - e), UNC_FLOOR_KEV) for m, e in zip(levels_moved, levels, strict=True)
+        )
+
+
 # --------------------------------------------------------------------------------------------
 # which nuclides the tables keep
 # --------------------------------------------------------------------------------------------
@@ -922,11 +975,11 @@ def table_rows(out: Outputs) -> tuple[list[TableRow], dict[tuple[int, int], str]
         base, moved = (derive_bindings(run_id(row, kind), out.headers[run_id(row, kind)],
                                        out.lines[run_id(row, kind)]) for kind in ("base", "rsig"))
         k, levels = quantities(base)
-        k_moved, levels_moved = quantities(moved)
+        k_unc, level_uncs = uncertainties(base, moved)
         isotopes.append(TableRow(
-            row.z, row.a, row.a, float(k), float(abs(k_moved - k)),
+            row.z, row.a, row.a, float(k), float(k_unc),
             tuple(float(e) for e in levels),
-            tuple(float(abs(m - e)) for m, e in zip(levels_moved, levels, strict=True)),
+            tuple(float(u) for u in level_uncs),
         ))
     most: dict[int, int] = {}
     for row in out.inputs:
@@ -943,13 +996,105 @@ def table_rows(out: Outputs) -> tuple[list[TableRow], dict[tuple[int, int], str]
 
 
 # --------------------------------------------------------------------------------------------
+# the level energies Geant4's own muonic cascade uses, kept for context beside the comparison
+# --------------------------------------------------------------------------------------------
+
+GEANT4_LEVELS_COLUMNS = ("Z", "A", "n", "level_MeV")
+#: The levels `G4EmCaptureCascade` carries, `fLevelEnergy[0]` through `fLevelEnergy[13]`; a row's `n`
+#: is the index plus one, the shell whose energy the cascade holds there.
+CASCADE_LEVELS = 14
+#: A positive normal double as C's ``%a`` prints it.
+_HEXFLOAT = re.compile(r"0x1(?:\.[0-9a-f]+)?p[+-][0-9]+")
+
+
+def render_geant4_levels(harvest_text: str, nuclides: list[tuple[int, int]]) -> bytes:
+    """``geant4_cascade_levels.csv`` from the output of ``cpp/tools/harvest_d3.cc``: for each of
+    ``nuclides``, ascending, the CASCADE_LEVELS level energies its ``C`` line prints, each the ``%a``
+    token verbatim, in MeV. Every other line is passed over. Raises when a nuclide has no ``C`` line
+    or two, or a level is not a ``%a`` token."""
+    wanted = set(nuclides)
+    found: dict[tuple[int, int], list[str]] = {}
+    for number, line in enumerate(harvest_text.split("\n"), start=1):
+        fields = line.split(" ")
+        if fields[0] != "C":
+            continue
+        where = f"harvest line {number}"
+        key = (integer(fields[1], where, "Z"), integer(fields[2], where, "A"))
+        if key not in wanted:
+            continue
+        if key in found:
+            raise DuplicateKeyError(f"{where}: a second C line for (Z, A) = {key}")
+        levels = fields[3:3 + CASCADE_LEVELS]
+        if len(levels) != CASCADE_LEVELS or not all(_HEXFLOAT.fullmatch(token) for token in levels):
+            raise CellError(
+                f"{where}: {CASCADE_LEVELS} level energies printed with %a expected after Z and A"
+            )
+        found[key] = levels
+    missing = sorted(wanted - set(found))
+    if missing:
+        raise CellError(f"the harvest has no C line for {missing}")
+    rows = [",".join(GEANT4_LEVELS_COLUMNS)]
+    for z, a in sorted(found):
+        rows += [f"{z},{a},{n},{token}" for n, token in enumerate(found[(z, a)], start=1)]
+    return ("\n".join(rows) + "\n").encode("ascii")
+
+
+def load_geant4_levels(path: Path) -> dict[tuple[int, int], tuple[float, ...]]:
+    """Parse ``geant4_cascade_levels.csv``: ``{(Z, A): (level 1, ..., level CASCADE_LEVELS)}`` in MeV,
+    each read exactly from its ``%a`` token. Rows ascend by (Z, A, n), and n runs 1 through
+    CASCADE_LEVELS for every nuclide."""
+    out: dict[tuple[int, int], list[float]] = {}
+    previous: tuple[int, int, int] | None = None
+    for where, r in read_rows(path, GEANT4_LEVELS_COLUMNS):
+        z, a, n = integer(r["Z"], where, "Z"), integer(r["A"], where, "A"), integer(r["n"], where, "n")
+        if not _HEXFLOAT.fullmatch(r["level_MeV"]):
+            raise CellError(
+                f"{where}: level_MeV must be a positive double printed with %a, got {r['level_MeV']!r}"
+            )
+        key = (z, a, n)
+        if previous is not None and key == previous:
+            raise DuplicateKeyError(f"{where}: duplicate row for (Z, A, n) = {key}")
+        if previous is not None and key < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, n)")
+        levels = out.setdefault((z, a), [])
+        if n != len(levels) + 1 or n > CASCADE_LEVELS:
+            raise CellError(f"{where}: n runs 1 through {CASCADE_LEVELS} for every (Z, A), got n = {n}")
+        levels.append(float.fromhex(r["level_MeV"]))
+        previous = key
+    short = sorted(key for key, levels in out.items() if len(levels) != CASCADE_LEVELS)
+    if short:
+        raise CellError(
+            f"{Path(path).name}: n runs 1 through {CASCADE_LEVELS} for every (Z, A); {short} stop short"
+        )
+    return {key: tuple(levels) for key, levels in out.items()}
+
+
+def line_shells(line: str) -> tuple[int, int]:
+    """The (lower, upper) shells of a line in MuDirac's IUPAC spelling: K is shell 1, L shell 2, ..."""
+    lower, upper = (ord(orbit[0]) - ord("K") + 1 for orbit in line.split("-"))
+    if not lower < upper:
+        raise CellError(f"line {line!r} does not go from a lower to a higher shell")
+    return lower, upper
+
+
+def geant4_line_kev(levels: tuple[float, ...], line: str) -> Decimal:
+    """The photon Geant4's cascade emits between the two shells of ``line`` -- the difference of its
+    two level energies, taken in doubles as the cascade takes it -- in keV, at nine decimals."""
+    lower, upper = line_shells(line)
+    photon = levels[lower - 1] - levels[upper - 1]
+    with localcontext() as context:
+        context.prec = 1000
+        return (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+
+
+# --------------------------------------------------------------------------------------------
 # the comparison with the measured transition energies
 # --------------------------------------------------------------------------------------------
 
 VALIDATION_COLUMNS = (
     "source", "Z", "A", "transition", "quantity", "measured_keV", "unc_keV", "unc_label", "tol_keV",
     "model_keV", "residual_keV", "dE_sigma_keV", "dE_1pct_keV", "label", "within", "npol_keV",
-    "radius_origin", "gated", "reason", "locator",
+    "radius_origin", "gated", "reason", "locator", "geant4_keV", "geant4_residual_keV",
 )
 #: The comparison labels: a row whose model value moves by at least a third of its tolerance when
 #: the radius moves (by its uncertainty, or by the SIZE_FLOOR factor) is size-dominated.
@@ -972,12 +1117,20 @@ def line_energy_kev(out: Outputs, row: InputRow, kind: str, line: str) -> Decima
 
 
 def validation_rows(
-    out: Outputs, cells: tuple[Cell, ...], origins: dict[tuple[int, int], RadiusOrigin]
+    out: Outputs, cells: tuple[Cell, ...], origins: dict[tuple[int, int], RadiusOrigin],
+    geant4_levels: dict[tuple[int, int], tuple[float, ...]],
 ) -> list[dict[str, str]]:
     """One row per transcribed cell, in the transcription's order: the measured value, the tolerance
     TOL_FACTOR * sqrt(sigma**2 + SIGMA_CALC**2), and on a gated row the model value, the residual,
     the model's shift when the radius moves, the label and whether the residual is within tolerance.
-    Nothing is altered for lying outside tolerance."""
+    Nothing is altered for lying outside tolerance. For context, a gated row also carries the energy
+    Geant4's own cascade emits between the line's two shells and its difference from the measured
+    value; the label and the tolerance test use MuDirac's residual alone."""
+    if set(geant4_levels) != set(gated_nuclides(cells)):
+        raise CellError(
+            f"{Path(GEANT4_LEVELS_RELPATH).name} names {sorted(geant4_levels)}, "
+            f"the gated nuclides are {gated_nuclides(cells)}"
+        )
     inputs = {row.nuclide: row for row in out.inputs}
     rows = []
     for cell in cells:
@@ -993,6 +1146,7 @@ def validation_rows(
             "npol_keV": cell.npol_kev,
             "radius_origin": origins[cell.nuclide].origin if cell.nuclide in origins else "",
             "gated": "true" if cell.gated else "false", "reason": cell.reason, "locator": cell.locator,
+            "geant4_keV": "", "geant4_residual_keV": "",
         }
         if cell.gated:
             member = inputs[cell.nuclide]
@@ -1006,6 +1160,11 @@ def validation_rows(
                 "dE_sigma_keV": _decimal_text(d_sigma), "dE_1pct_keV": _decimal_text(d_floor),
                 "label": SIZE_DOMINATED if size else WEAKLY_SENSITIVE,
                 "within": "true" if abs(residual) <= tol else "false",
+            })
+            geant4 = geant4_line_kev(geant4_levels[cell.nuclide], cell.quantity)
+            row.update({
+                "geant4_keV": _decimal_text(geant4),
+                "geant4_residual_keV": _decimal_text(geant4 - Decimal(cell.value_kev)),
             })
         rows.append(row)
     return rows
@@ -1025,14 +1184,16 @@ def build_validation(root: Path) -> bytes:
     """The comparison file from the committed files under ``root`` alone."""
     root = Path(root)
     cells, origins = load_validation(root / CELLS_RELPATH, root / ORIGIN_RELPATH)
-    return render_validation(validation_rows(load_outputs(root), cells, origins))
+    geant4_levels = load_geant4_levels(root / GEANT4_LEVELS_RELPATH)
+    return render_validation(validation_rows(load_outputs(root), cells, origins, geant4_levels))
 
 
 #: The columns of the document's comparison table, each a column of ``validation.csv``.
 TABLE_COLUMNS = (
     ("source", "source"), ("Z", "Z"), ("A", "A"), ("transition", "transition"), ("line", "quantity"),
     ("measured (keV)", "measured_keV"), ("sigma (keV)", "unc_keV"), ("model (keV)", "model_keV"),
-    ("residual (keV)", "residual_keV"), ("tol (keV)", "tol_keV"), ("label", "label"),
+    ("residual (keV)", "residual_keV"), ("Geant4 residual (keV)", "geant4_residual_keV"),
+    ("tol (keV)", "tol_keV"), ("label", "label"),
     ("within", "within"), ("NPol (keV)", "npol_keV"),
 )
 

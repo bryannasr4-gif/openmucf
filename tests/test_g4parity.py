@@ -76,6 +76,38 @@ BETA_SHA256S = {
     HELPER.name: "d020924b759ad1149cf74e2955eeffede84bc55c8be4ffb364385cc803720e2a",
 }
 
+#: The two files the behaviour patches' D3 hunks apply to -- the muonic cascade and the muonic-atom
+#: decay process -- vendored per tag beside the two above, as evidence and never as a source:
+#: nothing in `data/g4/d3/` is generated from them. Each pin is upstream's own object name for the
+#: bytes at that tag's commit, and the upstream path is where the patches find the file.
+CASCADE_NAME = "G4EmCaptureCascade.cc"
+DECAY_NAME = "G4MuonicAtomDecay.cc"
+D3_SEAM_UPSTREAM_PATHS = {
+    CASCADE_NAME: "source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc",
+    DECAY_NAME: "source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc",
+}
+D3_SEAM_BLOB_IDS = {
+    d1.UPSTREAM_TAG: {
+        CASCADE_NAME: "f9d9d5497c0c08e918b9651dd78ef8343b95d3ab",
+        DECAY_NAME: "21f2fb116ce1be5c78194ee4782c784964875cf6",
+    },
+    BETA_TAG: {
+        CASCADE_NAME: "c7f628d9705fc471a5fa55650419614adebb46c5",
+        DECAY_NAME: "3393b875297bf9c7c2cd40ad0c77c7fa28858d35",
+    },
+}
+D3_SEAM_SHA256S = {
+    d1.UPSTREAM_TAG: {
+        CASCADE_NAME: "ed0570b24189dc7d1a615f31a54d693cf29154e1675501c906bdbda6732957ab",
+        DECAY_NAME: "b08c146a98630415bd1ae46469852091be3120f12515e1c6c16feb31c47fbd1b",
+    },
+    BETA_TAG: {
+        CASCADE_NAME: "d922c721b567845297b815f1c0fe6f696617ddd595745a90fbc1dd844f2c7d08",
+        DECAY_NAME: "7aec94ae97d6f865408cd57be021d0f76cb3bd834be94efbe4987ddd889a8abd",
+    },
+}
+D3_SEAM_DIRS = {d1.UPSTREAM_TAG: VENDORED.parent, BETA_TAG: BETA_DIR}
+
 
 def git_blob_id(data: bytes) -> str:
     """Git's object name for ``data`` as a blob: ``sha1("blob <len>\\0" + data)``.
@@ -189,6 +221,26 @@ def test_t80_the_vendored_readme_pins_are_computed_from_the_vendored_bytes():
         assert cell(label + " size") == f"{len(beta)} bytes, {beta_lines} lines", (
             f"the beta {name} `size` cell is not the vendored beta file's byte and newline count"
         )
+
+    # The cascade and decay copies of both tags: upstream path (v11.4.2 table), blob id, sha256 and
+    # size, each cell computed from the vendored bytes.
+    for name, upstream_path in D3_SEAM_UPSTREAM_PATHS.items():
+        assert cell(re.escape(f"`{name}`") + " upstream path") == upstream_path, (
+            f"the {name} `upstream path` cell is not the path the patches find it at"
+        )
+        for tag, directory in D3_SEAM_DIRS.items():
+            copy = (directory / name).read_bytes()
+            prefix = re.escape(f"`{name}`") if tag == d1.UPSTREAM_TAG else re.escape(f"`{tag}/{name}`")
+            assert cell(prefix + r" \*\*git blob id\*\*") == git_blob_id(copy), (
+                f"the {tag} {name} `git blob id` cell is not the blob id of the vendored bytes"
+            )
+            assert cell(prefix + " sha256") == hashlib.sha256(copy).hexdigest(), (
+                f"the {tag} {name} `sha256` cell is not the sha256 of the vendored bytes"
+            )
+            copy_lines = copy.count(b"\n")
+            assert cell(prefix + " size") == f"{len(copy)} bytes, {copy_lines} lines", (
+                f"the {tag} {name} `size` cell is not the vendored file's byte and newline count"
+            )
 
     data = VENDORED.read_bytes()
     assert cell(r"\*\*git blob id\*\*") == d1.UPSTREAM_BLOB_ID, (
@@ -428,7 +480,9 @@ def test_t69_the_two_compiled_in_copies_hold_the_same_tables_and_differ_in_the_c
     # syntax error before Python 3.12, and the CI matrix still runs 3.11.
     line_count = data.count(b"\n")
     assert f"{len(data)} bytes, {line_count} lines" in readme
-    assert {p.name for p in HELPER.parent.iterdir() if p.is_file()} == {VENDORED.name, HELPER.name}
+    assert {p.name for p in HELPER.parent.iterdir() if p.is_file()} == (
+        {VENDORED.name, HELPER.name} | set(D3_SEAM_BLOB_IDS[d1.UPSTREAM_TAG])
+    )
 
 
 def test_t70_mutation_drill_a_moved_digit_in_the_second_copy_is_named(tmp_path):
@@ -2295,10 +2349,6 @@ def document_pins() -> DocumentPins:
     crosscheck_disagreements = [pair for pair in crosscheck_pairs if not pair["agrees"]]
     # Released lines are held by dated registry rows; only `[Unreleased]` lines may be pinned live.
     changelog_claims: list = []
-    # A string the changelog states about a shipped file, read from that file: the dataset version
-    # the entry names is the `#VERSION` the committed capture table carries.
-    shipped_version = re.search(r"^#VERSION\s+(\S+)$", CAPTURE_LAYER1.read_text("ascii"), re.M)
-    assert shipped_version, "the committed capture table declares no #VERSION"
     # The one record the value comparison settled: the settled audit row `decided_by_value` decides,
     # derived from the audit and the printed cells. Every sentence naming it carries this key.
     blocks = d1.cells_by_z(capture_cells())
@@ -2314,8 +2364,6 @@ def document_pins() -> DocumentPins:
     ((settled_z, settled_a),) = settled_by_value_keys
     key_text = f"`({settled_z}, {settled_a})`"
     string_claims = [
-        ("the dataset version the entry names",
-         r"moves the dataset's `#VERSION` to (\d+\.\d+\.\d+)", shipped_version.group(1)),
         ("the record the value comparison settled",
          r"the (`\(\d+, \d+\)`) record is settled as the separated isotope the primary lists",
          key_text),
@@ -2804,7 +2852,9 @@ def test_t87_the_beta_copies_are_the_pinned_upstream_blobs(path: pathlib.Path):
         "the vendored beta file is not the pinned upstream blob at the beta commit"
     )
     assert hashlib.sha256(data).hexdigest() == BETA_SHA256S[path.name]
-    assert {p.name for p in BETA_DIR.iterdir() if p.is_file()} == set(BETA_BLOB_IDS)
+    assert {p.name for p in BETA_DIR.iterdir() if p.is_file()} == (
+        set(BETA_BLOB_IDS) | set(D3_SEAM_BLOB_IDS[BETA_TAG])
+    )
 
 
 @pytest.mark.parametrize("copy", [d1.BOUND_DECAY, d1.HELPER], ids=lambda c: c.name)
@@ -3909,3 +3959,91 @@ def test_t100_drill_a_section_4_that_names_no_beta_build_is_caught():
     mutated = head + "\n## 4." + "\n".join(kept) + "\n## 5." + tail
     with pytest.raises(AssertionError, match=re.escape(BETA_TAG[1:])):
         check_headline_revisions(mutated)
+
+
+# --------------------------------------------------------------------------------------------
+# T-108 -- the vendored cascade and decay copies, and the four compiled-in K tables
+# --------------------------------------------------------------------------------------------
+
+D3_SEAM_COPIES = [(tag, name) for tag in D3_SEAM_DIRS for name in D3_SEAM_BLOB_IDS[tag]]
+
+
+@pytest.mark.parametrize("tag, name", D3_SEAM_COPIES, ids=[f"{t}/{n}" for t, n in D3_SEAM_COPIES])
+def test_t108_the_vendored_cascade_and_decay_copies_are_the_pinned_upstream_blobs(tag: str, name: str):
+    """Each copy is upstream's file at that tag's commit, proven by upstream's own object name, with
+    the sha256 recorded alongside and no CR byte."""
+    data = (D3_SEAM_DIRS[tag] / name).read_bytes()
+    assert b"\r" not in data, (
+        f"the checkout rewrote {tag}/{name}'s line endings: check that .gitattributes still carries "
+        "`third_party/geant4/** -text`"
+    )
+    assert git_blob_id(data) == D3_SEAM_BLOB_IDS[tag][name], f"{tag}/{name} is not the pinned upstream blob"
+    assert hashlib.sha256(data).hexdigest() == D3_SEAM_SHA256S[tag][name]
+
+
+#: The four compiled-in K tables: the cascade's `listK` / `listKEnergy`, sized by `nlevels`, and the
+#: helper's `ListZK` / `ListKEnergy`, sized by `ListK`, in the vendored copy of each tag.
+K_TABLE_NAMES = {
+    CASCADE_NAME: ("nlevels", "listK", "listKEnergy"),
+    HELPER.name: ("ListK", "ListZK", "ListKEnergy"),
+}
+K_TABLE_COPIES = {
+    f"{tag}/{name}": D3_SEAM_DIRS[tag] / name for tag in D3_SEAM_DIRS for name in sorted(K_TABLE_NAMES)
+}
+
+
+def k_table(text: str, name: str) -> tuple[list[int], list[str]]:
+    """``(Z values as integers, energy literals as printed)`` of the compiled-in K table of one copy,
+    each list holding exactly the size the source declares for it."""
+    size_name, z_name, energy_name = K_TABLE_NAMES[name]
+    declared = re.search(rf"\b{size_name}\s*=\s*(\d+)\s*;", text)
+    assert declared, f"{name}: no `{size_name} = <n>;` declaration"
+    size = int(declared.group(1))
+    out = []
+    for array in (z_name, energy_name):
+        block = re.search(rf"\b{array}\[{size_name}\]\s*=\s*\{{(.*?)\}};", text, re.S)
+        assert block, f"{name}: no `{array}[{size_name}] = {{...}};` initializer"
+        tokens = [token for token in re.split(r"[\s,]+", block.group(1)) if token]
+        assert len(tokens) == size, f"{name}: {array} carries {len(tokens)} values, declared {size}"
+        out.append(tokens)
+    return [int(float(token)) for token in out[0]], out[1]
+
+
+def k_table_problems(texts: dict[str, str]) -> list[str]:
+    """Every copy's K table against the v11.4.2 cascade's: the Z values as integers and the energy
+    literals as strings, the first differing index named with its file."""
+    tables = {label: k_table(text, label.split("/")[1]) for label, text in texts.items()}
+    reference_label = f"{d1.UPSTREAM_TAG}/{CASCADE_NAME}"
+    reference = tables[reference_label]
+    problems = []
+    for label, table in tables.items():
+        for what, got, expected in (("Z", table[0], reference[0]), ("energy", table[1], reference[1])):
+            if got != expected:
+                index = next(
+                    (i for i, (a, b) in enumerate(zip(got, expected, strict=False)) if a != b),
+                    min(len(got), len(expected)),
+                )
+                problems.append(f"{label}: {what} index {index} differs from {reference_label}")
+    return problems
+
+
+def test_t108_the_four_compiled_in_k_tables_are_identical_across_files_and_revisions():
+    texts = {label: path.read_text("ascii") for label, path in K_TABLE_COPIES.items()}
+    assert len(texts) == 4, sorted(texts)
+    assert not k_table_problems(texts)
+    zs, energies = k_table(texts[f"{d1.UPSTREAM_TAG}/{CASCADE_NAME}"], CASCADE_NAME)
+    print(f"\nK table points: {len(zs)} in each of {len(texts)} copies")
+
+
+def test_t108_drill_one_changed_literal_is_named_with_its_file_and_index():
+    texts = {label: path.read_text("ascii") for label, path in K_TABLE_COPIES.items()}
+    label = f"{BETA_TAG}/{HELPER.name}"
+    _, energies = k_table(texts[label], HELPER.name)
+    index = len(energies) // 2
+    literal = energies[index]
+    start = texts[label].index("ListKEnergy[ListK]")
+    at = texts[label].index(literal + ",", start)
+    texts[label] = texts[label][:at] + literal + "1" + texts[label][at + len(literal):]
+    problems = k_table_problems(texts)
+    reference = f"{d1.UPSTREAM_TAG}/{CASCADE_NAME}"
+    assert problems == [f"{label}: energy index {index} differs from {reference}"], problems

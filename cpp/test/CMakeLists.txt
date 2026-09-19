@@ -320,6 +320,20 @@ set_tests_properties(validate_d3_profiles PROPERTIES
   PASS_REGULAR_EXPRESSION "V-14 PASS profiles=mizuno2025,mudirac130,parity pairs=[0-9]+\nV-15 PASS [^\n]*\nV-16 PASS profiles=mudirac130 keys=[0-9]+\n"
   FAIL_REGULAR_EXPRESSION " FAIL ")
 
+# The assembled dataset with one byte appended to the level table's Layer-2 file: V-04 checks
+# every loaded table's sibling, so it fails and names that table.
+set(dir "${CMAKE_BINARY_DIR}/d3_digest_mismatch")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+if(NOT EXISTS "${dir}/d3_levels.mudirac130.prov.json")
+  message(FATAL_ERROR "the digest case needs d3_levels.mudirac130.prov.json in the assembled dataset")
+endif()
+file(APPEND "${dir}/d3_levels.mudirac130.prov.json" " ")
+add_test(NAME validate_d3_digest_mismatch
+         COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+set_tests_properties(validate_d3_digest_mismatch PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-04 FAIL [^\n]*level_energy")
+
 # The level table without its first record: the key sets differ, and V-16 names the first key.
 set(dir "${CMAKE_BINARY_DIR}/d3_key_sets_differ")
 file(REMOVE_RECURSE "${dir}")
@@ -364,6 +378,206 @@ add_test(NAME validate_d3_natural_under_listed
          COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
 set_tests_properties(validate_d3_natural_under_listed PROPERTIES
   PASS_REGULAR_EXPRESSION "V-15 FAIL under A:listed: 'd3_kshell.mudirac130.g4dat' carries [0-9]+ A = 0 row")
+
+# The Geant4-facing glue the patches add (cpp/src/G4MuonicDataOverlay.cc), compiled against the
+# stand-in Geant4 headers under g4stub/ and run over the assembled dataset: each case checks what
+# the glue answers against a resolution overlay_check makes itself, and any MISMATCH fails it.
+add_executable(g4muonicdata_overlay_check overlay_check.cc ../src/G4MuonicDataOverlay.cc)
+target_include_directories(g4muonicdata_overlay_check BEFORE PRIVATE g4stub ../include)
+target_link_libraries(g4muonicdata_overlay_check PRIVATE g4muonicdatatable)
+g4muonicdata_target_options(g4muonicdata_overlay_check)
+
+# Every key and token below is read from the shipped files at configure time.
+function(g4muonicdata_record_lines file out)
+  file(STRINGS "${file}" lines REGEX "^ *[0-9]")
+  if(NOT lines)
+    message(FATAL_ERROR "${file} has no record line")
+  endif()
+  set(${out} "${lines}" PARENT_SCOPE)
+endfunction()
+g4muonicdata_record_lines("${G4MUONICDATA_D1_DIR}/d1_capture.g4dat" capture_lines)
+list(GET capture_lines 0 line)
+string(REGEX MATCH "^ *([0-9]+) +([0-9]+) " match "${line}")
+set(capture_key "${CMAKE_MATCH_1} ${CMAKE_MATCH_2}")
+g4muonicdata_record_lines("${G4MUONICDATA_D1_DIR}/d1_zeff.g4dat" zeff_lines)
+list(GET zeff_lines 0 line)
+string(REGEX MATCH "^ *([0-9]+) " match "${line}")
+set(zeff_key "${CMAKE_MATCH_1}")
+g4muonicdata_record_lines("${G4MUONICDATA_D3_KSHELL}" kshell_lines)
+list(GET kshell_lines 0 line)
+string(REGEX MATCH "^ *([0-9]+) +([0-9]+) " match "${line}")
+set(kshell_key "${CMAKE_MATCH_1} ${CMAKE_MATCH_2}")
+# The Z of every k-shell record, the first Z with a (Z, 0) record, and the lowest Z with none.
+set(kshell_zs "")
+set(natural_z "")
+foreach(line IN LISTS kshell_lines)
+  string(REGEX MATCH "^ *([0-9]+) +([0-9]+) " match "${line}")
+  list(APPEND kshell_zs "${CMAKE_MATCH_1}")
+  if(natural_z STREQUAL "" AND CMAKE_MATCH_2 STREQUAL "0")
+    set(natural_z "${CMAKE_MATCH_1}")
+  endif()
+endforeach()
+if(natural_z STREQUAL "")
+  message(FATAL_ERROR "d3_kshell.mudirac130.g4dat has no (Z, 0) record")
+endif()
+# A mass number equal to that Z, which no record of that Z carries, so it resolves to (Z, 0).
+foreach(line IN LISTS kshell_lines)
+  if(line MATCHES "^ *${natural_z} +${natural_z} ")
+    message(FATAL_ERROR "d3_kshell.mudirac130.g4dat lists (${natural_z}, ${natural_z}); the unlisted key needs another A")
+  endif()
+endforeach()
+set(unlisted_key "${natural_z} ${natural_z}")
+set(missing_z 1)
+list(FIND kshell_zs "${missing_z}" at)
+while(NOT at EQUAL -1)
+  math(EXPR missing_z "${missing_z} + 1")
+  list(FIND kshell_zs "${missing_z}" at)
+endwhile()
+set(missing_key "${missing_z} ${missing_z}")
+# The number of e<n> columns the level table declares, and the D3 profile token.
+file(STRINGS "${G4MUONICDATA_D3_LEVELS}" level_columns REGEX "^#COLUMNS")
+string(REGEX MATCHALL " e[0-9]+" level_e_columns "${level_columns}")
+list(LENGTH level_e_columns level_count)
+file(STRINGS "${G4MUONICDATA_D3_KSHELL}" d3_profile REGEX "^#PROFILE")
+string(REGEX REPLACE "^#PROFILE +" "" d3_profile "${d3_profile}")
+# The profiles the assembled dataset declares, bytewise sorted, as the glue lists them.
+file(GLOB dataset_tables "${G4MUONICDATA_DATASET_DIR}/*.g4dat")
+set(dataset_profiles "")
+foreach(member IN LISTS dataset_tables)
+  file(STRINGS "${member}" profile REGEX "^#PROFILE")
+  string(REGEX REPLACE "^#PROFILE +" "" profile "${profile}")
+  list(APPEND dataset_profiles "${profile}")
+endforeach()
+list(REMOVE_DUPLICATES dataset_profiles)
+list(SORT dataset_profiles)
+string(REPLACE ";" ", " dataset_profiles "${dataset_profiles}")
+string(REPLACE " " ";" capture_args "rate ${capture_key}")
+string(REPLACE " " ";" zeff_args "zeff ${zeff_key}")
+string(REPLACE " " ";" kshell_args "kshell ${kshell_key}")
+string(REPLACE " " ";" levels_args "levels ${kshell_key}")
+string(REPLACE " " ";" unlisted_args "kshell ${unlisted_key}")
+string(REPLACE " " ";" missing_args "kshell ${missing_key}")
+string(REPLACE " " ";" missing_levels_args "levels ${missing_key}")
+
+function(g4muonicdata_overlay_case name)
+  cmake_parse_arguments(CASE "" "PASS" "ENV;QUERIES" ${ARGN})
+  add_test(NAME ${name}
+           COMMAND ${CMAKE_COMMAND} -E env ${CASE_ENV} $<TARGET_FILE:g4muonicdata_overlay_check> ${CASE_QUERIES})
+  set_tests_properties(${name} PROPERTIES PASS_REGULAR_EXPRESSION "${CASE_PASS}" FAIL_REGULAR_EXPRESSION "MISMATCH")
+endfunction()
+set(parity_queries ${capture_args} ${zeff_args} ${kshell_args} ${levels_args})
+set(parity_pass
+    "RATE ${capture_key} -?0x[^\n]*\nZEFF ${zeff_key} -?0x[^\n]*\nKSHELL ${kshell_key} none\nLEVELS ${kshell_key} none\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\n")
+
+# The profile variable unset, then empty: parity, whose D1 keys hit and which carries no D3 table.
+g4muonicdata_overlay_case(overlay_parity_default
+  ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE
+  QUERIES ${parity_queries} PASS "${parity_pass}")
+g4muonicdata_overlay_case(overlay_profile_empty
+  ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" "G4MUONICDATA_PROFILE="
+  QUERIES ${parity_queries} PASS "${parity_pass}")
+
+# The D3 profile: no D1 table; the first k-shell key hits; an unlisted mass number of a Z with a
+# (Z, 0) record resolves to it; the lowest Z with no record resolves nothing; the level lookup
+# returns as many values as the level table declares e<n> columns.
+g4muonicdata_overlay_case(overlay_${d3_profile}
+  ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" "G4MUONICDATA_PROFILE=${d3_profile}"
+  QUERIES ${capture_args} ${zeff_args} ${kshell_args} ${unlisted_args} ${missing_args} ${levels_args} ${missing_levels_args}
+  PASS "RATE ${capture_key} none\nZEFF ${zeff_key} none\nKSHELL ${kshell_key} 0x[^\n]*\nKSHELL ${unlisted_key} 0x[^\n]*\nKSHELL ${missing_key} none\nLEVELS ${kshell_key} ${level_count} 0x[^\n]*\nLEVELS ${missing_key} none\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\n")
+
+# A profile no file declares: the fatal exception names the token and the profiles present; with
+# the abort suppressed, every lookup resolves nothing and the run ends with every line a MATCH.
+g4muonicdata_overlay_case(overlay_unknown_profile
+  ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" "G4MUONICDATA_PROFILE=nosuchprofile"
+  QUERIES ${kshell_args}
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData004 [^\n]*'nosuchprofile'[^\n]*: ${dataset_profiles}\n")
+g4muonicdata_overlay_case(overlay_suppressed_fatal
+  ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" "G4MUONICDATA_PROFILE=nosuchprofile" "OVERLAY_CHECK_SUPPRESS_FATAL=1"
+  QUERIES ${parity_queries}
+  PASS "G4MuonicData004[^\n]*\nRATE ${capture_key} none\nZEFF ${zeff_key} none\nKSHELL ${kshell_key} none\nLEVELS ${kshell_key} none\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\n")
+
+# No dataset directory resolves: the fatal exception the glue raises first.
+g4muonicdata_overlay_case(overlay_no_dataset
+  ENV --unset=G4MUONICDATA "G4MUONICDATA_PROFILE=${d3_profile}"
+  QUERIES ${kshell_args}
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData001 ")
+
+# A k-shell table whose #UNITS assigns `value` another unit, and a level table without `e2` (its
+# column renamed in #COLUMNS and #UNITS): each refused with the file, table, column and unit named.
+set(dir "${CMAKE_BINARY_DIR}/overlay_units_mismatch")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+file(READ "${G4MUONICDATA_D3_KSHELL}" kshell)
+string(FIND "${kshell}" " value=keV " at)
+if(at EQUAL -1)
+  message(FATAL_ERROR "d3_kshell.mudirac130.g4dat does not assign value=keV")
+endif()
+string(REPLACE " value=keV " " value=eV " kshell "${kshell}")
+g4muonicdata_write_member("${dir}" "d3_kshell.mudirac130.g4dat" "${kshell}")
+g4muonicdata_overlay_case(overlay_units_mismatch
+  ENV "G4MUONICDATA=${dir}" "G4MUONICDATA_PROFILE=${d3_profile}"
+  QUERIES ${kshell_args}
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData003 [^\n]*d3_kshell[^\n]*k_shell_energy, column 'value' has unit 'eV'")
+
+set(dir "${CMAKE_BINARY_DIR}/overlay_no_e2")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+file(READ "${G4MUONICDATA_D3_LEVELS}" levels)
+foreach(old IN ITEMS " e2 " " e2=keV ")
+  string(FIND "${levels}" "${old}" at)
+  if(at EQUAL -1)
+    message(FATAL_ERROR "d3_levels.mudirac130.g4dat does not carry '${old}'")
+  endif()
+endforeach()
+string(REPLACE " e2 " " f2 " levels "${levels}")
+string(REPLACE " e2=keV " " f2=keV " levels "${levels}")
+g4muonicdata_write_member("${dir}" "d3_levels.mudirac130.g4dat" "${levels}")
+g4muonicdata_overlay_case(overlay_no_e2
+  ENV "G4MUONICDATA=${dir}" "G4MUONICDATA_PROFILE=${d3_profile}"
+  QUERIES ${levels_args}
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData003 [^\n]*d3_levels[^\n]*level_energy declares no column 'e2' [(]unit keV[)]")
+
+# The assembled dataset with every separating space of a multi-assignment #UNITS value replaced by
+# one tab, which the format allows: the glue reads each assignment the same, for the default
+# profile's D1 tables and for the D3 profile's tables.
+set(dir "${CMAKE_BINARY_DIR}/overlay_units_tab")
+file(REMOVE_RECURSE "${dir}")
+file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+set(tabbed_members "")
+foreach(member IN LISTS G4MUONICDATA_DATASET_MEMBERS)
+  if(NOT member MATCHES "[.]g4dat$")
+    continue()
+  endif()
+  get_filename_component(name "${member}" NAME)
+  file(READ "${member}" text)
+  string(REGEX MATCH "\n#UNITS +([^\n]*)\n" match "${text}")
+  if(match STREQUAL "")
+    message(FATAL_ERROR "${name} carries no #UNITS line")
+  endif()
+  set(value "${CMAKE_MATCH_1}")
+  if(value MATCHES " ")
+    string(REPLACE " " "\t" tabbed_value "${value}")
+    string(REPLACE "${value}" "${tabbed_value}" tabbed_match "${match}")
+    string(REPLACE "${match}" "${tabbed_match}" text "${text}")
+    g4muonicdata_write_member("${dir}" "${name}" "${text}")
+    list(APPEND tabbed_members "${name}")
+  endif()
+endforeach()
+foreach(name IN ITEMS d1_capture.g4dat d3_kshell.mudirac130.g4dat d3_levels.mudirac130.g4dat)
+  if(NOT name IN_LIST tabbed_members)
+    message(FATAL_ERROR "the tab case needs a multi-assignment #UNITS line in ${name}")
+  endif()
+endforeach()
+g4muonicdata_overlay_case(overlay_units_tab_default
+  ENV "G4MUONICDATA=${dir}" --unset=G4MUONICDATA_PROFILE
+  QUERIES ${capture_args} ${zeff_args}
+  PASS "RATE ${capture_key} -?0x[^\n]*\nZEFF ${zeff_key} -?0x[^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\n")
+g4muonicdata_overlay_case(overlay_units_tab_${d3_profile}
+  ENV "G4MUONICDATA=${dir}" "G4MUONICDATA_PROFILE=${d3_profile}"
+  QUERIES ${kshell_args} ${levels_args}
+  PASS "KSHELL ${kshell_key} 0x[^\n]*\nLEVELS ${kshell_key} ${level_count} 0x[^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\n")
+set_tests_properties(overlay_units_tab_default overlay_units_tab_${d3_profile} PROPERTIES
+  FAIL_REGULAR_EXPRESSION "MISMATCH|G4MuonicData003")
 
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
 # enabled (and FMA on x86-64), and the figures compared with the document.
