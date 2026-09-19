@@ -1099,3 +1099,38 @@ def test_t109_drill_a_line_outside_the_grammar_is_refused_by_number():
     ref_text, _, _, _ = _synthetic_harvests()
     with pytest.raises(HarvestError, match="line 3"):
         parse_d3_harvest(ref_text + "Geant4 says hello\n")
+
+
+# T-111 -- `G4NucleiProperties` reads six particle masses from the particle table; without them a
+# Z == A key outside its mass tables gets a nuclear mass of zero. `HarvestD3()` constructs them first.
+HARVEST_D3 = REPO / "cpp" / "tools" / "harvest_d3.cc"
+HARVEST_PARTICLES = ("G4Proton::Proton()", "G4Neutron::Neutron()", "G4Deuteron::Deuteron()",
+                     "G4Triton::Triton()", "G4Alpha::Alpha()", "G4He3::He3()")
+
+
+def particles_before_harvest(source: str) -> list[str]:
+    """Every constructor call missing from `HarvestD3()`'s body or placed after its first harvest."""
+    head = "void HarvestD3() {"
+    assert source.count(head) == 1, head
+    start, depth, end = source.index(head) + len(head), 1, None
+    for end in range(start, len(source)):
+        depth += {"{": 1, "}": -1}.get(source[end], 0)
+        if depth == 0:
+            break
+    body = source[start:end]
+    marks = {mark: body.find(mark) for mark in ("new G4EmCaptureCascade", "GetKShellEnergy")}
+    assert depth == 0 and min(marks.values()) >= 0, (depth, marks)
+    problems = [f"{call} is not in HarvestD3()" for call in HARVEST_PARTICLES if call not in body]
+    return problems + [f"{call} comes after {mark}" for call in HARVEST_PARTICLES if call in body
+                       for mark, first in marks.items() if body.find(call) > first]
+
+
+def test_t111_the_d3_harvest_constructs_the_six_particles_before_it_harvests():
+    assert particles_before_harvest(HARVEST_D3.read_text(encoding="utf-8")) == []
+
+
+def test_t111_drill_deleting_any_one_constructor_call_is_refused_by_name():
+    source = HARVEST_D3.read_text(encoding="utf-8")
+    for call in HARVEST_PARTICLES:
+        assert source.count(call) == 1, call
+        assert particles_before_harvest(source.replace(call, "")) == [f"{call} is not in HarvestD3()"]
