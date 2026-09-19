@@ -53,6 +53,4 @@ A patched build was also measured with the second profile the dataset ships name
 differed from the `parity` harvest on exactly the keys that profile resolves to a different value.
 The cascade and K-energy harvests of `v11.4.2` and `v11.5.0.beta` were measured the same way: with
 the opt-in off, or under a profile carrying no D3 table, they are bit-identical to an unpatched
-build's, and under the profile carrying the D3 tables every level, every emitted energy and every
-K energy is what the tables give, with the particles the cascade emits and the levels it steps
-through unchanged.
+build's.

@@ -783,9 +783,7 @@ def test_t73_drill_a_carriage_return_and_a_planted_number_are_caught(tag: str, t
 # `cpp/tools/harvest_d3.cc` prints the helper's K energy per Z and one capture cascade per (Z, A);
 # `harvest_d3_overlay.cc` prints the same with the opt-in on, then the two-argument K energy. These
 # functions are what the evidence runs check those harvests with: with the profile unset, the
-# patched harvest equals the unpatched one; under a profile carrying the D3 tables, every level,
-# every emitted energy and every K energy is the one the tables give, and nothing the branching
-# decides moves.
+# patched harvest equals the unpatched one.
 
 #: Geant4's keV in its internal energy unit (MeV), the double the glue multiplies a table value by.
 KEV = 1.0e-3
