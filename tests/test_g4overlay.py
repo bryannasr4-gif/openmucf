@@ -1108,6 +1108,9 @@ HARVEST_PARTICLES = ("G4Proton::Proton()", "G4Neutron::Neutron()", "G4Deuteron::
 
 def particles_before_harvest(source: str) -> list[str]:
     """Every constructor call missing from `HarvestD3()`'s body or placed after its first harvest."""
+    # A call inside a block or line comment is not a call: both are removed before the body is read.
+    source = re.sub("/[*].*?[*]/", "", source, flags=re.DOTALL)
+    source = re.sub("//.*", "", source)
     head = "void HarvestD3() {"
     assert source.count(head) == 1, head
     start, depth, end = source.index(head) + len(head), 1, None
@@ -1132,3 +1135,11 @@ def test_t111_drill_deleting_any_one_constructor_call_is_refused_by_name():
     for call in HARVEST_PARTICLES:
         assert source.count(call) == 1, call
         assert particles_before_harvest(source.replace(call, "")) == [f"{call} is not in HarvestD3()"]
+
+
+def test_t111_drill_a_constructor_call_inside_a_comment_is_refused_by_name():
+    source = HARVEST_D3.read_text(encoding="utf-8")
+    for call in HARVEST_PARTICLES:
+        assert source.count(f"{call};") == 1, call
+        for mutated in (source.replace(call, f"/* {call} */"), source.replace(f"{call};", f"// {call};\n")):
+            assert particles_before_harvest(mutated) == [f"{call} is not in HarvestD3()"]
