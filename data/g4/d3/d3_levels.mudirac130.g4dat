@@ -5,7 +5,7 @@
 #SEAM         d3_transitions
 #TABLE        level_energy
 #GENERATOR    openmucf-g4 1.2.0
-#SOURCEDIGEST f38bb02ac80d5014c7a6b60cbc0a99ee13d201805ff82d730f8c02639d8c0d0e
+#SOURCEDIGEST 219290b0b812c16f5f1341d936283c73e8e265bb10b07597152c6a30ffb47414
 #UNITS        e2=keV e3=keV e4=keV e5=keV e6=keV e7=keV e8=keV u2=keV u3=keV u4=keV u5=keV u6=keV u7=keV u8=keV
 #COLUMNS      Z A e2 e3 e4 e5 e6 e7 e8 u2 u3 u4 u5 u6 u7 u8
 #VALIDITY     Z:2-92 A:most_abundant_and_listed

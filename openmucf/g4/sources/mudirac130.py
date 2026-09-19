@@ -558,8 +558,7 @@ _PRINTED = re.compile(r"-?[0-9]+(\.[0-9]+)?(e[+-][0-9]+)?")
 _LINE_ENERGY = re.compile(r"[0-9]+\.[0-9]{6}")
 #: Half a unit of the last decimal a line energy is printed with, in eV.
 LINE_HALF_UNIT = Decimal("0.0000005")
-#: The least uncertainty a `unc` or `u<n>` cell carries, in keV: the most by which the rounding of
-#: the printed line energies can move a change measured through them. A quantity measured with the
+#: The least uncertainty a `unc` or `u<n>` cell carries, in keV. A quantity measured with the
 #: outermost circular state held fixed sums at most twice (N_MAX - 1) printed lines -- the
 #: N_MAX - 1 upper-chain lines down to K1, then the N_MAX - 1 lower-chain lines out again -- each
 #: within LINE_HALF_UNIT of the value MuDirac computed; a (2j+1) mean is a convex combination of two

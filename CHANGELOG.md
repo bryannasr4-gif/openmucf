@@ -21,8 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed -- the D3 uncertainty cells (2026-09-19)
 
 - **Each `unc` and `u<n>` cell is measured with the energy of the outermost circular state held
-  fixed and is never below the most by which the rounding of the printed line energies can move
-  it**, and the dataset's `#VERSION` becomes 0.4.1.
+  fixed**, and the dataset's `#VERSION` becomes 0.4.1.
   `data/g4/d3/validation.csv` and `DATASET_D3.md` also carry, for context, the residual of the
   energy Geant4's own cascade emits for each compared line.
   The validator's V-04 now checks the Layer-2 digest of every table it loads, not only the parity

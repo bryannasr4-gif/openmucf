@@ -44,8 +44,7 @@ energy of the outermost circular state.
 quantity in the `rsig` run, whose rms radius is moved by its uncertainty in the IAEA charge-radii
 table (`charge_radii.csv`), measured through the printed line energies with the energy of the
 outermost circular state held fixed, and propagate nothing else.
-No `unc` or `u<n>` cell is below 0.000000014 keV, the most by which the rounding of the printed
-line energies can move such a change; a smaller change ships as that floor.
+No `unc` or `u<n>` cell is below 0.000000014 keV; a smaller change ships as that floor.
 Where the bundled rms radius and that table's value differ at the fourth decimal, the generator
 prints the member; neither value is edited.
 

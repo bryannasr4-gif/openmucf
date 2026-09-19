@@ -539,8 +539,8 @@ D3_UNC_COLUMN = {md.K_TABLE: "unc", md.LEVEL_TABLE: "Each u<n>"}
 D3_UNC = (
     "{column} is the absolute change of the same quantity in run {rsig}, whose rms radius is moved by "
     "its charge-radii table uncertainty, measured through the printed line energies with the energy "
-    "of the outermost circular state held fixed, and never less than {floor} keV, the most by which "
-    "the rounding of those line energies can move such a change; nothing else is propagated."
+    "of the outermost circular state held fixed, and never less than {floor} keV"
+    "; nothing else is propagated."
 )
 D3_NATURAL = "This A = 0 row carries the values of A={a}, the isotope MuDirac's abundance file names for Z={z}."
 
