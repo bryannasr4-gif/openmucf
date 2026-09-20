@@ -617,7 +617,7 @@ def test_t72_the_glue_files_are_identical_across_families_and_read_the_profile_v
     """The glue `.hh` and `.cc`, rebuilt from each family's added-file hunks, are byte-identical
     across the two families -- the glue does not depend on the revision -- and the `.cc` reads the
     environment at exactly one place, names exactly the discovery variable and the three profile
-    variables, and raises exactly the five error codes the patch README documents.
+    variables, and raises exactly the five error codes.
     """
     rebuilt: dict[str, dict[str, bytes]] = {}
     for tag in sorted(FAMILIES):

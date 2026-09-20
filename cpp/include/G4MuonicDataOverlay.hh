@@ -51,8 +51,8 @@ class G4MuonicDataOverlay {
   };
 
   // What the environment selected, frozen when the opt-in was set. Both profiles are `compiled`
-  // and both strings empty with the opt-in off, and whenever neither seam has tables -- in which
-  // case no directory was searched and nothing was read. `fallbackDeclarationExecuted` says
+  // and both strings empty with the opt-in off.
+  // `fallbackDeclarationExecuted` says
   // whether a `#FALLBACK` declaration was evaluated: it is always false, because a declaration is
   // documentary here and no expression of one is interpreted.
   struct Configuration {
@@ -66,8 +66,8 @@ class G4MuonicDataOverlay {
   static void Initialize();
   static const Configuration& Config();
 
-  // The dataset, or nullptr with the opt-in off, when neither seam has tables, or after a
-  // suppressed fatal exception.
+  // The dataset, or nullptr with the opt-in off, when neither seam has
+  // tables.
   static const G4MuonicDataTable* Table();
 
   // The `value` field of the nuclear_capture_rate record for this nuclide, in the dataset's own
