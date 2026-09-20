@@ -1,4 +1,4 @@
-// g4muonicdata_validate -- the standalone validator (no Geant4): checks V-00 .. V-12 and V-14 .. V-16
+// g4muonicdata_validate -- the standalone validator (no Geant4): checks V-00 .. V-12 and V-14 .. V-17
 // over the dataset directory, the conformance corpus and the committed oracle.
 //
 //   g4muonicdata_validate <dataset-dir> --oracle <file> --conformance <dir>
@@ -26,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "G4MuonicDataSemantics.hh"
 #include "G4MuonicDataTable.hh"
 #include "gp_kernel.hh"
 #include "hexfloat.hh"
@@ -920,6 +921,23 @@ int Run(int argc, char** argv) {
       keys += kshell_keys.size();
     }
     if (ok) report.Pass("V-16", "profiles=" + (joined.empty() ? std::string("none") : joined) + (joined.empty() ? std::string() : " keys=" + std::to_string(keys)));
+  }
+
+  // V-17 -- the semantic layer a patched build runs in production (G4MuonicDataSemantics) over the
+  // same bytes: one line, naming how many issues it found and the first of them, or the number of
+  // tables it found none in.
+  if (!loaded) {
+    report.Fail("V-17", "dataset not loaded");
+  } else {
+    const std::vector<G4MuonicDataSemantics::Issue> issues = G4MuonicDataSemantics::Validate(tables);
+    if (issues.empty()) {
+      report.Pass("V-17", "tables=" + std::to_string(tables.Tables().size()) + " issues=0");
+    } else {
+      const G4MuonicDataSemantics::Issue& first = issues.front();
+      const std::string where = first.file.empty() ? "'#PROFILE " + first.profile + "'" : Quote(FileName(first.file));
+      report.Fail("V-17", std::to_string(issues.size()) + " issue(s); first: " + first.code + " " + where +
+                              (first.table.empty() ? "" : " " + first.table) + ": " + first.text);
+    }
   }
 
   return report.failed ? 1 : 0;

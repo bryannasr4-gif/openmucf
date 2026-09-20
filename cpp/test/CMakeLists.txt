@@ -76,7 +76,7 @@ endfunction()
 enable_testing()
 
 # The probe: compiler, __cpp_lib_to_chars, the compiled parser path, the contraction detector.
-add_library(g4muonicdatatable STATIC ../src/G4MuonicDataTable.cc)
+add_library(g4muonicdatatable STATIC ../src/G4MuonicDataTable.cc ../src/G4MuonicDataSemantics.cc)
 target_include_directories(g4muonicdatatable PUBLIC ../include)
 g4muonicdata_target_options(g4muonicdatatable)
 
@@ -578,6 +578,78 @@ g4muonicdata_overlay_case(overlay_units_tab_${d3_profile}
   PASS "KSHELL ${kshell_key} 0x[^\n]*\nLEVELS ${kshell_key} ${level_count} 0x[^\n]*\nMATCH [^\n]*\nMATCH [^\n]*\n")
 set_tests_properties(overlay_units_tab_default overlay_units_tab_${d3_profile} PROPERTIES
   FAIL_REGULAR_EXPRESSION "MISMATCH|G4MuonicData003")
+
+# The semantic layer (G4MuonicDataSemantics), which the validator reports as V-17 and the glue
+# applies in production: the shipped dataset yields no issue, and one stated edit of one shipped
+# member -- every replacement derived from that member's own bytes at configure time -- yields the
+# code named here first. The mutation drill of each rule family lives in these cases.
+add_test(NAME validate_semantics_shipped COMMAND g4muonicdata_validate ${G4MUONICDATA_VALIDATE_ARGS})
+set_tests_properties(validate_semantics_shipped PROPERTIES
+  PASS_REGULAR_EXPRESSION "V-17 PASS tables=[0-9]+ issues=0\n"
+  FAIL_REGULAR_EXPRESSION " FAIL ")
+
+function(g4muonicdata_semantics_case name member old new code)
+  if(old STREQUAL "" OR new STREQUAL "" OR old STREQUAL new)
+    message(FATAL_ERROR "${name}: the replacement is empty or changes nothing")
+  endif()
+  set(dir "${CMAKE_BINARY_DIR}/${name}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  file(READ "${dir}/${member}" text)
+  string(FIND "${text}" "${old}" at)
+  if(at EQUAL -1)
+    message(FATAL_ERROR "${name}: ${member} does not carry the text it mutates")
+  endif()
+  string(REPLACE "${old}" "${new}" mutated "${text}")
+  g4muonicdata_write_member("${dir}" "${member}" "${mutated}")
+  add_test(NAME ${name}
+           COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
+  set_tests_properties(${name} PROPERTIES
+    PASS_REGULAR_EXPRESSION "V-17 FAIL [0-9]+ issue[(]s[)]; first: ${code} ")
+endfunction()
+
+get_filename_component(G4MUONICDATA_D3_KSHELL_NAME "${G4MUONICDATA_D3_KSHELL}" NAME)
+# S001 -- the dataset name, prefixed in place.
+file(STRINGS "${G4MUONICDATA_D3_KSHELL}" semantics_dataset_line REGEX "^#DATASET")
+string(REGEX REPLACE "^(#DATASET +)(.+)$" "\\1other_\\2" semantics_dataset_other "${semantics_dataset_line}")
+g4muonicdata_semantics_case(validate_semantics_dataset "${G4MUONICDATA_D3_KSHELL_NAME}"
+  "${semantics_dataset_line}" "${semantics_dataset_other}" S001)
+
+# S002 -- the D3 k-shell table declaring the D1 seam, copied from the D1 capture member's own line.
+file(STRINGS "${G4MUONICDATA_D3_KSHELL}" semantics_seam_line REGEX "^#SEAM")
+file(STRINGS "${G4MUONICDATA_D1_DIR}/d1_capture.g4dat" semantics_d1_seam_line REGEX "^#SEAM")
+g4muonicdata_semantics_case(validate_semantics_seam "${G4MUONICDATA_D3_KSHELL_NAME}"
+  "${semantics_seam_line}" "${semantics_d1_seam_line}" S002)
+
+# S003 -- the declared Z range with its two bounds exchanged, so it is no longer inclusive.
+file(STRINGS "${G4MUONICDATA_D3_KSHELL}" semantics_validity_line REGEX "^#VALIDITY")
+string(REGEX REPLACE "Z:([0-9]+)-([0-9]+)" "Z:\\2-\\1" semantics_validity_swapped "${semantics_validity_line}")
+g4muonicdata_semantics_case(validate_semantics_validity "${G4MUONICDATA_D3_KSHELL_NAME}"
+  "${semantics_validity_line}" "${semantics_validity_swapped}" S003)
+
+# S004 -- the unit of the column the K-energy lookup reads, prefixed so it is no longer the one the
+# lookup reads it as.
+file(STRINGS "${G4MUONICDATA_D3_KSHELL}" semantics_units_line REGEX "^#UNITS")
+string(REGEX REPLACE "( value=)" "\\1x" semantics_units_prefixed "${semantics_units_line}")
+g4muonicdata_semantics_case(validate_semantics_units "${G4MUONICDATA_D3_KSHELL_NAME}"
+  "${semantics_units_line}" "${semantics_units_prefixed}" S004)
+
+# S005 and S006 over the first k-shell record: its binding energy negated in place, and its binding
+# energy replaced by its own uncertainty field, which is below the level the same key lists under
+# `e2`. Both are built from that record's fields, so neither states a value.
+list(GET kshell_lines 0 semantics_first_record)
+string(REGEX MATCH "^( *[0-9]+ +[0-9]+ +) ([^ ]+)( +)([^ ]+)$" semantics_match "${semantics_first_record}")
+if(semantics_match STREQUAL "")
+  message(FATAL_ERROR "the semantic cases need the first k-shell record as `Z A value unc`")
+endif()
+set(semantics_head "${CMAKE_MATCH_1}")
+set(semantics_value "${CMAKE_MATCH_2}")
+set(semantics_gap "${CMAKE_MATCH_3}")
+set(semantics_unc "${CMAKE_MATCH_4}")
+g4muonicdata_semantics_case(validate_semantics_value "${G4MUONICDATA_D3_KSHELL_NAME}"
+  "${semantics_first_record}" "${semantics_head}-${semantics_value}${semantics_gap}${semantics_unc}" S005)
+g4muonicdata_semantics_case(validate_semantics_pair "${G4MUONICDATA_D3_KSHELL_NAME}"
+  "${semantics_first_record}" "${semantics_head} ${semantics_unc}${semantics_gap}${semantics_unc}" S006)
 
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
 # enabled (and FMA on x86-64), and the figures compared with the document.
