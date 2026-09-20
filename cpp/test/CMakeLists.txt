@@ -630,6 +630,15 @@ string(REGEX REPLACE "Z:([0-9]+)-([0-9]+)" "Z:\\2-\\1" semantics_validity_swappe
 g4muonicdata_semantics_case(validate_semantics_validity "${G4MUONICDATA_D3_KSHELL_NAME}"
   "${semantics_validity_line}" "${semantics_validity_swapped}" S003)
 
+# S003 over the one-key table -- the declared Z range narrowed to its own minimum, so every row
+# above that minimum falls outside it. The rule binds a one-key member exactly as it binds a
+# two-key one, and this case is the only one over the muon_zeff member.
+file(STRINGS "${G4MUONICDATA_D1_DIR}/d1_zeff.g4dat" semantics_zeff_validity_line REGEX "^#VALIDITY")
+string(REGEX REPLACE "Z:([0-9]+)-([0-9]+)" "Z:\\1-\\1"
+       semantics_zeff_validity_narrowed "${semantics_zeff_validity_line}")
+g4muonicdata_semantics_case(validate_semantics_validity_zeff "d1_zeff.g4dat"
+  "${semantics_zeff_validity_line}" "${semantics_zeff_validity_narrowed}" S003)
+
 # S004 -- the unit of the column the K-energy lookup reads, prefixed so it is no longer the one the
 # lookup reads it as.
 file(STRINGS "${G4MUONICDATA_D3_KSHELL}" semantics_units_line REGEX "^#UNITS")

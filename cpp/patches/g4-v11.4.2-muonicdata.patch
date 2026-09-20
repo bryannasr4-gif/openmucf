@@ -867,7 +867,7 @@ index 0000000000..14c9fd3d21
 +}
 diff --git a/source/particles/management/src/G4MuonicDataSemantics.cc b/source/particles/management/src/G4MuonicDataSemantics.cc
 new file mode 100644
-index 0000000000..0176ec1243
+index 0000000000..2398be99b4
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicDataSemantics.cc
 @@ -0,0 +1,431 @@
@@ -1164,15 +1164,15 @@ index 0000000000..0176ec1243
 +      Add(issues, "S003", table, "row " + Key(record.keys) + " has a Z outside the key domain");
 +      reported_z = true;
 +    }
++    if (!reported_range && ranged && (z < low || z > high)) {
++      Add(issues, "S003", table, "row " + Key(record.keys) + " has a Z outside '#VALIDITY Z:" + std::to_string(low) + "-" + std::to_string(high) + "'");
++      reported_range = true;
++    }
 +    if (!two_key) continue;
 +    const long a = record.keys[1];
 +    if (!reported_a && a != 0 && (a < z || a > kMaxA)) {
 +      Add(issues, "S003", table, "row " + Key(record.keys) + " has a mass number below its Z or above " + std::to_string(kMaxA));
 +      reported_a = true;
-+    }
-+    if (!reported_range && ranged && (z < low || z > high)) {
-+      Add(issues, "S003", table, "row " + Key(record.keys) + " has a Z outside '#VALIDITY Z:" + std::to_string(low) + "-" + std::to_string(high) + "'");
-+      reported_range = true;
 +    }
 +    if (!reported_natural && a == 0 && convention == kListed) {
 +      Add(issues, "S003", table, "row " + Key(record.keys) + " carries A = 0 under 'A:" + kListed + "'");

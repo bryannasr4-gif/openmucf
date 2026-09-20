@@ -291,15 +291,15 @@ void CheckTable(const Table& table, const std::string& version, std::vector<Issu
       Add(issues, "S003", table, "row " + Key(record.keys) + " has a Z outside the key domain");
       reported_z = true;
     }
+    if (!reported_range && ranged && (z < low || z > high)) {
+      Add(issues, "S003", table, "row " + Key(record.keys) + " has a Z outside '#VALIDITY Z:" + std::to_string(low) + "-" + std::to_string(high) + "'");
+      reported_range = true;
+    }
     if (!two_key) continue;
     const long a = record.keys[1];
     if (!reported_a && a != 0 && (a < z || a > kMaxA)) {
       Add(issues, "S003", table, "row " + Key(record.keys) + " has a mass number below its Z or above " + std::to_string(kMaxA));
       reported_a = true;
-    }
-    if (!reported_range && ranged && (z < low || z > high)) {
-      Add(issues, "S003", table, "row " + Key(record.keys) + " has a Z outside '#VALIDITY Z:" + std::to_string(low) + "-" + std::to_string(high) + "'");
-      reported_range = true;
     }
     if (!reported_natural && a == 0 && convention == kListed) {
       Add(issues, "S003", table, "row " + Key(record.keys) + " carries A = 0 under 'A:" + kListed + "'");

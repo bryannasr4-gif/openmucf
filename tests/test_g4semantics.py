@@ -218,16 +218,17 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
 
     for record in member.records:
         z = int(record[0])
+        key = "-".join(str(int(part)) for part in record[: 2 if two_key else 1])
         if two_key and not BOUNDS["kMinZ"] <= z <= BOUNDS["kMaxZ"]:
             once("key_z", f"row {z} has a Z outside the key domain")
         if not two_key and not 0 <= z <= BOUNDS["kMaxZeffZ"]:
             once("key_z", f"row {z} has a Z outside the key domain")
+        if z_range is not None and not z_range[0] <= z <= z_range[1]:
+            once("key_range", f"row {key} has a Z outside the declared range")
         if two_key:
             a = int(record[1])
             if a != 0 and not z <= a <= BOUNDS["kMaxA"]:
                 once("key_a", f"row {z}-{a} has a mass number outside the key domain")
-            if z_range is not None and not z_range[0] <= z <= z_range[1]:
-                once("key_range", f"row {z}-{a} has a Z outside the declared range")
             if a == 0 and convention == LISTED:
                 once("key_natural", f"row {z}-{a} carries A = 0 under 'A:{LISTED}'")
 
@@ -333,6 +334,11 @@ def kshell_member(directory: pathlib.Path) -> pathlib.Path:
     return path
 
 
+def zeff_member(directory: pathlib.Path) -> pathlib.Path:
+    (path,) = [p for p in sorted(directory.iterdir()) if p.name.endswith(".g4dat") and "zeff" in p.name]
+    return path
+
+
 def replace_once(path: pathlib.Path, old: str, new: str) -> None:
     text = path.read_text(encoding="ascii")
     assert text.count(old) == 1, (path.name, old)
@@ -402,6 +408,15 @@ def test_t118_a_k_energy_below_its_next_level_raises_s006(mutable: pathlib.Path)
     replace_once(member, line, f"{keys}{gap}{unc} {unc}")
     codes = codes_of(mutable)
     assert codes and codes[0] == "S006", codes
+
+
+def test_t120_a_z_outside_the_one_key_tables_declared_range_raises_s003(mutable: pathlib.Path):
+    member = zeff_member(mutable)
+    line = directive_line(member, "VALIDITY")
+    narrowed = re.sub(r"Z:([0-9]+)-([0-9]+)", lambda m: f"Z:{m.group(1)}-{m.group(1)}", line)
+    assert narrowed != line, line
+    replace_once(member, line, narrowed)
+    assert codes_of(mutable)[0] == "S003"
 
 
 # T-119 -- the two statements of the rules name the same things
