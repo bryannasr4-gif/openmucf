@@ -31,6 +31,7 @@
 151fbe3bf215ca516c7610320a00f4bd8fd6e003	CHANGELOG.md	REGISTERED: one -- 'added one' and 'exactly one of': the pair the journal name added and the one that straddled a claim
 1555255b60ecaf8f5b436a382d6965e6955df664	CHANGELOG.md	REGISTERED: 5.6 -- the Kamimura chain's red rate under the superseded band, as this entry records that dated sweep
 16147e0c3ed787a87adafc92429ac24e839d6840	CHANGELOG.md	REGISTERED: Two -- the two derived rows, `kelly_electrical_minimal` and `kelly_electrical_site` in openmucf/data/muon_cost.csv
+1633d8a6c771b8ad1fd53834ef212ba4da8e0acb	CHANGELOG.md	REGISTERED: 4, 3 -- the digits of the seam variable `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
 166694b2ee8c28810c2d15cb3ca660d245be0f34	CHANGELOG.md	REGISTERED: three, one -- NEUTRONOMICS.md's three tier-separated rows, one per tier
 1692412415eccee5b9faea4677b78192595d0feb	CHANGELOG.md	REGISTERED: 6, 1, 0 -- the scoreboard as the v1.0.0 notes recorded it, superseded by the v1.2.0 class-tiered scoreboard entry
 16a4586dc2d0bd6f22d4a5a18fb60517f052acb9	CHANGELOG.md	REGISTERED: 4 -- the figures as the v1.0.0 notes recorded them, superseded by the figures later releases added
@@ -115,6 +116,7 @@
 5047d49f26259ed89582d8a40ad9a1bd01272493	CHANGELOG.md	REGISTERED: 7.8, 1.8 -- Bertin et al. (1987) Table II's value and uncertainty, the `bertin_1987` row of openmucf/data/muon_cost.csv
 521f1316de0d06426c07f802045acdabef4d8ca4	CHANGELOG.md	REGISTERED: one -- 'one comparable reference basis'
 5360292c1962b75744e369dee723454affe96695	CHANGELOG.md	REGISTERED: 731, 596 -- the prototype's figure and the wrapped sentences at that tree: dated counts
+5412cb1b620b42564ec6fb8f9df33ec7471c8675	CHANGELOG.md	REGISTERED: 4 -- the digit of the seam variable `G4MUONICDATA_D1_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name, an identifier
 54f5be277a1d022f194fa476133b16c443b9c24d	CHANGELOG.md	REGISTERED: 10.4, 18.3, four -- the Kovach et al. (2017) efficiencies openmucf/data/muon_cost_chain.csv carries as 0.104 and 0.183, and the four subsystem draws the note read in that paper
 552405559eef6d18dcb1784ee8dc3752222d2516	CHANGELOG.md	REGISTERED: 30, 800, 300 -- the ±30% lambda_c(800 K)/lambda_c(300 K) clause, VALIDATION.md's V_yamashita_ratio row
 56434901b5bef7064b2a51d725a2e56eb542e2e0	CHANGELOG.md	REGISTERED: 2024 -- '2024 global supply', the year of the supply figure scripts/parisi_ac225.py cites
@@ -139,6 +141,7 @@
 613bc6f1aeb6a1868fab030a04ba98bcf8a67197	CHANGELOG.md	REGISTERED: 0.18, 2367, 3946 -- SYSTEMS.md's self-correction finding: the PSI-measured eta_acc and the breakeven before and after
 6179d70ed9a348f6cc415f13fe05572018d4d637	CHANGELOG.md	REGISTERED: Four -- the four pages the sentence names
 65f377375c87321dda8171ce22d60104dc7cf6e1	CHANGELOG.md	REGISTERED: one -- 'this one', the release
+660439a1a80362339c49437c600fd0bb1bb0eac3	CHANGELOG.md	REGISTERED: one -- 'selects one': the single table a patched build selects per seam, a pronoun
 665819f6f32a528203becd95de7cfb1debc2b7bb	CHANGELOG.md	REGISTERED: 1, 3 -- the tier labels T1 and T3 inside the test name `test_no_basis_class_spans_T1_and_T3`
 66bfad040d377363f4026b398378e502fad33e5b	CHANGELOG.md	REGISTERED: one -- 'every one', a pronoun
 678cabdf4156a263aefe205b1932d6cf279d7cf6	CHANGELOG.md	REGISTERED: one -- 'as one test', VALIDATION.md's summary line
@@ -389,6 +392,7 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 49faed848a85357acba9e0d638fbf361c9b43943	DATASET_D1.md	REGISTERED: 1 -- the declared domain bounds, restated from section 2
 4be63143d76bff1974e138ef3987746c1019dac9	DATASET_D1.md	REGISTERED: three -- 'the three ways it differs': the three bullets that follow, each a T-63 pin
 4e466ae19befef2183c91ffd7deb30493a344f26	DATASET_D1.md	REGISTERED: two -- 'The two are independent': the two uncertainties the paragraph contrasts
+5037f1b272e701d700f2d7777c22812316bdf1e7	DATASET_D1.md	REGISTERED: 4, 3 -- the digits of the seam variables `G4MUONICDATA_D1_PROFILE` and `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells them: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
 5815a8304074ea0bdf962b20d9d1b036631a87fb	DATASET_D1.md	REGISTERED: 8, 16, 12 -- the record key (8, 16) and the nuclide labels C-12 and O-16
 5ad604c3c36eec0101bb2796c2823b2af1efa56e	DATASET_D1.md	EXERCISED: 0.03, 0.25, 3.24, 875, 9, 2.663, 5, 75704, 1, 100 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
 5b7061db8200e990d8a21b2c744ae195ca4ddaf9	DATASET_D1.md	REGISTERED: one -- 'one reimplements': the second of those tests (T-47)
@@ -413,7 +417,6 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 7d1e41b17c4e5bddcdd7fd5c9500fab810ad1585	DATASET_D1.md	REGISTERED: 10 -- the atomic number where the primary's Table IV starts, as the paper labels it; T-63 uses the same boundary as its selector between the Table III and Table IV halves
 811ccd8f21ca093d05a97582464156333185a6d5	DATASET_D1.md	REGISTERED: 50, 8 -- quoted from the primary's abstract ('in 50 elements plus 8 isotopes'), which this repository does not redistribute; the sentence marks it as the paper's count of its own measurements
 81b7e60cb61b9cd488226104b8884fefbcbc30bd	DATASET_D1.md	REGISTERED: 56, 55 -- the atomic numbers of barium and caesium; the effective charges beside them are pinned (29.99 in tests/test_g4prose.py, 29.75 by T-63)
-82d46e521044efc8076b773582d23f3e0e3923d5	DATASET_D1.md	REGISTERED: one -- 'one profile' and 'the one `G4MUONICDATA_PROFILE` names': the single profile a patched build reads through, and a pronoun for it
 851c7bb53ac84e8a4592b6edbf36c4579bca72ca	DATASET_D1.md	REGISTERED: Two, one -- 'Two different sources' are the primary and the NIST table the paragraph names; 'only one of them' is a pronoun
 8a095a16d997cc6d395b1885a928735f4ca87286	DATASET_D1.md	REGISTERED: one -- 'one row per record': the audit's shape, which T-59 asserts (every capture record exactly once)
 8ce3f7f04aa72b411d1afff36be22b5403632c8e	DATASET_D1.md	REGISTERED: two -- 'the two overlap': the same two uncertainties
@@ -463,6 +466,7 @@ fb75dedfb605f98897d95fabd58e54396f759b86	DATASET_D1.md	REGISTERED: one -- a pron
 ff75fbe4536b0ca4aee71784da448e67d0842e07	DATASET_D1.md	REGISTERED: 62, 150, 50, 119 -- the record keys (62, 150) and (50, 119) and the nuclide labels Sm-150 and Sn-119; the abundances beside them are T-63's rounded pins, read from the audit rows of those keys
 3615ea3bebe2efc40bff8091e9e942ca0fbc5dc4	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 7a3d05bb1c1b3364e73a2a5a2a3b06e05e2401f4	DATASET_D3.md	REGISTERED: one -- 'below the one from which', a pronoun
+f5628c7e58a3465d06ea82b025bae391520a8dde	DATASET_D3.md	REGISTERED: 4, 3 -- the digits of the seam variable `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
 0ccdf0a1a697580b0dcf6641da9f8d632e79d931	README.md	REGISTERED: 225 -- the nuclide label Ac-225
 11eca2c304568f729867dead4a32bb3a18259e9c	README.md	EXERCISED: 284 -- tests/test_energy.py::test_scientific_breakeven_is_284
 2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H
@@ -499,10 +503,11 @@ e3fd28cba23d87ba142c75fac3c3fb4a855bb8d9	README.md	REGISTERED: 6, 5, 1 -- restat
 e52326badfd61270409743256330b494a0f4e7ef	README.md	REGISTERED: 4.70, 10, ³ -- restates MUON_COST.md's anchor row (Kelly, Hart & Rose: 4.70 GeV/muon) and the order of magnitude between its tiers ('~10³×'); MUON_COST.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
 f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
 21ffeec98e1eab90e7c9b55fc3e79d25073d0a52	cpp/patches/README.md	REGISTERED: one -- the single call the sentence quotes, SetEnableMuonicData(true)
-5fd9062c3391956a1c188db50d2f757719982970	cpp/patches/README.md	REGISTERED: 4, 003 -- the code of the fatal G4Exception the glue raises for a unit mismatch, G4MuonicData003 as cpp/src/G4MuonicDataOverlay.cc spells it
+5037f1b272e701d700f2d7777c22812316bdf1e7	cpp/patches/README.md	REGISTERED: 4, 3 -- the digits of the seam variables `G4MUONICDATA_D1_PROFILE` and `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells them: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
 7adbc79d41e9978fcb2c79814f8ae1f02434411b	cpp/patches/README.md	REGISTERED: one -- the boolean the patch adds to G4HadronicParameters
+7e669acdacf26345f54f4f3c90959c365eadc8f7	cpp/patches/README.md	REGISTERED: one -- 'one falling order': a single order, a pronoun for it, not a count
 7f10a2658f68adf54c457f479b42b006407c529b	cpp/patches/README.md	REGISTERED: one -- the opt-in test each patched function makes before its own code
-82324d86d7255b34522c6cb597776eae01c06e17	cpp/patches/README.md	REGISTERED: one -- 'one profile' and 'the one `G4MUONICDATA_PROFILE` names': the single profile a patched build reads through, and a pronoun for it
+d5694c7e61886bf35034966d99d6e7e19650f4aa	cpp/patches/README.md	REGISTERED: two, one -- the pair of energy tables a profile declares, which FORMAT_SPEC.md names `k_shell_energy` and `level_energy`, and 'one profile', 'one set': a single profile and a single set, not counts of data
 ffc9ecfeb990967e9d6d644890750f0754208e1a	cpp/patches/README.md	REGISTERED: four, two -- the functions and files the sentence itself lists by name; T-72 pins the patch's path set
 37a429d48aa30b8e4ec5448de067bb6f2ff5f46b	cpp/tools/README.md	REGISTERED: 0..101 -- the zeff loop bounds of harvest_d1.cc ('for (int Z = 0; Z <= 101; ++Z)'), past the array's last index so both clamp ends are probed: a driver-declared range, not a count of the array, whose length T-63 pins
 557684388c44d59ed7c3818ad62ebcc08278e5f5	cpp/tools/README.md	REGISTERED: two -- 'exactly two things': the two computations the sentence goes on to name (the digest, the diagnostic-subset selection)

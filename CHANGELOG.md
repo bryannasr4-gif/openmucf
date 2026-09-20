@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- a profile for each seam, and what a patched build refuses (2026-09-20)
+
+- **A patched Geant4 reads each seam through a profile of its own**: `G4MUONICDATA_D1_PROFILE`
+  for nuclear capture and `G4MUONICDATA_D3_PROFILE` for the muonic transitions,
+  `G4MUONICDATA_PROFILE` for both where neither is set, and `compiled` reserved for a seam with
+  no tables; the environment is read where the opt-in is set and not again.
+- **A lookup through an evaluated profile reads the row keyed by exactly the nuclide asked for**,
+  and an element's natural-composition row answers only a request that asks for it by name; under
+  `parity` the reader's natural rung answers as it did before.
+- **A dataset that parses but means what no consumer may read is now refused whole**, by a
+  semantic layer the standalone validator reports as `V-17` and a patched build applies to every
+  loaded table before it selects one.
+
 ### Added -- the D3 energies in the overlay (2026-09-19)
 
 - **With the opt-in on and `G4MUONICDATA_PROFILE=mudirac130`, a patched Geant4 reads the D3
