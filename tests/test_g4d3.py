@@ -11,6 +11,7 @@ import io
 import json
 import pathlib
 import re
+from dataclasses import replace
 from decimal import Decimal, localcontext
 
 import pytest
@@ -1090,3 +1091,96 @@ GEANT4_LEVELS_DRILLS = [
                          ids=[d[0] for d in GEANT4_LEVELS_DRILLS])
 def test_t110_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
     _drill(tmp_path, GEANT4_LEVELS, mutate, error, message, md.load_geant4_levels)
+
+
+# --------------------------------------------------------------------------------------------
+# T-121 -- the runs made beside the committed ones: how their inputs are rendered
+# --------------------------------------------------------------------------------------------
+
+
+def _kept() -> tuple[md.Outputs, list[md.InputRow]]:
+    out = md.load_outputs(REPO)
+    return out, md.kept_members(out)
+
+
+def test_t121_the_level_zero_input_is_the_base_input_plus_the_three_defaults_each_set_once():
+    """MuDirac 1.3.0 documents the three keywords' defaults in its lib/config.cpp: energy_tol 1e-7
+    (line 42), loggrid_step 0.005 (line 46), uehling_steps 100 (line 62); the base renderer emits
+    none of them, so the level-0 input is the base input with each set once at its default."""
+    _out, kept = _kept()
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    defaults = "loggrid_step: 0.005\nuehling_steps: 100\nenergy_tol: 1e-07\n"
+    for row in kept:
+        extra = md.extra_lines(cells, row.nuclide)
+        base = md.render_input(row, "base", extra)
+        assert not any(f"{key}:" in base for key in md.NUMERICS_KEYS)
+        text = md.render_numerics_input(row, 0, extra)
+        assert text == base + defaults
+        keys = [line.split(":")[0] for line in text.splitlines()]
+        assert [keys.count(key) for key in md.NUMERICS_KEYS] == [1, 1, 1]
+    print(f"\nlevel-0 inputs rendered for {len(kept)} kept members")
+
+
+def test_t121_each_level_halves_the_grid_step_doubles_the_uehling_steps_and_tightens_the_tolerance_tenfold():
+    def values(level: int) -> tuple[float, int, float]:
+        step, steps, tol = (line.split(": ")[1] for line in md.numerics_settings(level))
+        return float(step), int(steps), float(tol)
+
+    for level in (*md.NUMERICS_LEVELS_ALL, *md.NUMERICS_LEVELS_DEEP)[1:]:
+        step, steps, tol = values(level)
+        step0, steps0, tol0 = values(level - 1)
+        assert step == step0 / 2 and steps == 2 * steps0
+        assert abs(tol / tol0 - 0.1) < 1e-12
+
+
+def test_t121_render_numerics_input_refuses_to_set_a_key_the_base_input_already_sets(monkeypatch):
+    _out, kept = _kept()
+    row = kept[0]
+    base = md.render_input
+    monkeypatch.setattr(md, "render_input", lambda r, k, e: base(r, k, e) + "energy_tol: 1\n")
+    with pytest.raises(ValueError, match="already sets energy_tol"):
+        md.render_numerics_input(row, 0, [])
+
+
+def test_t121_the_rminus_radius_moves_the_rms_radius_down_by_its_uncertainty_and_nothing_else_moves():
+    _out, kept = _kept()
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    for row in kept:
+        rms = float(row.radius_fm) / md.SPHERE_FACTOR
+        sigma = float(row.sigma_rms_fm)
+        minus, plus = (float(md.run_radius(row, kind)) / md.SPHERE_FACTOR for kind in ("rminus", "rsig"))
+        assert abs((rms - minus) - sigma) <= 1e-12 * rms and abs((plus - rms) - sigma) <= 1e-12 * rms
+        extra = md.extra_lines(cells, row.nuclide)
+        base, moved = (md.render_input(row, kind, extra).splitlines() for kind in ("base", "rminus"))
+        differing = [(b, m) for b, m in zip(base, moved, strict=True) if b != m]
+        assert differing == [(f"radius: {row.radius_fm}", f"radius: {md.run_radius(row, 'rminus')}")]
+        assert md.numerics_run_id(row, "rminus", 0).endswith(f"{row.a}_rminus")
+        assert md.numerics_run_id(row, "grid", 2).endswith(f"{row.a}_grid2")
+
+
+def test_t121_the_domain_rule_refuses_a_nonpositive_rms_and_a_moved_radius_whose_fermi_c_is_not_real():
+    _out, kept = _kept()
+    inputs = {row.nuclide: row for row in kept}
+    lead = inputs[(82, 208)]
+    assert md.rminus_in_domain(lead)
+    assert not md.rminus_in_domain(replace(lead, sigma_rms_fm=lead.rms_fm))
+    threshold = md.fermi2_c_threshold(lead.fermi_t_fm)
+    near = replace(lead, radius_fm=repr(threshold * 1.001), sigma_rms_fm=repr(threshold * 0.01))
+    assert float(near.radius_fm) / md.SPHERE_FACTOR - float(near.sigma_rms_fm) > 0
+    assert not md.fermi2_c_not_real(near) and not md.rminus_in_domain(near)
+    outside = [row for row in kept if not md.rminus_in_domain(row)]
+    print(f"\nkept members {len(kept)}; rminus outside the domain: {len(outside)} "
+          + " ".join(md.run_id(row, 'base')[:-len('_base')] for row in outside))
+
+
+def test_t121_the_implied_numerics_runs_are_four_per_kept_member_plus_two_per_deep_nuclide():
+    _out, kept = _kept()
+    runs = md.expected_numerics_runs(kept)
+    deep = [row for row in kept if row.nuclide in md.NUMERICS_DEEP_NUCLIDES]
+    assert len(deep) == len(md.NUMERICS_DEEP_NUCLIDES)
+    per_member, per_deep = 1 + len(md.NUMERICS_LEVELS_ALL), len(md.NUMERICS_LEVELS_DEEP)
+    assert len(runs) == len(kept) * per_member + len(deep) * per_deep
+    assert len({run for run, *_ in runs}) == len(runs)
+    for row in deep:
+        assert md.numerics_levels(row) == [*md.NUMERICS_LEVELS_ALL, *md.NUMERICS_LEVELS_DEEP]
+    print(f"\nimplied numerics runs: {len(runs)} over {len(kept)} kept members, {len(deep)} deep")

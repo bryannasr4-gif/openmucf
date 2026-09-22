@@ -1,18 +1,26 @@
 """Run MuDirac 1.3.0 over the D3 input set and commit what it prints.
 
     python3 scripts/mudirac_d3.py inputs --radii R --abundant A --iaea I --out data/g4/d3
-    python3 scripts/mudirac_d3.py write --kind K --dir D
-    python3 scripts/mudirac_d3.py run --mudirac BIN --dir D --jobs N
+    python3 scripts/mudirac_d3.py write --kind K [--level L] --dir D
+    python3 scripts/mudirac_d3.py run --mudirac BIN --dir D --jobs N [--shard i/n] [--time-v]
     python3 scripts/mudirac_d3.py collect --dir D [D ...] --out data/g4/d3
+    python3 scripts/mudirac_d3.py collect-numerics --dir D [D ...] --out data/g4/d3
     python3 scripts/mudirac_d3.py geant4-levels --harvest H --out data/g4/d3/geant4_cascade_levels.csv
 
 `inputs` checks the three pinned source files and writes ``mudirac_inputs.csv``. `write` renders one
-``<run>/<run>.in`` per member for one run kind. `run` runs MuDirac once per input with exactly one
-argument, the input file, and records each exit status and ``.err`` size in ``D/runs.tsv``. `collect`
-reads the run directories of the committed kinds and writes the run table, every printed state header,
-every printed line and the hydrogen-like comparison of the checked shells, each in a fixed order.
-`geant4-levels` reads the output of ``cpp/tools/harvest_d3.cc`` on a Geant4 build without the
-overlay and writes the cascade's level energies for every gated validation nuclide.
+``<run>/<run>.in`` per member for one run kind: a committed or evidence kind over the input set, or
+``rminus`` (the radius moved down, over the kept members whose moved radius stays in the model's
+domain) or ``grid`` at ``--level`` (the base input with its three numerical settings refined, over
+the kept members that level is run for). `run` runs MuDirac once per input with exactly one
+argument, the input file, and records each exit status, ``.err`` size, wall time and input digest in
+``D/runs.tsv`` (``D/runs.<i>of<n>.tsv`` for the shard ``i/n`` of the sorted inputs); ``--time-v``
+wraps each run in ``/usr/bin/time -v`` so its peak memory is kept beside it. `collect` reads the run
+directories of the committed kinds and writes the run table, every printed state header, every
+printed line and the hydrogen-like comparison of the checked shells, each in a fixed order.
+`collect-numerics` does the same for the ``rminus`` and ``grid`` directories into the three numerics
+tables, with a row of status ``INVALID_PERTURBATION_DOMAIN`` for each member whose ``rminus`` run
+was not made. `geant4-levels` reads the output of ``cpp/tools/harvest_d3.cc`` on a Geant4 build
+without the overlay and writes the cascade's level energies for every gated validation nuclide.
 
 The generator itself is not run by the test suite or the audit: its committed outputs are the input
 of record, and ``scripts/generate_g4data.py`` builds the D3 tables from them. This script imports
@@ -23,10 +31,12 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import hashlib
 import importlib.util
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,41 +74,70 @@ def _inputs_and_cells():
     return rows, cells
 
 
+def _numerics_members(args: argparse.Namespace, cells) -> list[tuple[str, object, str]]:
+    """``(run, row, input text)`` of every ``rminus`` or ``grid`` run of ``args.level`` to make."""
+    out = []
+    for row in md.kept_members(md.load_outputs(ROOT)):
+        extra = md.extra_lines(cells, row.nuclide)
+        if args.kind == "rminus":
+            if not md.rminus_in_domain(row):
+                continue
+            out.append((md.numerics_run_id(row, "rminus", 0), row, md.render_input(row, "rminus", extra)))
+        elif args.level in md.numerics_levels(row):
+            out.append((md.numerics_run_id(row, "grid", args.level), row,
+                        md.render_numerics_input(row, args.level, extra)))
+    return out
+
+
 def cmd_write(args: argparse.Namespace) -> None:
     rows, cells = _inputs_and_cells()
     validation = set(md.gated_nuclides(cells))
-    written = 0
-    for row in rows:
-        if args.kind in md.COMMITTED_KINDS and args.kind not in md.run_kinds(row, validation):
-            continue
-        run = md.run_id(row, args.kind)
+    if args.kind in md.RESPONSE_KINDS + ("grid",):
+        inputs = _numerics_members(args, cells)
+    else:
+        inputs = [(md.run_id(row, args.kind), row, md.render_input(row, args.kind, md.extra_lines(cells, row.nuclide)))
+                  for row in rows
+                  if args.kind not in md.COMMITTED_KINDS or args.kind in md.run_kinds(row, validation)]
+    for run, _row, text in inputs:
         directory = Path(args.dir) / run
         directory.mkdir(parents=True, exist_ok=True)
-        text = md.render_input(row, args.kind, md.extra_lines(cells, row.nuclide))
         (directory / f"{run}.in").write_bytes(text.encode("ascii"))
-        written += 1
-    print(f"wrote {written} inputs of kind {args.kind} under {args.dir}")
+    print(f"wrote {len(inputs)} inputs of kind {args.kind} level {args.level} under {args.dir}")
 
 
-def _run_one(binary: str, directory: Path) -> tuple[str, int, str]:
+def _run_one(binary: str, directory: Path, time_v: bool) -> tuple[str, int, str, str, str]:
+    """Run one input: ``(run, rc, err_bytes, wall_s, input_sha256)``; MuDirac gets exactly one
+    argument whether or not ``/usr/bin/time -v`` wraps it."""
     run = directory.name
+    digest = hashlib.sha256((directory / f"{run}.in").read_bytes()).hexdigest()
+    argv = md.mudirac_argv(binary, f"{run}.in")
+    if time_v:
+        argv = ["/usr/bin/time", "-v", "-o", "time_v.txt", *argv]
+    start = time.monotonic()
     with open(directory / "stdout.txt", "wb") as sink:
-        rc = subprocess.run(
-            md.mudirac_argv(binary, f"{run}.in"), cwd=directory, stdout=sink, stderr=subprocess.STDOUT
-        ).returncode
+        rc = subprocess.run(argv, cwd=directory, stdout=sink, stderr=subprocess.STDOUT).returncode
+    wall = time.monotonic() - start
     err = directory / f"{run}.err"
-    return run, rc, str(err.stat().st_size) if err.exists() else "missing"
+    return run, rc, str(err.stat().st_size) if err.exists() else "missing", f"{wall:.3f}", digest
 
 
 def cmd_run(args: argparse.Namespace) -> None:
+    index, count = (int(part) for part in args.shard.split("/"))
+    if not 0 <= index < count:
+        raise SystemExit(f"--shard must be i/n with 0 <= i < n, got {args.shard}")
     directories = sorted(p for p in Path(args.dir).iterdir() if (p / f"{p.name}.in").is_file())
+    directories = [d for position, d in enumerate(directories) if position % count == index]
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        results = sorted(pool.map(lambda d: _run_one(args.mudirac, d), directories))
-    lines = [f"{run}\t{rc}\t{err}" for run, rc, err in results]
-    (Path(args.dir) / "runs.tsv").write_bytes(("\n".join(lines) + "\n").encode("ascii"))
+        results = sorted(pool.map(lambda d: _run_one(args.mudirac, d, args.time_v), directories))
+    lines = ["\t".join(fields) for run, rc, err, wall, digest in results
+             for fields in [(run, str(rc), err, wall, digest)]]
+    name = "runs.tsv" if count == 1 else f"runs.{index}of{count}.tsv"
+    (Path(args.dir) / name).write_bytes(("\n".join(lines) + "\n").encode("ascii"))
     failed = [r for r in results if r[1] != 0 or r[2] != "0"]
-    print(f"ran {len(results)} inputs; rc != 0 or non-empty .err: {len(failed)}")
-    for run, rc, err in failed:
+    total = sum(float(r[3]) for r in results)
+    print(f"ran {len(results)} inputs (shard {args.shard}, wall {total:.1f} s summed); "
+          f"rc != 0 or non-empty .err: {len(failed)}")
+    for run, rc, err, _wall, _digest in failed:
         print(f"  {run} rc={rc} err_bytes={err}")
 
 
@@ -137,14 +176,65 @@ def _lines(directory: Path) -> list[tuple[str, str, str]]:
     return out
 
 
+def _results(directories: list[str]) -> list[tuple[str, Path, str, str, str, str]]:
+    """Every ``(run, directory, rc, err_bytes, wall_s, input_sha256)`` the ``runs*.tsv`` files of
+    ``directories`` record; a file written before wall time and digest were kept gives empty ones."""
+    out = []
+    for directory in directories:
+        for table in sorted(Path(directory).glob("runs*.tsv")):
+            for line in table.read_text("ascii").splitlines():
+                fields = line.split("\t")
+                run, rc, err = fields[:3]
+                wall, digest = (fields[3], fields[4]) if len(fields) >= 5 else ("", "")
+                out.append((run, Path(directory) / run, rc, err, wall, digest))
+    return out
+
+
+def cmd_collect_numerics(args: argparse.Namespace) -> None:
+    results = {run: (directory, rc, err, wall, digest)
+               for run, directory, rc, err, wall, digest in _results(args.dir)}
+    kept = md.kept_members(md.load_outputs(ROOT))
+    runs = [list(md.NUMERICS_RUNS_COLUMNS)]
+    states = [list(md.NUMERICS_STATES_COLUMNS)]
+    lines = [list(md.NUMERICS_LINES_COLUMNS)]
+    made = {}
+    invalid = 0
+    rows = {row.nuclide: row for row in kept}
+    for run, z, a, kind, level in md.expected_numerics_runs(kept):
+        key = [str(z), str(a), kind, str(level)]
+        if kind == "rminus" and not md.rminus_in_domain(rows[(z, a)]):
+            runs.append([run, *key, md.INVALID_PERTURBATION_DOMAIN, "", "", "", ""])
+            invalid += 1
+            continue
+        if run not in results:
+            raise SystemExit(f"no result for {run}: run every kind and level before collecting")
+        directory, rc, err, wall, digest = results[run]
+        if not wall or not digest:
+            raise SystemExit(f"{run}: its runs table carries no wall time or input digest")
+        runs.append([run, *key, md.RAN, rc, err, wall, digest])
+        made[f"{kind}{level}"] = made.get(f"{kind}{level}", 0) + 1
+        headers = _state_headers(directory)
+        for orbit in sorted(headers, key=_orbit_order):
+            states.append([run, *key, orbit, *headers[orbit]])
+        for name, delta, rate in _lines(directory):
+            lines.append([run, *key, name, delta, rate])
+    out = Path(args.out)
+    for relpath, table in ((md.NUMERICS_RUNS_RELPATH, runs), (md.NUMERICS_STATES_RELPATH, states),
+                           (md.NUMERICS_LINES_RELPATH, lines)):
+        _write(out / Path(relpath).name, table)
+        print(f"wrote {Path(relpath).name}: {len(table) - 1} rows, "
+              f"{(out / Path(relpath).name).stat().st_size} bytes")
+    print(f"kept members {len(kept)}; runs made per kind and level: "
+          + ", ".join(f"{k} {v}" for k, v in sorted(made.items()))
+          + f"; {md.INVALID_PERTURBATION_DOMAIN} {invalid}")
+
+
 def cmd_collect(args: argparse.Namespace) -> None:
     rows, cells = _inputs_and_cells()
     validation = set(md.gated_nuclides(cells))
     by_kind = {}
-    for directory in args.dir:
-        for line in (Path(directory) / "runs.tsv").read_text("ascii").splitlines():
-            run, rc, err = line.split("\t")
-            by_kind[run] = (Path(directory) / run, rc, err)
+    for run, directory, rc, err, _wall, _digest in _results(args.dir):
+        by_kind[run] = (directory, rc, err)
     runs = [["run", "Z", "A", "kind", "rc", "err_bytes"]]
     states = [["run", "Z", "A", "kind", "state", "n", "l", "s", "binding_eV", "total_eV"]]
     lines = [["run", "Z", "A", "kind", "line", "delta_e_eV", "w12_per_s"]]
@@ -193,13 +283,20 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--iaea", required=True)
     p.add_argument("--out", required=True)
     p = sub.add_parser("write")
-    p.add_argument("--kind", required=True, choices=md.COMMITTED_KINDS + md.EVIDENCE_KINDS)
+    p.add_argument("--kind", required=True,
+                   choices=md.COMMITTED_KINDS + md.EVIDENCE_KINDS + md.RESPONSE_KINDS + ("grid",))
+    p.add_argument("--level", type=int, default=0)
     p.add_argument("--dir", required=True)
     p = sub.add_parser("run")
     p.add_argument("--mudirac", required=True)
     p.add_argument("--dir", required=True)
     p.add_argument("--jobs", type=int, required=True)
+    p.add_argument("--shard", default="0/1")
+    p.add_argument("--time-v", action="store_true")
     p = sub.add_parser("collect")
+    p.add_argument("--dir", required=True, nargs="+")
+    p.add_argument("--out", required=True)
+    p = sub.add_parser("collect-numerics")
     p.add_argument("--dir", required=True, nargs="+")
     p.add_argument("--out", required=True)
     p = sub.add_parser("geant4-levels")
@@ -207,7 +304,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--out", required=True)
     args = parser.parse_args(argv)
     {"inputs": cmd_inputs, "write": cmd_write, "run": cmd_run, "collect": cmd_collect,
-     "geant4-levels": cmd_geant4_levels}[args.command](args)
+     "collect-numerics": cmd_collect_numerics, "geant4-levels": cmd_geant4_levels}[args.command](args)
 
 
 if __name__ == "__main__":
