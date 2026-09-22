@@ -18,7 +18,7 @@ index e2973354eb..ffa2a0b56a 100644
  #endif
 diff --git a/source/particles/management/include/G4MuonicDataOverlay.hh b/source/particles/management/include/G4MuonicDataOverlay.hh
 new file mode 100644
-index 0000000000..f4dfbf9e50
+index 0000000000..37f46cb19f
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataOverlay.hh
 @@ -0,0 +1,101 @@
