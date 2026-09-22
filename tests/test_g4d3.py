@@ -924,7 +924,7 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("the tolerance factor", path, r"The tolerance is (\d+) times", (1,), md.TOL_FACTOR),
         ("the model's own uncertainty", path, r"is set to (\d+) by decision", (1,), md.SIGMA_CALC),
         ("the size floor", path, r"multiplied by (\d+\.\d+) \(the `r101` runs", (1,), str(md.SIZE_FLOOR)),
-        ("gated rows", path, r"Of the (\d+) gated rows", (1,), len(gated)),
+        ("gated rows", path, r"Of the (\d+) gated rows, \d+ lie within tolerance", (1,), len(gated)),
         ("gated rows within tolerance", path, r"gated rows, (\d+) lie within tolerance", (1,), len(within)),
         ("gated rows outside tolerance", path, r"lie within tolerance and (\d+) outside it", (1,),
          len(gated) - len(within)),
@@ -943,7 +943,84 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     for number, line in enumerate(table, start=1):
         pattern, groups = _row_pattern(line)
         pins.append((f"comparison table row {number}", path, pattern, groups, None))
+    pins.extend(contract_pins())
     return pins
+
+
+def _committed_rows(relpath: str) -> list[dict[str, str]]:
+    text = (REPO / relpath).read_bytes().decode("ascii")
+    assert "\r" not in text
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """The pins of the section on the energy the cascade receives: every number it states, read
+    from `shell_projection.csv`, `incompatible_groups.csv`, `validation.csv` and `radius_lineage.csv`,
+    and one pin per row of the generated groups table."""
+    from openmucf.g4 import d3_contract as d3c
+
+    path = "DATASET_D3.md"
+    projection = _committed_rows(d3c.PROJECTION_RELPATH)
+    groups = _committed_rows(d3c.GROUPS_RELPATH)
+    validation = _committed_rows(md.VALIDATION_RELPATH)
+    lineage = d3c.load_radius_lineage(REPO / d3c.LINEAGE_RELPATH)
+    assert all(row.dependency_state == d3c.UNKNOWN for row in lineage)
+    widest = max(groups, key=lambda g: Decimal(g["gap_keV"]))
+    pb_line = next(r for r in projection
+                   if (r["Z"], r["A"], r["quantity"]) == (widest["Z"], widest["A"], "K1-L3"))
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        pb_shift = sum((Decimal(s) for s in pb_line["solver_numeric_shifts_keV"].split(";")), Decimal(0))
+    qualified = [r for r in projection if r["solver_numeric_qualification"].startswith(d3c.QUALIFIED)
+                 and int(r["solver_numeric_qualification"][len(d3c.QUALIFIED):]) >= 2]
+    weak = [r for r in validation if r["gated"] == "true" and r["label"] == md.WEAKLY_SENSITIVE]
+    pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
+        ("gated rows in the projection", path, r"Of the (\d+) gated rows, the shell difference lies", (1,),
+         len(projection)),
+        ("rows whose shell difference lies within the band", path,
+         r"the shell difference lies within the band for (\d+),", (1,),
+         sum(r["consumer_within"] == "true" for r in projection)),
+        ("rows whose solver line lies within the band", path,
+         r"lies within the band for \d+, the solver line for (\d+),", (1,),
+         sum(r["solver_within"] == "true" for r in projection)),
+        ("rows whose unpatched cascade lies within the band", path,
+         r"the solver line for \d+, the unpatched cascade for (\d+),", (1,),
+         sum(r["stock_within"] == "true" for r in projection)),
+        ("rows whose shell difference is closer than the unpatched cascade", path,
+         r"closer than the unpatched cascade for (\d+)\.", (1,),
+         sum(r["consumer_closer_than_stock"] == "true" for r in projection)),
+        ("groups with an empty intersection", path,
+         r"intersects the lines' bands: (\d+) of the \d+ such groups", (1,),
+         sum(g["empty"] == "true" for g in groups)),
+        ("multi-line groups", path, r"bands: \d+ of the (\d+) such groups", (1,), len(groups)),
+        ("the widest group's mass number", path, r"the widest, Pb-(\d+) K–L, by", (1,), widest["A"]),
+        ("the widest gap", path, r"Pb-\d+ K–L, by ([0-9.]+) keV", (1,), widest["gap_keV"]),
+        ("the refined line's mass number", path, r"moves the Pb-(\d+) `K1-L3` line by", (1,), pb_line["A"]),
+        ("the refined line's shift", path, r"`K1-L3` line by ([0-9.]+) keV against a printed", (1,),
+         format(pb_shift, "f")),
+        ("the refined line's printed uncertainty", path,
+         r"against a printed uncertainty of ([0-9.]+) keV;", (1,), pb_line["unc_keV"]),
+        ("gated lines meeting the resolution target", path, r"keV; (\d+) of the \d+ gated lines meet", (1,),
+         len(qualified)),
+        ("gated lines under the resolution target", path, r"keV; \d+ of the (\d+) gated lines meet", (1,),
+         len(projection)),
+        ("weakly sensitive rows in the lineage sentence", path,
+         r"and the (\d+) weakly sensitive rows are \d+ isotopes", (1,), len(weak)),
+        ("isotopes the weakly sensitive rows span", path,
+         r"weakly sensitive rows are (\d+) isotopes of palladium", (1,),
+         len({(r["Z"], r["A"]) for r in weak})),
+    ]
+    for number, line in enumerate(d3c.render_groups_table(groups).splitlines()[2:], start=1):
+        pattern, row_groups = _row_pattern(line)
+        pins.append((f"groups table row {number}", path, pattern, row_groups, None))
+    return pins
+
+
+def test_t107_the_groups_table_is_the_generated_block():
+    from openmucf.g4 import d3_contract as d3c
+
+    block = d3c.render_groups_table(_committed_rows(d3c.GROUPS_RELPATH))
+    assert _document_text().count(block) == 1
 
 
 def test_t107_the_comparison_table_is_the_generated_block():
@@ -977,9 +1054,11 @@ def test_t107_every_pin_matches_once_and_states_its_value():
 
 def test_t107_drill_a_changed_count_and_a_changed_table_cell_are_refused():
     text = _document_text()
-    gated = sum(row["gated"] == "true" for row in _committed_validation())
-    stated = f"Of the {gated} gated rows"
-    mutated = _replace_once(text, stated, f"Of the {gated + 1} gated rows")
+    validation = _committed_validation()
+    gated = sum(row["gated"] == "true" for row in validation)
+    within = sum(row["gated"] == "true" and row["within"] == "true" for row in validation)
+    stated = f"Of the {gated} gated rows, {within} lie"
+    mutated = _replace_once(text, stated, f"Of the {gated + 1} gated rows, {within} lie")
     assert any(problem.startswith("gated rows: states") for problem in _pin_problems(mutated))
     block = md.render_validation_table(_committed_validation())
     row = block.splitlines()[2]

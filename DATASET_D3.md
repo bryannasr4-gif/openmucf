@@ -167,13 +167,76 @@ Every gated row is listed below; the table is generated from `validation.csv`.
 | Saito2025 | 46 | 110 | 4f7/2-3d5/2 | `M5-N7` | 291.6 | 0.1 | 291.878401931 | 0.278401931 | -2.647824404 | 0.3 | weakly sensitive | true |  |
 | Saito2025 | 46 | 110 | 4f5/2-3d3/2 | `M4-N6` | 294.9 | 0.2 | 295.245103622 | 0.345103622 | -5.947824404 | 0.6 | weakly sensitive | true |  |
 
-## 5. Findings
+## 5. The energy the cascade receives
+
+The comparison above scores the orbit-resolved line MuDirac prints; a patched cascade receives, for
+each shell above K, the degeneracy-weighted mean of its two circular states, so the energy it emits
+between two shells is one number where the sources print two.
+`shell_projection.csv` joins each gated row to that shell difference (`consumer_quantity`), beside
+the solver line and the energy the unpatched cascade emits, and never relabels a measured line as a
+centroid.
+Of the 67 gated rows, the shell difference lies within the band for 1, the solver line for 26,
+the unpatched cascade for 0, and the shell difference is closer than the unpatched cascade for 42.
+`incompatible_groups.csv` takes every (source, nuclide, shell pair) with more than one gated line and
+intersects the lines' bands: 29 of the 29 such groups have an empty intersection, the widest,
+Pb-208 K–L, by 184.226 keV, so no single shell energy can lie within the band of every line it stands
+for.
+Every such group is listed below; the table is generated from `incompatible_groups.csv`.
+
+| source | Z | A | initial n | final n | lines | quantities | lower (keV) | upper (keV) | gap (keV) | empty |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Fricke1995 | 21 | 45 | 2 | 1 | 2 | `K1-L2;K1-L3` | 856.882 | 855.308 | 1.574 | true |
+| Fricke1995 | 26 | 56 | 2 | 1 | 2 | `K1-L2;K1-L3` | 1256.915 | 1253.093 | 3.822 | true |
+| Fricke1995 | 29 | 63 | 2 | 1 | 2 | `K1-L2;K1-L3` | 1514.311 | 1508.232 | 6.079 | true |
+| Fricke1995 | 32 | 74 | 2 | 1 | 2 | `K1-L2;K1-L3` | 1774.830 | 1765.807 | 9.023 | true |
+| Fricke1995 | 38 | 88 | 2 | 1 | 2 | `K1-L2;K1-L3` | 2342.168 | 2324.703 | 17.465 | true |
+| Fricke1995 | 40 | 90 | 2 | 1 | 4 | `K1-L2;K1-L3;K1-L2;K1-L3` | 2536.470 | 2515.191 | 21.279 | true |
+| Fricke1995 | 41 | 93 | 2 | 1 | 2 | `K1-L2;K1-L3` | 2626.632 | 2603.478 | 23.154 | true |
+| Fricke1995 | 44 | 102 | 2 | 1 | 2 | `K1-L2;K1-L3` | 2893.819 | 2864.509 | 29.310 | true |
+| Fricke1995 | 47 | 107 | 2 | 1 | 2 | `K1-L2;K1-L3` | 3184.239 | 3147.219 | 37.020 | true |
+| Fricke1995 | 49 | 115 | 2 | 1 | 2 | `K1-L2;K1-L3` | 3366.696 | 3323.087 | 43.609 | true |
+| Fricke1995 | 53 | 127 | 2 | 1 | 2 | `K1-L2;K1-L3` | 3723.643 | 3667.466 | 56.177 | true |
+| Fricke1995 | 55 | 133 | 2 | 1 | 2 | `K1-L2;K1-L3` | 3902.543 | 3840.819 | 61.724 | true |
+| Fricke1995 | 79 | 197 | 2 | 1 | 2 | `K1-L2;K1-L3` | 5760.333 | 5592.148 | 168.185 | true |
+| Fricke1995 | 81 | 205 | 2 | 1 | 2 | `K1-L2;K1-L3` | 5895.280 | 5719.160 | 176.120 | true |
+| Fricke1995 | 82 | 208 | 2 | 1 | 2 | `K1-L2;K1-L3` | 5962.584 | 5778.358 | 184.226 | true |
+| Saito2025 | 46 | 104 | 2 | 1 | 2 | `K1-L2;K1-L3` | 3091.1 | 3058.7 | 32.4 | true |
+| Saito2025 | 46 | 104 | 3 | 2 | 2 | `L3-M5;L2-M4` | 862.7 | 833.7 | 29.0 | true |
+| Saito2025 | 46 | 104 | 4 | 3 | 2 | `M5-N7;M4-N6` | 294.3 | 291.9 | 2.4 | true |
+| Saito2025 | 46 | 105 | 3 | 2 | 2 | `L3-M5;L2-M4` | 863.6 | 833.2 | 30.4 | true |
+| Saito2025 | 46 | 105 | 4 | 3 | 2 | `M5-N7;M4-N6` | 293.1 | 292.0 | 1.1 | true |
+| Saito2025 | 46 | 106 | 2 | 1 | 2 | `K1-L2;K1-L3` | 3083.1 | 3051.8 | 31.3 | true |
+| Saito2025 | 46 | 106 | 3 | 2 | 2 | `L3-M5;L2-M4` | 862.9 | 834.3 | 28.6 | true |
+| Saito2025 | 46 | 106 | 4 | 3 | 2 | `M5-N7;M4-N6` | 294.2 | 292.3 | 1.9 | true |
+| Saito2025 | 46 | 108 | 2 | 1 | 2 | `K1-L2;K1-L3` | 3076.0 | 3043.5 | 32.5 | true |
+| Saito2025 | 46 | 108 | 3 | 2 | 2 | `L3-M5;L2-M4` | 863.2 | 833.6 | 29.6 | true |
+| Saito2025 | 46 | 108 | 4 | 3 | 2 | `M5-N7;M4-N6` | 294.6 | 291.9 | 2.7 | true |
+| Saito2025 | 46 | 110 | 2 | 1 | 2 | `K1-L2;K1-L3` | 3067.6 | 3038.3 | 29.3 | true |
+| Saito2025 | 46 | 110 | 3 | 2 | 2 | `L3-M5;L2-M4` | 862.5 | 834.0 | 28.5 | true |
+| Saito2025 | 46 | 110 | 4 | 3 | 2 | `M5-N7;M4-N6` | 294.3 | 291.9 | 2.4 | true |
+
+`unc` and `u<n>` are the magnitude of one signed radius response with a floor, not a predictive
+uncertainty; `components.jsonl` carries, for every value, the signed response in both directions,
+the rounding bound of the printed anchor, the shift observed when the numerical settings are
+refined, and no total uncertainty.
+Refining the settings twice (grid step halved, Uehling steps doubled, convergence tolerance
+tightened tenfold each time) moves the Pb-208 `K1-L3` line by 0.208069319 keV against a printed
+uncertainty of 0.090 keV; 19 of the 67 gated lines meet a resolution target of a tenth of their
+printed uncertainty through the second refinement.
+Each `numeric_qualification` column of `shell_projection.csv` states whether the latest shifts
+under refinement lie within that target and shrink, and nothing about the true error.
+`radius_lineage.csv` records, per compared nuclide, what is known of the experiments behind the
+radius passed to MuDirac and behind the compared line; its state is `UNKNOWN` on every row, because
+the evaluation the radii come from is not in hand, and the 16 weakly sensitive rows are 5
+isotopes of palladium.
+
+## 6. Findings
 
 - The rows outside tolerance are this comparison's registered disagreements; none is fitted away.
 - The members whose bundled rms radius differs from the IAEA table are printed by the generator
   and passed as bundled.
 
-## 6. In Geant4
+## 7. In Geant4
 
 With the opt-in on and the muonic-transition seam reading through `mudirac130` — named by
 `G4MUONICDATA_D3_PROFILE`, or by `G4MUONICDATA_PROFILE`, which names both seams — a patched
