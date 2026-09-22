@@ -521,11 +521,12 @@ A reader must therefore distinguish three outcomes and never confuse them:
 A directory may hold several files that declare one `#TABLE`, one per `#PROFILE`: a reader keys its
 tables by the pair (`#PROFILE`, `#TABLE`), never by file name, and rejects a directory in which two
 files declare the same pair. A consumer names the profile it reads through; `parity` is the default. A key the selected profile has
-no record for — neither the exact (Z, A) nor, under `A:natural_and_listed` or
-`A:most_abundant_and_listed`, the (Z, 0) row of
-section 6 — falls through to the consumer's compiled-in value, never to another profile.
+no record for falls through to the consumer's compiled-in value, never to another profile.
+Whether a request for (Z, A) may also be answered by the (Z, 0) row of section 6 is the
+consumer's rule and not the format's: that row is a facility the reader offers, and a consumer
+states where it reads it.
 `precedence` (section 3) ranks sources within one file;
-a `#FALLBACK`, where a file declares one, is the last rung of its profile.
+a `#FALLBACK`, where a file declares one, declares the last rung of its profile.
 
 ---
 
@@ -579,12 +580,12 @@ Two further requirements follow from section 2:
 - The reader must not accept a comma decimal separator under any locale. The grammar has exactly one
   numeric syntax and it is the C-locale one.
 
-**The natural-composition row.** Under `#VALIDITY` with `A:natural_and_listed`, a record with `A = 0`
-is the row for the element's natural composition, and a lookup for (Z, A) that finds no exact record
-reads (Z, 0) before it gives up. Under `A:most_abundant_and_listed` a record with `A = 0` carries
-the values the same table lists for the element's most abundant isotope, and a lookup reads it by
-the same rung. Under `A:listed` no record has `A = 0`; Layer 1 does not decompose
-`#VALIDITY` (section 2.2), so the rule binds the consumer and its validator, not the parser.
+**The natural-composition row.** Under `#VALIDITY` with `A:natural_and_listed`, a record with
+`A = 0` is the row for the element's natural composition. Under `A:most_abundant_and_listed` a
+record with `A = 0` carries the values the same table lists for the element's most abundant isotope.
+Under `A:listed` no record has `A = 0`; Layer 1 does not decompose `#VALIDITY` (section 2.2), so the
+rule binds the consumer and its validator, not the parser, and a consumer that reads only the record
+keyed by exactly the nuclide it asked for is reading this format correctly.
 
 **Line length is not bounded by this format**, and deliberately carries no error code: a dataset is
 a generated, audited artifact, not untrusted network input, so a

@@ -2,7 +2,8 @@
 
 `cpp/patches/g4-v11.4.2-muonicdata.patch` and `cpp/patches/g4-v11.5.0.beta-muonicdata.patch` are
 where the reader meets Geant4, one patch family per revision the overlay targets. Each adds the
-reader and its glue to Geant4's own tree, adds the opt-in boolean to `G4HadronicParameters`, and
+reader, its semantic layer and its glue to Geant4's own tree, adds the opt-in boolean to
+`G4HadronicParameters`, and
 inserts lookups into the two compiled-in copies of the muon-capture tables, the muonic cascade and
 the helper's K energy. Two things about a family can
 rot silently: the reader it carries can drift from `cpp/include` + `cpp/src` (the repository's
@@ -15,8 +16,8 @@ What each test here is actually for:
 * **T-72** -- the patch parses as a unified diff, touches exactly the declared set of files, applies
   (with a zero-fuzz applier written here, not `git apply`, so the check is the same on every
   runner) to the vendored copies of the seam files without deleting a line of any file that
-  existed before it but the two call lines it changes, and the reader and glue files it adds equal
-  the repository's byte for byte. The
+  existed before it but the lines it declares it changes, and the reader, semantic-layer and glue
+  files it adds equal the repository's byte for byte. The
   registration patch touches only the dataset-definitions file and adds exactly the committed
   snippet's entry.
 * **T-73** -- the drill: alter one context line and the applier must refuse, naming the hunk; and
@@ -64,10 +65,12 @@ BEHAVIOUR_PATHS = frozenset(
     {
         "source/particles/management/include/G4MuonicAtomHelper.hh",
         "source/particles/management/include/G4MuonicDataOverlay.hh",
+        "source/particles/management/include/G4MuonicDataSemantics.hh",
         "source/particles/management/include/G4MuonicDataTable.hh",
         "source/particles/management/sources.cmake",
         "source/particles/management/src/G4MuonicAtomHelper.cc",
         "source/particles/management/src/G4MuonicDataOverlay.cc",
+        "source/particles/management/src/G4MuonicDataSemantics.cc",
         "source/particles/management/src/G4MuonicDataTable.cc",
         "source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc",
         "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc",
@@ -81,6 +84,8 @@ BEHAVIOUR_PATHS = frozenset(
 (HELPER_HH,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/G4MuonicAtomHelper.hh"))
 #: The cascade, the one file the D3 lookups are inserted into besides the helper.
 (CASCADE,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/G4EmCaptureCascade.cc"))
+#: The helper's source, which gains the two public K-energy forms and the private compiled-in one.
+(HELPER_CC,) = tuple(p for p in BEHAVIOUR_PATHS if p.endswith("/G4MuonicAtomHelper.cc"))
 #: The two existing lines the patch changes: each call of the one-argument K energy that has the
 #: muonic atom's base ion in scope, which now passes its mass number. Old call, new call, by path.
 CALL_SITES: dict[str, tuple[bytes, bytes]] = {
@@ -89,6 +94,15 @@ CALL_SITES: dict[str, tuple[bytes, bytes]] = {
     ),
     "source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc": (
         b"GetKShellEnergy(Zd)", b"GetKShellEnergy(Zd, baseion->GetAtomicMass())"
+    ),
+}
+#: The one definition the patch renames: the compiled-in K energy keeps its body, and its
+#: arithmetic order, under a private name, so each public form can query its own key before
+#: falling to it. Old name, new name, by path -- held exactly like a call site.
+RENAMES: dict[str, tuple[bytes, bytes]] = {
+    HELPER_CC: (
+        b"G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z)",
+        b"G4double G4MuonicAtomHelper::GetCompiledKShellEnergy(G4double Z)",
     ),
 }
 #: The cascade's branching block, which no added line may touch.
@@ -130,6 +144,12 @@ READER: dict[str, dict[str, pathlib.Path]] = {
             REPO / "cpp/include/G4MuonicDataOverlay.hh"
         ),
         "source/particles/management/src/G4MuonicDataOverlay.cc": REPO / "cpp/src/G4MuonicDataOverlay.cc",
+        "source/particles/management/include/G4MuonicDataSemantics.hh": (
+            REPO / "cpp/include/G4MuonicDataSemantics.hh"
+        ),
+        "source/particles/management/src/G4MuonicDataSemantics.cc": (
+            REPO / "cpp/src/G4MuonicDataSemantics.cc"
+        ),
     }
     for tag in FAMILIES
 }
@@ -413,11 +433,19 @@ def test_t72_the_behaviour_patch_touches_exactly_the_declared_files(tag: str):
     assert set(files) == BEHAVIOUR_PATHS
 
 
+#: Every line of a pre-existing file the patch is allowed to change, by path: the call sites and
+#: the renamed definition. A file absent from here is only ever added to.
+CHANGES: dict[str, list[tuple[bytes, bytes]]] = {}
+for _path, _pair in list(CALL_SITES.items()) + list(RENAMES.items()):
+    CHANGES.setdefault(_path, []).append(_pair)
+
+
 def check_deletions(files: dict[str, FilePatch]) -> None:
     """Every file that existed before the patch -- the seams, the helper's header, the source list,
-    the two `G4HadronicParameters` files -- is only ever added to, except a `CALL_SITES` file: its
-    one `-` line holds its old call exactly once, and the hunk that removes it adds exactly that line
-    with the call replaced. Every message names the path."""
+    the two `G4HadronicParameters` files -- is only ever added to, except where `CHANGES` declares a
+    line for it: it deletes exactly as many lines as it declares changes, each deleted line holds
+    its old text exactly once, and the hunk that removes it adds exactly that line with the old text
+    replaced by the new. Every message names the path."""
     for path, file in sorted(files.items()):
         if file.old_path == b"/dev/null":
             continue
@@ -425,17 +453,22 @@ def check_deletions(files: dict[str, FilePatch]) -> None:
         removed = [
             (hunk, content) for hunk in file.hunks for marker, content, _ in hunk.lines if marker == b"-"
         ]
-        if path not in CALL_SITES:
+        declared = list(CHANGES.get(path, []))
+        if not declared:
             assert not removed, f"{path}: the patch deletes {[content for _, content in removed]}"
             continue
-        old, new = CALL_SITES[path]
-        assert len(removed) == 1, f"{path}: the patch deletes {len(removed)} line(s), not only its call line"
-        ((hunk, content),) = removed
-        assert content.count(old) == 1, f"{path}: the deleted line does not hold {old!r} once: {content!r}"
-        added = [line for marker, line, _ in hunk.lines if marker == b"+"]
-        assert added == [content.replace(old, new)], (
-            f"{path}: hunk {hunk.header.decode()} adds {added}, not the call line with {new!r}"
+        assert len(removed) == len(declared), (
+            f"{path}: the patch deletes {len(removed)} line(s), not the {len(declared)} it declares"
         )
+        for hunk, content in removed:
+            matching = [pair for pair in declared if content.count(pair[0]) == 1]
+            assert matching, f"{path}: the deleted line holds no declared text once: {content!r}"
+            old, new = matching[0]
+            declared.remove((old, new))
+            added = [line for marker, line, _ in hunk.lines if marker == b"+"]
+            assert added == [content.replace(old, new)], (
+                f"{path}: hunk {hunk.header.decode()} adds {added}, not the line with {new!r}"
+            )
 
 
 @family
@@ -454,11 +487,38 @@ def test_t72_the_seam_hunks_apply_to_the_vendored_files_and_delete_only_the_call
 
 
 @family
-def test_t72_the_helper_header_adds_exactly_the_two_argument_declaration(tag: str):
+def test_t72_the_helper_header_adds_the_mass_number_form_and_the_private_compiled_form(tag: str):
+    """The header gains exactly two declarations: the public form that also takes a mass number,
+    and, under `private:`, the compiled-in form the two public ones fall to."""
     behaviour, _, _ = FAMILIES[tag]
     files = by_new_path(parse_patch(behaviour.read_bytes()))
     added = [content for _, content in added_lines(files[HELPER_HH]) if content.strip()]
-    assert added == [b"    static G4double GetKShellEnergy(G4double Z, G4int A);"], added
+    assert added == [
+        b"    static G4double GetKShellEnergy(G4double Z, G4int A);",
+        b"  private:",
+        b"    static G4double GetCompiledKShellEnergy(G4double Z);",
+    ], added
+
+
+@family
+def test_t72_each_public_k_energy_form_queries_its_own_key_and_falls_to_the_compiled_one(tag: str):
+    """The split: the compiled-in body is reached only under its private name, each public form
+    is defined once and queries exactly its own key, and the form that takes a mass number does
+    not reach the natural-composition row by calling the one that does not."""
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    added = [content for _, content in added_lines(files[HELPER_CC])]
+    for signature in (
+        b"G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z)",
+        b"G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z, G4int A)",
+        b"      if (const G4double* v = G4MuonicDataOverlay::KShell(iz, 0)) return *v * keV;",
+        b"      if (const G4double* v = G4MuonicDataOverlay::KShell(iz, A)) return *v * keV;",
+    ):
+        assert added.count(signature) == 1, (tag, signature, added.count(signature))
+    assert added.count(b"  return GetCompiledKShellEnergy(Z);") == 2, tag
+    assert b"  return GetKShellEnergy(Z);" not in added, (
+        f"{tag}: {HELPER_CC} reaches the one-argument form from the two-argument one"
+    )
 
 
 def check_cascade_lookups(tag: str, files: dict[str, FilePatch]) -> None:
@@ -553,10 +613,11 @@ def test_t72_every_file_a_patch_touches_rebuilds_to_the_blob_its_index_line_decl
     assert not_rebuilt == set(PRISTINE_INDEX_OLD[tag]), sorted(PRISTINE_INDEX_OLD[tag])
 
 
-def test_t72_the_glue_files_are_identical_across_families_and_read_the_profile_variable():
+def test_t72_the_glue_files_are_identical_across_families_and_read_the_profile_variables():
     """The glue `.hh` and `.cc`, rebuilt from each family's added-file hunks, are byte-identical
-    across the two families -- the glue does not depend on the revision -- and the `.cc` reads
-    `G4MUONICDATA_PROFILE` at exactly one place and raises the profile error code at exactly one.
+    across the two families -- the glue does not depend on the revision -- and the `.cc` reads the
+    environment at exactly one place, names exactly the discovery variable and the three profile
+    variables, and raises exactly the five error codes.
     """
     rebuilt: dict[str, dict[str, bytes]] = {}
     for tag in sorted(FAMILIES):
@@ -570,8 +631,22 @@ def test_t72_the_glue_files_are_identical_across_families_and_read_the_profile_v
     for path in sorted(GLUE):
         assert rebuilt[first][path] == rebuilt[second][path], f"{path} differs between {first} and {second}"
     glue_cc = rebuilt[first][GLUE_CC]
-    assert glue_cc.count(b'std::getenv("G4MUONICDATA_PROFILE")') == 1, glue_cc.count(b"G4MUONICDATA_PROFILE")
-    assert glue_cc.count(b'"G4MuonicData004"') == 1, glue_cc.count(b"G4MuonicData004")
+    assert glue_cc.count(b"std::getenv(") == 1, glue_cc.count(b"std::getenv(")
+    named = sorted(set(re.findall(rb'[A-Za-z]\w*\("(G4MUONICDATA[A-Z0-9_]*)"', glue_cc)))
+    assert named == [
+        b"G4MUONICDATA",
+        b"G4MUONICDATA_D1_PROFILE",
+        b"G4MUONICDATA_D3_PROFILE",
+        b"G4MUONICDATA_PROFILE",
+    ], named
+    codes = sorted(set(re.findall(rb'"(G4MuonicData[0-9]{3})"', glue_cc)))
+    assert codes == [
+        b"G4MuonicData001",
+        b"G4MuonicData002",
+        b"G4MuonicData003",
+        b"G4MuonicData004",
+        b"G4MuonicData005",
+    ], codes
 
 
 @family

@@ -441,9 +441,11 @@ Geant4 resolves it under `GEANT4_DATA_DIR`; without it, an exported `G4MUONICDAT
 The generator builds `G4MuonicData.<version>.tar.gz` in memory from every table file, their provenance
 files, a `README` and a `History`, and the registration snippet carries that archive's MD5; the archive
 unpacks to the `G4MuonicData<version>` directory the registered mode looks for, and `<version>` is the
-`#VERSION` every table carries. The patched build looks values up through one profile — the one
-`G4MUONICDATA_PROFILE` names, or `parity` when the variable is unset or empty — and never through
-another; `cpp/patches/README.md` states what a token no file carries does.
+`#VERSION` every table carries. The patched build reads each seam through a profile of its own —
+`G4MUONICDATA_D1_PROFILE` for nuclear capture and `G4MUONICDATA_D3_PROFILE` for the muonic
+transitions, `G4MUONICDATA_PROFILE` for both where neither is set, and `parity` for capture where
+none is — and never through another; `cpp/patches/README.md` states what a token no file carries
+does, and what the reserved token `compiled` does.
 An application opts in with one line before its physics list is built,
 `G4HadronicParameters::Instance()->SetEnableMuonicData(true);`, as `cpp/patches/README.md` states.
 `cpp/patches/README.md` states what the patches change, how the dataset is found at run time, and

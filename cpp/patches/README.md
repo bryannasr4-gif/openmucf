@@ -30,13 +30,24 @@ the dataset is registered, the entry under `GEANT4_DATA_DIR` or, when that varia
 names no directory, under the default system paths `G4FindDataDir` searches next. If none resolves a
 directory, the first lookup raises a fatal `G4Exception` naming both `G4MUONICDATA` and
 `GEANT4_DATA_DIR`; if a directory is found but a file in it fails validation, the exception carries
-the reader's error code and line. A patched build looks values up through one profile: the one
-`G4MUONICDATA_PROFILE` names, or `parity` when the variable is unset or empty, and a token no file
-in the directory carries raises a fatal `G4Exception` naming the variable and the profiles present.
+the reader's error code and line. A patched build reads each seam through a profile of its own:
+`G4MUONICDATA_D1_PROFILE` for nuclear capture and `G4MUONICDATA_D3_PROFILE` for the muonic
+transitions, `G4MUONICDATA_PROFILE` for both where neither is set, and, where none is set,
+`parity` for capture and the compiled-in code for the transitions; a variable set to nothing is
+unset, and `compiled` is a reserved token naming a seam with no tables, whose selection reads no
+directory at all. The environment is read where the opt-in is set and not again, so a variable
+exported after that selects nothing. A variable naming a profile that carries no table of its own
+seam raises a fatal `G4Exception` naming that variable, and so does a token no file in the
+directory carries.
 A table the named profile carries no file for is treated like a key it lacks: the function's
-compiled-in code runs. For every table it reads, the glue checks the unit `#UNITS` gives each column
-a lookup reads, and a mismatch, or a `level_energy` table without an `e2` column, raises the fatal
-`G4Exception` `G4MuonicData003` naming the file, the table, the column and the unit.
+compiled-in code runs. So is a nuclide the selected profile has no row for: under every profile
+but `parity` a lookup reads the row keyed by exactly that nuclide, and an element's
+natural-composition row answers only a request that asks for it by name.
+Before any table is selected, the glue checks what every loaded table means — its identity and
+version, its shape, its keys and declared validity, the units of the columns a lookup reads, the
+domain of its values, and, for the two energy tables of one profile, that they cover one set of
+nuclides in one falling order — and refuses the whole dataset with a fatal `G4Exception` naming
+the rule, the file and the table where any of that does not hold.
 `g4-v11.4.2-register-dataset.patch` and
 `g4-v11.5.0.beta-register-dataset.patch` are separate and serve the registered mode only: each
 appends the dataset's `geant4_add_dataset` entry to `G4DatasetDefinitions.cmake`, so a build

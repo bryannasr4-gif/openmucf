@@ -175,13 +175,15 @@ Every gated row is listed below; the table is generated from `validation.csv`.
 
 ## 6. In Geant4
 
-With the opt-in on and `G4MUONICDATA_PROFILE=mudirac130`, a patched Geant4's muonic cascade
+With the opt-in on and the muonic-transition seam reading through `mudirac130` — named by
+`G4MUONICDATA_D3_PROFILE`, or by `G4MUONICDATA_PROFILE`, which names both seams — a patched
+Geant4's muonic cascade
 (`G4EmCaptureCascade`) takes the K energy, and the energy of every shell above it up to the chain's
-last, from these tables (the member's row, else its element's natural-composition row), and keeps
+last, from these tables, from the row keyed by exactly the nuclide it is transporting, and keeps
 its hydrogen-like formula for the shells above those, and its branching and random draws, unchanged.
-`G4MuonicAtomHelper::GetKShellEnergy` reads the natural-composition row, and the form of it that
-also takes the mass number reads the member's row, else its element's natural-composition row, for the muonic atom's mass and for the bound
-energy its decay passes on.
+`G4MuonicAtomHelper::GetKShellEnergy` reads the element's natural-composition row, which it asks
+for by name, and the form of it that also takes the mass number reads the row of that nuclide, for the muonic atom's mass and for the bound
+energy its decay passes on; where these tables carry no such row, the compiled-in code runs.
 The energy the cascade deposits, which Geant4 passes on as the muon's binding energy to decay in
 orbit and to nuclear capture, is the sum of the energies it emitted, and so moves with the table's
 K energy.
