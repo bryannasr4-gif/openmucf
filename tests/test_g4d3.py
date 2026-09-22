@@ -971,8 +971,6 @@ def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     with localcontext() as context:
         context.prec = md._PRECISION
         pb_shift = sum((Decimal(s) for s in pb_line["solver_numeric_shifts_keV"].split(";")), Decimal(0))
-    qualified = [r for r in projection if r["solver_numeric_qualification"].startswith(d3c.QUALIFIED)
-                 and int(r["solver_numeric_qualification"][len(d3c.QUALIFIED):]) >= 2]
     weak = [r for r in validation if r["gated"] == "true" and r["label"] == md.WEAKLY_SENSITIVE]
     pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
         ("gated rows in the projection", path, r"Of the (\d+) gated rows, the shell difference lies", (1,),
@@ -999,11 +997,7 @@ def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("the refined line's shift", path, r"`K1-L3` line by ([0-9.]+) keV against a printed", (1,),
          format(pb_shift, "f")),
         ("the refined line's printed uncertainty", path,
-         r"against a printed uncertainty of ([0-9.]+) keV;", (1,), pb_line["unc_keV"]),
-        ("gated lines meeting the resolution target", path, r"keV; (\d+) of the \d+ gated lines meet", (1,),
-         len(qualified)),
-        ("gated lines under the resolution target", path, r"keV; \d+ of the (\d+) gated lines meet", (1,),
-         len(projection)),
+         r"against a printed uncertainty of ([0-9.]+) keV\.", (1,), pb_line["unc_keV"]),
         ("weakly sensitive rows in the lineage sentence", path,
          r"and the (\d+) weakly sensitive rows are \d+ isotopes", (1,), len(weak)),
         ("isotopes the weakly sensitive rows span", path,

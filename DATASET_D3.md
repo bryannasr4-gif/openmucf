@@ -221,10 +221,7 @@ the rounding bound of the printed anchor, the shift observed when the numerical 
 refined, and no total uncertainty.
 Refining the settings twice (grid step halved, Uehling steps doubled, convergence tolerance
 tightened tenfold each time) moves the Pb-208 `K1-L3` line by 0.208069319 keV against a printed
-uncertainty of 0.090 keV; 19 of the 67 gated lines meet a resolution target of a tenth of their
-printed uncertainty through the second refinement.
-Each `numeric_qualification` column of `shell_projection.csv` states whether the latest shifts
-under refinement lie within that target and shrink, and nothing about the true error.
+uncertainty of 0.090 keV.
 `radius_lineage.csv` records, per compared nuclide, what is known of the experiments behind the
 radius passed to MuDirac and behind the compared line; its state is `UNKNOWN` on every row, because
 the evaluation the radii come from is not in hand, and the 16 weakly sensitive rows are 5
