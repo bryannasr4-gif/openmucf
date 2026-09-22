@@ -7,6 +7,7 @@ Every count here is derived at run time from the committed files; none is writte
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import pathlib
@@ -1184,3 +1185,194 @@ def test_t121_the_implied_numerics_runs_are_four_per_kept_member_plus_two_per_de
     for row in deep:
         assert md.numerics_levels(row) == [*md.NUMERICS_LEVELS_ALL, *md.NUMERICS_LEVELS_DEEP]
     print(f"\nimplied numerics runs: {len(runs)} over {len(kept)} kept members, {len(deep)} deep")
+
+
+# --------------------------------------------------------------------------------------------
+# T-122 -- the numerics tables: exactly the implied runs, every input re-rendered to its digest,
+# level 0 equal to the committed base strings, and the loaders' refusals
+# --------------------------------------------------------------------------------------------
+
+NUMERICS_RUNS = REPO / md.NUMERICS_RUNS_RELPATH
+NUMERICS_STATES = REPO / md.NUMERICS_STATES_RELPATH
+NUMERICS_LINES = REPO / md.NUMERICS_LINES_RELPATH
+
+
+def test_t122_the_run_table_lists_exactly_the_implied_runs_and_every_input_rerenders_to_its_digest():
+    out, kept = _kept()
+    numerics = md.load_numerics_outputs(REPO, out)
+    listed = [(r.run, r.z, r.a, r.kind, r.level) for r in numerics.runs.values()]
+    assert listed == md.expected_numerics_runs(kept)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    inputs = {row.nuclide: row for row in kept}
+    made: dict[str, int] = {}
+    invalid = 0
+    for run in numerics.runs.values():
+        row = inputs[(run.z, run.a)]
+        extra = md.extra_lines(cells, row.nuclide)
+        if run.status == md.INVALID_PERTURBATION_DOMAIN:
+            invalid += 1
+            assert run.kind == "rminus" and not md.rminus_in_domain(row)
+            assert run.run not in numerics.headers and run.run not in numerics.lines
+            continue
+        text = (md.render_input(row, "rminus", extra) if run.kind == "rminus"
+                else md.render_numerics_input(row, run.level, extra))
+        assert hashlib.sha256(text.encode("ascii")).hexdigest() == run.input_sha256, run.run
+        made[f"{run.kind}{run.level}"] = made.get(f"{run.kind}{run.level}", 0) + 1
+    failed = [r.run for r in numerics.runs.values() if r.status == md.RAN and not r.clean]
+    counts = ", ".join(f"{k} {v}" for k, v in sorted(made.items()))
+    print(f"\nnumerics runs {len(numerics.runs)}: {counts}; {md.INVALID_PERTURBATION_DOMAIN} {invalid}; "
+          f"rc != 0 or non-empty .err: {len(failed)} {failed}")
+
+
+def test_t122_every_grid0_state_header_and_line_equals_its_committed_base_row_string_for_string():
+    base_states = {(r["run"], r["state"]): (r["n"], r["l"], r["s"], r["binding_eV"], r["total_eV"])
+                   for _, r in md.read_rows(REPO / md.STATES_RELPATH, md.STATES_COLUMNS)
+                   if r["kind"] == "base"}
+    base_lines: dict[str, list[tuple[str, str, str]]] = {}
+    for _, r in md.read_rows(REPO / md.LINES_RELPATH, md.LINES_COLUMNS):
+        if r["kind"] == "base":
+            base_lines.setdefault(r["run"], []).append((r["line"], r["delta_e_eV"], r["w12_per_s"]))
+    grid0_states = {}
+    for _, r in md.read_rows(NUMERICS_STATES, md.NUMERICS_STATES_COLUMNS):
+        if r["kind"] == "grid" and r["level"] == "0":
+            grid0_states[(r["run"].replace("_grid0", "_base"), r["state"])] = (
+                r["n"], r["l"], r["s"], r["binding_eV"], r["total_eV"])
+    grid0_lines: dict[str, list[tuple[str, str, str]]] = {}
+    for _, r in md.read_rows(NUMERICS_LINES, md.NUMERICS_LINES_COLUMNS):
+        if r["kind"] == "grid" and r["level"] == "0":
+            grid0_lines.setdefault(r["run"].replace("_grid0", "_base"), []).append(
+                (r["line"], r["delta_e_eV"], r["w12_per_s"]))
+    _out, kept = _kept()
+    runs = {md.run_id(row, "base") for row in kept}
+    assert {run for run, _ in grid0_states} == runs and set(grid0_lines) == runs
+    assert grid0_states == {key: value for key, value in base_states.items() if key[0] in runs}
+    assert grid0_lines == {run: lines for run, lines in base_lines.items() if run in runs}
+    print(f"\ngrid0 equals base on {len(runs)} runs: {len(grid0_states)} state headers, "
+          f"{sum(len(v) for v in grid0_lines.values())} lines")
+
+
+def _numerics_root(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A root holding copies of the three numerics tables under data/g4/d3."""
+    d3 = tmp_path / md.D3_RELDIR
+    d3.mkdir(parents=True)
+    for source in (NUMERICS_RUNS, NUMERICS_STATES, NUMERICS_LINES):
+        (d3 / source.name).write_bytes(source.read_bytes())
+    return tmp_path
+
+
+def test_t122_drill_a_missing_run_a_status_against_the_domain_rule_and_a_stray_run_are_refused(tmp_path):
+    out, _kept_rows = _kept()
+    root = _numerics_root(tmp_path)
+    runs_path = root / md.NUMERICS_RUNS_RELPATH
+    states_path = root / md.NUMERICS_STATES_RELPATH
+    md.load_numerics_outputs(root, out)
+    text = runs_path.read_bytes().decode("ascii")
+    lines = _lines(text)
+    runs_path.write_bytes(NL.join([*lines[:1], *lines[2:]]).encode("ascii"))
+    with pytest.raises(md.CellError, match="does not list exactly the implied runs"):
+        md.load_numerics_outputs(root, out)
+    first = lines[1].split(",")
+    assert first[3] == "rminus" and first[5] == md.RAN
+    flipped = ",".join([*first[:5], md.INVALID_PERTURBATION_DOMAIN, "", "", "", ""])
+    runs_path.write_bytes(NL.join([lines[0], flipped, *lines[2:]]).encode("ascii"))
+    with pytest.raises(md.CellError, match="disagrees with the domain rule"):
+        md.load_numerics_outputs(root, out)
+    runs_path.write_bytes(text.encode("ascii"))
+    states = _lines(states_path.read_bytes().decode("ascii"))
+    last = states[-2]
+    level = last.split(",")[4]
+    stray = last.replace(f"_grid{level},", "_grid9,", 1).replace(f",grid,{level},", ",grid,9,", 1)
+    assert stray != last and "_grid9," in stray
+    states_path.write_bytes(NL.join([*states[:-1], stray, ""]).encode("ascii"))
+    with pytest.raises(md.CellError, match="does not list as made"):
+        md.load_numerics_outputs(root, out)
+
+
+def _one_row(text: str, edit) -> str:
+    """The header of ``text`` and its first row after ``edit``."""
+    lines = _lines(text)
+    return lines[0] + NL + edit(lines[1]) + NL
+
+
+def _cell(index: int, new: str):
+    def edit(row: str) -> str:
+        cells = row.split(",")
+        cells[index] = new
+        return ",".join(cells)
+    return edit
+
+
+def _not_made(row: str) -> list[str]:
+    return [*row.split(",")[:5], md.INVALID_PERTURBATION_DOMAIN, "", "", "", ""]
+
+
+NUMERICS_RUNS_DRILLS = [
+    ("a carriage return", lambda t: t.replace(NL, "\r" + NL, 1), md.CarriageReturnError, "contains CR"),
+    ("a non-ASCII byte", lambda t: t.replace(",rminus,", ",rminus·", 1), md.NonAsciiError,
+     "outside US-ASCII"),
+    ("a renamed column", lambda t: _replace_once(t, "wall_s,input_sha256", "wall,input_sha256"),
+     md.HeaderError, "header is"),
+    ("an unknown kind", lambda t: _one_row(t, _cell(3, "rplus")), md.CellError, "kind"),
+    ("a level that is not a count", lambda t: _one_row(t, _cell(4, "x")), md.CellError,
+     "level must be a count"),
+    ("an rminus run at level 1", lambda t: _one_row(t, _cell(4, "1")), md.CellError,
+     "an rminus run is level 0"),
+    ("a run not naming its kind", lambda t: _one_row(t, _cell(3, "grid")), md.CellError, "does not name"),
+    ("an unknown status", lambda t: _one_row(t, _cell(5, "OK")), md.CellError, "status"),
+    ("a signed rc", lambda t: _one_row(t, _cell(6, "+0")), md.CellError, "rc and err_bytes must be integers"),
+    ("a signed wall time", lambda t: _one_row(t, _cell(8, "-1.0")), md.CellError,
+     "wall_s must be a printed decimal"),
+    ("a short digest", lambda t: _one_row(t, lambda row: row[:-1]), md.CellError,
+     "input_sha256 must be 64 hex"),
+    ("a run not made that carries an rc",
+     lambda t: _one_row(t, lambda row: ",".join([*_not_made(row)[:6], "0", "", "", ""])),
+     md.CellError, "carries no rc"),
+    ("a grid run not made",
+     lambda t: _one_row(t, lambda row: ",".join(
+         _not_made(row.replace("_rminus", "_grid0").replace(",rminus,", ",grid,")))),
+     md.CellError, "only an rminus run"),
+    ("a duplicated run", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate run"),
+    ("rows out of order", lambda t: _swap_lines(t, 1), md.OrderError, "ordered by (Z, A, kind, level)"),
+    ("no rows", lambda t: _lines(t)[0] + NL, md.EmptyError, "carries no rows"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", NUMERICS_RUNS_DRILLS,
+                         ids=[d[0] for d in NUMERICS_RUNS_DRILLS])
+def test_t122_drill_each_run_table_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, NUMERICS_RUNS, mutate, error, message, md.load_numerics_runs)
+
+
+NUMERICS_STATES_DRILLS = [
+    ("a state that is not an orbit", lambda t: _one_row(t, _cell(5, "K")), md.CellError, "IUPAC orbit"),
+    ("an n that is not an integer", lambda t: _one_row(t, _cell(6, "1.0")), md.CellError,
+     "n must be an integer"),
+    ("a binding that is not printed", lambda t: _one_row(t, _cell(9, "x")), md.CellError,
+     "binding_eV must be"),
+    ("a duplicated state", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate state"),
+    ("rows out of order", lambda t: _swap_lines(t, 1), md.OrderError,
+     "ordered by (Z, A, kind, level, orbit)"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", NUMERICS_STATES_DRILLS,
+                         ids=[d[0] for d in NUMERICS_STATES_DRILLS])
+def test_t122_drill_each_state_table_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, NUMERICS_STATES, mutate, error, message, md.load_numerics_states)
+
+
+NUMERICS_LINES_DRILLS = [
+    ("a line that is not orbit-orbit", lambda t: _one_row(t, _cell(5, "K1L2")), md.CellError, "orbit-orbit"),
+    ("a line energy at five decimals", lambda t: _one_row(t, _cell(6, "1.12345")), md.CellError,
+     "six decimals"),
+    ("a rate that is not a decimal", lambda t: _one_row(t, _cell(7, "1e5")), md.CellError, "w12_per_s"),
+    ("a duplicated line", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate line"),
+    ("runs out of order", lambda t: NL.join([_lines(t)[0], _lines(t)[-2], *_lines(t)[1:-2], ""]),
+     md.OrderError, "ordered by (Z, A, kind, level)"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", NUMERICS_LINES_DRILLS,
+                         ids=[d[0] for d in NUMERICS_LINES_DRILLS])
+def test_t122_drill_each_line_table_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, NUMERICS_LINES, mutate, error, message, md.load_numerics_lines)
