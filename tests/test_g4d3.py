@@ -7,15 +7,18 @@ Every count here is derived at run time from the committed files; none is writte
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 import pathlib
 import re
+from dataclasses import replace
 from decimal import Decimal, localcontext
 
 import pytest
 import test_g4parity as parity
 
+from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import mudirac130 as md
 
@@ -921,7 +924,7 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("the tolerance factor", path, r"The tolerance is (\d+) times", (1,), md.TOL_FACTOR),
         ("the model's own uncertainty", path, r"is set to (\d+) by decision", (1,), md.SIGMA_CALC),
         ("the size floor", path, r"multiplied by (\d+\.\d+) \(the `r101` runs", (1,), str(md.SIZE_FLOOR)),
-        ("gated rows", path, r"Of the (\d+) gated rows", (1,), len(gated)),
+        ("gated rows", path, r"Of the (\d+) gated rows, \d+ lie within tolerance", (1,), len(gated)),
         ("gated rows within tolerance", path, r"gated rows, (\d+) lie within tolerance", (1,), len(within)),
         ("gated rows outside tolerance", path, r"lie within tolerance and (\d+) outside it", (1,),
          len(gated) - len(within)),
@@ -940,7 +943,78 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     for number, line in enumerate(table, start=1):
         pattern, groups = _row_pattern(line)
         pins.append((f"comparison table row {number}", path, pattern, groups, None))
+    pins.extend(contract_pins())
     return pins
+
+
+def _committed_rows(relpath: str) -> list[dict[str, str]]:
+    text = (REPO / relpath).read_bytes().decode("ascii")
+    assert "\r" not in text
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """The pins of the section on the energy the cascade receives: every number it states, read
+    from `shell_projection.csv`, `incompatible_groups.csv`, `validation.csv` and `radius_lineage.csv`,
+    and one pin per row of the generated groups table."""
+    from openmucf.g4 import d3_contract as d3c
+
+    path = "DATASET_D3.md"
+    projection = _committed_rows(d3c.PROJECTION_RELPATH)
+    groups = _committed_rows(d3c.GROUPS_RELPATH)
+    validation = _committed_rows(md.VALIDATION_RELPATH)
+    lineage = d3c.load_radius_lineage(REPO / d3c.LINEAGE_RELPATH)
+    assert all(row.dependency_state == d3c.UNKNOWN for row in lineage)
+    widest = max(groups, key=lambda g: Decimal(g["gap_keV"]))
+    pb_line = next(r for r in projection
+                   if (r["Z"], r["A"], r["quantity"]) == (widest["Z"], widest["A"], "K1-L3"))
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        pb_shift = sum((Decimal(s) for s in pb_line["solver_numeric_shifts_keV"].split(";")), Decimal(0))
+    weak = [r for r in validation if r["gated"] == "true" and r["label"] == md.WEAKLY_SENSITIVE]
+    pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
+        ("gated rows in the projection", path, r"Of the (\d+) gated rows, the shell difference lies", (1,),
+         len(projection)),
+        ("rows whose shell difference lies within the band", path,
+         r"the shell difference lies within the band for (\d+),", (1,),
+         sum(r["consumer_within"] == "true" for r in projection)),
+        ("rows whose solver line lies within the band", path,
+         r"lies within the band for \d+, the solver line for (\d+),", (1,),
+         sum(r["solver_within"] == "true" for r in projection)),
+        ("rows whose unpatched cascade lies within the band", path,
+         r"the solver line for \d+, the unpatched cascade for (\d+),", (1,),
+         sum(r["stock_within"] == "true" for r in projection)),
+        ("rows whose shell difference is closer than the unpatched cascade", path,
+         r"closer than the unpatched cascade for (\d+)\.", (1,),
+         sum(r["consumer_closer_than_stock"] == "true" for r in projection)),
+        ("groups with an empty intersection", path,
+         r"intersects the lines' bands: (\d+) of the \d+ such groups", (1,),
+         sum(g["empty"] == "true" for g in groups)),
+        ("multi-line groups", path, r"bands: \d+ of the (\d+) such groups", (1,), len(groups)),
+        ("the widest group's mass number", path, r"the widest, Pb-(\d+) K–L, by", (1,), widest["A"]),
+        ("the widest gap", path, r"Pb-\d+ K–L, by ([0-9.]+) keV", (1,), widest["gap_keV"]),
+        ("the refined line's mass number", path, r"moves the Pb-(\d+) `K1-L3` line by", (1,), pb_line["A"]),
+        ("the refined line's shift", path, r"`K1-L3` line by ([0-9.]+) keV against a printed", (1,),
+         format(pb_shift, "f")),
+        ("the refined line's printed uncertainty", path,
+         r"against a printed uncertainty of ([0-9.]+) keV\.", (1,), pb_line["unc_keV"]),
+        ("weakly sensitive rows in the lineage sentence", path,
+         r"and the (\d+) weakly sensitive rows are \d+ isotopes", (1,), len(weak)),
+        ("isotopes the weakly sensitive rows span", path,
+         r"weakly sensitive rows are (\d+) isotopes of palladium", (1,),
+         len({(r["Z"], r["A"]) for r in weak})),
+    ]
+    for number, line in enumerate(d3c.render_groups_table(groups).splitlines()[2:], start=1):
+        pattern, row_groups = _row_pattern(line)
+        pins.append((f"groups table row {number}", path, pattern, row_groups, None))
+    return pins
+
+
+def test_t107_the_groups_table_is_the_generated_block():
+    from openmucf.g4 import d3_contract as d3c
+
+    block = d3c.render_groups_table(_committed_rows(d3c.GROUPS_RELPATH))
+    assert _document_text().count(block) == 1
 
 
 def test_t107_the_comparison_table_is_the_generated_block():
@@ -974,9 +1048,11 @@ def test_t107_every_pin_matches_once_and_states_its_value():
 
 def test_t107_drill_a_changed_count_and_a_changed_table_cell_are_refused():
     text = _document_text()
-    gated = sum(row["gated"] == "true" for row in _committed_validation())
-    stated = f"Of the {gated} gated rows"
-    mutated = _replace_once(text, stated, f"Of the {gated + 1} gated rows")
+    validation = _committed_validation()
+    gated = sum(row["gated"] == "true" for row in validation)
+    within = sum(row["gated"] == "true" and row["within"] == "true" for row in validation)
+    stated = f"Of the {gated} gated rows, {within} lie"
+    mutated = _replace_once(text, stated, f"Of the {gated + 1} gated rows, {within} lie")
     assert any(problem.startswith("gated rows: states") for problem in _pin_problems(mutated))
     block = md.render_validation_table(_committed_validation())
     row = block.splitlines()[2]
@@ -1090,3 +1166,859 @@ GEANT4_LEVELS_DRILLS = [
                          ids=[d[0] for d in GEANT4_LEVELS_DRILLS])
 def test_t110_drill_each_loader_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
     _drill(tmp_path, GEANT4_LEVELS, mutate, error, message, md.load_geant4_levels)
+
+
+# --------------------------------------------------------------------------------------------
+# T-121 -- the runs made beside the committed ones: how their inputs are rendered
+# --------------------------------------------------------------------------------------------
+
+
+def _kept() -> tuple[md.Outputs, list[md.InputRow]]:
+    out = md.load_outputs(REPO)
+    return out, md.kept_members(out)
+
+
+def test_t121_the_level_zero_input_is_the_base_input_plus_the_three_defaults_each_set_once():
+    """MuDirac 1.3.0 documents the three keywords' defaults in its lib/config.cpp: energy_tol 1e-7
+    (line 42), loggrid_step 0.005 (line 46), uehling_steps 100 (line 62); the base renderer emits
+    none of them, so the level-0 input is the base input with each set once at its default."""
+    _out, kept = _kept()
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    defaults = "loggrid_step: 0.005\nuehling_steps: 100\nenergy_tol: 1e-07\n"
+    for row in kept:
+        extra = md.extra_lines(cells, row.nuclide)
+        base = md.render_input(row, "base", extra)
+        assert not any(f"{key}:" in base for key in md.NUMERICS_KEYS)
+        text = md.render_numerics_input(row, 0, extra)
+        assert text == base + defaults
+        keys = [line.split(":")[0] for line in text.splitlines()]
+        assert [keys.count(key) for key in md.NUMERICS_KEYS] == [1, 1, 1]
+    print(f"\nlevel-0 inputs rendered for {len(kept)} kept members")
+
+
+def test_t121_each_level_halves_the_grid_step_doubles_the_uehling_steps_and_tightens_the_tolerance_tenfold():
+    def values(level: int) -> tuple[float, int, float]:
+        step, steps, tol = (line.split(": ")[1] for line in md.numerics_settings(level))
+        return float(step), int(steps), float(tol)
+
+    for level in (*md.NUMERICS_LEVELS_ALL, *md.NUMERICS_LEVELS_DEEP)[1:]:
+        step, steps, tol = values(level)
+        step0, steps0, tol0 = values(level - 1)
+        assert step == step0 / 2 and steps == 2 * steps0
+        assert abs(tol / tol0 - 0.1) < 1e-12
+
+
+def test_t121_render_numerics_input_refuses_to_set_a_key_the_base_input_already_sets(monkeypatch):
+    _out, kept = _kept()
+    row = kept[0]
+    base = md.render_input
+    monkeypatch.setattr(md, "render_input", lambda r, k, e: base(r, k, e) + "energy_tol: 1\n")
+    with pytest.raises(ValueError, match="already sets energy_tol"):
+        md.render_numerics_input(row, 0, [])
+
+
+def test_t121_the_rminus_radius_moves_the_rms_radius_down_by_its_uncertainty_and_nothing_else_moves():
+    _out, kept = _kept()
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    for row in kept:
+        rms = float(row.radius_fm) / md.SPHERE_FACTOR
+        sigma = float(row.sigma_rms_fm)
+        minus, plus = (float(md.run_radius(row, kind)) / md.SPHERE_FACTOR for kind in ("rminus", "rsig"))
+        assert abs((rms - minus) - sigma) <= 1e-12 * rms and abs((plus - rms) - sigma) <= 1e-12 * rms
+        extra = md.extra_lines(cells, row.nuclide)
+        base, moved = (md.render_input(row, kind, extra).splitlines() for kind in ("base", "rminus"))
+        differing = [(b, m) for b, m in zip(base, moved, strict=True) if b != m]
+        assert differing == [(f"radius: {row.radius_fm}", f"radius: {md.run_radius(row, 'rminus')}")]
+        assert md.numerics_run_id(row, "rminus", 0).endswith(f"{row.a}_rminus")
+        assert md.numerics_run_id(row, "grid", 2).endswith(f"{row.a}_grid2")
+
+
+def test_t121_the_domain_rule_refuses_a_nonpositive_rms_and_a_moved_radius_whose_fermi_c_is_not_real():
+    _out, kept = _kept()
+    inputs = {row.nuclide: row for row in kept}
+    lead = inputs[(82, 208)]
+    assert md.rminus_in_domain(lead)
+    assert not md.rminus_in_domain(replace(lead, sigma_rms_fm=lead.rms_fm))
+    threshold = md.fermi2_c_threshold(lead.fermi_t_fm)
+    near = replace(lead, radius_fm=repr(threshold * 1.001), sigma_rms_fm=repr(threshold * 0.01))
+    assert float(near.radius_fm) / md.SPHERE_FACTOR - float(near.sigma_rms_fm) > 0
+    assert not md.fermi2_c_not_real(near) and not md.rminus_in_domain(near)
+    outside = [row for row in kept if not md.rminus_in_domain(row)]
+    print(f"\nkept members {len(kept)}; rminus outside the domain: {len(outside)} "
+          + " ".join(md.run_id(row, 'base')[:-len('_base')] for row in outside))
+
+
+def test_t121_the_implied_numerics_runs_are_four_per_kept_member_plus_two_per_deep_nuclide():
+    _out, kept = _kept()
+    runs = md.expected_numerics_runs(kept)
+    deep = [row for row in kept if row.nuclide in md.NUMERICS_DEEP_NUCLIDES]
+    assert len(deep) == len(md.NUMERICS_DEEP_NUCLIDES)
+    per_member, per_deep = 1 + len(md.NUMERICS_LEVELS_ALL), len(md.NUMERICS_LEVELS_DEEP)
+    assert len(runs) == len(kept) * per_member + len(deep) * per_deep
+    assert len({run for run, *_ in runs}) == len(runs)
+    for row in deep:
+        assert md.numerics_levels(row) == [*md.NUMERICS_LEVELS_ALL, *md.NUMERICS_LEVELS_DEEP]
+    print(f"\nimplied numerics runs: {len(runs)} over {len(kept)} kept members, {len(deep)} deep")
+
+
+# --------------------------------------------------------------------------------------------
+# T-122 -- the numerics tables: exactly the implied runs, every input re-rendered to its digest,
+# level 0 equal to the committed base strings, and the loaders' refusals
+# --------------------------------------------------------------------------------------------
+
+NUMERICS_RUNS = REPO / md.NUMERICS_RUNS_RELPATH
+NUMERICS_STATES = REPO / md.NUMERICS_STATES_RELPATH
+NUMERICS_LINES = REPO / md.NUMERICS_LINES_RELPATH
+
+
+def test_t122_the_run_table_lists_exactly_the_implied_runs_and_every_input_rerenders_to_its_digest():
+    out, kept = _kept()
+    numerics = md.load_numerics_outputs(REPO, out)
+    listed = [(r.run, r.z, r.a, r.kind, r.level) for r in numerics.runs.values()]
+    assert listed == md.expected_numerics_runs(kept)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    inputs = {row.nuclide: row for row in kept}
+    made: dict[str, int] = {}
+    invalid = 0
+    for run in numerics.runs.values():
+        row = inputs[(run.z, run.a)]
+        extra = md.extra_lines(cells, row.nuclide)
+        if run.status == md.INVALID_PERTURBATION_DOMAIN:
+            invalid += 1
+            assert run.kind == "rminus" and not md.rminus_in_domain(row)
+            assert run.run not in numerics.headers and run.run not in numerics.lines
+            continue
+        text = (md.render_input(row, "rminus", extra) if run.kind == "rminus"
+                else md.render_numerics_input(row, run.level, extra))
+        assert hashlib.sha256(text.encode("ascii")).hexdigest() == run.input_sha256, run.run
+        made[f"{run.kind}{run.level}"] = made.get(f"{run.kind}{run.level}", 0) + 1
+    failed = [r.run for r in numerics.runs.values() if r.status == md.RAN and not r.clean]
+    counts = ", ".join(f"{k} {v}" for k, v in sorted(made.items()))
+    print(f"\nnumerics runs {len(numerics.runs)}: {counts}; {md.INVALID_PERTURBATION_DOMAIN} {invalid}; "
+          f"rc != 0 or non-empty .err: {len(failed)} {failed}")
+
+
+def test_t122_every_grid0_state_header_and_line_equals_its_committed_base_row_string_for_string():
+    base_states = {(r["run"], r["state"]): (r["n"], r["l"], r["s"], r["binding_eV"], r["total_eV"])
+                   for _, r in md.read_rows(REPO / md.STATES_RELPATH, md.STATES_COLUMNS)
+                   if r["kind"] == "base"}
+    base_lines: dict[str, list[tuple[str, str, str]]] = {}
+    for _, r in md.read_rows(REPO / md.LINES_RELPATH, md.LINES_COLUMNS):
+        if r["kind"] == "base":
+            base_lines.setdefault(r["run"], []).append((r["line"], r["delta_e_eV"], r["w12_per_s"]))
+    grid0_states = {}
+    for _, r in md.read_rows(NUMERICS_STATES, md.NUMERICS_STATES_COLUMNS):
+        if r["kind"] == "grid" and r["level"] == "0":
+            grid0_states[(r["run"].replace("_grid0", "_base"), r["state"])] = (
+                r["n"], r["l"], r["s"], r["binding_eV"], r["total_eV"])
+    grid0_lines: dict[str, list[tuple[str, str, str]]] = {}
+    for _, r in md.read_rows(NUMERICS_LINES, md.NUMERICS_LINES_COLUMNS):
+        if r["kind"] == "grid" and r["level"] == "0":
+            grid0_lines.setdefault(r["run"].replace("_grid0", "_base"), []).append(
+                (r["line"], r["delta_e_eV"], r["w12_per_s"]))
+    _out, kept = _kept()
+    runs = {md.run_id(row, "base") for row in kept}
+    assert {run for run, _ in grid0_states} == runs and set(grid0_lines) == runs
+    assert grid0_states == {key: value for key, value in base_states.items() if key[0] in runs}
+    assert grid0_lines == {run: lines for run, lines in base_lines.items() if run in runs}
+    print(f"\ngrid0 equals base on {len(runs)} runs: {len(grid0_states)} state headers, "
+          f"{sum(len(v) for v in grid0_lines.values())} lines")
+
+
+def _numerics_root(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A root holding copies of the three numerics tables under data/g4/d3."""
+    d3 = tmp_path / md.D3_RELDIR
+    d3.mkdir(parents=True)
+    for source in (NUMERICS_RUNS, NUMERICS_STATES, NUMERICS_LINES):
+        (d3 / source.name).write_bytes(source.read_bytes())
+    return tmp_path
+
+
+def test_t122_drill_a_missing_run_a_status_against_the_domain_rule_and_a_stray_run_are_refused(tmp_path):
+    out, _kept_rows = _kept()
+    root = _numerics_root(tmp_path)
+    runs_path = root / md.NUMERICS_RUNS_RELPATH
+    states_path = root / md.NUMERICS_STATES_RELPATH
+    md.load_numerics_outputs(root, out)
+    text = runs_path.read_bytes().decode("ascii")
+    lines = _lines(text)
+    runs_path.write_bytes(NL.join([*lines[:1], *lines[2:]]).encode("ascii"))
+    with pytest.raises(md.CellError, match="does not list exactly the implied runs"):
+        md.load_numerics_outputs(root, out)
+    first = lines[1].split(",")
+    assert first[3] == "rminus" and first[5] == md.RAN
+    flipped = ",".join([*first[:5], md.INVALID_PERTURBATION_DOMAIN, "", "", "", ""])
+    runs_path.write_bytes(NL.join([lines[0], flipped, *lines[2:]]).encode("ascii"))
+    with pytest.raises(md.CellError, match="disagrees with the domain rule"):
+        md.load_numerics_outputs(root, out)
+    runs_path.write_bytes(text.encode("ascii"))
+    states = _lines(states_path.read_bytes().decode("ascii"))
+    last = states[-2]
+    level = last.split(",")[4]
+    stray = last.replace(f"_grid{level},", "_grid9,", 1).replace(f",grid,{level},", ",grid,9,", 1)
+    assert stray != last and "_grid9," in stray
+    states_path.write_bytes(NL.join([*states[:-1], stray, ""]).encode("ascii"))
+    with pytest.raises(md.CellError, match="does not list as made"):
+        md.load_numerics_outputs(root, out)
+
+
+def _one_row(text: str, edit) -> str:
+    """The header of ``text`` and its first row after ``edit``."""
+    lines = _lines(text)
+    return lines[0] + NL + edit(lines[1]) + NL
+
+
+def _cell(index: int, new: str):
+    def edit(row: str) -> str:
+        cells = row.split(",")
+        cells[index] = new
+        return ",".join(cells)
+    return edit
+
+
+def _not_made(row: str) -> list[str]:
+    return [*row.split(",")[:5], md.INVALID_PERTURBATION_DOMAIN, "", "", "", ""]
+
+
+NUMERICS_RUNS_DRILLS = [
+    ("a carriage return", lambda t: t.replace(NL, "\r" + NL, 1), md.CarriageReturnError, "contains CR"),
+    ("a non-ASCII byte", lambda t: t.replace(",rminus,", ",rminus·", 1), md.NonAsciiError,
+     "outside US-ASCII"),
+    ("a renamed column", lambda t: _replace_once(t, "wall_s,input_sha256", "wall,input_sha256"),
+     md.HeaderError, "header is"),
+    ("an unknown kind", lambda t: _one_row(t, _cell(3, "rplus")), md.CellError, "kind"),
+    ("a level that is not a count", lambda t: _one_row(t, _cell(4, "x")), md.CellError,
+     "level must be a count"),
+    ("an rminus run at level 1", lambda t: _one_row(t, _cell(4, "1")), md.CellError,
+     "an rminus run is level 0"),
+    ("a run not naming its kind", lambda t: _one_row(t, _cell(3, "grid")), md.CellError, "does not name"),
+    ("an unknown status", lambda t: _one_row(t, _cell(5, "OK")), md.CellError, "status"),
+    ("a signed rc", lambda t: _one_row(t, _cell(6, "+0")), md.CellError, "rc and err_bytes must be integers"),
+    ("a signed wall time", lambda t: _one_row(t, _cell(8, "-1.0")), md.CellError,
+     "wall_s must be a printed decimal"),
+    ("a short digest", lambda t: _one_row(t, lambda row: row[:-1]), md.CellError,
+     "input_sha256 must be 64 hex"),
+    ("a run not made that carries an rc",
+     lambda t: _one_row(t, lambda row: ",".join([*_not_made(row)[:6], "0", "", "", ""])),
+     md.CellError, "carries no rc"),
+    ("a grid run not made",
+     lambda t: _one_row(t, lambda row: ",".join(
+         _not_made(row.replace("_rminus", "_grid0").replace(",rminus,", ",grid,")))),
+     md.CellError, "only an rminus run"),
+    ("a duplicated run", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate run"),
+    ("rows out of order", lambda t: _swap_lines(t, 1), md.OrderError, "ordered by (Z, A, kind, level)"),
+    ("no rows", lambda t: _lines(t)[0] + NL, md.EmptyError, "carries no rows"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", NUMERICS_RUNS_DRILLS,
+                         ids=[d[0] for d in NUMERICS_RUNS_DRILLS])
+def test_t122_drill_each_run_table_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, NUMERICS_RUNS, mutate, error, message, md.load_numerics_runs)
+
+
+NUMERICS_STATES_DRILLS = [
+    ("a state that is not an orbit", lambda t: _one_row(t, _cell(5, "K")), md.CellError, "IUPAC orbit"),
+    ("an n that is not an integer", lambda t: _one_row(t, _cell(6, "1.0")), md.CellError,
+     "n must be an integer"),
+    ("a binding that is not printed", lambda t: _one_row(t, _cell(9, "x")), md.CellError,
+     "binding_eV must be"),
+    ("a duplicated state", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate state"),
+    ("rows out of order", lambda t: _swap_lines(t, 1), md.OrderError,
+     "ordered by (Z, A, kind, level, orbit)"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", NUMERICS_STATES_DRILLS,
+                         ids=[d[0] for d in NUMERICS_STATES_DRILLS])
+def test_t122_drill_each_state_table_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, NUMERICS_STATES, mutate, error, message, md.load_numerics_states)
+
+
+NUMERICS_LINES_DRILLS = [
+    ("a line that is not orbit-orbit", lambda t: _one_row(t, _cell(5, "K1L2")), md.CellError, "orbit-orbit"),
+    ("a line energy at five decimals", lambda t: _one_row(t, _cell(6, "1.12345")), md.CellError,
+     "six decimals"),
+    ("a rate that is not a decimal", lambda t: _one_row(t, _cell(7, "1e5")), md.CellError, "w12_per_s"),
+    ("a duplicated line", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate line"),
+    ("runs out of order", lambda t: NL.join([_lines(t)[0], _lines(t)[-2], *_lines(t)[1:-2], ""]),
+     md.OrderError, "ordered by (Z, A, kind, level)"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", NUMERICS_LINES_DRILLS,
+                         ids=[d[0] for d in NUMERICS_LINES_DRILLS])
+def test_t122_drill_each_line_table_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _drill(tmp_path, NUMERICS_LINES, mutate, error, message, md.load_numerics_lines)
+
+
+# --------------------------------------------------------------------------------------------
+# T-123 -- the shell projection: every gated line beside the shell difference the cascade emits,
+# re-derived here from the tables' text and the committed files, with the counts pinned
+# --------------------------------------------------------------------------------------------
+
+PROJECTION = REPO / d3c.PROJECTION_RELPATH
+GROUPS = REPO / d3c.GROUPS_RELPATH
+SHELL_OF = {letter: n for n, letter in enumerate("KLMNOPQRSTUVWXYZ", start=1)}
+
+
+def _committed_csv(path: pathlib.Path) -> list[dict[str, str]]:
+    text = path.read_bytes().decode("ascii")
+    assert "\r" not in text
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def _table_cells(path: pathlib.Path) -> dict[tuple[int, int], list[str]]:
+    """The record cells of a .g4dat as text, by this test's own reading of the file."""
+    out = {}
+    for line in path.read_bytes().decode("ascii").split(NL):
+        if line.strip() and not line.startswith("#"):
+            fields = line.split()
+            out[(int(fields[0]), int(fields[1]))] = fields[2:]
+    return out
+
+
+def _shell_text(kshell, levels, key: tuple[int, int], n: int) -> str:
+    return kshell[key][0] if n == 1 else levels[key][n - 2]
+
+
+def _numerics_by_level(row: md.InputRow, numerics: md.NumericsOutputs):
+    """Per refinement level of ``row``: (clean, bindings or None, printed lines or None)."""
+    out = {}
+    for level in md.numerics_levels(row):
+        run = numerics.runs[md.numerics_run_id(row, "grid", level)]
+        bindings = lines = None
+        if run.clean:
+            try:
+                bindings = md.derive_bindings(run.run, numerics.headers.get(run.run, {}),
+                                              numerics.lines.get(run.run, {}))
+                lines = numerics.lines[run.run]
+            except md.DerivationError:
+                bindings = lines = None
+        out[level] = (run.clean, bindings, lines)
+    return out
+
+
+def _qualify(
+    values: dict[int, Decimal], failed: bool, target: Decimal, allowance: Decimal
+) -> tuple[str, str]:
+    """The rule as this test states it: (shifts text, token)."""
+    levels = sorted(values)
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        observed = [values[b] - values[a] for a, b in zip(levels, levels[1:], strict=False)]
+    text = ";".join(format(s, "f") for s in observed)
+    if len(levels) < 3:
+        return text, "INSUFFICIENT_LEVELS"
+    if failed:
+        return text, "RUN_FAILED"
+    older, newer = observed[-2], observed[-1]
+    ok = abs(older) <= target + allowance and abs(newer) <= target + allowance and abs(newer) <= abs(older)
+    return text, f"{'QUALIFIED_AT_LEVEL_' if ok else 'NOT_QUALIFIED_THROUGH_LEVEL_'}{levels[-1]}"
+
+
+def test_t123_the_projection_equals_an_independent_rederivation_from_the_tables_text():
+    out = md.load_outputs(REPO)
+    numerics = md.load_numerics_outputs(REPO, out)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    stock = md.load_geant4_levels(GEANT4_LEVELS)
+    kshell = _table_cells(D3DIR / "d3_kshell.mudirac130.g4dat")
+    levels = _table_cells(D3DIR / "d3_levels.mudirac130.g4dat")
+    inputs = {row.nuclide: row for row in out.inputs}
+    committed = _committed_csv(PROJECTION)
+    gated = [cell for cell in cells if cell.gated]
+    assert list(committed[0]) == list(d3c.PROJECTION_COLUMNS)
+    assert len(committed) == len(gated)
+    assert md.TOL_FACTOR == 3 and md.SIGMA_CALC == 0
+    path = d3c.path_lengths()
+    assert path["K1"] == md.N_MAX - 1
+    half_line = md.LINE_HALF_UNIT / 1000
+    refinements = {}
+    for cell, row in zip(gated, committed, strict=True):
+        key = cell.nuclide
+        member = inputs[key]
+        lower_n, upper_n = (SHELL_OF[orbit[0]] for orbit in cell.quantity.split("-"))
+        assert (row["source"], row["Z"], row["A"], row["transition"], row["quantity"]) == (
+            cell.source, str(cell.z), str(cell.a), cell.transition, cell.quantity)
+        assert row["consumer_quantity"] == "shell_difference"
+        assert (row["initial_n"], row["final_n"]) == (str(upper_n), str(lower_n))
+        assert (row["measured_keV"], row["unc_keV"], row["locator"], row["copy_read"]) == (
+            cell.value_kev, cell.unc_kev, cell.locator, cell.copy_read)
+        with localcontext() as context:
+            context.prec = md._PRECISION
+            measured = Decimal(cell.value_kev)
+            tol = 3 * Decimal(cell.unc_kev)
+            solver = Decimal(out.lines[md.run_id(member, "base")][cell.quantity]) / 1000
+            consumer = (Decimal(_shell_text(kshell, levels, key, lower_n))
+                        - Decimal(_shell_text(kshell, levels, key, upper_n)))
+            photon = stock[key][lower_n - 1] - stock[key][upper_n - 1]
+            with localcontext() as wide:
+                wide.prec = 1000
+                stock_kev = (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+            assert Decimal(row["tol_keV"]) == tol
+            assert Decimal(row["solver_keV"]) == solver
+            assert Decimal(row["consumer_keV"]) == consumer
+            assert Decimal(row["stock_keV"]) == stock_kev
+            for name, value in (("solver", solver), ("consumer", consumer), ("stock", stock_kev)):
+                assert Decimal(row[f"{name}_residual_keV"]) == value - measured
+                assert row[f"{name}_within"] == ("true" if abs(value - measured) <= tol else "false")
+            assert row["consumer_closer_than_stock"] == (
+                "true" if abs(consumer - measured) < abs(stock_kev - measured) else "false")
+            assert Decimal(row["representation_error_keV"]) == consumer - solver
+            # the observed stability, from the numerics tables and the rule as stated above
+            if key not in refinements:
+                refinements[key] = _numerics_by_level(member, numerics)
+            by_level = refinements[key]
+            failed = any(not clean for clean, _, _ in by_level.values())
+            solver_values = {level: Decimal(lines[cell.quantity]) / 1000
+                             for level, (_, _, lines) in by_level.items() if lines and cell.quantity in lines}
+            sigmas = [Decimal(c.unc_kev) for c in gated if c.nuclide == key and c.quantity == cell.quantity]
+            solver_target = Decimal("0.1") * min(sigmas)
+            assert Decimal(row["solver_numeric_target_keV"]) == solver_target
+            text, token = _qualify(solver_values, failed, solver_target, 2 * half_line)
+            assert (row["solver_numeric_shifts_keV"], row["solver_numeric_qualification"]) == (
+                text, token), row
+            anchor_header = out.headers[md.run_id(member, "base")][md.orbit(md.N_MAX, True)]
+            anchor_bound = md.half_unit_6sig(anchor_header) / 1000
+            consumer_target = Decimal(0)
+            consumer_allowance = Decimal(0)
+            consumer_values: dict[int, Decimal] = {}
+            for level, (_, bindings, _) in by_level.items():
+                if bindings is not None:
+                    k, means = md.quantities(bindings)
+                    consumer_values[level] = (k if lower_n == 1 else means[lower_n - 2]) - means[upper_n - 2]
+            for n in (lower_n, upper_n):
+                central = Decimal(_shell_text(kshell, levels, key, n))
+                consumer_target += max(Decimal("1e-6"), Decimal("1e-6") * abs(central))
+                if n == 1:
+                    line_bound = path["K1"] * half_line
+                else:
+                    ell = n - 1
+                    weighted = 2 * ell * path[md.orbit(n, False)] + (2 * ell + 2) * path[md.orbit(n, True)]
+                    line_bound = Decimal(weighted) / (4 * ell + 2) * half_line
+                consumer_allowance += 2 * (line_bound + anchor_bound)
+            assert Decimal(row["consumer_numeric_target_keV"]) == consumer_target
+            text, token = _qualify(consumer_values, failed, consumer_target, consumer_allowance)
+            assert (row["consumer_numeric_shifts_keV"], row["consumer_numeric_qualification"]) == (
+                text, token), row
+    assert PROJECTION.read_bytes() == d3c.render_projection(REPO)
+
+
+def _counts(rows: list[dict[str, str]]) -> dict[str, int]:
+    return {
+        "gated": len(rows),
+        "solver_within": sum(r["solver_within"] == "true" for r in rows),
+        "consumer_within": sum(r["consumer_within"] == "true" for r in rows),
+        "stock_within": sum(r["stock_within"] == "true" for r in rows),
+        "consumer_closer_than_stock": sum(r["consumer_closer_than_stock"] == "true" for r in rows),
+    }
+
+
+def test_t123_the_projection_counts_are_pinned():
+    """Regression pins, copied from the unit's own measurement log -- not quotas: a change trips
+    this test on purpose."""
+    counts = _counts(_committed_csv(PROJECTION))
+    assert counts == {"gated": 67, "solver_within": 26, "consumer_within": 1, "stock_within": 0,
+                      "consumer_closer_than_stock": 42}
+    print("\nprojection counts: " + " ".join(f"{k} {v}" for k, v in counts.items()))
+
+
+def _d3_copy(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A root whose data/g4/d3 is a copy of the committed directory."""
+    target = tmp_path / md.D3_RELDIR
+    target.mkdir(parents=True)
+    for source in D3DIR.iterdir():
+        if source.is_file():
+            (target / source.name).write_bytes(source.read_bytes())
+    return tmp_path
+
+
+CONSUMER_COLUMNS = {"consumer_keV", "consumer_residual_keV", "consumer_within", "consumer_closer_than_stock",
+                    "representation_error_keV", "consumer_numeric_target_keV"}
+
+
+def test_t123_drill_a_moved_e2_cell_changes_exactly_that_nuclides_consumer_columns(tmp_path):
+    root = _d3_copy(tmp_path)
+    levels_path = root / d3c.LEVELS_RELPATH
+    text = levels_path.read_bytes().decode("ascii")
+    line = next(ln for ln in text.split(NL) if ln.split()[:2] == ["82", "208"])
+    fields = line.split()
+    moved = line.replace(fields[2], "9" + fields[2], 1)
+    assert moved != line
+    levels_path.write_bytes(_replace_once(text, line, moved).encode("ascii"))
+    before = _committed_csv(PROJECTION)
+    after = d3c.project_shell_rows(root)
+    changed = [(b, a) for b, a in zip(before, after, strict=True) if b != a]
+    assert changed and all(b["Z"] == "82" and b["A"] == "208" for b, _ in changed)
+    touching_e2 = {c["quantity"] for c in before if c["Z"] == "82" and c["A"] == "208"
+                   and 2 in {SHELL_OF[o[0]] for o in c["quantity"].split("-")}}
+    assert {b["quantity"] for b, _ in changed} == touching_e2
+    for b, a in changed:
+        differing = {column for column in b if b[column] != a[column]}
+        assert differing <= CONSUMER_COLUMNS and "consumer_keV" in differing, differing
+
+
+# --------------------------------------------------------------------------------------------
+# T-124 -- the band intersections of the lines sharing a shell pair, re-derived from the cells
+# --------------------------------------------------------------------------------------------
+
+
+def test_t124_the_groups_equal_an_independent_rederivation_from_the_cells():
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    committed = _committed_csv(GROUPS)
+    assert list(committed[0]) == list(d3c.GROUPS_COLUMNS)
+    groups: dict[tuple[str, int, int, int, int], list[md.Cell]] = {}
+    for cell in cells:
+        if cell.gated:
+            lower_n, upper_n = (SHELL_OF[orbit[0]] for orbit in cell.quantity.split("-"))
+            groups.setdefault((cell.source, cell.z, cell.a, upper_n, lower_n), []).append(cell)
+    expected = []
+    for key in sorted(groups):
+        members = groups[key]
+        if len({cell.quantity for cell in members}) < 2:
+            continue
+        with localcontext() as context:
+            context.prec = md._PRECISION
+            lower = max(Decimal(c.value_kev) - 3 * Decimal(c.unc_kev) for c in members)
+            upper = min(Decimal(c.value_kev) + 3 * Decimal(c.unc_kev) for c in members)
+        basis = []
+        for cell in members:
+            if cell.copy_read not in basis:
+                basis.append(cell.copy_read)
+        expected.append((key, len(members), ";".join(c.quantity for c in members), lower, upper,
+                         ";".join(basis)))
+    assert len(committed) == len(expected)
+    for row, (key, lines, quantities, lower, upper, basis) in zip(committed, expected, strict=True):
+        assert (row["source"], int(row["Z"]), int(row["A"]), int(row["initial_n"]),
+                int(row["final_n"])) == key
+        assert (row["lines"], row["quantities"], row["basis"]) == (str(lines), quantities, basis)
+        assert Decimal(row["lower_keV"]) == lower and Decimal(row["upper_keV"]) == upper
+        assert Decimal(row["gap_keV"]) == lower - upper
+        assert row["empty"] == ("true" if lower - upper > 0 else "false")
+    assert GROUPS.read_bytes() == d3c.render_groups(REPO)
+
+
+def test_t124_every_multi_line_group_is_empty_and_the_widest_is_pb208_k_to_l():
+    """Pins copied from the unit's own measurement log; the two Pb-208 constants are assertion
+    targets computed here from the printed cells and the tables' text, never inputs."""
+    committed = _committed_csv(GROUPS)
+    empty = [row for row in committed if row["empty"] == "true"]
+    assert (len(committed), len(empty)) == (29, 29)
+    pb = next(row for row in committed
+              if (row["source"], row["Z"], row["A"], row["initial_n"], row["final_n"])
+              == ("Fricke1995", "82", "208", "2", "1"))
+    assert Decimal(pb["gap_keV"]) == Decimal("184.226")
+    assert pb == max(committed, key=lambda row: Decimal(row["gap_keV"]))
+    kshell = _table_cells(D3DIR / "d3_kshell.mudirac130.g4dat")
+    levels = _table_cells(D3DIR / "d3_levels.mudirac130.g4dat")
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        k_to_l = (Decimal(_shell_text(kshell, levels, (82, 208), 1))
+                  - Decimal(_shell_text(kshell, levels, (82, 208), 2)))
+    assert abs(k_to_l - Decimal("5902.236247053")) <= Decimal("1e-9")
+    projection = _committed_csv(PROJECTION)
+    pb_k_lines = [row for row in projection if row["Z"] == "82" and row["quantity"].startswith("K1-L")]
+    assert {row["consumer_keV"] for row in pb_k_lines} == {format(k_to_l, "f")}
+    print(f"\ngroups {len(committed)} empty {len(empty)}; Pb-208 K-L gap {pb['gap_keV']} keV; "
+          f"consumer K-L {k_to_l}")
+
+
+def test_t124_drill_a_widened_pb208_uncertainty_flips_the_group_to_non_empty(tmp_path):
+    root = _d3_copy(tmp_path)
+    cells_path = root / md.CELLS_RELPATH
+    text = cells_path.read_bytes().decode("ascii")
+    mutated = _replace_once(text, "Fricke1995,82,208,2p1/2-1s1/2,K1-L2,5778.058,0.100,",
+                            "Fricke1995,82,208,2p1/2-1s1/2,K1-L2,5778.058,99.000,")
+    cells_path.write_bytes(mutated.encode("ascii"))
+    groups = d3c.incompatible_groups(d3c.project_shell_rows(root))
+    pb = next(row for row in groups if (row["source"], row["Z"], row["A"], row["initial_n"], row["final_n"])
+              == ("Fricke1995", "82", "208", "2", "1"))
+    assert pb["empty"] == "false" and Decimal(pb["gap_keV"]) < 0
+    assert sum(row["empty"] == "true" for row in groups) == len(groups) - 1
+
+
+# --------------------------------------------------------------------------------------------
+# T-125 -- the radius lineage: what is recorded of the experiments behind each compared radius
+# --------------------------------------------------------------------------------------------
+
+LINEAGE = REPO / d3c.LINEAGE_RELPATH
+
+
+def test_t125_the_lineage_names_the_gated_nuclides_in_order_and_every_row_is_unknown_today():
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    rows = d3c.load_radius_lineage(LINEAGE)
+    assert [row.nuclide for row in rows] == md.gated_nuclides(cells)
+    sources = {row.input_source for row in rows}
+    assert len(sources) == 1
+    source = sources.pop()
+    assert md.RADII_BLOB in source and source.startswith("nuclear_radii.dat blob ")
+    assert "(Angeli and Marinova 2013)" in source
+    for row in rows:
+        assert row.dependency_state == d3c.UNKNOWN
+        assert row.primary_experiment_id == d3c.NOT_TRACED and row.calibration_inputs == d3c.NOT_TRACED
+        assert row.method == "evaluated compilation" and row.covariance_source == "none"
+        seen: list[str] = []
+        for cell in cells:
+            if cell.gated and cell.nuclide == row.nuclide and cell.source not in seen:
+                seen.append(cell.source)
+        assert row.comparison_experiment_id == "; ".join(seen)
+        assert row.locator == origins[row.nuclide].locator
+    audit = d3c.audit_dependencies(REPO)
+    assert [(r["Z"], r["A"]) for r in audit] == [(str(z), str(a)) for z, a in md.gated_nuclides(cells)]
+    for record, row in zip(audit, rows, strict=True):
+        assert record["dependency_state"] == row.dependency_state
+        assert int(record["gated_rows"]) == sum(1 for c in cells if c.gated and c.nuclide == row.nuclide)
+    states: dict[str, int] = {}
+    for row in rows:
+        states[row.dependency_state] = states.get(row.dependency_state, 0) + 1
+    print(f"\nlineage rows {len(rows)}: " + ", ".join(f"{k} {v}" for k, v in sorted(states.items())))
+
+
+def test_t125_the_weakly_sensitive_rows_are_isotopes_of_one_element():
+    weak = [row for row in _committed_validation()
+            if row["gated"] == "true" and row["label"] == md.WEAKLY_SENSITIVE]
+    nuclides = sorted({(int(row["Z"]), int(row["A"])) for row in weak})
+    assert weak and {z for z, _ in nuclides} == {46}
+    out = md.load_outputs(REPO)
+    symbols = {row.z: row.symbol for row in out.inputs}
+    assert symbols[46] == "Pd"
+    print(f"\nweakly sensitive rows {len(weak)} over {len(nuclides)} isotopes of Z=46 ({symbols[46]})")
+
+
+def _lineage_drill(tmp_path, mutate, error, message):
+    """Copy the lineage file and the cells beside it, check the copy loads, corrupt it, require
+    the named refusal."""
+    for source in (LINEAGE, CELLS):
+        (tmp_path / source.name).write_bytes(source.read_bytes())
+    copy = tmp_path / LINEAGE.name
+    text = LINEAGE.read_bytes().decode("ascii")
+    d3c.load_radius_lineage(copy)
+    mutated = mutate(text)
+    assert mutated != text
+    copy.write_bytes(mutated.encode("utf-8"))
+    with pytest.raises(error, match=re.escape(message)):
+        d3c.load_radius_lineage(copy)
+
+
+def _lineage_cell(index: int, new: str):
+    def edit(text: str) -> str:
+        rows = list(csv.reader(io.StringIO(text)))
+        rows[1][index] = new
+        buffer = io.StringIO()
+        csv.writer(buffer, lineterminator=NL).writerows(rows)
+        return buffer.getvalue()
+    return edit
+
+
+LINEAGE_DRILLS = [
+    ("a carriage return", lambda t: t.replace(NL, "\r" + NL, 1), md.CarriageReturnError, "contains CR"),
+    ("a non-ASCII byte", lambda t: t.replace("not traced", "not tracéd", 1), md.NonAsciiError,
+     "outside US-ASCII"),
+    ("a renamed column", lambda t: _replace_once(t, "dependency_state,locator", "state,locator"),
+     md.HeaderError, "header is"),
+    ("an unknown state", _lineage_cell(8, "TRACED"), md.CellError, "dependency_state"),
+    ("SHARED with an untraced primary", _lineage_cell(8, d3c.SHARED), md.CellError,
+     "SHARED needs a traced primary_experiment_id"),
+    ("DISJOINT_DOCUMENTED with an untraced primary", _lineage_cell(8, d3c.DISJOINT_DOCUMENTED), md.CellError,
+     "DISJOINT_DOCUMENTED needs a traced primary_experiment_id"),
+    ("an empty locator", _lineage_cell(9, ""), md.CellError, "every row must carry a locator"),
+    ("a missing nuclide", lambda t: NL.join([*_lines(t)[:1], *_lines(t)[2:]]), md.CellError,
+     "the gated nuclides in order are"),
+    ("rows out of order", lambda t: _swap_lines(t, 1), md.CellError, "the gated nuclides in order are"),
+    ("a duplicated row", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate key"),
+    ("no rows", lambda t: _lines(t)[0] + NL, md.EmptyError, "carries no rows"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", LINEAGE_DRILLS, ids=[d[0] for d in LINEAGE_DRILLS])
+def test_t125_drill_each_lineage_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _lineage_drill(tmp_path, mutate, error, message)
+
+
+def test_t125_drill_a_shared_row_with_a_traced_primary_and_calibration_loads(tmp_path):
+    for source in (LINEAGE, CELLS):
+        (tmp_path / source.name).write_bytes(source.read_bytes())
+    copy = tmp_path / LINEAGE.name
+    text = copy.read_bytes().decode("ascii")
+    rows = list(csv.reader(io.StringIO(text)))
+    rows[1][3], rows[1][5], rows[1][8] = "experiment X", "calibration Y", d3c.SHARED
+    buffer = io.StringIO()
+    csv.writer(buffer, lineterminator=NL).writerows(rows)
+    copy.write_bytes(buffer.getvalue().encode("ascii"))
+    loaded = d3c.load_radius_lineage(copy)
+    assert loaded[0].dependency_state == d3c.SHARED and loaded[0].primary_experiment_id == "experiment X"
+
+
+# --------------------------------------------------------------------------------------------
+# T-126 -- the component records: every field re-derived from the committed files
+# --------------------------------------------------------------------------------------------
+
+COMPONENTS = REPO / d3c.COMPONENTS_RELPATH
+COMPONENT_KEYS = (
+    "Z", "A", "quantity", "central_keV", "sigma_rms_fm", "radius_plus_relative_response_keV",
+    "radius_minus_relative_response_keV", "radius_plus_absolute_response_keV",
+    "radius_minus_absolute_response_keV", "anchor_rounding_bound_keV", "anchor_coefficient",
+    "line_rounding_bound_keV", "numeric_observed_shifts_keV", "numeric_resolution_target_keV",
+    "numeric_qualification", "correlation_groups", "legacy_radius_response_magnitude_with_floor",
+)
+
+
+def _component_records(path: pathlib.Path) -> list[dict]:
+    text = path.read_bytes().decode("ascii")
+    assert "\r" not in text and text.endswith(NL)
+    return [json.loads(line) for line in text.split(NL)[:-1]]
+
+
+def _quantity(b: dict[str, Decimal], quantity: str) -> Decimal:
+    k, means = md.quantities(b)
+    return k if quantity == "K" else means[int(quantity[1:]) - 2]
+
+
+def _line_bound(path: dict[str, int], quantity: str) -> Decimal:
+    half_line = md.LINE_HALF_UNIT / 1000
+    if quantity == "K":
+        return path["K1"] * half_line
+    n = int(quantity[1:])
+    ell = n - 1
+    weighted = 2 * ell * path[md.orbit(n, False)] + (2 * ell + 2) * path[md.orbit(n, True)]
+    return Decimal(weighted) / (4 * ell + 2) * half_line
+
+
+def _component_problems(records: list[dict]) -> list[str]:
+    """Every record of ``records`` that the committed files do not give, named."""
+    out = md.load_outputs(REPO)
+    numerics = md.load_numerics_outputs(REPO, out)
+    kshell = _table_cells(D3DIR / "d3_kshell.mudirac130.g4dat")
+    levels = _table_cells(D3DIR / "d3_levels.mudirac130.g4dat")
+    kept = md.kept_members(out)
+    table_rows, _ = md.table_rows(out)
+    path = d3c.path_lengths()
+    problems: list[str] = []
+    header, body = records[0], records[1:]
+    digests = sorted(hashlib.sha256((REPO / rel).read_bytes()).hexdigest() for rel in d3c.COMPONENT_INPUTS)
+    expected_header = {
+        "record": "header", "profile": md.PROFILE, "radius_perturbation": "source_rms_sigma",
+        "omitted_components": ["model discrepancy", "nuclear polarization", "electron screening",
+                               "higher-order QED", "hyperfine structure",
+                               "numerical settings beyond the observed levels"],
+        "total_sigma_keV": None, "model_uncertainty": "unknown",
+        "inputs_sha256": hashlib.sha256((NL.join(digests) + NL).encode("ascii")).hexdigest(),
+    }
+    if header != expected_header:
+        problems.append("header")
+    expected: list[dict] = []
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        for row in kept:
+            key = row.nuclide
+            base = md.derive_bindings(md.run_id(row, "base"), out.headers[md.run_id(row, "base")],
+                                      out.lines[md.run_id(row, "base")])
+            plus = md.derive_bindings(md.run_id(row, "rsig"), out.headers[md.run_id(row, "rsig")],
+                                      out.lines[md.run_id(row, "rsig")])
+            minus_run = numerics.runs[md.numerics_run_id(row, "rminus", 0)]
+            minus = None
+            if minus_run.clean:
+                minus = md.derive_bindings(minus_run.run, numerics.headers[minus_run.run],
+                                           numerics.lines[minus_run.run])
+            by_level = _numerics_by_level(row, numerics)
+            failed = any(not clean for clean, _, _ in by_level.values())
+            anchor = md.half_unit_6sig(out.headers[md.run_id(row, "base")][md.orbit(md.N_MAX, True)]) / 1000
+            for index, quantity in enumerate(("K", *(f"e{n}" for n in range(2, md.N_MAX + 1)))):
+                central = kshell[key][0] if quantity == "K" else levels[key][index - 1]
+                legacy = kshell[key][1] if quantity == "K" else levels[key][md.N_MAX - 1 + index - 1]
+                values = {level: _quantity(b, quantity) for level, (_, b, _) in by_level.items()
+                          if b is not None}
+                target = max(Decimal("1e-6"), Decimal("1e-6") * abs(Decimal(central)))
+                line_bound = _line_bound(path, quantity)
+                shifts_text, token = _qualify(values, failed, target, 2 * (line_bound + anchor))
+                plus_rel = _quantity(md.relative(plus), quantity) - _quantity(md.relative(base), quantity)
+                record = {
+                    "Z": row.z, "A": row.a, "quantity": quantity, "central_keV": central,
+                    "sigma_rms_fm": row.sigma_rms_fm,
+                    "radius_plus_relative_response_keV": format(plus_rel, "f"),
+                    "radius_minus_relative_response_keV": None if minus is None else format(
+                        _quantity(md.relative(minus), quantity) - _quantity(md.relative(base), quantity),
+                        "f"),
+                    "radius_plus_absolute_response_keV": format(
+                        _quantity(plus, quantity) - _quantity(base, quantity), "f"),
+                    "radius_minus_absolute_response_keV": None if minus is None else format(
+                        _quantity(minus, quantity) - _quantity(base, quantity), "f"),
+                    "anchor_rounding_bound_keV": format(anchor, "f"),
+                    "anchor_coefficient": "1",
+                    "line_rounding_bound_keV": format(line_bound, "f"),
+                    "numeric_observed_shifts_keV": shifts_text.split(";") if shifts_text else [],
+                    "numeric_resolution_target_keV": format(target, "f"),
+                    "numeric_qualification": token,
+                    "correlation_groups": [f"anchor:{md.run_id(row, 'base')}", f"radius:{row.symbol}{row.a}"],
+                    "legacy_radius_response_magnitude_with_floor": legacy,
+                }
+                assert float(legacy) == float(max(abs(plus_rel), md.UNC_FLOOR_KEV)), (key, quantity)
+                expected.append(record)
+    for table_row in table_rows:
+        if table_row.a == 0:
+            expected.append({"record": "reference", "Z": table_row.z, "A": 0,
+                             "references": {"Z": table_row.z, "A": table_row.carries}})
+    if len(body) != len(expected):
+        problems.append(f"record count {len(body)} != {len(expected)}")
+    for got, want in zip(body, expected, strict=False):
+        if got != want:
+            problems.append(f"record {want.get('Z')},{want.get('A')},{want.get('quantity', 'reference')}")
+    return problems
+
+
+def test_t126_every_component_field_is_rederived_from_the_committed_files():
+    records = _component_records(COMPONENTS)
+    assert not _component_problems(records)
+    body = [r for r in records[1:] if "quantity" in r]
+    assert all(list(r) == list(COMPONENT_KEYS) for r in body)
+    out = md.load_outputs(REPO)
+    rows, _ = md.table_rows(out)
+    isotopes, natural = sum(1 for r in rows if r.a > 0), sum(1 for r in rows if r.a == 0)
+    assert len(records) == isotopes * len(d3c.QUANTITIES) + natural + 1
+    pb = next(r for r in body if (r["Z"], r["A"], r["quantity"]) == (82, 208, "K"))
+    assert Decimal(pb["anchor_rounding_bound_keV"]) == Decimal("0.0005")
+    assert Decimal(pb["anchor_rounding_bound_keV"]) > md.UNC_FLOOR_KEV
+    assert COMPONENTS.read_bytes() == d3c.render_components(REPO)
+    histogram: dict[str, int] = {}
+    for r in body:
+        histogram[r["numeric_qualification"]] = histogram.get(r["numeric_qualification"], 0) + 1
+    minus_made = sum(r["radius_minus_relative_response_keV"] is not None for r in body)
+    print(f"\ncomponents {len(body)}; rminus responses present {minus_made}; qualification "
+          + ", ".join(f"{k} {v}" for k, v in sorted(histogram.items())))
+
+
+def test_t126_the_anchor_moves_every_absolute_binding_by_its_coefficient_and_cancels_in_every_difference():
+    """A moved anchor header moves every derived binding, K and each (2j+1) mean alike, by exactly
+    its shift (the weights sum to one); the anchor-subtracted values, and every difference of two
+    derived values, do not move; a difference against a value computed elsewhere does."""
+    out = md.load_outputs(REPO)
+    row = next(r for r in out.inputs if r.nuclide == (82, 208))
+    run = md.run_id(row, "base")
+    headers, lines = dict(out.headers[run]), out.lines[run]
+    anchor = md.orbit(md.N_MAX, True)
+    delta = Decimal("0.5")
+    moved_headers = dict(headers)
+    moved_headers[anchor] = format(Decimal(headers[anchor]) - delta, "f")
+    b = md.derive_bindings(run, headers, lines)
+    b2 = md.derive_bindings(run, moved_headers, lines)
+    quantities = ("K", *(f"e{n}" for n in range(2, md.N_MAX + 1)))
+    synthetic_tail = Decimal("100")
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        for q in quantities:
+            assert _quantity(b2, q) - _quantity(b, q) == delta / 1000, q
+            assert _quantity(md.relative(b2), q) == _quantity(md.relative(b), q), q
+            assert (_quantity(b2, q) - synthetic_tail) - (_quantity(b, q) - synthetic_tail) == delta / 1000
+        for q1 in quantities:
+            for q2 in quantities:
+                assert _quantity(b2, q1) - _quantity(b2, q2) == _quantity(b, q1) - _quantity(b, q2)
+
+
+def test_t126_drill_a_tampered_shift_is_refused(tmp_path):
+    records = _component_records(COMPONENTS)
+    tampered = json.loads(json.dumps(records))
+    target = next(r for r in tampered[1:] if r.get("numeric_observed_shifts_keV"))
+    shift = target["numeric_observed_shifts_keV"][0]
+    target["numeric_observed_shifts_keV"][0] = shift + "1"
+    problems = _component_problems(tampered)
+    assert problems == [f"record {target['Z']},{target['A']},{target['quantity']}"]

@@ -23,7 +23,7 @@ from __future__ import annotations
 import importlib as _importlib
 from types import ModuleType
 
-_SUBMODULES = ("spec", "provenance", "emit")
+_SUBMODULES = ("spec", "provenance", "emit", "d3_contract")
 
 
 def __getattr__(name: str) -> ModuleType:
@@ -39,4 +39,4 @@ def __dir__() -> list[str]:
     return sorted(set(globals()) | set(_SUBMODULES))
 
 
-__all__ = ["emit", "provenance", "spec"]
+__all__ = ["d3_contract", "emit", "provenance", "spec"]

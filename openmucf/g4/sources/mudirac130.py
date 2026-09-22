@@ -21,7 +21,7 @@ import hashlib
 import io
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, localcontext
 from pathlib import Path
 
@@ -76,6 +76,10 @@ COMMITTED_KINDS = ("base", "rsig", "r101", *IDEAL_KINDS)
 EVIDENCE_KINDS = ("again", "defaultradius")
 #: The kinds whose printed states and lines are committed.
 PRINTED_KINDS = ("base", "rsig", "r101")
+#: The kind run beside the committed ones to measure the other sign of the radius response: the
+#: rms radius moved down by its uncertainty, where `rsig` moves it up. Its printed strings are
+#: committed in the numerics tables, never read by the table derivation.
+RESPONSE_KINDS = ("rminus",)
 
 INPUTS_COLUMNS = (
     "Z", "A", "symbol", "rms_fm", "sigma_rms_fm", "radius_fm", "fermi_t_fm", "most_abundant",
@@ -497,6 +501,8 @@ def run_radius(row: InputRow, kind: str) -> str | None:
     rms = float(row.radius_fm) / SPHERE_FACTOR
     if kind == "rsig":
         return repr((rms + float(row.sigma_rms_fm)) * SPHERE_FACTOR)
+    if kind == "rminus":
+        return repr((rms - float(row.sigma_rms_fm)) * SPHERE_FACTOR)
     if kind == "r101":
         return repr(rms * float(SIZE_FLOOR) * SPHERE_FACTOR)
     if kind == "defaultradius":
@@ -508,7 +514,7 @@ def render_input(row: InputRow, kind: str, extra: list[str]) -> str:
     """The MuDirac input file of ``row`` under ``kind``: the fixed settings in their order, the kind's
     radius, the circular chain plus ``extra`` (none on a hydrogen-like run), and on a hydrogen-like
     run the shell from which the atom is hydrogen-like."""
-    if kind not in COMMITTED_KINDS + EVIDENCE_KINDS:
+    if kind not in COMMITTED_KINDS + EVIDENCE_KINDS + RESPONSE_KINDS:
         raise ValueError(f"unknown run kind {kind!r}")
     lines = [
         f"element: {row.symbol}",
@@ -1211,3 +1217,256 @@ def render_validation_table(rows: list[dict[str, str]]) -> str:
         cells = [f"`{row[column]}`" if column == "quantity" else row[column] for _, column in TABLE_COLUMNS]
         lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines) + "\n"
+
+
+# --------------------------------------------------------------------------------------------
+# the runs made beside the committed ones: the radius moved the other way, and the settings refined
+# --------------------------------------------------------------------------------------------
+
+NUMERICS_RUNS_RELPATH = f"{D3_RELDIR}/mudirac_numerics_runs.csv"
+NUMERICS_STATES_RELPATH = f"{D3_RELDIR}/mudirac_numerics_states.csv"
+NUMERICS_LINES_RELPATH = f"{D3_RELDIR}/mudirac_numerics_lines.csv"
+
+NUMERICS_RUNS_COLUMNS = (
+    "run", "Z", "A", "kind", "level", "status", "rc", "err_bytes", "wall_s", "input_sha256",
+)
+NUMERICS_STATES_COLUMNS = (
+    "run", "Z", "A", "kind", "level", "state", "n", "l", "s", "binding_eV", "total_eV",
+)
+NUMERICS_LINES_COLUMNS = ("run", "Z", "A", "kind", "level", "line", "delta_e_eV", "w12_per_s")
+
+#: The kinds of the numerics tables, in their order: the rms radius moved down by its uncertainty
+#: (level 0 only), and the base input with its three numerical settings refined together to a level.
+NUMERICS_KINDS = ("rminus", "grid")
+#: The refinement levels run over every kept member, and the further levels run only over the
+#: members named after them.
+NUMERICS_LEVELS_ALL = (0, 1, 2)
+NUMERICS_LEVELS_DEEP = (3, 4)
+NUMERICS_DEEP_NUCLIDES = ((3, 6), (29, 63), (46, 104), (82, 208))
+#: The three keywords refined together. The base renderer never emits them, so at level 0 each is
+#: written at the value MuDirac 1.3.0 documents as its default (`lib/config.cpp`: energy_tol 1e-7,
+#: loggrid_step 0.005, uehling_steps 100) and no key is ever set twice.
+NUMERICS_KEYS = ("loggrid_step", "uehling_steps", "energy_tol")
+#: A numerics run row's status: the run was made, or the moved radius left the model's domain and
+#: no run was made.
+RAN = "RAN"
+INVALID_PERTURBATION_DOMAIN = "INVALID_PERTURBATION_DOMAIN"
+NUMERICS_STATUSES = (RAN, INVALID_PERTURBATION_DOMAIN)
+_SHA256 = re.compile(r"[0-9a-f]{64}")
+
+
+def numerics_settings(level: int) -> list[str]:
+    """The three refined keyword lines at ``level``: the grid step halved, the Uehling steps doubled
+    and the convergence tolerance tightened tenfold per level, each number as Python prints it."""
+    return [
+        f"loggrid_step: {0.005 / 2 ** level!r}",
+        f"uehling_steps: {100 * 2 ** level}",
+        f"energy_tol: {1e-7 / 10 ** level!r}",
+    ]
+
+
+def render_numerics_input(row: InputRow, level: int, extra: list[str]) -> str:
+    """The base input of ``row`` followed by the three settings of ``level``. Raises if the base
+    renderer already sets one of the three keys, so a key is never set twice in one input."""
+    text = render_input(row, "base", extra)
+    for key in NUMERICS_KEYS:
+        if f"{key}:" in text:
+            raise ValueError(f"the base input already sets {key}")
+    return text + "\n".join(numerics_settings(level)) + "\n"
+
+
+def rminus_in_domain(row: InputRow) -> bool:
+    """Whether the rms radius moved down by its uncertainty stays positive and keeps the default
+    Fermi parameter c real; where it does not, the `rminus` run is not made."""
+    rms = float(row.radius_fm) / SPHERE_FACTOR
+    if rms - float(row.sigma_rms_fm) <= 0:
+        return False
+    moved = run_radius(row, "rminus")
+    assert moved is not None
+    return not fermi2_c_not_real(replace(row, radius_fm=moved))
+
+
+def numerics_run_id(row: InputRow, kind: str, level: int) -> str:
+    """``<Sym><A>_rminus`` or ``<Sym><A>_grid<level>``."""
+    return run_id(row, kind if kind == "rminus" else f"{kind}{level}")
+
+
+def kept_members(out: Outputs) -> list[InputRow]:
+    """The members the tables keep -- the A > 0 rows of ``table_rows`` -- as input rows, in order."""
+    rows, _dropped = table_rows(out)
+    inputs = {row.nuclide: row for row in out.inputs}
+    return [inputs[(r.z, r.a)] for r in rows if r.a > 0]
+
+
+def numerics_levels(row: InputRow) -> list[int]:
+    """The refinement levels run for ``row``."""
+    deep = row.nuclide in NUMERICS_DEEP_NUCLIDES
+    return [*NUMERICS_LEVELS_ALL, *(NUMERICS_LEVELS_DEEP if deep else ())]
+
+
+def expected_numerics_runs(kept: list[InputRow]) -> list[tuple[str, int, int, str, int]]:
+    """Every numerics run the kept members imply, ``(run, Z, A, kind, level)``, in the run table's
+    order: per member the radius moved down, then each refinement level."""
+    out: list[tuple[str, int, int, str, int]] = []
+    for row in kept:
+        out.append((numerics_run_id(row, "rminus", 0), row.z, row.a, "rminus", 0))
+        for level in numerics_levels(row):
+            out.append((numerics_run_id(row, "grid", level), row.z, row.a, "grid", level))
+    return out
+
+
+@dataclass(frozen=True)
+class NumericsRun:
+    run: str
+    z: int
+    a: int
+    kind: str
+    level: int
+    status: str
+    rc: int | None
+    err_bytes: int | None
+    wall_s: str
+    input_sha256: str
+
+    @property
+    def clean(self) -> bool:
+        return self.status == RAN and self.rc == 0 and self.err_bytes == 0
+
+
+@dataclass(frozen=True)
+class NumericsOutputs:
+    """The numerics run table and the printed state headers and lines of every run made."""
+
+    runs: dict[str, NumericsRun]
+    headers: dict[str, dict[str, str]]
+    lines: dict[str, dict[str, str]]
+
+
+def _numerics_key(z: int, a: int, kind: str, level: int) -> tuple[int, int, int, int]:
+    return (z, a, NUMERICS_KINDS.index(kind), level)
+
+
+def _numerics_nuclide(where: str, r: dict[str, str]) -> tuple[int, int, str, int]:
+    z, a, kind = _nuclide_kind(where, r, NUMERICS_KINDS)
+    if not _COUNT.fullmatch(r["level"]):
+        raise CellError(f"{where}: level must be a count, got {r['level']!r}")
+    level = int(r["level"])
+    if kind == "rminus" and level != 0:
+        raise CellError(f"{where}: an rminus run is level 0, got {level}")
+    suffix = f"{a}_rminus" if kind == "rminus" else f"{a}_grid{level}"
+    if not r["run"].endswith(suffix):
+        raise CellError(f"{where}: run {r['run']!r} does not name A={a}, kind {kind} and level {level}")
+    return z, a, kind, level
+
+
+def load_numerics_runs(path: Path) -> dict[str, NumericsRun]:
+    """Parse ``mudirac_numerics_runs.csv``: one row per run the kept members imply, ordered by
+    (Z, A, kind order, level); a run made carries its rc, error-file size, wall time and input
+    digest, a run not made carries the domain status and nothing else."""
+    out: dict[str, NumericsRun] = {}
+    previous: tuple[int, int, int, int] | None = None
+    for where, r in read_rows(path, NUMERICS_RUNS_COLUMNS):
+        z, a, kind, level = _numerics_nuclide(where, r)
+        if r["status"] not in NUMERICS_STATUSES:
+            raise CellError(f"{where}: status {r['status']!r} is not one of {NUMERICS_STATUSES!r}")
+        rc: int | None = None
+        err: int | None = None
+        if r["status"] == RAN:
+            if not _SIGNED_COUNT.fullmatch(r["rc"]) or not _COUNT.fullmatch(r["err_bytes"]):
+                raise CellError(
+                    f"{where}: rc and err_bytes must be integers, got {r['rc']!r}, {r['err_bytes']!r}"
+                )
+            if not _UNSIGNED_DECIMAL.fullmatch(r["wall_s"]):
+                raise CellError(f"{where}: wall_s must be a printed decimal, got {r['wall_s']!r}")
+            if not _SHA256.fullmatch(r["input_sha256"]):
+                raise CellError(f"{where}: input_sha256 must be 64 hex digits, got {r['input_sha256']!r}")
+            rc, err = int(r["rc"]), int(r["err_bytes"])
+        else:
+            if kind != "rminus":
+                raise CellError(f"{where}: only an rminus run can be {INVALID_PERTURBATION_DOMAIN}")
+            if any(r[column] for column in ("rc", "err_bytes", "wall_s", "input_sha256")):
+                raise CellError(f"{where}: a run not made carries no rc, err_bytes, wall_s or input_sha256")
+        if r["run"] in out:
+            raise DuplicateKeyError(f"{where}: duplicate run {r['run']!r}")
+        order = _numerics_key(z, a, kind, level)
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, kind, level)")
+        previous = order
+        out[r["run"]] = NumericsRun(r["run"], z, a, kind, level, r["status"], rc, err, r["wall_s"],
+                                    r["input_sha256"])
+    return out
+
+
+def load_numerics_states(path: Path) -> dict[str, dict[str, str]]:
+    """Parse ``mudirac_numerics_states.csv``: printed header energies by run then orbit, ordered."""
+    out: dict[str, dict[str, str]] = {}
+    previous: tuple[int, int, int, int, int, int] | None = None
+    for where, r in read_rows(path, NUMERICS_STATES_COLUMNS):
+        z, a, kind, level = _numerics_nuclide(where, r)
+        if not _ORBIT.fullmatch(r["state"]):
+            raise CellError(f"{where}: state must be an IUPAC orbit, got {r['state']!r}")
+        for column in ("n", "l", "s"):
+            if not _SIGNED_COUNT.fullmatch(r[column]):
+                raise CellError(f"{where}: {column} must be an integer, got {r[column]!r}")
+        for column in ("binding_eV", "total_eV"):
+            if not _PRINTED.fullmatch(r[column]):
+                raise CellError(f"{where}: {column} must be a printed number, got {r[column]!r}")
+        if r["state"] in out.get(r["run"], {}):
+            raise DuplicateKeyError(f"{where}: duplicate state {r['run']} {r['state']}")
+        order = (*_numerics_key(z, a, kind, level), *_orbit_order(r["state"]))
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, kind, level, orbit)")
+        previous = order
+        out.setdefault(r["run"], {})[r["state"]] = r["binding_eV"]
+    return out
+
+
+def load_numerics_lines(path: Path) -> dict[str, dict[str, str]]:
+    """Parse ``mudirac_numerics_lines.csv``: printed line energies by run then line, runs ordered."""
+    out: dict[str, dict[str, str]] = {}
+    previous: tuple[int, int, int, int] | None = None
+    for where, r in read_rows(path, NUMERICS_LINES_COLUMNS):
+        z, a, kind, level = _numerics_nuclide(where, r)
+        if not _LINE.fullmatch(r["line"]):
+            raise CellError(f"{where}: line must be orbit-orbit, got {r['line']!r}")
+        if not _LINE_ENERGY.fullmatch(r["delta_e_eV"]):
+            raise CellError(f"{where}: delta_e_eV must be printed with six decimals, got {r['delta_e_eV']!r}")
+        if not _UNSIGNED_DECIMAL.fullmatch(r["w12_per_s"]):
+            raise CellError(f"{where}: w12_per_s must be a printed decimal, got {r['w12_per_s']!r}")
+        if r["line"] in out.get(r["run"], {}):
+            raise DuplicateKeyError(f"{where}: duplicate line {r['run']} {r['line']}")
+        order = _numerics_key(z, a, kind, level)
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: rows are ordered by (Z, A, kind, level)")
+        previous = order
+        out.setdefault(r["run"], {})[r["line"]] = r["delta_e_eV"]
+    return out
+
+
+def load_numerics_outputs(root: Path, out: Outputs) -> NumericsOutputs:
+    """The three numerics CSVs under ``root``, cross-checked against the committed outputs: the run
+    table lists exactly the runs the kept members imply, a run not made is exactly one whose moved
+    radius leaves the domain, and every run with states or lines is a listed run that was made."""
+    root = Path(root)
+    runs = load_numerics_runs(root / NUMERICS_RUNS_RELPATH)
+    kept = kept_members(out)
+    expected = expected_numerics_runs(kept)
+    listed = [(r.run, r.z, r.a, r.kind, r.level) for r in runs.values()]
+    if listed != expected:
+        missing = sorted(set(expected) - set(listed))[:3]
+        extra = sorted(set(listed) - set(expected))[:3]
+        raise CellError(f"{Path(NUMERICS_RUNS_RELPATH).name} does not list exactly the implied runs: "
+                        f"missing {missing}, unexpected {extra}")
+    inputs = {row.nuclide: row for row in kept}
+    for run in runs.values():
+        if run.kind == "rminus" and (run.status == RAN) != rminus_in_domain(inputs[(run.z, run.a)]):
+            raise CellError(f"{run.run}: status {run.status} disagrees with the domain rule")
+    headers = load_numerics_states(root / NUMERICS_STATES_RELPATH)
+    lines = load_numerics_lines(root / NUMERICS_LINES_RELPATH)
+    for name, table in ((NUMERICS_STATES_RELPATH, headers), (NUMERICS_LINES_RELPATH, lines)):
+        stray = sorted(run for run in table if run not in runs or runs[run].status != RAN)
+        if stray:
+            raise CellError(
+                f"{Path(name).name} carries runs the run table does not list as made: {stray[:3]}"
+            )
+    return NumericsOutputs(runs, headers, lines)

@@ -1753,7 +1753,10 @@ def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
     d3dir = REPO / "data" / "g4" / "d3"
     artifacts = sorted(D1DIR.glob("d1_*.g4dat")) + sorted(D1DIR.glob("*.prov.json")) + [
         D1DIR / "geant4_add_dataset.snippet"
-    ] + sorted(d3dir.glob("d3_*.g4dat")) + sorted(d3dir.glob("*.prov.json")) + [d3dir / "validation.csv"]
+    ] + sorted(d3dir.glob("d3_*.g4dat")) + sorted(d3dir.glob("*.prov.json")) + [
+        d3dir / "validation.csv", d3dir / "shell_projection.csv", d3dir / "incompatible_groups.csv",
+        d3dir / "components.jsonl",
+    ]
     # The files found on disk are exactly the ones the generator writes: a generated file the
     # globs miss, or a stray file they catch, would make this drill prove less than it claims.
     assert set(artifacts) == set(generator_module().build_dataset_artifacts()[0]), [p.name for p in artifacts]

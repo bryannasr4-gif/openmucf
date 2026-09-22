@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the energy the cascade receives, measured beside the D3 tables (2026-09-22)
+
+- **Beside the unchanged D3 tables, `data/g4/d3/` gains generated files and a record of what is
+  known**: `shell_projection.csv` joins every compared line to the shell difference a
+  patched cascade emits for it, beside the solver line and the unpatched cascade's energy;
+  `incompatible_groups.csv` intersects the bands of the lines that share a shell pair;
+  `components.jsonl` carries, per emitted value, the signed radius responses, the printed rounding
+  bounds and the shifts observed under refined numerical settings, with no total uncertainty; and
+  `radius_lineage.csv` records what is known of the experiments behind each compared radius.
+
 ### Added -- a profile for each seam, and what a patched build refuses (2026-09-20)
 
 - **A patched Geant4 reads each seam through a profile of its own**: `G4MUONICDATA_D1_PROFILE`
