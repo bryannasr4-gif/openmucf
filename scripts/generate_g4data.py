@@ -522,11 +522,12 @@ D3_LEVELS_LAYER2 = D3DIR / f"d3_levels.{md.PROFILE}.prov.json"
 #: The comparison with the measured transition energies: generated and byte-diffed, not an
 #: archive member.
 D3_VALIDATION = ROOT / md.VALIDATION_RELPATH
-#: The representation contract beside the tables -- the shell projection of every gated line and
-#: the band intersections of the lines sharing a shell pair -- generated from the committed files
-#: and byte-diffed like the comparison; neither is an archive member.
+#: The representation contract beside the tables -- the shell projection of every gated line, the
+#: band intersections of the lines sharing a shell pair, and the component records -- generated
+#: from the committed files and byte-diffed like the comparison; none is an archive member.
 D3_PROJECTION = ROOT / d3c.PROJECTION_RELPATH
 D3_GROUPS = ROOT / d3c.GROUPS_RELPATH
+D3_COMPONENTS = ROOT / d3c.COMPONENTS_RELPATH
 #: What each table's value columns are, as the per-row method text names them.
 D3_QUANTITY = {
     md.K_TABLE: "The 1s1/2 binding energy in keV is",
@@ -727,6 +728,7 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     bundle = d3c.load_bundle(ROOT)
     artifacts[D3_PROJECTION] = d3c.render_projection(ROOT, bundle)
     artifacts[D3_GROUPS] = d3c.render_groups(ROOT, bundle)
+    artifacts[D3_COMPONENTS] = d3c.render_components(ROOT, bundle)
     return artifacts, archive
 
 

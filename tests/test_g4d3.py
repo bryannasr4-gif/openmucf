@@ -1774,3 +1774,178 @@ def test_t125_drill_a_shared_row_with_a_traced_primary_and_calibration_loads(tmp
     copy.write_bytes(buffer.getvalue().encode("ascii"))
     loaded = d3c.load_radius_lineage(copy)
     assert loaded[0].dependency_state == d3c.SHARED and loaded[0].primary_experiment_id == "experiment X"
+
+
+# --------------------------------------------------------------------------------------------
+# T-126 -- the component records: every field re-derived from the committed files
+# --------------------------------------------------------------------------------------------
+
+COMPONENTS = REPO / d3c.COMPONENTS_RELPATH
+COMPONENT_KEYS = (
+    "Z", "A", "quantity", "central_keV", "sigma_rms_fm", "radius_plus_relative_response_keV",
+    "radius_minus_relative_response_keV", "radius_plus_absolute_response_keV",
+    "radius_minus_absolute_response_keV", "anchor_rounding_bound_keV", "anchor_coefficient",
+    "line_rounding_bound_keV", "numeric_observed_shifts_keV", "numeric_resolution_target_keV",
+    "numeric_qualification", "correlation_groups", "legacy_radius_response_magnitude_with_floor",
+)
+
+
+def _component_records(path: pathlib.Path) -> list[dict]:
+    text = path.read_bytes().decode("ascii")
+    assert "\r" not in text and text.endswith(NL)
+    return [json.loads(line) for line in text.split(NL)[:-1]]
+
+
+def _quantity(b: dict[str, Decimal], quantity: str) -> Decimal:
+    k, means = md.quantities(b)
+    return k if quantity == "K" else means[int(quantity[1:]) - 2]
+
+
+def _line_bound(path: dict[str, int], quantity: str) -> Decimal:
+    half_line = md.LINE_HALF_UNIT / 1000
+    if quantity == "K":
+        return path["K1"] * half_line
+    n = int(quantity[1:])
+    ell = n - 1
+    weighted = 2 * ell * path[md.orbit(n, False)] + (2 * ell + 2) * path[md.orbit(n, True)]
+    return Decimal(weighted) / (4 * ell + 2) * half_line
+
+
+def _component_problems(records: list[dict]) -> list[str]:
+    """Every record of ``records`` that the committed files do not give, named."""
+    out = md.load_outputs(REPO)
+    numerics = md.load_numerics_outputs(REPO, out)
+    kshell = _table_cells(D3DIR / "d3_kshell.mudirac130.g4dat")
+    levels = _table_cells(D3DIR / "d3_levels.mudirac130.g4dat")
+    kept = md.kept_members(out)
+    table_rows, _ = md.table_rows(out)
+    path = d3c.path_lengths()
+    problems: list[str] = []
+    header, body = records[0], records[1:]
+    digests = sorted(hashlib.sha256((REPO / rel).read_bytes()).hexdigest() for rel in d3c.COMPONENT_INPUTS)
+    expected_header = {
+        "record": "header", "profile": md.PROFILE, "radius_perturbation": "source_rms_sigma",
+        "omitted_components": ["model discrepancy", "nuclear polarization", "electron screening",
+                               "higher-order QED", "hyperfine structure",
+                               "numerical settings beyond the observed levels"],
+        "total_sigma_keV": None, "model_uncertainty": "unknown",
+        "inputs_sha256": hashlib.sha256((NL.join(digests) + NL).encode("ascii")).hexdigest(),
+    }
+    if header != expected_header:
+        problems.append("header")
+    expected: list[dict] = []
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        for row in kept:
+            key = row.nuclide
+            base = md.derive_bindings(md.run_id(row, "base"), out.headers[md.run_id(row, "base")],
+                                      out.lines[md.run_id(row, "base")])
+            plus = md.derive_bindings(md.run_id(row, "rsig"), out.headers[md.run_id(row, "rsig")],
+                                      out.lines[md.run_id(row, "rsig")])
+            minus_run = numerics.runs[md.numerics_run_id(row, "rminus", 0)]
+            minus = None
+            if minus_run.clean:
+                minus = md.derive_bindings(minus_run.run, numerics.headers[minus_run.run],
+                                           numerics.lines[minus_run.run])
+            by_level = _numerics_by_level(row, numerics)
+            failed = any(not clean for clean, _, _ in by_level.values())
+            anchor = md.half_unit_6sig(out.headers[md.run_id(row, "base")][md.orbit(md.N_MAX, True)]) / 1000
+            for index, quantity in enumerate(("K", *(f"e{n}" for n in range(2, md.N_MAX + 1)))):
+                central = kshell[key][0] if quantity == "K" else levels[key][index - 1]
+                legacy = kshell[key][1] if quantity == "K" else levels[key][md.N_MAX - 1 + index - 1]
+                values = {level: _quantity(b, quantity) for level, (_, b, _) in by_level.items()
+                          if b is not None}
+                target = max(Decimal("1e-6"), Decimal("1e-6") * abs(Decimal(central)))
+                line_bound = _line_bound(path, quantity)
+                shifts_text, token = _qualify(values, failed, target, 2 * (line_bound + anchor))
+                plus_rel = _quantity(md.relative(plus), quantity) - _quantity(md.relative(base), quantity)
+                record = {
+                    "Z": row.z, "A": row.a, "quantity": quantity, "central_keV": central,
+                    "sigma_rms_fm": row.sigma_rms_fm,
+                    "radius_plus_relative_response_keV": format(plus_rel, "f"),
+                    "radius_minus_relative_response_keV": None if minus is None else format(
+                        _quantity(md.relative(minus), quantity) - _quantity(md.relative(base), quantity),
+                        "f"),
+                    "radius_plus_absolute_response_keV": format(
+                        _quantity(plus, quantity) - _quantity(base, quantity), "f"),
+                    "radius_minus_absolute_response_keV": None if minus is None else format(
+                        _quantity(minus, quantity) - _quantity(base, quantity), "f"),
+                    "anchor_rounding_bound_keV": format(anchor, "f"),
+                    "anchor_coefficient": "1",
+                    "line_rounding_bound_keV": format(line_bound, "f"),
+                    "numeric_observed_shifts_keV": shifts_text.split(";") if shifts_text else [],
+                    "numeric_resolution_target_keV": format(target, "f"),
+                    "numeric_qualification": token,
+                    "correlation_groups": [f"anchor:{md.run_id(row, 'base')}", f"radius:{row.symbol}{row.a}"],
+                    "legacy_radius_response_magnitude_with_floor": legacy,
+                }
+                assert float(legacy) == float(max(abs(plus_rel), md.UNC_FLOOR_KEV)), (key, quantity)
+                expected.append(record)
+    for table_row in table_rows:
+        if table_row.a == 0:
+            expected.append({"record": "reference", "Z": table_row.z, "A": 0,
+                             "references": {"Z": table_row.z, "A": table_row.carries}})
+    if len(body) != len(expected):
+        problems.append(f"record count {len(body)} != {len(expected)}")
+    for got, want in zip(body, expected, strict=False):
+        if got != want:
+            problems.append(f"record {want.get('Z')},{want.get('A')},{want.get('quantity', 'reference')}")
+    return problems
+
+
+def test_t126_every_component_field_is_rederived_from_the_committed_files():
+    records = _component_records(COMPONENTS)
+    assert not _component_problems(records)
+    body = [r for r in records[1:] if "quantity" in r]
+    assert all(list(r) == list(COMPONENT_KEYS) for r in body)
+    out = md.load_outputs(REPO)
+    rows, _ = md.table_rows(out)
+    isotopes, natural = sum(1 for r in rows if r.a > 0), sum(1 for r in rows if r.a == 0)
+    assert len(records) == isotopes * len(d3c.QUANTITIES) + natural + 1
+    pb = next(r for r in body if (r["Z"], r["A"], r["quantity"]) == (82, 208, "K"))
+    assert Decimal(pb["anchor_rounding_bound_keV"]) == Decimal("0.0005")
+    assert Decimal(pb["anchor_rounding_bound_keV"]) > md.UNC_FLOOR_KEV
+    assert COMPONENTS.read_bytes() == d3c.render_components(REPO)
+    histogram: dict[str, int] = {}
+    for r in body:
+        histogram[r["numeric_qualification"]] = histogram.get(r["numeric_qualification"], 0) + 1
+    minus_made = sum(r["radius_minus_relative_response_keV"] is not None for r in body)
+    print(f"\ncomponents {len(body)}; rminus responses present {minus_made}; qualification "
+          + ", ".join(f"{k} {v}" for k, v in sorted(histogram.items())))
+
+
+def test_t126_the_anchor_moves_every_absolute_binding_by_its_coefficient_and_cancels_in_every_difference():
+    """A moved anchor header moves every derived binding, K and each (2j+1) mean alike, by exactly
+    its shift (the weights sum to one); the anchor-subtracted values, and every difference of two
+    derived values, do not move; a difference against a value computed elsewhere does."""
+    out = md.load_outputs(REPO)
+    row = next(r for r in out.inputs if r.nuclide == (82, 208))
+    run = md.run_id(row, "base")
+    headers, lines = dict(out.headers[run]), out.lines[run]
+    anchor = md.orbit(md.N_MAX, True)
+    delta = Decimal("0.5")
+    moved_headers = dict(headers)
+    moved_headers[anchor] = format(Decimal(headers[anchor]) - delta, "f")
+    b = md.derive_bindings(run, headers, lines)
+    b2 = md.derive_bindings(run, moved_headers, lines)
+    quantities = ("K", *(f"e{n}" for n in range(2, md.N_MAX + 1)))
+    synthetic_tail = Decimal("100")
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        for q in quantities:
+            assert _quantity(b2, q) - _quantity(b, q) == delta / 1000, q
+            assert _quantity(md.relative(b2), q) == _quantity(md.relative(b), q), q
+            assert (_quantity(b2, q) - synthetic_tail) - (_quantity(b, q) - synthetic_tail) == delta / 1000
+        for q1 in quantities:
+            for q2 in quantities:
+                assert _quantity(b2, q1) - _quantity(b2, q2) == _quantity(b, q1) - _quantity(b, q2)
+
+
+def test_t126_drill_a_tampered_shift_is_refused(tmp_path):
+    records = _component_records(COMPONENTS)
+    tampered = json.loads(json.dumps(records))
+    target = next(r for r in tampered[1:] if r.get("numeric_observed_shifts_keV"))
+    shift = target["numeric_observed_shifts_keV"][0]
+    target["numeric_observed_shifts_keV"][0] = shift + "1"
+    problems = _component_problems(tampered)
+    assert problems == [f"record {target['Z']},{target['A']},{target['quantity']}"]

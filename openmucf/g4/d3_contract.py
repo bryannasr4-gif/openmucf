@@ -2,8 +2,11 @@
 
 The shipped tables are not touched. This module reads them as text, joins every gated measured line
 to the shell difference a patched cascade emits for it, intersects the bands of the lines that share
-a shell pair, and loads what is recorded of the radius each compared member was run with. No
-tolerance moves and no central value moves.
+a shell pair, loads what is recorded of the radius each compared member was run with, and writes one
+component record per emitted value: the signed radius responses in both directions, the rounding
+bounds of the printed anchor and of the summed lines, the shifts observed when MuDirac's numerical
+settings are refined, and the legacy ``unc``/``u<n>`` cell under the name of what it is. No total
+uncertainty is produced, no tolerance moves and no central value moves.
 
 Standard library plus ``openmucf.g4.sources.mudirac130`` only.
 """
@@ -11,7 +14,9 @@ Standard library plus ``openmucf.g4.sources.mudirac130`` only.
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
+import json
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 from pathlib import Path
@@ -194,9 +199,11 @@ def qualification(observed: list[Decimal], valid: list[int], failed: bool, targe
         return RUN_FAILED
     k = valid[-1]
     older, newer = observed[-2], observed[-1]
-    bound = target + allowance
-    if abs(older) <= bound and abs(newer) <= bound and abs(newer) <= abs(older):
-        return f"{QUALIFIED}{k}"
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        bound = target + allowance
+        if abs(older) <= bound and abs(newer) <= bound and abs(newer) <= abs(older):
+            return f"{QUALIFIED}{k}"
     return f"{NOT_QUALIFIED}{k}"
 
 
@@ -488,6 +495,7 @@ def summary_lines(root: Path, bundle: Bundle | None = None) -> list[str]:
         f"d3 contract: numeric qualification over {len(rows)} gated solver lines: "
         + _histogram([r["solver_numeric_qualification"] for r in rows]),
         lineage_summary(root),
+        components_summary(root, bundle),
     ]
 
 
@@ -581,3 +589,108 @@ def lineage_summary(root: Path) -> str:
     lineage = load_radius_lineage(Path(root) / LINEAGE_RELPATH)
     return (f"d3 contract: lineage states {_histogram([row.dependency_state for row in lineage])} "
             f"over {len(lineage)} rows")
+
+
+# --------------------------------------------------------------------------------------------
+# the component records: per emitted value, what is known of what can move it
+# --------------------------------------------------------------------------------------------
+
+COMPONENTS_RELPATH = f"{md.D3_RELDIR}/components.jsonl"
+#: What no component record accounts for.
+OMITTED_COMPONENTS = [
+    "model discrepancy", "nuclear polarization", "electron screening", "higher-order QED",
+    "hyperfine structure", "numerical settings beyond the observed levels",
+]
+RADIUS_PERTURBATION = "source_rms_sigma"
+#: The files the records are computed from, digested together into the header record.
+COMPONENT_INPUTS = (
+    KSHELL_RELPATH, LEVELS_RELPATH, md.INPUTS_RELPATH, md.STATES_RELPATH, md.LINES_RELPATH,
+    md.NUMERICS_RUNS_RELPATH, md.NUMERICS_STATES_RELPATH, md.NUMERICS_LINES_RELPATH,
+)
+
+
+def inputs_sha256(root: Path) -> str:
+    """One digest over the sorted digests of COMPONENT_INPUTS, one per line, LF."""
+    root = Path(root)
+    digests = sorted(hashlib.sha256((root / relpath).read_bytes()).hexdigest()
+                     for relpath in COMPONENT_INPUTS)
+    return hashlib.sha256(("\n".join(digests) + "\n").encode("ascii")).hexdigest()
+
+
+def header_record(root: Path) -> dict[str, object]:
+    return {
+        "record": "header", "profile": md.PROFILE, "radius_perturbation": RADIUS_PERTURBATION,
+        "omitted_components": list(OMITTED_COMPONENTS), "total_sigma_keV": None,
+        "model_uncertainty": "unknown", "inputs_sha256": inputs_sha256(root),
+    }
+
+
+def response_kev(
+    bundle: Bundle, key: tuple[int, int], kind: str, quantity: str, relative: bool
+) -> str | None:
+    """The signed change of ``quantity`` between the base run and the ``kind`` run, from the
+    bindings as derived (absolute) or with the anchor subtracted (relative); None where the run
+    was not made."""
+    derived = bundle.bindings[key]
+    if kind not in derived:
+        return None
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        moved, base = derived[kind], derived["base"]
+        if relative:
+            moved, base = md.relative(moved), md.relative(base)
+        return _text(quantity_value(moved, quantity) - quantity_value(base, quantity))
+
+
+def components(root: Path, bundle: Bundle | None = None) -> list[dict[str, object]]:
+    """The header record, one record per kept (Z, A) and emitted quantity in (Z, A, quantity)
+    order, then one reference record per A = 0 row naming the isotope it carries."""
+    root = Path(root)
+    bundle = _bundle(root, bundle)
+    out: list[dict[str, object]] = [header_record(root)]
+    for row in bundle.kept:
+        key = row.nuclide
+        refinement = bundle.refinements[key]
+        anchor = _anchor_bound_kev(bundle, key)
+        for quantity in QUANTITIES:
+            central = bundle.tables.central(key, quantity)
+            values = {level: quantity_value(b, quantity) for level, b in refinement.bindings.items()}
+            observed = shifts(values)
+            target = binding_target_kev(central)
+            out.append({
+                "Z": row.z, "A": row.a, "quantity": quantity, "central_keV": central,
+                "sigma_rms_fm": row.sigma_rms_fm,
+                "radius_plus_relative_response_keV": response_kev(bundle, key, "rsig", quantity, True),
+                "radius_minus_relative_response_keV": response_kev(bundle, key, "rminus", quantity, True),
+                "radius_plus_absolute_response_keV": response_kev(bundle, key, "rsig", quantity, False),
+                "radius_minus_absolute_response_keV": response_kev(bundle, key, "rminus", quantity, False),
+                "anchor_rounding_bound_keV": _text(anchor),
+                "anchor_coefficient": "1",
+                "line_rounding_bound_keV": _text(line_rounding_bound_kev(quantity)),
+                "numeric_observed_shifts_keV": [_text(s) for s in observed],
+                "numeric_resolution_target_keV": _text(target),
+                "numeric_qualification": qualification(
+                    observed, refinement.valid, refinement.failed, target,
+                    _binding_allowance_kev(bundle, key, quantity)),
+                "correlation_groups": [f"anchor:{md.run_id(row, 'base')}", f"radius:{row.symbol}{row.a}"],
+                "legacy_radius_response_magnitude_with_floor": bundle.tables.legacy(key, quantity),
+            })
+    table_rows, _dropped = md.table_rows(bundle.outputs)
+    for table_row in table_rows:
+        if table_row.a == 0:
+            out.append({"record": "reference", "Z": table_row.z, "A": 0,
+                        "references": {"Z": table_row.z, "A": table_row.carries}})
+    return out
+
+
+def render_components(root: Path, bundle: Bundle | None = None) -> bytes:
+    """``components.jsonl``: one compact ASCII JSON record per line, LF."""
+    lines = [json.dumps(record, separators=(",", ":"), ensure_ascii=True)
+             for record in components(root, bundle)]
+    return ("\n".join(lines) + "\n").encode("ascii")
+
+
+def components_summary(root: Path, bundle: Bundle | None = None) -> str:
+    records = [r for r in components(root, bundle) if "quantity" in r]
+    return (f"d3 contract: numeric qualification over {len(records)} components: "
+            + _histogram([str(r["numeric_qualification"]) for r in records]))
