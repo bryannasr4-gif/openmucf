@@ -18,6 +18,7 @@ from decimal import Decimal, localcontext
 import pytest
 import test_g4parity as parity
 
+from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import mudirac130 as md
 
@@ -1376,3 +1377,288 @@ NUMERICS_LINES_DRILLS = [
                          ids=[d[0] for d in NUMERICS_LINES_DRILLS])
 def test_t122_drill_each_line_table_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
     _drill(tmp_path, NUMERICS_LINES, mutate, error, message, md.load_numerics_lines)
+
+
+# --------------------------------------------------------------------------------------------
+# T-123 -- the shell projection: every gated line beside the shell difference the cascade emits,
+# re-derived here from the tables' text and the committed files, with the counts pinned
+# --------------------------------------------------------------------------------------------
+
+PROJECTION = REPO / d3c.PROJECTION_RELPATH
+GROUPS = REPO / d3c.GROUPS_RELPATH
+SHELL_OF = {letter: n for n, letter in enumerate("KLMNOPQRSTUVWXYZ", start=1)}
+
+
+def _committed_csv(path: pathlib.Path) -> list[dict[str, str]]:
+    text = path.read_bytes().decode("ascii")
+    assert "\r" not in text
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def _table_cells(path: pathlib.Path) -> dict[tuple[int, int], list[str]]:
+    """The record cells of a .g4dat as text, by this test's own reading of the file."""
+    out = {}
+    for line in path.read_bytes().decode("ascii").split(NL):
+        if line.strip() and not line.startswith("#"):
+            fields = line.split()
+            out[(int(fields[0]), int(fields[1]))] = fields[2:]
+    return out
+
+
+def _shell_text(kshell, levels, key: tuple[int, int], n: int) -> str:
+    return kshell[key][0] if n == 1 else levels[key][n - 2]
+
+
+def _numerics_by_level(row: md.InputRow, numerics: md.NumericsOutputs):
+    """Per refinement level of ``row``: (clean, bindings or None, printed lines or None)."""
+    out = {}
+    for level in md.numerics_levels(row):
+        run = numerics.runs[md.numerics_run_id(row, "grid", level)]
+        bindings = lines = None
+        if run.clean:
+            try:
+                bindings = md.derive_bindings(run.run, numerics.headers.get(run.run, {}),
+                                              numerics.lines.get(run.run, {}))
+                lines = numerics.lines[run.run]
+            except md.DerivationError:
+                bindings = lines = None
+        out[level] = (run.clean, bindings, lines)
+    return out
+
+
+def _qualify(
+    values: dict[int, Decimal], failed: bool, target: Decimal, allowance: Decimal
+) -> tuple[str, str]:
+    """The rule as this test states it: (shifts text, token)."""
+    levels = sorted(values)
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        observed = [values[b] - values[a] for a, b in zip(levels, levels[1:], strict=False)]
+    text = ";".join(format(s, "f") for s in observed)
+    if len(levels) < 3:
+        return text, "INSUFFICIENT_LEVELS"
+    if failed:
+        return text, "RUN_FAILED"
+    older, newer = observed[-2], observed[-1]
+    ok = abs(older) <= target + allowance and abs(newer) <= target + allowance and abs(newer) <= abs(older)
+    return text, f"{'QUALIFIED_AT_LEVEL_' if ok else 'NOT_QUALIFIED_THROUGH_LEVEL_'}{levels[-1]}"
+
+
+def test_t123_the_projection_equals_an_independent_rederivation_from_the_tables_text():
+    out = md.load_outputs(REPO)
+    numerics = md.load_numerics_outputs(REPO, out)
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    stock = md.load_geant4_levels(GEANT4_LEVELS)
+    kshell = _table_cells(D3DIR / "d3_kshell.mudirac130.g4dat")
+    levels = _table_cells(D3DIR / "d3_levels.mudirac130.g4dat")
+    inputs = {row.nuclide: row for row in out.inputs}
+    committed = _committed_csv(PROJECTION)
+    gated = [cell for cell in cells if cell.gated]
+    assert list(committed[0]) == list(d3c.PROJECTION_COLUMNS)
+    assert len(committed) == len(gated)
+    assert md.TOL_FACTOR == 3 and md.SIGMA_CALC == 0
+    path = d3c.path_lengths()
+    assert path["K1"] == md.N_MAX - 1
+    half_line = md.LINE_HALF_UNIT / 1000
+    refinements = {}
+    for cell, row in zip(gated, committed, strict=True):
+        key = cell.nuclide
+        member = inputs[key]
+        lower_n, upper_n = (SHELL_OF[orbit[0]] for orbit in cell.quantity.split("-"))
+        assert (row["source"], row["Z"], row["A"], row["transition"], row["quantity"]) == (
+            cell.source, str(cell.z), str(cell.a), cell.transition, cell.quantity)
+        assert row["consumer_quantity"] == "shell_difference"
+        assert (row["initial_n"], row["final_n"]) == (str(upper_n), str(lower_n))
+        assert (row["measured_keV"], row["unc_keV"], row["locator"], row["copy_read"]) == (
+            cell.value_kev, cell.unc_kev, cell.locator, cell.copy_read)
+        with localcontext() as context:
+            context.prec = md._PRECISION
+            measured = Decimal(cell.value_kev)
+            tol = 3 * Decimal(cell.unc_kev)
+            solver = Decimal(out.lines[md.run_id(member, "base")][cell.quantity]) / 1000
+            consumer = (Decimal(_shell_text(kshell, levels, key, lower_n))
+                        - Decimal(_shell_text(kshell, levels, key, upper_n)))
+            photon = stock[key][lower_n - 1] - stock[key][upper_n - 1]
+            with localcontext() as wide:
+                wide.prec = 1000
+                stock_kev = (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+            assert Decimal(row["tol_keV"]) == tol
+            assert Decimal(row["solver_keV"]) == solver
+            assert Decimal(row["consumer_keV"]) == consumer
+            assert Decimal(row["stock_keV"]) == stock_kev
+            for name, value in (("solver", solver), ("consumer", consumer), ("stock", stock_kev)):
+                assert Decimal(row[f"{name}_residual_keV"]) == value - measured
+                assert row[f"{name}_within"] == ("true" if abs(value - measured) <= tol else "false")
+            assert row["consumer_closer_than_stock"] == (
+                "true" if abs(consumer - measured) < abs(stock_kev - measured) else "false")
+            assert Decimal(row["representation_error_keV"]) == consumer - solver
+            # the observed stability, from the numerics tables and the rule as stated above
+            if key not in refinements:
+                refinements[key] = _numerics_by_level(member, numerics)
+            by_level = refinements[key]
+            failed = any(not clean for clean, _, _ in by_level.values())
+            solver_values = {level: Decimal(lines[cell.quantity]) / 1000
+                             for level, (_, _, lines) in by_level.items() if lines and cell.quantity in lines}
+            sigmas = [Decimal(c.unc_kev) for c in gated if c.nuclide == key and c.quantity == cell.quantity]
+            solver_target = Decimal("0.1") * min(sigmas)
+            assert Decimal(row["solver_numeric_target_keV"]) == solver_target
+            text, token = _qualify(solver_values, failed, solver_target, 2 * half_line)
+            assert (row["solver_numeric_shifts_keV"], row["solver_numeric_qualification"]) == (
+                text, token), row
+            anchor_header = out.headers[md.run_id(member, "base")][md.orbit(md.N_MAX, True)]
+            anchor_bound = md.half_unit_6sig(anchor_header) / 1000
+            consumer_target = Decimal(0)
+            consumer_allowance = Decimal(0)
+            consumer_values: dict[int, Decimal] = {}
+            for level, (_, bindings, _) in by_level.items():
+                if bindings is not None:
+                    k, means = md.quantities(bindings)
+                    consumer_values[level] = (k if lower_n == 1 else means[lower_n - 2]) - means[upper_n - 2]
+            for n in (lower_n, upper_n):
+                central = Decimal(_shell_text(kshell, levels, key, n))
+                consumer_target += max(Decimal("1e-6"), Decimal("1e-6") * abs(central))
+                if n == 1:
+                    line_bound = path["K1"] * half_line
+                else:
+                    ell = n - 1
+                    weighted = 2 * ell * path[md.orbit(n, False)] + (2 * ell + 2) * path[md.orbit(n, True)]
+                    line_bound = Decimal(weighted) / (4 * ell + 2) * half_line
+                consumer_allowance += 2 * (line_bound + anchor_bound)
+            assert Decimal(row["consumer_numeric_target_keV"]) == consumer_target
+            text, token = _qualify(consumer_values, failed, consumer_target, consumer_allowance)
+            assert (row["consumer_numeric_shifts_keV"], row["consumer_numeric_qualification"]) == (
+                text, token), row
+    assert PROJECTION.read_bytes() == d3c.render_projection(REPO)
+
+
+def _counts(rows: list[dict[str, str]]) -> dict[str, int]:
+    return {
+        "gated": len(rows),
+        "solver_within": sum(r["solver_within"] == "true" for r in rows),
+        "consumer_within": sum(r["consumer_within"] == "true" for r in rows),
+        "stock_within": sum(r["stock_within"] == "true" for r in rows),
+        "consumer_closer_than_stock": sum(r["consumer_closer_than_stock"] == "true" for r in rows),
+    }
+
+
+def test_t123_the_projection_counts_are_pinned():
+    """Regression pins, copied from the unit's own measurement log -- not quotas: a change trips
+    this test on purpose."""
+    counts = _counts(_committed_csv(PROJECTION))
+    assert counts == {"gated": 67, "solver_within": 26, "consumer_within": 1, "stock_within": 0,
+                      "consumer_closer_than_stock": 42}
+    print("\nprojection counts: " + " ".join(f"{k} {v}" for k, v in counts.items()))
+
+
+def _d3_copy(tmp_path: pathlib.Path) -> pathlib.Path:
+    """A root whose data/g4/d3 is a copy of the committed directory."""
+    target = tmp_path / md.D3_RELDIR
+    target.mkdir(parents=True)
+    for source in D3DIR.iterdir():
+        if source.is_file():
+            (target / source.name).write_bytes(source.read_bytes())
+    return tmp_path
+
+
+CONSUMER_COLUMNS = {"consumer_keV", "consumer_residual_keV", "consumer_within", "consumer_closer_than_stock",
+                    "representation_error_keV", "consumer_numeric_target_keV"}
+
+
+def test_t123_drill_a_moved_e2_cell_changes_exactly_that_nuclides_consumer_columns(tmp_path):
+    root = _d3_copy(tmp_path)
+    levels_path = root / d3c.LEVELS_RELPATH
+    text = levels_path.read_bytes().decode("ascii")
+    line = next(ln for ln in text.split(NL) if ln.split()[:2] == ["82", "208"])
+    fields = line.split()
+    moved = line.replace(fields[2], "9" + fields[2], 1)
+    assert moved != line
+    levels_path.write_bytes(_replace_once(text, line, moved).encode("ascii"))
+    before = _committed_csv(PROJECTION)
+    after = d3c.project_shell_rows(root)
+    changed = [(b, a) for b, a in zip(before, after, strict=True) if b != a]
+    assert changed and all(b["Z"] == "82" and b["A"] == "208" for b, _ in changed)
+    touching_e2 = {c["quantity"] for c in before if c["Z"] == "82" and c["A"] == "208"
+                   and 2 in {SHELL_OF[o[0]] for o in c["quantity"].split("-")}}
+    assert {b["quantity"] for b, _ in changed} == touching_e2
+    for b, a in changed:
+        differing = {column for column in b if b[column] != a[column]}
+        assert differing <= CONSUMER_COLUMNS and "consumer_keV" in differing, differing
+
+
+# --------------------------------------------------------------------------------------------
+# T-124 -- the band intersections of the lines sharing a shell pair, re-derived from the cells
+# --------------------------------------------------------------------------------------------
+
+
+def test_t124_the_groups_equal_an_independent_rederivation_from_the_cells():
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    committed = _committed_csv(GROUPS)
+    assert list(committed[0]) == list(d3c.GROUPS_COLUMNS)
+    groups: dict[tuple[str, int, int, int, int], list[md.Cell]] = {}
+    for cell in cells:
+        if cell.gated:
+            lower_n, upper_n = (SHELL_OF[orbit[0]] for orbit in cell.quantity.split("-"))
+            groups.setdefault((cell.source, cell.z, cell.a, upper_n, lower_n), []).append(cell)
+    expected = []
+    for key in sorted(groups):
+        members = groups[key]
+        if len({cell.quantity for cell in members}) < 2:
+            continue
+        with localcontext() as context:
+            context.prec = md._PRECISION
+            lower = max(Decimal(c.value_kev) - 3 * Decimal(c.unc_kev) for c in members)
+            upper = min(Decimal(c.value_kev) + 3 * Decimal(c.unc_kev) for c in members)
+        basis = []
+        for cell in members:
+            if cell.copy_read not in basis:
+                basis.append(cell.copy_read)
+        expected.append((key, len(members), ";".join(c.quantity for c in members), lower, upper,
+                         ";".join(basis)))
+    assert len(committed) == len(expected)
+    for row, (key, lines, quantities, lower, upper, basis) in zip(committed, expected, strict=True):
+        assert (row["source"], int(row["Z"]), int(row["A"]), int(row["initial_n"]),
+                int(row["final_n"])) == key
+        assert (row["lines"], row["quantities"], row["basis"]) == (str(lines), quantities, basis)
+        assert Decimal(row["lower_keV"]) == lower and Decimal(row["upper_keV"]) == upper
+        assert Decimal(row["gap_keV"]) == lower - upper
+        assert row["empty"] == ("true" if lower - upper > 0 else "false")
+    assert GROUPS.read_bytes() == d3c.render_groups(REPO)
+
+
+def test_t124_every_multi_line_group_is_empty_and_the_widest_is_pb208_k_to_l():
+    """Pins copied from the unit's own measurement log; the two Pb-208 constants are assertion
+    targets computed here from the printed cells and the tables' text, never inputs."""
+    committed = _committed_csv(GROUPS)
+    empty = [row for row in committed if row["empty"] == "true"]
+    assert (len(committed), len(empty)) == (29, 29)
+    pb = next(row for row in committed
+              if (row["source"], row["Z"], row["A"], row["initial_n"], row["final_n"])
+              == ("Fricke1995", "82", "208", "2", "1"))
+    assert Decimal(pb["gap_keV"]) == Decimal("184.226")
+    assert pb == max(committed, key=lambda row: Decimal(row["gap_keV"]))
+    kshell = _table_cells(D3DIR / "d3_kshell.mudirac130.g4dat")
+    levels = _table_cells(D3DIR / "d3_levels.mudirac130.g4dat")
+    with localcontext() as context:
+        context.prec = md._PRECISION
+        k_to_l = (Decimal(_shell_text(kshell, levels, (82, 208), 1))
+                  - Decimal(_shell_text(kshell, levels, (82, 208), 2)))
+    assert abs(k_to_l - Decimal("5902.236247053")) <= Decimal("1e-9")
+    projection = _committed_csv(PROJECTION)
+    pb_k_lines = [row for row in projection if row["Z"] == "82" and row["quantity"].startswith("K1-L")]
+    assert {row["consumer_keV"] for row in pb_k_lines} == {format(k_to_l, "f")}
+    print(f"\ngroups {len(committed)} empty {len(empty)}; Pb-208 K-L gap {pb['gap_keV']} keV; "
+          f"consumer K-L {k_to_l}")
+
+
+def test_t124_drill_a_widened_pb208_uncertainty_flips_the_group_to_non_empty(tmp_path):
+    root = _d3_copy(tmp_path)
+    cells_path = root / md.CELLS_RELPATH
+    text = cells_path.read_bytes().decode("ascii")
+    mutated = _replace_once(text, "Fricke1995,82,208,2p1/2-1s1/2,K1-L2,5778.058,0.100,",
+                            "Fricke1995,82,208,2p1/2-1s1/2,K1-L2,5778.058,99.000,")
+    cells_path.write_bytes(mutated.encode("ascii"))
+    groups = d3c.incompatible_groups(d3c.project_shell_rows(root))
+    pb = next(row for row in groups if (row["source"], row["Z"], row["A"], row["initial_n"], row["final_n"])
+              == ("Fricke1995", "82", "208", "2", "1"))
+    assert pb["empty"] == "false" and Decimal(pb["gap_keV"]) < 0
+    assert sum(row["empty"] == "true" for row in groups) == len(groups) - 1

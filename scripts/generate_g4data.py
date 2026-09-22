@@ -44,6 +44,7 @@ import tempfile
 from pathlib import Path
 
 import openmucf
+from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import emit, provenance, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1src
 from openmucf.g4.sources import mizuno2025 as mizsrc
@@ -521,6 +522,11 @@ D3_LEVELS_LAYER2 = D3DIR / f"d3_levels.{md.PROFILE}.prov.json"
 #: The comparison with the measured transition energies: generated and byte-diffed, not an
 #: archive member.
 D3_VALIDATION = ROOT / md.VALIDATION_RELPATH
+#: The representation contract beside the tables -- the shell projection of every gated line and
+#: the band intersections of the lines sharing a shell pair -- generated from the committed files
+#: and byte-diffed like the comparison; neither is an archive member.
+D3_PROJECTION = ROOT / d3c.PROJECTION_RELPATH
+D3_GROUPS = ROOT / d3c.GROUPS_RELPATH
 #: What each table's value columns are, as the per-row method text names them.
 D3_QUANTITY = {
     md.K_TABLE: "The 1s1/2 binding energy in keV is",
@@ -645,6 +651,7 @@ def d3_summary(out: md.Outputs) -> list[str]:
         )
     for z, a, bundled, table in md.radius_disagreements(out.inputs):
         lines.append(f"d3: bundled rms radius differs from the charge-radii table at 4 decimals: Z={z} A={a} {bundled} vs {table}")
+    lines.extend(d3c.summary_lines(ROOT))
     return lines
 
 
@@ -717,6 +724,9 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     )
     artifacts[D1_SNIPPET_PATH] = snippet.encode("ascii")
     artifacts[D3_VALIDATION] = md.build_validation(ROOT)
+    bundle = d3c.load_bundle(ROOT)
+    artifacts[D3_PROJECTION] = d3c.render_projection(ROOT, bundle)
+    artifacts[D3_GROUPS] = d3c.render_groups(ROOT, bundle)
     return artifacts, archive
 
 
