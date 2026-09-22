@@ -1,8 +1,9 @@
 """The representation contract of the D3 tables: what a cascade receives, measured beside the tables.
 
 The shipped tables are not touched. This module reads them as text, joins every gated measured line
-to the shell difference a patched cascade emits for it, and intersects the bands of the lines that
-share a shell pair. No tolerance moves and no central value moves.
+to the shell difference a patched cascade emits for it, intersects the bands of the lines that share
+a shell pair, and loads what is recorded of the radius each compared member was run with. No
+tolerance moves and no central value moves.
 
 Standard library plus ``openmucf.g4.sources.mudirac130`` only.
 """
@@ -486,4 +487,97 @@ def summary_lines(root: Path, bundle: Bundle | None = None) -> list[str]:
         f"gap {widest['gap_keV']} keV",
         f"d3 contract: numeric qualification over {len(rows)} gated solver lines: "
         + _histogram([r["solver_numeric_qualification"] for r in rows]),
+        lineage_summary(root),
     ]
+
+
+# --------------------------------------------------------------------------------------------
+# the radius lineage: what is known of the experiments behind each compared member's radius
+# --------------------------------------------------------------------------------------------
+
+LINEAGE_RELPATH = f"{md.D3_RELDIR}/radius_lineage.csv"
+LINEAGE_COLUMNS = (
+    "Z", "A", "input_source", "primary_experiment_id", "method", "calibration_inputs",
+    "covariance_source", "comparison_experiment_id", "dependency_state", "locator",
+)
+#: What is known of the experiments behind a member's radius and behind its compared lines:
+#: traced and shared, traced and disjoint, or not traced.
+SHARED = "SHARED"
+DISJOINT_DOCUMENTED = "DISJOINT_DOCUMENTED"
+UNKNOWN = "UNKNOWN"
+DEPENDENCY_STATES = (SHARED, DISJOINT_DOCUMENTED, UNKNOWN)
+#: The cell a lineage row carries where a primary or its calibration inputs are not in hand.
+NOT_TRACED = "not traced"
+
+
+@dataclass(frozen=True)
+class Lineage:
+    z: int
+    a: int
+    input_source: str
+    primary_experiment_id: str
+    method: str
+    calibration_inputs: str
+    covariance_source: str
+    comparison_experiment_id: str
+    dependency_state: str
+    locator: str
+
+    @property
+    def nuclide(self) -> tuple[int, int]:
+        return (self.z, self.a)
+
+
+def load_radius_lineage(path: Path) -> tuple[Lineage, ...]:
+    """Parse ``radius_lineage.csv``: one row per gated nuclide of the ``validation_cells.csv``
+    beside it, in that order; a state among DEPENDENCY_STATES; SHARED and DISJOINT_DOCUMENTED only
+    with a traced primary and traced calibration inputs."""
+    path = Path(path)
+    gated = md.gated_nuclides(md.load_cells(path.with_name(Path(md.CELLS_RELPATH).name)))
+    rows: list[Lineage] = []
+    for where, r in md.read_rows(path, LINEAGE_COLUMNS):
+        z, a = md.integer(r["Z"], where, "Z"), md.integer(r["A"], where, "A")
+        if r["dependency_state"] not in DEPENDENCY_STATES:
+            raise md.CellError(
+                f"{where}: dependency_state {r['dependency_state']!r} is not one of {DEPENDENCY_STATES!r}"
+            )
+        if r["dependency_state"] != UNKNOWN:
+            for column in ("primary_experiment_id", "calibration_inputs"):
+                if r[column] in ("", NOT_TRACED):
+                    raise md.CellError(
+                        f"{where}: {r['dependency_state']} needs a traced {column}, got {r[column]!r}"
+                    )
+        for column in ("input_source", "method", "covariance_source", "comparison_experiment_id", "locator"):
+            if not r[column]:
+                raise md.CellError(f"{where}: every row must carry a {column}")
+        if any(row.nuclide == (z, a) for row in rows):
+            raise md.DuplicateKeyError(f"{where}: duplicate key ({z}, {a})")
+        rows.append(Lineage(z, a, r["input_source"], r["primary_experiment_id"], r["method"],
+                            r["calibration_inputs"], r["covariance_source"],
+                            r["comparison_experiment_id"], r["dependency_state"], r["locator"]))
+    if [row.nuclide for row in rows] != gated:
+        raise md.CellError(
+            f"{path.name} names {[row.nuclide for row in rows]}, the gated nuclides in order are {gated}"
+        )
+    return tuple(rows)
+
+
+def audit_dependencies(root: Path) -> list[dict[str, str]]:
+    """The lineage rows as loaded, each with ``gated_rows``, the count of gated cells of its
+    nuclide. Nothing is inferred: a row's state is what the file records."""
+    root = Path(root)
+    cells = md.load_cells(root / md.CELLS_RELPATH)
+    out = []
+    for row in load_radius_lineage(root / LINEAGE_RELPATH):
+        record = {column: getattr(row, column.lower() if column in ("Z", "A") else column)
+                  for column in LINEAGE_COLUMNS}
+        record["Z"], record["A"] = str(row.z), str(row.a)
+        record["gated_rows"] = str(sum(1 for cell in cells if cell.gated and cell.nuclide == row.nuclide))
+        out.append(record)
+    return out
+
+
+def lineage_summary(root: Path) -> str:
+    lineage = load_radius_lineage(Path(root) / LINEAGE_RELPATH)
+    return (f"d3 contract: lineage states {_histogram([row.dependency_state for row in lineage])} "
+            f"over {len(lineage)} rows")

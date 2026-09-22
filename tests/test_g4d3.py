@@ -1662,3 +1662,115 @@ def test_t124_drill_a_widened_pb208_uncertainty_flips_the_group_to_non_empty(tmp
               == ("Fricke1995", "82", "208", "2", "1"))
     assert pb["empty"] == "false" and Decimal(pb["gap_keV"]) < 0
     assert sum(row["empty"] == "true" for row in groups) == len(groups) - 1
+
+
+# --------------------------------------------------------------------------------------------
+# T-125 -- the radius lineage: what is recorded of the experiments behind each compared radius
+# --------------------------------------------------------------------------------------------
+
+LINEAGE = REPO / d3c.LINEAGE_RELPATH
+
+
+def test_t125_the_lineage_names_the_gated_nuclides_in_order_and_every_row_is_unknown_today():
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    rows = d3c.load_radius_lineage(LINEAGE)
+    assert [row.nuclide for row in rows] == md.gated_nuclides(cells)
+    sources = {row.input_source for row in rows}
+    assert len(sources) == 1
+    source = sources.pop()
+    assert md.RADII_BLOB in source and source.startswith("nuclear_radii.dat blob ")
+    assert "(Angeli and Marinova 2013)" in source
+    for row in rows:
+        assert row.dependency_state == d3c.UNKNOWN
+        assert row.primary_experiment_id == d3c.NOT_TRACED and row.calibration_inputs == d3c.NOT_TRACED
+        assert row.method == "evaluated compilation" and row.covariance_source == "none"
+        seen: list[str] = []
+        for cell in cells:
+            if cell.gated and cell.nuclide == row.nuclide and cell.source not in seen:
+                seen.append(cell.source)
+        assert row.comparison_experiment_id == "; ".join(seen)
+        assert row.locator == origins[row.nuclide].locator
+    audit = d3c.audit_dependencies(REPO)
+    assert [(r["Z"], r["A"]) for r in audit] == [(str(z), str(a)) for z, a in md.gated_nuclides(cells)]
+    for record, row in zip(audit, rows, strict=True):
+        assert record["dependency_state"] == row.dependency_state
+        assert int(record["gated_rows"]) == sum(1 for c in cells if c.gated and c.nuclide == row.nuclide)
+    states: dict[str, int] = {}
+    for row in rows:
+        states[row.dependency_state] = states.get(row.dependency_state, 0) + 1
+    print(f"\nlineage rows {len(rows)}: " + ", ".join(f"{k} {v}" for k, v in sorted(states.items())))
+
+
+def test_t125_the_weakly_sensitive_rows_are_isotopes_of_one_element():
+    weak = [row for row in _committed_validation()
+            if row["gated"] == "true" and row["label"] == md.WEAKLY_SENSITIVE]
+    nuclides = sorted({(int(row["Z"]), int(row["A"])) for row in weak})
+    assert weak and {z for z, _ in nuclides} == {46}
+    out = md.load_outputs(REPO)
+    symbols = {row.z: row.symbol for row in out.inputs}
+    assert symbols[46] == "Pd"
+    print(f"\nweakly sensitive rows {len(weak)} over {len(nuclides)} isotopes of Z=46 ({symbols[46]})")
+
+
+def _lineage_drill(tmp_path, mutate, error, message):
+    """Copy the lineage file and the cells beside it, check the copy loads, corrupt it, require
+    the named refusal."""
+    for source in (LINEAGE, CELLS):
+        (tmp_path / source.name).write_bytes(source.read_bytes())
+    copy = tmp_path / LINEAGE.name
+    text = LINEAGE.read_bytes().decode("ascii")
+    d3c.load_radius_lineage(copy)
+    mutated = mutate(text)
+    assert mutated != text
+    copy.write_bytes(mutated.encode("utf-8"))
+    with pytest.raises(error, match=re.escape(message)):
+        d3c.load_radius_lineage(copy)
+
+
+def _lineage_cell(index: int, new: str):
+    def edit(text: str) -> str:
+        rows = list(csv.reader(io.StringIO(text)))
+        rows[1][index] = new
+        buffer = io.StringIO()
+        csv.writer(buffer, lineterminator=NL).writerows(rows)
+        return buffer.getvalue()
+    return edit
+
+
+LINEAGE_DRILLS = [
+    ("a carriage return", lambda t: t.replace(NL, "\r" + NL, 1), md.CarriageReturnError, "contains CR"),
+    ("a non-ASCII byte", lambda t: t.replace("not traced", "not tracéd", 1), md.NonAsciiError,
+     "outside US-ASCII"),
+    ("a renamed column", lambda t: _replace_once(t, "dependency_state,locator", "state,locator"),
+     md.HeaderError, "header is"),
+    ("an unknown state", _lineage_cell(8, "TRACED"), md.CellError, "dependency_state"),
+    ("SHARED with an untraced primary", _lineage_cell(8, d3c.SHARED), md.CellError,
+     "SHARED needs a traced primary_experiment_id"),
+    ("DISJOINT_DOCUMENTED with an untraced primary", _lineage_cell(8, d3c.DISJOINT_DOCUMENTED), md.CellError,
+     "DISJOINT_DOCUMENTED needs a traced primary_experiment_id"),
+    ("an empty locator", _lineage_cell(9, ""), md.CellError, "every row must carry a locator"),
+    ("a missing nuclide", lambda t: NL.join([*_lines(t)[:1], *_lines(t)[2:]]), md.CellError,
+     "the gated nuclides in order are"),
+    ("rows out of order", lambda t: _swap_lines(t, 1), md.CellError, "the gated nuclides in order are"),
+    ("a duplicated row", lambda t: _repeat_line(t, 1), md.DuplicateKeyError, "duplicate key"),
+    ("no rows", lambda t: _lines(t)[0] + NL, md.EmptyError, "carries no rows"),
+]
+
+
+@pytest.mark.parametrize("label, mutate, error, message", LINEAGE_DRILLS, ids=[d[0] for d in LINEAGE_DRILLS])
+def test_t125_drill_each_lineage_rule_refuses_its_fixture(tmp_path, label, mutate, error, message):
+    _lineage_drill(tmp_path, mutate, error, message)
+
+
+def test_t125_drill_a_shared_row_with_a_traced_primary_and_calibration_loads(tmp_path):
+    for source in (LINEAGE, CELLS):
+        (tmp_path / source.name).write_bytes(source.read_bytes())
+    copy = tmp_path / LINEAGE.name
+    text = copy.read_bytes().decode("ascii")
+    rows = list(csv.reader(io.StringIO(text)))
+    rows[1][3], rows[1][5], rows[1][8] = "experiment X", "calibration Y", d3c.SHARED
+    buffer = io.StringIO()
+    csv.writer(buffer, lineterminator=NL).writerows(rows)
+    copy.write_bytes(buffer.getvalue().encode("ascii"))
+    loaded = d3c.load_radius_lineage(copy)
+    assert loaded[0].dependency_state == d3c.SHARED and loaded[0].primary_experiment_id == "experiment X"
