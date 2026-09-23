@@ -5,7 +5,7 @@ package on inputs this module renders from ``data/g4/d3/mudirac_inputs.csv``; ev
 every line it prints is committed as a CSV beside them, and this module turns those printed strings
 into the two tables by exact decimal arithmetic whose checks raise rather than warn.
 
-Beside the energies, the directory carries the measured transition energies the tables are compared
+Beside the energies, the directory carries the measured energies the tables are compared
 with, transcribed from their sources' printed tables, and the comparison is re-derived from the
 committed files alone.
 
@@ -53,7 +53,7 @@ SIGMA_CALC = 0
 NMAX_BOUND = Decimal("0.01")
 K_TABLE = "k_shell_energy"
 LEVEL_TABLE = "level_energy"
-#: The bibliography keys of the transition energies the tables are compared with.
+#: The bibliography keys of the energies the tables are compared with.
 VALIDATION_SOURCES = ("Fricke1995", "Saito2025")
 
 D3_RELDIR = "data/g4/d3"
@@ -192,13 +192,13 @@ def _decimals(text: str) -> int:
 
 
 # --------------------------------------------------------------------------------------------
-# the measured transition energies
+# the measured energies
 # --------------------------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class Cell:
-    """One printed transition energy, every cell as its source prints it."""
+    """One printed energy, every cell as its source prints it."""
 
     source: str
     z: int
@@ -644,7 +644,7 @@ class Outputs:
     runs: dict[str, RunRow]
     #: ``{run: {orbit: printed header energy E}}`` of every base, rsig and r101 run.
     headers: dict[str, dict[str, str]]
-    #: ``{run: {line: printed transition energy}}`` of the same runs.
+    #: ``{run: {line: printed level difference}}`` of the same runs.
     lines: dict[str, dict[str, str]]
     nmax: tuple[NmaxRow, ...]
 
@@ -1126,7 +1126,7 @@ def geant4_line_kev(levels: tuple[float, ...], line: str) -> Decimal:
 
 
 # --------------------------------------------------------------------------------------------
-# the comparison with the measured transition energies
+# the comparison with the measured energies
 # --------------------------------------------------------------------------------------------
 
 VALIDATION_COLUMNS = (

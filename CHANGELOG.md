@@ -67,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The D3 tables of the `mudirac130` profile, `k_shell_energy` and `level_energy`**
   (`data/g4/d3/`), generated from the MuDirac inputs and printed outputs committed beside them.
   The change moves the dataset's `#VERSION` to 0.4.0.
-  The comparison with the transition energies Fricke et al. (1995) and Saito et al. (2025) print
+  The comparison with the energies Fricke et al. (1995) and Saito et al. (2025) print
   is generated as `data/g4/d3/validation.csv` and tabulated in `DATASET_D3.md`, with a tolerance
   fixed before the comparison and every row outside it listed, not altered.
   The validator gains V-16, which requires a profile carrying either D3 table to carry both with

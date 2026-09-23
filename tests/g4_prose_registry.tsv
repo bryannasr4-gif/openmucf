@@ -465,14 +465,15 @@ fa4e454cf7376988fd9aea2dbc833169f0203cf3	DATASET_D1.md	REGISTERED: two -- the tw
 fb75dedfb605f98897d95fabd58e54396f759b86	DATASET_D1.md	REGISTERED: one -- a pronoun ('a bare one')
 ff75fbe4536b0ca4aee71784da448e67d0842e07	DATASET_D1.md	REGISTERED: 62, 150, 50, 119 -- the record keys (62, 150) and (50, 119) and the nuclide labels Sm-150 and Sn-119; the abundances beside them are T-63's rounded pins, read from the audit rows of those keys
 2651db6c1279516bcfe33fc14e87d8fe3d7bc0df	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
-3615ea3bebe2efc40bff8091e9e942ca0fbc5dc4	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 504a430ad67b5a0eb78a3cf308a3f8c644c9f817	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 51ab8f49b9429d8158ebb7d33981ab86d6371de6	DATASET_D3.md	REGISTERED: one -- 'the patched one', a pronoun
+602155485737a9aa1c6381131f0cd92b4d3ff9da	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 7a3d05bb1c1b3364e73a2a5a2a3b06e05e2401f4	DATASET_D3.md	REGISTERED: one -- 'below the one from which', a pronoun
 95b64a653f86894a5f07681ebde979de44abe74e	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 c6ebd9b91bd4e49df07c7ceddec34af44279992d	DATASET_D3.md	REGISTERED: one -- 'more than one gated line', a pronoun
 d740c76e0828c8f02defb363455e0d3733b0e5eb	DATASET_D3.md	REGISTERED: two -- 'its two circular states', a description
 daacccf759d51544614bfc88c1fec44ac2a591de	DATASET_D3.md	REGISTERED: one -- 'one signed radius response', a description
+e89fe618ca851636957d81975e880ab0e7de99cc	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s in the title of Table IIIA of Fricke et al.: a transition label, not a quantity
 eb37287d325e7ebc9bc380349193266efbb93991	DATASET_D3.md	REGISTERED: two, one -- 'between two shells', 'one number where the sources print two', a description
 f5628c7e58a3465d06ea82b025bae391520a8dde	DATASET_D3.md	REGISTERED: 4, 3 -- the digits of the seam variable `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
 0ccdf0a1a697580b0dcf6641da9f8d632e79d931	README.md	REGISTERED: 225 -- the nuclide label Ac-225

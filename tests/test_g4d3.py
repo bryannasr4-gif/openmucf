@@ -65,7 +65,7 @@ def _drill(tmp_path, source: pathlib.Path, mutate, error, message, loader):
 
 
 # --------------------------------------------------------------------------------------------
-# T-106 -- the measured transition energies (loaders)
+# T-106 -- the measured energies (loaders)
 # --------------------------------------------------------------------------------------------
 
 _G = "Fricke1995,21,45,2p1/2-1s1/2,K1-L2,855.185,0.041,"
@@ -755,7 +755,7 @@ def test_t105_no_d3_file_carries_a_carriage_return():
 
 
 # --------------------------------------------------------------------------------------------
-# T-106 -- the comparison with the measured transition energies, re-derived
+# T-106 -- the comparison with the measured energies, re-derived
 # --------------------------------------------------------------------------------------------
 
 VALIDATION = REPO / md.VALIDATION_RELPATH
