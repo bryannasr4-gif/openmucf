@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the K–L shell difference beside single-value centroids (2026-09-23)
+
+- **`data/g4/d3/consumer_centroids.csv` and `centroid_margins.csv` are generated beside the unchanged D3 tables**: they set the K–L shell difference a patched cascade emits beside the centers of gravity of Table IIIA of Fricke et al. (1995), beside degeneracy-convention centroids of the doublets the sources print, and beside the unpatched cascade, with a discrepancy screen bounded over every correlation and, per row, the shift to a finer numerical setting.
+- `mudirac_settings_runs.csv`, `mudirac_settings_states.csv` and `mudirac_settings_lines.csv` record the MuDirac runs behind that shift, and `geant4_cascade_levels.csv` now also holds the unpatched cascade's levels for the nuclides of the `centroid` rows.
+- `intensity_ratios.csv` transcribes the doublet intensity ratio Jenkins et al. (1971) print in their Table 9, which the new file uses for illustration only.
+
 ### Changed -- the Kamimura calibration prior, the bit-identity scope and the test-environment caps (2026-09-22)
 
 - The Kamimura calibration chain now truncates its Normal prior to the weak prior's support; `CALIBRATION.md` records the new realization and its convergence.

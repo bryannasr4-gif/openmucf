@@ -227,6 +227,80 @@ radius passed to MuDirac and behind the compared line; its state is `UNKNOWN` on
 the evaluation the radii come from is not in hand, and the 16 weakly sensitive rows are 5
 isotopes of palladium.
 
+### The K–L shell difference beside a single measured value
+
+This part follows a rule fixed after the residuals above had been published and after this shell
+difference had already been set beside degeneracy-convention centroids and beside the unpatched
+cascade, so it is a retrospective analysis and qualifies no accuracy.
+`consumer_centroids.csv` sets the energy a patched cascade emits between the K and L shells, the K
+energy minus the L-shell mean of these tables, beside a single value for a nuclide's 2p → 1s
+transition and beside the energy the unpatched cascade emits between the same shells, for which
+`geant4_cascade_levels.csv` is now also cut to the nuclides of the `centroid` rows.
+For a `centroid` row that value is what the explanation of Table IIIA of Fricke et al. (1995) calls
+"the center of gravity of the 2p → 1s transition", for which it states no weighting, with its
+printed statistical uncertainty.
+Where both lines of a 2p → 1s doublet are gated rows above, the value is their degeneracy-convention
+centroid, the lines weighted by the degeneracies of their upper states as the L-shell mean of these
+tables is, a convention that implies nothing about the lines' relative intensities; a nuclide with a
+gated line whose partner is missing or ungated is listed as `excluded`.
+`validation_cells.csv` carries no correlation between the lines, so that centroid's uncertainty is
+given as its smallest and largest values over every correlation, and each row is screened against
+the band of the comparison above as `inside`, `outside` or, where the bounds disagree,
+`correlation-dependent`, a label of a discrepancy and not of accuracy.
+Each row also carries the shift of its shell difference from the shipped numerical settings to a
+finer reference setting (`dU_keV` from the Uehling steps, `dgrid_keV` from the grid step, and their
+sum `dnum_keV`), never added to an uncertainty, and `screen_at_reference`, the screen repeated with
+that shift applied.
+That sum exceeds a tenth of the row's uncertainty, taken at its largest over every correlation, on
+26 of the 27 rows and reaches 0.214379930 keV for Pb-208, and `u_certified`, the smallest Uehling
+step count at which the rule in `openmucf/g4/d3_centroids.py` certifies the shell difference against
+doubling it, is `none` for 6 of the 26 nuclides.
+`centroid_margins.csv` gives, per cohort and source, the smallest, median and largest margin, the
+unpatched cascade's absolute residual minus the patched one's, over the isotopes, each counted once,
+and the patched cascade's largest absolute residual with its nuclide, as a distribution only; both
+files are tabulated below.
+For Pb-208 the row also lists the ratio of the doublet's intensities that Jenkins et al. (1971)
+measured, from their Table 9 with the target of their Table 3, and the centroid that ratio would
+give, for illustration only and never screened.
+Neither the nuclear-polarization corrections Fricke et al. print, listed beside each of their rows,
+nor electron screening enters the shell difference, a centroid or a band.
+
+| cohort | source | Z | A | value (keV) | sigma (keV) | sigma min (keV) | sigma max (keV) | shell difference (keV) | residual (keV) | unpatched residual (keV) | margin (keV) | screen | dnum (keV) | u_certified | screen at reference |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| labelled | Fricke1995 | 4 | 9 | 33.402000000 | 0.010000000 |  |  | 33.392443192 | -0.009556808 | -1.510349355 | 1.500792547 | inside | 0.000077480 | 100 | inside |
+| labelled | Fricke1995 | 6 | 12 | 75.258200000 | 0.000500000 |  |  | 75.261047326 | 0.002847326 | -2.329588794 | 2.326741468 | outside | 0.000281489 | 300 | outside |
+| labelled | Fricke1995 | 8 | 16 | 133.535000000 | 0.002000000 |  |  | 133.532449579 | -0.002550421 | -5.210871570 | 5.208321149 | inside | 0.000728762 | 200 | inside |
+| labelled | Fricke1995 | 11 | 23 | 250.229000000 | 0.002000000 |  |  | 250.223863606 | -0.005136394 | -8.875728079 | 8.870591685 | inside | 0.002104159 | 300 | inside |
+| labelled | Fricke1995 | 13 | 27 | 346.828000000 | 0.002000000 |  |  | 346.834883059 | 0.006883059 | -12.154564424 | 12.147681365 | outside | 0.003681636 | 400 | outside |
+| labelled | Fricke1995 | 14 | 28 | 400.173000000 | 0.005000000 |  |  | 400.165477424 | -0.007522576 | -13.406839395 | 13.399316819 | inside | 0.004686204 | 300 | inside |
+| labelled | Fricke1995 | 18 | 40 | 644.004000000 | 0.025000000 |  |  | 643.627044234 | -0.376955766 | -18.135103427 | 17.758147661 | outside | 0.010221448 | 200 | outside |
+| constructed | Fricke1995 | 21 | 45 | 856.398333333 |  | 0.013666667 | 0.041000000 | 856.365797437 | -0.032535896 | -19.646241702 | 19.613705806 | inside | 0.016292550 | 200 | inside |
+| constructed | Fricke1995 | 26 | 56 | 1255.671000000 |  | 0.010000000 | 0.048666667 | 1255.510937706 | -0.160062294 | -21.945228401 | 21.785166107 | outside | 0.029850213 | 300 | correlation-dependent |
+| constructed | Fricke1995 | 29 | 63 | 1512.318666667 |  | 0.011333333 | 0.051333333 | 1512.164751704 | -0.153914963 | -21.487886406 | 21.333971443 | correlation-dependent | 0.039430815 | 300 | correlation-dependent |
+| constructed | Fricke1995 | 32 | 74 | 1771.830333333 |  | 0.002666667 | 0.020000000 | 1771.154352356 | -0.675980978 | -15.611615841 | 14.935634864 | outside | 0.049111723 | 500 | outside |
+| constructed | Fricke1995 | 38 | 88 | 2336.352333333 |  | 0.002000000 | 0.008666667 | 2335.956916383 | -0.395416951 | -27.193418640 | 26.798001690 | outside | 0.073863272 | none | outside |
+| constructed | Fricke1995 | 40 | 90 | 2529.456000000 |  | 0.003000000 | 0.010333333 | 2529.354589792 | -0.101410208 | -25.857812304 | 25.756402096 | outside | 0.082833560 | none | correlation-dependent |
+| constructed | Fricke1995 | 40 | 90 | 2529.198666667 |  | 0.007000000 | 0.022333333 | 2529.354589792 | 0.155923126 | -25.600478971 | 25.444555845 | outside | 0.082833560 | none | outside |
+| constructed | Fricke1995 | 41 | 93 | 2618.926000000 |  | 0.004000000 | 0.017333333 | 2618.555694794 | -0.370305206 | -20.248095737 | 19.877790531 | outside | 0.086443358 | 700 | outside |
+| constructed | Fricke1995 | 44 | 102 | 2884.072000000 |  | 0.007666667 | 0.031000000 | 2883.250099042 | -0.821900958 | -6.589975537 | 5.768074579 | outside | 0.097076307 | 600 | outside |
+| constructed | Fricke1995 | 47 | 107 | 3171.913000000 |  | 0.004666667 | 0.023333333 | 3170.603713446 | -1.309286554 | -20.500470701 | 19.191184147 | outside | 0.110619061 | none | outside |
+| constructed | Fricke1995 | 49 | 115 | 3352.169666667 |  | 0.003333333 | 0.024666667 | 3351.012379212 | -1.157287454 | -22.436927494 | 21.279640039 | outside | 0.118458839 | none | outside |
+| constructed | Fricke1995 | 53 | 127 | 3704.948333333 |  | 0.010333333 | 0.033666667 | 3704.396093694 | -0.552239639 | -30.945683745 | 30.393444106 | outside | 0.133614066 | none | outside |
+| constructed | Fricke1995 | 55 | 133 | 3881.991333333 |  | 0.007666667 | 0.033666667 | 3881.736131960 | -0.255201373 | -40.789379902 | 40.534178529 | outside | 0.141441215 | none | outside |
+| constructed | Fricke1995 | 79 | 197 | 5704.431333333 |  | 0.053333333 | 0.150666667 | 5706.500360205 | 2.069026872 | -186.487327126 | 184.418300255 | outside | 0.208708155 | 400 | outside |
+| constructed | Fricke1995 | 81 | 205 | 5837.263333333 |  | 0.230000000 | 0.663333333 | 5841.524376794 | 4.261043461 | -225.174733054 | 220.913689593 | outside | 0.212955462 | 200 | outside |
+| constructed | Fricke1995 | 82 | 208 | 5901.255333333 |  | 0.026666667 | 0.093333333 | 5902.236247053 | 0.980913720 | -227.374463435 | 226.393549716 | outside | 0.214379930 | 500 | outside |
+| constructed | Saito2025 | 46 | 104 | 3080.400000000 |  | 0.033333333 | 0.233333333 | 3080.193308696 | -0.206691304 | -19.550430954 | 19.343739650 | correlation-dependent | 0.106716959 | 300 | inside |
+| constructed | Saito2025 | 46 | 106 | 3072.766666667 |  | 0.033333333 | 0.366666667 | 3072.397468491 | -0.369198175 | -11.947705909 | 11.578507733 | correlation-dependent | 0.105789953 | 200 | correlation-dependent |
+| constructed | Saito2025 | 46 | 108 | 3065.366666667 |  | 0.066666667 | 0.200000000 | 3064.463845933 | -0.902820734 | -4.577194686 | 3.674373952 | outside | 0.104855984 | 300 | outside |
+| constructed | Saito2025 | 46 | 110 | 3057.933333333 |  | 0.033333333 | 0.500000000 | 3057.397072201 | -0.536261132 | 2.827710358 | 2.291449225 | correlation-dependent | 0.104032117 | 200 | correlation-dependent |
+
+| cohort | source | isotopes | margin min (keV) | margin median (keV) | margin max (keV) | largest residual (keV) | Z | A |
+|---|---|---|---|---|---|---|---|---|
+| labelled | Fricke1995 | 7 | 1.500792547 | 8.870591685 | 17.758147661 | 0.376955766 | 18 | 40 |
+| constructed | Fricke1995 | 15 | 5.768074579 | 21.785166107 | 226.393549716 | 4.261043461 | 81 | 205 |
+| constructed | Saito2025 | 4 | 2.291449225 | 3.674373952..11.578507733 | 19.343739650 | 0.902820734 | 46 | 108 |
+
 ## 6. Findings
 
 - The rows outside tolerance are this comparison's registered disagreements; none is fitted away.

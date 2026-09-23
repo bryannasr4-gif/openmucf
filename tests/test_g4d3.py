@@ -945,6 +945,7 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         pattern, groups = _row_pattern(line)
         pins.append((f"comparison table row {number}", path, pattern, groups, None))
     pins.extend(contract_pins())
+    pins.extend(centroid_pins())
     return pins
 
 
@@ -1009,6 +1010,54 @@ def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         pattern, row_groups = _row_pattern(line)
         pins.append((f"groups table row {number}", path, pattern, row_groups, None))
     return pins
+
+
+def centroid_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    from openmucf.g4 import d3_centroids as centroids
+
+    rows = _committed_rows(centroids.CENTROIDS_RELPATH)
+    margins = _committed_rows(centroids.MARGINS_RELPATH)
+    ratios = _committed_rows(centroids.RATIOS_RELPATH)
+    compared = [row for row in rows if row["cohort"] != "excluded"]
+    above = sum(abs(Decimal(row["dnum_keV"])) >
+                Decimal(row["sigma_keV"] or row["sigma_max_keV"]) / 10 for row in compared)
+    largest = max(compared, key=lambda row: abs(Decimal(row["dnum_keV"])))
+    nuclides = {(row["Z"], row["A"]) for row in compared}
+    uncertified = {(row["Z"], row["A"]) for row in compared if row["u_certified"] == "none"}
+    assert len(ratios) == 1
+    path = "DATASET_D3.md"
+    pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
+        ("centroid shift count", path, r"on (\d+) of the \d+ rows and reaches", (1,), above),
+        ("centroid compared rows", path, r"on \d+ of the (\d+) rows and reaches", (1,), len(compared)),
+        ("largest centroid shift", path, r"reaches ([-0-9.]+) keV for Pb-", (1,),
+         largest["dnum_keV"]),
+        ("largest shift mass", path, r"keV for Pb-(\d+), and", (1,), largest["A"]),
+        ("uncertified nuclides", path, r"is `none` for (\d+) of the \d+ nuclides", (1,),
+         len(uncertified)),
+        ("compared nuclides", path, r"is `none` for \d+ of the (\d+) nuclides", (1,),
+         len(nuclides)),
+        ("illustrative ratio mass", path, r"For Pb-(\d+) the row also lists", (1,), ratios[0]["A"]),
+    ]
+    for name, block in (("centroids", centroids.render_centroids_table(rows)),
+                        ("margins", centroids.render_margins_table(margins))):
+        for number, line in enumerate(block.splitlines()[2:], start=1):
+            pattern, groups = _row_pattern(line)
+            pins.append((f"{name} table row {number}", path, pattern, groups, None))
+    return pins
+
+
+def test_t107_the_centroid_tables_are_generated_blocks():
+    from openmucf.g4 import d3_centroids as centroids
+
+    rows = _committed_rows(centroids.CENTROIDS_RELPATH)
+    margins = _committed_rows(centroids.MARGINS_RELPATH)
+    text = _document_text()
+    for block in (centroids.render_centroids_table(rows), centroids.render_margins_table(margins)):
+        assert text.count(block) == 1
+        data_row = block.splitlines()[2]
+        mutated = _replace_once(text, data_row, data_row.replace(" | ", " | 1", 1))
+        assert mutated.count(block) == 0
+        assert _pin_problems(mutated)
 
 
 def test_t107_the_groups_table_is_the_generated_block():
