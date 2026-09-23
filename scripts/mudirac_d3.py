@@ -269,9 +269,14 @@ def cmd_collect(args: argparse.Namespace) -> None:
 def cmd_geant4_levels(args: argparse.Namespace) -> None:
     _rows, cells = _inputs_and_cells()
     nuclides = md.gated_nuclides(cells)
-    payload = md.render_geant4_levels(Path(args.harvest).read_bytes().decode("ascii"), nuclides)
+    optional = sorted(set(md.centroid_nuclides(cells)) - set(nuclides))
+    payload = md.render_geant4_levels(Path(args.harvest).read_bytes().decode("ascii"), nuclides, optional)
     Path(args.out).write_bytes(payload)
-    print(f"wrote {args.out}: {len(nuclides)} nuclides")
+    present = set(md.load_geant4_levels(Path(args.out)))
+    for z, a in optional:
+        if (z, a) not in present:
+            print(f"no C line: Z={z} A={a} (leaves the stock comparison)")
+    print(f"wrote {args.out}: {len(present)} nuclides")
 
 
 def main(argv: list[str] | None = None) -> None:

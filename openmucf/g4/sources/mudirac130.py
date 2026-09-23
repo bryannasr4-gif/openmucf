@@ -21,6 +21,7 @@ import hashlib
 import io
 import math
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, localcontext
 from pathlib import Path
@@ -301,6 +302,16 @@ def load_radius_origins(path: Path) -> tuple[RadiusOrigin, ...]:
 def gated_nuclides(cells: tuple[Cell, ...]) -> list[tuple[int, int]]:
     """Every (Z, A) with at least one gated row, ascending."""
     return sorted({cell.nuclide for cell in cells if cell.gated})
+
+
+def centroid_nuclides(cells: tuple[Cell, ...]) -> list[tuple[int, int]]:
+    """Nuclides with a source-labelled center of gravity."""
+    return sorted({cell.nuclide for cell in cells if cell.reason == "centroid"})
+
+
+def stock_nuclides(cells: tuple[Cell, ...]) -> list[tuple[int, int]]:
+    """Gated and source-labelled nuclides eligible for the stock comparison."""
+    return sorted(set(gated_nuclides(cells)) | set(centroid_nuclides(cells)))
 
 
 def load_validation(
@@ -1013,12 +1024,14 @@ CASCADE_LEVELS = 14
 _HEXFLOAT = re.compile(r"0x1(?:\.[0-9a-f]+)?p[+-][0-9]+")
 
 
-def render_geant4_levels(harvest_text: str, nuclides: list[tuple[int, int]]) -> bytes:
+def render_geant4_levels(
+    harvest_text: str, nuclides: list[tuple[int, int]], optional: Sequence[tuple[int, int]] = (),
+) -> bytes:
     """``geant4_cascade_levels.csv`` from the output of ``cpp/tools/harvest_d3.cc``: for each of
-    ``nuclides``, ascending, the CASCADE_LEVELS level energies its ``C`` line prints, each the ``%a``
-    token verbatim, in MeV. Every other line is passed over. Raises when a nuclide has no ``C`` line
-    or two, or a level is not a ``%a`` token."""
-    wanted = set(nuclides)
+    ``nuclides`` and present ``optional`` keys, ascending, the CASCADE_LEVELS level energies its ``C``
+    line prints, each the ``%a`` token verbatim, in MeV. Every other line is passed over. Required
+    keys need a ``C`` line; repeated lines and malformed levels are refused."""
+    wanted = set(nuclides) | set(optional)
     found: dict[tuple[int, int], list[str]] = {}
     for number, line in enumerate(harvest_text.split("\n"), start=1):
         fields = line.split(" ")
@@ -1036,7 +1049,7 @@ def render_geant4_levels(harvest_text: str, nuclides: list[tuple[int, int]]) -> 
                 f"{where}: {CASCADE_LEVELS} level energies printed with %a expected after Z and A"
             )
         found[key] = levels
-    missing = sorted(wanted - set(found))
+    missing = sorted(set(nuclides) - set(found))
     if missing:
         raise CellError(f"the harvest has no C line for {missing}")
     rows = [",".join(GEANT4_LEVELS_COLUMNS)]
@@ -1132,10 +1145,11 @@ def validation_rows(
     Nothing is altered for lying outside tolerance. For context, a gated row also carries the energy
     Geant4's own cascade emits between the line's two shells and its difference from the measured
     value; the label and the tolerance test use MuDirac's residual alone."""
-    if set(geant4_levels) != set(gated_nuclides(cells)):
+    gated = set(gated_nuclides(cells))
+    if not gated <= set(geant4_levels) or not set(geant4_levels) <= set(stock_nuclides(cells)):
         raise CellError(
             f"{Path(GEANT4_LEVELS_RELPATH).name} names {sorted(geant4_levels)}, "
-            f"the gated nuclides are {gated_nuclides(cells)}"
+            f"the gated nuclides are {sorted(gated)} and stock nuclides are {stock_nuclides(cells)}"
         )
     inputs = {row.nuclide: row for row in out.inputs}
     rows = []

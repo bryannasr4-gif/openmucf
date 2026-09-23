@@ -1092,7 +1092,7 @@ def cascade_k_energies(zs: list[int], literals: list[str]) -> dict[int, float]:
 def test_t110_the_cascade_levels_are_the_vendored_cascades_for_every_gated_nuclide():
     levels = md.load_geant4_levels(GEANT4_LEVELS)
     cells, _ = md.load_validation(CELLS, ORIGIN)
-    assert sorted(levels) == md.gated_nuclides(cells)
+    assert sorted(levels) == md.stock_nuclides(cells)
     cascade = parity.D3_SEAM_DIRS[parity.d1.UPSTREAM_TAG] / parity.CASCADE_NAME
     text = cascade.read_text("ascii")
     assert f"fLevelEnergy[{md.CASCADE_LEVELS - 1}]" in text and f"i<{md.CASCADE_LEVELS}" in text
@@ -1105,7 +1105,7 @@ def test_t110_the_cascade_levels_are_the_vendored_cascades_for_every_gated_nucli
         e = 4 * row[1]
         for n in range(2, md.CASCADE_LEVELS + 1):
             assert e / float(n * n) == row[n - 1], (z, a, n)
-    print(f"\ncascade levels: {len(levels)} gated nuclides, {md.CASCADE_LEVELS} levels each")
+    print(f"\ncascade levels: {len(levels)} stock nuclides, {md.CASCADE_LEVELS} levels each")
 
 
 def _harvest_from_levels() -> str:
@@ -1124,14 +1124,45 @@ def _harvest_from_levels() -> str:
 def test_t110_the_committed_file_is_what_the_renderer_writes_from_a_harvest():
     cells, _ = md.load_validation(CELLS, ORIGIN)
     harvest = _harvest_from_levels()
-    assert md.render_geant4_levels(harvest, md.gated_nuclides(cells)) == GEANT4_LEVELS.read_bytes()
+    gated = md.gated_nuclides(cells)
+    optional = sorted(set(md.centroid_nuclides(cells)) - set(gated))
+    assert md.render_geant4_levels(harvest, gated, optional) == GEANT4_LEVELS.read_bytes()
+
+
+def test_t110_a_missing_labelled_c_line_leaves_only_that_stock_comparison(tmp_path):
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    gated = md.gated_nuclides(cells)
+    optional = sorted(set(md.centroid_nuclides(cells)) - set(gated))
+    key = optional[0]
+    harvest = _harvest_from_levels()
+    missing = next(line for line in harvest.split(NL) if line.startswith(f"C {key[0]} {key[1]} "))
+    payload = md.render_geant4_levels(harvest.replace(missing + NL, ""), gated, optional)
+    path = tmp_path / "levels.csv"
+    path.write_bytes(payload)
+    levels = md.load_geant4_levels(path)
+    assert key not in levels
+    assert sorted(levels) == sorted(set(md.stock_nuclides(cells)) - {key})
+    md.validation_rows(md.load_outputs(REPO), cells, origins, levels)
+
+
+def test_t110_a_missing_gated_key_or_an_unlisted_stock_key_is_refused():
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    levels = md.load_geant4_levels(GEANT4_LEVELS)
+    out = md.load_outputs(REPO)
+    first = md.gated_nuclides(cells)[0]
+    with pytest.raises(md.CellError, match="gated nuclides"):
+        md.validation_rows(out, cells, origins, {k: v for k, v in levels.items() if k != first})
+    stray = (max(k[0] for k in levels) + 1, 1)
+    with pytest.raises(md.CellError, match="stock nuclides"):
+        md.validation_rows(out, cells, origins, {**levels, stray: next(iter(levels.values()))})
 
 
 def test_t110_drill_a_missing_a_repeated_and_a_malformed_c_line_are_refused():
     cells, _ = md.load_validation(CELLS, ORIGIN)
     nuclides = md.gated_nuclides(cells)
     harvest = _harvest_from_levels()
-    first = next(line for line in harvest.split(NL) if line.startswith("C "))
+    key = nuclides[0]
+    first = next(line for line in harvest.split(NL) if line.startswith(f"C {key[0]} {key[1]} "))
     drills = [
         (harvest.replace(first + NL, ""), md.CellError, "no C line for"),
         (harvest + first + NL, md.DuplicateKeyError, "a second C line"),
