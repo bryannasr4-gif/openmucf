@@ -26,12 +26,9 @@ Sampling API
   the OLD R box, the registered seed/warmup/samples) -- never changed while a card is registered against
   it (the FC-001 registered-card freeze). FC-002+ use the new defaults.
 
-Convergence caveat (Kamimura chain): the informative omega_s0 prior is an UNBOUNDED Normal, so on the thin
-degeneracy ridge a chain can occasionally get trapped in a zero-prior-mass artifact basin at negative
-omega_s0 for some seeds (a NUTS init pathology, NOT a real posterior mode -- its prior log-density is
-~-1200). The shipped chains use the pre-registered seed 0, which converges (r_hat ~1.00); CALIBRATION.md
-reports and audits that r_hat, and the SBC / convergence gates use the BOUNDED weak prior, which cannot
-trap. The init strategy is left at numpyro's default so the registered FC-001 realization is unchanged.
+Convergence caveat (Kamimura chain): the informative omega_s0 Normal is truncated to the weak prior's
+support, removing the negative-omega_s0 artifact basin in which a chain could trap. The registered FC-001
+realization retains its untruncated prior and the default init strategy.
 """
 
 from __future__ import annotations
@@ -54,6 +51,8 @@ OBS = dict(omega_s_eff_obs=0.45, omega_s_eff_sd=0.05, xmu_obs=113.0, xmu_sd=12.0
 # is unchanged. Parameters (R_prior, lambda_c_prior) are exposed so that (a) the FC-001 realization can be
 # pinned to its registered OLD R box and (b) the prior-sensitivity sweep can vary each box.
 WEAK_OMEGA_S0_PRIOR = ("uniform", 0.50, 1.20)
+# The calibration chain bounds the Kamimura Normal by the weak prior's support.
+KAMIMURA_OMEGA_S0_PRIOR = ("truncnormal", 0.857, 0.03, WEAK_OMEGA_S0_PRIOR[1], WEAK_OMEGA_S0_PRIOR[2])
 R_PRIOR_DEFAULT = (0.00, 0.80)
 LAMBDA_C_PRIOR_DEFAULT = (0.8e8, 1.6e8)
 
@@ -75,7 +74,7 @@ def model(
     lambda_c_prior=LAMBDA_C_PRIOR_DEFAULT,
     obs_corr=0.0,
 ):
-    """omega_s0_prior: ('uniform', lo, hi) [weak; exposes the degeneracy] or ('normal', mu, sd) [Kamimura].
+    """omega_s0_prior accepts uniform, normal, or truncated Normal tuples.
 
     ``R_prior`` / ``lambda_c_prior`` are (lo, hi) uniform boxes. ``obs_corr`` (default 0.0) treats the two
     observations as independent Gaussians -- published as separate summary statistics, primary covariance
@@ -86,8 +85,17 @@ def model(
     """
     if omega_s0_prior[0] == "normal":
         omega_s0 = numpyro.sample("omega_s0_pct", dist.Normal(omega_s0_prior[1], omega_s0_prior[2]))
-    else:
+    elif omega_s0_prior[0] == "uniform":
         omega_s0 = numpyro.sample("omega_s0_pct", dist.Uniform(omega_s0_prior[1], omega_s0_prior[2]))
+    elif omega_s0_prior[0] == "truncnormal":
+        omega_s0 = numpyro.sample(
+            "omega_s0_pct",
+            dist.TruncatedNormal(
+                omega_s0_prior[1], omega_s0_prior[2], low=omega_s0_prior[3], high=omega_s0_prior[4]
+            ),
+        )
+    else:
+        raise ValueError(f"unknown omega_s0 prior kind: {omega_s0_prior[0]}")
     R = numpyro.sample("R", dist.Uniform(R_prior[0], R_prior[1]))
     lambda_c = numpyro.sample("lambda_c", dist.Uniform(lambda_c_prior[0], lambda_c_prior[1]))
 

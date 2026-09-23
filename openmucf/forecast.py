@@ -34,7 +34,8 @@ from . import analytic, calibrate
 from .rates import RATES_CSV
 
 # --- Pre-registered constants (do not adjust after seeing outputs; see FORECAST_PROTOCOL.md) ----------
-# Chain settings mirror scripts/generate_calibration.py:19 (the Kamimura-informative chain).
+# Chain settings mirror the CALIBRATION.md chain's settings.
+# This prior is the registered untruncated one; the calibration chain bounds its support.
 # calibrate.run_mcmc DEFAULTS differ, so every argument is passed explicitly below.
 NUM_WARMUP = 1000
 NUM_SAMPLES = 4000

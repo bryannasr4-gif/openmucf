@@ -1,5 +1,10 @@
 """Tests for Bayesian calibration + the identifiability finding (Phase 2 v1 polish, item 2)."""
 
+import math
+
+import numpyro.handlers
+import pytest
+
 from openmucf import calibrate
 
 
@@ -18,17 +23,38 @@ def test_calibration_recovers_effective_sticking_and_exposes_degeneracy():
 
 
 def test_informative_prior_partially_breaks_degeneracy():
-    # seed 0 = the project's pre-registered seed (used by every shipped chain incl. FC-001). NOTE the
-    # Kamimura prior is an UNBOUNDED Normal, so on a thin degeneracy ridge some seeds trap a chain in a
-    # zero-prior-mass artifact basin at negative omega_s0 (a NUTS pathology, not a real mode); the shipped
-    # seed 0 converges (r_hat ~1.00), and the CALIBRATION.md audit re-checks that r_hat cell. The default
-    # convergence GATE (test_multichain_diagnostics) uses the BOUNDED weak prior, which cannot trap.
-    mk, sk = calibrate.run_mcmc_full(1000, 1000, seed=0, omega_s0_prior=("normal", 0.857, 0.03))
+    # The bounded Kamimura chain must meet the same convergence gate as the weak chain.
+    mk, sk = calibrate.run_mcmc_full(1000, 1000, seed=0, omega_s0_prior=calibrate.KAMIMURA_OMEGA_S0_PRIOR)
     kam = calibrate.summarize(sk, mcmc=mk)
     weak = calibrate.summarize(calibrate.run_mcmc(1000, 1000, seed=0))
-    assert kam["diagnostics"]["omega_s0_pct"]["r_hat"] < 1.05  # the shipped seed converges
+    assert kam["n_divergences"] == 0
+    for site in calibrate._DIAG_SITES:
+        d = kam["diagnostics"][site]
+        assert d["r_hat"] < 1.01, (site, d["r_hat"])
+        assert d["ess"] > 400, (site, d["ess"])
     # the Kamimura theory prior tightens omega_s0 (and hence R) vs the weak-prior case
     assert kam["omega_s0_pct"]["sd"] < weak["omega_s0_pct"]["sd"]
+
+
+def test_kamimura_prior_is_the_weak_support_truncation():
+    """The sampled support matches the weak box and excludes the negative basin."""
+    prior = calibrate.KAMIMURA_OMEGA_S0_PRIOR
+    assert prior == ("truncnormal", 0.857, 0.03, 0.50, 1.20)
+    trace = numpyro.handlers.trace(numpyro.handlers.seed(calibrate.model, 0)).get_trace(omega_s0_prior=prior)
+    support = trace["omega_s0_pct"]["fn"].support
+    assert (float(support.lower_bound), float(support.upper_bound)) == calibrate.WEAK_OMEGA_S0_PRIOR[1:]
+    assert float(support.lower_bound) > 0
+    mass = (math.erfc((prior[1] - prior[3]) / (prior[2] * math.sqrt(2)))
+            + math.erfc((prior[4] - prior[1]) / (prior[2] * math.sqrt(2)))) / 2
+    assert 1.0 - mass == 1.0
+
+
+def test_unknown_prior_kind_is_refused():
+    """An unsupported prior kind raises instead of silently becoming uniform."""
+    with pytest.raises(ValueError, match="bogus"):
+        numpyro.handlers.trace(numpyro.handlers.seed(calibrate.model, 0)).get_trace(
+            omega_s0_prior=("bogus", 0.5, 1.2)
+        )
 
 
 def test_multichain_diagnostics():

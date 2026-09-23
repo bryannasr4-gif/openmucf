@@ -321,7 +321,11 @@ def test_d6_constants_still_mirror_generate_calibration():
     # the main CALIBRATION.md chains use warmup 1000 / samples 4000 (mirrored by forecast's D6 constants)
     assert "MAIN_WARMUP, MAIN_SAMPLES = 1000, 4000" in src
     assert "seed=0" in src
-    assert '("normal", 0.857, 0.03)' in src
+    assert "omega_s0_prior=calibrate.KAMIMURA_OMEGA_S0_PRIOR" in src
+    from openmucf import calibrate
+
+    assert calibrate.KAMIMURA_OMEGA_S0_PRIOR[1:3] == forecast.OMEGA_S0_PRIOR[1:3]
+    assert calibrate.KAMIMURA_OMEGA_S0_PRIOR[3:] == calibrate.WEAK_OMEGA_S0_PRIOR[1:]
     # and forecast.py's constants match those literals
     assert (forecast.NUM_WARMUP, forecast.NUM_SAMPLES, forecast.SEED) == (1000, 4000, 0)
 

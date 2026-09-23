@@ -87,7 +87,8 @@ def _run_summaries():
     (weak, kam, summary_weak, summary_kam) with diagnostics attached."""
     mw, sw = calibrate.run_mcmc_full(num_warmup=MAIN_WARMUP, num_samples=MAIN_SAMPLES, seed=0)
     mk, sk = calibrate.run_mcmc_full(
-        num_warmup=MAIN_WARMUP, num_samples=MAIN_SAMPLES, seed=0, omega_s0_prior=("normal", 0.857, 0.03)
+        num_warmup=MAIN_WARMUP, num_samples=MAIN_SAMPLES, seed=0,
+        omega_s0_prior=calibrate.KAMIMURA_OMEGA_S0_PRIOR,
     )
     return sw, sk, calibrate.summarize(sw, mcmc=mw), calibrate.summarize(sk, mcmc=mk)
 
@@ -308,6 +309,13 @@ and lambda_c are well constrained; omega_s0 and R are not separable. (Figure `fi
 
 The Kamimura *theory* input tightens omega_s0 (sd {ssw["omega_s0_pct"]["sd"]:.3g} -> {ssk["omega_s0_pct"]["sd"]:.3g} %)
 and hence R -- but R still inherits that uncertainty.
+
+## AMENDMENT 2026-09-22 -- the Kamimura prior bounded to the weak-prior support
+
+The Kamimura chain uses a Normal with location {calibrate.KAMIMURA_OMEGA_S0_PRIOR[1]} and scale {calibrate.KAMIMURA_OMEGA_S0_PRIOR[2]}, truncated to the weak prior's support [{calibrate.KAMIMURA_OMEGA_S0_PRIOR[3]}, {calibrate.KAMIMURA_OMEGA_S0_PRIOR[4]}].
+Within that support the prior is unchanged at double precision; the bound removes the negative-omega_s0 region in which a chain could trap, so the convergence cells and their audit describe this sampler across seeds.
+The Kamimura cells are a new realization replacing those in this document as released in v1.2.0.
+The FC-001 forecast retains its registered untruncated prior.
 
 ## Finding
 Experiment alone determines **effective sticking and the cycling rate**, not the microscopic
