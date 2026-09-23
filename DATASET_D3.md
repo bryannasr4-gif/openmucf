@@ -88,12 +88,14 @@ only).
 A row is size-dominated when the larger of those changes is at least a third of its tolerance,
 and weakly sensitive otherwise; agreement on a size-dominated row is a consistency check only,
 because the radius passed may itself come from muonic X-ray data (the column `radius_origin`).
-`centroid` marks a Table IIIA centre of gravity, and `hyperfine` a Table IIIB hyperfine component
+`centroid` marks a Table IIIA center of gravity, and `hyperfine` a Table IIIB hyperfine component
 or a line Saito et al. describe as showing hyperfine splitting.
-Both are reported and not compared: the first because the explanation of Table IIIA names such a
-value the centre of gravity of the 2p → 1s transition and states no weighting for it, the second
-because the keywords MuDirac documents include none for a hyperfine or
-quadrupole interaction.
+Neither is compared in this section, whose model is the orbit-resolved line: the first because the
+explanation of Table IIIA names such a value the center of gravity of the 2p → 1s transition and
+states no weighting for it, the second because the keywords MuDirac documents include none for a
+hyperfine or quadrupole interaction.
+Section 5 screens the `centroid` rows separately, against the energy a patched cascade emits, and
+that screen qualifies no accuracy.
 Of the 67 gated rows, 26 lie within tolerance and 41 outside it; 16 of the gated
 rows are weakly sensitive, and 13 of those lie within tolerance.
 For context only, and never compared, `geant4_keV` is the energy the cascade compiled into Geant4
@@ -252,6 +254,10 @@ gated line whose partner is missing or ungated is listed as `excluded`.
 given as its smallest and largest values over every correlation, and each row is screened against
 the band of the comparison above as `inside`, `outside` or, where the bounds disagree,
 `correlation-dependent`, a label of a discrepancy and not of accuracy.
+Fricke et al. (1995) title their Table IIIA "Muonic 2p → 1s Transition Energies" and call each
+value it lists an "Experimental energy"; neither the explanation of that table nor their section 4
+states whether the photon recoil has been taken out of a value, and the screen subtracts no recoil
+from either side.
 Each row also carries the shift of its shell difference from the shipped numerical settings to a
 finer reference setting (`dU_keV` from the Uehling steps, `dgrid_keV` from the grid step, and their
 sum `dnum_keV`), never added to an uncertainty, and `screen_at_reference`, the screen repeated with
