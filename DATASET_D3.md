@@ -255,7 +255,7 @@ given as its smallest and largest values over every correlation, and each row is
 the band of the comparison above as `inside`, `outside` or, where the bounds disagree,
 `correlation-dependent`, a label of a discrepancy and not of accuracy.
 Fricke et al. (1995) title their Table IIIA "Muonic 2p → 1s Transition Energies" and call each
-value it lists an "Experimental energy"; neither the explanation of that table nor their section 4
+value in its column `E_exp` an "Experimental energy"; neither the explanation of that table nor their section 4
 states whether the photon recoil has been taken out of a value, and the screen subtracts no recoil
 from either side.
 Each row also carries the shift of its shell difference from the shipped numerical settings to a
