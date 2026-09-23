@@ -314,6 +314,25 @@ def stock_nuclides(cells: tuple[Cell, ...]) -> list[tuple[int, int]]:
     return sorted(set(gated_nuclides(cells)) | set(centroid_nuclides(cells)))
 
 
+def doublet_determinations(cells: tuple[Cell, ...]) -> list[tuple[Cell, Cell]]:
+    """Complete gated doublets paired by their source, nuclide and printed locator."""
+    groups: dict[tuple[str, int, int, str], list[Cell]] = {}
+    for cell in cells:
+        if cell.gated and cell.quantity in ("K1-L2", "K1-L3"):
+            groups.setdefault((cell.source, cell.z, cell.a, cell.locator), []).append(cell)
+    return [(l2, l3) for group in groups.values()
+            if len(group) == 2
+            for l2, l3 in [(next((c for c in group if c.quantity == "K1-L2"), None),
+                            next((c for c in group if c.quantity == "K1-L3"), None))]
+            if l2 is not None and l3 is not None]
+
+
+def settings_nuclides(cells: tuple[Cell, ...]) -> list[tuple[int, int]]:
+    """The labelled and complete-doublet nuclides that need settings runs."""
+    return sorted(set(centroid_nuclides(cells)) |
+                  {l2.nuclide for l2, _l3 in doublet_determinations(cells)})
+
+
 def load_validation(
     cells_path: Path, origin_path: Path
 ) -> tuple[tuple[Cell, ...], dict[tuple[int, int], RadiusOrigin]]:
@@ -1261,6 +1280,40 @@ NUMERICS_DEEP_NUCLIDES = ((3, 6), (29, 63), (46, 104), (82, 208))
 #: written at the value MuDirac 1.3.0 documents as its default (`lib/config.cpp`: energy_tol 1e-7,
 #: loggrid_step 0.005, uehling_steps 100) and no key is ever set twice.
 NUMERICS_KEYS = ("loggrid_step", "uehling_steps", "energy_tol")
+
+SETTINGS_UEHLING_G0 = tuple(sorted(set((50, 150, 250, 350, 450, 550)) | set(range(100, 2401, 100))))
+SETTINGS = tuple((0, u) for u in SETTINGS_UEHLING_G0) + ((2, 1000),)
+SETTINGS_RUNS_RELPATH = f"{D3_RELDIR}/mudirac_settings_runs.csv"
+SETTINGS_STATES_RELPATH = f"{D3_RELDIR}/mudirac_settings_states.csv"
+SETTINGS_LINES_RELPATH = f"{D3_RELDIR}/mudirac_settings_lines.csv"
+SETTINGS_RUNS_COLUMNS = ("run", "Z", "A", "setting", "loggrid_step", "uehling_steps", "energy_tol",
+                         "rc", "err_bytes", "wall_s", "input_sha256")
+SETTINGS_STATES_COLUMNS = ("run", "Z", "A", "setting", "state", "n", "l", "s", "binding_eV", "total_eV")
+SETTINGS_LINES_COLUMNS = ("run", "Z", "A", "setting", "line", "delta_e_eV", "w12_per_s")
+
+
+def setting_id(level: int, uehling: int) -> str:
+    return f"g{level}u{uehling:04d}"
+
+
+def settings_run_id(row: InputRow, level: int, uehling: int) -> str:
+    return run_id(row, setting_id(level, uehling))
+
+
+def settings_values(level: int, uehling: int) -> tuple[str, str, str]:
+    return (repr(0.005 / 2 ** level), str(uehling), repr(1e-7))
+
+
+def render_settings_input(row: InputRow, level: int, uehling: int, extra: list[str]) -> str:
+    """The base input plus the named numerical settings, each key set once."""
+    if (level, uehling) not in SETTINGS:
+        raise ValueError(f"unknown setting {setting_id(level, uehling)}")
+    text = render_input(row, "base", extra)
+    for key in NUMERICS_KEYS:
+        if f"{key}:" in text:
+            raise ValueError(f"the base input already sets {key}")
+    return text + "".join(f"{key}: {value}\n" for key, value in zip(
+        NUMERICS_KEYS, settings_values(level, uehling), strict=True))
 #: A numerics run row's status: the run was made, or the moved radius left the model's domain and
 #: no run was made.
 RAN = "RAN"
@@ -1484,3 +1537,127 @@ def load_numerics_outputs(root: Path, out: Outputs) -> NumericsOutputs:
                 f"{Path(name).name} carries runs the run table does not list as made: {stray[:3]}"
             )
     return NumericsOutputs(runs, headers, lines)
+
+
+@dataclass(frozen=True)
+class SettingsRun:
+    run: str
+    z: int
+    a: int
+    setting: str
+    rc: int
+    err_bytes: int | None
+    wall_s: str
+    input_sha256: str
+
+    @property
+    def clean(self) -> bool:
+        return self.rc == 0 and self.err_bytes == 0
+
+
+@dataclass(frozen=True)
+class SettingsOutputs:
+    runs: dict[str, SettingsRun]
+    headers: dict[str, dict[str, str]]
+    lines: dict[str, dict[str, str]]
+
+
+def _setting_fields(where: str, r: dict[str, str]) -> tuple[int, int, str, int, int]:
+    z, a = integer(r["Z"], where, "Z"), integer(r["A"], where, "A")
+    setting = r["setting"]
+    match = re.fullmatch(r"g([0-9]+)u([0-9]{4})", setting)
+    if match is None:
+        raise CellError(f"{where}: unknown setting {setting!r}")
+    level, uehling = int(match[1]), int(match[2])
+    if (level, uehling) not in SETTINGS or setting != setting_id(level, uehling):
+        raise CellError(f"{where}: unknown setting {setting!r}")
+    if not r["run"].endswith(f"{a}_{setting}"):
+        raise CellError(f"{where}: run does not name A and setting")
+    return z, a, setting, level, uehling
+
+
+def _settings_order(z: int, a: int, level: int, uehling: int) -> tuple[int, int, int, int]:
+    return z, a, level, uehling
+
+
+def load_settings_runs(path: Path) -> dict[str, SettingsRun]:
+    """Parse settings run records and refuse malformed identities and status cells."""
+    out: dict[str, SettingsRun] = {}
+    previous: tuple[int, int, int, int] | None = None
+    for where, r in read_rows(path, SETTINGS_RUNS_COLUMNS):
+        z, a, setting, level, uehling = _setting_fields(where, r)
+        if tuple(r[key] for key in NUMERICS_KEYS) != settings_values(level, uehling):
+            raise CellError(f"{where}: setting columns disagree with {setting}")
+        if not _SIGNED_COUNT.fullmatch(r["rc"]):
+            raise CellError(f"{where}: rc must be an integer")
+        if r["err_bytes"] != "missing" and not _COUNT.fullmatch(r["err_bytes"]):
+            raise CellError(f"{where}: err_bytes must be an integer or missing")
+        if not _UNSIGNED_DECIMAL.fullmatch(r["wall_s"]):
+            raise CellError(f"{where}: wall_s must be a printed decimal")
+        if not _SHA256.fullmatch(r["input_sha256"]):
+            raise CellError(f"{where}: input_sha256 must be 64 hex digits")
+        if r["run"] in out:
+            raise DuplicateKeyError(f"{where}: duplicate run {r['run']}")
+        order = _settings_order(z, a, level, uehling)
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: settings runs are ordered by (Z, A, level, U)")
+        previous = order
+        err = None if r["err_bytes"] == "missing" else int(r["err_bytes"])
+        out[r["run"]] = SettingsRun(r["run"], z, a, setting, int(r["rc"]), err, r["wall_s"],
+                                    r["input_sha256"])
+    return out
+
+
+def _load_settings_printed(path: Path, columns: tuple[str, ...], states: bool) -> dict[str, dict[str, str]]:
+    out: dict[str, dict[str, str]] = {}
+    previous: tuple[int, int, int, int, int, int] | None = None
+    for where, r in read_rows(path, columns):
+        z, a, _setting, level, uehling = _setting_fields(where, r)
+        key = r["state"] if states else r["line"]
+        if states:
+            if not _ORBIT.fullmatch(key):
+                raise CellError(f"{where}: state must be an IUPAC orbit")
+            for column in ("n", "l", "s"):
+                if not _SIGNED_COUNT.fullmatch(r[column]):
+                    raise CellError(f"{where}: {column} must be an integer")
+            for column in ("binding_eV", "total_eV"):
+                if not _PRINTED.fullmatch(r[column]):
+                    raise CellError(f"{where}: {column} must be a printed number")
+        else:
+            if not _LINE.fullmatch(key):
+                raise CellError(f"{where}: line must be orbit-orbit")
+            if not _LINE_ENERGY.fullmatch(r["delta_e_eV"]):
+                raise CellError(f"{where}: delta_e_eV must be printed with six decimals")
+            if not _UNSIGNED_DECIMAL.fullmatch(r["w12_per_s"]):
+                raise CellError(f"{where}: w12_per_s must be a printed decimal")
+        if key in out.get(r["run"], {}):
+            raise DuplicateKeyError(f"{where}: duplicate {key} for {r['run']}")
+        orbit = _orbit_order(key) if states else (0, 0)
+        order = (*_settings_order(z, a, level, uehling), *orbit)
+        if previous is not None and order < previous:
+            raise OrderError(f"{where}: settings rows are ordered by (Z, A, level, U, orbit)")
+        previous = order
+        out.setdefault(r["run"], {})[key] = r["binding_eV" if states else "delta_e_eV"]
+    return out
+
+
+def load_settings_outputs(root: Path, cells: tuple[Cell, ...]) -> SettingsOutputs:
+    """Cross-check the settings files against their implied run set and clean-run status."""
+    root = Path(root)
+    runs = load_settings_runs(root / SETTINGS_RUNS_RELPATH)
+    kept = {row.nuclide: row for row in kept_members(load_outputs(root))}
+    wanted = settings_nuclides(cells)
+    if not set(wanted) <= set(kept):
+        raise CellError(f"settings nuclides not kept: {sorted(set(wanted) - set(kept))}")
+    expected = [(settings_run_id(kept[key], level, uehling), *key, setting_id(level, uehling))
+                for key in wanted for level, uehling in SETTINGS]
+    listed = [(run.run, run.z, run.a, run.setting) for run in runs.values()]
+    if listed != expected:
+        raise CellError("settings run table does not list exactly the implied runs")
+    headers = _load_settings_printed(root / SETTINGS_STATES_RELPATH, SETTINGS_STATES_COLUMNS, True)
+    lines = _load_settings_printed(root / SETTINGS_LINES_RELPATH, SETTINGS_LINES_COLUMNS, False)
+    for name, table in ((SETTINGS_STATES_RELPATH, headers), (SETTINGS_LINES_RELPATH, lines)):
+        stray = sorted(run for run in table if run not in runs or not runs[run].clean)
+        if stray:
+            raise CellError(f"{Path(name).name} carries unlisted or unclean runs: {stray[:3]}")
+    return SettingsOutputs(runs, headers, lines)

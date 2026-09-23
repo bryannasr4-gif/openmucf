@@ -105,7 +105,28 @@ def cmd_write(args: argparse.Namespace) -> None:
     print(f"wrote {len(inputs)} inputs of kind {args.kind} level {args.level} under {args.dir}")
 
 
-def _run_one(binary: str, directory: Path, time_v: bool) -> tuple[str, int, str, str, str]:
+def cmd_write_settings(args: argparse.Namespace) -> None:
+    _rows, cells = _inputs_and_cells()
+    kept = {row.nuclide: row for row in md.kept_members(md.load_outputs(ROOT))}
+    wanted = md.settings_nuclides(cells)
+    if not set(wanted) <= set(kept):
+        raise SystemExit(f"settings nuclides not kept: {sorted(set(wanted) - set(kept))}")
+    made = 0
+    for key in wanted:
+        row = kept[key]
+        extra = md.extra_lines(cells, key)
+        for level, uehling in md.SETTINGS:
+            setting = md.setting_id(level, uehling)
+            run = md.settings_run_id(row, level, uehling)
+            directory = Path(args.dir) / setting / run
+            directory.mkdir(parents=True, exist_ok=True)
+            text = md.render_settings_input(row, level, uehling, extra)
+            (directory / f"{run}.in").write_bytes(text.encode("ascii"))
+            made += 1
+    print(f"wrote {made} settings inputs for {len(wanted)} nuclides under {args.dir}")
+
+
+def _run_one(binary: str, directory: Path, time_v: bool, timeout: int | None) -> tuple[str, int, str, str, str]:
     """Run one input: ``(run, rc, err_bytes, wall_s, input_sha256)``; MuDirac gets exactly one
     argument whether or not ``/usr/bin/time -v`` wraps it."""
     run = directory.name
@@ -115,7 +136,11 @@ def _run_one(binary: str, directory: Path, time_v: bool) -> tuple[str, int, str,
         argv = ["/usr/bin/time", "-v", "-o", "time_v.txt", *argv]
     start = time.monotonic()
     with open(directory / "stdout.txt", "wb") as sink:
-        rc = subprocess.run(argv, cwd=directory, stdout=sink, stderr=subprocess.STDOUT).returncode
+        try:
+            rc = subprocess.run(argv, cwd=directory, stdout=sink, stderr=subprocess.STDOUT,
+                                timeout=timeout).returncode
+        except subprocess.TimeoutExpired:
+            rc = 124
     wall = time.monotonic() - start
     err = directory / f"{run}.err"
     return run, rc, str(err.stat().st_size) if err.exists() else "missing", f"{wall:.3f}", digest
@@ -128,7 +153,7 @@ def cmd_run(args: argparse.Namespace) -> None:
     directories = sorted(p for p in Path(args.dir).iterdir() if (p / f"{p.name}.in").is_file())
     directories = [d for position, d in enumerate(directories) if position % count == index]
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        results = sorted(pool.map(lambda d: _run_one(args.mudirac, d, args.time_v), directories))
+        results = sorted(pool.map(lambda d: _run_one(args.mudirac, d, args.time_v, args.timeout), directories))
     lines = ["\t".join(fields) for run, rc, err, wall, digest in results
              for fields in [(run, str(rc), err, wall, digest)]]
     name = "runs.tsv" if count == 1 else f"runs.{index}of{count}.tsv"
@@ -229,6 +254,40 @@ def cmd_collect_numerics(args: argparse.Namespace) -> None:
           + f"; {md.INVALID_PERTURBATION_DOMAIN} {invalid}")
 
 
+def cmd_collect_settings(args: argparse.Namespace) -> None:
+    _rows, cells = _inputs_and_cells()
+    kept = {row.nuclide: row for row in md.kept_members(md.load_outputs(ROOT))}
+    wanted = md.settings_nuclides(cells)
+    results = {run: (directory, rc, err, wall, digest)
+               for run, directory, rc, err, wall, digest in _results(
+                   [str(p) for p in Path(args.dir).glob("g*") if p.is_dir()])}
+    runs = [list(md.SETTINGS_RUNS_COLUMNS)]
+    states = [list(md.SETTINGS_STATES_COLUMNS)]
+    lines = [list(md.SETTINGS_LINES_COLUMNS)]
+    for key in wanted:
+        row = kept[key]
+        for level, uehling in md.SETTINGS:
+            setting = md.setting_id(level, uehling)
+            run = md.settings_run_id(row, level, uehling)
+            if run not in results:
+                raise SystemExit(f"no result for {run}")
+            directory, rc, err, wall, digest = results.pop(run)
+            runs.append([run, str(row.z), str(row.a), setting, *md.settings_values(level, uehling),
+                         rc, err, wall, digest])
+            if rc == "0" and err == "0":
+                for orbit, header in sorted(_state_headers(directory).items(), key=lambda item: _orbit_order(item[0])):
+                    states.append([run, str(row.z), str(row.a), setting, orbit, *header])
+                for name, delta, rate in _lines(directory):
+                    lines.append([run, str(row.z), str(row.a), setting, name, delta, rate])
+    if results:
+        raise SystemExit(f"unexpected settings results: {sorted(results)[:3]}")
+    out = Path(args.out)
+    for relpath, table in ((md.SETTINGS_RUNS_RELPATH, runs), (md.SETTINGS_STATES_RELPATH, states),
+                           (md.SETTINGS_LINES_RELPATH, lines)):
+        _write(out / Path(relpath).name, table)
+        print(f"wrote {Path(relpath).name}: {len(table) - 1} rows")
+
+
 def cmd_collect(args: argparse.Namespace) -> None:
     rows, cells = _inputs_and_cells()
     validation = set(md.gated_nuclides(cells))
@@ -292,24 +351,31 @@ def main(argv: list[str] | None = None) -> None:
                    choices=md.COMMITTED_KINDS + md.EVIDENCE_KINDS + md.RESPONSE_KINDS + ("grid",))
     p.add_argument("--level", type=int, default=0)
     p.add_argument("--dir", required=True)
+    p = sub.add_parser("write-settings")
+    p.add_argument("--dir", required=True)
     p = sub.add_parser("run")
     p.add_argument("--mudirac", required=True)
     p.add_argument("--dir", required=True)
     p.add_argument("--jobs", type=int, required=True)
     p.add_argument("--shard", default="0/1")
     p.add_argument("--time-v", action="store_true")
+    p.add_argument("--timeout", type=int)
     p = sub.add_parser("collect")
     p.add_argument("--dir", required=True, nargs="+")
     p.add_argument("--out", required=True)
     p = sub.add_parser("collect-numerics")
     p.add_argument("--dir", required=True, nargs="+")
     p.add_argument("--out", required=True)
+    p = sub.add_parser("collect-settings")
+    p.add_argument("--dir", required=True)
+    p.add_argument("--out", required=True)
     p = sub.add_parser("geant4-levels")
     p.add_argument("--harvest", required=True)
     p.add_argument("--out", required=True)
     args = parser.parse_args(argv)
-    {"inputs": cmd_inputs, "write": cmd_write, "run": cmd_run, "collect": cmd_collect,
-     "collect-numerics": cmd_collect_numerics, "geant4-levels": cmd_geant4_levels}[args.command](args)
+    {"inputs": cmd_inputs, "write": cmd_write, "write-settings": cmd_write_settings,
+     "run": cmd_run, "collect": cmd_collect, "collect-numerics": cmd_collect_numerics,
+     "collect-settings": cmd_collect_settings, "geant4-levels": cmd_geant4_levels}[args.command](args)
 
 
 if __name__ == "__main__":

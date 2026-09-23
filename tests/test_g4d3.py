@@ -2053,3 +2053,37 @@ def test_t126_drill_a_tampered_shift_is_refused(tmp_path):
     target["numeric_observed_shifts_keV"][0] = shift + "1"
     problems = _component_problems(tampered)
     assert problems == [f"record {target['Z']},{target['A']},{target['quantity']}"]
+
+
+# T-127 -- named settings inputs and their committed run records
+
+
+def test_t127_settings_render_from_the_base_and_name_exactly_the_compared_kept_nuclides(monkeypatch):
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    out = md.load_outputs(REPO)
+    kept = {row.nuclide: row for row in md.kept_members(out)}
+    wanted = md.settings_nuclides(cells)
+    expected = set(md.centroid_nuclides(cells)) | {
+        left.nuclide for left, _right in md.doublet_determinations(cells)}
+    assert set(wanted) == expected <= set(kept)
+    assert len(md.SETTINGS) == len(md.SETTINGS_UEHLING_G0) + 1
+    assert tuple(sorted(set(md.SETTINGS_UEHLING_G0))) == md.SETTINGS_UEHLING_G0
+    for key in wanted:
+        row = kept[key]
+        extra = md.extra_lines(cells, key)
+        base = md.render_input(row, "base", extra)
+        for level, uehling in md.SETTINGS:
+            values = md.settings_values(level, uehling)
+            expected_text = base + "".join(f"{name}: {value}\n" for name, value in zip(
+                md.NUMERICS_KEYS, values, strict=True))
+            assert md.render_settings_input(row, level, uehling, extra) == expected_text
+            assert md.settings_run_id(row, level, uehling).endswith(md.setting_id(level, uehling))
+    first = kept[wanted[0]]
+    extra = md.extra_lines(cells, first.nuclide)
+    with pytest.raises(ValueError, match="unknown setting"):
+        md.render_settings_input(first, -1, 100, extra)
+    original = md.render_input
+    monkeypatch.setattr(md, "render_input", lambda *args: original(*args) + "uehling_steps: 100\n")
+    with pytest.raises(ValueError, match="already sets uehling_steps"):
+        md.render_settings_input(first, 0, 100, extra)
+    print(f"\nsettings nuclides {len(wanted)} runs {len(wanted) * len(md.SETTINGS)}")
