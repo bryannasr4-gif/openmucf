@@ -1751,8 +1751,10 @@ def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
     regeneration silently reproduces the corruption, passes every other test in this file.
     """
     d3dir = REPO / "data" / "g4" / "d3"
+    generator = generator_module()
     artifacts = sorted(D1DIR.glob("d1_*.g4dat")) + sorted(D1DIR.glob("*.prov.json")) + [
-        D1DIR / "geant4_add_dataset.snippet"
+        D1DIR / "geant4_add_dataset.snippet", generator.SUZUKI_QUANTITY_PATH,
+        generator.SUZUKI_PARITY_CELLS, generator.SUZUKI_PREPRINT_DIFF,
     ] + sorted(d3dir.glob("d3_*.g4dat")) + sorted(d3dir.glob("*.prov.json")) + [
         d3dir / "validation.csv", d3dir / "shell_projection.csv", d3dir / "incompatible_groups.csv",
         d3dir / "components.jsonl", d3dir / "consumer_centroids.csv", d3dir / "centroid_margins.csv",
@@ -2705,10 +2707,10 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     generator = generator_module()
     _, archive = generator.build_dataset_artifacts()
     directory = emit.dataset_directory(generator.DATASET_NAME, generator.DATASET_VERSION)
-    pairs = (
-        (CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2), (MIZUNO_LAYER1, MIZUNO_LAYER2),
-        (generator.D3_KSHELL_LAYER1, generator.D3_KSHELL_LAYER2),
-        (generator.D3_LEVELS_LAYER1, generator.D3_LEVELS_LAYER2),
+    pairs = tuple(
+        (path, path.with_suffix(".prov.json"))
+        for folder in (D1DIR, REPO / "data" / "g4" / "d3")
+        for path in folder.glob("*.g4dat")
     )
     committed = [path.name for pair in pairs for path in pair]
     with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
@@ -3232,7 +3234,10 @@ def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_eve
     assert len(tables) == len(files), (sorted(tables), files)
     for profile, name in tables:
         assert (spec.PARITY_PROFILE, name) in tables, (profile, name)
-    assert {profile for profile, _ in tables} == {spec.PARITY_PROFILE, mizuno2025.PROFILE}
+    assert {profile for profile, _ in tables} == {
+        spec.parse(path.read_text(encoding="ascii")).directives["PROFILE"]
+        for path in D1DIR.glob("*.g4dat")
+    }
     for (profile, _name), table in tables.items():
         natural = spec.natural_rows(table)
         assert (natural > 0) is (profile == mizuno2025.PROFILE), (profile, natural)

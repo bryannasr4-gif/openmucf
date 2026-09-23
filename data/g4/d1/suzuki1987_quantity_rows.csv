@@ -1,0 +1,268 @@
+table,printed_page,page_row_ordinal,Z,z_from,target_label,label_from,target_basis,basis_rule,mean_life_ns,mean_life_unc_ns,rate,rate_unc,rate_unc_plus,rate_unc_minus,rate_exp10,rate_unit,rate_parenthesized,huff_factor,huff_from,refs,own_measurement,copy_read
+III,2217,4,1,printed,1H^b,Table III p.2217 row 4,isotope,integer-mass-prefix,2194.903,0.066,420,20,,,0,s^-1,false,1.00,printed,34,false,published-scan
+III,2217,5,1,Table III p.2217 row 4,1H^b,Table III p.2217 row 5,isotope,integer-mass-prefix,,,420,60,,,0,s^-1,false,1.00,printed,35,false,published-scan
+III,2217,6,1,Table III p.2217 row 4,1H^b,Table III p.2217 row 5,isotope,integer-mass-prefix,2194.53,0.11,470,29,,,0,s^-1,false,1.00,Table III p.2217 row 5,36,false,published-scan
+III,2217,7,2,printed,3He,Table III p.2217 row 7,isotope,integer-mass-prefix,,,2170,,170,-430,0,s^-1,false,1.00,printed,37,false,published-scan
+III,2217,8,2,Table III p.2217 row 7,3He,Table III p.2217 row 7,isotope,integer-mass-prefix,,,2140,200,,,0,s^-1,false,1.00,Table III p.2217 row 7,38,false,published-scan
+III,2217,9,2,Table III p.2217 row 7,4He,Table III p.2217 row 9,isotope,integer-mass-prefix,,,336,75,,,0,s^-1,false,,,39,false,published-scan
+III,2217,10,2,Table III p.2217 row 7,4He,Table III p.2217 row 9,isotope,integer-mass-prefix,,,375,,30,-300,0,s^-1,false,,,37,false,published-scan
+III,2217,11,2,Table III p.2217 row 7,4He,Table III p.2217 row 9,isotope,integer-mass-prefix,,,364,46,,,0,s^-1,false,,,60,false,published-scan
+III,2217,12,3,printed,6Li,Table III p.2217 row 12,isotope,integer-mass-prefix,2173,5,6100,1400,,,0,s^-1,false,,,1,false,published-scan
+III,2217,13,3,Table III p.2217 row 12,6Li,Table III p.2217 row 12,isotope,integer-mass-prefix,2175.3,0.4,4680,120,,,0,s^-1,false,1.00,printed,6,false,published-scan
+III,2217,14,3,Table III p.2217 row 12,6Li,Table III p.2217 row 12,isotope,integer-mass-prefix,2177.0,2.0,4180,450,,,0,s^-1,false,1.00,Table III p.2217 row 13,a,true,published-scan
+III,2217,15,3,printed,7Li,Table III p.2217 row 15,isotope,integer-mass-prefix,2194,4,1800,1100,,,0,s^-1,false,,,1,false,published-scan
+III,2217,16,3,Table III p.2217 row 15,7Li,Table III p.2217 row 15,isotope,integer-mass-prefix,2186.8,0.4,2260,120,,,0,s^-1,false,,,6,false,published-scan
+III,2217,17,3,Table III p.2217 row 15,7Li,Table III p.2217 row 15,isotope,integer-mass-prefix,2188.3,2.0,1810,440,,,0,s^-1,false,,,a,true,published-scan
+III,2217,18,4,printed,Be,Table III p.2217 row 18,unspecified,bare-symbol,2140,20,18,10,,,3,s^-1,false,1.00,printed,40,false,published-scan
+III,2217,19,4,Table III p.2217 row 18,Be,Table III p.2217 row 18,unspecified,bare-symbol,2156,10,10,2,,,3,s^-1,false,1.00,Table III p.2217 row 18,1,false,published-scan
+III,2217,20,4,Table III p.2217 row 18,Be,Table III p.2217 row 18,unspecified,bare-symbol,2169.0,1.0,5.9,0.2,,,3,s^-1,false,1.00,Table III p.2217 row 18,7,false,published-scan
+III,2217,21,4,Table III p.2217 row 18,Be,Table III p.2217 row 18,unspecified,bare-symbol,2162.1,2.0,7.4,0.5,,,3,s^-1,false,1.00,Table III p.2217 row 18,a,true,published-scan
+III,2217,22,5,printed,10B,Table III p.2217 row 22,isotope,integer-mass-prefix,2082,6,26.5,1.5,,,3,s^-1,false,1.00,printed,1,false,published-scan
+III,2217,23,5,Table III p.2217 row 22,10B,Table III p.2217 row 22,isotope,integer-mass-prefix,2070.7,3.0,27.8,0.7,,,3,s^-1,false,1.00,Table III p.2217 row 22,a,true,published-scan
+III,2217,24,5,Table III p.2217 row 22,11B,Table III p.2217 row 24,isotope,integer-mass-prefix,2102,6,21.8,1.6,,,3,s^-1,false,,,1,false,published-scan
+III,2217,25,5,Table III p.2217 row 22,11B,Table III p.2217 row 24,isotope,integer-mass-prefix,2096.1,3.0,21.9,0.7,,,3,s^-1,false,,,a,true,published-scan
+III,2217,26,6,printed,C,Table III p.2217 row 26,unspecified,bare-symbol,2020,20,44,10,,,3,s^-1,false,1.00,printed,40,false,published-scan
+III,2217,27,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,,,36,4,,,3,s^-1,false,1.00,Table III p.2217 row 26,53,false,published-scan
+III,2217,28,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2043,3,37.3,1.1,,,3,s^-1,false,1.00,Table III p.2217 row 26,41,false,published-scan
+III,2217,29,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2041,5,36.1,1.0,,,3,s^-1,false,1.00,Table III p.2217 row 26,42,false,published-scan
+III,2217,30,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2040,30,37,7,,,3,s^-1,false,1.00,Table III p.2217 row 26,43,false,published-scan
+III,2217,31,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2025,4,39.7,1.3,,,3,s^-1,false,1.00,Table III p.2217 row 26,1,false,published-scan
+III,2217,32,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2035,8,36.5,2.0,,,3,s^-1,false,1.00,Table III p.2217 row 26,27,false,published-scan
+III,2217,33,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2060,30,30.3,7,,,3,s^-1,false,1.00,Table III p.2217 row 26,44,false,published-scan
+III,2217,34,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2030.0,1.6,37.6,0.4,,,3,s^-1,false,1.00,Table III p.2217 row 26,7,false,published-scan
+III,2217,35,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2040,10,35.2,2.0,,,3,s^-1,false,1.00,Table III p.2217 row 26,73,false,published-scan
+III,2217,36,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2029,3,37.7,0.7,,,3,s^-1,false,1.00,Table III p.2217 row 26,29,false,published-scan
+III,2217,37,6,Table III p.2217 row 26,C,Table III p.2217 row 26,unspecified,bare-symbol,2026.3,1.5,38.8,0.5,,,3,s^-1,false,1.00,Table III p.2217 row 26,a,true,published-scan
+III,2217,38,6,Table III p.2217 row 26,13C,Table III p.2217 row 38,isotope,integer-mass-prefix,2045,2,33.8,0.4,,,3,s^-1,false,,,29,false,published-scan
+III,2217,39,6,Table III p.2217 row 26,13C,Table III p.2217 row 38,isotope,integer-mass-prefix,2029.1,3.0,37.6,0.7,,,3,s^-1,false,,,a,true,published-scan
+III,2217,40,7,printed,N,Table III p.2217 row 40,unspecified,bare-symbol,1860,20,86,11,,,3,s^-1,false,1.00,printed,40,false,published-scan
+III,2217,41,7,Table III p.2217 row 40,N,Table III p.2217 row 40,unspecified,bare-symbol,1927,13,65,4,,,3,s^-1,false,1.00,Table III p.2217 row 40,1,false,published-scan
+III,2217,42,7,Table III p.2217 row 40,N,Table III p.2217 row 40,unspecified,bare-symbol,1940.5,2.8,60.2,0.8,,,3,s^-1,false,1.00,Table III p.2217 row 40,7,false,published-scan
+III,2217,43,7,Table III p.2217 row 40,N,Table III p.2217 row 40,unspecified,bare-symbol,1910,3,68.4,0.8,,,3,s^-1,false,1.00,Table III p.2217 row 40,29,false,published-scan
+III,2217,44,7,Table III p.2217 row 40,N,Table III p.2217 row 40,unspecified,bare-symbol,1906.8,3.0,69.3,0.8,,,3,s^-1,false,1.00,Table III p.2217 row 40,a,true,published-scan
+III,2217,45,8,printed,O,Table III p.2217 row 45,unspecified,bare-symbol,1640,30,159,14,,,3,s^-1,false,0.998,printed,40,false,published-scan
+III,2217,46,8,Table III p.2217 row 45,O,Table III p.2217 row 45,unspecified,bare-symbol,1812,12,98,3,,,3,s^-1,false,0.998,Table III p.2217 row 45,1,false,published-scan
+III,2217,47,8,Table III p.2217 row 45,O,Table III p.2217 row 45,unspecified,bare-symbol,1810,20,98,5,,,3,s^-1,false,0.998,Table III p.2217 row 45,44,false,published-scan
+III,2217,48,8,Table III p.2217 row 45,O,Table III p.2217 row 45,unspecified,bare-symbol,1832,29,95,8,,,3,s^-1,false,0.998,Table III p.2217 row 45,73,false,published-scan
+III,2217,49,8,Table III p.2217 row 45,O,Table III p.2217 row 45,unspecified,bare-symbol,1795.4,2.0,102.6,0.6,,,3,s^-1,false,0.998,Table III p.2217 row 45,a,true,published-scan
+III,2217,50,8,Table III p.2217 row 45,18O,Table III p.2217 row 50,isotope,integer-mass-prefix,1844.0,4.5,88.0,1.5,,,3,s^-1,false,,,a,true,published-scan
+III,2217,51,9,printed,F,Table III p.2217 row 51,unspecified,bare-symbol,1420,40,254,22,,,3,s^-1,false,0.998,printed,40,false,published-scan
+III,2217,52,9,Table III p.2217 row 51,F,Table III p.2217 row 51,unspecified,bare-symbol,1450,20,235,10,,,3,s^-1,false,0.998,Table III p.2217 row 51,45,false,published-scan
+III,2217,53,9,Table III p.2217 row 51,F,Table III p.2217 row 51,unspecified,bare-symbol,1458,13,231,6,,,3,s^-1,false,0.998,Table III p.2217 row 51,27,false,published-scan
+III,2217,54,9,Table III p.2217 row 51,F,Table III p.2217 row 51,unspecified,bare-symbol,1462.7,5.0,229,1,,,3,s^-1,false,0.998,Table III p.2217 row 51,a,true,published-scan
+IV,2218,3,10,printed,Ne,Table IV p.2218 row 3,unspecified,bare-symbol,1520,23,0.204,0.010,,,0,10^6/s,false,0.997,printed,46,false,published-scan
+IV,2218,4,10,Table IV p.2218 row 3,Ne,Table IV p.2218 row 3,unspecified,bare-symbol,,,0.167,0.030,,,0,10^6/s,false,0.997,Table IV p.2218 row 3,47,false,published-scan
+IV,2218,5,10,Table IV p.2218 row 3,Ne,Table IV p.2218 row 3,unspecified,bare-symbol,,,0.30,0.02,,,0,10^6/s,false,0.997,Table IV p.2218 row 3,48,false,published-scan
+IV,2218,6,10,Table IV p.2218 row 3,Ne,Table IV p.2218 row 3,unspecified,bare-symbol,1450,10,0.235,0.005,,,0,10^6/s,false,0.997,Table IV p.2218 row 3,7,false,published-scan
+IV,2218,7,11,printed,Na,Table IV p.2218 row 7,unspecified,bare-symbol,1190,20,0.387,0.015,,,0,10^6/s,false,0.996,printed,40,false,published-scan
+IV,2218,8,11,Table IV p.2218 row 7,Na,Table IV p.2218 row 7,unspecified,bare-symbol,1204.0,2.0,0.3772,0.0014,,,0,10^6/s,false,0.996,Table IV p.2218 row 7,a,true,published-scan
+IV,2218,9,12,printed,Mg,Table IV p.2218 row 9,unspecified,bare-symbol,1040,20,0.507,0.020,,,0,10^6/s,false,0.995,printed,40,false,published-scan
+IV,2218,10,12,Table IV p.2218 row 9,Mg,Table IV p.2218 row 9,unspecified,bare-symbol,1071,2,0.480,0.002,,,0,10^6/s,false,0.995,Table IV p.2218 row 9,42,false,published-scan
+IV,2218,11,12,Table IV p.2218 row 9,Mg,Table IV p.2218 row 9,unspecified,bare-symbol,1021,25,0.52,0.02,,,0,10^6/s,false,0.995,Table IV p.2218 row 9,49,false,published-scan
+IV,2218,12,12,Table IV p.2218 row 9,Mg,Table IV p.2218 row 9,unspecified,bare-symbol,1067.2,2.0,0.4841,0.0018,,,0,10^6/s,false,0.995,Table IV p.2218 row 9,a,true,published-scan
+IV,2218,13,13,printed,Al,Table IV p.2218 row 13,unspecified,bare-symbol,880,10,0.691,0.020,,,0,10^6/s,false,0.993,printed,40,false,published-scan
+IV,2218,14,13,Table IV p.2218 row 13,Al,Table IV p.2218 row 13,unspecified,bare-symbol,864,2,0.662,0.003,,,0,10^6/s,false,0.993,Table IV p.2218 row 13,42,false,published-scan
+IV,2218,15,13,Table IV p.2218 row 13,Al,Table IV p.2218 row 13,unspecified,bare-symbol,905,12,0.650,0.015,,,0,10^6/s,false,0.993,Table IV p.2218 row 13,45,false,published-scan
+IV,2218,16,13,Table IV p.2218 row 13,Al,Table IV p.2218 row 13,unspecified,bare-symbol,864.0,1.0,0.7054,0.0013,,,0,10^6/s,false,0.993,Table IV p.2218 row 13,a,true,published-scan
+IV,2218,17,14,printed,Si,Table IV p.2218 row 17,unspecified,bare-symbol,810,10,0.777,0.025,,,0,10^6/s,false,0.992,printed,40,false,published-scan
+IV,2218,18,14,Table IV p.2218 row 17,Si,Table IV p.2218 row 17,unspecified,bare-symbol,767,2,0.850,0.003,,,0,10^6/s,false,0.992,Table IV p.2218 row 17,42,false,published-scan
+IV,2218,19,14,Table IV p.2218 row 17,Si,Table IV p.2218 row 17,unspecified,bare-symbol,758,20,0.86,0.04,,,0,10^6/s,false,0.992,Table IV p.2218 row 17,49,false,published-scan
+IV,2218,20,14,Table IV p.2218 row 17,Si,Table IV p.2218 row 17,unspecified,bare-symbol,756.0,1.0,0.8712,0.0018,,,0,10^6/s,false,0.992,Table IV p.2218 row 17,a,true,published-scan
+IV,2218,21,15,printed,P,Table IV p.2218 row 21,unspecified,bare-symbol,660,20,1.05,0.05,,,0,10^6/s,false,0.991,printed,40,false,published-scan
+IV,2218,22,15,Table IV p.2218 row 21,P,Table IV p.2218 row 21,unspecified,bare-symbol,635,2,1.121,0.005,,,0,10^6/s,false,0.991,Table IV p.2218 row 21,42,false,published-scan
+IV,2218,23,15,Table IV p.2218 row 21,P,Table IV p.2218 row 21,unspecified,bare-symbol,611.2,1.0,1.185,0.003,,,0,10^6/s,false,0.991,Table IV p.2218 row 21,a,true,published-scan
+IV,2218,24,16,printed,S,Table IV p.2218 row 24,unspecified,bare-symbol,540,20,1.39,0.09,,,0,10^6/s,false,0.990,printed,40,false,published-scan
+IV,2218,25,16,Table IV p.2218 row 24,S,Table IV p.2218 row 24,unspecified,bare-symbol,567.4,8.4,1.31,0.03,,,0,10^6/s,false,0.990,Table IV p.2218 row 24,49,false,published-scan
+IV,2218,26,16,Table IV p.2218 row 24,S,Table IV p.2218 row 24,unspecified,bare-symbol,559,3,1.34,0.01,,,0,10^6/s,false,0.990,Table IV p.2218 row 24,27,false,published-scan
+IV,2218,27,16,Table IV p.2218 row 24,S,Table IV p.2218 row 24,unspecified,bare-symbol,554.7,1.0,1.352,0.003,,,0,10^6/s,false,0.990,Table IV p.2218 row 24,a,true,published-scan
+IV,2218,28,17,printed,Cl,Table IV p.2218 row 28,unspecified,bare-symbol,540,20,1.39,0.09,,,0,10^6/s,false,0.989,printed,40,false,published-scan
+IV,2218,29,17,Table IV p.2218 row 28,Cl,Table IV p.2218 row 28,unspecified,bare-symbol,560.8,2.0,1.333,0.006,,,0,10^6/s,false,0.989,Table IV p.2218 row 28,a,true,published-scan
+IV,2218,30,17,Table IV p.2218 row 28,35Cl,Table IV p.2218 row 30,isotope,integer-mass-prefix,444,10,1.80,0.05,,,0,10^6/s,false,,,76,false,published-scan
+IV,2218,31,17,Table IV p.2218 row 28,37Cl,Table IV p.2218 row 31,isotope,integer-mass-prefix,587,17,1.25,0.05,,,0,10^6/s,false,,,76,false,published-scan
+IV,2218,32,17,Table IV p.2218 row 28,natCl,Table IV p.2218 row 32,natural,nat-prefix,479,17,1.64,0.08,,,0,10^6/s,false,,,76,false,published-scan
+IV,2218,33,18,printed,Ar,Table IV p.2218 row 33,unspecified,bare-symbol,,,1.20,0.08,,,0,10^6/s,false,,,48,false,published-scan
+IV,2218,34,18,Table IV p.2218 row 33,Ar,Table IV p.2218 row 33,unspecified,bare-symbol,537,32,1.41,0.11,,,0,10^6/s,false,0.988,printed,59,false,published-scan
+IV,2218,35,19,printed,K,Table IV p.2218 row 35,unspecified,bare-symbol,410,20,1.99,0.12,,,0,10^6/s,false,0.987,printed,40,false,published-scan
+IV,2218,36,19,Table IV p.2218 row 35,K,Table IV p.2218 row 35,unspecified,bare-symbol,435.0,1.0,1.849,0.005,,,0,10^6/s,false,0.987,Table IV p.2218 row 35,a,true,published-scan
+IV,2218,37,20,printed,Ca,Table IV p.2218 row 37,unspecified,bare-symbol,333,7,2.55,0.05,,,0,10^6/s,false,0.985,printed,40,false,published-scan
+IV,2218,38,20,Table IV p.2218 row 37,Ca,Table IV p.2218 row 37,unspecified,bare-symbol,345,3,2.444,0.023,,,0,10^6/s,false,0.985,Table IV p.2218 row 37,50,false,published-scan
+IV,2218,39,20,Table IV p.2218 row 37,Ca,Table IV p.2218 row 37,unspecified,bare-symbol,335.9,0.9,2.529,0.008,,,0,10^6/s,false,0.985,Table IV p.2218 row 37,51,false,published-scan
+IV,2218,40,20,Table IV p.2218 row 37,Ca,Table IV p.2218 row 37,unspecified,bare-symbol,365,8,2.29,0.05,,,0,10^6/s,false,0.985,Table IV p.2218 row 37,52,false,published-scan
+IV,2218,41,20,Table IV p.2218 row 37,Ca,Table IV p.2218 row 37,unspecified,bare-symbol,332.7,1.5,2.557,0.014,,,0,10^6/s,false,0.985,Table IV p.2218 row 37,a,true,published-scan
+IV,2218,42,20,Table IV p.2218 row 37,43.8Ca,Table IV p.2218 row 42,enriched_mixture,noninteger-mass-prefix,445,8,1.793,0.040,,,0,10^6/s,false,,,50,false,published-scan
+IV,2218,43,21,printed,Sc,Table IV p.2218 row 43,unspecified,bare-symbol,316.6,2.5,2.711,0.025,,,0,10^6/s,false,0.983,printed,a,true,published-scan
+IV,2218,44,22,printed,Ti,Table IV p.2218 row 44,unspecified,bare-symbol,330,7,2.63,0.06,,,0,10^6/s,false,0.981,printed,40,false,published-scan
+IV,2218,45,22,Table IV p.2218 row 44,Ti,Table IV p.2218 row 44,unspecified,bare-symbol,327.3,4.5,2.60,0.04,,,0,10^6/s,false,0.981,Table IV p.2218 row 44,49,false,published-scan
+IV,2218,46,22,Table IV p.2218 row 44,Ti,Table IV p.2218 row 44,unspecified,bare-symbol,329.3,1.3,2.590,0.012,,,0,10^6/s,false,0.981,Table IV p.2218 row 44,a,true,published-scan
+IV,2218,47,23,printed,V,Table IV p.2218 row 47,unspecified,bare-symbol,264,4,3.37,0.06,,,0,10^6/s,false,0.980,printed,40,false,published-scan
+IV,2218,48,23,Table IV p.2218 row 47,V,Table IV p.2218 row 47,unspecified,bare-symbol,271,5,3.24,0.07,,,0,10^6/s,false,0.980,Table IV p.2218 row 47,43,false,published-scan
+IV,2218,49,23,Table IV p.2218 row 47,V,Table IV p.2218 row 47,unspecified,bare-symbol,282.6,3.2,3.09,0.05,,,0,10^6/s,false,0.980,Table IV p.2218 row 47,49,false,published-scan
+IV,2218,50,23,Table IV p.2218 row 47,V,Table IV p.2218 row 47,unspecified,bare-symbol,284.5,2.0,3.069,0.025,,,0,10^6/s,false,0.980,Table IV p.2218 row 47,a,true,published-scan
+IV,2218,51,24,printed,Cr,Table IV p.2218 row 51,unspecified,bare-symbol,276,6,3.24,0.08,,,0,10^6/s,false,0.978,printed,40,false,published-scan
+IV,2218,52,24,Table IV p.2218 row 51,Cr,Table IV p.2218 row 51,unspecified,bare-symbol,264.5,3.2,3.33,0.06,,,0,10^6/s,false,0.978,Table IV p.2218 row 51,49,false,published-scan
+IV,2218,53,24,Table IV p.2218 row 51,Cr,Table IV p.2218 row 51,unspecified,bare-symbol,255.3,2.0,3.472,0.031,,,0,10^6/s,false,0.978,Table IV p.2218 row 51,a,true,published-scan
+IV,2218,54,24,Table IV p.2218 row 51,50Cr,Table IV p.2218 row 54,isotope,integer-mass-prefix,233.7,2.7,3.825,0.050,,,0,10^6/s,false,,,73,false,published-scan
+IV,2218,55,24,Table IV p.2218 row 51,52Cr,Table IV p.2218 row 55,isotope,integer-mass-prefix,256.0,3.0,3.452,0.047,,,0,10^6/s,false,,,73,false,published-scan
+IV,2218,56,24,Table IV p.2218 row 51,53Cr,Table IV p.2218 row 56,isotope,integer-mass-prefix,266.6,3.2,3.297,0.045,,,0,10^6/s,false,,,73,false,published-scan
+IV,2218,57,24,Table IV p.2218 row 51,54Cr,Table IV p.2218 row 57,isotope,integer-mass-prefix,284.8,3.3,3.057,0.042,,,0,10^6/s,false,,,73,false,published-scan
+IV,2218,58,24,Table IV p.2218 row 51,natCr,Table IV p.2218 row 58,natural,nat-prefix,256.7,3.0,3.444,0.047,,,0,10^6/s,false,,,73,false,published-scan
+IV,2218,59,25,printed,Mn,Table IV p.2218 row 59,unspecified,bare-symbol,239,4,3.67,0.08,,,0,10^6/s,false,0.976,printed,40,false,published-scan
+IV,2218,60,25,Table IV p.2218 row 59,Mn,Table IV p.2218 row 59,unspecified,bare-symbol,225.5,2.3,3.98,0.05,,,0,10^6/s,false,0.976,Table IV p.2218 row 59,49,false,published-scan
+IV,2219,3,25,Table IV p.2218 row 59,Mn,Table IV p.2219 row 3,unspecified,bare-symbol,232.5,2.0,3.857,0.037,,,0,10^6/s,false,0.976,Table IV p.2218 row 59,a,true,published-scan
+IV,2219,4,26,printed,Fe,Table IV p.2219 row 4,unspecified,bare-symbol,201,4,4.53,0.10,,,0,10^6/s,false,0.975,printed,40,false,published-scan
+IV,2219,5,26,Table IV p.2219 row 4,Fe,Table IV p.2219 row 4,unspecified,bare-symbol,207,3,4.38,0.07,,,0,10^6/s,false,0.975,Table IV p.2219 row 4,43,false,published-scan
+IV,2219,6,26,Table IV p.2219 row 4,Fe,Table IV p.2219 row 4,unspecified,bare-symbol,206.7,2.4,4.40,0.05,,,0,10^6/s,false,0.975,Table IV p.2219 row 4,49,false,published-scan
+IV,2219,7,26,Table IV p.2219 row 4,Fe,Table IV p.2219 row 4,unspecified,bare-symbol,206.0,1.0,4.411,0.024,,,0,10^6/s,false,0.975,Table IV p.2219 row 4,a,true,published-scan
+IV,2219,8,27,printed,Co,Table IV p.2219 row 8,unspecified,bare-symbol,188,3,4.89,0.09,,,0,10^6/s,false,0.971,printed,43,false,published-scan
+IV,2219,9,27,Table IV p.2219 row 8,Co,Table IV p.2219 row 8,unspecified,bare-symbol,184.0,1.7,4.96,0.05,,,0,10^6/s,false,0.971,Table IV p.2219 row 8,49,false,published-scan
+IV,2219,10,27,Table IV p.2219 row 8,Co,Table IV p.2219 row 8,unspecified,bare-symbol,185.8,1.0,4.940,0.029,,,0,10^6/s,false,0.971,Table IV p.2219 row 8,a,true,published-scan
+IV,2219,11,28,printed,Ni,Table IV p.2219 row 11,unspecified,bare-symbol,154,3,6.03,0.14,,,0,10^6/s,false,0.969,printed,40,false,published-scan
+IV,2219,12,28,Table IV p.2219 row 11,Ni,Table IV p.2219 row 11,unspecified,bare-symbol,158,3,5.89,0.12,,,0,10^6/s,false,0.969,Table IV p.2219 row 11,43,false,published-scan
+IV,2219,13,28,Table IV p.2219 row 11,Ni,Table IV p.2219 row 11,unspecified,bare-symbol,159.4,3.1,5.83,0.13,,,0,10^6/s,false,0.969,Table IV p.2219 row 11,49,false,published-scan
+IV,2219,14,28,Table IV p.2219 row 11,Ni,Table IV p.2219 row 11,unspecified,bare-symbol,156.9,1.0,5.932,0.041,,,0,10^6/s,false,0.969,Table IV p.2219 row 11,a,true,published-scan
+IV,2219,15,28,Table IV p.2219 row 11,58Ni,Table IV p.2219 row 15,isotope,integer-mass-prefix,152.3,2.4,6.11,0.10,,,0,10^6/s,false,,,73,false,published-scan
+IV,2219,16,28,Table IV p.2219 row 11,60Ni,Table IV p.2219 row 16,isotope,integer-mass-prefix,166.2,2.6,5.56,0.10,,,0,10^6/s,false,,,73,false,published-scan
+IV,2219,17,28,Table IV p.2219 row 11,62Ni,Table IV p.2219 row 17,isotope,integer-mass-prefix,193.4,3.5,4.72,0.10,,,0,10^6/s,false,,,73,false,published-scan
+IV,2219,18,28,Table IV p.2219 row 11,natNi,Table IV p.2219 row 18,natural,nat-prefix,158.4,2.5,5.88,0.10,,,0,10^6/s,false,,,73,false,published-scan
+IV,2219,19,29,printed,Cu,Table IV p.2219 row 19,unspecified,bare-symbol,160,4,5.79,0.16,,,0,10^6/s,false,0.967,printed,40,false,published-scan
+IV,2219,20,29,Table IV p.2219 row 19,Cu,Table IV p.2219 row 19,unspecified,bare-symbol,169,6,5.47,0.20,,,0,10^6/s,false,0.967,Table IV p.2219 row 19,45,false,published-scan
+IV,2219,21,29,Table IV p.2219 row 19,Cu,Table IV p.2219 row 19,unspecified,bare-symbol,164.0,2.3,5.66,0.09,,,0,10^6/s,false,0.967,Table IV p.2219 row 19,54,false,published-scan
+IV,2219,22,29,Table IV p.2219 row 19,Cu,Table IV p.2219 row 19,unspecified,bare-symbol,163.5,2.4,5.67,0.09,,,0,10^6/s,false,0.967,Table IV p.2219 row 19,49,false,published-scan
+IV,2219,23,29,Table IV p.2219 row 19,Cu,Table IV p.2219 row 19,unspecified,bare-symbol,163.5,1.0,5.676,0.037,,,0,10^6/s,false,0.967,Table IV p.2219 row 19,a,true,published-scan
+IV,2219,24,29,Table IV p.2219 row 19,63Cu,Table IV p.2219 row 24,isotope,integer-mass-prefix,162.1,1.4,5.72,0.05,,,0,10^6/s,false,,,49,false,published-scan
+IV,2219,25,30,printed,Zn,Table IV p.2219 row 25,unspecified,bare-symbol,161,4,5.76,0.17,,,0,10^6/s,false,0.965,printed,40,false,published-scan
+IV,2219,26,30,Table IV p.2219 row 25,Zn,Table IV p.2219 row 25,unspecified,bare-symbol,169,4,5.5,0.1,,,0,10^6/s,false,0.965,Table IV p.2219 row 25,43,false,published-scan
+IV,2219,27,30,Table IV p.2219 row 25,Zn,Table IV p.2219 row 25,unspecified,bare-symbol,161.2,1.1,5.76,0.05,,,0,10^6/s,false,0.965,Table IV p.2219 row 25,49,false,published-scan
+IV,2219,28,30,Table IV p.2219 row 25,Zn,Table IV p.2219 row 25,unspecified,bare-symbol,159.4,1.0,5.834,0.039,,,0,10^6/s,false,0.965,Table IV p.2219 row 25,a,true,published-scan
+IV,2219,29,31,printed,Ga,Table IV p.2219 row 29,unspecified,bare-symbol,163.0,1.6,5.70,0.06,,,0,10^6/s,false,0.962,printed,49,false,published-scan
+IV,2219,30,32,printed,Ge,Table IV p.2219 row 30,unspecified,bare-symbol,167.4,1.8,5.54,0.06,,,0,10^6/s,false,0.960,printed,49,false,published-scan
+IV,2219,31,32,Table IV p.2219 row 30,Ge,Table IV p.2219 row 30,unspecified,bare-symbol,166.5,1.0,5.569,0.036,,,0,10^6/s,false,0.960,Table IV p.2219 row 30,a,true,published-scan
+IV,2219,32,33,printed,As,Table IV p.2219 row 32,unspecified,bare-symbol,153.8,1.7,6.07,0.07,,,0,10^6/s,false,0.958,printed,49,false,published-scan
+IV,2219,33,33,Table IV p.2219 row 32,As,Table IV p.2219 row 32,unspecified,bare-symbol,153.9,2.4,6.06,0.12,,,0,10^6/s,false,0.958,Table IV p.2219 row 32,54,false,published-scan
+IV,2219,34,33,Table IV p.2219 row 32,As,Table IV p.2219 row 32,unspecified,bare-symbol,152.9,1.0,6.104,0.043,,,0,10^6/s,false,0.958,Table IV p.2219 row 32,a,true,published-scan
+IV,2219,35,34,printed,Se,Table IV p.2219 row 35,unspecified,bare-symbol,163.0,1.2,5.70,0.05,,,0,10^6/s,false,0.955,printed,49,false,published-scan
+IV,2219,36,34,Table IV p.2219 row 35,Se,Table IV p.2219 row 35,unspecified,bare-symbol,163.5,1.0,5.681,0.037,,,0,10^6/s,false,0.955,Table IV p.2219 row 35,a,true,published-scan
+IV,2219,37,35,printed,79Br,Table IV p.2219 row 37,isotope,integer-mass-prefix,133.7,6.5,7.05,0.35,,,0,10^6/s,false,0.952,printed,55,false,published-scan
+IV,2219,38,35,Table IV p.2219 row 37,81Br,Table IV p.2219 row 38,isotope,integer-mass-prefix,125.3,7.9,7.55,0.48,,,0,10^6/s,false,,,55,false,published-scan
+IV,2219,39,35,Table IV p.2219 row 37,Br,Table IV p.2219 row 39,unspecified,bare-symbol,133.3,1.0,7.07,0.06,,,0,10^6/s,false,,,a,true,published-scan
+IV,2219,40,37,printed,Rb,Table IV p.2219 row 40,unspecified,bare-symbol,136.5,2.7,6.89,0.14,,,0,10^6/s,false,0.948,printed,49,false,published-scan
+IV,2219,41,38,printed,Sr,Table IV p.2219 row 41,unspecified,bare-symbol,130.1,2.3,7.25,0.14,,,0,10^6/s,false,0.945,printed,49,false,published-scan
+IV,2219,42,38,Table IV p.2219 row 41,Sr,Table IV p.2219 row 41,unspecified,bare-symbol,134.1,2.5,7.02,0.14,,,0,10^6/s,false,0.945,Table IV p.2219 row 41,a,true,published-scan
+IV,2219,43,38,Table IV p.2219 row 41,88Sr,Table IV p.2219 row 43,isotope,integer-mass-prefix,142.0,5.5,6.61,0.27,,,0,10^6/s,false,,,49,false,published-scan
+IV,2219,44,39,printed,Y,Table IV p.2219 row 44,unspecified,bare-symbol,120.2,1.4,7.89,0.11,,,0,10^6/s,false,0.942,printed,54,false,published-scan
+IV,2219,45,40,printed,Zr,Table IV p.2219 row 45,unspecified,bare-symbol,110.8,0.8,8.59,0.07,,,0,10^6/s,false,0.940,printed,49,false,published-scan
+IV,2219,46,40,Table IV p.2219 row 45,Zr,Table IV p.2219 row 45,unspecified,bare-symbol,110.0,1.0,8.66,0.08,,,0,10^6/s,false,0.940,Table IV p.2219 row 45,a,true,published-scan
+IV,2219,47,41,printed,Nb,Table IV p.2219 row 47,unspecified,bare-symbol,92.3,1.1,10.40,0.14,,,0,10^6/s,false,0.939,printed,54,false,published-scan
+IV,2219,48,41,Table IV p.2219 row 47,Nb,Table IV p.2219 row 47,unspecified,bare-symbol,92.7,1.5,10.36,0.17,,,0,10^6/s,false,0.939,Table IV p.2219 row 47,a,true,published-scan
+IV,2219,49,42,printed,Mo,Table IV p.2219 row 49,unspecified,bare-symbol,105,2,9.09,0.18,,,0,10^6/s,false,0.936,printed,40,false,published-scan
+IV,2219,50,42,Table IV p.2219 row 49,Mo,Table IV p.2219 row 49,unspecified,bare-symbol,103.5,0.7,9.23,0.07,,,0,10^6/s,false,0.936,Table IV p.2219 row 49,49,false,published-scan
+IV,2219,51,42,Table IV p.2219 row 49,Mo,Table IV p.2219 row 49,unspecified,bare-symbol,99.6,1.5,9.614,0.15,,,0,10^6/s,false,0.936,Table IV p.2219 row 49,a,true,published-scan
+IV,2219,52,45,printed,Rh,Table IV p.2219 row 52,unspecified,bare-symbol,95.8,0.6,10.01,0.07,,,0,10^6/s,false,0.929,printed,49,false,published-scan
+IV,2219,53,46,printed,Pd,Table IV p.2219 row 53,unspecified,bare-symbol,96.0,0.6,10.00,0.07,,,0,10^6/s,false,0.927,printed,49,false,published-scan
+IV,2219,54,47,printed,Ag,Table IV p.2219 row 54,unspecified,bare-symbol,85,3,11.25,0.50,,,0,10^6/s,false,0.925,printed,40,false,published-scan
+IV,2219,55,47,Table IV p.2219 row 54,Ag,Table IV p.2219 row 54,unspecified,bare-symbol,88.7,0.9,10.86,0.13,,,0,10^6/s,false,0.925,Table IV p.2219 row 54,54,false,published-scan
+IV,2219,56,47,Table IV p.2219 row 54,Ag,Table IV p.2219 row 54,unspecified,bare-symbol,88.6,1.1,10.88,0.14,,,0,10^6/s,false,0.925,Table IV p.2219 row 54,49,false,published-scan
+IV,2219,57,47,Table IV p.2219 row 54,Ag,Table IV p.2219 row 54,unspecified,bare-symbol,91.6,2.2,10.5,0.3,,,0,10^6/s,false,0.925,Table IV p.2219 row 54,76,false,published-scan
+IV,2219,58,47,Table IV p.2219 row 54,Ag,Table IV p.2219 row 54,unspecified,bare-symbol,87.0,1.5,11.07,0.20,,,0,10^6/s,false,0.925,Table IV p.2219 row 54,a,true,published-scan
+IV,2219,59,48,printed,Cd,Table IV p.2219 row 59,unspecified,bare-symbol,95,5,10.1,0.5,,,0,10^6/s,false,0.921,printed,40,false,published-scan
+IV,2219,60,48,Table IV p.2219 row 59,Cd,Table IV p.2219 row 59,unspecified,bare-symbol,90.5,0.8,10.63,0.11,,,0,10^6/s,false,0.921,Table IV p.2219 row 59,54,false,published-scan
+IV,2220,3,48,Table IV p.2219 row 59,Cd,Table IV p.2220 row 3,unspecified,bare-symbol,90.7,1.5,10.61,0.18,,,0,10^6/s,false,0.921,Table IV p.2219 row 59,a,true,published-scan
+IV,2220,4,49,printed,In,Table IV p.2220 row 4,unspecified,bare-symbol,84.8,0.8,11.37,0.13,,,0,10^6/s,false,0.920,printed,54,false,published-scan
+IV,2220,5,49,Table IV p.2220 row 4,In,Table IV p.2220 row 4,unspecified,bare-symbol,84.6,1.5,11.40,0.21,,,0,10^6/s,false,0.920,Table IV p.2220 row 4,a,true,published-scan
+IV,2220,6,50,printed,Sn,Table IV p.2220 row 6,unspecified,bare-symbol,92,3,10.5,0.4,,,0,10^6/s,false,0.918,printed,43,false,published-scan
+IV,2220,7,50,Table IV p.2220 row 6,Sn,Table IV p.2220 row 6,unspecified,bare-symbol,89.9,1.0,10.70,0.14,,,0,10^6/s,false,0.918,Table IV p.2220 row 6,54,false,published-scan
+IV,2220,8,50,Table IV p.2220 row 6,Sn,Table IV p.2220 row 6,unspecified,bare-symbol,92.1,1.5,10.44,0.18,,,0,10^6/s,false,0.918,Table IV p.2220 row 6,a,true,published-scan
+IV,2220,9,51,printed,Sb,Table IV p.2220 row 9,unspecified,bare-symbol,91.7,1.1,10.49,0.14,,,0,10^6/s,false,0.916,printed,54,false,published-scan
+IV,2220,10,51,Table IV p.2220 row 9,Sb,Table IV p.2220 row 9,unspecified,bare-symbol,94.1,1.7,10.21,0.20,,,0,10^6/s,false,0.916,Table IV p.2220 row 9,a,true,published-scan
+IV,2220,11,52,printed,Te,Table IV p.2220 row 11,unspecified,bare-symbol,105.5,1.2,9.06,0.11,,,0,10^6/s,false,0.913,printed,49,false,published-scan
+IV,2220,12,52,Table IV p.2220 row 11,Te,Table IV p.2220 row 11,unspecified,bare-symbol,103.2,1.0,9.27,0.10,,,0,10^6/s,false,0.913,Table IV p.2220 row 11,a,true,published-scan
+IV,2220,13,53,printed,I,Table IV p.2220 row 13,unspecified,bare-symbol,86.1,0.7,11.20,0.11,,,0,10^6/s,false,0.910,printed,54,false,published-scan
+IV,2220,14,53,Table IV p.2220 row 13,I,Table IV p.2220 row 13,unspecified,bare-symbol,83.4,1.5,11.58,0.22,,,0,10^6/s,false,0.910,Table IV p.2220 row 13,a,true,published-scan
+IV,2220,15,55,printed,Cs,Table IV p.2220 row 15,unspecified,bare-symbol,87.8,1.9,10.98,0.25,,,0,10^6/s,false,0.905,printed,54,false,published-scan
+IV,2220,16,56,printed,Ba,Table IV p.2220 row 16,unspecified,bare-symbol,94.5,0.7,10.18,0.10,,,0,10^6/s,false,0.902,printed,54,false,published-scan
+IV,2220,17,56,Table IV p.2220 row 16,Ba,Table IV p.2220 row 16,unspecified,bare-symbol,96.6,1.5,9.94,0.16,,,0,10^6/s,false,0.902,Table IV p.2220 row 16,a,true,published-scan
+IV,2220,18,57,printed,La,Table IV p.2220 row 18,unspecified,bare-symbol,89.9,0.7,10.71,0.10,,,0,10^6/s,false,0.901,printed,54,false,published-scan
+IV,2220,19,58,printed,Ce,Table IV p.2220 row 19,unspecified,bare-symbol,84.4,0.7,11.44,0.11,,,0,10^6/s,false,0.899,printed,54,false,published-scan
+IV,2220,20,58,Table IV p.2220 row 19,Ce,Table IV p.2220 row 19,unspecified,bare-symbol,83.3,1.0,11.60,0.14,,,0,10^6/s,false,0.899,Table IV p.2220 row 19,a,true,published-scan
+IV,2220,21,59,printed,Pr,Table IV p.2220 row 21,unspecified,bare-symbol,72.1,0.6,13.45,0.13,,,0,10^6/s,false,0.897,printed,54,false,published-scan
+IV,2220,22,60,printed,Nd,Table IV p.2220 row 22,unspecified,bare-symbol,78.5,0.8,12.32,0.14,,,0,10^6/s,false,0.895,printed,54,false,published-scan
+IV,2220,23,60,Table IV p.2220 row 22,Nd,Table IV p.2220 row 22,unspecified,bare-symbol,77.5,2.0,12.50,0.33,,,0,10^6/s,false,0.895,Table IV p.2220 row 22,a,true,published-scan
+IV,2220,24,62,printed,Sm,Table IV p.2220 row 24,unspecified,bare-symbol,79.2,1.0,12.22,0.17,,,0,10^6/s,false,0.890,printed,54,false,published-scan
+IV,2220,25,64,printed,Gd,Table IV p.2220 row 25,unspecified,bare-symbol,80.1,1.0,12.09,0.16,,,0,10^6/s,false,0.885,printed,54,false,published-scan
+IV,2220,26,64,Table IV p.2220 row 25,Gd,Table IV p.2220 row 25,unspecified,bare-symbol,81.8,1.5,11.82,0.22,,,0,10^6/s,false,0.885,Table IV p.2220 row 25,a,true,published-scan
+IV,2220,27,65,printed,Th,Table IV p.2220 row 27,unspecified,bare-symbol,76.2,0.7,12.73,0.13,,,0,10^6/s,false,0.882,printed,54,false,published-scan
+IV,2220,28,66,printed,Dy,Table IV p.2220 row 28,unspecified,bare-symbol,78.8,1.1,12.29,0.18,,,0,10^6/s,false,0.880,printed,a,true,published-scan
+IV,2220,29,67,printed,Ho,Table IV p.2220 row 29,unspecified,bare-symbol,74.9,0.6,12.95,0.13,,,0,10^6/s,false,0.877,printed,54,false,published-scan
+IV,2220,30,68,printed,Er,Table IV p.2220 row 30,unspecified,bare-symbol,74.4,1.5,13.04,0.27,,,0,10^6/s,false,0.875,printed,a,true,published-scan
+IV,2220,31,72,printed,Hf,Table IV p.2220 row 31,unspecified,bare-symbol,74.5,1.3,13.03,0.21,,,0,10^6/s,false,0.865,printed,49,false,published-scan
+IV,2220,32,73,printed,Ta,Table IV p.2220 row 32,unspecified,bare-symbol,75.5,0.6,12.86,0.13,,,0,10^6/s,false,0.862,printed,54,false,published-scan
+IV,2220,33,74,printed,W,Table IV p.2220 row 33,unspecified,bare-symbol,81,2,11.92,0.30,,,0,10^6/s,false,0.860,printed,40,false,published-scan
+IV,2220,34,74,Table IV p.2220 row 33,W,Table IV p.2220 row 33,unspecified,bare-symbol,72,3,13.5,0.6,,,0,10^6/s,false,0.860,Table IV p.2220 row 33,43,false,published-scan
+IV,2220,35,74,Table IV p.2220 row 33,W,Table IV p.2220 row 33,unspecified,bare-symbol,74.3,1.2,13.07,0.21,,,0,10^6/s,false,0.860,Table IV p.2220 row 33,49,false,published-scan
+IV,2220,36,74,Table IV p.2220 row 33,W,Table IV p.2220 row 33,unspecified,bare-symbol,78.4,1.5,12.36,0.24,,,0,10^6/s,false,0.860,Table IV p.2220 row 33,a,true,published-scan
+IV,2220,37,79,printed,Au,Table IV p.2220 row 37,unspecified,bare-symbol,72.6,0.5,13.39,0.11,,,0,10^6/s,false,0.850,printed,54,false,published-scan
+IV,2220,38,79,Table IV p.2220 row 37,Au,Table IV p.2220 row 37,unspecified,bare-symbol,74.3,1.5,13.07,0.28,,,0,10^6/s,false,0.850,Table IV p.2220 row 37,a,true,published-scan
+IV,2220,39,80,printed,Hg,Table IV p.2220 row 39,unspecified,bare-symbol,76.2,1.5,12.74,0.26,,,0,10^6/s,false,0.848,printed,49,false,published-scan
+IV,2220,40,80,Table IV p.2220 row 39,Hg,Table IV p.2220 row 39,unspecified,bare-symbol,76.2,1.5,12.74,0.26,,,0,10^6/s,false,0.848,Table IV p.2220 row 39,a,true,published-scan
+IV,2220,41,81,printed,Tl,Table IV p.2220 row 41,unspecified,bare-symbol,75,4,12.90,0.75,,,0,10^6/s,false,0.846,printed,40,false,published-scan
+IV,2220,42,81,Table IV p.2220 row 41,Tl,Table IV p.2220 row 41,unspecified,bare-symbol,70.3,0.9,13.83,0.20,,,0,10^6/s,false,0.846,Table IV p.2220 row 41,54,false,published-scan
+IV,2220,43,81,Table IV p.2220 row 41,Tl,Table IV p.2220 row 41,unspecified,bare-symbol,70.0,1.5,13.90,0.31,,,0,10^6/s,false,0.846,Table IV p.2220 row 41,a,true,published-scan
+IV,2220,44,82,printed,Pb,Table IV p.2220 row 44,unspecified,bare-symbol,82,5,11.70,0.75,,,0,10^6/s,false,0.844,printed,40,false,published-scan
+IV,2220,45,82,Table IV p.2220 row 44,Pb,Table IV p.2220 row 44,unspecified,bare-symbol,67,3,14.5,0.7,,,0,10^6/s,false,0.844,Table IV p.2220 row 44,43,false,published-scan
+IV,2220,46,82,Table IV p.2220 row 44,Pb,Table IV p.2220 row 44,unspecified,bare-symbol,74.9,0.4,12.98,0.10,,,0,10^6/s,false,0.844,Table IV p.2220 row 44,54,false,published-scan
+IV,2220,47,82,Table IV p.2220 row 44,Pb,Table IV p.2220 row 44,unspecified,bare-symbol,73.2,1.2,13.27,0.22,,,0,10^6/s,false,0.844,Table IV p.2220 row 44,49,false,published-scan
+IV,2220,48,82,Table IV p.2220 row 44,Pb,Table IV p.2220 row 44,unspecified,bare-symbol,75.4,1.0,13.45,0.18,,,0,10^6/s,false,0.844,Table IV p.2220 row 44,a,true,published-scan
+IV,2220,49,82,Table IV p.2220 row 44,RPb^b,Table IV p.2220 row 49,enriched_mixture,R-prefix,71.5,0.4,13.61,0.10,,,0,10^6/s,false,,,54,false,published-scan
+IV,2220,50,83,printed,Bi,Table IV p.2220 row 50,unspecified,bare-symbol,79,5,12.20,0.75,,,0,10^6/s,false,0.840,printed,40,false,published-scan
+IV,2220,51,83,Table IV p.2220 row 50,Bi,Table IV p.2220 row 50,unspecified,bare-symbol,73.3,0.4,13.26,0.07,,,0,10^6/s,false,0.840,Table IV p.2220 row 50,54,false,published-scan
+IV,2220,52,83,Table IV p.2220 row 50,Bi,Table IV p.2220 row 50,unspecified,bare-symbol,74.2,1.0,13.10,0.18,,,0,10^6/s,false,0.840,Table IV p.2220 row 50,a,true,published-scan
+IV,2220,53,90,printed,232Th^c,Table IV p.2220 row 53,isotope,integer-mass-prefix,80.4,2.0,,,,,,10^6/s,false,0.824,printed,56e,false,published-scan
+IV,2220,54,90,Table IV p.2220 row 53,232Th^c,Table IV p.2220 row 53,isotope,integer-mass-prefix,79.2,2.0,,,,,,10^6/s,false,0.824,Table IV p.2220 row 53,57e,false,published-scan
+IV,2220,55,90,Table IV p.2220 row 53,232Th^c,Table IV p.2220 row 53,isotope,integer-mass-prefix,80.1,0.6,,,,,,10^6/s,false,0.824,Table IV p.2220 row 53,66n,false,published-scan
+IV,2220,56,90,Table IV p.2220 row 53,232Th^c,Table IV p.2220 row 53,isotope,integer-mass-prefix,74.2,5.6,13.1,0.9,,,0,10^6/s,true,0.824,Table IV p.2220 row 53,61f,false,published-scan
+IV,2220,57,90,Table IV p.2220 row 53,232Th^c,Table IV p.2220 row 53,isotope,integer-mass-prefix,87,4,11.1,0.6,,,0,10^6/s,true,0.824,Table IV p.2220 row 53,63f,false,published-scan
+IV,2220,58,90,Table IV p.2220 row 53,232Th^c,Table IV p.2220 row 53,isotope,integer-mass-prefix,77.3,0.3,12.56,0.05,,,0,10^6/s,true,0.824,Table IV p.2220 row 53,67f,false,published-scan
+IV,2220,59,90,Table IV p.2220 row 53,232Th^c,Table IV p.2220 row 53,isotope,integer-mass-prefix,84.0,4.5,11.5,0.6,,,0,10^6/s,true,0.824,Table IV p.2220 row 53,68f,false,published-scan
+IV,2220,60,90,Table IV p.2220 row 53,232Th^c,Table IV p.2220 row 53,isotope,integer-mass-prefix,78.5,2.0,12.4,0.3,,,0,10^6/s,true,0.824,Table IV p.2220 row 53,71f,false,published-scan
+IV,2221,3,92,printed,233U^c,Table IV p.2221 row 3,isotope,integer-mass-prefix,61.7,3.8,15.8,0.9,,,0,10^6/s,true,0.820,printed,62f,false,published-scan
+IV,2221,4,92,Table IV p.2221 row 3,233U^c,Table IV p.2221 row 3,isotope,integer-mass-prefix,68.5,0.7,14.23,0.15,,,0,10^6/s,true,0.820,Table IV p.2221 row 3,71f,false,published-scan
+IV,2221,5,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,78,4,,,,,,10^6/s,false,,,56e,false,published-scan
+IV,2221,6,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,75.4,1.9,,,,,,10^6/s,false,,,57e,false,published-scan
+IV,2221,7,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,75.0,0.7,,,,,,10^6/s,false,,,66n,false,published-scan
+IV,2221,8,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,71,2,13.7,0.4,,,0,10^6/s,true,,,74Kgamma,false,published-scan
+IV,2221,9,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,65.3,2.8,14.9,0.6,,,0,10^6/s,true,,,62f,false,published-scan
+IV,2221,10,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,66.5,4.2,14.7,1.0,,,0,10^6/s,true,,,61f,false,published-scan
+IV,2221,11,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,75.6,2.3,12.9,0.4,,,0,10^6/s,true,,,63f,false,published-scan
+IV,2221,12,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,72.9,0.9,13.3,0.2,,,0,10^6/s,true,,,58f,false,published-scan
+IV,2221,13,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,72.8,0.6,13.36,0.12,,,0,10^6/s,true,,,71f,false,published-scan
+IV,2221,14,92,Table IV p.2221 row 3,235U^c,Table IV p.2221 row 5,isotope,integer-mass-prefix,71.6,0.6,13.58,0.12,,,0,10^6/s,true,,,26f,false,published-scan
+IV,2221,15,92,Table IV p.2221 row 3,236U^c,Table IV p.2221 row 15,isotope,integer-mass-prefix,70,2,13.9,0.4,,,0,10^6/s,true,,,74Kgamma,false,published-scan
+IV,2221,16,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,88,4,,,,,,10^6/s,false,,,40e,false,published-scan
+IV,2221,17,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,81.5,2.0,,,,,,10^6/s,false,,,56e,false,published-scan
+IV,2221,18,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,73.5,2.0,,,,,,10^6/s,false,,,57e,false,published-scan
+IV,2221,19,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,84.6,1.5,,,,,,10^6/s,false,,,"a,e",true,published-scan
+IV,2221,20,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,78.3,1.0,,,,,,10^6/s,false,,,66n,false,published-scan
+IV,2221,21,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,78.6,1.5,,,,,,10^6/s,false,,,69gamma,false,published-scan
+IV,2221,22,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,79.1,0.5,,,,,,10^6/s,false,,,70gamma,false,published-scan
+IV,2221,23,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,78,2,12.4,0.4,,,0,10^6/s,true,,,74Kgamma,false,published-scan
+IV,2221,24,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,74.1,2.8,13.1,0.5,,,0,10^6/s,true,,,62f,false,published-scan
+IV,2221,25,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,75.6,2.9,12.9,0.5,,,0,10^6/s,true,,,61f,false,published-scan
+IV,2221,26,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,76.0,1.0,12.8,0.2,,,0,10^6/s,true,,,63f,false,published-scan
+IV,2221,27,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,77.1,0.2,12.60,0.04,,,0,10^6/s,true,,,67f,false,published-scan
+IV,2221,28,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,77.9,0.5,12.46,0.09,,,0,10^6/s,true,,,58f,false,published-scan
+IV,2221,29,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,77.7,0.6,12.50,0.10,,,0,10^6/s,true,,,71f,false,published-scan
+IV,2221,30,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,78.0,2.0,12.4,0.4,,,0,10^6/s,true,,,72f,false,published-scan
+IV,2221,31,92,Table IV p.2221 row 3,238U^c,Table IV p.2221 row 16,isotope,integer-mass-prefix,77.2,0.4,12.57,0.07,,,0,10^6/s,false,,,26f,false,published-scan
+IV,2221,32,93,printed,237Np^c,Table IV p.2221 row 32,isotope,integer-mass-prefix,73.5,1.4,,,,,,10^6/s,false,0.818,printed,66n,false,published-scan
+IV,2221,33,93,Table IV p.2221 row 32,237Np^c,Table IV p.2221 row 32,isotope,integer-mass-prefix,71.3,0.9,13.6,0.2,,,0,10^6/s,true,0.818,Table IV p.2221 row 32,58f,false,published-scan
+IV,2221,34,93,Table IV p.2221 row 32,237Np^c,Table IV p.2221 row 32,isotope,integer-mass-prefix,72,2,13.5,0.4,,,0,10^6/s,true,0.818,Table IV p.2221 row 32,65f,false,published-scan
+IV,2221,35,94,printed,239Pu^c,Table IV p.2221 row 35,isotope,integer-mass-prefix,77.5,2.0,,,,,,10^6/s,false,0.816,printed,56e,false,published-scan
+IV,2221,36,94,Table IV p.2221 row 35,239Pu^c,Table IV p.2221 row 35,isotope,integer-mass-prefix,73.4,2.8,,,,,,10^6/s,false,0.816,Table IV p.2221 row 35,57e,false,published-scan
+IV,2221,37,94,Table IV p.2221 row 35,239Pu^c,Table IV p.2221 row 35,isotope,integer-mass-prefix,74.5,0.5,,,,,,10^6/s,false,0.816,Table IV p.2221 row 35,66n,false,published-scan
+IV,2221,38,94,Table IV p.2221 row 35,239Pu^c,Table IV p.2221 row 35,isotope,integer-mass-prefix,74,14,13.1,2.6,,,0,10^6/s,true,0.816,Table IV p.2221 row 35,64f,false,published-scan
+IV,2221,39,94,Table IV p.2221 row 35,239Pu^c,Table IV p.2221 row 35,isotope,integer-mass-prefix,70,3,13.9,0.9,,,0,10^6/s,true,0.816,Table IV p.2221 row 35,65f,false,published-scan
+IV,2221,40,94,Table IV p.2221 row 35,239Pu^c,Table IV p.2221 row 35,isotope,integer-mass-prefix,70.1,0.7,13.9,0.2,,,0,10^6/s,true,0.816,Table IV p.2221 row 35,58f,false,published-scan
+IV,2221,41,94,Table IV p.2221 row 35,239Pu^c,Table IV p.2221 row 35,isotope,integer-mass-prefix,67,8,14.6,2.0,,,0,10^6/s,true,0.816,Table IV p.2221 row 35,75f,false,published-scan
+IV,2221,42,94,Table IV p.2221 row 35,242Pu^c,Table IV p.2221 row 42,isotope,integer-mass-prefix,81.1,0.7,,,,,,10^6/s,false,,,66n,false,published-scan
+IV,2221,43,94,Table IV p.2221 row 35,242Pu^c,Table IV p.2221 row 42,isotope,integer-mass-prefix,75.4,0.9,12.9,0.2,,,0,10^6/s,true,,,58f,false,published-scan
+IV,2221,44,94,Table IV p.2221 row 35,242Pu^c,Table IV p.2221 row 42,isotope,integer-mass-prefix,79,5,12.3,0.8,,,0,10^6/s,true,,,65f,false,published-scan

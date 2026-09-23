@@ -36,8 +36,10 @@ evidence; it is guarded by re-derivation in ``tests/test_g4parity.py`` instead o
 
 from __future__ import annotations
 
+import csv
 import filecmp
 import functools
+import io
 import json
 import sys
 import tempfile
@@ -49,6 +51,7 @@ from openmucf.g4 import emit, provenance, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1src
 from openmucf.g4.sources import mizuno2025 as mizsrc
 from openmucf.g4.sources import mudirac130 as md
+from openmucf.g4.sources import suzuki1987 as suzsrc
 
 ROOT = Path(__file__).resolve().parents[1]
 G4DIR = ROOT / "data" / "g4"
@@ -89,11 +92,27 @@ D1_MIZUNO_LAYER1 = D1DIR / f"d1_capture.{mizsrc.PROFILE}.g4dat"
 D1_MIZUNO_LAYER2 = D1DIR / f"d1_capture.{mizsrc.PROFILE}.prov.json"
 MIZUNO_TABLE1_PATH = ROOT / mizsrc.TABLE1_RELPATH
 MIZUNO_TABLE3_PATH = ROOT / mizsrc.TABLE3_RELPATH
+D1_SUZUKI_LAYER1 = D1DIR / f"d1_capture.{suzsrc.PROFILE}.g4dat"
+D1_SUZUKI_LAYER2 = D1DIR / f"d1_capture.{suzsrc.PROFILE}.prov.json"
+SUZUKI_PRINTED_PATH = ROOT / suzsrc.PRINTED_ROWS_RELPATH
+SUZUKI_QUANTITY_PATH = ROOT / suzsrc.QUANTITY_ROWS_RELPATH
+SUZUKI_PARITY_CELLS = ROOT / suzsrc.PARITY_CELLS_RELPATH
+SUZUKI_PREPRINT_DIFF = ROOT / suzsrc.PREPRINT_DIFF_RELPATH
 
 #: The version moves with the archive: this one corrects the uncertainty cells of the two D3 energy
 #: tables, the previous one added those tables as members beside the D1 pairs. Plainly distinct
 #: from the example's `0.0.0-example`, and below 1.0.0 because D1 and D3 alone are not the dataset.
-DATASET_VERSION = "0.4.1"
+_BASE_DATASET_VERSION = "0.4.1"
+
+
+def _next_minor_version(base: str) -> str:
+    parts = base.split(".")
+    if len(parts) != 3 or not all(part.isdecimal() for part in parts):
+        raise ValueError("base DATASET_VERSION must be MAJOR.MINOR.PATCH")
+    return f"{parts[0]}.{int(parts[1]) + 1}.0"
+
+
+DATASET_VERSION = _next_minor_version(_BASE_DATASET_VERSION)
 D1_SEAM = "d1_nuclear_capture"
 #: The release we actually read -- we vendored it. NOT the papers Geant4 cites: those are carried as
 #: quoted upstream text in `conditions`, because citing a paper this project has not opened would be
@@ -510,6 +529,212 @@ def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) 
     return spec.G4DatTable(directives=directives, records=records)
 
 
+def build_suzuki_capture_document(
+    selected: dict[tuple[int, int], dict[str, str]],
+) -> provenance.ProvDocument:
+    rows = {}
+    for (z, a), row in sorted(selected.items()):
+        unit = row["rate_unit"]
+        locator = f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}"
+        printed_huff = row["huff_factor"] if row["huff_from"] == "printed" else "none on this row"
+        rows[f"{z}-{a}"] = provenance.ProvRow(
+            source_bibkey=suzsrc.BIBKEY,
+            source_locator=f"{locator} [copy read: published-scan]",
+            unc_type="table",
+            conditions=(
+                f"target label as printed: {row['target_label']}; mean life as printed: "
+                f"{row['mean_life_ns']}+-{row['mean_life_unc_ns']} ns; Huff factor as printed: "
+                f"{printed_huff}; copy read: page images of the published article"
+            ),
+            validity_range=f"Z={z} A={a}",
+            evaluation_method=(
+                f"total capture rate as the primary prints it (Table {row['table']}, column "
+                f"'Total capture rate ({unit})'), scaled exactly to 1e6/s; not re-derived here"
+            ),
+            single_source=row["refs"] == "a",
+            needs_verification=False,
+            recommendation="",
+            evaluation_id=suzsrc.EVALUATION_ID,
+            source_library=suzsrc.PROFILE,
+            isotope_resolved=row["target_basis"] == "isotope",
+        )
+    return provenance.ProvDocument(
+        dataset=DATASET_NAME,
+        version=DATASET_VERSION,
+        profile=suzsrc.PROFILE,
+        seam=D1_SEAM,
+        precedence=(suzsrc.PROFILE,),
+        rows=rows,
+    )
+
+
+def build_suzuki_capture_table(
+    selected: dict[tuple[int, int], dict[str, str]], digest: str,
+) -> spec.G4DatTable:
+    z_values = sorted({z for z, _ in selected})
+    validity = spec.A_NATURAL_AND_LISTED if any(a == 0 for _, a in selected) else "listed"
+    directives = {
+        "GRAMMAR": spec.GRAMMAR_VERSION,
+        "DATASET": DATASET_NAME,
+        "VERSION": DATASET_VERSION,
+        "PROFILE": suzsrc.PROFILE,
+        "SEAM": D1_SEAM,
+        "TABLE": D1_CAPTURE_TABLE,
+        "GENERATOR": f"openmucf-g4 {openmucf.__version__}",
+        "SOURCEDIGEST": digest,
+        "UNITS": "value=1e6/s unc=1e6/s",
+        "COLUMNS": "Z A value unc",
+        "VALIDITY": f"Z:{z_values[0]}-{z_values[-1]} A:{validity}",
+    }
+    records = tuple(
+        (z, a, float(suzsrc.scaled(row, "rate")), float(suzsrc.scaled(row, "rate_unc")))
+        for (z, a), row in sorted(selected.items())
+    )
+    return spec.G4DatTable(directives=directives, records=records)
+
+
+def _csv_bytes(columns: tuple[str, ...], rows: list[dict[str, str]]) -> bytes:
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=columns, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return buffer.getvalue().encode("ascii")
+
+
+PARITY_COLUMNS = (
+    "Z", "A", "parity_value", "parity_unc", "published_cells_at_z", "equal_count",
+    "equal_locators",
+)
+DIFF_COLUMNS = (
+    "kind", "Z", "preprint_locator", "published_locator", "preprint", "published",
+)
+
+
+def _published_locator(row: dict[str, str]) -> str:
+    return f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}"
+
+
+def _published_rate(row: dict[str, str]) -> str:
+    if row["rate_unc"]:
+        text = f"{row['rate']}+-{row['rate_unc']}"
+    elif row["rate_unc_plus"]:
+        text = f"{row['rate']}+{row['rate_unc_plus']}({row['rate_unc_minus']})"
+    else:
+        text = row["rate"]
+    if row["rate_exp10"] not in ("", "0"):
+        text += f"x10^{row['rate_exp10']}"
+    if row["rate_parenthesized"] == "true":
+        text = f"({text})"
+    return text
+
+
+def build_suzuki_parity_cells(
+    found: d1src.D1Extraction, rows: tuple[dict[str, str], ...],
+) -> bytes:
+    blocks: dict[int, list[dict[str, str]]] = {}
+    for row in rows:
+        blocks.setdefault(int(row["Z"]), []).append(row)
+    literals = found.capture_literals
+    result = []
+    for (z, a, value, unc), (literal_value, literal_unc) in zip(
+        found.capture_records, literals, strict=True
+    ):
+        if z not in blocks:
+            continue
+        published = [row for row in blocks[z] if row["rate"]]
+        equal = [
+            row for row in published
+            if row["rate_unc"]
+            and d1src.agrees_at_printed_precision(value, format(suzsrc.scaled(row, "rate"), "f"))
+            and d1src.agrees_at_printed_precision(unc, format(suzsrc.scaled(row, "rate_unc"), "f"))
+        ]
+        cells = "; ".join(
+            f"{_published_locator(row)} {row['target_label']} {_published_rate(row)} "
+            f"[{row['rate_unit']}]"
+            for row in published
+        )
+        result.append(dict(
+            Z=str(z), A=str(a), parity_value=literal_value, parity_unc=literal_unc,
+            published_cells_at_z=cells, equal_count=str(len(equal)),
+            equal_locators="; ".join(_published_locator(row) for row in equal),
+        ))
+    return _csv_bytes(PARITY_COLUMNS, result)
+
+
+def _canonical_preprint_label(label: str, dagger: bool) -> str:
+    symbol, _, suffix = label.partition("-")
+    if suffix == "nat":
+        result = f"nat{symbol}"
+    elif suffix:
+        result = f"{suffix}{symbol}"
+    else:
+        result = symbol
+    return result + ("^c" if dagger else "")
+
+
+def build_suzuki_preprint_differences(
+    printed: tuple[suzsrc.PrintedRow, ...], rows: tuple[dict[str, str], ...],
+) -> bytes:
+    old_cells = d1src.load_capture_cells(ROOT / d1src.CAPTURE_CELLS_RELPATH)
+    old_zeff = d1src.load_zeff_audit(ROOT / d1src.ZEFF_AUDIT_RELPATH)
+    published = [row for row in rows if row["rate"]]
+    covered_z = {cell.z for cell in old_cells}
+    unused = {index for index, row in enumerate(published) if int(row["Z"]) in covered_z}
+    result: list[dict[str, str]] = []
+
+    def add(kind: str, z: int, pre_loc: str, pub_loc: str, before: str, after: str) -> None:
+        result.append(dict(kind=kind, Z=str(z), preprint_locator=pre_loc,
+                           published_locator=pub_loc, preprint=before, published=after))
+
+    for old in old_cells:
+        label = _canonical_preprint_label(old.label, old.dagger)
+        candidates = [i for i in sorted(unused) if int(published[i]["Z"]) == old.z
+                      and published[i]["target_label"] == label]
+        exact = [i for i in candidates if published[i]["rate"] == old.rate
+                 and published[i]["rate_unc"] == old.rate_unc]
+        if not candidates:
+            candidates = [i for i in sorted(unused) if int(published[i]["Z"]) == old.z
+                          and published[i]["rate"] == old.rate
+                          and published[i]["rate_unc"] == old.rate_unc]
+        if not candidates:
+            add("unmatched", old.z, old.locator, "", old.label, "")
+            continue
+        index = (exact or candidates)[0]
+        unused.remove(index)
+        row = published[index]
+        locator = _published_locator(row)
+        if row["target_label"] != label:
+            add("label", old.z, old.locator, locator, old.label, row["target_label"])
+        for kind, before, after in (
+            ("value", old.rate, row["rate"]),
+            ("unc", old.rate_unc, row["rate_unc"]),
+            ("refs", "a" if old.refs == "*" else old.refs, row["refs"]),
+            ("bracket", str(old.bracketed).lower(), row["rate_parenthesized"]),
+        ):
+            if before != after:
+                add(kind, old.z, old.locator, locator, before, after)
+    for index in sorted(unused):
+        row = published[index]
+        add("not_in_committed_preprint_cells", int(row["Z"]), "", _published_locator(row),
+            "", f"{row['target_label']} {_published_rate(row)}")
+
+    pub_zeff: dict[int, suzsrc.PrintedRow] = {}
+    for row in printed:
+        if row.row_kind == "data" and row.z_raw and row.zeff_raw:
+            pub_zeff.setdefault(int(row.z_raw), row)
+    for z, old in old_zeff.items():
+        row = pub_zeff.get(z)
+        if row is None:
+            add("zeff", z, old.locator, "", old.printed_zeff, "")
+            continue
+        if old.printed_zeff != row.zeff_raw or old.printed_z != int(row.z_raw):
+            add("zeff", z, old.locator, row.locator, old.printed_zeff, row.zeff_raw)
+        if old.underlined != (row.zeff_underlined == "true"):
+            add("underline", z, old.locator, row.locator, str(old.underlined).lower(),
+                row.zeff_underlined)
+    return _csv_bytes(DIFF_COLUMNS, result)
+
+
 # --------------------------------------------------------------------------------------------
 # D3 -- the mudirac130 energy tables, from the committed MuDirac inputs and printed outputs
 # --------------------------------------------------------------------------------------------
@@ -668,6 +893,9 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
 
     found = d1src.load(VENDORED_PATH)  # checks the upstream pins before anything is generated
     mizuno = mizsrc.load(MIZUNO_TABLE1_PATH, MIZUNO_TABLE3_PATH)
+    suzuki_printed = suzsrc.load_printed_rows(SUZUKI_PRINTED_PATH)
+    suzuki_rows = suzsrc.normalize(suzuki_printed)
+    suzuki_selected = suzsrc.selected(suzuki_rows)
     outputs = md.load_outputs(ROOT)
 
     members: dict[str, bytes] = {}
@@ -685,6 +913,11 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
         (
             D1_MIZUNO_LAYER1, D1_MIZUNO_LAYER2, build_mizuno_capture_document(mizuno),
             functools.partial(build_mizuno_capture_table, mizuno),
+        ),
+        (
+            D1_SUZUKI_LAYER1, D1_SUZUKI_LAYER2,
+            build_suzuki_capture_document(suzuki_selected),
+            functools.partial(build_suzuki_capture_table, suzuki_selected),
         ),
         (
             D3_KSHELL_LAYER1, D3_KSHELL_LAYER2, build_d3_document(outputs, md.K_TABLE),
@@ -731,6 +964,9 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
         md5=emit.tarball_md5(archive),
     )
     artifacts[D1_SNIPPET_PATH] = snippet.encode("ascii")
+    artifacts[SUZUKI_QUANTITY_PATH] = suzsrc.quantity_bytes(suzuki_rows)
+    artifacts[SUZUKI_PARITY_CELLS] = build_suzuki_parity_cells(found, suzuki_rows)
+    artifacts[SUZUKI_PREPRINT_DIFF] = build_suzuki_preprint_differences(suzuki_printed, suzuki_rows)
     artifacts[D3_VALIDATION] = md.build_validation(ROOT)
     bundle = d3c.load_bundle(ROOT)
     artifacts[D3_PROJECTION] = d3c.render_projection(ROOT, bundle)
@@ -883,6 +1119,7 @@ def audit() -> None:
         (D1_CAPTURE_LAYER1, D1_CAPTURE_LAYER2),
         (D1_ZEFF_LAYER1, D1_ZEFF_LAYER2),
         (D1_MIZUNO_LAYER1, D1_MIZUNO_LAYER2),
+        (D1_SUZUKI_LAYER1, D1_SUZUKI_LAYER2),
         (D3_KSHELL_LAYER1, D3_KSHELL_LAYER2),
         (D3_LEVELS_LAYER1, D3_LEVELS_LAYER2),
     )
