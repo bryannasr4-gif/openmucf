@@ -1,7 +1,7 @@
 table,printed_page,page_row_ordinal,row_kind,z_raw,zeff_raw,zeff_underlined,element_raw,mean_life_raw,rate_raw,huff_raw,refs_raw,note,copy_read
 III,2217,1,caption,,,,,,,,,TABLE III. Compendium of total muon capture results for light nuclei. (Z_eff is taken from Ref. 77. When underlined it is an estimate.),published-scan
-III,2217,2,header,Z (Z_eff),,,Element,Mean life (ns),Total capture rate (s^-1),Huff factor,Refs.,,published-scan
-III,2217,3,positive_muon,Positive muon,,,,2197.03+-0.04,,,"4,5",,published-scan
+III,2217,2,header,Z,Z_eff,,Element,Mean life (ns),Total capture rate (s^-1),Huff factor,Refs.,,published-scan
+III,2217,3,positive_muon,Positive muon,,false,,2197.03+-0.04,,,"4,5",,published-scan
 III,2217,4,data,1,1.0,false,1H^b,2194.903+-0.066,420+-20,1.00,34,,published-scan
 III,2217,5,data,,,false,1H^b,,420+-60,1.00,35,,published-scan
 III,2217,6,data,,,false,,2194.53+-0.11,470+-29,,36,,published-scan
@@ -54,10 +54,10 @@ III,2217,52,data,,,false,,1450+-20,235+-10x10^3,,45,,published-scan
 III,2217,53,data,,,false,,1458+-13,231+-6x10^3,,27,,published-scan
 III,2217,54,data,,,false,,1462.7+-5.0,229+-1x10^3,,a,,published-scan
 III,2217,55,note,,,,,,,,,(these F data show the lifetime for the lower hf state; see Sec. IV D).,published-scan
-III,2217,56,footnote,,,,,,,,,^a Denotes the results of this experiment.,published-scan
-III,2217,57,footnote,,,,,,,,,^b For hydrogen the capture rate depends on mesomolecular effects (Ref. 25). Thus we have given the most recent articles only.,published-scan
+III,2217,56,footnote,,,,,,,,,^aDenotes the results of this experiment.,published-scan
+III,2217,57,footnote,,,,,,,,,^bFor hydrogen the capture rate depends on mesomolecular effects (Ref. 25). Thus we have given the most recent articles only.,published-scan
 IV,2218,1,caption,,,,,,,,,"TABLE IV. Compendium of total muon capture results for medium and heavy nuclei. (Z_eff is taken from Ref. 77. When it is underlined, it is an estimate. Entries in parentheses in column 4 are not given in the original reference.)",published-scan
-IV,2218,2,header,Z (Z_eff),,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
+IV,2218,2,header,Z,Z_eff,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
 IV,2218,3,data,10,9.14,true,Ne,1520+-23,0.204+-0.010,0.997,46,,published-scan
 IV,2218,4,data,,,false,,,0.167+-0.030,,47,,published-scan
 IV,2218,5,data,,,false,,,0.30+-0.02,,48,,published-scan
@@ -85,7 +85,7 @@ IV,2218,26,data,,,false,,559+-3,1.34+-0.01,,27,,published-scan
 IV,2218,27,data,,,false,,554.7+-1.0,1.352+-0.003,,a,,published-scan
 IV,2218,28,data,17,14.24,false,Cl,540+-20,1.39+-0.09,0.989,40,,published-scan
 IV,2218,29,data,,,false,,560.8+-2.0,1.333+-0.006,,a,,published-scan
-IV,2218,30,data,,,false,35Cl,444+-10,1.80+-0.05,,76,,published-scan
+IV,2218,30,data,,,false,35Cl,444+-10,1.80+-0.05,,76,mark: stray dot printed in the gap between the mean-life and capture-rate columns; not part of any cell,published-scan
 IV,2218,31,data,,,false,37Cl,587+-17,1.25+-0.05,,76,,published-scan
 IV,2218,32,data,,,false,natCl,479+-17,1.64+-0.08,,76,,published-scan
 IV,2218,33,data,18,14.89,true,Ar,,1.20+-0.08,,48,,published-scan
@@ -117,7 +117,7 @@ IV,2218,58,data,,,false,natCr,256.7+-3.0,3.444+-0.047,,73,,published-scan
 IV,2218,59,data,25,19.06,false,Mn,239+-4,3.67+-0.08,0.976,40,,published-scan
 IV,2218,60,data,,,false,,225.5+-2.3,3.98+-0.05,,49,,published-scan
 IV,2219,1,caption,,,,,,,,,TABLE IV. (Continued).,published-scan
-IV,2219,2,header,Z (Z_eff),,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
+IV,2219,2,header,Z,Z_eff,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
 IV,2219,3,data,,,false,Mn (con't),232.5+-2.0,3.857+-0.037,,a,,published-scan
 IV,2219,4,data,26,19.59,false,Fe,201+-4,4.53+-0.10,0.975,40,,published-scan
 IV,2219,5,data,,,false,,207+-3,4.38+-0.07,,43,,published-scan
@@ -177,7 +177,7 @@ IV,2219,58,data,,,false,,87.0+-1.5,11.07+-0.20,,a,,published-scan
 IV,2219,59,data,48,28.20,false,Cd,95+-5,10.1+-0.5,0.921,40,,published-scan
 IV,2219,60,data,,,false,,90.5+-0.8,10.63+-0.11,,54,,published-scan
 IV,2220,1,caption,,,,,,,,,TABLE IV. (Continued).,published-scan
-IV,2220,2,header,Z (Z_eff),,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
+IV,2220,2,header,Z,Z_eff,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
 IV,2220,3,data,,,false,Cd (con't),90.7+-1.5,10.61+-0.18,,a,,published-scan
 IV,2220,4,data,49,28.42,true,In,84.8+-0.8,11.37+-0.13,0.920,54,,published-scan
 IV,2220,5,data,,,false,,84.6+-1.5,11.40+-0.21,,a,,published-scan
@@ -199,7 +199,7 @@ IV,2220,20,data,,,false,,83.3+-1.0,11.60+-0.14,,a,,published-scan
 IV,2220,21,data,59,30.53,true,Pr,72.1+-0.6,13.45+-0.13,0.897,54,,published-scan
 IV,2220,22,data,60,30.69,true,Nd,78.5+-0.8,12.32+-0.14,0.895,54,,published-scan
 IV,2220,23,data,,,false,,77.5+-2.0,12.50+-0.33,,a,,published-scan
-IV,2220,24,data,62,31.01,false,Sm,79.2+-1.0,12.22+-0.17,0.890,54,,published-scan
+IV,2220,24,data,62,31.01,true,Sm,79.2+-1.0,12.22+-0.17,0.890,54,,published-scan
 IV,2220,25,data,64,31.34,false,Gd,80.1+-1.0,12.09+-0.16,0.885,54,,published-scan
 IV,2220,26,data,,,false,,81.8+-1.5,11.82+-0.22,,a,,published-scan
 IV,2220,27,data,65,31.48,true,Th,76.2+-0.7,12.73+-0.13,0.882,54,,published-scan
@@ -237,7 +237,7 @@ IV,2220,58,data,,,false,,77.3+-0.3,(12.56+-0.05),,67f,,published-scan
 IV,2220,59,data,,,false,,84.0+-4.5,(11.5+-0.6),,68f,,published-scan
 IV,2220,60,data,,,false,,78.5+-2.0,(12.4+-0.3),,71f,,published-scan
 IV,2221,1,caption,,,,,,,,,TABLE IV. (Continued).,published-scan
-IV,2221,2,header,Z (Z_eff),,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
+IV,2221,2,header,Z,Z_eff,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
 IV,2221,3,data,92,34.94,false,233U^c,61.7+-3.8,(15.8+-0.9),0.820,62f,,published-scan
 IV,2221,4,data,,,false,,68.5+-0.7,(14.23+-0.15),,71f,,published-scan
 IV,2221,5,data,,,false,235U^c,78+-4,,,56e,,published-scan
@@ -262,7 +262,7 @@ IV,2221,23,data,,,false,,78+-2,(12.4+-0.4),,74Kgamma,,published-scan
 IV,2221,24,data,,,false,,74.1+-2.8,(13.1+-0.5),,62f,,published-scan
 IV,2221,25,data,,,false,,75.6+-2.9,(12.9+-0.5),,61f,,published-scan
 IV,2221,26,data,,,false,,76.0+-1.0,(12.8+-0.2),,63f,,published-scan
-IV,2221,27,data,,,false,,77.1+-0.2,(12.60+-0.04),,61f,,published-scan
+IV,2221,27,data,,,false,,77.1+-0.2,(12.60+-0.04),,67f,,published-scan
 IV,2221,28,data,,,false,,77.9+-0.5,(12.46+-0.09),,58f,,published-scan
 IV,2221,29,data,,,false,,77.7+-0.6,(12.50+-0.10),,71f,,published-scan
 IV,2221,30,data,,,false,,78.0+-2.0,(12.4+-0.4),,72f,,published-scan
@@ -280,6 +280,6 @@ IV,2221,41,data,,,false,,67+-8,(14.6+-2.0),,75f,,published-scan
 IV,2221,42,data,,,false,242Pu^c,81.1+-0.7,,,66n,,published-scan
 IV,2221,43,data,,,false,,75.4+-0.9,(12.9+-0.2),,58f,,published-scan
 IV,2221,44,data,,,false,,79+-5,(12.3+-0.8),,65f,,published-scan
-IV,2221,45,footnote,,,,,,,,,^a Denotes the results of this experiment.,published-scan
-IV,2221,46,footnote,,,,,,,,,^b RPb denotes radiogenic lead (88% 206Pb:9% 207Pb:3% 208Pb).,published-scan
-IV,2221,47,footnote,,,,,,,,,"^c For these nuclides, prompt fission can complicate the measurement. The letters after the reference denote the type of particle detected, viz., e, electrons; n, neutrons; gamma, gammas; Kgamma, gammas in coincidence with K x rays; f, fission fragments, (f and Kgamma are probably the most reliable for determining the total capture rate. See Refs. 26 and 58 for details.)",published-scan
+IV,2221,45,footnote,,,,,,,,,^aDenotes the results of this experiment.,published-scan
+IV,2221,46,footnote,,,,,,,,,^bRPb denotes radiogenic lead (88% 206Pb:9% 207Pb:3% 208Pb).,published-scan
+IV,2221,47,footnote,,,,,,,,,"^cFor these nuclides, prompt fission can complicate the measurement. The letters after the reference denote the type of particle detected, viz., e, electrons; n, neutrons; gamma, gammas, Kgamma, gammas in coincidence with K x rays; f, fission fragments, (f and Kgamma are probably the most reliable for determining the total capture rate. See Refs. 26 and 58 for details.)",published-scan
