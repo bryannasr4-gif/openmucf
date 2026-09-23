@@ -10,14 +10,13 @@ on Apple Silicon, 2026-07-23: `omega_s_eff@phi=1.2` scenario B came back 0.5371 
 +0.24%, and the `lambda_c@phi=2.0` bracket limbs moved ~0.4%, with jax_enable_x64 ON in both runs):
 
 * the PORTABLE gate (:data:`MC_RTOL`) runs everywhere and is what a third-party reproducer must satisfy;
-* the BIT-IDENTITY gate runs only on the platform the card itself records in ``generation.env``.
+* the BIT-IDENTITY gate runs only when every recorded ``generation.env`` field matches.
 """
 
 import copy
+import inspect
 import json
-import platform
 import re
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -59,14 +58,43 @@ def _pred(card, scenario_name, target_id):
 
 
 # ------------------------------------------------- reproduction-claim scoping (see the module docstring)
-def _on_recorded_platform(card) -> bool:
-    """True iff this host is the platform the SHIPPED card records as its generation environment.
-
-    Bit-identity is claimed only there. The check reads the card (never a hard-coded string), so it
-    follows the card if FC-002+ is ever generated somewhere else.
-    """
+def _environment_mismatch(card) -> dict:
+    """Return every recorded environment field that differs from the live environment."""
     env = card["generation"]["env"]
-    return (env["machine"], env["platform"]) == (platform.machine(), sys.platform)
+    live = forecast._env()
+    return {field: (recorded, live.get(field)) for field, recorded in env.items()
+            if live.get(field) != recorded}
+
+
+def _on_recorded_environment(card) -> bool:
+    """True when the live environment matches every field the card records."""
+    return not _environment_mismatch(card)
+
+
+def test_bit_identity_scope_reads_every_recorded_env_field(shipped_card, monkeypatch):
+    """Each recorded field independently controls the bit-identity predicate."""
+    env = shipped_card["generation"]["env"]
+    monkeypatch.setattr(forecast, "_env", lambda: env.copy())
+    assert _on_recorded_environment(shipped_card)
+    assert _environment_mismatch(shipped_card) == {}
+    for field in env:
+        altered = env.copy()
+        altered[field] = object()
+        monkeypatch.setattr(forecast, "_env", lambda altered=altered: altered)
+        assert not _on_recorded_environment(shipped_card)
+        assert set(_environment_mismatch(shipped_card)) == {field}
+
+
+def test_bit_identity_call_sites_use_recorded_environment(shipped_card, monkeypatch):
+    scenario_source = inspect.getsource(test_scenario_b_replicates_from_recorded_spec)
+    bitwise_source = inspect.getsource(test_fc001_pinned_posterior_reproduces_registered_predictions_bitwise)
+    assert "if _on_recorded_environment(shipped_card):" in scenario_source
+    assert "mismatch = _environment_mismatch(shipped_card)" in bitwise_source
+    env = shipped_card["generation"]["env"].copy()
+    env["jax"] = "different"
+    monkeypatch.setattr(forecast, "_env", lambda: env)
+    with pytest.raises(pytest.skip.Exception, match="jax"):
+        test_fc001_pinned_posterior_reproduces_registered_predictions_bitwise({}, shipped_card)
 
 
 def _numeric_pairs(a, b, path="") -> list[tuple[str, float, float]]:
@@ -301,8 +329,8 @@ def test_scenario_b_replicates_from_recorded_spec(shipped_card, samples):
         f"scenario-B median {med} vs registered {registered} "
         f"({abs(med - registered) / abs(registered):.2%} > {MC_RTOL:.0%} MC band)"
     )
-    if _on_recorded_platform(shipped_card):
-        assert med == registered  # bit-identity, claimed only on the recorded platform
+    if _on_recorded_environment(shipped_card):
+        assert med == registered  # bit-identity requires every recorded environment field
 
 
 # 9 -------------------------------------------------------------------------------- wall-clock guard
@@ -374,19 +402,17 @@ def test_fc001_pinned_posterior_reproduces_registered_predictions_within_mc_band
 
 
 def test_fc001_pinned_posterior_reproduces_registered_predictions_bitwise(fresh_card, shipped_card):
-    """STRICT gate, scoped to the platform the card records (FORECAST_PROTOCOL.md sec.7).
+    """STRICT gate, scoped to the environment the card records (FORECAST_PROTOCOL.md sec.7).
 
     On the recorded environment the pinned realization must come back bit-for-bit: this is what pins the
     single-chain / OLD-R-box FC-001 freeze and would catch an accidental un-pinning. It is SKIPPED (not
-    softened) elsewhere -- NUTS draws are not bit-portable across architectures even with x64 on, measured
-    on arm64 2026-07-23 -- and the portable band above is what runs there instead.
+    softened) elsewhere; the portable band above runs there instead.
     """
-    env = shipped_card["generation"]["env"]
-    if not _on_recorded_platform(shipped_card):
+    mismatch = _environment_mismatch(shipped_card)
+    if mismatch:
         pytest.skip(
-            f"card records machine={env['machine']}/{env['platform']}; this host is "
-            f"{platform.machine()}/{sys.platform}. Bit-identity is claimed only on the recorded platform; "
-            "the cross-platform MC-band gate covers this host."
+            f"bit-identity requires the recorded environment; mismatched fields: {mismatch}; "
+            "the MC-band gate covers this host."
         )
     assert _preds(fresh_card) == _preds(shipped_card)
     assert forecast.OMEGA_S0_PRIOR == ("normal", 0.857, 0.03)

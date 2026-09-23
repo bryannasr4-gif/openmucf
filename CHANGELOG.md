@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed -- the Kamimura calibration prior, the bit-identity scope and the test-environment caps (2026-09-22)
+
+- The Kamimura calibration chain now truncates its Normal prior to the weak prior's support; `CALIBRATION.md` records the new realization and its convergence.
+- Forecast bit-identity is asserted when every field of the registered card's environment matches the live environment.
+
 ### Added -- the energy the cascade receives, measured beside the D3 tables (2026-09-22)
 
 - **Beside the unchanged D3 tables, `data/g4/d3/` gains generated files and a record of what is
