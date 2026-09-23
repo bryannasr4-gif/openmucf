@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The Kamimura calibration chain now truncates its Normal prior to the weak prior's support; `CALIBRATION.md` records the new realization and its convergence.
 - Forecast bit-identity is asserted when every field of the registered card's environment matches the live environment.
+- The development extra no longer caps `jax` or `numpyro` for tests.
 
 ### Added -- the energy the cascade receives, measured beside the D3 tables (2026-09-22)
 
