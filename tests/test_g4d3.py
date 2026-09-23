@@ -2400,6 +2400,14 @@ def test_t128_synthetic_onsets_and_certificates_discriminate_each_clause():
     for u in range(400, 2401, 100):
         reversed_sign[u] = Decimal("0")
     assert centroids.onset_and_certificate(reversed_sign, target)[0] == 300
+    reversed_at_floor = dict(values)
+    reversed_at_floor[200] = Decimal("0.01")
+    assert centroids.onset_and_certificate(reversed_at_floor, target)[0] == 300
+    certificate_at_target = dict(values)
+    certificate_at_target[100] = target
+    for u in range(200, 2401, 100):
+        certificate_at_target[u] = 2 * target
+    assert centroids.onset_and_certificate(certificate_at_target, target) == (None, 200)
     missing_half = dict(values)
     del missing_half[50]
     assert centroids.onset_and_certificate(missing_half, target)[0] == 50
