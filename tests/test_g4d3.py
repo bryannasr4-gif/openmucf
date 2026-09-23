@@ -2189,10 +2189,19 @@ def test_t127_settings_loaders_refuse_each_record_shape(tmp_path):
         with pytest.raises(md.Mudirac130Error):
             md._load_settings_printed(state_path, md.SETTINGS_STATES_COLUMNS, True)
     for changed in (line.replace("K1-L2", "bad"), line.replace("1.000000", "1"),
-                    line.replace(",1.0", ",-1.0"), line + line):
+                    line.rsplit(",1.0", 1)[0] + ",-1.0" + NL, line + line):
         line_path.write_bytes((line_header + changed).encode("ascii"))
         with pytest.raises(md.Mudirac130Error):
             md._load_settings_printed(line_path, md.SETTINGS_LINES_COLUMNS, False)
+    later_state = state.replace("K1,1,0,1", "L2,2,1,1")
+    state_path.write_bytes((state_header + later_state + state).encode("ascii"))
+    with pytest.raises(md.OrderError):
+        md._load_settings_printed(state_path, md.SETTINGS_STATES_COLUMNS, True)
+    later_line = line.replace(run, f"Be9_{second_setting}").replace("," + setting + ",",
+                                                                    "," + second_setting + ",")
+    line_path.write_bytes((line_header + later_line + line).encode("ascii"))
+    with pytest.raises(md.OrderError):
+        md._load_settings_printed(line_path, md.SETTINGS_LINES_COLUMNS, False)
 
 
 def test_t127_committed_settings_are_the_implied_runs_and_the_default_equals_base():
@@ -2229,7 +2238,8 @@ def test_t127_committed_settings_are_the_implied_runs_and_the_default_equals_bas
     print(f"\nsettings runs {len(settings.runs)} clean {sum(r.clean for r in settings.runs.values())}")
 
 
-def test_t127_script_writes_named_inputs_and_reports_a_missing_optional_stock_line(tmp_path, capsys):
+def test_t127_script_writes_named_inputs_and_reports_a_missing_optional_stock_line(
+        monkeypatch, tmp_path, capsys):
     import runpy
     from types import SimpleNamespace
 
@@ -2241,6 +2251,11 @@ def test_t127_script_writes_named_inputs_and_reports_a_missing_optional_stock_li
     assert len(paths) == len(wanted) * len(md.SETTINGS)
     sample = paths[0]
     assert sample.stem == sample.parent.name
+    with monkeypatch.context() as patcher:
+        script_md = script["cmd_write_settings"].__globals__["md"]
+        patcher.setattr(script_md, "settings_nuclides", lambda _cells: [*wanted, (999, 999)])
+        with pytest.raises(SystemExit, match="settings nuclides not kept"):
+            script["cmd_write_settings"](SimpleNamespace(dir=str(tmp_path / "unkept")))
     harvest = _harvest_from_levels()
     optional = next(key for key in md.centroid_nuclides(cells) if key not in md.gated_nuclides(cells))
     line = next(line for line in harvest.split(NL) if line.startswith(f"C {optional[0]} {optional[1]} "))
