@@ -2087,3 +2087,221 @@ def test_t127_settings_render_from_the_base_and_name_exactly_the_compared_kept_n
     with pytest.raises(ValueError, match="already sets uehling_steps"):
         md.render_settings_input(first, 0, 100, extra)
     print(f"\nsettings nuclides {len(wanted)} runs {len(wanted) * len(md.SETTINGS)}")
+
+
+def test_t127_settings_loaders_refuse_each_record_shape(tmp_path):
+    setting = md.setting_id(*md.SETTINGS[0])
+    values = md.settings_values(*md.SETTINGS[0])
+    run = f"Be9_{setting}"
+    digest = "a" * 64
+    header = ",".join(md.SETTINGS_RUNS_COLUMNS) + NL
+    row = ",".join([run, "4", "9", setting, *values, "0", "0", "0.1", digest]) + NL
+    path = tmp_path / "runs.csv"
+    path.write_bytes((header + row).encode("ascii"))
+    assert list(md.load_settings_runs(path)) == [run]
+    unlisted = md.setting_id(9, 9999)
+    unlisted_row = ",".join([f"Be9_{unlisted}", "4", "9", unlisted,
+                             *md.settings_values(9, 9999), "0", "0", "0.1", digest]) + NL
+    bad = [
+        (header.replace("setting", "kind", 1) + row, md.HeaderError),
+        ((header + row).replace(NL, "\r" + NL, 1), md.CarriageReturnError),
+        ((header + row).replace("Be9", "BeÂ·9", 1), md.NonAsciiError),
+        (header + row.replace(setting, "g9u9999"), md.CellError),
+        (header + unlisted_row, md.CellError),
+        (header + row.replace("Be9_", "Be8_"), md.CellError),
+        (header + row.replace(values[0], "0.1", 1), md.CellError),
+        (header + row.replace(",0,0,0.1,", ",x,0,0.1,"), md.CellError),
+        (header + row.replace(",0,0,0.1,", ",0,-1,0.1,"), md.CellError),
+        (header + row.replace(",0,0,0.1,", ",0,0,-0.1,"), md.CellError),
+        (header + row[:-2] + NL, md.CellError),
+        (header + row + row, md.DuplicateKeyError),
+    ]
+    for changed, error in bad:
+        path.write_bytes(changed.encode("utf-8"))
+        with pytest.raises(error):
+            md.load_settings_runs(path)
+    second_setting = md.setting_id(*md.SETTINGS[1])
+    second_values = md.settings_values(*md.SETTINGS[1])
+    second = ",".join([f"Be9_{second_setting}", "4", "9", second_setting, *second_values,
+                       "0", "0", "0.1", digest]) + NL
+    path.write_bytes((header + second + row).encode("ascii"))
+    with pytest.raises(md.OrderError):
+        md.load_settings_runs(path)
+
+    state_header = ",".join(md.SETTINGS_STATES_COLUMNS) + NL
+    state = ",".join([run, "4", "9", setting, "K1", "1", "0", "1", "1.0", "1.0"]) + NL
+    line_header = ",".join(md.SETTINGS_LINES_COLUMNS) + NL
+    line = ",".join([run, "4", "9", setting, "K1-L2", "1.000000", "1.0"]) + NL
+    state_path, line_path = tmp_path / "states.csv", tmp_path / "lines.csv"
+    state_path.write_bytes((state_header + state).encode("ascii"))
+    line_path.write_bytes((line_header + line).encode("ascii"))
+    assert run in md._load_settings_printed(state_path, md.SETTINGS_STATES_COLUMNS, True)
+    assert run in md._load_settings_printed(line_path, md.SETTINGS_LINES_COLUMNS, False)
+    for changed in (state.replace("K1,", "bad,"), state.replace(",1,0,1,", ",x,0,1,"),
+                    state.replace(",1.0,1.0", ",bad,1.0"), state + state):
+        state_path.write_bytes((state_header + changed).encode("ascii"))
+        with pytest.raises(md.Mudirac130Error):
+            md._load_settings_printed(state_path, md.SETTINGS_STATES_COLUMNS, True)
+    for changed in (line.replace("K1-L2", "bad"), line.replace("1.000000", "1"),
+                    line.replace(",1.0", ",-1.0"), line + line):
+        line_path.write_bytes((line_header + changed).encode("ascii"))
+        with pytest.raises(md.Mudirac130Error):
+            md._load_settings_printed(line_path, md.SETTINGS_LINES_COLUMNS, False)
+
+
+def test_t127_committed_settings_are_the_implied_runs_and_the_default_equals_base():
+    cells = md.load_cells(CELLS)
+    settings = md.load_settings_outputs(REPO, cells)
+    kept = {row.nuclide: row for row in md.kept_members(md.load_outputs(REPO))}
+    expected = [(md.settings_run_id(kept[key], level, uehling), *key, md.setting_id(level, uehling))
+                for key in md.settings_nuclides(cells) for level, uehling in md.SETTINGS]
+    assert [(r.run, r.z, r.a, r.setting) for r in settings.runs.values()] == expected
+    for run in settings.runs.values():
+        row = kept[(run.z, run.a)]
+        level, uehling = next(pair for pair in md.SETTINGS if md.setting_id(*pair) == run.setting)
+        rendered = md.render_settings_input(row, level, uehling, md.extra_lines(cells, row.nuclide))
+        assert hashlib.sha256(rendered.encode("ascii")).hexdigest() == run.input_sha256
+        if not run.clean:
+            assert run.run not in settings.headers and run.run not in settings.lines
+    base_states = {(r["run"], r["state"]): (r["n"], r["l"], r["s"], r["binding_eV"], r["total_eV"])
+                   for _, r in md.read_rows(REPO / md.STATES_RELPATH, md.STATES_COLUMNS)
+                   if r["kind"] == "base"}
+    base_lines = {(r["run"], r["line"]): (r["delta_e_eV"], r["w12_per_s"])
+                  for _, r in md.read_rows(REPO / md.LINES_RELPATH, md.LINES_COLUMNS)
+                  if r["kind"] == "base"}
+    states = md.read_rows(REPO / md.SETTINGS_STATES_RELPATH, md.SETTINGS_STATES_COLUMNS)
+    lines = md.read_rows(REPO / md.SETTINGS_LINES_RELPATH, md.SETTINGS_LINES_COLUMNS)
+    for _where, r in states:
+        if r["setting"] == md.setting_id(0, 100):
+            base = r["run"].replace("_g0u0100", "_base")
+            assert (r["n"], r["l"], r["s"], r["binding_eV"], r["total_eV"]) == (
+                base_states[(base, r["state"])])
+    for _where, r in lines:
+        if r["setting"] == md.setting_id(0, 100):
+            base = r["run"].replace("_g0u0100", "_base")
+            assert (r["delta_e_eV"], r["w12_per_s"]) == base_lines[(base, r["line"])]
+    print(f"\nsettings runs {len(settings.runs)} clean {sum(r.clean for r in settings.runs.values())}")
+
+
+def test_t127_script_writes_named_inputs_and_reports_a_missing_optional_stock_line(tmp_path, capsys):
+    import runpy
+    from types import SimpleNamespace
+
+    script = runpy.run_path(str(REPO / "scripts" / "mudirac_d3.py"))
+    cells = md.load_cells(CELLS)
+    script["cmd_write_settings"](SimpleNamespace(dir=str(tmp_path / "settings")))
+    wanted = md.settings_nuclides(cells)
+    paths = list((tmp_path / "settings").glob("g*/*/*.in"))
+    assert len(paths) == len(wanted) * len(md.SETTINGS)
+    sample = paths[0]
+    assert sample.stem == sample.parent.name
+    harvest = _harvest_from_levels()
+    optional = next(key for key in md.centroid_nuclides(cells) if key not in md.gated_nuclides(cells))
+    line = next(line for line in harvest.split(NL) if line.startswith(f"C {optional[0]} {optional[1]} "))
+    source, out = tmp_path / "harvest.txt", tmp_path / "levels.csv"
+    source.write_text(harvest.replace(line + NL, ""), encoding="ascii")
+    script["cmd_geant4_levels"](SimpleNamespace(harvest=str(source), out=str(out)))
+    assert optional not in md.load_geant4_levels(out)
+    assert f"no C line: Z={optional[0]} A={optional[1]}" in capsys.readouterr().out
+
+
+def test_t127_script_times_out_and_collects_only_clean_settings(monkeypatch, tmp_path):
+    import runpy
+    import subprocess
+    from types import SimpleNamespace
+
+    script = runpy.run_path(str(REPO / "scripts" / "mudirac_d3.py"))
+    run_one = script["_run_one"]
+    globals_ = run_one.__globals__
+    directory = tmp_path / "Be9_g0u0050"
+    directory.mkdir()
+    (directory / "Be9_g0u0050.in").write_text("input\n", encoding="ascii")
+
+    def timeout(*args, **kwargs):
+        assert kwargs["timeout"] == 1
+        raise subprocess.TimeoutExpired(args[0], 1)
+
+    monkeypatch.setattr(globals_["subprocess"], "run", timeout)
+    assert run_one("binary", directory, False, 1)[1] == 124
+
+    collect = script["cmd_collect_settings"]
+    collected = collect.__globals__
+    script_md = collected["md"]
+    cells = md.load_cells(CELLS)
+    key = md.settings_nuclides(cells)[0]
+    row = next(r for r in md.kept_members(md.load_outputs(REPO)) if r.nuclide == key)
+    level, uehling = md.SETTINGS[0]
+    run = md.settings_run_id(row, level, uehling)
+    run_dir = tmp_path / "collected" / run
+    run_dir.mkdir(parents=True)
+    monkeypatch.setattr(script_md, "settings_nuclides", lambda _cells: [key])
+    monkeypatch.setattr(script_md, "SETTINGS", ((level, uehling),))
+    monkeypatch.setitem(collected, "_results", lambda dirs: [(run, run_dir, "0", "0", "0.1", "a" * 64)])
+    monkeypatch.setitem(collected, "_state_headers", lambda directory: {"K1": ("1", "0", "1", "1.0", "1.0")})
+    monkeypatch.setitem(collected, "_lines", lambda directory: [("K1-L2", "1.000000", "1.0")])
+    out = tmp_path / "out"
+    out.mkdir()
+    collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
+    assert len(md.read_rows(out / pathlib.Path(md.SETTINGS_RUNS_RELPATH).name, md.SETTINGS_RUNS_COLUMNS)) == 1
+    states_out = out / pathlib.Path(md.SETTINGS_STATES_RELPATH).name
+    lines_out = out / pathlib.Path(md.SETTINGS_LINES_RELPATH).name
+    assert len(md.read_rows(states_out, md.SETTINGS_STATES_COLUMNS)) == 1
+    assert len(md.read_rows(lines_out, md.SETTINGS_LINES_COLUMNS)) == 1
+    monkeypatch.setitem(collected, "_results", lambda dirs: [])
+    with pytest.raises(SystemExit, match="no result"):
+        collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
+    monkeypatch.setitem(collected, "_results", lambda dirs: [
+        (run, run_dir, "0", "0", "0.1", "a" * 64),
+        ("unexpected", run_dir, "0", "0", "0.1", "a" * 64),
+    ])
+    with pytest.raises(SystemExit, match="unexpected settings results"):
+        collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
+
+
+def test_t127_settings_crosscheck_refuses_missing_and_unclean_records(monkeypatch, tmp_path):
+    cells = md.load_cells(CELLS)
+    out = md.load_outputs(REPO)
+    d3 = tmp_path / md.D3_RELDIR
+    d3.mkdir(parents=True)
+    paths = [md.SETTINGS_RUNS_RELPATH, md.SETTINGS_STATES_RELPATH, md.SETTINGS_LINES_RELPATH]
+    for rel in paths:
+        (tmp_path / rel).write_bytes((REPO / rel).read_bytes())
+    monkeypatch.setattr(md, "load_outputs", lambda root: out)
+    loaded = md.load_settings_outputs(tmp_path, cells)
+    assert len(loaded.runs) == len(md.settings_nuclides(cells)) * len(md.SETTINGS)
+    runs_path = tmp_path / md.SETTINGS_RUNS_RELPATH
+    states_path = tmp_path / md.SETTINGS_STATES_RELPATH
+    lines_path = tmp_path / md.SETTINGS_LINES_RELPATH
+    runs, states, lines = (path.read_text(encoding="ascii") for path in
+                           (runs_path, states_path, lines_path))
+    run_rows = runs.splitlines()
+    runs_path.write_bytes((NL.join([run_rows[0], *run_rows[2:]]) + NL).encode("ascii"))
+    with pytest.raises(md.CellError, match="implied runs"):
+        md.load_settings_outputs(tmp_path, cells)
+    runs_path.write_bytes(runs.encode("ascii"))
+    first = run_rows[1].split(",")
+    assert first[7:9] == ["0", "0"]
+    first[7] = "124"
+    runs_path.write_bytes((NL.join([run_rows[0], ",".join(first), *run_rows[2:]]) + NL).encode("ascii"))
+    with pytest.raises(md.CellError, match="unclean runs"):
+        md.load_settings_outputs(tmp_path, cells)
+    runs_path.write_bytes(runs.encode("ascii"))
+    state_rows = states.splitlines()
+    stray = state_rows[1].replace(state_rows[1].split(",")[0], "X9_g0u0050", 1)
+    states_path.write_bytes((NL.join([state_rows[0], stray, *state_rows[2:]]) + NL).encode("ascii"))
+    with pytest.raises(md.CellError, match="unlisted"):
+        md.load_settings_outputs(tmp_path, cells)
+    states_path.write_bytes(states.encode("ascii"))
+    line_rows = lines.splitlines()
+    stray = line_rows[1].replace(line_rows[1].split(",")[0], "X9_g0u0050", 1)
+    lines_path.write_bytes((NL.join([line_rows[0], stray, *line_rows[2:]]) + NL).encode("ascii"))
+    with pytest.raises(md.CellError, match="unlisted"):
+        md.load_settings_outputs(tmp_path, cells)
+
+
+def test_t127_settings_loader_refuses_a_compared_nuclide_outside_kept_members(monkeypatch):
+    cells = md.load_cells(CELLS)
+    wanted = md.settings_nuclides(cells)
+    monkeypatch.setattr(md, "settings_nuclides", lambda _cells: [*wanted, (999, 999)])
+    with pytest.raises(md.CellError, match="settings nuclides not kept"):
+        md.load_settings_outputs(REPO, cells)
