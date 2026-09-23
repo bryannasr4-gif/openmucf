@@ -9,11 +9,11 @@ Every `value` and `e<n>` cell is a positive binding energy in keV derived from t
 Hillier (2021); Liborio et al. (2026)), a Dirac-equation solver for muonic atoms released under the
 MIT License with the copyright held by the Science and Technology Facility Council, as its
 `LICENSE` reads.
-`k_shell_energy` carries the binding energy of the `K1` orbit in its `value` column, with its
-uncertainty in `unc`.
+`k_shell_energy` carries the binding energy of the `K1` orbit in its `value` column, with the
+magnitude of its radius response in `unc`.
 `level_energy` carries, for each shell above `K`, the mean binding energy of both circular states
-of the shell weighted by their degeneracy, in the columns `e<n>`, with their uncertainties in
-`u<n>`.
+of the shell weighted by their degeneracy, in the columns `e<n>`, with the magnitudes of their
+radius responses in `u<n>`.
 The chain ends at shell 8, the highest shell through which every circular state converged on
 the nuclides checked when the settings were fixed.
 Each table has a row for every kept (Z, A) and, for each element whose most abundant isotope in
