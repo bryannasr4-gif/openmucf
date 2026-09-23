@@ -2149,11 +2149,15 @@ def test_t127_settings_loaders_refuse_each_record_shape(tmp_path):
     path = tmp_path / "runs.csv"
     path.write_bytes((header + row).encode("ascii"))
     assert list(md.load_settings_runs(path)) == [run]
+    unlisted = md.setting_id(9, 9999)
+    unlisted_row = ",".join([f"Be9_{unlisted}", "4", "9", unlisted,
+                             *md.settings_values(9, 9999), "0", "0", "0.1", digest]) + NL
     bad = [
         (header.replace("setting", "kind", 1) + row, md.HeaderError),
         ((header + row).replace(NL, "\r" + NL, 1), md.CarriageReturnError),
         ((header + row).replace("Be9", "BeÂ·9", 1), md.NonAsciiError),
         (header + row.replace(setting, "g9u9999"), md.CellError),
+        (header + unlisted_row, md.CellError),
         (header + row.replace("Be9_", "Be8_"), md.CellError),
         (header + row.replace(values[0], "0.1", 1), md.CellError),
         (header + row.replace(",0,0,0.1,", ",x,0,0.1,"), md.CellError),
@@ -2386,6 +2390,10 @@ def test_t128_synthetic_onsets_and_certificates_discriminate_each_clause():
     for u in range(300, 2401, 100):
         growth_at_floor[u] += Decimal("0.009")
     assert centroids.onset_and_certificate(growth_at_floor, target)[0] == 300
+    growth_below_by_less = dict(growth_below_floor)
+    for u in range(300, 2401, 100):
+        growth_below_by_less[u] += Decimal("0.008")
+    assert centroids.onset_and_certificate(growth_below_by_less, target)[0] is None
     reversed_sign = dict(values)
     reversed_sign[200] = Decimal("1")
     reversed_sign[300] = Decimal("0")
@@ -2447,6 +2455,7 @@ def test_t128_screen_boundary_and_frozen_calculation_error(monkeypatch):
     assert centroids._screen(Decimal("0.3"), sigma, Decimal("0.1")) == "inside"
     assert centroids._screen(Decimal("1"), sigma, Decimal("0.1")) == "correlation-dependent"
     assert centroids._screen(Decimal("3.1"), sigma, Decimal("0.1")) == "outside"
+    assert centroids._screen(Decimal("3"), sigma, Decimal("0.1")) == "correlation-dependent"
     cells = md.load_cells(CELLS)
     zeros = {key: (Decimal(0), Decimal(0), Decimal(0), None, None)
              for key in md.settings_nuclides(cells)}
