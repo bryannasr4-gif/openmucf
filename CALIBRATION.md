@@ -26,12 +26,19 @@ and lambda_c are well constrained; omega_s0 and R are not separable. (Figure `fi
 ## Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it
 | parameter | mean | sd | mcse | 95% CI |
 |---|---|---|---|---|
-| omega_s0_pct | 0.856 | 0.0301 | 0.000313 | [0.798, 0.915] |
-| R | 0.462 | 0.0585 | 0.000589 | [0.346, 0.576] |
-| omega_s_eff_pct | 0.46 | 0.0473 | 0.000446 | [0.367, 0.552] |
+| omega_s0_pct | 0.856 | 0.0298 | 0.000291 | [0.798, 0.914] |
+| R | 0.462 | 0.058 | 0.000556 | [0.346, 0.575] |
+| omega_s_eff_pct | 0.46 | 0.047 | 0.000428 | [0.367, 0.552] |
 
-The Kamimura *theory* input tightens omega_s0 (sd 0.202 -> 0.0301 %)
+The Kamimura *theory* input tightens omega_s0 (sd 0.202 -> 0.0298 %)
 and hence R -- but R still inherits that uncertainty.
+
+## AMENDMENT 2026-09-22 -- the Kamimura prior bounded to the weak-prior support
+
+The Kamimura chain uses a Normal with location 0.857 and scale 0.03, truncated to the weak prior's support [0.5, 1.2].
+Within that support the prior is unchanged at double precision; the bound removes the negative-omega_s0 region in which a chain could trap, so the convergence cells and their audit describe this sampler across seeds.
+The Kamimura cells are a new realization replacing those in this document as released in v1.2.0.
+The FC-001 forecast retains its registered untruncated prior.
 
 ## Finding
 Experiment alone determines **effective sticking and the cycling rate**, not the microscopic
@@ -43,7 +50,7 @@ and this degeneracy is the quantitative reason it is needed.
 | chain | max r_hat | min ess | divergences |
 |---|---|---|---|
 | weak | 1.000 | 5e+03 | 0 |
-| Kamimura | 1.000 | 9.2e+03 | 0 |
+| Kamimura | 1.000 | 1e+04 | 0 |
 
 Convergence gate (`tests/test_calibrate.py::test_multichain_diagnostics`): max r_hat < 1.01, min ess > 400, divergences == 0 on the default (widened-box) chains.
 
@@ -79,7 +86,7 @@ The product omega_s0(1-R) (= ose mean) is box-invariant across the sweep (the os
 | quantity | mean | sd | 95% CI |
 |---|---|---|---|
 | X_mu (weak-box posterior) | 115.7 | 9.25 | [98.71, 134.1] |
-| X_mu (Kamimura posterior) | 115.6 | 9.12 | [98.7, 133.7] |
+| X_mu (Kamimura posterior) | 115.6 | 9.18 | [98.6, 133.7] |
 | Q_net (hybrid: posterior kinetics x ignorance-box economics) | 0.04905 | 0.0324 | [0.01178, 0.1387] |
 
 X_mu is the DEFAULT-box weak-chain (and Kamimura-chain) `(omega_s_eff, lambda_c)` joint draws pushed through `1/(ose/100 + lambda_0/lambda_c)` -- the state-of-knowledge (posterior) interval, as opposed to the ignorance-box propagation in FINDINGS.md. The two chains agree (the product is data-pinned). Q_net multiplies the weak-box posterior X_mu by seeded-uniform draws over the FROZEN uq boxes for E_mu / eta_acc / eta_thermal (posterior kinetics x ignorance-box economics -- hybrid; the economics is an ignorance box, not a posterior).
