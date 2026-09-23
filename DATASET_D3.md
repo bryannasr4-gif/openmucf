@@ -64,9 +64,14 @@ it falls through to Geant4's compiled-in code.
 
 ## 4. Comparison with measured energies
 
-`validation.csv` compares the model with the transition energies transcribed from Fricke et al.
-(1995), Tables IIIA and IIIB, and from Saito et al. (2025), Tables III and IV, each as printed
-(`validation_cells.csv`).
+`validation.csv` compares the model line, the difference between the energies of its initial and
+final states as MuDirac prints it, with the energies transcribed from Fricke et al. (1995), Tables
+IIIA and IIIB, whose titles call them transition energies, and from Saito et al. (2025), whose
+Table III is titled "Observed muonic X-ray energies" and Table IV "Observed muonic X-ray
+transition energies", each as printed (`validation_cells.csv`).
+Saito et al. write: "The observed X-ray energies in Table III are different from the transition
+energies because they are affected by the photon recoil effect"; no recoil correction is applied
+to either side of this comparison.
 The Fricke values were read from page images of the journal copy.
 Each uncertainty carries its source's own label: `statistical` (Table IIIA), `statistical and fit`
 (Table IIIB) or `statistical and systematic` (Saito et al.).
