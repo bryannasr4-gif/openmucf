@@ -18,6 +18,7 @@ from decimal import Decimal, localcontext
 import pytest
 import test_g4parity as parity
 
+from openmucf.g4 import d3_centroids as centroids
 from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import mudirac130 as md
@@ -944,6 +945,7 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         pattern, groups = _row_pattern(line)
         pins.append((f"comparison table row {number}", path, pattern, groups, None))
     pins.extend(contract_pins())
+    pins.extend(centroid_pins())
     return pins
 
 
@@ -1008,6 +1010,54 @@ def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         pattern, row_groups = _row_pattern(line)
         pins.append((f"groups table row {number}", path, pattern, row_groups, None))
     return pins
+
+
+def centroid_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    from openmucf.g4 import d3_centroids as centroids
+
+    rows = _committed_rows(centroids.CENTROIDS_RELPATH)
+    margins = _committed_rows(centroids.MARGINS_RELPATH)
+    ratios = _committed_rows(centroids.RATIOS_RELPATH)
+    compared = [row for row in rows if row["cohort"] != "excluded"]
+    above = sum(abs(Decimal(row["dnum_keV"])) >
+                Decimal(row["sigma_keV"] or row["sigma_max_keV"]) / 10 for row in compared)
+    largest = max(compared, key=lambda row: abs(Decimal(row["dnum_keV"])))
+    nuclides = {(row["Z"], row["A"]) for row in compared}
+    uncertified = {(row["Z"], row["A"]) for row in compared if row["u_certified"] == "none"}
+    assert len(ratios) == 1
+    path = "DATASET_D3.md"
+    pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
+        ("centroid shift count", path, r"on (\d+) of the \d+ rows and reaches", (1,), above),
+        ("centroid compared rows", path, r"on \d+ of the (\d+) rows and reaches", (1,), len(compared)),
+        ("largest centroid shift", path, r"reaches ([-0-9.]+) keV for Pb-", (1,),
+         largest["dnum_keV"]),
+        ("largest shift mass", path, r"keV for Pb-(\d+), and", (1,), largest["A"]),
+        ("uncertified nuclides", path, r"is `none` for (\d+) of the \d+ nuclides", (1,),
+         len(uncertified)),
+        ("compared nuclides", path, r"is `none` for \d+ of the (\d+) nuclides", (1,),
+         len(nuclides)),
+        ("illustrative ratio mass", path, r"For Pb-(\d+) the row also lists", (1,), ratios[0]["A"]),
+    ]
+    for name, block in (("centroids", centroids.render_centroids_table(rows)),
+                        ("margins", centroids.render_margins_table(margins))):
+        for number, line in enumerate(block.splitlines()[2:], start=1):
+            pattern, groups = _row_pattern(line)
+            pins.append((f"{name} table row {number}", path, pattern, groups, None))
+    return pins
+
+
+def test_t107_the_centroid_tables_are_generated_blocks():
+    from openmucf.g4 import d3_centroids as centroids
+
+    rows = _committed_rows(centroids.CENTROIDS_RELPATH)
+    margins = _committed_rows(centroids.MARGINS_RELPATH)
+    text = _document_text()
+    for block in (centroids.render_centroids_table(rows), centroids.render_margins_table(margins)):
+        assert text.count(block) == 1
+        data_row = block.splitlines()[2]
+        mutated = _replace_once(text, data_row, data_row.replace(" | ", " | 1", 1))
+        assert mutated.count(block) == 0
+        assert _pin_problems(mutated)
 
 
 def test_t107_the_groups_table_is_the_generated_block():
@@ -1092,7 +1142,7 @@ def cascade_k_energies(zs: list[int], literals: list[str]) -> dict[int, float]:
 def test_t110_the_cascade_levels_are_the_vendored_cascades_for_every_gated_nuclide():
     levels = md.load_geant4_levels(GEANT4_LEVELS)
     cells, _ = md.load_validation(CELLS, ORIGIN)
-    assert sorted(levels) == md.gated_nuclides(cells)
+    assert sorted(levels) == md.stock_nuclides(cells)
     cascade = parity.D3_SEAM_DIRS[parity.d1.UPSTREAM_TAG] / parity.CASCADE_NAME
     text = cascade.read_text("ascii")
     assert f"fLevelEnergy[{md.CASCADE_LEVELS - 1}]" in text and f"i<{md.CASCADE_LEVELS}" in text
@@ -1105,7 +1155,7 @@ def test_t110_the_cascade_levels_are_the_vendored_cascades_for_every_gated_nucli
         e = 4 * row[1]
         for n in range(2, md.CASCADE_LEVELS + 1):
             assert e / float(n * n) == row[n - 1], (z, a, n)
-    print(f"\ncascade levels: {len(levels)} gated nuclides, {md.CASCADE_LEVELS} levels each")
+    print(f"\ncascade levels: {len(levels)} stock nuclides, {md.CASCADE_LEVELS} levels each")
 
 
 def _harvest_from_levels() -> str:
@@ -1124,14 +1174,45 @@ def _harvest_from_levels() -> str:
 def test_t110_the_committed_file_is_what_the_renderer_writes_from_a_harvest():
     cells, _ = md.load_validation(CELLS, ORIGIN)
     harvest = _harvest_from_levels()
-    assert md.render_geant4_levels(harvest, md.gated_nuclides(cells)) == GEANT4_LEVELS.read_bytes()
+    gated = md.gated_nuclides(cells)
+    optional = sorted(set(md.centroid_nuclides(cells)) - set(gated))
+    assert md.render_geant4_levels(harvest, gated, optional) == GEANT4_LEVELS.read_bytes()
+
+
+def test_t110_a_missing_labelled_c_line_leaves_only_that_stock_comparison(tmp_path):
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    gated = md.gated_nuclides(cells)
+    optional = sorted(set(md.centroid_nuclides(cells)) - set(gated))
+    key = optional[0]
+    harvest = _harvest_from_levels()
+    missing = next(line for line in harvest.split(NL) if line.startswith(f"C {key[0]} {key[1]} "))
+    payload = md.render_geant4_levels(harvest.replace(missing + NL, ""), gated, optional)
+    path = tmp_path / "levels.csv"
+    path.write_bytes(payload)
+    levels = md.load_geant4_levels(path)
+    assert key not in levels
+    assert sorted(levels) == sorted(set(md.stock_nuclides(cells)) - {key})
+    md.validation_rows(md.load_outputs(REPO), cells, origins, levels)
+
+
+def test_t110_a_missing_gated_key_or_an_unlisted_stock_key_is_refused():
+    cells, origins = md.load_validation(CELLS, ORIGIN)
+    levels = md.load_geant4_levels(GEANT4_LEVELS)
+    out = md.load_outputs(REPO)
+    first = md.gated_nuclides(cells)[0]
+    with pytest.raises(md.CellError, match="gated nuclides"):
+        md.validation_rows(out, cells, origins, {k: v for k, v in levels.items() if k != first})
+    stray = (max(k[0] for k in levels) + 1, 1)
+    with pytest.raises(md.CellError, match="stock nuclides"):
+        md.validation_rows(out, cells, origins, {**levels, stray: next(iter(levels.values()))})
 
 
 def test_t110_drill_a_missing_a_repeated_and_a_malformed_c_line_are_refused():
     cells, _ = md.load_validation(CELLS, ORIGIN)
     nuclides = md.gated_nuclides(cells)
     harvest = _harvest_from_levels()
-    first = next(line for line in harvest.split(NL) if line.startswith("C "))
+    key = nuclides[0]
+    first = next(line for line in harvest.split(NL) if line.startswith(f"C {key[0]} {key[1]} "))
     drills = [
         (harvest.replace(first + NL, ""), md.CellError, "no C line for"),
         (harvest + first + NL, md.DuplicateKeyError, "a second C line"),
@@ -2022,3 +2103,705 @@ def test_t126_drill_a_tampered_shift_is_refused(tmp_path):
     target["numeric_observed_shifts_keV"][0] = shift + "1"
     problems = _component_problems(tampered)
     assert problems == [f"record {target['Z']},{target['A']},{target['quantity']}"]
+
+
+# T-127 -- named settings inputs and their committed run records
+
+
+def test_t127_settings_render_from_the_base_and_name_exactly_the_compared_kept_nuclides(monkeypatch):
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    out = md.load_outputs(REPO)
+    kept = {row.nuclide: row for row in md.kept_members(out)}
+    wanted = md.settings_nuclides(cells)
+    expected = set(md.centroid_nuclides(cells)) | {
+        left.nuclide for left, _right in md.doublet_determinations(cells)}
+    assert set(wanted) == expected <= set(kept)
+    assert len(md.SETTINGS) == len(md.SETTINGS_UEHLING_G0) + 1
+    assert tuple(sorted(set(md.SETTINGS_UEHLING_G0))) == md.SETTINGS_UEHLING_G0
+    for key in wanted:
+        row = kept[key]
+        extra = md.extra_lines(cells, key)
+        base = md.render_input(row, "base", extra)
+        for level, uehling in md.SETTINGS:
+            values = md.settings_values(level, uehling)
+            expected_text = base + "".join(f"{name}: {value}\n" for name, value in zip(
+                md.NUMERICS_KEYS, values, strict=True))
+            assert md.render_settings_input(row, level, uehling, extra) == expected_text
+            assert md.settings_run_id(row, level, uehling).endswith(md.setting_id(level, uehling))
+    first = kept[wanted[0]]
+    extra = md.extra_lines(cells, first.nuclide)
+    with pytest.raises(ValueError, match="unknown setting"):
+        md.render_settings_input(first, -1, 100, extra)
+    original = md.render_input
+    monkeypatch.setattr(md, "render_input", lambda *args: original(*args) + "uehling_steps: 100\n")
+    with pytest.raises(ValueError, match="already sets uehling_steps"):
+        md.render_settings_input(first, 0, 100, extra)
+    print(f"\nsettings nuclides {len(wanted)} runs {len(wanted) * len(md.SETTINGS)}")
+
+
+def test_t127_settings_loaders_refuse_each_record_shape(tmp_path):
+    setting = md.setting_id(*md.SETTINGS[0])
+    values = md.settings_values(*md.SETTINGS[0])
+    run = f"Be9_{setting}"
+    digest = "a" * 64
+    header = ",".join(md.SETTINGS_RUNS_COLUMNS) + NL
+    row = ",".join([run, "4", "9", setting, *values, "0", "0", "0.1", digest]) + NL
+    path = tmp_path / "runs.csv"
+    path.write_bytes((header + row).encode("ascii"))
+    assert list(md.load_settings_runs(path)) == [run]
+    unlisted = md.setting_id(9, 9999)
+    unlisted_row = ",".join([f"Be9_{unlisted}", "4", "9", unlisted,
+                             *md.settings_values(9, 9999), "0", "0", "0.1", digest]) + NL
+    bad = [
+        (header.replace("setting", "kind", 1) + row, md.HeaderError),
+        ((header + row).replace(NL, "\r" + NL, 1), md.CarriageReturnError),
+        ((header + row).replace("Be9", "BeÂ·9", 1), md.NonAsciiError),
+        (header + row.replace(setting, "g9u9999"), md.CellError),
+        (header + unlisted_row, md.CellError),
+        (header + row.replace("Be9_", "Be8_"), md.CellError),
+        (header + row.replace(values[0], "0.1", 1), md.CellError),
+        (header + row.replace(",0,0,0.1,", ",x,0,0.1,"), md.CellError),
+        (header + row.replace(",0,0,0.1,", ",0,-1,0.1,"), md.CellError),
+        (header + row.replace(",0,0,0.1,", ",0,0,-0.1,"), md.CellError),
+        (header + row[:-2] + NL, md.CellError),
+        (header + row + row, md.DuplicateKeyError),
+    ]
+    for changed, error in bad:
+        path.write_bytes(changed.encode("utf-8"))
+        with pytest.raises(error):
+            md.load_settings_runs(path)
+    second_setting = md.setting_id(*md.SETTINGS[1])
+    second_values = md.settings_values(*md.SETTINGS[1])
+    second = ",".join([f"Be9_{second_setting}", "4", "9", second_setting, *second_values,
+                       "0", "0", "0.1", digest]) + NL
+    path.write_bytes((header + second + row).encode("ascii"))
+    with pytest.raises(md.OrderError):
+        md.load_settings_runs(path)
+
+    state_header = ",".join(md.SETTINGS_STATES_COLUMNS) + NL
+    state = ",".join([run, "4", "9", setting, "K1", "1", "0", "1", "1.0", "1.0"]) + NL
+    line_header = ",".join(md.SETTINGS_LINES_COLUMNS) + NL
+    line = ",".join([run, "4", "9", setting, "K1-L2", "1.000000", "1.0"]) + NL
+    state_path, line_path = tmp_path / "states.csv", tmp_path / "lines.csv"
+    state_path.write_bytes((state_header + state).encode("ascii"))
+    line_path.write_bytes((line_header + line).encode("ascii"))
+    assert run in md._load_settings_printed(state_path, md.SETTINGS_STATES_COLUMNS, True)
+    assert run in md._load_settings_printed(line_path, md.SETTINGS_LINES_COLUMNS, False)
+    for changed in (state.replace("K1,", "bad,"), state.replace(",1,0,1,", ",x,0,1,"),
+                    state.replace(",1.0,1.0", ",bad,1.0"), state + state):
+        state_path.write_bytes((state_header + changed).encode("ascii"))
+        with pytest.raises(md.Mudirac130Error):
+            md._load_settings_printed(state_path, md.SETTINGS_STATES_COLUMNS, True)
+    for changed in (line.replace("K1-L2", "bad"), line.replace("1.000000", "1"),
+                    line.rsplit(",1.0", 1)[0] + ",-1.0" + NL, line + line):
+        line_path.write_bytes((line_header + changed).encode("ascii"))
+        with pytest.raises(md.Mudirac130Error):
+            md._load_settings_printed(line_path, md.SETTINGS_LINES_COLUMNS, False)
+    later_state = state.replace("K1,1,0,1", "L2,2,1,1")
+    state_path.write_bytes((state_header + later_state + state).encode("ascii"))
+    with pytest.raises(md.OrderError):
+        md._load_settings_printed(state_path, md.SETTINGS_STATES_COLUMNS, True)
+    later_line = line.replace(run, f"Be9_{second_setting}").replace("," + setting + ",",
+                                                                    "," + second_setting + ",")
+    line_path.write_bytes((line_header + later_line + line).encode("ascii"))
+    with pytest.raises(md.OrderError):
+        md._load_settings_printed(line_path, md.SETTINGS_LINES_COLUMNS, False)
+
+
+def test_t127_committed_settings_are_the_implied_runs_and_the_default_equals_base():
+    cells = md.load_cells(CELLS)
+    settings = md.load_settings_outputs(REPO, cells)
+    kept = {row.nuclide: row for row in md.kept_members(md.load_outputs(REPO))}
+    expected = [(md.settings_run_id(kept[key], level, uehling), *key, md.setting_id(level, uehling))
+                for key in md.settings_nuclides(cells) for level, uehling in md.SETTINGS]
+    assert [(r.run, r.z, r.a, r.setting) for r in settings.runs.values()] == expected
+    for run in settings.runs.values():
+        row = kept[(run.z, run.a)]
+        level, uehling = next(pair for pair in md.SETTINGS if md.setting_id(*pair) == run.setting)
+        rendered = md.render_settings_input(row, level, uehling, md.extra_lines(cells, row.nuclide))
+        assert hashlib.sha256(rendered.encode("ascii")).hexdigest() == run.input_sha256
+        if not run.clean:
+            assert run.run not in settings.headers and run.run not in settings.lines
+    base_states = {(r["run"], r["state"]): (r["n"], r["l"], r["s"], r["binding_eV"], r["total_eV"])
+                   for _, r in md.read_rows(REPO / md.STATES_RELPATH, md.STATES_COLUMNS)
+                   if r["kind"] == "base"}
+    base_lines = {(r["run"], r["line"]): (r["delta_e_eV"], r["w12_per_s"])
+                  for _, r in md.read_rows(REPO / md.LINES_RELPATH, md.LINES_COLUMNS)
+                  if r["kind"] == "base"}
+    states = md.read_rows(REPO / md.SETTINGS_STATES_RELPATH, md.SETTINGS_STATES_COLUMNS)
+    lines = md.read_rows(REPO / md.SETTINGS_LINES_RELPATH, md.SETTINGS_LINES_COLUMNS)
+    for _where, r in states:
+        if r["setting"] == md.setting_id(0, 100):
+            base = r["run"].replace("_g0u0100", "_base")
+            assert (r["n"], r["l"], r["s"], r["binding_eV"], r["total_eV"]) == (
+                base_states[(base, r["state"])])
+    for _where, r in lines:
+        if r["setting"] == md.setting_id(0, 100):
+            base = r["run"].replace("_g0u0100", "_base")
+            assert (r["delta_e_eV"], r["w12_per_s"]) == base_lines[(base, r["line"])]
+    print(f"\nsettings runs {len(settings.runs)} clean {sum(r.clean for r in settings.runs.values())}")
+
+
+def test_t127_script_writes_named_inputs_and_reports_a_missing_optional_stock_line(
+        monkeypatch, tmp_path, capsys):
+    import runpy
+    from types import SimpleNamespace
+
+    script = runpy.run_path(str(REPO / "scripts" / "mudirac_d3.py"))
+    cells = md.load_cells(CELLS)
+    script["cmd_write_settings"](SimpleNamespace(dir=str(tmp_path / "settings")))
+    wanted = md.settings_nuclides(cells)
+    paths = list((tmp_path / "settings").glob("g*/*/*.in"))
+    assert len(paths) == len(wanted) * len(md.SETTINGS)
+    sample = paths[0]
+    assert sample.stem == sample.parent.name
+    with monkeypatch.context() as patcher:
+        script_md = script["cmd_write_settings"].__globals__["md"]
+        patcher.setattr(script_md, "settings_nuclides", lambda _cells: [*wanted, (999, 999)])
+        with pytest.raises(SystemExit, match="settings nuclides not kept"):
+            script["cmd_write_settings"](SimpleNamespace(dir=str(tmp_path / "unkept")))
+    harvest = _harvest_from_levels()
+    optional = next(key for key in md.centroid_nuclides(cells) if key not in md.gated_nuclides(cells))
+    line = next(line for line in harvest.split(NL) if line.startswith(f"C {optional[0]} {optional[1]} "))
+    source, out = tmp_path / "harvest.txt", tmp_path / "levels.csv"
+    source.write_text(harvest.replace(line + NL, ""), encoding="ascii")
+    script["cmd_geant4_levels"](SimpleNamespace(harvest=str(source), out=str(out)))
+    assert optional not in md.load_geant4_levels(out)
+    assert f"no C line: Z={optional[0]} A={optional[1]}" in capsys.readouterr().out
+
+
+def test_t127_script_times_out_and_collects_only_clean_settings(monkeypatch, tmp_path):
+    import runpy
+    import subprocess
+    from types import SimpleNamespace
+
+    script = runpy.run_path(str(REPO / "scripts" / "mudirac_d3.py"))
+    run_one = script["_run_one"]
+    globals_ = run_one.__globals__
+    directory = tmp_path / "Be9_g0u0050"
+    directory.mkdir()
+    (directory / "Be9_g0u0050.in").write_text("input\n", encoding="ascii")
+
+    def timeout(*args, **kwargs):
+        assert kwargs["timeout"] == 1
+        raise subprocess.TimeoutExpired(args[0], 1)
+
+    monkeypatch.setattr(globals_["subprocess"], "run", timeout)
+    assert run_one("binary", directory, False, 1)[1] == 124
+
+    collect = script["cmd_collect_settings"]
+    collected = collect.__globals__
+    script_md = collected["md"]
+    cells = md.load_cells(CELLS)
+    key = md.settings_nuclides(cells)[0]
+    row = next(r for r in md.kept_members(md.load_outputs(REPO)) if r.nuclide == key)
+    level, uehling = md.SETTINGS[0]
+    run = md.settings_run_id(row, level, uehling)
+    run_dir = tmp_path / "collected" / run
+    run_dir.mkdir(parents=True)
+    monkeypatch.setattr(script_md, "settings_nuclides", lambda _cells: [key])
+    monkeypatch.setattr(script_md, "SETTINGS", ((level, uehling),))
+    monkeypatch.setitem(collected, "_results", lambda dirs: [(run, run_dir, "0", "0", "0.1", "a" * 64)])
+    monkeypatch.setitem(collected, "_state_headers", lambda directory: {"K1": ("1", "0", "1", "1.0", "1.0")})
+    monkeypatch.setitem(collected, "_lines", lambda directory: [("K1-L2", "1.000000", "1.0")])
+    out = tmp_path / "out"
+    out.mkdir()
+    collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
+    assert len(md.read_rows(out / pathlib.Path(md.SETTINGS_RUNS_RELPATH).name, md.SETTINGS_RUNS_COLUMNS)) == 1
+    states_out = out / pathlib.Path(md.SETTINGS_STATES_RELPATH).name
+    lines_out = out / pathlib.Path(md.SETTINGS_LINES_RELPATH).name
+    assert len(md.read_rows(states_out, md.SETTINGS_STATES_COLUMNS)) == 1
+    assert len(md.read_rows(lines_out, md.SETTINGS_LINES_COLUMNS)) == 1
+    monkeypatch.setitem(collected, "_results", lambda dirs: [])
+    with pytest.raises(SystemExit, match="no result"):
+        collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
+    monkeypatch.setitem(collected, "_results", lambda dirs: [
+        (run, run_dir, "0", "0", "0.1", "a" * 64),
+        ("unexpected", run_dir, "0", "0", "0.1", "a" * 64),
+    ])
+    with pytest.raises(SystemExit, match="unexpected settings results"):
+        collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
+
+
+def test_t127_settings_crosscheck_refuses_missing_and_unclean_records(monkeypatch, tmp_path):
+    cells = md.load_cells(CELLS)
+    out = md.load_outputs(REPO)
+    d3 = tmp_path / md.D3_RELDIR
+    d3.mkdir(parents=True)
+    paths = [md.SETTINGS_RUNS_RELPATH, md.SETTINGS_STATES_RELPATH, md.SETTINGS_LINES_RELPATH]
+    for rel in paths:
+        (tmp_path / rel).write_bytes((REPO / rel).read_bytes())
+    monkeypatch.setattr(md, "load_outputs", lambda root: out)
+    loaded = md.load_settings_outputs(tmp_path, cells)
+    assert len(loaded.runs) == len(md.settings_nuclides(cells)) * len(md.SETTINGS)
+    runs_path = tmp_path / md.SETTINGS_RUNS_RELPATH
+    states_path = tmp_path / md.SETTINGS_STATES_RELPATH
+    lines_path = tmp_path / md.SETTINGS_LINES_RELPATH
+    runs, states, lines = (path.read_text(encoding="ascii") for path in
+                           (runs_path, states_path, lines_path))
+    run_rows = runs.splitlines()
+    runs_path.write_bytes((NL.join([run_rows[0], *run_rows[2:]]) + NL).encode("ascii"))
+    with pytest.raises(md.CellError, match="implied runs"):
+        md.load_settings_outputs(tmp_path, cells)
+    runs_path.write_bytes(runs.encode("ascii"))
+    first = run_rows[1].split(",")
+    assert first[7:9] == ["0", "0"]
+    first[7] = "124"
+    runs_path.write_bytes((NL.join([run_rows[0], ",".join(first), *run_rows[2:]]) + NL).encode("ascii"))
+    with pytest.raises(md.CellError, match="unclean runs"):
+        md.load_settings_outputs(tmp_path, cells)
+    runs_path.write_bytes(runs.encode("ascii"))
+    state_rows = states.splitlines()
+    stray = state_rows[1].replace(state_rows[1].split(",")[0], "X9_g0u0050", 1)
+    states_path.write_bytes((NL.join([state_rows[0], stray, *state_rows[2:]]) + NL).encode("ascii"))
+    with pytest.raises(md.CellError, match="unlisted"):
+        md.load_settings_outputs(tmp_path, cells)
+    states_path.write_bytes(states.encode("ascii"))
+    line_rows = lines.splitlines()
+    stray = line_rows[1].replace(line_rows[1].split(",")[0], "X9_g0u0050", 1)
+    lines_path.write_bytes((NL.join([line_rows[0], stray, *line_rows[2:]]) + NL).encode("ascii"))
+    with pytest.raises(md.CellError, match="unlisted"):
+        md.load_settings_outputs(tmp_path, cells)
+
+
+def test_t127_settings_loader_refuses_a_compared_nuclide_outside_kept_members(monkeypatch):
+    cells = md.load_cells(CELLS)
+    wanted = md.settings_nuclides(cells)
+    monkeypatch.setattr(md, "settings_nuclides", lambda _cells: [*wanted, (999, 999)])
+    with pytest.raises(md.CellError, match="settings nuclides not kept"):
+        md.load_settings_outputs(REPO, cells)
+
+
+# T-128 -- the onset and certificate use the frozen increment clause
+
+
+def test_t128_synthetic_onsets_and_certificates_discriminate_each_clause():
+    target = Decimal("2")
+    values = {u: Decimal(0) for u in md.SETTINGS_UEHLING_G0}
+    assert centroids.onset_and_certificate(values, target) == (None, 100)
+    growth_below_floor = dict(values)
+    growth_below_floor[200] = Decimal("1")
+    growth_below_floor[300] = Decimal("2.001")
+    for u in range(400, 2401, 100):
+        growth_below_floor[u] = growth_below_floor[300]
+    onset, _cert = centroids.onset_and_certificate(growth_below_floor, target)
+    assert onset is None
+    growth_at_floor = dict(growth_below_floor)
+    for u in range(300, 2401, 100):
+        growth_at_floor[u] += Decimal("0.009")
+    assert centroids.onset_and_certificate(growth_at_floor, target)[0] == 300
+    growth_below_by_less = dict(growth_below_floor)
+    for u in range(300, 2401, 100):
+        growth_below_by_less[u] += Decimal("0.008")
+    assert centroids.onset_and_certificate(growth_below_by_less, target)[0] is None
+    reversed_sign = dict(values)
+    reversed_sign[200] = Decimal("1")
+    reversed_sign[300] = Decimal("0")
+    for u in range(400, 2401, 100):
+        reversed_sign[u] = Decimal("0")
+    assert centroids.onset_and_certificate(reversed_sign, target)[0] == 300
+    reversed_at_floor = dict(values)
+    reversed_at_floor[200] = Decimal("0.01")
+    assert centroids.onset_and_certificate(reversed_at_floor, target)[0] == 300
+    certificate_at_target = dict(values)
+    certificate_at_target[100] = target
+    for u in range(200, 2401, 100):
+        certificate_at_target[u] = 2 * target
+    assert centroids.onset_and_certificate(certificate_at_target, target) == (None, 200)
+    missing_half = dict(values)
+    del missing_half[50]
+    assert centroids.onset_and_certificate(missing_half, target)[0] == 50
+    missing_whole = dict(values)
+    del missing_whole[400]
+    assert centroids.onset_and_certificate(missing_whole, target)[0] == 400
+    no_certificate = {u: Decimal(3) * Decimal(u) / 100 for u in md.SETTINGS_UEHLING_G0}
+    assert centroids.onset_and_certificate(no_certificate, target) == (None, None)
+
+
+def test_t128_a_component_at_onset_or_without_a_clean_fine_reference_is_refused(monkeypatch):
+    key = (4, 9)
+    settings = md.SettingsOutputs({}, {}, {})
+    monkeypatch.setattr(md, "load_settings_outputs", lambda root, cells: settings)
+    monkeypatch.setattr(md, "settings_nuclides", lambda cells: [key])
+    monkeypatch.setattr(centroids, "_targets", lambda cells: {key: Decimal("0.1")})
+    q = {(4, 9, md.setting_id(0, 100)): Decimal(0),
+         (4, 9, md.setting_id(0, 1000)): Decimal(1),
+         (4, 9, md.setting_id(2, 1000)): Decimal("1.1")}
+    monkeypatch.setattr(centroids, "_settings_q", lambda loaded: q)
+    monkeypatch.setattr(centroids, "onset_and_certificate", lambda values, target: (1000, None))
+    with pytest.raises(md.CellError, match="at or above onset"):
+        centroids.numerical_components(REPO, ())
+    monkeypatch.setattr(centroids, "onset_and_certificate", lambda values, target: (None, 100))
+    del q[(4, 9, md.setting_id(2, 1000))]
+    with pytest.raises(md.CellError, match="fine-grid reference is unclean"):
+        centroids.numerical_components(REPO, ())
+    q[(4, 9, md.setting_id(2, 1000))] = Decimal("1.1")
+    del q[(4, 9, md.setting_id(0, 100))]
+    with pytest.raises(md.CellError, match="numerical endpoint is unclean"):
+        centroids.numerical_components(REPO, ())
+
+
+def test_t128_a_derivation_failure_is_an_unclean_setting(monkeypatch):
+    clean = md.SettingsRun("Be9_g0u0100", 4, 9, "g0u0100", 0, 0, "0.1", "a" * 64)
+    unclean = md.SettingsRun("Be9_g0u0200", 4, 9, "g0u0200", 124, 0, "0.1", "a" * 64)
+    outputs = md.SettingsOutputs({clean.run: clean, unclean.run: unclean}, {}, {})
+    calls = []
+
+    def failed(run, headers, lines):
+        calls.append(run)
+        raise ValueError("unreadable binding")
+
+    monkeypatch.setattr(md, "derive_bindings", failed)
+    assert centroids._settings_q(outputs) == {}
+    assert calls == [clean.run]
+
+
+def test_t128_screen_boundary_and_frozen_calculation_error(monkeypatch):
+    sigma = Decimal("1")
+    assert centroids._screen(3 * sigma, sigma) == "inside"
+    assert centroids._screen(3 * sigma + Decimal("0.1"), sigma) == "outside"
+    assert centroids._screen(Decimal("0.3"), sigma, Decimal("0.1")) == "inside"
+    assert centroids._screen(Decimal("1"), sigma, Decimal("0.1")) == "correlation-dependent"
+    assert centroids._screen(Decimal("3.1"), sigma, Decimal("0.1")) == "outside"
+    assert centroids._screen(Decimal("3"), sigma, Decimal("0.1")) == "correlation-dependent"
+    cells = md.load_cells(CELLS)
+    zeros = {key: (Decimal(0), Decimal(0), Decimal(0), None, None)
+             for key in md.settings_nuclides(cells)}
+    monkeypatch.setattr(centroids, "numerical_components", lambda root, cells: (zeros, 0))
+    monkeypatch.setattr(md, "SIGMA_CALC", 1)
+    with pytest.raises(md.CellError, match="freezes SIGMA_CALC"):
+        centroids.centroid_rows(REPO)
+
+
+def test_t128_committed_components_and_certificates_match_reproduced_cells():
+    cells = md.load_cells(CELLS)
+    components, _unclean = centroids.numerical_components(REPO, cells)
+    expected = {
+        (4, 9): ('0.000076749', '0.000000731', '0.000077480', '100'),
+        (6, 12): ('0.000277602', '0.000003887', '0.000281489', '300'),
+        (8, 16): ('0.000714321', '0.000014440', '0.000728762', '200'),
+        (11, 23): ('0.002046892', '0.000057267', '0.002104159', '300'),
+        (13, 27): ('0.003573340', '0.000108296', '0.003681636', '400'),
+        (14, 28): ('0.004541285', '0.000144919', '0.004686204', '300'),
+        (18, 40): ('0.009833462', '0.000387986', '0.010221448', '200'),
+        (21, 45): ('0.015628270', '0.000664280', '0.016292550', '200'),
+        (26, 56): ('0.028503393', '0.001346820', '0.029850213', '300'),
+        (29, 63): ('0.037523574', '0.001907240', '0.039430815', '300'),
+        (32, 74): ('0.046517982', '0.002593741', '0.049111723', '500'),
+        (38, 88): ('0.069731116', '0.004132155', '0.073863272', 'none'),
+        (40, 90): ('0.078123816', '0.004709744', '0.082833560', 'none'),
+        (41, 93): ('0.081419659', '0.005023699', '0.086443358', '700'),
+        (44, 102): ('0.091082539', '0.005993768', '0.097076307', '600'),
+        (46, 104): ('0.100082807', '0.006634152', '0.106716959', '300'),
+        (46, 106): ('0.099148665', '0.006641288', '0.105789953', '200'),
+        (46, 108): ('0.098206686', '0.006649298', '0.104855984', '300'),
+        (46, 110): ('0.097374805', '0.006657312', '0.104032117', '200'),
+        (47, 107): ('0.103651034', '0.006968027', '0.110619061', 'none'),
+        (49, 115): ('0.110816451', '0.007642388', '0.118458839', 'none'),
+        (53, 127): ('0.124608964', '0.009005102', '0.133614066', 'none'),
+        (55, 133): ('0.131755063', '0.009686152', '0.141441215', 'none'),
+        (79, 197): ('0.192017477', '0.016690678', '0.208708155', '400'),
+        (81, 205): ('0.195824922', '0.017130541', '0.212955462', '200'),
+        (82, 208): ('0.197049118', '0.017330812', '0.214379930', '500'),
+    }
+    actual = {key: (centroids._text(du), centroids._text(grid), centroids._text(total),
+                    str(cert) if cert is not None else "none")
+              for key, (du, grid, total, cert, _onset) in components.items()}
+    assert actual == expected
+    assert all(onset is None or onset > 1000 for _du, _grid, _total, _cert, onset
+               in components.values())
+
+
+# T-130 -- source ratios are copied and affect only illustrative columns
+
+
+def test_t130_ratio_loader_refuses_bad_bytes_values_keys_and_duplicates(tmp_path):
+    cells = md.load_cells(CELLS)
+    source = REPO / centroids.RATIOS_RELPATH
+    text = source.read_bytes().decode("ascii")
+    path = tmp_path / source.name
+    path.write_bytes(text.encode("ascii"))
+    ratio = centroids.load_intensity_ratios(path, cells)
+    assert len(ratio) == 1
+    printed = next(iter(ratio.values()))
+    assert (printed["source"], printed["Z"], printed["A"], printed["ratio"],
+            printed["ratio_unc"], printed["label"]) == (
+                "Jenkins1971", "82", "208", "1.67", "0.07", "This Experiment")
+    assert printed["locator"] == "Table 9, PDF p. 46, row R_p"
+    assert "Pb(NO3)2" in printed["target"] and "98.7%" in printed["target"]
+    mutations = [
+        (text.replace(NL, "\r" + NL, 1), md.CarriageReturnError),
+        (text.replace("Jenkins1971", "JenkinsÂ·1971", 1), md.NonAsciiError),
+        (text.replace("ratio_unc", "unc", 1), md.HeaderError),
+        (text.replace(",1.67,", ",x,"), md.CellError),
+        (text.replace(",1.67,", ",0.00,"), md.CellError),
+        (text.replace(",0.07,", ",-0.07,"), md.CellError),
+        (text.replace(",82,208,", ",82,209,"), md.CellError),
+        (text + text.splitlines()[1] + NL, md.DuplicateKeyError),
+    ]
+    for changed, error in mutations:
+        assert changed != text
+        path.write_bytes(changed.encode("utf-8"))
+        with pytest.raises(error):
+            centroids.load_intensity_ratios(path, cells)
+
+
+# T-129 -- independent re-derivation of the cohort columns and the margin groups
+
+
+def _centroid_records(path):
+    with path.open(newline="", encoding="ascii") as source:
+        return list(csv.DictReader(source))
+
+
+def _nine(value):
+    with localcontext() as context:
+        context.prec = 50
+        return format(value.quantize(Decimal("1e-9")), ".9f")
+
+
+def test_t129_every_comparison_and_margin_cell_is_rederived_from_the_sources():
+    cells = md.load_cells(CELLS)
+    pairs = md.doublet_determinations(cells)
+    labelled = [cell for cell in cells if cell.reason == "centroid"]
+    rows = _centroid_records(REPO / centroids.CENTROIDS_RELPATH)
+    margins = _centroid_records(REPO / centroids.MARGINS_RELPATH)
+    assert tuple(rows[0]) == centroids.CENTROID_COLUMNS
+    assert tuple(margins[0]) == centroids.MARGIN_COLUMNS
+    assert (len([r for r in rows if r["cohort"] == "labelled"]),
+            len([r for r in rows if r["cohort"] == "constructed"])) == (len(labelled), len(pairs))
+    assert [(r["source"], r["Z"], r["A"], r["locator"]) for r in rows if r["cohort"] == "constructed"] == [
+        (left.source, str(left.z), str(left.a), left.locator) for left, _right in pairs]
+    paired = {(left.source, left.z, left.a) for left, _right in pairs}
+    excluded = {(cell.source, cell.z, cell.a) for cell in cells
+                if cell.gated and cell.quantity in ("K1-L2", "K1-L3") and
+                (cell.source, cell.z, cell.a) not in paired}
+    assert {(r["source"], int(r["Z"]), int(r["A"])) for r in rows
+            if r["cohort"] == "excluded"} == excluded
+    tables = d3c.Tables(d3c.read_table_text(REPO / d3c.KSHELL_RELPATH),
+                        d3c.read_table_text(REPO / d3c.LEVELS_RELPATH))
+    stock = md.load_geant4_levels(GEANT4_LEVELS)
+    components, _unclean = centroids.numerical_components(REPO, cells)
+    ratios = centroids.load_intensity_ratios(REPO / centroids.RATIOS_RELPATH, cells)
+    for row in rows:
+        if row["cohort"] == "excluded":
+            key = row["source"], int(row["Z"]), int(row["A"])
+            present = [c for c in cells if (c.source, c.z, c.a) == key]
+            assert row["excluded_gated"] == ";".join(c.quantity for c in present
+                                                       if c.gated and c.quantity in ("K1-L2", "K1-L3"))
+            assert row["two_p_rows"] == ";".join(
+                f"{c.transition}:{c.reason or 'gated'}" for c in present
+                if c.transition.startswith("2p") and c.reason != "centroid")
+            assert all(value == "" for name, value in row.items() if name not in
+                       {"cohort", "source", "Z", "A", "excluded_gated", "two_p_rows"})
+            continue
+        key = int(row["Z"]), int(row["A"])
+        q = Decimal(tables.shell(key, 1)) - Decimal(tables.shell(key, 2))
+        assert row["q_keV"] == _nine(q)
+        du, grid, total, certified, _onset = components[key]
+        assert (row["dU_keV"], row["dgrid_keV"], row["dnum_keV"], row["u_certified"]) == (
+            _nine(du), _nine(grid), _nine(total), str(certified) if certified is not None else "none")
+        assert Decimal(row["dnum_keV"]) == Decimal(row["dU_keV"]) + Decimal(row["dgrid_keV"]) or (
+            abs(Decimal(row["dnum_keV"]) - Decimal(row["dU_keV"]) - Decimal(row["dgrid_keV"]))
+            <= Decimal("1e-9"))
+        if row["cohort"] == "labelled":
+            source = next(c for c in labelled if c.nuclide == key)
+            c = Decimal(source.value_kev)
+            sigma = Decimal(source.unc_kev)
+            minimum = sigma
+            assert row["sigma_keV"] == _nine(sigma)
+            assert row["npol_keV"] == source.npol_kev
+            assert row["representative"] == "true"
+            assert row["comparator"] == "center of gravity"
+        else:
+            left, right = next((a, b) for a, b in pairs if (a.source, a.nuclide, a.locator) ==
+                               (row["source"], key, row["locator"]))
+            c = (Decimal(left.value_kev) + 2 * Decimal(right.value_kev)) / 3
+            u2, u3 = Decimal(left.unc_kev), Decimal(right.unc_kev)
+            sigma, minimum = (u2 + 2 * u3) / 3, abs(u2 - 2 * u3) / 3
+            assert row["sigma_max_keV"] == _nine(sigma)
+            assert row["sigma_min_keV"] == _nine(minimum)
+            sigma_zero = ((u2 / 3) ** 2 + (2 * u3 / 3) ** 2).sqrt()
+            assert row["sigma_0_keV"] == _nine(sigma_zero)
+            assert row["npol_l2_keV"] == left.npol_kev
+            assert row["npol_l3_keV"] == right.npol_kev
+            assert row["comparator"] == "degeneracy-convention centroid"
+            if key in ratios:
+                ratio = ratios[key]
+                assert (row["ratio"], row["ratio_unc"], row["ratio_source"], row["ratio_locator"],
+                        row["ratio_label"]) == (ratio["ratio"], ratio["ratio_unc"], ratio["source"],
+                                               ratio["locator"], ratio["label"])
+                r, uncertainty = Decimal(ratio["ratio"]), Decimal(ratio["ratio_unc"])
+                first, second = Decimal(left.value_kev), Decimal(right.value_kev)
+                with localcontext() as context:
+                    context.prec = 50
+                    values = [first + trial / (1 + trial) * (second - first)
+                              for trial in (r - uncertainty, r, r + uncertainty)]
+                assert row["illustrative_c_keV"] == ";".join(_nine(value) for value in values)
+                assert row["illustrative_q_minus_c_keV"] == ";".join(_nine(q - value) for value in values)
+            else:
+                assert not any(row[name] for name in ("ratio", "ratio_unc", "ratio_source",
+                                                     "ratio_locator", "ratio_label", "illustrative_c_keV",
+                                                     "illustrative_q_minus_c_keV"))
+        residual = q - c
+        assert row["c_keV"] == _nine(c)
+        assert row["r_d3_keV"] == _nine(residual)
+        screen = ("outside" if abs(residual) > 3 * sigma else
+                  "inside" if abs(residual) <= 3 * minimum else "correlation-dependent")
+        assert row["screen"] == screen
+        reference = residual + Decimal(row["dnum_keV"])
+        reference_screen = ("outside" if abs(reference) > 3 * sigma else
+                            "inside" if abs(reference) <= 3 * minimum else "correlation-dependent")
+        assert row["screen_at_reference"] == reference_screen
+        if key in stock:
+            stock_value = d3c.stock_kev(stock[key], 1, 2)
+            stock_residual = stock_value - c
+            assert row["s_keV"] == _nine(stock_value)
+            assert row["r_stock_keV"] == _nine(stock_residual)
+            assert row["margin_keV"] == _nine(abs(stock_residual) - abs(residual))
+            assert row["stock_reason"] == ""
+        else:
+            assert (row["s_keV"], row["r_stock_keV"], row["margin_keV"]) == ("", "", "")
+            assert row["stock_reason"] == "no C line in the unpatched harvest"
+    grouped = {}
+    for row in rows:
+        if row["cohort"] == "constructed":
+            grouped.setdefault((row["source"], row["Z"], row["A"]), []).append(row)
+    for determinations in grouped.values():
+        expected = min(determinations, key=lambda r: Decimal(r["sigma_max_keV"]))
+        assert [r["locator"] for r in determinations if r["representative"] == "true"] == [
+            expected["locator"]]
+    groups = [("labelled", "Fricke1995"), ("constructed", "Fricke1995"),
+              ("constructed", "Saito2025")]
+    assert [(r["cohort"], r["source"]) for r in margins] == groups
+    for summary in margins:
+        group = [r for r in rows if (r["cohort"], r["source"]) ==
+                 (summary["cohort"], summary["source"])]
+        representative = [r for r in group if r["representative"] == "true" and r["margin_keV"]]
+        values = sorted(Decimal(r["margin_keV"]) for r in representative)
+        assert summary["isotopes"] == str(len({(r["Z"], r["A"]) for r in representative}))
+        assert summary["margin_min_keV"] == _nine(values[0])
+        assert summary["margin_max_keV"] == _nine(values[-1])
+        mid = len(values) // 2
+        median = _nine(values[mid]) if len(values) % 2 else f"{_nine(values[mid - 1])}..{_nine(values[mid])}"
+        assert summary["margin_median_keV"] == median
+        maximum = max(group, key=lambda r: abs(Decimal(r["r_d3_keV"])))
+        assert (summary["max_abs_r_d3_keV"], summary["max_abs_r_d3_Z"], summary["max_abs_r_d3_A"]) == (
+            _nine(abs(Decimal(maximum["r_d3_keV"]))), maximum["Z"], maximum["A"])
+
+
+def test_t129_moved_measured_line_and_missing_or_extra_stock_key_are_local(monkeypatch):
+    original = md.load_cells
+    baseline = centroids.centroid_rows(REPO)
+    cells = original(CELLS)
+    target = next(c for c in cells if c.gated and c.quantity == "K1-L3")
+    changed = tuple(replace(c, value_kev=str(Decimal(c.value_kev) + 1)) if c == target else c
+                    for c in cells)
+    monkeypatch.setattr(md, "load_cells", lambda path: (
+        changed if pathlib.Path(path) == CELLS else original(path)))
+    moved = centroids.centroid_rows(REPO)
+    different = [i for i, (a, b) in enumerate(zip(baseline, moved, strict=True)) if a != b]
+    assert len(different) == 1
+    assert moved[different[0]]["locator"] == target.locator
+    monkeypatch.undo()
+    levels = md.load_geant4_levels(GEANT4_LEVELS)
+    optional = next(key for key in md.centroid_nuclides(cells) if key not in md.gated_nuclides(cells))
+    monkeypatch.setattr(md, "load_geant4_levels", lambda path: {
+        k: v for k, v in levels.items() if k != optional})
+    missing = centroids.centroid_rows(REPO)
+    different = [i for i, (a, b) in enumerate(zip(baseline, missing, strict=True)) if a != b]
+    assert len(different) == 1
+    assert (int(missing[different[0]]["Z"]), int(missing[different[0]]["A"])) == optional
+    assert missing[different[0]]["s_keV"] == missing[different[0]]["r_stock_keV"] == ""
+    monkeypatch.setattr(md, "load_geant4_levels", lambda path: {
+        **levels, (999, 999): next(iter(levels.values()))})
+    with pytest.raises(md.CellError, match="unlisted key"):
+        centroids.centroid_rows(REPO)
+    required = md.gated_nuclides(cells)[0]
+    monkeypatch.setattr(md, "load_geant4_levels", lambda path: {
+        k: v for k, v in levels.items() if k != required})
+    with pytest.raises(md.CellError, match="omit a gated key"):
+        centroids.centroid_rows(REPO)
+
+
+def test_t129_each_constructed_projection_identity_refuses_a_moved_cell(monkeypatch):
+    cells = md.load_cells(CELLS)
+    left, _right = md.doublet_determinations(cells)[0]
+    original = md.read_rows
+    projection_path = REPO / d3c.PROJECTION_RELPATH
+    identity_cases = (
+        ("consumer_keV", "shell projection disagrees"),
+        ("solver_keV", "weighted solver lines disagree"),
+        ("stock_keV", "stock level difference disagrees"),
+    )
+    for column, error in identity_cases:
+        def moved(path, columns, field=column):
+            rows = original(path, columns)
+            if pathlib.Path(path) != projection_path:
+                return rows
+            changed = []
+            for where, row in rows:
+                if (row["source"], row["Z"], row["A"], row["locator"], row["quantity"]) == (
+                        left.source, str(left.z), str(left.a), left.locator, left.quantity):
+                    row = {**row, field: str(Decimal(row[field]) + 1)}
+                changed.append((where, row))
+            return changed
+
+        with monkeypatch.context() as patcher:
+            patcher.setattr(md, "read_rows", moved)
+            with pytest.raises(md.CellError, match=error):
+                centroids.centroid_rows(REPO)
+    def missing(path, columns):
+        rows = original(path, columns)
+        if pathlib.Path(path) != projection_path:
+            return rows
+        return [(where, row) for where, row in rows
+                if (row["source"], row["Z"], row["A"], row["locator"], row["quantity"]) !=
+                (left.source, str(left.z), str(left.a), left.locator, left.quantity)]
+
+    with monkeypatch.context() as patcher:
+        patcher.setattr(md, "read_rows", missing)
+        with pytest.raises(md.CellError, match="shell_projection.csv"):
+            centroids.centroid_rows(REPO)
+
+
+def test_t129_representative_uses_unrounded_sigma_max(monkeypatch):
+    cells = md.load_cells(CELLS)
+    grouped = {}
+    for left, right in md.doublet_determinations(cells):
+        grouped.setdefault((left.source, left.z, left.a), []).append((left, right))
+    key, determinations = next((key, pairs) for key, pairs in grouped.items() if len(pairs) > 1)
+    first, second = determinations[:2]
+    first_locator, second_locator = first[0].locator, second[0].locator
+    changed = tuple(replace(cell, unc_kev=("1.0000000003" if
+                                   (cell.source, cell.z, cell.a, cell.locator) ==
+                                   (*key, first_locator) and cell.quantity == "K1-L2" else "1"))
+                    if (cell.source, cell.z, cell.a, cell.locator) in
+                    {(*key, first_locator), (*key, second_locator)} else cell for cell in cells)
+    monkeypatch.setattr(md, "load_cells", lambda path: changed)
+    zero = {nuclide: (Decimal(0), Decimal(0), Decimal(0), None, None)
+            for nuclide in md.settings_nuclides(changed)}
+    monkeypatch.setattr(centroids, "numerical_components", lambda root, source: (zero, 0))
+    rows = [r for r in centroids.centroid_rows(REPO)
+            if (r["source"], int(r["Z"]), int(r["A"])) == key and r["cohort"] == "constructed"]
+    assert rows[0]["sigma_max_keV"] == rows[1]["sigma_max_keV"]
+    assert [r["locator"] for r in rows if r["representative"] == "true"] == [second_locator]
+
+
+def test_t130_a_changed_ratio_moves_only_the_illustrative_cells(monkeypatch):
+    baseline = centroids.centroid_rows(REPO)
+    original = centroids.load_intensity_ratios
+
+    def moved(path, cells):
+        ratios = original(path, cells)
+        key = next(iter(ratios))
+        ratios[key] = {**ratios[key], "ratio": str(Decimal(ratios[key]["ratio"]) + Decimal("0.1"))}
+        return ratios
+
+    monkeypatch.setattr(centroids, "load_intensity_ratios", moved)
+    changed = centroids.centroid_rows(REPO)
+    different = [(a, b) for a, b in zip(baseline, changed, strict=True) if a != b]
+    assert len(different) == 1
+    before, after = different[0]
+    columns = {key for key in before if before[key] != after[key]}
+    assert columns == {"ratio", "illustrative_c_keV", "illustrative_q_minus_c_keV"}

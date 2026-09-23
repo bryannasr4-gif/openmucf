@@ -41,7 +41,7 @@ g++ -O2 harvest_d3_overlay.cc    -o harvest_d3_overlay    $(geant4-config --cfla
 ```
 
 `data/g4/d3/geant4_cascade_levels.csv` is `harvest_d3`'s output on an unpatched build, cut to the
-gated validation nuclides by
+nuclides of the gated validation rows and of the `centroid` rows by
 `scripts/mudirac_d3.py geant4-levels --harvest d3.txt --out data/g4/d3/geant4_cascade_levels.csv`,
 and a test ties it to the cascade source vendored under `third_party/geant4/`.
 

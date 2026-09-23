@@ -1755,7 +1755,7 @@ def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
         D1DIR / "geant4_add_dataset.snippet"
     ] + sorted(d3dir.glob("d3_*.g4dat")) + sorted(d3dir.glob("*.prov.json")) + [
         d3dir / "validation.csv", d3dir / "shell_projection.csv", d3dir / "incompatible_groups.csv",
-        d3dir / "components.jsonl",
+        d3dir / "components.jsonl", d3dir / "consumer_centroids.csv", d3dir / "centroid_margins.csv",
     ]
     # The files found on disk are exactly the ones the generator writes: a generated file the
     # globs miss, or a stray file they catch, would make this drill prove less than it claims.

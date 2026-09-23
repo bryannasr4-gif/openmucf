@@ -1,0 +1,2 @@
+source,Z,A,quantity,ratio,ratio_unc,label,target,locator,copy_read
+Jenkins1971,82,208,I(2p3/2-1s1/2)/I(2p1/2-1s1/2),1.67,0.07,This Experiment,"Pb(NO3)2, isotopic composition 208: 98.7% (Table 3, PDF p. 38)","Table 9, PDF p. 46, row R_p","NASA NTRS 19710024235 PDF page image, sha256 7e760c55c8f495d9cc78adee1ed8498fb172bfc7998111c80ed2f8a9e63035fb"

@@ -515,6 +515,8 @@ def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) 
 # --------------------------------------------------------------------------------------------
 
 D3DIR = ROOT / md.D3_RELDIR
+D3_CENTROIDS = D3DIR / "consumer_centroids.csv"
+D3_MARGINS = D3DIR / "centroid_margins.csv"
 D3_KSHELL_LAYER1 = D3DIR / f"d3_kshell.{md.PROFILE}.g4dat"
 D3_KSHELL_LAYER2 = D3DIR / f"d3_kshell.{md.PROFILE}.prov.json"
 D3_LEVELS_LAYER1 = D3DIR / f"d3_levels.{md.PROFILE}.g4dat"
@@ -639,6 +641,8 @@ def build_d3_levels_table(out: md.Outputs, digest: str) -> spec.G4DatTable:
 def d3_summary(out: md.Outputs) -> list[str]:
     """What the D3 build kept and dropped, and the members whose bundled radius the charge-radii
     table prints differently -- printed by the regeneration and by the audit."""
+    from openmucf.g4 import d3_centroids as d3centroids
+
     rows, dropped = md.table_rows(out)
     isotopes = sum(1 for r in rows if r.a != 0)
     lines = [f"d3: members {len(out.inputs)} kept {isotopes} dropped {len(dropped)} natural rows {len(rows) - isotopes}"]
@@ -653,12 +657,15 @@ def d3_summary(out: md.Outputs) -> list[str]:
     for z, a, bundled, table in md.radius_disagreements(out.inputs):
         lines.append(f"d3: bundled rms radius differs from the charge-radii table at 4 decimals: Z={z} A={a} {bundled} vs {table}")
     lines.extend(d3c.summary_lines(ROOT))
+    lines.extend(d3centroids.summary_lines(ROOT))
     return lines
 
 
 def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     """The committed D1 and D3 artifacts keyed by path, plus the archive they describe (not
     committed)."""
+    from openmucf.g4 import d3_centroids as d3centroids
+
     found = d1src.load(VENDORED_PATH)  # checks the upstream pins before anything is generated
     mizuno = mizsrc.load(MIZUNO_TABLE1_PATH, MIZUNO_TABLE3_PATH)
     outputs = md.load_outputs(ROOT)
@@ -729,6 +736,8 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     artifacts[D3_PROJECTION] = d3c.render_projection(ROOT, bundle)
     artifacts[D3_GROUPS] = d3c.render_groups(ROOT, bundle)
     artifacts[D3_COMPONENTS] = d3c.render_components(ROOT, bundle)
+    artifacts[D3_CENTROIDS] = d3centroids.render_centroids(ROOT)
+    artifacts[D3_MARGINS] = d3centroids.render_margins(ROOT)
     return artifacts, archive
 
 
