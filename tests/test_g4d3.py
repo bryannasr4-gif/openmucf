@@ -18,6 +18,7 @@ from decimal import Decimal, localcontext
 import pytest
 import test_g4parity as parity
 
+from openmucf.g4 import d3_centroids as centroids
 from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import mudirac130 as md
@@ -2099,15 +2100,11 @@ def test_t127_settings_loaders_refuse_each_record_shape(tmp_path):
     path = tmp_path / "runs.csv"
     path.write_bytes((header + row).encode("ascii"))
     assert list(md.load_settings_runs(path)) == [run]
-    unlisted = md.setting_id(9, 9999)
-    unlisted_row = ",".join([f"Be9_{unlisted}", "4", "9", unlisted,
-                             *md.settings_values(9, 9999), "0", "0", "0.1", digest]) + NL
     bad = [
         (header.replace("setting", "kind", 1) + row, md.HeaderError),
         ((header + row).replace(NL, "\r" + NL, 1), md.CarriageReturnError),
         ((header + row).replace("Be9", "BeÂ·9", 1), md.NonAsciiError),
         (header + row.replace(setting, "g9u9999"), md.CellError),
-        (header + unlisted_row, md.CellError),
         (header + row.replace("Be9_", "Be8_"), md.CellError),
         (header + row.replace(values[0], "0.1", 1), md.CellError),
         (header + row.replace(",0,0,0.1,", ",x,0,0.1,"), md.CellError),
@@ -2305,3 +2302,425 @@ def test_t127_settings_loader_refuses_a_compared_nuclide_outside_kept_members(mo
     monkeypatch.setattr(md, "settings_nuclides", lambda _cells: [*wanted, (999, 999)])
     with pytest.raises(md.CellError, match="settings nuclides not kept"):
         md.load_settings_outputs(REPO, cells)
+
+
+# T-128 -- the onset and certificate use the frozen increment clause
+
+
+def test_t128_synthetic_onsets_and_certificates_discriminate_each_clause():
+    target = Decimal("2")
+    values = {u: Decimal(0) for u in md.SETTINGS_UEHLING_G0}
+    assert centroids.onset_and_certificate(values, target) == (None, 100)
+    growth_below_floor = dict(values)
+    growth_below_floor[200] = Decimal("1")
+    growth_below_floor[300] = Decimal("2.001")
+    for u in range(400, 2401, 100):
+        growth_below_floor[u] = growth_below_floor[300]
+    onset, _cert = centroids.onset_and_certificate(growth_below_floor, target)
+    assert onset is None
+    growth_at_floor = dict(growth_below_floor)
+    for u in range(300, 2401, 100):
+        growth_at_floor[u] += Decimal("0.009")
+    assert centroids.onset_and_certificate(growth_at_floor, target)[0] == 300
+    reversed_sign = dict(values)
+    reversed_sign[200] = Decimal("1")
+    reversed_sign[300] = Decimal("0")
+    for u in range(400, 2401, 100):
+        reversed_sign[u] = Decimal("0")
+    assert centroids.onset_and_certificate(reversed_sign, target)[0] == 300
+    missing_half = dict(values)
+    del missing_half[50]
+    assert centroids.onset_and_certificate(missing_half, target)[0] == 50
+    missing_whole = dict(values)
+    del missing_whole[400]
+    assert centroids.onset_and_certificate(missing_whole, target)[0] == 400
+    no_certificate = {u: Decimal(3) * Decimal(u) / 100 for u in md.SETTINGS_UEHLING_G0}
+    assert centroids.onset_and_certificate(no_certificate, target) == (None, None)
+
+
+def test_t128_a_component_at_onset_or_without_a_clean_fine_reference_is_refused(monkeypatch):
+    key = (4, 9)
+    settings = md.SettingsOutputs({}, {}, {})
+    monkeypatch.setattr(md, "load_settings_outputs", lambda root, cells: settings)
+    monkeypatch.setattr(md, "settings_nuclides", lambda cells: [key])
+    monkeypatch.setattr(centroids, "_targets", lambda cells: {key: Decimal("0.1")})
+    q = {(4, 9, md.setting_id(0, 100)): Decimal(0),
+         (4, 9, md.setting_id(0, 1000)): Decimal(1),
+         (4, 9, md.setting_id(2, 1000)): Decimal("1.1")}
+    monkeypatch.setattr(centroids, "_settings_q", lambda loaded: q)
+    monkeypatch.setattr(centroids, "onset_and_certificate", lambda values, target: (1000, None))
+    with pytest.raises(md.CellError, match="at or above onset"):
+        centroids.numerical_components(REPO, ())
+    monkeypatch.setattr(centroids, "onset_and_certificate", lambda values, target: (None, 100))
+    del q[(4, 9, md.setting_id(2, 1000))]
+    with pytest.raises(md.CellError, match="fine-grid reference is unclean"):
+        centroids.numerical_components(REPO, ())
+    q[(4, 9, md.setting_id(2, 1000))] = Decimal("1.1")
+    del q[(4, 9, md.setting_id(0, 100))]
+    with pytest.raises(md.CellError, match="numerical endpoint is unclean"):
+        centroids.numerical_components(REPO, ())
+
+
+def test_t128_a_derivation_failure_is_an_unclean_setting(monkeypatch):
+    clean = md.SettingsRun("Be9_g0u0100", 4, 9, "g0u0100", 0, 0, "0.1", "a" * 64)
+    unclean = md.SettingsRun("Be9_g0u0200", 4, 9, "g0u0200", 124, 0, "0.1", "a" * 64)
+    outputs = md.SettingsOutputs({clean.run: clean, unclean.run: unclean}, {}, {})
+    calls = []
+
+    def failed(run, headers, lines):
+        calls.append(run)
+        raise ValueError("unreadable binding")
+
+    monkeypatch.setattr(md, "derive_bindings", failed)
+    assert centroids._settings_q(outputs) == {}
+    assert calls == [clean.run]
+
+
+def test_t128_screen_boundary_and_frozen_calculation_error(monkeypatch):
+    sigma = Decimal("1")
+    assert centroids._screen(3 * sigma, sigma) == "inside"
+    assert centroids._screen(3 * sigma + Decimal("0.1"), sigma) == "outside"
+    assert centroids._screen(Decimal("0.3"), sigma, Decimal("0.1")) == "inside"
+    assert centroids._screen(Decimal("1"), sigma, Decimal("0.1")) == "correlation-dependent"
+    assert centroids._screen(Decimal("3.1"), sigma, Decimal("0.1")) == "outside"
+    cells = md.load_cells(CELLS)
+    zeros = {key: (Decimal(0), Decimal(0), Decimal(0), None, None)
+             for key in md.settings_nuclides(cells)}
+    monkeypatch.setattr(centroids, "numerical_components", lambda root, cells: (zeros, 0))
+    monkeypatch.setattr(md, "SIGMA_CALC", 1)
+    with pytest.raises(md.CellError, match="freezes SIGMA_CALC"):
+        centroids.centroid_rows(REPO)
+
+
+def test_t128_committed_components_and_certificates_match_reproduced_cells():
+    cells = md.load_cells(CELLS)
+    components, _unclean = centroids.numerical_components(REPO, cells)
+    expected = {
+        (4, 9): ('0.000076749', '0.000000731', '0.000077480', '100'),
+        (6, 12): ('0.000277602', '0.000003887', '0.000281489', '300'),
+        (8, 16): ('0.000714321', '0.000014440', '0.000728762', '200'),
+        (11, 23): ('0.002046892', '0.000057267', '0.002104159', '300'),
+        (13, 27): ('0.003573340', '0.000108296', '0.003681636', '400'),
+        (14, 28): ('0.004541285', '0.000144919', '0.004686204', '300'),
+        (18, 40): ('0.009833462', '0.000387986', '0.010221448', '200'),
+        (21, 45): ('0.015628270', '0.000664280', '0.016292550', '200'),
+        (26, 56): ('0.028503393', '0.001346820', '0.029850213', '300'),
+        (29, 63): ('0.037523574', '0.001907240', '0.039430815', '300'),
+        (32, 74): ('0.046517982', '0.002593741', '0.049111723', '500'),
+        (38, 88): ('0.069731116', '0.004132155', '0.073863272', 'none'),
+        (40, 90): ('0.078123816', '0.004709744', '0.082833560', 'none'),
+        (41, 93): ('0.081419659', '0.005023699', '0.086443358', '700'),
+        (44, 102): ('0.091082539', '0.005993768', '0.097076307', '600'),
+        (46, 104): ('0.100082807', '0.006634152', '0.106716959', '300'),
+        (46, 106): ('0.099148665', '0.006641288', '0.105789953', '200'),
+        (46, 108): ('0.098206686', '0.006649298', '0.104855984', '300'),
+        (46, 110): ('0.097374805', '0.006657312', '0.104032117', '200'),
+        (47, 107): ('0.103651034', '0.006968027', '0.110619061', 'none'),
+        (49, 115): ('0.110816451', '0.007642388', '0.118458839', 'none'),
+        (53, 127): ('0.124608964', '0.009005102', '0.133614066', 'none'),
+        (55, 133): ('0.131755063', '0.009686152', '0.141441215', 'none'),
+        (79, 197): ('0.192017477', '0.016690678', '0.208708155', '400'),
+        (81, 205): ('0.195824922', '0.017130541', '0.212955462', '200'),
+        (82, 208): ('0.197049118', '0.017330812', '0.214379930', '500'),
+    }
+    actual = {key: (centroids._text(du), centroids._text(grid), centroids._text(total),
+                    str(cert) if cert is not None else "none")
+              for key, (du, grid, total, cert, _onset) in components.items()}
+    assert actual == expected
+    assert all(onset is None or onset > 1000 for _du, _grid, _total, _cert, onset
+               in components.values())
+
+
+# T-130 -- source ratios are copied and affect only illustrative columns
+
+
+def test_t130_ratio_loader_refuses_bad_bytes_values_keys_and_duplicates(tmp_path):
+    cells = md.load_cells(CELLS)
+    source = REPO / centroids.RATIOS_RELPATH
+    text = source.read_bytes().decode("ascii")
+    path = tmp_path / source.name
+    path.write_bytes(text.encode("ascii"))
+    ratio = centroids.load_intensity_ratios(path, cells)
+    assert len(ratio) == 1
+    printed = next(iter(ratio.values()))
+    assert (printed["source"], printed["Z"], printed["A"], printed["ratio"],
+            printed["ratio_unc"], printed["label"]) == (
+                "Jenkins1971", "82", "208", "1.67", "0.07", "This Experiment")
+    assert printed["locator"] == "Table 9, PDF p. 46, row R_p"
+    assert "Pb(NO3)2" in printed["target"] and "98.7%" in printed["target"]
+    mutations = [
+        (text.replace(NL, "\r" + NL, 1), md.CarriageReturnError),
+        (text.replace("Jenkins1971", "JenkinsÂ·1971", 1), md.NonAsciiError),
+        (text.replace("ratio_unc", "unc", 1), md.HeaderError),
+        (text.replace(",1.67,", ",x,"), md.CellError),
+        (text.replace(",1.67,", ",0.00,"), md.CellError),
+        (text.replace(",0.07,", ",-0.07,"), md.CellError),
+        (text.replace(",82,208,", ",82,209,"), md.CellError),
+        (text + text.splitlines()[1] + NL, md.DuplicateKeyError),
+    ]
+    for changed, error in mutations:
+        assert changed != text
+        path.write_bytes(changed.encode("utf-8"))
+        with pytest.raises(error):
+            centroids.load_intensity_ratios(path, cells)
+
+
+# T-129 -- independent re-derivation of the cohort columns and the margin groups
+
+
+def _centroid_records(path):
+    with path.open(newline="", encoding="ascii") as source:
+        return list(csv.DictReader(source))
+
+
+def _nine(value):
+    with localcontext() as context:
+        context.prec = 50
+        return format(value.quantize(Decimal("1e-9")), ".9f")
+
+
+def test_t129_every_comparison_and_margin_cell_is_rederived_from_the_sources():
+    cells = md.load_cells(CELLS)
+    pairs = md.doublet_determinations(cells)
+    labelled = [cell for cell in cells if cell.reason == "centroid"]
+    rows = _centroid_records(REPO / centroids.CENTROIDS_RELPATH)
+    margins = _centroid_records(REPO / centroids.MARGINS_RELPATH)
+    assert tuple(rows[0]) == centroids.CENTROID_COLUMNS
+    assert tuple(margins[0]) == centroids.MARGIN_COLUMNS
+    assert (len([r for r in rows if r["cohort"] == "labelled"]),
+            len([r for r in rows if r["cohort"] == "constructed"])) == (len(labelled), len(pairs))
+    assert [(r["source"], r["Z"], r["A"], r["locator"]) for r in rows if r["cohort"] == "constructed"] == [
+        (left.source, str(left.z), str(left.a), left.locator) for left, _right in pairs]
+    paired = {(left.source, left.z, left.a) for left, _right in pairs}
+    excluded = {(cell.source, cell.z, cell.a) for cell in cells
+                if cell.gated and cell.quantity in ("K1-L2", "K1-L3") and
+                (cell.source, cell.z, cell.a) not in paired}
+    assert {(r["source"], int(r["Z"]), int(r["A"])) for r in rows
+            if r["cohort"] == "excluded"} == excluded
+    tables = d3c.Tables(d3c.read_table_text(REPO / d3c.KSHELL_RELPATH),
+                        d3c.read_table_text(REPO / d3c.LEVELS_RELPATH))
+    stock = md.load_geant4_levels(GEANT4_LEVELS)
+    components, _unclean = centroids.numerical_components(REPO, cells)
+    ratios = centroids.load_intensity_ratios(REPO / centroids.RATIOS_RELPATH, cells)
+    for row in rows:
+        if row["cohort"] == "excluded":
+            key = row["source"], int(row["Z"]), int(row["A"])
+            present = [c for c in cells if (c.source, c.z, c.a) == key]
+            assert row["excluded_gated"] == ";".join(c.quantity for c in present
+                                                       if c.gated and c.quantity in ("K1-L2", "K1-L3"))
+            assert row["two_p_rows"] == ";".join(
+                f"{c.transition}:{c.reason or 'gated'}" for c in present
+                if c.transition.startswith("2p") and c.reason != "centroid")
+            assert all(value == "" for name, value in row.items() if name not in
+                       {"cohort", "source", "Z", "A", "excluded_gated", "two_p_rows"})
+            continue
+        key = int(row["Z"]), int(row["A"])
+        q = Decimal(tables.shell(key, 1)) - Decimal(tables.shell(key, 2))
+        assert row["q_keV"] == _nine(q)
+        du, grid, total, certified, _onset = components[key]
+        assert (row["dU_keV"], row["dgrid_keV"], row["dnum_keV"], row["u_certified"]) == (
+            _nine(du), _nine(grid), _nine(total), str(certified) if certified is not None else "none")
+        assert Decimal(row["dnum_keV"]) == Decimal(row["dU_keV"]) + Decimal(row["dgrid_keV"]) or (
+            abs(Decimal(row["dnum_keV"]) - Decimal(row["dU_keV"]) - Decimal(row["dgrid_keV"]))
+            <= Decimal("1e-9"))
+        if row["cohort"] == "labelled":
+            source = next(c for c in labelled if c.nuclide == key)
+            c = Decimal(source.value_kev)
+            sigma = Decimal(source.unc_kev)
+            minimum = sigma
+            assert row["sigma_keV"] == _nine(sigma)
+            assert row["npol_keV"] == source.npol_kev
+            assert row["representative"] == "true"
+            assert row["comparator"] == "center of gravity"
+        else:
+            left, right = next((a, b) for a, b in pairs if (a.source, a.nuclide, a.locator) ==
+                               (row["source"], key, row["locator"]))
+            c = (Decimal(left.value_kev) + 2 * Decimal(right.value_kev)) / 3
+            u2, u3 = Decimal(left.unc_kev), Decimal(right.unc_kev)
+            sigma, minimum = (u2 + 2 * u3) / 3, abs(u2 - 2 * u3) / 3
+            assert row["sigma_max_keV"] == _nine(sigma)
+            assert row["sigma_min_keV"] == _nine(minimum)
+            sigma_zero = ((u2 / 3) ** 2 + (2 * u3 / 3) ** 2).sqrt()
+            assert row["sigma_0_keV"] == _nine(sigma_zero)
+            assert row["npol_l2_keV"] == left.npol_kev
+            assert row["npol_l3_keV"] == right.npol_kev
+            assert row["comparator"] == "degeneracy-convention centroid"
+            if key in ratios:
+                ratio = ratios[key]
+                assert (row["ratio"], row["ratio_unc"], row["ratio_source"], row["ratio_locator"],
+                        row["ratio_label"]) == (ratio["ratio"], ratio["ratio_unc"], ratio["source"],
+                                               ratio["locator"], ratio["label"])
+                r, uncertainty = Decimal(ratio["ratio"]), Decimal(ratio["ratio_unc"])
+                first, second = Decimal(left.value_kev), Decimal(right.value_kev)
+                with localcontext() as context:
+                    context.prec = 50
+                    values = [first + trial / (1 + trial) * (second - first)
+                              for trial in (r - uncertainty, r, r + uncertainty)]
+                assert row["illustrative_c_keV"] == ";".join(_nine(value) for value in values)
+                assert row["illustrative_q_minus_c_keV"] == ";".join(_nine(q - value) for value in values)
+            else:
+                assert not any(row[name] for name in ("ratio", "ratio_unc", "ratio_source",
+                                                     "ratio_locator", "ratio_label", "illustrative_c_keV",
+                                                     "illustrative_q_minus_c_keV"))
+        residual = q - c
+        assert row["c_keV"] == _nine(c)
+        assert row["r_d3_keV"] == _nine(residual)
+        screen = ("outside" if abs(residual) > 3 * sigma else
+                  "inside" if abs(residual) <= 3 * minimum else "correlation-dependent")
+        assert row["screen"] == screen
+        reference = residual + Decimal(row["dnum_keV"])
+        reference_screen = ("outside" if abs(reference) > 3 * sigma else
+                            "inside" if abs(reference) <= 3 * minimum else "correlation-dependent")
+        assert row["screen_at_reference"] == reference_screen
+        if key in stock:
+            stock_value = d3c.stock_kev(stock[key], 1, 2)
+            stock_residual = stock_value - c
+            assert row["s_keV"] == _nine(stock_value)
+            assert row["r_stock_keV"] == _nine(stock_residual)
+            assert row["margin_keV"] == _nine(abs(stock_residual) - abs(residual))
+            assert row["stock_reason"] == ""
+        else:
+            assert (row["s_keV"], row["r_stock_keV"], row["margin_keV"]) == ("", "", "")
+            assert row["stock_reason"] == "no C line in the unpatched harvest"
+    grouped = {}
+    for row in rows:
+        if row["cohort"] == "constructed":
+            grouped.setdefault((row["source"], row["Z"], row["A"]), []).append(row)
+    for determinations in grouped.values():
+        expected = min(determinations, key=lambda r: Decimal(r["sigma_max_keV"]))
+        assert [r["locator"] for r in determinations if r["representative"] == "true"] == [
+            expected["locator"]]
+    groups = [("labelled", "Fricke1995"), ("constructed", "Fricke1995"),
+              ("constructed", "Saito2025")]
+    assert [(r["cohort"], r["source"]) for r in margins] == groups
+    for summary in margins:
+        group = [r for r in rows if (r["cohort"], r["source"]) ==
+                 (summary["cohort"], summary["source"])]
+        representative = [r for r in group if r["representative"] == "true" and r["margin_keV"]]
+        values = sorted(Decimal(r["margin_keV"]) for r in representative)
+        assert summary["isotopes"] == str(len({(r["Z"], r["A"]) for r in representative}))
+        assert summary["margin_min_keV"] == _nine(values[0])
+        assert summary["margin_max_keV"] == _nine(values[-1])
+        mid = len(values) // 2
+        median = _nine(values[mid]) if len(values) % 2 else f"{_nine(values[mid - 1])}..{_nine(values[mid])}"
+        assert summary["margin_median_keV"] == median
+        maximum = max(group, key=lambda r: abs(Decimal(r["r_d3_keV"])))
+        assert (summary["max_abs_r_d3_keV"], summary["max_abs_r_d3_Z"], summary["max_abs_r_d3_A"]) == (
+            _nine(abs(Decimal(maximum["r_d3_keV"]))), maximum["Z"], maximum["A"])
+
+
+def test_t129_moved_measured_line_and_missing_or_extra_stock_key_are_local(monkeypatch):
+    original = md.load_cells
+    baseline = centroids.centroid_rows(REPO)
+    cells = original(CELLS)
+    target = next(c for c in cells if c.gated and c.quantity == "K1-L3")
+    changed = tuple(replace(c, value_kev=str(Decimal(c.value_kev) + 1)) if c == target else c
+                    for c in cells)
+    monkeypatch.setattr(md, "load_cells", lambda path: (
+        changed if pathlib.Path(path) == CELLS else original(path)))
+    moved = centroids.centroid_rows(REPO)
+    different = [i for i, (a, b) in enumerate(zip(baseline, moved, strict=True)) if a != b]
+    assert len(different) == 1
+    assert moved[different[0]]["locator"] == target.locator
+    monkeypatch.undo()
+    levels = md.load_geant4_levels(GEANT4_LEVELS)
+    optional = next(key for key in md.centroid_nuclides(cells) if key not in md.gated_nuclides(cells))
+    monkeypatch.setattr(md, "load_geant4_levels", lambda path: {
+        k: v for k, v in levels.items() if k != optional})
+    missing = centroids.centroid_rows(REPO)
+    different = [i for i, (a, b) in enumerate(zip(baseline, missing, strict=True)) if a != b]
+    assert len(different) == 1
+    assert (int(missing[different[0]]["Z"]), int(missing[different[0]]["A"])) == optional
+    assert missing[different[0]]["s_keV"] == missing[different[0]]["r_stock_keV"] == ""
+    monkeypatch.setattr(md, "load_geant4_levels", lambda path: {
+        **levels, (999, 999): next(iter(levels.values()))})
+    with pytest.raises(md.CellError, match="unlisted key"):
+        centroids.centroid_rows(REPO)
+    required = md.gated_nuclides(cells)[0]
+    monkeypatch.setattr(md, "load_geant4_levels", lambda path: {
+        k: v for k, v in levels.items() if k != required})
+    with pytest.raises(md.CellError, match="omit a gated key"):
+        centroids.centroid_rows(REPO)
+
+
+def test_t129_each_constructed_projection_identity_refuses_a_moved_cell(monkeypatch):
+    cells = md.load_cells(CELLS)
+    left, _right = md.doublet_determinations(cells)[0]
+    original = md.read_rows
+    projection_path = REPO / d3c.PROJECTION_RELPATH
+    identity_cases = (
+        ("consumer_keV", "shell projection disagrees"),
+        ("solver_keV", "weighted solver lines disagree"),
+        ("stock_keV", "stock level difference disagrees"),
+    )
+    for column, error in identity_cases:
+        def moved(path, columns, field=column):
+            rows = original(path, columns)
+            if pathlib.Path(path) != projection_path:
+                return rows
+            changed = []
+            for where, row in rows:
+                if (row["source"], row["Z"], row["A"], row["locator"], row["quantity"]) == (
+                        left.source, str(left.z), str(left.a), left.locator, left.quantity):
+                    row = {**row, field: str(Decimal(row[field]) + 1)}
+                changed.append((where, row))
+            return changed
+
+        with monkeypatch.context() as patcher:
+            patcher.setattr(md, "read_rows", moved)
+            with pytest.raises(md.CellError, match=error):
+                centroids.centroid_rows(REPO)
+    def missing(path, columns):
+        rows = original(path, columns)
+        if pathlib.Path(path) != projection_path:
+            return rows
+        return [(where, row) for where, row in rows
+                if (row["source"], row["Z"], row["A"], row["locator"], row["quantity"]) !=
+                (left.source, str(left.z), str(left.a), left.locator, left.quantity)]
+
+    with monkeypatch.context() as patcher:
+        patcher.setattr(md, "read_rows", missing)
+        with pytest.raises(md.CellError, match="shell_projection.csv"):
+            centroids.centroid_rows(REPO)
+
+
+def test_t129_representative_uses_unrounded_sigma_max(monkeypatch):
+    cells = md.load_cells(CELLS)
+    grouped = {}
+    for left, right in md.doublet_determinations(cells):
+        grouped.setdefault((left.source, left.z, left.a), []).append((left, right))
+    key, determinations = next((key, pairs) for key, pairs in grouped.items() if len(pairs) > 1)
+    first, second = determinations[:2]
+    first_locator, second_locator = first[0].locator, second[0].locator
+    changed = tuple(replace(cell, unc_kev=("1.0000000003" if
+                                   (cell.source, cell.z, cell.a, cell.locator) ==
+                                   (*key, first_locator) and cell.quantity == "K1-L2" else "1"))
+                    if (cell.source, cell.z, cell.a, cell.locator) in
+                    {(*key, first_locator), (*key, second_locator)} else cell for cell in cells)
+    monkeypatch.setattr(md, "load_cells", lambda path: changed)
+    zero = {nuclide: (Decimal(0), Decimal(0), Decimal(0), None, None)
+            for nuclide in md.settings_nuclides(changed)}
+    monkeypatch.setattr(centroids, "numerical_components", lambda root, source: (zero, 0))
+    rows = [r for r in centroids.centroid_rows(REPO)
+            if (r["source"], int(r["Z"]), int(r["A"])) == key and r["cohort"] == "constructed"]
+    assert rows[0]["sigma_max_keV"] == rows[1]["sigma_max_keV"]
+    assert [r["locator"] for r in rows if r["representative"] == "true"] == [second_locator]
+
+
+def test_t130_a_changed_ratio_moves_only_the_illustrative_cells(monkeypatch):
+    baseline = centroids.centroid_rows(REPO)
+    original = centroids.load_intensity_ratios
+
+    def moved(path, cells):
+        ratios = original(path, cells)
+        key = next(iter(ratios))
+        ratios[key] = {**ratios[key], "ratio": str(Decimal(ratios[key]["ratio"]) + Decimal("0.1"))}
+        return ratios
+
+    monkeypatch.setattr(centroids, "load_intensity_ratios", moved)
+    changed = centroids.centroid_rows(REPO)
+    different = [(a, b) for a, b in zip(baseline, changed, strict=True) if a != b]
+    assert len(different) == 1
+    before, after = different[0]
+    columns = {key for key in before if before[key] != after[key]}
+    assert columns == {"ratio", "illustrative_c_keV", "illustrative_q_minus_c_keV"}

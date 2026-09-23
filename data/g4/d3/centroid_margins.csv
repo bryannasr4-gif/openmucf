@@ -1,0 +1,4 @@
+cohort,source,isotopes,margin_min_keV,margin_median_keV,margin_max_keV,max_abs_r_d3_keV,max_abs_r_d3_Z,max_abs_r_d3_A
+labelled,Fricke1995,7,1.500792547,8.870591685,17.758147661,0.376955766,18,40
+constructed,Fricke1995,15,5.768074579,21.785166107,226.393549716,4.261043461,81,205
+constructed,Saito2025,4,2.291449225,3.674373952..11.578507733,19.343739650,0.902820734,46,108

@@ -312,7 +312,7 @@ def _shifts_text(observed: list[Decimal]) -> str:
     return ";".join(_text(s) for s in observed)
 
 
-def _stock_kev(levels: tuple[float, ...], lower_n: int, upper_n: int) -> Decimal:
+def stock_kev(levels: tuple[float, ...], lower_n: int, upper_n: int) -> Decimal:
     """The photon the unpatched cascade emits between the two shells: the difference of its two
     level energies taken in doubles, in keV at nine decimals."""
     photon = levels[lower_n - 1] - levels[upper_n - 1]
@@ -346,7 +346,7 @@ def project_shell_rows(root: Path, bundle: Bundle | None = None) -> list[dict[st
             tol = md.TOL_FACTOR * Decimal(cell.unc_kev)
             solver = Decimal(bundle.outputs.lines[md.run_id(inputs[key], "base")][cell.quantity]) / 1000
             consumer = Decimal(bundle.tables.shell(key, lower_n)) - Decimal(bundle.tables.shell(key, upper_n))
-            stock = _stock_kev(bundle.stock[key], lower_n, upper_n)
+            stock = stock_kev(bundle.stock[key], lower_n, upper_n)
             residuals = {name: value - measured for name, value in
                          (("solver", solver), ("consumer", consumer), ("stock", stock))}
             solver_levels = {level: Decimal(lines[cell.quantity]) / 1000
