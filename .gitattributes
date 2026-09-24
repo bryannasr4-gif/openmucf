@@ -40,3 +40,5 @@ cpp/transport/** -text
 # would break the pin and with it the entire parity chain -- and would do so silently.
 # tests/test_g4parity.py asserts each file carries no CR, so deleting this line names its own cause.
 third_party/geant4/** -text
+data/g4/d2/* -text
+cpp/tools/harvest_d2.cc -text
