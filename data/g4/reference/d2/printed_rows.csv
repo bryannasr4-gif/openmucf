@@ -1,0 +1,137 @@
+source_id,table,printed_page,pdf_page,row_ordinal,row_kind,target_raw,value_raw,unc_raw,column_raw,note
+Stanislaus1987a,Table 1,17,9,1,caption,,,,,Table 1 : Atomic Capture Ratios of Negative Muons in Oxides
+Stanislaus1987a,Table 1,17,9,2,header,,,,,Z | Oxide | Present measurement | Egidy(81) | Daniel(77) | Knight(76) | Zinov(66)
+Stanislaus1987a,Table 1,17,9,3,data,Na2O2,1.00,0.05,Present measurement,
+Stanislaus1987a,Table 1,17,9,4,data,MgO,0.93,0.05,Present measurement,
+Stanislaus1987a,Table 1,17,9,5,data,Al2O3,0.94,0.03,Present measurement,
+Stanislaus1987a,Table 1,17,9,6,data,SiO,0.98,0.03,Present measurement,
+Stanislaus1987a,Table 1,17,9,7,data,SiO2,0.90,0.03,Present measurement,
+Stanislaus1987a,Table 1,17,9,8,data,P2O5,0.97,0.03,Present measurement,
+Stanislaus1987a,Table 1,17,9,9,data,CaO,1.69,0.09,Present measurement,
+Stanislaus1987a,Table 1,17,9,10,data,Sc2O3,2.23,0.25,Present measurement,
+Stanislaus1987a,Table 1,17,9,11,data,TiO,2.65,0.15,Present measurement,
+Stanislaus1987a,Table 1,17,9,12,data,TiO2,2.71,0.14,Present measurement,
+Stanislaus1987a,Table 1,17,9,13,data,V2O5,3.04,0.16,Present measurement,
+Stanislaus1987a,Table 1,17,9,14,data,CrO3,3.15,0.13,Present measurement,
+Stanislaus1987a,Table 1,17,9,15,data,MnO,2.89,0.14,Present measurement,
+Stanislaus1987a,Table 1,17,9,16,data,MnO2,3.28,0.15,Present measurement,
+Stanislaus1987a,Table 1,17,9,17,data,Fe2O3,3.48,0.24,Present measurement,
+Stanislaus1987a,Table 1,17,9,18,data,Fe3O4,2.36,0.13,Present measurement,
+Stanislaus1987a,Table 1,17,9,19,data,CoO,3.09,0.15,Present measurement,
+Stanislaus1987a,Table 1,17,9,20,data,NiO,2.35,0.19,Present measurement,
+Stanislaus1987a,Table 1,17,9,21,data,Cu2O,2.20,0.25,Present measurement,
+Stanislaus1987a,Table 1,17,9,22,data,ZnO,3.17,0.16,Present measurement,
+Stanislaus1987a,Table 1,17,9,23,data,Y2O3,3.17,0.42,Present measurement,
+Stanislaus1987a,Table 1,17,9,24,data,ZrO2,2.89,0.13,Present measurement,
+Stanislaus1987a,Table 1,18,9,1,caption,,,,,Table 1(continued) : Atomic Capture Ratios of Negative Muons in Oxides
+Stanislaus1987a,Table 1,18,9,2,header,,,,,Z | Oxide | Present measurement | Egidy(81) | Daniel(77) | Knight(76) | Zinov(66)
+Stanislaus1987a,Table 1,18,9,3,data,NbO,3.44,0.20,Present measurement,
+Stanislaus1987a,Table 1,18,9,4,data,Nb2O5,3.57,0.19,Present measurement,
+Stanislaus1987a,Table 1,18,9,5,data,MoO2,3.08,0.14,Present measurement,
+Stanislaus1987a,Table 1,18,9,6,data,MoO3,3.86,0.18,Present measurement,
+Stanislaus1987a,Table 1,18,9,7,data,Ag2O,3.95,0.52,Present measurement,
+Stanislaus1987a,Table 1,18,9,8,data,CdO,2.59,0.21,Present measurement,
+Stanislaus1987a,Table 1,18,9,9,data,SnO,2.74,0.13,Present measurement,
+Stanislaus1987a,Table 1,18,9,10,data,SnO2,3.40,0.16,Present measurement,
+Stanislaus1987a,Table 1,18,9,11,data,Sb2O3,3.64,0.24,Present measurement,
+Stanislaus1987a,Table 1,18,9,12,data,TeO2,3.30,0.15,Present measurement,
+Stanislaus1987a,Table 1,18,9,13,data,BaO2,3.16,0.15,Present measurement,
+Stanislaus1987a,Table 1,18,9,14,data,CeO2,4.89,0.27,Present measurement,
+Stanislaus1987a,Table 1,18,9,15,data,PrO2,5.00,0.44,Present measurement,
+Stanislaus1987a,Table 1,18,9,16,data,Sm2O3,6.24,0.50,Present measurement,
+Stanislaus1987a,Table 1,18,9,17,data,HgO,4.88,0.42,Present measurement,
+Stanislaus1987a,Table 1,18,9,18,data,PbO,4.30,0.24,Present measurement,
+Stanislaus1987a,Table 1,18,9,19,data,PbO2,4.65,0.25,Present measurement,
+Stanislaus1987a,Table 1,18,9,20,data,Pb3O4,4.19,0.59,Present measurement,
+Stanislaus1987a,Table 1,18,9,21,data,Bi2O3,6.15,0.53,Present measurement,
+Suzuki1980,Table 1,7,4,1,caption,,,,,Table 1 Relative muon capture rates as determined in this experiment.
+Suzuki1980,Table 1,7,4,2,header,,,,,Z | Oxide | W(Z)/W(O) | Z | Oxide | W(Z)/W(O)
+Suzuki1980,Table 1,7,4,3,data,CO2,0.43,0.02,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,4,data,Na2O2,0.87,0.02,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,5,data,MgO,0.80,0.02,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,6,data,Al2O3,0.84,0.03,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,7,data,SiO2,0.96,0.04,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,8,data,P2O5,0.87,0.03,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,9,data,Ca(OH)2,1.49,0.06,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,10,data,TiO2,2.17,0.11,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,11,data,Cr2O3,2.63,0.13,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,12,data,CrO3,2.96,0.20,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,13,data,MnO2,3.00,0.17,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,14,data,CuO,4.06,0.23,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,15,data,ZnO,2.39,0.10,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,16,data,GeO,2.24,0.12,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,17,data,GeO2,2.41,0.13,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,18,data,CdO,1.93,0.07,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,19,data,SnO2,2.15,0.11,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,20,data,BaO,2.27,0.09,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,21,data,NdO2,4.13,0.29,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,22,data,HgO,3.75,0.29,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,23,data,Pb3O4,3.87,0.29,W(Z)/W(O),
+Suzuki1980,Table 1,7,4,24,data,PbO2,3.21,0.23,W(Z)/W(O),
+Baijal1962OSTI,Table IV,55,64,1,caption,,,,,Table IV. Results for atomic-capture probability in the constituents of the compounds
+Baijal1962OSTI,Table IV,55,64,2,header,,,,,Compound | C1 | C2 | C1/C2 | C1+C2
+Baijal1962OSTI,Table IV,55,64,3,data,CuAu,0.26,0.023,C1,
+Baijal1962OSTI,Table IV,55,64,4,data,CuAu,0.77,0.023,C2,
+Baijal1962OSTI,Table IV,55,64,5,data,CuAu,0.34,0.032,C1/C2,
+Baijal1962OSTI,Table IV,55,64,6,data,AgLi,0.921,0.023,C1,
+Baijal1962OSTI,Table IV,55,64,7,data,AgLi,0.079,0.023,C2,
+Baijal1962OSTI,Table IV,55,64,8,data,AgLi,11.66,3.39,C1/C2,
+Baijal1962OSTI,Table IV,55,64,9,data,CuS,0.51,0.015,C1,
+Baijal1962OSTI,Table IV,55,64,10,data,CuS,0.27,0.024,C2,
+Baijal1962OSTI,Table IV,55,64,11,data,CuS,1.89,0.18,C1/C2,
+Baijal1962OSTI,Table IV,55,64,12,data,Sb2S3,0.59,0.015,C1,
+Baijal1962OSTI,Table IV,55,64,13,data,Sb2S3,0.36,0.020,C2,
+Baijal1962OSTI,Table IV,55,64,14,data,Sb2S3,1.64,0.10,C1/C2,
+Baijal1962OSTI,Table IV,55,64,15,data,PbS,0.66,0.019,C1,
+Baijal1962OSTI,Table IV,55,64,16,data,PbS,0.23,0.027,C2,
+Baijal1962OSTI,Table IV,55,64,17,data,PbS,2.87,0.35,C1/C2,
+Baijal1962OSTI,Table IV,55,64,18,data,CuO,0.86,0.019,C1,
+Baijal1962OSTI,Table IV,55,64,19,data,CuO,0.14,0.019,C2,
+Baijal1962OSTI,Table IV,55,64,20,data,CuO,6.14,0.85,C1/C2,
+Baijal1962OSTI,Table IV,55,64,21,data,Sb2O3,0.65,0.012,C1,
+Baijal1962OSTI,Table IV,55,64,22,data,Sb2O3,0.35,0.012,C2,
+Baijal1962OSTI,Table IV,55,64,23,data,Sb2O3,1.86,0.096,C1/C2,
+Baijal1962OSTI,Table IV,55,64,24,data,PbO,0.82,0.020,C1,
+Baijal1962OSTI,Table IV,55,64,25,data,PbO,0.18,0.020,C2,
+Baijal1962OSTI,Table IV,55,64,26,data,PbO,4.56,0.53,C1/C2,
+Baijal1962OSTI,Table IV,55,64,27,note,,,,,"The sum C1 + C2 has not been indicated for AgLi and the oxide compounds because, in these cases, C2 was calculated from C2 = 1 - C1 and not independently as in CuAu and sulfide compounds."
+Baijal1962OSTI,Table IV,55,64,28,footnote,,,,,"After the atomic captures in oxygen are estimated, the sum is about 0.98 in CuS. The ratio C1/C2 remains unchanged. In the case of PbS, the sum changes from 0.89 to 0.94 after estimation of the correction for captures in oxygen. The ratio C1/C2 again remains the same. For details see text (Sec. V.C)."
+Baijal1962OSTI,Table V,56,65,1,caption,,,,,Table V. Summary of results. Relative number of mu^- mesons reaching the mesic K shell in the constituents of a chemical compound
+Baijal1962OSTI,Table V,56,65,2,header,,,,,"Compound | Ratio | Observed | Predicted, Fermi and Teller | Atomic ratio | n"
+Baijal1962OSTI,Table V,56,65,3,data,CuAu,0.34,0.032,Observed,Ratio=Au/Cu
+Baijal1962OSTI,Table V,56,65,4,data,AgLi,11.66,3.39,Observed,Ratio=Ag/Li
+Baijal1962OSTI,Table V,56,65,5,data,CuS,1.89,0.18,Observed,Ratio=Cu/S
+Baijal1962OSTI,Table V,56,65,6,data,Sb2S3,1.64,0.10,Observed,Ratio=Sb/S
+Baijal1962OSTI,Table V,56,65,7,data,PbS,2.87,0.35,Observed,Ratio=Pb/S
+Baijal1962OSTI,Table V,56,65,8,data,CuO,6.14,0.85,Observed,Ratio=Cu/O
+Baijal1962OSTI,Table V,56,65,9,data,Sb2O3,1.86,0.096,Observed,Ratio=Sb/O
+Baijal1962OSTI,Table V,56,65,10,data,PbO,4.56,0.53,Observed,Ratio=Pb/O
+Baijal1962OSTI,Table V,56,65,11,footnote,,,,,AgLi and CuAu are metallic solutions. AgLi has 10% of Li by weight. CuAu has 36% of Au by weight.
+Baijal1962OSTI,Result text,31,40,1,data,CuO,0.163,,C_O/C_Cu,"from experimental result for CuO, Table V"
+Baijal1962OSTI,Result text,31,40,2,data,CuS,51%,,captures in Cu,from experimental result for CuS
+Mausner1975,Result text,3,6,1,data,KCl,1.16,0.03,K+/Cl-,
+Mausner1975,Result text,3,6,2,data,CaS,1.57,0.04,Ca+2/S-2,
+Mausner1975,Result text,4,7,1,data,NaCl,0.68,0.04,Na/Cl,
+Mausner1975,Result text,4,7,2,data,NaClO4,0.73,0.04,Na/Cl,
+Mausner1975,Result text,4,7,3,data,CaS,1.57,0.04,Ca/S,
+Mausner1975,Result text,4,7,4,data,CaSO4,1.83,0.06,Ca/S,
+Yoshida2016,Table 1,116,4,1,caption,,,,,"Table 1 Muon capture ratio per atom: A(C/O) of H2+CO (50 kPa, 99 kPa) and H2+CO2 (50 kPa, 99 kPa)"
+Yoshida2016,Table 1,116,4,2,header,,,,,Sample | A(C/O)
+Yoshida2016,Table 1,116,4,3,data,"H2+CO, 50 kPa",0.593,(49),A(C/O),
+Yoshida2016,Table 1,116,4,4,data,"H2+CO, 99 kPa",0.649,(32),A(C/O),
+Yoshida2016,Table 1,116,4,5,data,Average (50 kPa and 99 kPa),0.621,(29),A(C/O),
+Yoshida2016,Table 1,116,4,6,data,"H2+CO2, 50 kPa",0.632,(51),A(C/O),
+Yoshida2016,Table 1,116,4,7,data,"H2+CO2, 99 kPa",0.656,(36),A(C/O),
+Yoshida2016,Table 1,116,4,8,data,Average (50 kPa and 99 kPa),0.644,(31),A(C/O),
+Inagaki2021,Table 2,322,4,1,caption,,,,,"Table 2: Intensity ratio of total Lyman series muonic X-ray of carbon to that of chlorine in each sample. Intensity fraction of total Lyman series muonic X-ray of carbon to sum of that of carbon and chlorine in each sample is also shown. These ratios and fractions correspond to muon capture ratios and muon capture fractions, respectively."
+Inagaki2021,Table 2,322,4,2,header,,,,,muC Lyman/muCl Lyman | muC Lyman/(muC Lyman+muCl Lyman)
+Inagaki2021,Table 2,322,4,3,data,C6H6 + CCl4 (15%) sample,0.829,0.004,muC Lyman/(muC Lyman+muCl Lyman),
+Inagaki2021,Table 2,322,4,4,data,C6H6 + CCl4 (30%) sample,0.667,0.009,muC Lyman/(muC Lyman+muCl Lyman),
+Inagaki2021,Table 2,322,4,5,data,C6H6 + CCl4 (70%) sample,0.302,0.007,muC Lyman/(muC Lyman+muCl Lyman),
+Inagaki2021,Table 2,322,4,6,data,C6H12 + CCl4 (15%) sample,0.844,0.004,muC Lyman/(muC Lyman+muCl Lyman),
+Inagaki2021,Table 2,322,4,7,data,C6H12 + CCl4 (30%) sample,0.694,0.008,muC Lyman/(muC Lyman+muCl Lyman),
+Inagaki2021,Table 2,322,4,8,data,C6H12 + CCl4 (70%) sample,0.313,0.007,muC Lyman/(muC Lyman+muCl Lyman),
+Inagaki2021,Table 2,322,4,9,data,CCl4 sample,0.068,0.003,muC Lyman/(muC Lyman+muCl Lyman),
+Inagaki2021,Table 3,323,5,1,caption,,,,,Table 3: Parameters used for analysis.
+Inagaki2021,Table 3,323,5,2,header,,,,,C6H6 | C6H12 | Note
+Inagaki2021,Table 3,323,5,3,data,K_Cl,0.932,0.003,,This study
