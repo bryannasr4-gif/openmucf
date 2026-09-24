@@ -6,6 +6,7 @@ import csv
 import hashlib
 import importlib.util
 import json
+import re
 import sys
 from collections import defaultdict
 from fractions import Fraction
@@ -290,6 +291,20 @@ def test_d2_measurements_bind_every_printed_primary_cell() -> None:
         assert row["source_sha256"] == source["copy_sha256"]
         assert source["access"] == "AVAILABLE" and source["kind"] == "measurement"
         assert source["primary_read"] == row["primary_read"] == "true"
+
+
+_NAMED_MATERIAL = re.compile(r"(alloy|intermetallic|solution)\(([A-Z][a-z]?),([A-Z][a-z]?)\)")
+
+
+def test_d2_measured_targets_follow_the_formula_grammar() -> None:
+    rows = _reference("measurements.csv")
+    assert rows
+    for row in rows:
+        formula = row["material_formula"]
+        named = _NAMED_MATERIAL.fullmatch(formula)
+        symbols = [named[2], named[3]] if named else [
+            symbol for part in formula.split("+") for symbol in d2.formula_atoms(part)]
+        assert symbols and set(symbols) <= set(d2._SYMBOLS), (row["record_id"], formula)
 
 
 def test_d2_baijal_oxygen_footnote_qualifies_cus_and_pbs() -> None:
