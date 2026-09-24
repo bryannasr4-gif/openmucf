@@ -34,6 +34,7 @@ data/g4/d3/* -text
 # The Geant4 patches: their added-file hunks are the reader's LF bytes and a test compares them
 # byte-for-byte against cpp/include and cpp/src, so a checkout must not rewrite their line endings.
 cpp/patches/*.patch -text
+cpp/transport/** -text
 # The vendored upstream sources: each one's IDENTITY is its bytes. Each is pinned by its upstream
 # git blob id, which is a hash of exactly those bytes, so a checkout that rewrote its line endings
 # would break the pin and with it the entire parity chain -- and would do so silently.
