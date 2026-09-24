@@ -871,7 +871,7 @@ def check(work: Path, out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(file, fieldnames=("tag", "mode", "route", "Z", "A", "threads",
-                                                  "check", "status", "detail"))
+                                                  "check", "status", "detail"), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     print(f"CHECK COMPLETE rows={len(rows)} gating_failures=0")

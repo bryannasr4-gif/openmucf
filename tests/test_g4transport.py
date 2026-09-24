@@ -45,7 +45,7 @@ def synthetic_check_work(tmp_path, monkeypatch, changes=None):
     target = MATRIX["targets"][0]
     minimal = dict(MATRIX)
     minimal.update(revisions={tag: MATRIX["revisions"][tag]}, routes=[route], targets=[target],
-                   threads=[1, 4], events=1, cases={})
+                   threads=[1, 2, 4], events=1, cases={})
     monkeypatch.setattr(transport, "MATRIX", minimal)
     for name in ("route_check", "lookup_check", "level_check", "d9_check"):
         monkeypatch.setattr(transport, name, lambda *args: (True, "synthetic"))
@@ -90,17 +90,20 @@ def test_t149_check_wiring_rejects_gating_changes_and_reports_preserved(tmp_path
     assert len(preserved) == 1 and preserved[0]["status"] == "INFO"
     assert preserved[0]["tag"] == tag and preserved[0]["route"] == route
     assert preserved[0]["Z"] == str(target["Z"])
+    assert b"\r" not in out.read_bytes()
 
 
 @pytest.mark.parametrize("change", [
     ("patched-off", 1, "record"), ("patched-default", 1, "record"),
-    "threads", ("patched-default", 1, "config"),
+    "threads", "threads-2", ("patched-default", 1, "config"),
     ("pristine", 1, "particles")])
 def test_t149_check_wiring_rejects_corruption(tmp_path, monkeypatch, change):
     if change == "threads":
         changes = {(mode, 4, "record"): True for mode in MATRIX["modes"] if mode != "preserved"}
+    elif change == "threads-2":
+        changes = {(mode, 2, "record"): True for mode in MATRIX["modes"] if mode != "preserved"}
     elif change in (("patched-off", 1, "record"), ("patched-default", 1, "record")):
-        changes = {(change[0], thread, "record"): True for thread in (1, 4)}
+        changes = {(change[0], thread, "record"): True for thread in (1, 2, 4)}
     elif change == ("patched-default", 1, "config"):
         changes = {("patched-default", thread, "config"): True for thread in (1, 4)}
     else:
