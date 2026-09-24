@@ -3962,6 +3962,15 @@ def test_t147_preprint_listings_agree_with_published_label_bases():
     added["target_label"] = f"{a}X"
     with pytest.raises(AssertionError, match=str(z)):
         check_preprint_listings(audit, [*published, added])
+    only_audit = {key: audit[key]}
+    natural_row = dict(next(row for row in published if int(row["Z"]) == z))
+    natural_row["target_basis"] = "natural"
+    with pytest.raises(AssertionError, match=str(z)):
+        check_preprint_listings(only_audit, [*published, natural_row])
+    only_without_unspecified = [row for row in published
+                                if int(row["Z"]) != z or row["target_basis"] != "unspecified"]
+    with pytest.raises(AssertionError, match=str(z)):
+        check_preprint_listings(only_audit, only_without_unspecified)
     separated_key = next(key for key, finding in audit.items()
                          if finding.copy_read == "preprint-scan"
                          and finding.evidence.startswith("the primary lists the separated isotope "))
@@ -3976,6 +3985,11 @@ def test_t147_preprint_listings_agree_with_published_label_bases():
     also_row["target_label"] = f"{also_key[1]}X"
     with pytest.raises(AssertionError, match=str(also_key[0])):
         check_preprint_listings(audit, [*published, also_row])
+    also_without_unspecified = [row for row in published
+                                if int(row["Z"]) != also_key[0]
+                                or row["target_basis"] != "unspecified"]
+    with pytest.raises(AssertionError, match=str(also_key[0])):
+        check_preprint_listings({also_key: audit[also_key]}, also_without_unspecified)
     both_key = next(key for key, finding in audit.items()
                     if finding.evidence.startswith("the primary lists BOTH "))
     both_rows = [row for row in published if int(row["Z"]) != both_key[0]
@@ -3985,6 +3999,11 @@ def test_t147_preprint_listings_agree_with_published_label_bases():
     )}
     with pytest.raises(AssertionError, match=str(both_key[0])):
         check_preprint_listings(both_audit, both_rows)
+    both_without_bare_basis = [row for row in published
+                               if int(row["Z"]) != both_key[0]
+                               or row["target_basis"] not in {"unspecified", "natural"}]
+    with pytest.raises(AssertionError, match=str(both_key[0])):
+        check_preprint_listings(both_audit, both_without_bare_basis)
     unknown = dict(audit)
     unknown[key] = dataclasses.replace(audit[key], evidence="unrecognized listing opening")
     with pytest.raises(AssertionError, match="unrecognized preprint listing opening"):

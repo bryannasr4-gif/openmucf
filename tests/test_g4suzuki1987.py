@@ -428,10 +428,13 @@ def test_parity_comparison_requires_both_printed_cells() -> None:
     (
         ("flag", "isotope_resolved must be true"),
         ("opening", "evidence must open with the separated isotope label"),
+        ("mass", "evidence must open with the separated isotope label"),
+        ("prefix", "evidence must open with the separated isotope label"),
         ("no_equal", "exactly one published cell"),
         ("two_equal", "exactly one published cell"),
         ("basis", "matched cell must carry the isotope mass and symbol"),
         ("symbol", "matched cell must carry the isotope mass and symbol"),
+        ("cell_mass", "matched cell must carry the isotope mass and symbol"),
         ("locator", "locator must name the matched published table and page"),
     ),
 )
@@ -454,6 +457,20 @@ def test_t149_published_audit_guard_clauses(monkeypatch, case: str, message: str
         changed[key] = dataclasses.replace(finding, isotope_resolved=False)
     elif case == "opening":
         changed[key] = dataclasses.replace(finding, evidence="wrong opening; " + finding.evidence)
+    elif case == "mass":
+        changed[key] = dataclasses.replace(
+            finding,
+            evidence=finding.evidence.replace(
+                f"separated isotope {symbol}-{a}", f"separated isotope {symbol}-{a + 1}", 1
+            ),
+        )
+        assert changed[key].evidence != finding.evidence
+    elif case == "prefix":
+        changed[key] = dataclasses.replace(
+            finding,
+            evidence=finding.evidence.removeprefix("the primary lists the separated isotope "),
+        )
+        assert changed[key].evidence != finding.evidence
     elif case == "locator":
         changed[key] = dataclasses.replace(finding, locator=finding.locator + " wrong")
     elif case == "two_equal":
@@ -467,6 +484,10 @@ def test_t149_published_audit_guard_clauses(monkeypatch, case: str, message: str
             altered["target_basis"] = "unspecified"
         elif case == "symbol":
             altered["target_label"] = f"{a}X"
+        elif case == "cell_mass":
+            altered["target_label"] = (
+                f"{a + 1}{symbol}" + matching["target_label"][len(f"{a}{symbol}"):]
+            )
         rows[index] = altered
     monkeypatch.setattr(d1, "load_isotope_audit", lambda _path: changed)
     with pytest.raises(SystemExit, match=message):
