@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import dataclasses
+import importlib.util
 import io
 import json
 import re
@@ -16,9 +17,21 @@ import pytest
 from openmucf.g4 import provenance, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
 from openmucf.g4.sources import mizuno2025, suzuki1987
-from scripts import generate_g4data as gen
 
 DATA = Path(__file__).resolve().parents[1] / suzuki1987.PRINTED_ROWS_RELPATH
+
+
+def _load_generator():
+    """`scripts/generate_g4data.py`, loaded by path -- `scripts/` is a directory, not a package."""
+    path = Path(__file__).resolve().parents[1] / "scripts" / "generate_g4data.py"
+    module_spec = importlib.util.spec_from_file_location("generate_g4data", path)
+    assert module_spec and module_spec.loader, path
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    return module
+
+
+gen = _load_generator()
 
 
 def _csv_bytes(rows: list[dict[str, str]], columns: tuple[str, ...] | None = None) -> bytes:
