@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed -- the reserved compiled token beside a per-seam profile (2026-09-24)
+
+- **A patched build no longer raises a fatal exception when `G4MUONICDATA_PROFILE` is `compiled` and a per-seam variable names a profile**: that seam reads its profile and the other keeps the compiled-in code.
+
+### Added -- a transport workflow on clean Geant4 builds (2026-09-24)
+
+- **`cpp/transport/` builds each revision the patches name with and without them from a clean export of its tag and compares the events the builds transport**: the unpatched build and the patched build with the opt-in off, or on with no profile selected, write identical records, sorted records are identical across the thread counts the workflow runs, and under the evaluated profiles a cascade transition between tabulated levels carries the difference of their tabulated energies.
+
 ### Fixed -- the capture record the published article settles, and the audit's element-only rows (2026-09-24)
 
 - The isotope audit settles the uranium record the preprint had left open against the published article, whose cell the compiled-in value and uncertainty equal at the printed precision; its locator cites the published copy.
