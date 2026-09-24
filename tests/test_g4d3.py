@@ -1173,6 +1173,11 @@ def cascade_k_energies(zs: list[int], literals: list[str]) -> dict[int, float]:
     return k
 
 
+def test_t110_drill_equal_empty_gated_stock_sets_are_admitted():
+    out = md.load_outputs(REPO)
+    assert md.validation_rows(out, (), {}, {}) == []
+
+
 def test_t110_the_cascade_levels_are_the_vendored_cascades_for_every_gated_nuclide():
     levels = md.load_geant4_levels(GEANT4_LEVELS)
     cells, _ = md.load_validation(CELLS, ORIGIN)
@@ -1639,6 +1644,20 @@ def test_t123_drill_reversed_shell_pair_is_refused_through_stock_and_line_helper
         d3c.stock_kev(levels, 2, 1)
     with pytest.raises(md.CellError, match="lower to a higher shell"):
         md.geant4_line_kev(levels, "L-K")
+
+
+def test_t123_drill_qualification_clauses_and_equality_edges():
+    target = Decimal("1")
+    valid = list(range(1, d3c.MIN_VALID_LEVELS + 1))
+    qualified = f"{d3c.QUALIFIED}{valid[-1]}"
+    unqualified = f"{d3c.NOT_QUALIFIED}{valid[-1]}"
+    assert d3c.qualification([target, target], valid, False, target, Decimal(0)) == qualified
+    assert (d3c.qualification([target, target], valid[:-1], False, target, Decimal(0)) ==
+            d3c.INSUFFICIENT_LEVELS)
+    assert d3c.qualification([target, target], valid, True, target, Decimal(0)) == d3c.RUN_FAILED
+    above = target + Decimal("0.1")
+    for shifts in ([above, Decimal(0)], [target, above], [Decimal("0.5"), Decimal("0.6")]):
+        assert d3c.qualification(shifts, valid, False, target, Decimal(0)) == unqualified
 
 
 def test_t123_the_projection_equals_an_independent_rederivation_from_the_tables_text():
@@ -2355,6 +2374,10 @@ def test_t127_script_times_out_and_collects_only_clean_settings(monkeypatch, tmp
     lines_out = out / pathlib.Path(md.SETTINGS_LINES_RELPATH).name
     assert len(md.read_rows(states_out, md.SETTINGS_STATES_COLUMNS)) == 1
     assert len(md.read_rows(lines_out, md.SETTINGS_LINES_COLUMNS)) == 1
+    monkeypatch.setitem(collected, "_results", lambda dirs: [(run, run_dir, "124", "0", "0.1", "a" * 64)])
+    collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
+    assert states_out.read_text(encoding="ascii").splitlines() == [",".join(md.SETTINGS_STATES_COLUMNS)]
+    assert lines_out.read_text(encoding="ascii").splitlines() == [",".join(md.SETTINGS_LINES_COLUMNS)]
     monkeypatch.setitem(collected, "_results", lambda dirs: [])
     with pytest.raises(SystemExit, match="no result"):
         collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
@@ -2364,6 +2387,17 @@ def test_t127_script_times_out_and_collects_only_clean_settings(monkeypatch, tmp
     ])
     with pytest.raises(SystemExit, match="unexpected settings results"):
         collect(SimpleNamespace(dir=str(tmp_path), out=str(out)))
+
+
+def test_t127_drill_wanted_set_equal_to_kept_set_is_admitted(monkeypatch):
+    cells = md.load_cells(CELLS)
+    wanted = set(md.settings_nuclides(cells))
+    out = md.load_outputs(REPO)
+    original = md.kept_members
+    monkeypatch.setattr(md, "kept_members", lambda loaded: tuple(row for row in original(loaded)
+                                                            if row.nuclide in wanted))
+    assert set(row.nuclide for row in md.kept_members(out)) == wanted
+    assert md.load_settings_outputs(REPO, cells).runs
 
 
 def test_t127_settings_crosscheck_refuses_missing_and_unclean_records(monkeypatch, tmp_path):
@@ -2426,6 +2460,65 @@ def test_t127_drill_clean_settings_runs_need_printed_rows_in_both_tables(monkeyp
         path.write_bytes(original.encode("ascii"))
 
 
+def test_t104_drill_equal_run_and_state_orders_are_admitted(tmp_path):
+    for relpath, loader, change in (
+        (md.RUNS_RELPATH, md.load_runs, lambda row: "X" + row),
+        (md.STATES_RELPATH, md.load_states, lambda row: row.replace(",K1,", ",K01,")),
+    ):
+        header, first, *_ = (REPO / relpath).read_text(encoding="ascii").splitlines()
+        second = change(first)
+        assert second != first
+        path = tmp_path / pathlib.Path(relpath).name
+        path.write_bytes(f"{header}{NL}{first}{NL}{second}{NL}".encode("ascii"))
+        loaded = loader(path)
+        if loader is md.load_runs:
+            assert len(loaded) == 2
+        else:
+            assert len(loaded[first.split(",")[0]]) == 2
+
+
+def test_t104_drill_equal_nmax_order_is_a_duplicate(tmp_path):
+    header, first, *_ = (REPO / md.NMAX_RELPATH).read_text(encoding="ascii").splitlines()
+    path = tmp_path / "nmax.csv"
+    path.write_bytes(f"{header}{NL}{first}{NL}{first}{NL}".encode("ascii"))
+    with pytest.raises(md.DuplicateKeyError, match="duplicate row"):
+        md.load_nmax(path)
+
+
+def test_t122_drill_equal_numerics_run_and_state_orders_are_admitted(tmp_path):
+    for relpath, loader, change in (
+        (md.NUMERICS_RUNS_RELPATH, md.load_numerics_runs, lambda row: "X" + row),
+        (md.NUMERICS_STATES_RELPATH, md.load_numerics_states,
+         lambda row: row.replace(",K1,", ",K01,")),
+    ):
+        header, first, *_ = (REPO / relpath).read_text(encoding="ascii").splitlines()
+        second = change(first)
+        assert second != first
+        path = tmp_path / pathlib.Path(relpath).name
+        path.write_bytes(f"{header}{NL}{first}{NL}{second}{NL}".encode("ascii"))
+        loaded = loader(path)
+        if loader is md.load_numerics_runs:
+            assert len(loaded) == 2
+        else:
+            assert len(loaded[first.split(",")[0]]) == 2
+
+
+def test_t127_drill_equal_settings_order_and_noncanonical_setting(tmp_path):
+    header, first, *_ = (REPO / md.SETTINGS_RUNS_RELPATH).read_text(encoding="ascii").splitlines()
+    path = tmp_path / "settings.csv"
+    path.write_bytes(f"{header}{NL}{first}{NL}X{first}{NL}".encode("ascii"))
+    assert len(md.load_settings_runs(path)) == 2
+    fields = first.split(",")
+    setting = fields[3]
+    noncanonical = setting.replace("g0", "g00", 1)
+    assert noncanonical != setting
+    fields[0] = fields[0].replace(setting, noncanonical)
+    fields[3] = noncanonical
+    path.write_bytes(f"{header}{NL}{','.join(fields)}{NL}".encode("ascii"))
+    with pytest.raises(md.CellError, match="unknown setting"):
+        md.load_settings_runs(path)
+
+
 def test_t127_settings_loader_refuses_a_compared_nuclide_outside_kept_members(monkeypatch):
     cells = md.load_cells(CELLS)
     wanted = md.settings_nuclides(cells)
@@ -2478,6 +2571,68 @@ def test_t128_synthetic_onsets_and_certificates_discriminate_each_clause():
     assert centroids.onset_and_certificate(missing_whole, target)[0] == 400
     no_certificate = {u: Decimal(3) * Decimal(u) / 100 for u in md.SETTINGS_UEHLING_G0}
     assert centroids.onset_and_certificate(no_certificate, target) == (None, None)
+
+
+def test_t128_drill_reference_sign_uses_the_exact_floor_in_precision_50():
+    with localcontext() as context:
+        context.prec = 50
+        target = Decimal("2")
+        phi = target / 200
+        at_floor = {u: Decimal(0) for u in md.SETTINGS_UEHLING_G0}
+        at_floor[200] = phi
+        assert centroids.onset_and_certificate(at_floor, target)[0] == 300
+        below_floor = dict(at_floor)
+        below_floor[200] = phi.next_minus()
+        below_floor[300] = below_floor[200] - phi
+        for u in range(400, 2401, 100):
+            below_floor[u] = below_floor[300]
+        assert centroids.onset_and_certificate(below_floor, target)[0] is None
+
+
+def test_t129_drill_within_unit_includes_the_edge_only():
+    with localcontext() as context:
+        context.prec = 50
+        unit = centroids._UNIT
+        assert centroids._within_unit(Decimal(0), unit)
+        assert not centroids._within_unit(Decimal(0), unit + Decimal("1e-40"))
+
+
+def test_t129_drill_margin_max_uses_all_rows_even_when_not_representative():
+    rows = []
+    for cohort, source in (("labelled", "Fricke1995"), ("constructed", "Fricke1995"),
+                           ("constructed", "Saito2025")):
+        rows.extend((
+            {"cohort": cohort, "source": source, "representative": "true", "margin_keV": "1",
+             "r_d3_keV": "1", "Z": "1", "A": "1"},
+            {"cohort": cohort, "source": source, "representative": "false", "margin_keV": "2",
+             "r_d3_keV": "3", "Z": "2", "A": "2"},
+        ))
+    for row in centroids.margin_rows(rows):
+        assert row["max_abs_r_d3_keV"] == "3.000000000"
+        assert (row["max_abs_r_d3_Z"], row["max_abs_r_d3_A"]) == ("2", "2")
+
+
+def test_t129_drill_summary_counts_shifts_above_the_tenth(monkeypatch):
+    rows = []
+    for cohort, source, shift in (("labelled", "Fricke1995", "2"),
+                                  ("constructed", "Fricke1995", "0"),
+                                  ("constructed", "Saito2025", "0")):
+        rows.append({"cohort": cohort, "source": source, "Z": "1", "A": "1", "dnum_keV": shift,
+                     "sigma_keV": "10", "sigma_max_keV": "", "screen": "inside",
+                     "screen_at_reference": "inside"})
+    monkeypatch.setattr(centroids, "centroid_rows", lambda root: rows)
+    monkeypatch.setattr(centroids, "margin_rows", lambda members: [])
+    monkeypatch.setattr(centroids, "numerical_components",
+                        lambda root, cells: ({(1, 1): (0, 0, 0, None, 100)}, []))
+    monkeypatch.setattr(centroids.md, "load_cells", lambda path: ())
+    monkeypatch.setattr(centroids, "load_intensity_ratios", lambda path, cells: {})
+    assert any("above a tenth of the largest sigma on 1 of 3 rows" in line
+               for line in centroids.summary_lines(REPO))
+
+
+def test_t129_drill_excluded_two_p_rows_omit_centroid_labels():
+    source = (REPO / "openmucf/g4/d3_centroids.py").read_text(encoding="utf-8")
+    assert 'if c.transition.startswith("2p") and c.reason != "centroid"' in source
 
 
 def test_t128_a_component_at_onset_or_without_a_clean_fine_reference_is_refused(monkeypatch):
@@ -2620,6 +2775,16 @@ def _nine(value):
     with localcontext() as context:
         context.prec = 50
         return format(value.quantize(Decimal("1e-9")), ".9f")
+
+
+def test_t129_drill_stock_set_equal_to_gated_set_is_admitted(monkeypatch):
+    cells = md.load_cells(CELLS)
+    gated = set(md.gated_nuclides(cells))
+    original = md.load_geant4_levels
+    monkeypatch.setattr(md, "load_geant4_levels", lambda path: {key: value for key, value in
+                        original(path).items() if key in gated})
+    assert set(md.load_geant4_levels(REPO / md.GEANT4_LEVELS_RELPATH)) == gated
+    assert centroids.centroid_rows(REPO)
 
 
 def test_t129_every_comparison_and_margin_cell_is_rederived_from_the_sources():

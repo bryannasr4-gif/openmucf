@@ -44,6 +44,10 @@ MARGIN_TABLE_COLUMNS = (
 _UNIT = Decimal("1e-9")
 
 
+def _within_unit(a: Decimal, b: Decimal) -> bool:
+    return abs(a - b) <= _UNIT
+
+
 def _text(value: Decimal) -> str:
     with localcontext() as context:
         context.prec = 50
@@ -267,7 +271,7 @@ def centroid_rows(root: Path) -> list[dict[str, str]]:
             if any(Decimal(p["consumer_keV"]) != q for p in pair):
                 raise md.CellError(f"{key}: shell projection disagrees with the consumer quantity")
             solver = (Decimal(pair[0]["solver_keV"]) + 2 * Decimal(pair[1]["solver_keV"])) / 3
-            if abs(q - solver) > _UNIT:
+            if not _within_unit(q, solver):
                 raise md.CellError(f"{key}: weighted solver lines disagree with the shell difference")
             if any(Decimal(p["stock_keV"]) != contract.stock_kev(stock[key], 1, 2) for p in pair):
                 raise md.CellError(f"{key}: stock level difference disagrees with the shell projection")
