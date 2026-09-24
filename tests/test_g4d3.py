@@ -1114,6 +1114,8 @@ def test_t144_changelog_versions_track_the_shipped_version_and_history():
     newer = ".".join(map(str, (top_version[0] + 1, *top_version[1:])))
     out_of_order = text[:historical.start(1)] + newer + text[historical.end(1):]
     assert "changelog versions do not strictly decrease" in changelog_version_problems(out_of_order)
+    restated = text[:historical.start(1)] + top.group(1) + text[historical.end(1):]
+    assert changelog_version_problems(restated) == ["changelog versions do not strictly decrease"]
     removed_top = text[:top.start()] + text[top.end():]
     assert "the topmost changelog version differs from the shipped version" in (
         changelog_version_problems(removed_top)
