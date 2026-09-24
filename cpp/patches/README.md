@@ -56,7 +56,7 @@ The evidence that a patched build behaves as stated — with the opt-in off, app
 harvest whose whole output is bit-identical to an unpatched build's; with the opt-in on, the
 harvested sweep reproducing the digest recorded by the oracle file beside the dataset
 (`cpp/tools/README.md` describes it), through both compiled-in copies and in both discovery modes —
-is kept outside this repository. That digest is stated here by reference to the oracle file, never
+is kept outside this repository, except the transport runs `cpp/transport/README.md` describes, whose manifest and check results `cpp/transport/evidence/` holds. That digest is stated here by reference to the oracle file, never
 as a literal, and a test holds this file to that.
 A patched build was also measured with the second profile the dataset ships named: its harvest
 differed from the `parity` harvest on exactly the keys that profile resolves to a different value.

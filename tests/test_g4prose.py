@@ -49,9 +49,15 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 PROSE_PATHS = (
     "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
     "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md",
+    "cpp/transport/README.md",
 )
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
+
+
+def test_t74_transport_readme_enumerated():
+    assert "cpp/transport/README.md" in PROSE_PATHS
+
 
 CLASSES = pathlib.Path(__file__).with_name("g4_prose_classes.tsv")
 REGISTRY = pathlib.Path(__file__).with_name("g4_prose_registry.tsv")

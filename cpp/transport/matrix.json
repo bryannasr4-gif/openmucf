@@ -1,0 +1,56 @@
+{
+  "revisions": {
+    "v11.4.2": "8cc04f65977807f1848da7b958c421cd5e162f26",
+    "v11.5.0.beta": "f3d5293d384757b8a228a099898b2b87cfa4023c"
+  },
+  "configure": {
+    "CMAKE_BUILD_TYPE": "Release",
+    "GEANT4_BUILD_MULTITHREADED": "ON",
+    "CMAKE_CXX_FLAGS": "-ffp-contract=off",
+    "CMAKE_C_FLAGS": "-ffp-contract=off",
+    "GEANT4_INSTALL_DATA": "OFF",
+    "GEANT4_USE_QT": "OFF",
+    "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+  },
+  "jobs": 6,
+  "routes": ["bound_decay", "muonic_atom_helper"],
+  "targets": [
+    {"Z": 13, "A": 27},
+    {"Z": 14, "A": 28},
+    {"Z": 47, "A": 107},
+    {"Z": 82, "A": 208}
+  ],
+  "threads": [1, 4],
+  "events": 1000,
+  "seed_base": 8675309,
+  "seed_stride": 1000003,
+  "modes": {
+    "pristine": {"kind": "pristine", "opt_in": "off"},
+    "patched-off": {"kind": "patched", "opt_in": "off"},
+    "patched-default": {"kind": "patched", "opt_in": "on"},
+    "enabled": {
+      "kind": "patched",
+      "opt_in": "on",
+      "profiles": {
+        "G4MUONICDATA_D1_PROFILE": "mizuno2025",
+        "G4MUONICDATA_D3_PROFILE": "mudirac130"
+      }
+    },
+    "preserved": {"kind": "preserved", "opt_in": "off"}
+  },
+  "cases": {
+    "P1": "no variable",
+    "P2": "legacy D3",
+    "P3": "D1 only",
+    "P4": "D3 only",
+    "P5": "both seams",
+    "P6": "compiled legacy and D1",
+    "P7": "compiled legacy and D3",
+    "P8": "compiled without dataset",
+    "P9": "explicit dataset",
+    "P10": "missing dataset",
+    "P11": "unknown profile",
+    "P12": "falling-level refusal",
+    "P13": "removed call site"
+  }
+}

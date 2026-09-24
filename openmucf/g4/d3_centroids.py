@@ -295,10 +295,14 @@ def centroid_rows(root: Path) -> list[dict[str, str]]:
             row.update(cohort="excluded", source=source, Z=str(z), A=str(a),
                        excluded_gated=";".join(c.quantity for c in members
                                                  if c.gated and c.quantity in ("K1-L2", "K1-L3")),
-                       two_p_rows=";".join(f"{c.transition}:{c.reason or 'gated'}" for c in members
-                                             if c.transition.startswith("2p") and c.reason != "centroid"))
+                        two_p_rows=_two_p_rows(members))
             rows.append(row)
     return rows
+
+
+def _two_p_rows(members: list[md.Cell]) -> str:
+    return ";".join(f"{c.transition}:{c.reason or 'gated'}" for c in members
+                    if c.transition.startswith("2p") and c.reason != "centroid")
 
 
 def margin_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:

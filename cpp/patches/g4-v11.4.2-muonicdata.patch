@@ -391,7 +391,7 @@ index 9893519553..a30a4e1740 100644
                                            G4double Xuser)
 diff --git a/source/particles/management/src/G4MuonicDataOverlay.cc b/source/particles/management/src/G4MuonicDataOverlay.cc
 new file mode 100644
-index 0000000000..14c9fd3d21
+index 0000000000..31ed6849af
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicDataOverlay.cc
 @@ -0,0 +1,469 @@
@@ -657,7 +657,7 @@ index 0000000000..14c9fd3d21
 +  for (const std::string& name : profiles) present += (present.empty() ? "" : ", ") + name;
 +  // A profile named by the one variable that spans both seams must exist; a seam it carries no
 +  // table for resolves to the compiled-in code for that seam.
-+  if ((d1.source == Source::Legacy || d3.source == Source::Legacy) &&
++  if (legacy != kCompiledProfile && (d1.source == Source::Legacy || d3.source == Source::Legacy) &&
 +      std::find(profiles.begin(), profiles.end(), legacy) == profiles.end()) {
 +    Fatal("G4MuonicData004", "G4MUONICDATA_PROFILE names '" + legacy + "' but no file in the dataset at " +
 +                                 dir + " declares that '#PROFILE'; the profiles present are: " + present);

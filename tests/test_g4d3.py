@@ -2624,8 +2624,27 @@ def test_t129_drill_summary_counts_shifts_above_the_tenth(monkeypatch):
 
 
 def test_t129_drill_excluded_two_p_rows_omit_centroid_labels():
-    source = (REPO / "openmucf/g4/d3_centroids.py").read_text(encoding="utf-8")
-    assert 'if c.transition.startswith("2p") and c.reason != "centroid"' in source
+    from types import SimpleNamespace
+
+    members = [SimpleNamespace(transition="2p1/2", reason=""),
+               SimpleNamespace(transition="2p3/2", reason="centroid"),
+               SimpleNamespace(transition="3p1/2", reason="gated")]
+    assert centroids._two_p_rows(members) == "2p1/2:gated"
+
+
+def test_t129_drill_summary_excludes_a_shift_exactly_at_the_tenth(monkeypatch):
+    rows = [{"cohort": cohort, "source": "Fricke1995", "Z": "1", "A": "1", "dnum_keV": shift,
+             "sigma_keV": "10", "sigma_max_keV": "", "screen": "inside",
+             "screen_at_reference": "inside"}
+            for cohort, shift in (("labelled", "1"), ("constructed", "2"))]
+    monkeypatch.setattr(centroids, "centroid_rows", lambda root: rows)
+    monkeypatch.setattr(centroids, "margin_rows", lambda members: [])
+    monkeypatch.setattr(centroids, "numerical_components",
+                        lambda root, cells: ({(1, 1): (0, 0, 0, None, 100)}, []))
+    monkeypatch.setattr(md, "load_cells", lambda path: ())
+    monkeypatch.setattr(centroids, "load_intensity_ratios", lambda path, cells: {})
+    assert any("above a tenth of the largest sigma on 1 of 2 rows" in line
+               for line in centroids.summary_lines(REPO))
 
 
 def test_t128_a_component_at_onset_or_without_a_clean_fine_reference_is_refused(monkeypatch):
