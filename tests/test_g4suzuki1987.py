@@ -70,6 +70,10 @@ def _corruption(case: str) -> bytes:
         first["printed_page"] = "x"
     elif case == "positive":
         first["printed_page"] = "-1"
+    elif case == "page_zero":
+        first["printed_page"] = "0"
+    elif case == "ordinal_zero":
+        first["page_row_ordinal"] = "0"
     elif case == "ordinal":
         second = _row()
         second["page_row_ordinal"] = "3"
@@ -91,7 +95,8 @@ def _corruption(case: str) -> bytes:
 @pytest.mark.parametrize(
     "case",
     (
-        "header", "cr", "ascii", "shape", "table", "integer", "positive", "ordinal",
+        "header", "cr", "ascii", "shape", "table", "integer", "positive", "page_zero",
+        "ordinal_zero", "ordinal",
         "duplicate", "kind", "underline", "copy", "empty", "missing",
     ),
 )
@@ -99,7 +104,21 @@ def test_loader_refusals(tmp_path: Path, case: str) -> None:
     path = tmp_path / "printed_rows.csv"
     if case != "missing":
         path.write_bytes(_corruption(case))
-    with pytest.raises(suzuki1987.Suzuki1987Error, match=r"printed_rows\.csv line \d+"):
+    messages = {
+        "header": "header differs", "cr": "CR is forbidden", "ascii": "non-ASCII byte",
+        "shape": "wrong cell count", "table": "table must be III or IV",
+        "integer": "page and ordinal must be integers", "positive": "must be positive",
+        "page_zero": "must be positive", "ordinal_zero": "must be positive",
+        "ordinal": "follows", "duplicate": "follows", "kind": "unrecognized row_kind",
+        "underline": "zeff_underlined must be", "copy": "copy_read must be",
+        "empty": "no printed rows", "missing": "",
+    }
+    pattern = (r"printed_rows\.csv line 0:" if case == "missing"
+               else rf"printed_rows\.csv line \d+.*{messages[case]}")
+    with pytest.raises(
+        suzuki1987.Suzuki1987Error,
+        match=pattern,
+    ):
         suzuki1987.load_printed_rows(path)
 
 
@@ -180,7 +199,7 @@ def test_normalize_refusals(case: str) -> None:
     else:
         index = next(i for i, r in enumerate(rows) if r.row_kind == "data")
         edits = {
-            "label": {"element_raw": "43.8.8Ca"},
+            "label": {"element_raw": "1.2.3Ca"},
             "life": {"mean_life_raw": "bad"},
             "rate_power": {"rate_raw": "12+-3x10^x"},
             "rate": {"rate_raw": "bad"},
@@ -200,7 +219,11 @@ def test_normalize_refusals(case: str) -> None:
             rows[index] = dataclasses.replace(rows[index], element_raw="Xx")
         else:
             rows[index] = dataclasses.replace(rows[index], **edits[case])
-    with pytest.raises(suzuki1987.Suzuki1987Error):
+    message = {
+        "label": "target label .* has no supported basis",
+        "missing_label": "missing target label",
+    }.get(case)
+    with pytest.raises(suzuki1987.Suzuki1987Error, match=message):
         suzuki1987.normalize(tuple(rows))
 
 
@@ -461,3 +484,62 @@ def test_t150_published_equal_cells_require_value_uncertainty_and_printed_uncert
     no_unc = dict(source)
     no_unc["rate_unc"] = ""
     assert not gen._published_equal_cells(value, unc, [no_unc])
+
+
+def _own_isotope_and_natural() -> tuple[dict[str, str], dict[str, str]]:
+    isotope = next(row for row in _normalized() if row["own_measurement"] == "true"
+                   and row["target_basis"] == "isotope" and row["rate_unc"]
+                   and row["rate_parenthesized"] == "false")
+    symbol = re.search(r"[A-Z][a-z]?", isotope["target_label"])
+    assert symbol is not None
+    natural = dict(isotope, target_basis="natural", target_label=f"nat{symbol.group()}")
+    return isotope, natural
+
+
+# T-151: a selected own natural row receives the natural-composition key.
+def test_t151_selected_natural_row_uses_its_natural_key() -> None:
+    isotope, natural = _own_isotope_and_natural()
+    selected = suzuki1987.selected((natural,))
+    assert set(selected) == {(int(isotope["Z"]), 0)}
+
+
+# T-152: the validity token follows the actual selected natural keys.
+def test_t152_validity_distinguishes_isotope_only_and_mixed_selection() -> None:
+    isotope, natural = _own_isotope_and_natural()
+    digest = spec.parse((DATA.parent / "d1_capture.suzuki1987.g4dat").read_text(
+        encoding="ascii"
+    )).directives["SOURCEDIGEST"]
+    isotope_only = suzuki1987.selected((isotope,))
+    mixed = suzuki1987.selected((isotope, natural))
+    assert spec.validity_assignments(gen.build_suzuki_capture_table(
+        isotope_only, digest
+    ))["A"] == "listed"
+    assert spec.validity_assignments(gen.build_suzuki_capture_table(
+        mixed, digest
+    ))["A"] == spec.A_NATURAL_AND_LISTED
+
+
+# T-153: an equal preprint value under another label becomes a label difference.
+def test_t153_preprint_comparison_reports_a_value_match_under_another_label(monkeypatch) -> None:
+    rows = _normalized()
+    source = next(row for row in rows if row["rate"] and row["rate_unc"])
+    committed = d1.load_capture_cells(gen.ROOT / d1.CAPTURE_CELLS_RELPATH)
+    fake = dataclasses.replace(
+        committed[0], z=int(source["Z"]), label="Xx", rate=source["rate"],
+        rate_unc=source["rate_unc"],
+    )
+    monkeypatch.setattr(d1, "load_capture_cells", lambda _path: (fake,))
+    differences = list(csv.DictReader(io.StringIO(
+        gen.build_suzuki_preprint_differences(_printed(), rows).decode("ascii")
+    )))
+    assert any(row["kind"] == "label" and row["preprint_locator"] == fake.locator
+               for row in differences)
+
+
+# T-154: a multi-reference own measurement does not claim a single source.
+def test_t154_multi_reference_own_row_is_not_single_source() -> None:
+    isotope, _natural = _own_isotope_and_natural()
+    source = dict(isotope, refs="a,62f")
+    selected = suzuki1987.selected((source,))
+    document = gen.build_suzuki_capture_document(selected)
+    assert all(not row.single_source for row in document.rows.values())
