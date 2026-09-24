@@ -820,6 +820,18 @@ g4muonicdata_overlay_case(overlay_compiled_one_seam
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D3_PROFILE=compiled"
   QUERIES ${capture_args} ${kshell_args}
   PASS "CONFIG d1=parity d3=compiled dir=set version=[^\n]*\nTABLE loaded\nRATE ${capture_key} 0x[^\n]* parity exact\nKSHELL ${kshell_key} none compiled compiled\nMATCH [^\n]*\nMATCH [^\n]*\n")
+g4muonicdata_overlay_case(overlay_compiled_legacy_d1_seam
+  ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" "G4MUONICDATA_PROFILE=compiled" --unset=G4MUONICDATA_D3_PROFILE
+      "G4MUONICDATA_D1_PROFILE=${d1_profile}"
+  QUERIES ${evaluated_listed_args} ${kshell_args}
+  PASS "CONFIG d1=${d1_profile} d3=compiled dir=set version=[^\n]*\nTABLE loaded\nRATE ${evaluated_z} ${evaluated_listed} 0x[^\n]* ${d1_profile} exact\nKSHELL ${kshell_key} none compiled compiled\nMATCH [^\n]*\nMATCH [^\n]*\n")
+g4muonicdata_overlay_case(overlay_compiled_legacy_d3_seam
+  ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" "G4MUONICDATA_PROFILE=compiled" --unset=G4MUONICDATA_D1_PROFILE
+      "G4MUONICDATA_D3_PROFILE=${d3_profile}"
+  QUERIES ${capture_args} ${kshell_args}
+  PASS "CONFIG d1=compiled d3=${d3_profile} dir=set version=[^\n]*\nTABLE loaded\nRATE ${capture_key} none compiled compiled\nKSHELL ${kshell_key} 0x[^\n]* ${d3_profile} exact\nMATCH [^\n]*\nMATCH [^\n]*\n")
+set_tests_properties(overlay_compiled_legacy_d1_seam overlay_compiled_legacy_d3_seam PROPERTIES
+  FAIL_REGULAR_EXPRESSION "MISMATCH|G4Exception")
 g4muonicdata_overlay_case(overlay_compiled_both_seams
   ENV "G4MUONICDATA=${CMAKE_BINARY_DIR}/no_such_dataset_directory" "G4MUONICDATA_PROFILE=compiled"
   QUERIES ${capture_args} ${kshell_args}

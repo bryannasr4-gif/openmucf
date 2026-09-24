@@ -260,7 +260,7 @@ void BuildOrRefuse(State& state) {
   for (const std::string& name : profiles) present += (present.empty() ? "" : ", ") + name;
   // A profile named by the one variable that spans both seams must exist; a seam it carries no
   // table for resolves to the compiled-in code for that seam.
-  if ((d1.source == Source::Legacy || d3.source == Source::Legacy) &&
+  if (legacy != kCompiledProfile && (d1.source == Source::Legacy || d3.source == Source::Legacy) &&
       std::find(profiles.begin(), profiles.end(), legacy) == profiles.end()) {
     Fatal("G4MuonicData004", "G4MUONICDATA_PROFILE names '" + legacy + "' but no file in the dataset at " +
                                  dir + " declares that '#PROFILE'; the profiles present are: " + present);
