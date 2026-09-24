@@ -727,7 +727,9 @@ def build_suzuki_preprint_differences(
         if row is None:
             add("zeff", z, old.locator, "", old.printed_zeff, "")
             continue
-        if old.printed_zeff != row.zeff_raw or old.printed_z != int(row.z_raw):
+        if old.printed_z != int(row.z_raw):
+            add("printed_z", z, old.locator, row.locator, str(old.printed_z), row.z_raw)
+        if old.printed_zeff != row.zeff_raw:
             add("zeff", z, old.locator, row.locator, old.printed_zeff, row.zeff_raw)
         if old.underlined != (row.zeff_underlined == "true"):
             add("underline", z, old.locator, row.locator, str(old.underlined).lower(),

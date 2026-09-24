@@ -304,12 +304,28 @@ def test_comparison_files_and_mizuno_lifetimes() -> None:
         differences = list(csv.DictReader(stream))
     assert differences
     assert {r["kind"] for r in differences} <= {
-        "refs", "value", "unc", "label", "bracket", "zeff", "underline", "unmatched",
+        "refs", "value", "unc", "label", "bracket", "zeff", "printed_z", "underline", "unmatched",
         "not_in_committed_preprint_cells",
     }
     assert any(r["kind"] == "not_in_committed_preprint_cells"
                and r["published_locator"].endswith(f"row {uranium['page_row_ordinal']}")
                for r in differences)
+    assert all(row["preprint"] != row["published"] for row in differences)
+    zeff = d1.load_zeff_audit(DATA.parents[3] / d1.ZEFF_AUDIT_RELPATH)
+    printed_z = {
+        int(row.z_raw): row for row in _printed()
+        if row.row_kind == "data" and row.z_raw and row.zeff_raw
+    }
+    changed_z = {
+        z for z, old in zeff.items()
+        if z in printed_z and old.printed_z != int(printed_z[z].z_raw)
+    }
+    assert {int(row["Z"]) for row in differences if row["kind"] == "printed_z"} == changed_z
+    for z in changed_z:
+        matching = [row for row in differences if row["kind"] == "printed_z" and int(row["Z"]) == z]
+        assert len(matching) == 1
+        assert matching[0]["preprint"] == str(zeff[z].printed_z)
+        assert matching[0]["published"] == printed_z[z].z_raw
     own = [r for r in rows if r["own_measurement"] == "true"]
     table1 = mizuno2025.load_table1(DATA.parent / "mizuno2025_table1.csv")
     for target in table1:
