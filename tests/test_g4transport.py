@@ -97,8 +97,14 @@ def test_t149_check_wiring_rejects_gating_changes_and_reports_preserved(tmp_path
     "threads", ("patched-default", 1, "config"),
     ("pristine", 1, "particles")])
 def test_t149_check_wiring_rejects_corruption(tmp_path, monkeypatch, change):
-    changes = ({(mode, 4, "record"): True for mode in MATRIX["modes"] if mode != "preserved"}
-               if change == "threads" else {change: True})
+    if change == "threads":
+        changes = {(mode, 4, "record"): True for mode in MATRIX["modes"] if mode != "preserved"}
+    elif change in (("patched-off", 1, "record"), ("patched-default", 1, "record")):
+        changes = {(change[0], thread, "record"): True for thread in (1, 4)}
+    elif change == ("patched-default", 1, "config"):
+        changes = {("patched-default", thread, "config"): True for thread in (1, 4)}
+    else:
+        changes = {change: True}
     synthetic_check_work(tmp_path, monkeypatch, changes)
     with pytest.raises(RuntimeError, match="first gating failure"):
         transport.check(tmp_path, tmp_path / "cells.csv")
@@ -157,6 +163,26 @@ def test_t149_level_table_excludes_uncertainty_columns(tmp_path):
             transport.table_levels(source, (13, 27))
 
 
+def test_t149_enabled_level_array_and_resolution_are_required(tmp_path):
+    levels = [float(value) for value in range(14, 0, -1)]
+    columns = " ".join(f"e{i}" for i in range(2, 9))
+    values = " ".join(str(value * 1000) for value in levels[1:8])
+    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+        "#COLUMNS Z A value\n13 27 14000\n", encoding="ascii")
+    (tmp_path / "d3_levels.mudirac130.g4dat").write_text(
+        f"#COLUMNS Z A {columns}\n13 27 {values}\n", encoding="ascii")
+    pristine = {"L": [value.hex() for value in levels]}
+    config = {"L": pristine["L"][:],
+              "_RES_LINES": [["levels", "13", "27", "exact", "mudirac130", "7"]]}
+    target = {"Z": 13, "A": 27}
+    assert transport.level_check(config, pristine, "enabled", target, tmp_path)[0]
+    config["L"][1] = float(12).hex()
+    assert not transport.level_check(config, pristine, "enabled", target, tmp_path)[0]
+    config["L"][1] = pristine["L"][1]
+    config["_RES_LINES"][0][3] = "compiled"
+    assert not transport.level_check(config, pristine, "enabled", target, tmp_path)[0]
+
+
 def test_t149_same_writer_lookup_fallback_spelling_stays_distinct(tmp_path):
     (tmp_path / "d1_capture.mizuno2025.g4dat").write_text(
         "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
@@ -186,6 +212,9 @@ def test_t149_missing_event_and_wrong_seed_fail():
     assert not transport.event_check(records[:1], 1, MATRIX["seed_base"])[0]
     changed = [row[:] for row in records]
     changed[1][2] = str(MATRIX["seed_base"] + 1)
+    assert not transport.event_check(changed, 1, MATRIX["seed_base"])[0]
+    changed = [row[:] for row in records]
+    changed[1][3] = "0"
     assert not transport.event_check(changed, 1, MATRIX["seed_base"])[0]
 
 
@@ -417,14 +446,73 @@ def test_t149_cascade_transition_bound_and_leftover_step(tmp_path):
     assert not transport.d9_check(leftover, config, "bound_decay", target, dataset)[0]
 
 
+def test_t149_cascade_initial_electron_filter_and_end(tmp_path):
+    dataset, config, records = cascade_fixture(tmp_path)
+    target = {"Z": 13, "A": 27}
+    initial = [row[:] for row in records]
+    initial[0][4] = "22"
+    assert not transport.d9_check(initial, config, "bound_decay", target, dataset)[0]
+    initial[0][4] = "11"
+    initial[0][6] = float(2).hex()
+    assert not transport.d9_check(initial, config, "bound_decay", target, dataset)[0]
+    ignored = [["C", "0", "1", "99", "2112", "other", float(1).hex(), "0x0p+0"]]
+    assert transport.d9_check(ignored + records, config, "bound_decay", target, dataset)[0]
+    other = [row[:] for row in records]
+    other.append(["C", "0", "1", "14", "2112", "model_EMCascade", float(1).hex(), "0x0p+0"])
+    assert not transport.d9_check(other, config, "bound_decay", target, dataset)[0]
+    assert not transport.d9_check(records[:-1], config, "bound_decay", target, dataset)[0]
+
+
+def test_t149_cascade_gamma_boundary_and_ambiguity(tmp_path):
+    dataset, config, records = cascade_fixture(tmp_path)
+    target = {"Z": 13, "A": 27}
+    tolerance = 64 * sys.float_info.epsilon * float.fromhex(config["L"][0])
+    boundary = [row[:] for row in records]
+    boundary[1][4] = "22"
+    boundary[1][6] = (1.0 + tolerance).hex()
+    assert transport.d9_check(boundary, config, "bound_decay", target, dataset)[0]
+    levels = [float.fromhex(value) for value in config["L"]]
+    levels[11] = levels[12]
+    config["L"] = [value.hex() for value in levels]
+    ambiguous = [row[:] for row in records]
+    ambiguous[1][4] = "22"
+    ambiguous[1][6] = (levels[11] - levels[13]).hex()
+    ambiguous = ambiguous[:2] + ambiguous[3:]
+    ambiguous[2][6] = (levels[10] - levels[11]).hex()
+    assert not transport.d9_check(ambiguous, config, "bound_decay", target, dataset)[0]
+
+
+def test_t149_cascade_floor_and_transition_classes(tmp_path):
+    dataset, config, records = cascade_fixture(tmp_path)
+    target = {"Z": 13, "A": 27}
+    ok, detail = transport.d9_check(records, config, "bound_decay", target, dataset)
+    assert ok and "mixed=1" in detail
+    tabulated = dataset / "d3_levels.mudirac130.g4dat"
+    text = tabulated.read_text(encoding="ascii")
+    tabulated.write_text(text.replace("7000", "7100"), encoding="ascii")
+    assert not transport.d9_check(records, config, "bound_decay", target, dataset)[0]
+    tabulated.write_text(text, encoding="ascii")
+    tabulated.write_text("#COLUMNS Z A e2\n82 208 1000\n", encoding="ascii")
+    assert not transport.d9_check(records, config, "bound_decay", target, dataset)[0]
+    small = [0.0005 * (14 - i) / 14 for i in range(14)]
+    config["L"] = [value.hex() for value in small]
+    tabulated.write_text(
+        "#COLUMNS Z A " + " ".join(f"e{i}" for i in range(2, 9)) + "\n13 27 "
+        + " ".join(repr(value * 1000) for value in small[1:8]) + "\n", encoding="ascii")
+    tiny = [row[:] for row in records]
+    tiny[0][6] = (small[13] + 1e-15).hex()
+    for step, row in enumerate(tiny[1:], start=1):
+        n = 14 - step
+        row[6] = (small[n - 1] - small[n]).hex()
+    assert not transport.d9_check(tiny, config, "bound_decay", target, dataset)[0]
+
+
 def test_t149_manifest_source_digest_guard():
     expected = {name: hashlib.sha256((ROOT / "cpp/transport" / name).read_bytes()).hexdigest()
                 for name in transport.SOURCES}
     changed = dict(expected)
     changed["transport.py"] = "0" * len(changed["transport.py"])
     assert expected != changed
-    if not (EVIDENCE / "manifest.json").exists():
-        pytest.skip("manifest is written after transport runs")
     manifest = json.loads((EVIDENCE / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["sources"] == expected
 
@@ -449,11 +537,42 @@ def test_t149_rate_division_and_kshell_scale(tmp_path):
     pristine = {"ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(11).hex()]}
     target = {"Z": 14, "A": 0}
     assert transport.lookup_check(config, pristine, target, tmp_path)[0]
+    config["_RES_LINES"][0][4] = "wrong"
+    assert not transport.lookup_check(config, pristine, target, tmp_path)[0]
+    config["_RES_LINES"][0][4] = "mizuno2025"
+    config["_RES_LINES"][0][5] = "0"
+    assert not transport.lookup_check(config, pristine, target, tmp_path)[0]
+    config["_RES_LINES"][0][5] = "1"
+    config["RATE_BD"] = [float(42).hex()]
+    assert not transport.lookup_check(config, pristine, target, tmp_path)[0]
+    config["RATE_BD"] = [(value / 1000.0).hex()]
+    config["RATE_HELPER"] = [float(42).hex()]
+    assert not transport.lookup_check(config, pristine, target, tmp_path)[0]
+    config["RATE_HELPER"] = [(value / 1000.0).hex()]
     config["RATE_BD"] = [(value * 0.001).hex()]
     assert not transport.lookup_check(config, pristine, target, tmp_path)[0]
     config["RATE_BD"] = [(value / 1000.0).hex()]
     config["RATE_HELPER"] = [(value * 0.001).hex()]
     assert not transport.lookup_check(config, pristine, target, tmp_path)[0]
+
+
+def test_t149_kshell_fallback_uses_pristine_k1(tmp_path):
+    (tmp_path / "d1_capture.mizuno2025.g4dat").write_text(
+        "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
+    (tmp_path / "d1_zeff.g4dat").write_text(
+        "#COLUMNS Z value\n82 1\n", encoding="ascii")
+    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+        "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
+    one = float(1).hex()
+    two = float(2).hex()
+    config = {"RATE_BD": [one], "RATE_HELPER": [one], "ZEFF_BD": [one],
+              "ZEFF_HELPER": [one], "KA": [one],
+              "_RES_LINES": [["rate", "13", "27", "compiled", "mizuno2025", "0"],
+                             ["zeff", "13", "0", "compiled", "mizuno2025", "0"],
+                             ["kshell", "13", "27", "compiled", "mudirac130", "0"]]}
+    pristine = {"RATE_BD": [one], "RATE_HELPER": [one], "ZEFF_BD": [one],
+                "ZEFF_HELPER": [one], "K1": [one], "KA": [two]}
+    assert transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
 
 
 def test_t149_manifest_resolves_libraries_from_build_install(monkeypatch, tmp_path):
@@ -549,8 +668,6 @@ def test_t149_nonempty_target_is_refused(tmp_path):
 
 
 def test_t149_committed_manifest_ties_builds_dataset_and_cells():
-    if not (EVIDENCE / "manifest.json").exists():
-        pytest.skip("manifest is written after transport runs")
     manifest = json.loads((EVIDENCE / "manifest.json").read_text(encoding="utf-8"))
     raw = (EVIDENCE / "manifest.json").read_text(encoding="utf-8")
     assert not any(token in raw.lower() for token in ("/root/", "/mnt/", "/home/", "u020", "bryan"))
