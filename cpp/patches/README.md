@@ -36,9 +36,7 @@ transitions, `G4MUONICDATA_PROFILE` for both where neither is set, and, where no
 `parity` for capture and the compiled-in code for the transitions; a variable set to nothing is
 unset, and `compiled` is a reserved token naming a seam with no tables, whose selection reads no
 directory at all. The environment is read where the opt-in is set and not again, so a variable
-exported after that selects nothing. A variable naming a profile that carries no table of its own
-seam raises a fatal `G4Exception` naming that variable, and so does a token no file in the
-directory carries.
+exported after that selects nothing. `G4MUONICDATA_D1_PROFILE` or `G4MUONICDATA_D3_PROFILE` naming a profile that carries no table of its own seam raises a fatal `G4Exception` naming that variable, and so does a variable a seam reads through naming a token other than `compiled` that no file in the directory carries.
 A table the named profile carries no file for is treated like a key it lacks: the function's
 compiled-in code runs. So is a nuclide the selected profile has no row for: under every profile
 but `parity` a lookup reads the row keyed by exactly that nuclide, and an element's

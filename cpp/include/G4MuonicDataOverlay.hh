@@ -66,8 +66,7 @@ class G4MuonicDataOverlay {
   static void Initialize();
   static const Configuration& Config();
 
-  // The dataset, or nullptr with the opt-in off, when neither seam has
-  // tables.
+  // The dataset, or nullptr.
   static const G4MuonicDataTable* Table();
 
   // The `value` field of the nuclear_capture_rate record for this nuclide, in the dataset's own
