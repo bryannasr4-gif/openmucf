@@ -373,14 +373,16 @@ def test_audit_checks_suzuki_pair(monkeypatch: pytest.MonkeyPatch) -> None:
         gen.audit()
 
 
-# T-142: a base release has three numeric components before its minor is advanced.
+# T-142: a base release has three numeric components before its patch is advanced.
 def test_version_bump_rejects_a_short_or_nonnumeric_base() -> None:
     parts = gen._BASE_DATASET_VERSION.split(".")
-    assert f"{parts[0]}.{int(parts[1]) + 1}.0" == gen.DATASET_VERSION
+    assert f"{parts[0]}.{parts[1]}.{int(parts[2]) + 1}" == gen.DATASET_VERSION
     with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
-        gen._next_minor_version(".".join(parts[:-1]))
+        gen._next_patch_version(".".join(parts[:-1]))
     with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
-        gen._next_minor_version(".".join((parts[0], "word", parts[-1])))
+        gen._next_patch_version(".".join((*parts, "0")))
+    with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
+        gen._next_patch_version(".".join((parts[0], "word", parts[-1])))
 
 
 # T-143: an equal value with a different uncertainty is not an equal published cell.
@@ -395,3 +397,67 @@ def test_parity_comparison_requires_both_printed_cells() -> None:
     cells = gen.build_suzuki_parity_cells(fake, (source,))
     (comparison,) = list(csv.DictReader(io.StringIO(cells.decode("ascii"))))
     assert comparison["equal_count"] == "0" and not comparison["equal_locators"]
+
+
+# T-149: each published-copy audit clause refuses its own isolated corruption.
+@pytest.mark.parametrize(
+    ("case", "message"),
+    (
+        ("flag", "isotope_resolved must be true"),
+        ("opening", "evidence must open with the separated isotope label"),
+        ("no_equal", "exactly one published cell"),
+        ("two_equal", "exactly one published cell"),
+        ("basis", "matched cell must carry the isotope mass and symbol"),
+        ("symbol", "matched cell must carry the isotope mass and symbol"),
+        ("locator", "locator must name the matched published table and page"),
+    ),
+)
+def test_t149_published_audit_guard_clauses(monkeypatch, case: str, message: str) -> None:
+    found = d1.load(gen.VENDORED_PATH)
+    audit = d1.load_isotope_audit(gen.ROOT / d1.AUDIT_RELPATH)
+    published_keys = [key for key, finding in audit.items()
+                      if finding.copy_read == suzuki1987.COPY_READ]
+    assert len(published_keys) == 1
+    (key,) = published_keys
+    finding = audit[key]
+    rows = list(_normalized())
+    gen.build_capture_document(found, tuple(rows))
+    z, a = key
+    symbol = finding.evidence.split("separated isotope ", 1)[1].split("-", 1)[0]
+    matching = next(row for row in rows if int(row["Z"]) == z
+                    and row["target_label"].partition("^")[0] == f"{a}{symbol}")
+    changed = dict(audit)
+    if case == "flag":
+        changed[key] = dataclasses.replace(finding, isotope_resolved=False)
+    elif case == "opening":
+        changed[key] = dataclasses.replace(finding, evidence="wrong opening; " + finding.evidence)
+    elif case == "locator":
+        changed[key] = dataclasses.replace(finding, locator=finding.locator + " wrong")
+    elif case == "two_equal":
+        rows.append(dict(matching))
+    else:
+        index = rows.index(matching)
+        altered = dict(matching)
+        if case == "no_equal":
+            altered["rate_unc"] = ""
+        elif case == "basis":
+            altered["target_basis"] = "unspecified"
+        elif case == "symbol":
+            altered["target_label"] = f"{a}X"
+        rows[index] = altered
+    monkeypatch.setattr(d1, "load_isotope_audit", lambda _path: changed)
+    with pytest.raises(SystemExit, match=message):
+        gen.build_capture_document(found, tuple(rows))
+
+
+# T-150: each printed-precision conjunct is necessary to identify an equal cell.
+def test_t150_published_equal_cells_require_value_uncertainty_and_printed_uncertainty() -> None:
+    source = next(row for row in _normalized() if row["rate"] and row["rate_unc"])
+    value = float(suzuki1987.scaled(source, "rate"))
+    unc = float(suzuki1987.scaled(source, "rate_unc"))
+    assert gen._published_equal_cells(value, unc, [source]) == [source]
+    assert not gen._published_equal_cells(value * 2, unc, [source])
+    assert not gen._published_equal_cells(value, unc * 2, [source])
+    no_unc = dict(source)
+    no_unc["rate_unc"] = ""
+    assert not gen._published_equal_cells(value, unc, [no_unc])

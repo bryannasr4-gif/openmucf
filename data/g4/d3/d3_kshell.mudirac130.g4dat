@@ -1,11 +1,11 @@
 #GRAMMAR      1.0
 #DATASET      G4MuonicData
-#VERSION      0.5.0
+#VERSION      0.5.1
 #PROFILE      mudirac130
 #SEAM         d3_transitions
 #TABLE        k_shell_energy
 #GENERATOR    openmucf-g4 1.2.0
-#SOURCEDIGEST bd3b4c11e4348951a72bf146ab829adb16c3d4b02028d77510ee8f306730bc8c
+#SOURCEDIGEST 4c7f165415706cd3c8d71def0e288826a67169e660578987ca67a2e1d68e0b83
 #UNITS        value=keV unc=keV
 #COLUMNS      Z A value unc
 #VALIDITY     Z:2-92 A:most_abundant_and_listed

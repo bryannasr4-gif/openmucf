@@ -223,7 +223,6 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
     distinct_z = _computed(pins, "distinct Z, section 1")
     swept = _computed(pins, "swept points, section 4")
     zeff_entries = _computed(pins, "effective-charge array length, section 3")
-    open_rows = _computed(pins, "open rows")
     named = _computed(pins, "elements the primary's sentence names")
     carrying = _computed(pins, "named elements carrying a separated-isotope record")
     zeff_56 = _rounded(pins, "the effective charge at Z=56")
@@ -271,23 +270,8 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
             r"the rate is instead `value / (\d+)`", (1,), int(per_microsecond)),
         Pin("named elements without a separated-isotope record, F-6", "DATASET_D1.md",
             r"The (\w+) exceptions are instructive", (1,), named - carrying),
-        Pin("open rows, F-6's strontium sentence", "DATASET_D1.md",
-            r"it is one of the (\w+) records this dataset \*\*cannot settle\*\*", (1,), open_rows),
         Pin("mononuclidic route, section 6 restated", "DATASET_D1.md",
             r"the (\d+) mononuclidic calls above", (1,), _computed(pins, "mononuclidic route")),
-        Pin("open rows, section 6 closing sentence", "DATASET_D1.md",
-            r"\w+ of the (\w+) unsettled rows appear in that list", (1,), open_rows),
-        Pin("unsettled rows inside the disagreement list", "DATASET_D1.md",
-            r"(\w+) of the \w+ unsettled rows appear in that list", (1,),
-            _computed(pins, "rows the primary fails to establish")),
-        Pin("unsettled rows outside the disagreement list", "DATASET_D1.md",
-            r"unsettled rows appear in that list and (\w+) does not", (1,),
-            open_rows - _computed(pins, "rows the primary fails to establish")),
-        Pin("open rows, against the disagreements", "DATASET_D1.md",
-            r"The (\w+) open rows and the \d+ disagreements", (1,), open_rows),
-        Pin("rows the old rule disagrees with, restated", "DATASET_D1.md",
-            r"The \w+ open rows and the (\d+) disagreements", (1,),
-            _computed(pins, "rows the old rule disagrees with")),
         Pin("the effective charge at Z=56, the barium sentence", "DATASET_D1.md",
             r"barium is Z = \d+, and ([\d.]+) sits correctly", (1,), zeff_56[0], zeff_56[1]),
         Pin("the effective charge at Z=82, the second descent's start", "DATASET_D1.md",
@@ -303,8 +287,6 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
         Pin("the effective charge at Z=83, as the primary prints it", "DATASET_D1.md",
             r"Table IV prints \*\*81\([\d.]+\), 82\([\d.]+\), 83\(([\d.]+)\)\*\*", (1,),
             zeff_83[0], zeff_83[1]),
-        Pin("open rows, section 6's naming sentence", "DATASET_D1.md",
-            r"\*\*The (\w+) unsettled rows say so with an empty locator", (1,), open_rows),
         Pin("F-3 maximum, the README's restatement", "README.md",
             r"moves by up to \*\*(\d+) ulp\*\* between two conforming", (1,), max_ulp),
         Pin("F-3 maximum, the changelog's restatement", "CHANGELOG.md",

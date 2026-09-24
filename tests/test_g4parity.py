@@ -1824,7 +1824,7 @@ def test_t58_the_generator_version_is_coupled_to_every_dataset_it_stamped():
 #: The copies of a paper this project distinguishes. A locator that does not say WHICH copy was
 #: read is a locator that cannot be re-checked: the scanned preprint and the published article are
 #: different documents with different pagination, and this dataset was built from the preprint.
-KNOWN_COPIES = frozenset({"preprint-scan", "arxiv-preprint", "published-pdf"})
+KNOWN_COPIES = frozenset({"preprint-scan", "arxiv-preprint", "published-pdf", suzuki1987.COPY_READ})
 
 
 def audit_rows():
@@ -2315,7 +2315,7 @@ def document_pins() -> DocumentPins:
         ("named elements carrying a separated-isotope record",
          r"the sentence names, \*\*(\w+) carry at", len(carrying)),
         ("unsettled records sitting at a named element",
-         r"\*\*all (\w+) of the records this dataset cannot settle", len(unsettled)),
+         r"\*\*the (\w+) records this dataset cannot settle sit at elements", len(unsettled)),
         ("findings in section 5", r"Section 5 carries (\w+) findings", findings),
         ("findings that are defects", r"findings: \*\*(\w+)\*\* defects",
          findings - settled_findings),
@@ -2407,8 +2407,7 @@ def document_pins() -> DocumentPins:
     blocks = d1.cells_by_z(capture_cells())
     settled_by_value_keys = sorted(
         key for key, finding in audit.items()
-        if finding.settled and key[0] in blocks
-        and d1.decided_by_value(key, finding.evidence, blocks[key[0]])
+        if finding.settled and d1.value_compared(key, finding, blocks)
     )
     assert len(settled_by_value_keys) == 1, (
         "the sentences below name one record settled by the comparison; if this count moves, the "
@@ -2416,10 +2415,22 @@ def document_pins() -> DocumentPins:
     )
     ((settled_z, settled_a),) = settled_by_value_keys
     key_text = f"`({settled_z}, {settled_a})`"
+    published_keys = sorted(key for key, finding in audit.items()
+                            if finding.copy_read == suzuki1987.COPY_READ)
+    assert len(published_keys) == 1, (
+        "the document names one record settled by the published copy; if this count moves, "
+        f"the document is rewritten: {published_keys}"
+    )
+    ((published_z, published_a),) = published_keys
     string_claims = [
         ("the record the value comparison settled",
          r"the (`\(\d+, \d+\)`) record is settled as the separated isotope the primary lists",
          key_text),
+    ]
+    doc_string_claims = [
+        ("the record the published copy settled",
+         r"the compiled-in (`\(\d+, \d+\)`) pair equals it alone",
+         f"`({published_z}, {published_a})`"),
     ]
 
     # `README.md` is the third copy of these numbers and the one a reader meets first. Its G4
@@ -2486,6 +2497,11 @@ def document_pins() -> DocumentPins:
         assert re.findall(pattern, changelog) == [expected_string], (
             f"CHANGELOG.md: {what}: expected exactly one match of {pattern!r} stating "
             f"{expected_string!r}, found {re.findall(pattern, changelog)}"
+        )
+    for what, pattern, expected_string in doc_string_claims:
+        assert re.findall(pattern, doc) == [expected_string], (
+            f"DATASET_D1.md: {what}: expected {expected_string!r}, "
+            f"found {re.findall(pattern, doc)}"
         )
 
     # Section 9's cross-check table: one row per pair on which the two capture profiles disagree
@@ -3680,13 +3696,16 @@ def check_open_row_verdicts(
     }
     by_value = sorted(
         key for key, finding in audit.items()
-        if key[0] in blocks and d1.decided_by_value(key, finding.evidence, blocks[key[0]])
+        if d1.value_compared(key, finding, blocks)
     )
     unsettled = sorted(key for key, finding in audit.items() if not finding.settled)
     # (a) every unsettled row is decided here, and every block of cells decides at least one row.
     assert set(unsettled) <= set(by_value), sorted(set(unsettled) - set(by_value))
     for z in blocks:
-        assert any(key[0] == z for key in by_value), f"the cells at Z={z} decide no row"
+        assert any(key[0] == z for key in by_value) or any(
+            key[0] == z and finding.copy_read == suzuki1987.COPY_READ
+            for key, finding in audit.items()
+        ), f"the cells at Z={z} decide no row"
     print(f"\ndecided by value: {by_value}")
     open_by_value = set()
     for key in by_value:
@@ -3800,7 +3819,7 @@ def test_t101_each_conjunct_of_the_comparison_rule_decides_a_derived_block():
     values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
     by_value = sorted(
         key for key, finding in audit.items()
-        if key[0] in blocks and d1.decided_by_value(key, finding.evidence, blocks[key[0]])
+        if d1.value_compared(key, finding, blocks)
     )
 
     def separated_labels(block):
@@ -3842,7 +3861,7 @@ def test_t101_each_conjunct_of_the_comparison_rule_decides_a_derived_block():
     # (c)
     absent = [
         key for key, finding in audit.items()
-        if not finding.settled and key[0] in blocks and key[1] not in separated_labels(blocks[key[0]])
+        if key[0] in blocks and key[1] not in separated_labels(blocks[key[0]])
     ]
     assert absent, "no open key has an A no separated label carries"
     for key in absent:
@@ -3850,6 +3869,139 @@ def test_t101_each_conjunct_of_the_comparison_rule_decides_a_derived_block():
         assert d1.decided_by_value(key, evidence, blocks[key[0]]), key
         stripped = re.sub(r"round\(Ar\)=\d+", "", evidence)
         assert d1.decided_by_value(key, stripped, blocks[key[0]]), key
+
+
+# T-146: element-only evidence cannot silently assert natural composition.
+def check_element_only_wording(audit, cells=None, published=None):
+    if cells is None:
+        cells = d1.cells_by_z(capture_cells())
+    if published is None:
+        published = suzuki1987.normalize(
+        suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH)
+        )
+    for (z, a), finding in audit.items():
+        evidence = re.sub(
+            r"[A-Z][a-z]?-\d+ is [\d.]+% of natural [A-Z][a-z]?", "", finding.evidence
+        )
+        evidence = re.sub(
+            r"\([A-Z][a-z]?-\d+ = [\d.]+% of the natural element\)", "", evidence
+        )
+        assert "natural-composition" not in evidence, (z, a)
+        for symbol in re.findall(r"\bnatural ([A-Z][a-z]?)\b", evidence):
+            assert any(c.label == f"{symbol}-nat" for c in cells.get(z, ())), (z, a)
+            assert any(int(r["Z"]) == z and r["target_basis"] == "natural"
+                       for r in published), (z, a)
+
+
+def test_t146_element_only_evidence_follows_printed_nat_labels():
+    audit = audit_rows()
+    check_element_only_wording(audit)
+    key = next(key for key, finding in audit.items()
+               if "BOTH Sr with no mass number" in finding.evidence)
+    planted = dict(audit)
+    planted[key] = dataclasses.replace(audit[key], evidence=audit[key].evidence + " natural Sr")
+    with pytest.raises(AssertionError, match=str(key[0])):
+        check_element_only_wording(planted)
+    planted[key] = dataclasses.replace(audit[key], evidence=audit[key].evidence + " natural-composition")
+    with pytest.raises(AssertionError, match=str(key[0])):
+        check_element_only_wording(planted)
+    planted[key] = dataclasses.replace(audit[key], evidence=audit[key].evidence + " natural Sr")
+    cells = d1.cells_by_z(capture_cells())
+    with_nat = dict(cells)
+    with_nat[key[0]] = (*cells[key[0]], dataclasses.replace(cells[key[0]][0], label="Sr-nat"))
+    with pytest.raises(AssertionError, match=str(key[0])):
+        check_element_only_wording(planted, cells=with_nat)
+    published = list(suzuki1987.normalize(
+        suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH)
+    ))
+    natural_row = dict(next(row for row in published if int(row["Z"]) == key[0]))
+    natural_row["target_basis"] = "natural"
+    with pytest.raises(AssertionError, match=str(key[0])):
+        check_element_only_wording(planted, published=[*published, natural_row])
+
+
+# T-147: the published labels test every preprint-based audit opening.
+def check_preprint_listings(audit, published):
+    by_z = {}
+    for row in published:
+        by_z.setdefault(int(row["Z"]), []).append(row)
+    for (z, a), finding in audit.items():
+        if finding.copy_read != "preprint-scan" or "Suzuki" not in finding.locator:
+            continue
+        block = by_z.get(z, [])
+        isotope_masses = {
+            int(m.group(1)) for row in block
+            if row["target_basis"] == "isotope"
+            if (m := re.match(r"(\d+)[A-Z]", row["target_label"]))
+        }
+        bases = {row["target_basis"] for row in block}
+        evidence = finding.evidence
+        if evidence.startswith("the primary lists the separated isotope "):
+            assert a in isotope_masses, (z, a)
+        elif " only, with no mass number" in evidence or " is mononuclidic" in evidence:
+            assert "unspecified" in bases and not ({"isotope", "natural"} & bases), (z, a)
+        elif " with no mass number at this Z -- also " in evidence:
+            assert "unspecified" in bases and a not in isotope_masses, (z, a)
+        elif evidence.startswith("the primary lists BOTH "):
+            assert a in isotope_masses and ({"unspecified", "natural"} & bases), (z, a)
+        else:
+            raise AssertionError(f"unrecognized preprint listing opening at {(z, a)}: {evidence}")
+
+
+def test_t147_preprint_listings_agree_with_published_label_bases():
+    audit = audit_rows()
+    published = list(suzuki1987.normalize(
+        suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH)
+    ))
+    check_preprint_listings(audit, published)
+    key = next(key for key, finding in audit.items()
+               if " only, with no mass number" in finding.evidence)
+    z, a = key
+    added = dict(next(row for row in published if int(row["Z"]) == z))
+    added["target_basis"] = "isotope"
+    added["target_label"] = f"{a}X"
+    with pytest.raises(AssertionError, match=str(z)):
+        check_preprint_listings(audit, [*published, added])
+    separated_key = next(key for key, finding in audit.items()
+                         if finding.copy_read == "preprint-scan"
+                         and finding.evidence.startswith("the primary lists the separated isotope "))
+    separated_rows = [row for row in published if int(row["Z"]) != separated_key[0]
+                      or row["target_basis"] != "isotope"]
+    with pytest.raises(AssertionError, match=str(separated_key[0])):
+        check_preprint_listings(audit, separated_rows)
+    also_key = next(key for key, finding in audit.items()
+                    if " with no mass number at this Z -- also " in finding.evidence)
+    also_row = dict(next(row for row in published if int(row["Z"]) == also_key[0]))
+    also_row["target_basis"] = "isotope"
+    also_row["target_label"] = f"{also_key[1]}X"
+    with pytest.raises(AssertionError, match=str(also_key[0])):
+        check_preprint_listings(audit, [*published, also_row])
+    both_key = next(key for key, finding in audit.items()
+                    if finding.evidence.startswith("the primary lists BOTH "))
+    both_rows = [row for row in published if int(row["Z"]) != both_key[0]
+                 or row["target_basis"] != "isotope"]
+    both_audit = {both_key: dataclasses.replace(
+        audit[both_key], copy_read="preprint-scan", locator="Suzuki table listing"
+    )}
+    with pytest.raises(AssertionError, match=str(both_key[0])):
+        check_preprint_listings(both_audit, both_rows)
+    unknown = dict(audit)
+    unknown[key] = dataclasses.replace(audit[key], evidence="unrecognized listing opening")
+    with pytest.raises(AssertionError, match="unrecognized preprint listing opening"):
+        check_preprint_listings(unknown, published)
+
+
+# T-148: the published-copy row does not enter the preprint-value comparison.
+def test_t148_published_copy_bypasses_preprint_value_comparison():
+    audit = audit_rows()
+    blocks = d1.cells_by_z(capture_cells())
+    published = [key for key, finding in audit.items()
+                 if finding.copy_read == suzuki1987.COPY_READ]
+    assert published
+    for key in published:
+        assert d1.decided_by_value(key, audit[key].evidence, blocks[key[0]])
+        assert not d1.value_compared(key, audit[key], blocks)
+        assert d1.value_compared(key, dataclasses.replace(audit[key], copy_read="preprint-scan"), blocks)
 
 
 # --------------------------------------------------------------------------------------------
