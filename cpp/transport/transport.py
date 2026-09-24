@@ -394,7 +394,7 @@ def corrupt_levels(tag: str, work: Path) -> Path:
         if len(tokens) > index and tokens[0] == "82" and tokens[1] in ("0", "208"):
             mass = int(tokens[1])
             if not (0 < e8 < float(tokens[columns.index("e7")]) and
-                    e8 > float(tokens[columns.index("e9")]) and e8 * 0.001 < pristine_l8):
+                    e8 * 0.001 < pristine_l8):
                 raise RuntimeError(f"P12 precondition fails for {mass}")
             tokens[index] = repr(e8)
             line = " ".join(tokens) + "\n"
@@ -403,7 +403,7 @@ def corrupt_levels(tag: str, work: Path) -> Path:
     if seen != {0, 208}:
         raise RuntimeError(f"P12 changed wrong rows: {seen}")
     path.write_text("".join(lines), encoding="ascii")
-    print(f"P12_PRECONDITION {tag} e8={e8!r} 0<e8<e7 and e9<e8 and e8<pristine_L8 "
+    print(f"P12_PRECONDITION {tag} e8={e8!r} 0<e8<e7 and e8<pristine_L8 "
           f"rows={sorted(seen)}", flush=True)
     return corrupted
 

@@ -7,6 +7,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import shutil
 import sys
 import tarfile
 from pathlib import Path
@@ -120,6 +121,37 @@ def test_t149_build_location_uses_successful_retry(tmp_path):
     assert transport.build_dir(tmp_path, tag, "pristine") == tmp_path / tag / "pristine"
     transport.record_build_dir(tmp_path, tag, "pristine", tmp_path / tag / "pristine_retry")
     assert transport.build_dir(tmp_path, tag, "pristine") == tmp_path / tag / "pristine_retry"
+
+
+def test_t149_corrupt_levels_uses_last_tabulated_column(tmp_path):
+    tag = "v11.4.2"
+    stage = tmp_path / "dataset"
+    data = stage / "G4MuonicDatasynthetic"
+    data.mkdir(parents=True)
+    transport.save(stage / "stage.json", {"name": "G4MuonicData", "version": "synthetic"})
+    levels = data / "d3_levels.mudirac130.g4dat"
+    levels.write_text("#COLUMNS Z A e2 e3 e4 e5 e6 e7 e8\n"
+                      "82 0 700 600 500 400 350 300 250\n"
+                      "82 208 700 600 500 400 350 300 250\n", encoding="ascii")
+    (tmp_path / tag / "farm_nodata").mkdir(parents=True)
+    cell = tmp_path / tag / "runs/pristine/bound_decay/82-208/1"
+    output = cell / "attempt_1"
+    output.mkdir(parents=True)
+    transport.save(cell / "complete.json", {"output": "attempt_1"})
+    (output / "config.txt").write_text("L " + " ".join([1.0.hex()] * 8 + [0.4.hex()]),
+                                       encoding="utf-8")
+    corrupted = transport.corrupt_levels(tag, tmp_path)
+    changed = (corrupted / data.name / levels.name).read_text(encoding="ascii")
+    assert changed.count(" 200.0\n") == 2
+    invalid = tmp_path / "invalid"
+    shutil.copytree(stage, invalid / "dataset")
+    (invalid / tag / "farm_nodata").mkdir(parents=True)
+    bad_cell = invalid / tag / "runs/pristine/bound_decay/82-208/1"
+    shutil.copytree(cell, bad_cell)
+    (bad_cell / "attempt_1/config.txt").write_text(
+        "L " + " ".join([1.0.hex()] * 9), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="P12 precondition"):
+        transport.corrupt_levels(tag, invalid)
 
 
 def cascade_fixture(tmp_path):
