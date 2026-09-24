@@ -1084,13 +1084,27 @@ def is_separated_label(label: str) -> bool:
     return _SEPARATED_LABEL.fullmatch(label) is not None
 
 
+def value_compared(
+    key: tuple[int, int], finding: IsotopeAuditRow,
+    blocks: dict[int, tuple[CaptureCellRow, ...]],
+) -> bool:
+    from openmucf.g4.sources.suzuki1987 import COPY_READ
+
+    return (
+        finding.copy_read != COPY_READ
+        and key[0] in blocks
+        and decided_by_value(key, finding.evidence, blocks[key[0]])
+    )
+
+
 def decided_by_value(
     key: tuple[int, int], evidence: str, block: Sequence[CaptureCellRow]
 ) -> bool:
     """Whether a capture record's flag is decided by comparing its value with the printed cells.
 
     True on the two shapes the isotope audit cannot settle from the listing alone: the primary
-    prints a natural-composition entry AND a separated isotope of the record's ``A``, and ``A`` is
+    prints an entry whose label is not a separated-isotope label (in capture_rate_cells.csv, a bare
+    element symbol or a ``-nat`` label) AND a separated isotope of the record's ``A``, and ``A`` is
     also the ``round(Ar)`` the audit's evidence states -- so the key names either entry; or no
     printed label at that Z carries the record's ``A`` at all.
     """

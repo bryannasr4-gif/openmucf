@@ -34,6 +34,6 @@ not_in_committed_preprint_cells,92,,Table IV p.2221 row 8,,235U^c (13.7+-0.4)
 not_in_committed_preprint_cells,92,,Table IV p.2221 row 15,,236U^c (13.9+-0.4)
 not_in_committed_preprint_cells,92,,Table IV p.2221 row 30,,238U^c (12.4+-0.4)
 underline,55,Suzuki 1987 (TRI-PP-87-5) Table IV p.27,Table IV p.2220 row 15,true,false
-zeff,56,Suzuki 1987 (TRI-PP-87-5) Table IV p.27,Table IV p.2220 row 16,29.99,29.99
+printed_z,56,Suzuki 1987 (TRI-PP-87-5) Table IV p.27,Table IV p.2220 row 16,59,56
 underline,66,Suzuki 1987 (TRI-PP-87-5) Table IV p.27,Table IV p.2220 row 28,true,false
 zeff,83,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2220 row 50,34.0,34.00

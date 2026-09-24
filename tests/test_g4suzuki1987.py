@@ -70,6 +70,10 @@ def _corruption(case: str) -> bytes:
         first["printed_page"] = "x"
     elif case == "positive":
         first["printed_page"] = "-1"
+    elif case == "page_zero":
+        first["printed_page"] = "0"
+    elif case == "ordinal_zero":
+        first["page_row_ordinal"] = "0"
     elif case == "ordinal":
         second = _row()
         second["page_row_ordinal"] = "3"
@@ -91,7 +95,8 @@ def _corruption(case: str) -> bytes:
 @pytest.mark.parametrize(
     "case",
     (
-        "header", "cr", "ascii", "shape", "table", "integer", "positive", "ordinal",
+        "header", "cr", "ascii", "shape", "table", "integer", "positive", "page_zero",
+        "ordinal_zero", "ordinal",
         "duplicate", "kind", "underline", "copy", "empty", "missing",
     ),
 )
@@ -99,7 +104,21 @@ def test_loader_refusals(tmp_path: Path, case: str) -> None:
     path = tmp_path / "printed_rows.csv"
     if case != "missing":
         path.write_bytes(_corruption(case))
-    with pytest.raises(suzuki1987.Suzuki1987Error, match=r"printed_rows\.csv line \d+"):
+    messages = {
+        "header": "header differs", "cr": "CR is forbidden", "ascii": "non-ASCII byte",
+        "shape": "wrong cell count", "table": "table must be III or IV",
+        "integer": "page and ordinal must be integers", "positive": "must be positive",
+        "page_zero": "must be positive", "ordinal_zero": "must be positive",
+        "ordinal": "follows", "duplicate": "follows", "kind": "unrecognized row_kind",
+        "underline": "zeff_underlined must be", "copy": "copy_read must be",
+        "empty": "no printed rows", "missing": "",
+    }
+    pattern = (r"printed_rows\.csv line 0:" if case == "missing"
+               else rf"printed_rows\.csv line \d+.*{messages[case]}")
+    with pytest.raises(
+        suzuki1987.Suzuki1987Error,
+        match=pattern,
+    ):
         suzuki1987.load_printed_rows(path)
 
 
@@ -180,7 +199,7 @@ def test_normalize_refusals(case: str) -> None:
     else:
         index = next(i for i, r in enumerate(rows) if r.row_kind == "data")
         edits = {
-            "label": {"element_raw": "43.8.8Ca"},
+            "label": {"element_raw": "1.2.3Ca"},
             "life": {"mean_life_raw": "bad"},
             "rate_power": {"rate_raw": "12+-3x10^x"},
             "rate": {"rate_raw": "bad"},
@@ -200,7 +219,11 @@ def test_normalize_refusals(case: str) -> None:
             rows[index] = dataclasses.replace(rows[index], element_raw="Xx")
         else:
             rows[index] = dataclasses.replace(rows[index], **edits[case])
-    with pytest.raises(suzuki1987.Suzuki1987Error):
+    message = {
+        "label": "target label .* has no supported basis",
+        "missing_label": "missing target label",
+    }.get(case)
+    with pytest.raises(suzuki1987.Suzuki1987Error, match=message):
         suzuki1987.normalize(tuple(rows))
 
 
@@ -304,12 +327,28 @@ def test_comparison_files_and_mizuno_lifetimes() -> None:
         differences = list(csv.DictReader(stream))
     assert differences
     assert {r["kind"] for r in differences} <= {
-        "refs", "value", "unc", "label", "bracket", "zeff", "underline", "unmatched",
+        "refs", "value", "unc", "label", "bracket", "zeff", "printed_z", "underline", "unmatched",
         "not_in_committed_preprint_cells",
     }
     assert any(r["kind"] == "not_in_committed_preprint_cells"
                and r["published_locator"].endswith(f"row {uranium['page_row_ordinal']}")
                for r in differences)
+    assert all(row["preprint"] != row["published"] for row in differences)
+    zeff = d1.load_zeff_audit(DATA.parents[3] / d1.ZEFF_AUDIT_RELPATH)
+    printed_z = {
+        int(row.z_raw): row for row in _printed()
+        if row.row_kind == "data" and row.z_raw and row.zeff_raw
+    }
+    changed_z = {
+        z for z, old in zeff.items()
+        if z in printed_z and old.printed_z != int(printed_z[z].z_raw)
+    }
+    assert {int(row["Z"]) for row in differences if row["kind"] == "printed_z"} == changed_z
+    for z in changed_z:
+        matching = [row for row in differences if row["kind"] == "printed_z" and int(row["Z"]) == z]
+        assert len(matching) == 1
+        assert matching[0]["preprint"] == str(zeff[z].printed_z)
+        assert matching[0]["published"] == printed_z[z].z_raw
     own = [r for r in rows if r["own_measurement"] == "true"]
     table1 = mizuno2025.load_table1(DATA.parent / "mizuno2025_table1.csv")
     for target in table1:
@@ -357,14 +396,16 @@ def test_audit_checks_suzuki_pair(monkeypatch: pytest.MonkeyPatch) -> None:
         gen.audit()
 
 
-# T-142: a base release has three numeric components before its minor is advanced.
+# T-142: a base release has three numeric components before its patch is advanced.
 def test_version_bump_rejects_a_short_or_nonnumeric_base() -> None:
     parts = gen._BASE_DATASET_VERSION.split(".")
-    assert f"{parts[0]}.{int(parts[1]) + 1}.0" == gen.DATASET_VERSION
+    assert f"{parts[0]}.{parts[1]}.{int(parts[2]) + 1}" == gen.DATASET_VERSION
     with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
-        gen._next_minor_version(".".join(parts[:-1]))
+        gen._next_patch_version(".".join(parts[:-1]))
     with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
-        gen._next_minor_version(".".join((parts[0], "word", parts[-1])))
+        gen._next_patch_version(".".join((*parts, "0")))
+    with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
+        gen._next_patch_version(".".join((parts[0], "word", parts[-1])))
 
 
 # T-143: an equal value with a different uncertainty is not an equal published cell.
@@ -379,3 +420,147 @@ def test_parity_comparison_requires_both_printed_cells() -> None:
     cells = gen.build_suzuki_parity_cells(fake, (source,))
     (comparison,) = list(csv.DictReader(io.StringIO(cells.decode("ascii"))))
     assert comparison["equal_count"] == "0" and not comparison["equal_locators"]
+
+
+# T-149: each published-copy audit clause refuses its own isolated corruption.
+@pytest.mark.parametrize(
+    ("case", "message"),
+    (
+        ("flag", "isotope_resolved must be true"),
+        ("opening", "evidence must open with the separated isotope label"),
+        ("mass", "evidence must open with the separated isotope label"),
+        ("prefix", "evidence must open with the separated isotope label"),
+        ("no_equal", "exactly one published cell"),
+        ("two_equal", "exactly one published cell"),
+        ("basis", "matched cell must carry the isotope mass and symbol"),
+        ("symbol", "matched cell must carry the isotope mass and symbol"),
+        ("cell_mass", "matched cell must carry the isotope mass and symbol"),
+        ("locator", "locator must name the matched published table and page"),
+    ),
+)
+def test_t149_published_audit_guard_clauses(monkeypatch, case: str, message: str) -> None:
+    found = d1.load(gen.VENDORED_PATH)
+    audit = d1.load_isotope_audit(gen.ROOT / d1.AUDIT_RELPATH)
+    published_keys = [key for key, finding in audit.items()
+                      if finding.copy_read == suzuki1987.COPY_READ]
+    assert len(published_keys) == 1
+    (key,) = published_keys
+    finding = audit[key]
+    rows = list(_normalized())
+    gen.build_capture_document(found, tuple(rows))
+    z, a = key
+    symbol = finding.evidence.split("separated isotope ", 1)[1].split("-", 1)[0]
+    matching = next(row for row in rows if int(row["Z"]) == z
+                    and row["target_label"].partition("^")[0] == f"{a}{symbol}")
+    changed = dict(audit)
+    if case == "flag":
+        changed[key] = dataclasses.replace(finding, isotope_resolved=False)
+    elif case == "opening":
+        changed[key] = dataclasses.replace(finding, evidence="wrong opening; " + finding.evidence)
+    elif case == "mass":
+        changed[key] = dataclasses.replace(
+            finding,
+            evidence=finding.evidence.replace(
+                f"separated isotope {symbol}-{a}", f"separated isotope {symbol}-{a + 1}", 1
+            ),
+        )
+        assert changed[key].evidence != finding.evidence
+    elif case == "prefix":
+        changed[key] = dataclasses.replace(
+            finding,
+            evidence=finding.evidence.removeprefix("the primary lists the separated isotope "),
+        )
+        assert changed[key].evidence != finding.evidence
+    elif case == "locator":
+        changed[key] = dataclasses.replace(finding, locator=finding.locator + " wrong")
+    elif case == "two_equal":
+        rows.append(dict(matching))
+    else:
+        index = rows.index(matching)
+        altered = dict(matching)
+        if case == "no_equal":
+            altered["rate_unc"] = ""
+        elif case == "basis":
+            altered["target_basis"] = "unspecified"
+        elif case == "symbol":
+            altered["target_label"] = f"{a}X"
+        elif case == "cell_mass":
+            altered["target_label"] = (
+                f"{a + 1}{symbol}" + matching["target_label"][len(f"{a}{symbol}"):]
+            )
+        rows[index] = altered
+    monkeypatch.setattr(d1, "load_isotope_audit", lambda _path: changed)
+    with pytest.raises(SystemExit, match=message):
+        gen.build_capture_document(found, tuple(rows))
+
+
+# T-150: each printed-precision conjunct is necessary to identify an equal cell.
+def test_t150_published_equal_cells_require_value_uncertainty_and_printed_uncertainty() -> None:
+    source = next(row for row in _normalized() if row["rate"] and row["rate_unc"])
+    value = float(suzuki1987.scaled(source, "rate"))
+    unc = float(suzuki1987.scaled(source, "rate_unc"))
+    assert gen._published_equal_cells(value, unc, [source]) == [source]
+    assert not gen._published_equal_cells(value * 2, unc, [source])
+    assert not gen._published_equal_cells(value, unc * 2, [source])
+    no_unc = dict(source)
+    no_unc["rate_unc"] = ""
+    assert not gen._published_equal_cells(value, unc, [no_unc])
+
+
+def _own_isotope_and_natural() -> tuple[dict[str, str], dict[str, str]]:
+    isotope = next(row for row in _normalized() if row["own_measurement"] == "true"
+                   and row["target_basis"] == "isotope" and row["rate_unc"]
+                   and row["rate_parenthesized"] == "false")
+    symbol = re.search(r"[A-Z][a-z]?", isotope["target_label"])
+    assert symbol is not None
+    natural = dict(isotope, target_basis="natural", target_label=f"nat{symbol.group()}")
+    return isotope, natural
+
+
+# T-151: a selected own natural row receives the natural-composition key.
+def test_t151_selected_natural_row_uses_its_natural_key() -> None:
+    isotope, natural = _own_isotope_and_natural()
+    selected = suzuki1987.selected((natural,))
+    assert set(selected) == {(int(isotope["Z"]), 0)}
+
+
+# T-152: the validity token follows the actual selected natural keys.
+def test_t152_validity_distinguishes_isotope_only_and_mixed_selection() -> None:
+    isotope, natural = _own_isotope_and_natural()
+    digest = spec.parse((DATA.parent / "d1_capture.suzuki1987.g4dat").read_text(
+        encoding="ascii"
+    )).directives["SOURCEDIGEST"]
+    isotope_only = suzuki1987.selected((isotope,))
+    mixed = suzuki1987.selected((isotope, natural))
+    assert spec.validity_assignments(gen.build_suzuki_capture_table(
+        isotope_only, digest
+    ))["A"] == "listed"
+    assert spec.validity_assignments(gen.build_suzuki_capture_table(
+        mixed, digest
+    ))["A"] == spec.A_NATURAL_AND_LISTED
+
+
+# T-153: an equal preprint value under another label becomes a label difference.
+def test_t153_preprint_comparison_reports_a_value_match_under_another_label(monkeypatch) -> None:
+    rows = _normalized()
+    source = next(row for row in rows if row["rate"] and row["rate_unc"])
+    committed = d1.load_capture_cells(gen.ROOT / d1.CAPTURE_CELLS_RELPATH)
+    fake = dataclasses.replace(
+        committed[0], z=int(source["Z"]), label="Xx", rate=source["rate"],
+        rate_unc=source["rate_unc"],
+    )
+    monkeypatch.setattr(d1, "load_capture_cells", lambda _path: (fake,))
+    differences = list(csv.DictReader(io.StringIO(
+        gen.build_suzuki_preprint_differences(_printed(), rows).decode("ascii")
+    )))
+    assert any(row["kind"] == "label" and row["preprint_locator"] == fake.locator
+               for row in differences)
+
+
+# T-154: a multi-reference own measurement does not claim a single source.
+def test_t154_multi_reference_own_row_is_not_single_source() -> None:
+    isotope, _natural = _own_isotope_and_natural()
+    source = dict(isotope, refs="a,62f")
+    selected = suzuki1987.selected((source,))
+    document = gen.build_suzuki_capture_document(selected)
+    assert all(not row.single_source for row in document.rows.values())

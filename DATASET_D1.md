@@ -298,13 +298,11 @@ the first group is evidence about the model.
 
 What makes it land here is which elements those are. Of the nine the sentence names, **seven carry at
 least one record this audit establishes as a separated isotope** — Cl, Cr, Ni, Cu, Br, U and Pu. The
-two exceptions are instructive rather than incidental. **Ca** appears once, as a natural-composition
-record. **Sr** appears once too, and it is one of the three records this dataset **cannot settle** —
-`(38, 88)`, where the primary prints both natural Sr and Sr-88 and the key matches either.
+two exceptions are instructive rather than incidental. **Ca** appears once, as a record the primary
+prints with no mass number. **Sr** appears once too, and it is one of the records this dataset **cannot settle** —
+`(38, 88)`, where the primary prints both Sr with no mass number and Sr-88 and the key matches either.
 
-Sharper still: **all three of the records this dataset cannot settle sit at elements this sentence
-names.** `(92, 236)` U is open — the preprint's table carries no U-236 row at all — and U is named in
-the model half, where the complaint is about the formula rather than about the data.
+Sharper still: **the two records this dataset cannot settle sit at elements this sentence names.**
 
 **Those are not the same uncertainty, and saying so would overstate it.** This dataset cannot settle
 a row because the *key* fails to distinguish two printed entries; the primary doubts the
@@ -317,7 +315,7 @@ entry can only be there to be ambiguous with where separated-isotope work was do
 where these authors had something to say about isotopic effects.
 
 **F-7 — `(Z, A)` is a label on most rows, not a target specification.** For **41 of the 90 records**
-the primary shows the measurement was made on a **natural-composition element**, not on the nuclide
+the primary shows the measurement was made on an **element printed with no mass number**, not on the nuclide
 the record's `A` names. In 15 of those, `A` is not even the element's most abundant nuclide: the
 extremes are `(62, 150)`, where Sm-150 is **7.4 %** of natural samarium, and `(50, 119)`, where
 Sn-119 is **8.6 %** of natural tin. For `(30, 66)` and `(32, 72)` the `A` is neither the rounded
@@ -356,19 +354,19 @@ draw.
 **In this release the capture flags are established from the primary literature, row by row.** Each
 of the 90 records was checked against the paper its own value is attributed to — the capture table
 to Suzuki, Measday & Roalsvig (1987), hydrogen and helium to the two sources the source comment
-carves them out to. **87 of the 90 are settled and carry `needs_verification: false`; 3 are not and
-still carry `true`.** Of the settled rows, **46 are `isotope_resolved: true`**: 24 because the
+carves them out to. **88 of the 90 are settled and carry `needs_verification: false`; 2 are not and
+still carry `true`.** Of the settled rows, **47 are `isotope_resolved: true`**: 25 because the
 primary lists a separated isotope with that mass number (the `(17, 35)` record among them settled to
 that entry by the comparison below), 19 because the element is mononuclidic and so a
-natural-composition target *is* a single nuclide, and 3 — the hydrogen and helium records — because
+target of that element *is* a single nuclide, and 3 — the hydrogen and helium records — because
 the sources the table carves them out to describe an isotopically distinct target
 (deuterium-depleted protium; ³He and ⁴He tabulated as separate nuclides). The remaining **41 are
-`false` as an established finding**, because the primary shows the value rests on a
-natural-composition element (F-7).
+`false` as an established finding**, because the primary shows the value rests on an element
+printed with no mass number (F-7).
 
 **Two different sources are doing work here, and only one of them is the primary.** Whether a
-measurement was made on a separated isotope or on a natural element is read from the primary. But
-whether a natural element *is* a single nuclide — the 19 mononuclidic calls above — and every
+measurement was made on a separated isotope or on an element printed with no mass number is read from the primary. But
+whether an element *is* a single nuclide — the 19 mononuclidic calls above — and every
 isotopic abundance this document quotes, F-7's two extremes and its comparisons against the rounded
 standard atomic weight among them, come from the NIST *Atomic Weights and
 Isotopic Compositions* table (`NISTIsotopicCompositions` in `references.bib`). The primary states no
@@ -385,47 +383,48 @@ line, because that is where the *value* comes from and the two questions must no
 audit is shipped as `data/g4/d1/isotope_audit.csv` — one row per record, hand-authored, reviewable
 and diffable.
 
-**The three unsettled rows say so with an empty locator, and they are worth naming.**
+**The unsettled rows say so with an empty locator, and they are worth naming.**
 The rows the audit had left open were compared with every Total Capture Rate cell the primary
 prints at their Z in Table IV, at the primary's printed precision, from a committed transcription
 of those cells (`data/g4/d1/capture_rate_cells.csv` — with the primary's parentheses, whose
 footnote reads *"Numbers are not given in original reference"*, and its `Refs.` column); a row
 whose value and uncertainty equal a printed cell and no other is settled to that entry, which is
-how the `(17, 35)` record became `isotope_resolved`, and the rows no cell equals stay open with the
-comparison recorded in their `evaluation_method`:
+how the `(17, 35)` record became `isotope_resolved`, and the rows no cell equals stay open, unless the
+published article settles them, with the comparison recorded in their `evaluation_method`:
 
 | record | compiled-in value +- unc | Total Capture Rate cells the primary prints at this Z | equal at the printed precision |
 |---|---|---|---|
 | (24, 52) | 3.465 +- 0.026 | Cr 3.24 +- 0.08 [39]; Cr 3.33 +- 0.06 [48]; Cr 3.472 +- 0.031 [*]; Cr-50 3.825 +- 0.05 [72]; Cr-52 3.452 +- 0.047 [72]; Cr-53 3.297 +- 0.045 [72]; Cr-54 3.057 +- 0.042 [72]; Cr-nat 3.444 +- 0.047 [72] | no cell |
 | (38, 88) | 6.93 +- 0.12 | Sr 7.25 +- 0.14 [48]; Sr 7.02 +- 0.14 [*]; Sr-88 6.61 +- 0.27 [48] | no cell |
-| (92, 236) | 13.90 +- 0.40 | U-233 (15.8 +- 0.9) [61f]; U-233 (14.23 +- 0.15) [70f]; U-235 (14.9 +- 0.6) [61f]; U-235 (14.7 +- 1.0) [60f]; U-235 (12.9 +- 0.4) [62f]; U-235 (13.3 +- 0.2) [57f]; U-235 (13.36 +- 0.12) [70f]; U-235 13.58 +- 0.12 [25f]; U-238 (13.1 +- 0.5) [61f]; U-238 (12.9 +- 0.5) [60f]; U-238 (12.8 +- 0.2) [62f]; U-238 (12.60 +- 0.04) [66f]; U-238 (12.46 +- 0.09) [57f]; U-238 (12.50 +- 0.10) [70f]; U-238 (12.4 +- 0.4) [71f]; U-238 12.57 +- 0.07 [25f] | no cell |
+
+The preprint's Table IV prints U-233, U-235 and U-238 cells and no U-236 cell; the published article's Table IV prints a 236U cell, and the compiled-in `(92, 236)` pair equals it alone at the printed precision (`suzuki1987_parity_cells.csv`), so that row is settled to it and its locator cites the published copy.
 
 **What changed, and why the previous rule was not enough.** The earlier release derived the flag
 mechanically: `true` if and only if the row's Z carried more than one capture record. Its soundness
 argument was about the *Z* — two differing rates at one Z do show the underlying data distinguishes
 isotopes — and it was then applied to each *row* of that Z, which does not follow, since one of
 those rows can still be the natural-composition entry. The audited flag differs from that rule on
-**27 of the 90 records**, and the three ways it differs are not the same claim:
+**26 of the 90 records**, and the three ways it differs are not the same claim:
 
 * **23** the rule called unresolved that the primary establishes as resolved.
 * **2** the primary flatly contradicts: it lists "C" and "C-13", and "O" and "O-18", so `(6, 12)`
-  and `(8, 16)` are natural carbon and natural oxygen, not C-12 and O-16.
-* **2** — `(24, 52)`, `(92, 236)` — where the primary does not contradict the rule but
+  and `(8, 16)` are carbon and oxygen printed with no mass number, not C-12 and O-16.
+* **1** — `(24, 52)` — where the primary does not contradict the rule but
   **fails to establish the question it was answering**, so the flag falls back to "not established"
-  and `needs_verification` stays `true`. Counting these as "the rule was wrong" would overstate it;
-  counting them as agreement would hide an open question.
+  and `needs_verification` stays `true`. Counting this as "the rule was wrong" would overstate it;
+  counting it as agreement would hide an open question.
 
-Two of the three unsettled rows appear in that list and one does not, which is not an oversight:
+Not every unsettled row appears in that list, which is not an oversight:
 `(38, 88)` is the only capture record at Z=38, so the old rule called it unresolved as well, and
-rule and audited flag agree. The three open rows and the 27 disagreements are different sets and do
+rule and audited flag agree. The open rows and the disagreements are different sets and do
 not line up row for row.
 
 The `zeff` rows remain `false` throughout, as a fact rather than a default: an effective charge is a
 per-Z quantity, so there is no isotope for it to be resolved to.
 
 **Two limits on all of the above, stated plainly.** First, what was read is the TRIUMF preprint
-TRI-PP-87-5 (January 1987), a scanned copy, not the published article; every locator for a row
-attributed to Suzuki cites the preprint's pagination and records `copy_read`, and if a value's
+TRI-PP-87-5 (January 1987), a scanned copy, except where the published article settles a row the preprint leaves open; every locator for a row
+attributed to Suzuki cites the pagination of the copy its `copy_read` names, and if a value's
 evidence differs between the two copies this audit is the one that must move. A row attributed to
 another primary carries that primary's locator and copy, and a row the audit leaves unsettled
 carries its evidence in place of a locator. Second, this is a resolution audit, not an
@@ -502,7 +501,7 @@ journal version is unread.
 `data/g4/d1/suzuki1987_printed_rows.csv` records each printed line of Tables III and IV of the published Suzuki, Measday and Roalsvig article from its page images, with table, printed page and row locators.
 The generated `suzuki1987_quantity_rows.csv` normalizes the data rows and carries the Huff factor column as printed.
 The `suzuki1987` capture profile selects this experiment's own rows when the printed target label identifies an isotope or natural composition, the rate has a symmetric uncertainty, and the rate is not parenthesized.
-A bare element symbol stays `unspecified` because the format's natural-composition row must be named explicitly.
+A bare element symbol stays `unspecified` under this project's source-preserving convention, which records natural composition only where the printed label carries the `nat` prefix; the format itself makes an `A = 0` record the natural-composition row only under `A:natural_and_listed`.
 `suzuki1987_parity_cells.csv` lists every compiled-in capture record at a Z the published tables print and the published cells equal at their printed precision.
 `suzuki1987_preprint_differences.csv` lists differences against the committed preprint capture and effective-charge cells.
 Its `not_in_committed_preprint_cells` kind means a published capture cell at a covered Z has no paired committed preprint cell.

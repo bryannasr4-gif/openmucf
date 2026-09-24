@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed -- the capture record the published article settles, and the audit's element-only rows (2026-09-24)
+
+- The isotope audit settles the uranium record the preprint had left open against the published article, whose cell the compiled-in value and uncertainty equal at the printed precision; its locator cites the published copy.
+- Audit evidence no longer calls a target natural where the primary prints only the element symbol, with no mass number and no nat label.
+- The preprint comparison reports a printed Z that differs between the two copies as its own `printed_z` kind.
+- For this correction, the dataset's `#VERSION` becomes 0.5.1.
+
 ### Fixed -- the D3 harvest's particle-table check (2026-09-24)
 
 - **`cpp/tools/harvest_d3.cc` exits with a nonzero status before it prints a line when the particle table lacks a particle it constructs.**

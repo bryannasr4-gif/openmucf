@@ -99,20 +99,19 @@ SUZUKI_QUANTITY_PATH = ROOT / suzsrc.QUANTITY_ROWS_RELPATH
 SUZUKI_PARITY_CELLS = ROOT / suzsrc.PARITY_CELLS_RELPATH
 SUZUKI_PREPRINT_DIFF = ROOT / suzsrc.PREPRINT_DIFF_RELPATH
 
-#: The version moves with the archive: this one corrects the uncertainty cells of the two D3 energy
-#: tables, the previous one added those tables as members beside the D1 pairs. Plainly distinct
+#: The version moves with the archive. Plainly distinct
 #: from the example's `0.0.0-example`, and below 1.0.0 because D1 and D3 alone are not the dataset.
-_BASE_DATASET_VERSION = "0.4.1"
+_BASE_DATASET_VERSION = "0.5.0"
 
 
-def _next_minor_version(base: str) -> str:
+def _next_patch_version(base: str) -> str:
     parts = base.split(".")
     if len(parts) != 3 or not all(part.isdecimal() for part in parts):
         raise ValueError("base DATASET_VERSION must be MAJOR.MINOR.PATCH")
-    return f"{parts[0]}.{int(parts[1]) + 1}.0"
+    return f"{parts[0]}.{parts[1]}.{int(parts[2]) + 1}"
 
 
-DATASET_VERSION = _next_minor_version(_BASE_DATASET_VERSION)
+DATASET_VERSION = _next_patch_version(_BASE_DATASET_VERSION)
 D1_SEAM = "d1_nuclear_capture"
 #: The release we actually read -- we vendored it. NOT the papers Geant4 cites: those are carried as
 #: quoted upstream text in `conditions`, because citing a paper this project has not opened would be
@@ -133,7 +132,7 @@ CAPTURE_PARITY_CLAUSE = (
     "re-evaluated."
 )
 #: Settled by a primary -- in EITHER direction. `false` here is a finding ("the primary shows this
-#: value to rest on a natural-composition target"), not the absence of one, which is exactly the
+#: value to rest on an element target, not a separated isotope"), not the absence of one, which is exactly the
 #: distinction `needs_verification` exists to carry.
 CAPTURE_METHOD_SETTLED = (
     CAPTURE_PARITY_CLAUSE + " isotope_resolved was established by reading the primary literature "
@@ -200,7 +199,9 @@ def _isotope_locator(line: int, audit: d1src.IsotopeAuditRow) -> str:
     )
 
 
-def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument:
+def build_capture_document(
+    found: d1src.D1Extraction, suzuki_rows: tuple[dict[str, str], ...],
+) -> provenance.ProvDocument:
     """Layer 2 for the capture table: one row per record, every field decided by rule."""
     audit = d1src.load_isotope_audit(ROOT / d1src.AUDIT_RELPATH)
     keys = {(z, a) for z, a, _, _ in found.capture_records}
@@ -237,6 +238,32 @@ def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument
             "cells to be compared with"
         )
     values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    published: dict[int, list[dict[str, str]]] = {}
+    for row in suzuki_rows:
+        if row["rate"]:
+            published.setdefault(int(row["Z"]), []).append(row)
+    for key, finding in audit.items():
+        if finding.copy_read != suzsrc.COPY_READ:
+            continue
+        z, a = key
+        failure = f"g4data build FAILED: the audit row {key} published-scan"
+        if not finding.isotope_resolved:
+            raise SystemExit(f"{failure}: isotope_resolved must be true")
+        prefix = "the primary lists the separated isotope "
+        label = finding.evidence.removeprefix(prefix).split(";", 1)[0]
+        symbol, separator, mass = label.partition("-")
+        if not finding.evidence.startswith(prefix) or not separator or mass != str(a):
+            raise SystemExit(f"{failure}: evidence must open with the separated isotope label")
+        matches = _published_equal_cells(*values[key], published.get(z, []))
+        if len(matches) != 1:
+            raise SystemExit(f"{failure}: exactly one published cell must equal value and uncertainty")
+        (match,) = matches
+        if (match["target_basis"] != "isotope"
+                or match["target_label"].partition("^")[0] != f"{a}{symbol}"):
+            raise SystemExit(f"{failure}: matched cell must carry the isotope mass and symbol")
+        locator = f"{suzsrc.AUDIT_CITATION} Table {match['table']} p.{match['printed_page']}"
+        if finding.locator != locator:
+            raise SystemExit(f"{failure}: locator must name the matched published table and page")
     literals = {
         (z, a): literal
         for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
@@ -248,7 +275,7 @@ def build_capture_document(found: d1src.D1Extraction) -> provenance.ProvDocument
         finding = audit[(z, a)]
         template = CAPTURE_METHOD_SETTLED if finding.settled else CAPTURE_METHOD_UNSETTLED
         method = template.format(evidence=finding.evidence)
-        if z in blocks and d1src.decided_by_value((z, a), finding.evidence, blocks[z]):
+        if d1src.value_compared((z, a), finding, blocks):
             matches = d1src.printed_matches(*values[(z, a)], blocks[z])
             # The audit's finding must be the comparison's outcome, never a flag beside it: one
             # equal cell settles the row to that entry, any other count leaves it open.
@@ -628,6 +655,17 @@ def _published_rate(row: dict[str, str]) -> str:
     return text
 
 
+def _published_equal_cells(
+    value: float, unc: float, rows_at_z: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    return [
+        row for row in rows_at_z
+        if row["rate_unc"]
+        and d1src.agrees_at_printed_precision(value, format(suzsrc.scaled(row, "rate"), "f"))
+        and d1src.agrees_at_printed_precision(unc, format(suzsrc.scaled(row, "rate_unc"), "f"))
+    ]
+
+
 def build_suzuki_parity_cells(
     found: d1src.D1Extraction, rows: tuple[dict[str, str], ...],
 ) -> bytes:
@@ -642,12 +680,7 @@ def build_suzuki_parity_cells(
         if z not in blocks:
             continue
         published = [row for row in blocks[z] if row["rate"]]
-        equal = [
-            row for row in published
-            if row["rate_unc"]
-            and d1src.agrees_at_printed_precision(value, format(suzsrc.scaled(row, "rate"), "f"))
-            and d1src.agrees_at_printed_precision(unc, format(suzsrc.scaled(row, "rate_unc"), "f"))
-        ]
+        equal = _published_equal_cells(value, unc, published)
         cells = "; ".join(
             f"{_published_locator(row)} {row['target_label']} {_published_rate(row)} "
             f"[{row['rate_unit']}]"
@@ -727,7 +760,9 @@ def build_suzuki_preprint_differences(
         if row is None:
             add("zeff", z, old.locator, "", old.printed_zeff, "")
             continue
-        if old.printed_zeff != row.zeff_raw or old.printed_z != int(row.z_raw):
+        if old.printed_z != int(row.z_raw):
+            add("printed_z", z, old.locator, row.locator, str(old.printed_z), row.z_raw)
+        if old.printed_zeff != row.zeff_raw:
             add("zeff", z, old.locator, row.locator, old.printed_zeff, row.zeff_raw)
         if old.underlined != (row.zeff_underlined == "true"):
             add("underline", z, old.locator, row.locator, str(old.underlined).lower(),
@@ -903,7 +938,7 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     files: list[emit.TableEntry] = []
     for layer1_path, layer2_path, document, build in (
         (
-            D1_CAPTURE_LAYER1, D1_CAPTURE_LAYER2, build_capture_document(found),
+            D1_CAPTURE_LAYER1, D1_CAPTURE_LAYER2, build_capture_document(found, suzuki_rows),
             functools.partial(build_capture_table, found),
         ),
         (

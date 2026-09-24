@@ -12,6 +12,8 @@ PARITY_CELLS_RELPATH = "data/g4/d1/suzuki1987_parity_cells.csv"
 PREPRINT_DIFF_RELPATH = "data/g4/d1/suzuki1987_preprint_differences.csv"
 PROFILE = "suzuki1987"
 BIBKEY = "Suzuki1987"
+COPY_READ = "published-scan"
+AUDIT_CITATION = "Suzuki 1987 (Phys. Rev. C 35, 2212)"
 EVALUATION_ID = "suzuki1987-tables-iii-iv"
 PRINTED_COLUMNS = (
     "table", "printed_page", "page_row_ordinal", "row_kind", "z_raw", "zeff_raw",
@@ -97,8 +99,8 @@ def load_printed_rows(path: Path) -> tuple[PrintedRow, ...]:
             raise Suzuki1987Error(f"{where}: unrecognized row_kind {record['row_kind']!r}")
         if record["zeff_underlined"] not in ("true", "false", ""):
             raise Suzuki1987Error(f"{where}: zeff_underlined must be true, false, or blank")
-        if record["copy_read"] != "published-scan":
-            raise Suzuki1987Error(f"{where}: copy_read must be published-scan")
+        if record["copy_read"] != COPY_READ:
+            raise Suzuki1987Error(f"{where}: copy_read must be {COPY_READ}")
         rows.append(PrintedRow(
             table=record["table"], printed_page=page, page_row_ordinal=ordinal,
             row_kind=record["row_kind"], z_raw=record["z_raw"], zeff_raw=record["zeff_raw"],
