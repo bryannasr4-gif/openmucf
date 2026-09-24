@@ -26,6 +26,7 @@ PATCHES = ROOT / "cpp" / "patches"
 SNIPPET = ROOT / "data" / "g4" / "d1" / "geant4_add_dataset.snippet"
 SOURCES = ("matrix.json", "g4muonic_transport.cc", "CMakeLists.txt", "transport.py")
 RUNS_DIR = "runs_precreated"
+ATOM_SYMBOLS = ("Al", "Si", "Ag", "Pb")
 
 
 def digest(path: Path) -> str:
@@ -555,15 +556,40 @@ def route_check(config: dict[str, list[str]], records: list[list[str]], route: s
     expected = (1, 0) if route == "bound_decay" else (0, 1)
     if (bound, helper) != expected:
         return False, f"rest process counts {(bound, helper)} expected {expected}"
-    if route == "muonic_atom_helper" and len(config.get("MUATOM_PRECREATED", [])) != 1:
-        return False, f"master muonic atom marker {config.get('MUATOM_PRECREATED')}"
+    material = config.get("MATERIAL", [])
+    if len(material) < 4:
+        return False, f"material lacks target: {material}"
+    try:
+        z, a = int(material[2]), int(material[3])
+    except ValueError:
+        return False, f"material target is not integer: {material}"
+    atom_pdg = 2_000_000_000 + z * 10000 + a * 10
+    marker = config.get("MUATOM_PRECREATED", [])
+    symbol = next((symbol for target, symbol in zip(MATRIX["targets"], ATOM_SYMBOLS, strict=True)
+                   if (target["Z"], target["A"]) == (z, a)), None)
+    if route == "muonic_atom_helper" and (
+            symbol is None or marker != [f"Mu{symbol}{a}"]):
+        return False, f"master muonic atom marker {marker} for {z},{a}"
     by_event: dict[int, int] = {}
+    atomic_creator: dict[int, int] = {}
+    any_atom: dict[int, int] = {}
     for row in records:
-        if row[0] == "T" and row[5] == "muMinusAtomicCaptureAtRest":
-            event = int(row[1])
+        if row[0] != "T":
+            continue
+        event = int(row[1])
+        try:
+            is_atom = int(row[4]) == atom_pdg
+        except ValueError:
+            return False, f"track has invalid PDG: {row}"
+        is_atomic_creator = row[5] == "muMinusAtomicCaptureAtRest"
+        if is_atom:
+            any_atom[event] = any_atom.get(event, 0) + 1
+        if is_atomic_creator:
+            atomic_creator[event] = atomic_creator.get(event, 0) + 1
+        if is_atom and is_atomic_creator:
             by_event[event] = by_event.get(event, 0) + 1
-    if route == "bound_decay" and by_event:
-        return False, f"bound route created atomic tracks: {by_event}"
+    if route == "bound_decay" and (any_atom or atomic_creator):
+        return False, f"bound route atomic tracks: atoms={any_atom} creator={atomic_creator}"
     if route == "muonic_atom_helper" and any(by_event.get(e, 0) != 1 for e in range(events)):
         return False, f"helper atomic-track counts differ: {list(by_event.items())[:8]}"
     return True, f"rest={expected} atomic_tracks={sum(by_event.values())}"
@@ -571,8 +597,14 @@ def route_check(config: dict[str, list[str]], records: list[list[str]], route: s
 
 def target_check(config: dict[str, list[str]], target: dict[str, int]) -> tuple[bool, str]:
     material = config.get("MATERIAL", [])
-    expected = ["1", "1", str(target["Z"]), str(target["A"]), float(1).hex()]
-    return material == expected, f"material={material} expected={expected}"
+    expected = (1, 1, target["Z"], target["A"], float(1))
+    if len(material) != len(expected):
+        return False, f"material={material} expected={expected}"
+    try:
+        actual = tuple(int(value) for value in material[:4]) + (float.fromhex(material[4]),)
+    except ValueError:
+        return False, f"material={material} expected={expected}"
+    return actual == expected, f"material={material} expected={expected}"
 
 
 def config_check(config: dict[str, list[str]], mode: str, version: str) -> tuple[bool, str]:
@@ -616,9 +648,12 @@ def table_levels(path: Path, key: tuple[int, int]) -> list[float] | None:
     values = rows.get(key)
     if values is None:
         return None
-    if columns[:2] != ["Z", "A"] or not columns[2:] or columns[2] != "e2":
+    energies = [name for name in columns[2:] if re.fullmatch(r"e\d+", name)]
+    if (columns[:2] != ["Z", "A"] or not energies
+            or columns[2:2 + len(energies)] != energies
+            or energies != [f"e{i}" for i in range(2, 2 + len(energies))]):
         raise RuntimeError(f"bad level shape: {path}")
-    return values
+    return values[:len(energies)]
 
 
 def same_float(actual: str, expected: float) -> bool:
@@ -647,16 +682,25 @@ def lookup_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
             return False, f"{name} resolution {line}"
         if hit is None:
             fallback_key = "K1" if name == "kshell" else config_key
-            expected = float.fromhex(pristine[fallback_key][0])
+            expected_text = pristine[fallback_key][0]
+            matched = config_key in config and config[config_key][0] == expected_text
         else:
             expected = hit * scale
-        if config_key not in config or not same_float(config[config_key][0], expected):
-            return False, f"{config_key} {config.get(config_key)} expected {expected.hex()}"
+            expected_text = expected.hex()
+            matched = config_key in config and same_float(config[config_key][0], expected)
+        if not matched:
+            return False, f"{config_key} {config.get(config_key)} expected {expected_text}"
         if name in ("rate", "zeff"):
             helper_key = "RATE_HELPER" if name == "rate" else "ZEFF_HELPER"
-            expected_helper = (float.fromhex(pristine[helper_key][0]) if hit is None else hit * scale)
-            if helper_key not in config or not same_float(config[helper_key][0], expected_helper):
-                return False, f"{helper_key} {config.get(helper_key)} expected {expected_helper.hex()}"
+            if hit is None:
+                helper_text = pristine[helper_key][0]
+                helper_match = helper_key in config and config[helper_key][0] == helper_text
+            else:
+                expected_helper = hit * scale
+                helper_text = expected_helper.hex()
+                helper_match = helper_key in config and same_float(config[helper_key][0], expected_helper)
+            if not helper_match:
+                return False, f"{helper_key} {config.get(helper_key)} expected {helper_text}"
     return True, f"rate zeff kshell checked for {z},{a}"
 
 
@@ -667,12 +711,12 @@ def level_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
     if len(actual) != len(stock):
         return False, "level count differs from pristine"
     if mode != "enabled":
-        return actual == stock, "off/default level array vs pristine"
+        return config["L"] == pristine["L"], "off/default level array vs pristine"
     key = target["Z"], target["A"]
     k = table_value(dataset / "d3_kshell.mudirac130.g4dat", key, "value")
     levels = table_levels(dataset / "d3_levels.mudirac130.g4dat", key)
     if k is None or levels is None:
-        return actual == stock, "compiled level array vs pristine"
+        return config["L"] == pristine["L"], "compiled level array vs pristine"
     expected = stock[:]
     expected[0] = k * 0.001
     for i, level in enumerate(levels, start=1):
@@ -831,16 +875,22 @@ def check(work: Path, out: Path) -> None:
 
 
 def normalized(path: str, work: Path, preserved_paths: dict[str, Path]) -> str:
-    if path.startswith(str(work)):
-        return "$WORK" + path[len(str(work)):]
+    if str(work) in path:
+        return path.replace(str(work), "$WORK")
     for tag, install in preserved_paths.items():
-        if path.startswith(str(install)):
-            return f"$PRESERVED_{tag}" + path[len(str(install)):]
+        if str(install) in path:
+            return path.replace(str(install), f"$PRESERVED_{tag}")
     return path
 
 
-def libraries(binary: Path, work: Path, preserved_paths: dict[str, Path]) -> list[dict[str, str | None]]:
-    output = command(["ldd", str(binary)])
+def farm_manifest_entry(tag: str, entry: dict[str, str]) -> dict[str, str]:
+    return {"name": entry["name"], "target": f"$WORK/{tag}/farm/{entry['name']}",
+            "sha256": entry["sha256"]}
+
+
+def libraries(binary: Path, work: Path, preserved_paths: dict[str, Path],
+              install: Path) -> list[dict[str, str | None]]:
+    output = command(["ldd", str(binary)], env={**os.environ, "LD_LIBRARY_PATH": str(install / "lib")})
     found: list[dict[str, str | None]] = []
     for line in output.splitlines():
         line = line.strip()
@@ -886,15 +936,11 @@ def manifest(work: Path, out: Path) -> None:
                            "version": info["version"], "wall_s": info["wall_s"],
                            "harness_sha256": digest(binary),
                            "harness_path": normalized(str(binary), work, preserved_paths),
-                           "ldd": libraries(binary, work, preserved_paths)})
+                            "ldd": libraries(binary, work, preserved_paths, Path(info["install"]))})
     farms = {}
     for tag in MATRIX["revisions"]:
         info = json.loads((work / tag / "farm.json").read_text(encoding="utf-8"))
-        farms[tag] = [{"name": entry["name"],
-                       "target": (f"$WORK/{tag}/farm/{entry['name']}"
-                                  if entry["name"].startswith(stage["name"])
-                                  else normalized(entry["target"], work, preserved_paths)),
-                       "sha256": entry["sha256"]} for entry in info["entries"]]
+        farms[tag] = [farm_manifest_entry(tag, entry) for entry in info["entries"]]
     host = {"arch": platform.machine(), "gcc": command(["gcc", "--version"]).splitlines()[0],
             "cmake": command(["cmake", "--version"]).splitlines()[0],
             "glibc": " ".join(platform.libc_ver()), "python": platform.python_version()}

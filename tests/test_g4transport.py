@@ -7,6 +7,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import math
 import shutil
 import sys
 import tarfile
@@ -45,6 +46,74 @@ def test_t149_parity_and_thread_digest_detect_one_field_corruption():
     assert transport.records_digest(records) != transport.records_digest(changed)
 
 
+def test_t149_same_writer_hex_spelling_remains_byte_distinct():
+    records = tiny_records()
+    records[0][7] = float(1).hex()
+    respelled = [row[:] for row in records]
+    respelled[0][7] = "0x1p+0"
+    assert transport.records_digest(records) != transport.records_digest(respelled)
+
+
+def test_t149_target_numeric_fields_compare_exact_values():
+    config = tiny_config()
+    target = {"Z": 13, "A": 27}
+    config["MATERIAL"][-1] = "0x1p+0"
+    assert transport.target_check(config, target)[0]
+    config["MATERIAL"][0] = "01"
+    assert transport.target_check(config, target)[0]
+    config["MATERIAL"][-1] = math.nextafter(1.0, 2.0).hex()
+    assert not transport.target_check(config, target)[0]
+    config["MATERIAL"] = ["1", "1", "13", "27"]
+    assert not transport.target_check(config, target)[0]
+    config["MATERIAL"] = ["1", "1", "13", "27", "invalid"]
+    assert not transport.target_check(config, target)[0]
+
+
+def test_t149_same_writer_level_spelling_stays_distinct(tmp_path):
+    pristine = {"L": [float(1).hex()]}
+    config = {"L": ["0x1p+0"]}
+    target = {"Z": 13, "A": 27}
+    assert not transport.level_check(config, pristine, "patched-off", target, tmp_path)[0]
+    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+        "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
+    (tmp_path / "d3_levels.mudirac130.g4dat").write_text(
+        "#COLUMNS Z A e2\n82 208 1\n", encoding="ascii")
+    assert not transport.level_check(config, pristine, "enabled", target, tmp_path)[0]
+
+
+def test_t149_level_table_excludes_uncertainty_columns(tmp_path):
+    source = tmp_path / "levels.g4dat"
+    source.write_text("#COLUMNS Z A e2 e3 u2 u3\n13 27 100 50 0.1 0.2\n", encoding="ascii")
+    assert transport.table_levels(source, (13, 27)) == [100.0, 50.0]
+    for header in ("Z A u2 u3", "Z A e2 u2 e3", "Z A e2 e4 u2"):
+        source.write_text(f"#COLUMNS {header}\n13 27 100 50 0.1\n", encoding="ascii")
+        with pytest.raises(RuntimeError, match="bad level shape"):
+            transport.table_levels(source, (13, 27))
+
+
+def test_t149_same_writer_lookup_fallback_spelling_stays_distinct(tmp_path):
+    (tmp_path / "d1_capture.mizuno2025.g4dat").write_text(
+        "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
+    (tmp_path / "d1_zeff.g4dat").write_text(
+        "#COLUMNS Z value\n82 1\n", encoding="ascii")
+    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+        "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
+    pristine = {key: [float(1).hex()] for key in
+                ("RATE_BD", "RATE_HELPER", "ZEFF_BD", "ZEFF_HELPER", "K1")}
+    config = {key: [float(1).hex()] for key in
+              ("RATE_BD", "RATE_HELPER", "ZEFF_BD", "ZEFF_HELPER", "KA")}
+    config["RATE_BD"] = ["0x1p+0"]
+    config["_RES_LINES"] = [
+        ["rate", "13", "27", "compiled", "mizuno2025", "0"],
+        ["zeff", "13", "0", "compiled", "mizuno2025", "0"],
+        ["kshell", "13", "27", "compiled", "mudirac130", "0"],
+    ]
+    assert not transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
+    config["RATE_BD"] = [float(1).hex()]
+    config["RATE_HELPER"] = ["0x1p+0"]
+    assert not transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
+
+
 def test_t149_missing_event_and_wrong_seed_fail():
     records = tiny_records()
     assert transport.event_check(records, 1, MATRIX["seed_base"])[0]
@@ -68,11 +137,80 @@ def test_t149_duplicate_rest_process_and_two_isotope_material_fail():
 def test_t149_helper_requires_master_precreation_marker():
     config = tiny_config()
     config["PROCESSES"] = ["muMinusAtomicCaptureAtRest"]
-    config["MUATOM_PRECREATED"] = ["synthetic_atom"]
-    records = [["T", "0", "1", "0", "13", "muMinusAtomicCaptureAtRest", "-", "0x0p+0", "0x0p+0"]]
+    config["MUATOM_PRECREATED"] = ["MuAl27"]
+    atom = str(2_000_000_000 + int(config["MATERIAL"][2]) * 10000
+               + int(config["MATERIAL"][3]) * 10)
+    records = [["T", "0", "1", "0", atom, "muMinusAtomicCaptureAtRest", "-", "0x0p+0", "0x0p+0"]]
     assert transport.route_check(config, records, "muonic_atom_helper", 1)[0]
     del config["MUATOM_PRECREATED"]
     assert not transport.route_check(config, records, "muonic_atom_helper", 1)[0]
+
+
+def test_t149_helper_counts_atom_pdg_amid_cascade_tracks():
+    config = tiny_config()
+    config["PROCESSES"] = ["muMinusAtomicCaptureAtRest"]
+    config["MUATOM_PRECREATED"] = ["MuAl27"]
+    atom = str(2_000_000_000 + int(config["MATERIAL"][2]) * 10000
+               + int(config["MATERIAL"][3]) * 10)
+    creator = "muMinusAtomicCaptureAtRest"
+    def track(ident: int, pdg: str) -> list[str]:
+        return ["T", "0", str(ident), "1", pdg, creator, "-", "0x0p+0", "0x0p+0"]
+    records = [track(1, atom), track(2, "11"), track(3, "22")]
+    assert transport.route_check(config, records, "muonic_atom_helper", 1)[0]
+    assert not transport.route_check(config, records + [track(4, atom)], "muonic_atom_helper", 1)[0]
+    assert not transport.route_check(config, [track(2, "22")], "muonic_atom_helper", 1)[0]
+    wrong_creator = [track(2, "22")]
+    wrong_creator.append(["T", "0", "1", "0", atom, "-", "-", "0x0p+0", "0x0p+0"])
+    assert not transport.route_check(config, wrong_creator, "muonic_atom_helper", 1)[0]
+    config["MUATOM_PRECREATED"] = ["MuAl28"]
+    assert not transport.route_check(config, [track(1, atom)], "muonic_atom_helper", 1)[0]
+    config["MUATOM_PRECREATED"] = ["MuSi27"]
+    assert not transport.route_check(config, [track(1, atom)], "muonic_atom_helper", 1)[0]
+    config["MUATOM_PRECREATED"] = ["MuAl27"]
+    config["MATERIAL"] = ["1", "1", "13"]
+    assert not transport.route_check(config, [track(1, atom)], "muonic_atom_helper", 1)[0]
+    config["MATERIAL"] = ["1", "1", "bad", "27", float(1).hex()]
+    assert not transport.route_check(config, [track(1, atom)], "muonic_atom_helper", 1)[0]
+    config["MATERIAL"] = tiny_config()["MATERIAL"]
+    assert not transport.route_check(config, [track(1, "bad")], "muonic_atom_helper", 1)[0]
+    config["MATERIAL"] = ["1", "1", "99", "99", float(1).hex()]
+    config["MUATOM_PRECREATED"] = ["MuNone99"]
+    unknown_atom = str(2_000_000_000 + 99 * 10000 + 99 * 10)
+    assert not transport.route_check(config, [track(1, unknown_atom)], "muonic_atom_helper", 1)[0]
+
+
+@pytest.mark.parametrize(
+    "target,symbol", tuple(zip(MATRIX["targets"], ("Al", "Si", "Ag", "Pb"), strict=True)))
+def test_t149_helper_marker_matches_target_ion_name(target, symbol):
+    config = tiny_config()
+    config["PROCESSES"] = ["muMinusAtomicCaptureAtRest"]
+    config["MATERIAL"][2:4] = [str(target["Z"]), str(target["A"])]
+    config["MUATOM_PRECREATED"] = [f"Mu{symbol}{target['A']}"]
+    atom = str(2_000_000_000 + target["Z"] * 10000 + target["A"] * 10)
+    records = [["T", "0", "1", "0", atom, "muMinusAtomicCaptureAtRest", "-", "0x0p+0", "0x0p+0"]]
+    assert transport.route_check(config, records, "muonic_atom_helper", 1)[0]
+
+
+def test_t149_marker_symbols_cover_matrix_targets(monkeypatch):
+    config = tiny_config()
+    config["PROCESSES"] = ["muMinusAtomicCaptureAtRest"]
+    config["MATERIAL"][2:4] = ["99", "99"]
+    config["MUATOM_PRECREATED"] = ["MuNone99"]
+    monkeypatch.setitem(transport.MATRIX, "targets", [*MATRIX["targets"], {"Z": 99, "A": 99}])
+    with pytest.raises(ValueError, match="zip"):
+        transport.route_check(config, [], "muonic_atom_helper", 1)
+
+
+def test_t149_bound_route_rejects_atom_and_atomic_creator():
+    config = tiny_config()
+    atom = str(2_000_000_000 + int(config["MATERIAL"][2]) * 10000
+               + int(config["MATERIAL"][3]) * 10)
+    def track(pdg: str, creator: str) -> list[str]:
+        return ["T", "0", "1", "0", pdg, creator, "-", "0x0p+0", "0x0p+0"]
+    assert transport.route_check(config, [track("13", "-")], "bound_decay", 1)[0]
+    assert not transport.route_check(config, [track("22", "muMinusAtomicCaptureAtRest")],
+                                     "bound_decay", 1)[0]
+    assert not transport.route_check(config, [track(atom, "-")], "bound_decay", 1)[0]
 
 
 def test_t149_master_precreation_call_precedes_beamon():
@@ -223,6 +361,38 @@ def test_t149_manifest_source_digest_guard():
         pytest.skip("manifest is written after transport runs")
     manifest = json.loads((EVIDENCE / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["sources"] == expected
+
+
+def test_t149_manifest_resolves_libraries_from_build_install(monkeypatch, tmp_path):
+    install = tmp_path / "install"
+    lib = install / "lib/libprobe.so"
+    lib.parent.mkdir(parents=True)
+    lib.write_bytes(b"library")
+    binary = tmp_path / "binary"
+    binary.write_bytes(b"executable")
+
+    def ldd(argv, **kwargs):
+        assert argv == ["ldd", str(binary)]
+        assert kwargs["env"]["LD_LIBRARY_PATH"] == str(install / "lib")
+        return f"libprobe.so => {lib} (0x000)\n"
+
+    monkeypatch.setattr(transport, "command", ldd)
+    found = transport.libraries(binary, tmp_path, {}, install)
+    assert found == [{"soname": "libprobe.so", "path": "$WORK" + str(lib)[len(str(tmp_path)):],
+                      "sha256": hashlib.sha256(b"library").hexdigest()}]
+
+
+def test_t149_manifest_normalizes_embedded_work_path(tmp_path):
+    install = tmp_path / "tag/pristine/install"
+    arg = f"-DCMAKE_INSTALL_PREFIX={install}"
+    expected = "-DCMAKE_INSTALL_PREFIX=$WORK" + str(install)[len(str(tmp_path)):]
+    assert transport.normalized(arg, tmp_path, {}) == expected
+
+
+def test_t149_manifest_farm_target_is_inside_work():
+    entry = {"name": "physics_data", "target": "/root/external/data", "sha256": "digest"}
+    assert transport.farm_manifest_entry("tag", entry) == {
+        "name": "physics_data", "target": "$WORK/tag/farm/physics_data", "sha256": "digest"}
 
 
 def test_t149_stage_refuses_wrong_archive_md5(monkeypatch, tmp_path):

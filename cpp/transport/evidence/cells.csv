@@ -1,0 +1,1466 @@
+tag,mode,route,Z,A,threads,check,status,detail
+v11.4.2,pristine,bound_decay,13,27,1,events,PASS,events=1000
+v11.4.2,pristine,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,pristine,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,pristine,bound_decay,13,27,1,particles,PASS,particle table
+v11.4.2,pristine,bound_decay,13,27,1,config,PASS,config=None expected=None
+v11.4.2,pristine,bound_decay,13,27,1,lookups,PASS,not enabled
+v11.4.2,pristine,bound_decay,13,27,1,levels,PASS,reference
+v11.4.2,pristine,bound_decay,13,27,1,d9,PASS,not enabled
+v11.4.2,pristine,bound_decay,13,27,1,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.4.2,pristine,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.4.2,pristine,bound_decay,13,27,4,events,PASS,events=1000
+v11.4.2,pristine,bound_decay,13,27,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,pristine,bound_decay,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,pristine,bound_decay,13,27,4,particles,PASS,particle table
+v11.4.2,pristine,bound_decay,13,27,4,config,PASS,config=None expected=None
+v11.4.2,pristine,bound_decay,13,27,4,lookups,PASS,not enabled
+v11.4.2,pristine,bound_decay,13,27,4,levels,PASS,reference
+v11.4.2,pristine,bound_decay,13,27,4,d9,PASS,not enabled
+v11.4.2,pristine,bound_decay,13,27,4,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.4.2,pristine,bound_decay,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-off,bound_decay,13,27,1,events,PASS,events=1000
+v11.4.2,patched-off,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-off,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,patched-off,bound_decay,13,27,1,particles,PASS,particle table
+v11.4.2,patched-off,bound_decay,13,27,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,bound_decay,13,27,1,lookups,PASS,not enabled
+v11.4.2,patched-off,bound_decay,13,27,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,bound_decay,13,27,1,d9,PASS,not enabled
+v11.4.2,patched-off,bound_decay,13,27,1,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.4.2,patched-off,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.4.2,patched-off,bound_decay,13,27,4,events,PASS,events=1000
+v11.4.2,patched-off,bound_decay,13,27,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-off,bound_decay,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,patched-off,bound_decay,13,27,4,particles,PASS,particle table
+v11.4.2,patched-off,bound_decay,13,27,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,bound_decay,13,27,4,lookups,PASS,not enabled
+v11.4.2,patched-off,bound_decay,13,27,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,bound_decay,13,27,4,d9,PASS,not enabled
+v11.4.2,patched-off,bound_decay,13,27,4,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.4.2,patched-off,bound_decay,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-default,bound_decay,13,27,1,events,PASS,events=1000
+v11.4.2,patched-default,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-default,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,patched-default,bound_decay,13,27,1,particles,PASS,particle table
+v11.4.2,patched-default,bound_decay,13,27,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,bound_decay,13,27,1,lookups,PASS,not enabled
+v11.4.2,patched-default,bound_decay,13,27,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,bound_decay,13,27,1,d9,PASS,not enabled
+v11.4.2,patched-default,bound_decay,13,27,1,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.4.2,patched-default,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.4.2,patched-default,bound_decay,13,27,4,events,PASS,events=1000
+v11.4.2,patched-default,bound_decay,13,27,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-default,bound_decay,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,patched-default,bound_decay,13,27,4,particles,PASS,particle table
+v11.4.2,patched-default,bound_decay,13,27,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,bound_decay,13,27,4,lookups,PASS,not enabled
+v11.4.2,patched-default,bound_decay,13,27,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,bound_decay,13,27,4,d9,PASS,not enabled
+v11.4.2,patched-default,bound_decay,13,27,4,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.4.2,patched-default,bound_decay,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,enabled,bound_decay,13,27,1,events,PASS,events=1000
+v11.4.2,enabled,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,enabled,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,enabled,bound_decay,13,27,1,particles,PASS,particle table
+v11.4.2,enabled,bound_decay,13,27,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,bound_decay,13,27,1,lookups,PASS,"rate zeff kshell checked for 13,27"
+v11.4.2,enabled,bound_decay,13,27,1,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,bound_decay,13,27,1,d9,PASS,transitions table=3156 mixed=1000 formula=1772
+v11.4.2,enabled,bound_decay,13,27,1,parity,PASS,digest=0078f56bfb588bcbbdcf9c21c98c5f6f241fceab738dcf9b0de8c15a1cbdb8b5 reference=0078f56bfb588bcbbdcf9c21c98c5f6f241fceab738dcf9b0de8c15a1cbdb8b5
+v11.4.2,enabled,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.4.2,enabled,bound_decay,13,27,4,events,PASS,events=1000
+v11.4.2,enabled,bound_decay,13,27,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,enabled,bound_decay,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,enabled,bound_decay,13,27,4,particles,PASS,particle table
+v11.4.2,enabled,bound_decay,13,27,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,bound_decay,13,27,4,lookups,PASS,"rate zeff kshell checked for 13,27"
+v11.4.2,enabled,bound_decay,13,27,4,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,bound_decay,13,27,4,d9,PASS,transitions table=3156 mixed=1000 formula=1772
+v11.4.2,enabled,bound_decay,13,27,4,parity,PASS,digest=0078f56bfb588bcbbdcf9c21c98c5f6f241fceab738dcf9b0de8c15a1cbdb8b5 reference=0078f56bfb588bcbbdcf9c21c98c5f6f241fceab738dcf9b0de8c15a1cbdb8b5
+v11.4.2,enabled,bound_decay,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,preserved,bound_decay,13,27,1,events,PASS,events=1000
+v11.4.2,preserved,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,preserved,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,preserved,bound_decay,13,27,1,particles,PASS,particle table
+v11.4.2,preserved,bound_decay,13,27,1,config,PASS,config=None expected=None
+v11.4.2,preserved,bound_decay,13,27,1,lookups,PASS,not enabled
+v11.4.2,preserved,bound_decay,13,27,1,levels,PASS,reference
+v11.4.2,preserved,bound_decay,13,27,1,d9,PASS,not enabled
+v11.4.2,preserved,bound_decay,13,27,1,parity,INFO,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.4.2,preserved,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.4.2,pristine,bound_decay,14,28,1,events,PASS,events=1000
+v11.4.2,pristine,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,pristine,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,pristine,bound_decay,14,28,1,particles,PASS,particle table
+v11.4.2,pristine,bound_decay,14,28,1,config,PASS,config=None expected=None
+v11.4.2,pristine,bound_decay,14,28,1,lookups,PASS,not enabled
+v11.4.2,pristine,bound_decay,14,28,1,levels,PASS,reference
+v11.4.2,pristine,bound_decay,14,28,1,d9,PASS,not enabled
+v11.4.2,pristine,bound_decay,14,28,1,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.4.2,pristine,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.4.2,pristine,bound_decay,14,28,4,events,PASS,events=1000
+v11.4.2,pristine,bound_decay,14,28,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,pristine,bound_decay,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,pristine,bound_decay,14,28,4,particles,PASS,particle table
+v11.4.2,pristine,bound_decay,14,28,4,config,PASS,config=None expected=None
+v11.4.2,pristine,bound_decay,14,28,4,lookups,PASS,not enabled
+v11.4.2,pristine,bound_decay,14,28,4,levels,PASS,reference
+v11.4.2,pristine,bound_decay,14,28,4,d9,PASS,not enabled
+v11.4.2,pristine,bound_decay,14,28,4,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.4.2,pristine,bound_decay,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-off,bound_decay,14,28,1,events,PASS,events=1000
+v11.4.2,patched-off,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-off,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,patched-off,bound_decay,14,28,1,particles,PASS,particle table
+v11.4.2,patched-off,bound_decay,14,28,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,bound_decay,14,28,1,lookups,PASS,not enabled
+v11.4.2,patched-off,bound_decay,14,28,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,bound_decay,14,28,1,d9,PASS,not enabled
+v11.4.2,patched-off,bound_decay,14,28,1,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.4.2,patched-off,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.4.2,patched-off,bound_decay,14,28,4,events,PASS,events=1000
+v11.4.2,patched-off,bound_decay,14,28,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-off,bound_decay,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,patched-off,bound_decay,14,28,4,particles,PASS,particle table
+v11.4.2,patched-off,bound_decay,14,28,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,bound_decay,14,28,4,lookups,PASS,not enabled
+v11.4.2,patched-off,bound_decay,14,28,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,bound_decay,14,28,4,d9,PASS,not enabled
+v11.4.2,patched-off,bound_decay,14,28,4,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.4.2,patched-off,bound_decay,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-default,bound_decay,14,28,1,events,PASS,events=1000
+v11.4.2,patched-default,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-default,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,patched-default,bound_decay,14,28,1,particles,PASS,particle table
+v11.4.2,patched-default,bound_decay,14,28,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,bound_decay,14,28,1,lookups,PASS,not enabled
+v11.4.2,patched-default,bound_decay,14,28,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,bound_decay,14,28,1,d9,PASS,not enabled
+v11.4.2,patched-default,bound_decay,14,28,1,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.4.2,patched-default,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.4.2,patched-default,bound_decay,14,28,4,events,PASS,events=1000
+v11.4.2,patched-default,bound_decay,14,28,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-default,bound_decay,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,patched-default,bound_decay,14,28,4,particles,PASS,particle table
+v11.4.2,patched-default,bound_decay,14,28,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,bound_decay,14,28,4,lookups,PASS,not enabled
+v11.4.2,patched-default,bound_decay,14,28,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,bound_decay,14,28,4,d9,PASS,not enabled
+v11.4.2,patched-default,bound_decay,14,28,4,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.4.2,patched-default,bound_decay,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,enabled,bound_decay,14,28,1,events,PASS,events=1000
+v11.4.2,enabled,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,enabled,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,enabled,bound_decay,14,28,1,particles,PASS,particle table
+v11.4.2,enabled,bound_decay,14,28,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,bound_decay,14,28,1,lookups,PASS,"rate zeff kshell checked for 14,28"
+v11.4.2,enabled,bound_decay,14,28,1,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,bound_decay,14,28,1,d9,PASS,transitions table=3064 mixed=1000 formula=1668
+v11.4.2,enabled,bound_decay,14,28,1,parity,PASS,digest=22f7c9f54d69ab5ae2f439c50828c97c5715139b54bc6fe3fa5928a78b0eaac8 reference=22f7c9f54d69ab5ae2f439c50828c97c5715139b54bc6fe3fa5928a78b0eaac8
+v11.4.2,enabled,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.4.2,enabled,bound_decay,14,28,4,events,PASS,events=1000
+v11.4.2,enabled,bound_decay,14,28,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,enabled,bound_decay,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,enabled,bound_decay,14,28,4,particles,PASS,particle table
+v11.4.2,enabled,bound_decay,14,28,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,bound_decay,14,28,4,lookups,PASS,"rate zeff kshell checked for 14,28"
+v11.4.2,enabled,bound_decay,14,28,4,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,bound_decay,14,28,4,d9,PASS,transitions table=3064 mixed=1000 formula=1668
+v11.4.2,enabled,bound_decay,14,28,4,parity,PASS,digest=22f7c9f54d69ab5ae2f439c50828c97c5715139b54bc6fe3fa5928a78b0eaac8 reference=22f7c9f54d69ab5ae2f439c50828c97c5715139b54bc6fe3fa5928a78b0eaac8
+v11.4.2,enabled,bound_decay,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,preserved,bound_decay,14,28,1,events,PASS,events=1000
+v11.4.2,preserved,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,preserved,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,preserved,bound_decay,14,28,1,particles,PASS,particle table
+v11.4.2,preserved,bound_decay,14,28,1,config,PASS,config=None expected=None
+v11.4.2,preserved,bound_decay,14,28,1,lookups,PASS,not enabled
+v11.4.2,preserved,bound_decay,14,28,1,levels,PASS,reference
+v11.4.2,preserved,bound_decay,14,28,1,d9,PASS,not enabled
+v11.4.2,preserved,bound_decay,14,28,1,parity,INFO,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.4.2,preserved,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.4.2,pristine,bound_decay,47,107,1,events,PASS,events=1000
+v11.4.2,pristine,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,pristine,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,pristine,bound_decay,47,107,1,particles,PASS,particle table
+v11.4.2,pristine,bound_decay,47,107,1,config,PASS,config=None expected=None
+v11.4.2,pristine,bound_decay,47,107,1,lookups,PASS,not enabled
+v11.4.2,pristine,bound_decay,47,107,1,levels,PASS,reference
+v11.4.2,pristine,bound_decay,47,107,1,d9,PASS,not enabled
+v11.4.2,pristine,bound_decay,47,107,1,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.4.2,pristine,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.4.2,pristine,bound_decay,47,107,4,events,PASS,events=1000
+v11.4.2,pristine,bound_decay,47,107,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,pristine,bound_decay,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,pristine,bound_decay,47,107,4,particles,PASS,particle table
+v11.4.2,pristine,bound_decay,47,107,4,config,PASS,config=None expected=None
+v11.4.2,pristine,bound_decay,47,107,4,lookups,PASS,not enabled
+v11.4.2,pristine,bound_decay,47,107,4,levels,PASS,reference
+v11.4.2,pristine,bound_decay,47,107,4,d9,PASS,not enabled
+v11.4.2,pristine,bound_decay,47,107,4,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.4.2,pristine,bound_decay,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-off,bound_decay,47,107,1,events,PASS,events=1000
+v11.4.2,patched-off,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-off,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,patched-off,bound_decay,47,107,1,particles,PASS,particle table
+v11.4.2,patched-off,bound_decay,47,107,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,bound_decay,47,107,1,lookups,PASS,not enabled
+v11.4.2,patched-off,bound_decay,47,107,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,bound_decay,47,107,1,d9,PASS,not enabled
+v11.4.2,patched-off,bound_decay,47,107,1,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.4.2,patched-off,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.4.2,patched-off,bound_decay,47,107,4,events,PASS,events=1000
+v11.4.2,patched-off,bound_decay,47,107,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-off,bound_decay,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,patched-off,bound_decay,47,107,4,particles,PASS,particle table
+v11.4.2,patched-off,bound_decay,47,107,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,bound_decay,47,107,4,lookups,PASS,not enabled
+v11.4.2,patched-off,bound_decay,47,107,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,bound_decay,47,107,4,d9,PASS,not enabled
+v11.4.2,patched-off,bound_decay,47,107,4,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.4.2,patched-off,bound_decay,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-default,bound_decay,47,107,1,events,PASS,events=1000
+v11.4.2,patched-default,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-default,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,patched-default,bound_decay,47,107,1,particles,PASS,particle table
+v11.4.2,patched-default,bound_decay,47,107,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,bound_decay,47,107,1,lookups,PASS,not enabled
+v11.4.2,patched-default,bound_decay,47,107,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,bound_decay,47,107,1,d9,PASS,not enabled
+v11.4.2,patched-default,bound_decay,47,107,1,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.4.2,patched-default,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.4.2,patched-default,bound_decay,47,107,4,events,PASS,events=1000
+v11.4.2,patched-default,bound_decay,47,107,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-default,bound_decay,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,patched-default,bound_decay,47,107,4,particles,PASS,particle table
+v11.4.2,patched-default,bound_decay,47,107,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,bound_decay,47,107,4,lookups,PASS,not enabled
+v11.4.2,patched-default,bound_decay,47,107,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,bound_decay,47,107,4,d9,PASS,not enabled
+v11.4.2,patched-default,bound_decay,47,107,4,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.4.2,patched-default,bound_decay,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,enabled,bound_decay,47,107,1,events,PASS,events=1000
+v11.4.2,enabled,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,enabled,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,enabled,bound_decay,47,107,1,particles,PASS,particle table
+v11.4.2,enabled,bound_decay,47,107,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,bound_decay,47,107,1,lookups,PASS,"rate zeff kshell checked for 47,107"
+v11.4.2,enabled,bound_decay,47,107,1,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,bound_decay,47,107,1,d9,PASS,transitions table=2826 mixed=1000 formula=1279
+v11.4.2,enabled,bound_decay,47,107,1,parity,PASS,digest=62474280c24f992614437a7c3cc0e6ec63416a0fc1f3554f04fff02bd9fb88bc reference=62474280c24f992614437a7c3cc0e6ec63416a0fc1f3554f04fff02bd9fb88bc
+v11.4.2,enabled,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.4.2,enabled,bound_decay,47,107,4,events,PASS,events=1000
+v11.4.2,enabled,bound_decay,47,107,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,enabled,bound_decay,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,enabled,bound_decay,47,107,4,particles,PASS,particle table
+v11.4.2,enabled,bound_decay,47,107,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,bound_decay,47,107,4,lookups,PASS,"rate zeff kshell checked for 47,107"
+v11.4.2,enabled,bound_decay,47,107,4,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,bound_decay,47,107,4,d9,PASS,transitions table=2826 mixed=1000 formula=1279
+v11.4.2,enabled,bound_decay,47,107,4,parity,PASS,digest=62474280c24f992614437a7c3cc0e6ec63416a0fc1f3554f04fff02bd9fb88bc reference=62474280c24f992614437a7c3cc0e6ec63416a0fc1f3554f04fff02bd9fb88bc
+v11.4.2,enabled,bound_decay,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,preserved,bound_decay,47,107,1,events,PASS,events=1000
+v11.4.2,preserved,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,preserved,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,preserved,bound_decay,47,107,1,particles,PASS,particle table
+v11.4.2,preserved,bound_decay,47,107,1,config,PASS,config=None expected=None
+v11.4.2,preserved,bound_decay,47,107,1,lookups,PASS,not enabled
+v11.4.2,preserved,bound_decay,47,107,1,levels,PASS,reference
+v11.4.2,preserved,bound_decay,47,107,1,d9,PASS,not enabled
+v11.4.2,preserved,bound_decay,47,107,1,parity,INFO,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.4.2,preserved,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.4.2,pristine,bound_decay,82,208,1,events,PASS,events=1000
+v11.4.2,pristine,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,pristine,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,pristine,bound_decay,82,208,1,particles,PASS,particle table
+v11.4.2,pristine,bound_decay,82,208,1,config,PASS,config=None expected=None
+v11.4.2,pristine,bound_decay,82,208,1,lookups,PASS,not enabled
+v11.4.2,pristine,bound_decay,82,208,1,levels,PASS,reference
+v11.4.2,pristine,bound_decay,82,208,1,d9,PASS,not enabled
+v11.4.2,pristine,bound_decay,82,208,1,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.4.2,pristine,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.4.2,pristine,bound_decay,82,208,4,events,PASS,events=1000
+v11.4.2,pristine,bound_decay,82,208,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,pristine,bound_decay,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,pristine,bound_decay,82,208,4,particles,PASS,particle table
+v11.4.2,pristine,bound_decay,82,208,4,config,PASS,config=None expected=None
+v11.4.2,pristine,bound_decay,82,208,4,lookups,PASS,not enabled
+v11.4.2,pristine,bound_decay,82,208,4,levels,PASS,reference
+v11.4.2,pristine,bound_decay,82,208,4,d9,PASS,not enabled
+v11.4.2,pristine,bound_decay,82,208,4,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.4.2,pristine,bound_decay,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-off,bound_decay,82,208,1,events,PASS,events=1000
+v11.4.2,patched-off,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-off,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,patched-off,bound_decay,82,208,1,particles,PASS,particle table
+v11.4.2,patched-off,bound_decay,82,208,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,bound_decay,82,208,1,lookups,PASS,not enabled
+v11.4.2,patched-off,bound_decay,82,208,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,bound_decay,82,208,1,d9,PASS,not enabled
+v11.4.2,patched-off,bound_decay,82,208,1,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.4.2,patched-off,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.4.2,patched-off,bound_decay,82,208,4,events,PASS,events=1000
+v11.4.2,patched-off,bound_decay,82,208,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-off,bound_decay,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,patched-off,bound_decay,82,208,4,particles,PASS,particle table
+v11.4.2,patched-off,bound_decay,82,208,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,bound_decay,82,208,4,lookups,PASS,not enabled
+v11.4.2,patched-off,bound_decay,82,208,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,bound_decay,82,208,4,d9,PASS,not enabled
+v11.4.2,patched-off,bound_decay,82,208,4,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.4.2,patched-off,bound_decay,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-default,bound_decay,82,208,1,events,PASS,events=1000
+v11.4.2,patched-default,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-default,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,patched-default,bound_decay,82,208,1,particles,PASS,particle table
+v11.4.2,patched-default,bound_decay,82,208,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,bound_decay,82,208,1,lookups,PASS,not enabled
+v11.4.2,patched-default,bound_decay,82,208,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,bound_decay,82,208,1,d9,PASS,not enabled
+v11.4.2,patched-default,bound_decay,82,208,1,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.4.2,patched-default,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.4.2,patched-default,bound_decay,82,208,4,events,PASS,events=1000
+v11.4.2,patched-default,bound_decay,82,208,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,patched-default,bound_decay,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,patched-default,bound_decay,82,208,4,particles,PASS,particle table
+v11.4.2,patched-default,bound_decay,82,208,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,bound_decay,82,208,4,lookups,PASS,not enabled
+v11.4.2,patched-default,bound_decay,82,208,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,bound_decay,82,208,4,d9,PASS,not enabled
+v11.4.2,patched-default,bound_decay,82,208,4,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.4.2,patched-default,bound_decay,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,enabled,bound_decay,82,208,1,events,PASS,events=1000
+v11.4.2,enabled,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,enabled,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,enabled,bound_decay,82,208,1,particles,PASS,particle table
+v11.4.2,enabled,bound_decay,82,208,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,bound_decay,82,208,1,lookups,PASS,"rate zeff kshell checked for 82,208"
+v11.4.2,enabled,bound_decay,82,208,1,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,bound_decay,82,208,1,d9,PASS,transitions table=2831 mixed=1000 formula=1274
+v11.4.2,enabled,bound_decay,82,208,1,parity,PASS,digest=bcece37087b102cdb2b7f41cbd8b058a73392cf4129715b5ceb147760d147867 reference=bcece37087b102cdb2b7f41cbd8b058a73392cf4129715b5ceb147760d147867
+v11.4.2,enabled,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.4.2,enabled,bound_decay,82,208,4,events,PASS,events=1000
+v11.4.2,enabled,bound_decay,82,208,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,enabled,bound_decay,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,enabled,bound_decay,82,208,4,particles,PASS,particle table
+v11.4.2,enabled,bound_decay,82,208,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,bound_decay,82,208,4,lookups,PASS,"rate zeff kshell checked for 82,208"
+v11.4.2,enabled,bound_decay,82,208,4,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,bound_decay,82,208,4,d9,PASS,transitions table=2831 mixed=1000 formula=1274
+v11.4.2,enabled,bound_decay,82,208,4,parity,PASS,digest=bcece37087b102cdb2b7f41cbd8b058a73392cf4129715b5ceb147760d147867 reference=bcece37087b102cdb2b7f41cbd8b058a73392cf4129715b5ceb147760d147867
+v11.4.2,enabled,bound_decay,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,preserved,bound_decay,82,208,1,events,PASS,events=1000
+v11.4.2,preserved,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.4.2,preserved,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,preserved,bound_decay,82,208,1,particles,PASS,particle table
+v11.4.2,preserved,bound_decay,82,208,1,config,PASS,config=None expected=None
+v11.4.2,preserved,bound_decay,82,208,1,lookups,PASS,not enabled
+v11.4.2,preserved,bound_decay,82,208,1,levels,PASS,reference
+v11.4.2,preserved,bound_decay,82,208,1,d9,PASS,not enabled
+v11.4.2,preserved,bound_decay,82,208,1,parity,INFO,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.4.2,preserved,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.4.2,pristine,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.4.2,pristine,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,pristine,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,pristine,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.4.2,pristine,muonic_atom_helper,13,27,1,config,PASS,config=None expected=None
+v11.4.2,pristine,muonic_atom_helper,13,27,1,lookups,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,13,27,1,levels,PASS,reference
+v11.4.2,pristine,muonic_atom_helper,13,27,1,d9,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,13,27,1,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.4.2,pristine,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.4.2,pristine,muonic_atom_helper,13,27,4,events,PASS,events=1000
+v11.4.2,pristine,muonic_atom_helper,13,27,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,pristine,muonic_atom_helper,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,pristine,muonic_atom_helper,13,27,4,particles,PASS,particle table
+v11.4.2,pristine,muonic_atom_helper,13,27,4,config,PASS,config=None expected=None
+v11.4.2,pristine,muonic_atom_helper,13,27,4,lookups,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,13,27,4,levels,PASS,reference
+v11.4.2,pristine,muonic_atom_helper,13,27,4,d9,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,13,27,4,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.4.2,pristine,muonic_atom_helper,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,lookups,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,d9,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.4.2,patched-off,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,events,PASS,events=1000
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,particles,PASS,particle table
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,lookups,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,d9,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.4.2,patched-off,muonic_atom_helper,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,lookups,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,d9,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.4.2,patched-default,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,events,PASS,events=1000
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,particles,PASS,particle table
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,lookups,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,d9,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.4.2,patched-default,muonic_atom_helper,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,enabled,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.4.2,enabled,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,enabled,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,enabled,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.4.2,enabled,muonic_atom_helper,13,27,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,muonic_atom_helper,13,27,1,lookups,PASS,"rate zeff kshell checked for 13,27"
+v11.4.2,enabled,muonic_atom_helper,13,27,1,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,muonic_atom_helper,13,27,1,d9,PASS,transitions table=3156 mixed=1000 formula=1772
+v11.4.2,enabled,muonic_atom_helper,13,27,1,parity,PASS,digest=3244a7965e87e845f35836d5a2f99f4526cbd7d0f0db45062098b5baded62e90 reference=3244a7965e87e845f35836d5a2f99f4526cbd7d0f0db45062098b5baded62e90
+v11.4.2,enabled,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.4.2,enabled,muonic_atom_helper,13,27,4,events,PASS,events=1000
+v11.4.2,enabled,muonic_atom_helper,13,27,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,enabled,muonic_atom_helper,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,enabled,muonic_atom_helper,13,27,4,particles,PASS,particle table
+v11.4.2,enabled,muonic_atom_helper,13,27,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,muonic_atom_helper,13,27,4,lookups,PASS,"rate zeff kshell checked for 13,27"
+v11.4.2,enabled,muonic_atom_helper,13,27,4,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,muonic_atom_helper,13,27,4,d9,PASS,transitions table=3156 mixed=1000 formula=1772
+v11.4.2,enabled,muonic_atom_helper,13,27,4,parity,PASS,digest=3244a7965e87e845f35836d5a2f99f4526cbd7d0f0db45062098b5baded62e90 reference=3244a7965e87e845f35836d5a2f99f4526cbd7d0f0db45062098b5baded62e90
+v11.4.2,enabled,muonic_atom_helper,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,preserved,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.4.2,preserved,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,preserved,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.4.2,preserved,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.4.2,preserved,muonic_atom_helper,13,27,1,config,PASS,config=None expected=None
+v11.4.2,preserved,muonic_atom_helper,13,27,1,lookups,PASS,not enabled
+v11.4.2,preserved,muonic_atom_helper,13,27,1,levels,PASS,reference
+v11.4.2,preserved,muonic_atom_helper,13,27,1,d9,PASS,not enabled
+v11.4.2,preserved,muonic_atom_helper,13,27,1,parity,INFO,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.4.2,preserved,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.4.2,pristine,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.4.2,pristine,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,pristine,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,pristine,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.4.2,pristine,muonic_atom_helper,14,28,1,config,PASS,config=None expected=None
+v11.4.2,pristine,muonic_atom_helper,14,28,1,lookups,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,14,28,1,levels,PASS,reference
+v11.4.2,pristine,muonic_atom_helper,14,28,1,d9,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,14,28,1,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.4.2,pristine,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.4.2,pristine,muonic_atom_helper,14,28,4,events,PASS,events=1000
+v11.4.2,pristine,muonic_atom_helper,14,28,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,pristine,muonic_atom_helper,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,pristine,muonic_atom_helper,14,28,4,particles,PASS,particle table
+v11.4.2,pristine,muonic_atom_helper,14,28,4,config,PASS,config=None expected=None
+v11.4.2,pristine,muonic_atom_helper,14,28,4,lookups,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,14,28,4,levels,PASS,reference
+v11.4.2,pristine,muonic_atom_helper,14,28,4,d9,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,14,28,4,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.4.2,pristine,muonic_atom_helper,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,lookups,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,d9,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.4.2,patched-off,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,events,PASS,events=1000
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,particles,PASS,particle table
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,lookups,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,d9,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.4.2,patched-off,muonic_atom_helper,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,lookups,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,d9,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.4.2,patched-default,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,events,PASS,events=1000
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,particles,PASS,particle table
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,lookups,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,d9,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.4.2,patched-default,muonic_atom_helper,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,enabled,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.4.2,enabled,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,enabled,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,enabled,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.4.2,enabled,muonic_atom_helper,14,28,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,muonic_atom_helper,14,28,1,lookups,PASS,"rate zeff kshell checked for 14,28"
+v11.4.2,enabled,muonic_atom_helper,14,28,1,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,muonic_atom_helper,14,28,1,d9,PASS,transitions table=3064 mixed=1000 formula=1668
+v11.4.2,enabled,muonic_atom_helper,14,28,1,parity,PASS,digest=3f53a8a398336995dd51b037f2217f19d8bb7f4615938bce63c411c16c126366 reference=3f53a8a398336995dd51b037f2217f19d8bb7f4615938bce63c411c16c126366
+v11.4.2,enabled,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.4.2,enabled,muonic_atom_helper,14,28,4,events,PASS,events=1000
+v11.4.2,enabled,muonic_atom_helper,14,28,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,enabled,muonic_atom_helper,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,enabled,muonic_atom_helper,14,28,4,particles,PASS,particle table
+v11.4.2,enabled,muonic_atom_helper,14,28,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,muonic_atom_helper,14,28,4,lookups,PASS,"rate zeff kshell checked for 14,28"
+v11.4.2,enabled,muonic_atom_helper,14,28,4,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,muonic_atom_helper,14,28,4,d9,PASS,transitions table=3064 mixed=1000 formula=1668
+v11.4.2,enabled,muonic_atom_helper,14,28,4,parity,PASS,digest=3f53a8a398336995dd51b037f2217f19d8bb7f4615938bce63c411c16c126366 reference=3f53a8a398336995dd51b037f2217f19d8bb7f4615938bce63c411c16c126366
+v11.4.2,enabled,muonic_atom_helper,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,preserved,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.4.2,preserved,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,preserved,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.4.2,preserved,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.4.2,preserved,muonic_atom_helper,14,28,1,config,PASS,config=None expected=None
+v11.4.2,preserved,muonic_atom_helper,14,28,1,lookups,PASS,not enabled
+v11.4.2,preserved,muonic_atom_helper,14,28,1,levels,PASS,reference
+v11.4.2,preserved,muonic_atom_helper,14,28,1,d9,PASS,not enabled
+v11.4.2,preserved,muonic_atom_helper,14,28,1,parity,INFO,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.4.2,preserved,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.4.2,pristine,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.4.2,pristine,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,pristine,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,pristine,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.4.2,pristine,muonic_atom_helper,47,107,1,config,PASS,config=None expected=None
+v11.4.2,pristine,muonic_atom_helper,47,107,1,lookups,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,47,107,1,levels,PASS,reference
+v11.4.2,pristine,muonic_atom_helper,47,107,1,d9,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,47,107,1,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.4.2,pristine,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.4.2,pristine,muonic_atom_helper,47,107,4,events,PASS,events=1000
+v11.4.2,pristine,muonic_atom_helper,47,107,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,pristine,muonic_atom_helper,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,pristine,muonic_atom_helper,47,107,4,particles,PASS,particle table
+v11.4.2,pristine,muonic_atom_helper,47,107,4,config,PASS,config=None expected=None
+v11.4.2,pristine,muonic_atom_helper,47,107,4,lookups,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,47,107,4,levels,PASS,reference
+v11.4.2,pristine,muonic_atom_helper,47,107,4,d9,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,47,107,4,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.4.2,pristine,muonic_atom_helper,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,lookups,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,d9,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.4.2,patched-off,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,events,PASS,events=1000
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,particles,PASS,particle table
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,lookups,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,d9,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.4.2,patched-off,muonic_atom_helper,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,lookups,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,d9,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.4.2,patched-default,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,events,PASS,events=1000
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,particles,PASS,particle table
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,lookups,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,d9,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.4.2,patched-default,muonic_atom_helper,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,enabled,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.4.2,enabled,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,enabled,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,enabled,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.4.2,enabled,muonic_atom_helper,47,107,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,muonic_atom_helper,47,107,1,lookups,PASS,"rate zeff kshell checked for 47,107"
+v11.4.2,enabled,muonic_atom_helper,47,107,1,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,muonic_atom_helper,47,107,1,d9,PASS,transitions table=2826 mixed=1000 formula=1279
+v11.4.2,enabled,muonic_atom_helper,47,107,1,parity,PASS,digest=2fc32a2c84c32485f277392011fb2cc4d7710a39811ab2d80f4eb3d3beb92a10 reference=2fc32a2c84c32485f277392011fb2cc4d7710a39811ab2d80f4eb3d3beb92a10
+v11.4.2,enabled,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.4.2,enabled,muonic_atom_helper,47,107,4,events,PASS,events=1000
+v11.4.2,enabled,muonic_atom_helper,47,107,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,enabled,muonic_atom_helper,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,enabled,muonic_atom_helper,47,107,4,particles,PASS,particle table
+v11.4.2,enabled,muonic_atom_helper,47,107,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,muonic_atom_helper,47,107,4,lookups,PASS,"rate zeff kshell checked for 47,107"
+v11.4.2,enabled,muonic_atom_helper,47,107,4,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,muonic_atom_helper,47,107,4,d9,PASS,transitions table=2826 mixed=1000 formula=1279
+v11.4.2,enabled,muonic_atom_helper,47,107,4,parity,PASS,digest=2fc32a2c84c32485f277392011fb2cc4d7710a39811ab2d80f4eb3d3beb92a10 reference=2fc32a2c84c32485f277392011fb2cc4d7710a39811ab2d80f4eb3d3beb92a10
+v11.4.2,enabled,muonic_atom_helper,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,preserved,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.4.2,preserved,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,preserved,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.4.2,preserved,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.4.2,preserved,muonic_atom_helper,47,107,1,config,PASS,config=None expected=None
+v11.4.2,preserved,muonic_atom_helper,47,107,1,lookups,PASS,not enabled
+v11.4.2,preserved,muonic_atom_helper,47,107,1,levels,PASS,reference
+v11.4.2,preserved,muonic_atom_helper,47,107,1,d9,PASS,not enabled
+v11.4.2,preserved,muonic_atom_helper,47,107,1,parity,INFO,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.4.2,preserved,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.4.2,pristine,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.4.2,pristine,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,pristine,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,pristine,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.4.2,pristine,muonic_atom_helper,82,208,1,config,PASS,config=None expected=None
+v11.4.2,pristine,muonic_atom_helper,82,208,1,lookups,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,82,208,1,levels,PASS,reference
+v11.4.2,pristine,muonic_atom_helper,82,208,1,d9,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,82,208,1,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.4.2,pristine,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.4.2,pristine,muonic_atom_helper,82,208,4,events,PASS,events=1000
+v11.4.2,pristine,muonic_atom_helper,82,208,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,pristine,muonic_atom_helper,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,pristine,muonic_atom_helper,82,208,4,particles,PASS,particle table
+v11.4.2,pristine,muonic_atom_helper,82,208,4,config,PASS,config=None expected=None
+v11.4.2,pristine,muonic_atom_helper,82,208,4,lookups,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,82,208,4,levels,PASS,reference
+v11.4.2,pristine,muonic_atom_helper,82,208,4,d9,PASS,not enabled
+v11.4.2,pristine,muonic_atom_helper,82,208,4,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.4.2,pristine,muonic_atom_helper,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,lookups,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,d9,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.4.2,patched-off,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,events,PASS,events=1000
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,particles,PASS,particle table
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,lookups,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,d9,PASS,not enabled
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.4.2,patched-off,muonic_atom_helper,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,lookups,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,d9,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.4.2,patched-default,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,events,PASS,events=1000
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,particles,PASS,particle table
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,lookups,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,levels,PASS,off/default level array vs pristine
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,d9,PASS,not enabled
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.4.2,patched-default,muonic_atom_helper,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,enabled,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.4.2,enabled,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,enabled,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,enabled,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.4.2,enabled,muonic_atom_helper,82,208,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,muonic_atom_helper,82,208,1,lookups,PASS,"rate zeff kshell checked for 82,208"
+v11.4.2,enabled,muonic_atom_helper,82,208,1,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,muonic_atom_helper,82,208,1,d9,PASS,transitions table=2831 mixed=1000 formula=1274
+v11.4.2,enabled,muonic_atom_helper,82,208,1,parity,PASS,digest=5dd4e5481c7a675b100c1832f3aa5739a246368f57aebd18abe0507ba456a7fa reference=5dd4e5481c7a675b100c1832f3aa5739a246368f57aebd18abe0507ba456a7fa
+v11.4.2,enabled,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.4.2,enabled,muonic_atom_helper,82,208,4,events,PASS,events=1000
+v11.4.2,enabled,muonic_atom_helper,82,208,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,enabled,muonic_atom_helper,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,enabled,muonic_atom_helper,82,208,4,particles,PASS,particle table
+v11.4.2,enabled,muonic_atom_helper,82,208,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.4.2,enabled,muonic_atom_helper,82,208,4,lookups,PASS,"rate zeff kshell checked for 82,208"
+v11.4.2,enabled,muonic_atom_helper,82,208,4,levels,PASS,levels=table:7 formula:6
+v11.4.2,enabled,muonic_atom_helper,82,208,4,d9,PASS,transitions table=2831 mixed=1000 formula=1274
+v11.4.2,enabled,muonic_atom_helper,82,208,4,parity,PASS,digest=5dd4e5481c7a675b100c1832f3aa5739a246368f57aebd18abe0507ba456a7fa reference=5dd4e5481c7a675b100c1832f3aa5739a246368f57aebd18abe0507ba456a7fa
+v11.4.2,enabled,muonic_atom_helper,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.4.2,preserved,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.4.2,preserved,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.4.2,preserved,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.4.2,preserved,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.4.2,preserved,muonic_atom_helper,82,208,1,config,PASS,config=None expected=None
+v11.4.2,preserved,muonic_atom_helper,82,208,1,lookups,PASS,not enabled
+v11.4.2,preserved,muonic_atom_helper,82,208,1,levels,PASS,reference
+v11.4.2,preserved,muonic_atom_helper,82,208,1,d9,PASS,not enabled
+v11.4.2,preserved,muonic_atom_helper,82,208,1,parity,INFO,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.4.2,preserved,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,bound_decay,13,27,1,events,PASS,events=1000
+v11.5.0.beta,pristine,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,pristine,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,pristine,bound_decay,13,27,1,particles,PASS,particle table
+v11.5.0.beta,pristine,bound_decay,13,27,1,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,bound_decay,13,27,1,lookups,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,13,27,1,levels,PASS,reference
+v11.5.0.beta,pristine,bound_decay,13,27,1,d9,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,13,27,1,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.5.0.beta,pristine,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,bound_decay,13,27,4,events,PASS,events=1000
+v11.5.0.beta,pristine,bound_decay,13,27,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,pristine,bound_decay,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,pristine,bound_decay,13,27,4,particles,PASS,particle table
+v11.5.0.beta,pristine,bound_decay,13,27,4,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,bound_decay,13,27,4,lookups,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,13,27,4,levels,PASS,reference
+v11.5.0.beta,pristine,bound_decay,13,27,4,d9,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,13,27,4,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.5.0.beta,pristine,bound_decay,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-off,bound_decay,13,27,1,events,PASS,events=1000
+v11.5.0.beta,patched-off,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-off,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,patched-off,bound_decay,13,27,1,particles,PASS,particle table
+v11.5.0.beta,patched-off,bound_decay,13,27,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,bound_decay,13,27,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,13,27,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,bound_decay,13,27,1,d9,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,13,27,1,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.5.0.beta,patched-off,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-off,bound_decay,13,27,4,events,PASS,events=1000
+v11.5.0.beta,patched-off,bound_decay,13,27,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-off,bound_decay,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,patched-off,bound_decay,13,27,4,particles,PASS,particle table
+v11.5.0.beta,patched-off,bound_decay,13,27,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,bound_decay,13,27,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,13,27,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,bound_decay,13,27,4,d9,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,13,27,4,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.5.0.beta,patched-off,bound_decay,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-default,bound_decay,13,27,1,events,PASS,events=1000
+v11.5.0.beta,patched-default,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-default,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,patched-default,bound_decay,13,27,1,particles,PASS,particle table
+v11.5.0.beta,patched-default,bound_decay,13,27,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,bound_decay,13,27,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,13,27,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,bound_decay,13,27,1,d9,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,13,27,1,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.5.0.beta,patched-default,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-default,bound_decay,13,27,4,events,PASS,events=1000
+v11.5.0.beta,patched-default,bound_decay,13,27,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-default,bound_decay,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,patched-default,bound_decay,13,27,4,particles,PASS,particle table
+v11.5.0.beta,patched-default,bound_decay,13,27,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,bound_decay,13,27,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,13,27,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,bound_decay,13,27,4,d9,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,13,27,4,parity,PASS,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.5.0.beta,patched-default,bound_decay,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,enabled,bound_decay,13,27,1,events,PASS,events=1000
+v11.5.0.beta,enabled,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,enabled,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,enabled,bound_decay,13,27,1,particles,PASS,particle table
+v11.5.0.beta,enabled,bound_decay,13,27,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,bound_decay,13,27,1,lookups,PASS,"rate zeff kshell checked for 13,27"
+v11.5.0.beta,enabled,bound_decay,13,27,1,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,bound_decay,13,27,1,d9,PASS,transitions table=3156 mixed=1000 formula=1772
+v11.5.0.beta,enabled,bound_decay,13,27,1,parity,PASS,digest=0078f56bfb588bcbbdcf9c21c98c5f6f241fceab738dcf9b0de8c15a1cbdb8b5 reference=0078f56bfb588bcbbdcf9c21c98c5f6f241fceab738dcf9b0de8c15a1cbdb8b5
+v11.5.0.beta,enabled,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,enabled,bound_decay,13,27,4,events,PASS,events=1000
+v11.5.0.beta,enabled,bound_decay,13,27,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,enabled,bound_decay,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,enabled,bound_decay,13,27,4,particles,PASS,particle table
+v11.5.0.beta,enabled,bound_decay,13,27,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,bound_decay,13,27,4,lookups,PASS,"rate zeff kshell checked for 13,27"
+v11.5.0.beta,enabled,bound_decay,13,27,4,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,bound_decay,13,27,4,d9,PASS,transitions table=3156 mixed=1000 formula=1772
+v11.5.0.beta,enabled,bound_decay,13,27,4,parity,PASS,digest=0078f56bfb588bcbbdcf9c21c98c5f6f241fceab738dcf9b0de8c15a1cbdb8b5 reference=0078f56bfb588bcbbdcf9c21c98c5f6f241fceab738dcf9b0de8c15a1cbdb8b5
+v11.5.0.beta,enabled,bound_decay,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,preserved,bound_decay,13,27,1,events,PASS,events=1000
+v11.5.0.beta,preserved,bound_decay,13,27,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,preserved,bound_decay,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,preserved,bound_decay,13,27,1,particles,PASS,particle table
+v11.5.0.beta,preserved,bound_decay,13,27,1,config,PASS,config=None expected=None
+v11.5.0.beta,preserved,bound_decay,13,27,1,lookups,PASS,not enabled
+v11.5.0.beta,preserved,bound_decay,13,27,1,levels,PASS,reference
+v11.5.0.beta,preserved,bound_decay,13,27,1,d9,PASS,not enabled
+v11.5.0.beta,preserved,bound_decay,13,27,1,parity,INFO,digest=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf reference=5d76d857bed82a6e13e1b2788e7d1b62ab8123befcff33c20389d08b691cdfaf
+v11.5.0.beta,preserved,bound_decay,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,bound_decay,14,28,1,events,PASS,events=1000
+v11.5.0.beta,pristine,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,pristine,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,pristine,bound_decay,14,28,1,particles,PASS,particle table
+v11.5.0.beta,pristine,bound_decay,14,28,1,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,bound_decay,14,28,1,lookups,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,14,28,1,levels,PASS,reference
+v11.5.0.beta,pristine,bound_decay,14,28,1,d9,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,14,28,1,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.5.0.beta,pristine,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,bound_decay,14,28,4,events,PASS,events=1000
+v11.5.0.beta,pristine,bound_decay,14,28,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,pristine,bound_decay,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,pristine,bound_decay,14,28,4,particles,PASS,particle table
+v11.5.0.beta,pristine,bound_decay,14,28,4,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,bound_decay,14,28,4,lookups,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,14,28,4,levels,PASS,reference
+v11.5.0.beta,pristine,bound_decay,14,28,4,d9,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,14,28,4,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.5.0.beta,pristine,bound_decay,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-off,bound_decay,14,28,1,events,PASS,events=1000
+v11.5.0.beta,patched-off,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-off,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,patched-off,bound_decay,14,28,1,particles,PASS,particle table
+v11.5.0.beta,patched-off,bound_decay,14,28,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,bound_decay,14,28,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,14,28,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,bound_decay,14,28,1,d9,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,14,28,1,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.5.0.beta,patched-off,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-off,bound_decay,14,28,4,events,PASS,events=1000
+v11.5.0.beta,patched-off,bound_decay,14,28,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-off,bound_decay,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,patched-off,bound_decay,14,28,4,particles,PASS,particle table
+v11.5.0.beta,patched-off,bound_decay,14,28,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,bound_decay,14,28,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,14,28,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,bound_decay,14,28,4,d9,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,14,28,4,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.5.0.beta,patched-off,bound_decay,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-default,bound_decay,14,28,1,events,PASS,events=1000
+v11.5.0.beta,patched-default,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-default,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,patched-default,bound_decay,14,28,1,particles,PASS,particle table
+v11.5.0.beta,patched-default,bound_decay,14,28,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,bound_decay,14,28,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,14,28,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,bound_decay,14,28,1,d9,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,14,28,1,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.5.0.beta,patched-default,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-default,bound_decay,14,28,4,events,PASS,events=1000
+v11.5.0.beta,patched-default,bound_decay,14,28,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-default,bound_decay,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,patched-default,bound_decay,14,28,4,particles,PASS,particle table
+v11.5.0.beta,patched-default,bound_decay,14,28,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,bound_decay,14,28,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,14,28,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,bound_decay,14,28,4,d9,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,14,28,4,parity,PASS,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.5.0.beta,patched-default,bound_decay,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,enabled,bound_decay,14,28,1,events,PASS,events=1000
+v11.5.0.beta,enabled,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,enabled,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,enabled,bound_decay,14,28,1,particles,PASS,particle table
+v11.5.0.beta,enabled,bound_decay,14,28,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,bound_decay,14,28,1,lookups,PASS,"rate zeff kshell checked for 14,28"
+v11.5.0.beta,enabled,bound_decay,14,28,1,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,bound_decay,14,28,1,d9,PASS,transitions table=3064 mixed=1000 formula=1668
+v11.5.0.beta,enabled,bound_decay,14,28,1,parity,PASS,digest=22f7c9f54d69ab5ae2f439c50828c97c5715139b54bc6fe3fa5928a78b0eaac8 reference=22f7c9f54d69ab5ae2f439c50828c97c5715139b54bc6fe3fa5928a78b0eaac8
+v11.5.0.beta,enabled,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,enabled,bound_decay,14,28,4,events,PASS,events=1000
+v11.5.0.beta,enabled,bound_decay,14,28,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,enabled,bound_decay,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,enabled,bound_decay,14,28,4,particles,PASS,particle table
+v11.5.0.beta,enabled,bound_decay,14,28,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,bound_decay,14,28,4,lookups,PASS,"rate zeff kshell checked for 14,28"
+v11.5.0.beta,enabled,bound_decay,14,28,4,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,bound_decay,14,28,4,d9,PASS,transitions table=3064 mixed=1000 formula=1668
+v11.5.0.beta,enabled,bound_decay,14,28,4,parity,PASS,digest=22f7c9f54d69ab5ae2f439c50828c97c5715139b54bc6fe3fa5928a78b0eaac8 reference=22f7c9f54d69ab5ae2f439c50828c97c5715139b54bc6fe3fa5928a78b0eaac8
+v11.5.0.beta,enabled,bound_decay,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,preserved,bound_decay,14,28,1,events,PASS,events=1000
+v11.5.0.beta,preserved,bound_decay,14,28,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,preserved,bound_decay,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,preserved,bound_decay,14,28,1,particles,PASS,particle table
+v11.5.0.beta,preserved,bound_decay,14,28,1,config,PASS,config=None expected=None
+v11.5.0.beta,preserved,bound_decay,14,28,1,lookups,PASS,not enabled
+v11.5.0.beta,preserved,bound_decay,14,28,1,levels,PASS,reference
+v11.5.0.beta,preserved,bound_decay,14,28,1,d9,PASS,not enabled
+v11.5.0.beta,preserved,bound_decay,14,28,1,parity,INFO,digest=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277 reference=2e798b28f04b260486ac600b27d81405848d81043ce8018c564083ddf88e8277
+v11.5.0.beta,preserved,bound_decay,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,bound_decay,47,107,1,events,PASS,events=1000
+v11.5.0.beta,pristine,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,pristine,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,pristine,bound_decay,47,107,1,particles,PASS,particle table
+v11.5.0.beta,pristine,bound_decay,47,107,1,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,bound_decay,47,107,1,lookups,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,47,107,1,levels,PASS,reference
+v11.5.0.beta,pristine,bound_decay,47,107,1,d9,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,47,107,1,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.5.0.beta,pristine,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,bound_decay,47,107,4,events,PASS,events=1000
+v11.5.0.beta,pristine,bound_decay,47,107,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,pristine,bound_decay,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,pristine,bound_decay,47,107,4,particles,PASS,particle table
+v11.5.0.beta,pristine,bound_decay,47,107,4,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,bound_decay,47,107,4,lookups,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,47,107,4,levels,PASS,reference
+v11.5.0.beta,pristine,bound_decay,47,107,4,d9,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,47,107,4,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.5.0.beta,pristine,bound_decay,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-off,bound_decay,47,107,1,events,PASS,events=1000
+v11.5.0.beta,patched-off,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-off,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,patched-off,bound_decay,47,107,1,particles,PASS,particle table
+v11.5.0.beta,patched-off,bound_decay,47,107,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,bound_decay,47,107,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,47,107,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,bound_decay,47,107,1,d9,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,47,107,1,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.5.0.beta,patched-off,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-off,bound_decay,47,107,4,events,PASS,events=1000
+v11.5.0.beta,patched-off,bound_decay,47,107,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-off,bound_decay,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,patched-off,bound_decay,47,107,4,particles,PASS,particle table
+v11.5.0.beta,patched-off,bound_decay,47,107,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,bound_decay,47,107,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,47,107,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,bound_decay,47,107,4,d9,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,47,107,4,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.5.0.beta,patched-off,bound_decay,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-default,bound_decay,47,107,1,events,PASS,events=1000
+v11.5.0.beta,patched-default,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-default,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,patched-default,bound_decay,47,107,1,particles,PASS,particle table
+v11.5.0.beta,patched-default,bound_decay,47,107,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,bound_decay,47,107,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,47,107,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,bound_decay,47,107,1,d9,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,47,107,1,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.5.0.beta,patched-default,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-default,bound_decay,47,107,4,events,PASS,events=1000
+v11.5.0.beta,patched-default,bound_decay,47,107,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-default,bound_decay,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,patched-default,bound_decay,47,107,4,particles,PASS,particle table
+v11.5.0.beta,patched-default,bound_decay,47,107,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,bound_decay,47,107,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,47,107,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,bound_decay,47,107,4,d9,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,47,107,4,parity,PASS,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.5.0.beta,patched-default,bound_decay,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,enabled,bound_decay,47,107,1,events,PASS,events=1000
+v11.5.0.beta,enabled,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,enabled,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,enabled,bound_decay,47,107,1,particles,PASS,particle table
+v11.5.0.beta,enabled,bound_decay,47,107,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,bound_decay,47,107,1,lookups,PASS,"rate zeff kshell checked for 47,107"
+v11.5.0.beta,enabled,bound_decay,47,107,1,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,bound_decay,47,107,1,d9,PASS,transitions table=2826 mixed=1000 formula=1279
+v11.5.0.beta,enabled,bound_decay,47,107,1,parity,PASS,digest=62474280c24f992614437a7c3cc0e6ec63416a0fc1f3554f04fff02bd9fb88bc reference=62474280c24f992614437a7c3cc0e6ec63416a0fc1f3554f04fff02bd9fb88bc
+v11.5.0.beta,enabled,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,enabled,bound_decay,47,107,4,events,PASS,events=1000
+v11.5.0.beta,enabled,bound_decay,47,107,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,enabled,bound_decay,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,enabled,bound_decay,47,107,4,particles,PASS,particle table
+v11.5.0.beta,enabled,bound_decay,47,107,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,bound_decay,47,107,4,lookups,PASS,"rate zeff kshell checked for 47,107"
+v11.5.0.beta,enabled,bound_decay,47,107,4,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,bound_decay,47,107,4,d9,PASS,transitions table=2826 mixed=1000 formula=1279
+v11.5.0.beta,enabled,bound_decay,47,107,4,parity,PASS,digest=62474280c24f992614437a7c3cc0e6ec63416a0fc1f3554f04fff02bd9fb88bc reference=62474280c24f992614437a7c3cc0e6ec63416a0fc1f3554f04fff02bd9fb88bc
+v11.5.0.beta,enabled,bound_decay,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,preserved,bound_decay,47,107,1,events,PASS,events=1000
+v11.5.0.beta,preserved,bound_decay,47,107,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,preserved,bound_decay,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,preserved,bound_decay,47,107,1,particles,PASS,particle table
+v11.5.0.beta,preserved,bound_decay,47,107,1,config,PASS,config=None expected=None
+v11.5.0.beta,preserved,bound_decay,47,107,1,lookups,PASS,not enabled
+v11.5.0.beta,preserved,bound_decay,47,107,1,levels,PASS,reference
+v11.5.0.beta,preserved,bound_decay,47,107,1,d9,PASS,not enabled
+v11.5.0.beta,preserved,bound_decay,47,107,1,parity,INFO,digest=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810 reference=bf0e290ce46a95b822cf776c00e8728d281558cd9ddc3dd121075dc9ccea4810
+v11.5.0.beta,preserved,bound_decay,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,bound_decay,82,208,1,events,PASS,events=1000
+v11.5.0.beta,pristine,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,pristine,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,pristine,bound_decay,82,208,1,particles,PASS,particle table
+v11.5.0.beta,pristine,bound_decay,82,208,1,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,bound_decay,82,208,1,lookups,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,82,208,1,levels,PASS,reference
+v11.5.0.beta,pristine,bound_decay,82,208,1,d9,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,82,208,1,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.5.0.beta,pristine,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,bound_decay,82,208,4,events,PASS,events=1000
+v11.5.0.beta,pristine,bound_decay,82,208,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,pristine,bound_decay,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,pristine,bound_decay,82,208,4,particles,PASS,particle table
+v11.5.0.beta,pristine,bound_decay,82,208,4,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,bound_decay,82,208,4,lookups,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,82,208,4,levels,PASS,reference
+v11.5.0.beta,pristine,bound_decay,82,208,4,d9,PASS,not enabled
+v11.5.0.beta,pristine,bound_decay,82,208,4,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.5.0.beta,pristine,bound_decay,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-off,bound_decay,82,208,1,events,PASS,events=1000
+v11.5.0.beta,patched-off,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-off,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,patched-off,bound_decay,82,208,1,particles,PASS,particle table
+v11.5.0.beta,patched-off,bound_decay,82,208,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,bound_decay,82,208,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,82,208,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,bound_decay,82,208,1,d9,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,82,208,1,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.5.0.beta,patched-off,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-off,bound_decay,82,208,4,events,PASS,events=1000
+v11.5.0.beta,patched-off,bound_decay,82,208,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-off,bound_decay,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,patched-off,bound_decay,82,208,4,particles,PASS,particle table
+v11.5.0.beta,patched-off,bound_decay,82,208,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,bound_decay,82,208,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,82,208,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,bound_decay,82,208,4,d9,PASS,not enabled
+v11.5.0.beta,patched-off,bound_decay,82,208,4,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.5.0.beta,patched-off,bound_decay,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-default,bound_decay,82,208,1,events,PASS,events=1000
+v11.5.0.beta,patched-default,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-default,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,patched-default,bound_decay,82,208,1,particles,PASS,particle table
+v11.5.0.beta,patched-default,bound_decay,82,208,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,bound_decay,82,208,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,82,208,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,bound_decay,82,208,1,d9,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,82,208,1,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.5.0.beta,patched-default,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-default,bound_decay,82,208,4,events,PASS,events=1000
+v11.5.0.beta,patched-default,bound_decay,82,208,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,patched-default,bound_decay,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,patched-default,bound_decay,82,208,4,particles,PASS,particle table
+v11.5.0.beta,patched-default,bound_decay,82,208,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,bound_decay,82,208,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,82,208,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,bound_decay,82,208,4,d9,PASS,not enabled
+v11.5.0.beta,patched-default,bound_decay,82,208,4,parity,PASS,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.5.0.beta,patched-default,bound_decay,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,enabled,bound_decay,82,208,1,events,PASS,events=1000
+v11.5.0.beta,enabled,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,enabled,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,enabled,bound_decay,82,208,1,particles,PASS,particle table
+v11.5.0.beta,enabled,bound_decay,82,208,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,bound_decay,82,208,1,lookups,PASS,"rate zeff kshell checked for 82,208"
+v11.5.0.beta,enabled,bound_decay,82,208,1,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,bound_decay,82,208,1,d9,PASS,transitions table=2831 mixed=1000 formula=1274
+v11.5.0.beta,enabled,bound_decay,82,208,1,parity,PASS,digest=bcece37087b102cdb2b7f41cbd8b058a73392cf4129715b5ceb147760d147867 reference=bcece37087b102cdb2b7f41cbd8b058a73392cf4129715b5ceb147760d147867
+v11.5.0.beta,enabled,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,enabled,bound_decay,82,208,4,events,PASS,events=1000
+v11.5.0.beta,enabled,bound_decay,82,208,4,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,enabled,bound_decay,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,enabled,bound_decay,82,208,4,particles,PASS,particle table
+v11.5.0.beta,enabled,bound_decay,82,208,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,bound_decay,82,208,4,lookups,PASS,"rate zeff kshell checked for 82,208"
+v11.5.0.beta,enabled,bound_decay,82,208,4,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,bound_decay,82,208,4,d9,PASS,transitions table=2831 mixed=1000 formula=1274
+v11.5.0.beta,enabled,bound_decay,82,208,4,parity,PASS,digest=bcece37087b102cdb2b7f41cbd8b058a73392cf4129715b5ceb147760d147867 reference=bcece37087b102cdb2b7f41cbd8b058a73392cf4129715b5ceb147760d147867
+v11.5.0.beta,enabled,bound_decay,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,preserved,bound_decay,82,208,1,events,PASS,events=1000
+v11.5.0.beta,preserved,bound_decay,82,208,1,route,PASS,"rest=(1, 0) atomic_tracks=0"
+v11.5.0.beta,preserved,bound_decay,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,preserved,bound_decay,82,208,1,particles,PASS,particle table
+v11.5.0.beta,preserved,bound_decay,82,208,1,config,PASS,config=None expected=None
+v11.5.0.beta,preserved,bound_decay,82,208,1,lookups,PASS,not enabled
+v11.5.0.beta,preserved,bound_decay,82,208,1,levels,PASS,reference
+v11.5.0.beta,preserved,bound_decay,82,208,1,d9,PASS,not enabled
+v11.5.0.beta,preserved,bound_decay,82,208,1,parity,INFO,digest=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7 reference=ea4740fea43244935f45ca87972443011622234d784387f19321f8c1a7c4e0a7
+v11.5.0.beta,preserved,bound_decay,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,lookups,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,levels,PASS,reference
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,d9,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,events,PASS,events=1000
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,particles,PASS,particle table
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,lookups,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,levels,PASS,reference
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,d9,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.5.0.beta,pristine,muonic_atom_helper,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,d9,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,events,PASS,events=1000
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,particles,PASS,particle table
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,d9,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.5.0.beta,patched-off,muonic_atom_helper,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,d9,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,events,PASS,events=1000
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,particles,PASS,particle table
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,d9,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,parity,PASS,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.5.0.beta,patched-default,muonic_atom_helper,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,lookups,PASS,"rate zeff kshell checked for 13,27"
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,d9,PASS,transitions table=3156 mixed=1000 formula=1772
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,parity,PASS,digest=3244a7965e87e845f35836d5a2f99f4526cbd7d0f0db45062098b5baded62e90 reference=3244a7965e87e845f35836d5a2f99f4526cbd7d0f0db45062098b5baded62e90
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,events,PASS,events=1000
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,particles,PASS,particle table
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,lookups,PASS,"rate zeff kshell checked for 13,27"
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,d9,PASS,transitions table=3156 mixed=1000 formula=1772
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,parity,PASS,digest=3244a7965e87e845f35836d5a2f99f4526cbd7d0f0db45062098b5baded62e90 reference=3244a7965e87e845f35836d5a2f99f4526cbd7d0f0db45062098b5baded62e90
+v11.5.0.beta,enabled,muonic_atom_helper,13,27,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,events,PASS,events=1000
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,target,PASS,"material=['1', '1', '13', '27', '0x1p+0'] expected=(1, 1, 13, 27, 1.0)"
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,particles,PASS,particle table
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,config,PASS,config=None expected=None
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,lookups,PASS,not enabled
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,levels,PASS,reference
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,d9,PASS,not enabled
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,parity,INFO,digest=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4 reference=1db30481a5f433c40bcd6397c0493ab78462d6c6e953ce8a9455d9f6237eb2f4
+v11.5.0.beta,preserved,muonic_atom_helper,13,27,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,lookups,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,levels,PASS,reference
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,d9,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,events,PASS,events=1000
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,particles,PASS,particle table
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,lookups,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,levels,PASS,reference
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,d9,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.5.0.beta,pristine,muonic_atom_helper,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,d9,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,events,PASS,events=1000
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,particles,PASS,particle table
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,d9,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.5.0.beta,patched-off,muonic_atom_helper,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,d9,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,events,PASS,events=1000
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,particles,PASS,particle table
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,d9,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,parity,PASS,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.5.0.beta,patched-default,muonic_atom_helper,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,lookups,PASS,"rate zeff kshell checked for 14,28"
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,d9,PASS,transitions table=3064 mixed=1000 formula=1668
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,parity,PASS,digest=3f53a8a398336995dd51b037f2217f19d8bb7f4615938bce63c411c16c126366 reference=3f53a8a398336995dd51b037f2217f19d8bb7f4615938bce63c411c16c126366
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,events,PASS,events=1000
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,particles,PASS,particle table
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,lookups,PASS,"rate zeff kshell checked for 14,28"
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,d9,PASS,transitions table=3064 mixed=1000 formula=1668
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,parity,PASS,digest=3f53a8a398336995dd51b037f2217f19d8bb7f4615938bce63c411c16c126366 reference=3f53a8a398336995dd51b037f2217f19d8bb7f4615938bce63c411c16c126366
+v11.5.0.beta,enabled,muonic_atom_helper,14,28,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,events,PASS,events=1000
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,target,PASS,"material=['1', '1', '14', '28', '0x1p+0'] expected=(1, 1, 14, 28, 1.0)"
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,particles,PASS,particle table
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,config,PASS,config=None expected=None
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,lookups,PASS,not enabled
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,levels,PASS,reference
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,d9,PASS,not enabled
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,parity,INFO,digest=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676 reference=5c4cf476c61709608335e85ff56830bd9a233a6bbe22c98d3bf4a8081e250676
+v11.5.0.beta,preserved,muonic_atom_helper,14,28,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,lookups,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,levels,PASS,reference
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,d9,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,events,PASS,events=1000
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,particles,PASS,particle table
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,lookups,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,levels,PASS,reference
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,d9,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.5.0.beta,pristine,muonic_atom_helper,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,d9,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,events,PASS,events=1000
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,particles,PASS,particle table
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,d9,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.5.0.beta,patched-off,muonic_atom_helper,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,d9,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,events,PASS,events=1000
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,particles,PASS,particle table
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,d9,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,parity,PASS,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.5.0.beta,patched-default,muonic_atom_helper,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,lookups,PASS,"rate zeff kshell checked for 47,107"
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,d9,PASS,transitions table=2826 mixed=1000 formula=1279
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,parity,PASS,digest=2fc32a2c84c32485f277392011fb2cc4d7710a39811ab2d80f4eb3d3beb92a10 reference=2fc32a2c84c32485f277392011fb2cc4d7710a39811ab2d80f4eb3d3beb92a10
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,events,PASS,events=1000
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,particles,PASS,particle table
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,lookups,PASS,"rate zeff kshell checked for 47,107"
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,d9,PASS,transitions table=2826 mixed=1000 formula=1279
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,parity,PASS,digest=2fc32a2c84c32485f277392011fb2cc4d7710a39811ab2d80f4eb3d3beb92a10 reference=2fc32a2c84c32485f277392011fb2cc4d7710a39811ab2d80f4eb3d3beb92a10
+v11.5.0.beta,enabled,muonic_atom_helper,47,107,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,events,PASS,events=1000
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,target,PASS,"material=['1', '1', '47', '107', '0x1p+0'] expected=(1, 1, 47, 107, 1.0)"
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,particles,PASS,particle table
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,config,PASS,config=None expected=None
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,lookups,PASS,not enabled
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,levels,PASS,reference
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,d9,PASS,not enabled
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,parity,INFO,digest=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f reference=649b6991d3c819e958327cb338308939cd4cf23242033dadc7bfa595c5c4698f
+v11.5.0.beta,preserved,muonic_atom_helper,47,107,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,lookups,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,levels,PASS,reference
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,d9,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,events,PASS,events=1000
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,particles,PASS,particle table
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,config,PASS,config=None expected=None
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,lookups,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,levels,PASS,reference
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,d9,PASS,not enabled
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.5.0.beta,pristine,muonic_atom_helper,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,d9,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,events,PASS,events=1000
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,particles,PASS,particle table
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,config,PASS,"config=['compiled', 'compiled', 'none', 'none'] expected=['compiled', 'compiled', 'none', 'none']"
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,d9,PASS,not enabled
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.5.0.beta,patched-off,muonic_atom_helper,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,d9,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,events,PASS,events=1000
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,particles,PASS,particle table
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,config,PASS,"config=['parity', 'compiled', 'set', '0.5.1'] expected=['parity', 'compiled', 'set', '0.5.1']"
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,lookups,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,levels,PASS,off/default level array vs pristine
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,d9,PASS,not enabled
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,parity,PASS,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.5.0.beta,patched-default,muonic_atom_helper,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,lookups,PASS,"rate zeff kshell checked for 82,208"
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,d9,PASS,transitions table=2831 mixed=1000 formula=1274
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,parity,PASS,digest=5dd4e5481c7a675b100c1832f3aa5739a246368f57aebd18abe0507ba456a7fa reference=5dd4e5481c7a675b100c1832f3aa5739a246368f57aebd18abe0507ba456a7fa
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,events,PASS,events=1000
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,particles,PASS,particle table
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,config,PASS,"config=['mizuno2025', 'mudirac130', 'set', '0.5.1'] expected=['mizuno2025', 'mudirac130', 'set', '0.5.1']"
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,lookups,PASS,"rate zeff kshell checked for 82,208"
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,levels,PASS,levels=table:7 formula:6
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,d9,PASS,transitions table=2831 mixed=1000 formula=1274
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,parity,PASS,digest=5dd4e5481c7a675b100c1832f3aa5739a246368f57aebd18abe0507ba456a7fa reference=5dd4e5481c7a675b100c1832f3aa5739a246368f57aebd18abe0507ba456a7fa
+v11.5.0.beta,enabled,muonic_atom_helper,82,208,4,threads,PASS,sorted worker records vs one thread
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,events,PASS,events=1000
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,route,PASS,"rest=(0, 1) atomic_tracks=1000"
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,target,PASS,"material=['1', '1', '82', '208', '0x1p+0'] expected=(1, 1, 82, 208, 1.0)"
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,particles,PASS,particle table
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,config,PASS,config=None expected=None
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,lookups,PASS,not enabled
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,levels,PASS,reference
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,d9,PASS,not enabled
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,parity,INFO,digest=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379 reference=776feec1102cb2874f7b6c48ab05bc7d92ffe698c7916962060ec56cb9899379
+v11.5.0.beta,preserved,muonic_atom_helper,82,208,1,threads,PASS,one-thread reference
+v11.4.2,case,bound_decay,,,,P1,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P2,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P3,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P4,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P5,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P6,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P7,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P8,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P9,PASS,rc=0
+v11.4.2,case,bound_decay,,,,P10,PASS,rc=-6
+v11.4.2,case,bound_decay,,,,P11,PASS,rc=-6
+v11.4.2,case,bound_decay,,,,P12,PASS,rc=-6
+v11.4.2,case,bound_decay,,,,P13,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P1,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P2,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P3,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P4,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P5,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P6,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P7,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P8,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P9,PASS,rc=0
+v11.5.0.beta,case,bound_decay,,,,P10,PASS,rc=-6
+v11.5.0.beta,case,bound_decay,,,,P11,PASS,rc=-6
+v11.5.0.beta,case,bound_decay,,,,P12,PASS,rc=-6
