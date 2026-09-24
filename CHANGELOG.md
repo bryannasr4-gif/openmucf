@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the capturing-atom selector reference and the atomic-capture corpus (2026-09-24)
+
+- **`data/g4/d2/` records which element Geant4's selector picks in the harvested materials and which stopped particles reach it, and `openmucf/g4/d2.py` reproduces the harvested counts; `data/g4/reference/d2/` holds atomic-capture values read in primary publications, and `selector_vs_primary.csv` sets the selector's per-atom ratio beside them.**
+
 ### Fixed -- the reserved compiled token beside a per-seam profile (2026-09-24)
 
 - **A patched build no longer raises a fatal exception when `G4MUONICDATA_PROFILE` is `compiled` and a per-seam variable names a profile**: that seam reads its profile and the other keeps the compiled-in code.
