@@ -1632,6 +1632,15 @@ def _qualify(
     return text, f"{'QUALIFIED_AT_LEVEL_' if ok else 'NOT_QUALIFIED_THROUGH_LEVEL_'}{levels[-1]}"
 
 
+def test_t123_drill_reversed_shell_pair_is_refused_through_stock_and_line_helpers():
+    levels = (2.0, 1.0)
+    assert md.geant4_line_kev(levels, "K-L") == d3c.stock_kev(levels, 1, 2)
+    with pytest.raises(md.CellError, match="lower to a higher shell"):
+        d3c.stock_kev(levels, 2, 1)
+    with pytest.raises(md.CellError, match="lower to a higher shell"):
+        md.geant4_line_kev(levels, "L-K")
+
+
 def test_t123_the_projection_equals_an_independent_rederivation_from_the_tables_text():
     out = md.load_outputs(REPO)
     numerics = md.load_numerics_outputs(REPO, out)

@@ -1115,14 +1115,21 @@ def line_shells(line: str) -> tuple[int, int]:
     return lower, upper
 
 
-def geant4_line_kev(levels: tuple[float, ...], line: str) -> Decimal:
-    """The photon Geant4's cascade emits between the two shells of ``line`` -- the difference of its
-    two level energies, taken in doubles as the cascade takes it -- in keV, at nine decimals."""
-    lower, upper = line_shells(line)
+def shell_difference_kev(levels: tuple[float, ...], lower: int, upper: int) -> Decimal:
+    """The photon the unpatched cascade emits between the two shells: the difference of its two
+    level energies taken in doubles, in keV at nine decimals."""
+    if not lower < upper:
+        raise CellError(f"shells {lower} and {upper} do not go from a lower to a higher shell")
     photon = levels[lower - 1] - levels[upper - 1]
     with localcontext() as context:
         context.prec = 1000
         return (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+
+
+def geant4_line_kev(levels: tuple[float, ...], line: str) -> Decimal:
+    """The photon Geant4's cascade emits between the two shells of ``line`` -- the difference of its
+    two level energies, taken in doubles as the cascade takes it -- in keV, at nine decimals."""
+    return shell_difference_kev(levels, *line_shells(line))
 
 
 # --------------------------------------------------------------------------------------------
