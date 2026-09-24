@@ -2617,7 +2617,7 @@ def test_t129_drill_summary_counts_shifts_above_the_tenth(monkeypatch):
     monkeypatch.setattr(centroids, "margin_rows", lambda members: [])
     monkeypatch.setattr(centroids, "numerical_components",
                         lambda root, cells: ({(1, 1): (0, 0, 0, None, 100)}, []))
-    monkeypatch.setattr(centroids.md, "load_cells", lambda path: ())
+    monkeypatch.setattr(md, "load_cells", lambda path: ())
     monkeypatch.setattr(centroids, "load_intensity_ratios", lambda path, cells: {})
     assert any("above a tenth of the largest sigma on 1 of 3 rows" in line
                for line in centroids.summary_lines(REPO))
