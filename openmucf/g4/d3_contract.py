@@ -66,11 +66,6 @@ def _text(value: Decimal) -> str:
     return format(value, "f")
 
 
-def _shell_index(orbit: str) -> int:
-    """The principal quantum number an IUPAC orbit's shell letter names: K is 1."""
-    return ord(orbit[0]) - ord("K") + 1
-
-
 def _shell_quantity(n: int) -> str:
     return "K" if n == 1 else f"e{n}"
 
@@ -315,10 +310,7 @@ def _shifts_text(observed: list[Decimal]) -> str:
 def stock_kev(levels: tuple[float, ...], lower_n: int, upper_n: int) -> Decimal:
     """The photon the unpatched cascade emits between the two shells: the difference of its two
     level energies taken in doubles, in keV at nine decimals."""
-    photon = levels[lower_n - 1] - levels[upper_n - 1]
-    with localcontext() as context:
-        context.prec = 1000
-        return (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+    return md.shell_difference_kev(levels, lower_n, upper_n)
 
 
 def project_shell_rows(root: Path, bundle: Bundle | None = None) -> list[dict[str, str]]:
@@ -337,7 +329,7 @@ def project_shell_rows(root: Path, bundle: Bundle | None = None) -> list[dict[st
         if not cell.gated:
             continue
         key = cell.nuclide
-        lower_n, upper_n = (_shell_index(orbit) for orbit in cell.quantity.split("-"))
+        lower_n, upper_n = md.line_shells(cell.quantity)
         pair = (lower_n, upper_n)
         refinement = bundle.refinements[key]
         with localcontext() as context:

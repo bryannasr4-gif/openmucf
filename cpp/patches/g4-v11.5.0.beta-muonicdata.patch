@@ -18,10 +18,10 @@ index fa725ef8f1..c4a04cccbe 100644
  #endif
 diff --git a/source/particles/management/include/G4MuonicDataOverlay.hh b/source/particles/management/include/G4MuonicDataOverlay.hh
 new file mode 100644
-index 0000000000..37f46cb19f
+index 0000000000..dafb708af9
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataOverlay.hh
-@@ -0,0 +1,101 @@
+@@ -0,0 +1,100 @@
 +// G4MuonicDataOverlay -- the Geant4-facing glue between the G4MuonicData dataset reader and the
 +// compiled-in muon-capture and muonic-atom energy code paths.
 +//
@@ -90,8 +90,7 @@ index 0000000000..37f46cb19f
 +  static void Initialize();
 +  static const Configuration& Config();
 +
-+  // The dataset, or nullptr with the opt-in off, when neither seam has
-+  // tables.
++  // The dataset, or nullptr.
 +  static const G4MuonicDataTable* Table();
 +
 +  // The `value` field of the nuclear_capture_rate record for this nuclide, in the dataset's own

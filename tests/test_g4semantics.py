@@ -339,6 +339,13 @@ def zeff_member(directory: pathlib.Path) -> pathlib.Path:
     return path
 
 
+def d1_member(directory: pathlib.Path, table: str) -> pathlib.Path:
+    (path,) = [p for p in sorted(directory.glob("*.g4dat"))
+               if directive_line(p, "PROFILE").split()[-1] == "parity"
+               and directive_line(p, "TABLE").split()[-1] == table]
+    return path
+
+
 def replace_once(path: pathlib.Path, old: str, new: str) -> None:
     text = path.read_text(encoding="ascii")
     assert text.count(old) == 1, (path.name, old)
@@ -360,6 +367,13 @@ def first_record_line(path: pathlib.Path) -> str:
     return next(line for line in lines if not line.startswith("#") and line.strip())
 
 
+def negative_value(line: str, index: int) -> str:
+    matches = list(re.finditer(r"\S+", line))
+    value = matches[index]
+    assert float(value.group()) > 0
+    return line[:value.start()] + "-" + line[value.start():]
+
+
 def test_t113_a_foreign_dataset_name_raises_s001(mutable: pathlib.Path):
     member = kshell_member(mutable)
     line = directive_line(member, "DATASET")
@@ -374,11 +388,29 @@ def test_t114_a_table_in_the_wrong_seam_raises_s002(mutable: pathlib.Path):
     assert codes_of(mutable)[0] == "S002"
 
 
+@pytest.mark.parametrize("table", (CAPTURE, ZEFF))
+def test_t114_drill_d1_member_in_the_wrong_seam_raises_s002(mutable: pathlib.Path, table: str):
+    member = d1_member(mutable, table)
+    own = directive_line(member, "SEAM")
+    other = directive_line(kshell_member(mutable), "SEAM")
+    replace_once(member, own, other)
+    assert codes_of(mutable)[0] == "S002"
+
+
 def test_t115_a_z_range_that_is_not_inclusive_raises_s003(mutable: pathlib.Path):
     member = kshell_member(mutable)
     line = directive_line(member, "VALIDITY")
     swapped = re.sub(r"Z:([0-9]+)-([0-9]+)", lambda m: f"Z:{m.group(2)}-{m.group(1)}", line)
     assert swapped != line, line
+    replace_once(member, line, swapped)
+    assert codes_of(mutable)[0] == "S003"
+
+
+def test_t115_drill_capture_range_not_inclusive_raises_s003(mutable: pathlib.Path):
+    member = d1_member(mutable, CAPTURE)
+    line = directive_line(member, "VALIDITY")
+    swapped = re.sub(r"Z:([0-9]+)-([0-9]+)", lambda m: f"Z:{m.group(2)}-{m.group(1)}", line)
+    assert swapped != line
     replace_once(member, line, swapped)
     assert codes_of(mutable)[0] == "S003"
 
@@ -390,6 +422,14 @@ def test_t116_a_unit_the_lookup_does_not_read_raises_s004(mutable: pathlib.Path)
     assert codes_of(mutable)[0] == "S004"
 
 
+@pytest.mark.parametrize("table", (CAPTURE, ZEFF))
+def test_t116_drill_d1_value_unit_the_lookup_does_not_read_raises_s004(mutable: pathlib.Path, table: str):
+    member = d1_member(mutable, table)
+    line = directive_line(member, "UNITS")
+    replace_once(member, line, line.replace(" value=", " value=x", 1))
+    assert codes_of(mutable)[0] == "S004"
+
+
 def test_t117_a_negative_binding_energy_raises_s005(mutable: pathlib.Path):
     member = kshell_member(mutable)
     line = first_record_line(member)
@@ -397,6 +437,17 @@ def test_t117_a_negative_binding_energy_raises_s005(mutable: pathlib.Path):
     keys, gap, value = head.rpartition(" ")
     assert value and gap, line
     replace_once(member, line, f"{keys}{gap[:-1]}-{value} {rest}")
+    assert codes_of(mutable)[0] == "S005"
+
+
+@pytest.mark.parametrize("table", (CAPTURE, ZEFF))
+def test_t117_drill_d1_negative_value_raises_s005(mutable: pathlib.Path, table: str):
+    member = d1_member(mutable, table)
+    lines = member.read_text(encoding="ascii").splitlines()
+    line = next(text for text in lines if not text.startswith("#") and text.strip()
+                and (table != ZEFF or int(text.split()[0]) >= BOUNDS["kMinZ"]))
+    index = 2 if table == CAPTURE else 1
+    replace_once(member, line, negative_value(line, index))
     assert codes_of(mutable)[0] == "S005"
 
 

@@ -1115,14 +1115,21 @@ def line_shells(line: str) -> tuple[int, int]:
     return lower, upper
 
 
-def geant4_line_kev(levels: tuple[float, ...], line: str) -> Decimal:
-    """The photon Geant4's cascade emits between the two shells of ``line`` -- the difference of its
-    two level energies, taken in doubles as the cascade takes it -- in keV, at nine decimals."""
-    lower, upper = line_shells(line)
+def shell_difference_kev(levels: tuple[float, ...], lower: int, upper: int) -> Decimal:
+    """The photon the unpatched cascade emits between the two shells: the difference of its two
+    level energies taken in doubles, in keV at nine decimals."""
+    if not lower < upper:
+        raise CellError(f"shells {lower} and {upper} do not go from a lower to a higher shell")
     photon = levels[lower - 1] - levels[upper - 1]
     with localcontext() as context:
         context.prec = 1000
         return (Decimal(photon) * 1000).quantize(Decimal("1e-9"))
+
+
+def geant4_line_kev(levels: tuple[float, ...], line: str) -> Decimal:
+    """The photon Geant4's cascade emits between the two shells of ``line`` -- the difference of its
+    two level energies, taken in doubles as the cascade takes it -- in keV, at nine decimals."""
+    return shell_difference_kev(levels, *line_shells(line))
 
 
 # --------------------------------------------------------------------------------------------
@@ -1660,4 +1667,7 @@ def load_settings_outputs(root: Path, cells: tuple[Cell, ...]) -> SettingsOutput
         stray = sorted(run for run in table if run not in runs or not runs[run].clean)
         if stray:
             raise CellError(f"{Path(name).name} carries unlisted or unclean runs: {stray[:3]}")
+        missing = sorted(run for run in runs if runs[run].clean and run not in table)
+        if missing:
+            raise CellError(f"{Path(name).name} lacks the printed rows of clean runs: {missing[:3]}")
     return SettingsOutputs(runs, headers, lines)

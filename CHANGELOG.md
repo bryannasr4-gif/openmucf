@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed -- the D3 harvest's particle-table check (2026-09-24)
+
+- **`cpp/tools/harvest_d3.cc` exits with a nonzero status before it prints a line when the particle table lacks a particle it constructs.**
+
 ### Added -- the published capture-rate tables as a third capture profile (2026-09-23)
 
 - The `suzuki1987` capture profile carries the published article's own isotope measurements beside its printed-row ledger and generated normalized rows.
@@ -56,13 +60,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **With the opt-in on and `G4MUONICDATA_PROFILE=mudirac130`, a patched Geant4 reads the D3
   tables**: `G4EmCaptureCascade` takes its K energy and the energies of the shells above it up to
   the chain's last from them, and `G4MuonicAtomHelper::GetKShellEnergy` its K energy from the
-  natural-composition row, or from the member's row in a new form taking the mass number, which the
+  natural-composition row, or from the member's row, else the natural-composition row, in a new form taking the mass number, which the
   muonic atom's construction and decay now call.
 
 ### Fixed -- the D3 uncertainty cells (2026-09-19)
 
 - **Each `unc` and `u<n>` cell is measured with the energy of the outermost circular state held
   fixed**, and the dataset's `#VERSION` becomes 0.4.1.
+  A change smaller than the floor `DATASET_D3.md` states ships as that floor.
   `data/g4/d3/validation.csv` and `DATASET_D3.md` also carry, for context, the residual of the
   energy Geant4's own cascade emits for each compared line.
   The validator's V-04 now checks the Layer-2 digest of every table it loads, not only the parity

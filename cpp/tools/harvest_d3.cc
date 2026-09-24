@@ -25,12 +25,15 @@
 #include "G4MuonicAtomHelper.hh"
 #include "G4Neutron.hh"
 #include "G4Nucleus.hh"
+#include "G4ParticleTable.hh"
 #include "G4Proton.hh"
 #include "G4ThreeVector.hh"
 #include "G4Triton.hh"
 #include "Randomize.hh"
 
 #include <cstdio>
+#include <cstdlib>
+#include <initializer_list>
 
 // The cascade's level array is private. It is read through the standard explicit-instantiation
 // access idiom: a friend function defined inside a class template returns the template's
@@ -51,6 +54,12 @@ void HarvestD3() {
   // outside its mass tables gets a nuclear mass of zero.
   G4Proton::Proton(); G4Neutron::Neutron(); G4Deuteron::Deuteron();
   G4Triton::Triton(); G4Alpha::Alpha(); G4He3::He3();
+  for (const char* name : {"neutron", "deuteron", "triton", "alpha", "He3", "proton"}) {
+    if (G4ParticleTable::GetParticleTable()->FindParticle(name) == nullptr) {
+      std::fprintf(stderr, "harvest_d3: the particle table lacks %s\n", name);
+      std::exit(2);
+    }
+  }
   for (int Z = 1; Z <= 120; ++Z) std::printf("K %d %a\n", Z, G4MuonicAtomHelper::GetKShellEnergy(G4double(Z)));
   // Owned by the hadronic interaction registry from construction on, so never deleted here.
   G4EmCaptureCascade* cascade = new G4EmCaptureCascade();

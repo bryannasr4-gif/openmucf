@@ -296,6 +296,10 @@ g4muonicdata_validity_case(validate_validity_assigned_twice "A:listed A:natural_
 # shipped D1 pair and the shipped D3 files; a changed member is one stated edit of a shipped file.
 set(G4MUONICDATA_D3_KSHELL "${G4MUONICDATA_D3_DIR}/d3_kshell.mudirac130.g4dat")
 set(G4MUONICDATA_D3_LEVELS "${G4MUONICDATA_D3_DIR}/d3_levels.mudirac130.g4dat")
+set(G4MUONICDATA_D1_CAPTURE "${G4MUONICDATA_D1_DIR}/d1_capture.g4dat")
+set(G4MUONICDATA_D1_ZEFF "${G4MUONICDATA_D1_DIR}/d1_zeff.g4dat")
+get_filename_component(G4MUONICDATA_D1_CAPTURE_NAME "${G4MUONICDATA_D1_CAPTURE}" NAME)
+get_filename_component(G4MUONICDATA_D1_ZEFF_NAME "${G4MUONICDATA_D1_ZEFF}" NAME)
 foreach(member IN ITEMS "${G4MUONICDATA_D3_KSHELL}" "${G4MUONICDATA_D3_LEVELS}")
   if(NOT EXISTS "${member}")
     message(FATAL_ERROR "the D3 case needs ${member}, which is not in the tree")
@@ -631,23 +635,33 @@ g4muonicdata_semantics_case(validate_semantics_dataset "${G4MUONICDATA_D3_KSHELL
 
 # S002 -- the D3 k-shell table declaring the D1 seam, copied from the D1 capture member's own line.
 file(STRINGS "${G4MUONICDATA_D3_KSHELL}" semantics_seam_line REGEX "^#SEAM")
-file(STRINGS "${G4MUONICDATA_D1_DIR}/d1_capture.g4dat" semantics_d1_seam_line REGEX "^#SEAM")
+file(STRINGS "${G4MUONICDATA_D1_CAPTURE}" semantics_d1_seam_line REGEX "^#SEAM")
 g4muonicdata_semantics_case(validate_semantics_seam "${G4MUONICDATA_D3_KSHELL_NAME}"
   "${semantics_seam_line}" "${semantics_d1_seam_line}" S002)
+file(STRINGS "${G4MUONICDATA_D1_ZEFF}" semantics_zeff_seam_line REGEX "^#SEAM")
+g4muonicdata_semantics_case(validate_semantics_seam_capture "${G4MUONICDATA_D1_CAPTURE_NAME}"
+  "${semantics_d1_seam_line}" "${semantics_seam_line}" S002)
+g4muonicdata_semantics_case(validate_semantics_seam_zeff "${G4MUONICDATA_D1_ZEFF_NAME}"
+  "${semantics_zeff_seam_line}" "${semantics_seam_line}" S002)
 
 # S003 -- the declared Z range with its two bounds exchanged, so it is no longer inclusive.
 file(STRINGS "${G4MUONICDATA_D3_KSHELL}" semantics_validity_line REGEX "^#VALIDITY")
 string(REGEX REPLACE "Z:([0-9]+)-([0-9]+)" "Z:\\2-\\1" semantics_validity_swapped "${semantics_validity_line}")
 g4muonicdata_semantics_case(validate_semantics_validity "${G4MUONICDATA_D3_KSHELL_NAME}"
   "${semantics_validity_line}" "${semantics_validity_swapped}" S003)
+file(STRINGS "${G4MUONICDATA_D1_CAPTURE}" semantics_capture_validity_line REGEX "^#VALIDITY")
+string(REGEX REPLACE "Z:([0-9]+)-([0-9]+)" "Z:\\2-\\1"
+       semantics_capture_validity_swapped "${semantics_capture_validity_line}")
+g4muonicdata_semantics_case(validate_semantics_validity_capture "${G4MUONICDATA_D1_CAPTURE_NAME}"
+  "${semantics_capture_validity_line}" "${semantics_capture_validity_swapped}" S003)
 
 # S003 over the one-key table -- the declared Z range narrowed to its own minimum, so every row
 # above that minimum falls outside it. The rule binds a one-key member exactly as it binds a
 # two-key one, and this case is the only one over the muon_zeff member.
-file(STRINGS "${G4MUONICDATA_D1_DIR}/d1_zeff.g4dat" semantics_zeff_validity_line REGEX "^#VALIDITY")
+file(STRINGS "${G4MUONICDATA_D1_ZEFF}" semantics_zeff_validity_line REGEX "^#VALIDITY")
 string(REGEX REPLACE "Z:([0-9]+)-([0-9]+)" "Z:\\1-\\1"
        semantics_zeff_validity_narrowed "${semantics_zeff_validity_line}")
-g4muonicdata_semantics_case(validate_semantics_validity_zeff "d1_zeff.g4dat"
+g4muonicdata_semantics_case(validate_semantics_validity_zeff "${G4MUONICDATA_D1_ZEFF_NAME}"
   "${semantics_zeff_validity_line}" "${semantics_zeff_validity_narrowed}" S003)
 
 # S004 -- the unit of the column the K-energy lookup reads, prefixed so it is no longer the one the
@@ -656,6 +670,13 @@ file(STRINGS "${G4MUONICDATA_D3_KSHELL}" semantics_units_line REGEX "^#UNITS")
 string(REGEX REPLACE "( value=)" "\\1x" semantics_units_prefixed "${semantics_units_line}")
 g4muonicdata_semantics_case(validate_semantics_units "${G4MUONICDATA_D3_KSHELL_NAME}"
   "${semantics_units_line}" "${semantics_units_prefixed}" S004)
+foreach(member IN ITEMS CAPTURE ZEFF)
+  file(STRINGS "${G4MUONICDATA_D1_${member}}" semantics_d1_units_line REGEX "^#UNITS")
+  string(REGEX REPLACE "( value=)" "\\1x" semantics_d1_units_prefixed "${semantics_d1_units_line}")
+  string(TOLOWER "${member}" suffix)
+  g4muonicdata_semantics_case(validate_semantics_units_${suffix} "${G4MUONICDATA_D1_${member}_NAME}"
+    "${semantics_d1_units_line}" "${semantics_d1_units_prefixed}" S004)
+endforeach()
 
 # S005 and S006 over the first k-shell record: its binding energy negated in place, and its binding
 # energy replaced by its own uncertainty field, which is below the level the same key lists under
@@ -673,6 +694,28 @@ g4muonicdata_semantics_case(validate_semantics_value "${G4MUONICDATA_D3_KSHELL_N
   "${semantics_first_record}" "${semantics_head}-${semantics_value}${semantics_gap}${semantics_unc}" S005)
 g4muonicdata_semantics_case(validate_semantics_pair "${G4MUONICDATA_D3_KSHELL_NAME}"
   "${semantics_first_record}" "${semantics_head} ${semantics_unc}${semantics_gap}${semantics_unc}" S006)
+
+g4muonicdata_record_lines("${G4MUONICDATA_D1_CAPTURE}" semantics_capture_records)
+list(GET semantics_capture_records 0 semantics_capture_first_record)
+string(REGEX REPLACE "^( *[0-9]+ +[0-9]+ +)([^ ]+)( +)([^ ]+)$" "\\1-\\2\\3\\4"
+       semantics_capture_negative "${semantics_capture_first_record}")
+g4muonicdata_semantics_case(validate_semantics_value_capture "${G4MUONICDATA_D1_CAPTURE_NAME}"
+  "${semantics_capture_first_record}" "${semantics_capture_negative}" S005)
+g4muonicdata_record_lines("${G4MUONICDATA_D1_ZEFF}" semantics_zeff_records)
+set(semantics_zeff_first_record "")
+foreach(line IN LISTS semantics_zeff_records)
+  if(line MATCHES "^ *[1-9][0-9]* +")
+    set(semantics_zeff_first_record "${line}")
+    break()
+  endif()
+endforeach()
+if(semantics_zeff_first_record STREQUAL "")
+  message(FATAL_ERROR "the semantic cases need a positive-Z effective-charge record")
+endif()
+string(REGEX REPLACE "^( *[1-9][0-9]* +)([^ ]+)$" "\\1-\\2"
+       semantics_zeff_negative "${semantics_zeff_first_record}")
+g4muonicdata_semantics_case(validate_semantics_value_zeff "${G4MUONICDATA_D1_ZEFF_NAME}"
+  "${semantics_zeff_first_record}" "${semantics_zeff_negative}" S005)
 
 # The two seams, selected independently; the exact-isotope rule; the frozen configuration; and the
 # two computed-value guards. Every key below is read from the shipped files at configure time.

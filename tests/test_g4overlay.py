@@ -1044,7 +1044,11 @@ def check_profile(
                 expected[i] = level_values[i - 1] * KEV
             resolved_levels += 1
         for i, (got, want) in enumerate(zip(after.levels, expected, strict=True)):
-            assert _bits(got) == _bits(want), f"C {key}: level {i} is {got!r}, the tables give {want!r}"
+            origin = ("the k-shell table" if i == 0 and k_value is not None else
+                      "the level table" if level_values is not None and
+                      1 <= i <= min(count, CASCADE_LEVELS - 1)
+                      else "the unpatched harvest")
+            assert _bits(got) == _bits(want), f"C {key}: level {i} is {got!r}, {origin} gives {want!r}"
         kinds = [kind for kind, _ in after.secondaries]
         assert kinds == [kind for kind, _ in before.secondaries], f"C {key}: particle types differ"
         path_before, path_after = level_path(key, before), level_path(key, after)
@@ -1142,6 +1146,55 @@ def test_t109_the_checker_passes_a_synthetic_patched_harvest_and_its_unset_count
     assert check_unset(ref, parse_d3_harvest(unset)) == {"K": 1, "C": 1, "KA": 1}
 
 
+def test_t109_drill_every_unset_assertion_names_its_corruption():
+    ref_text, _, _, _ = _synthetic_harvests()
+    ref = parse_d3_harvest(ref_text)
+    key = next(iter(ref.cascades))
+    unset_text = ref_text + f"KA {key[0]} {key[1]} {ref.k[key[0]].hex()}\n"
+    pat = parse_d3_harvest(unset_text)
+    cascade = pat.cascades[key]
+    levels = list(cascade.levels)
+    levels[1] = math.nextafter(levels[1], math.inf)
+    secondaries = list(cascade.secondaries)
+    kind, energy = secondaries[0]
+    assert energy is not None
+    secondaries[0] = (kind, math.nextafter(energy, math.inf))
+    cases = (
+        ("K set", ref, dataclasses.replace(pat, k={}), "3"),
+        ("K bits", ref, dataclasses.replace(
+            pat, k={key[0]: math.nextafter(ref.k[key[0]], math.inf)}), "K 3:"),
+        ("cascade keys", ref, dataclasses.replace(pat, cascades={}), "cascade key sets differ"),
+        ("levels", ref, dataclasses.replace(
+            pat, cascades={key: dataclasses.replace(cascade, levels=tuple(levels))}), "levels"),
+        ("secondaries", ref, dataclasses.replace(
+            pat, cascades={key: dataclasses.replace(cascade, secondaries=tuple(secondaries))}),
+         "secondaries"),
+        ("edep", ref, dataclasses.replace(
+            pat, cascades={key: dataclasses.replace(cascade, edep=math.nextafter(cascade.edep, math.inf))}),
+         "edep"),
+        ("ref KA", dataclasses.replace(ref, ka={key: ref.k[key[0]]}), pat, "unpatched harvest carries KA"),
+        ("KA keys", ref, dataclasses.replace(pat, ka={}), "KA keys are not the cascade keys"),
+        ("KA bits", ref, dataclasses.replace(pat, ka={key: math.nextafter(ref.k[key[0]], math.inf)}), "KA"),
+    )
+    for _name, before, after, message in cases:
+        with pytest.raises(AssertionError, match=re.escape(message)):
+            check_unset(before, after)
+
+
+def test_t109_drill_profile_level_message_names_each_value_origin():
+    ref_text, pat_text, kshell, levels = _synthetic_harvests()
+    ref, pat = parse_d3_harvest(ref_text), parse_d3_harvest(pat_text)
+    key = next(iter(pat.cascades))
+    for index, origin in ((0, "the k-shell table"), (3, "the level table"),
+                          (10, "the unpatched harvest")):
+        values = list(pat.cascades[key].levels)
+        values[index] = math.nextafter(values[index], math.inf)
+        changed = dataclasses.replace(pat, cascades={key: dataclasses.replace(
+            pat.cascades[key], levels=tuple(values))})
+        with pytest.raises(AssertionError, match=f"level {index} is .*{origin} gives"):
+            check_profile(ref, changed, kshell, levels)
+
+
 def _replace_token(text: str, old: str, new: str) -> str:
     assert text.count(old) == 1, (old, text.count(old))
     return text.replace(old, new)
@@ -1218,3 +1271,14 @@ def test_t111_drill_a_constructor_call_inside_a_comment_is_refused_by_name():
         assert source.count(f"{call};") == 1, call
         for mutated in (source.replace(call, f"/* {call} */"), source.replace(f"{call};", f"// {call};\n")):
             assert particles_before_harvest(mutated) == [f"{call} is not in HarvestD3()"]
+
+
+def test_t111_drill_particle_table_check_precedes_the_first_print():
+    source = HARVEST_D3.read_text(encoding="utf-8")
+    expected = ("neutron", "deuteron", "triton", "alpha", "He3", "proton")
+    predicate = "G4ParticleTable::GetParticleTable()->FindParticle(name) == nullptr"
+    assert source.count(f"if ({predicate})") == 1
+    assert all(f'"{name}"' in source for name in expected)
+    assert source.index("FindParticle(name)") < source.index('std::printf("K %d')
+    assert 'std::fprintf(stderr, "harvest_d3: the particle table lacks %s\\n", name);' in source
+    assert "std::exit(2);" in source
