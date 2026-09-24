@@ -2407,6 +2407,25 @@ def test_t127_settings_crosscheck_refuses_missing_and_unclean_records(monkeypatc
         md.load_settings_outputs(tmp_path, cells)
 
 
+def test_t127_drill_clean_settings_runs_need_printed_rows_in_both_tables(monkeypatch, tmp_path):
+    cells = md.load_cells(CELLS)
+    out = md.load_outputs(REPO)
+    monkeypatch.setattr(md, "load_outputs", lambda root: out)
+    (tmp_path / md.D3_RELDIR).mkdir(parents=True)
+    for rel in (md.SETTINGS_RUNS_RELPATH, md.SETTINGS_STATES_RELPATH, md.SETTINGS_LINES_RELPATH):
+        (tmp_path / rel).write_bytes((REPO / rel).read_bytes())
+    runs = md.load_settings_runs(tmp_path / md.SETTINGS_RUNS_RELPATH)
+    clean = next(run for run in runs if runs[run].clean)
+    for rel in (md.SETTINGS_STATES_RELPATH, md.SETTINGS_LINES_RELPATH):
+        path = tmp_path / rel
+        original = path.read_text(encoding="ascii")
+        rows = original.splitlines()
+        path.write_bytes((NL.join(row for row in rows if row.split(",")[0] != clean) + NL).encode("ascii"))
+        with pytest.raises(md.CellError, match="lacks the printed rows of clean runs"):
+            md.load_settings_outputs(tmp_path, cells)
+        path.write_bytes(original.encode("ascii"))
+
+
 def test_t127_settings_loader_refuses_a_compared_nuclide_outside_kept_members(monkeypatch):
     cells = md.load_cells(CELLS)
     wanted = md.settings_nuclides(cells)

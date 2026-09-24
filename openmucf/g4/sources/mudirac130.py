@@ -1667,4 +1667,7 @@ def load_settings_outputs(root: Path, cells: tuple[Cell, ...]) -> SettingsOutput
         stray = sorted(run for run in table if run not in runs or not runs[run].clean)
         if stray:
             raise CellError(f"{Path(name).name} carries unlisted or unclean runs: {stray[:3]}")
+        missing = sorted(run for run in runs if runs[run].clean and run not in table)
+        if missing:
+            raise CellError(f"{Path(name).name} lacks the printed rows of clean runs: {missing[:3]}")
     return SettingsOutputs(runs, headers, lines)
