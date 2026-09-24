@@ -49,7 +49,7 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 PROSE_PATHS = (
     "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
     "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md",
-    "cpp/transport/README.md",
+    "cpp/transport/README.md", "DATASET_D2.md",
 )
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)

@@ -1077,6 +1077,7 @@ def test_t34_import_fence():
         "emit.py",
         "d3_contract.py",
         "d3_centroids.py",
+        "d2.py",
         "sources/__init__.py",
         "sources/d1_nuclear_capture.py",
         "sources/mizuno2025.py",

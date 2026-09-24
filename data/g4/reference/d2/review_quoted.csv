@@ -1,0 +1,75 @@
+source_id,table,printed_page,target,column,value_raw,label
+Measday2001,Table 3.1,267,Na2O2/Na2O,Experimental,0.79 +- 0.07,Experimental
+Measday2001,Table 3.1,267,Na2O2/Na2O,Schneuwly et al,1.00,Schneuwly et al
+Measday2001,Table 3.1,267,Na2O2/Na2O,Stanislaus et al,1.06,Stanislaus et al
+Measday2001,Table 3.1,267,SiO2/SiO,Experimental,0.88 +- 0.03,Experimental
+Measday2001,Table 3.1,267,SiO2/SiO,Schneuwly et al,0.95,Schneuwly et al
+Measday2001,Table 3.1,267,SiO2/SiO,Stanislaus et al,1.19,Stanislaus et al
+Measday2001,Table 3.1,267,TiO2/TiO,Experimental,0.88 +- 0.05,Experimental
+Measday2001,Table 3.1,267,TiO2/TiO,Schneuwly et al,1.01,Schneuwly et al
+Measday2001,Table 3.1,267,TiO2/TiO,Stanislaus et al,0.95,Stanislaus et al
+Measday2001,Table 3.1,267,V2O4/V2O3,Experimental,1.16 +- 0.12,Experimental
+Measday2001,Table 3.1,267,V2O4/V2O3,Schneuwly et al,1.00,Schneuwly et al
+Measday2001,Table 3.1,267,V2O4/V2O3,Stanislaus et al,0.96,Stanislaus et al
+Measday2001,Table 3.1,267,V2O5/V2O3,Experimental,1.32 +- 0.11,Experimental
+Measday2001,Table 3.1,267,V2O5/V2O3,Schneuwly et al,1.01,Schneuwly et al
+Measday2001,Table 3.1,267,V2O5/V2O3,Stanislaus et al,0.92,Stanislaus et al
+Measday2001,Table 3.1,267,CrO3/Cr2O3,Experimental,1.27 +- 0.05,Experimental
+Measday2001,Table 3.1,267,CrO3/Cr2O3,Schneuwly et al,1.02,Schneuwly et al
+Measday2001,Table 3.1,267,CrO3/Cr2O3,Stanislaus et al,1.00,Stanislaus et al
+Measday2001,Table 3.1,267,MnO2/MnO,Experimental,1.04 +- 0.06,Experimental
+Measday2001,Table 3.1,267,MnO2/MnO,Schneuwly et al,1.01,Schneuwly et al
+Measday2001,Table 3.1,267,MnO2/MnO,Stanislaus et al,1.02,Stanislaus et al
+Measday2001,Table 3.1,267,Co3O4/CoO,Experimental,1.08 +- 0.10,Experimental
+Measday2001,Table 3.1,267,Co3O4/CoO,Schneuwly et al,1.01,Schneuwly et al
+Measday2001,Table 3.1,267,Co3O4/CoO,Stanislaus et al,0.96,Stanislaus et al
+Measday2001,Table 3.1,267,Co2O3/CoO,Experimental,1.20 +- 0.14,Experimental
+Measday2001,Table 3.1,267,Co2O3/CoO,Schneuwly et al,1.01,Schneuwly et al
+Measday2001,Table 3.1,267,Co2O3/CoO,Stanislaus et al,0.82,Stanislaus et al
+Measday2001,Table 3.1,267,CuO/Cu2O,Experimental,1.62 +- 0.18,Experimental
+Measday2001,Table 3.1,267,CuO/Cu2O,Schneuwly et al,1.01,Schneuwly et al
+Measday2001,Table 3.1,267,CuO/Cu2O,Stanislaus et al,1.07,Stanislaus et al
+Measday2001,Table 3.1,267,Nb2O5/NbO,Experimental,0.96 +- 0.07,Experimental
+Measday2001,Table 3.1,267,Nb2O5/NbO,Schneuwly et al,1.04,Schneuwly et al
+Measday2001,Table 3.1,267,Nb2O5/NbO,Stanislaus et al,0.83,Stanislaus et al
+Measday2001,Table 3.1,267,MoO3/MoO2,Experimental,1.20 +- 0.07,Experimental
+Measday2001,Table 3.1,267,MoO3/MoO2,Schneuwly et al,1.03,Schneuwly et al
+Measday2001,Table 3.1,267,MoO3/MoO2,Stanislaus et al,1.29,Stanislaus et al
+Measday2001,Table 3.1,267,SnO2/SnO,Experimental,1.19 +- 0.08,Experimental
+Measday2001,Table 3.1,267,SnO2/SnO,Schneuwly et al,1.02,Schneuwly et al
+Measday2001,Table 3.1,267,SnO2/SnO,Stanislaus et al,1.19,Stanislaus et al
+Measday2001,Table 3.1,267,Sb2O5/Sb2O3,Experimental,0.55 +- 0.04,Experimental
+Measday2001,Table 3.1,267,Sb2O5/Sb2O3,Schneuwly et al,1.00,Schneuwly et al
+Measday2001,Table 3.1,267,Sb2O5/Sb2O3,Stanislaus et al,0.67,Stanislaus et al
+Measday2001,Table 3.1,267,BaO2/BaO,Experimental,1.33 +- 0.11,Experimental
+Measday2001,Table 3.1,267,BaO2/BaO,Schneuwly et al,1.00,Schneuwly et al
+Measday2001,Table 3.1,267,BaO2/BaO,Stanislaus et al,0.87,Stanislaus et al
+Measday2001,Table 3.1,267,Pb3O4/PbO,Experimental,0.93 +- 0.14,Experimental
+Measday2001,Table 3.1,267,Pb3O4/PbO,Schneuwly et al,1.02,Schneuwly et al
+Measday2001,Table 3.1,267,Pb3O4/PbO,Stanislaus et al,1.05,Stanislaus et al
+Measday2001,Table 3.1,267,PbO2/PbO,Experimental,1.00 +- 0.06,Experimental
+Measday2001,Table 3.1,267,PbO2/PbO,Schneuwly et al,1.02,Schneuwly et al
+Measday2001,Table 3.1,267,PbO2/PbO,Stanislaus et al,1.08,Stanislaus et al
+Measday2001,Table 3.2,268,0.22 (5) [A]a,Pions A(Z1/Z2),0.23 (5) [B],Pions A(Z1/Z2)
+Measday2001,Table 3.2,268,0.22 (5) [A]a,vEH,0.25 (7),vEH
+Measday2001,Table 3.2,268,0.22 (5) [A]a,Z Law; parenthetic digits and bracket letters printed as shown,0.63,Z Law; parenthetic digits and bracket letters printed as shown
+Measday2001,Table 3.2,268,0.43 (2) [C],Pions A(Z1/Z2),0.38 (6) [D],Pions A(Z1/Z2)
+Measday2001,Table 3.2,268,0.43 (2) [C],Z Law; parenthetic digits and bracket letters printed as shown,0.75,Z Law; parenthetic digits and bracket letters printed as shown
+Measday2001,Table 3.2,268,0.28 (3) [A]a,Pions A(Z1/Z2),0.10 (1) [E],Pions A(Z1/Z2)
+Measday2001,Table 3.2,268,0.28 (3) [A]a,vEH,0.18 (5),vEH
+Measday2001,Table 3.2,268,0.28 (3) [A]a,Z Law; parenthetic digits and bracket letters printed as shown,0.33,Z Law; parenthetic digits and bracket letters printed as shown
+Measday2001,Table 3.2,268,0.10 (8) [F],Pions A(Z1/Z2),0.22 (2) [H],Pions A(Z1/Z2)
+Measday2001,Table 3.2,268,1.56 (12) [A]a,Pions A(Z1/Z2),0.89 (5) [E],Pions A(Z1/Z2)
+Measday2001,Table 3.2,268,1.56 (12) [A]a,vEH,1.01 (5),vEH
+Measday2001,Table 3.2,268,1.56 (12) [A]a,Z Law; parenthetic digits and bracket letters printed as shown,1.22,Z Law; parenthetic digits and bracket letters printed as shown
+Measday2001,Table 3.2,268,0.96 (5) [F],Pions A(Z1/Z2),1.02 (15) [D],Pions A(Z1/Z2)
+Measday2001,Table 3.2,268,1.89 (18) [G],Pions A(Z1/Z2),2.0 (1) [E],Pions A(Z1/Z2)
+Measday2001,Table 3.2,268,1.89 (18) [G],vEH,1.55 (7),vEH
+Measday2001,Table 3.2,268,1.89 (18) [G],Z Law; parenthetic digits and bracket letters printed as shown,2.11,Z Law; parenthetic digits and bracket letters printed as shown
+Measday2001,Table 3.3,269,A(Be/B),Be4B,0.40 (2),Be4B
+Measday2001,Table 3.3,269,A(Be/B),Be2B,0.36 (2),Be2B
+Measday2001,Table 3.3,269,A(Be/B),BeB2,0.25 (2),BeB2
+Measday2001,Table 3.3,269,A(Be/B),BeB6,0.10 (3),BeB6
+Measday2001,Table 3.3,269,A(Be/B),Mixture,0.75 (3),Mixture
+Measday2001,Table 3.3,269,A(Be/B),vEH,0.30 (9),vEH
+Measday2001,Table 3.3,269,A(Be/B),Z law,0.8,Z law

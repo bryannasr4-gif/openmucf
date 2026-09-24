@@ -1,0 +1,5 @@
+build,revision,install_kind,geant4_version,gcc,harness_sha256,compile_flags
+preserved-v11.4.2,v11.4.2,preserved,11.4.2,g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,ef1d6318e8b223e869c25bb44a1ae5ec55b4db9be93feea28779fa69c09f3805,-std=c++17 -O2 -ffp-contract=off
+preserved-v11.5.0.beta,v11.5.0.beta,preserved,11.5.0,g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,ef1d6318e8b223e869c25bb44a1ae5ec55b4db9be93feea28779fa69c09f3805,-std=c++17 -O2 -ffp-contract=off
+clean-v11.4.2,v11.4.2,clean,11.4.2,g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,ef1d6318e8b223e869c25bb44a1ae5ec55b4db9be93feea28779fa69c09f3805,-std=c++17 -O2 -ffp-contract=off
+clean-v11.5.0.beta,v11.5.0.beta,clean,11.5.0,g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0,ef1d6318e8b223e869c25bb44a1ae5ec55b4db9be93feea28779fa69c09f3805,-std=c++17 -O2 -ffp-contract=off

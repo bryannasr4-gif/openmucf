@@ -1,0 +1,15 @@
+revision,commit,kind,file,line,text
+v11.4.2,8cc04f65977807f1848da7b958c421cd5e162f26,derived,source/processes/hadronic/stopping/include/G4HadronicAbsorptionBertini.hh,46,class G4HadronicAbsorptionBertini : public G4HadronStoppingProcess {
+v11.4.2,8cc04f65977807f1848da7b958c421cd5e162f26,derived,source/processes/hadronic/stopping/include/G4HadronicAbsorptionFritiof.hh,51,class G4HadronicAbsorptionFritiof : public G4HadronStoppingProcess {
+v11.4.2,8cc04f65977807f1848da7b958c421cd5e162f26,derived,source/processes/hadronic/stopping/include/G4HadronicAbsorptionFritiofWithBinaryCascade.hh,58,class G4HadronicAbsorptionFritiofWithBinaryCascade : public G4HadronStoppingProcess {
+v11.4.2,8cc04f65977807f1848da7b958c421cd5e162f26,derived,source/processes/hadronic/stopping/include/G4HadronicAbsorptionINCLXX.hh,52,class G4HadronicAbsorptionINCLXX : public G4HadronStoppingProcess {
+v11.4.2,8cc04f65977807f1848da7b958c421cd5e162f26,derived,source/processes/hadronic/stopping/include/G4MuonMinusCapture.hh,54,class G4MuonMinusCapture : public G4HadronStoppingProcess
+v11.4.2,8cc04f65977807f1848da7b958c421cd5e162f26,caller,source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc,140,"const G4Element* elm = fElementSelector->SelectZandA(track, nucleus);"
+v11.4.2,8cc04f65977807f1848da7b958c421cd5e162f26,caller,source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc,124,"fElementSelector->SelectZandA(track, nucleus);"
+v11.5.0.beta,f3d5293d384757b8a228a099898b2b87cfa4023c,derived,source/processes/hadronic/stopping/include/G4HadronicAbsorptionBertini.hh,46,class G4HadronicAbsorptionBertini : public G4HadronStoppingProcess
+v11.5.0.beta,f3d5293d384757b8a228a099898b2b87cfa4023c,derived,source/processes/hadronic/stopping/include/G4HadronicAbsorptionFritiof.hh,51,class G4HadronicAbsorptionFritiof : public G4HadronStoppingProcess
+v11.5.0.beta,f3d5293d384757b8a228a099898b2b87cfa4023c,derived,source/processes/hadronic/stopping/include/G4HadronicAbsorptionFritiofWithBinaryCascade.hh,58,class G4HadronicAbsorptionFritiofWithBinaryCascade : public G4HadronStoppingProcess
+v11.5.0.beta,f3d5293d384757b8a228a099898b2b87cfa4023c,derived,source/processes/hadronic/stopping/include/G4HadronicAbsorptionINCLXX.hh,51,class G4HadronicAbsorptionINCLXX : public G4HadronStoppingProcess
+v11.5.0.beta,f3d5293d384757b8a228a099898b2b87cfa4023c,derived,source/processes/hadronic/stopping/include/G4MuonMinusCapture.hh,54,class G4MuonMinusCapture : public G4HadronStoppingProcess
+v11.5.0.beta,f3d5293d384757b8a228a099898b2b87cfa4023c,caller,source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc,141,"const G4Element* elm = fElementSelector->SelectZandA(track, nucleus);"
+v11.5.0.beta,f3d5293d384757b8a228a099898b2b87cfa4023c,caller,source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc,123,"fElementSelector->SelectZandA(track, nucleus);"
