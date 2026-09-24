@@ -201,17 +201,28 @@ def test_d2_independence_requires_lineage_and_disjoint_inputs() -> None:
     assert not d2.independent(a, unlocated, sources)
 
 
-def test_d2_limit_rows_never_support_a_pass() -> None:
+def _independent_pair() -> tuple[dict[str, str], dict[str, str], dict[str, dict[str, str]]]:
     a, b = _row(), _row()
     b.update({"source_id": "b", "qualification": a["qualification"].replace("a p.1", "b p.1")
               .replace("self:a:cal", "self:b:cal")})
-    sources = {"a": _source("a"), "b": _source("b")}
+    return a, b, {"a": _source("a"), "b": _source("b")}
+
+
+def test_d2_limit_rows_never_support_a_pass() -> None:
+    a, b, sources = _independent_pair()
     record = "d2-selector-hydrogenous"
     subs = frozenset((record,))
     assert d2.class_outcome(record, [(a, "inside", subs), (b, "inside", subs)], sources) is True
     for results in (("not_excluded", "not_excluded"), ("inside", "not_excluded")):
         rows = [(row, result, subs) for row, result in zip((a, b), results, strict=True)]
         assert d2.class_outcome(record, rows, sources) is None
+
+
+def test_d2_unidentifiable_records_stay_null_with_independent_inside_rows() -> None:
+    a, b, sources = _independent_pair()
+    for record in ("d2-initial-capture-general", "d2-selector-powder-mixtures"):
+        subs = frozenset((record,))
+        assert d2.class_outcome(record, [(a, "inside", subs), (b, "inside", subs)], sources) is None
 
 
 def test_d2_class_coverage_and_outside_priority() -> None:
