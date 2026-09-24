@@ -951,14 +951,13 @@ def _committed_rows(relpath: str) -> list[dict[str, str]]:
 
 def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     """The pins of the section on the energy the cascade receives: every number it states, read
-    from `shell_projection.csv`, `incompatible_groups.csv`, `validation.csv` and `radius_lineage.csv`,
+    from `shell_projection.csv`, `incompatible_groups.csv` and `radius_lineage.csv`,
     and one pin per row of the generated groups table."""
     from openmucf.g4 import d3_contract as d3c
 
     path = "DATASET_D3.md"
     projection = _committed_rows(d3c.PROJECTION_RELPATH)
     groups = _committed_rows(d3c.GROUPS_RELPATH)
-    validation = _committed_rows(md.VALIDATION_RELPATH)
     lineage = d3c.load_radius_lineage(REPO / d3c.LINEAGE_RELPATH)
     assert all(row.dependency_state == d3c.UNKNOWN for row in lineage)
     widest = max(groups, key=lambda g: Decimal(g["gap_keV"]))
@@ -967,7 +966,6 @@ def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     with localcontext() as context:
         context.prec = md._PRECISION
         pb_shift = sum((Decimal(s) for s in pb_line["solver_numeric_shifts_keV"].split(";")), Decimal(0))
-    weak = [r for r in validation if r["gated"] == "true" and r["label"] == md.WEAKLY_SENSITIVE]
     pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
         ("gated rows in the projection", path, r"Of the (\d+) gated rows, the shell difference lies", (1,),
          len(projection)),
@@ -994,11 +992,6 @@ def contract_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
          format(pb_shift, "f")),
         ("the refined line's printed uncertainty", path,
          r"against a printed uncertainty of ([0-9.]+) keV\.", (1,), pb_line["unc_keV"]),
-        ("weakly sensitive rows in the lineage sentence", path,
-         r"and the (\d+) weakly sensitive rows are \d+ isotopes", (1,), len(weak)),
-        ("isotopes the weakly sensitive rows span", path,
-         r"weakly sensitive rows are (\d+) isotopes of palladium", (1,),
-         len({(r["Z"], r["A"]) for r in weak})),
     ]
     for number, line in enumerate(d3c.render_groups_table(groups).splitlines()[2:], start=1):
         pattern, row_groups = _row_pattern(line)

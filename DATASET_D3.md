@@ -14,6 +14,7 @@ magnitude of its radius response in `unc`.
 `level_energy` carries, for each shell above `K`, the mean binding energy of both circular states
 of the shell weighted by their degeneracy, in the columns `e<n>`, with the magnitudes of their
 radius responses in `u<n>`.
+A magnitude below the floor stated in the next section ships as that floor.
 The chain ends at shell 8, the highest shell through which every circular state converged on
 the nuclides checked when the settings were fixed.
 Each table has a row for every kept (Z, A) and, for each element whose most abundant isotope in
@@ -82,6 +83,7 @@ That is a decision, not a figure taken from either paper: Liborio et al. (2026) 
 and Sturniolo and Hillier (2021) state a precision for eigenenergies on p. 2 of their arXiv copy.
 No value is changed for lying outside the tolerance, and omitted physics is not absorbed into it:
 each Table IIIA row carries the nuclear-polarization correction that table prints beside it (`NPol`).
+A line's band is the range of energies within that tolerance of its measured value.
 `dE_sigma_keV` and `dE_1pct_keV` are the model line's change when the rms radius moves by its
 uncertainty and when it is multiplied by 1.01 (the `r101` runs, made for the compared nuclides
 only).
@@ -178,13 +180,13 @@ Every gated row is listed below; the table is generated from `validation.csv`.
 
 The comparison above scores the orbit-resolved line MuDirac prints; a patched cascade receives, for
 each shell above K, the degeneracy-weighted mean of its two circular states, so the energy it emits
-between two shells is one number where the sources print two.
+between two shells is one number even where the sources print two.
 `shell_projection.csv` joins each gated row to that shell difference (`consumer_quantity`), beside
 the solver line and the energy the unpatched cascade emits, and never relabels a measured line as a
 centroid.
 Of the 67 gated rows, the shell difference lies within the band for 1, the solver line for 26,
 the unpatched cascade for 0, and the shell difference is closer than the unpatched cascade for 42.
-`incompatible_groups.csv` takes every (source, nuclide, shell pair) with more than one gated line and
+`incompatible_groups.csv` takes every (source, nuclide, shell pair) with more than one distinct gated line and
 intersects the lines' bands: 29 of the 29 such groups have an empty intersection, the widest,
 Pb-208 K–L, by 184.226 keV, so no single shell energy can lie within the band of every line it stands
 for.
@@ -231,8 +233,7 @@ tightened tenfold each time) moves the Pb-208 `K1-L3` line by 0.208069319 keV ag
 uncertainty of 0.090 keV.
 `radius_lineage.csv` records, per compared nuclide, what is known of the experiments behind the
 radius passed to MuDirac and behind the compared line; its state is `UNKNOWN` on every row, because
-the evaluation the radii come from is not in hand, and the 16 weakly sensitive rows are 5
-isotopes of palladium.
+the evaluation the radii come from is not in hand.
 
 ### The K–L shell difference beside a single measured value
 
