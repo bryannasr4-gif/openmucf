@@ -1223,7 +1223,8 @@ def test_t111_drill_a_constructor_call_inside_a_comment_is_refused_by_name():
 def test_t111_drill_particle_table_check_precedes_the_first_print():
     source = HARVEST_D3.read_text(encoding="utf-8")
     expected = ("neutron", "deuteron", "triton", "alpha", "He3", "proton")
-    assert source.count("G4ParticleTable::GetParticleTable()->FindParticle(name)") == 1
+    predicate = "G4ParticleTable::GetParticleTable()->FindParticle(name) == nullptr"
+    assert source.count(f"if ({predicate})") == 1
     assert all(f'"{name}"' in source for name in expected)
     assert source.index("FindParticle(name)") < source.index('std::printf("K %d')
     assert 'std::fprintf(stderr, "harvest_d3: the particle table lacks %s\\n", name);' in source
