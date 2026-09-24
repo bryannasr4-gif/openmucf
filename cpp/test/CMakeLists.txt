@@ -314,10 +314,21 @@ function(g4muonicdata_write_member dir name text)
   configure_file("${CMAKE_BINARY_DIR}/${name}.in" "${dir}/${name}" @ONLY NEWLINE_STYLE LF)
 endfunction()
 
-# The full shipped set: every profile, V-14 naming all three, V-16 passing over mudirac130.
+# The full shipped set: V-14 naming every shipped profile, V-16 passing over mudirac130.
+set(G4MUONICDATA_SHIPPED_PROFILES)
+foreach(member IN LISTS G4MUONICDATA_DATASET_MEMBERS)
+  if(member MATCHES "\\.g4dat$")
+    file(STRINGS "${member}" profile_header REGEX "^#PROFILE[ \t]+")
+    string(REGEX REPLACE "^#PROFILE[ \t]+" "" profile "${profile_header}")
+    list(APPEND G4MUONICDATA_SHIPPED_PROFILES "${profile}")
+  endif()
+endforeach()
+list(REMOVE_DUPLICATES G4MUONICDATA_SHIPPED_PROFILES)
+list(SORT G4MUONICDATA_SHIPPED_PROFILES)
+list(JOIN G4MUONICDATA_SHIPPED_PROFILES "," G4MUONICDATA_SHIPPED_PROFILE_LIST)
 add_test(NAME validate_d3_profiles COMMAND g4muonicdata_validate ${G4MUONICDATA_VALIDATE_ARGS})
 set_tests_properties(validate_d3_profiles PROPERTIES
-  PASS_REGULAR_EXPRESSION "V-14 PASS profiles=mizuno2025,mudirac130,parity pairs=[0-9]+\nV-15 PASS [^\n]*\nV-16 PASS profiles=mudirac130 keys=[0-9]+\n"
+  PASS_REGULAR_EXPRESSION "V-14 PASS profiles=${G4MUONICDATA_SHIPPED_PROFILE_LIST} pairs=[0-9]+\nV-15 PASS [^\n]*\nV-16 PASS profiles=mudirac130 keys=[0-9]+\n"
   FAIL_REGULAR_EXPRESSION " FAIL ")
 
 # The assembled dataset with one byte appended to the level table's Layer-2 file: V-04 checks

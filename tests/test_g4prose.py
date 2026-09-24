@@ -170,6 +170,7 @@ def pin_table() -> list[Pin]:
         ("README.md", pins.readme_claims),
         ("cpp/tools/README.md", pins.tools_readme_claims),
         ("DATASET_D1.md", pins.crosscheck_rows),
+        ("DATASET_D1.md", pins.suzuki_crosscheck_rows),
         ("DATASET_D1.md", pins.crosscheck_unpartnered),
         ("CHANGELOG.md", pins.string_claims),
         ("DATASET_D1.md", pins.open_row_comparisons),

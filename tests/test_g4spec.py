@@ -1080,6 +1080,7 @@ def test_t34_import_fence():
         "sources/__init__.py",
         "sources/d1_nuclear_capture.py",
         "sources/mizuno2025.py",
+        "sources/suzuki1987.py",
         "sources/mudirac130.py",
     }
 
@@ -1452,13 +1453,16 @@ def test_t83_validity_assignments_and_natural_rows():
 def test_t84_load_directory_keys_tables_by_profile_and_table(tmp_path):
     """The reference mirror of the C++ `Load`: one file per (profile, table) pair, both named on a
     repeat, and a second profile of a table beside the shipped pair loads as a third key."""
-    assert set(spec.load_directory(D1DIR)) == {
-        ("parity", "nuclear_capture_rate"),
-        ("parity", "muon_zeff"),
-        ("mizuno2025", "nuclear_capture_rate"),
-    }
     shipped = sorted(D1DIR.glob("*.g4dat"))
     assert shipped
+    expected = {
+        (
+            re.search(r"^#PROFILE\s+(\S+)$", path.read_text("ascii"), re.M).group(1),
+            re.search(r"^#TABLE\s+(\S+)$", path.read_text("ascii"), re.M).group(1),
+        )
+        for path in shipped
+    }
+    assert set(spec.load_directory(D1DIR)) == expected
 
     duplicated = tmp_path / "same_pair"
     duplicated.mkdir()

@@ -934,12 +934,6 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         ("weakly sensitive rows within tolerance", path, r"and (\d+) of those lie within tolerance", (1,),
          sum(row["within"] == "true" for row in weak)),
     ]
-    # The changelog's entry for this dataset version names the version the shipped D3 tables carry.
-    kshell_table = (D3DIR / "d3_kshell.mudirac130.g4dat").read_text("ascii")
-    shipped = re.search(r"^#VERSION\s+(\S+)$", kshell_table, re.M)
-    assert shipped, "the committed k-shell table declares no #VERSION"
-    pins.append(("the dataset version the D3 fix moves to", "CHANGELOG.md",
-                 r"the dataset's `#VERSION` becomes (\d+\.\d+\.\d+)", (1,), shipped.group(1)))
     table = md.render_validation_table(validation).splitlines()[2:]
     for number, line in enumerate(table, start=1):
         pattern, groups = _row_pattern(line)
@@ -1088,11 +1082,51 @@ def _pin_problems(text: str, path: str = "DATASET_D3.md") -> list[str]:
     return problems
 
 
+VERSION_STATEMENT = re.compile(r"the dataset's `#VERSION` becomes (\d+\.\d+\.\d+)")
+
+
+def changelog_version_problems(text: str) -> list[str]:
+    """The newest stated dataset version is shipped; earlier statements strictly decrease."""
+    kshell_table = (D3DIR / "d3_kshell.mudirac130.g4dat").read_text("ascii")
+    shipped = re.search(r"^#VERSION\s+(\S+)$", kshell_table, re.M)
+    assert shipped, "the committed k-shell table declares no #VERSION"
+    versions = [tuple(map(int, match.group(1).split(".")))
+                for match in VERSION_STATEMENT.finditer(text)]
+    if not versions:
+        return ["the changelog states no dataset version"]
+    problems = []
+    if versions[0] != tuple(map(int, shipped.group(1).split("."))):
+        problems.append("the topmost changelog version differs from the shipped version")
+    if any(above <= below for above, below in zip(versions, versions[1:], strict=False)):
+        problems.append("changelog versions do not strictly decrease")
+    return problems
+
+
+def test_t144_changelog_versions_track_the_shipped_version_and_history():
+    text = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
+    matches = list(VERSION_STATEMENT.finditer(text))
+    assert len(matches) >= 2
+    assert changelog_version_problems(text) == []
+    top, historical = matches[:2]
+    stale_top = text[:top.start(1)] + historical.group(1) + text[top.end(1):]
+    assert changelog_version_problems(stale_top)
+    top_version = tuple(map(int, top.group(1).split(".")))
+    newer = ".".join(map(str, (top_version[0] + 1, *top_version[1:])))
+    out_of_order = text[:historical.start(1)] + newer + text[historical.end(1):]
+    assert "changelog versions do not strictly decrease" in changelog_version_problems(out_of_order)
+    restated = text[:historical.start(1)] + top.group(1) + text[historical.end(1):]
+    assert changelog_version_problems(restated) == ["changelog versions do not strictly decrease"]
+    removed_top = text[:top.start()] + text[top.end():]
+    assert "the topmost changelog version differs from the shipped version" in (
+        changelog_version_problems(removed_top)
+    )
+    no_statements = VERSION_STATEMENT.sub("", text)
+    assert changelog_version_problems(no_statements) == ["the changelog states no dataset version"]
+
+
 def test_t107_every_pin_matches_once_and_states_its_value():
     assert not _pin_problems(_document_text())
-    changelog = (REPO / "CHANGELOG.md").read_bytes().decode("utf-8")
-    assert not _pin_problems(changelog, "CHANGELOG.md")
-    assert {pin[1] for pin in document_pins()} == {"DATASET_D3.md", "CHANGELOG.md"}
+    assert {pin[1] for pin in document_pins()} == {"DATASET_D3.md"}
     print(f"\ndocument pins: {len(document_pins())}")
 
 

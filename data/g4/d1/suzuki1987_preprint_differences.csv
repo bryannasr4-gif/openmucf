@@ -1,0 +1,39 @@
+kind,Z,preprint_locator,published_locator,preprint,published
+refs,17,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 28,39,40
+refs,17,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 30,86,76
+refs,17,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 31,86,76
+refs,17,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 32,86,76
+refs,24,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 51,39,40
+refs,24,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 52,48,49
+unc,24,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 54,0.05,0.050
+refs,24,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 54,72,73
+refs,24,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 55,72,73
+refs,24,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 56,72,73
+refs,24,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 57,72,73
+refs,24,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,Table IV p.2218 row 58,72,73
+refs,38,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,Table IV p.2219 row 41,48,49
+refs,38,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,Table IV p.2219 row 43,48,49
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 3,61f,62f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 4,70f,71f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 9,61f,62f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 10,60f,61f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 11,62f,63f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 12,57f,58f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 13,70f,71f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 14,25f,26f
+bracket,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 14,false,true
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 24,61f,62f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 25,60f,61f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 26,62f,63f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 27,66f,67f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 28,57f,58f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 29,70f,71f
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 23,71f,74Kgamma
+refs,92,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2221 row 31,25f,26f
+not_in_committed_preprint_cells,92,,Table IV p.2221 row 8,,235U^c (13.7+-0.4)
+not_in_committed_preprint_cells,92,,Table IV p.2221 row 15,,236U^c (13.9+-0.4)
+not_in_committed_preprint_cells,92,,Table IV p.2221 row 30,,238U^c (12.4+-0.4)
+underline,55,Suzuki 1987 (TRI-PP-87-5) Table IV p.27,Table IV p.2220 row 15,true,false
+zeff,56,Suzuki 1987 (TRI-PP-87-5) Table IV p.27,Table IV p.2220 row 16,29.99,29.99
+underline,66,Suzuki 1987 (TRI-PP-87-5) Table IV p.27,Table IV p.2220 row 28,true,false
+zeff,83,Suzuki 1987 (TRI-PP-87-5) Table IV p.28,Table IV p.2220 row 50,34.0,34.00

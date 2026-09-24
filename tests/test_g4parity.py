@@ -42,7 +42,7 @@ import openmucf
 from openmucf import rates
 from openmucf.g4 import emit, provenance, sources, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
-from openmucf.g4.sources import mizuno2025
+from openmucf.g4.sources import mizuno2025, suzuki1987
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 VENDORED = REPO / "third_party" / "geant4" / "v11.4.2" / "G4MuonMinusBoundDecay.cc"
@@ -1751,8 +1751,10 @@ def test_t57_mutation_drill_every_generated_artifact_is_actually_guarded():
     regeneration silently reproduces the corruption, passes every other test in this file.
     """
     d3dir = REPO / "data" / "g4" / "d3"
+    generator = generator_module()
     artifacts = sorted(D1DIR.glob("d1_*.g4dat")) + sorted(D1DIR.glob("*.prov.json")) + [
-        D1DIR / "geant4_add_dataset.snippet"
+        D1DIR / "geant4_add_dataset.snippet", generator.SUZUKI_QUANTITY_PATH,
+        generator.SUZUKI_PARITY_CELLS, generator.SUZUKI_PREPRINT_DIFF,
     ] + sorted(d3dir.glob("d3_*.g4dat")) + sorted(d3dir.glob("*.prov.json")) + [
         d3dir / "validation.csv", d3dir / "shell_projection.csv", d3dir / "incompatible_groups.csv",
         d3dir / "components.jsonl", d3dir / "consumer_centroids.csv", d3dir / "centroid_margins.csv",
@@ -1976,6 +1978,7 @@ class DocumentPins:
     #: Section 9's cross-check table, one `(what, pattern, expected_row)` per row the two capture
     #: profiles disagree on; the whole row is the pinned span.
     crosscheck_rows: list
+    suzuki_crosscheck_rows: list
     #: Section 9's account of the keys the cross-check never compares: one `(what, pattern,
     #: expected_string)` row when the `mizuno2025` profile carries a key no `parity` record
     #: partners, its expected string the sorted keys as the document lists them; empty otherwise.
@@ -2000,6 +2003,52 @@ def zeff_covered_split(zs, zeff_table) -> tuple[set[int], set[int], set[int]]:
     covered = {int(z) for z, _ in zeff_table.records if int(z) in zs}
     covered_iv = {z for z in covered if z >= 10}
     return covered, covered - covered_iv, covered_iv
+
+
+def suzuki_section_rows(doc: str) -> list[tuple[str, str, str]]:
+    """Pin the complete published-profile disagreement table to two shipped sources."""
+    printed = suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH)
+    selected = suzuki1987.selected(suzuki1987.normalize(printed))
+    found = d1.load(VENDORED)
+    literals = {
+        (z, a): literal
+        for (z, a, _, _), literal in zip(found.capture_records, found.capture_literals, strict=True)
+    }
+    values = {(z, a): (value, unc) for z, a, value, unc in found.capture_records}
+    expected = []
+    for (z, a), row in sorted(selected.items()):
+        if (z, a) not in values:
+            continue
+        value, unc = values[(z, a)]
+        published_value = format(suzuki1987.scaled(row, "rate"), "f")
+        published_unc = format(suzuki1987.scaled(row, "rate_unc"), "f")
+        if (d1.agrees_at_printed_precision(value, published_value)
+                and d1.agrees_at_printed_precision(unc, published_unc)):
+            continue
+        parity_value, parity_unc = literals[(z, a)]
+        row_text = (
+            f"| {z} | {a} | {a} | {parity_value} ± {parity_unc} | "
+            f"{published_value} ± {published_unc} | "
+            f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']} |"
+        )
+        expected.append(row_text)
+    sections = doc.split("## 10. Published capture-rate tables", 1)
+    assert len(sections) == 2, "DATASET_D1.md: missing published-profile section"
+    actual = re.findall(r"\| \d+ \| \d+ \| \d+ \| [^|\n]+ \| [^|\n]+ \| Table [^|\n]+ \|", sections[1])
+    assert actual == expected, "DATASET_D1.md: published-profile table differs from shipped sources"
+    return [(f"published-profile row {index}", "(" + re.escape(row) + ")", row)
+            for index, row in enumerate(expected, 1)]
+
+
+def test_t145_suzuki_section_table_is_derived_from_shipped_sources():
+    doc = " ".join((REPO / "DATASET_D1.md").read_text(encoding="utf-8").split())
+    rows = suzuki_section_rows(doc)
+    assert rows
+    assert document_pins().suzuki_crosscheck_rows == rows
+    with pytest.raises(AssertionError, match="missing published-profile section"):
+        suzuki_section_rows(doc.replace("## 10. Published capture-rate tables", "## Published tables"))
+    with pytest.raises(AssertionError, match="table differs"):
+        suzuki_section_rows(doc.replace(rows[0][2], rows[0][2].replace(" ± ", " +- ", 1)))
 
 
 def document_pins() -> DocumentPins:
@@ -2051,6 +2100,7 @@ def document_pins() -> DocumentPins:
     the expected value, and never delete a row.
     """
     doc = " ".join((REPO / "DATASET_D1.md").read_text(encoding="utf-8").split())
+    suzuki_crosscheck_rows = suzuki_section_rows(doc)
 
     found = extraction()
     audit = audit_rows()
@@ -2669,7 +2719,8 @@ def document_pins() -> DocumentPins:
 
     return DocumentPins(
         doc, changelog, readme, tools_readme, claims, rounded, changelog_claims, readme_claims,
-        tools_readme_claims, changelog_rounded, crosscheck_rows, crosscheck_unpartnered,
+        tools_readme_claims, changelog_rounded, crosscheck_rows, suzuki_crosscheck_rows,
+        crosscheck_unpartnered,
         string_claims, open_row_comparisons, settled_by_value,
     )
 
@@ -2705,10 +2756,10 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     generator = generator_module()
     _, archive = generator.build_dataset_artifacts()
     directory = emit.dataset_directory(generator.DATASET_NAME, generator.DATASET_VERSION)
-    pairs = (
-        (CAPTURE_LAYER1, CAPTURE_LAYER2), (ZEFF_LAYER1, ZEFF_LAYER2), (MIZUNO_LAYER1, MIZUNO_LAYER2),
-        (generator.D3_KSHELL_LAYER1, generator.D3_KSHELL_LAYER2),
-        (generator.D3_LEVELS_LAYER1, generator.D3_LEVELS_LAYER2),
+    pairs = tuple(
+        (path, path.with_suffix(".prov.json"))
+        for folder in (D1DIR, REPO / "data" / "g4" / "d3")
+        for path in folder.glob("*.g4dat")
     )
     committed = [path.name for pair in pairs for path in pair]
     with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
@@ -3232,7 +3283,10 @@ def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_eve
     assert len(tables) == len(files), (sorted(tables), files)
     for profile, name in tables:
         assert (spec.PARITY_PROFILE, name) in tables, (profile, name)
-    assert {profile for profile, _ in tables} == {spec.PARITY_PROFILE, mizuno2025.PROFILE}
+    assert {profile for profile, _ in tables} == {
+        spec.parse(path.read_text(encoding="ascii")).directives["PROFILE"]
+        for path in D1DIR.glob("*.g4dat")
+    }
     for (profile, _name), table in tables.items():
         natural = spec.natural_rows(table)
         assert (natural > 0) is (profile == mizuno2025.PROFILE), (profile, natural)

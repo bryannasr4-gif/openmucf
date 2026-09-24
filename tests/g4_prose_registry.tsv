@@ -26,6 +26,7 @@
 118a097b7e6e5ee82d6824f0c87ee8ccf3ac9075	CHANGELOG.md	REGISTERED: 14, one -- '14 MeV neutron source', NEUTRONOMICS.md's section-1 heading; 'one basis'
 11ec0dc0895c73919a07f95ad42072cf5c1def19	CHANGELOG.md	REGISTERED: one -- 'The one dominant', a description
 124c92e2447a6f1e3f72086bf60c814ebf767f89	CHANGELOG.md	REGISTERED: 18.3, 25.68, 26.11 -- MUON_COST.md's electrical figures on the minimal-subsystem denominator, unrounded and rounded
+13dfd08e67345de0da638aafd5f77fabcd7191b5	CHANGELOG.md	REGISTERED: 0.4.1 -- historical: the version the 2026-09-19 D3 fix produced; the changelog-version rule checks it is older than every entry above it
 144910243a4ac1ea1abd96a20ae92f5b57308852	CHANGELOG.md	REGISTERED: two -- 'a two-place diff', an idiom
 14b01095f1ea4509fe85b0e59c8a94b67508ac81	CHANGELOG.md	REGISTERED: 2 -- the conversions carrying a factor from a primary, as MUON_COST.md's chain-coverage sentence counts them
 151fbe3bf215ca516c7610320a00f4bd8fd6e003	CHANGELOG.md	REGISTERED: one -- 'added one' and 'exactly one of': the pair the journal name added and the one that straddled a claim
@@ -222,6 +223,7 @@
 9e40493a339c324fc857234b30e5852ef35011fa	CHANGELOG.md	REGISTERED: 25.68, 26.11, 45.19 -- MUON_COST.md's electrical figures per negative muon produced
 9e58684280ea611c0c2f5df4b983816710477202	CHANGELOG.md	REGISTERED: 18.3 -- Kovach et al. (2017)'s efficiency, `eta_acc_kovach_minimal` = 0.183 in openmucf/data/muon_cost_chain.csv
 a08c5031c2980ac019a47e024a7068752d2b1dca	CHANGELOG.md	REGISTERED: Five, four, two -- wrapped arithmetic statements and the files carrying them at this entry's date, a count the sentence states 'at this head'
+a19ec5475d82727c02309b1f6b32a0fcc550aa51	CHANGELOG.md	EXERCISED: 0.5.0 -- tests/test_g4d3.py::test_t144_changelog_versions_track_the_shipped_version_and_history
 a1d8627fa416a75f014f3159671a6eb850593035	CHANGELOG.md	REGISTERED: three -- the three routes to the marker the sentence enumerates
 a28f89f487dc60ca4643ad2597127de239ee1b2c	CHANGELOG.md	REGISTERED: two -- the two patterns, `STRONG` and `LEDGER`
 a297dfdfd1158dab76458be032289a8618c2511b	CHANGELOG.md	REGISTERED: 200, 400, 600, 800, 30 -- VALIDATION.md's V_yamashita_curve row: the temperatures, ±30% per point, the 800 K point a registered expected-FAIL
@@ -400,9 +402,9 @@ fef45c840bbcbf53f2bbb79a2a1c73ab0516d6ff	CHANGELOG.md	REGISTERED: two -- 'two te
 5ba4e34c554009712687347c7d9ae2e243dfad9d	DATASET_D1.md	REGISTERED: two -- the two tables (III and IV) named on the previous line
 5bff1893012430bc906e4e1b43ba563326bda1bc	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of the three'); the three is pinned on this line
 5e0a1ccc928fef81837da59786453e4b270cd14a	DATASET_D1.md	REGISTERED: 1.0 -- a literal constant of the Goulard–Primakoff expression, transcribed from the vendored source; the reference implementation carries the same expression and T-48 holds its output to the compiled library over the whole sweep; the document's transcription is read by no test
+5e9e2b543aaed112c1f63776e643a30c699fd469	DATASET_D1.md	REGISTERED: 92, 236 -- the unsettled key (92, 236), a row of isotope_audit.csv; 236 -- the nuclide label U-236
 612001eaad9f2b438b367045ea7c78d5a4dcb624	DATASET_D1.md	REGISTERED: three -- the three papers section 1 names in the previous paragraph (Suzuki, Measday & Roalsvig 1987; Phys. Rev. Lett. 99 (2007) 032002; Measday's 2001 review), a count of listed items
 6773aa6ab1b3a9acdc8c235bb1991cff0cfdea5a	DATASET_D1.md	REGISTERED: one -- a pronoun ('one that carries')
-67eb2b8d29e48110f95eddbf9b1888c181c57ae2	DATASET_D1.md	REGISTERED: 92, 236 -- the unsettled key (92, 236), a row of isotope_audit.csv; 236 -- the nuclide label U-236
 67fdf6eaa1f02258dda0bf49e079d49c5564741d	DATASET_D1.md	REGISTERED: Two -- 'Two limits': the two the paragraph states ('First', 'Second')
 689c40fe1e4037b3f5c58cb94d18de2128291d1f	DATASET_D1.md	REGISTERED: one -- 'on one machine, in one translation unit': the setting of the measurement F-3's block reports
 6a44591ac63a782da2e99047289d486a8133c3cb	DATASET_D1.md	REGISTERED: one -- a pronoun ('to one built')

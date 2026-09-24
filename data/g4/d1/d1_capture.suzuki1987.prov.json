@@ -1,0 +1,95 @@
+{
+  "dataset": "G4MuonicData",
+  "precedence": [
+    "suzuki1987"
+  ],
+  "profile": "suzuki1987",
+  "rows": {
+    "3-6": {
+      "conditions": "target label as printed: 6Li; mean life as printed: 2177.0+-2.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table III p.2217 row 14 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=3 A=6"
+    },
+    "3-7": {
+      "conditions": "target label as printed: 7Li; mean life as printed: 2188.3+-2.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table III p.2217 row 17 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=3 A=7"
+    },
+    "5-10": {
+      "conditions": "target label as printed: 10B; mean life as printed: 2070.7+-3.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table III p.2217 row 23 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=5 A=10"
+    },
+    "5-11": {
+      "conditions": "target label as printed: 11B; mean life as printed: 2096.1+-3.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table III p.2217 row 25 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=5 A=11"
+    },
+    "6-13": {
+      "conditions": "target label as printed: 13C; mean life as printed: 2029.1+-3.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table III p.2217 row 39 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=6 A=13"
+    },
+    "8-18": {
+      "conditions": "target label as printed: 18O; mean life as printed: 1844.0+-4.5 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table III p.2217 row 50 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=8 A=18"
+    }
+  },
+  "seam": "d1_nuclear_capture",
+  "version": "0.5.0"
+}
