@@ -38,6 +38,72 @@ def tiny_config() -> dict[str, list[str]]:
             "PARTICLES": ["ok"], "CONFIG": ["mizuno2025", "mudirac130", "set", "x"]}
 
 
+def synthetic_check_work(tmp_path, monkeypatch, changes=None):
+    changes = changes or {}
+    tag = next(iter(MATRIX["revisions"]))
+    route = MATRIX["routes"][0]
+    target = MATRIX["targets"][0]
+    minimal = dict(MATRIX)
+    minimal.update(revisions={tag: MATRIX["revisions"][tag]}, routes=[route], targets=[target],
+                   threads=[1, 4], events=1, cases={})
+    monkeypatch.setattr(transport, "MATRIX", minimal)
+    for name in ("route_check", "lookup_check", "level_check", "d9_check"):
+        monkeypatch.setattr(transport, name, lambda *args: (True, "synthetic"))
+    stage = tmp_path / "dataset"
+    stage.mkdir()
+    transport.save(stage / "stage.json", {"name": "G4MuonicData", "version": "synthetic"})
+    (stage / "G4MuonicDatasynthetic").mkdir()
+    transport.save(tmp_path / "cases.json", [])
+    for mode in minimal["modes"]:
+        for thread in ([1] if mode == "preserved" else minimal["threads"]):
+            directory = transport.cell_dir(tmp_path, tag, mode, route, target, thread)
+            output = directory / "attempt_1"
+            output.mkdir(parents=True)
+            transport.save(directory / "complete.json", {"output": "attempt_1"})
+            record = tiny_records()
+            if changes.get((mode, thread, "record")):
+                record[0][7] = float(1).hex()
+            (output / "records-0.txt").write_text(
+                "\n".join(" ".join(row) for row in record) + "\n", encoding="utf-8")
+            lines = ["PROCESSES muMinusCaptureAtRest",
+                     f"MATERIAL 1 1 {target['Z']} {target['A']} {float(1).hex()}",
+                     f"PARTICLES {changes.get((mode, thread, 'particles'), 'ok')}"]
+            values = {"patched-off": ["compiled", "compiled", "none", "none"],
+                      "patched-default": ["parity", "compiled", "set", "synthetic"],
+                      "enabled": ["mizuno2025", "mudirac130", "set", "synthetic"]}.get(mode)
+            if changes.get((mode, thread, "config")):
+                values = None
+            if values:
+                lines.append("CONFIG " + " ".join(values))
+            (output / "config.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return tag, route, target
+
+
+def test_t149_check_wiring_rejects_gating_changes_and_reports_preserved(tmp_path, monkeypatch):
+    tag, route, target = synthetic_check_work(
+        tmp_path, monkeypatch, {("preserved", 1, "record"): True})
+    out = tmp_path / "cells.csv"
+    transport.check(tmp_path, out)
+    with out.open(newline="", encoding="utf-8") as file:
+        rows = list(csv.DictReader(file))
+    preserved = [row for row in rows if row["mode"] == "preserved" and row["check"] == "parity"]
+    assert len(preserved) == 1 and preserved[0]["status"] == "INFO"
+    assert preserved[0]["tag"] == tag and preserved[0]["route"] == route
+    assert preserved[0]["Z"] == str(target["Z"])
+
+
+@pytest.mark.parametrize("change", [
+    ("patched-off", 1, "record"), ("patched-default", 1, "record"),
+    "threads", ("patched-default", 1, "config"),
+    ("pristine", 1, "particles")])
+def test_t149_check_wiring_rejects_corruption(tmp_path, monkeypatch, change):
+    changes = ({(mode, 4, "record"): True for mode in MATRIX["modes"] if mode != "preserved"}
+               if change == "threads" else {change: True})
+    synthetic_check_work(tmp_path, monkeypatch, changes)
+    with pytest.raises(RuntimeError, match="first gating failure"):
+        transport.check(tmp_path, tmp_path / "cells.csv")
+
+
 def test_t149_parity_and_thread_digest_detect_one_field_corruption():
     records = tiny_records()
     assert transport.records_digest(records) == transport.records_digest(list(reversed(records)))
@@ -244,7 +310,7 @@ def test_t149_wrong_lookup_origin_fails(tmp_path):
     (tmp_path / "d1_zeff.g4dat").write_text("#COLUMNS Z value\n13 11\n", encoding="ascii")
     (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
         "#COLUMNS Z A value\n13 27 400\n", encoding="ascii")
-    config = {"RATE_BD": [(0.7 * 0.001).hex()], "RATE_HELPER": [(0.7 * 0.001).hex()],
+    config = {"RATE_BD": [(0.7 / 1000.0).hex()], "RATE_HELPER": [(0.7 / 1000.0).hex()],
               "ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(11).hex()],
               "KA": [(400 * 0.001).hex()],
               "_RES_LINES": [["rate", "13", "27", "exact", "mizuno2025", "1"],
@@ -263,7 +329,7 @@ def test_t149_compiled_helper_uses_its_own_pristine_kernel(tmp_path):
     (tmp_path / "d1_zeff.g4dat").write_text("#COLUMNS Z value\n13 11\n", encoding="ascii")
     (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
         "#COLUMNS Z A value\n13 27 400\n", encoding="ascii")
-    config = {"RATE_BD": [(0.7 * 0.001).hex()], "RATE_HELPER": [(0.7 * 0.001).hex()],
+    config = {"RATE_BD": [(0.7 / 1000.0).hex()], "RATE_HELPER": [(0.7 / 1000.0).hex()],
               "ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(12).hex()],
               "KA": [(400 * 0.001).hex()],
               "_RES_LINES": [["rate", "13", "27", "exact", "mizuno2025", "1"],
@@ -363,6 +429,33 @@ def test_t149_manifest_source_digest_guard():
     assert manifest["sources"] == expected
 
 
+def test_t149_rate_division_and_kshell_scale(tmp_path):
+    source = ROOT / "data/g4/d1/d1_capture.mizuno2025.g4dat"
+    value = transport.table_value(source, (14, 0), "value")
+    assert value is not None and value / 1000.0 != value * 0.001
+    (tmp_path / source.name).write_text(
+        f"#COLUMNS Z A value\n14 0 {value!r}\n", encoding="ascii")
+    (tmp_path / "d1_zeff.g4dat").write_text(
+        "#COLUMNS Z value\n82 11\n", encoding="ascii")
+    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+        f"#COLUMNS Z A value\n14 0 {value!r}\n", encoding="ascii")
+    config = {"RATE_BD": [(value / 1000.0).hex()],
+              "RATE_HELPER": [(value / 1000.0).hex()],
+              "ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(11).hex()],
+              "KA": [(value * 0.001).hex()],
+              "_RES_LINES": [["rate", "14", "0", "exact", "mizuno2025", "1"],
+                             ["zeff", "14", "0", "compiled", "mizuno2025", "0"],
+                             ["kshell", "14", "0", "exact", "mudirac130", "1"]]}
+    pristine = {"ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(11).hex()]}
+    target = {"Z": 14, "A": 0}
+    assert transport.lookup_check(config, pristine, target, tmp_path)[0]
+    config["RATE_BD"] = [(value * 0.001).hex()]
+    assert not transport.lookup_check(config, pristine, target, tmp_path)[0]
+    config["RATE_BD"] = [(value / 1000.0).hex()]
+    config["RATE_HELPER"] = [(value * 0.001).hex()]
+    assert not transport.lookup_check(config, pristine, target, tmp_path)[0]
+
+
 def test_t149_manifest_resolves_libraries_from_build_install(monkeypatch, tmp_path):
     install = tmp_path / "install"
     lib = install / "lib/libprobe.so"
@@ -380,6 +473,49 @@ def test_t149_manifest_resolves_libraries_from_build_install(monkeypatch, tmp_pa
     found = transport.libraries(binary, tmp_path, {}, install)
     assert found == [{"soname": "libprobe.so", "path": "$WORK" + str(lib)[len(str(tmp_path)):],
                       "sha256": hashlib.sha256(b"library").hexdigest()}]
+
+
+def test_t149_manifest_records_preserved_harness_and_libraries(monkeypatch, tmp_path):
+    stage = tmp_path / "dataset"
+    (stage / "G4MuonicDatasynthetic").mkdir(parents=True)
+    transport.save(stage / "stage.json", {"name": "G4MuonicData", "version": "synthetic",
+                                           "members": {}, "archive": "synthetic.tar.gz", "md5": "probe"})
+    for tag in MATRIX["revisions"]:
+        preserved = tmp_path / tag / "preserved"
+        binary = preserved / "harness/executable"
+        binary.parent.mkdir(parents=True)
+        binary.write_bytes(tag.encode())
+        install = preserved / "install"
+        (install / "lib").mkdir(parents=True)
+        transport.save(preserved / "preserved.json",
+                       {"binary": str(binary), "install": str(install)})
+        transport.save(tmp_path / tag / "farm.json", {"entries": []})
+        kinds = ("pristine", "patched", "mutant") if tag == "v11.4.2" else ("pristine", "patched")
+        for kind in kinds:
+            build = transport.build_dir(tmp_path, tag, kind)
+            build.mkdir(parents=True)
+            transport.save(build / "build.json", {
+                "binary": str(binary), "install": str(install), "commit": MATRIX["revisions"][tag],
+                "patches": [], "removed": False, "configure_argv": [], "cache_sha256": "probe",
+                "compile_commands_sha256": "probe", "compile_count": 1, "flag_count": 1,
+                "version": "synthetic", "wall_s": 0})
+
+    def ldd(binary, work, preserved_paths, install):
+        assert install == preserved_paths[next(tag for tag in MATRIX["revisions"]
+                                               if tag in str(binary))]
+        return [{"soname": "libprobe.so", "path": "$WORK/libprobe.so", "sha256": "probe"}]
+
+    monkeypatch.setattr(transport, "libraries", ldd)
+    monkeypatch.setattr(transport, "command", lambda *args, **kwargs: "synthetic version\n")
+    output = tmp_path / "manifest.json"
+    transport.manifest(tmp_path, output)
+    manifest = json.loads(output.read_text(encoding="utf-8"))
+    assert set(manifest["preserved"]) == set(MATRIX["revisions"])
+    for tag, entry in manifest["preserved"].items():
+        assert entry["harness_path"].replace("\\", "/").startswith(f"$WORK/{tag}/preserved/")
+        assert entry["harness_sha256"] == hashlib.sha256(tag.encode()).hexdigest()
+        assert entry["ldd"] == [{"soname": "libprobe.so", "path": "$WORK/libprobe.so",
+                                 "sha256": "probe"}]
 
 
 def test_t149_manifest_normalizes_embedded_work_path(tmp_path):
@@ -424,6 +560,13 @@ def test_t149_committed_manifest_ties_builds_dataset_and_cells():
         for patch in build["patches"]:
             assert patch["sha256"] == hashlib.sha256((ROOT / patch["path"]).read_bytes()).hexdigest()
         assert all(row["sha256"] for row in build["ldd"] if row["path"].startswith(("$WORK", "$PRESERVED")))
+    assert set(manifest["preserved"]) == set(MATRIX["revisions"])
+    for item in manifest["preserved"].values():
+        assert item["harness_path"].startswith("$WORK/")
+        assert item["harness_sha256"]
+        assert item["ldd"]
+        assert all(row["sha256"] for row in item["ldd"]
+                   if row["path"].startswith(("$WORK", "$PRESERVED")))
     generator_path = ROOT / "scripts/generate_g4data.py"
     spec = importlib.util.spec_from_file_location("transport_generator_test", generator_path)
     assert spec is not None and spec.loader is not None

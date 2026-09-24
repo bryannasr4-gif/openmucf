@@ -685,7 +685,10 @@ def lookup_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
             expected_text = pristine[fallback_key][0]
             matched = config_key in config and config[config_key][0] == expected_text
         else:
-            expected = hit * scale
+            if name == "rate":  # noqa: SIM108
+                expected = hit / 1000.0
+            else:
+                expected = hit * scale
             expected_text = expected.hex()
             matched = config_key in config and same_float(config[config_key][0], expected)
         if not matched:
@@ -696,7 +699,7 @@ def lookup_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
                 helper_text = pristine[helper_key][0]
                 helper_match = helper_key in config and config[helper_key][0] == helper_text
             else:
-                expected_helper = hit * scale
+                expected_helper = hit / 1000.0 if name == "rate" else hit * scale
                 helper_text = expected_helper.hex()
                 helper_match = helper_key in config and same_float(config[helper_key][0], expected_helper)
             if not helper_match:
@@ -838,7 +841,7 @@ def check(work: Path, out: Path) -> None:
                                      if mode in comparison_modes else records_digest(records))
                         same = records_digest(records) == reference
                         results["parity"] = (same, f"digest={records_digest(records)} reference={reference}")
-                        if thread == 4:
+                        if thread != 1:
                             single = cell_dir(work, tag, mode, route, target, 1)
                             single = cell_output(single)
                             thread_same = records_digest(records) == records_digest(parsed_records(single))
@@ -919,8 +922,9 @@ def manifest(work: Path, out: Path) -> None:
                for p in sorted(dataset.rglob("*")) if p.is_file()}
     if members != stage["members"]:
         raise RuntimeError("staged dataset members changed")
-    preserved_paths = {tag: Path(json.loads((work / tag / "preserved/preserved.json").read_text(
-        encoding="utf-8"))["install"]) for tag in MATRIX["revisions"]}
+    preserved_info = {tag: json.loads((work / tag / "preserved/preserved.json").read_text(
+        encoding="utf-8")) for tag in MATRIX["revisions"]}
+    preserved_paths = {tag: Path(info["install"]) for tag, info in preserved_info.items()}
     builds: list[dict[str, Any]] = []
     for tag in MATRIX["revisions"]:
         for kind in (("pristine", "patched", "mutant") if tag == "v11.4.2" else ("pristine", "patched")):
@@ -937,6 +941,13 @@ def manifest(work: Path, out: Path) -> None:
                            "harness_sha256": digest(binary),
                            "harness_path": normalized(str(binary), work, preserved_paths),
                             "ldd": libraries(binary, work, preserved_paths, Path(info["install"]))})
+    preserved = {}
+    for tag, info in preserved_info.items():
+        binary = Path(info["binary"])
+        install = Path(info["install"])
+        preserved[tag] = {"harness_path": normalized(str(binary), work, preserved_paths),
+                          "harness_sha256": digest(binary),
+                          "ldd": libraries(binary, work, preserved_paths, install)}
     farms = {}
     for tag in MATRIX["revisions"]:
         info = json.loads((work / tag / "farm.json").read_text(encoding="utf-8"))
@@ -944,7 +955,7 @@ def manifest(work: Path, out: Path) -> None:
     host = {"arch": platform.machine(), "gcc": command(["gcc", "--version"]).splitlines()[0],
             "cmake": command(["cmake", "--version"]).splitlines()[0],
             "glibc": " ".join(platform.libc_ver()), "python": platform.python_version()}
-    value = {"builds": builds, "farms": farms,
+    value = {"builds": builds, "preserved": preserved, "farms": farms,
              "dataset": {"name": stage["name"], "version": stage["version"],
                          "archive": stage["archive"], "md5": stage["md5"], "members": members},
              "sources": {name: digest(HERE / name) for name in SOURCES}, "host": host}

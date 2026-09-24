@@ -983,10 +983,264 @@
     "glibc": "glibc 2.43",
     "python": "3.14.4"
   },
+  "preserved": {
+    "v11.4.2": {
+      "harness_path": "$WORK/v11.4.2/preserved/harness_precreated/g4muonic_transport",
+      "harness_sha256": "b0d2b9083dba08e5a51570a2d6ab47029e47b2ac88629eacb7432d95e2e35419",
+      "ldd": [
+        {
+          "path": "linux-vdso.so.1",
+          "sha256": null,
+          "soname": "linux-vdso.so.1"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4physicslists.so",
+          "sha256": "fd8d5c6eab50e3ee4f85dc7434faa362f1026250eaa5bc1741bbfc3bcb3b3812",
+          "soname": "libG4physicslists.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4run.so",
+          "sha256": "3de24888d1cd189248a3596d89fddbdffa213c1bef5bc3fdd83ced459ba28278",
+          "soname": "libG4run.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4event.so",
+          "sha256": "6555b39d45f403b64d9776c25d8ddf4425a1df18da17386f023036fd9a9446fc",
+          "soname": "libG4event.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4tracking.so",
+          "sha256": "52f7b80390975d888743a59598d69cc2837f12b73238f39427ae792e080909bf",
+          "soname": "libG4tracking.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4processes_hadronic.so",
+          "sha256": "25a1b5c5edc820d352fd27b69c4cbeecfd301fb21c8631cdc2f078ce29de8f1d",
+          "soname": "libG4processes_hadronic.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4processes_core.so",
+          "sha256": "8d90b7038cc9ce9504e1cec59d0108a0f59bf6d94004301ce0439aeaafc68c8c",
+          "soname": "libG4processes_core.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4track.so",
+          "sha256": "8b7a2425972f89af309dde7037578631e32ce06dac64203dbbdc9004e9e979d6",
+          "soname": "libG4track.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4particles.so",
+          "sha256": "2b5bbc6a772a49cae5e21879e4a0b9c96574dd8390826c7194863e39cabe5189",
+          "soname": "libG4particles.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4geometry.so",
+          "sha256": "334af466ec890f79856c9feebb6d7f02983e4b1502b08bfff6d3a13bf0b7f6e2",
+          "soname": "libG4geometry.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4materials.so",
+          "sha256": "56ed5adefcda75daba3edbd8d70f6a9ce3ffaa0fa9175e23b2fede506a1acd84",
+          "soname": "libG4materials.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4global.so",
+          "sha256": "0de21d24df6ab50262a3273dd235d496450b96abf24099e665005026e06b1814",
+          "soname": "libG4global.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4clhep.so",
+          "sha256": "5d008d456d3b4744c16fb386391dc82ce5ec32a6a9143563854661a13119d362",
+          "soname": "libG4clhep.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4ptl.so.3",
+          "sha256": "313df1e148c139e179b4547f40fb8ad23abf34011859911859875b4e45c6cde9",
+          "soname": "libG4ptl.so.3"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6",
+          "sha256": "5bb0d21308f123b6ad46c6f35b42cedfcb8d6d439a53aa3dae04d880aaffdde3",
+          "soname": "libstdc++.so.6"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "sha256": "9d339ecb409578d6a5d587e6c537a8f9589b8a13fefba30d167433a4b5758bee",
+          "soname": "libgcc_s.so.1"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "a3947513a02831ec692ebf13053c07614882ab54a2101fb91a1b15724062ed0c",
+          "soname": "libc.so.6"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4parmodels.so",
+          "sha256": "84cc6de53eb421f6fb074cdc7657c9f61fb8620fc1565fd07ee532c8fb797052",
+          "soname": "libG4parmodels.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4intercoms.so",
+          "sha256": "a4d1602a458fc3c2b1647f1f35f279195cc7c129f887d4379d013be9cc98e4b6",
+          "soname": "libG4intercoms.so"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "beea4eeacfcfa2cd96011b959a826c97cf4a774017e214f6a34d7eea3d49cd88",
+          "soname": "libm.so.6"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4digits_hits.so",
+          "sha256": "64cf494facf2816dceb161d48fd6d93edf6e8e05e8b26f70fa73789d8479f2b8",
+          "soname": "libG4digits_hits.so"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4graphics_reps.so",
+          "sha256": "794e0b96ea7c5e97e41e62cf5a0d5d514930e2c1c22e1a17deccbfc3633db9b4",
+          "soname": "libG4graphics_reps.so"
+        },
+        {
+          "path": "/lib64/ld-linux-x86-64.so.2",
+          "sha256": "c5e80a563850d6ab5c2f2482e4202d9c1b71fbf44854b8c399e63527202c64e1",
+          "soname": "/lib64/ld-linux-x86-64.so.2"
+        },
+        {
+          "path": "$PRESERVED_v11.4.2/lib/libG4zlib.so",
+          "sha256": "ab4d64c117d932c633eb8674841904d5c75ff5c8f8a437f6c08b8c6c42fc6101",
+          "soname": "libG4zlib.so"
+        }
+      ]
+    },
+    "v11.5.0.beta": {
+      "harness_path": "$WORK/v11.5.0.beta/preserved/harness_precreated/g4muonic_transport",
+      "harness_sha256": "f7213285ccdd7e42d72dde29ebf231d2acb9430d7c433317200482ed7b91d89a",
+      "ldd": [
+        {
+          "path": "linux-vdso.so.1",
+          "sha256": null,
+          "soname": "linux-vdso.so.1"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4physicslists.so",
+          "sha256": "84385b85718671b1bb496351c1d90e0907466b4503116b09c3d9570f791f4499",
+          "soname": "libG4physicslists.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4run.so",
+          "sha256": "771b93b233fd2c02dcff33251724643f248653c1915bd43646ae635a266bf66e",
+          "soname": "libG4run.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4event.so",
+          "sha256": "da9848de2276cbad414f9898241851668481addbd2e13d2105874490bc548059",
+          "soname": "libG4event.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4tracking.so",
+          "sha256": "10a1b02e16517109146532b6bca3f5d89058f38eb85a27e7373f87cc6e3240da",
+          "soname": "libG4tracking.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4processes_hadronic.so",
+          "sha256": "75059754f1f0acc6707b20c681901312594306c194c0ba2e2892b9b92eb667c8",
+          "soname": "libG4processes_hadronic.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4processes_core.so",
+          "sha256": "b03d170887e137fed95d68cf89dd250d38fba717d4f65c22295615ba10df46ae",
+          "soname": "libG4processes_core.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4track.so",
+          "sha256": "22c8405935fa1cc93052d7ed2a1cab3a12b0f285f185f0d860deccf4a32178a8",
+          "soname": "libG4track.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4particles.so",
+          "sha256": "c0bc0c676ca3a172693011ab64e58fcefdb783903dff2f0ec822a276ec22f73c",
+          "soname": "libG4particles.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4geometry.so",
+          "sha256": "c6bc03529d99ee78ef634ed93c0b270125c7f6a8fe2ff5f1ce17dd1f3e6e619d",
+          "soname": "libG4geometry.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4materials.so",
+          "sha256": "fe8465943177ef35a19d9ed5fc2c61fe0885222771174bf4c13f37b2d65c4f37",
+          "soname": "libG4materials.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4global.so",
+          "sha256": "4eba2fb1b0ca6b4f18d840ca776b86828a1a0c7a65578cd57bda06a323f28251",
+          "soname": "libG4global.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4clhep.so",
+          "sha256": "6f9812f451dc22b05af35b546504c75db0a0a6c83fafa9d3a1f70581573baddc",
+          "soname": "libG4clhep.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4ptl.so.3",
+          "sha256": "fd3d4460d6beccec6f67d39c0413bda826aafedadacb980543ed7356849ba1d9",
+          "soname": "libG4ptl.so.3"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6",
+          "sha256": "5bb0d21308f123b6ad46c6f35b42cedfcb8d6d439a53aa3dae04d880aaffdde3",
+          "soname": "libstdc++.so.6"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+          "sha256": "9d339ecb409578d6a5d587e6c537a8f9589b8a13fefba30d167433a4b5758bee",
+          "soname": "libgcc_s.so.1"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+          "sha256": "a3947513a02831ec692ebf13053c07614882ab54a2101fb91a1b15724062ed0c",
+          "soname": "libc.so.6"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4parmodels.so",
+          "sha256": "65358151756ae11fafc7e34f02d09d4c58d18d8d0bc995de842a49386fd7cdd1",
+          "soname": "libG4parmodels.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4intercoms.so",
+          "sha256": "fa9a8f9eba0b164a72f8549870563fa2bd33dbe9a1712c6d19de1116cd414896",
+          "soname": "libG4intercoms.so"
+        },
+        {
+          "path": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+          "sha256": "beea4eeacfcfa2cd96011b959a826c97cf4a774017e214f6a34d7eea3d49cd88",
+          "soname": "libm.so.6"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4digits_hits.so",
+          "sha256": "7985132746e631e0fe05dd18a2eb89ba80edb4b05a7f54a265060ec4237acda7",
+          "soname": "libG4digits_hits.so"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4graphics_reps.so",
+          "sha256": "8ba091d6640d7ce2f1814f28389d8fa8560271099e1dc04c24030c899ef6cf0a",
+          "soname": "libG4graphics_reps.so"
+        },
+        {
+          "path": "/lib64/ld-linux-x86-64.so.2",
+          "sha256": "c5e80a563850d6ab5c2f2482e4202d9c1b71fbf44854b8c399e63527202c64e1",
+          "soname": "/lib64/ld-linux-x86-64.so.2"
+        },
+        {
+          "path": "$PRESERVED_v11.5.0.beta/lib/libG4zlib.so",
+          "sha256": "6e558db0a06df2392d501514e8a1459733243172ad9075fb9d8c6a08e0972232",
+          "soname": "libG4zlib.so"
+        }
+      ]
+    }
+  },
   "sources": {
     "CMakeLists.txt": "d29593bd8d9cbb0ca8ec6ba10c9da7abef332b4e7a4eff7ef5bc15b4abddfefc",
     "g4muonic_transport.cc": "70729424a387ede325c49c53b24a3e59a0efa2cba045e234ae32dc332b52b40d",
     "matrix.json": "0258ed4e558152da8088f0a93062456eefcf80e01d6266301519c81035844548",
-    "transport.py": "868f614f7abc5c486af8aa1fa7953fd86e9cf67cd496ed682cc22dabe3cd5847"
+    "transport.py": "2cab96646b562001d726efc2dd0ec53fd7e1a94e22c4249c15f7442c7f09513d"
   }
 }
