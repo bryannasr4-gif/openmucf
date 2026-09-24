@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- the published capture-rate tables as a third capture profile (2026-09-23)
+
+- The `suzuki1987` capture profile carries the published article's own isotope measurements beside its printed-row ledger and generated normalized rows.
+- Generated comparisons place the compiled-in capture records and committed preprint cells beside the published table cells.
+- For this addition, the dataset's `#VERSION` becomes 0.5.0.
+
 ### Added -- the K–L shell difference beside single-value centroids (2026-09-23)
 
 - **`data/g4/d3/consumer_centroids.csv` and `centroid_margins.csv` are generated beside the unchanged D3 tables**: they set the K–L shell difference a patched cascade emits beside the centers of gravity of Table IIIA of Fricke et al. (1995), beside degeneracy-convention centroids of the doublets the sources print, and beside the unpatched cascade, with a discrepancy screen bounded over every correlation and, per row, the shift to a finer numerical setting.

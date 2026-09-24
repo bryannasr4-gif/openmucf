@@ -303,7 +303,7 @@ record. **Sr** appears once too, and it is one of the three records this dataset
 `(38, 88)`, where the primary prints both natural Sr and Sr-88 and the key matches either.
 
 Sharper still: **all three of the records this dataset cannot settle sit at elements this sentence
-names.** `(92, 236)` U is open — the primary's table carries no U-236 row at all — and U is named in
+names.** `(92, 236)` U is open — the preprint's table carries no U-236 row at all — and U is named in
 the model half, where the complaint is about the formula rather than about the data.
 
 **Those are not the same uncertainty, and saying so would overstate it.** This dataset cannot settle
@@ -496,3 +496,24 @@ vendored source prints them and the `mizuno2025` cells as the transcription prin
 
 No value in either profile is altered by the comparison. The copy read is the arXiv v2 HTML; the
 journal version is unread.
+
+## 10. Published capture-rate tables — `suzuki1987`
+
+`data/g4/d1/suzuki1987_printed_rows.csv` records each printed line of Tables III and IV of the published Suzuki, Measday and Roalsvig article from its page images, with table, printed page and row locators.
+The generated `suzuki1987_quantity_rows.csv` normalizes the data rows and carries the Huff factor column as printed.
+The `suzuki1987` capture profile selects this experiment's own rows when the printed target label identifies an isotope or natural composition, the rate has a symmetric uncertainty, and the rate is not parenthesized.
+A bare element symbol stays `unspecified` because the format's natural-composition row must be named explicitly.
+`suzuki1987_parity_cells.csv` lists every compiled-in capture record at a Z the published tables print and the published cells equal at their printed precision.
+`suzuki1987_preprint_differences.csv` lists differences against the committed preprint capture and effective-charge cells.
+Its `not_in_committed_preprint_cells` kind means a published capture cell at a covered Z has no paired committed preprint cell.
+Neither comparison changes a profile value.
+
+The table lists the paired keys whose value or uncertainty differs at the published printed precision:
+
+| Z | A (suzuki1987) | A (parity) | parity value ± unc | suzuki1987 value ± unc | locator |
+|---|---|---|---|---|---|
+| 3 | 6 | 6 | 0.004647 ± 0.00012 | 0.004180 ± 0.000450 | Table III p.2217 row 14 |
+| 3 | 7 | 7 | 0.002229 ± 0.00012 | 0.001810 ± 0.000440 | Table III p.2217 row 17 |
+| 5 | 10 | 10 | 0.02757 ± 0.00063 | 0.0278 ± 0.0007 | Table III p.2217 row 23 |
+| 5 | 11 | 11 | 0.02188 ± 0.00064 | 0.0219 ± 0.0007 | Table III p.2217 row 25 |
+| 6 | 13 | 13 | 0.03474 ± 0.00034 | 0.0376 ± 0.0007 | Table III p.2217 row 39 |
