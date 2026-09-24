@@ -9,6 +9,7 @@ import importlib.util
 import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -110,6 +111,52 @@ def harvest(raw: Path, out: Path) -> None:
     print(f"harvest builds={len(builds)} selector_rows={len(selector)} binding_rows={len(bindings)}")
 
 
+def compare() -> None:
+    reference = ROOT / "data/g4/reference/d2"
+    with (reference / "sources.csv").open(newline="", encoding="utf-8") as stream:
+        sources = {row["source_id"]: row for row in csv.DictReader(stream)}
+    measurements = d2.load_measurements(reference / "measurements.csv", sources)
+    output: list[dict[str, str]] = []
+    reasons: Counter[str] = Counter()
+    for row in measurements:
+        reason = d2.gate_reason(row, sources[row["source_id"]])
+        try:
+            record, _ = d2.classify(row)
+        except ValueError:
+            record = ""
+        qual = d2.qualification(row["qualification"])
+        stage = qual.get("stage", ("unstated", ""))[0]
+        population = qual.get("population", ("unstated", ""))[0]
+        parameter = row["inferable_parameter"]
+        pair = re.fullmatch(r"A\(([A-Za-z]+)/([A-Za-z]+)\)", parameter)
+        z1 = z2 = ""
+        predicted = None
+        if pair:
+            z1, z2 = str(d2._SYMBOLS[pair[1]]), str(d2._SYMBOLS[pair[2]])
+            predicted = d2.a_g4(int(z1), int(z2))
+        elif parameter == "P(H)":
+            predicted = d2.h_share(row["material_formula"])
+        if not reason and predicted is None:
+            raise ValueError(f"{row['record_id']}: gated row has no selector prediction")
+        result = d2.compare_ratio(predicted, row["reported_value"], row["reported_uncertainty"]) if not reason and predicted is not None else ""
+        reasons[reason or "gated"] += 1
+        output.append({
+            "record_id": row["record_id"], "source_id": row["source_id"], "class": record,
+            "gated": "false" if reason else "true", "reason": reason,
+            "stage": stage, "population": population,
+            "quantity": parameter or row["observable"], "z1": z1, "z2": z2,
+            "value_src": row["reported_value"], "sigma_src": row["reported_uncertainty"],
+            "value_g4": repr(float(predicted)) if predicted is not None else "", "result": result,
+        })
+    path = ROOT / "data/g4/d2/selector_vs_primary.csv"
+    write_csv(path, ("record_id", "source_id", "class", "gated", "reason", "stage",
+                     "population", "quantity", "z1", "z2", "value_src", "sigma_src",
+                     "value_g4", "result"), output)
+    print(f"comparison_rows={len(output)} gated={reasons['gated']} out={path.relative_to(ROOT)}")
+    for reason, count in sorted(reasons.items()):
+        print(f"reason={reason} rows={count}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
@@ -126,7 +173,7 @@ def main() -> None:
     elif args.command == "harvest":
         harvest(args.raw, args.out)
     else:
-        raise NotImplementedError("comparison requires the primary-row ledger")
+        compare()
 
 
 if __name__ == "__main__":

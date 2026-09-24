@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import importlib.util
 import json
+import sys
 from collections import defaultdict
 from fractions import Fraction
 from pathlib import Path
@@ -15,10 +17,16 @@ from openmucf.g4 import d2
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data/g4/d2"
+REFERENCE = ROOT / "data/g4/reference/d2"
 
 
 def _csv(name: str) -> list[dict[str, str]]:
     with (DATA / name).open(newline="", encoding="utf-8") as stream:
+        return list(csv.DictReader(stream))
+
+
+def _reference(name: str) -> list[dict[str, str]]:
+    with (REFERENCE / name).open(newline="", encoding="utf-8") as stream:
         return list(csv.DictReader(stream))
 
 
@@ -105,6 +113,8 @@ def test_d2_source_gate_and_hydrogen_limit() -> None:
     assert d2.gate_reason(row, _source()) == ""
     assert d2.compare_ratio(Fraction(1, 2), "<0.5", "") == "not_excluded"
     assert d2.compare_ratio(Fraction(3, 4), "<0.5", "") == "outside"
+    row["material_formula"] = "SiO2"
+    assert d2.gate_reason(row, _source()) == "not a per-atom ratio"
 
 
 def test_d2_three_sigma_inclusive_and_asymmetric_side() -> None:
@@ -157,6 +167,15 @@ def test_d2_independence_requires_lineage_and_disjoint_inputs() -> None:
         assert d2.class_outcome("d2-selector-oxides", pair, sources) is None
     sources["b"]["same_data_as"] = "a"
     assert not d2.independent(a, b, sources)
+    sources = {"a": _source("a"), "b": _source("b"), "c": _source("c")}
+    sources["a"]["same_data_as"] = "c"
+    sources["b"]["same_data_as"] = "c"
+    assert not d2.independent(a, b, sources)
+    sources["a"]["same_data_as"] = ""
+    sources["b"]["same_data_as"] = ""
+    empty = dict(b)
+    empty["qualification"] = b["qualification"].replace("inputs=self:b:cal", "inputs=")
+    assert not d2.independent(a, empty, sources)
 
 
 def test_d2_class_coverage_and_outside_priority() -> None:
@@ -167,6 +186,19 @@ def test_d2_class_coverage_and_outside_priority() -> None:
     assert d2.class_outcome("d2-selector-alloys", one + [(row, "outside", frozenset())], sources) is False
     assert d2.class_outcome("d2-initial-capture-general", one, sources) is None
     assert d2.class_outcome("d2-selector-powder-mixtures", one, sources) is None
+
+
+def test_d2_unrelated_inside_row_does_not_block_covered_subclasses() -> None:
+    a, b, c = _row(), _row(), _row()
+    b.update({"source_id": "b", "qualification": a["qualification"].replace("a p.1", "b p.1")
+              .replace("self:a:cal", "self:b:cal")})
+    c["source_id"] = "c"
+    c["qualification"] = c["qualification"].replace("lineage=own", "lineage=unstated")
+    sources = {"a": _source("a"), "b": _source("b"), "c": _source("c")}
+    rows = [(row, "inside", frozenset((sub,))) for row in (a, b)
+            for sub in ("alloy", "intermetallic")]
+    rows.append((c, "inside", frozenset(("unrelated",))))
+    assert d2.class_outcome("d2-selector-alloys", rows, sources) is True
 
 
 def test_d2_harvest_exact_selector_parity() -> None:
@@ -240,3 +272,117 @@ def test_d2_bindings_reach_static_trace() -> None:
                 if physics_list == "QBBC+helper":
                     assert any(row["class"] == "G4MuonMinusAtomicCapture" and row["atomic_capture"] == "true"
                                for row in selected if row["particle"] == "mu-")
+
+
+def test_d2_measurements_bind_every_printed_primary_cell() -> None:
+    printed = [row for row in _reference("printed_rows.csv") if row["row_kind"] == "data"]
+    measurements = _reference("measurements.csv")
+    sources = {row["source_id"]: row for row in _reference("sources.csv")}
+    assert len(measurements) == len(printed)
+    by_id = {row["record_id"]: row for row in measurements}
+    assert len(by_id) == len(measurements)
+    for cell in printed:
+        record_id = "-".join(cell[field] for field in ("source_id", "table", "printed_page", "row_ordinal"))
+        row = by_id[record_id]
+        source = sources[cell["source_id"]]
+        assert row["reported_value"] == cell["value_raw"]
+        assert row["reported_uncertainty"] == cell["unc_raw"]
+        assert row["source_sha256"] == source["copy_sha256"]
+        assert source["access"] == "AVAILABLE" and source["kind"] == "measurement"
+        assert source["primary_read"] == row["primary_read"] == "true"
+
+
+def test_d2_baijal_oxygen_footnote_qualifies_cus_and_pbs() -> None:
+    printed = _reference("printed_rows.csv")
+    footnote = next(row for row in printed if row["source_id"] == "Baijal1962OSTI"
+                    and row["table"] == "Table IV" and row["row_kind"] == "footnote"
+                    and "captures in oxygen" in row["note"])
+    footnote_id = "-".join(footnote[field] for field in
+                           ("source_id", "table", "printed_page", "row_ordinal"))
+    rows = [row for row in _reference("measurements.csv") if row["source_id"] == "Baijal1962OSTI"
+            and row["material_formula"] in ("CuS", "PbS")]
+    assert rows
+    assert {row["material_formula"] for row in rows} == {"CuS", "PbS"}
+    for row in rows:
+        assert "oxygen-capture footnote" in row["normalization"]
+        assert footnote_id in row["normalization"]
+        assert footnote["note"] in row["normalization"]
+        assert footnote_id in row["stopping_model"]
+        assert row["observable"] == "other"
+
+
+def test_d2_yoshida_delayed_table_stays_ungated() -> None:
+    printed = [row for row in _reference("printed_rows.csv") if row["source_id"] == "Yoshida2016"
+               and row["table"] == "Table 1" and row["row_kind"] == "data"]
+    measured = {row["record_id"]: row for row in _reference("measurements.csv")}
+    sources = {row["source_id"]: row for row in _reference("sources.csv")}
+    compared = {row["record_id"]: row for row in _csv("selector_vs_primary.csv")}
+    assert printed
+    for cell in printed:
+        record_id = "-".join(cell[field] for field in ("source_id", "table", "printed_page", "row_ordinal"))
+        row = measured[record_id]
+        result = compared[record_id]
+        assert row["qualification"].startswith("stage=terminal@Yoshida2016 p.116;")
+        assert "population=transfer_only@Yoshida2016 p.116" in row["qualification"]
+        assert d2.gate_reason(row, sources[row["source_id"]]) == "population transfer_only"
+        assert result["population"] == "transfer_only"
+        assert result["gated"] == "false" and result["reason"] == "population transfer_only"
+
+
+def test_d2_loader_refuses_secondary_rows(tmp_path: Path) -> None:
+    row = _row()
+    row["record_id"] = "secondary"
+    path = tmp_path / "measurements.csv"
+    with path.open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, d2.MEASUREMENT_COLUMNS)
+        writer.writeheader()
+        writer.writerow(row)
+    for source in ({**_source(), "kind": "review"}, {**_source(), "primary_read": "false"}):
+        with pytest.raises(ValueError, match="not primary-read"):
+            d2.load_measurements(path, {"a": source})
+
+
+def test_d2_comparison_bytes_regenerate_without_review_reads(monkeypatch: pytest.MonkeyPatch) -> None:
+    path = DATA / "selector_vs_primary.csv"
+    before = path.read_bytes()
+    original_open = Path.open
+
+    def checked_open(self: Path, *args: object, **kwargs: object) -> object:
+        if self.name == "review_quoted.csv":
+            raise AssertionError("comparison read review quotations")
+        return original_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", checked_open)
+    script = ROOT / "scripts/generate_g4d2.py"
+    spec = importlib.util.spec_from_file_location("generate_g4d2_test", script)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    module.compare()
+    assert path.read_bytes() == before
+
+
+def test_d2_independence_and_each_subclass_require_source_evidence() -> None:
+    a, b = _row(), _row()
+    a["locator"] = "facility A; year 2001"
+    b.update({"source_id": "b", "qualification": a["qualification"].replace("a p.1", "b p.1")
+              .replace("self:a:cal", "self:b:cal").replace("method=xray", "method=lifetime"),
+              "locator": "facility B; year 2002"})
+    sources = {"a": _source("a"), "b": _source("b")}
+    for record, subclasses in d2.SUBCLASSES.items():
+        pairs = [(dict(a), "inside", frozenset((sub,))) for sub in subclasses]
+        pairs += [(dict(b), "inside", frozenset((sub,))) for sub in subclasses]
+        assert d2.class_outcome(record, pairs, sources) is True
+        missing = [(row, result, subs) for row, result, subs in pairs
+                   if next(iter(subclasses)) not in subs]
+        assert d2.class_outcome(record, missing, sources) is None
+        for edit in ("lineage=unstated", "inputs=self:a:cal"):
+            broken = []
+            for row, result, subs in pairs:
+                changed = dict(row)
+                if changed["source_id"] == "b":
+                    changed["qualification"] = changed["qualification"].replace(
+                        "lineage=own" if edit.startswith("lineage") else "inputs=self:b:cal", edit)
+                broken.append((changed, result, subs))
+            assert d2.class_outcome(record, broken, sources) is None

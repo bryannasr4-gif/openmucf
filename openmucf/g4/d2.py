@@ -35,11 +35,18 @@ SUBCLASSES = {
         "bromide", "iodide", "sulfide", "nitride", "boride", "ternary",
     )),
 }
-_SYMBOLS = {
-    "H": 1, "Li": 3, "B": 5, "C": 6, "N": 7, "O": 8, "F": 9, "Na": 11, "Mg": 12,
-    "Al": 13, "Si": 14, "P": 15, "S": 16, "Cl": 17, "K": 19, "Ca": 20,
-    "Fe": 26, "Cu": 29, "Zn": 30, "Br": 35, "Ag": 47, "I": 53, "Pb": 82,
-}
+_ELEMENT_SYMBOLS = (
+    'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg',
+    'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr',
+    'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
+    'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd',
+    'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd',
+    'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf',
+    'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po',
+    'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm',
+    'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg',
+)
+_SYMBOLS = {symbol: z for z, symbol in enumerate(_ELEMENT_SYMBOLS, 1)}
 
 
 @dataclass(frozen=True)
@@ -187,7 +194,8 @@ def gate_reason(row: dict[str, str], source: dict[str, str]) -> str:
     parameter = row["inferable_parameter"]
     is_ratio = row["observable"] == "atomic_capture_ratio" and bool(
         re.fullmatch(r"A\([A-Za-z]+/[A-Za-z]+\)", parameter))
-    if not (is_ratio or parameter == "P(H)"):
+    is_hydrogen = parameter == "P(H)" and "H" in formula_atoms(row["material_formula"])
+    if not (is_ratio or is_hydrogen):
         return "not a per-atom ratio"
     qual = qualification(row["qualification"])
     stage = qual.get("stage", ("unstated", ""))[0]
@@ -214,15 +222,21 @@ def gate_reason(row: dict[str, str], source: dict[str, str]) -> str:
 def independent(a: dict[str, str], b: dict[str, str], sources: dict[str, dict[str, str]]) -> bool:
     if a["source_id"] == b["source_id"]:
         return False
-    a_links_b = sources[a["source_id"]].get("same_data_as") == b["source_id"]
-    b_links_a = sources[b["source_id"]].get("same_data_as") == a["source_id"]
-    if a_links_b or b_links_a:
+
+    def data_chain(source_id: str) -> set[str]:
+        seen = set()
+        while source_id and source_id not in seen:
+            seen.add(source_id)
+            source_id = sources.get(source_id, {}).get("same_data_as", "")
+        return seen
+
+    if data_chain(a["source_id"]) & data_chain(b["source_id"]):
         return False
     qa, qb = qualification(a["qualification"]), qualification(b["qualification"])
     if any(q.get("lineage", ("", ""))[0] != "own" or not q.get("lineage", ("", ""))[1] for q in (qa, qb)):
         return False
     ia, ib = (q.get("inputs", ("unstated", ""))[0] for q in (qa, qb))
-    if "unstated" in (ia, ib):
+    if not ia or not ib or "unstated" in (ia, ib):
         return False
     return set(ia.split("+" )).isdisjoint(ib.split("+"))
 
@@ -235,10 +249,11 @@ def class_outcome(record: str, rows: list[tuple[dict[str, str], str, frozenset[s
         return False
     inside = [(row, subs) for row, result, subs in rows if result == "inside"]
     required = SUBCLASSES.get(record, frozenset((record,)))
-    if not all(any(sub in subs for _, subs in inside) for sub in required):
+    supporting = [(row, subs) for row, subs in inside if subs & required]
+    if not all(any(sub in subs for _, subs in supporting) for sub in required):
         return None
-    for row, _ in inside:
-        if not any(independent(row, other, sources) for other, _ in inside):
+    for row, _ in supporting:
+        if not any(independent(row, other, sources) for other, _ in supporting):
             return None
     return True
 
