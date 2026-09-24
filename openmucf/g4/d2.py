@@ -183,7 +183,7 @@ def classify(row: dict[str, str]) -> tuple[str, frozenset[str]]:
             ("S", "sulfide"), ("N", "nitride"), ("B", "boride")) if len(atoms) == 2 and symbol in atoms}
     if len(atoms) >= 3:
         subs.add("ternary")
-    if subs:
+    if len(atoms) >= 2:
         return "d2-selector-other-compounds", frozenset(subs)
     raise ValueError(f"unidentifiable class: {formula}")
 

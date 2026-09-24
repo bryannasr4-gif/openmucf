@@ -147,6 +147,21 @@ def test_d2_class_priority_and_subclasses() -> None:
         assert found_subs == subs
 
 
+def test_d2_every_other_condensed_compound_is_an_other_compound() -> None:
+    row = _row()
+    for formula in ("SiC", "GaAs", "H2O"):
+        row["material_formula"] = formula
+        assert d2.classify(row) == ("d2-selector-other-compounds", frozenset())
+    row["inferable_parameter"] = "A(Si/C)"
+    row["material_formula"] = "SiC"
+    assert d2.gate_reason(row, _source()) == ""
+    for formula in ("Fe", "solution(Cu,Au)"):
+        row["material_formula"] = formula
+        with pytest.raises(ValueError, match="unidentifiable class|unsupported formula"):
+            d2.classify(row)
+        assert d2.gate_reason(row, _source()) == "unidentifiable class"
+
+
 def test_d2_independence_requires_lineage_and_disjoint_inputs() -> None:
     a, b = _row(), _row()
     b.update({"source_id": "b", "qualification": a["qualification"].replace("a p.1", "b p.1")
