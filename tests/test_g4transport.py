@@ -65,6 +65,34 @@ def test_t149_duplicate_rest_process_and_two_isotope_material_fail():
     assert not transport.target_check(config, {"Z": 13, "A": 27})[0]
 
 
+def test_t149_helper_requires_master_precreation_marker():
+    config = tiny_config()
+    config["PROCESSES"] = ["muMinusAtomicCaptureAtRest"]
+    config["MUATOM_PRECREATED"] = ["synthetic_atom"]
+    records = [["T", "0", "1", "0", "13", "muMinusAtomicCaptureAtRest", "-", "0x0p+0", "0x0p+0"]]
+    assert transport.route_check(config, records, "muonic_atom_helper", 1)[0]
+    del config["MUATOM_PRECREATED"]
+    assert not transport.route_check(config, records, "muonic_atom_helper", 1)[0]
+
+
+def test_t149_master_precreation_call_precedes_beamon():
+    source = (ROOT / "cpp/transport/g4muonic_transport.cc").read_text(encoding="utf-8")
+    assert source.index("manager->Initialize();") < source.index(
+        "G4IonTable::GetIonTable()->GetMuonicAtom(options.z, options.a);") < source.index(
+        "manager->BeamOn(options.events);")
+    assert '"MUATOM_PRECREATED "' in source
+
+
+def test_t149_new_harness_uses_fresh_run_tree(tmp_path):
+    target = {"Z": 13, "A": 27}
+    old = tmp_path / "v11.4.2/runs/pristine/muonic_atom_helper/13-27/1"
+    old.mkdir(parents=True)
+    (old / "complete.json").write_text("old harness", encoding="utf-8")
+    chosen = transport.cell_dir(tmp_path, "v11.4.2", "pristine", "muonic_atom_helper", target, 1)
+    assert chosen == tmp_path / "v11.4.2/runs_precreated/pristine/muonic_atom_helper/13-27/1"
+    assert not (chosen / "complete.json").exists()
+
+
 def test_t149_wrong_config_fails():
     config = tiny_config()
     assert transport.config_check(config, "enabled", "x")[0]
@@ -134,7 +162,7 @@ def test_t149_corrupt_levels_uses_last_tabulated_column(tmp_path):
                       "82 0 700 600 500 400 350 300 250\n"
                       "82 208 700 600 500 400 350 300 250\n", encoding="ascii")
     (tmp_path / tag / "farm_nodata").mkdir(parents=True)
-    cell = tmp_path / tag / "runs/pristine/bound_decay/82-208/1"
+    cell = tmp_path / tag / transport.RUNS_DIR / "pristine/bound_decay/82-208/1"
     output = cell / "attempt_1"
     output.mkdir(parents=True)
     transport.save(cell / "complete.json", {"output": "attempt_1"})
@@ -146,7 +174,7 @@ def test_t149_corrupt_levels_uses_last_tabulated_column(tmp_path):
     invalid = tmp_path / "invalid"
     shutil.copytree(stage, invalid / "dataset")
     (invalid / tag / "farm_nodata").mkdir(parents=True)
-    bad_cell = invalid / tag / "runs/pristine/bound_decay/82-208/1"
+    bad_cell = invalid / tag / transport.RUNS_DIR / "pristine/bound_decay/82-208/1"
     shutil.copytree(cell, bad_cell)
     (bad_cell / "attempt_1/config.txt").write_text(
         "L " + " ".join([1.0.hex()] * 9), encoding="utf-8")

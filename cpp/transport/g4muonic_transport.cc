@@ -12,6 +12,7 @@
 #include "G4HadronicParameters.hh"
 #include "G4He3.hh"
 #include "G4Isotope.hh"
+#include "G4IonTable.hh"
 #include "G4LogicalVolume.hh"
 #include "G4Material.hh"
 #include "G4MuonMinus.hh"
@@ -291,7 +292,7 @@ void Resolution(std::ofstream& file, const char* name, G4MuonicDataOverlay::Reso
 }
 #endif
 
-void WriteConfig(const Options& o, Detector* detector) {
+void WriteConfig(const Options& o, Detector* detector, const G4ParticleDefinition* precreated) {
   std::ofstream file(o.out + "/config.txt");
   if (!file) throw std::runtime_error("cannot open config.txt");
   file << "VERSION " << G4VERSION_TAG << '\n';
@@ -313,6 +314,7 @@ void WriteConfig(const Options& o, Detector* detector) {
   }
   file << '\n';
   file << "PARTICLES ok\n";
+  if (precreated) file << "MUATOM_PRECREATED " << precreated->GetParticleName() << '\n';
 #ifdef G4MUONIC_TRANSPORT_PATCHED
   const auto& config = G4MuonicDataOverlay::Config();
   file << "CONFIG " << config.d1Profile << ' ' << config.d3Profile << ' '
@@ -373,8 +375,13 @@ int main(int argc, char** argv) {
     manager->SetUserInitialization(new Actions(options));
     manager->Initialize();
     ParticlesOrExit();
+    G4ParticleDefinition* precreated = nullptr;
+    if (options.route == "muonic_atom_helper" &&
+        std::getenv("G4MUONIC_TRANSPORT_NO_PRECREATE") == nullptr) {
+      precreated = G4IonTable::GetIonTable()->GetMuonicAtom(options.z, options.a);
+    }
     if (!options.config_only) manager->BeamOn(options.events);
-    WriteConfig(options, detector);
+    WriteConfig(options, detector, precreated);
     delete manager;
     return 0;
   } catch (const std::exception& error) {

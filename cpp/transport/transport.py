@@ -25,6 +25,7 @@ MATRIX = json.loads((HERE / "matrix.json").read_text(encoding="utf-8"))
 PATCHES = ROOT / "cpp" / "patches"
 SNIPPET = ROOT / "data" / "g4" / "d1" / "geant4_add_dataset.snippet"
 SOURCES = ("matrix.json", "g4muonic_transport.cc", "CMakeLists.txt", "transport.py")
+RUNS_DIR = "runs_precreated"
 
 
 def digest(path: Path) -> str:
@@ -334,7 +335,7 @@ def run(tag: str, mode: str, work: Path, route_only: str | None) -> None:
             continue
         for target in MATRIX["targets"]:
             for count in threads:
-                target_dir = parent / "runs" / mode / route / f"{target['Z']}-{target['A']}" / str(count)
+                target_dir = parent / RUNS_DIR / mode / route / f"{target['Z']}-{target['A']}" / str(count)
                 marker = target_dir / "complete.json"
                 if marker.exists():
                     print(f"SKIP {tag} {mode} {route} {target['Z']},{target['A']} t={count}")
@@ -379,7 +380,7 @@ def corrupt_levels(tag: str, work: Path) -> Path:
         (corrupted / item.name).symlink_to(item.resolve(), target_is_directory=True)
     source = dataset_dir(work / "dataset")
     shutil.copytree(source, corrupted / source.name)
-    config = config_map(cell_output(root / "runs/pristine/bound_decay/82-208/1") / "config.txt")
+    config = config_map(cell_output(root / RUNS_DIR / "pristine/bound_decay/82-208/1") / "config.txt")
     pristine_l8 = float.fromhex(config["L"][8])
     e8 = pristine_l8 * 1000.0 / 2.0
     path = corrupted / source.name / "d3_levels.mudirac130.g4dat"
@@ -554,6 +555,8 @@ def route_check(config: dict[str, list[str]], records: list[list[str]], route: s
     expected = (1, 0) if route == "bound_decay" else (0, 1)
     if (bound, helper) != expected:
         return False, f"rest process counts {(bound, helper)} expected {expected}"
+    if route == "muonic_atom_helper" and len(config.get("MUATOM_PRECREATED", [])) != 1:
+        return False, f"master muonic atom marker {config.get('MUATOM_PRECREATED')}"
     by_event: dict[int, int] = {}
     for row in records:
         if row[0] == "T" and row[5] == "muMinusAtomicCaptureAtRest":
@@ -742,7 +745,7 @@ CHECK_IDS = ("events", "route", "target", "particles", "config", "lookups", "lev
 
 
 def cell_dir(work: Path, tag: str, mode: str, route: str, target: dict[str, int], threads: int) -> Path:
-    return work / tag / "runs" / mode / route / f"{target['Z']}-{target['A']}" / str(threads)
+    return work / tag / RUNS_DIR / mode / route / f"{target['Z']}-{target['A']}" / str(threads)
 
 
 def cell_output(directory: Path) -> Path:
