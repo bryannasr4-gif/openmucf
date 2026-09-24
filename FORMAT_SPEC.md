@@ -584,8 +584,8 @@ Two further requirements follow from section 2:
 `A = 0` is the row for the element's natural composition. Under `A:most_abundant_and_listed` a
 record with `A = 0` carries the values the same table lists for the element's most abundant isotope.
 Under `A:listed` no record has `A = 0`; Layer 1 does not decompose `#VALIDITY` (section 2.2), so the
-rule binds the consumer and its validator, not the parser, and a consumer that reads only the record
-keyed by exactly the nuclide it asked for is reading this format correctly.
+rule binds the consumer and its validator, not the parser.
+Under each of these conventions, a consumer that reads only the record keyed by exactly the nuclide it asked for is reading this format correctly, because whether a request for (Z, A) may also be answered by the (Z, 0) row is the consumer's rule and not the format's (section 5).
 
 **Line length is not bounded by this format**, and deliberately carries no error code: a dataset is
 a generated, audited artifact, not untrusted network input, so a
