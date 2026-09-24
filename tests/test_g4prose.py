@@ -54,6 +54,11 @@ PROSE_PATHS = (
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
 
+
+def test_t74_transport_readme_enumerated():
+    assert "cpp/transport/README.md" in PROSE_PATHS
+
+
 CLASSES = pathlib.Path(__file__).with_name("g4_prose_classes.tsv")
 REGISTRY = pathlib.Path(__file__).with_name("g4_prose_registry.tsv")
 CHECK_F3 = REPO / "cpp" / "test" / "check_f3.py"
