@@ -327,14 +327,19 @@ def test_generator_includes_every_suzuki_output() -> None:
 
 
 # T-141: the committed Suzuki pair receives the same E009 audit as the other pairs.
-def test_audit_checks_suzuki_pair(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_audit_checks_suzuki_pair(monkeypatch: pytest.MonkeyPatch) -> None:
     original = gen.D1_SUZUKI_LAYER2
-    corrupted = tmp_path / original.name
-    corrupted.write_bytes(original.read_bytes().replace(
+    corrupted = original.read_bytes().replace(
         b'"profile": "suzuki1987"', b'"profile": "corrupted"'
-    ))
-    monkeypatch.setattr(gen, "D1_SUZUKI_LAYER2", corrupted)
-    monkeypatch.setattr(gen, "ROOT", original.parents[4])
+    )
+    read_bytes = Path.read_bytes
+
+    def read_corrupted(path: Path) -> bytes:
+        if path == original:
+            return corrupted
+        return read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", read_corrupted)
     with pytest.raises(SystemExit, match="E009"):
         gen.audit()
 
