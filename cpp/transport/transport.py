@@ -215,8 +215,26 @@ def patch_paths(tag: str) -> list[Path]:
     return [PATCHES / f"g4-{tag}-{kind}.patch" for kind in ("muonicdata", "register-dataset")]
 
 
-def build(tag: str, source: Path, kind: str, work: Path) -> None:
-    parent = work / tag / kind
+def build_dir(work: Path, tag: str, kind: str) -> Path:
+    locations = work / tag / "build_locations.json"
+    names = json.loads(locations.read_text(encoding="utf-8")) if locations.exists() else {}
+    return work / tag / names.get(kind, kind)
+
+
+def record_build_dir(work: Path, tag: str, kind: str, parent: Path) -> None:
+    locations = work / tag / "build_locations.json"
+    names = json.loads(locations.read_text(encoding="utf-8")) if locations.exists() else {}
+    names[kind] = parent.name
+    save(locations, names)
+
+
+def version_matches(tag: str, version: str) -> bool:
+    match = re.fullmatch(r"v(\d+\.\d+\.\d+)(?:\.beta(?:\.\d+)?)?", tag)
+    return match is not None and version == match.group(1)
+
+
+def build(tag: str, source: Path, kind: str, work: Path, slot: str | None = None) -> None:
+    parent = work / tag / (kind if slot is None else f"{kind}_{slot}")
     fresh(parent)
     src = parent / "src"
     src.mkdir()
@@ -273,7 +291,7 @@ def build(tag: str, source: Path, kind: str, work: Path) -> None:
     if "CMAKE_BUILD_TYPE:STRING=Release" not in cache or "GEANT4_BUILD_MULTITHREADED:BOOL=ON" not in cache:
         raise RuntimeError("CMake cache lacks Release or MT ON")
     version = command([str(install / "bin/geant4-config"), "--version"], history=history).strip()
-    if version != tag.removeprefix("v"):
+    if not version_matches(tag, version):
         raise RuntimeError(f"Geant4 version {version} disagrees with {tag}")
     if kind != "pristine":
         headers = list(builddir.rglob("G4FindDataDir.hh"))
@@ -293,6 +311,8 @@ def build(tag: str, source: Path, kind: str, work: Path) -> None:
             "harness_sha256": digest(binary), "binary": str(binary), "install": str(install),
             "wall_s": sum(item["wall_s"] for item in history)}
     save(parent / "build.json", info)
+    if slot is not None:
+        record_build_dir(work, tag, kind, parent)
     print(f"BUILD {tag} {kind} rc=0 wall_s={info['wall_s']:.1f} flags={flagged}/{len(compile_commands)} "
           f"Release MT=ON version={version}")
 
@@ -301,7 +321,8 @@ def run(tag: str, mode: str, work: Path, route_only: str | None) -> None:
     spec = MATRIX["modes"][mode]
     kind = spec["kind"]
     parent = work / tag
-    build_file = parent / ("preserved/preserved.json" if kind == "preserved" else f"{kind}/build.json")
+    build_file = (parent / "preserved/preserved.json" if kind == "preserved"
+                  else build_dir(work, tag, kind) / "build.json")
     info = json.loads(build_file.read_text(encoding="utf-8"))
     install = Path(info["install"])
     binary = Path(info["binary"])
@@ -409,7 +430,7 @@ def cases(work: Path) -> None:
     ]
     for tag in MATRIX["revisions"]:
         root = work / tag
-        build_info = json.loads((root / "patched/build.json").read_text(encoding="utf-8"))
+        build_info = json.loads((build_dir(work, tag, "patched") / "build.json").read_text(encoding="utf-8"))
         install = Path(build_info["install"])
         binary = Path(build_info["binary"])
         farm_path = root / "farm"
@@ -454,7 +475,7 @@ def cases(work: Path) -> None:
         for case_id, build_kind in (("P12", "patched"), ("P13", "mutant")):
             if case_id == "P13" and tag != "v11.4.2":
                 continue
-            spec = json.loads((root / f"{build_kind}/build.json").read_text(encoding="utf-8"))
+            spec = json.loads((build_dir(work, tag, build_kind) / "build.json").read_text(encoding="utf-8"))
             cell = root / "cases" / case_id
             fresh(cell)
             args = cell_argv(Path(spec["binary"]), route, {"Z": 82, "A": 208}, 1, 1, "on", cell)
@@ -630,8 +651,9 @@ def lookup_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
             return False, f"{config_key} {config.get(config_key)} expected {expected.hex()}"
         if name in ("rate", "zeff"):
             helper_key = "RATE_HELPER" if name == "rate" else "ZEFF_HELPER"
-            if helper_key not in config or not same_float(config[helper_key][0], expected):
-                return False, f"{helper_key} {config.get(helper_key)} expected {expected.hex()}"
+            expected_helper = (float.fromhex(pristine[helper_key][0]) if hit is None else hit * scale)
+            if helper_key not in config or not same_float(config[helper_key][0], expected_helper):
+                return False, f"{helper_key} {config.get(helper_key)} expected {expected_helper.hex()}"
     return True, f"rate zeff kshell checked for {z},{a}"
 
 
@@ -849,7 +871,7 @@ def manifest(work: Path, out: Path) -> None:
     builds: list[dict[str, Any]] = []
     for tag in MATRIX["revisions"]:
         for kind in (("pristine", "patched", "mutant") if tag == "v11.4.2" else ("pristine", "patched")):
-            info = json.loads((work / tag / kind / "build.json").read_text(encoding="utf-8"))
+            info = json.loads((build_dir(work, tag, kind) / "build.json").read_text(encoding="utf-8"))
             binary = Path(info["binary"])
             builds.append({"tag": tag, "commit": info["commit"], "kind": kind,
                            "patches": info["patches"], "removed": info["removed"],
@@ -910,6 +932,7 @@ def main() -> None:
     build_parser.add_argument("--source", type=Path, required=True)
     build_parser.add_argument("--kind", choices=("pristine", "patched", "mutant"), required=True)
     build_parser.add_argument("--work", type=Path, required=True)
+    build_parser.add_argument("--slot")
     run_parser = sub.add_parser("run")
     run_parser.add_argument("--tag", required=True)
     run_parser.add_argument("--mode", choices=MATRIX["modes"], required=True)
@@ -930,7 +953,7 @@ def main() -> None:
     elif args.action == "throughput":
         throughput(args.tag, args.work, args.events)
     elif args.action == "build":
-        build(args.tag, args.source, args.kind, args.work)
+        build(args.tag, args.source, args.kind, args.work, args.slot)
     elif args.action == "run":
         run(args.tag, args.mode, args.work, args.route)
     elif args.action == "cases":

@@ -90,6 +90,38 @@ def test_t149_wrong_lookup_origin_fails(tmp_path):
     assert not transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
 
 
+def test_t149_compiled_helper_uses_its_own_pristine_kernel(tmp_path):
+    (tmp_path / "d1_capture.mizuno2025.g4dat").write_text(
+        "#COLUMNS Z A value\n13 27 0.7\n", encoding="ascii")
+    (tmp_path / "d1_zeff.g4dat").write_text("#COLUMNS Z value\n13 11\n", encoding="ascii")
+    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+        "#COLUMNS Z A value\n13 27 400\n", encoding="ascii")
+    config = {"RATE_BD": [(0.7 * 0.001).hex()], "RATE_HELPER": [(0.7 * 0.001).hex()],
+              "ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(12).hex()],
+              "KA": [(400 * 0.001).hex()],
+              "_RES_LINES": [["rate", "13", "27", "exact", "mizuno2025", "1"],
+                             ["zeff", "13", "0", "compiled", "mizuno2025", "0"],
+                             ["kshell", "13", "27", "exact", "mudirac130", "1"]]}
+    pristine = {"ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(12).hex()]}
+    assert transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
+
+
+def test_t149_version_matches_numeric_release():
+    assert transport.version_matches("v11.4.2", "11.4.2")
+    assert transport.version_matches("v11.5.0.beta", "11.5.0")
+    assert transport.version_matches("v11.5.0.beta.1", "11.5.0")
+    assert not transport.version_matches("v11.5.1.beta", "11.5.0")
+    assert not transport.version_matches("v11.5.0.beta", "11.5.0.beta")
+    assert not transport.version_matches("v11.5.0.rc1", "11.5.0")
+
+
+def test_t149_build_location_uses_successful_retry(tmp_path):
+    tag = "v11.5.0.beta"
+    assert transport.build_dir(tmp_path, tag, "pristine") == tmp_path / tag / "pristine"
+    transport.record_build_dir(tmp_path, tag, "pristine", tmp_path / tag / "pristine_retry")
+    assert transport.build_dir(tmp_path, tag, "pristine") == tmp_path / tag / "pristine_retry"
+
+
 def cascade_fixture(tmp_path):
     dataset = tmp_path / "dataset"
     dataset.mkdir()
