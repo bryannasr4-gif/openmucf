@@ -84,6 +84,7 @@ def _source(source_id: str = "a") -> dict[str, str]:
 
 @pytest.mark.parametrize(("change", "reason"), [
     ({"observable": "xray_yield"}, "not a per-atom ratio"),
+    ({"inferable_parameter": "A(Si)"}, "not a per-atom ratio"),
     ({"qualification": "stage=initial@a p.1;population=all_stops@a p.1;method=xray@a p.1"}, "stage initial"),
     ({"qualification": "stage=terminal@a p.1;population=transfer_only@a p.1;method=xray@a p.1"},
      "population transfer_only"),
@@ -105,6 +106,8 @@ def test_d2_each_gating_reason(change: dict[str, str], reason: str) -> None:
 def test_d2_source_gate_and_hydrogen_limit() -> None:
     row = _row()
     assert d2.gate_reason(row, _source()) == ""
+    joint = dict(row, qualification=row["qualification"].replace("stage=terminal", "stage=initial=terminal"))
+    assert d2.gate_reason(joint, _source()) == ""
     for field, value in (("access", "REQUEST_NEEDED"), ("primary_read", "false"), ("kind", "review")):
         source = _source()
         source[field] = value
@@ -145,6 +148,8 @@ def test_d2_class_priority_and_subclasses() -> None:
         found, found_subs = d2.classify(row)
         assert found == expected
         assert found_subs == subs
+    row.update({"material_formula": "H2O", "phase": "solid", "inferable_parameter": "P(H)"})
+    assert d2.classify(row) == ("d2-selector-hydrogenous", frozenset(("d2-selector-hydrogenous",)))
 
 
 def test_d2_every_other_condensed_compound_is_an_other_compound() -> None:
@@ -192,6 +197,21 @@ def test_d2_independence_requires_lineage_and_disjoint_inputs() -> None:
     empty = dict(b)
     empty["qualification"] = b["qualification"].replace("inputs=self:b:cal", "inputs=")
     assert not d2.independent(a, empty, sources)
+    unlocated = dict(b, qualification=b["qualification"].replace("lineage=own@b p.1", "lineage=own@"))
+    assert not d2.independent(a, unlocated, sources)
+
+
+def test_d2_limit_rows_never_support_a_pass() -> None:
+    a, b = _row(), _row()
+    b.update({"source_id": "b", "qualification": a["qualification"].replace("a p.1", "b p.1")
+              .replace("self:a:cal", "self:b:cal")})
+    sources = {"a": _source("a"), "b": _source("b")}
+    record = "d2-selector-hydrogenous"
+    subs = frozenset((record,))
+    assert d2.class_outcome(record, [(a, "inside", subs), (b, "inside", subs)], sources) is True
+    for results in (("not_excluded", "not_excluded"), ("inside", "not_excluded")):
+        rows = [(row, result, subs) for row, result in zip((a, b), results, strict=True)]
+        assert d2.class_outcome(record, rows, sources) is None
 
 
 def test_d2_class_coverage_and_outside_priority() -> None:
