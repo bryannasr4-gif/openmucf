@@ -50,7 +50,7 @@ PROSE_PATHS = (
     "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
     "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md",
     "cpp/transport/README.md", "DATASET_D2.md",
-    "paper/muonic-data/paper.md",
+    "paper/muonic-data/paper.md", "FORMAT_SPEC.md",
 )
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
@@ -62,6 +62,10 @@ def test_t74_transport_readme_enumerated():
 
 def test_t74_paper_draft_enumerated():
     assert "paper/muonic-data/paper.md" in PROSE_PATHS
+
+
+def test_t74_format_specification_enumerated():
+    assert "FORMAT_SPEC.md" in PROSE_PATHS
 
 
 CLASSES = pathlib.Path(__file__).with_name("g4_prose_classes.tsv")
@@ -346,6 +350,216 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
         Pin("error codes the format defines, the changelog's count", "CHANGELOG.md",
             r"\*\*(\w+) exact error codes\*\*", (1,), error_codes),
         *d3_seam_size_pins(vendored_readme),
+        *format_spec_pins(error_codes),
+    ]
+
+
+FORMAT_SPEC = "FORMAT_SPEC.md"
+
+
+def format_spec_pins(error_codes: int) -> list[Pin]:
+    """The format specification's restatements of what the reference implementation carries: the
+    grammar version, each directive's place in the order, the digest length, the patterns the
+    reader compiles, the integer-column bounds, the error-code count and the archive's pinned
+    member fields. Every `expected` is read from `openmucf.g4` or computed; none is typed here."""
+    from openmucf.g4 import emit, spec
+
+    grammar = spec.GRAMMAR_VERSION
+    hex_digits = len(hashlib.sha256().hexdigest())
+    integer = spec._INTEGER_PATTERN.pattern
+    column_name = spec._COLUMN_NAME_PATTERN.pattern
+    pins = [
+        Pin(f"directive order, #{name}", FORMAT_SPEC, rf"\| (\d+) \| `#{name}` \| ", (1,), place)
+        for place, name in enumerate(spec.DIRECTIVE_ORDER, 1)
+    ]
+    for what, pattern, expected in (
+        ("grammar version, the document's own",
+         r"Version of this document: \*\*grammar (\d+\.\d+)\*\*", grammar),
+        ("grammar version, the directive table", r"`MAJOR\.MINOR`; currently `(\d+\.\d+)`", grammar),
+        ("grammar version, the unconstrained directives",
+         r"grammar (\d+\.\d+) pins no internal syntax", grammar),
+        ("grammar version, the example header", r"#GRAMMAR (\d+\.\d+) #DATASET", grammar),
+        ("grammar pattern, the checked values", r"\| `#GRAMMAR` \| `([^`]+)` \(`E010`\)",
+         spec._GRAMMAR_PATTERN.pattern.replace("|", "\\|")),
+        ("grammar pattern, section 2.7", r"lexically `([^`]+)` -- two runs",
+         spec._GRAMMAR_PATTERN.pattern),
+        ("digest length, the directive table",
+         r"SHA-256 of the Layer-2 file, (\d+) lowercase hex", hex_digits),
+        ("digest length, the checked values", r"exactly (\d+) lowercase hex characters", hex_digits),
+        ("digest length, the example header", r"\.\.\.(\d+) lowercase hex total\.\.\.", hex_digits),
+        ("digest pattern, the checked values", r"lowercase hex characters, `([^`]+)` \(`E016`\)",
+         spec._SOURCEDIGEST_PATTERN.pattern),
+        ("column-name pattern, the checked values",
+         r"one or more names matching `([^`]+)`, all", column_name),
+        ("column-name pattern, the #UNITS name",
+         r"`NAME=UNIT`, `NAME` matching `([^`]+)`", column_name),
+        ("profile pattern, section 2.5", r"`#PROFILE` is a token matching `([^`]+)`",
+         spec.PROFILE_PATTERN.pattern),
+        ("integer pattern, section 2.3", r"the field must match `([^`]+)` and its value", integer),
+        ("integer lower bound, section 2.3",
+         r"must lie in \*\*`(\d+)`-`\d+` inclusive\*\*", spec.INTEGER_MIN),
+        ("integer upper bound, section 2.3",
+         r"must lie in \*\*`\d+`-`(\d+)` inclusive\*\*", spec.INTEGER_MAX),
+        ("integer pattern, the E007 row", r"or `([^`]+)` within `\d+`-`\d+` for `Z`", integer),
+        ("integer lower bound, the E007 row", r"within `(\d+)`-`\d+` for `Z`", spec.INTEGER_MIN),
+        ("integer upper bound, the E007 row", r"within `\d+`-`(\d+)` for `Z`", spec.INTEGER_MAX),
+        ("integer pattern, the Layer-2 key note", r"are laxer — `([^`]+)`, section", integer),
+        ("error codes the format defines, section 7",
+         r"the section-4 codes remain exactly the (\w+) file-level", error_codes),
+        ("stored member name limit, section 8", r"at most \*\*(\d+) bytes\*\*", emit._MAX_MEMBER_NAME),
+        ("member mode, section 8", r"\| tar \| `mode` \| `(\d+)` \|", f"{emit._MEMBER_MODE:04o}"),
+        ("member mtime, section 8", r"\| tar \| `mtime` \| `(\d+)` \|", emit._EPOCH),
+        ("gzip mtime, section 8", r"\| gzip \| `mtime` \| `(\d+)` \|", emit._EPOCH),
+    ):
+        pins.append(Pin(what, FORMAT_SPEC, pattern, (1,), expected))
+    pins.extend(format_spec_derived_pins())
+    return pins
+
+
+def format_spec_derived_pins() -> list[Pin]:
+    """The format specification's restatements of values the reference implementation holds in a
+    compiled pattern, passes as a literal argument or writes through its own code: the bytes the
+    reader permits and splits on, the digit range of its underflow test, the Layer-2 key pattern,
+    the float precision and the text the emitter writes, the Layer-2 layout, the archive member's
+    owner, mode and type, the gzip compression level and header bytes, and the line a directive occupies
+    in the order.
+    Every `expected` is read from `openmucf.g4` at run time -- a pattern parsed, an output measured,
+    a call's argument read from its source -- and none is typed here."""
+    import gzip
+    import inspect
+    import io
+    import json
+    import math
+    import tarfile
+    from re import _parser as sre_parse
+
+    from openmucf.g4 import emit, provenance, spec
+
+    doc = collapse((REPO / FORMAT_SPEC).read_text(encoding="utf-8"))[0]
+    hexa = "0x[0-9A-F]{2}"
+
+    # `_FORBIDDEN_BYTE` negates a class of single bytes and one range: the bytes the reader permits.
+    [(_, forbidden)] = list(sre_parse.parse(spec._FORBIDDEN_BYTE.pattern))
+    tab, lf, cr = (f"0x{v:02X}" for v in sorted(v for op, v in forbidden if op is sre_parse.LITERAL))
+    [(low, high)] = [v for op, v in forbidden if op is sre_parse.RANGE]
+    # `_FIELD_SEPARATOR` repeats a class of the separator bytes, space first.
+    [(_, (_, _, repeated))] = list(sre_parse.parse(spec._FIELD_SEPARATOR.pattern))
+    [(_, separators)] = list(repeated)
+    space, separator_tab = (f"0x{v:02X}" for op, v in separators)
+    # `_NONZERO_DIGIT` is one range of digit characters.
+    [(_, [(_, (first, last))])] = list(sre_parse.parse(spec._NONZERO_DIGIT.pattern))
+    # `_ROW_KEY_PATTERN` is the single-column form with the both-columns suffix optional.
+    key = re.fullmatch(r"\^(\([^()]*\))\(\?:-(\([^()]*\))\)\?\$", provenance._ROW_KEY_PATTERN.pattern)
+    assert key is not None, provenance._ROW_KEY_PATTERN.pattern
+    both_keys = f"^{key[1]}-{key[2]}$".replace("|", "\\|")
+    one_key = f"^{key[1]}$".replace("|", "\\|")
+    # The precision `format_float` writes, measured on a value that needs every digit.
+    precision = len(spec.format_float(math.pi).replace(".", ""))
+    subnormal = spec.format_float(math.ulp(0.0))
+    entered = re.search(r"entered as `([^`]+)` is emitted as", doc)
+    assert entered is not None, "section 2.6 no longer states an entered value"
+    emitted = spec.format_float(float(entered[1]))
+    # The Layer-2 layout `render_json` writes, measured on a shipped Layer-2 document.
+    shipped = (REPO / "data" / "g4" / "d1" / "d1_zeff.prov.json").read_text(encoding="ascii")
+    rendered = provenance.render_json(provenance.from_json_obj(json.loads(shipped)))
+    nested = rendered.splitlines()[1]
+    indent = len(nested) - len(nested.lstrip(" "))
+    newlines = len(rendered) - len(rendered.rstrip("\n"))
+    # The member `build_tarball` writes, read back; the compression level, read from its call; the
+    # gzip header bytes, as `gzip_header` reads them.
+    archive = emit.build_tarball(
+        {FORMAT_SPEC: b""}, directory=emit.dataset_directory("G4MuonicData", spec.GRAMMAR_VERSION)
+    )
+    with tarfile.open(fileobj=io.BytesIO(archive)) as unpacked:
+        [member] = unpacked.getmembers()
+    typeflag = member.type.decode("ascii")
+    # The mode, uid and gid fields of that member's ustar header as `build_tarball` wrote them: seven
+    # octal digits at the offsets the header layout fixes.
+    header = gzip.decompress(archive)[:512]
+    encoded_mode, encoded_uid, encoded_gid = (header[at:at + 7].decode("ascii") for at in (100, 108, 116))
+    assert encoded_uid == encoded_gid, (encoded_uid, encoded_gid)
+    gzip_header = emit.gzip_header(archive)
+    [level] = re.findall(r"\bcompresslevel=(\d+)", inspect.getsource(emit.build_tarball))
+    place = {name: line for line, name in enumerate(spec.DIRECTIVE_ORDER, 1)}
+
+    return [
+        Pin("permitted byte, TAB, section 2.1", FORMAT_SPEC,
+            rf"\*\*`({hexa})` \(TAB\), `{hexa}` \(LF\)", (1,), tab),
+        Pin("permitted byte, LF, section 2.1", FORMAT_SPEC,
+            rf"`{hexa}` \(TAB\), `({hexa})` \(LF\)", (1,), lf),
+        Pin("permitted byte, CR, section 2.1", FORMAT_SPEC, rf"\(LF\), `({hexa})` \(CR\)", (1,), cr),
+        Pin("permitted range, low end, section 2.1", FORMAT_SPEC,
+            rf"\(CR\), and `({hexa})`-`{hexa}`\*\*", (1,), f"0x{low:02X}"),
+        Pin("permitted range, high end, section 2.1", FORMAT_SPEC,
+            rf"\(CR\), and `{hexa}`-`({hexa})`\*\*", (1,), f"0x{high:02X}"),
+        Pin("permitted range, low end, the E005 row", FORMAT_SPEC,
+            rf"`\{{TAB, LF, CR, ({hexa})-{hexa}\}}`", (1,), f"0x{low:02X}"),
+        Pin("permitted range, high end, the E005 row", FORMAT_SPEC,
+            rf"`\{{TAB, LF, CR, {hexa}-({hexa})\}}`", (1,), f"0x{high:02X}"),
+        Pin("field separator, space, section 2.3", FORMAT_SPEC,
+            rf"\*\*space \(`({hexa})`\) and tab", (1,), space),
+        Pin("field separator, tab, section 2.3", FORMAT_SPEC,
+            rf"\) and tab \(`({hexa})`\) only\*\*", (1,), separator_tab),
+        Pin("nonzero digits, low end, section 2.3", FORMAT_SPEC,
+            r"no digit `(\d)`-`\d` before the exponent", (1,), chr(first)),
+        Pin("nonzero digits, high end, section 2.3", FORMAT_SPEC,
+            r"no digit `\d`-`(\d)` before the exponent", (1,), chr(last)),
+        Pin("nonzero digits, low end, section 6", FORMAT_SPEC,
+            r"\(a digit `(\d)`-`\d` before the exponent\)", (1,), chr(first)),
+        Pin("nonzero digits, high end, section 6", FORMAT_SPEC,
+            r"\(a digit `\d`-`(\d)` before the exponent\)", (1,), chr(last)),
+        Pin("Layer-2 key pattern, both key columns, section 3", FORMAT_SPEC,
+            r"then `A` \S+ `([^`]+)` \|", (1,), both_keys),
+        Pin("Layer-2 key pattern, one key column, section 3", FORMAT_SPEC,
+            r"that column's integer \S+ `([^`]+)` \|", (1,), one_key),
+        Pin("float precision, section 2.6", FORMAT_SPEC, r"Floats are written with `%\.(\d+)g`", (1,),
+            precision),
+        Pin("float precision in words, section 2.6", FORMAT_SPEC,
+            r"IEEE-754 double\. (\w+) significant decimal digits", (1,), precision),
+        Pin("float precision, section 7", FORMAT_SPEC, r"the `%\.(\d+)g` float syntax of section", (1,),
+            precision),
+        Pin("the smallest subnormal as emitted, section 2.3", FORMAT_SPEC,
+            r"subnormal\*\*: `([^`]+)` is representable", (1,), subnormal),
+        Pin("the smallest subnormal as emitted, section 6", FORMAT_SPEC,
+            r"`[^`]+` is emitted as `([^`]+)`\);", (1,), subnormal),
+        Pin("the entered value as emitted, section 2.6", FORMAT_SPEC,
+            r"is emitted as `([^`]+)`: the file records", (1,), emitted),
+        Pin("the entered value as emitted, section 6", FORMAT_SPEC,
+            r'`strtod\("([^"]+)"\)` stops', (1,), emitted),
+        Pin("Layer-2 indent in words, section 3", FORMAT_SPEC,
+            r"at every level, (\w+)-space indentation", (1,), indent),
+        Pin("Layer-2 trailing newlines, section 3", FORMAT_SPEC, r"exactly (\w+) trailing newline\.", (1,),
+            newlines),
+        Pin("Layer-2 indent, the digest invariant", FORMAT_SPEC, r"indent=(\d+), ensure_ascii=True\)",
+            (1,), indent),
+        Pin("member uid, section 8", FORMAT_SPEC, r"\| tar \| `uid`, `gid` \| `(\d+)`, `\d+` \|", (1,),
+            member.uid),
+        Pin("member gid, section 8", FORMAT_SPEC, r"\| tar \| `uid`, `gid` \| `\d+`, `(\d+)` \|", (1,),
+            member.gid),
+        Pin("member typeflag, section 8", FORMAT_SPEC, r"\| tar \| typeflag \| the byte `'(.)'`", (1,),
+            typeflag),
+        Pin("member typeflag in hexadecimal, section 8", FORMAT_SPEC,
+            rf"the byte `'.'` \(`({hexa})`\)", (1,), f"0x{ord(typeflag):02X}"),
+        Pin("member mode as encoded, section 8", FORMAT_SPEC,
+            r"as 7 digits \+ NUL \(`(\d+)`, `\d+`\)", (1,), encoded_mode),
+        Pin("member uid and gid as encoded, section 8", FORMAT_SPEC,
+            r"as 7 digits \+ NUL \(`\d+`, `(\d+)`\)", (1,), encoded_uid),
+        Pin("gzip compression level, section 8", FORMAT_SPEC,
+            r"\| gzip \| compression level \| `(\d+)` with", (1,), int(level)),
+        Pin("gzip XFL byte, section 8", FORMAT_SPEC, r"and therefore `XFL` = `(\d+)`", (1,),
+            gzip_header["xfl"]),
+        Pin("gzip OS byte, section 8", FORMAT_SPEC, r"\| gzip \| `OS` byte \| \*\*(\d+)\*\*", (1,),
+            gzip_header["os"]),
+        Pin("the #GRAMMAR line, section 4's lexical example", FORMAT_SPEC,
+            r"an unreadable `#GRAMMAR` on line (\d+) reports", (1,), place["GRAMMAR"]),
+        Pin("the #PROFILE line, section 4's priority example", FORMAT_SPEC,
+            r"an `E013` whose fault line is (\d+)\.", (1,), place["PROFILE"]),
+        Pin("the #SOURCEDIGEST line, section 4's priority example", FORMAT_SPEC,
+            r"an `E016` on line (\d+) is reported ahead", (1,), place["SOURCEDIGEST"]),
+        Pin("the #PROFILE line, section 4's preemption example", FORMAT_SPEC,
+            r"whose `#PROFILE` on line (\d+) lacks", (1,), place["PROFILE"]),
+        Pin("the E013 line, section 4's preemption example", FORMAT_SPEC,
+            r"not `E013` on line (\d+), because", (1,), place["PROFILE"]),
     ]
 
 
@@ -904,6 +1118,149 @@ def test_t75_every_pin_pattern_matches_exactly_once():
     assert not problems, "\n".join(
         f"{p.pin.path}: {p.pin.what}: {p.detail}" for p in problems
     )
+
+
+def test_t75_drill_a_format_spec_bound_that_disagrees_with_the_package_is_named():
+    """Raise the integer-column bound section 2.3 of `FORMAT_SPEC.md` states by one in an in-memory
+    copy: the pin holding it to `openmucf.g4.spec.INTEGER_MAX` names the disagreement, and no other
+    pin moves."""
+    from openmucf.g4 import spec
+
+    texts = tree_texts()
+    stated = f"`{spec.INTEGER_MIN}`-`{spec.INTEGER_MAX}` inclusive"
+    assert texts[FORMAT_SPEC].count(stated) == 1
+    texts[FORMAT_SPEC] = texts[FORMAT_SPEC].replace(
+        stated, f"`{spec.INTEGER_MIN}`-`{spec.INTEGER_MAX + 1}` inclusive"
+    )
+    _, problems = pin_spans(texts, pin_table())
+    assert [p.pin.what for p in problems] == ["integer upper bound, section 2.3"], [
+        f"{p.pin.what}: {p.detail}" for p in problems
+    ]
+
+
+def _wrong(stated: str) -> str:
+    """A different value of the same kind and width as `stated`: a number one higher (wrapping), a
+    hexadecimal byte one higher, another spelled number, or -- inside a pattern or a literal -- its
+    first digit moved."""
+    if stated.isdigit():
+        return str((int(stated) + 1) % 10 ** len(stated)).zfill(len(stated))
+    if re.fullmatch(r"0x[0-9A-F]{2}", stated):
+        return f"0x{int(stated, 16) + 1:02X}"
+    if stated.isalpha():
+        return "three" if stated.lower() != "three" else "four"
+    digit = re.search(r"\d", stated)
+    assert digit is not None, stated
+    return stated[: digit.start()] + str((int(digit[0]) + 1) % 10) + stated[digit.end():]
+
+
+def test_t75_drill_each_derived_format_spec_figure_that_disagrees_with_the_package_is_named():
+    """For every pin of `format_spec_derived_pins`, state a different value where its figure stands
+    in an in-memory copy of `FORMAT_SPEC.md`: exactly that pin names the disagreement."""
+    texts = tree_texts()
+    pins = format_spec_derived_pins()
+    doc, origin = collapse(texts[FORMAT_SPEC])
+    for pin in pins:
+        [hit] = re.finditer(pin.pattern, doc)
+        start, end = hit.span(1)
+        (line, col), (last_line, last_col) = origin[start], origin[end - 1]
+        assert line == last_line, pin.what
+        lines = texts[FORMAT_SPEC].split("\n")
+        lines[line - 1] = lines[line - 1][:col] + _wrong(hit[1]) + lines[line - 1][last_col + 1:]
+        _, problems = pin_spans({FORMAT_SPEC: "\n".join(lines)}, pins)
+        assert [p.pin.what for p in problems] == [pin.what], [f"{p.pin.what}: {p.detail}" for p in problems]
+
+
+def _rebuilt_tarball(members, *, directory):
+    """A writer that stores its members owned by uid and gid 1, with the NUL typeflag, at
+    compression level 6 (so another XFL byte) -- each a legal choice section 8 excludes."""
+    import gzip
+    import io
+    import tarfile
+
+    raw = io.BytesIO()
+    with tarfile.open(fileobj=raw, mode="w", format=tarfile.USTAR_FORMAT) as archive:
+        for name, payload in sorted(members.items()):
+            info = tarfile.TarInfo(f"{directory}/{name}")
+            info.size = len(payload)
+            info.uid = info.gid = 1
+            info.type = tarfile.AREGTYPE
+            archive.addfile(info, io.BytesIO(payload))
+    compressed = io.BytesIO()
+    with gzip.GzipFile(fileobj=compressed, mode="wb", compresslevel=6, mtime=0, filename="") as stream:
+        stream.write(raw.getvalue())
+    return compressed.getvalue()
+
+
+def _drill_package(monkeypatch, case: str) -> None:
+    import json
+
+    from openmucf.g4 import emit, provenance, spec
+
+    if case == "permitted bytes":
+        monkeypatch.setattr(spec, "_FORBIDDEN_BYTE", re.compile(r"[^\t\n\r\x20-\x7F]"))
+    elif case == "field separators":
+        monkeypatch.setattr(spec, "_FIELD_SEPARATOR", re.compile(r"[\x0b\t]+"))
+    elif case == "nonzero digits":
+        monkeypatch.setattr(spec, "_NONZERO_DIGIT", re.compile(r"[2-9]"))
+    elif case == "row keys":
+        monkeypatch.setattr(provenance, "_ROW_KEY_PATTERN", re.compile(r"^([0-9]+)(?:-([0-9]+))?$"))
+    elif case == "float syntax":
+        monkeypatch.setattr(spec, "format_float", lambda x: f"{float(x):.16g}")
+    elif case == "Layer-2 layout":
+        monkeypatch.setattr(provenance, "render_json", lambda document: json.dumps(
+            provenance.to_json_obj(document), sort_keys=True, indent=4, ensure_ascii=True) + "\n\n")
+    elif case == "archive":
+        monkeypatch.setattr(emit, "build_tarball", _rebuilt_tarball)
+    elif case == "directive order":
+        order = [name for name in spec.DIRECTIVE_ORDER if name != "PROFILE"]
+        order.insert(order.index("SEAM") + 1, "PROFILE")
+        monkeypatch.setattr(spec, "DIRECTIVE_ORDER", tuple(order))
+    elif case == "member mode":
+        monkeypatch.setattr(emit, "_MEMBER_MODE", 0o600)
+    elif case == "digest line":
+        order = list(spec.DIRECTIVE_ORDER)
+        first, second = order.index("GENERATOR"), order.index("SOURCEDIGEST")
+        order[first], order[second] = order[second], order[first]
+        monkeypatch.setattr(spec, "DIRECTIVE_ORDER", tuple(order))
+    else:
+        raise AssertionError(case)
+
+
+#: Each in-memory change of `_drill_package`, and the derived pins that must then name it, in order.
+PACKAGE_DRILLS = {
+    "permitted bytes": ["permitted range, high end, section 2.1", "permitted range, high end, the E005 row"],
+    "field separators": ["field separator, space, section 2.3"],
+    "nonzero digits": ["nonzero digits, low end, section 2.3", "nonzero digits, low end, section 6"],
+    "row keys": ["Layer-2 key pattern, both key columns, section 3",
+                 "Layer-2 key pattern, one key column, section 3"],
+    "float syntax": ["float precision, section 2.6", "float precision in words, section 2.6",
+                     "float precision, section 7", "the smallest subnormal as emitted, section 2.3",
+                     "the smallest subnormal as emitted, section 6",
+                     "the entered value as emitted, section 2.6", "the entered value as emitted, section 6"],
+    "Layer-2 layout": ["Layer-2 indent in words, section 3", "Layer-2 trailing newlines, section 3",
+                       "Layer-2 indent, the digest invariant"],
+    "archive": ["member uid, section 8", "member gid, section 8", "member typeflag, section 8",
+                "member typeflag in hexadecimal, section 8", "member uid and gid as encoded, section 8",
+                "gzip compression level, section 8", "gzip XFL byte, section 8"],
+    "member mode": ["member mode as encoded, section 8"],
+    "digest line": ["the #SOURCEDIGEST line, section 4's priority example"],
+    "directive order": ["the #PROFILE line, section 4's priority example",
+                        "the #PROFILE line, section 4's preemption example",
+                        "the E013 line, section 4's preemption example"],
+}
+
+
+def test_t75_drill_a_package_value_a_derived_format_spec_pin_reads_is_named(monkeypatch):
+    """Change, in memory, each value in `openmucf.g4` a derived pin reads: exactly the pins that
+    restate it name the disagreement."""
+    texts = tree_texts()
+    for case, named in PACKAGE_DRILLS.items():
+        _drill_package(monkeypatch, case)
+        _, problems = pin_spans(texts, format_spec_derived_pins())
+        monkeypatch.undo()
+        assert [p.pin.what for p in problems] == named, (
+            case, [f"{p.pin.what}: {p.detail}" for p in problems]
+        )
 
 
 def test_t75_the_enumerator_prints_nothing_on_the_tree():
