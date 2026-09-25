@@ -75,7 +75,7 @@ directive that should follow it, or that appears after the record block has begu
 | 7 | `#GENERATOR` | yes | producing tool and its version |
 | 8 | `#SOURCEDIGEST` | yes | SHA-256 of the Layer-2 file, 64 lowercase hex characters |
 | 9 | `#SOURCESHA` | iff `#PROFILE parity` | revision of the upstream source the parity profile reproduces |
-| 10 | `#UNITS` | yes | `name=unit` assignments, e.g. `rate=1e6/s` |
+| 10 | `#UNITS` | yes | `name=unit` assignments, e.g. `value=1e6/s` |
 | 11 | `#COLUMNS` | yes | whitespace-separated column names, e.g. `Z A value unc` |
 | 12 | `#VALIDITY` | yes | where the table applies, e.g. `Z:1-94 A:natural_and_listed` |
 | 13 | `#FALLBACK` | optional | analytic fallback declared **as data**, e.g. `goulard_primakoff b0a=-0.03 b0b=-0.25 b0c=3.24 t1=875e-9` |
@@ -132,7 +132,7 @@ likewise one string to the reader — their sub-grammars, below, bind the **cons
 #### Value sub-grammars
 
 To Layer 1 the values of `#UNITS`, `#VALIDITY` and `#FALLBACK` are **one string** each -- the parser
-does not decompose them, and no error code concerns their internal structure (unlike the four
+does not decompose them, and no error code concerns their internal structure (unlike the
 directives in the table above, which the reader does check). The sub-grammars here therefore bind
 the **consumer**, not the reader: they are what a C++ implementation must be able to parse out of
 those three values once it has the string, and stating them now is what stops three implementations
@@ -227,8 +227,7 @@ After the directives come **zero or more records**, one per line.
    Deterministic output requires the order and it makes diffs readable.
 
 A table whose `#COLUMNS` contains neither `Z` nor `A` has no primary key; rules 6 and 7 then have
-nothing to check and are not enforced. Every table defined for this format so far carries `Z` and
-`A` as its first two columns.
+nothing to check and are not enforced.
 
 ### 2.4 Terminator
 
@@ -363,10 +362,6 @@ into a reader cannot.
 | `evaluation_id` | string | identifies *which* evaluation this row belongs to |
 | `source_library` | string | `geant4-compiled-in`, `suzuki1987`, `iwamoto2025`, `jendl-mund`, `openmucf`, `mizuno2025`, `mudirac130` |
 | `isotope_resolved` | bool | **disclosure**: is this row an isotope-resolved value, or an element value carrying an isotope label? |
-
-The first nine field names are identical to those used by this project's rate ledger
-(`openmucf/data/rates.schema.json`), so there is one provenance vocabulary across the project rather
-than one per dataset.
 
 `evaluation_id` and `source_library` exist so that **two evaluations of the same `(Z, A)` can
 coexist** in the corpus without either being silently averaged away or dropped.
