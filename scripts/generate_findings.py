@@ -184,6 +184,11 @@ for _name in ("R", "lambda_c", "omega_s0_pct"):
     H[f"sobol_xmu_ST_{_name}"] = f"{sob_x['ST'][_name]:.3f}"
 for _name in ("E_mu_GeV", "eta_acc"):
     H[f"sobol_qnet_ST_{_name}"] = f"{sob_q['ST'][_name]:.3f}"
+# first-order S1 of the same inputs, recorded as values of their own
+for _name in ("R", "lambda_c", "omega_s0_pct"):
+    H[f"sobol_xmu_S1_{_name}"] = f"{sob_x['S1'][_name]:.3f}"
+for _name in ("E_mu_GeV", "eta_acc"):
+    H[f"sobol_qnet_S1_{_name}"] = f"{sob_q['S1'][_name]:.3f}"
 # ST - S1 interaction share for the top X_mu driver (the omega_s0 x R bilinear interaction)
 H["sobol_xmu_interaction_R"] = f"{sob_x['ST']['R'] - sob_x['S1']['R']:.3f}"
 # N-stability of the top-driver ST across N in {4096, 8192} x seed in {0, 1} (ST only; seeded, byte-stable)
@@ -619,13 +624,32 @@ def _entry(entry_id, pattern):
     )
 
 
+def _s1_cell(name, s):
+    """Pattern whose match is '| name | S1 +/- conf |': the row's name and its first-order cell only."""
+    return re.escape(f"| {name} | {s['S1'][name]:.3f} +/- {s['S1_conf'][name]:.3f} |")
+
+
+def _st_cell(name, s):
+    """Pattern whose match is 'ST +/- conf |', found behind the row's name and first-order cell."""
+    return "(?<=" + _s1_cell(name, s) + " )" + re.escape(f"{s['ST'][name]:.3f} +/- {s['ST_conf'][name]:.3f} |")
+
+
 _entries = [
-    # each ST value is anchored to its FULL Sobol row (now '| name | S1 +/- conf | ST +/- conf |')
-    _entry("sobol_xmu_ST_R", re.escape(_srow("R", sob_x))),
-    _entry("sobol_xmu_ST_lambda_c", re.escape(_srow("lambda_c", sob_x))),
-    _entry("sobol_xmu_ST_omega_s0_pct", re.escape(_srow("omega_s0_pct", sob_x))),
-    _entry("sobol_qnet_ST_E_mu_GeV", re.escape(_srow("E_mu_GeV", sob_q))),
-    _entry("sobol_qnet_ST_eta_acc", re.escape(_srow("eta_acc", sob_q))),
+    # the matched text of a Sobol-table entry is its own cell, so the row's other index cannot satisfy it
+    _entry("sobol_xmu_ST_R", _st_cell("R", sob_x)),
+    _entry("sobol_xmu_ST_lambda_c", _st_cell("lambda_c", sob_x)),
+    _entry("sobol_xmu_ST_omega_s0_pct", _st_cell("omega_s0_pct", sob_x)),
+    _entry("sobol_qnet_ST_E_mu_GeV", _st_cell("E_mu_GeV", sob_q)),
+    _entry("sobol_qnet_ST_eta_acc", _st_cell("eta_acc", sob_q)),
+    _entry("sobol_xmu_S1_R", _s1_cell("R", sob_x)),
+    _entry("sobol_xmu_S1_lambda_c", _s1_cell("lambda_c", sob_x)),
+    _entry("sobol_xmu_S1_omega_s0_pct", _s1_cell("omega_s0_pct", sob_x)),
+    _entry("sobol_qnet_S1_E_mu_GeV", _s1_cell("E_mu_GeV", sob_q)),
+    _entry("sobol_qnet_S1_eta_acc", _s1_cell("eta_acc", sob_q)),
+    _entry(
+        "sobol_xmu_interaction_R",
+        rf"driver R it is\s*\n?\s*\*\*{re.escape(H['sobol_xmu_interaction_R'])}\*\* \(the omega_s0 x R",
+    ),
 ]
 for _name in ("R", "lambda_c", "omega_s0_pct"):
     _bi = re.escape(H[f"robustness_{_name}_box_i"])

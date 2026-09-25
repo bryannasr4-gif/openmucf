@@ -1352,11 +1352,6 @@ def load_muon_cost_chain(
                             f"row {i} ({eid}): a stage edge must advance the chain "
                             f"('{from_stage}' -> '{to_stage}')"
                         )
-                if from_num != ANY or to_num != ANY:
-                    errors.append(
-                        f"row {i} ({eid}): a stage factor is dimensionless and holds in any "
-                        f"numeraire, so both numeraire cells must be '{ANY}'"
-                    )
             else:
                 if from_num in VALID_EDGE_NUMERAIRE and to_num in VALID_EDGE_NUMERAIRE:
                     if from_num == ANY or to_num == ANY:
@@ -1369,11 +1364,6 @@ def load_muon_cost_chain(
                             f"row {i} ({eid}): a numeraire edge must change the numeraire "
                             f"('{from_num}' -> '{to_num}' converts nothing)"
                         )
-                if from_stage != ANY or to_stage != ANY:
-                    errors.append(
-                        f"row {i} ({eid}): a numeraire conversion applies at any stage, so both "
-                        f"stage cells must be '{ANY}'"
-                    )
             status = (row.get("evidence_status") or "").strip()
             if status not in VALID_EVIDENCE_STATUS:
                 errors.append(

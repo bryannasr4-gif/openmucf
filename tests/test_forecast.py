@@ -90,6 +90,11 @@ def test_bit_identity_call_sites_use_recorded_environment(shipped_card, monkeypa
     bitwise_source = inspect.getsource(test_fc001_pinned_posterior_reproduces_registered_predictions_bitwise)
     assert "if _on_recorded_environment(shipped_card):" in scenario_source
     assert "mismatch = _environment_mismatch(shipped_card)" in bitwise_source
+    # ...and each scoped block still holds its bit-identity assertion, after its scope check
+    guard = scenario_source.index("if _on_recorded_environment(shipped_card):")
+    assert scenario_source.find("assert med == registered", guard) > guard
+    skip = bitwise_source.index("mismatch = _environment_mismatch(shipped_card)")
+    assert bitwise_source.find("assert _preds(fresh_card) == _preds(shipped_card)", skip) > skip
     env = shipped_card["generation"]["env"].copy()
     env["jax"] = "different"
     monkeypatch.setattr(forecast, "_env", lambda: env)

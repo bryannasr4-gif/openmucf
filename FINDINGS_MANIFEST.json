@@ -3,7 +3,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_xmu_ST_R",
-      "pattern": "\\|\\ R\\ \\|\\ 0\\.616\\ \\+/\\-\\ 0\\.020\\ \\|\\ 0\\.620\\ \\+/\\-\\ 0\\.017\\ \\|",
+      "pattern": "(?<=\\|\\ R\\ \\|\\ 0\\.616\\ \\+/\\-\\ 0\\.020\\ \\| )0\\.620\\ \\+/\\-\\ 0\\.017\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.620"
@@ -11,7 +11,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_xmu_ST_lambda_c",
-      "pattern": "\\|\\ lambda_c\\ \\|\\ 0\\.249\\ \\+/\\-\\ 0\\.014\\ \\|\\ 0\\.254\\ \\+/\\-\\ 0\\.008\\ \\|",
+      "pattern": "(?<=\\|\\ lambda_c\\ \\|\\ 0\\.249\\ \\+/\\-\\ 0\\.014\\ \\| )0\\.254\\ \\+/\\-\\ 0\\.008\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.254"
@@ -19,7 +19,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_xmu_ST_omega_s0_pct",
-      "pattern": "\\|\\ omega_s0_pct\\ \\|\\ 0\\.130\\ \\+/\\-\\ 0\\.011\\ \\|\\ 0\\.131\\ \\+/\\-\\ 0\\.004\\ \\|",
+      "pattern": "(?<=\\|\\ omega_s0_pct\\ \\|\\ 0\\.130\\ \\+/\\-\\ 0\\.011\\ \\| )0\\.131\\ \\+/\\-\\ 0\\.004\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.131"
@@ -27,7 +27,7 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_qnet_ST_E_mu_GeV",
-      "pattern": "\\|\\ E_mu_GeV\\ \\|\\ 0\\.541\\ \\+/\\-\\ 0\\.027\\ \\|\\ 0\\.631\\ \\+/\\-\\ 0\\.023\\ \\|",
+      "pattern": "(?<=\\|\\ E_mu_GeV\\ \\|\\ 0\\.541\\ \\+/\\-\\ 0\\.027\\ \\| )0\\.631\\ \\+/\\-\\ 0\\.023\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.631"
@@ -35,10 +35,58 @@
     {
       "doc": "FINDINGS.md",
       "id": "sobol_qnet_ST_eta_acc",
-      "pattern": "\\|\\ eta_acc\\ \\|\\ 0\\.340\\ \\+/\\-\\ 0\\.018\\ \\|\\ 0\\.427\\ \\+/\\-\\ 0\\.020\\ \\|",
+      "pattern": "(?<=\\|\\ eta_acc\\ \\|\\ 0\\.340\\ \\+/\\-\\ 0\\.018\\ \\| )0\\.427\\ \\+/\\-\\ 0\\.020\\ \\|",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.427"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_xmu_S1_R",
+      "pattern": "\\|\\ R\\ \\|\\ 0\\.616\\ \\+/\\-\\ 0\\.020\\ \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.616"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_xmu_S1_lambda_c",
+      "pattern": "\\|\\ lambda_c\\ \\|\\ 0\\.249\\ \\+/\\-\\ 0\\.014\\ \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.249"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_xmu_S1_omega_s0_pct",
+      "pattern": "\\|\\ omega_s0_pct\\ \\|\\ 0\\.130\\ \\+/\\-\\ 0\\.011\\ \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.130"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_qnet_S1_E_mu_GeV",
+      "pattern": "\\|\\ E_mu_GeV\\ \\|\\ 0\\.541\\ \\+/\\-\\ 0\\.027\\ \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.541"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_qnet_S1_eta_acc",
+      "pattern": "\\|\\ eta_acc\\ \\|\\ 0\\.340\\ \\+/\\-\\ 0\\.018\\ \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.340"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sobol_xmu_interaction_R",
+      "pattern": "driver R it is\\s*\\n?\\s*\\*\\*0\\.004\\*\\* \\(the omega_s0 x R",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.004"
     },
     {
       "doc": "FINDINGS.md",
