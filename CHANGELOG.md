@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed -- refusals the muon-cost code enforced without a drill, and the claim guard's loose ends (2026-09-25)
+
+- **Refusals the muon-cost code enforced without a drill are now drilled.** The `load_muon_cost` row rules the claim registry recorded as undrilled, a bad `evidence_status` in the edge table, the refusals of `ChainValue.compose` and the return-to-a-coordinate refusal of `compose_path` were enforced in the body and fired by no test; each is now fed the input that breaks it, and the off-chain refusal's test asserts its whole message.
+- **The edge loader's wildcard refusals were unreachable and are removed.** A stage edge that names a numeraire cell, or a numeraire edge that names a stage cell, moves both axes and is refused as such before either branch could run, so the rule still holds.
+- **A registry reason no longer carries a line number.** `test_registry_reasons_carry_no_line_numbers` refuses a line locator in the claim guard's registries; the line numbers the reasons carried are removed, leaving the file, entry or function each pointed into.
+- **The contraction form also reads the typographic apostrophe.** It matches no line of the claim paths at this head, and an example row drills each apostrophe.
+- **A page that names the muon-cost ledger must be a claim path.** `test_a_page_naming_the_muon_cost_ledger_is_a_claim_path` reads the top-level and `docs/` markdown pages; CONTRIBUTING.md and the docs pages name none of the ledger's files, its module or its generator and stay outside the claim paths, which settles the question the sentence-layer entry left open.
+- **The findings manifest pins the first-order Sobol indices and the interaction share.** `FINDINGS_MANIFEST.json` records the first-order index of each input whose total-order index it pinned, and the `S_T - S_1` share of the top X_mu driver. The first-order and total-order entries of the X_mu and Q_net Sobol tables now each match only their own cell, so swapping the first-order and total-order values of a row fails the check; `FINDINGS.md` is unchanged.
+- **`uq.q_sci` and `uq.q_net` are held to `EnergyChain`** by a test over a grid of inputs.
+
 ### Added -- a method-aware second gate and a discrepancy screen in the selector comparison (2026-09-25)
 
 - **`measurements.csv` gains a `capture_branch_correction` column, the correction a decay-electron lifetime measurement makes for muons absorbed by the nucleus, and `selector_vs_primary.csv` gains the `method`, `method_gated`, `method_reason`, `method_result` and `screen` columns: a second gating rule, adopted after the selector's ratio had already been compared with the rows it gates, asks each source only for the corrections its measurement method involves, that correction among them for a lifetime measurement, and every row it gates lies `outside` in `method_result`; the first rule's columns are unchanged.**
