@@ -474,7 +474,7 @@ def format_spec_derived_pins() -> list[Pin]:
         [member] = unpacked.getmembers()
     typeflag = member.type.decode("ascii")
     # The mode, uid and gid fields of that member's ustar header as `build_tarball` wrote them: seven
-    # octal digits at the offsets the header layout fixes (tests/test_g4spec.py reads the same slices).
+    # octal digits at the offsets the header layout fixes.
     header = gzip.decompress(archive)[:512]
     encoded_mode, encoded_uid, encoded_gid = (header[at:at + 7].decode("ascii") for at in (100, 108, 116))
     assert encoded_uid == encoded_gid, (encoded_uid, encoded_gid)
