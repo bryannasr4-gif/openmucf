@@ -50,7 +50,7 @@ PROSE_PATHS = (
     "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
     "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md",
     "cpp/transport/README.md", "DATASET_D2.md",
-    "paper/muonic-data/paper.md",
+    "paper/muonic-data/paper.md", "FORMAT_SPEC.md",
 )
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
@@ -62,6 +62,10 @@ def test_t74_transport_readme_enumerated():
 
 def test_t74_paper_draft_enumerated():
     assert "paper/muonic-data/paper.md" in PROSE_PATHS
+
+
+def test_t74_format_specification_enumerated():
+    assert "FORMAT_SPEC.md" in PROSE_PATHS
 
 
 CLASSES = pathlib.Path(__file__).with_name("g4_prose_classes.tsv")
@@ -346,7 +350,69 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
         Pin("error codes the format defines, the changelog's count", "CHANGELOG.md",
             r"\*\*(\w+) exact error codes\*\*", (1,), error_codes),
         *d3_seam_size_pins(vendored_readme),
+        *format_spec_pins(error_codes),
     ]
+
+
+FORMAT_SPEC = "FORMAT_SPEC.md"
+
+
+def format_spec_pins(error_codes: int) -> list[Pin]:
+    """The format specification's restatements of what the reference implementation carries: the
+    grammar version, each directive's place in the order, the digest length, the patterns the
+    reader compiles, the integer-column bounds, the error-code count and the archive's pinned
+    member fields. Every `expected` is read from `openmucf.g4` or computed; none is typed here."""
+    from openmucf.g4 import emit, spec
+
+    grammar = spec.GRAMMAR_VERSION
+    hex_digits = len(hashlib.sha256().hexdigest())
+    integer = spec._INTEGER_PATTERN.pattern
+    column_name = spec._COLUMN_NAME_PATTERN.pattern
+    pins = [
+        Pin(f"directive order, #{name}", FORMAT_SPEC, rf"\| (\d+) \| `#{name}` \| ", (1,), place)
+        for place, name in enumerate(spec.DIRECTIVE_ORDER, 1)
+    ]
+    for what, pattern, expected in (
+        ("grammar version, the document's own",
+         r"Version of this document: \*\*grammar (\d+\.\d+)\*\*", grammar),
+        ("grammar version, the directive table", r"`MAJOR\.MINOR`; currently `(\d+\.\d+)`", grammar),
+        ("grammar version, the unconstrained directives",
+         r"grammar (\d+\.\d+) pins no internal syntax", grammar),
+        ("grammar version, the example header", r"#GRAMMAR (\d+\.\d+) #DATASET", grammar),
+        ("grammar pattern, the checked values", r"\| `#GRAMMAR` \| `([^`]+)` \(`E010`\)",
+         spec._GRAMMAR_PATTERN.pattern.replace("|", "\\|")),
+        ("grammar pattern, section 2.7", r"lexically `([^`]+)` -- two runs",
+         spec._GRAMMAR_PATTERN.pattern),
+        ("digest length, the directive table",
+         r"SHA-256 of the Layer-2 file, (\d+) lowercase hex", hex_digits),
+        ("digest length, the checked values", r"exactly (\d+) lowercase hex characters", hex_digits),
+        ("digest length, the example header", r"\.\.\.(\d+) lowercase hex total\.\.\.", hex_digits),
+        ("digest pattern, the checked values", r"lowercase hex characters, `([^`]+)` \(`E016`\)",
+         spec._SOURCEDIGEST_PATTERN.pattern),
+        ("column-name pattern, the checked values",
+         r"one or more names matching `([^`]+)`, all", column_name),
+        ("column-name pattern, the #UNITS name",
+         r"`NAME=UNIT`, `NAME` matching `([^`]+)`", column_name),
+        ("profile pattern, section 2.5", r"`#PROFILE` is a token matching `([^`]+)`",
+         spec.PROFILE_PATTERN.pattern),
+        ("integer pattern, section 2.3", r"the field must match `([^`]+)` and its value", integer),
+        ("integer lower bound, section 2.3",
+         r"must lie in \*\*`(\d+)`-`\d+` inclusive\*\*", spec.INTEGER_MIN),
+        ("integer upper bound, section 2.3",
+         r"must lie in \*\*`\d+`-`(\d+)` inclusive\*\*", spec.INTEGER_MAX),
+        ("integer pattern, the E007 row", r"or `([^`]+)` within `\d+`-`\d+` for `Z`", integer),
+        ("integer lower bound, the E007 row", r"within `(\d+)`-`\d+` for `Z`", spec.INTEGER_MIN),
+        ("integer upper bound, the E007 row", r"within `\d+`-`(\d+)` for `Z`", spec.INTEGER_MAX),
+        ("integer pattern, the Layer-2 key note", r"are laxer — `([^`]+)`, section", integer),
+        ("error codes the format defines, section 7",
+         r"the section-4 codes remain exactly the (\w+) file-level", error_codes),
+        ("stored member name limit, section 8", r"at most \*\*(\d+) bytes\*\*", emit._MAX_MEMBER_NAME),
+        ("member mode, section 8", r"\| tar \| `mode` \| `(\d+)` \|", f"{emit._MEMBER_MODE:04o}"),
+        ("member mtime, section 8", r"\| tar \| `mtime` \| `(\d+)` \|", emit._EPOCH),
+        ("gzip mtime, section 8", r"\| gzip \| `mtime` \| `(\d+)` \|", emit._EPOCH),
+    ):
+        pins.append(Pin(what, FORMAT_SPEC, pattern, (1,), expected))
+    return pins
 
 
 PAPER = "paper/muonic-data/paper.md"
@@ -904,6 +970,24 @@ def test_t75_every_pin_pattern_matches_exactly_once():
     assert not problems, "\n".join(
         f"{p.pin.path}: {p.pin.what}: {p.detail}" for p in problems
     )
+
+
+def test_t75_drill_a_format_spec_bound_that_disagrees_with_the_package_is_named():
+    """Raise the integer-column bound section 2.3 of `FORMAT_SPEC.md` states by one in an in-memory
+    copy: the pin holding it to `openmucf.g4.spec.INTEGER_MAX` names the disagreement, and no other
+    pin moves."""
+    from openmucf.g4 import spec
+
+    texts = tree_texts()
+    stated = f"`{spec.INTEGER_MIN}`-`{spec.INTEGER_MAX}` inclusive"
+    assert texts[FORMAT_SPEC].count(stated) == 1
+    texts[FORMAT_SPEC] = texts[FORMAT_SPEC].replace(
+        stated, f"`{spec.INTEGER_MIN}`-`{spec.INTEGER_MAX + 1}` inclusive"
+    )
+    _, problems = pin_spans(texts, pin_table())
+    assert [p.pin.what for p in problems] == ["integer upper bound, section 2.3"], [
+        f"{p.pin.what}: {p.detail}" for p in problems
+    ]
 
 
 def test_t75_the_enumerator_prints_nothing_on_the_tree():

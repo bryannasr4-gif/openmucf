@@ -481,6 +481,145 @@ d740c76e0828c8f02defb363455e0d3733b0e5eb	DATASET_D3.md	REGISTERED: two -- 'its t
 daacccf759d51544614bfc88c1fec44ac2a591de	DATASET_D3.md	REGISTERED: one -- 'one signed radius response', a description
 e89fe618ca851636957d81975e880ab0e7de99cc	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s in the title of Table IIIA of Fricke et al.: a transition label, not a quantity
 f5628c7e58a3465d06ea82b025bae391520a8dde	DATASET_D3.md	REGISTERED: 4, 3 -- the digits of the seam variable `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
+00dadc01bf1706031b27157d22db19cab29bdc63	FORMAT_SPEC.md	REGISTERED: One, one -- 'One row per record' and 'exactly one object per Layer-1 record': the rule openmucf/g4/provenance.py's check_against_table enforces
+0678008b48226e0edd80b7f572b5a4f91d1f3f19	FORMAT_SPEC.md	REGISTERED: 1.5 -- '1.5x' and '1.5', an example field with a trailing byte and the prefix a converter would accept
+068fba64a53aa85a7676a8db12f2bdd7681e12ab	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('one is the version of the format, the other ...')
+074c76d7b3c53782b85ad52c2e3a2eb9ac0f6a74	FORMAT_SPEC.md	REGISTERED: one -- 'one gzipped tar archive': the single artifact openmucf/g4/emit.py's build_tarball writes
+0864447a2f1df17e89d0ea3cb1bfdfc1d1b6b695	FORMAT_SPEC.md	REGISTERED: one -- 'exactly one directory component', the layout tests/test_g4spec.py asserts on the built archive
+0878f4d315d396a387123f4154d7f61a62d64b9e	FORMAT_SPEC.md	REGISTERED: 0 -- the uid and gid openmucf/g4/emit.py writes; tests/test_g4spec.py reads both back
+09d76ee72419272adcef18fbda579b1b87a41935	FORMAT_SPEC.md	REGISTERED: zero, 7, 0000644, 0000000, 11 -- the ustar numeric-field widths and the encoded mode and uid/gid values; tests/test_g4spec.py compares the encoded mode and mtime fields
+0c43dfe28fc4d21994d2f368b716bba952bc7363	FORMAT_SPEC.md	REGISTERED: 1, One -- 'column 1', the first byte of the line; 'One directive per line' is the grammar's rule
+10a2b3c08856360b405d521bf4a54f241aa44858	FORMAT_SPEC.md	REGISTERED: one -- 'exactly one trailing newline', the newline openmucf/g4/provenance.py's render_json appends
+10eea7a46c38767b36c873abf23dccdb5cdfba76	FORMAT_SPEC.md	REGISTERED: two -- the discovery modes the section defines
+15058c553a9e073c6f641b69439faca762ab18c7	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('the one that preempts', the verdict)
+1569766baa59b8f43e013f71e0643af77f0a135a	FORMAT_SPEC.md	REGISTERED: 1.0.0 -- the example header's #VERSION, as the reference tests' fixture header writes it (tests/test_g4spec.py); a dataset's content version is its own (section 2.2), and the shipped tables carry theirs
+16eca89ff3259132a595ec7fad8138877e829c56	FORMAT_SPEC.md	REGISTERED: 0 -- '(Z, 0)', the natural-composition row, A = 0
+19300513f3ccb46502479377a5384018f5f1350e	FORMAT_SPEC.md	REGISTERED: 10240 -- the record size of the end-of-archive row above
+1c833f37ca49701b035b4f6a2b567d5b90721d81	FORMAT_SPEC.md	REGISTERED: zero -- 'arity zero', the #COLUMNS arity that would admit a blank line
+1d7d4ffa412b83a48aa2e0148c91a5a8bf5d9ecc	FORMAT_SPEC.md	REGISTERED: 10, 2 -- the example pair of the line above, in text order
+1f85cee66ec5bd6ff9a1ed0cb9c0ce0ea8c23c79	FORMAT_SPEC.md	REGISTERED: 0 -- the typeflag byte, the character '0', which tests/test_g4spec.py reads from the header block
+2078a70afc422be1c247c86d25ee0181f1a816de	FORMAT_SPEC.md	REGISTERED: two -- 'the two rules': the lexical rule of E010 and section 2.2's empty-counts-as-absent rule, both named above
+226801d67b99c61ef09b8c8d16a3e98571f1d14c	FORMAT_SPEC.md	REGISTERED: One, one -- 'One version has one spelling': the rule the pattern above enforces
+2492e175c6e271da83b5cb059a54642ef511052b	FORMAT_SPEC.md	REGISTERED: one -- '#SEAM is one of' the listed values, openmucf/g4/spec.py's ALLOWED_SEAMS
+2591266d867fbc34df218790d54439ab6c26db4e	FORMAT_SPEC.md	REGISTERED: 0 -- '(Z, 0)', the natural-composition row, A = 0 (section 6)
+26a60a9f3653d9a3b63b4278300ce8682c22d41b	FORMAT_SPEC.md	REGISTERED: 0 -- 'A = 0', the key of the row that stands for the element
+285c28dec73b77e377dee661dc41bdd2ad3d108b	FORMAT_SPEC.md	REGISTERED: zero -- 'exactly zero', the result that counts as underflow
+2f2aa8d523b01f2a256658f010858c1d3a6f927f	FORMAT_SPEC.md	REGISTERED: one -- 'one file': the alternative the paragraph rejects, every evaluation as columns of a single file
+317478d80f0cc2e13495ea6120e30c248ec8ad5e	FORMAT_SPEC.md	REGISTERED: 0.03, 0.25, 3.24, 875, 9 -- an example #FALLBACK value, as the reference tests' fixture header writes it (tests/test_g4spec.py); its assignments are the leading coefficients of the #FALLBACK line of the parity capture table (data/g4/d1/d1_capture.g4dat)
+33467dfbfa178d06e8224e65bd2e452b415ea03a	FORMAT_SPEC.md	REGISTERED: 1, 6 -- '1e6/s', the unit the shipped capture tables' #UNITS line gives both columns (data/g4/d1/d1_capture.g4dat)
+3661a559c97a15610ac39a3882214cb885c8f38c	FORMAT_SPEC.md	REGISTERED: two -- 'two zlib builds': any pair of builds
+36b12f3cf8ba65df36543f6e5ee865c203489d63	FORMAT_SPEC.md	REGISTERED: 01.0, 1.0 -- a spelling that pads MAJOR, which tests/test_g4spec.py expects the reader to refuse with E010, and the version it would otherwise spell
+37838afa8875b4ef1f2c78865d17f402062f31dd	FORMAT_SPEC.md	REGISTERED: two -- 'two consumers': the least number of readers that can disagree, illustrative
+37ef4af6d0199c7c7363e7b13c04906c2744040c	FORMAT_SPEC.md	REGISTERED: 0.0 -- what Python returns for the example field of the line above, as openmucf/g4/spec.py's comment on underflow states
+39924a66ee5ab16545142faf9ecf01d4102723d5	FORMAT_SPEC.md	REGISTERED: 0 -- A = 0, which the rejected sentinel column would have carried
+39e14270556c8030b7c0d23177dcb98679a583c1	FORMAT_SPEC.md	REGISTERED: zero -- 'underflowing to zero', the result the rule refuses
+3d8c8da59d150b4308f018c5968e3df90dc38b06	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('an unsupported one', a #GRAMMAR)
+3d9782c93e921e47debe9f73509fd0203a3e85f2	FORMAT_SPEC.md	REGISTERED: One -- 'One honest limit': the single limit the paragraph states
+3dc3cf71021781f3987b5875fcea2b86420855d9	FORMAT_SPEC.md	REGISTERED: one -- 'one or more ... assignments': the element form a consumer parses a #VALIDITY value into
+3f34ed9423c80db9b312dfe1e06e71e6a5ec288b	FORMAT_SPEC.md	REGISTERED: six, seven, 512, eight -- the ustar checksum field's encoding, the width it is not, the header size and the spaces POSIX substitutes when summing; tests/test_g4spec.py checks the encoding
+40fa69382a3c4b82e0bb9cf850469f4b0612203e	FORMAT_SPEC.md	REGISTERED: one -- 'one top-level directory', the layout of the member-name row above
+411ae931f8a713f20e47604f8076215cc43de4dc	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('declares one', a #FALLBACK)
+42b60082625c0a5033bafd373c91cc53b0d79ea9	FORMAT_SPEC.md	REGISTERED: one -- 'one or more ... assignments': a #UNITS value states at least a single unit
+439a37d8a73d882d457a7d356da7371208c918a1	FORMAT_SPEC.md	REGISTERED: one -- 'Use one of': the alternatives the list below gives
+4648e80ddd0154999dba04c2ac7963990da79296	FORMAT_SPEC.md	REGISTERED: 1, 3 -- '1e3', an example of a float spelling in an integer column (E007)
+48ead92bf554d6150a61c94a8fac9a25739bf26b	FORMAT_SPEC.md	REGISTERED: one -- 'one ... measurement': the definition of single_source
+49854db6f34c4a4ed7aa697b0941f42fc5e4638b	FORMAT_SPEC.md	REGISTERED: one -- 'separated by one .': the pattern admits a single dot
+4d86c18641c220657d1d7e42a6a0821b04bb37e7	FORMAT_SPEC.md	REGISTERED: one, two -- 'which one' is a pronoun; 'two conforming implementations' is the least number that can disagree
+4fabd5f6e4cc08a85fc8d0cb24b3f67b75b26914	FORMAT_SPEC.md	REGISTERED: two -- the two layers the sentence binds
+51ab41c86713cf6e389ed197b63e5b62dc52a89b	FORMAT_SPEC.md	REGISTERED: 001, 1, 029 -- example spellings the key rule forbids; tests/test_g4spec.py requires the Layer-2 validator to refuse each of them but the last
+51cf320e00d2acbe7e509d0ba69267562ed6f03e	FORMAT_SPEC.md	REGISTERED: one -- 'one or more names': an empty #COLUMNS is refused, and section 2.3 rule 2 says why
+55227772e737176d8b78ed88e90833c7107476aa	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('report it as one', a producer bug)
+5fa5ef00424f596f6eacc0167f7acbd64dff6c0d	FORMAT_SPEC.md	REGISTERED: one, 0, 1, 9, 29, 100 -- 'exactly one of them'; the single-column form of openmucf/g4/provenance.py's row-key pattern, written out, and example keys: Z = 0 and Z = 100 bound the effective-charge table's range (data/g4/d1/d1_zeff.g4dat), and 29 is a key within it
+60f6b44335e95ed55afe8e0226fed7042e5d564d	FORMAT_SPEC.md	REGISTERED: two -- 'two calls': any pair of calls on the same table
+61166b16b4f70a5fafc32e58217c288b491057f3	FORMAT_SPEC.md	REGISTERED: two -- Layer 1 and Layer 2, the rows of the table that follows
+62fcd13dea92e1e9a60ef36990bd3763078255ba	FORMAT_SPEC.md	REGISTERED: 118, 300 -- the physical ranges of Z and A the integer bound is generous against, as openmucf/g4/spec.py's comment on it states them
+643f8af794036550c59330d3ee791967927b36e7	FORMAT_SPEC.md	REGISTERED: two -- 'no two spellings survive': the reader re-emits integers canonically
+6667aeaf0d85c8965e90c524faa0285c0a057e02	FORMAT_SPEC.md	REGISTERED: one -- 'from one line': a check that needs more than a single line
+66c6c8ab97b3c4c660d8582f19eaaf0636e66b02	FORMAT_SPEC.md	REGISTERED: one -- 'one opaque string': the reader keeps each unchecked value whole
+682050658ef89deeb3063491c26c90bb722bdd94	FORMAT_SPEC.md	REGISTERED: one -- 'one #TABLE, one per #PROFILE': a single table name, a file for each profile
+68798576f2f55bada84b53eeadccdbe7a3d8370e	FORMAT_SPEC.md	REGISTERED: 0, 00, 257, 264 -- the NUL of the ustar magic, the version field and their byte range in the header block; tests/test_g4spec.py compares those bytes
+6f7dc4390aed055373bb35fbda3a49c64e19cf13	FORMAT_SPEC.md	REGISTERED: 17 -- the '%.17g' conversion openmucf/g4/spec.py's format_float applies
+7003d6a9c93b07d65b74929c1b8dd1d08068062b	FORMAT_SPEC.md	REGISTERED: one -- 'within one file': precedence does not reach across files
+7085f783038dcfa20e1b59798c0c589420dc618d	FORMAT_SPEC.md	REGISTERED: 2, 10 -- the example pair that numeric order and text order sort differently
+72d030dd3cfc09b064b34c60cb0caddb6a75fb0a	FORMAT_SPEC.md	REGISTERED: two -- 'two archives': any pair a consumer compares
+72eb819f3f77dee90779fb2086d063c53e8d4d95	FORMAT_SPEC.md	REGISTERED: one -- 'one string': the reader keeps each of these values whole
+74b3e78b071d52099268a923f7451f81317b78cf	FORMAT_SPEC.md	REGISTERED: 4 -- the example's E013 fault line: the line #PROFILE occupies when the directives before it are present, as in the example of a repeated directive below
+763ea2233dadce878633d2992fccfaa62f24f35a	FORMAT_SPEC.md	REGISTERED: two, one -- 'two forms' are the rows of the key-form table below; 'which one' is a pronoun
+7a77a74d2726c086b8687ebb019563e0d107259b	FORMAT_SPEC.md	REGISTERED: 1, 6 -- '1e6/s', the unit the shipped capture tables' #UNITS line gives the value column (data/g4/d1/d1_capture.g4dat); a unit, not a measurement
+7b508030790c0cba5232d8f2084995b5badaa950	FORMAT_SPEC.md	REGISTERED: 1, 999 -- '1e-999', an example underflowing field; tests/test_g4spec.py feeds it to the reader and expects E014
+7d0d4afa98a37614363fd9773fd8cf347c84b46a	FORMAT_SPEC.md	REGISTERED: 1, 94 -- the example header's #VALIDITY range, as the reference tests' fixture header writes it (tests/test_g4spec.py)
+7d56a6b6d8574f8382eac139d5df54a74d0988f1	FORMAT_SPEC.md	REGISTERED: 2, one -- the Layer column's label for Layer 2; 'one JSON object per Layer-1 record' is the row rule section 3 states and openmucf/g4/provenance.py's check_against_table enforces
+7ef34cff5bb34d276c065aacc25f816ced5e0bd9	FORMAT_SPEC.md	REGISTERED: one -- 'any one line': a single line of the file
+7fab82470b9c3c8aedcb47906ecc73b8906ea323	FORMAT_SPEC.md	REGISTERED: one -- 'one defect', the usual case the paragraph sets against several
+82c5b076921fb279969d06537074d8b51ad5dd4d	FORMAT_SPEC.md	REGISTERED: two -- 'two-layer design': the layers of section 1
+84b3ed4a25c56708d378b9d0acf88c727cfc8cd5	FORMAT_SPEC.md	REGISTERED: 0, 0.0, 999, zero -- example lexically zero fields, each of which tests/test_g4spec.py passes through the reader and expects to read as zero; 'a genuine zero' is their value
+8683aa285b08fbdf84fe12bde59cc76139f0a0b2	FORMAT_SPEC.md	REGISTERED: two -- the heading's 'two layers': Layer 1 and Layer 2, the rows of the table below it
+87dd654303250d7df4775c8539e78572f7b0f825	FORMAT_SPEC.md	REGISTERED: 1.5 -- '+1.5', an example field with a leading sign, which the float pattern of section 2.3 rule 4 admits
+8874b58651a45eaaa1ac8b4d1af449405df873e3	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('which have one', a line number)
+8c8b143b0c26f26a108eed60384ec32ba4ea801e	FORMAT_SPEC.md	REGISTERED: 255, 3, 1 -- the OS byte the archive carries, which tests/test_g4spec.py reads from the gzip header; 3 is the Unix value, and gzip(1) names the manual page
+8dcc0b7c18a2d52b5cc36bcb217b3bd3bfc68a45	FORMAT_SPEC.md	REGISTERED: one, two -- 'a file containing one' is a pronoun for a VT byte; 'two different field counts' are what the two kinds of reader the sentence names would each find
+8e14ea0d07143b8f6239b79eaf6688713d04e2a3	FORMAT_SPEC.md	REGISTERED: 0.00072499999999999995, 0 -- the emitted literal of section 2.6 and the integer part a comma-decimal strtod reads before it stops
+8f9bbcdd761f23f9385c68b225d5cd6fea0baf8f	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('diagnosed as one', a record)
+9163bb0dbc4e3855f586c45285308726efbc9121	FORMAT_SPEC.md	REGISTERED: zero, one -- 'zero or more records' (a table may be empty) and 'one per line': the record grammar
+94dc60f7bb7cca8f12029f29dd538a44dbb34dc1	FORMAT_SPEC.md	REGISTERED: two -- 'two files declare the same pair': the duplicate the reader rejects
+954e388b78d60b6810bbca3d59d56275dcd336a8	FORMAT_SPEC.md	REGISTERED: two -- 'two conforming readers': a reader that converts the field silently and a reader that reports it out of range
+95578f716e96945933c4b370053dc4c5908e83f5	FORMAT_SPEC.md	REGISTERED: one -- 'by one tool': a count of producers, the tool a Layer-1 file names in its #GENERATOR directive
+973413034ca8dd2e50e613398664199c4590cbbc	FORMAT_SPEC.md	REGISTERED: 0 -- 'A = 0', the key no record carries under A:listed, a rule openmucf/g4/spec.py applies to a table's records
+9b38b556a871d7d941d41360a0adddfde9536648	FORMAT_SPEC.md	REGISTERED: zero -- 'underflow to zero', the E014 condition section 2.3 rule 5 defines
+9bbb43a98e5a1de45a2874bcde8fec530da33c20	FORMAT_SPEC.md	REGISTERED: two -- 'two-space indentation', the indent openmucf/g4/provenance.py's render_json writes
+9d6bba9791f419b38688ae353a99408d961d75d7	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('a bad one', a version)
+9e32c2441fee2dc893805c65b82e97878bfd1031	FORMAT_SPEC.md	REGISTERED: 1, 9, zero -- the digit range that defines a lexically nonzero field, and 'exactly zero', the result that makes it E014
+a0027fd1f2211fc433a87c8d791328295eaa487f	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('an empty one', a line)
+a0180417e8a23be59d88c38d753372486e81c79b	FORMAT_SPEC.md	REGISTERED: 1.1.0 -- the example header's #GENERATOR version, as the reference tests' fixture header writes it (tests/test_g4spec.py); the shipped tables name the generator that wrote them
+a0a03b432b7d2389e0aa3e2ab71fc5d847798270	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('the C-locale one', the syntax)
+a0e6ebce866cee603552aa2ec3879dd1330a13d3	FORMAT_SPEC.md	REGISTERED: zero -- 'no zero padding': the key spelling forbids leading zeros
+a34595d36b49391578c18850326d7764cc1d90dc	FORMAT_SPEC.md	REGISTERED: one -- 'the one code that spans both layers': E009, as section 4 states
+a3b674cd9e44fd70f73f0cf5004d075550167a7b	FORMAT_SPEC.md	REGISTERED: zero -- a blank line has zero fields
+a4433a24b05822d076bb04c40a4f7fbe7b2fd724	FORMAT_SPEC.md	REGISTERED: 9, 2 -- the compression level openmucf/g4/emit.py passes to gzip, and the XFL byte it yields, which tests/test_g4spec.py reads from the gzip header
+a9b5ac1283840b4e38dc230ded75633a0744ce28	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('this one', the key rule)
+acd6ac930efc71762034bb1544d4fc816281bd08	FORMAT_SPEC.md	REGISTERED: Two -- the tie-breaks the paragraph states, each in bold
+adf22e98623cfd6643e02679c35059aa7e8fdecb	FORMAT_SPEC.md	REGISTERED: one -- 'one of these': a section-4 code
+b305a09894e3c386a80e4bdd0f48694c8e0de3f2	FORMAT_SPEC.md	REGISTERED: 1 -- '1-based': line numbers count from the first line of the file
+b962545dd616d6b377d4b9829934692595bf83ff	FORMAT_SPEC.md	REGISTERED: Three -- the details the bullets below state
+bbc4ca16b886cdfdb7d7b6d0dcd92283cc5d829e	FORMAT_SPEC.md	REGISTERED: one -- 'exactly one numeric syntax': the C-locale float syntax of section 2.3 rule 4
+bd036a1f3b8ef0b038f3b52bbed18a799fe7f883	FORMAT_SPEC.md	REGISTERED: three -- 'three different splittings': the illustrative implementations of the line above, each splitting its own way
+bd62f98fc7eca1964a96dca56ab228a6e1927e6a	FORMAT_SPEC.md	REGISTERED: 1, 01, two, one -- the example keys '1-1' and '01-1', two spellings of a single record's key, which tests/test_g4spec.py requires the Layer-2 validator to accept and to refuse respectively; 'for one record' is that record
+bd9d1c1a756471f21f52b25ae1a8efca3c2d35f8	FORMAT_SPEC.md	REGISTERED: zero, 1, 9 -- the definition of a lexically zero field: no digit of the range the line names before the exponent
+c2aca537b2f6431676438ad5e8e9e217025b7f7f	FORMAT_SPEC.md	REGISTERED: 0.000725, 0.00072499999999999995 -- a value and its exact rendering under section 2.6's float syntax; tests/test_g4spec.py carries both
+c48ac2b68dd05f6a9779a5ae9e0d92e6eb8f5dc2	FORMAT_SPEC.md	REGISTERED: one -- 'one object per Layer-1 record' under rows, the rule the paragraph on row counts below states
+c4d1e52d9cfe5d407995d98c1df48fda851297ec	FORMAT_SPEC.md	REGISTERED: 1 -- 'column 1', the first byte of the line
+c7ac321819e68b37e41a65a70b82f531666b57ff	FORMAT_SPEC.md	REGISTERED: 16, 329, 344 -- the NUL bytes of devmajor and devminor and their offsets in the header block; tests/test_g4spec.py compares those bytes
+c896e203eecbd020a3048202760e086b0a591549	FORMAT_SPEC.md	REGISTERED: Seventeen -- the precision of that conversion; tests/test_g4spec.py checks the round trip it guarantees
+c89a45c41b66a2bd13ff62e33fb5b164aee0b8dd	FORMAT_SPEC.md	REGISTERED: 1, 6 -- '1e6/s' in the retracted example this paragraph quotes as history
+cd541c40cf9e8b9728f2b6a546e4300e64669f26	FORMAT_SPEC.md	REGISTERED: Two -- the requirements the bullets below state
+d19d2a2a7dc3a96172da28e54ba9f04dc249f04d	FORMAT_SPEC.md	REGISTERED: two -- 'two callers': any pair of callers that build the same table in different orders
+d3f805c73cd0573072c1523d4d9454e0f04a03f3	FORMAT_SPEC.md	REGISTERED: 1, 94 -- an example #VALIDITY value, as the reference tests' fixture header writes it (tests/test_g4spec.py): an illustration of the NAME:RANGE form, not a shipped table's range
+d472f7736f48aa0813f1fbb824c27f8d92225402	FORMAT_SPEC.md	REGISTERED: zero, 9 -- 'zero or more assignments' after the model name; 9 closes the digit range of the MODEL pattern, a consumer rule no reader checks (section 2.2 leaves #FALLBACK a single string to the reader)
+d5c6d30f9a3aa8fe8c1a69a262cc5f2c0659651d	FORMAT_SPEC.md	REGISTERED: two -- 'two evaluations of the same (Z, A)': the least number that can coexist
+d5ddc31584a04e569122f855fd3b531a0758000a	FORMAT_SPEC.md	REGISTERED: 4.9406564584124654, 324 -- the smallest positive subnormal double, as the emitter prints it; tests/test_g4spec.py parses this literal and expects that value
+d76cb388c3f699ae4bf45b4623fb81115170eaa0	FORMAT_SPEC.md	REGISTERED: one -- 'for one that declares only one of them': a pronoun and the single key column of such a table
+d9c9781574ea2c8ff6d304bbacffd8263b2a4d55	FORMAT_SPEC.md	REGISTERED: three -- 'those three values' are #UNITS, #VALIDITY and #FALLBACK, named where the paragraph opens; 'three implementations' is illustrative
+da1f9935081798e63a8a1a2dd95995ed3dc89d6e	FORMAT_SPEC.md	REGISTERED: two -- 'two runs of decimal digits': MAJOR and MINOR, the groups of the pinned pattern on this line
+ddaa193da8f5677868329b8ff3eb1a69682eb67c	FORMAT_SPEC.md	REGISTERED: one -- 'one separator': a run of spaces and tabs counts once
+dff1b39640111030a38c7e1e195360e965bdefb2	FORMAT_SPEC.md	REGISTERED: 0 -- 'A = 0', the natural-composition row's key
+e12c5dd224a15ad723537cb71d58bede71ae1ac4	FORMAT_SPEC.md	REGISTERED: three -- the outcomes numbered in the list that follows
+e5c0aa258f1b22e084a2daf8f7a9800c9c5b9ef1	FORMAT_SPEC.md	REGISTERED: zero -- 'underflows to zero', the E014 case of section 2.3 rule 5
+e8b9babef58a19d198f0b70af9b42aacd04be66d	FORMAT_SPEC.md	REGISTERED: 1 -- the Layer column: the label Layer 1 carries throughout the document
+eb103b5294353baa3ff0405392be087bb76c9baf	FORMAT_SPEC.md	REGISTERED: 17 -- the '%.17g' conversion, the format openmucf/g4/spec.py's format_float applies
+f033488709790c42b5970dd0fbe108b49700b70e	FORMAT_SPEC.md	REGISTERED: 3, 1 -- '3b1f...', the elided opening of an example digest; the digest length on this line is pinned
+f2dd60cdcb130c5c0e820ee459a800e0f6697498	FORMAT_SPEC.md	REGISTERED: one -- 'one more (empty) field': the extra field a reader that does not strip the line's end finds
+f323ae2108685057bd3880813b998fada44f5e7a	FORMAT_SPEC.md	REGISTERED: 0, 1, 9, 29, 63, 94, 242 -- the both-columns form of openmucf/g4/provenance.py's row-key pattern, written out, and example keys: the records of the reference tests' fixture (tests/test_g4spec.py)
+f478fdaa8a77063820735a77204097a3bf5a1aef	FORMAT_SPEC.md	REGISTERED: one -- 'one built artifact': the archive whose bytes the MD5SUM hashes
+f48402139f976c998b0f7f100227b2fc763b7737	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('the leading one')
+f7a4704114cc9e636224af739321d6a4739013e9	FORMAT_SPEC.md	REGISTERED: 5, 324, 4.9406564584124654 -- the smallest positive subnormal double and the text the emitter writes for it; tests/test_g4spec.py carries both
+f7afa3f3c534d6b6e9662f45bacfae70d190523e	FORMAT_SPEC.md	REGISTERED: one -- 'add one': line numbers count from the first line, so the would-be line is the count of present predecessors plus one
+f990a63ff8ff269e7c8422a0b6c645a064268cb8	FORMAT_SPEC.md	REGISTERED: 2 -- 'indent=2', the argument openmucf/g4/provenance.py's render_json passes to json.dumps, quoted
+fa5468b96024776dc2ee506d29247bf3d0fffa88	FORMAT_SPEC.md	REGISTERED: one -- 'one string' each: the parser does not decompose these values
+fa87ff211b4d70f7b4ae619025413214ec38a82a	FORMAT_SPEC.md	REGISTERED: one, two -- 'one that omits the line' is a pronoun; 'two distinct files' are the file with the empty directive and the file without it
+fb7f5aac166159646fa7a7194a843ec037e11c36	FORMAT_SPEC.md	REGISTERED: two, 512, zero, 10240 -- the end-of-archive blocks and the record size the archive is padded to; tests/test_g4spec.py checks both
+fdad014f66483c4baa04681c0a3cb22fed602e59	FORMAT_SPEC.md	REGISTERED: 000000, 0, 000666 -- the bytes bsdtar wrote in those fields of a ustar archive on Windows, quoted as legal alternatives the table excludes
+ff8cb07b29f5d22d1ed175d1a1ec6de323531f9b	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('one present with an empty value', a required directive)
+ff9e698e73f14f73c93e5f484019640954acc85a	FORMAT_SPEC.md	REGISTERED: three -- the phases numbered in the list that follows
 0ccdf0a1a697580b0dcf6641da9f8d632e79d931	README.md	REGISTERED: 225 -- the nuclide label Ac-225
 11eca2c304568f729867dead4a32bb3a18259e9c	README.md	EXERCISED: 284 -- tests/test_energy.py::test_scientific_breakeven_is_284
 2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H
