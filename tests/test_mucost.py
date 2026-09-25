@@ -674,8 +674,13 @@ def test_a_non_sourced_chain_renders_as_a_bound_not_a_value(table):
         composed.render_value()
 
     # 3. a row stopped outside D-T fuel is not on the chain at all and cannot become a chain point
-    with pytest.raises(BasisError, match="not on the muCF chain"):
+    with pytest.raises(BasisError) as off_chain:
         table["mu2e"].chain_point()
+    assert str(off_chain.value) == (
+        f"mu2e: stage {table['mu2e'].stage!r} is not on the muCF chain "
+        "(the muons are stopped outside D-T fuel), so no chain of sub-unity factors "
+        "connects it to a muCF cost"
+    )
 
     # 4. the refusal is NOT vacuous: a complete, fully-sourced chain does render as a value
     ok = mucost.ChainValue(
@@ -886,7 +891,7 @@ def test_declared_edges_and_published_boxes_are_pinned(table):
     ``_DECLARED_EDGES`` used to be checked only by ``edge.value in mucost._DECLARED_EDGES.values()``
     (in test_no_box_edge_is_set_by_a_barred_row), which is circular: mutate the dict, regenerate,
     and every gate stays green while the published T1 row silently becomes Uniform(3.0, 7.0) --
-    measured on this branch, twice, before this pin existed. The section-2b stop says the T1 and T2
+    measured twice before this pin existed. The section-2b stop says the T1 and T2
     rows are byte-identical or the run halts; this is the test that halts it. The T3 edges are
     ledger values and are pinned here too: a ledger move is a published-number move, and a published
     number moves only through a conscious two-place edit (ledger + this literal), never through a
@@ -1929,3 +1934,78 @@ def test_the_generated_edge_section_says_what_stops_the_chain(table, chain):
     beam = table[gen.CHAIN_ANCHOR_ID].chain_point()
     assert mucost.compose_path(beam, [chain["eta_acc_kovach_site"]]).render().startswith(">= ")
     assert not mucost.compose_path(beam, [chain["delivery_kelly_eta_mu"]]).render().startswith(">= ")
+
+
+# ---- refusals the loaders and the composers enforce, each fed the input that breaks it -----------
+
+
+def _shipped_row(source_id: str) -> tuple[list[str], dict[str, str]]:
+    """The header and one shipped row of the node table, so a drill changes one rule's input."""
+    with MUON_COST_CSV.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        row = next(r for r in reader if r["source_id"] == source_id)
+    return header, row
+
+
+def test_the_loader_row_rules_fire_on_the_rows_that_break_them(tmp_path):
+    """The node loader's basis rules, each drilled on a shipped pinned row with one cell changed."""
+    header, base = _shipped_row("kelly_hart_rose_2021")
+    control = tmp_path / "control.csv"
+    _write_csv(control, header, base)
+    load_muon_cost(csv_path=control, schema_path=MUON_COST_SCHEMA, check_refs=False)
+    cases = [
+        (dict(normalized_GeV_per_mu="", needs_verification="false"),
+         "empty normalized_GeV_per_mu is allowed only when needs_verification=true"),
+        (dict(numeraire=""), "a pinned value requires both numeraire and stage"),
+        (dict(useful_fraction_sourced="true"), "useful_fraction_sourced is only meaningful at stage"),
+        (dict(stage=mucost.TERMINAL_STAGE), "useful_fraction_sourced (true/false), never leave it unsaid"),
+        (dict(charge_basis=""), "a pinned normalized value requires both basis_class and charge_basis"),
+    ]
+    for i, (mutation, expected) in enumerate(cases):
+        bad = tmp_path / f"rule_{i}.csv"
+        _write_csv(bad, header, dict(base, **mutation))
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            load_muon_cost(csv_path=bad, schema_path=MUON_COST_SCHEMA, check_refs=False)
+
+
+def test_a_bad_chain_evidence_status_is_refused(tmp_path):
+    """The edge loader checks ``evidence_status`` against the node table's closed set."""
+    _load_chain(_write_chain(tmp_path, [CHAIN_CONTROL], "status_ok.csv"))
+    bad = _write_chain(tmp_path, [dict(CHAIN_CONTROL, evidence_status="rumour")], "status_bad.csv")
+    with pytest.raises(ValueError, match=re.escape("bad evidence_status 'rumour'")):
+        _load_chain(bad)
+
+
+def test_compose_refuses_what_it_must(table):
+    """``ChainValue.compose`` refuses an off-chain stage, a stage that does not advance, an unknown
+    status and a factor outside (0, 1], and a legal composition still goes through."""
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    with pytest.raises(BasisError, match="not on the muCF chain"):
+        beam.compose(0.5, "nowhere", "primary", "drill")
+    with pytest.raises(BasisError, match="must advance the chain"):
+        beam.compose(0.5, beam.stage, "primary", "drill")
+    with pytest.raises(BasisError, match="unknown evidence_status"):
+        beam.compose(0.5, mucost.TERMINAL_STAGE, "rumour", "drill")
+    for factor in (0.0, 1.5):
+        with pytest.raises(BasisError, match=re.escape("must lie in (0, 1]")):
+            beam.compose(factor, mucost.TERMINAL_STAGE, "primary", "drill")
+    assert beam.compose(0.5, mucost.TERMINAL_STAGE, "primary", "drill").stage == mucost.TERMINAL_STAGE
+
+
+def test_compose_path_refuses_a_return_to_a_coordinate(tmp_path):
+    """The committed edges cannot bring a path back to a coordinate it left, so the refusal is drilled
+    on a synthetic pair: beam energy to electrical and back."""
+    edges = [
+        dict(CHAIN_CONTROL, edge_id="syn_out"),
+        dict(CHAIN_CONTROL, edge_id="syn_back", from_numeraire="electrical_minimal",
+             to_numeraire=mucost.BEAM_KINETIC),
+    ]
+    syn = _load_chain(_write_chain(tmp_path, edges, "round_trip.csv"))
+    start = mucost.ChainValue(
+        value_GeV=4.0, stage="produced", numeraire=mucost.BEAM_KINETIC, charge_basis="mu_minus",
+        statuses=("primary",), provenance=("synthetic_start",),
+    )
+    assert mucost.compose_path(start, [syn["syn_out"]]).value.numeraire == "electrical_minimal"
+    with pytest.raises(BasisError, match="a coordinate it has already left"):
+        mucost.compose_path(start, [syn["syn_out"], syn["syn_back"]])
