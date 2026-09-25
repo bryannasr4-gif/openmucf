@@ -98,11 +98,12 @@ CLAIM_PATHS = (
 #: true, and had never been enumerable). Negation -- `not`, `cannot` and the contraction `\w+n't` --
 #: entered 2026-08-31 on the family's attested escape (`does not depend on`), every line it
 #: enumerates read and ruled as it landed; `\w+n't` matched nothing at admission and entered on
-#: the pair precedent.
+#: the pair precedent. Its apostrophe is the ASCII one or the typographic right single quotation
+#: mark, and an example row drills each.
 STRONG_FORMS = (
     "every", "all", "each", "none", "never", "always", "only", "sole", "solely", "exactly", "exact",
     "unique", "uniquely", "neither", "any", "entire", r"without\s+exception", "no", "nothing",
-    "not", "cannot", r"\w+n't",
+    "not", "cannot", r"\w+n['\u2019]t",
 )
 
 #: Words that make a sentence a claim about the ledger rather than about anything else. `bound` and
@@ -1155,6 +1156,55 @@ def test_deleting_a_form_stales_sentence_rows():
                 f"stale sentence row"
             )
     assert shrank, "no form's deletion changes the wrapped enumeration -- the drill is inert"
+
+
+# --------------------------------------------------------------------------------------------------
+# Registry reasons, and the pages outside the claim paths
+# --------------------------------------------------------------------------------------------------
+
+#: A line locator inside a registry reason: ``path.ext:N``, a bare ``:N`` continuation, or ``line N``.
+#: A line number goes stale when the file above it changes.
+_LINE_LOCATOR = re.compile(
+    r"[A-Za-z0-9_./-]+\.[A-Za-z0-9]+:\d+|(?<![A-Za-z0-9_./-]):\d+|\blines? \d+", re.IGNORECASE
+)
+
+
+def test_registry_reasons_carry_no_line_numbers():
+    """A registry reason names a file, a function or a test, and no line of one.
+
+    The detector is exampled on each of its shapes and on text it must leave alone.
+    """
+    for s in ("tests/test_ledger_claims.py:91-94", "enforced at :196-199", "references.bib lines 197-202"):
+        assert _LINE_LOCATOR.search(s), s
+    for clean in ("tests/test_mucost.py::test_jandel_unpinned", "Table II (p. 879)", "doi:10.1209/0295-5075"):
+        assert not _LINE_LOCATOR.search(clean), clean
+    for registry in (REGISTRY, SENTENCE_REGISTRY, FIGURE_TEXT_REGISTRY):
+        hits = [(rel, sha, m.group(0)) for (rel, sha), status in _read_registry(registry).items()
+                for m in [_LINE_LOCATOR.search(status)] if m]
+        assert not hits, f"{registry.name}: registry reasons carry line locators: {hits}"
+
+
+#: What names the muon-cost ledger: its document, data files and schemas, its module, its generator,
+#: or the word muon-cost.
+_MUON_COST_NAMES = re.compile(
+    r"MUON_COST\.md|muon_cost(?:_chain)?(?:\.schema)?\.(?:csv|json)"
+    r"|openmucf[./]mucost|generate_mucost|muon-cost",
+    re.IGNORECASE,
+)
+
+
+def test_a_page_naming_the_muon_cost_ledger_is_a_claim_path():
+    """A top-level or ``docs/`` markdown page that names the muon-cost ledger is in :data:`CLAIM_PATHS`.
+
+    The claim paths are the prose homes of the ledger's claims. A hand-written page outside them that comes
+    to match :data:`_MUON_COST_NAMES` fails this test until it joins them.
+    """
+    found = [*REPO.glob("*.md"), *(REPO / "docs").glob("*.md")]
+    pages = sorted(p.relative_to(REPO).as_posix() for p in found)
+    assert "CONTRIBUTING.md" in pages and "docs/index.md" in pages
+    naming = [rel for rel in pages if rel not in CLAIM_PATHS
+              and _MUON_COST_NAMES.search((REPO / rel).read_text(encoding="utf-8"))]
+    assert not naming, f"pages that name the muon-cost ledger but are not claim paths: {naming}"
 
 
 if __name__ == "__main__":
