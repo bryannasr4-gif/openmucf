@@ -1985,12 +1985,16 @@ def test_compose_refuses_what_it_must(table):
         beam.compose(0.5, "nowhere", "primary", "drill")
     with pytest.raises(BasisError, match="must advance the chain"):
         beam.compose(0.5, beam.stage, "primary", "drill")
+    late = beam.compose(0.5, "transported", "primary", "drill")
+    with pytest.raises(BasisError, match="must advance the chain"):
+        late.compose(0.5, "captured", "primary", "drill")
     with pytest.raises(BasisError, match="unknown evidence_status"):
         beam.compose(0.5, mucost.TERMINAL_STAGE, "rumour", "drill")
-    for factor in (0.0, 1.5):
+    for factor in (0.0, math.nextafter(1.0, 2.0), 1.5):
         with pytest.raises(BasisError, match=re.escape("must lie in (0, 1]")):
             beam.compose(factor, mucost.TERMINAL_STAGE, "primary", "drill")
     assert beam.compose(0.5, mucost.TERMINAL_STAGE, "primary", "drill").stage == mucost.TERMINAL_STAGE
+    assert beam.compose(1.0, mucost.TERMINAL_STAGE, "primary", "drill").value_GeV == beam.value_GeV
 
 
 def test_compose_path_refuses_a_return_to_a_coordinate(tmp_path):
@@ -2000,6 +2004,10 @@ def test_compose_path_refuses_a_return_to_a_coordinate(tmp_path):
         dict(CHAIN_CONTROL, edge_id="syn_out"),
         dict(CHAIN_CONTROL, edge_id="syn_back", from_numeraire="electrical_minimal",
              to_numeraire=mucost.BEAM_KINETIC),
+        dict(CHAIN_CONTROL, edge_id="syn_on", from_numeraire="electrical_minimal",
+             to_numeraire="electrical_site"),
+        dict(CHAIN_CONTROL, edge_id="syn_to_min", from_numeraire="electrical_site",
+             to_numeraire="electrical_minimal"),
     ]
     syn = _load_chain(_write_chain(tmp_path, edges, "round_trip.csv"))
     start = mucost.ChainValue(
@@ -2009,3 +2017,5 @@ def test_compose_path_refuses_a_return_to_a_coordinate(tmp_path):
     assert mucost.compose_path(start, [syn["syn_out"]]).value.numeraire == "electrical_minimal"
     with pytest.raises(BasisError, match="a coordinate it has already left"):
         mucost.compose_path(start, [syn["syn_out"], syn["syn_back"]])
+    with pytest.raises(BasisError, match="a coordinate it has already left"):
+        mucost.compose_path(start, [syn["syn_out"], syn["syn_on"], syn["syn_to_min"]])
