@@ -11,6 +11,7 @@ constrains (the decay slope); its 95% credible interval should cover the truth a
 -- so THEIR intervals over-cover; lambda_n is the honestly data-constrained, calibration-testable one.)
 """
 
+import conftest
 import numpy as np
 import pytest
 
@@ -37,6 +38,7 @@ def test_interval_calibration_200_replicas():
         samples = likelihood.fit_spectrum(_T_EDGES, counts, num_warmup=300, num_samples=800, seed=i)
         lo, hi = np.percentile(samples["lambda_n"], [2.5, 97.5])
         covered += int(lo <= _LAMBDA_N_TRUE <= hi)
+        conftest.bound_jax_caches(i)
     frac = covered / _N_REPLICAS
     print(f"\nlambda_n 95% CI coverage: {covered}/{_N_REPLICAS} = {frac:.1%}")
     assert 0.88 <= frac <= 0.99, f"lambda_n 95% CI coverage {covered}/{_N_REPLICAS} = {frac:.1%}"

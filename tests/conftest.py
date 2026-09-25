@@ -1,8 +1,10 @@
-"""Session-level resource report for the test suite. Reports only -- asserts nothing, gates nothing.
+"""Session-level resource report for the test suite, and the jax cache bound of its slow MCMC loops.
+Neither asserts nor gates anything.
 
-WHY THIS EXISTS. The weekly `slow` job runs three long MCMC gates in ONE process: the SBC rank
-uniformity run (200 rounds x 2 chains), the sd-contraction refit, and the twin interval-calibration
-run (200 replicas). On 2026-08-24 the macos-15 leg of that job was lost 45 minutes into the suite;
+WHY THIS EXISTS. The weekly `slow` job runs its long MCMC tests in ONE process: the SBC rank
+uniformity run (200 rounds x 2 chains), the sd-contraction refit, the twin interval-calibration
+run (200 replicas), and the cache-bound comparison in `tests/test_jax_cache_bound.py`. On
+2026-08-24 the macos-15 leg of that job was lost 45 minutes into the suite;
 GitHub attributed it to "the hosted runner lost communication with the server. Anything in your
 workflow that terminates the runner process, starves it for CPU/Memory, or blocks its network
 access can cause this error." Nothing in the suite reported how much memory it had used, so the
@@ -59,3 +61,24 @@ def pytest_terminal_summary(terminalreporter) -> None:
     if total:
         line += f" of {total / gib:.2f} GiB physical ({100.0 * peak / total:.1f}%)"
     terminalreporter.write_line(line)
+
+
+#: Fits between two clears of jax's caches in the slow MCMC loops (see :func:`bound_jax_caches`). A
+#: smaller interval holds less memory and costs more wall time.
+JAX_CACHE_CLEAR_EVERY = 10
+
+
+def bound_jax_caches(fit_index: int) -> bool:
+    """Clear jax's caches after the fit `fit_index` (counted from 0) that ends a block of
+    `JAX_CACHE_CLEAR_EVERY` fits, and return whether it cleared.
+
+    Each fit in the slow loops runs a new numpyro sampler, and in a loop of such fits the memory the
+    process holds grows until jax's caches are cleared. `tests/test_jax_cache_bound.py` checks that
+    clearing leaves the draws bit-identical and that both slow loops call this once per fit.
+    """
+    if (fit_index + 1) % JAX_CACHE_CLEAR_EVERY:
+        return False
+    import jax
+
+    jax.clear_caches()
+    return True
