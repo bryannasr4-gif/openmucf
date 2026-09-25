@@ -585,7 +585,7 @@ c7ac321819e68b37e41a65a70b82f531666b57ff	FORMAT_SPEC.md	REGISTERED: 16, 329, 344
 c89a45c41b66a2bd13ff62e33fb5b164aee0b8dd	FORMAT_SPEC.md	REGISTERED: 1, 6 -- '1e6/s' in the retracted example this paragraph quotes as history
 cd541c40cf9e8b9728f2b6a546e4300e64669f26	FORMAT_SPEC.md	REGISTERED: Two -- the requirements the bullets below state
 d19d2a2a7dc3a96172da28e54ba9f04dc249f04d	FORMAT_SPEC.md	REGISTERED: two -- 'two callers': any pair of callers that build the same table in different orders
-d3f805c73cd0573072c1523d4d9454e0f04a03f3	FORMAT_SPEC.md	REGISTERED: 1, 94 -- an example #VALIDITY value, as the reference tests' fixture header writes it (tests/test_g4spec.py): an illustration of the NAME:RANGE form, not a shipped table's range
+d3f805c73cd0573072c1523d4d9454e0f04a03f3	FORMAT_SPEC.md	REGISTERED: 1, 94 -- an example #VALIDITY value, as the reference tests' fixture header writes it (tests/test_g4spec.py): an illustration of the NAME:RANGE form
 d472f7736f48aa0813f1fbb824c27f8d92225402	FORMAT_SPEC.md	REGISTERED: zero, 9 -- 'zero or more assignments' after the model name; 9 closes the digit range of the MODEL pattern, a consumer rule no reader checks (section 2.2 leaves #FALLBACK a single string to the reader)
 d5c6d30f9a3aa8fe8c1a69a262cc5f2c0659651d	FORMAT_SPEC.md	REGISTERED: two -- 'two evaluations of the same (Z, A)': the least number that can coexist
 d76cb388c3f699ae4bf45b4623fb81115170eaa0	FORMAT_SPEC.md	REGISTERED: one -- 'for one that declares only one of them': a pronoun and the single key column of such a table
