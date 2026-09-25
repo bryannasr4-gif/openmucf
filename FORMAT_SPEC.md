@@ -584,7 +584,7 @@ Under each of these conventions, a consumer that reads only the record keyed by 
 
 **Line length is not bounded by this format**, and deliberately carries no error code: a dataset is
 a generated, audited artifact, not untrusted network input, so a
-resource cap would buy nothing and add a seventeenth code. A reader that must run in a fixed memory
+resource cap would buy nothing and add a code. A reader that must run in a fixed memory
 budget should impose its own limit and report it as its own error, not as one of these.
 
 ---
