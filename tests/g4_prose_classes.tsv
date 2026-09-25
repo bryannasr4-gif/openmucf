@@ -33,3 +33,4 @@ cross-reference	*	(?:§|\bsections?|\bSections?|\bLayers?|\blines?|\bFig\.|\bTab
 markdown-numbering	*	^#{1,6} \d+\.|^\s*\d+\. \S	a heading or ordered-list number: markdown structure	## 3. Two disclosures about the shipped tables
 unit-exponent	*	⁻[¹²³]	the exponent of an inverse unit (`ns⁻¹`, `µs⁻¹`)	in units of ns⁻¹
 identifier-digit	*	\b[^\W\d]+\d+[^\W\d]*\b	a digit inside an identifier -- a variable, coefficient name, file stem or experiment name (`b0a`, `a2ze`, `zeff2`, `ω_s0`, `mu2e`, `T1`) -- the residue after the named kinds above; a digit glued to letters names something and counts nothing	r1     = zeff[max(min(Z, zmax), zmin)]
+joss-metadata-index	paper/*/paper.md	^\s*(?:- )?(?:affiliation|index): \d+$	the index a JOSS paper's metadata joins an author to an affiliation by: a label, not a quantity	    affiliation: 1

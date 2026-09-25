@@ -50,6 +50,7 @@ PROSE_PATHS = (
     "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
     "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md",
     "cpp/transport/README.md", "DATASET_D2.md",
+    "paper/muonic-data/paper.md",
 )
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
@@ -57,6 +58,10 @@ REGISTRY_FREE = ("cpp/README.md",)
 
 def test_t74_transport_readme_enumerated():
     assert "cpp/transport/README.md" in PROSE_PATHS
+
+
+def test_t74_paper_draft_enumerated():
+    assert "paper/muonic-data/paper.md" in PROSE_PATHS
 
 
 CLASSES = pathlib.Path(__file__).with_name("g4_prose_classes.tsv")
@@ -193,6 +198,7 @@ def pin_table() -> list[Pin]:
     table.append(Pin("F-3 maximum relative difference, the document's line", "DATASET_D1.md",
                      check_f3.DOCUMENT_MAX_REL.pattern, (1,)))
     table.extend(internal_pins(pins, check_f3))
+    table.extend(paper_pins(pins, check_f3))
     # The D3 document's pins, as its own test module builds them.
     for what, path, pattern, groups, expected in d3.document_pins():
         table.append(Pin(what, path, pattern, groups, expected))
@@ -340,6 +346,55 @@ def internal_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
         Pin("error codes the format defines, the changelog's count", "CHANGELOG.md",
             r"\*\*(\w+) exact error codes\*\*", (1,), error_codes),
         *d3_seam_size_pins(vendored_readme),
+    ]
+
+
+PAPER = "paper/muonic-data/paper.md"
+
+
+def _d3_expected(what: str) -> object:
+    """The value `tests/test_g4d3.py` computes for the `DATASET_D3.md` pin it labels `what` --
+    looked up, never retyped."""
+    hits = [row[4] for row in d3.document_pins() if row[0] == what]
+    assert len(hits) == 1, (what, len(hits))
+    return hits[0]
+
+
+def paper_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
+    """The draft paper's numbers. Each restates a value another pin already holds its home
+    document to; every `expected` is looked up from the module that computes it."""
+    max_ulp = check_f3.document_figures(REPO / "DATASET_D1.md")[3]
+    swept = _computed(pins, "swept points at zero ulp")
+    return [
+        Pin("capture record count, the paper", PAPER,
+            r"(\d+) `\{Z, A, rate, error\}` records", (1,), _computed(pins, "capture record count")),
+        Pin("effective-charge entries, the paper", PAPER,
+            r"records and a (\d+)-value effective-charge table", (1,),
+            _computed(pins, "effective-charge record count")),
+        Pin("swept points, the paper's box", PAPER,
+            r"over a (\d+)-point box", (1,), swept),
+        Pin("swept points returning a negative rate, the paper", PAPER,
+            r"negative capture rates on (\d+) of the \d+ swept points", (1,),
+            _computed(pins, "swept points returning a negative rate")),
+        Pin("swept points, the paper's finding", PAPER,
+            r"negative capture rates on \d+ of the (\d+) swept points", (1,), swept),
+        Pin("F-3 maximum, the paper", PAPER,
+            r"moves its result by up to (\d+) ulp", (1,), max_ulp),
+        Pin("the D3 tolerance factor, the paper", PAPER,
+            r"at a tolerance of (\d+) times the printed standard", (1,),
+            _d3_expected("the tolerance factor")),
+        Pin("D3 gated rows, the paper", PAPER,
+            r"of the (\d+) gated rows, the line MuDirac prints", (1,),
+            _d3_expected("gated rows in the projection")),
+        Pin("D3 rows whose solver line lies within the band, the paper", PAPER,
+            r"the line MuDirac prints lies within it for (\d+),", (1,),
+            _d3_expected("rows whose solver line lies within the band")),
+        Pin("D3 rows whose shell difference lies within the band, the paper", PAPER,
+            r"the shell difference the patched cascade receives for (\d+),", (1,),
+            _d3_expected("rows whose shell difference lies within the band")),
+        Pin("D3 rows whose unpatched cascade lies within the band, the paper", PAPER,
+            r"the energy the unpatched cascade emits for (\d+)\.", (1,),
+            _d3_expected("rows whose unpatched cascade lies within the band")),
     ]
 
 

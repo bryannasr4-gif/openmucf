@@ -233,7 +233,8 @@ jobs:
         run: ctest --test-dir build -C Release -V
 
   paper:
-    # JOSS paper artifact. BLOCKING: paper/paper.md must compile to paper.pdf before merge.
+    # JOSS paper artifacts. BLOCKING: paper/paper.md and paper/muonic-data/paper.md must each compile
+    # to paper.pdf beside it before merge.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -247,3 +248,13 @@ jobs:
         with:
           name: paper
           path: paper/paper.pdf
+      - name: Build the muonic-data draft paper PDF
+        uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: joss
+          paper-path: paper/muonic-data/paper.md
+      - name: Upload the muonic-data draft paper PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-muonic-data
+          path: paper/muonic-data/paper.pdf
