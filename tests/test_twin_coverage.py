@@ -1,9 +1,9 @@
 """Slow gate: interval calibration of the counts-level likelihood (200 seeded replicas).
 
-Marked `slow`: deselected from the default `pytest -q` (and CI) by the `addopts = "-m 'not slow'"` in
-pyproject.toml; run it explicitly with `pytest -m slow -q` (~9 min). It is a gate executed
-deliberately rather than continuously -- NOT a CI job (the coverage run is too long for CI, and its
-Poisson replicas are deterministic only on a fixed platform).
+Marked `slow`: deselected from the default `pytest -q` by the `addopts = "-m 'not slow'"` in
+pyproject.toml; run it explicitly with `pytest -m slow -q` (~9 min). CI runs it in the `slow` job on
+ubuntu-latest and macos-15, which runs on the weekly schedule or on manual dispatch and not on push.
+Its Poisson replicas are deterministic only on a fixed platform.
 
 What it checks: the DISAPPEARANCE RATE lambda_n is the quantity a delta-pulse counts histogram actually
 constrains (the decay slope); its 95% credible interval should cover the truth at ~the nominal rate.
@@ -38,4 +38,5 @@ def test_interval_calibration_200_replicas():
         lo, hi = np.percentile(samples["lambda_n"], [2.5, 97.5])
         covered += int(lo <= _LAMBDA_N_TRUE <= hi)
     frac = covered / _N_REPLICAS
+    print(f"\nlambda_n 95% CI coverage: {covered}/{_N_REPLICAS} = {frac:.1%}")
     assert 0.88 <= frac <= 0.99, f"lambda_n 95% CI coverage {covered}/{_N_REPLICAS} = {frac:.1%}"
