@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed -- the slow MCMC loops clear jax's caches as they run (2026-09-25)
+
+- **The SBC loop in `tests/test_calibrate_sbc.py` and the replica loop in `tests/test_twin_coverage.py` clear jax's caches after a fixed block of fits (`bound_jax_caches` in `tests/conftest.py`)**, so the memory those caches hold in the weekly `slow` job is released block by block instead of accumulating across the loop; `tests/test_jax_cache_bound.py` checks that both loops call it once per fit and that clearing leaves the draws bit-identical, at reduced sampler settings on every run and, in the `slow` job, at the loops' own settings and seeds over the first fits of each loop.
+
 ### Fixed -- refusals the muon-cost code enforced without a drill, and the claim guard's loose ends (2026-09-25)
 
 - **Refusals the muon-cost code enforced without a drill are now drilled.** The `load_muon_cost` row rules the claim registry recorded as undrilled, a bad `evidence_status` in the edge table, the refusals of `ChainValue.compose` and the return-to-a-coordinate refusal of `compose_path` were enforced in the body; each is now fed the input that breaks it, and the off-chain refusal's test asserts its whole message.
