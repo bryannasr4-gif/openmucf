@@ -65,3 +65,35 @@ def test_file_sha256_lf_normalization(tmp_path):
     lf.write_bytes(b"alpha\nbeta\ngamma\n")
     crlf.write_bytes(b"alpha\r\nbeta\r\ngamma\r\n")
     assert provenance.file_sha256(lf) == provenance.file_sha256(crlf)
+
+
+def test_manifest_pins_the_first_order_indices_and_the_interaction_share():
+    """The first-order Sobol index of each input whose total-order index is pinned, and the ST - S1
+    share of the top X_mu driver, are manifest values of their own."""
+    ids = {e["id"] for e in json.loads(MANIFEST.read_text(encoding="utf-8"))["entries"]}
+    for st_id in sorted(i for i in ids if i.startswith(("sobol_xmu_ST_", "sobol_qnet_ST_"))):
+        assert st_id.replace("_ST_", "_S1_") in ids, st_id
+    assert "sobol_xmu_interaction_R" in ids
+
+
+def test_each_sobol_index_is_pinned_to_its_own_cell(tmp_path):
+    """A first-order and a total-order value of one row, swapped between their entries, fail the check.
+
+    Both indices sit in the same table row, so an entry anchored on the whole row would accept the other
+    index's value; each entry's matched text must be its own cell.
+    """
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    by_id = {e["id"]: e for e in manifest["entries"]}
+    st_ids = [i for i in sorted(by_id) if i.startswith(("sobol_xmu_ST_", "sobol_qnet_ST_"))]
+    pairs = [(i, i.replace("_ST_", "_S1_")) for i in st_ids]
+    assert pairs
+    findings = (REPO_ROOT / "FINDINGS.md").read_text(encoding="utf-8")
+    (tmp_path / "FINDINGS.md").write_text(findings, encoding="utf-8")
+    for st_id, s1_id in pairs:
+        assert by_id[st_id]["value"] != by_id[s1_id]["value"], (st_id, s1_id)
+        for target, other in ((st_id, s1_id), (s1_id, st_id)):
+            swapped = json.loads(json.dumps(manifest))
+            next(e for e in swapped["entries"] if e["id"] == target)["value"] = by_id[other]["value"]
+            (tmp_path / "FINDINGS_MANIFEST.json").write_text(json.dumps(swapped), encoding="utf-8")
+            failures = provenance.check_manifest(tmp_path / "FINDINGS_MANIFEST.json", repo_root=tmp_path)
+            assert [f for f in failures if f.startswith(f"{target}:")], (target, failures)
