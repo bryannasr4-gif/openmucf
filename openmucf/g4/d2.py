@@ -19,11 +19,17 @@ MEASUREMENT_COLUMNS = (
     "observable", "normalization", "reported_value", "reported_uncertainty", "units",
     "efficiency_correction", "attenuation_correction", "cascade_correction",
     "transfer_assumption", "stopping_model", "covariance_reference", "primary_read",
-    "inferable_parameter", "qualification", "missing_inputs",
+    "inferable_parameter", "qualification", "missing_inputs", "capture_branch_correction",
 )
 CORRECTION_COLUMNS = (
     "efficiency_correction", "attenuation_correction", "cascade_correction", "transfer_assumption",
 )
+METHOD_CORRECTIONS = {
+    "lifetime": ("efficiency_correction", "attenuation_correction", "capture_branch_correction"),
+    "xray": ("efficiency_correction", "attenuation_correction", "cascade_correction"),
+    "other": ("efficiency_correction", "attenuation_correction", "cascade_correction",
+              "capture_branch_correction"),
+}
 RECORDS = (
     "d2-initial-capture-general", "d2-selector-oxides", "d2-selector-fluorides",
     "d2-selector-chlorides", "d2-selector-other-compounds", "d2-selector-alloys",
@@ -188,7 +194,7 @@ def classify(row: dict[str, str]) -> tuple[str, frozenset[str]]:
     raise ValueError(f"unidentifiable class: {formula}")
 
 
-def gate_reason(row: dict[str, str], source: dict[str, str]) -> str:
+def gate_reason(row: dict[str, str], source: dict[str, str], *, by_method: bool = False) -> str:
     if source["access"] != "AVAILABLE" or source["primary_read"] != "true" or source["kind"] != "measurement":
         return "access"
     parameter = row["inferable_parameter"]
@@ -204,9 +210,12 @@ def gate_reason(row: dict[str, str], source: dict[str, str]) -> str:
     population = qual.get("population", ("unstated", ""))[0]
     if population != "all_stops":
         return f"population {population}"
-    if qual.get("method", ("unstated", ""))[0] == "unstated":
+    method = qual.get("method", ("unstated", ""))[0]
+    if method == "unstated":
         return "method undocumented"
-    for field in CORRECTION_COLUMNS:
+    if by_method and method not in METHOD_CORRECTIONS:
+        raise ValueError(f"unknown method: {method}")
+    for field in METHOD_CORRECTIONS[method] if by_method else CORRECTION_COLUMNS:
         if not row[field]:
             return f"correction undocumented: {field}"
     is_hydrogen_limit = parameter == "P(H)" and row["reported_value"].startswith("<")
@@ -272,6 +281,22 @@ def compare_ratio(predicted: Fraction, value: str, uncertainty: str) -> str:
     else:
         sigma = decimal_fraction(uncertainty.removeprefix("+-"))
     return "inside" if abs(predicted - observed) <= 3 * sigma else "outside"
+
+
+def printed_uncertainty(value: str, uncertainty: str) -> str:
+    match = re.fullmatch(r"\((\d+)\)", uncertainty)
+    if match is None:
+        return uncertainty
+    if re.fullmatch(r"\d+(\.\d+)?", value) is None:
+        raise ValueError(f"unsupported printed value: {value}")
+    places = len(value.partition(".")[2])
+    return str(Decimal(match[1]).scaleb(-places))
+
+
+def screen_ratio(predicted: Fraction, value: str, uncertainty: str) -> str:
+    if not uncertainty and not value.startswith("<"):
+        return ""
+    return compare_ratio(predicted, value, printed_uncertainty(value, uncertainty))
 
 
 def load_csv(path: Path, columns: tuple[str, ...]) -> list[dict[str, str]]:
