@@ -118,8 +118,11 @@ def compare() -> None:
     measurements = d2.load_measurements(reference / "measurements.csv", sources)
     output: list[dict[str, str]] = []
     reasons: Counter[str] = Counter()
+    method_reasons: Counter[str] = Counter()
+    screens: Counter[str] = Counter()
     for row in measurements:
         reason = d2.gate_reason(row, sources[row["source_id"]])
+        method_reason = d2.gate_reason(row, sources[row["source_id"]], by_method=True)
         try:
             record, _ = d2.classify(row)
         except ValueError:
@@ -127,6 +130,7 @@ def compare() -> None:
         qual = d2.qualification(row["qualification"])
         stage = qual.get("stage", ("unstated", ""))[0]
         population = qual.get("population", ("unstated", ""))[0]
+        method = qual.get("method", ("unstated", ""))[0]
         parameter = row["inferable_parameter"]
         pair = re.fullmatch(r"A\(([A-Za-z]+)/([A-Za-z]+)\)", parameter)
         z1 = z2 = ""
@@ -138,8 +142,15 @@ def compare() -> None:
             predicted = d2.h_share(row["material_formula"])
         if not reason and predicted is None:
             raise ValueError(f"{row['record_id']}: gated row has no selector prediction")
+        if not method_reason and predicted is None:
+            raise ValueError(f"{row['record_id']}: method-gated row has no selector prediction")
         result = d2.compare_ratio(predicted, row["reported_value"], row["reported_uncertainty"]) if not reason and predicted is not None else ""
+        method_result = d2.compare_ratio(predicted, row["reported_value"], row["reported_uncertainty"]) if not method_reason and predicted is not None else ""
+        screen = d2.screen_ratio(predicted, row["reported_value"], row["reported_uncertainty"]) if predicted is not None else ""
         reasons[reason or "gated"] += 1
+        method_reasons[method_reason or "gated"] += 1
+        if screen:
+            screens[screen] += 1
         output.append({
             "record_id": row["record_id"], "source_id": row["source_id"], "class": record,
             "gated": "false" if reason else "true", "reason": reason,
@@ -147,14 +158,21 @@ def compare() -> None:
             "quantity": parameter or row["observable"], "z1": z1, "z2": z2,
             "value_src": row["reported_value"], "sigma_src": row["reported_uncertainty"],
             "value_g4": repr(float(predicted)) if predicted is not None else "", "result": result,
+            "method": method, "method_gated": "false" if method_reason else "true",
+            "method_reason": method_reason, "method_result": method_result, "screen": screen,
         })
     path = ROOT / "data/g4/d2/selector_vs_primary.csv"
     write_csv(path, ("record_id", "source_id", "class", "gated", "reason", "stage",
                      "population", "quantity", "z1", "z2", "value_src", "sigma_src",
-                     "value_g4", "result"), output)
-    print(f"comparison_rows={len(output)} gated={reasons['gated']} out={path.relative_to(ROOT)}")
+                      "value_g4", "result", "method", "method_gated", "method_reason",
+                      "method_result", "screen"), output)
+    print(f"comparison_rows={len(output)} gated={reasons['gated']} method_gated={method_reasons['gated']} out={path.relative_to(ROOT)}")
     for reason, count in sorted(reasons.items()):
         print(f"reason={reason} rows={count}")
+    for reason, count in sorted(method_reasons.items()):
+        print(f"method_reason={reason} rows={count}")
+    for screen, count in sorted(screens.items()):
+        print(f"screen={screen} rows={count}")
 
 
 def main() -> None:

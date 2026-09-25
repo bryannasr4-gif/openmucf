@@ -1,118 +1,118 @@
-record_id,source_id,class,gated,reason,stage,population,quantity,z1,z2,value_src,sigma_src,value_g4,result
-Stanislaus1987a-Table 1-17-3,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Na/O),11,8,1.00,0.05,2.455357142857143,
-Stanislaus1987a-Table 1-17-4,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mg/O),12,8,0.93,0.05,2.6785714285714284,
-Stanislaus1987a-Table 1-17-5,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Al/O),13,8,0.94,0.03,2.901785714285714,
-Stanislaus1987a-Table 1-17-6,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Si/O),14,8,0.98,0.03,3.1249999999999996,
-Stanislaus1987a-Table 1-17-7,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Si/O),14,8,0.90,0.03,3.1249999999999996,
-Stanislaus1987a-Table 1-17-8,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(P/O),15,8,0.97,0.03,3.3482142857142856,
-Stanislaus1987a-Table 1-17-9,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ca/O),20,8,1.69,0.09,4.4642857142857135,
-Stanislaus1987a-Table 1-17-10,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sc/O),21,8,2.23,0.25,4.687499999999999,
-Stanislaus1987a-Table 1-17-11,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ti/O),22,8,2.65,0.15,4.910714285714286,
-Stanislaus1987a-Table 1-17-12,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ti/O),22,8,2.71,0.14,4.910714285714286,
-Stanislaus1987a-Table 1-17-13,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(V/O),23,8,3.04,0.16,5.133928571428571,
-Stanislaus1987a-Table 1-17-14,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cr/O),24,8,3.15,0.13,5.357142857142857,
-Stanislaus1987a-Table 1-17-15,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mn/O),25,8,2.89,0.14,5.580357142857142,
-Stanislaus1987a-Table 1-17-16,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mn/O),25,8,3.28,0.15,5.580357142857142,
-Stanislaus1987a-Table 1-17-17,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Fe/O),26,8,3.48,0.24,5.803571428571428,
-Stanislaus1987a-Table 1-17-18,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Fe/O),26,8,2.36,0.13,5.803571428571428,
-Stanislaus1987a-Table 1-17-19,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Co/O),27,8,3.09,0.15,6.0267857142857135,
-Stanislaus1987a-Table 1-17-20,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ni/O),28,8,2.35,0.19,6.249999999999999,
-Stanislaus1987a-Table 1-17-21,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cu/O),29,8,2.20,0.25,6.473214285714285,
-Stanislaus1987a-Table 1-17-22,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Zn/O),30,8,3.17,0.16,6.696428571428571,
-Stanislaus1987a-Table 1-17-23,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Y/O),39,8,3.17,0.42,8.705357142857142,
-Stanislaus1987a-Table 1-17-24,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Zr/O),40,8,2.89,0.13,8.928571428571427,
-Stanislaus1987a-Table 1-18-3,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Nb/O),41,8,3.44,0.20,9.151785714285714,
-Stanislaus1987a-Table 1-18-4,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Nb/O),41,8,3.57,0.19,9.151785714285714,
-Stanislaus1987a-Table 1-18-5,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mo/O),42,8,3.08,0.14,9.374999999999998,
-Stanislaus1987a-Table 1-18-6,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mo/O),42,8,3.86,0.18,9.374999999999998,
-Stanislaus1987a-Table 1-18-7,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ag/O),47,8,3.95,0.52,10.491071428571427,
-Stanislaus1987a-Table 1-18-8,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cd/O),48,8,2.59,0.21,10.714285714285714,
-Stanislaus1987a-Table 1-18-9,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sn/O),50,8,2.74,0.13,11.160714285714285,
-Stanislaus1987a-Table 1-18-10,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sn/O),50,8,3.40,0.16,11.160714285714285,
-Stanislaus1987a-Table 1-18-11,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sb/O),51,8,3.64,0.24,11.383928571428571,
-Stanislaus1987a-Table 1-18-12,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Te/O),52,8,3.30,0.15,11.607142857142856,
-Stanislaus1987a-Table 1-18-13,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ba/O),56,8,3.16,0.15,12.499999999999998,
-Stanislaus1987a-Table 1-18-14,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ce/O),58,8,4.89,0.27,12.94642857142857,
-Stanislaus1987a-Table 1-18-15,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pr/O),59,8,5.00,0.44,13.169642857142856,
-Stanislaus1987a-Table 1-18-16,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sm/O),62,8,6.24,0.50,13.839285714285714,
-Stanislaus1987a-Table 1-18-17,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Hg/O),80,8,4.88,0.42,17.857142857142854,
-Stanislaus1987a-Table 1-18-18,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,4.30,0.24,18.303571428571427,
-Stanislaus1987a-Table 1-18-19,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,4.65,0.25,18.303571428571427,
-Stanislaus1987a-Table 1-18-20,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,4.19,0.59,18.303571428571427,
-Stanislaus1987a-Table 1-18-21,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Bi/O),83,8,6.15,0.53,18.52678571428571,
-Suzuki1980-Table 1-7-3,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(C/O),6,8,0.43,0.02,1.3392857142857142,
-Suzuki1980-Table 1-7-4,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Na/O),11,8,0.87,0.02,2.455357142857143,
-Suzuki1980-Table 1-7-5,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mg/O),12,8,0.80,0.02,2.6785714285714284,
-Suzuki1980-Table 1-7-6,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Al/O),13,8,0.84,0.03,2.901785714285714,
-Suzuki1980-Table 1-7-7,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Si/O),14,8,0.96,0.04,3.1249999999999996,
-Suzuki1980-Table 1-7-8,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(P/O),15,8,0.87,0.03,3.3482142857142856,
-Suzuki1980-Table 1-7-9,Suzuki1980,d2-selector-other-compounds,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ca/O),20,8,1.49,0.06,4.4642857142857135,
-Suzuki1980-Table 1-7-10,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ti/O),22,8,2.17,0.11,4.910714285714286,
-Suzuki1980-Table 1-7-11,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cr/O),24,8,2.63,0.13,5.357142857142857,
-Suzuki1980-Table 1-7-12,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cr/O),24,8,2.96,0.20,5.357142857142857,
-Suzuki1980-Table 1-7-13,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mn/O),25,8,3.00,0.17,5.580357142857142,
-Suzuki1980-Table 1-7-14,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cu/O),29,8,4.06,0.23,6.473214285714285,
-Suzuki1980-Table 1-7-15,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Zn/O),30,8,2.39,0.10,6.696428571428571,
-Suzuki1980-Table 1-7-16,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ge/O),32,8,2.24,0.12,7.142857142857142,
-Suzuki1980-Table 1-7-17,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ge/O),32,8,2.41,0.13,7.142857142857142,
-Suzuki1980-Table 1-7-18,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cd/O),48,8,1.93,0.07,10.714285714285714,
-Suzuki1980-Table 1-7-19,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sn/O),50,8,2.15,0.11,11.160714285714285,
-Suzuki1980-Table 1-7-20,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ba/O),56,8,2.27,0.09,12.499999999999998,
-Suzuki1980-Table 1-7-21,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Nd/O),60,8,4.13,0.29,13.392857142857142,
-Suzuki1980-Table 1-7-22,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Hg/O),80,8,3.75,0.29,17.857142857142854,
-Suzuki1980-Table 1-7-23,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,3.87,0.29,18.303571428571427,
-Suzuki1980-Table 1-7-24,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,3.21,0.23,18.303571428571427,
-Baijal1962OSTI-Table IV-55-3,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.26,0.023,,
-Baijal1962OSTI-Table IV-55-4,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.77,0.023,,
-Baijal1962OSTI-Table IV-55-5,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.34,0.032,,
-Baijal1962OSTI-Table IV-55-6,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.921,0.023,,
-Baijal1962OSTI-Table IV-55-7,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.079,0.023,,
-Baijal1962OSTI-Table IV-55-8,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,11.66,3.39,,
-Baijal1962OSTI-Table IV-55-9,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.51,0.015,,
-Baijal1962OSTI-Table IV-55-10,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.27,0.024,,
-Baijal1962OSTI-Table IV-55-11,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,1.89,0.18,,
-Baijal1962OSTI-Table IV-55-12,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.59,0.015,,
-Baijal1962OSTI-Table IV-55-13,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.36,0.020,,
-Baijal1962OSTI-Table IV-55-14,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,1.64,0.10,,
-Baijal1962OSTI-Table IV-55-15,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.66,0.019,,
-Baijal1962OSTI-Table IV-55-16,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.23,0.027,,
-Baijal1962OSTI-Table IV-55-17,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,2.87,0.35,,
-Baijal1962OSTI-Table IV-55-18,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.86,0.019,,
-Baijal1962OSTI-Table IV-55-19,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.14,0.019,,
-Baijal1962OSTI-Table IV-55-20,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,6.14,0.85,,
-Baijal1962OSTI-Table IV-55-21,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.65,0.012,,
-Baijal1962OSTI-Table IV-55-22,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.35,0.012,,
-Baijal1962OSTI-Table IV-55-23,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,1.86,0.096,,
-Baijal1962OSTI-Table IV-55-24,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.82,0.020,,
-Baijal1962OSTI-Table IV-55-25,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.18,0.020,,
-Baijal1962OSTI-Table IV-55-26,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,4.56,0.53,,
-Baijal1962OSTI-Table V-56-3,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.34,0.032,,
-Baijal1962OSTI-Table V-56-4,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,11.66,3.39,,
-Baijal1962OSTI-Table V-56-5,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,1.89,0.18,,
-Baijal1962OSTI-Table V-56-6,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,1.64,0.10,,
-Baijal1962OSTI-Table V-56-7,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,2.87,0.35,,
-Baijal1962OSTI-Table V-56-8,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,6.14,0.85,,
-Baijal1962OSTI-Table V-56-9,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,1.86,0.096,,
-Baijal1962OSTI-Table V-56-10,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,4.56,0.53,,
-Baijal1962OSTI-Result text-31-1,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.163,,,
-Baijal1962OSTI-Result text-31-2,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,51%,,,
-Mausner1975-Result text-3-1,Mausner1975,d2-selector-chlorides,false,population unstated,terminal,unstated,A(K/Cl),19,17,1.16,0.03,1.6934046345811051,
-Mausner1975-Result text-3-2,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Ca/S),20,16,1.57,0.04,1.25,
-Mausner1975-Result text-4-1,Mausner1975,d2-selector-chlorides,false,population unstated,terminal,unstated,A(Na/Cl),11,17,0.68,0.04,0.9803921568627451,
-Mausner1975-Result text-4-2,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Na/Cl),11,17,0.73,0.04,0.9803921568627451,
-Mausner1975-Result text-4-3,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Ca/S),20,16,1.57,0.04,1.25,
-Mausner1975-Result text-4-4,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Ca/S),20,16,1.83,0.06,1.25,
-Yoshida2016-Table 1-116-3,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.593,(49),1.3392857142857142,
-Yoshida2016-Table 1-116-4,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.649,(32),1.3392857142857142,
-Yoshida2016-Table 1-116-5,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.621,(29),1.3392857142857142,
-Yoshida2016-Table 1-116-6,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.632,(51),1.3392857142857142,
-Yoshida2016-Table 1-116-7,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.656,(36),1.3392857142857142,
-Yoshida2016-Table 1-116-8,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.644,(31),1.3392857142857142,
-Inagaki2021-Table 2-322-3,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.829,0.004,,
-Inagaki2021-Table 2-322-4,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.667,0.009,,
-Inagaki2021-Table 2-322-5,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.302,0.007,,
-Inagaki2021-Table 2-322-6,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.844,0.004,,
-Inagaki2021-Table 2-322-7,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.694,0.008,,
-Inagaki2021-Table 2-322-8,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.313,0.007,,
-Inagaki2021-Table 2-322-9,Inagaki2021,d2-selector-chlorides,false,not a per-atom ratio,terminal,unstated,other,,,0.068,0.003,,
-Inagaki2021-Table 3-323-3,Inagaki2021,d2-selector-chlorides,false,not a per-atom ratio,terminal,per_molecule,other,,,0.932,0.003,,
+record_id,source_id,class,gated,reason,stage,population,quantity,z1,z2,value_src,sigma_src,value_g4,result,method,method_gated,method_reason,method_result,screen
+Stanislaus1987a-Table 1-17-3,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Na/O),11,8,1.00,0.05,2.455357142857143,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-4,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mg/O),12,8,0.93,0.05,2.6785714285714284,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-5,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Al/O),13,8,0.94,0.03,2.901785714285714,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-6,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Si/O),14,8,0.98,0.03,3.1249999999999996,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-7,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Si/O),14,8,0.90,0.03,3.1249999999999996,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-8,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(P/O),15,8,0.97,0.03,3.3482142857142856,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-9,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ca/O),20,8,1.69,0.09,4.4642857142857135,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-10,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sc/O),21,8,2.23,0.25,4.687499999999999,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-11,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ti/O),22,8,2.65,0.15,4.910714285714286,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-12,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ti/O),22,8,2.71,0.14,4.910714285714286,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-13,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(V/O),23,8,3.04,0.16,5.133928571428571,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-14,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cr/O),24,8,3.15,0.13,5.357142857142857,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-15,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mn/O),25,8,2.89,0.14,5.580357142857142,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-16,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mn/O),25,8,3.28,0.15,5.580357142857142,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-17,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Fe/O),26,8,3.48,0.24,5.803571428571428,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-18,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Fe/O),26,8,2.36,0.13,5.803571428571428,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-19,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Co/O),27,8,3.09,0.15,6.0267857142857135,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-20,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ni/O),28,8,2.35,0.19,6.249999999999999,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-21,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cu/O),29,8,2.20,0.25,6.473214285714285,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-22,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Zn/O),30,8,3.17,0.16,6.696428571428571,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-23,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Y/O),39,8,3.17,0.42,8.705357142857142,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-17-24,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Zr/O),40,8,2.89,0.13,8.928571428571427,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-3,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Nb/O),41,8,3.44,0.20,9.151785714285714,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-4,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Nb/O),41,8,3.57,0.19,9.151785714285714,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-5,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mo/O),42,8,3.08,0.14,9.374999999999998,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-6,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mo/O),42,8,3.86,0.18,9.374999999999998,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-7,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ag/O),47,8,3.95,0.52,10.491071428571427,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-8,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cd/O),48,8,2.59,0.21,10.714285714285714,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-9,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sn/O),50,8,2.74,0.13,11.160714285714285,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-10,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sn/O),50,8,3.40,0.16,11.160714285714285,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-11,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sb/O),51,8,3.64,0.24,11.383928571428571,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-12,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Te/O),52,8,3.30,0.15,11.607142857142856,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-13,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ba/O),56,8,3.16,0.15,12.499999999999998,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-14,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ce/O),58,8,4.89,0.27,12.94642857142857,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-15,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pr/O),59,8,5.00,0.44,13.169642857142856,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-16,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sm/O),62,8,6.24,0.50,13.839285714285714,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-17,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Hg/O),80,8,4.88,0.42,17.857142857142854,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-18,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,4.30,0.24,18.303571428571427,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-19,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,4.65,0.25,18.303571428571427,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-20,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,4.19,0.59,18.303571428571427,,lifetime,true,,outside,outside
+Stanislaus1987a-Table 1-18-21,Stanislaus1987a,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Bi/O),83,8,6.15,0.53,18.52678571428571,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-3,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(C/O),6,8,0.43,0.02,1.3392857142857142,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-4,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Na/O),11,8,0.87,0.02,2.455357142857143,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-5,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mg/O),12,8,0.80,0.02,2.6785714285714284,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-6,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Al/O),13,8,0.84,0.03,2.901785714285714,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-7,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Si/O),14,8,0.96,0.04,3.1249999999999996,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-8,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(P/O),15,8,0.87,0.03,3.3482142857142856,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-9,Suzuki1980,d2-selector-other-compounds,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ca/O),20,8,1.49,0.06,4.4642857142857135,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-10,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ti/O),22,8,2.17,0.11,4.910714285714286,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-11,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cr/O),24,8,2.63,0.13,5.357142857142857,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-12,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cr/O),24,8,2.96,0.20,5.357142857142857,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-13,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Mn/O),25,8,3.00,0.17,5.580357142857142,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-14,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cu/O),29,8,4.06,0.23,6.473214285714285,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-15,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Zn/O),30,8,2.39,0.10,6.696428571428571,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-16,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ge/O),32,8,2.24,0.12,7.142857142857142,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-17,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ge/O),32,8,2.41,0.13,7.142857142857142,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-18,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Cd/O),48,8,1.93,0.07,10.714285714285714,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-19,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Sn/O),50,8,2.15,0.11,11.160714285714285,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-20,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Ba/O),56,8,2.27,0.09,12.499999999999998,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-21,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Nd/O),60,8,4.13,0.29,13.392857142857142,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-22,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Hg/O),80,8,3.75,0.29,17.857142857142854,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-23,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,3.87,0.29,18.303571428571427,,lifetime,true,,outside,outside
+Suzuki1980-Table 1-7-24,Suzuki1980,d2-selector-oxides,false,correction undocumented: cascade_correction,terminal,all_stops,A(Pb/O),82,8,3.21,0.23,18.303571428571427,,lifetime,true,,outside,outside
+Baijal1962OSTI-Table IV-55-3,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.26,0.023,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-4,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.77,0.023,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-5,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.34,0.032,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-6,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.921,0.023,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-7,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.079,0.023,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-8,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,11.66,3.39,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-9,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.51,0.015,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-10,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.27,0.024,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-11,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,1.89,0.18,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-12,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.59,0.015,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-13,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.36,0.020,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-14,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,1.64,0.10,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-15,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.66,0.019,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-16,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,0.23,0.027,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-17,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,2.87,0.35,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-18,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.86,0.019,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-19,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.14,0.019,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-20,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,6.14,0.85,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-21,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.65,0.012,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-22,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.35,0.012,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-23,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,1.86,0.096,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-24,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.82,0.020,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-25,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.18,0.020,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table IV-55-26,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,4.56,0.53,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table V-56-3,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,0.34,0.032,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table V-56-4,Baijal1962OSTI,,false,not a per-atom ratio,terminal,unstated,other,,,11.66,3.39,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table V-56-5,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,1.89,0.18,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table V-56-6,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,1.64,0.10,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table V-56-7,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,2.87,0.35,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table V-56-8,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,6.14,0.85,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table V-56-9,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,1.86,0.096,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Table V-56-10,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,4.56,0.53,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Result text-31-1,Baijal1962OSTI,d2-selector-oxides,false,not a per-atom ratio,terminal,unstated,other,,,0.163,,,,unstated,false,not a per-atom ratio,,
+Baijal1962OSTI-Result text-31-2,Baijal1962OSTI,d2-selector-other-compounds,false,not a per-atom ratio,terminal,unstated,other,,,51%,,,,unstated,false,not a per-atom ratio,,
+Mausner1975-Result text-3-1,Mausner1975,d2-selector-chlorides,false,population unstated,terminal,unstated,A(K/Cl),19,17,1.16,0.03,1.6934046345811051,,xray,false,population unstated,,outside
+Mausner1975-Result text-3-2,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Ca/S),20,16,1.57,0.04,1.25,,xray,false,population unstated,,outside
+Mausner1975-Result text-4-1,Mausner1975,d2-selector-chlorides,false,population unstated,terminal,unstated,A(Na/Cl),11,17,0.68,0.04,0.9803921568627451,,xray,false,population unstated,,outside
+Mausner1975-Result text-4-2,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Na/Cl),11,17,0.73,0.04,0.9803921568627451,,xray,false,population unstated,,outside
+Mausner1975-Result text-4-3,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Ca/S),20,16,1.57,0.04,1.25,,xray,false,population unstated,,outside
+Mausner1975-Result text-4-4,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Ca/S),20,16,1.83,0.06,1.25,,xray,false,population unstated,,outside
+Yoshida2016-Table 1-116-3,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.593,(49),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-4,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.649,(32),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-5,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.621,(29),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-6,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.632,(51),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-7,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.656,(36),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-8,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.644,(31),1.3392857142857142,,xray,false,population transfer_only,,outside
+Inagaki2021-Table 2-322-3,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.829,0.004,,,xray,false,not a per-atom ratio,,
+Inagaki2021-Table 2-322-4,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.667,0.009,,,xray,false,not a per-atom ratio,,
+Inagaki2021-Table 2-322-5,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.302,0.007,,,xray,false,not a per-atom ratio,,
+Inagaki2021-Table 2-322-6,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.844,0.004,,,xray,false,not a per-atom ratio,,
+Inagaki2021-Table 2-322-7,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.694,0.008,,,xray,false,not a per-atom ratio,,
+Inagaki2021-Table 2-322-8,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.313,0.007,,,xray,false,not a per-atom ratio,,
+Inagaki2021-Table 2-322-9,Inagaki2021,d2-selector-chlorides,false,not a per-atom ratio,terminal,unstated,other,,,0.068,0.003,,,xray,false,not a per-atom ratio,,
+Inagaki2021-Table 3-323-3,Inagaki2021,d2-selector-chlorides,false,not a per-atom ratio,terminal,per_molecule,other,,,0.932,0.003,,,xray,false,not a per-atom ratio,,

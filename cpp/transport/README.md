@@ -8,6 +8,8 @@ Each event is seeded from its own number, and each track it creates is written w
 
 `transport.py check` requires the unpatched build, the patched build with the dataset opt-in off and the patched build with the opt-in on and no profile selected to write identical records, and requires the records of each thread count the matrix names to be identical once sorted.
 
+On the `muonic_atom_helper` route the harness creates the target's muonic atom on the master thread before the run starts (setting `G4MUONIC_TRANSPORT_NO_PRECREATE` skips it): without that step, a run on several worker threads aborted with the exception `PART122` in the unpatched build of each revision `matrix.json` names, because `G4IonTable::GetMuonicAtom` constructs a new muonic atom before it takes the ion table's lock. That step was shown to leave the records unchanged only for the muonic atom `MuAl27` on a single thread in the v11.4.2 builds of the `pristine` and `enabled` modes, where the records written with and without it are identical byte for byte; no other target, revision or thread count was tested for it.
+
 Under the profiles the matrix selects, it requires each transition of the muonic cascade to carry the difference of the level energies it connects, and a transition between tabulated levels to carry the difference of their table values, within the tolerance the script states.
 
 For each target it requires the capture rate, looked up by nuclide, the effective charge, looked up by element, and the K-shell energy, looked up by nuclide, to equal the value the selected profile's table gives for that key under the lookup rules `cpp/patches/README.md` states, or, where the profile gives none, the unpatched build's value.
