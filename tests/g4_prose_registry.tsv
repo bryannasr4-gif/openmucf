@@ -486,7 +486,7 @@ f5628c7e58a3465d06ea82b025bae391520a8dde	DATASET_D3.md	REGISTERED: 4, 3 -- the d
 068fba64a53aa85a7676a8db12f2bdd7681e12ab	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('one is the version of the format, the other ...')
 074c76d7b3c53782b85ad52c2e3a2eb9ac0f6a74	FORMAT_SPEC.md	REGISTERED: one -- 'one gzipped tar archive': the single artifact openmucf/g4/emit.py's build_tarball writes
 0864447a2f1df17e89d0ea3cb1bfdfc1d1b6b695	FORMAT_SPEC.md	REGISTERED: one -- 'exactly one directory component', the layout tests/test_g4spec.py asserts on the built archive
-09d76ee72419272adcef18fbda579b1b87a41935	FORMAT_SPEC.md	REGISTERED: zero, 7, 0000644, 0000000, 11 -- the ustar numeric-field widths and the encoded mode and uid/gid values; tests/test_g4spec.py compares the encoded mode and mtime fields
+09d76ee72419272adcef18fbda579b1b87a41935	FORMAT_SPEC.md	REGISTERED: zero, 7, 11 -- the ustar numeric-field widths; tests/test_g4spec.py compares the encoded mode and mtime fields
 0c43dfe28fc4d21994d2f368b716bba952bc7363	FORMAT_SPEC.md	REGISTERED: 1, One -- 'column 1', the first byte of the line; 'One directive per line' is the grammar's rule
 10eea7a46c38767b36c873abf23dccdb5cdfba76	FORMAT_SPEC.md	REGISTERED: two -- the discovery modes the section defines
 15058c553a9e073c6f641b69439faca762ab18c7	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('the one that preempts', the verdict)

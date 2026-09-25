@@ -421,10 +421,11 @@ def format_spec_derived_pins() -> list[Pin]:
     compiled pattern, passes as a literal argument or writes through its own code: the bytes the
     reader permits and splits on, the digit range of its underflow test, the Layer-2 key pattern,
     the float precision and the text the emitter writes, the Layer-2 layout, the archive member's
-    owner and type, the gzip compression level and header bytes, and the line a directive occupies
+    owner, mode and type, the gzip compression level and header bytes, and the line a directive occupies
     in the order.
     Every `expected` is read from `openmucf.g4` at run time -- a pattern parsed, an output measured,
     a call's argument read from its source -- and none is typed here."""
+    import gzip
     import inspect
     import io
     import json
@@ -472,6 +473,11 @@ def format_spec_derived_pins() -> list[Pin]:
     with tarfile.open(fileobj=io.BytesIO(archive)) as unpacked:
         [member] = unpacked.getmembers()
     typeflag = member.type.decode("ascii")
+    # The mode, uid and gid fields of that member's ustar header as `build_tarball` wrote them: seven
+    # octal digits at the offsets the header layout fixes (tests/test_g4spec.py reads the same slices).
+    header = gzip.decompress(archive)[:512]
+    encoded_mode, encoded_uid, encoded_gid = (header[at:at + 7].decode("ascii") for at in (100, 108, 116))
+    assert encoded_uid == encoded_gid, (encoded_uid, encoded_gid)
     gzip_header = emit.gzip_header(archive)
     [level] = re.findall(r"\bcompresslevel=(\d+)", inspect.getsource(emit.build_tarball))
     place = {name: line for line, name in enumerate(spec.DIRECTIVE_ORDER, 1)}
@@ -534,6 +540,10 @@ def format_spec_derived_pins() -> list[Pin]:
             typeflag),
         Pin("member typeflag in hexadecimal, section 8", FORMAT_SPEC,
             rf"the byte `'.'` \(`({hexa})`\)", (1,), f"0x{ord(typeflag):02X}"),
+        Pin("member mode as encoded, section 8", FORMAT_SPEC,
+            r"as 7 digits \+ NUL \(`(\d+)`, `\d+`\)", (1,), encoded_mode),
+        Pin("member uid and gid as encoded, section 8", FORMAT_SPEC,
+            r"as 7 digits \+ NUL \(`\d+`, `(\d+)`\)", (1,), encoded_uid),
         Pin("gzip compression level, section 8", FORMAT_SPEC,
             r"\| gzip \| compression level \| `(\d+)` with", (1,), int(level)),
         Pin("gzip XFL byte, section 8", FORMAT_SPEC, r"and therefore `XFL` = `(\d+)`", (1,),
@@ -544,6 +554,8 @@ def format_spec_derived_pins() -> list[Pin]:
             r"an unreadable `#GRAMMAR` on line (\d+) reports", (1,), place["GRAMMAR"]),
         Pin("the #PROFILE line, section 4's priority example", FORMAT_SPEC,
             r"an `E013` whose fault line is (\d+)\.", (1,), place["PROFILE"]),
+        Pin("the #SOURCEDIGEST line, section 4's priority example", FORMAT_SPEC,
+            r"an `E016` on line (\d+) is reported ahead", (1,), place["SOURCEDIGEST"]),
         Pin("the #PROFILE line, section 4's preemption example", FORMAT_SPEC,
             r"whose `#PROFILE` on line (\d+) lacks", (1,), place["PROFILE"]),
         Pin("the E013 line, section 4's preemption example", FORMAT_SPEC,
@@ -1203,6 +1215,13 @@ def _drill_package(monkeypatch, case: str) -> None:
         order = [name for name in spec.DIRECTIVE_ORDER if name != "PROFILE"]
         order.insert(order.index("SEAM") + 1, "PROFILE")
         monkeypatch.setattr(spec, "DIRECTIVE_ORDER", tuple(order))
+    elif case == "member mode":
+        monkeypatch.setattr(emit, "_MEMBER_MODE", 0o600)
+    elif case == "digest line":
+        order = list(spec.DIRECTIVE_ORDER)
+        first, second = order.index("GENERATOR"), order.index("SOURCEDIGEST")
+        order[first], order[second] = order[second], order[first]
+        monkeypatch.setattr(spec, "DIRECTIVE_ORDER", tuple(order))
     else:
         raise AssertionError(case)
 
@@ -1221,8 +1240,10 @@ PACKAGE_DRILLS = {
     "Layer-2 layout": ["Layer-2 indent in words, section 3", "Layer-2 trailing newlines, section 3",
                        "Layer-2 indent, the digest invariant"],
     "archive": ["member uid, section 8", "member gid, section 8", "member typeflag, section 8",
-                "member typeflag in hexadecimal, section 8", "gzip compression level, section 8",
-                "gzip XFL byte, section 8"],
+                "member typeflag in hexadecimal, section 8", "member uid and gid as encoded, section 8",
+                "gzip compression level, section 8", "gzip XFL byte, section 8"],
+    "member mode": ["member mode as encoded, section 8"],
+    "digest line": ["the #SOURCEDIGEST line, section 4's priority example"],
     "directive order": ["the #PROFILE line, section 4's priority example",
                         "the #PROFILE line, section 4's preemption example",
                         "the E013 line, section 4's preemption example"],
