@@ -447,3 +447,147 @@ def test_d2_independence_and_each_subclass_require_source_evidence() -> None:
                         "lineage=own" if edit.startswith("lineage") else "inputs=self:b:cal", edit)
                 broken.append((changed, result, subs))
             assert d2.class_outcome(record, broken, sources) is None
+
+
+def test_d2_method_table_asks_each_method_only_for_its_corrections() -> None:
+    expected = {
+        "lifetime": ("efficiency_correction", "attenuation_correction", "capture_branch_correction"),
+        "xray": ("efficiency_correction", "attenuation_correction", "cascade_correction"),
+        "other": ("efficiency_correction", "attenuation_correction", "cascade_correction",
+                  "capture_branch_correction"),
+    }
+    assert expected == d2.METHOD_CORRECTIONS
+    assert d2.MEASUREMENT_COLUMNS[-1] == "capture_branch_correction"
+    assert "capture_branch_correction" not in d2.CORRECTION_COLUMNS
+    fields = (*d2.CORRECTION_COLUMNS, "capture_branch_correction")
+    for method, needed in expected.items():
+        row = _row()
+        row["capture_branch_correction"] = "source words; a p.1"
+        row["qualification"] = row["qualification"].replace("method=xray", f"method={method}")
+        assert d2.gate_reason(row, _source(), by_method=True) == ""
+        for field in fields:
+            changed = dict(row, **{field: ""})
+            expected_reason = f"correction undocumented: {field}" if field in needed else ""
+            assert d2.gate_reason(changed, _source(), by_method=True) == expected_reason
+            old_reason = f"correction undocumented: {field}" if field in d2.CORRECTION_COLUMNS else ""
+            assert d2.gate_reason(changed, _source()) == old_reason
+        assert d2.gate_reason(row, _source()) == ""
+        moved = dict(row, source_id="different", locator="different")
+        moved["qualification"] = re.sub(r"@[^;]+", "@different p.9", row["qualification"])
+        assert d2.gate_reason(moved, _source("different"), by_method=True) == ""
+    row["qualification"] = row["qualification"].replace("method=other", "method=bogus")
+    with pytest.raises(ValueError, match="unknown method: bogus"):
+        d2.gate_reason(row, _source(), by_method=True)
+    row["qualification"] = row["qualification"].replace("method=bogus", "method=unstated")
+    assert d2.gate_reason(row, _source(), by_method=True) == "method undocumented"
+    row["qualification"] = row["qualification"].replace("method=unstated", "method=other")
+    row["qualification"] = row["qualification"].replace("population=all_stops", "population=transfer_only")
+    assert d2.gate_reason(row, _source()) == "population transfer_only"
+    assert d2.gate_reason(row, _source(), by_method=True) == "population transfer_only"
+
+
+def test_d2_method_gate_keeps_the_first_rule_and_every_method_gated_row_is_outside() -> None:
+    path = DATA / "selector_vs_primary.csv"
+    with path.open(newline="", encoding="utf-8") as stream:
+        reader = csv.DictReader(stream)
+        fields = tuple(reader.fieldnames or ())
+        comparisons = list(reader)
+    original = fields[:14]
+    assert fields[14:] == ("method", "method_gated", "method_reason", "method_result", "screen")
+    from io import StringIO
+
+    out = StringIO(newline="")
+    writer = csv.DictWriter(out, fieldnames=original, extrasaction="ignore", lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(comparisons)
+    assert hashlib.sha256(out.getvalue().encode()).hexdigest() == (
+        "a872a59720139dad03edf6e45afd6cc54bc8c7ff4a50a3ad2445e46fc5fe3622")
+    measurements = {row["record_id"]: row for row in _reference("measurements.csv")}
+    sources = {row["source_id"]: row for row in _reference("sources.csv")}
+    assert len(comparisons) == len(measurements)
+    assert any(row["method_gated"] == "true" for row in comparisons)
+    for compared in comparisons:
+        measured = measurements[compared["record_id"]]
+        source = sources[measured["source_id"]]
+        reason = d2.gate_reason(measured, source)
+        method_reason = d2.gate_reason(measured, source, by_method=True)
+        method = d2.qualification(measured["qualification"]).get("method", ("unstated", ""))[0]
+        assert compared["gated"] == ("false" if reason else "true")
+        assert compared["reason"] == reason
+        assert compared["method"] == method
+        assert compared["method_gated"] == ("false" if method_reason else "true")
+        assert compared["method_reason"] == method_reason
+        predicted = None
+        if compared["z1"] and compared["z2"]:
+            predicted = d2.a_g4(int(compared["z1"]), int(compared["z2"]))
+        elif compared["quantity"] == "P(H)":
+            predicted = d2.h_share(measured["material_formula"])
+        result = (d2.compare_ratio(predicted, measured["reported_value"], measured["reported_uncertainty"])
+                  if predicted is not None and (not reason or not method_reason) else "")
+        assert compared["result"] == (result if not reason else "")
+        assert compared["method_result"] == (result if not method_reason else "")
+        assert compared["screen"] == (d2.screen_ratio(predicted, measured["reported_value"],
+                                                         measured["reported_uncertainty"])
+                                       if predicted is not None else "")
+        if not method_reason:
+            assert compared["method_result"] == "outside"
+
+
+def test_d2_parenthesized_uncertainty_counts_last_printed_digits() -> None:
+    assert d2.printed_uncertainty("0.593", "(49)") == "0.049"
+    assert d2.printed_uncertainty("1.2", "(5)") == "0.5"
+    assert d2.printed_uncertainty("12", "(3)") == "3"
+    assert d2.printed_uncertainty("1.0", "0.1") == "0.1"
+    with pytest.raises(ValueError, match="unsupported printed value"):
+        d2.printed_uncertainty("<0.5", "(3)")
+    assert d2.screen_ratio(Fraction(1, 2), "1.0", "") == ""
+
+
+def test_d2_screen_covers_every_row_with_a_selector_ratio() -> None:
+    comparisons = _csv("selector_vs_primary.csv")
+    assert comparisons
+    for row in comparisons:
+        expected = bool(row["value_g4"] and (row["sigma_src"] or row["value_src"].startswith("<")))
+        assert bool(row["screen"]) == expected
+        if row["gated"] == "true":
+            assert row["screen"] == row["result"]
+        if row["method_gated"] == "true":
+            assert row["screen"] == row["method_result"]
+
+
+def test_d2_selector_ratio_exactly_on_per_atom_ratio_rows() -> None:
+    comparisons = _csv("selector_vs_primary.csv")
+    assert comparisons
+    for row in comparisons:
+        expected = bool(re.fullmatch(r"A\([A-Za-z]+/[A-Za-z]+\)", row["quantity"]) or
+                        row["quantity"] == "P(H)")
+        assert bool(row["value_g4"]) == expected
+
+
+def test_d2_capture_branch_cells_carry_their_own_source_locator() -> None:
+    measurements = _reference("measurements.csv")
+    assert measurements
+    lifetime_ratios = []
+    for row in measurements:
+        cell = row["capture_branch_correction"]
+        if cell:
+            assert re.search(r"; " + re.escape(row["source_id"]) + r" p\.\d+(?:-\d+)?$", cell)
+        method = d2.qualification(row["qualification"]).get("method", ("unstated", ""))[0]
+        ratio = row["observable"] == "atomic_capture_ratio" and bool(
+            re.fullmatch(r"A\([A-Za-z]+/[A-Za-z]+\)", row["inferable_parameter"]))
+        if method == "lifetime" and ratio:
+            lifetime_ratios.append(row)
+            assert cell
+            assert re.search(r"; " + re.escape(row["source_id"]) + r" p\.\d+(?:-\d+)?$", cell)
+    assert lifetime_ratios
+
+
+def test_d2_transfer_only_and_unstated_population_rows_stay_ungated_under_both_rules() -> None:
+    comparisons = _csv("selector_vs_primary.csv")
+    populations = {"transfer_only": 0, "unstated": 0}
+    for row in comparisons:
+        if row["population"] in populations:
+            populations[row["population"]] += 1
+            assert row["gated"] == "false"
+            assert row["method_gated"] == "false"
+    assert all(populations.values())

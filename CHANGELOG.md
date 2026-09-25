@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- a method-aware second gate and a discrepancy screen in the selector comparison (2026-09-25)
+
+- **`measurements.csv` gains a `capture_branch_correction` column, the correction a decay-electron lifetime measurement makes for muons absorbed by the nucleus, and `selector_vs_primary.csv` gains the `method`, `method_gated`, `method_reason`, `method_result` and `screen` columns: a second gating rule, adopted after the selector's ratio had already been compared with the rows it gates, asks each source only for the corrections its measurement method involves, that correction among them for a lifetime measurement, and every row it gates lies `outside` in `method_result`; the first rule's columns are unchanged.**
+
 ### Added -- the capturing-atom selector reference and the atomic-capture corpus (2026-09-24)
 
-- **`data/g4/d2/` records which element Geant4's selector picks in the harvested materials and which stopped particles reach it, and `openmucf/g4/d2.py` reproduces the harvested counts; `data/g4/reference/d2/` holds atomic-capture values read in primary publications, and `selector_vs_primary.csv` sets the selector's per-atom ratio beside them.**
+- **`data/g4/d2/` records which element Geant4's selector picks in the harvested materials and which stopped particles reach it, and `openmucf/g4/d2.py` reproduces the harvested counts; `data/g4/reference/d2/` holds atomic-capture values read in primary publications, and `selector_vs_primary.csv` sets the selector's per-atom ratio beside those recorded as a per-atom ratio `A(X/Y)`.**
 
 ### Fixed -- the reserved compiled token beside a per-seam profile (2026-09-24)
 

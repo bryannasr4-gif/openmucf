@@ -1408,3 +1408,4 @@ fd5168a71aa60a21c1df30271391cf6d3303a226	tests/test_mucost.py	REGISTERED: the co
 fdd69a6c8b70127a002d28bbd6a3bda7cebf8ca3	tests/test_mucost.py	REGISTERED: checked against the four assertions below it, which show T2 homogeneous with a single numeraire and T1 homogeneous while holding more than one, which is the gap the comment says basis_class alone leaves.
 fe09ae44a3e4cceba77ab87141ad8be911bfeb39	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_hand_written_docs_restate_the_ledger_correctly
 fe89507c3b46f5ee5763e6ea35ec1ef7ac9c2987	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean
+255cc2aec53bc7e6a21d33730b9d23c26312a1c0	CHANGELOG.md	EXERCISED: tests/test_g4d2.py::test_d2_method_gate_keeps_the_first_rule_and_every_method_gated_row_is_outside
