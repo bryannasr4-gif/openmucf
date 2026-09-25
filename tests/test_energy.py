@@ -2,6 +2,7 @@
 
 import math
 
+from openmucf import uq
 from openmucf.energy import EnergyChain
 
 
@@ -32,3 +33,22 @@ def test_blanket_multiplier_helps_monotonically():
     plain = EnergyChain()
     hybrid = EnergyChain(blanket_M=10.0)  # fission-hybrid-style multiplication
     assert hybrid.Q_net_electrical(150.0) > plain.Q_net_electrical(150.0)
+
+
+def test_uq_energy_maps_agree_with_the_energy_chain():
+    """``uq.q_sci`` and ``uq.q_net`` restate ``EnergyChain``'s algebra; this holds them to one answer.
+
+    The grid moves each factor the two share, including a blanket multiplication above 1, so a factor
+    dropped from either implementation changes a result.
+    """
+    for omega_s0_pct, R, lambda_c in ((0.857, 0.3, 1.3e8), (0.6, 0.0, 0.8e8), (1.1, 0.7, 1.6e8)):
+        x = float(uq.xmu(omega_s0_pct, R, lambda_c))
+        for E_mu_GeV, eta_acc, eta_thermal, blanket_M in ((5.0, 0.3, 0.4, 1.0), (2.5, 0.5, 0.35, 3.0)):
+            ch = EnergyChain(E_mu_GeV=E_mu_GeV, eta_acc=eta_acc, eta_thermal=eta_thermal,
+                             blanket_M=blanket_M)
+            assert math.isclose(float(uq.q_sci(omega_s0_pct, R, lambda_c, E_mu_GeV)), ch.Q_sci(x),
+                                rel_tol=1e-12)
+            assert math.isclose(
+                float(uq.q_net(omega_s0_pct, R, lambda_c, E_mu_GeV, eta_acc, eta_thermal, blanket_M)),
+                ch.Q_net_electrical(x), rel_tol=1e-12,
+            )
