@@ -38,7 +38,7 @@
 16a4586dc2d0bd6f22d4a5a18fb60517f052acb9	CHANGELOG.md	REGISTERED: 4 -- the figures as the v1.0.0 notes recorded them, superseded by the figures later releases added
 17b650d6d1fa411b82af5fe867adc5116386b644	CHANGELOG.md	REGISTERED: one -- 'the committed one', a pronoun
 17c1b200f212d0a9c0708c09f2fee91fb756b94d	CHANGELOG.md	REGISTERED: one -- 'this one', the pass
-17f2a3242e8ffd01066752920116735c499a90ba	CHANGELOG.md	REGISTERED: three -- the three Yamashita rows VALIDATION.md's summary counts
+17f2a3242e8ffd01066752920116735c499a90ba	CHANGELOG.md	REGISTERED: three -- the three Yamashita rows, which VALIDATION.md's summary counts as a single shape check
 18e9a3b017db25f7f0c5417c61127486d769baa0	CHANGELOG.md	REGISTERED: one -- 'every one', a pronoun
 191e23cf84ca251427354529feb05dff8698cbcf	CHANGELOG.md	REGISTERED: 43 -- the spallation comparison, '~43 MeV of beam per neutron' as NEUTRONOMICS.md prints it
 1b8efcbf8566f7602b2635cadbdba61e4f2a5386	CHANGELOG.md	REGISTERED: 126, one -- what the first measurement reported and the one pair it missed, as this entry records that superseded measurement
@@ -310,7 +310,7 @@ e0f50cf1474fad9957fa148a5eba658d154099d0	CHANGELOG.md	REGISTERED: Three -- the t
 e218061e9f9519b7d7aa499e24dda387e6d0dd69	CHANGELOG.md	REGISTERED: 2367 -- the net-electrical breakeven at the v1 default eta_acc, as SYSTEMS.md's self-correction finding restates it
 e2609569503d85f919f79cc0d2c5482fc56dfa6b	CHANGELOG.md	REGISTERED: 0.555, 0.12, 0.60 -- the simulated false alarm and the chosen regime, as scripts/generate_design.py's preamble records them; DESIGN.md prints 0.555%
 e52ddcb95b7eb96af3b7157dc3aa4a4c30fbc04d	CHANGELOG.md	REGISTERED: 500, 0, 1.45, 0.77 -- FINDINGS.md section 3: P(X_mu > 500) = 0.0% at liquid density, and the R >= 0.77 requirement
-e55d79ea8d6fac72603c6d4429f3fb4062d2766f	CHANGELOG.md	REGISTERED: 6, 3 -- the v1 state vector's components, indices 0..5 as openmucf/cycle.py's index comment records them
+e55d79ea8d6fac72603c6d4429f3fb4062d2766f	CHANGELOG.md	REGISTERED: 6, 3 -- the v1 state vector's components, indices 0..5 as openmucf/cycle.py's index comment records them; 3 counts each kind its docstring lists, the dynamical muonic-atom states and the accumulators
 e5cfd57c5792cbf2af5144a93d1fa8260528eec6	CHANGELOG.md	REGISTERED: 2.3, 3, 1, 6, 2286, 6002 -- the T3 prior before ('Uniform(2.3e3, 1e6)') and after, as FINDINGS.md's section-2b amendment prints them
 e5eccfda833ed81773d753adeadad508d998151d	CHANGELOG.md	REGISTERED: 0.088, 92, 1.48 -- the arm64 flag's place in the seed-perturbation distribution, as scripts/generate_design.py's preamble records it
 e6bac5e5c9d5cae5e18fb96d744ab6efe701ae46	CHANGELOG.md	REGISTERED: one, six -- the priors of openmucf/data/uq_priors.csv, six rows, one of them measured
