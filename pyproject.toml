@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,8 +8,10 @@ version = "1.2.0"
 description = "Open FAIR rate ledger + differentiable muon-catalyzed-fusion cycle/energy auditor"
 readme = "README.md"
 requires-python = ">=3.11"
-license = "Apache-2.0"
-license-files = ["LICENSE"]
+# The distribution ships the package's code (Apache-2.0, LICENSE) and the rate ledger under
+# openmucf/data (CC-BY-4.0, LICENSE-DATA); no file under cpp/ or third_party/ is packaged.
+license = "Apache-2.0 AND CC-BY-4.0"
+license-files = ["LICENSE", "LICENSE-DATA"]
 authors = [{ name = "Bryan Nasr", email = "bryannasr4@gmail.com" }]
 keywords = ["muon-catalyzed-fusion", "fusion", "kinetics", "uncertainty-quantification", "jax"]
 classifiers = [

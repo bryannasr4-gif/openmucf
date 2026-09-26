@@ -4,7 +4,6 @@ title: "OpenMuCF: Open FAIR rate ledger and differentiable cycle/energy-balance 
 version: 1.2.0
 doi: "10.5281/zenodo.22167360"
 date-released: "2026-08-29"
-license: Apache-2.0
 type: software
 authors:
   - given-names: "Bryan"
@@ -33,8 +32,12 @@ abstract: >-
   error-barred, falsifiable verdicts.
 # The `version` and `doi` above pin this exact release. The `preferred-citation` below is the
 # version-independent software record (Zenodo concept DOI) -- cite it to always resolve to the
-# latest version. The ledger data files (openmucf/data/*) are additionally licensed CC-BY-4.0;
-# see LICENSE-DATA (the software is Apache-2.0).
+# latest version. No `license` key is set: this repository's files carry different licences by
+# path, and CFF reads a list of licences as alternatives. The code is Apache-2.0 (LICENSE) apart
+# from the Geant4 patches; the Geant4 patches (cpp/patches/*.patch) are offered under the Geant4
+# Software License (cpp/patches/LICENSE); the vendored Geant4 files under third_party/geant4/ are
+# redistributed under the Geant4 Software License; the ledger data files (openmucf/data/*) are
+# CC-BY-4.0 (LICENSE-DATA). The License section of README.md names each path.
 preferred-citation:
   type: software
   title: "OpenMuCF: Open FAIR rate ledger and differentiable cycle/energy-balance auditor for muon-catalyzed fusion"
@@ -46,4 +49,3 @@ preferred-citation:
   doi: "10.5281/zenodo.21251511"
   url: "https://doi.org/10.5281/zenodo.21251511"
   repository-code: "https://github.com/bryannasr4-gif/openmucf"
-  license: Apache-2.0
