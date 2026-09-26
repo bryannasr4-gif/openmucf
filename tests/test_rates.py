@@ -108,7 +108,7 @@ def test_wsn_loss_channel_rows_load_and_flagged():
         assert r[sym].phase and r[sym].target_molecule, sym  # non-empty typed projections
     assert r.value("lambda_ttmu") == 0.0  # blocked fallback -> refit keys on this (SKIP)
     assert r["lambda_ttmu"].notes.startswith("blocked:")
-    assert r["lambda_ttmu"].source_bibkey == "BomTT2005"
+    assert r["lambda_ttmu"].source_bibkey == "Bogdanova2009tt"
     assert r.value("lambda_dhe3") > 0.0
     assert r["lambda_dhe3"].source_bibkey == "Fotev2020"
 
