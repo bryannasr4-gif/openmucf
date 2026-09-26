@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed -- the licence of the Geant4 patch files, and the licence metadata (2026-09-26)
+
+- **The patch files under `cpp/patches/` are offered under the Geant4 Software License**, the Geant4 source lines they carry and the lines they add alike, so that they can be taken into Geant4 under the licence Geant4 itself carries. `cpp/patches/LICENSE` is a byte-for-byte copy of `third_party/geant4/LICENSE`, and a test in `tests/test_g4overlay.py` holds it to that copy and to the object id upstream's repository gives the file; `cpp/patches/README.md` carries the notice the licence asks of a redistribution's documentation. The licence statements of `README.md` (its License section and its badge), `CONTRIBUTING.md`, `DATASET_D1.md`, `FORMAT_SPEC.md`, `docs/index.md` and `third_party/geant4/README.md` now name the patch files.
+- **The package metadata names the data licence.** The sdist and wheel package the files under `openmucf/data/`, which are CC-BY-4.0, beside the Apache-2.0 code, so `pyproject.toml` declares `Apache-2.0 AND CC-BY-4.0` and lists `LICENSE-DATA` beside `LICENSE`; the patch files and the vendored Geant4 files are outside both. The build requirement moves from `setuptools>=68` to `setuptools>=77`: the old floor admitted setuptools releases that reject the `license` string the file already carried.
+- **The citation and archive metadata state the licences by path.** `codemeta.json` lists the Apache-2.0, CC-BY-4.0 and Geant4 licence documents; `.zenodo.json` marks the archive's licence Other (Open), since Zenodo applies a record's licence to all files in it, and its notes give the licence of each path; `CITATION.cff` sets no `license` key, since CFF reads a list of licences as alternatives, and its comment gives the licence of each path.
+
 ### Fixed -- the density-scaled cap in the findings, and the calibration page of the API overview (2026-09-26)
 
 - **`FINDINGS.md`'s density-scaled decay-only cap is computed from the rate ledger.** `scripts/generate_findings.py` scales the `lambda_c_liquid` band from its liquid anchor to the stated density and divides it by the muon decay rate, where it had typed a range whose lower end disagreed with that band; `FINDINGS_MANIFEST.json` pins each end of the range, and `test_the_density_scaled_cap_range_is_the_ledger_band_at_that_density` recomputes them from the ledger.

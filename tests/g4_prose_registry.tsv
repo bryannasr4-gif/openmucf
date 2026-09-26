@@ -130,6 +130,7 @@
 5b0efa8edce084b2597fbdc629cc591646283f7e	CHANGELOG.md	REGISTERED: one -- 'one each', the files the parenthesis enumerates
 5b96247fa797ae8308f82bff72b57480cfddde7c	CHANGELOG.md	REGISTERED: 1, two -- '1-based line number', a convention; 'two implementations', the reporting-order rule's subjects
 5c73ecf5714992a5cbe3e8782047a6e9f6c4d3f5	CHANGELOG.md	REGISTERED: Two, 2026 -- the two reproduction cases; and the year in the case name `kou-chen-2026`, an identifier
+5d2659b9963297f0c313ca2cfd5cbcf512d2ec80	CHANGELOG.md	REGISTERED: 68, 77 -- the setuptools version floors: `setuptools>=68`, the build requirement this entry replaces, and `setuptools>=77`, which pyproject.toml's [build-system] requires now carries
 5e49a697a3aa14bde913b4703667ba4929032fba	CHANGELOG.md	REGISTERED: two, 18 -- the two denominators, Kelly's adopted 18% as MUON_COST.md states it; 'two-figure' rounding
 5e54fd0595a6d4caed2649154aefc09c9b5df0b1	CHANGELOG.md	REGISTERED: four -- the four rows per family (L_mu, N_L, omega_crit, G_mu) among the `V_kouchenlawson_` rows of openmucf/data/validation_targets.csv
 5e8367a9a4b6816d5fb8ef99040d90436b999b5f	CHANGELOG.md	REGISTERED: 30, 0.5, 7 -- the low-T grid-convergence figures as the v1.1.0 notes recorded them; openmucf/formation.py's grid comment records the same doubling test
