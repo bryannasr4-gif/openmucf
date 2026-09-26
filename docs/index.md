@@ -79,4 +79,4 @@ See also the in-repo references: `README.md`, `MODEL_SPEC.md`, `LITERATURE.md`,
 
 Apache-2.0 for code and CC-BY-4.0 for data, except the Geant4 patches under `cpp/patches/`
 and the vendored Geant4 files under `third_party/geant4/`, which are under the Geant4 Software
-License; the License section of [`README.md`](../README.md) names each path.
+License.
