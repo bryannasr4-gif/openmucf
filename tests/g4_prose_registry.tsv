@@ -232,7 +232,7 @@ a44029fc41b404096f3ec5135681af2644e6c80b	CHANGELOG.md	REGISTERED: three, 23, 2 -
 a6f9c417976ed61107a58b6958da9cf2c8b078b9	CHANGELOG.md	REGISTERED: 82, two -- Z=82, the lead shell closure the effective-charge step sits near: a label, not a shipped value; 'the last two' of the findings this entry enumerates, F-1 to F-5 by the dataset document's numbering, as registered on the dated entry below
 a75c120a01e20a27d433f228a0b1396902d839ea	CHANGELOG.md	REGISTERED: three -- the three routes the named test drills
 a79800efd8bd766ee7f3760e6c361f6051ef96ac	CHANGELOG.md	REGISTERED: One, 8 -- one registry; and the result ids `openmucf.validate` exposed at v1.1.0, as those notes recorded them
-a81d9bc0705aedafa9c3c55bf8166103ed93cf2c	CHANGELOG.md	REGISTERED: 0.11.1 -- the jax version the dev extra caps below, `jax<0.11.1` in pyproject.toml
+a81d9bc0705aedafa9c3c55bf8166103ed93cf2c	CHANGELOG.md	REGISTERED: 0.11.1 -- the jax version the v1.2.0 dev extra capped below, `jax<0.11.1` in that release's pyproject.toml; the Changed entry of 2026-09-22 lifts the cap
 a83e8467f5865fcfa46d264eb7ed5909e7818962	CHANGELOG.md	REGISTERED: 10, ⁵ -- the '~10⁵' figure FINDINGS.md's section-2b amendment records as retracted
 a83f68b219613154e0da78a54a8f4d137941a156	CHANGELOG.md	REGISTERED: five -- the other five inputs of openmucf/data/uq_priors.csv, beside E_mu
 a9681d9b52a73827806d8c4c1991f886b043419c	CHANGELOG.md	REGISTERED: four -- MATERIALITY.md's four operating points, OP-A to OP-D
