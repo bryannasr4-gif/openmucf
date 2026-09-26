@@ -39,7 +39,7 @@ def test_every_rate_is_sourced_and_in_bib():
 def test_contested_and_unverified_are_flagged_not_hidden():
     rt = load_rates()
     # The two single-quoted/placeholder formation points must be flagged for Phase-2 digitization.
-    for sym in ("lambda_dtmu_lowT", "lambda_dt_transfer", "lambda_10_spinflip"):
+    for sym in ("lambda_dtmu_lowT", "lambda_10_spinflip"):
         assert rt[sym].needs_verification is True
 
 
@@ -111,6 +111,13 @@ def test_wsn_loss_channel_rows_load_and_flagged():
     assert r["lambda_ttmu"].source_bibkey == "BomTT2005"
     assert r.value("lambda_dhe3") > 0.0
     assert r["lambda_dhe3"].source_bibkey == "Fotev2020"
+
+
+def test_lambda_dt_transfer_pinned_to_its_primary():
+    """lambda_dt_transfer's pinned state: source, locator, flag, value and uncertainty."""
+    dt = load_rates()["lambda_dt_transfer"]
+    assert (dt.source_bibkey, dt.source_locator, dt.needs_verification) == ("Jones1986", "p.589", False)
+    assert (dt.value, dt.unc, dt.unc_type) == (2.8e8, 0.4e8, "exp")
 
 
 # --- FAIR provenance: DOI/URL backfill -------------------------------------------------------
