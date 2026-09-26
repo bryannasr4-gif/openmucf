@@ -209,6 +209,7 @@ def build_headline(rates) -> dict:
     H["ci_width"] = f"{ci_hi - ci_lo}"
     H["ingrowth_pct_month"] = f"{ingrowth_pct_per_month():.2f}"
     H["tt_blocked"] = f"blocked -- pending acquisition of {tt_doc}" if is_blocked else "(ttmu channel LIVE)"
+    H["omega_tt"] = f"{rates.value('omega_tt')}"  # the ledger value the section-3 prose restates
     H["_tt_is_blocked"] = "1" if is_blocked else "0"  # not a manifest entry; drives rendering only
     return H
 
@@ -315,7 +316,7 @@ channel is a small, one-sided structural correction, reported beside the CI and 
 ## 3. ttmu side-branch channel (BLOCKED)
 **ttmu side-branch: {H["tt_blocked"]}.** The ttmu formation-rate row `lambda_ttmu` ships the
 machine-representable fallback value 0.0 (channel inert) because no open source pins its density/c_t
-normalization; the companion loss fraction `omega_tt`=0.14 is recorded for the re-attribution once the
+normalization; the companion loss fraction `omega_tt`={H["omega_tt"]} is recorded for the re-attribution once the
 formation rate is acquired. Toggling `include_loss_channels` therefore leaves X_mu unchanged for this
 channel at every operating point, but a **zero bracket would be misleading** -- it would assert the ttmu
 channel is negligible, which is exactly what is NOT yet established. The bracket is reported as blocked,
