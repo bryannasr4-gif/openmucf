@@ -249,12 +249,6 @@ the layer covers every claim path a sentence can wrap in and a test asserts that
   prose the claim guard does not read and the rest project-wide rules on sourcing, coding,
   licensing and generated documents. Whether those pages should join the claim paths is recorded
   as an open question, not decided here.
-- **One typed figure found false and left for its own change.** FINDINGS.md section 3 says density
-  scaling at phi = 2.4 "would lift the decay-only cap to ~530-640"; the ledger's liquid band,
-  scaled from phi = 1.2 the way the adjacent computed cap is, gives ~440-640 -- the lower figure
-  mixes the two normalizations. The number is typed in the generator, so correcting it means a
-  regeneration and a manifest byte-diff of its own; it is recorded here and in the sentence's
-  registry reason, and not re-typed in this change.
 - **One stated rule found unenforced, and now enforced.** `ChainPath`'s docstring says a figure
   composed through a factor its own authors call arbitrary must not print `>=`, but
   `ChainPath.bias_direction` read only its edges' declarations and whether the figure was a bound,

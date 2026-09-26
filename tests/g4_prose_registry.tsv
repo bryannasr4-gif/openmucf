@@ -96,7 +96,6 @@
 435176fd8c4c8cf3b24b2f70a883c02313beeaff	CHANGELOG.md	REGISTERED: 74 -- 74: distinct Z, superseded finding, as this dated entry recorded it (a released line, held by this row and not re-derived)
 43fe06eda1465ceae8a5fe83f74a4329a07bc2af	CHANGELOG.md	REGISTERED: 42.95, 15 -- DESIGN.md's C4 inclusion sentence: the best-cell contraction and the pre-registered threshold
 444586872b831025a21b227c646a1240df78057c	CHANGELOG.md	REGISTERED: five, 10, ⁵ -- the other five inputs of openmucf/data/uq_priors.csv beside E_mu, and the '~10⁵×' fall FINDINGS.md's section-2b amendment records as retracted
-44793c4cd95a020d9f440bde533effbca325c91b	CHANGELOG.md	REGISTERED: two -- the two normalizations the figure mixes
 44df0d8a9615702fefe9324b0079eab54637d3b2	CHANGELOG.md	REGISTERED: 0.4.0 -- the dataset version this dated entry moved the dataset to, as the entry recorded it (a dated line, held by this row and not re-derived)
 452b35ef6ccbea23cc0d1014411b08e0bbf6e250	CHANGELOG.md	REGISTERED: 0.000 -- the V1 gate's relative difference as the v1.0.0 notes recorded it
 4598f6c304d76521e521d14a13298622f1bb1d03	CHANGELOG.md	REGISTERED: 1.283, 08, 1.413 -- NEUTRONOMICS.md's T3 row, 1.413e+08 n/J today; 1.283e+08 is the value this entry moved it from
@@ -181,7 +180,6 @@
 823dd180751a0554ed06ccc8f65348ef22ff06f6	CHANGELOG.md	REGISTERED: two -- the two tests that asserted bit-identity unconditionally, as this entry counted them
 8330e097bfcb09bdfaa0e6af048e6ddf8647b5c7	CHANGELOG.md	REGISTERED: three -- the three lexical holes the heading's entry enumerates
 83f10a178019a7c88a86094b5d117dcf14a9153f	CHANGELOG.md	REGISTERED: 0 -- the value `strtod` returns under a comma-decimal locale, a quoted behaviour
-8543b706b8f456f13468d425b5721af167e4d947	CHANGELOG.md	REGISTERED: One -- the one typed figure the bullet describes
 856597fbb3607d0152870b81037b9dd6d7c6a68f	CHANGELOG.md	REGISTERED: 36000 -- 36000: swept points harvested, as this dated entry recorded it (a released line, held by this row and not re-derived)
 85fad9d836eb4288862264d0e92a4e87bd212b1e	CHANGELOG.md	REGISTERED: 6, 4, 2 -- the conversions a fully-sourced chain requires, as MUON_COST.md's chain-coverage sentence counts them
 8619b55cb48e3d1ca975c2e035df1a7fbe500688	CHANGELOG.md	REGISTERED: 4.1, 1, ³ -- MODEL_SPEC.md's section 4.1; the '<1%' analytic-vs-ODE gate in tests/test_cycle_channels.py; the nuclide label ³He
@@ -202,7 +200,6 @@
 92cacda373d8a75dd37604e203695871db8f71f5	CHANGELOG.md	REGISTERED: Three, 1.92, 8 -- the three rows the bullet names, and `lambda_dhe3` = 1.92e8 in openmucf/data/rates.csv
 939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	REGISTERED: 7 -- '~7 decades', the rate span openmucf/_jaxcfg.py states as the reason float64 is mandatory
 93fa8a9c690ffbd35d7bd69ea45e3147b30d605b	CHANGELOG.md	REGISTERED: 0.62 -- the Sobol total-order index for R, FINDINGS.md's sensitivity table (0.620)
-94049a3cb272ae43d5a2bfcdde2cc3442b8a4bc5	CHANGELOG.md	REGISTERED: 2.4, 530, 640 -- FINDINGS.md section 3's sentence, quoted: phi=2.4 and ~530-640
 955c04f7f4180bf9d397f5c2e2c33bddeaa5fb00	CHANGELOG.md	REGISTERED: three, two -- where the loader converts its numeric columns, three outside and two inside the row constructor, as the corrected docstring says
 9572735a6557822a598ffb6513c8a6487853256d	CHANGELOG.md	EXERCISED: 0.5.1 -- tests/test_g4d3.py::test_t144_changelog_versions_track_the_shipped_version_and_history
 959b72c5dc19be7a806a4c28f0436ea3d2894015	CHANGELOG.md	REGISTERED: 223 -- negated universals outside the pattern, an approximate count at this release's date
@@ -332,7 +329,6 @@ f1b5d66480badda8965bf9aec143f9a1d5dd7df0	CHANGELOG.md	REGISTERED: one -- 'one-si
 f37374c38727965c42ef6ddead18d5e6b0de78af	CHANGELOG.md	REGISTERED: 13, 9, 4 -- openmucf/data/rates.csv's rows by status as the v1.0.0 notes recorded them, superseded by the rows later releases added
 f4441b224c4add6bc3198dc9e959a6eca50c3da9	CHANGELOG.md	REGISTERED: 20 -- the mcse band, `AUDIT_RTOL_ESS_MCSE` in scripts/generate_calibration.py
 f47945360efb7d12865f35e08d23003fd07e38ad	CHANGELOG.md	REGISTERED: 0.042, 0.068, 1.40, 6.10 -- the per-cell realization noise, as scripts/generate_design.py's preamble records it
-f5071755fc8809013c151d952d29e4fcf4328345	CHANGELOG.md	REGISTERED: 1.2, 440, 640 -- this entry's own re-scaling of the liquid band from phi = 1.2, recorded as a found-false figure left for its own change; FINDINGS.md section 3 still prints ~530-640
 f58ae742f67f1e6312da3366e99af9ac7e2324ce	CHANGELOG.md	REGISTERED: 112.6, 114.5, 156.5, 160.3, 113, 130.5 -- VALIDATION.md's Kou–Chen and Petitjean rows, observed and predicted
 f5e9f72c8c0e82f7edadc3b4d828efbb9c1738dc	CHANGELOG.md	REGISTERED: 100, 3.0 -- the chain-seed sweep and the weak chain's red rate under the superseded band, as this entry records that dated sweep; scripts/generate_calibration.py's floor comment cites the same 100-realization sweep
 f65671923b273805532c2a7a8cb08d3ae3289fd8	CHANGELOG.md	REGISTERED: 10 -- openmucf/data/validation_targets.csv's rows as the v1.0.0 notes recorded them, superseded by the targets later releases added
