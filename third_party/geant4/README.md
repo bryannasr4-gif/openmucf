@@ -106,5 +106,6 @@ record of what moved.
 
 ## Licensing
 
-The terms in `LICENSE` apply to **this directory only**. The rest of this repository is
-Apache-2.0 (code) and CC-BY-4.0 (data) — see `../../LICENSE` and `../../LICENSE-DATA`.
+The terms in `LICENSE` apply to this directory and to the patch files under `../../cpp/patches/`,
+whose own `LICENSE` is a verbatim copy of this file. The rest of this repository is Apache-2.0
+(code) and CC-BY-4.0 (data) — see `../../LICENSE` and `../../LICENSE-DATA`.

@@ -21,8 +21,10 @@ What each test here is actually for:
   registration patch touches only the dataset-definitions file and adds exactly the committed
   snippet's entry.
 * **T-73** -- the drill: alter one context line and the applier must refuse, naming the hunk; and
-  the patch README states the sweep digest by reference, never as a literal, and carries no
-  digit-bearing token the patches themselves do not.
+  the patch README states the sweep digest by reference, never as a literal, carries the notice
+  clause 2 of the Geant4 Software License requires of a redistribution's documentation, and outside
+  that notice carries no digit-bearing token the patches themselves do not; and
+  `cpp/patches/LICENSE` is the vendored upstream licence, byte for byte.
 
 Every path set and every expected line here is read from the repository -- the patch files, the
 vendored sources, the snippet -- never typed as a number.
@@ -350,25 +352,67 @@ def check_no_carriage_return(path: pathlib.Path) -> None:
     assert offset < 0, f"{path.name} carries a CR byte at offset {offset}"
 
 
-def readme_tokens_with_digits(readme: pathlib.Path) -> list[str]:
-    """Every whitespace-delimited token of the README that contains a digit, trimmed of backticks,
-    a leading parenthesis and trailing punctuation."""
+def readme_tokens_with_digits(text: str) -> list[str]:
+    """Every whitespace-delimited token of a README's text that contains a digit, trimmed of
+    backticks, a leading parenthesis and trailing punctuation."""
     tokens = []
-    for raw in readme.read_text("utf-8").split():
+    for raw in text.split():
         token = raw.strip("`").lstrip("(").rstrip(".,;:!?)").strip("`")
         if any(ch.isdigit() for ch in token):
             tokens.append(token)
     return tokens
 
 
-def check_readme_numbers(readme: pathlib.Path, patches: list[pathlib.Path]) -> None:
-    """(b) no 64-hex literal; (c) every digit-bearing token occurs in a patch's text or file name."""
+#: The Geant4 Software License the patch files are offered under, beside them.
+PATCH_LICENSE = PATCHES / "LICENSE"
+#: The copy vendored with the upstream sources the patches were cut against.
+VENDORED_LICENSE = REPO / "third_party" / "geant4" / "LICENSE"
+#: Upstream's object name for its `LICENSE`: `git rev-parse <tag>:LICENSE` in the Geant4 repository
+#: printed this id at both tags the patch families target.
+UPSTREAM_LICENSE_BLOB = "3926c4ef6815a78bec1bc3c1a012e1596ef74394"
+#: What opens the notice clause 2 of that licence requires of a redistribution's user documentation.
+NOTICE_OPENING = 'the following notice:"'
+
+
+def licence_notice(licence: pathlib.Path) -> str:
+    """The notice clause 2 of the licence quotes, read from the licence text itself: the words between
+    :data:`NOTICE_OPENING` and the next double quote, each run of whitespace collapsed to one space."""
+    text = licence.read_text("utf-8")
+    start = text.index(NOTICE_OPENING) + len(NOTICE_OPENING)
+    return " ".join(text[start : text.index('"', start)].split())
+
+
+def check_readme_numbers(
+    readme: pathlib.Path, patches: list[pathlib.Path], licence: pathlib.Path = PATCH_LICENSE
+) -> None:
+    """(b) no 64-hex literal; (c) the README carries the notice clause 2 of the licence requires, and
+    every digit-bearing token outside that notice occurs in a patch's text or file name. The notice is
+    read from the licence and removed once before the tokens are taken, so its words are held to the
+    licence rather than to the patches."""
     text = readme.read_text("utf-8")
     assert re.search(r"[0-9a-f]{64}", text) is None, "the README states a digest as a literal"
+    notice = licence_notice(licence)
+    flat = " ".join(" ".join(line.lstrip("> ") for line in text.splitlines()).split())
+    assert notice in flat, f"the README lacks the notice clause 2 of the licence requires: {notice!r}"
     corpus = "\n".join(p.read_bytes().decode("latin-1") for p in patches)
     names = " ".join(p.name for p in patches)
-    foreign = [t for t in readme_tokens_with_digits(readme) if t not in corpus and t not in names]
+    outside = flat.replace(notice, " ", 1)
+    foreign = [t for t in readme_tokens_with_digits(outside) if t not in corpus and t not in names]
     assert not foreign, f"README tokens the patches do not carry: {foreign}"
+
+
+def check_licence_copy(copy: pathlib.Path, vendored: pathlib.Path) -> None:
+    """The licence beside the patches is the vendored upstream licence: no CR byte, the same bytes as
+    the vendored copy, and those bytes are the object upstream's repository names
+    :data:`UPSTREAM_LICENSE_BLOB`."""
+    data = copy.read_bytes()
+    offset = data.find(b"\r")
+    assert offset < 0, (
+        f"{copy.name} carries a CR byte at offset {offset}: check that .gitattributes still carries "
+        "`cpp/patches/LICENSE -text`"
+    )
+    assert data == vendored.read_bytes(), f"{copy.name} is not a byte copy of the vendored licence"
+    assert parity.git_blob_id(data) == UPSTREAM_LICENSE_BLOB, f"{copy.name} is not upstream's licence file"
 
 
 #: The one added line of `G4HadronicParameters.hh` that declares the opt-in member and its default.
@@ -732,6 +776,10 @@ def test_t73_the_readme_states_no_digest_literal_and_no_foreign_number():
     check_readme_numbers(README, ALL_PATCHES)
 
 
+def test_t73_the_patch_licence_is_the_vendored_upstream_licence():
+    check_licence_copy(PATCH_LICENSE, VENDORED_LICENSE)
+
+
 @family
 def test_t73_drill_a_dropped_member_default_and_a_second_enable_caller_are_refused_by_family(tag: str):
     """Two in-memory corruptions of the behaviour patch, each refused with the family named: the
@@ -850,6 +898,50 @@ def test_t73_drill_a_carriage_return_and_a_planted_number_are_caught(tag: str, t
     readme_copy.write_text(README.read_text("utf-8") + f"\nThe sweep has {planted} points.\n", "utf-8")
     with pytest.raises(AssertionError, match=planted):
         check_readme_numbers(readme_copy, [behaviour, registration])
+
+
+def test_t73_drill_a_missing_or_altered_licence_notice_is_refused(tmp_path):
+    """The notice guard, shown to fire three ways on temporary copies: the README with its quoted
+    notice lines removed, the README with the notice's address altered, and a licence whose notice
+    differs from the one the README carries."""
+    text = README.read_text("utf-8")
+    assert [line for line in text.splitlines() if line.startswith(">")], "the README quotes no notice"
+    without = tmp_path / "without" / README.name
+    without.parent.mkdir()
+    kept = [line for line in text.splitlines() if not line.startswith(">")]
+    without.write_text("\n".join(kept) + "\n", "utf-8")
+    with pytest.raises(AssertionError, match="clause 2"):
+        check_readme_numbers(without, ALL_PATCHES)
+    assert text.count("cern.ch") == 1
+    altered = tmp_path / "altered" / README.name
+    altered.parent.mkdir()
+    altered.write_text(text.replace("cern.ch", "cern.org"), "utf-8")
+    with pytest.raises(AssertionError, match="clause 2"):
+        check_readme_numbers(altered, ALL_PATCHES)
+    licence = tmp_path / "LICENSE"
+    licence_bytes = PATCH_LICENSE.read_bytes()
+    licence.write_bytes(licence_bytes.replace(b"developed by Members", b"developed by members", 1))
+    with pytest.raises(AssertionError, match="clause 2"):
+        check_readme_numbers(README, ALL_PATCHES, licence)
+
+
+def test_t73_drill_a_crlf_an_altered_or_a_foreign_licence_copy_is_refused(tmp_path):
+    """The licence-copy guard, shown to fire on each of its three conditions: a CR byte, bytes that
+    differ from the vendored copy, and bytes that are not upstream's file even where both copies
+    agree."""
+    data = PATCH_LICENSE.read_bytes()
+    crlf = tmp_path / "crlf" / "LICENSE"
+    crlf.parent.mkdir()
+    crlf.write_bytes(data.replace(b"\n", b"\r\n", 1))
+    with pytest.raises(AssertionError, match="CR byte"):
+        check_licence_copy(crlf, VENDORED_LICENSE)
+    altered = tmp_path / "altered" / "LICENSE"
+    altered.parent.mkdir()
+    altered.write_bytes(data.replace(b"Members", b"Membres", 1))
+    with pytest.raises(AssertionError, match="byte copy"):
+        check_licence_copy(altered, VENDORED_LICENSE)
+    with pytest.raises(AssertionError, match="upstream's licence"):
+        check_licence_copy(altered, altered)
 
 
 # T-109 -- the D3 harvests: what a patched cascade and helper must emit, derived from the tables

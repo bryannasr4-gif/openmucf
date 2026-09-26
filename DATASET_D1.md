@@ -454,7 +454,8 @@ what a patched build was measured to do.
 
 The values are derived from Geant4 source redistributed under the Geant4 Software License v1.0; see
 `third_party/geant4/`, whose terms apply to that directory. The dataset files themselves are
-CC-BY-4.0 and the toolchain is Apache-2.0, as for the rest of this repository.
+CC-BY-4.0 and the toolchain is Apache-2.0, except the patch files under `cpp/patches/`, which are
+offered under the Geant4 Software License, as `cpp/patches/README.md` states.
 
 ## 9. A second profile of the capture table — `mizuno2025`
 

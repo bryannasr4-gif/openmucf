@@ -2,7 +2,7 @@
   "title": "OpenMuCF: Open FAIR rate ledger + differentiable muon-catalyzed-fusion cycle/energy auditor",
   "upload_type": "software",
   "description": "OpenMuCF is open, reproducible, differentiable, uncertainty-bearing infrastructure for the muon-catalyzed-fusion (μCF) cycle: a FAIR rate ledger with per-row provenance, conditions, uncertainty, established/contested tags and validity ranges; a JAX/diffrax cycle-kinetics and net-electrical energy-balance engine; and a global Sobol/forward-UQ auditor that turns point-estimate breakeven claims into error-barred, falsifiable verdicts. It introduces no new fundamental μCF physics — the cycle is textbook and the reactivation transport follows Stodden (1990) and Rafelski–Müller (1988/89) — its contribution is the open shared substrate plus honest findings; it complements GEANT4 and does not compete with it.",
-  "license": "Apache-2.0",
+  "license": "other-open",
   "version": "1.2.0",
   "language": "eng",
   "access_right": "open",
@@ -57,5 +57,5 @@
       "scheme": "doi"
     }
   ],
-  "notes": "All related identifiers use relation 'references' because OpenMuCF is standalone infrastructure, not supplementary material to any single paper. The Toyama et al. (Science Advances 12, 2026) 'Direct observation of muonic molecules...' record is included by its published DOI 10.1126/sciadv.aed3321 (verified against CrossRef 2026-07-13; it has no arXiv ID). If this software is ever published as a supplement to a specific paper, change that paper's relation to 'isSupplementTo'."
+  "notes": "All related identifiers use relation 'references' because OpenMuCF is standalone infrastructure, not supplementary material to any single paper. The Toyama et al. (Science Advances 12, 2026) 'Direct observation of muonic molecules...' record is included by its published DOI 10.1126/sciadv.aed3321 (verified against CrossRef 2026-07-13; it has no arXiv ID). If this software is ever published as a supplement to a specific paper, change that paper's relation to 'isSupplementTo'. The archive's files carry licences by path, so the record's licence is Other (Open): Apache-2.0 for code (LICENSE); CC-BY-4.0 for data (LICENSE-DATA); the Geant4 Software License for the Geant4 patch files under cpp/patches/ (cpp/patches/LICENSE) and the vendored Geant4 files under third_party/geant4/."
 }

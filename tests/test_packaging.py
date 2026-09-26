@@ -9,11 +9,15 @@ by shipped code while arriving only transitively; the last test below makes that
 test failure instead of a latent packaging bug, so it cannot recur silently as more code lands."""
 
 import ast
+import json
 import re
 import subprocess
 import sys
 import tomllib
+import urllib.parse
 from pathlib import Path
+
+import pytest
 
 import openmucf
 
@@ -175,3 +179,120 @@ def test_every_third_party_import_is_a_declared_dependency():
         "imports with no declared distribution in pyproject.toml (add the dependency, or map the "
         f"import name in IMPORT_TO_DISTRIBUTION): {undeclared}"
     )
+
+
+def test_the_distribution_licence_metadata_names_what_it_packages():
+    """The distribution declares `Apache-2.0 AND CC-BY-4.0` and ships both licence files: the package's
+    code is Apache-2.0 (`LICENSE`) and the files under `openmucf/data` it packages are CC-BY-4.0
+    (`LICENSE-DATA`). The configuration that decides what it packages is held here as well -- an
+    explicit package list under `openmucf`, package data declared for `openmucf` alone, no
+    `MANIFEST.in` -- because under it a build packages nothing from `cpp/` or `third_party/`, the
+    paths that carry the Geant4 Software License, so the expression needs no term for that licence.
+    The build floor is held too: setuptools 76.1.0 refuses `license` as a string, and 77.0.1 builds
+    this file."""
+    pyproject = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
+    project = pyproject["project"]
+    assert project["license"] == "Apache-2.0 AND CC-BY-4.0"
+    assert project["license-files"] == ["LICENSE", "LICENSE-DATA"]
+    assert all((REPO / name).is_file() for name in project["license-files"])
+    setuptools = pyproject["tool"]["setuptools"]
+    assert all(name == "openmucf" or name.startswith("openmucf.") for name in setuptools["packages"])
+    assert set(setuptools["package-data"]) == {"openmucf"}
+    assert "data/*" in setuptools["package-data"]["openmucf"]
+    assert not (REPO / "MANIFEST.in").exists()
+    assert pyproject["build-system"]["requires"] == ["setuptools>=77"]
+
+
+#: The licence names a per-path statement may use.
+LICENCES = ("Apache-2.0", "CC-BY-4.0", "Geant4 Software License")
+#: Each path token of the per-path statements, and the one licence a clause naming it must name.
+LICENCE_BY_PATH = {
+    "(LICENSE)": "Apache-2.0",
+    "(LICENSE-DATA)": "CC-BY-4.0",
+    "openmucf/data": "CC-BY-4.0",
+    "cpp/patches/": "Geant4 Software License",
+    "third_party/geant4/": "Geant4 Software License",
+}
+
+
+def check_licences_by_path(text: str, paths: tuple[str, ...]) -> None:
+    """Every path in `paths` occurs in `text`, and every clause that names a path of
+    :data:`LICENCE_BY_PATH` names exactly one licence of :data:`LICENCES`: the one that path carries.
+    A clause is the text between semicolons, colons and sentence ends, whitespace collapsed; a clause
+    naming a path and no known licence (an unknown one, say) fails as well as a clause naming the wrong
+    one."""
+    flat = " ".join(text.split())
+    assert all(path in flat for path in paths), [path for path in paths if path not in flat]
+    for clause in re.split(r"[;:]|\.\s", flat):
+        named = [licence for licence in LICENCES if licence in clause]
+        for path, licence in LICENCE_BY_PATH.items():
+            if path in clause:
+                assert named == [licence], f"{path!r} is given {named}, not [{licence!r}]: {clause!r}"
+
+
+def check_licence_badge(readme: str) -> None:
+    """The README's licence badge links to its License section and lists exactly the licences of
+    :data:`LICENCES`, read back from the badge's own URL (shields.io writes `--` for `-` and `%xx`
+    escapes)."""
+    badge = r"\[!\[Licenses by path\]\((https://img\.shields\.io/badge/[^)]+)\)\]\(#license\)"
+    match = re.search(badge, readme)
+    assert match, "no `Licenses by path` badge linking to #license"
+    assert re.search(r"^## License$", readme, re.MULTILINE), "no License section for the badge to link to"
+    segment = match.group(1).split("/badge/", 1)[1].removesuffix(".svg")
+    _label, message, _colour = re.split(r"(?<!-)-(?!-)", segment)
+    listed = [urllib.parse.unquote(part).replace("--", "-") for part in message.split("%20%C2%B7%20")]
+    assert listed == list(LICENCES), listed
+
+
+def citation_comment(citation: str) -> str:
+    """The comment lines of `CITATION.cff`, without their `#`, as one text with whitespace collapsed."""
+    lines = [line.lstrip().lstrip("#") for line in citation.splitlines() if line.lstrip().startswith("#")]
+    return " ".join(" ".join(lines).split())
+
+
+def test_the_citation_and_archive_metadata_state_the_licences_by_path():
+    """The repository's files carry licences by path, and each metadata file says so in the form its
+    format allows. `codemeta.json` lists the three licence documents. `.zenodo.json` takes one licence
+    id, which Zenodo applies to every file of the record, so it carries `other-open` and its notes give
+    each path its licence. CFF reads a list of `license` ids as alternatives, so `CITATION.cff` sets no
+    `license` key at any level and its comment gives each path its licence. The README badge lists the
+    licences and links to the section that names their paths."""
+    codemeta = json.loads((REPO / "codemeta.json").read_text(encoding="utf-8"))
+    assert codemeta["license"] == [
+        "https://spdx.org/licenses/Apache-2.0",
+        "https://spdx.org/licenses/CC-BY-4.0",
+        "http://cern.ch/geant4/license",
+    ]
+    zenodo = json.loads((REPO / ".zenodo.json").read_text(encoding="utf-8"))
+    assert zenodo["license"] == "other-open"
+    zenodo_paths = ("(LICENSE)", "(LICENSE-DATA)", "cpp/patches/", "third_party/geant4/")
+    check_licences_by_path(zenodo["notes"], zenodo_paths)
+    citation = (REPO / "CITATION.cff").read_text(encoding="utf-8")
+    assert not re.search(r"^\s*license\s*:", citation, re.MULTILINE)
+    check_licences_by_path(citation_comment(citation), tuple(LICENCE_BY_PATH))
+    check_licence_badge((REPO / "README.md").read_text(encoding="utf-8"))
+
+
+def test_drill_a_wrong_or_swapped_licence_by_path_is_refused():
+    """The per-path and badge guards, shown to fire on in-memory corruptions of the shipped texts: an
+    unknown licence put in place of one, two licences swapped between paths, the patches given the code's
+    licence, a licence dropped from the badge, and the badge's link moved off the License section."""
+    notes = json.loads((REPO / ".zenodo.json").read_text(encoding="utf-8"))["notes"]
+    comment = citation_comment((REPO / "CITATION.cff").read_text(encoding="utf-8"))
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    swapped = notes.replace("Apache-2.0 for code", "CC-BY-4.0 for code")
+    swapped = swapped.replace("CC-BY-4.0 for data", "Apache-2.0 for data")
+    corruptions = [
+        (notes, "Apache-2.0 for code", "MIT for code"),
+        (notes, notes, swapped),
+        (comment, "The code is Apache-2.0", "The code is MIT"),
+        (comment, "Geant4 Software License (cpp/patches/LICENSE)", "Apache-2.0 (cpp/patches/LICENSE)"),
+    ]
+    for text, old, new in corruptions:
+        assert text.count(old) == 1, old
+        with pytest.raises(AssertionError):
+            check_licences_by_path(text.replace(old, new), ())
+    for old, new in (("%20%C2%B7%20CC--BY--4.0", ""), ("](#license)", "](#top)")):
+        assert readme.count(old) == 1, old
+        with pytest.raises(AssertionError):
+            check_licence_badge(readme.replace(old, new))

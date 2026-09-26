@@ -63,3 +63,13 @@ differed from the `parity` harvest on exactly the keys that profile resolves to 
 The cascade and K-energy harvests of `v11.4.2` and `v11.5.0.beta` were measured the same way: with
 the opt-in off, or under a profile carrying no D3 table, they are bit-identical to an unpatched
 build's.
+
+The patch files in this directory, the Geant4 source lines they carry as context and the lines
+they add alike, are offered under the Geant4 Software License, so that they can be taken into
+Geant4 under the licence Geant4 itself carries. `LICENSE` in this directory is a verbatim copy of
+that licence, and a test holds it byte for byte to the copy vendored under `third_party/`. The
+files the patches add keep, under `cpp/include` and `cpp/src`, the licence the rest of this
+repository's code carries.
+
+> This product includes software developed by Members of the Geant4 Collaboration
+> ( http://cern.ch/geant4 ).
