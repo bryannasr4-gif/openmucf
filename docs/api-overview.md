@@ -123,13 +123,18 @@ Calibrates (ω_s0, R, λ_c) to the measured effective sticking (0.45 ± 0.05 %) 
 yield (113 ± 12); exposes the ω_s0/R identifiability degeneracy.
 
 - `model(omega_s_eff_obs=0.45, omega_s_eff_sd=0.05, xmu_obs=113.0, xmu_sd=12.0,
-  omega_s0_prior=("uniform", 0.60, 1.10))` — the numpyro model; `omega_s0_prior`
-  can be `("uniform", lo, hi)` (weak; exposes the degeneracy) or `("normal", mu,
-  sd)` (informative Kamimura prior).
-- `run_mcmc(num_warmup=800, num_samples=2000, seed=0, omega_s0_prior=..., **obs)
-  -> samples` — run NUTS and return posterior samples.
-- `summarize(samples) -> dict` — per-parameter mean/sd/2.5%/97.5% for `omega_s0_pct`,
-  `R`, `lambda_c`, `omega_s_eff_pct`, `X_mu`, plus `corr_omega_s0_R`.
+  omega_s0_prior=WEAK_OMEGA_S0_PRIOR, R_prior=R_PRIOR_DEFAULT,
+  lambda_c_prior=LAMBDA_C_PRIOR_DEFAULT, obs_corr=0.0)` — the numpyro model;
+  `omega_s0_prior` can be `("uniform", lo, hi)` (weak; exposes the degeneracy),
+  `("normal", mu, sd)` (the untruncated Kamimura prior the registered FC-001 realization keeps) or
+  `("truncnormal", mu, sd, lo, hi)` (`KAMIMURA_OMEGA_S0_PRIOR`: the Kamimura Normal truncated to
+  the weak prior's support); any other kind raises `ValueError`.
+- `run_mcmc_full(num_warmup, num_samples, seed, omega_s0_prior, ..., num_chains, chain_method, **obs)
+  -> (mcmc, samples)` — run NUTS; `run_mcmc(*args, **kwargs) -> samples` takes the same
+  arguments and returns only the pooled samples.
+- `summarize(samples, mcmc=None) -> dict` — per-parameter mean/sd/2.5%/97.5% for
+  `omega_s0_pct`, `R`, `lambda_c`, `omega_s_eff_pct`, `X_mu`, plus `corr_omega_s0_R`; with `mcmc`,
+  also split-R_hat, ESS and MCSE per site and the divergence count.
 
 ## `openmucf.twin` / `openmucf.likelihood` — counts-level neutron time-spectrum twin (v0)
 
