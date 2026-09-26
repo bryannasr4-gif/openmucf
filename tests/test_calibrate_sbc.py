@@ -11,6 +11,7 @@ session and paste the output. No committed artifact -> zero audit surface. No ne
 numpyro chains + the already-locked scipy (transitive dep of numpyro/SALib) for the chi-square p-value.
 """
 
+import conftest
 import numpy as np
 import pytest
 
@@ -48,6 +49,7 @@ def test_sbc_rank_uniformity():
         n_draws = np.asarray(s["R"]).size
         for name, true in (("omega_s0_pct", os0), ("R", r), ("lambda_c", lc)):
             ranks[name].append(int((np.asarray(s[name]) < true).sum()))
+        conftest.bound_jax_caches(i)
 
     print(f"\nSBC: {n_rounds} rounds x 2 chains x 1000 draws (n_draws/round={n_draws})")
     for name in ("omega_s0_pct", "R", "lambda_c"):
