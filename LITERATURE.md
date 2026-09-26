@@ -42,7 +42,7 @@ theory–experiment tension). We do NOT try to resolve it; we quantify how much 
 | Intramolecular fusion rate λ_f(dtμ) | ≈ 1.1×10¹² s⁻¹ | J=v=0 ground; effectively instantaneous | Bogdanova; Kamimura |
 | Resonant dtμ formation λ_dtμ(T,φ,F) | rises with T; ~10⁸–10¹⁰ s⁻¹ scale | Vesman mechanism; strong F (hyperfine) dependence | Faifman; Vesman; Yamashita–Kino 2022 |
 | dtμ formation resonance peak | ~7.1×10⁹ s⁻¹ near **E_cm ≈ 0.423 eV** | atomic-beam (epithermal) | Faifman; used as the Phase-1 sanity anchor |
-| Isotopic transfer λ_dt (dμ→tμ) | ≈ 2.8×10⁸ s⁻¹ (×φ·c_t) **[VERIFY P1]** | drives muon onto tritium | Standard tables |
+| Isotopic transfer λ_dt (dμ→tμ) | ≈ 2.8×10⁸ s⁻¹ (×φ·c_t) | drives muon onto tritium; printed as [1 + (6±1)×10⁻⁴ T](280 ± 40)×10⁶ s⁻¹ over 20–500 K | Jones et al. PRL 56, 588 (1986), p.589 |
 | tμ hyperfine spin-flip λ_10 | ~10⁸–10⁹ s⁻¹ scale **[VERIFY P1]** | F=1 → F=0 | Faifman |
 | Cycling rate λ̃_c (density-NORMALIZED; Fig. 3a, c_t=0.5 EVM-SPM-FIF panel) | digitized: ≈ 0.84×10⁸ (300 K) → 1.97×10⁸ (800 K) s⁻¹, 800/300 ratio ≈ 2.36 (`openmucf/data/yamashita_kino_lc_T.csv`) | c_t ~ 0.5; a φ-normalized *gas* cycle rate — **NOT** the Breunlich *liquid* λ_c max 1.45×10⁸ s⁻¹ (`V_breunlich_lambdac`). The earlier "≈1.0–1.45×10⁸" reading here was a digitization under-read (corrected 2026-07-13); its numeric coincidence with the separate Breunlich 1.45×10⁸ anchor is a documented hazard (see `forecasts/FORECAST_PROTOCOL.md`). | **Yamashita–Kino Sci. Rep. 12, 6393 (2022)** |
 

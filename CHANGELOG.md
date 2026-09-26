@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed -- the transfer and tt-branch rows of the rate ledger, read against their primaries (2026-09-26)
+
+- `lambda_dt_transfer` in `openmucf/data/rates.csv` now cites Jones et al. (1986), p. 589, and carries the uncertainty that page prints; the temperature factor printed beside the rate is recorded in the row and not applied.
+- `omega_tt` now carries the combined value and uncertainty of the first table of the JINR preprint that the new `Bogdanova2009tt` entry of `references.bib` points at; both rows now have `needs_verification` false.
+- `lambda_ttmu` keeps the placeholder that leaves the tt channel inert: in that preprint the target-density uncertainty enters the rate's error while its cycling-rate equation uses the rate unscaled, readings that differ by the target density's factor; the row's notes give that derivation.
+
 ### Fixed -- the slow MCMC loops clear jax's caches as they run (2026-09-25)
 
 - **The SBC loop in `tests/test_calibrate_sbc.py` and the replica loop in `tests/test_twin_coverage.py` clear jax's caches after a fixed block of fits (`bound_jax_caches` in `tests/conftest.py`)**, so the memory those caches hold in the weekly `slow` job is released block by block instead of accumulating across the loop; `tests/test_jax_cache_bound.py` checks that both loops call it once per fit and that clearing leaves the draws bit-identical, at reduced sampler settings on every run and, in the `slow` job, at the loops' own settings and seeds over the first fits of each loop.
