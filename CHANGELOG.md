@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed -- the density-scaled cap in the findings, and the calibration page of the API overview (2026-09-26)
+
+- **`FINDINGS.md`'s density-scaled decay-only cap is computed from the rate ledger.** `scripts/generate_findings.py` scales the `lambda_c_liquid` band from its liquid anchor to the stated density and divides it by the muon decay rate, where it had typed a range whose lower end disagreed with that band; `FINDINGS_MANIFEST.json` pins each end of the range, and `test_the_density_scaled_cap_range_is_the_ledger_band_at_that_density` recomputes them from the ledger.
+- **`docs/api-overview.md` names the calibration prior defaults the code defines.** Its `calibrate` section gave a weak prior box and a warmup count that differ from the code's; it now names the prior constants `model` defaults to in place of the box, drops the count, and lists the `truncnormal` prior kind, the `ValueError` an unknown kind raises, `run_mcmc_full`, and what `run_mcmc` and `summarize(..., mcmc=None)` return.
+
 ### Changed -- the transfer and tt-branch rows of the rate ledger, read against their primaries (2026-09-26)
 
 - `lambda_dt_transfer` in `openmucf/data/rates.csv` now cites Jones et al. (1986), p. 589, and carries the uncertainty that page prints; the temperature factor printed beside the rate is recorded in the row and not applied.
