@@ -50,7 +50,7 @@ channel is a small, one-sided structural correction, reported beside the CI and 
 ## 3. ttmu side-branch channel (BLOCKED)
 **ttmu side-branch: blocked -- pending acquisition of the Matsuzaki/Bom tt-fusion formation-rate tables (Muon Catal. Fusion / JINR).** The ttmu formation-rate row `lambda_ttmu` ships the
 machine-representable fallback value 0.0 (channel inert) because no open source pins its density/c_t
-normalization; the companion loss fraction `omega_tt`=0.14 is recorded for the re-attribution once the
+normalization; the companion loss fraction `omega_tt`=0.139 is recorded for the re-attribution once the
 formation rate is acquired. Toggling `include_loss_channels` therefore leaves X_mu unchanged for this
 channel at every operating point, but a **zero bracket would be misleading** -- it would assert the ttmu
 channel is negligible, which is exactly what is NOT yet established. The bracket is reported as blocked,

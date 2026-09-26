@@ -8,7 +8,7 @@
 0224712ada90845352de3a7e80d90ee72f051abf	CHANGELOG.md	REGISTERED: 3, 5 -- the superseded fixed 3 pp and 5 % bands, as DESIGN.md's audit section records them
 02bc74079b56de0bdaf1db6410c5e41b9eae5fb6	CHANGELOG.md	REGISTERED: 856, 140 -- the ledger-claims registry's rows and its EXERCISED rows at this release: dated counts
 0535db050f8d79a9d8ea748cdb8238e8eb99450a	CHANGELOG.md	REGISTERED: one -- 'producing one here', a pronoun
-0577e27dd2e6d42d006d937462a5668db59f8e38	CHANGELOG.md	REGISTERED: 0.14, 0.015, 2.84, 32, 0.139, 15 -- the `omega_tt` value and uncertainty openmucf/data/rates.csv ships, and the JINR preprint's figures as the `BomTT2005` note in openmucf/data/references.bib records them
+0577e27dd2e6d42d006d937462a5668db59f8e38	CHANGELOG.md	REGISTERED: 0.14, 0.015, 2.84, 32, 0.139, 15 -- the `omega_tt` value and uncertainty openmucf/data/rates.csv shipped at this release, and the JINR preprint's figures as the `BomTT2005` note in openmucf/data/references.bib records them
 072c57186ec91659b3239eddd4f0a1190dda2ba1	CHANGELOG.md	REGISTERED: two -- the two published numbers the next sentences name
 09bcc38e6a900187246f8392ca3d18dfd2e755e6	CHANGELOG.md	REGISTERED: 2.2 -- FORMAT_SPEC.md's section 2.2, a pointer
 0a9a8528fc568bfa935c8c7a875c5e599690ccfb	CHANGELOG.md	REGISTERED: 2000, 136 -- `AUDIT_ESS_FLOOR` in scripts/generate_calibration.py and the converged realizations its sizing comment counts
@@ -44,7 +44,7 @@
 1b8efcbf8566f7602b2635cadbdba61e4f2a5386	CHANGELOG.md	REGISTERED: 126, one -- what the first measurement reported and the one pair it missed, as this entry records that superseded measurement
 1c383bf05d7c10eecb203facd120663ce9879b60	CHANGELOG.md	REGISTERED: ³, 1, 4, 3, 0.18, 0.6 -- the nuclide label ³He; the helium levels c_He = 1e-4 and 1e-3 MATERIALITY.md tabulates; its bracket-size sentence (<= ~0.18, under ~0.6%)
 1f7c21cd3756264c9c317bbb2f678f7d41f8c294	CHANGELOG.md	REGISTERED: 20, 1 -- the replicate base chains, `AUDIT_EIG_REPLICATES` in scripts/generate_design.py, as its comment states; DESIGN.md prints 20
-2087cb71dddadd0ad2a82add96ce66e1c597f4df	CHANGELOG.md	REGISTERED: 0.14, 13.9 -- `omega_tt` = 0.14 in openmucf/data/rates.csv and the corroborating 13.9(1.5)% its row notes
+2087cb71dddadd0ad2a82add96ce66e1c597f4df	CHANGELOG.md	REGISTERED: 0.14, 13.9 -- `omega_tt` = 0.14 in openmucf/data/rates.csv at this release, and the corroborating 13.9(1.5)% its row noted then
 211d9f1db07f859b3f9c1de54568e433884d7ba7	CHANGELOG.md	REGISTERED: 112.6, 156.5, 10 -- Kou–Chen's published yields and the ±10% tolerance, benchmarks/kou-chen-2026.json
 21cc5f047c9a91dcdda6ee8fd999a19c970abab5	CHANGELOG.md	REGISTERED: five, two, seven -- five: findings that are defects, as this dated entry recorded it (a released line, held by this row and not re-derived); two: findings the primary settled, as this dated entry recorded it (a released line, held by this row and not re-derived); seven: findings in total, as this dated entry recorded it (a released line, held by this row and not re-derived)
 21e9a7aa2e064a5d45a6d256cabd4cfb925e831c	CHANGELOG.md	REGISTERED: 1 -- the line the plural forms added, a dated count

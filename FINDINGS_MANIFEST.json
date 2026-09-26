@@ -436,7 +436,7 @@
   "generated_by": "scripts/generate_findings.py",
   "inputs": {
     "muon_cost_csv_sha256": "a5c4959d7df4bbefdd07c87dadd3a35b876b77f427e72bb0afc3803d9985a5e8",
-    "rates_csv_sha256": "f15a033df98ce1b46631ac35988c603cb16a71a62cf3375e483ee5356f4dc09f",
+    "rates_csv_sha256": "e74f04d9b75dcf016855480af200b202fbc0d5bfafb8cb6977c614a77bfdcd5c",
     "seeds": {
       "breakeven": 1,
       "forward_uq": 0,

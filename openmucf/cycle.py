@@ -186,8 +186,9 @@ def params_from_conditions(
     ``include_loss_channels`` (default False = channels OFF) pulls the loss-channel rates from the
     ledger: ``lambda_tt = lambda_ttmu * phi * c_t`` (ttmu side-branch) and ``lambda_he = lambda_dhe3 * phi
     * c_he`` (He-3 scavenging; ``c_he`` is a STATIC per-run helium fraction, never time-evolved). Channels
-    OFF returns all three at 0.0, so the engine default reproduces v1 exactly (the three ledger rows are
-    needs_verification, and an unverified value may not introduce NEW PHYSICS as a silent default --
+    OFF returns all three at 0.0, so the engine default reproduces v1 exactly (the two rate rows,
+    ``lambda_ttmu`` and ``lambda_dhe3``, are needs_verification, and an unverified value may not
+    introduce NEW PHYSICS as a silent default --
     the scope matters: other needs_verification rows, e.g. ``eta_dtmu``, are read as defaults below,
     because they parameterise physics v1 already had).
 

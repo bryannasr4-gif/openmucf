@@ -97,14 +97,14 @@ def test_recommended_superseded_pair():
 
 
 def test_wsn_loss_channel_rows_load_and_flagged():
-    """The three loss-channel rows load, pass the enum/interval loader, and are needs_verification.
+    """The three loss-channel rows load; the two rates are needs_verification and omega_tt is pinned.
 
     lambda_ttmu ships the documented blocked fallback (0.0 + `blocked:` note); lambda_dhe3 ships a real value
     from a live open source (Fotev et al., arXiv:2001.09927 = bibkey Fotev2020)."""
     r = load_rates()
     for sym in ("lambda_ttmu", "omega_tt", "lambda_dhe3"):
         assert sym in r, sym
-        assert r[sym].needs_verification is True, sym
+        assert r[sym].needs_verification is (sym != "omega_tt"), sym
         assert r[sym].phase and r[sym].target_molecule, sym  # non-empty typed projections
     assert r.value("lambda_ttmu") == 0.0  # blocked fallback -> refit keys on this (SKIP)
     assert r["lambda_ttmu"].notes.startswith("blocked:")
@@ -118,6 +118,14 @@ def test_lambda_dt_transfer_pinned_to_its_primary():
     dt = load_rates()["lambda_dt_transfer"]
     assert (dt.source_bibkey, dt.source_locator, dt.needs_verification) == ("Jones1986", "p.589", False)
     assert (dt.value, dt.unc, dt.unc_type) == (2.8e8, 0.4e8, "exp")
+
+
+def test_omega_tt_pinned_to_its_primary():
+    """omega_tt's pinned state: source, locator, flag, value and uncertainty."""
+    tt = load_rates()["omega_tt"]
+    assert (tt.source_bibkey, tt.source_locator, tt.needs_verification) == (
+        "Bogdanova2009tt", "Table 1 (Combined)", False)
+    assert (tt.value, tt.unc, tt.unit) == (0.139, 0.015, "fraction")
 
 
 # --- FAIR provenance: DOI/URL backfill -------------------------------------------------------
