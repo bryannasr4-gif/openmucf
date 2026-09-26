@@ -1,6 +1,6 @@
 # For Geant4 developers
 
-This repository ships Geant4 muonic-atom data as an external, versioned dataset, with provenance and uncertainty attached, that a patched Geant4 consults only after an explicit opt-in ([`paper.md`](../paper/muonic-data/paper.md)); until then, every function the patches insert a lookup into runs exactly its unpatched code after a single boolean test ([`cpp/patches/README.md`](../cpp/patches/README.md)).
+This repository ships Geant4 muonic-atom data as an external, versioned dataset, with provenance and uncertainty attached, that a patched Geant4 consults only after an explicit opt-in ([`paper.md`](../paper/muonic-data/paper.md)).
 
 ## Try it
 

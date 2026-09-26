@@ -18,10 +18,6 @@ LINK = re.compile(r"\]\(([^)\s]+)\)")
 #: Clauses the page copies, each with the document it copies it from.
 COPIED = (
     (
-        "runs exactly its unpatched code",
-        "cpp/patches/README.md",
-    ),
-    (
         "unpatched build and the patched build with the opt-in off, or on with no profile selected, "
         "write identical records",
         "CHANGELOG.md",
@@ -87,7 +83,7 @@ def test_every_paragraph_and_bullet_of_the_page_carries_a_link() -> None:
 #: For the opener and the names bullet, which join clauses from several documents, the documents
 #: whose clauses they join.
 REQUIRED_LINKS = {
-    "This repository ships": {"../paper/muonic-data/paper.md", "../cpp/patches/README.md"},
+    "This repository ships": {"../paper/muonic-data/paper.md"},
     "- **Names, registration.**": {"../README.md", "../FORMAT_SPEC.md", "../cpp/patches/README.md"},
 }
 
