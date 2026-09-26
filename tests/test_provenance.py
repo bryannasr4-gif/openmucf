@@ -4,8 +4,9 @@ import json
 from pathlib import Path
 
 import openmucf
-from openmucf import provenance
-from openmucf.rates import RATES_CSV, TARGETS_CSV
+from openmucf import forecast, provenance
+from openmucf.constants import LAMBDA_0
+from openmucf.rates import RATES_CSV, TARGETS_CSV, load_rates
 
 REPO_ROOT = Path(openmucf.__file__).resolve().parent.parent
 MANIFEST = REPO_ROOT / "FINDINGS_MANIFEST.json"
@@ -97,3 +98,24 @@ def test_each_sobol_index_is_pinned_to_its_own_cell(tmp_path):
             (tmp_path / "FINDINGS_MANIFEST.json").write_text(json.dumps(swapped), encoding="utf-8")
             failures = provenance.check_manifest(tmp_path / "FINDINGS_MANIFEST.json", repo_root=tmp_path)
             assert [f for f in failures if f.startswith(f"{target}:")], (target, failures)
+
+
+def test_the_density_scaled_cap_range_is_the_ledger_band_at_that_density(tmp_path):
+    """The decay-only cap FINDINGS.md prints for phi = 2.4 is the ledger's liquid lambda_c band, scaled
+    from the liquid anchor to that density, over lambda_0, rounded to tens. Each end is pinned to its
+    own side of the range, so the two ends swapped between their entries fail the check.
+    """
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    by_id = {e["id"]: e for e in manifest["entries"]}
+    band = load_rates().dist_bounds("lambda_c_liquid")
+    expected = [f"{round(2.4 / forecast.PHI_ANCHOR * lc / LAMBDA_0, -1):.0f}" for lc in band]
+    assert [by_id["cap_dac_lo"]["value"], by_id["cap_dac_hi"]["value"]] == expected
+    findings = (REPO_ROOT / "FINDINGS.md").read_text(encoding="utf-8")
+    assert f"phi=2.4 would lift the decay-only cap to ~{expected[0]}-{expected[1]} *if" in findings
+    (tmp_path / "FINDINGS.md").write_text(findings, encoding="utf-8")
+    for target, other in (("cap_dac_lo", "cap_dac_hi"), ("cap_dac_hi", "cap_dac_lo")):
+        swapped = json.loads(json.dumps(manifest))
+        next(e for e in swapped["entries"] if e["id"] == target)["value"] = by_id[other]["value"]
+        (tmp_path / "FINDINGS_MANIFEST.json").write_text(json.dumps(swapped), encoding="utf-8")
+        failures = provenance.check_manifest(tmp_path / "FINDINGS_MANIFEST.json", repo_root=tmp_path)
+        assert [f for f in failures if f.startswith(f"{target}:")], (target, failures)

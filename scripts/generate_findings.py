@@ -15,7 +15,7 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from openmucf import cycle, mucost, provenance, uq  # noqa: E402
+from openmucf import cycle, likelihood, mucost, provenance, uq  # noqa: E402
 from openmucf.constants import LAMBDA_0  # noqa: E402
 from openmucf.rates import RATES_CSV, TARGETS_CSV, load_rates  # noqa: E402
 
@@ -216,6 +216,12 @@ H["cap_zero_sticking"] = f"{be['xmu_cap_at_measured_lambda_c']:.0f}"
 # the cap is lambda_c/lambda_0 and therefore CONDITION-dependent; the ledger carries a second,
 # condition-tagged anchor (SIN 12 K solid) whose sticking is paired to the SAME measurement
 H["cap_zero_sticking_solid"] = f"{be['xmu_cap_at_solid_lambda_c']:.0f}"
+# section 3's density-scaled cap: the ledger's liquid lambda_c band scaled from its liquid anchor to
+# the stated density (likelihood.ledger_lambda_c_bounds), over lambda_0, rounded to tens as printed
+_PHI_DAC = 2.4
+H["cap_dac_lo"], H["cap_dac_hi"] = (
+    f"{round(_lc / LAMBDA_0, -1):.0f}" for _lc in likelihood.ledger_lambda_c_bounds(_PHI_DAC)
+)
 H["yield_solid_pair"] = f"{be['yield_at_solid_anchor_pair']:.0f}"
 H["R_required"] = f"{be['R_required_at_infinite_lambda_c']:.2f}"  # computed from the omega_s0 nominal
 # the R>=0.77 point value carries an omega_s0-box band (higher initial sticking needs more R)
@@ -563,7 +569,7 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\\mu > 500$, $Q > 2$. U
   the faster cycle also carried higher measured sticking (0.57% vs 0.45%), so the measured yield rose
   only 113 -> {H["yield_solid_pair"]}. Even at the +30% reproduction
   band on lambda_c the liquid cap is ~414 < 500. Density scaling (lambda_c = phi*lambda_c_tilde) at the
-  demonstrated DAC phi=2.4 would lift the decay-only cap to ~530-640 *if phi-linearity holds there* --
+  demonstrated DAC phi={_PHI_DAC:g} would lift the decay-only cap to ~{H["cap_dac_lo"]}-{H["cap_dac_hi"]} *if phi-linearity holds there* --
   which is precisely the unmeasured question the MuFusE program tests.
 - **What would have to be true** for $N_\\mu$=500: the (lambda_c, R) frontier runs from
   (2.28e8, R -> 1) to (3e8, R = {be["R_required_at_lambda_c_3e8"]:.2f}); and even at infinite lambda_c,
@@ -671,6 +677,9 @@ _entries += [
     _entry("P_qnet_gt1", rf"P\(Q_net > 1\) = {re.escape(H['P_qnet_gt1'])}"),
     _entry("P_xmu_gt500", rf"P\(X_mu > 500\) = {re.escape(H['P_xmu_gt500'])}"),
     _entry("cap_zero_sticking", rf"\*\*X_mu = {re.escape(H['cap_zero_sticking'])}\*\*"),
+    # each end of the density-scaled cap range is anchored to its own side of the dash
+    _entry("cap_dac_lo", rf"decay-only cap to ~{re.escape(H['cap_dac_lo'])}-"),
+    _entry("cap_dac_hi", rf"-{re.escape(H['cap_dac_hi'])} \*if phi-linearity"),
     _entry(
         "cap_zero_sticking_solid",
         rf"anchor\s*\n?\s*\(\$\\lambda_c\$=1\.93e8[^\n]*\n?[^\n]*\*\*X_mu = "

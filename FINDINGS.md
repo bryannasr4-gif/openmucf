@@ -250,7 +250,7 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Un
   the faster cycle also carried higher measured sticking (0.57% vs 0.45%), so the measured yield rose
   only 113 -> 124. Even at the +30% reproduction
   band on lambda_c the liquid cap is ~414 < 500. Density scaling (lambda_c = phi*lambda_c_tilde) at the
-  demonstrated DAC phi=2.4 would lift the decay-only cap to ~530-640 *if phi-linearity holds there* --
+  demonstrated DAC phi=2.4 would lift the decay-only cap to ~440-640 *if phi-linearity holds there* --
   which is precisely the unmeasured question the MuFusE program tests.
 - **What would have to be true** for $N_\mu$=500: the (lambda_c, R) frontier runs from
   (2.28e8, R -> 1) to (3e8, R = 0.94); and even at infinite lambda_c,
