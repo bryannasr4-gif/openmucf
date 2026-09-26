@@ -2,7 +2,7 @@
 
 **Open FAIR rate ledger + differentiable cycle/energy-balance auditor for muon-catalyzed fusion (μCF).**
 
-![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
+[![Licenses by path](https://img.shields.io/badge/licenses%20by%20path-Apache--2.0%20%C2%B7%20CC--BY--4.0%20%C2%B7%20Geant4%20Software%20License-blue.svg)](#license)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
 ![Status](https://img.shields.io/badge/status-v1%20open%20infrastructure%20%2B%20honest%20findings-blue.svg)
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
@@ -218,6 +218,7 @@ repository" button from it). Archived on Zenodo — cite the exact release **v1.
 [10.5281/zenodo.21251511](https://doi.org/10.5281/zenodo.21251511) to always resolve to the latest version.
 
 ## License
-- **Code** — the `openmucf/` package, `scripts/`, tests, and all software: **Apache-2.0** (see [`LICENSE`](LICENSE)).
+- **Code** — the `openmucf/` package, `scripts/`, tests, and all software not named below: **Apache-2.0** (see [`LICENSE`](LICENSE)).
 - **Data** — the rate ledger `openmucf/data/*` and the generated data docs: **CC-BY-4.0** (see [`LICENSE-DATA`](LICENSE-DATA)), so the compiled, provenance-tagged rates can be reused and cited with attribution.
-- **Third party** — `third_party/geant4/` holds unmodified Geant4 source files, redistributed under the **Geant4 Software License v1.0** ([`third_party/geant4/LICENSE`](third_party/geant4/LICENSE)). Those terms apply to that directory only.
+- **Geant4 patches** — the patch files `cpp/patches/*.patch`, the Geant4 source lines they carry and the lines they add alike: offered under the **Geant4 Software License v1.0** ([`cpp/patches/LICENSE`](cpp/patches/LICENSE)), so that they can be taken into Geant4 under the licence Geant4 itself carries.
+- **Third party** — `third_party/geant4/` holds unmodified Geant4 source files, redistributed under the **Geant4 Software License v1.0** ([`third_party/geant4/LICENSE`](third_party/geant4/LICENSE)).
