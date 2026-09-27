@@ -2,6 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "OpenMuCF: Open FAIR rate ledger and differentiable cycle/energy-balance auditor for muon-catalyzed fusion"
 version: 1.3.0
+doi: "10.5281/zenodo.22995079"
 date-released: "2026-09-27"
 type: software
 authors:
@@ -29,7 +30,7 @@ abstract: >-
   Stodden (1990) and Rafelski-Müller (1988/89) -- and instead provides a
   neutral shared substrate that turns point-estimate breakeven claims into
   error-barred, falsifiable verdicts.
-# The `version` above pins this exact release. The `preferred-citation` below is the
+# The `version` and `doi` above pin this exact release. The `preferred-citation` below is the
 # version-independent software record (Zenodo concept DOI) -- cite it to always resolve to the
 # latest version. No `license` key is set: this repository's files carry different licences by
 # path, and CFF reads a list of licences as alternatives. The code is Apache-2.0 (LICENSE) apart
