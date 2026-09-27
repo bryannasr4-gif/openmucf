@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-27
+
+**What this release is.** v1.3.0 ships the muonic-atom data layer for Geant4: its datasets, the dataset read from C++ and from inside Geant4, a transport workflow that builds each revision the patches name with and without them, and a page for Geant4 developers.
+
+- **D1.** The `mizuno2025` and `suzuki1987` capture profiles ship beside the `parity` tables, with the effective-charge audit.
+- **D2.** `data/g4/d2/` records which element Geant4's selector picks in the harvested materials, `data/g4/reference/d2/` holds atomic-capture values read in primary publications, and `selector_vs_primary.csv` sets the selector's per-atom ratio beside those recorded as a per-atom ratio `A(X/Y)`.
+- **D3.** The energy tables of the `mudirac130` profile are compared with the energies Fricke et al. (1995) and Saito et al. (2025) print; the rows outside tolerance are registered disagreements, and none is fitted away.
+- **Reader and patches.** `G4MuonicDataTable`, a C++17 reader built on the standard library alone, with a standalone validator the `cpp` CI job runs on Linux, macOS and Windows; and patches under `cpp/patches/` for Geant4 v11.4.2 and v11.5.0.beta: behind the `G4HadronicParameters` opt-in, a patched Geant4 reads each seam through a profile of its own.
+- **Patch documents.** `cpp/patches/README.md` states which calls into the glue the patches' hunks in existing Geant4 files make outside an opt-in test, and `tests/test_g4patch_readme.py` holds it to both behaviour patches.
+- **Transport.** `cpp/transport/` builds each revision the patches name with and without them from a clean export of its tag and compares the events the builds transport.
+- **For Geant4 developers.** `docs/geant4-developers.md`: how to try it, what has been checked, what building it showed about Geant4 itself and taking it upstream, with links to the documents that carry the evidence.
+- **Licence of the patches.** The patch files under `cpp/patches/` are offered under the Geant4 Software License, so that they can be taken into Geant4.
+- **Rate ledger.** The transfer and tt-branch rows of the rate ledger are read against their primaries, the Kamimura calibration chain truncates its Normal prior to the weak prior's support, and the density-scaled cap in the findings is computed from the rate ledger.
+- **Claim guard.** It reads a universal stated by negation, a wrapped claim sentence is keyed whole, and figure text is a guarded surface.
+- **What v1.2.0 deferred.** Each item the v1.2.0 notes deferred to v1.3.0 has an entry below.
+- **Names.** The dataset name `G4MuonicData` and the environment variable `G4MUONICDATA` are provisional placeholders, pending discussion with the Geant4 collaboration.
+
 ### Fixed -- what the patch documents say a patched build does (2026-09-27)
 
 - **`cpp/patches/README.md` states which calls into the glue the patches' hunks in existing Geant4 files make outside an opt-in test**: both capture-rate functions pass the rate they computed to `G4MuonicDataOverlay::CheckComputedCaptureRate`, which under an evaluated capture profile, a profile other than `parity` that gives the capture seam a table, raises `G4MuonicData005` for a rate that is not a positive finite rate; the opt-in's setter calls `G4MuonicDataOverlay::Initialize()`, which, unless both seams select `compiled`, refuses a missing or unreadable dataset when the opt-in is set; and the README names each `G4MuonicData` code the patches raise, the semantic layer they add and the definition they rename. `paper/muonic-data/paper.md` states that the negative fallback rates are reproduced under `parity` and refused under the profiles that carry published capture-rate measurements, and that the patches also change the line that renames the compiled-in K-energy definition.
@@ -1063,7 +1080,8 @@ provenance-clean and reproducible.
   ignorance-bound scenario B — **registered at this tag** (Zenodo DOI 10.5281/zenodo.21251512). Adds 20 forecast
   tests (**63 total**).
 
-[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.1.0
 [1.0.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.0.0
