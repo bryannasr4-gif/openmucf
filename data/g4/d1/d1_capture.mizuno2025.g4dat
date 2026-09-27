@@ -4,7 +4,7 @@
 #PROFILE      mizuno2025
 #SEAM         d1_nuclear_capture
 #TABLE        nuclear_capture_rate
-#GENERATOR    openmucf-g4 1.2.0
+#GENERATOR    openmucf-g4 1.3.0
 #SOURCEDIGEST c729bc3ce039febdaa794a0e02258956fa70dd5ceb562ca029f0ea7cb5308732
 #UNITS        value=1e6/s unc=1e6/s
 #COLUMNS      Z A value unc

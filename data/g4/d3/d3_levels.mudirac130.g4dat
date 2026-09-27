@@ -4,7 +4,7 @@
 #PROFILE      mudirac130
 #SEAM         d3_transitions
 #TABLE        level_energy
-#GENERATOR    openmucf-g4 1.2.0
+#GENERATOR    openmucf-g4 1.3.0
 #SOURCEDIGEST 011ffc42a9932737b194cb2a010433e1d9a8e88a9eec8d245a199b72260ca677
 #UNITS        e2=keV e3=keV e4=keV e5=keV e6=keV e7=keV e8=keV u2=keV u3=keV u4=keV u5=keV u6=keV u7=keV u8=keV
 #COLUMNS      Z A e2 e3 e4 e5 e6 e7 e8 u2 u3 u4 u5 u6 u7 u8
