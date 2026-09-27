@@ -333,5 +333,5 @@ energy its decay passes on; where these tables carry no such row, the compiled-i
 The energy the cascade deposits, which Geant4 passes on as the muon's binding energy to decay in
 orbit and to nuclear capture, is the sum of the energies it emitted, and so moves with the table's
 K energy.
-With the opt-in off, or under a profile carrying no D3 table, the cascade and K-energy harvests of
-Geant4 v11.4.2 and v11.5.0.beta are bit-identical to those of unpatched builds.
+With the opt-in off, the cascade and K-energy harvests of Geant4 v11.4.2 and v11.5.0.beta are
+bit-identical to those of unpatched builds.

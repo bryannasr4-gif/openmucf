@@ -643,11 +643,11 @@ e52326badfd61270409743256330b494a0f4e7ef	README.md	REGISTERED: 4.70, 10, ³ -- r
 f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
 21ffeec98e1eab90e7c9b55fc3e79d25073d0a52	cpp/patches/README.md	REGISTERED: one -- the single call the sentence quotes, SetEnableMuonicData(true)
 5037f1b272e701d700f2d7777c22812316bdf1e7	cpp/patches/README.md	REGISTERED: 4, 3 -- the digits of the seam variables `G4MUONICDATA_D1_PROFILE` and `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells them: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
-75447ed461a1582e02a51d077e894e7c8ee23c75	cpp/patches/README.md	REGISTERED: 3, 4 -- digits of the toolkit and seam profile variable names as cpp/src/G4MuonicDataOverlay.cc names them
 7adbc79d41e9978fcb2c79814f8ae1f02434411b	cpp/patches/README.md	REGISTERED: one -- the boolean the patch adds to G4HadronicParameters
-7e669acdacf26345f54f4f3c90959c365eadc8f7	cpp/patches/README.md	REGISTERED: one -- 'one falling order': a single order, a pronoun for it, not a count
-7f10a2658f68adf54c457f479b42b006407c529b	cpp/patches/README.md	REGISTERED: one -- the opt-in test each patched function makes before its own code
+7ee0719af0f5827c237692000e8544b917c0d1d4	cpp/patches/README.md	REGISTERED: 3, 4 -- digits of the toolkit and seam profile variable names as cpp/src/G4MuonicDataOverlay.cc names them
+a58d13cc217e49285cbf137cb66b6f01cc48fcbc	cpp/patches/README.md	REGISTERED: one -- 'one falling order': a single order, a pronoun for it, not a count
 d5694c7e61886bf35034966d99d6e7e19650f4aa	cpp/patches/README.md	REGISTERED: two, one -- the pair of energy tables a profile declares, which FORMAT_SPEC.md names `k_shell_energy` and `level_energy`, and 'one profile', 'one set': a single profile and a single set, not counts of data
+e44bc318fe3fd480d04811689eea39b02f9fadd8	cpp/patches/README.md	REGISTERED: one -- the opt-in test each patched function makes
 ffc9ecfeb990967e9d6d644890750f0754208e1a	cpp/patches/README.md	REGISTERED: four, two -- the functions and files the sentence itself lists by name; T-72 pins the patch's path set
 37a429d48aa30b8e4ec5448de067bb6f2ff5f46b	cpp/tools/README.md	REGISTERED: 0..101 -- the zeff loop bounds of harvest_d1.cc ('for (int Z = 0; Z <= 101; ++Z)'), past the array's last index so both clamp ends are probed: a driver-declared range, not a count of the array, whose length T-63 pins
 557684388c44d59ed7c3818ad62ebcc08278e5f5	cpp/tools/README.md	REGISTERED: two -- 'exactly two things': the two computations the sentence goes on to name (the digest, the diagnostic-subset selection)
