@@ -1,9 +1,9 @@
 {
-  "title": "OpenMuCF: Open FAIR rate ledger + differentiable muon-catalyzed-fusion cycle/energy auditor",
+  "title": "OpenMuCF: open FAIR rate ledger and auditor for muon-catalyzed fusion, and external muonic-atom data for Geant4",
   "upload_type": "software",
-  "description": "OpenMuCF is open, reproducible, differentiable, uncertainty-bearing infrastructure for the muon-catalyzed-fusion (μCF) cycle: a FAIR rate ledger with per-row provenance, conditions, uncertainty, established/contested tags and validity ranges; a JAX/diffrax cycle-kinetics and net-electrical energy-balance engine; and a global Sobol/forward-UQ auditor that turns point-estimate breakeven claims into error-barred, falsifiable verdicts. It introduces no new fundamental μCF physics — the cycle is textbook and the reactivation transport follows Stodden (1990) and Rafelski–Müller (1988/89) — its contribution is the open shared substrate plus honest findings; it complements GEANT4 and does not compete with it.",
+  "description": "<p>OpenMuCF is open, reproducible, differentiable, uncertainty-bearing infrastructure for the muon-catalyzed-fusion (μCF) cycle: a FAIR rate ledger with per-row provenance, conditions, uncertainty, established/contested tags and validity ranges; a JAX/diffrax cycle-kinetics and net-electrical energy-balance engine; and a global Sobol/forward-UQ auditor that turns point-estimate breakeven claims into error-barred, falsifiable verdicts.</p><p>It also ships Geant4 muonic-atom data as an external, versioned dataset, with provenance and uncertainty attached, that a patched Geant4 consults only after an explicit opt-in: the G4MuonicData external-data format; D1, nuclear capture; D2, the capturing-atom selector and the atomic-capture reference corpus; the D3 energy tables of the mudirac130 profile; patches for Geant4 v11.4.2 and v11.5.0.beta; and a transport workflow that builds each revision the patches name with and without them. docs/geant4-developers.md says how to try it, what has been checked and what building it showed about Geant4 itself.</p><p>The archive's files carry licences by path, given in the notes.</p>",
   "license": "other-open",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "language": "eng",
   "access_right": "open",
   "keywords": [
@@ -23,7 +23,11 @@
     "Bayesian calibration",
     "FAIR data",
     "reproducibility",
-    "open science infrastructure"
+    "open science infrastructure",
+    "Geant4",
+    "muonic atoms",
+    "muon capture",
+    "nuclear data"
   ],
   "creators": [
     {
