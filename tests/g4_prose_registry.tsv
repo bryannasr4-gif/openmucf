@@ -654,5 +654,6 @@ ffc9ecfeb990967e9d6d644890750f0754208e1a	cpp/patches/README.md	REGISTERED: four,
 9196923f60d9fbddd3dc3370dd0d04b2e4b08f96	cpp/tools/README.md	REGISTERED: 0 -- the degenerate probe inputs harvest_d1_degenerate.cc declares (Z = 0, A = 0, Z < 0), which T-52 reads back from the driver and holds the oracle's degenerate block to
 f1d04da00f8c3dd4297a7fb675e3cdde5460f8b0	cpp/tools/README.md	REGISTERED: one -- a pronoun ('the committed one')
 fd250c90cc595d332c9a6d8d094c4f25c7e16609	cpp/tools/README.md	REGISTERED: two, one -- 'two conforming Geant4 builds of one source': the two compiler configurations the F-3 measurement compares
+fdbe4baad131c8649d1244c5af11ac9620c5b1e0	docs/geant4-developers.md	REGISTERED: 4, 3 -- the digits of the seam variable `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
 af07cde6aa19f388476de4a17366a0b9dda6b70a	third_party/geant4/README.md	REGISTERED: 0 -- the NUL byte git's blob header ends with, spelled as the escape in the example
 c1c07f3c544b0b7083668ddf28de06790c656456	third_party/geant4/README.md	REGISTERED: three -- the lines of the fenced hashlib example that follows

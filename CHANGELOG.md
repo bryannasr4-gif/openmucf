@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added -- a page for Geant4 developers (2026-09-26)
+
+- **`docs/geant4-developers.md` is a page for Geant4 developers: the muonic-atom data layer, how to try it, what has been checked, what building it showed about Geant4 itself and taking it upstream, with links to the documents that carry the evidence.** `README.md` and `docs/index.md` link to it, the prose check in `tests/test_g4prose.py` reads it, and `tests/test_g4_developer_page.py` tests that its paragraphs and bullets carry links, that its relative links resolve, that its commands name the patches, the opt-in call and the table directories the repository ships, that a selection of the clauses it copies stand in their sources, and that `selector_vs_primary.csv` and `incompatible_groups.csv` carry the gating and the empty intersections it states.
+
 ### Changed -- the licence of the Geant4 patch files, and the licence metadata (2026-09-26)
 
 - **The patch files under `cpp/patches/` are offered under the Geant4 Software License**, the Geant4 source lines they carry and the lines they add alike, so that they can be taken into Geant4 under the licence Geant4 itself carries. `cpp/patches/LICENSE` is a byte-for-byte copy of `third_party/geant4/LICENSE`, and a test in `tests/test_g4overlay.py` holds it to that copy and to the object id upstream's repository gives the file; `cpp/patches/README.md` carries the notice the licence asks of a redistribution's documentation. The licence statements of `README.md` (its License section), `CONTRIBUTING.md`, `DATASET_D1.md`, `FORMAT_SPEC.md`, `docs/index.md` and `third_party/geant4/README.md` now name the patch files.

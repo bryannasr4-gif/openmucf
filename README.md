@@ -8,6 +8,8 @@
 [![CI](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml/badge.svg)](https://github.com/bryannasr4-gif/openmucf/actions/workflows/ci.yml)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21251511.svg)](https://doi.org/10.5281/zenodo.21251511)
 
+**For Geant4 developers:** [the muonic-atom data layer, how to try it, and what building it showed about Geant4](docs/geant4-developers.md).
+
 > Status: **v1 spine complete** (Phases 0–2): it reproduces the pre-registered reproduction/consistency
 > targets (see the class column in `VALIDATION.md`); independent-prediction targets are registered and
 > currently FAIL by design against the v1 placeholder formation model — the quantified motivation for the

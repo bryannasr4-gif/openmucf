@@ -70,6 +70,7 @@ make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 |---|---|
 | [getting-started.md](getting-started.md) | narrative walkthrough: load the ledger, compute X_μ ≈ 114, scientific breakeven ≈ 284 and net-electrical breakeven ≈ 2367, and reproduce a finding with `make findings` |
 | [api-overview.md](api-overview.md) | one short section per `openmucf` module — key public functions/classes and what they return |
+| [geant4-developers.md](geant4-developers.md) | for Geant4 developers: the muonic-atom data layer, how to try it, what has been checked, what building it showed about Geant4 itself, and taking it upstream |
 
 See also the in-repo references: `README.md`, `MODEL_SPEC.md`, `LITERATURE.md`,
 `PRE_REGISTRATION.md`, `FINDINGS.md`, `VALIDATION.md`, `CALIBRATION.md`,

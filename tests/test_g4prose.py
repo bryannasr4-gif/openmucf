@@ -50,7 +50,7 @@ PROSE_PATHS = (
     "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
     "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md",
     "cpp/transport/README.md", "DATASET_D2.md",
-    "paper/muonic-data/paper.md", "FORMAT_SPEC.md",
+    "paper/muonic-data/paper.md", "FORMAT_SPEC.md", "docs/geant4-developers.md",
 )
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
@@ -66,6 +66,10 @@ def test_t74_paper_draft_enumerated():
 
 def test_t74_format_specification_enumerated():
     assert "FORMAT_SPEC.md" in PROSE_PATHS
+
+
+def test_t74_geant4_developer_page_enumerated():
+    assert "docs/geant4-developers.md" in PROSE_PATHS
 
 
 CLASSES = pathlib.Path(__file__).with_name("g4_prose_classes.tsv")
