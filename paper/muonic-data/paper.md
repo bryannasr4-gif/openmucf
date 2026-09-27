@@ -64,7 +64,8 @@ G4CASCADE is a data-driven Geant4 module that simulates (n, γ) de-excitation pa
 [@Weimer2024].
 The layer described here extends Geant4's existing muonic-atom code rather than replacing it:
 every hunk its patches add to an existing Geant4 file only inserts, except the calls to
-`GetKShellEnergy` that now pass the mass number, and its opt-in takes the form NuDEX's does,
+`GetKShellEnergy` that now pass the mass number and the line that renames its compiled-in
+definition, and its opt-in takes the form NuDEX's does,
 `SetEnableMuonicData(true)` on the `G4HadronicParameters` singleton.
 
 # Software design
@@ -82,11 +83,14 @@ standalone validator built on it runs in continuous integration on Linux, macOS 
 Each table names a profile, and a patched build reads the nuclear-capture seam and the
 muonic-transition seam each through a profile of its own, chosen by an environment variable;
 where none is set, capture reads `parity` and the transitions keep the compiled-in code.
-A key the selected table lacks falls through to the compiled-in code, so the fallback formula is
-reproduced as it is, including the negative rates the dataset's documentation registers.
+A request the selected table finds no row for falls through to the compiled-in code; under
+`parity` the fallback formula is reproduced as it is, including the negative rates the dataset's
+documentation registers, and under the profiles that carry published capture-rate measurements a
+computed rate that is not positive and finite raises a fatal exception.
 Before any table is selected, the glue checks what every loaded table means, including its keys,
 the units of the columns a lookup reads and the domain of its values, and refuses the whole dataset
-with a fatal exception naming the rule, the file and the table where a check fails.
+with a fatal exception naming the rule that failed and the file and table, or the profile, it
+failed in.
 
 The `parity` profile is the fixed point against which every other profile is measured, so it
 reproduces the compiled-in data including its defects instead of correcting them.
