@@ -273,8 +273,9 @@ def run(rates, targets_csv=None, channels="off"):
             _within(omega_pred, float(_po["value"]), _po["tolerance"]),
             "independent prediction of effective sticking from the ledger microphysics "
             "(omega_s0 x (1-R_col) x (1-R_X)); FAIL is the registered finding: the ~+24% gap to the "
-            "measured 0.45% is the side-channel share the v1 effective parameters absorb "
-            "(accounting.md re-attribution; pending lambda_ttmu acquisition).",
+            "measured 0.45% is a theory-over-experiment sticking discrepancy -- a theory initial sticking "
+            "(omega_s0, Kamimura) times model reactivation factors (R_col, R_X), none of them fitted, "
+            "predicts more sticking than was measured.",
             "independent",
         )
     )

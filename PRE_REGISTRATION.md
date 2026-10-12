@@ -61,6 +61,14 @@ Formalized in `openmucf/data/validation_targets.csv`; backbone is `MODEL_SPEC.md
 > was changed; the corrected observation makes the target strictly harder, and the FAILs are the
 > reported result.
 
+> **Amendment (2026-10-12, disclosed — the `V_petitjean_omega` rationale):** the 2026-07-12 amendment above
+> read the expected gap between the predicted ω_s0·(1−R_col) and the registered band as an un-attributed
+> side-channel share of the v1 effective parameters. That reading is withdrawn. The prediction multiplies a
+> theory initial sticking (ω_s0, Kamimura) by a model reactivation factor (1 − R_col); neither is fitted,
+> so neither can absorb a side channel, and the gap is a theory-over-experiment sticking discrepancy.
+> Pinning the ttμ formation rate leaves the prediction unchanged, since it carries no tt term. The target,
+> its band, its class and the expected FAIL are unchanged.
+
 ## Falsification target (the headline)
 Re-create, **inside the same transparent model**, the 2026 projections:
 - Yin–Kou–Chen (2605.26432): N_μ "> 500", Q > 2 under four-dimensional synergy.
