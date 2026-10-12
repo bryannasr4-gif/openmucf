@@ -73,6 +73,7 @@
 304d626a3f087236dfb730250780d6e437372983	CHANGELOG.md	REGISTERED: zero -- 'a misleading zero bracket', a description
 30953f446b4e7a6863377a45c1c5022150ac9618	CHANGELOG.md	REGISTERED: 92, 80, 94 -- the UNREVIEWED cap's path across this release; `LEDGER_CLAIMS_UNREVIEWED_CEILING` in tests/test_ledger_claims.py is its current value
 30af5fbcb12d734d1ee6bb8d481f14648f7e7e9d	CHANGELOG.md	REGISTERED: 1 -- 'η=1', FINDINGS.md's section-1c structural bracket
+315cc688e00666c2a04669cef514d095c2fb3772	CHANGELOG.md	REGISTERED: two -- the lower and upper edges of the lambda_c_liquid band in openmucf/data/rates.csv: the Yamashita-Kino digitization and the Breunlich liquid maximum
 3317fdd313ce213a9dc4752e957342e92a732203	CHANGELOG.md	REGISTERED: fifteen, seven -- `SENTENCE_PATHS` in tests/test_ledger_claims.py, fifteen entries, and the seven the second change read
 340980a3db9a6acac0b905f37b19178be5b23fdf	CHANGELOG.md	REGISTERED: 1.2, 300 -- the section-2b box's operating point, phi=1.2 and 300 K as FINDINGS.md prints them, and the superseded parenthesis quoted
 34456b76858fa4a2fcd580616188bbe2524a739f	CHANGELOG.md	REGISTERED: 158, 157 -- sentence pairs cut after a capitalised token, measured at this entry's head and at the head before it: dated counts
@@ -136,6 +137,7 @@
 5e8367a9a4b6816d5fb8ef99040d90436b999b5f	CHANGELOG.md	REGISTERED: 30, 0.5, 7 -- the low-T grid-convergence figures as the v1.1.0 notes recorded them; openmucf/formation.py's grid comment records the same doubling test
 5f2d77c926bec999dd64427fd50f0d1a1ce6ca11	CHANGELOG.md	REGISTERED: 41 -- 41: rows where the key is a label, as this dated entry recorded it (a released line, held by this row and not re-derived)
 5f5b2fbcf4d50d22aa664b677b9242379c420863	CHANGELOG.md	REGISTERED: one -- 'a released one', a pronoun
+5fc4d3199f0998227b108d7a8d0469d512e2285c	CHANGELOG.md	REGISTERED: five -- 'a five-times-anchored scenario' names the eta=5 row of FINDINGS.md section 1c
 60e0f80e740d30071c66833b2d550bd843dbdb41	CHANGELOG.md	REGISTERED: 25.68 -- MUON_COST.md's electrical figure on the unrounded Kovach denominator
 60ef6aaf5d1d2903fc0ad29d113ca348d3910b45	CHANGELOG.md	REGISTERED: four -- the openmucf/data/muon_cost_chain.csv rows carrying a `factor` value
 610d209d84e8caea3ed579b900b4882ca4887953	CHANGELOG.md	REGISTERED: two -- the two routes `ChainPath`'s docstring compares
@@ -173,6 +175,7 @@
 7b9340d07df799bc7595f05ab42eaf8be24add0d	CHANGELOG.md	REGISTERED: one, four -- 'Not one of the four stage advances', MUON_COST.md's chain-coverage sentence
 7bc77965fff0b2b9f31267830af1a00c3f51e2c0	CHANGELOG.md	REGISTERED: 1986 -- the year in the case name `jones-1986`, an identifier
 7bf8506f8445fbbbd9d0821ebb9b6a26802b11c1	CHANGELOG.md	REGISTERED: 10, ²²⁶, ¹² -- the paper's feedstock and muon rate as scripts/parisi_ac225.py's docstring quotes them; the nuclide label ²²⁶Ra
+7d5aa58261d40aebaa1a3654b4449e90647cc9ba	CHANGELOG.md	REGISTERED: two -- the FINDINGS_MANIFEST.json entries eta_bracket_lo and eta_bracket_hi, whose patterns locate the relabelled rows of FINDINGS.md section 1c
 7dadbd8d71d63a96911521b76275d5f494afc5fa	CHANGELOG.md	REGISTERED: 17 -- the `%.17g` format `format_float` in openmucf/g4/spec.py renders with
 7e180128a3694d3513998b47756c27ae395b6c16	CHANGELOG.md	REGISTERED: 300 -- the 300 K anchor openmucf/formation.py's `_CALIB` re-derivation preserves
 7f72bb46326019ebcf5469a16af275ac32a68506	CHANGELOG.md	REGISTERED: 10, ³ -- '~10³× better', the sealed-tube comparison NEUTRONOMICS.md prints as ~10^3
