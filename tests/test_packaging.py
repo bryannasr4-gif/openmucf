@@ -243,6 +243,7 @@ LICENCE_BY_PATH: dict[str, str | None] = {
     "data/g4/d1/d1_capture.prov.json": "Geant4 Software License",
     "data/g4/d1/d1_zeff.g4dat": "Geant4 Software License",
     "data/g4/d1/d1_zeff.prov.json": "Geant4 Software License",
+    "data/g4/d1/geant4_natural_isotopes.csv": "Geant4 Software License",
     "data/g4/d3/mudirac_inputs.csv": "MIT",
     "data/g4/d3/LICENSE-MUDIRAC": "MIT",
 }
@@ -252,6 +253,9 @@ PARITY = (
     "data/g4/d1/d1_zeff.g4dat", "data/g4/d1/d1_zeff.prov.json",
 )
 #: MuDirac's input radii and the text of its MIT License, under which they are carried.
+#: The natural isotopic compositions read from Geant4 builds, which restate values compiled into Geant4 and
+#: carry the Geant4 Software License, as the `parity` tables do.
+GEANT4_COMPOSITIONS = ("data/g4/d1/geant4_natural_isotopes.csv",)
 MUDIRAC = ("data/g4/d3/mudirac_inputs.csv", "data/g4/d3/LICENSE-MUDIRAC")
 #: The files under `data/g4/` that restate cells of tables a third party publishes -- as printed, rescaled or
 #: normalized, whether alone, as the values of a table generated from them or beside this project's values in
@@ -284,6 +288,8 @@ PROJECT_AUTHORED = (
     "data/g4/d1/d1_gp_sweep.oracle",
     "data/g4/d1/geant4_add_dataset.snippet",
     "data/g4/d1/isotope_audit.csv",
+    "data/g4/d1/natural_harvest_builds.csv",
+    "data/g4/d1/natural_target_capture.csv",
     "data/g4/d2/harvest_builds.csv",
     "data/g4/d2/selector_bindings.csv",
     "data/g4/d2/selector_call_sites.csv",
@@ -318,6 +324,7 @@ G4_DATA: dict[str, str | None] = {
     **dict.fromkeys(RESTATED, None),
     **dict.fromkeys(PROJECT_AUTHORED, "CC-BY-4.0"),
     **dict.fromkeys(PARITY, "Geant4 Software License"),
+    **dict.fromkeys(GEANT4_COMPOSITIONS, "Geant4 Software License"),
     **dict.fromkeys(MUDIRAC, "MIT"),
 }
 #: The words in which a statement says that a path carries no licence of this repository.
@@ -452,7 +459,8 @@ def licence_statements() -> dict[str, tuple[str, tuple[str, ...]]]:
         ),
         "LICENSE-DATA": (
             _note(read("LICENSE-DATA"), "NOTE (not part of the Creative Commons licence)"),
-            ("openmucf/data", "data/g4/", "third_party/geant4/", "cpp/patches/"),
+            ("openmucf/data", "data/g4/", "third_party/geant4/", "cpp/patches/",
+             "data/g4/d1/geant4_natural_isotopes.csv"),
         ),
         "DATASET_D1.md": (
             _section(read("DATASET_D1.md"), "## 8. Licensing"),
@@ -533,7 +541,8 @@ def test_every_file_under_data_g4_carries_the_licence_its_class_gives_it():
     """The files under `data/g4/` are exactly those :data:`G4_DATA` lists, so a file added there is classed
     before it ships, and the paths of the statements give each file the licence its class gives it: none for
     a file of :data:`RESTATED`, CC-BY-4.0 for one of :data:`PROJECT_AUTHORED`, the Geant4 Software License for
-    the `parity` tables and the MIT License for MuDirac's radii and their licence text."""
+    the `parity` tables and the natural isotopic compositions read from Geant4 builds, and the MIT License for
+    MuDirac's radii and their licence text."""
     check_g4_data_inventory(g4_data_files(), G4_DATA)
 
 

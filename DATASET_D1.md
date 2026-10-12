@@ -456,6 +456,8 @@ The `parity` tables `data/g4/d1/d1_capture.g4dat` and `data/g4/d1/d1_zeff.g4dat`
 values compiled into Geant4, and their Layer-2 files `data/g4/d1/d1_capture.prov.json` and
 `data/g4/d1/d1_zeff.prov.json` are offered under the Geant4 Software License v1.0, the licence of the
 Geant4 source in `third_party/geant4/` they are generated from.
+`data/g4/d1/geant4_natural_isotopes.csv`, the natural isotopic compositions read from Geant4 builds, is
+offered under the Geant4 Software License v1.0.
 The files that restate cells of the primaries' tables, `data/g4/d1/capture_rate_cells.csv`,
 `data/g4/d1/zeff_audit.csv`, `data/g4/d1/suzuki1987_*.csv` and `data/g4/d1/mizuno2025_table*.csv`,
 and the `suzuki1987` and `mizuno2025` profiles generated from them,
@@ -530,3 +532,122 @@ The table lists the paired keys whose value or uncertainty differs at the publis
 | 5 | 10 | 10 | 0.02757 ± 0.00063 | 0.0278 ± 0.0007 | Table III p.2217 row 23 |
 | 5 | 11 | 11 | 0.02188 ± 0.00064 | 0.0219 ± 0.0007 | Table III p.2217 row 25 |
 | 6 | 13 | 13 | 0.03474 ± 0.00034 | 0.0376 ± 0.0007 | Table III p.2217 row 39 |
+
+## 11. Natural-composition targets
+
+Geant4 picks the nucleus that captures a stopped negative muon by drawing the element, then drawing an
+isotope of it with the probabilities of the element's relative abundance vector
+(`G4ElementSelector::SelectZandA`), and it asks `GetMuonCaptureRate(Z, A)` about that nucleus alone.
+`data/g4/d2/selector_call_sites.csv` lists both callers of the selector in each revision:
+`G4HadronStoppingProcess`, from which derives the `G4MuonMinusCapture` that the reference physics lists
+QBBC and FTFP_BERT give the negative muon (`data/g4/d2/selector_bindings.csv`), and
+`G4MuonMinusAtomicCapture`.
+The compiled-in table answers only a nucleus whose Z and A both match a record, and the
+Goulard–Primakoff formula answers every other (sections 1 and 2), so a target of natural composition
+reaches an element's record only on the stops that draw the record's own mass number.
+For an element `G4NistManager` builds, that vector is the natural composition Geant4 stores for it;
+Geant4's `G4NistElementBuilder.cc` attributes its element data to the NIST database of atomic weights
+and isotope compositions.
+An element built from explicit `G4Isotope` objects, an enriched target for instance, carries the
+composition its builder gave it instead, and nothing in this section applies to it.
+
+`cpp/tools/harvest_natural.cc` prints the isotopes and relative abundances stored in the `G4Element`
+that `G4NistManager` builds for every Z of the `parity` capture table's validity range, which are the
+vectors the selector reads.
+Unpatched builds of `v11.4.2` and `v11.5.0.beta` printed the same bytes; `geant4_natural_isotopes.csv`
+commits the compositions, and `natural_harvest_builds.csv` names the builds and the SHA-256 of the driver.
+`scripts/generate_g4natural.py`, a step of `make audit`, writes `natural_target_capture.csv`: for each
+profile of the capture table and each element, the shares of stops that the profile's own rows, the
+compiled-in table and the formula answer, the share whose rate is not a positive finite rate, the
+abundance-weighted capture rate, and the abundance-weighted spread of the isotopes' capture rates
+relative to it.
+Each isotope's rate follows the lookup a patched build runs: under `parity`, whose table holds the
+compiled-in records, the compiled-in chain, which the reference implementation of section 2 reproduces
+bit for bit at every isotope of these compositions (section 4); under any other profile, the profile's row
+keyed by exactly that nuclide, and the compiled-in chain where the profile has none
+(`cpp/patches/README.md`).
+Where the isotope audit of section 6 establishes that an element's compiled-in record was measured on
+the element printed with no mass number, the row also gives that record and the relative difference
+between the weighted rate and the record's rate.
+That difference is an abundance-weighted first-order estimate against the natural measurement the table
+itself encodes.
+
+It is first-order because Geant4 samples each stop's time from the drawn nucleus's own capture and decay
+rates (`G4MuonMinusBoundDecay::ApplyYourself`, and the lifetime
+`G4MuonicAtomHelper::ConstructMuonicAtom` gives the muonic atom), so a natural target decays as a
+mixture of exponentials, an exponential per isotope weighted by its abundance.
+The rate of an exponential fitted to that mixture differs from the mixture's initial rate, the
+abundance-weighted sum of the isotopes' capture and decay rates, only at second order in the spread of
+those rates; `relative_spread` gives the spread of the isotopes' capture rates, relative to the weighted
+capture rate.
+The decay rate that competes with capture depends on Z alone in `G4MuonicAtomHelper::GetMuonDecayRate`,
+and in `G4MuonMinusBoundDecay::GetMuonDecayRate` wherever Z ≥ 14; below that, the latter also
+reads the drawn nucleus's mass.
+Wherever the decay rate does not depend on the isotope drawn, the weighted rate and the record's rate
+differ by the same amount as the mixture's initial rate and the disappearance rate, capture plus decay,
+of a target the record answered on every stop; as a fraction of those larger rates, the difference is
+smaller.
+
+Of the 41 elements with a natural-composition record, the weighted rate differs from the
+record's rate by more than the record's tabulated relative uncertainty in 25 of them; the table
+gives the `parity` rows, each figure rounded to a tenth of a percent.
+
+| Z | element | record A | stops the table answers (%) | relative difference (%) | tabulated relative uncertainty (%) |
+|---|---|---|---|---|---|
+| 6 | C | 12 | 100.0 | -0.1 | 0.8 |
+| 7 | N | 14 | 99.6 | -0.1 | 0.8 |
+| 8 | O | 16 | 100.0 | 0.0 | 0.6 |
+| 10 | Ne | 20 | 90.5 | -3.0 | 2.0 |
+| 12 | Mg | 24 | 79.0 | -6.0 | 0.3 |
+| 14 | Si | 28 | 92.2 | -2.2 | 0.2 |
+| 16 | S | 32 | 94.9 | -1.5 | 0.2 |
+| 18 | Ar | 40 | 99.6 | +0.1 | 5.1 |
+| 19 | K | 39 | 93.3 | -1.5 | 0.3 |
+| 20 | Ca | 40 | 96.9 | -1.1 | 0.3 |
+| 22 | Ti | 48 | 73.7 | -3.4 | 0.4 |
+| 23 | V | 51 | 99.8 | 0.0 | 0.7 |
+| 26 | Fe | 56 | 91.8 | -0.6 | 0.5 |
+| 30 | Zn | 66 | 27.9 | -5.9 | 0.5 |
+| 31 | Ga | 69 | 60.1 | -8.8 | 1.1 |
+| 32 | Ge | 72 | 27.5 | -8.2 | 0.6 |
+| 34 | Se | 80 | 49.6 | -2.0 | 0.5 |
+| 37 | Rb | 85 | 72.2 | -4.1 | 2.0 |
+| 40 | Zr | 91 | 11.2 | -2.9 | 0.6 |
+| 42 | Mo | 96 | 16.7 | +0.5 | 0.7 |
+| 46 | Pd | 106 | 27.3 | +3.2 | 0.7 |
+| 47 | Ag | 107 | 51.8 | +0.2 | 0.9 |
+| 48 | Cd | 112 | 24.1 | 0.0 | 0.9 |
+| 49 | In | 115 | 95.7 | +0.3 | 1.0 |
+| 50 | Sn | 119 | 8.6 | -0.4 | 1.0 |
+| 51 | Sb | 121 | 57.2 | -2.5 | 1.2 |
+| 52 | Te | 128 | 31.7 | -0.4 | 0.8 |
+| 56 | Ba | 138 | 71.7 | +2.8 | 0.8 |
+| 57 | La | 139 | 99.9 | 0.0 | 0.9 |
+| 58 | Ce | 140 | 88.5 | -0.4 | 0.8 |
+| 60 | Nd | 144 | 23.8 | +3.5 | 1.1 |
+| 62 | Sm | 150 | 7.4 | +4.4 | 1.4 |
+| 64 | Gd | 157 | 15.7 | +1.7 | 1.1 |
+| 66 | Dy | 163 | 24.9 | +2.0 | 1.5 |
+| 68 | Er | 167 | 22.9 | +0.1 | 2.1 |
+| 72 | Hf | 178 | 27.3 | +1.2 | 1.6 |
+| 73 | Ta | 181 | 100.0 | 0.0 | 1.0 |
+| 74 | W | 184 | 30.6 | +5.0 | 1.3 |
+| 80 | Hg | 201 | 13.2 | +12.5 | 1.4 |
+| 81 | Tl | 205 | 70.5 | +3.1 | 1.2 |
+| 82 | Pb | 207 | 22.1 | +5.9 | 0.5 |
+
+This section does not revisit the rule that, under every profile but `parity`, an element's
+natural-composition row answers only a request that names it; the next table gives the rows of the
+other profiles with a natural-composition record whose weighted rate differs from the `parity` row's.
+
+| profile | Z | element | stops the profile's rows answer (%) | relative difference (%) |
+|---|---|---|---|---|
+| `mizuno2025` | 14 | Si | 100.0 | +2.1 |
+| `suzuki1987` | 6 | C | 1.1 | 0.0 |
+
+No row of `natural_target_capture.csv` has a positive `nonpositive_share`: under an evaluated profile,
+no isotope of an element `G4NistManager` builds in this Z range gets a computed capture rate that
+`G4MuonicDataOverlay::CheckComputedCaptureRate` refuses with `G4MuonicData005` (`cpp/patches/README.md`).
+A Geant4 bug report (2013), <https://bugzilla-geant4.kek.jp/show_bug.cgi?id=1457>, reported incorrect
+capture rates for nuclei the lookup table does not list and plotted the rate averaged over the isotopes
+with their abundances against Z; it is recorded as resolved and fixed.

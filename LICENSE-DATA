@@ -162,11 +162,14 @@ CC-BY-4.0 licence in this file to the rate ledger in openmucf/data/, to the
 data documents generated from it and to the files under data/g4/ that this
 project computed, harvested or wrote. It does not apply it to the files that
 the License section of README.md names as restating tables a third party
-publishes, to the parity tables of the D1 dataset or to the radii MuDirac
-bundles. The parity tables are generated from one unmodified third-party
+publishes, to the parity tables of the D1 dataset, to the natural isotopic
+compositions read from Geant4 builds or to the radii MuDirac bundles. The
+parity tables are generated from one unmodified third-party
 source file vendored under a different licence. See third_party/geant4/ --
 the Geant4 Software License v1.0 in third_party/geant4/LICENSE applies to
-that directory, to the patch files under cpp/patches/ and to those tables and
-their Layer-2 files. Values from third-party sources are facts: the project
+that directory, to the patch files under cpp/patches/, to those tables and
+their Layer-2 files and to the natural isotopic compositions read from Geant4
+builds, data/g4/d1/geant4_natural_isotopes.csv. Values from third-party
+sources are facts: the project
 asserts no rights over them and takes no position on the sources' rights. The
 License section of README.md states the licences by path.
