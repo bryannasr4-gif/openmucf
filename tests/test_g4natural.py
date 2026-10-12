@@ -1,9 +1,11 @@
-"""The natural-target capture study: the harvested compositions, the lookup and the generated study.
+"""The natural-target capture study: the harvested compositions, the lookup, the generated study and the
+document's restatement of it.
 
 `data/g4/d1/geant4_natural_isotopes.csv` is what `cpp/tools/harvest_natural.cc` printed on Geant4 builds, and
 `data/g4/d1/natural_target_capture.csv` is generated from it by `scripts/generate_g4natural.py compare`. These
 tests regenerate the study and compare its bytes, tie the harvest to the driver that printed it, drill each
-refusal of the harvest and each outcome the study can return.
+refusal of the harvest and each outcome the study can return, and bind section 11 of `DATASET_D1.md` to the
+study.
 """
 
 from __future__ import annotations
@@ -288,3 +290,76 @@ def test_the_decay_rate_depends_on_the_mass_number_only_below_the_threshold():
         text = _code((REPO / relpath).read_text(encoding="ascii"))
         assert re.search(r"G4double G4MuonicAtomHelper::GetMuonDecayRate\(G4int Z\)\s*\{", text), relpath
         assert re.search(r"G4double lambdad = GetMuonDecayRate\(Z\);", text), relpath
+
+
+# --------------------------------------------------------------------------------------------
+# the document
+# --------------------------------------------------------------------------------------------
+
+
+def _row_pattern(line: str, numeric: re.Pattern[str]) -> tuple[str, tuple[int, ...]]:
+    """A pattern matching ``line`` whitespace-collapsed, with every numeric token a group."""
+    collapsed = " ".join(line.split())
+    parts, groups, at = [], [], 0
+    for index, match in enumerate(numeric.finditer(collapsed), start=1):
+        parts.append(re.escape(collapsed[at:match.start()]))
+        parts.append(f"({re.escape(match.group())})")
+        groups.append(index)
+        at = match.end()
+    parts.append(re.escape(collapsed[at:]))
+    return "".join(parts), tuple(groups)
+
+
+def document_pins(numeric: re.Pattern[str]) -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """``(what, path, pattern, groups, expected)`` for every number section 11 of `DATASET_D1.md` states: one
+    row per line of its two tables, every numeric token a group, and one per count of the prose, ``expected``
+    computed from the committed study or the vendored source. ``numeric`` is the prose check's tokenizer."""
+    rows = study()
+    pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
+        ("elements with a natural-composition record", DOCUMENT,
+         r"Of the (\d+) elements with a natural-composition record", (1,), len(compared(rows))),
+        ("rows beyond the tabulated relative uncertainty", DOCUMENT,
+         r"tabulated relative uncertainty in (\d+) of them", (1,), len(beyond_uncertainty(rows))),
+        ("the decay-rate threshold", DOCUMENT, r"wherever Z ≥ (\d+)", (1,), decay_threshold()),
+    ]
+    for name, block in (("natural-target table", natural.render_table(rows)),
+                        ("profile table", natural.render_profile_table(rows))):
+        for number, line in enumerate(block.splitlines()[2:], start=1):
+            pattern, groups = _row_pattern(line, numeric)
+            pins.append((f"{name} row {number}", DOCUMENT, pattern, groups, None))
+    return pins
+
+
+_NUMERIC = re.compile(r"[0-9][0-9,.]*[0-9]|[0-9]|[⁰¹²³⁴⁵⁶⁷⁸⁹]+")
+
+
+def test_the_document_carries_both_tables_as_generated():
+    """Section 11 of `DATASET_D1.md` carries each table exactly as the study renders it."""
+    text = (REPO / DOCUMENT).read_text(encoding="utf-8")
+    section = text.split("\n## 11. ", 1)[1]
+    rows = study()
+    for block in (natural.render_table(rows), natural.render_profile_table(rows)):
+        assert section.count(block + "\n") == 1
+
+
+def test_every_pin_of_the_section_states_its_value():
+    collapsed = " ".join((REPO / DOCUMENT).read_text(encoding="utf-8").split())
+    for what, _, pattern, _, expected in document_pins(_NUMERIC):
+        hits = re.findall(pattern, collapsed)
+        assert len(hits) == 1, what
+        if expected is not None:
+            assert int(hits[0]) == expected, what
+
+
+def test_drill_a_changed_cell_or_count_is_refused():
+    """A table cell moved by a tenth and a count moved by one each leave their pin without a match."""
+    collapsed = " ".join((REPO / DOCUMENT).read_text(encoding="utf-8").split())
+    pins = document_pins(_NUMERIC)
+    row = next(pin for pin in pins if pin[0] == "natural-target table row 1")
+    line = " ".join(natural.render_table(study()).splitlines()[2].split())
+    head, last = line.rsplit(" | ", 1)
+    assert collapsed.count(line) == 1 and re.search(row[2], collapsed)
+    assert not re.search(row[2], collapsed.replace(line, f"{head} | 9{last}"))
+    count = pins[0]
+    moved = re.sub(count[2], lambda m: m[0].replace(m[1], str(int(m[1]) + 1)), collapsed)
+    assert int(re.findall(count[2], moved)[0]) != count[4]
