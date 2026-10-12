@@ -9,7 +9,8 @@
   "license": [
     "https://spdx.org/licenses/Apache-2.0",
     "https://spdx.org/licenses/CC-BY-4.0",
-    "http://cern.ch/geant4/license"
+    "http://cern.ch/geant4/license",
+    "https://spdx.org/licenses/MIT"
   ],
   "programmingLanguage": {
     "@type": "ComputerLanguage",

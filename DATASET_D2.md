@@ -19,3 +19,7 @@ g++ -std=c++17 -O2 -ffp-contract=off cpp/tools/harvest_d2.cc -o harvest_d2 $(<in
 env -i PATH=/usr/bin:/bin HOME=$HOME LD_LIBRARY_PATH=<install>/lib GEANT4_DATA_DIR=<data> ./harvest_d2 selector > selector.txt
 env -i PATH=/usr/bin:/bin HOME=$HOME LD_LIBRARY_PATH=<install>/lib GEANT4_DATA_DIR=<data> ./harvest_d2 bindings <physics list> > bindings.txt
 ```
+
+## Licensing
+
+The files that restate cells of the sources' tables, `data/g4/reference/d2/printed_rows.csv` and `data/g4/reference/d2/measurements.csv`, and the comparison that carries their values beside the selector's, `data/g4/d2/selector_vs_primary.csv`, are offered under no licence of this repository. The other files under `data/g4/d2/` and `data/g4/reference/d2/` are offered under CC-BY-4.0; the lines of Geant4 source that `selector_call_sites.csv` repeats are offered under the Geant4 Software License.

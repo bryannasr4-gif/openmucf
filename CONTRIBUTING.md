@@ -220,11 +220,11 @@ OpenMuCF is licensed by artifact type:
 - **The Geant4 patches** — `cpp/patches/*.patch`, the Geant4 source lines they carry included — are offered
   under the **Geant4 Software License** (`cpp/patches/LICENSE`), so that they can be taken into Geant4.
 
-By contributing you agree your contribution is offered under the license that governs the files it touches
-(Apache-2.0 for code, CC-BY-4.0 for data, the Geant4 Software License for a patch under `cpp/patches/`).
+By contributing you agree your contribution is offered under the licence that governs the files it touches,
+as the License section of `README.md` states it by path.
 SPDX identifiers make this machine-readable: where you add a new
 source file, a one-line SPDX tag is welcome — `# SPDX-License-Identifier: Apache-2.0` for code, and for a new
-data/doc artifact `SPDX-License-Identifier: CC-BY-4.0`. New ledger rows inherit CC-BY-4.0 from `openmucf/data/`;
+data/doc artifact this project authors, `SPDX-License-Identifier: CC-BY-4.0`. New ledger rows inherit CC-BY-4.0 from `openmucf/data/`;
 no per-row header is needed.
 
 ## 8. Versioning and API stability (SemVer)

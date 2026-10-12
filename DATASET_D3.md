@@ -335,3 +335,18 @@ orbit and to nuclear capture, is the sum of the energies it emitted, and so move
 K energy.
 With the opt-in off, the cascade and K-energy harvests of Geant4 v11.4.2 and v11.5.0.beta are
 bit-identical to those of unpatched builds.
+
+## 8. Licensing
+
+`data/g4/d3/mudirac_inputs.csv` repeats the nuclear radii MuDirac bundles in `nuclear_radii.dat` and
+carries them under the MIT License, whose text `data/g4/d3/LICENSE-MUDIRAC` copies from the release of
+MuDirac that section 1 names.
+The Layer-2 files of the `k_shell_energy` and `level_energy` tables repeat those radii, as each run's
+input radius, under the same licence.
+The files that restate cells of the comparison sources' tables, or carry them beside the model's values,
+`data/g4/d3/validation_cells.csv`, `data/g4/d3/intensity_ratios.csv`, `data/g4/d3/validation.csv`,
+`data/g4/d3/shell_projection.csv` and `data/g4/d3/consumer_centroids.csv`, are offered under no licence
+of this repository.
+The other files of `data/g4/d3/` are offered under CC-BY-4.0.
+The values compiled into Geant4 that `geant4_cascade_levels.csv` repeats are offered under the Geant4
+Software License.

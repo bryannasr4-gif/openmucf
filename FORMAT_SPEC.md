@@ -699,5 +699,6 @@ members, not the compressed bytes.
 
 The `parity` datasets described by this format reproduce values compiled into Geant4, and are
 generated from Geant4 source vendored in `third_party/geant4/` under the Geant4 Software License
-v1.0. Those terms apply to that directory and to the patch files under `cpp/patches/`; the rest of
-this repository is Apache-2.0 (code) and CC-BY-4.0 (data).
+v1.0. The Geant4 Software License applies to that directory, to the patch files under
+`cpp/patches/` and to the `parity` tables with their Layer-2 files; the License section of `README.md`
+states the licences of the other paths it names.

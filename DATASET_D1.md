@@ -452,10 +452,22 @@ what a patched build was measured to do.
 
 ## 8. Licensing
 
-The values are derived from Geant4 source redistributed under the Geant4 Software License v1.0; see
-`third_party/geant4/`, whose terms apply to that directory. The dataset files themselves are
-CC-BY-4.0 and the toolchain is Apache-2.0, except the patch files under `cpp/patches/`, which are
-offered under the Geant4 Software License, as `cpp/patches/README.md` states.
+The `parity` tables `data/g4/d1/d1_capture.g4dat` and `data/g4/d1/d1_zeff.g4dat`, which reproduce
+values compiled into Geant4, and their Layer-2 files `data/g4/d1/d1_capture.prov.json` and
+`data/g4/d1/d1_zeff.prov.json` are offered under the Geant4 Software License v1.0, the licence of the
+Geant4 source in `third_party/geant4/` they are generated from.
+The files that restate cells of the primaries' tables, `data/g4/d1/capture_rate_cells.csv`,
+`data/g4/d1/zeff_audit.csv`, `data/g4/d1/suzuki1987_*.csv` and `data/g4/d1/mizuno2025_table*.csv`,
+and the `suzuki1987` and `mizuno2025` profiles generated from them,
+`data/g4/d1/d1_capture.suzuki1987.*` and `data/g4/d1/d1_capture.mizuno2025.*`, are offered under no
+licence of this repository.
+The other files in `data/g4/d1/` are offered under CC-BY-4.0.
+Values compiled into Geant4 that another file of the dataset repeats are offered under the Geant4
+Software License.
+Values from third-party sources are facts: the project asserts no rights over them and takes no
+position on the sources' rights.
+The toolchain is Apache-2.0; the patch files under `cpp/patches/` are offered under the Geant4
+Software License, as `cpp/patches/README.md` states.
 
 ## 9. A second profile of the capture table — `mizuno2025`
 
