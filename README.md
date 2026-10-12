@@ -83,8 +83,13 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
 ```
 
 ## Headline results (see `FINDINGS.md`, `MUON_COST.md`, `CALIBRATION.md`)
-- **Sensitivity split:** yield X_μ is controlled by reactivation R (Sobol S_T=0.62), λ_c, ω_s0; net-electrical
-  Q is controlled by muon cost and accelerator efficiency. Different levers for yield vs energy.
+- **Sensitivity split (`FINDINGS.md` §1, §1b):** under the contested-range prior box, the variance of the
+  yield X_μ is shared by reactivation R, λ_c and ω_s0, in proportions that depend on the box widths: an
+  equal-relative box reorders them (§1b). The prior-independent statement is the local elasticity order at
+  the operating point, ω_s0 > λ_c > R. The variance of net-electrical Q sits in the engineering inputs —
+  muon cost, accelerator and thermal efficiency — rather than the microscopic ones under both boxes
+  (`openmucf.uq.sobol_robustness(output="Q_net")`); how it divides among the engineering inputs depends on
+  the box.
 - **Breakeven audit:** at liquid-scale density (φ ≤ ~1.45), under unpolarized ranges, P(X_μ>500)=0 —
   structural (outside the prior's support), not a Monte-Carlo estimate. Density scaling could supply the
   cycling-rate factor at DAC φ≈2.4, but even at infinite λ_c the projection needs reactivation R ≥ 0.77
@@ -123,7 +128,7 @@ oracle (`openmucf/exact.py`; tests), but no headline number depends on its multi
 
 | tier | outputs | why |
 |---|---|---|
-| **GREEN — citable as-is** | muon-cost ledger **per row** and its basis classification (`MUON_COST.md`: each cost at its own stage / numeraire / charge coordinate, with provenance), the Kou–Chen Eq.(15) ceiling comparison, Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table read **one tier row at a time** (`NEUTRONOMICS.md`), breakeven falsification & requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars, forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model. Each row is a self-contained statement in its own declared basis |
+| **GREEN — citable as-is** | muon-cost ledger **per row** and its basis classification (`MUON_COST.md`: each cost at its own stage / numeraire / charge coordinate, with provenance), the Kou–Chen Eq.(15) ceiling comparison, Q Rosetta stone (`SYSTEMS.md`), neutrons-per-joule table read **one tier row at a time** (`NEUTRONOMICS.md`), breakeven requirements form (`FINDINGS.md` §3: caps, R ≥ 0.77 algebra), sensitivity split with error bars under its stated prior box (`FINDINGS.md` §1b), forecast-registry machinery (FC-001) | transparent accounting / algebra on measured bands + provenance-tagged compilations; no dependence on the v1 formation model. Each row is a self-contained statement in its own declared basis |
 | **AMBER — citable with the stated basis** | **any CROSS-TIER muon-cost comparison** — the `MUON_COST.md` tier-median ratio and the cross-tier neutrons-per-joule ratio (`NEUTRONOMICS.md`); basis: mixed, order-of-magnitude. Also the `FINDINGS.md` §2b Q_net-by-tier panel, which computes no cost ratio and is a sensitivity scan over the E_mu boxes that section declares. Also the calibrated ω_s^eff and λ_c posterior (`CALIBRATION.md`; basis: two published summary statistics, stated error bars, prior-sensitivity table), X_μ at the 300 K liquid-density operating point | **no accounting stage is shared between T1 and T3**, so a cross-tier ratio has no common denominator to be a ratio *of*: quote it as a mixed-basis order-of-magnitude observation, never as a measured gap. The §2b panel's spread is additionally set by the E_mu prior boxes that section declares. The posterior is statistically sound but summary-statistic-based; cite WITH the basis caveat |
 | **RED — illustrative only, do not cite** | λ_c(T) / X_μ(T) temperature shape, anything at φ > 1.45, the ω_s0/R split as separate values, all `formation.py` outputs off the 300 K anchor | placeholder resonance geometry (unsourced positions/widths), linear-in-φ construction, ω_s0/R degenerate (corr ≈ +0.8); the λ_c(T) shape runs −41% to −44% below the digitized Yamashita–Kino 2022 curve (sourced comparator `V_yamashita_ratio`/`_curve`, fails ±30%); a one-shot scope warning fires for off-anchor concrete calls (phi > ~1.45 or T < 100 K) and is skipped under jit |
 

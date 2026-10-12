@@ -108,7 +108,7 @@ occurred in the anchor experiments (one channel, one accounting home), so the et
 enhancement on top of the anchored one; eta is reported as a structural bracket beside the CI, never
 convolved into it.
 
-## 2. Propagated uncertainty (what we can actually say today)
+## 2. Propagated uncertainty (a frozen registered-prior scenario; posterior intervals in CALIBRATION.md)
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
 posterior). The interval deliberately reflects LIQUID conditions -- the lambda_c band is the ledger's
 liquid-anchor row `lambda_c_liquid` (phi ~ 1.2) and the R box is widened around the liquid-scale
@@ -270,15 +270,16 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Un
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as
-requirements, any such mechanism must push reactivation to R ~ 0.9+ (density can supply the cycling-rate
-factor, sticking it cannot). That turns a headline into a falsifiable, quantitative bet on **exactly the
+requirements, any such mechanism must push reactivation to R ~ 0.9+ (density scaling can raise the cycling
+rate, but the required-R floor is independent of lambda_c; whether density raises R itself is an open
+question). That turns a headline into a falsifiable, quantitative bet on **exactly the
 quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking surrogate will forecast.**
 (Figure `figures/breakeven.png`.)
 
 ## Honest caveats
 - These use the closed-form yield map with uniform priors over the declared input ranges; the
   sticking/reactivation inputs are the v1 literature band, not yet the Phase-3 surrogate. The
-  falsification result depends only on measured lambda_c and lambda_0 -- not on the v1 network
+  zero-sticking cap depends only on measured lambda_c and lambda_0 -- not on the v1 network
   structure -- which is the strongest defense of its robustness.
 - All probability statements are scoped to liquid-scale density and unpolarized targets; the
   Yin-Kou-Chen projection's polarization levers are outside this model's support and are audited as

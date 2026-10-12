@@ -56,7 +56,7 @@ def test_breakeven_projection_is_falsified_under_prior_uncertainty():
     r = uq.breakeven_audit(n=50_000)
     assert r["P_xmu_gt500"] == 0.0
     assert r["P_qnet_gt1"] == 0.0
-    # even zero sticking at the best measured cycling rate cannot reach 500
+    # even zero sticking at the liquid-anchor cycling rate cannot reach 500
     assert r["xmu_cap_at_measured_lambda_c"] < 500
     # reaching 500 even at an optimistic lambda_c = 3e8 needs a TOTAL reactivation R > 0.85; the
     # ledger's R_col ~0.35 is only the collisional factor and is not comparable to it
