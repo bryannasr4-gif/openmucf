@@ -78,6 +78,8 @@ See also the in-repo references: `README.md`, `MODEL_SPEC.md`, `LITERATURE.md`,
 
 ## License
 
-Apache-2.0 for code and CC-BY-4.0 for data, except the Geant4 patches under `cpp/patches/`
-and the vendored Geant4 files under `third_party/geant4/`, which are under the Geant4 Software
-License.
+Apache-2.0 for code; CC-BY-4.0 for the rate ledger under `openmucf/data/`, the data documents
+generated from it and the files under `data/g4/` that this project computed, harvested or wrote; the
+Geant4 Software License for the Geant4 patches under `cpp/patches/` and the vendored Geant4 files
+under `third_party/geant4/`. The License section of `README.md` names, by path, the muonic-atom files
+offered under another licence or under none.

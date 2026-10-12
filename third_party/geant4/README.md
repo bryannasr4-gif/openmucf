@@ -106,6 +106,7 @@ record of what moved.
 
 ## Licensing
 
-The terms in `LICENSE` apply to this directory and to the patch files under `../../cpp/patches/`,
-whose own `LICENSE` is a verbatim copy of this file. The rest of this repository is Apache-2.0
-(code) and CC-BY-4.0 (data) — see `../../LICENSE` and `../../LICENSE-DATA`.
+The Geant4 Software License in `LICENSE` applies to this directory, to the patch files under
+`../../cpp/patches/`, whose own `LICENSE` is a verbatim copy of it, and to the `parity` tables and their
+Layer-2 files generated from `v11.4.2/G4MuonMinusBoundDecay.cc`. The License section of
+`../../README.md` states the licences of the other paths it names.

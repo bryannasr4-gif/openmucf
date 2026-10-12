@@ -355,9 +355,8 @@ def test_d2_measured_targets_follow_the_formula_grammar() -> None:
 
 def test_d2_baijal_oxygen_footnote_qualifies_cus_and_pbs() -> None:
     printed = _reference("printed_rows.csv")
-    footnote = next(row for row in printed if row["source_id"] == "Baijal1962OSTI"
-                    and row["table"] == "Table IV" and row["row_kind"] == "footnote"
-                    and "captures in oxygen" in row["note"])
+    (footnote,) = [row for row in printed if row["source_id"] == "Baijal1962OSTI"
+                   and row["table"] == "Table IV" and row["row_kind"] == "footnote"]
     footnote_id = "-".join(footnote[field] for field in
                            ("source_id", "table", "printed_page", "row_ordinal"))
     rows = [row for row in _reference("measurements.csv") if row["source_id"] == "Baijal1962OSTI"
@@ -365,9 +364,7 @@ def test_d2_baijal_oxygen_footnote_qualifies_cus_and_pbs() -> None:
     assert rows
     assert {row["material_formula"] for row in rows} == {"CuS", "PbS"}
     for row in rows:
-        assert "oxygen-capture footnote" in row["normalization"]
-        assert footnote_id in row["normalization"]
-        assert footnote["note"] in row["normalization"]
+        assert row["normalization"].endswith(f"; oxygen-capture footnote {footnote_id}")
         assert footnote_id in row["stopping_model"]
         assert row["observable"] == "other"
 
@@ -403,17 +400,19 @@ def test_d2_loader_refuses_secondary_rows(tmp_path: Path) -> None:
             d2.load_measurements(path, {"a": source})
 
 
-def test_d2_comparison_bytes_regenerate_without_review_reads(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_d2_comparison_bytes_regenerate_from_the_source_list_and_measurement_rows(
+        monkeypatch: pytest.MonkeyPatch) -> None:
     path = DATA / "selector_vs_primary.csv"
     before = path.read_bytes()
     original_open = Path.open
+    read: set[str] = set()
 
-    def checked_open(self: Path, *args: object, **kwargs: object) -> object:
-        if self.name == "review_quoted.csv":
-            raise AssertionError("comparison read review quotations")
+    def recording_open(self: Path, *args: object, **kwargs: object) -> object:
+        if self.resolve().parent == REFERENCE.resolve():
+            read.add(self.name)
         return original_open(self, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "open", checked_open)
+    monkeypatch.setattr(Path, "open", recording_open)
     script = ROOT / "scripts/generate_g4d2.py"
     spec = importlib.util.spec_from_file_location("generate_g4d2_test", script)
     assert spec is not None and spec.loader is not None
@@ -421,6 +420,7 @@ def test_d2_comparison_bytes_regenerate_without_review_reads(monkeypatch: pytest
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     module.compare()
+    assert read == {"sources.csv", "measurements.csv"}
     assert path.read_bytes() == before
 
 
