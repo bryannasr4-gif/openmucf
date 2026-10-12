@@ -86,23 +86,29 @@ The prior-independent statements are therefore the *local elasticity* ranking at
 (|dlnX_mu/dln omega_s0| > |dlnX_mu/dln lambda_c| > |dlnX_mu/dln R|) and the requirement-form result in
 section 3 -- not "R is the dominant driver" as an unconditional claim.
 
-## 1c. The eta=1-vs-5 formation debate (structural bracket, not a prior)
-The epithermal enhancement eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate; the
-literature spans eta=1 (bare Faifman theory) to eta~5 (Yamashita-Kino fit). Recomputing X_mu through the
-full cycle ODE at the canonical operating point (300 K, phi=1.2, c_t=0.5):
+## 1c. A five-times-anchored formation scenario (structural bracket, not a prior)
+The multiplier eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate of the cycle engine,
+and that rate is already anchored to the measured room-temperature cycling scale (`formation.py`; the
+`V_faifman_900K` and `V_faifman_lowT` rows of `VALIDATION.md` measure its distance from the bare Faifman
+rate). So eta=1 is the
+anchored rate, not bare theory, and eta=5 is a scenario with five times the anchored formation rate; the
+literature's eta=1-vs-5 range (bare theory vs the Yamashita-Kino fit) is relative to the bare rate, and
+this bracket does not span it. Recomputing X_mu through the full cycle ODE at the liquid-density
+room-temperature operating point (300 K, phi=1.2, c_t=0.5):
 
 | eta | X_mu |
 |---|---|
-| 1 (bare theory) | 114.5 |
-| 5 (Yamashita-Kino fit) | 157.6 |
+| 1 (the anchored rate) | 114.5 |
+| 5 (five times the anchored rate) | 157.6 |
 
 so the structural bracket is X_mu(eta=5) - X_mu(eta=1) = **43.1**.
 
 eta rescales the FORMATION pathway; the measured lambda_c band in sections 1/2 already contains eta as it
-occurred in the anchor experiments (one channel, one accounting home), so eta is reported as a structural bracket beside
-the CI, never convolved into it.
+occurred in the anchor experiments (one channel, one accounting home), so the eta=5 row applies a further
+enhancement on top of the anchored one; eta is reported as a structural bracket beside the CI, never
+convolved into it.
 
-## 2. Propagated uncertainty (what we can actually say today)
+## 2. Propagated uncertainty (a frozen registered-prior scenario; posterior intervals in CALIBRATION.md)
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
 posterior). The interval deliberately reflects LIQUID conditions -- the lambda_c band is the ledger's
 liquid-anchor row `lambda_c_liquid` (phi ~ 1.2) and the R box is widened around the liquid-scale
@@ -264,15 +270,16 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Un
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as
-requirements, any such mechanism must push reactivation to R ~ 0.9+ (density can supply the cycling-rate
-factor, sticking it cannot). That turns a headline into a falsifiable, quantitative bet on **exactly the
+requirements, any such mechanism must push reactivation to R ~ 0.9+ (density scaling can raise the cycling
+rate, but the required-R floor is independent of lambda_c; whether density raises R itself is an open
+question). That turns a headline into a falsifiable, quantitative bet on **exactly the
 quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking surrogate will forecast.**
 (Figure `figures/breakeven.png`.)
 
 ## Honest caveats
 - These use the closed-form yield map with uniform priors over the declared input ranges; the
   sticking/reactivation inputs are the v1 literature band, not yet the Phase-3 surrogate. The
-  falsification result depends only on measured lambda_c and lambda_0 -- not on the v1 network
+  zero-sticking cap depends only on measured lambda_c and lambda_0 -- not on the v1 network
   structure -- which is the strongest defense of its robustness.
 - All probability statements are scoped to liquid-scale density and unpolarized targets; the
   Yin-Kou-Chen projection's polarization levers are outside this model's support and are audited as

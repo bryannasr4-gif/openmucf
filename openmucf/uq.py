@@ -237,13 +237,14 @@ def breakeven_audit(n=400_000, seed=1):
     os0 = NOMINAL["omega_s0_pct"]  # % -- single-sourced from the registered priors (= 0.857 nominal)
     # (a) absolute cap set by decay alone (omega_s_eff -> 0): X_mu_max(lambda_c) = lambda_c/lambda_0
     lc_needed_decay_only = LAMBDA_0 * target  # lambda_c s.t. lambda_c/lambda_0 = 500 (sticking=0)
-    # (b) with best measured lambda_c = 1.45e8, the maximum achievable X_mu even at zero sticking:
+    # (b) with the liquid-anchor lambda_c = 1.45e8 (the 12 K solid anchor is higher; see
+    #     rates.csv lambda_c_solid_12K), the maximum achievable X_mu even at zero sticking:
     xmu_cap_at_measured_lc = 1.45e8 / LAMBDA_0
     # (c) required reactivation R at an optimistic lambda_c = 3e8 to hit 500:
     lc_opt = 3.0e8
     need_ose = 1.0 / target - LAMBDA_0 / lc_opt  # required omega_s_eff
     R_req = 1.0 - need_ose / (os0 / 100.0) if need_ose > 0 else float("nan")
-    # (d) even at infinite lambda_c: omega_s_eff <= 1/target, i.e. the R floor no density can beat.
+    # (d) even at infinite lambda_c: omega_s_eff <= 1/target, i.e. the R floor, independent of lambda_c.
     #     Computed (not transcribed) so the shipped "R >= 0.77" can never silently drift from the
     #     omega_s0 nominal it derives from (cross-vendor review hardening, 2026-07-08).
     R_req_inf_lc = 1.0 - (1.0 / target) / (os0 / 100.0)

@@ -11,7 +11,7 @@
 For each target yield X_mu, the reactivation `R` that would be required at a given cycling rate `lambda_c`,
 from the identity `R = 1 - (1/X_mu - lambda_0/lambda_c) / omega_s0` (omega_s0 = 0.00857 bare
 fraction, the Kamimura nominal; lambda_0 = 455200 s^-1, the muon decay rate). The `inf` column is
-the decay-free limit -- the R floor no density can beat.
+the decay-free limit -- the R floor, which is independent of `lambda_c`.
 
 | X_mu (target) \ lambda_c [s^-1] | 1.00e+08 | 1.45e+08 | 2.28e+08 | 3.00e+08 | inf |
 |---|---|---|---|---|---|
@@ -27,8 +27,9 @@ physical R exceeds 1). Every cell is closed-form float64 algebra -- byte-stable,
 ## The density-independent R floor (the marquee requirement)
 At X_mu = 500 and `lambda_c -> inf`, the required reactivation is **R >= 0.77** -- the
 decay-free floor, reproduced here bit-for-bit from `openmucf.uq.breakeven_audit` and matching the FINDINGS.md
-sec.3 headline. Density scaling (`lambda_c = phi * lambda_c_tilde`) can supply the cycling-rate factor, but
-**sticking it cannot**: the floor is independent of `lambda_c`. That floor is on the TOTAL reactivation.
+sec.3 headline. Density scaling (`lambda_c = phi * lambda_c_tilde`) can raise the cycling rate, but the
+floor is **independent of `lambda_c`**, so a faster cycle does not lower it; whether density raises R itself
+is an open question. That floor is on the TOTAL reactivation.
 The model-derived collisional value R_col = **0.35** (Kou-Chen Eq.33) is only the FIRST of two
 SUCCESSIVE factors -- `omega_s_eff = omega_s0 (1-R_col)(1-R_X)` -- so it is not directly comparable to the
 0.77 floor. Read in that decomposition, R_col = 0.35 leaves a required

@@ -129,7 +129,7 @@ to investigate. They are the standing, quantified motivation for a sourced-forma
 repository, a companion trust map sorts every output into **GREEN** (citable as-is: the muon-cost
 compilation read per row in its own declared basis, the Kou–Chen ceiling comparison, the
 energy-balance "Rosetta stone", the neutrons-per-joule table read one tier row at a time, the
-breakeven falsification and requirements form, the sensitivity split with error bars, the
+breakeven requirements form, the sensitivity split with error bars under its stated prior box, the
 forecast-registry machinery), **AMBER** (citable with the stated basis: any cross-tier muon-cost
 comparison — a mixed-basis, order-of-magnitude observation, never a same-basis ratio — and the
 calibrated effective-sticking and cycling-rate posterior), and **RED** (illustrative

@@ -104,7 +104,8 @@ mistyped key fails CI.
   established.
 - **`contested`** — anything that is a single source, a theory-spread, model-dependent, superseded-but-still-cited,
   or the subject of active debate: initial sticking `omega_s0` (Kamimura 2023's 0.857% vs the legacy 0.91–0.93%),
-  the reactivation fraction `R_col`, the epithermal enhancement `eta_dtmu` (the η = 1 vs η = 5 debate), muon
+  the reactivation fraction `R_col`, the formation-rate multiplier `eta_dtmu` (the literature's η = 1 vs η = 5 range, applied here to the
+  measurement-anchored formation rate), muon
   transfer / spin-flip rates quoted from single tables, and the muon-production energy cost.
 - **When in doubt, tag `contested`.** Over-claiming settledness is the failure mode this ledger exists to
   prevent. The whole point is to carry the disagreement *with its uncertainty*, not to launder it into a point

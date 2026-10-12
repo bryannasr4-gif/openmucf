@@ -31,7 +31,7 @@ rates = load_rates()          # a validated RatesTable (dict-like)
 The one-call forward map assembles the cycle rates from the ledger plus the
 physical conditions — temperature `T` [K], density `φ`, and tritium fraction
 `c_t` — and integrates the differentiable diffrax cycle ODE network. At the
-canonical liquid operating point **T = 300 K, φ = 1.2, c_t = 0.5** it returns
+liquid-density room-temperature operating point **T = 300 K, φ = 1.2, c_t = 0.5** it returns
 about **114 fusions per muon**:
 
 ```python
@@ -79,15 +79,18 @@ This regenerates `FINDINGS.md`, whose marquee results are:
 - **Gradient cross-check:** analytic vs autodiff-through-the-stiff-ODE gradient of
   X_μ w.r.t. effective sticking agree to **0.00%** (analytic = −1.384e+04, ODE =
   −1.384e+04) — the cheap map is a faithful stand-in for the ODE.
-- **Sensitivity split (Sobol total-order S_T):** X_μ is controlled by reactivation
-  `R` (S_T = 0.620), then `λ_c` (0.254) and `ω_s0` (0.131); net-electrical `Q_net`
-  flips to being controlled by muon cost `E_mu_GeV` (0.631) and wall-plug
-  efficiency `eta_acc` (0.427). Different levers for yield vs energy.
-- **Propagated uncertainty (95% CI):** X_μ = [89, 104, 122]; Q_sci =
+- **Sensitivity split (Sobol total-order S_T, contested-range prior box):** the variance of
+  X_μ is shared by reactivation `R`, `λ_c` and `ω_s0`, in proportions that depend on the box
+  widths (`FINDINGS.md` §1b); the prior-independent statement is the local elasticity order
+  `ω_s0` > `λ_c` > `R`. The variance of net-electrical `Q_net` sits in the engineering
+  inputs (muon cost `E_mu_GeV`, wall-plug efficiency `eta_acc`, thermal efficiency) rather
+  than the microscopic ones.
+- **Propagated uncertainty, a frozen registered-prior scenario (95% intervals; the posterior
+  intervals are in `CALIBRATION.md`):** X_μ = [89, 104, 122]; Q_sci =
   [0.177, 0.305, 0.839]; Q_net = [0.0107, 0.0364, 0.1246]. P(Q_sci > 1) = 0.2%,
   P(Q_net > 1) = 0.0%.
-- **Breakeven falsification:** under the prior ranges **P(X_μ > 500) = 0.0%**.
-  Even at zero sticking the best measured cycling rate (λ_c = 1.45e8) caps the
+- **Breakeven requirements:** under the prior ranges **P(X_μ > 500) = 0.0%**, a structural zero
+  (500 lies outside the box's support). Even at zero sticking the liquid-anchor cycling rate (λ_c = 1.45e8) caps the
   yield at **X_μ = 319**, so 500 is arithmetically impossible without both roughly
   doubling λ_c *and* raising the TOTAL reactivation to R ≈ 0.94 (at λ_c = 3e8; R ≥ 0.77 even
   at infinite λ_c). That R is not comparable to the collisional R_col ≈ 0.35: the two are successive

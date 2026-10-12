@@ -179,9 +179,10 @@ def params_from_conditions(
     Documented v1 density scalings: transfer ~ phi*c_t, spin-flip ~ phi, formation ~ phi (inside
     formation.lambda_dtmu). omega_s_eff defaults to omega_s0*(1-R_col) from the ledger.
 
-    ``eta`` is the epithermal formation enhancement (ledger row ``eta_dtmu``); ``None`` reads it from the
-    ledger (= 1.0, so behavior is unchanged), and it is a structural knob (eta=1 bare theory .. ~5 fit),
-    NOT a UQ prior -- the measured lambda_c band already contains eta as it occurred at the anchors.
+    ``eta`` multiplies the measurement-anchored formation rate (ledger row ``eta_dtmu``); ``None`` reads it
+    from the ledger (= 1.0, so behavior is unchanged), and it is a structural knob (eta=1 the anchored rate,
+    eta=5 a five-times-anchored formation scenario), NOT a UQ prior -- the measured lambda_c band already
+    contains eta as it occurred at the anchors.
 
     ``include_loss_channels`` (default False = channels OFF) pulls the loss-channel rates from the
     ledger: ``lambda_tt = lambda_ttmu * phi * c_t`` (ttmu side-branch) and ``lambda_he = lambda_dhe3 * phi

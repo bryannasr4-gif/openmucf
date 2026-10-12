@@ -24,7 +24,9 @@ from . import cycle
 from .analytic import ledger_reactivation
 from .rates import TARGETS_CSV, omega_fraction
 
-# Canonical liquid operating point for sticking-controlled checks.
+# Liquid-density (phi=1.2) room-temperature operating point for sticking-controlled checks. Earlier
+# revisions called it "canonical liquid"; it is a room-temperature point at liquid density, and the
+# cycling-rate scale it inherits (formation._CALIB) is a low-temperature liquid value applied at 300 K.
 _OP = dict(T=300.0, phi=1.2, c_t=0.5)
 
 # Digitized Yamashita-Kino 2022 Fig.3a lambda_c(T) (c_t=0.5 EVM-SPM-FIF band centreline), the sourced
@@ -273,8 +275,9 @@ def run(rates, targets_csv=None, channels="off"):
             _within(omega_pred, float(_po["value"]), _po["tolerance"]),
             "independent prediction of effective sticking from the ledger microphysics "
             "(omega_s0 x (1-R_col) x (1-R_X)); FAIL is the registered finding: the ~+24% gap to the "
-            "measured 0.45% is the side-channel share the v1 effective parameters absorb "
-            "(accounting.md re-attribution; pending lambda_ttmu acquisition).",
+            "measured 0.45% is a theory-over-experiment sticking discrepancy -- a theory initial sticking "
+            "(omega_s0, Kamimura) times model reactivation factors (R_col, R_X), none of them fitted, "
+            "predicts more sticking than was measured.",
             "independent",
         )
     )
@@ -350,7 +353,7 @@ def report_markdown(results, channels="off") -> str:
             "regression (the channels-OFF scoreboard stays the trust gate). See `docs/accounting.md`.",
             "",
             "Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** "
-            "(canonical liquid).",
+            "(liquid density at room temperature; see the gate rule for its cycling-rate anchor).",
             "",
             "| target | class | observed | predicted | tolerance | verdict | note |",
             "|---|---|---|---|---|---|---|",
@@ -364,7 +367,7 @@ def report_markdown(results, channels="off") -> str:
             "genuine predictions -- and as of v1 the passing set contains none (the failing `independent` "
             "rows are registered, pre-framed FAILs, counted in the summary below).",
             "Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** "
-            "(canonical liquid).",
+            "(liquid density at room temperature; see the gate rule for its cycling-rate anchor).",
             "",
             "| target | class | observed | predicted | tolerance | verdict | note |",
             "|---|---|---|---|---|---|---|",
@@ -397,8 +400,9 @@ def report_markdown(results, channels="off") -> str:
         "Gate rule: a target passes only within its pre-registered tolerance; deferred items are documented "
         "limitations of the v1 model, not silent passes. No input was tuned to hit a validation target, with "
         "one disclosed anchor: the formation model's overall scale (`formation._CALIB`) is set to the "
-        "room-temperature thermal rate (see formation.py), so yield-level targets at 300 K are not fully "
-        "independent of that anchor.",
+        "room-temperature thermal rate (see formation.py) at the scale of the liquid cycling maximum that "
+        "V_breunlich_lambdac observes, a low-temperature liquid value applied here at 300 K, so yield-level "
+        "targets at 300 K are not fully independent of that anchor.",
         "",
         "The T-shape rows are now split by claim tier: V_yamashita_lcT stays a `shape (calibrated model)` "
         "monotonicity check of the calibrated resonance-model construction (hand-placed, unsourced "

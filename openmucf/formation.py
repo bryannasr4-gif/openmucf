@@ -10,7 +10,9 @@ Anchored to measured data (provenance in openmucf/data/references.bib):
   * thermal-scale formation ~1e8 s^-1 near room temperature and rising with T to ~800 K
     (Yamashita-Kino 2022), which the Maxwellian average reproduces because kT << the 0.42 eV
     resonance over 20-800 K, so cooling/heating moves along the resonance flank;
-  * eta = epithermal enhancement (ledger row eta_dtmu): 1 (bare theory) .. 5 (Yamashita-Kino fit).
+  * eta (ledger row eta_dtmu) multiplies the measurement-anchored rate below: eta=1 is that anchored rate
+    and eta=5 a five-times-anchored formation scenario. The literature's eta=1 (bare theory) .. 5
+    (Yamashita-Kino fit) range is relative to the bare formation rate, which this module does not compute.
 
 NOT the full Faifman/Adamczak quantum grid nor the condensed-matter S(q,omega) rate -- those are the
 documented upgrade path (Phase 3).
@@ -50,7 +52,9 @@ _RESONANCES = {
     ],
 }
 # Thermal-scale calibration: set so lambda_dtmu(300 K, F=0, phi=1) ~ 1.3e8 s^-1 -- i.e. the ~1e8
-# room-temperature anchor (Yamashita-Kino 2022) and the canonical lambda_c(300 K) ~ 1.4e8. This scales
+# room-temperature anchor (Yamashita-Kino 2022) and a lambda_c(300 K) ~ 1.4e8. That 1.4e8 is the Breunlich
+# liquid cycling maximum (rates.csv lambda_c_liquid, upper edge), a low-temperature liquid value transplanted
+# here to the 300 K, liquid-density (phi=1.2) operating point of openmucf/validate.py. This scales
 # ONLY the thermal average; the energy-resolved peak (lambda_dtmu_energy) stays the measured 7.1e9.
 #
 # _CALIB re-anchor (2026-07-08): the quadrature grid changed from linear to geometric (_EGRID below;
@@ -123,7 +127,8 @@ def _maxwell_avg(T, F):
 def lambda_dtmu(T, phi=1.0, F=0, eta=1.0):
     """Thermally-averaged resonant dt-mu formation rate [s^-1] at T [K], density phi, hyperfine F.
 
-    ``eta`` is the epithermal enhancement (ledger row eta_dtmu; 1 = bare theory, ~5 = Yamashita-Kino fit).
+    ``eta`` multiplies the measurement-anchored rate (ledger row eta_dtmu; 1 = the anchored rate, 5 = a
+    five-times-anchored formation scenario); it is not the literature's enhancement over bare theory.
 
     Default ``F=0`` returns the placeholder F=0 branch; the physical post-cascade population is
     3/4 F=1 + 1/4 F=0 (MODEL_SPEC.md sec.3). The thermal output is an effective cycle-scale rate

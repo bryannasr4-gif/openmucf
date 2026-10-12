@@ -11,9 +11,12 @@
 > class-conditionally (constant-R vs R(phi)-inflated) and report the class contrast, RESOLVED OR NOT,
 > as a finding.
 
-**Method (no new physics).** Both metrics run over the EXISTING weak-prior calibration posterior
-(`openmucf.calibrate`, Uniform omega_s0 prior -- the +0.84 omega_s0/R degeneracy ridge of
-`CALIBRATION.md`, the same chain the X-ray verdict was decided on). A candidate is only an ADDED future
+**Method (no new physics).** Both metrics run over a weak-prior calibration posterior on the boxes
+`openmucf.design` pins -- Uniform omega_s0 (0.60, 1.10) and Uniform R
+(0.10, 0.60), the `openmucf.calibrate` boxes before they were widened, not its
+current defaults (`CALIBRATION.md` states both) -- the chain with the +0.84 omega_s0/R degeneracy ridge
+that `CALIBRATION.md`'s prior-sensitivity sweep reports for these boxes, the same chain the X-ray verdict
+was decided on. A candidate is only an ADDED future
 observable `y ~ Normal(mu(theta), sigma)` at a stated design point; nothing about the calibration data or
 the forward map changes. The PRIMARY metric is the preposterior median posterior-sd contraction from
 refitting with that observable appended (`openmucf.design.sd_contraction`); the SECONDARY metric is the
