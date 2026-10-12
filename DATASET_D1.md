@@ -456,6 +456,8 @@ The `parity` tables `data/g4/d1/d1_capture.g4dat` and `data/g4/d1/d1_zeff.g4dat`
 values compiled into Geant4, and their Layer-2 files `data/g4/d1/d1_capture.prov.json` and
 `data/g4/d1/d1_zeff.prov.json` are offered under the Geant4 Software License v1.0, the licence of the
 Geant4 source in `third_party/geant4/` they are generated from.
+`data/g4/d1/geant4_natural_isotopes.csv`, the natural isotopic compositions read from Geant4 builds, is
+offered under the Geant4 Software License v1.0.
 The files that restate cells of the primaries' tables, `data/g4/d1/capture_rate_cells.csv`,
 `data/g4/d1/zeff_audit.csv`, `data/g4/d1/suzuki1987_*.csv` and `data/g4/d1/mizuno2025_table*.csv`,
 and the `suzuki1987` and `mizuno2025` profiles generated from them,
