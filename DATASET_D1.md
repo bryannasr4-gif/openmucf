@@ -500,6 +500,7 @@ journal version is unread.
 ## 10. Published capture-rate tables — `suzuki1987`
 
 `data/g4/d1/suzuki1987_printed_rows.csv` records each printed line of Tables III and IV of the published Suzuki, Measday and Roalsvig article from its page images, with table, printed page and row locators.
+Of a caption, the ledger keeps the table's title; of a note or footnote of more than a sentence, only its footnote marker, if any; in place of the text it leaves out, it gives the SHA-256 of that text.
 The generated `suzuki1987_quantity_rows.csv` normalizes the data rows and carries the Huff factor column as printed.
 The `suzuki1987` capture profile selects this experiment's own rows when the printed target label identifies an isotope or natural composition, the rate has a symmetric uncertainty, and the rate is not parenthesized.
 A bare element symbol stays `unspecified` under this project's source-preserving convention, which records natural composition only where the printed label carries the `nat` prefix; the format itself makes an `A = 0` record the natural-composition row only under `A:natural_and_listed`.

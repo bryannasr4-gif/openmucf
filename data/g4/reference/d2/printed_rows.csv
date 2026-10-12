@@ -95,8 +95,8 @@ Baijal1962OSTI,Table IV,55,64,24,data,PbO,0.82,0.020,C1,
 Baijal1962OSTI,Table IV,55,64,25,data,PbO,0.18,0.020,C2,
 Baijal1962OSTI,Table IV,55,64,26,data,PbO,4.56,0.53,C1/C2,
 Baijal1962OSTI,Table IV,55,64,27,note,,,,,"The sum C1 + C2 has not been indicated for AgLi and the oxide compounds because, in these cases, C2 was calculated from C2 = 1 - C1 and not independently as in CuAu and sulfide compounds."
-Baijal1962OSTI,Table IV,55,64,28,footnote,,,,,"After the atomic captures in oxygen are estimated, the sum is about 0.98 in CuS. The ratio C1/C2 remains unchanged. In the case of PbS, the sum changes from 0.89 to 0.94 after estimation of the correction for captures in oxygen. The ratio C1/C2 again remains the same. For details see text (Sec. V.C)."
-Baijal1962OSTI,Table V,56,65,1,caption,,,,,Table V. Summary of results. Relative number of mu^- mesons reaching the mesic K shell in the constituents of a chemical compound
+Baijal1962OSTI,Table IV,55,64,28,footnote,,,,,[text omitted; sha256 337893063250eefcb17da2ae19fc83f7f3643eebf5965a0488b696578a129daf]
+Baijal1962OSTI,Table V,56,65,1,caption,,,,,Table V. Summary of results. [text omitted; sha256 985b1bc05ec596a57ff87fa3c512ceec5fc1dd4f6afadc245deb8244aadee6b3]
 Baijal1962OSTI,Table V,56,65,2,header,,,,,"Compound | Ratio | Observed | Predicted, Fermi and Teller | Atomic ratio | n"
 Baijal1962OSTI,Table V,56,65,3,data,CuAu^†,0.34,0.032,Observed,Ratio=Au/Cu
 Baijal1962OSTI,Table V,56,65,4,data,AgLi^†,11.66,3.39,Observed,Ratio=Ag/Li
@@ -106,7 +106,7 @@ Baijal1962OSTI,Table V,56,65,7,data,PbS,2.87,0.35,Observed,Ratio=Pb/S
 Baijal1962OSTI,Table V,56,65,8,data,CuO,6.14,0.85,Observed,Ratio=Cu/O
 Baijal1962OSTI,Table V,56,65,9,data,Sb2O3,1.86,0.096,Observed,Ratio=Sb/O
 Baijal1962OSTI,Table V,56,65,10,data,PbO,4.56,0.53,Observed,Ratio=Pb/O
-Baijal1962OSTI,Table V,56,65,11,footnote,,,,,AgLi and CuAu are metallic solutions. AgLi has 10% of Li by weight. CuAu has 36% of Au by weight.
+Baijal1962OSTI,Table V,56,65,11,footnote,,,,,[text omitted; sha256 690e014d265e080aa75a18fb84daa7ba6b139861bef2c70e035ec9bffe4fd23b]
 Baijal1962OSTI,Result text,31,40,1,data,CuO,0.163,,C_O/C_Cu,"from experimental result for CuO, Table V"
 Baijal1962OSTI,Result text,31,40,2,data,CuS,51%,,captures in Cu,from experimental result for CuS
 Mausner1975,Result text,3,6,1,data,KCl,1.16,0.03,K+/Cl-,
@@ -123,7 +123,7 @@ Yoshida2016,Table 1,116,4,5,data,Average (50 kPa and 99 kPa),0.621,(29),A(C/O),
 Yoshida2016,Table 1,116,4,6,data,"H2+CO2, 50 kPa",0.632,(51),A(C/O),
 Yoshida2016,Table 1,116,4,7,data,"H2+CO2, 99 kPa",0.656,(36),A(C/O),
 Yoshida2016,Table 1,116,4,8,data,Average (50 kPa and 99 kPa),0.644,(31),A(C/O),
-Inagaki2021,Table 2,322,4,1,caption,,,,,"Table 2: Intensity ratio of total Lyman series muonic X-ray of carbon to that of chlorine in each sample. Intensity fraction of total Lyman series muonic X-ray of carbon to sum of that of carbon and chlorine in each sample is also shown. These ratios and fractions correspond to muon capture ratios and muon capture fractions, respectively."
+Inagaki2021,Table 2,322,4,1,caption,,,,,Table 2: Intensity ratio of total Lyman series muonic X-ray of carbon to that of chlorine in each sample. [text omitted; sha256 5974fcec6be11eeca4fd9de38df81c462b2168eea1c267c7aaff8bda853b8b85]
 Inagaki2021,Table 2,322,4,2,header,,,,,muC Lyman/muCl Lyman | muC Lyman/(muC Lyman+muCl Lyman)
 Inagaki2021,Table 2,322,4,3,data,C6H6 + CCl4 (15%) sample,0.829,0.004,muC Lyman/(muC Lyman+muCl Lyman),
 Inagaki2021,Table 2,322,4,4,data,C6H6 + CCl4 (30%) sample,0.667,0.009,muC Lyman/(muC Lyman+muCl Lyman),

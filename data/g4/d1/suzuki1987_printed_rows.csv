@@ -1,5 +1,5 @@
 table,printed_page,page_row_ordinal,row_kind,z_raw,zeff_raw,zeff_underlined,element_raw,mean_life_raw,rate_raw,huff_raw,refs_raw,note,copy_read
-III,2217,1,caption,,,,,,,,,TABLE III. Compendium of total muon capture results for light nuclei. (Z_eff is taken from Ref. 77. When underlined it is an estimate.),published-scan
+III,2217,1,caption,,,,,,,,,TABLE III. Compendium of total muon capture results for light nuclei. [text omitted; sha256 37e82288e438fcc2cb749cc6af41a4382dcc17316c28cf91f7aed1bd46374efe],published-scan
 III,2217,2,header,Z,Z_eff,,Element,Mean life (ns),Total capture rate (s^-1),Huff factor,Refs.,,published-scan
 III,2217,3,positive_muon,Positive muon,,false,,2197.03+-0.04,,,"4,5",,published-scan
 III,2217,4,data,1,1.0,false,1H^b,2194.903+-0.066,420+-20,1.00,34,,published-scan
@@ -55,8 +55,8 @@ III,2217,53,data,,,false,,1458+-13,231+-6x10^3,,27,,published-scan
 III,2217,54,data,,,false,,1462.7+-5.0,229+-1x10^3,,a,,published-scan
 III,2217,55,note,,,,,,,,,(these F data show the lifetime for the lower hf state; see Sec. IV D).,published-scan
 III,2217,56,footnote,,,,,,,,,^aDenotes the results of this experiment.,published-scan
-III,2217,57,footnote,,,,,,,,,^bFor hydrogen the capture rate depends on mesomolecular effects (Ref. 25). Thus we have given the most recent articles only.,published-scan
-IV,2218,1,caption,,,,,,,,,"TABLE IV. Compendium of total muon capture results for medium and heavy nuclei. (Z_eff is taken from Ref. 77. When it is underlined, it is an estimate. Entries in parentheses in column 4 are not given in the original reference.)",published-scan
+III,2217,57,footnote,,,,,,,,,^b [text omitted; sha256 e64dfee49774571f550a3a671043437e427a78ba1b758f9e770d3ddeace23864],published-scan
+IV,2218,1,caption,,,,,,,,,TABLE IV. Compendium of total muon capture results for medium and heavy nuclei. [text omitted; sha256 c685a62500fe11a2b8dbb07ad3019d4399ff3b45bbdd7786738185a0ccd0cab7],published-scan
 IV,2218,2,header,Z,Z_eff,,Element,Mean life (ns),Total capture rate (10^6/s),Huff factor,Refs.,,published-scan
 IV,2218,3,data,10,9.14,true,Ne,1520+-23,0.204+-0.010,0.997,46,,published-scan
 IV,2218,4,data,,,false,,,0.167+-0.030,,47,,published-scan
@@ -282,4 +282,4 @@ IV,2221,43,data,,,false,,75.4+-0.9,(12.9+-0.2),,58f,,published-scan
 IV,2221,44,data,,,false,,79+-5,(12.3+-0.8),,65f,,published-scan
 IV,2221,45,footnote,,,,,,,,,^aDenotes the results of this experiment.,published-scan
 IV,2221,46,footnote,,,,,,,,,^bRPb denotes radiogenic lead (88% 206Pb:9% 207Pb:3% 208Pb).,published-scan
-IV,2221,47,footnote,,,,,,,,,"^cFor these nuclides, prompt fission can complicate the measurement. The letters after the reference denote the type of particle detected, viz., e, electrons; n, neutrons; gamma, gammas, Kgamma, gammas in coincidence with K x rays; f, fission fragments, (f and Kgamma are probably the most reliable for determining the total capture rate. See Refs. 26 and 58 for details.)",published-scan
+IV,2221,47,footnote,,,,,,,,,^c [text omitted; sha256 a50a72ee7dff2bd41bbec4a81a8c4cd47c2783d398c3e796dc66af2b85e9f830],published-scan
