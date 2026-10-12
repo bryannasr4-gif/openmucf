@@ -29,7 +29,7 @@ from openmucf.rates import RATES_CSV, load_rates  # noqa: E402
 os.makedirs("figures", exist_ok=True)
 rates = load_rates()
 
-# 64 uniform bins over [0, 30 us]; canonical liquid OP = (300 K, phi=1.2, c_t=0.5); n_mu*eff = 1e6.
+# 64 uniform bins over [0, 30 us]; liquid-density room-temperature OP = (300 K, phi=1.2, c_t=0.5); n_mu*eff = 1e6.
 T_EDGES = np.linspace(0.0, 30.0e-6, 65)
 N_MU_EFF = 1.0e6
 
@@ -157,7 +157,7 @@ md = f"""# TWIN_AUDIT.md -- counts-level twin: estimator bias + fuel-component b
 > Standard identity used throughout: `lambda_n = lambda_0 + omega_s_eff * lambda_c`, `X_mu = lambda_c/lambda_n`.
 
 ## 1. Closed-form disappearance gate (G-T1)
-Synthetic neutron spectrum at the canonical liquid OP (300 K, phi=1.2, c_t=0.5), 64 bins over [0, 30 us],
+Synthetic neutron spectrum at the liquid-density room-temperature OP (300 K, phi=1.2, c_t=0.5), 64 bins over [0, 30 us],
 n_mu*eff = 1e6, zero background (seed 0). The idealized two-exponential estimator (`fit_two_exponential`,
 t_min = 2 us) recovers the disappearance rate lambda_n:
 

@@ -47,7 +47,8 @@ assert xchk["rel_diff"] < 1e-11, (
     f"gradient cross-check degraded: rel_diff={xchk['rel_diff']:.3e} (bound 1e-11)"
 )
 
-# eta=1-vs-5 structural bracket (section 1c): X_mu through the full ODE at the canonical OP, eta=1 vs 5.
+# Section 1c's structural bracket: X_mu through the full ODE at the 300 K liquid-density OP, eta=1 (the
+# measurement-anchored formation rate) vs eta=5 (five times that rate).
 # These 300 K numbers are grid-stable by the formation _CALIB anchor procedure (see formation.py).
 _rates = load_rates()
 _xmu_eta1 = float(cycle.fusions_per_muon_from_conditions(_rates, 300.0, 1.2, 0.5, eta=1.0))
@@ -416,21 +417,27 @@ The prior-independent statements are therefore the *local elasticity* ranking at
 (|dlnX_mu/dln omega_s0| > |dlnX_mu/dln lambda_c| > |dlnX_mu/dln R|) and the requirement-form result in
 section 3 -- not "R is the dominant driver" as an unconditional claim.
 
-## 1c. The eta=1-vs-5 formation debate (structural bracket, not a prior)
-The epithermal enhancement eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate; the
-literature spans eta=1 (bare Faifman theory) to eta~5 (Yamashita-Kino fit). Recomputing X_mu through the
-full cycle ODE at the canonical operating point (300 K, phi=1.2, c_t=0.5):
+## 1c. A five-times-anchored formation scenario (structural bracket, not a prior)
+The multiplier eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate of the cycle engine,
+and that rate is already anchored to the measured room-temperature cycling scale (`formation.py`; the
+`V_faifman_900K` and `V_faifman_lowT` rows of `VALIDATION.md` measure its distance from the bare Faifman
+rate). So eta=1 is the
+anchored rate, not bare theory, and eta=5 is a scenario with five times the anchored formation rate; the
+literature's eta=1-vs-5 range (bare theory vs the Yamashita-Kino fit) is relative to the bare rate, and
+this bracket does not span it. Recomputing X_mu through the full cycle ODE at the liquid-density
+room-temperature operating point (300 K, phi=1.2, c_t=0.5):
 
 | eta | X_mu |
 |---|---|
-| 1 (bare theory) | {H["eta_bracket_lo"]} |
-| 5 (Yamashita-Kino fit) | {H["eta_bracket_hi"]} |
+| 1 (the anchored rate) | {H["eta_bracket_lo"]} |
+| 5 (five times the anchored rate) | {H["eta_bracket_hi"]} |
 
 so the structural bracket is X_mu(eta=5) - X_mu(eta=1) = **{H["eta_bracket_width"]}**.
 
 eta rescales the FORMATION pathway; the measured lambda_c band in sections 1/2 already contains eta as it
-occurred in the anchor experiments (one channel, one accounting home), so eta is reported as a structural bracket beside
-the CI, never convolved into it.
+occurred in the anchor experiments (one channel, one accounting home), so the eta=5 row applies a further
+enhancement on top of the anchored one; eta is reported as a structural bracket beside the CI, never
+convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
@@ -688,8 +695,8 @@ _entries += [
     _entry("R_required", rf"\*\*R >= {re.escape(H['R_required'])}\*\*"),
     _entry("R_required_band", rf"R >= {re.escape(H['R_required_band'])} across the"),
     _entry("R_X_required", rf"\*\*R_X >= {re.escape(H['R_X_required'])}\*\*"),
-    _entry("eta_bracket_lo", rf"\| 1 \(bare theory\) \| {re.escape(H['eta_bracket_lo'])} \|"),
-    _entry("eta_bracket_hi", rf"\| 5 \(Yamashita-Kino fit\) \| {re.escape(H['eta_bracket_hi'])} \|"),
+    _entry("eta_bracket_lo", rf"\| 1 \(the anchored rate\) \| {re.escape(H['eta_bracket_lo'])} \|"),
+    _entry("eta_bracket_hi", rf"\| 5 \(five times the anchored rate\) \| {re.escape(H['eta_bracket_hi'])} \|"),
     _entry("eta_bracket_width", rf"X_mu\(eta=5\) - X_mu\(eta=1\) = \*\*{re.escape(H['eta_bracket_width'])}\*\*"),
 ]
 # section 2b (the muon-cost tier panel): anchor each tracked number to its row of the Q_net-by-tier table.

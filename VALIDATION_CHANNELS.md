@@ -4,7 +4,7 @@
 
 **Pre-framed outcome:** the ttmu formation rate `lambda_ttmu` is currently BLOCKED (0.0, needs_verification -- pending acquisition of the Matsuzaki/Bom tt-fusion tables, *Muon Catal. Fusion*) and the validation anchors are He-purged (c_He=0), so the two channels are inert here and this scoreboard reproduces the channels-OFF one **exactly**. Once `lambda_ttmu` is pinned, the Kou-Chen +-10% PASSes may convert to documented discrepancies -- that will be a FINDING about the tt channel's share of their effective numbers, NOT a regression (the channels-OFF scoreboard stays the trust gate). See `docs/accounting.md`.
 
-Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** (canonical liquid).
+Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** (liquid density at room temperature; see the gate rule for its cycling-rate anchor).
 
 | target | class | observed | predicted | tolerance | verdict | note |
 |---|---|---|---|---|---|---|
@@ -23,7 +23,7 @@ Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** (c
 
 **Summary: 6 pass (0 independent), 5 fail (5 registered placeholder-distance findings -- see notes), 1 deferred. Distinct tests: 10 (the three Yamashita rows are one test, disclosed above).**
 
-Gate rule: a target passes only within its pre-registered tolerance; deferred items are documented limitations of the v1 model, not silent passes. No input was tuned to hit a validation target, with one disclosed anchor: the formation model's overall scale (`formation._CALIB`) is set to the room-temperature thermal rate (see formation.py), so yield-level targets at 300 K are not fully independent of that anchor.
+Gate rule: a target passes only within its pre-registered tolerance; deferred items are documented limitations of the v1 model, not silent passes. No input was tuned to hit a validation target, with one disclosed anchor: the formation model's overall scale (`formation._CALIB`) is set to the room-temperature thermal rate (see formation.py) at the scale of the liquid cycling maximum that V_breunlich_lambdac observes, a low-temperature liquid value applied here at 300 K, so yield-level targets at 300 K are not fully independent of that anchor.
 
 The T-shape rows are now split by claim tier: V_yamashita_lcT stays a `shape (calibrated model)` monotonicity check of the calibrated resonance-model construction (hand-placed, unsourced placeholder resonance positions -- see formation.py), NOT a sourced temperature dependence, while V_yamashita_ratio and V_yamashita_curve are `independent` comparators against the digitized Yamashita-Kino 2022 Fig.3a curve (openmucf/data/yamashita_kino_lc_T.csv). The only independent rows are those marked `independent` in the class column; as of this version the passing set contains none -- the FIVE FAILING independent rows are pre-registered findings that measure the v1 placeholder's distance from the field's own rates (PRE_REGISTRATION.md amendments 2026-07-12 / 2026-07-13). The sourced-shape finding: the engine's lambda_c(800 K)/lambda_c(300 K) ~ 1.31 is -41% to -44% below the digitized 2.24-2.36 (outside +-30% across the whole extraction band) -- the first sourced quantification of the placeholder's too-flat temperature shape, and the standing, quantified motivation for the sourced-formation upgrade and the Phase-3 reactivation module.
 

@@ -48,13 +48,16 @@ from . import _jaxcfg, calibrate
 from .constants import LAMBDA_0
 
 # --- pre-registered design settings (do not adjust after seeing outputs) ------------------------------
-# Base knowledge = the WEAK-prior calibration chain: the omega_s0/R degeneracy this design exists to
-# break (the +0.84 ridge of CALIBRATION.md; the same chain the X-ray feasibility study used).
+# Base knowledge = the WEAK-prior calibration chain on calibrate's boxes BEFORE they were widened
+# (omega_s0 here; R in _R_LO/_R_HI below): the omega_s0/R degeneracy this design exists to break (the
+# +0.84 ridge CALIBRATION.md's prior-sensitivity sweep reports for these boxes; the same chain the X-ray
+# feasibility study used). calibrate.py's current defaults are wider; this pin is one of the
+# pre-registered settings above.
 BASE_PRIOR = ("uniform", 0.60, 1.10)
 NUM_WARMUP = 1000        # mirrors scripts/generate_calibration.py + forecast.py chains
 NUM_SAMPLES = 4000
 
-PHI_ANCHOR = 1.2         # canonical liquid operating point (forecast.PHI_ANCHOR / validate _OP)
+PHI_ANCHOR = 1.2         # liquid-density operating point (forecast.PHI_ANCHOR / validate _OP)
 
 # R(phi)-inflated (scenario-B) registered prior on high-density reactivation (forecast.py D2).
 R_INFLATED_LO, R_INFLATED_HI = 0.15, 0.60
@@ -79,7 +82,8 @@ SE_BOOTSTRAP_SEED = 20260809
 # error is ~1/sqrt(2*19) ~ 16%. Pre-registered; do not tune after seeing a cell.
 SE_BASE_BATCHES = 20
 
-# base-model priors (verbatim from calibrate.model), reused by every refit
+# base-model priors: calibrate.model's R and lambda_c boxes as they stood before the omega_s0/R boxes
+# were widened (calibrate.py docstring; R_PRIOR_DEFAULT is now wider), pinned here and reused by every refit
 _R_LO, _R_HI = 0.10, 0.60
 _LAMBDA_C_LO, _LAMBDA_C_HI = 0.8e8, 1.6e8
 _OBS = dict(omega_s_eff_obs=0.45, omega_s_eff_sd=0.05, xmu_obs=113.0, xmu_sd=12.0)
@@ -237,7 +241,7 @@ def _eig_nats(y, mu_self, mu_pool, sigma):
 def eig_nested_mc(candidate, n_outer: int = 256, n_inner: int = 256, seed: int = 0,
                   cls: str = "constant", sigma_rel: float | None = None,
                   samples: dict | None = None) -> dict:
-    """Nested-MC Expected Information Gain (bits) of ``candidate`` over the existing weak-prior posterior.
+    """Nested-MC Expected Information Gain (bits) of ``candidate`` over the pinned weak-prior posterior.
 
     The posterior is the design prior; the candidate adds ``y ~ Normal(mu(theta), sigma)`` with
     ``sigma = sigma_rel * |mean(mu)|``. Draws ``n_outer`` (theta, y) outer pairs and marginalises the

@@ -31,7 +31,7 @@ rates = load_rates()          # a validated RatesTable (dict-like)
 The one-call forward map assembles the cycle rates from the ledger plus the
 physical conditions — temperature `T` [K], density `φ`, and tritium fraction
 `c_t` — and integrates the differentiable diffrax cycle ODE network. At the
-canonical liquid operating point **T = 300 K, φ = 1.2, c_t = 0.5** it returns
+liquid-density room-temperature operating point **T = 300 K, φ = 1.2, c_t = 0.5** it returns
 about **114 fusions per muon**:
 
 ```python

@@ -86,21 +86,27 @@ The prior-independent statements are therefore the *local elasticity* ranking at
 (|dlnX_mu/dln omega_s0| > |dlnX_mu/dln lambda_c| > |dlnX_mu/dln R|) and the requirement-form result in
 section 3 -- not "R is the dominant driver" as an unconditional claim.
 
-## 1c. The eta=1-vs-5 formation debate (structural bracket, not a prior)
-The epithermal enhancement eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate; the
-literature spans eta=1 (bare Faifman theory) to eta~5 (Yamashita-Kino fit). Recomputing X_mu through the
-full cycle ODE at the canonical operating point (300 K, phi=1.2, c_t=0.5):
+## 1c. A five-times-anchored formation scenario (structural bracket, not a prior)
+The multiplier eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate of the cycle engine,
+and that rate is already anchored to the measured room-temperature cycling scale (`formation.py`; the
+`V_faifman_900K` and `V_faifman_lowT` rows of `VALIDATION.md` measure its distance from the bare Faifman
+rate). So eta=1 is the
+anchored rate, not bare theory, and eta=5 is a scenario with five times the anchored formation rate; the
+literature's eta=1-vs-5 range (bare theory vs the Yamashita-Kino fit) is relative to the bare rate, and
+this bracket does not span it. Recomputing X_mu through the full cycle ODE at the liquid-density
+room-temperature operating point (300 K, phi=1.2, c_t=0.5):
 
 | eta | X_mu |
 |---|---|
-| 1 (bare theory) | 114.5 |
-| 5 (Yamashita-Kino fit) | 157.6 |
+| 1 (the anchored rate) | 114.5 |
+| 5 (five times the anchored rate) | 157.6 |
 
 so the structural bracket is X_mu(eta=5) - X_mu(eta=1) = **43.1**.
 
 eta rescales the FORMATION pathway; the measured lambda_c band in sections 1/2 already contains eta as it
-occurred in the anchor experiments (one channel, one accounting home), so eta is reported as a structural bracket beside
-the CI, never convolved into it.
+occurred in the anchor experiments (one channel, one accounting home), so the eta=5 row applies a further
+enhancement on top of the anchored one; eta is reported as a structural bracket beside the CI, never
+convolved into it.
 
 ## 2. Propagated uncertainty (what we can actually say today)
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a

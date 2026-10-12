@@ -5,8 +5,8 @@
 
 Content (openmucf.design): rank candidate NEXT muCF experiments (C1 neutron disappearance slope @ phi=2.0;
 C2 lambda_c(T) @ 800 K; C3 omega_s^eff @ phi=2.4 under scenario A AND B; C4 X-ray/neutron ratio) by the
-PRIMARY preposterior sd-contraction metric and the SECONDARY nested-MC EIG, over the EXISTING weak-prior
-calibrate posterior. R is reported class-conditionally (constant-R vs R(phi)-inflated); the class
+PRIMARY preposterior sd-contraction metric and the SECONDARY nested-MC EIG, over a weak-prior calibrate
+posterior on the boxes openmucf.design pins (calibrate's boxes before they were widened). R is reported class-conditionally (constant-R vs R(phi)-inflated); the class
 CONTRAST -- resolved or not, against its own Monte-Carlo error -- is the finding.
 
 Reproducibility (the CALIBRATION.md precedent, NOT the byte-diff pattern): DESIGN.md +
@@ -441,9 +441,12 @@ def build_markdown(H: dict, res: dict) -> str:
 > class-conditionally (constant-R vs R(phi)-inflated) and report the class contrast, RESOLVED OR NOT,
 > as a finding.
 
-**Method (no new physics).** Both metrics run over the EXISTING weak-prior calibration posterior
-(`openmucf.calibrate`, Uniform omega_s0 prior -- the +0.84 omega_s0/R degeneracy ridge of
-`CALIBRATION.md`, the same chain the X-ray verdict was decided on). A candidate is only an ADDED future
+**Method (no new physics).** Both metrics run over a weak-prior calibration posterior on the boxes
+`openmucf.design` pins -- Uniform omega_s0 ({design.BASE_PRIOR[1]:.2f}, {design.BASE_PRIOR[2]:.2f}) and Uniform R
+({design._R_LO:.2f}, {design._R_HI:.2f}), the `openmucf.calibrate` boxes before they were widened, not its
+current defaults (`CALIBRATION.md` states both) -- the chain with the +0.84 omega_s0/R degeneracy ridge
+that `CALIBRATION.md`'s prior-sensitivity sweep reports for these boxes, the same chain the X-ray verdict
+was decided on. A candidate is only an ADDED future
 observable `y ~ Normal(mu(theta), sigma)` at a stated design point; nothing about the calibration data or
 the forward map changes. The PRIMARY metric is the preposterior median posterior-sd contraction from
 refitting with that observable appended (`openmucf.design.sd_contraction`); the SECONDARY metric is the
