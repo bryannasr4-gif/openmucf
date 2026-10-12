@@ -459,7 +459,8 @@ def licence_statements() -> dict[str, tuple[str, tuple[str, ...]]]:
         ),
         "LICENSE-DATA": (
             _note(read("LICENSE-DATA"), "NOTE (not part of the Creative Commons licence)"),
-            ("openmucf/data", "data/g4/", "third_party/geant4/", "cpp/patches/"),
+            ("openmucf/data", "data/g4/", "third_party/geant4/", "cpp/patches/",
+             "data/g4/d1/geant4_natural_isotopes.csv"),
         ),
         "DATASET_D1.md": (
             _section(read("DATASET_D1.md"), "## 8. Licensing"),

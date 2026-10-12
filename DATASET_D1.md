@@ -638,7 +638,7 @@ gives the `parity` rows, each figure rounded to a tenth of a percent.
 
 This section does not revisit the rule that, under every profile but `parity`, an element's
 natural-composition row answers only a request that names it; the next table gives the rows of the
-other profiles whose weighted rate differs from the `parity` row's.
+other profiles with a natural-composition record whose weighted rate differs from the `parity` row's.
 
 | profile | Z | element | stops the profile's rows answer (%) | relative difference (%) |
 |---|---|---|---|---|
