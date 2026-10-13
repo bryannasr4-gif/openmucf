@@ -4400,6 +4400,19 @@ def test_f8_the_aluminium_record_is_the_weighted_mean_of_a_pair_printing_one_mea
     assert aluminium_problems(finding.own, finding.other, finding.record,
                               dataclasses.replace(later, rate_unc=str(wide))) == [
         "the mizuno2025 value is within its uncertainty of the record"]
+    # Strict boundaries: a later value exactly its uncertainty from the authors' own value, carried away from
+    # the record, is not within it; an uncertainty exactly the later value's separation from the record does
+    # not put the record farther than it.
+    edge = own_rate + later_unc.copy_sign(own_rate - record_value)
+    assert abs(edge - own_rate) == later_unc and abs(edge - record_value) > later_unc
+    assert aluminium_problems(finding.own, finding.other, finding.record,
+                              dataclasses.replace(later, rate=str(edge))) == [
+        "the mizuno2025 value is not within its uncertainty of the authors' own value"]
+    touching = abs(later_rate - record_value)
+    assert abs(later_rate - own_rate) < touching
+    assert aluminium_problems(finding.own, finding.other, finding.record,
+                              dataclasses.replace(later, rate_unc=str(touching))) == [
+        "the mizuno2025 value is within its uncertainty of the record"]
 
 
 def aluminium_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
