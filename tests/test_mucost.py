@@ -2329,3 +2329,31 @@ def test_the_evidence_grades_agree_everywhere_and_the_not_sourced_count_is_state
     for name in ("muon-cost", "muon-cost-chain"):
         assert f"The last {word} are NOT sourced" in fields[name]["evidence_status"]["description"]
 
+
+def test_the_amendment_and_the_t1_clause_are_read_off_the_tables(table, chain):
+    """The dated amendment prints the relayed edge's percentage, and the T1 clause says what its rows count.
+
+    Both are rendered from the ledger, so each is drilled the other way: a tier whose beam rows all share
+    one count loses the count qualifier, and the percentage moves with the edge's factor.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table, chain)
+    doc = _normalized("MUON_COST.md")
+    petrov = chain[gen.PETROV_EDGE_ID]
+    assert H["petrov_factor_pct"] == f"{petrov.factor * 100:g}"
+    assert f"converts about {H['petrov_factor_pct']}% of the negative pions created" in doc
+    t1 = {r.count_basis for r in table.tier("T1-design-study")
+          if r.has_normalized and r.numeraire == mucost.BEAM_KINETIC}
+    qualifier = " (it is not count-homogeneous: see the count basis above)"
+    assert len(t1) > 1 and H["t1_stage_clause"].endswith(qualifier)
+    assert f"so {H['t1_stage_clause']}," in doc
+    # drill: every T1 beam row given one count (one the count paragraph can still name), and the
+    # qualifier goes
+    one = "pi_minus_or_mu_minus_exiting"
+    rows = [dataclasses.replace(r, count_basis=one) if r.tier == "T1-design-study" and r.has_normalized
+            and r.numeraire == mucost.BEAM_KINETIC else r for r in table]
+    assert not gen.build_headline(MuonCostTable(rows), chain)["t1_stage_clause"].endswith(qualifier)
+    edges = mucost.ChainEdgeTable([dataclasses.replace(e, factor=0.6) if e.edge_id == petrov.edge_id else e
+                                   for e in chain])
+    assert gen.build_headline(table, edges)["petrov_factor_pct"] == "60"
+

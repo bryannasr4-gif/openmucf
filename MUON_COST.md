@@ -117,7 +117,7 @@ an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field
 > flagged a **lower bound** in the table above, exactly like every other PINNED row of its tier --
 > the unpinned one carries no figure to bound.
 > **What moves in this document:** T1's basis composition is now {produced},
-> so the tier is stage-homogeneous within the `beam_kinetic` numeraire,
+> so the tier is stage-homogeneous within the `beam_kinetic` numeraire (it is not count-homogeneous: see the count basis above),
 > and the Headline says so instead of describing a mixture.
 > **What does not:** the value stays 7.80 GeV; the tier medians
 > (4.85, 178 and 4993 GeV) and the 1029.5x spread are
@@ -326,6 +326,27 @@ exists to prevent.
 | `beam_kinetic` -> `electrical_site` | numeraire | `eta_acc_kovach_site` (primary) | yes |
 
 Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every one of them is a numeraire change: **none of the 4 stage advances the chain requires is sourced**. All 4 are spanned by one collapsed factor, `delivery_petrov_via_eliezer_henis` (bias `lower`), relayed by Eliezer & Henis (1994) from a primary not read here (`relayed_unread`) and stated for a machine no row of this compilation prices; it is not sourced, so a figure composed through it is a bound and never a value, like a figure composed through any other unsourced conversion. Exactly 1 cost source in this compilation (Kelly, Hart & Rose (2021)) states a beam-to-electrical conversion measured on an accelerator. That source also states a delivery factor (`delivery_kelly_eta_mu`), and grades it `author_declared_arbitrary` -- so composing it yields a bound and never a value.
+
+> **AMENDMENT (2026-10-13) -- a stage factor a held source relays is now an edge, under a new evidence
+> grade that is not sourced; the electrical figures state the machine transfer they rest on, and each row
+> records what it counts; no row's value moves.** This section said that not one of the 4 stage
+> advances the chain requires is sourced by any primary read here, and did not say that a source this
+> ledger already carries states one: Eliezer & Henis (1994) relay in sec.VII.A Petrov's calculation
+> that his converter-synthesizer converts about 75% of the negative pions created into muons that take
+> part in d-t catalysis. That factor is now the edge `delivery_petrov_via_eliezer_henis`, graded
+> `relayed_unread` -- a new evidence grade: the source states the number and attributes it to a primary
+> not read here -- because Petrov's paper is not read here, and given bias `lower` because the same
+> paragraph says the results seem to be optimistic. `relayed_unread` is not sourced, so the sentence
+> above, regenerated from both tables, still finds no stage advance sourced, and a figure composed
+> through the edge is a bound, never a value. The electrical figures
+> divide by efficiencies measured on the PSI HIPA proton cyclotron and applied to Kelly, Hart & Rose's
+> design -- by Kelly, Hart & Rose for the minimal-subsystem figure they adopt, and by this ledger for the
+> other two -- and now say so; their one-sidedness is stated for the stage axis only. `count_basis`
+> records that Kelly, Hart & Rose's rows count negative pions created and Acceleron's counts negative
+> pions and muons leaving the target, so T1 is stage-homogeneous but not count-homogeneous; a cost per
+> pion created is a lower bound on the cost per muon produced, so no bound changes direction.
+> **What does not move:** every row's value, the tier medians (4.85, 178 and 4993 GeV), the
+> 1029.5x spread and every number in the Kou-Chen comparison.
 
 ### Where the competing readings lead
 2 conversions carry more than one stated value: `beam_kinetic` -> `electrical_minimal` (`eta_acc_kelly_psi_minimal` = 0.18 and `eta_acc_kovach_minimal` = 0.183) and `produced` -> `stopped_useful_in_dt` (`delivery_kelly_eta_mu` = 0.5 and `delivery_petrov_via_eliezer_henis` = 0.75). No mean is formed and no value is preferred. Both readings of `beam_kinetic` -> `electrical_minimal` are carried to the end as separate figures below; neither reading of `produced` -> `stopped_useful_in_dt` is composed into them, because neither is sourced.

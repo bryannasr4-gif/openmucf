@@ -109,6 +109,9 @@ CHAIN_ANCHOR_ID = "kelly_hart_rose_2021"
 #: The evidence grade of a number a source states and attributes to a primary not read here. It is not
 #: sourced (``mucost.NON_SOURCED_STATUSES``); the coverage prose names a stage factor graded so.
 RELAYED_UNREAD = "relayed_unread"
+#: The one stage factor graded so today: Petrov's, as Eliezer & Henis relay it. The dated amendment names it
+#: and prints its percentage, which is read from the edge table and pinned in the manifest.
+PETROV_EDGE_ID = "delivery_petrov_via_eliezer_henis"
 
 
 def _join(items: list[str]) -> str:
@@ -277,6 +280,13 @@ def build_headline(
         if table.is_basis_homogeneous("T1-design-study")
         else "the tier still holds more than one accounting stage within the `beam_kinetic` numeraire"
     )
+    # ...and what its rows COUNT, read off the ledger: a stage-homogeneous tier may still mix counts
+    t1_counts = {
+        r.count_basis for r in table.tier("T1-design-study")
+        if r.has_normalized and r.numeraire == mucost.BEAM_KINETIC
+    }
+    if len(t1_counts) > 1:
+        H["t1_stage_clause"] += " (it is not count-homogeneous: see the count basis above)"
     H["t3_classes"] = ", ".join(sorted(table.basis_classes("T3-operating-facility")))
     shared = table.basis_classes("T1-design-study") & table.basis_classes("T3-operating-facility")
     H["shared_classes"] = ", ".join(sorted(shared)) if shared else "none"
@@ -413,6 +423,9 @@ def build_headline(
     H["n_numeraire_conversions"] = str(len(numeraire_convs))
     H["n_sourced_conversions"] = str(len(sourced))
     H["n_sourced_stage_conversions"] = str(len(sourced_links))
+    # the dated amendment names this edge; without it the amendment cannot render (a missing key, by design)
+    if PETROV_EDGE_ID in chain:
+        H["petrov_factor_pct"] = f"{chain[PETROV_EDGE_ID].factor * 100:g}"
 
     # which cost sources state their own beam-to-electrical conversion, read off the ledger
     carriers = [r for r in table if not math.isnan(r.eta_acc_assumption)]
@@ -1223,6 +1236,27 @@ exists to prevent.
 
 {H['chain_coverage_sentence']}
 
+> **AMENDMENT (2026-10-13) -- a stage factor a held source relays is now an edge, under a new evidence
+> grade that is not sourced; the electrical figures state the machine transfer they rest on, and each row
+> records what it counts; no row's value moves.** This section said that not one of the {H['n_stage_conversions']} stage
+> advances the chain requires is sourced by any primary read here, and did not say that a source this
+> ledger already carries states one: {LABELS['eliezer_henis_1994']} relay in sec.VII.A Petrov's calculation
+> that his converter-synthesizer converts about {H['petrov_factor_pct']}% of the negative pions created into muons that take
+> part in d-t catalysis. That factor is now the edge `{PETROV_EDGE_ID}`, graded
+> `relayed_unread` -- a new evidence grade: the source states the number and attributes it to a primary
+> not read here -- because Petrov's paper is not read here, and given bias `lower` because the same
+> paragraph says the results seem to be optimistic. `relayed_unread` is not sourced, so the sentence
+> above, regenerated from both tables, still finds no stage advance sourced, and a figure composed
+> through the edge is a bound, never a value. The electrical figures
+> divide by efficiencies measured on the PSI HIPA proton cyclotron and applied to Kelly, Hart & Rose's
+> design -- by Kelly, Hart & Rose for the minimal-subsystem figure they adopt, and by this ledger for the
+> other two -- and now say so; their one-sidedness is stated for the stage axis only. `count_basis`
+> records that Kelly, Hart & Rose's rows count negative pions created and Acceleron's counts negative
+> pions and muons leaving the target, so T1 is stage-homogeneous but not count-homogeneous; a cost per
+> pion created is a lower bound on the cost per muon produced, so no bound changes direction.
+> **What does not move:** every row's value, the tier medians ({H['t1_median']}, {H['t2_median']} and {H['t3_median']} GeV), the
+> {H['gap_ratio']}x spread and every number in the Kou-Chen comparison.
+
 ### Where the competing readings lead
 {H['competing_clause']}
 
@@ -1315,6 +1349,8 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable) -> li
         _entry("n_absent_edges", rf"\*\*no number\*\*: {re.escape(H['n_absent_edges'])} of the"),
         _entry("n_sourced_conversions", rf"\*\*{re.escape(H['n_sourced_conversions'])}\*\* carry a factor from a primary"),
         _entry("n_sourced_paths", rf"gives {re.escape(H['n_sourced_paths'])} figures"),
+        # the amendment's percentage is the relayed edge's factor, pinned like every published number
+        _entry("petrov_factor_pct", rf"converts about {re.escape(H['petrov_factor_pct'])}% of the negative pions"),
     ]
     for i in range(1, int(H["n_sourced_paths"]) + 1):
         entries.append(_entry(f"sourced_path_{i}", rf"\| {re.escape(H[f'sourced_path_{i}'])} \|"))

@@ -178,6 +178,14 @@
     },
     {
       "doc": "MUON_COST.md",
+      "id": "petrov_factor_pct",
+      "pattern": "converts about 75% of the negative pions",
+      "source": "scripts/generate_mucost.py",
+      "source_type": "derivation",
+      "value": "75"
+    },
+    {
+      "doc": "MUON_COST.md",
       "id": "sourced_path_1",
       "pattern": "\\| >=\\ 25\\.68\\ GeV\\ \\(conditional\\ on\\ a\\ machine\\ transfer\\) \\|",
       "source": "scripts/generate_mucost.py",
