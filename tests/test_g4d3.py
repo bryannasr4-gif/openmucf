@@ -886,6 +886,18 @@ def _row_pattern(line: str) -> tuple[str, tuple[int, ...]]:
     return "".join(parts), tuple(groups)
 
 
+def _npol_exceeding(npol: list[dict[str, str]]) -> int:
+    """The gated rows whose printed nuclear-polarization correction exceeds the tolerance in magnitude."""
+    return sum(abs(Decimal(row["npol_keV"])) > Decimal(row["tol_keV"]) for row in npol)
+
+
+def test_d3_an_npol_equal_to_the_tolerance_does_not_exceed_it() -> None:
+    at = [{"npol_keV": "0.5", "tol_keV": "0.5"}, {"npol_keV": "-0.5", "tol_keV": "0.5"}]
+    past = [{"npol_keV": "0.51", "tol_keV": "0.5"}, {"npol_keV": "-0.51", "tol_keV": "0.5"}]
+    assert _npol_exceeding(at) == 0
+    assert _npol_exceeding(past) == 2
+
+
 def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     """``(what, path, pattern, groups, expected)`` for every number `DATASET_D3.md` states: one row
     per comparison-table row (every numeric token a group, its value the generated block's), and
@@ -936,7 +948,7 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
          sum(row["within"] == "true" for row in weak)),
         ("gated rows whose NPol exceeds the tolerance", path,
          r"On (\d+) of the \d+ gated rows that carry an `NPol`", (1,),
-         sum(abs(Decimal(row["npol_keV"])) > Decimal(row["tol_keV"]) for row in npol)),
+         _npol_exceeding(npol)),
         ("gated rows that carry an NPol", path, r"On \d+ of the (\d+) gated rows that carry an `NPol`", (1,),
          len(npol)),
     ]
