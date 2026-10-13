@@ -106,8 +106,12 @@ _RAW = "E\t1\tH\t7\t1\t2\nI\t1\t1\t0x1.fffp-1\nI\t1\t2\t0x1p-12\nE\t2\tHe\t8\t3\
         _RAW.replace("0x1p-12", "0x0p+0"),  # an abundance that is not positive
         _RAW.replace("\t2\nI\t1\t1", "\t3\nI\t1\t1"),  # fewer isotope lines than the element line states
         _RAW + "the driver writes nothing else\n",  # a line the driver does not write
+        # an element out of order whose isotope lines all follow their own element
+        _RAW.replace("E\t2\t", "E\t3\t").replace("I\t2\t4", "I\t3\t4"),
+        # an isotope line after a later element's line, the earlier element's count still met
+        "E\t1\tH\t7\t1\t2\nI\t1\t1\t0x1.fffp-1\nE\t2\tHe\t8\t3\t1\nI\t2\t4\t0x1p+0\nI\t1\t2\t0x1p-12\n",
     ],
-    ids=["order", "orphan", "zero", "count", "foreign"],
+    ids=["order", "orphan", "zero", "count", "foreign", "gap", "late"],
 )
 def test_drill_the_harvest_parser_refuses_what_the_driver_does_not_print(text):
     with pytest.raises(natural.NaturalTargetError):

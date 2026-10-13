@@ -1094,6 +1094,18 @@ def test_t34_import_fence():
     assert longest + 1 <= spec._KEYWORD_WIDTH, "a directive name has outgrown the keyword pad"
 
 
+def test_t34_the_lazy_loader_names_every_top_level_module_of_the_package():
+    """`openmucf/g4/__init__.py` imports a submodule on attribute access only when `_SUBMODULES` names
+    it, and `__all__` lists the same names: both hold exactly the package's top-level modules."""
+    import openmucf.g4 as package
+
+    root = pathlib.Path(spec.__file__).resolve().parent
+    modules = {path.stem for path in root.glob("*.py")} - {"__init__"}
+    assert len(package._SUBMODULES) == len(set(package._SUBMODULES))
+    assert set(package._SUBMODULES) == modules
+    assert package.__all__ == sorted(package._SUBMODULES)
+
+
 # --------------------------------------------------------------------------------------------
 # T-35..T-37 -- the archive, the digest on disk, and the committed example
 # --------------------------------------------------------------------------------------------
