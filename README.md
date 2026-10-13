@@ -192,7 +192,7 @@ v11.4.2's compiled-in values bit-for-bit, generated at build time from the vendo
 rather than transcribed. Its parity was checked against a Geant4-linked binary over **36000 (Z, A)
 points at zero ulp**, and the committed oracle makes that checkable in CI with no Geant4 installed.
 
-Building it surfaced five defects in the upstream seam, all **registered and disclosed rather than
+Building it surfaced six defects in the upstream seam, all **registered and disclosed rather than
 fixed** — a parity dataset that "corrected" its source would stop being one. They include a fallback
 that returns **negative capture rates on 6325 of those 36000 points** (³H among them, where a
 negative rate silently disables capture entirely), non-finite returns at degenerate inputs with no

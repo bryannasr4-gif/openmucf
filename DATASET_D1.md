@@ -6,8 +6,8 @@
 `data/g4/d1/` is the first `G4MuonicData` dataset carrying real content. Its `parity` tables make
 one claim: that they reproduce the muon-capture data compiled into Geant4 `v11.4.2` and
 `v11.5.0.beta` bit-for-bit, on the builds section 4 names. They evaluate nothing, recommend nothing,
-and correct nothing — including where the upstream data looks wrong. Section 5 carries seven
-findings: **five** defects it reproduces rather than corrects, and **two** questions about the
+and correct nothing — including where the upstream data looks wrong. Section 5 carries eight
+findings: **six** defects it reproduces rather than corrects, and **two** questions about the
 upstream data that reading the primary literature has since settled.
 
 That restraint is the design. A parity profile is the fixed point everything else is measured
@@ -338,6 +338,24 @@ overlap is at low Z, where F-1's thresholds are small: A=3 at Z=1, A=6 at Z=2, A
 This dataset changes no key — it reproduces the table — but it now says, per row, which reading is
 which, so a consumer can tell a measured isotope from an element wearing an isotope's label before
 deciding whether a miss matters.
+
+**F-8 — the aluminium record averages a pair of rows that print the same mean life and different rates.** The
+comment above the compiled-in capture table describes its records as the *"weighted average of the
+two most precise measurements"*. For aluminium, Table IV of the primary (p.2218) prints four rows;
+the pair with the smallest rate uncertainties is the authors' own, 0.7054 ± 0.0013, and that of the
+primary's ref. 42, 0.662 ± 0.003, and their inverse-variance weighted mean, at the record's printed
+precision, is the record `(13, 27)`, 0.6985 ± 0.0012.
+
+Both rows of that pair print a mean life of 864 ns. The primary's Eq. (4) sets the inverse of the
+negative muon's mean life equal to the capture rate plus the Huff factor Q times the inverse of the
+positive muon's mean life τ_μ⁺, and its aluminium rows carry a single Q, 0.993, so a single τ_μ⁺
+gives both rows of the pair a single rate. Solved for τ_μ⁺ with that Q, the authors' row gives
+2197 ns and the ref. 42 row 2004 ns; the primary gives each rate as the authors who
+measured it calculated it, most often with their own value for the μ⁺ lifetime. The
+`mizuno2025` value for the same key (section 9) differs from the authors' own value by less than its
+printed uncertainty and from the record by more. The `parity` profile reproduces the record, as it
+reproduces every compiled-in value; this dataset does not decide how the ref. 42 row's rate was
+obtained.
 
 ## 6. Isotope resolution — what the flag means here
 

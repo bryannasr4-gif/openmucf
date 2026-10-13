@@ -4275,3 +4275,155 @@ def test_t108_drill_one_changed_literal_is_named_with_its_file_and_index():
     problems = k_table_problems(texts)
     reference = f"{d1.UPSTREAM_TAG}/{CASCADE_NAME}"
     assert problems == [f"{label}: energy index {index} differs from {reference}"], problems
+
+
+
+# --------------------------------------------------------------------------------------------
+# F-8 -- the aluminium record beside the published rows the comment above the table says it averages
+# --------------------------------------------------------------------------------------------
+
+#: The four vendored copies of the capture table: the bound-decay and helper copies of both revisions.
+CAPTURE_COPIES = (VENDORED, HELPER, BETA_BOUND_DECAY, BETA_HELPER)
+#: The comment above each copy of the capture table, with the number of measurements it names.
+AVERAGE_COMMENT = re.compile(r"// weighted average of the (\w+) most precise measurements")
+
+
+@dataclasses.dataclass(frozen=True)
+class AluminiumFinding:
+    comment_count: str
+    page: str
+    rows: tuple[dict[str, str], ...]
+    own: dict[str, str]
+    other: dict[str, str]
+    key: tuple[int, int]
+    record: tuple[str, str]
+    huff: str
+    mean_life: int
+    own_tau_plus: int
+    other_tau_plus: int
+
+
+def _tau_plus(row: dict[str, str]) -> int:
+    """The positive muon's mean life, in ns, that the primary's Eq. (4) gives a row: the inverse of the row's
+    mean life is its capture rate plus the Huff factor times the inverse of the positive muon's mean life."""
+    per_microsecond = decimal.Decimal(d1.MICROSECOND)
+    with decimal.localcontext() as context:
+        context.prec = 40
+        inverse = per_microsecond / decimal.Decimal(row["mean_life_ns"])
+        huff = decimal.Decimal(row["huff_factor"])
+        tau = per_microsecond * huff / (inverse - suzuki1987.scaled(row, "rate"))
+        return int(tau.quantize(decimal.Decimal(1), rounding=decimal.ROUND_HALF_EVEN))
+
+
+def aluminium_finding() -> AluminiumFinding:
+    """What F-8 states, read from the vendored copies and the committed transcription of Table IV."""
+    counts = set()
+    for path in CAPTURE_COPIES:
+        found = AVERAGE_COMMENT.findall(path.read_text(encoding="ascii"))
+        assert len(found) == 1, path
+        counts.add(found[0])
+    assert len(counts) == 1, counts
+    published = suzuki1987.normalize(suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH))
+    rows = tuple(row for row in published if row["target_label"] == "Al")
+    (z,) = {int(row["Z"]) for row in rows}
+    assert all(row["table"] == "IV" and row["mean_life_ns"] and row["rate_unc"] for row in rows)
+    own, other = sorted(rows, key=lambda row: suzuki1987.scaled(row, "rate_unc"))[:2]
+    assert own["own_measurement"] == "true" and other["own_measurement"] == "false"
+    found = extraction()
+    (index,) = [i for i, record in enumerate(found.capture_records) if record[0] == z]
+    key = (found.capture_records[index][0], found.capture_records[index][1])
+    record = found.capture_literals[index]
+    for path in CAPTURE_COPIES:
+        pattern = rf"\{{\s*{key[0]},\s*{key[1]},\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\}}"
+        assert re.findall(pattern, path.read_text(encoding="ascii")) == [record], path
+    (huff,) = {row["huff_factor"] for row in rows}
+    (page,) = {row["printed_page"] for row in rows}
+    mean_life = decimal.Decimal(own["mean_life_ns"])
+    assert mean_life == decimal.Decimal(other["mean_life_ns"]) == mean_life.to_integral_value()
+    return AluminiumFinding(counts.pop(), page, rows, own, other, key, record, huff, int(mean_life),
+                            _tau_plus(own), _tau_plus(other))
+
+
+def aluminium_problems(own: dict[str, str], other: dict[str, str], record: tuple[str, str],
+                       mizuno: mizuno2025.Table3Row) -> list[str]:
+    """What would make F-8 false: the pair's inverse-variance weighted mean, at the record's printed
+    precision, is not the record, or the `mizuno2025` value is not nearer the authors' own value than its
+    printed uncertainty and farther from the record."""
+    problems = []
+    value, unc = (decimal.Decimal(cell) for cell in record)
+    weights = [1 / suzuki1987.scaled(row, "rate_unc") ** 2 for row in (own, other)]
+    pair = zip(weights, (own, other), strict=True)
+    mean = sum(w * suzuki1987.scaled(row, "rate") for w, row in pair) / sum(weights)
+    sigma = 1 / sum(weights).sqrt()
+    if (mean.quantize(value), sigma.quantize(unc)) != (value, unc):
+        problems.append(f"the pair's weighted mean {mean} +- {sigma} is not the record {value} +- {unc}")
+    later, later_unc = decimal.Decimal(mizuno.rate), decimal.Decimal(mizuno.rate_unc)
+    if not abs(later - suzuki1987.scaled(own, "rate")) < later_unc:
+        problems.append("the mizuno2025 value is not within its uncertainty of the authors' own value")
+    if not abs(later - value) > later_unc:
+        problems.append("the mizuno2025 value is within its uncertainty of the record")
+    return problems
+
+
+def test_f8_the_aluminium_record_is_the_weighted_mean_of_a_pair_printing_one_mean_life():
+    finding = aluminium_finding()
+    later = {row.key: row for row in mizuno2025.load_table3(REPO / mizuno2025.TABLE3_RELPATH)}[finding.key]
+    assert aluminium_problems(finding.own, finding.other, finding.record, later) == []
+    # Drills: the next row by uncertainty in place of the reference's, the record moved by one unit in its
+    # last printed digit, and the later value moved onto the record each make the finding false.
+    third = sorted(finding.rows, key=lambda row: suzuki1987.scaled(row, "rate_unc"))[2]
+    assert aluminium_problems(finding.own, third, finding.record, later)
+    value, unc = finding.record
+    step = decimal.Decimal(1).scaleb(decimal.Decimal(value).as_tuple().exponent)
+    assert aluminium_problems(finding.own, finding.other, (str(decimal.Decimal(value) + step), unc), later)
+    moved = dataclasses.replace(later, rate=value)
+    assert aluminium_problems(finding.own, finding.other, finding.record, moved)
+
+
+def aluminium_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """``(what, path, pattern, groups, expected)`` for every number F-8 of `DATASET_D1.md` states, each read
+    from the vendored copies or the committed transcription of the primary's Table IV; patterns match the
+    whitespace-collapsed document."""
+    finding = aluminium_finding()
+    path = "DATASET_D1.md"
+    return [
+        ("F-8, the measurements the comment averages", path,
+         r'\*"weighted average of the (\w+) most precise measurements"\*', (1,), finding.comment_count),
+        ("F-8, the page of the aluminium rows", path,
+         r"Table IV of the primary \(p\.(\d+)\) prints \w+ rows;", (1,), finding.page),
+        ("F-8, the aluminium rows", path, r"Table IV of the primary \(p\.\d+\) prints (\w+) rows;", (1,),
+         len(finding.rows)),
+        ("F-8, the authors' rate", path, r"is the authors' own, ([0-9.]+) ± [0-9.]+, and", (1,),
+         finding.own["rate"]),
+        ("F-8, the authors' rate uncertainty", path, r"is the authors' own, [0-9.]+ ± ([0-9.]+), and", (1,),
+         finding.own["rate_unc"]),
+        ("F-8, the reference", path, r"and that of the primary's ref\. (\d+), ", (1,), finding.other["refs"]),
+        ("F-8, the reference's rate", path, r"ref\. \d+, ([0-9.]+) ± [0-9.]+, and their", (1,),
+         finding.other["rate"]),
+        ("F-8, the reference's rate uncertainty", path, r"ref\. \d+, [0-9.]+ ± ([0-9.]+), and their", (1,),
+         finding.other["rate_unc"]),
+        ("F-8, the record's Z", path, r"is the record `\((\d+), \d+\)`", (1,), finding.key[0]),
+        ("F-8, the record's A", path, r"is the record `\(\d+, (\d+)\)`", (1,), finding.key[1]),
+        ("F-8, the record's value", path, r"is the record `\(\d+, \d+\)`, ([0-9.]+) ±", (1,),
+         finding.record[0]),
+        ("F-8, the record's uncertainty", path, r"is the record `\(\d+, \d+\)`, [0-9.]+ ± ([0-9.]+)\.", (1,),
+         finding.record[1]),
+        ("F-8, the pair's mean life", path, r"Both rows of that pair print a mean life of (\d+) ns", (1,),
+         finding.mean_life),
+        ("F-8, the Huff factor", path, r"its aluminium rows carry a single Q, ([0-9]+\.[0-9]+), so", (1,),
+         finding.huff),
+        ("F-8, the authors' positive-muon mean life", path, r"the authors' row gives (\d+) ns", (1,),
+         finding.own_tau_plus),
+        ("F-8, the reference's positive-muon mean life", path, r"and the ref\. \d+ row (\d+) ns", (1,),
+         finding.other_tau_plus),
+    ]
+
+
+def test_f8_every_number_the_finding_states_is_pinned_once():
+    doc = " ".join(DATASET_DOCUMENT.read_text(encoding="utf-8").split())
+    for what, _path, pattern, _groups, expected in aluminium_pins():
+        hits = re.findall(pattern, doc)
+        assert len(hits) == 1, (what, len(hits))
+        stated = hits[0]
+        same = (stated == expected) if isinstance(expected, str) else (_stated(stated) == expected)
+        assert same, (what, stated)
