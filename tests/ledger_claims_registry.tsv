@@ -1551,3 +1551,6 @@ c4e8942176ac091eb31914e95083f4cc0f00bb0a	openmucf/mucost.py	EXERCISED: tests/tes
 d857fb4b6062f47ee49c640e1818d15ec5d889fb	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_an_applied_unknown_edge_grades_the_bare_value_unknown_through_every_later_step
 0d65b1bedcaf0130308aa9ebbdc7221b49880fbb	openmucf/data/muon_cost_chain.schema.json	REGISTERED: the bias_direction description, checked: 'lower' now names a factor its source states while calling the result optimistic (Eliezer & Henis 1994 p.58 'These results seem to be optimistic'), as well as one stated at its ceiling; the loader rule 'none' iff sourced is unchanged and drilled in tests/test_mucost.py::test_bias_direction_must_agree_with_the_evidence_status
 ffaef50cbd7d47d1d9b0e25216621f0824218b26	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value
+aafdec7ebcfe72b58e29f01e2a6c47cf0bdb80d5	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_chain_coverage_sentence_is_derived_from_the_two_tables
+1ae8c5455846582e402f1d1b780181ae3fba18d7	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_chain_coverage_sentence_is_derived_from_the_two_tables
+954cdb405bbfb337cfe431a676fb71d63958045b	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise

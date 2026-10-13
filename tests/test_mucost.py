@@ -1962,6 +1962,24 @@ def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain
     assert H["n_fully_sourced_chains"] == "0"
     assert f"**{H['n_fully_sourced_chains']} of the {H['n_chain_rows']} pinned rows" in \
         (REPO / "MUON_COST.md").read_text(encoding="utf-8")
+    rows = [dataclasses.replace(r, source_bibkey=table["eliezer_henis_1994"].source_bibkey)
+            if r.source_id == "bertin_1987" else r for r in table]
+    with pytest.raises(ValueError, match=re.escape("expected one beam_kinetic row of the relaying source")):
+        gen.build_headline(MuonCostTable(rows), chain)
+    sourced_stage = mucost.ChainEdgeTable([
+        dataclasses.replace(e, evidence_status="primary", bias_direction="none")
+        if e.edge_id == "delivery_petrov_via_eliezer_henis" else e
+        for e in chain if e.edge_id != "delivery_kelly_eta_mu"
+    ])
+    assert all(len({e.is_sourced for e in v}) == 1 for v in sourced_stage.competing().values())
+    with pytest.raises(ValueError, match=re.escape("a stage advance is sourced")):
+        gen.build_headline(table, sourced_stage)
+    mixed = mucost.ChainEdgeTable([
+        dataclasses.replace(e, evidence_status="assumption", bias_direction="unknown")
+        if e.edge_id == "eta_acc_kovach_minimal" else e for e in chain
+    ])
+    with pytest.raises(ValueError, match=re.escape("carries sourced and unsourced readings")):
+        gen.build_headline(table, mixed)
 
 
 #: The coverage sentence as it renders on the committed tables, and without the relayed edge.
@@ -2201,6 +2219,13 @@ def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
     rows = [dataclasses.replace(r, count_basis="") if r.source_id == "bertin_1987" else r for r in table]
     with pytest.raises(ValueError, match="does not describe these rows"):
         gen.build_headline(MuonCostTable(rows))
+    for gone in ("pi_minus_created", "pi_minus_or_mu_minus_exiting"):
+        rows = [dataclasses.replace(r, count_basis="muon") if r.count_basis == gone else r for r in table]
+        kept = {r.count_basis for r in rows if r.has_normalized}
+        assert gone not in kept and kept - {"muon"}
+        refusal = "does not describe these rows (other counts: {'muon'})"
+        with pytest.raises(ValueError, match=re.escape(refusal)):
+            gen.build_headline(MuonCostTable(rows))
 
 
 def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv", stage_first=False):
@@ -2425,6 +2450,12 @@ def test_the_amendment_and_the_t1_clause_are_read_off_the_tables(table, chain):
     rows = [dataclasses.replace(r, count_basis=one) if r.tier == "T1-design-study" and r.has_normalized
             and r.numeraire == mucost.BEAM_KINETIC else r for r in table]
     assert not gen.build_headline(MuonCostTable(rows), chain)["t1_stage_clause"].endswith(qualifier)
+    rows = [dataclasses.replace(r, count_basis="muon") if r.source_id == "kelly_hart_rose_2021" else r
+            for r in table]
+    two = {r.count_basis for r in MuonCostTable(rows).tier("T1-design-study")
+           if r.has_normalized and r.numeraire == mucost.BEAM_KINETIC}
+    assert two == {"muon", "pi_minus_or_mu_minus_exiting"}
+    assert gen.build_headline(MuonCostTable(rows), chain)["t1_stage_clause"].endswith(qualifier)
     edges = mucost.ChainEdgeTable([dataclasses.replace(e, factor=0.6) if e.edge_id == petrov.edge_id else e
                                    for e in chain])
     assert gen.build_headline(table, edges)["petrov_factor_pct"] == "60"
