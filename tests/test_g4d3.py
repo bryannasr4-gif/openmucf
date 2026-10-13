@@ -1040,6 +1040,9 @@ def centroid_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     return pins
 
 
+#: The words the document may give a multiple in, read as the multiple each names.
+MULTIPLES = {"once": 1, "twice": 2}
+
 
 def margin_summary_pins(compared: list[dict[str, str]],
                         margins: list[dict[str, str]]) -> list[tuple[str, str, str, tuple[int, ...], object]]:
@@ -1047,7 +1050,10 @@ def margin_summary_pins(compared: list[dict[str, str]],
     `centroid_margins.csv` counts, the largest absolute residuals of the patched and the unpatched cascade
     with their nuclides, and the rows whose margin exceeds twice the tolerance, taken at its largest over
     every correlation, plus the size of `dnum_keV` -- the most that moving the value within its band and the
-    shell difference by that shift can take from a margin."""
+    shell difference by that shift can take from a margin -- and the word for the multiple of the tolerance
+    that screen allows the value's band, read from the screen by probing it with no shift a step either
+    side of each multiple `MULTIPLES` names; whether a margin at the multiple itself outlasts is left to
+    the drill."""
     path = "DATASET_D3.md"
     symbol = {(row["Z"], row["A"]): row["symbol"] for row in _committed_rows(md.INPUTS_RELPATH)}
     patched = max(margins, key=lambda row: Decimal(row["max_abs_r_d3_keV"]))
@@ -1060,6 +1066,13 @@ def margin_summary_pins(compared: list[dict[str, str]],
     lasting = [row for row in compared if outlasts(row)]
     (short,) = [row for row in compared if not outlasts(row)]
     nuclide = symbol[(patched["max_abs_r_d3_Z"], patched["max_abs_r_d3_A"])]
+
+    def probe(margin: Decimal) -> bool:
+        return outlasts(dict(compared[0], dnum_keV="0", margin_keV=str(margin)))
+
+    unit = md.TOL_FACTOR * Decimal(compared[0]["sigma_keV"] or compared[0]["sigma_max_keV"])
+    (multiple,) = [word for word, times in MULTIPLES.items()
+                   if not probe((times * unit).next_minus()) and probe((times * unit).next_plus())]
     return [
         ("isotopes the margins are over", path,
          r"the margins over the (\d+) isotopes of `centroid_margins\.csv`", (1,),
@@ -1083,6 +1096,8 @@ def margin_summary_pins(compared: list[dict[str, str]],
          r"the margin exceeds the sum of both on \d+ of the (\d+) rows", (1,), len(compared)),
         ("the row whose margin does not", path,
          rf"and not on the row for {symbol[(short['Z'], short['A'])]}-(\d+)\.", (1,), short["A"]),
+        ("the band's multiple of the tolerance", path,
+         r"changes a margin by at most (\w+) the tolerance", (1,), multiple),
     ]
 
 
@@ -1098,6 +1113,28 @@ def test_t107_drill_a_margin_that_outlasts_nothing_moves_the_count() -> None:
         margin_summary_pins(shrunk, margins)
     count = stated["rows whose margin outlasts the band and the shift"]
     assert isinstance(count, int) and count == len(compared) - 1
+    # The edges of the screen, on that row with its committed sigma and shift: a margin one step above the
+    # band's multiple of the tolerance plus the size of the shift outlasts both, for either sign of the shift;
+    # a margin equal to that sum, and one a step below it (still above the band alone), does not, so a second
+    # row falls short and the single-row unpacking refuses. Only the two cells the screen reads move.
+    row = compared[first]
+    tolerance = md.TOL_FACTOR * Decimal(row["sigma_keV"] or row["sigma_max_keV"])
+    shift = abs(Decimal(row["dnum_keV"]))
+    bound = MULTIPLES[stated["the band's multiple of the tolerance"]] * tolerance
+    threshold = bound + shift
+    assert bound < threshold.next_minus() < threshold < threshold.next_plus()
+
+    def screened(margin: Decimal, dnum: Decimal) -> dict[str, object]:
+        moved = [dict(other, margin_keV=str(margin), dnum_keV=str(dnum)) if i == first else other
+                 for i, other in enumerate(compared)]
+        return {what: expected for what, *_, expected in margin_summary_pins(moved, margins)}
+
+    for dnum in (shift, -shift):
+        above = screened(threshold.next_plus(), dnum)
+        assert above["rows whose margin outlasts the band and the shift"] == count
+        for margin in (threshold, threshold.next_minus()):
+            with pytest.raises(ValueError, match="too many values to unpack"):
+                screened(margin, dnum)
 
 
 def test_t107_the_centroid_tables_are_generated_blocks():
