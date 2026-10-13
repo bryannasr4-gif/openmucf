@@ -140,6 +140,7 @@ def test_d2_class_priority_and_subclasses() -> None:
         ("BN", "solid", "d2-selector-other-compounds", {"nitride", "boride"}),
         ("Na2SO4", "solid", "d2-selector-other-compounds", {"ternary"}),
         ("SiO2", "gas", "d2-selector-gases", {"d2-selector-gases"}),
+        ("H2+CO", "gas", "d2-selector-gases", {"d2-selector-gases"}),
         ("alloy(Cu,Zn)", "solid", "d2-selector-alloys", {"alloy"}),
         ("intermetallic(Cu,Zn)", "solid", "d2-selector-alloys", {"intermetallic"}),
         ("NaCl+SiO2", "solid", "d2-selector-powder-mixtures", {"d2-selector-powder-mixtures"}),
@@ -496,13 +497,21 @@ def test_d2_method_gate_keeps_the_first_rule_and_every_method_gated_row_is_outsi
     assert fields[14:] == ("method", "method_gated", "method_reason", "method_result", "screen")
     from io import StringIO
 
+    measurements = {row["record_id"]: row for row in _reference("measurements.csv")}
+    # The pre-registered columns, with the class restored that the earlier order of `classify`, which tested
+    # a formula for `+` before the phase, gave each gas mixture.
+    mixtures = {record for record, row in measurements.items()
+                if row["phase"] == "gas" and "+" in row["material_formula"]}
+    assert mixtures
+    assert {row["class"] for row in comparisons if row["record_id"] in mixtures} == {"d2-selector-gases"}
+    earlier = [dict(row, **{"class": "d2-selector-powder-mixtures"}) if row["record_id"] in mixtures else row
+               for row in comparisons]
     out = StringIO(newline="")
     writer = csv.DictWriter(out, fieldnames=original, extrasaction="ignore", lineterminator="\n")
     writer.writeheader()
-    writer.writerows(comparisons)
+    writer.writerows(earlier)
     assert hashlib.sha256(out.getvalue().encode()).hexdigest() == (
         "a872a59720139dad03edf6e45afd6cc54bc8c7ff4a50a3ad2445e46fc5fe3622")
-    measurements = {row["record_id"]: row for row in _reference("measurements.csv")}
     sources = {row["source_id"]: row for row in _reference("sources.csv")}
     assert len(comparisons) == len(measurements)
     assert any(row["method_gated"] == "true" for row in comparisons)

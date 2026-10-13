@@ -171,10 +171,10 @@ def classify(row: dict[str, str]) -> tuple[str, frozenset[str]]:
     formula = row["material_formula"]
     if row["inferable_parameter"] == "P(H)" and "H" in formula_atoms(formula):
         return "d2-selector-hydrogenous", frozenset(("d2-selector-hydrogenous",))
-    if "+" in formula:
-        return "d2-selector-powder-mixtures", frozenset(("d2-selector-powder-mixtures",))
     if row["phase"] == "gas":
         return "d2-selector-gases", frozenset(("d2-selector-gases",))
+    if "+" in formula:
+        return "d2-selector-powder-mixtures", frozenset(("d2-selector-powder-mixtures",))
     if formula.startswith(("alloy(", "intermetallic(")):
         sub = "alloy" if formula.startswith("alloy(") else "intermetallic"
         return "d2-selector-alloys", frozenset((sub,))

@@ -3811,8 +3811,8 @@ def test_t101_each_conjunct_of_the_comparison_rule_decides_a_derived_block():
     is no longer a match. (b) the collision shape of `decided_by_value`: an open key whose block
     carries a natural label and a separated label of its A, and whose evidence states `round(Ar)`
     equal to A, is decided; with the stated `round(Ar)` moved off A, or with every natural label
-    removed from the block, it is not. (c) the absent shape: an open key whose A no separated label
-    carries is decided, with or without a `round(Ar)` clause in its evidence."""
+    removed from the block, it is not. (c) the absent shape: a key, settled or open, whose A no
+    separated label carries is decided, with or without a `round(Ar)` clause in its evidence."""
     audit = audit_rows()
     blocks = d1.cells_by_z(capture_cells())
     found = extraction()
@@ -3863,7 +3863,7 @@ def test_t101_each_conjunct_of_the_comparison_rule_decides_a_derived_block():
         key for key, finding in audit.items()
         if key[0] in blocks and key[1] not in separated_labels(blocks[key[0]])
     ]
-    assert absent, "no open key has an A no separated label carries"
+    assert absent, "no key has an A no separated label carries"
     for key in absent:
         evidence = audit[key].evidence
         assert d1.decided_by_value(key, evidence, blocks[key[0]]), key
