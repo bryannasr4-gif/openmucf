@@ -42,8 +42,10 @@ here (:meth:`MuonCostTable.tier_median` and friends) is **restricted to a single
 to :data:`BEAM_KINETIC` -- medianing beam-kinetic and electrical figures together would be a units error.
 
 **Composition is basis-typed and refuses to lie.** :class:`ChainValue` carries a figure together with
-its stage, numeraire and the evidence status of every factor composed into it.
-Every omitted factor is <= 1, so
+its stage, numeraire and the evidence status of every factor composed into it. If any composed factor
+is ``author_declared_arbitrary``/``assumption``/``absent``, or if the chain has not reached the terminal
+stage, the result is a **BOUND, not a value** -- and :meth:`ChainValue.render_value` *raises* rather
+than print it as one. Every omitted factor is <= 1, so
 the bound is one-sided along the stage axis (costs can only rise).
 No row in the literature today has a fully-sourced chain, which is the finding, not a gap in the code.
 
@@ -1304,7 +1306,8 @@ def compose_path(start: ChainValue, edges) -> ChainPath:
     The joins must match on the axis each edge moves; ``charge_basis`` must be composable at every
     step and at the start; an edge may appear at most once; and no path may return to a
     (stage, numeraire) coordinate it has already left. An edge with no factor cannot be composed at
-    all.
+    all. Any ``author_declared_arbitrary``, ``assumption`` or ``absent`` status carried in makes the
+    terminal figure a BOUND, and :meth:`ChainValue.render_value` then refuses it.
     """
     if start.charge_basis not in COMPOSABLE_CHARGE_BASIS:
         raise BasisError(

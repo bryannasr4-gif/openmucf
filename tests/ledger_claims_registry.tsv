@@ -1514,5 +1514,7 @@ ffaef50cbd7d47d1d9b0e25216621f0824218b26	tests/test_mucost.py	EXERCISED: tests/t
 aafdec7ebcfe72b58e29f01e2a6c47cf0bdb80d5	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_chain_coverage_sentence_is_derived_from_the_two_tables
 1ae8c5455846582e402f1d1b780181ae3fba18d7	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_chain_coverage_sentence_is_derived_from_the_two_tables
 954cdb405bbfb337cfe431a676fb71d63958045b	tests/test_mucost.py	EXERCISED: tests/test_mucost.py::test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise
-4ad4c78c53316df45491e1c437855f1a6a47780e	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
 b10befbaf5a01934522acd8f6013e36daa46b701	tests/test_mucost.py	REGISTERED:docstring or comment of the test on the same lines, which asserts the property
+a613efb0c7703fdfa020c03c952490c5e28c50d6	openmucf/mucost.py	REGISTERED:model/loader documentation of a rule the loader enforces on every load; read and measured true against the shipped ledger when this registry was written; no test binds the wording
+1676debff96b60f2a9ad4ad4d7df1fbbc31a9885	openmucf/mucost.py	REGISTERED: checked against ChainValue.is_bound, which is true when unsourced_statuses is non-empty or a stage is unreached.
+1b86dbf0d53ab2cf8184684c29d710d36533cc11	openmucf/mucost.py	REGISTERED: checked against ChainValue.render_value, which raises BasisError whenever is_bound rather than returning a formatted number.
