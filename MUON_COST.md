@@ -71,7 +71,8 @@ on top of the stage-basis error.
 MuSIC's figure is `mixed` (mu+ and mu- together, so the mu--only cost is higher by a
 factor this ledger does not source) and PSI HIMB is `mu_plus_only` -- irrelevant to muCF, which needs mu-, and
 listed for scale only. `evidence_status` grades each number: `primary` / `primary_cited` /
-`derived_here` are sourced; `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
+`derived_here` are sourced; `relayed_unread` (the source states the number and attributes it to a
+primary not read here) / `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
 figure composing one of those is reported as a **bound, never a value**.
 
 **What a row counts, and which machine it prices.** `count_basis` records what one unit of a row's count is. Kelly, Hart & Rose (2021), Kelly / eta_acc minimal-subsystem and Kelly / eta_acc site-wide count negative pions created (`pi_minus_created`), each of which Kelly, Hart & Rose count as a negative muon; Acceleron (2025 deck) counts negative pions and muons leaving the target together (`pi_minus_or_mu_minus_exiting`); the other pinned rows count muons (`muon`). Kelly, Hart & Rose's muons are born in the decay of the negative pions they count, and a pion can be lost to nuclear capture or interaction before it decays, so a cost per pion created is a lower bound on the cost per muon produced and the count basis reverses no bound. It does decide what may be composed: a stage factor is a fraction of one count, and applying a fraction of pions to a cost per muon would count the pion's decay twice, so `ChainEdge.apply_to` refuses it. `machine` records the machine a row prices and the machine each conversion was stated for. A conversion composed onto a figure for another machine is a **machine transfer**: the figure carries it with who made it (a derived row records its own in `machine_transfer`), prints *conditional on a machine transfer*, and is never rendered as a value.
@@ -251,7 +252,7 @@ sources do not settle the condition.
 |---|---|---|---|---|---|
 | Kelly, Hart & Rose (2021) | produced | `beam_kinetic` | yes, by a machine transfer (`eta_acc`, from the PSI primary) | stated as one collapsed factor, author_declared_arbitrary | **no** |
 | Bertin et al. (1987) | produced | `beam_kinetic` | absent | absent | **no** |
-| Eliezer & Henis (1994) | produced | `beam_kinetic` | absent | absent | **no** |
+| Eliezer & Henis (1994) | produced | `beam_kinetic` | absent | absent for this row's figure; the source relays `delivery_petrov_via_eliezer_henis` (relayed_unread) for another machine | **no** |
 | Acceleron (2025 deck) | produced | `beam_kinetic` | absent | absent | **no** |
 | muon-collider front end | transported | `beam_kinetic` | absent | absent | **no** |
 | mu2e (Fermilab) | stopped_other_target (NOT on the muCF chain) | `beam_kinetic` | absent | absent | **no** |
@@ -275,9 +276,9 @@ honest state of the literature, not a gap in this ledger, and it is why
 
 **What would close this properly.** Each row would have to reach `stopped_useful_in_dt` in a stated
 numeraire with every conversion sourced: beam GeV per mu- produced -> / eta_acc (a numeraire change)
--> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. Only the numeraire change
-is sourceable for any row today (Kelly: 4.70 / 0.18 =
-26.11 GeV). Kelly, Hart & Rose do quote a single collapsed delivery factor,
+-> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. For a row that counts
+mu-, the numeraire change is sourced today only through a machine transfer (Kelly: 4.70 / 0.18 =
+26.11 GeV, on the PSI efficiency he adopts), and no stage factor is sourced: the one stage factor a source here relays, `delivery_petrov_via_eliezer_henis`, comes from a primary not read here. Kelly, Hart & Rose do quote a single collapsed delivery factor,
 `eta_mu` = 0.50, but describe it verbatim as an "arbitrary but reasonable assumption" and state they do
 not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
 into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
@@ -298,7 +299,7 @@ source and make the second reading of a conversion inexpressible. An edge moves 
 writes `*` on the other, which reads *any* -- a delivery fraction is dimensionless and holds in any
 numeraire, and an accelerator efficiency applies at any stage, which is the same fact that makes
 wall-plug a numeraire rather than a chain node. Where no source read here states a conversion, the row
-carries `absent` and **no number**: 4 of the 8 edges
+carries `absent` and **no number**: 4 of the 9 edges
 are that kind, and filling one of those cells with a plausible factor is the failure this table
 exists to prevent.
 
@@ -308,6 +309,7 @@ exists to prevent.
 | `eta_acc_kovach_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.183 | primary | none | `*` | psi_hipa | Kovach2017 |
 | `eta_acc_kovach_site` | `beam_kinetic` -> `electrical_site` (at any stage) | 0.104 | primary | none | `*` | psi_hipa | Kovach2017 |
 | `delivery_kelly_eta_mu` | `produced` -> `stopped_useful_in_dt` (in any numeraire) | 0.5 | author_declared_arbitrary | unknown | `pi_minus_created` | kelly_hart_rose_2021 | KellyHartRose2021 |
+| `delivery_petrov_via_eliezer_henis` | `produced` -> `stopped_useful_in_dt` (in any numeraire) | 0.75 | relayed_unread | lower | `pi_minus_created` | petrov_converter_synthesizer | EliezerHenis1994 |
 | `produced_to_captured_absent` | `produced` -> `captured` (in any numeraire) | -- (no number) | absent | lower | `*` | -- | Jones1987Erice, KellyHartRose2021 |
 | `captured_to_transported_absent` | `captured` -> `transported` (in any numeraire) | -- (no number) | absent | lower | `*` | -- | Jones1987Erice, KellyHartRose2021 |
 | `transported_to_moderated_absent` | `transported` -> `moderated` (in any numeraire) | -- (no number) | absent | lower | `*` | -- | Jones1987Erice, KellyHartRose2021 |
@@ -316,17 +318,17 @@ exists to prevent.
 ### Which conversions are actually sourced
 | conversion | kind | edges that cover it | any sourced? |
 |---|---|---|---|
-| `produced` -> `captured` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `produced_to_captured_absent` (absent) | **no** |
-| `captured` -> `transported` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `captured_to_transported_absent` (absent) | **no** |
-| `transported` -> `moderated` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `transported_to_moderated_absent` (absent) | **no** |
-| `moderated` -> `stopped_useful_in_dt` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `moderated_to_stopped_useful_absent` (absent) | **no** |
+| `produced` -> `captured` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `delivery_petrov_via_eliezer_henis` (relayed_unread), `produced_to_captured_absent` (absent) | **no** |
+| `captured` -> `transported` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `delivery_petrov_via_eliezer_henis` (relayed_unread), `captured_to_transported_absent` (absent) | **no** |
+| `transported` -> `moderated` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `delivery_petrov_via_eliezer_henis` (relayed_unread), `transported_to_moderated_absent` (absent) | **no** |
+| `moderated` -> `stopped_useful_in_dt` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `delivery_petrov_via_eliezer_henis` (relayed_unread), `moderated_to_stopped_useful_absent` (absent) | **no** |
 | `beam_kinetic` -> `electrical_minimal` | numeraire | `eta_acc_kelly_psi_minimal` (primary_cited), `eta_acc_kovach_minimal` (primary) | yes |
 | `beam_kinetic` -> `electrical_site` | numeraire | `eta_acc_kovach_site` (primary) | yes |
 
-Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every one of them is a numeraire change: **not one of the 4 stage advances the chain requires is sourced by any primary read here**. Exactly 1 cost source in this compilation (Kelly, Hart & Rose (2021)) states its own beam-to-electrical conversion. That source also states the chain's one delivery factor (`delivery_kelly_eta_mu`), and grades it `author_declared_arbitrary` -- so composing it yields a bound and never a value.
+Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every one of them is a numeraire change: **none of the 4 stage advances the chain requires is sourced**. All 4 are spanned by one collapsed factor, `delivery_petrov_via_eliezer_henis` (bias `lower`), relayed by Eliezer & Henis (1994) from a primary not read here (`relayed_unread`) and stated for a machine no row of this compilation prices; it is not sourced, so a figure composed through it is a bound and never a value, like a figure composed through any other unsourced conversion. Exactly 1 cost source in this compilation (Kelly, Hart & Rose (2021)) states a beam-to-electrical conversion measured on an accelerator. That source also states a delivery factor (`delivery_kelly_eta_mu`), and grades it `author_declared_arbitrary` -- so composing it yields a bound and never a value.
 
 ### Where the competing readings lead
-1 conversion carries more than one stated value: `beam_kinetic` -> `electrical_minimal` (`eta_acc_kelly_psi_minimal` = 0.18 and `eta_acc_kovach_minimal` = 0.183). Both readings are carried to the end as separate figures -- no mean is formed and no value is preferred.
+2 conversions carry more than one stated value: `beam_kinetic` -> `electrical_minimal` (`eta_acc_kelly_psi_minimal` = 0.18 and `eta_acc_kovach_minimal` = 0.183) and `produced` -> `stopped_useful_in_dt` (`delivery_kelly_eta_mu` = 0.5 and `delivery_petrov_via_eliezer_henis` = 0.75). No mean is formed and no value is preferred. Both readings of `beam_kinetic` -> `electrical_minimal` are carried to the end as separate figures below; neither reading of `produced` -> `stopped_useful_in_dt` is composed into them, because neither is sourced.
 
 Composing every path out of the open-access anchor row (Kelly, Hart & Rose (2021)) that uses **only
 sourced conversions** gives 3 figures, and the deliverable is the SET of them
@@ -339,7 +341,7 @@ with their provenance -- never a mean, and never one of them singled out:
 | `eta_acc_kovach_site` | `produced` / `electrical_site` | >= 45.19 GeV (conditional on a machine transfer) | this ledger |
 
 **Read the marker, and read what is missing.** Each figure above prints `>=` because it is a one-sided **lower** bound along the stage axis: every conversion it omits is <= 1, so leaving it out can only understate the cost. Each is also *conditional on a machine transfer*: it divides by an efficiency measured on another machine, so it bounds the cost from below only if that efficiency is no larger on the machine it prices.
-Beyond that, the chain could be continued with one conversion stated but not sourced: `delivery_kelly_eta_mu` (author_declared_arbitrary, bias `unknown`). None of the figures here is composed through it. `delivery_kelly_eta_mu` is not even one-sided: its own authors state they do not know the value, so a figure built through it could be too high or too low rather than bounded below. The edge table carries every one of those conversions and the API
+Beyond those, the chain could be continued with 2 conversions stated but not sourced: `delivery_kelly_eta_mu` (author_declared_arbitrary, bias `unknown`) and `delivery_petrov_via_eliezer_henis` (relayed_unread, bias `lower`). None of the figures here is composed through any of them. `delivery_kelly_eta_mu` is not even one-sided: its own authors state they do not know the value, so a figure built through it could be too high or too low rather than bounded below. The edge table carries every one of those conversions and the API
 will compose them, marking a result *direction unknown* wherever its edges cannot bound it, and
 *conditional on a machine transfer* wherever an edge was stated for another machine -- which
 is how this compilation records a factor it may not publish a number from.

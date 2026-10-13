@@ -67,6 +67,7 @@
         "primary",
         "primary_cited",
         "derived_here",
+        "relayed_unread",
         "author_declared_arbitrary",
         "assumption",
         "absent",
@@ -117,11 +118,12 @@
         "primary",
         "primary_cited",
         "derived_here",
+        "relayed_unread",
         "author_declared_arbitrary",
         "assumption",
         "absent"
       ],
-      "description": "How well-founded this row's number is. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attributes it to a primary that has itself been read; 'derived_here' = OUR arithmetic on published inputs, shown verbatim in derivation; 'author_declared_arbitrary' = the source itself calls the value arbitrary or unknown; 'assumption' = assumed without the source saying so; 'absent' = the quantity is simply not in the literature. The last three are NOT SOURCED: any figure that composes one is a BOUND, never a value, and must never headline."
+      "description": "How well-founded this row's number is. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attributes it to a primary that has itself been read; 'derived_here' = OUR arithmetic on published inputs, shown verbatim in derivation; 'relayed_unread' = the source states the number and attributes it to a primary not read here; 'author_declared_arbitrary' = the source itself calls the value arbitrary or unknown; 'assumption' = assumed without the source saying so; 'absent' = the quantity is simply not in the literature. The last four are NOT SOURCED: any figure that composes one is a BOUND, never a value, and must never headline."
     },
     "useful_fraction_sourced": {
       "type": "boolean",

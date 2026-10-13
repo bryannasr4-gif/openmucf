@@ -43,10 +43,10 @@ to :data:`BEAM_KINETIC` -- medianing beam-kinetic and electrical figures togethe
 
 **Composition is basis-typed and refuses to lie.** :class:`ChainValue` carries a figure together with
 its stage, numeraire and the evidence status of every factor composed into it. If any composed factor
-is ``author_declared_arbitrary``/``assumption``/``absent``, or if the chain has not reached the terminal
-stage, the result is a **BOUND, not a value** -- and :meth:`ChainValue.render_value` *raises* rather
-than print it as one. Every omitted factor is <= 1, so the bound is one-sided along the stage axis
-(costs can only rise).
+is ``relayed_unread``/``author_declared_arbitrary``/``assumption``/``absent``, or if the chain has not
+reached the terminal stage, the result is a **BOUND, not a value** -- and
+:meth:`ChainValue.render_value` *raises* rather than print it as one. Every omitted factor is <= 1, so
+the bound is one-sided along the stage axis (costs can only rise).
 No row in the literature today has a fully-sourced chain, which is the finding, not a gap in the code.
 
 **What a row counts, and which machine it prices.** ``count_basis`` records what one unit of a row's
@@ -130,7 +130,7 @@ VALID_NUMERAIRE = {BEAM_KINETIC, "electrical_minimal", "electrical_site", ""}
 
 #: Statuses that carry real provenance. Anything else makes a composed figure a BOUND.
 SOURCED_STATUSES = frozenset({"primary", "primary_cited", "derived_here"})
-NON_SOURCED_STATUSES = frozenset({"author_declared_arbitrary", "assumption", "absent"})
+NON_SOURCED_STATUSES = frozenset({"relayed_unread", "author_declared_arbitrary", "assumption", "absent"})
 VALID_EVIDENCE_STATUS = SOURCED_STATUSES | NON_SOURCED_STATUSES
 
 #: The deprecated `basis_class` alias -> the `stage` it maps onto. Kept so the two cannot drift.
@@ -1334,8 +1334,8 @@ def compose_path(start: ChainValue, edges) -> ChainPath:
     The joins must match on the axis each edge moves; ``charge_basis`` must be composable at every
     step and at the start; an edge may appear at most once; and no path may return to a
     (stage, numeraire) coordinate it has already left. An edge with no factor cannot be composed at
-    all. Any ``author_declared_arbitrary``, ``assumption`` or ``absent`` status carried in makes the
-    terminal figure a BOUND, and :meth:`ChainValue.render_value` then refuses it.
+    all. Any ``relayed_unread``, ``author_declared_arbitrary``, ``assumption`` or ``absent`` status carried
+    in makes the terminal figure a BOUND, and :meth:`ChainValue.render_value` then refuses it.
     """
     if start.charge_basis not in COMPOSABLE_CHARGE_BASIS:
         raise BasisError(

@@ -61,7 +61,7 @@
     "bias_direction": {
       "type": "string",
       "enum": ["lower", "unknown", "none"],
-      "description": "Which way this edge can move a composed cost away from the truth. 'none' iff the factor is sourced. 'lower' where using the row as written can only understate the cost -- an absent factor is bounded above by 1, so omitting it understates, and a factor a source states at its own ceiling while saying the truth lies below it understates the same way. 'unknown' where a source declares its value arbitrary and gives no direction: composing such a factor can understate OR overstate, which is strictly weaker than an omitted one, and a chain that uses it is therefore not a one-sided bound at all.",
+      "description": "Which way this edge can move a composed cost away from the truth. 'none' iff the factor is sourced. 'lower' where using the row as written can only understate the cost -- an absent factor is bounded above by 1, so omitting it understates, and a factor its source states while calling the result optimistic, or at its own ceiling with the truth below it, understates the same way. 'unknown' where a source declares its value arbitrary and gives no direction: composing such a factor can understate OR overstate, which is strictly weaker than an omitted one, and a chain that uses it is therefore not a one-sided bound at all.",
       "$comment": "This grades the EDGE. ChainValue.bias_direction grades a composed figure by a different and older rule -- whether it is a bound at all -- so the two answer different questions and ChainPath.bias_direction is the one that reads these cells."
     },
     "charge_basis": {
@@ -92,11 +92,12 @@
         "primary",
         "primary_cited",
         "derived_here",
+        "relayed_unread",
         "author_declared_arbitrary",
         "assumption",
         "absent"
       ],
-      "description": "How well-founded this factor is, on the same closed enum and with the same meanings as muon_cost.csv's column of the same name. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attributes it to a primary that has itself been read; 'derived_here' = our arithmetic on published inputs, shown verbatim in derivation; 'author_declared_arbitrary' = the source itself calls the value arbitrary or unknown; 'assumption' = assumed without the source saying so; 'absent' = no source read here states the conversion at all. The last three are NOT SOURCED: a path composing one of them is a BOUND, never a value."
+      "description": "How well-founded this factor is, on the same closed enum and with the same meanings as muon_cost.csv's column of the same name. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attributes it to a primary that has itself been read; 'derived_here' = our arithmetic on published inputs, shown verbatim in derivation; 'relayed_unread' = the source states the number and attributes it to a primary not read here; 'author_declared_arbitrary' = the source itself calls the value arbitrary or unknown; 'assumption' = assumed without the source saying so; 'absent' = no source read here states the conversion at all. The last four are NOT SOURCED: a path composing one of them is a BOUND, never a value."
     },
     "source_bibkey": {
       "type": "string",
