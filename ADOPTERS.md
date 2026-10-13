@@ -27,7 +27,7 @@ community and its funders, with what each would actually consume and what would 
 
 ## What to cite (trust map)
 Cite along the README **trust map** (`README.md`, "What you may cite"): **GREEN** outputs (the muon-cost
-ledger per row and its basis classification, the Kou–Chen Eq.(15) ceiling comparison, Q Rosetta stone,
+ledger per row and its basis classification, the Kou–Chen Eq.(15) ceiling comparison (its electrical cells conditional on an accelerator-efficiency transfer), Q Rosetta stone,
 the neutrons-per-joule table read one tier row at a time, breakeven requirements form,
 sensitivity split under its stated prior box, forecast-registry machinery) are citable as-is; **AMBER** (any CROSS-TIER muon-cost
 comparison — the tier-median ratio, the cross-tier neutrons-per-joule ratio, the `FINDINGS.md` §2b

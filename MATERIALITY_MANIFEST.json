@@ -467,7 +467,7 @@
   ],
   "generated_by": "scripts/generate_materiality.py",
   "inputs": {
-    "findings_manifest_sha256": "ce1ec9e2918a1188ced64c0197dc370689f0eb76dec422f8932611b79496a121",
+    "findings_manifest_sha256": "077284fe1f3ca9f3d4ce47bd1b9b6c7f0ad908c1a677985646b5255b1fa3e9bb",
     "rates_csv_sha256": "9c53ca9a8b0aad92e3a397937557e0db6f2db2a55648dd494e8314e0d9277678"
   }
 }

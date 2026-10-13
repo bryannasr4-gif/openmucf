@@ -313,7 +313,10 @@ def build_headline(
         "created is a lower bound on the cost per muon produced and the count basis reverses no "
         "bound. It does decide what may be composed: a stage factor is a fraction of one count, and "
         "applying a fraction of pions to a cost per muon would count the pion's decay twice, so "
-        "`ChainEdge.apply_to` refuses it."
+        "`ChainEdge.apply_to` refuses it. `machine` records the machine a row prices and the machine "
+        "each conversion was stated for. A conversion composed onto a figure for another machine is a "
+        "**machine transfer**: the figure carries it with who made it (a derived row records its own in "
+        "`machine_transfer`), prints *conditional on a machine transfer*, and is never rendered as a value."
     )
     H["charge_psi_himb"] = table["psi_himb"].charge_basis
 
@@ -333,6 +336,7 @@ def build_headline(
         cv = table[sid].chain_point()
         short = _SHORT[sid]
         H[f"chain_{short}"] = cv.render()  # ">= X.XX GeV" -- the bound marker is part of the pinned string
+        H[f"maker_{short}"] = _maker_label(table, cv.transfers)
         for key, e_use in (("kc", E_USE_KOUCHEN_MEV), ("kelly", E_USE_KELLY_MEV)):
             n_L = eq9_cycle_demand(cv.value_GeV, e_use)
             H[f"ratio_{short}_{key}"] = f"{cv.value_GeV / eq15_max_muon_cost_GeV(e_use):.2f}"
@@ -515,9 +519,15 @@ def build_headline(
     printed_biases = sorted({p.bias_direction for p in paths})
     if printed_biases == ["lower"]:
         H["marker_clause"] = (
-            "Each figure above prints `>=` because it is a one-sided **lower** bound: every "
-            "conversion it omits is <= 1, so leaving it out can only understate the cost."
+            "Each figure above prints `>=` because it is a one-sided **lower** bound along the stage "
+            "axis: every conversion it omits is <= 1, so leaving it out can only understate the cost."
         )
+        if paths and all(p.value.transfers for p in paths):
+            H["marker_clause"] += (
+                " Each is also *conditional on a machine transfer*: it divides by an efficiency "
+                "measured on another machine, so it bounds the cost from below only if that efficiency "
+                "is no larger on the machine it prices."
+            )
     elif printed_biases == ["none"]:
         H["marker_clause"] = (
             "Each figure above prints as a plain value: its path reaches the terminal stage with "
@@ -724,8 +734,8 @@ def blocked_extensions(chain: mucost.ChainEdgeTable) -> list:
 
 def _edge_table(chain: mucost.ChainEdgeTable) -> str:
     head = (
-        "| edge | conversion | factor | evidence | bias | count | source |\n"
-        "|---|---|---|---|---|---|---|\n"
+        "| edge | conversion | factor | evidence | bias | count | machine | source |\n"
+        "|---|---|---|---|---|---|---|---|\n"
     )
     lines = []
     for e in chain:
@@ -737,7 +747,7 @@ def _edge_table(chain: mucost.ChainEdgeTable) -> str:
         source = e.source_bibkey.replace(";", ", ") if e.source_bibkey else "--"
         lines.append(
             f"| `{e.edge_id}` | {conv} | {factor} | {e.evidence_status} | {e.bias_direction} | "
-            f"`{e.count_basis}` | {source} |"
+            f"`{e.count_basis}` | {e.machine or '--'} | {source} |"
         )
     return head + "\n".join(lines)
 
@@ -757,12 +767,28 @@ def _edge_coverage_table(rows: list[dict]) -> str:
     return head + "\n".join(lines)
 
 
-def _sourced_path_table(paths: list) -> str:
-    head = "| conversions applied | coordinate reached | figure |\n|---|---|---|\n"
+def _maker_label(table: mucost.MuonCostTable, transfers) -> str:
+    """Who made a figure's machine transfers: `none`, a source's label, or `this ledger`."""
+    if not transfers:
+        return "none"
+    by_key = {r.source_bibkey.split(";")[0].strip(): LABELS[r.source_id] for r in table
+              if r.numeraire == mucost.BEAM_KINETIC}
+    return _join(sorted({"this ledger" if who == mucost.THIS_LEDGER else by_key.get(who, who)
+                         for _, who in transfers}))
+
+
+def _sourced_path_table(paths: list, table: mucost.MuonCostTable) -> str:
+    head = (
+        "| conversions applied | coordinate reached | figure | machine transfer made by |\n"
+        "|---|---|---|---|\n"
+    )
     lines = []
     for p in paths:
         applied = " -> ".join(f"`{i}`" for i in p.edge_ids)
-        lines.append(f"| {applied} | `{p.value.stage}` / `{p.value.numeraire}` | {p.render()} |")
+        lines.append(
+            f"| {applied} | `{p.value.stage}` / `{p.value.numeraire}` | {p.render()} | "
+            f"{_maker_label(table, p.value.transfers)} |"
+        )
     return head + "\n".join(lines)
 
 
@@ -804,7 +830,10 @@ def _coverage_table(table: mucost.MuonCostTable) -> str:
     lines = []
     for c in coverage_rows(table):
         stage = c["stage"] if c["on_chain"] else f"{c['stage']} (NOT on the muCF chain)"
-        conv = "yes (`eta_acc`, from the PSI primary)" if c["numeraire_sourced"] else "absent"
+        conv = (
+            "yes, by a machine transfer (`eta_acc`, from the PSI primary)"
+            if c["numeraire_sourced"] else "absent"
+        )
         lines.append(
             f"| {c['label']} | {stage} | `{c['numeraire']}` | {conv} | {c['delivery']} | "
             f"{'yes' if c['complete'] else '**no**'} |"
@@ -841,13 +870,13 @@ full-text-verified design studies corroborate the same single-GeV scale: **{LABE
 all-collected) and **{LABELS['eliezer_henis_1994']}, ~{H['norm_eliezer_henis_1994']} GeV/muon**
 (DOI 10.13182/FST94-A30300).
 
-**{H['anchor_basis_sentence']}.** On Kelly's own
-accelerator efficiency the same muon costs {H['norm_kelly_hart_rose_2021']} /
+**{H['anchor_basis_sentence']}.** On the PSI accelerator efficiency Kelly adopts for his own design, the same muon costs {H['norm_kelly_hart_rose_2021']} /
 {H['kelly_eta_acc']} = **{H['kelly_wallplug']} GeV per muon produced** in ELECTRICAL energy, and on the
-same primary's site-wide denominator ({H['kelly_eta_acc_site']}) it costs **{H['kelly_wallplug_site']} GeV**
--- and both are still LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T,
-because the capture, transport, moderation and stopping factors (all <= 1) have not been applied. Every
-factor omitted here pushes the cost UP, so the bound is one-sided.
+same primary's site-wide denominator ({H['kelly_eta_acc_site']}), which this ledger applies to his design, it costs **{H['kelly_wallplug_site']} GeV**.
+Both are LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T **only if his
+accelerator is no more efficient than the PSI one**: that efficiency was measured on a different machine
+(a *machine transfer*). Along the chain the bound is one-sided -- the capture, transport, moderation and
+stopping factors (all <= 1) have not been applied, and every one of them pushes the cost UP.
 
 **The tier spread is about three orders of magnitude, on MIXED bases.** The tier-median rises from **{H['t1_median']}
 GeV** (design studies) through **{H['t2_median']} GeV** (demonstrated technology, collected-not-stopped)
@@ -1009,11 +1038,11 @@ other two convention-set.
 Against that ceiling, the chain points built from the open-access anchor -- every one of them a
 **bound**, because {H['chain_points_stage_clause']}:
 
-| chain point | numeraire | figure | vs {H['ceiling_kc']} GeV ceiling | vs {H['ceiling_kelly']} GeV ceiling |
-|---|---|---|---|---|
-| beam kinetic per mu- produced | `beam_kinetic` | {H['chain_beam']} | {H['ratio_beam_kc']}x | {H['ratio_beam_kelly']}x |
-| electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | {H['chain_elecmin']} | {H['ratio_elecmin_kc']}x | {H['ratio_elecmin_kelly']}x |
-| electrical per mu- produced (site-wide) | `electrical_site` | {H['chain_elecsite']} | {H['ratio_elecsite_kc']}x | {H['ratio_elecsite_kelly']}x |
+| chain point | numeraire | figure | machine transfer made by | vs {H['ceiling_kc']} GeV ceiling | vs {H['ceiling_kelly']} GeV ceiling |
+|---|---|---|---|---|---|
+| beam kinetic per mu- produced | `beam_kinetic` | {H['chain_beam']} | {H['maker_beam']} | {H['ratio_beam_kc']}x | {H['ratio_beam_kelly']}x |
+| electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | {H['chain_elecmin']} | {H['maker_elecmin']} | {H['ratio_elecmin_kc']}x | {H['ratio_elecmin_kelly']}x |
+| electrical per mu- produced (site-wide) | `electrical_site` | {H['chain_elecsite']} | {H['maker_elecsite']} | {H['ratio_elecsite_kc']}x | {H['ratio_elecsite_kelly']}x |
 
 Read in the criterion's own coordinates, at `E_use` = {H['e_use_kouchen']} MeV. **`G_mu` carries two
 distinct meanings in eq.(12) and they must not be substituted into each other:** the row below reports
@@ -1037,23 +1066,29 @@ retyped.)
 to Kou & Chen's mathematics, every digit of which reproduces. Their own sec.IV places the historical
 anchors below breakeven, saying they "fall near the `G_mu` ~ 0.5-0.6 region"; their Table I `G_mu` column
 prints 0.51 (SIN/Crowe) and 0.61 (LAMPF/Jones), and 0.41 (Petitjean low) is the nearest value it prints
-outside that range. The contribution here is narrower and sharper:
-**the cost convention that puts them there is itself ~{H['optimism_low']}-{H['optimism_high']}x
-optimistic relative to the only anchor in the field whose beam-to-electrical conversion is
-sourced**, so that anchor's `G_mu` is
-~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than ~{H['gmu_conventional_1dp']},
-and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
-forbidden side of the no-go line rather than {H['overshoot_conventional']}x. **Every omitted factor pushes
-the same way**, so this reading is rigorously one-sided: the chain points above are lower bounds, and
-the true costs can only be higher.
+outside that range. The contribution here is narrower. **Without any machine transfer**, the anchor's
+beam energy alone, {H['chain_beam']} per muon produced, is {H['ratio_beam_kc']}x the {H['ceiling_kc']} GeV ceiling and {H['ratio_beam_kelly']}x the
+{H['ceiling_kelly']} GeV one. **Conditional on a machine transfer**, the cost convention that puts the historical
+anchors there is ~{H['optimism_low']}-{H['optimism_high']}x optimistic relative to that anchor's electrical cost, so its `G_mu` is
+~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than ~{H['gmu_conventional_1dp']}, and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
+forbidden side of the no-go line rather than {H['overshoot_conventional']}x. The electrical figures divide by efficiencies
+measured on the PSI HIPA proton cyclotron: Kelly, Hart & Rose apply its minimal-subsystem figure to their
+own deuteron design (sec.6), and this ledger applies its site-wide figure. **Along the stage axis the
+reading is one-sided**: every chain point above stops at stage `produced`, and each stage factor it
+omits is <= 1, so leaving it out can only understate the cost. **Along the numeraire axis it holds only
+if the transfer does**: the electrical figures are lower bounds if the anchor's accelerator is no more
+efficient than the PSI one. Kelly, Hart & Rose expect accelerator efficiency to decrease at higher beam
+energies (sec.6) and also to improve considerably (sec.7), and Eliezer & Henis take an optimistic
+accelerator efficiency far above the PSI ones in an illustrative energy balance (sec.VII), so these
+sources do not settle the condition.
 
 ## Chain coverage: which conversions are actually sourced
 {_coverage_table(table)}
 
 **{H['n_fully_sourced_chains']} of the {H['n_chain_rows']} pinned rows that sit on the muCF chain have a
 fully-sourced chain to a useful stopped muon** (a further {H['n_offchain_rows']} rows are not on the chain
-at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states its own
-beam-to-electrical conversion -- Kelly, Hart & Rose, who take 18% from the PSI primary they cite -- and
+at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states a
+beam-to-electrical conversion measured on an accelerator -- Kelly, Hart & Rose, who take 18% from the PSI primary they cite -- and
 that same source states the delivery factor is unknown. {H['n_numeraire_sourced']} rows carry an
 `eta_acc`: his beam row and its two electrical re-expressions, on the two denominators that same PSI
 primary supplies. Kelly adopts the minimally-required-subsystem one; the site-wide figure is the
@@ -1071,7 +1106,8 @@ is sourceable for any row today (Kelly: {H['norm_kelly_hart_rose_2021']} / {H['k
 not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
 into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
 figure above that sits **on the muCF chain** and counts mu- is a **lower bound** on the cost at the
-terminal stage. The {H['n_offchain_rows']} off-chain
+terminal stage, in its own numeraire and, where the figure is marked *conditional on a machine
+transfer*, only if that transfer holds. The {H['n_offchain_rows']} off-chain
 figures are not bounds on a muCF cost at all: they price stopping a muon somewhere that is not D-T
 fuel, so no chain of sub-unity factors connects them to the quantity this table is about.
 {H['mu_plus_only_clause']}
@@ -1103,11 +1139,12 @@ Composing every path out of the open-access anchor row ({LABELS[CHAIN_ANCHOR_ID]
 sourced conversions** gives {H['n_sourced_paths']} figures, and the deliverable is the SET of them
 with their provenance -- never a mean, and never one of them singled out:
 
-{_sourced_path_table(sourced_paths(table, chain))}
+{_sourced_path_table(sourced_paths(table, chain), table)}
 
 **Read the marker, and read what is missing.** {H['marker_clause']}
 {H['blocked_clause']} The edge table carries every one of those conversions and the API
-will compose them, marking a result *direction unknown* wherever its edges cannot bound it -- which
+will compose them, marking a result *direction unknown* wherever its edges cannot bound it, and
+*conditional on a machine transfer* wherever an edge was stated for another machine -- which
 is how this compilation records a factor it may not publish a number from.
 """
 

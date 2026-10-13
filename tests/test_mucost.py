@@ -128,6 +128,7 @@ def test_the_schema_required_columns_are_pinned_and_enforced(tmp_path):
         needs_verification="false", evidence_status="primary",
         recapture_credit_applied="false", normalized_GeV_per_mu="5.0", numeraire="beam_kinetic",
         stage="produced", basis_class="produced", charge_basis="mu_minus", count_basis="muon",
+        machine="bogus",
     )
 
     def _write(row, name):
@@ -397,7 +398,8 @@ def test_kelly_wallplug_is_a_one_sided_bound(table):
     a uniqueness claim here: the document renders those from the ledger, and this docstring cannot.
     Because Kelly's beam row is per-produced, the
     remaining (sub-unity) collection and stopping fractions can only raise the true per-stopped-in-D-T
-    cost -- the bound is one-sided.
+    cost -- the bound is one-sided along the stage axis. Along the numeraire axis the 0.18 is PSI HIPA's,
+    applied to Kelly's design, so the electrical rows carry that machine transfer.
     """
     kelly = table["kelly_hart_rose_2021"]
     assert kelly.eta_acc_assumption == 0.18
@@ -417,6 +419,7 @@ def test_kelly_wallplug_is_a_one_sided_bound(table):
         assert not math.isnan(elec.eta_acc_assumption)
         assert elec.has_normalized  # else NaN would come from the missing value, not the guard
         assert math.isnan(elec.wallplug_lower_bound_GeV)
+        assert elec.chain_point().transfers, f"{sid}: a PSI efficiency on Kelly's design is a transfer"
 
 
 def test_psi_himb_is_mu_plus_only(table):
@@ -1143,7 +1146,9 @@ def test_exactly_one_cost_source_states_a_beam_to_electrical_conversion(table):
     The claim is about this compilation's COST sources -- the primary each row is a row *of*. A row
     may additionally cite a supporting source for its denominator (the site-wide figure is the PSI
     primary's, not Kelly's), which is why the assertion is on the leading bibkey and why the document
-    no longer says Kelly's statement is why all three rows carry one.
+    no longer says Kelly's statement is why all three rows carry one. The claim is scoped to a conversion
+    measured on an accelerator: Eliezer & Henis also take an accelerator efficiency, an optimistic
+    assumption in an illustrative energy balance, which the edge table's notes disclose and do not carry.
     """
     carriers = [r for r in table if not math.isnan(r.eta_acc_assumption)]
     assert len(carriers) == 3
@@ -1296,7 +1301,8 @@ def test_the_float_wallplug_path_cannot_disagree_with_the_typed_conversion(table
 
 CHAIN_COLUMNS = [
     "edge_id", "from_stage", "from_numeraire", "to_stage", "to_numeraire",
-    "factor", "factor_lo", "factor_hi", "bias_direction", "charge_basis", "count_basis",
+    "factor", "factor_lo", "factor_hi", "bias_direction", "charge_basis", "count_basis", "machine",
+    "adopted_for",
     "conditions", "evidence_status", "source_bibkey", "source_locator", "derivation", "notes",
 ]
 
@@ -1305,7 +1311,8 @@ CHAIN_CONTROL = {
     "edge_id": "control_edge", "from_stage": "*", "from_numeraire": "beam_kinetic",
     "to_stage": "*", "to_numeraire": "electrical_minimal",
     "factor": "0.5", "factor_lo": "", "factor_hi": "",
-    "bias_direction": "none", "charge_basis": "*", "count_basis": "*", "conditions": "synthetic",
+    "bias_direction": "none", "charge_basis": "*", "count_basis": "*", "machine": "psi_hipa",
+    "adopted_for": "", "conditions": "synthetic",
     "evidence_status": "primary", "source_bibkey": "Kovach2017",
     "source_locator": "synthetic fixture, not a reading of the source",
     "derivation": "synthetic fixture", "notes": "",
@@ -1439,7 +1446,7 @@ def test_an_edge_moves_exactly_one_axis(tmp_path, chain):
         (dict(from_numeraire="*"), "needs both endpoints named"),
         (dict(from_stage="produced", to_stage="captured", from_numeraire="*", to_numeraire="*",
               factor="", evidence_status="absent", bias_direction="lower", source_bibkey="",
-              source_locator=""), None),  # a legal stage edge: the drill's own control
+              source_locator="", machine=""), None),  # a legal stage edge: the drill's own control
         (dict(from_stage="stopped_other_target", to_stage="*", from_numeraire="*",
               to_numeraire="*"), "bad from_stage"),
     ]
@@ -1465,7 +1472,7 @@ def test_an_absent_edge_carries_no_number_and_refuses_to_compose(tmp_path, chain
     stage_absent = dict(
         CHAIN_CONTROL, edge_id="a", from_stage="produced", to_stage="captured",
         from_numeraire="*", to_numeraire="*", evidence_status="absent", bias_direction="lower",
-        factor="", source_bibkey="", source_locator="",
+        factor="", source_bibkey="", source_locator="", machine="",
     )
     _load_chain(_write_chain(tmp_path, [stage_absent], "absent_ok.csv"))  # control
     for mutation, expected in (
@@ -1570,7 +1577,7 @@ def test_an_unsourced_path_is_a_bound_and_a_fully_sourced_synthetic_one_is_not(t
     syn = _load_chain(_write_chain(tmp_path, edges, "synthetic.csv"))
     start = mucost.ChainValue(
         value_GeV=4.0, stage="produced", numeraire=mucost.BEAM_KINETIC, charge_basis="mu_minus",
-        statuses=("primary",), provenance=("synthetic_start",), count_basis="muon",
+        statuses=("primary",), provenance=("synthetic_start",), count_basis="muon", machine="psi_hipa",
     )
     good = mucost.compose_path(start, list(syn))
     assert good.value.value_GeV == 4.0 / 0.20 / 0.25
@@ -1896,6 +1903,7 @@ def test_the_published_figure_set_is_sourced_only_and_is_never_reduced(table, ch
         assert " -> ".join(f"`{e}`" for e in p.edge_ids) in doc
         assert all(chain[e].is_sourced for e in p.edge_ids), "a published path used an unsourced edge"
         assert p.bias_direction == "lower" and p.render().startswith(">= ")
+        assert p.value.transfers and p.render().endswith(mucost.TRANSFER_SUFFIX)
     # the two rival readings of one conversion land at the same coordinate with different numbers,
     # and their mean is nowhere in the document
     rivals = [p for p in paths if p.value.numeraire == "electrical_minimal"]
@@ -2078,4 +2086,103 @@ def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
     rows = [dataclasses.replace(r, count_basis="") if r.source_id == "bertin_1987" else r for r in table]
     with pytest.raises(ValueError, match="does not describe these rows"):
         gen.build_headline(MuonCostTable(rows))
+
+
+def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv"):
+    """A sourced, bias-none, terminal synthetic path whose figure prices `psi_hipa`."""
+    edges = [
+        dict(CHAIN_CONTROL, edge_id="syn_numeraire", factor="0.20"),
+        dict(CHAIN_CONTROL, edge_id="syn_delivery", from_stage="produced",
+             to_stage="stopped_useful_in_dt", from_numeraire="*", to_numeraire="*",
+             factor="0.25", charge_basis="mu_minus", count_basis="muon", machine=machine),
+    ]
+    syn = _load_chain(_write_chain(tmp_path, edges, name))
+    start = mucost.ChainValue(
+        value_GeV=4.0, stage="produced", numeraire=mucost.BEAM_KINETIC, charge_basis="mu_minus",
+        statuses=("primary",), provenance=("synthetic_start",), count_basis="muon", machine="psi_hipa",
+    )
+    return mucost.compose_path(start, list(syn))
+
+
+def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_path, table, chain):
+    """One centralised guard in ChainValue.render_value refuses a figure resting on a transfer."""
+    control = _syn_terminal(tmp_path)
+    assert control.value.transfers == () and control.bias_direction == "none"
+    assert control.render_value() == control.value.render_value() == "80.00 GeV"
+    moved = _syn_terminal(tmp_path, machine="other_machine", name="syn_moved.csv")
+    assert moved.value.transfers == (("syn_delivery", "this_ledger"),)
+    assert moved.bias_direction == "none" and not moved.value.is_bound
+    with pytest.raises(BasisError, match="machine transfer"):
+        moved.render_value()
+    with pytest.raises(BasisError, match="machine transfer"):
+        moved.value.render_value()
+    assert moved.render() == "80.00 GeV (conditional on a machine transfer)"
+    # a direction-unknown figure keeps its marker and gains the suffix
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    unknown = mucost.compose_path(beam, [chain["eta_acc_kovach_minimal"], chain["delivery_kelly_eta_mu"]])
+    expected = "51.37 GeV (direction unknown) (conditional on a machine transfer)"
+    assert unknown.render() == unknown.value.render() == expected
+    # who made it: Kelly, Hart & Rose for the factor they adopt for their own design, this ledger otherwise
+    assert mucost.compose_path(beam, [chain["eta_acc_kelly_psi_minimal"]]).value.transfers == (
+        ("eta_acc_kelly_psi_minimal", "KellyHartRose2021"),
+    )
+    assert mucost.compose_path(beam, [chain["eta_acc_kovach_site"]]).value.transfers == (
+        ("eta_acc_kovach_site", "this_ledger"),
+    )
+    site = table["kelly_electrical_site"].chain_point()
+    assert site.transfers == (("kelly_electrical_site", "this_ledger"),)
+    assert "machine transfers: kelly_electrical_site (by this_ledger)" in site.why_bound()
+
+
+#: The retracted universals, and the trust map's conditional cells
+RETRACTED_C2 = (("MUON_COST.md", "rigorously one-sided"),
+                ("scripts/generate_mucost.py", "rigorously one-sided"),
+                ("MUON_COST.md", "the true costs can only be higher"))
+
+
+def test_the_retracted_one_sided_universals_are_gone_and_the_trust_map_is_conditional():
+    for rel, phrase in RETRACTED_C2:
+        assert phrase not in _normalized(rel), (rel, phrase)
+    for rel in ("README.md", "ADOPTERS.md", "paper/paper.md"):
+        assert "conditional on" in _normalized(rel), rel
+
+
+_NODE_GUARDS = {
+    "g1": ("kelly_hart_rose_2021", dict(machine=""), "machine is required on a pinned row"),
+    "g2": ("kelly_hart_rose_2021", dict(machine="Kelly-HRS"), "bad machine 'Kelly-HRS'"),
+    "g3": ("kelly_electrical_minimal", dict(machine_transfer="Bertin1987"),
+           "bad machine_transfer 'Bertin1987'"),
+}
+_ABSENT_CONTROL = dict(
+    CHAIN_CONTROL, factor="", evidence_status="absent", bias_direction="lower", machine=""
+)
+_EDGE_GUARDS = {
+    "g4": (CHAIN_CONTROL, dict(machine=""), "a stated factor needs a machine"),
+    "g5": (_ABSENT_CONTROL, dict(machine="psi_hipa"), "an absent row names no machine"),
+    "g6": (CHAIN_CONTROL, dict(machine="PSI-HIPA"), "bad machine 'PSI-HIPA'"),
+    "g7": (dict(CHAIN_CONTROL, adopted_for="kelly_hart_rose_2021"), dict(adopted_for="Kelly design"),
+           "bad adopted_for 'Kelly design'"),
+}
+
+
+@pytest.mark.parametrize("gid", sorted(_NODE_GUARDS) + sorted(_EDGE_GUARDS))
+def test_the_machine_columns_refuse_each_bad_cell(tmp_path, gid):
+    """Each machine-column guard -- the control loads, one changed cell is refused with its message."""
+    if gid in _NODE_GUARDS:
+        sid, bad, expected = _NODE_GUARDS[gid]
+        header, base = _shipped_row(sid)
+        extra = [dict(base, machine_transfer=v) for v in ("this_ledger", "")] if gid == "g3" else []
+        for k, ctl in enumerate([base] + extra):
+            ok = tmp_path / f"{gid}_ok_{k}.csv"
+            _write_csv(ok, header, ctl)
+            load_muon_cost(csv_path=ok, schema_path=MUON_COST_SCHEMA, check_refs=False)
+        path = tmp_path / f"{gid}_bad.csv"
+        _write_csv(path, header, dict(base, **bad))
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            load_muon_cost(csv_path=path, schema_path=MUON_COST_SCHEMA, check_refs=False)
+    else:
+        ctl, bad, expected = _EDGE_GUARDS[gid]
+        _load_chain(_write_chain(tmp_path, [ctl], f"{gid}_ok.csv"))
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            _load_chain(_write_chain(tmp_path, [dict(ctl, **bad)], f"{gid}_bad.csv"))
 

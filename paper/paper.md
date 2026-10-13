@@ -127,7 +127,7 @@ the artifact:
 The five failures are pre-registered findings, not bugs: a *pass* on any of them would be the thing
 to investigate. They are the standing, quantified motivation for a sourced-formation upgrade. In the
 repository, a companion trust map sorts every output into **GREEN** (citable as-is: the muon-cost
-compilation read per row in its own declared basis, the Kou–Chen ceiling comparison, the
+compilation read per row in its own declared basis, the Kou–Chen ceiling comparison, whose electrical cells are conditional on an accelerator-efficiency transfer, the
 energy-balance "Rosetta stone", the neutrons-per-joule table read one tier row at a time, the
 breakeven requirements form, the sensitivity split with error bars under its stated prior box, the
 forecast-registry machinery), **AMBER** (citable with the stated basis: any cross-tier muon-cost

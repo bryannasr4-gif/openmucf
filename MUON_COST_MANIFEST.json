@@ -179,26 +179,26 @@
     {
       "doc": "MUON_COST.md",
       "id": "sourced_path_1",
-      "pattern": "\\| >=\\ 25\\.68\\ GeV \\|",
+      "pattern": "\\| >=\\ 25\\.68\\ GeV\\ \\(conditional\\ on\\ a\\ machine\\ transfer\\) \\|",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": ">= 25.68 GeV"
+      "value": ">= 25.68 GeV (conditional on a machine transfer)"
     },
     {
       "doc": "MUON_COST.md",
       "id": "sourced_path_2",
-      "pattern": "\\| >=\\ 26\\.11\\ GeV \\|",
+      "pattern": "\\| >=\\ 26\\.11\\ GeV\\ \\(conditional\\ on\\ a\\ machine\\ transfer\\) \\|",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": ">= 26.11 GeV"
+      "value": ">= 26.11 GeV (conditional on a machine transfer)"
     },
     {
       "doc": "MUON_COST.md",
       "id": "sourced_path_3",
-      "pattern": "\\| >=\\ 45\\.19\\ GeV \\|",
+      "pattern": "\\| >=\\ 45\\.19\\ GeV\\ \\(conditional\\ on\\ a\\ machine\\ transfer\\) \\|",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": ">= 45.19 GeV"
+      "value": ">= 45.19 GeV (conditional on a machine transfer)"
     },
     {
       "doc": "MUON_COST.md",
@@ -227,10 +227,10 @@
     {
       "doc": "MUON_COST.md",
       "id": "chain_elecmin",
-      "pattern": "\\| >=\\ 26\\.11\\ GeV \\|",
+      "pattern": "\\| >=\\ 26\\.11\\ GeV\\ \\(conditional\\ on\\ a\\ machine\\ transfer\\) \\|",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": ">= 26.11 GeV"
+      "value": ">= 26.11 GeV (conditional on a machine transfer)"
     },
     {
       "doc": "MUON_COST.md",
@@ -251,10 +251,10 @@
     {
       "doc": "MUON_COST.md",
       "id": "chain_elecsite",
-      "pattern": "\\| >=\\ 45\\.19\\ GeV \\|",
+      "pattern": "\\| >=\\ 45\\.19\\ GeV\\ \\(conditional\\ on\\ a\\ machine\\ transfer\\) \\|",
       "source": "scripts/generate_mucost.py",
       "source_type": "derivation",
-      "value": ">= 45.19 GeV"
+      "value": ">= 45.19 GeV (conditional on a machine transfer)"
     },
     {
       "doc": "MUON_COST.md",
@@ -427,7 +427,7 @@
   ],
   "generated_by": "scripts/generate_mucost.py",
   "inputs": {
-    "muon_cost_chain_csv_sha256": "450c26f8664ef157d25d67353b4a97150bb590e0c254b2cdbe9f473fc21b58b9",
-    "muon_cost_csv_sha256": "49260050d03e1866ad6a1e74e0edc61ae8844e27c2b52ce89a80027e39a19a83"
+    "muon_cost_chain_csv_sha256": "8562b97ba76bf04630217e11897ab38d34312adcc7eb1e2f91572ef10228c790",
+    "muon_cost_csv_sha256": "e1a3a3bd0ff27a2cea70d3a571f7d79cd9842099e7f2ceb04eb850b313af7467"
   }
 }

@@ -158,6 +158,14 @@
       ],
       "description": "What one unit of the row's count is. 'pi_minus_created' = a negative pion created, which the source counts as a negative muon; 'pi_minus_or_mu_minus_exiting' = a negative pion or muon leaving the production target, counted together; 'muon' = a muon of the row's charge_basis. A stage edge names the count its factor is a fraction of, and composition refuses a figure on another count. Empty only on an unpinned needs_verification row."
     },
+    "machine": {
+      "type": "string",
+      "description": "Short key of the machine or design whose cost the row prices, on the same vocabulary as muon_cost_chain.csv's machine column; rows that price one machine share a key. A conversion stated for another machine is a machine transfer when composed onto this row. Empty only on an unpinned needs_verification row."
+    },
+    "machine_transfer": {
+      "type": "string",
+      "description": "Empty unless the row's figure divides by a factor stated for another machine; then who applied it to this row's machine: the bibkey of the row's own source that did, or 'this_ledger'. The row's chain point carries it, prints conditional on a machine transfer, and is never rendered as a value."
+    },
     "derivation": {
       "type": "string",
       "description": "Every OURS-normalization step VERBATIM: 'implied, derived here: <formula with numbers>' for facility/derived rows; 'as-published; no OURS-normalization' where the row is copied straight from the source."

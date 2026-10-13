@@ -74,6 +74,14 @@
       "enum": ["pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon", "*"],
       "description": "The count a stage edge's factor is a fraction of, on muon_cost.csv's vocabulary; '*' on a numeraire edge, whose efficiency counts no particles, and on an absent edge, which states no factor. Composition refuses a figure counted otherwise: a fraction of pions applied to a cost per muon would count the pion's decay twice. A stage edge yields a cost per muon."
     },
+    "machine": {
+      "type": "string",
+      "description": "Short key of the machine or design the factor was measured or calculated for, on muon_cost.csv's machine vocabulary. Required where a factor is stated, empty on an absent row. Composing the edge onto a figure for another machine is a machine transfer, which the composed figure carries with who made it."
+    },
+    "adopted_for": {
+      "type": "string",
+      "description": "A machine key the edge's own source applies the factor to, where it does: composing the edge onto that machine is a transfer the source made, and onto any other machine one this ledger makes. Empty where the source applies the factor to no other machine."
+    },
     "conditions": {
       "type": "string",
       "description": "The operating conditions the factor holds at (facility, beam, target, load point). Free text, not a controlled vocabulary."
