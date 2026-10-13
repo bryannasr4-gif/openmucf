@@ -396,10 +396,6 @@ def test_kelly_wallplug_is_a_one_sided_bound(table):
     the ledger publishes the converted figures as rows of their own rather than folding them into a
     beam-kinetic value -- which is why more than one row carries an eta_acc. Do not restate a count or
     a uniqueness claim here: the document renders those from the ledger, and this docstring cannot.
-    Because Kelly's beam row is per-produced, the
-    remaining (sub-unity) collection and stopping fractions can only raise the true per-stopped-in-D-T
-    cost -- the bound is one-sided along the stage axis. Along the numeraire axis the 0.18 is PSI HIPA's,
-    applied to Kelly's design, so the electrical rows carry that machine transfer.
     """
     kelly = table["kelly_hart_rose_2021"]
     assert kelly.eta_acc_assumption == 0.18
@@ -1146,9 +1142,7 @@ def test_exactly_one_cost_source_states_a_beam_to_electrical_conversion(table):
     The claim is about this compilation's COST sources -- the primary each row is a row *of*. A row
     may additionally cite a supporting source for its denominator (the site-wide figure is the PSI
     primary's, not Kelly's), which is why the assertion is on the leading bibkey and why the document
-    no longer says Kelly's statement is why all three rows carry one. The claim is scoped to a conversion
-    measured on an accelerator: Eliezer & Henis also take an accelerator efficiency, an optimistic
-    assumption in an illustrative energy balance, which the edge table's notes disclose and do not carry.
+    no longer says Kelly's statement is why all three rows carry one.
     """
     carriers = [r for r in table if not math.isnan(r.eta_acc_assumption)]
     assert len(carriers) == 3
@@ -1355,12 +1349,6 @@ def test_the_edge_table_loads_and_every_stated_factor_cites_a_primary(chain):
         "produced_to_captured_absent", "captured_to_transported_absent",
         "transported_to_moderated_absent", "moderated_to_stopped_useful_absent",
     ]
-    # the two stated stage factors each span the WHOLE delivery segment. delivery_kelly_eta_mu does
-    # because its source's own eq.(2) makes it so: a factor multiplying the fusion energy is the
-    # useful-stopped fraction, not an arrival fraction, and composing it alongside that source's earlier
-    # 100% placeholder for the same conversion would apply one factor twice, so only one of the two is an
-    # edge. delivery_petrov_via_eliezer_henis does because its source maps created pions onto muons that
-    # take part in d-t catalysis; it is relayed from a primary not read here, so it is not sourced.
     for eid in ("delivery_kelly_eta_mu", "delivery_petrov_via_eliezer_henis"):
         delivery = chain[eid]
         assert (delivery.from_stage, delivery.to_stage) == ("produced", mucost.TERMINAL_STAGE)
@@ -1626,14 +1614,11 @@ def test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean(table, c
     paths = mucost.enumerate_chain_paths(beam, list(chain))
     figures = [round(p.value.value_GeV, 2) for p in paths]
     assert len(figures) == len(set(figures)) == 6, "six maximal paths, six distinct figures"
-    # the rival readings of each conversion reach the SAME coordinate with DIFFERENT numbers
     same_coord = [p for p in paths if p.value.numeraire == "electrical_minimal"]
     assert len(same_coord) == 4
     assert {round(p.value.value_GeV, 2) for p in same_coord} == {52.22, 51.37, 34.81, 34.24}
     assert statistics.mean(rivals) not in rivals  # the mean is not a value this table holds
-    for p in paths:  # every figure carries the edges it was built from
-        # one numeraire conversion and one of the two collapsed delivery factors: the whole chain the
-        # literature can build, which is two edges long and ends on a factor that is not sourced
+    for p in paths:
         assert len(p.edge_ids) == 2 and p.describe().startswith("kelly_hart_rose_2021 -> ")
         assert p.value.stage == mucost.TERMINAL_STAGE
 
@@ -1941,10 +1926,8 @@ def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain
     for c in links:
         assert c["edges"], f"{c['label']} has no edge at all, not even an absent one"
         assert not c["sourced"]
-    # the relayed edge covers every link and sources none of them
     petrov = chain["delivery_petrov_via_eliezer_henis"]
     assert all(petrov in c["edges"] for c in links) and not any(petrov in c["sourced"] for c in links)
-    # the sentence, exactly, on the committed tables and on the same tables without the relayed edge
     assert sentence == COVERAGE_SENTENCE
     with mucost.MUON_COST_CHAIN_CSV.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -1992,7 +1975,6 @@ def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain
         gen.build_headline(table, mixed)
 
 
-#: The coverage sentence as it renders on the committed tables, and without the relayed edge.
 COVERAGE_SENTENCE = (
     "Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 "
     "numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every "
@@ -2050,12 +2032,10 @@ def test_the_published_figure_set_is_sourced_only_and_is_never_reduced(table, ch
     ledger = {r.normalized_GeV_per_mu for r in table
               if r.has_normalized and r.numeraire != mucost.BEAM_KINETIC}
     assert ledger < published, "the composed set must contain the ledger rows and at least one more"
-    # the relayed stage factor is blocked, never printed, and the printed set is the three figures
     petrov = "delivery_petrov_via_eliezer_henis"
     assert all(petrov not in p.edge_ids for p in paths)
     assert petrov in {e.edge_id for e in gen.blocked_extensions(chain)}
     assert [round(p.value.value_GeV, 2) for p in paths] == [25.68, 26.11, 45.19]
-    # the anchor is the one beam_kinetic row whose own source states a sourced conversion
     stated = {e.source_bibkey.split(";")[0].strip() for e in chain.sourced()}
     assert [r.source_id for r in table if r.numeraire == mucost.BEAM_KINETIC
             and r.source_bibkey.split(";")[0].strip() in stated] == [gen.CHAIN_ANCHOR_ID]
@@ -2175,11 +2155,6 @@ def test_compose_path_refuses_a_return_to_a_coordinate(tmp_path):
 
 
 def test_a_fraction_of_pions_is_never_applied_to_a_cost_per_muon(table, chain):
-    """A stage factor is a fraction of one count, and composition refuses a figure on another.
-
-    Bertin and Acceleron sit at ``produced`` on mu-, so the factor, charge and join checks pass and only
-    the count check can refuse; Kelly counts what the factor is a fraction of and composes.
-    """
     delivery = chain["delivery_kelly_eta_mu"]
     assert delivery.count_basis == "pi_minus_created"
     for sid in ("bertin_1987", "acceleron_2025"):
@@ -2193,7 +2168,6 @@ def test_a_fraction_of_pions_is_never_applied_to_a_cost_per_muon(table, chain):
 
 
 def test_the_edge_count_basis_rules_fire_on_the_rows_that_break_them(tmp_path):
-    """A stage edge with a factor names its count; a numeraire edge counts nothing."""
     stage_edge = dict(CHAIN_CONTROL, edge_id="s", from_stage="produced", to_stage="captured",
                       from_numeraire="*", to_numeraire="*", count_basis="muon")
     _load_chain(_write_chain(tmp_path, [CHAIN_CONTROL, stage_edge], "count_ok.csv"))  # control
@@ -2208,12 +2182,6 @@ def test_the_edge_count_basis_rules_fire_on_the_rows_that_break_them(tmp_path):
 
 
 def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
-    """The count-basis paragraph is read off the ledger, and its guard refuses rows it would misdescribe.
-
-    It names the pinned rows counted per negative pion created and per pion-or-muon exiting, and says the
-    other pinned rows count muons; that last clause is about rows it does not name, so the generator checks
-    it and raises rather than print it when a pinned row counts something else.
-    """
     gen = _load_generator()
     H = gen.build_headline(table)
     assert " ".join(H["count_para"].split()) in _normalized("MUON_COST.md")
@@ -2222,10 +2190,9 @@ def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
         named = gen.LABELS[r.source_id] in H["count_para"]
         assert named == (r.count_basis in {"pi_minus_created", "pi_minus_or_mu_minus_exiting"}), r.source_id
     assert {r.count_basis for r in pinned} == {"pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon"}
-    # drill: one pinned muon row recounted as nothing the paragraph names, and the generator refuses
     rows = [dataclasses.replace(r, count_basis="pi_minus_or_mu_minus_exiting") if r.source_id == "bertin_1987"
             else r for r in table]
-    gen.build_headline(MuonCostTable(rows))  # control: a row moved into a named count still renders
+    gen.build_headline(MuonCostTable(rows))
     rows = [dataclasses.replace(r, count_basis="") if r.source_id == "bertin_1987" else r for r in table]
     with pytest.raises(ValueError, match="does not describe these rows"):
         gen.build_headline(MuonCostTable(rows))
@@ -2276,7 +2243,6 @@ def _bibkey_variants(tmp_path, table, chain, sep):
 
 
 def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv", stage_first=False):
-    """A sourced, bias-none, terminal synthetic path whose figure prices `psi_hipa`."""
     edges = [
         dict(CHAIN_CONTROL, edge_id="syn_numeraire", factor="0.20"),
         dict(CHAIN_CONTROL, edge_id="syn_delivery", from_stage="produced",
@@ -2292,7 +2258,6 @@ def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv", stage_first=Fa
 
 
 def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_path, table, chain):
-    """One centralised guard in ChainValue.render_value refuses a figure resting on a transfer."""
     control = _syn_terminal(tmp_path)
     assert control.value.transfers == () and control.bias_direction == "none"
     assert control.render_value() == control.value.render_value() == "80.00 GeV"
@@ -2313,12 +2278,10 @@ def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_
     with pytest.raises(BasisError, match="machine transfer"):
         stage_first.value.render_value()
     assert stage_first.render() == stage_first.value.render() == control.render() + mucost.TRANSFER_SUFFIX
-    # a direction-unknown figure keeps its marker and gains the suffix
     beam = table["kelly_hart_rose_2021"].chain_point()
     unknown = mucost.compose_path(beam, [chain["eta_acc_kovach_minimal"], chain["delivery_kelly_eta_mu"]])
     expected = "51.37 GeV (direction unknown) (conditional on a machine transfer)"
     assert unknown.render() == unknown.value.render() == expected
-    # who made it: Kelly, Hart & Rose for the factor they adopt for their own design, this ledger otherwise
     assert mucost.compose_path(beam, [chain["eta_acc_kelly_psi_minimal"]]).value.transfers == (
         ("eta_acc_kelly_psi_minimal", "KellyHartRose2021"),
     )
@@ -2350,7 +2313,6 @@ def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_
         assert gen._maker_label(beam_table, ordinary.transfers) == gen.LABELS["kelly_hart_rose_2021"]
 
 
-#: The retracted universals, and the trust map's conditional cells
 RETRACTED_C2 = (("MUON_COST.md", "rigorously one-sided"),
                 ("scripts/generate_mucost.py", "rigorously one-sided"),
                 ("MUON_COST.md", "the true costs can only be higher"))
@@ -2383,7 +2345,6 @@ _EDGE_GUARDS = {
 
 @pytest.mark.parametrize("gid", sorted(_NODE_GUARDS) + sorted(_EDGE_GUARDS))
 def test_the_machine_columns_refuse_each_bad_cell(tmp_path, gid):
-    """Each machine-column guard -- the control loads, one changed cell is refused with its message."""
     if gid in _NODE_GUARDS:
         sid, bad, expected = _NODE_GUARDS[gid]
         header, base = _shipped_row(sid)
@@ -2404,12 +2365,6 @@ def test_the_machine_columns_refuse_each_bad_cell(tmp_path, gid):
 
 
 def test_the_petrov_edge_reproduces_its_relayed_figures_and_is_only_a_bound(table, chain):
-    """The relayed factor fixes the source's own two figures, and a path through it is a bound.
-
-    The locator's 4.5 GeV per negative pion created over the factor is the ~6 GeV per stopped muon the
-    source prints, which is what fixes the edge's span; the edge is relayed from a primary not read here,
-    so a figure composed through it is a bound, carries a machine transfer and is refused as a value.
-    """
     petrov = chain["delivery_petrov_via_eliezer_henis"]
     assert (petrov.from_stage, petrov.to_stage) == ("produced", mucost.TERMINAL_STAGE)
     assert petrov.evidence_status == "relayed_unread" and not petrov.is_sourced
@@ -2429,17 +2384,11 @@ def test_the_petrov_edge_reproduces_its_relayed_figures_and_is_only_a_bound(tabl
     with pytest.raises(BasisError):
         path.value.render_value()
     assert "relayed_unread" in path.value.why_bound()
-    # a fraction of pions created is never applied to a cost per muon
     with pytest.raises(BasisError, match="count basis"):
         petrov.apply_to(table["bertin_1987"].chain_point())
 
 
 def test_a_relayed_unread_edge_is_never_counted_as_sourced(table):
-    """An edge graded relayed_unread sources no coverage and enters no printed path.
-
-    The chain is built here from ChainEdge objects, not loaded, so the loader's own rules cannot refuse it
-    first: only the status sets decide whether it counts as sourced.
-    """
     gen = _load_generator()
     syn = mucost.ChainEdge(
         edge_id="syn_relayed", from_stage="produced", from_numeraire="*",
@@ -2457,13 +2406,11 @@ def test_a_relayed_unread_edge_is_never_counted_as_sourced(table):
     assert "relayed_unread" in mucost.NON_SOURCED_STATUSES
 
 
-#: The closed evidence grade, sourced members first, in the order every schema lists it
 EVIDENCE_ENUM = ["primary", "primary_cited", "derived_here", "relayed_unread",
                  "author_declared_arbitrary", "assumption", "absent"]
 
 
 def test_the_evidence_grades_agree_everywhere_and_the_not_sourced_count_is_stated():
-    """Both schemas and the data package list the same grades, and each says how many are not sourced."""
     n_sourced = len(mucost.SOURCED_STATUSES)
     assert set(EVIDENCE_ENUM[:n_sourced]) == mucost.SOURCED_STATUSES
     assert set(EVIDENCE_ENUM[n_sourced:]) == mucost.NON_SOURCED_STATUSES
@@ -2487,11 +2434,6 @@ def test_the_evidence_grades_agree_everywhere_and_the_not_sourced_count_is_state
 
 
 def test_the_amendment_and_the_t1_clause_are_read_off_the_tables(table, chain):
-    """The dated amendment prints the relayed edge's percentage, and the T1 clause says what its rows count.
-
-    Both are rendered from the ledger, so each is drilled the other way: a tier whose beam rows all share
-    one count loses the count qualifier, and the percentage moves with the edge's factor.
-    """
     gen = _load_generator()
     H = gen.build_headline(table, chain)
     doc = _normalized("MUON_COST.md")
@@ -2503,8 +2445,6 @@ def test_the_amendment_and_the_t1_clause_are_read_off_the_tables(table, chain):
     qualifier = " (it is not count-homogeneous: see the count basis above)"
     assert len(t1) > 1 and H["t1_stage_clause"].endswith(qualifier)
     assert f"so {H['t1_stage_clause']}," in doc
-    # drill: every T1 beam row given one count (one the count paragraph can still name), and the
-    # qualifier goes
     one = "pi_minus_or_mu_minus_exiting"
     rows = [dataclasses.replace(r, count_basis=one) if r.tier == "T1-design-study" and r.has_normalized
             and r.numeraire == mucost.BEAM_KINETIC else r for r in table]

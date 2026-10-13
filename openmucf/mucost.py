@@ -42,10 +42,8 @@ here (:meth:`MuonCostTable.tier_median` and friends) is **restricted to a single
 to :data:`BEAM_KINETIC` -- medianing beam-kinetic and electrical figures together would be a units error.
 
 **Composition is basis-typed and refuses to lie.** :class:`ChainValue` carries a figure together with
-its stage, numeraire and the evidence status of every factor composed into it. If any composed factor
-is ``relayed_unread``/``author_declared_arbitrary``/``assumption``/``absent``, or if the chain has not
-reached the terminal stage, the result is a **BOUND, not a value** -- and
-:meth:`ChainValue.render_value` *raises* rather than print it as one. Every omitted factor is <= 1, so
+its stage, numeraire and the evidence status of every factor composed into it.
+Every omitted factor is <= 1, so
 the bound is one-sided along the stage axis (costs can only rise).
 No row in the literature today has a fully-sourced chain, which is the finding, not a gap in the code.
 
@@ -92,13 +90,9 @@ TIER_ORDER = ("T1-design-study", "T2-demonstrated-tech", "T3-operating-facility"
 # somewhere that is not D-T fuel. Values on different classes are not commensurable.
 VALID_BASIS_CLASS = {"produced", "collected", "stopped_in_dt", "stopped_other_target", ""}
 VALID_CHARGE_BASIS = {"mu_minus", "mixed", "mu_plus_only", ""}
-#: What one unit of a row's count is (``count_basis``); empty only on an unpinned row.
 VALID_COUNT_BASIS = {"pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon", ""}
-#: A machine key (``machine``, ``adopted_for``): lower-case letters, digits and underscores.
 MACHINE_KEY = re.compile(r"^[a-z0-9_]+$")
-#: Who applied a factor stated for another machine to this row's machine, when its own source did not.
 THIS_LEDGER = "this_ledger"
-#: The marker every figure resting on a machine transfer carries, after whatever its bias earns.
 TRANSFER_SUFFIX = " (conditional on a machine transfer)"
 # Classes whose figure understates the true per-stopped-in-D-T cost (collection/stopping fractions < 1).
 LOWER_BOUND_CLASSES = frozenset({"produced", "collected"})
@@ -238,8 +232,6 @@ class ChainValue:
 
         This refusal is the point of the class: it makes the basis error unrepresentable rather than
         merely discouraged, so a caller cannot quote an incomplete or unsourced chain as a result.
-        A figure resting on a machine transfer is refused here too, and only here: the guard is the
-        first statement, and :meth:`ChainPath.render_value` reaches it by delegation.
         """
         if self.transfers:
             raise BasisError(
@@ -1077,7 +1069,6 @@ ANY = "*"
 VALID_EDGE_STAGE = set(MUCF_CHAIN) | {ANY}
 VALID_EDGE_NUMERAIRE = (VALID_NUMERAIRE - {""}) | {ANY}
 VALID_EDGE_CHARGE_BASIS = (VALID_CHARGE_BASIS - {""}) | {ANY}
-#: The count a stage edge's factor is a fraction of; ``*`` on a numeraire edge (it counts no particles).
 VALID_EDGE_COUNT_BASIS = (VALID_COUNT_BASIS - {""}) | {ANY}
 
 #: How an edge can move a composed cost away from the truth. ``none`` iff its factor is sourced;
@@ -1196,8 +1187,6 @@ class ChainEdge:
             )
         else:
             out = value.compose(self.factor, self.to_stage, self.evidence_status, self.edge_id)
-        # A factor stated for another machine is a machine transfer (an empty figure machine counts as
-        # different). Its source made it only where it applied the factor to this figure's machine.
         if self.machine != value.machine:
             first = first_bibkey(self.source_bibkey)
             maker = first if value.machine and self.adopted_for == value.machine else THIS_LEDGER
@@ -1315,8 +1304,7 @@ def compose_path(start: ChainValue, edges) -> ChainPath:
     The joins must match on the axis each edge moves; ``charge_basis`` must be composable at every
     step and at the start; an edge may appear at most once; and no path may return to a
     (stage, numeraire) coordinate it has already left. An edge with no factor cannot be composed at
-    all. Any ``relayed_unread``, ``author_declared_arbitrary``, ``assumption`` or ``absent`` status carried
-    in makes the terminal figure a BOUND, and :meth:`ChainValue.render_value` then refuses it.
+    all.
     """
     if start.charge_basis not in COMPOSABLE_CHARGE_BASIS:
         raise BasisError(

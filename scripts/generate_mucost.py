@@ -100,17 +100,10 @@ KOUCHEN_CONVENTIONAL_COST_GEV = 5.0
 #: The rows the Headline names as design-study anchors, in the order it names them.
 HEADLINE_ANCHOR_IDS = ("kelly_hart_rose_2021", "bertin_1987", "eliezer_henis_1994")
 
-#: The ledger row the terminal-figure set is composed FROM. Not a preference among rows: it is the
-#: only ``beam_kinetic`` row whose own source states a sourced conversion, so it is the only starting
-#: point for which a composed figure uses that row's own literature rather than borrowing another
-#: paper's factor.
+#: The ledger row the terminal-figure set is composed FROM.
 CHAIN_ANCHOR_ID = "kelly_hart_rose_2021"
 
-#: The evidence grade of a number a source states and attributes to a primary not read here. It is not
-#: sourced (``mucost.NON_SOURCED_STATUSES``); the coverage prose names a stage factor graded so.
 RELAYED_UNREAD = "relayed_unread"
-#: The one stage factor graded so today: Petrov's, as Eliezer & Henis relay it. The dated amendment names it
-#: and prints its percentage, which is read from the edge table and pinned in the manifest.
 PETROV_EDGE_ID = "delivery_petrov_via_eliezer_henis"
 
 
@@ -280,7 +273,6 @@ def build_headline(
         if table.is_basis_homogeneous("T1-design-study")
         else "the tier still holds more than one accounting stage within the `beam_kinetic` numeraire"
     )
-    # ...and what its rows COUNT, read off the ledger: a stage-homogeneous tier may still mix counts
     t1_counts = {
         r.count_basis for r in table.tier("T1-design-study")
         if r.has_normalized and r.numeraire == mucost.BEAM_KINETIC
@@ -309,8 +301,6 @@ def build_headline(
     # same reason eta_mu is: typing it would let the CSV move while the document kept asserting the
     # old basis, and both the document and the manifest would stay self-consistent while both were stale.
     H["charge_music"] = table["music"].charge_basis
-    # What each pinned row counts, read off the ledger like charge_basis above. The "other pinned rows
-    # count muons" clause is a claim about the rows not named, so it is checked before it is printed.
     pinned = [r for r in table if r.has_normalized]
     pi_rows = [LABELS[r.source_id] for r in pinned if r.count_basis == "pi_minus_created"]
     exit_rows = [LABELS[r.source_id] for r in pinned if r.count_basis == "pi_minus_or_mu_minus_exiting"]
@@ -423,7 +413,6 @@ def build_headline(
     H["n_numeraire_conversions"] = str(len(numeraire_convs))
     H["n_sourced_conversions"] = str(len(sourced))
     H["n_sourced_stage_conversions"] = str(len(sourced_links))
-    # the dated amendment names this edge; without it the amendment cannot render (a missing key, by design)
     if PETROV_EDGE_ID in chain:
         H["petrov_factor_pct"] = f"{chain[PETROV_EDGE_ID].factor * 100:g}"
 
@@ -455,8 +444,6 @@ def build_headline(
         if sourced and all(c["kind"] == mucost.NUMERAIRE_EDGE for c in sourced)
         else _join([c["label"] for c in sourced]) or "none of them"
     )
-    # A stage factor a source here relays from a primary not read here is NOT sourced, so it changes no count
-    # above; it is named, because a reader of "none is sourced" would otherwise not learn that it exists.
     relayed = [
         e for e in chain
         if e.kind == mucost.STAGE_EDGE and e.has_factor and e.evidence_status == RELAYED_UNREAD
@@ -520,7 +507,6 @@ def build_headline(
             f"measured on an accelerator.{delivery_clause}"
         ]
     )
-    # The closing paragraph says no stage factor is sourced and names the relayed one; both read off the tables.
     if sourced_links:
         raise ValueError("a stage advance is sourced: the closing paragraph's 'no stage factor is sourced' is false")
     if not relayed:
@@ -691,7 +677,6 @@ def _sticking_anchor() -> float:
 
 
 def _foreign_delivery(r: mucost.MuonCost, chain: mucost.ChainEdgeTable | None) -> str:
-    """The stage factors the row's own source states or relays for a machine other than the row's."""
     if chain is None:
         return ""
     key = mucost.first_bibkey(r.source_bibkey)
@@ -871,7 +856,6 @@ def _edge_coverage_table(rows: list[dict]) -> str:
 
 
 def _maker_label(table: mucost.MuonCostTable, transfers) -> str:
-    """Who made a figure's machine transfers: `none`, a source's label, or `this ledger`."""
     if not transfers:
         return "none"
     by_key = {mucost.first_bibkey(r.source_bibkey): LABELS[r.source_id] for r in table
@@ -1349,7 +1333,6 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable) -> li
         _entry("n_absent_edges", rf"\*\*no number\*\*: {re.escape(H['n_absent_edges'])} of the"),
         _entry("n_sourced_conversions", rf"\*\*{re.escape(H['n_sourced_conversions'])}\*\* carry a factor from a primary"),
         _entry("n_sourced_paths", rf"gives {re.escape(H['n_sourced_paths'])} figures"),
-        # the amendment's percentage is the relayed edge's factor, pinned like every published number
         _entry("petrov_factor_pct", rf"converts about {re.escape(H['petrov_factor_pct'])}% of the negative pions"),
     ]
     for i in range(1, int(H["n_sourced_paths"]) + 1):
