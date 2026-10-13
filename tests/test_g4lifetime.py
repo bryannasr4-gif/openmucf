@@ -378,12 +378,16 @@ def test_every_route_rate_is_capture_plus_decay_and_every_band_decision_is_exact
         for suffix, _ in lifetime.ROUTES:
             total = capture + float(row[f"decay_rate_{suffix}"])
             assert math.isclose(float(row[f"rate_{suffix}"]), total, rel_tol=1e-14), (row["locator"], suffix)
-            d = decimal.Decimal(row[f"rate_{suffix}"]) - decimal.Decimal(row["measured_rate"])
-            s2 = sum(decimal.Decimal(row[name]) ** 2 for name in ("measured_rate_unc", "capture_rate_unc"))
-            with decimal.localcontext() as context:
-                context.prec = 400
-                inside = d * d <= lifetime.K * lifetime.K * s2
-            assert row[f"within_{suffix}"] == ("true" if inside else "false"), (row["locator"], suffix)
+            _check_band_decision(row, suffix)
+
+
+def _check_band_decision(row: dict[str, str], suffix: str) -> None:
+    with decimal.localcontext() as context:
+        context.prec = 400
+        d = decimal.Decimal(row[f"rate_{suffix}"]) - decimal.Decimal(row["measured_rate"])
+        s2 = sum(decimal.Decimal(row[name]) ** 2 for name in ("measured_rate_unc", "capture_rate_unc"))
+        inside = d * d <= lifetime.K * lifetime.K * s2
+    assert row[f"within_{suffix}"] == ("true" if inside else "false"), (row["locator"], suffix)
 
 
 def test_drill_the_band_holds_its_edge_and_refuses_beyond_it():
@@ -391,6 +395,18 @@ def test_drill_the_band_holds_its_edge_and_refuses_beyond_it():
     assert not lifetime.within("1.3000000000000001", "1.0", ("0.1", "0"))
     assert lifetime.within("0.7", "1.0", ("0.06", "0.08"))
     assert not lifetime.within("0.69", "1.0", ("0.06", "0.08"))
+
+
+def test_drill_the_band_decision_check_holds_a_printed_rate_on_the_edge():
+    sigma, measured = "0.1234567890123451", "1.0"
+    rate = str(decimal.Decimal(measured) + lifetime.K * decimal.Decimal(sigma))
+    assert repr(float(rate)) == rate
+    assert lifetime.within(rate, measured, (sigma, "0"))
+    row = {"locator": "edge", "rate_bound": rate, "measured_rate": measured, "measured_rate_unc": sigma,
+           "capture_rate_unc": "0"}
+    _check_band_decision({**row, "within_bound": "true"}, "bound")
+    with pytest.raises(AssertionError):
+        _check_band_decision({**row, "within_bound": "false"}, "bound")
 
 
 def test_drill_the_comparison_refuses_an_unknown_profile_a_differing_charge_and_a_differing_copy(monkeypatch):
