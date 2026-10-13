@@ -1,4 +1,4 @@
-.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics design g4conformance g4natural audit all
+.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics design g4conformance g4natural g4lifetime audit all
 
 install:
 	pip install -e ".[dev]"
@@ -129,6 +129,16 @@ g4d2:
 g4natural:
 	python scripts/generate_g4natural.py compare
 
+# The mean-life comparison: for each capture profile and each mean life a source printed for its own
+# measurement, the measured rate and, for the nucleus the row names, the rate of capture plus decay on
+# Geant4's two bound-decay routes, from the decay rates committed in data/g4/d1/d1_decay_rate.oracle
+# (harvested from Geant4 builds and never regenerated here), the vendored sources, the shipped capture
+# tables, the isotope audit and the two transcriptions. Float64
+# arithmetic, with the band decided in exact decimals and no solver or sampling; the comparison joins the
+# git-diff list below, and tests/test_g4lifetime.py regenerates it.
+g4lifetime:
+	python scripts/generate_g4lifetime.py compare
+
 # Reproducibility gate: regenerate the deterministic docs and fail if they drift from what's committed.
 # CALIBRATION.md and the FC-001 card payload (forecasts/FC-001-mufuse.json) are MCMC-derived and are NOT
 # exact-diffed here; instead the card is checked for hash-consistency and FORECASTS.md (rendered
@@ -137,10 +147,10 @@ g4natural:
 # IS exact-diffed; the slow twin coverage MCMC (tests/test_twin_coverage.py) is a `slow` test, never here.
 # MATERIALITY.md is deterministic (one-at-a-time channel toggles through the v1 ODE, no MCMC) and IS
 # exact-diffed; its forward-UQ CI-width scale reference is read from the byte-stable FINDINGS_MANIFEST.json.
-audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics g4data g4conformance g4d2 g4natural
+audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics g4data g4conformance g4d2 g4natural g4lifetime
 	python scripts/generate_forecast.py --audit
 	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json NEUTRONOMICS_MANIFEST.json DESIGN_MANIFEST.json
-	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/d1_capture.mizuno2025.g4dat data/g4/d1/d1_capture.mizuno2025.prov.json data/g4/d1/mizuno2025_table1.csv data/g4/d1/mizuno2025_table3.csv data/g4/d1/suzuki1987_printed_rows.csv data/g4/d1/suzuki1987_quantity_rows.csv data/g4/d1/suzuki1987_parity_cells.csv data/g4/d1/suzuki1987_preprint_differences.csv data/g4/d1/d1_capture.suzuki1987.g4dat data/g4/d1/d1_capture.suzuki1987.prov.json data/g4/d1/zeff_audit.csv data/g4/d1/capture_rate_cells.csv data/g4/d1/geant4_add_dataset.snippet data/g4/d3 data/g4/d2/selector_vs_primary.csv data/g4/d2/selector_summary.csv data/g4/d1/natural_target_capture.csv tests/fixtures/g4dat_conformance
+	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/d1_capture.mizuno2025.g4dat data/g4/d1/d1_capture.mizuno2025.prov.json data/g4/d1/mizuno2025_table1.csv data/g4/d1/mizuno2025_table3.csv data/g4/d1/suzuki1987_printed_rows.csv data/g4/d1/suzuki1987_quantity_rows.csv data/g4/d1/suzuki1987_parity_cells.csv data/g4/d1/suzuki1987_preprint_differences.csv data/g4/d1/d1_capture.suzuki1987.g4dat data/g4/d1/d1_capture.suzuki1987.prov.json data/g4/d1/zeff_audit.csv data/g4/d1/capture_rate_cells.csv data/g4/d1/geant4_add_dataset.snippet data/g4/d3 data/g4/d2/selector_vs_primary.csv data/g4/d2/selector_summary.csv data/g4/d1/natural_target_capture.csv data/g4/d1/mean_life_comparison.csv tests/fixtures/g4dat_conformance
 	python scripts/generate_g4data.py --audit
 	python scripts/generate_g4dat_conformance.py --audit
 	python scripts/generate_calibration.py --audit

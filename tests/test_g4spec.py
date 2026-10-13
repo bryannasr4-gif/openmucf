@@ -1079,6 +1079,7 @@ def test_t34_import_fence():
         "d3_centroids.py",
         "d2.py",
         "d1_natural.py",
+        "d1_lifetime.py",
         "sources/__init__.py",
         "sources/d1_nuclear_capture.py",
         "sources/mizuno2025.py",

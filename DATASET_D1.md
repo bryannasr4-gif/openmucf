@@ -476,11 +476,14 @@ values compiled into Geant4, and their Layer-2 files `data/g4/d1/d1_capture.prov
 Geant4 source in `third_party/geant4/` they are generated from.
 `data/g4/d1/geant4_natural_isotopes.csv`, the natural isotopic compositions read from Geant4 builds, is
 offered under the Geant4 Software License v1.0.
+`data/g4/d1/d1_decay_rate.oracle`, the decay rates and nuclear masses read from Geant4 builds, is offered
+under the Geant4 Software License v1.0.
 The files that restate cells of the primaries' tables, `data/g4/d1/capture_rate_cells.csv`,
 `data/g4/d1/zeff_audit.csv`, `data/g4/d1/suzuki1987_*.csv` and `data/g4/d1/mizuno2025_table*.csv`,
 and the `suzuki1987` and `mizuno2025` profiles generated from them,
-`data/g4/d1/d1_capture.suzuki1987.*` and `data/g4/d1/d1_capture.mizuno2025.*`, are offered under no
-licence of this repository.
+`data/g4/d1/d1_capture.suzuki1987.*` and `data/g4/d1/d1_capture.mizuno2025.*`, and the comparison that
+restates their mean lives, `data/g4/d1/mean_life_comparison.csv`, are offered under no licence of this
+repository.
 The other files in `data/g4/d1/` are offered under CC-BY-4.0.
 Values compiled into Geant4 that another file of the dataset repeats are offered under the Geant4
 Software License.
