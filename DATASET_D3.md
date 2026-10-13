@@ -100,6 +100,7 @@ Section 5 screens the `centroid` rows separately, against the energy a patched c
 that screen qualifies no accuracy.
 Of the 67 gated rows, 26 lie within tolerance and 41 outside it; 16 of the gated
 rows are weakly sensitive, and 13 of those lie within tolerance.
+On 34 of the 34 gated rows that carry an `NPol`, its magnitude exceeds the row's tolerance.
 For context only, and never compared, `geant4_keV` is the energy the cascade compiled into Geant4
 v11.4.2 and v11.5.0.beta, unpatched, emits between the line's lower and upper shell, a single energy per shell
 whatever the orbit (`geant4_cascade_levels.csv`), and `geant4_residual_keV`, the table's Geant4
@@ -313,6 +314,9 @@ nor electron screening enters the shell difference, a centroid or a band.
 | constructed | Fricke1995 | 15 | 5.768074579 | 21.785166107 | 226.393549716 | 4.261043461 | 81 | 205 |
 | constructed | Saito2025 | 4 | 2.291449225 | 3.674373952..11.578507733 | 19.343739650 | 0.902820734 | 46 | 108 |
 
+As part of this retrospective analysis, and qualifying no accuracy, the margins over the 26 isotopes of `centroid_margins.csv` run from 1.500792547 keV to 226.393549716 keV, and the patched cascade's largest absolute residual is 4.261043461 keV, for Tl-205, where the unpatched cascade's reaches 227.374463435 keV, for Pb-208.
+Moving the value anywhere within its band changes a margin by at most twice the tolerance, and moving the shell difference by `dnum_keV` changes it by at most the size of that shift; with the tolerance taken at its largest over every correlation, the margin exceeds the sum of both on 26 of the 27 rows, and not on the row for Pd-110.
+
 ## 6. Findings
 
 - The rows outside tolerance are this comparison's registered disagreements; none is fitted away.
@@ -335,6 +339,10 @@ orbit and to nuclear capture, is the sum of the energies it emitted, and so move
 K energy.
 With the opt-in off, the cascade and K-energy harvests of Geant4 v11.4.2 and v11.5.0.beta are
 bit-identical to those of unpatched builds.
+
+By what they represent, the tables suit these uses: the muonic K binding energy, the energy a patched cascade emits between a pair of shells where a detector does not separate the lines that energy stands for, and the energy the cascade deposits; section 5 sets the energy the cascade receives beside measured energies.
+They do not suit a spectrum that separates those lines, or the intensities of lines, because the cascade emits a single energy per shell pair and keeps its branching unchanged.
+For separated lines, `mudirac_lines.csv` carries the line energies MuDirac printed (section 2).
 
 ## 8. Licensing
 

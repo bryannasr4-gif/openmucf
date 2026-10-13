@@ -294,6 +294,7 @@ PROJECT_AUTHORED = (
     "data/g4/d2/selector_bindings.csv",
     "data/g4/d2/selector_call_sites.csv",
     "data/g4/d2/selector_harvest.csv",
+    "data/g4/d2/selector_summary.csv",
     "data/g4/d3/centroid_margins.csv",
     "data/g4/d3/components.jsonl",
     "data/g4/d3/d3_kshell.mudirac130.g4dat",

@@ -102,12 +102,12 @@ Mausner1975-Result text-4-1,Mausner1975,d2-selector-chlorides,false,population u
 Mausner1975-Result text-4-2,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Na/Cl),11,17,0.73,0.04,0.9803921568627451,,xray,false,population unstated,,outside
 Mausner1975-Result text-4-3,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Ca/S),20,16,1.57,0.04,1.25,,xray,false,population unstated,,outside
 Mausner1975-Result text-4-4,Mausner1975,d2-selector-other-compounds,false,population unstated,terminal,unstated,A(Ca/S),20,16,1.83,0.06,1.25,,xray,false,population unstated,,outside
-Yoshida2016-Table 1-116-3,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.593,(49),1.3392857142857142,,xray,false,population transfer_only,,outside
-Yoshida2016-Table 1-116-4,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.649,(32),1.3392857142857142,,xray,false,population transfer_only,,outside
-Yoshida2016-Table 1-116-5,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.621,(29),1.3392857142857142,,xray,false,population transfer_only,,outside
-Yoshida2016-Table 1-116-6,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.632,(51),1.3392857142857142,,xray,false,population transfer_only,,outside
-Yoshida2016-Table 1-116-7,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.656,(36),1.3392857142857142,,xray,false,population transfer_only,,outside
-Yoshida2016-Table 1-116-8,Yoshida2016,d2-selector-powder-mixtures,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.644,(31),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-3,Yoshida2016,d2-selector-gases,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.593,(49),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-4,Yoshida2016,d2-selector-gases,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.649,(32),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-5,Yoshida2016,d2-selector-gases,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.621,(29),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-6,Yoshida2016,d2-selector-gases,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.632,(51),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-7,Yoshida2016,d2-selector-gases,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.656,(36),1.3392857142857142,,xray,false,population transfer_only,,outside
+Yoshida2016-Table 1-116-8,Yoshida2016,d2-selector-gases,false,population transfer_only,terminal,transfer_only,A(C/O),6,8,0.644,(31),1.3392857142857142,,xray,false,population transfer_only,,outside
 Inagaki2021-Table 2-322-3,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.829,0.004,,,xray,false,not a per-atom ratio,,
 Inagaki2021-Table 2-322-4,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.667,0.009,,,xray,false,not a per-atom ratio,,
 Inagaki2021-Table 2-322-5,Inagaki2021,d2-selector-powder-mixtures,false,not a per-atom ratio,terminal,unstated,other,,,0.302,0.007,,,xray,false,not a per-atom ratio,,

@@ -39,6 +39,7 @@ import re
 import subprocess
 import sys
 
+import test_g4d2 as d2
 import test_g4d3 as d3
 import test_g4natural as natural
 import test_g4parity as parity
@@ -210,6 +211,12 @@ def pin_table() -> list[Pin]:
     table.extend(paper_pins(pins, check_f3))
     # The D3 document's pins, as its own test module builds them.
     for what, path, pattern, groups, expected in d3.document_pins():
+        table.append(Pin(what, path, pattern, groups, expected))
+    # The D2 document's pins on the rows the method-aware rule gates, as its own test module builds them.
+    for what, path, pattern, groups, expected in d2.document_pins():
+        table.append(Pin(what, path, pattern, groups, expected))
+    # F-8's pins, as the parity tests build them.
+    for what, path, pattern, groups, expected in parity.aluminium_pins():
         table.append(Pin(what, path, pattern, groups, expected))
     # The natural-target section's pins, as its own test module builds them with this file's tokenizer.
     for what, path, pattern, groups, expected in natural.document_pins(NUMERIC):
