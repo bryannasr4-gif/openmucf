@@ -4378,6 +4378,28 @@ def test_f8_the_aluminium_record_is_the_weighted_mean_of_a_pair_printing_one_mea
     assert aluminium_problems(finding.own, finding.other, (str(decimal.Decimal(value) + step), unc), later)
     moved = dataclasses.replace(later, rate=value)
     assert aluminium_problems(finding.own, finding.other, finding.record, moved)
+    # Isolated drills, one per condition, each built from the committed rates, uncertainties and their
+    # separations and each failing that condition alone: the record's uncertainty moved by one unit in its
+    # last printed digit while its value stays the weighted mean; the later value carried past the authors'
+    # own value, away from the record, by its uncertainty plus their separation; and the later value kept
+    # where it is with an uncertainty the sum of its separations from the record and from the authors' value.
+    unc_step = decimal.Decimal(1).scaleb(decimal.Decimal(unc).as_tuple().exponent)
+    wider_record = (value, str(decimal.Decimal(unc) + unc_step))
+    problems = aluminium_problems(finding.own, finding.other, wider_record, later)
+    assert len(problems) == 1 and problems[0].startswith("the pair's weighted mean"), problems
+    own_rate, record_value = suzuki1987.scaled(finding.own, "rate"), decimal.Decimal(value)
+    later_rate, later_unc = decimal.Decimal(later.rate), decimal.Decimal(later.rate_unc)
+    assert later_rate != own_rate and own_rate != record_value
+    beyond = own_rate + (later_unc + abs(later_rate - own_rate)).copy_sign(own_rate - record_value)
+    assert abs(beyond - own_rate) > later_unc and abs(beyond - record_value) > later_unc
+    assert aluminium_problems(finding.own, finding.other, finding.record,
+                              dataclasses.replace(later, rate=str(beyond))) == [
+        "the mizuno2025 value is not within its uncertainty of the authors' own value"]
+    wide = abs(later_rate - record_value) + abs(later_rate - own_rate)
+    assert abs(later_rate - own_rate) < wide and abs(later_rate - record_value) < wide
+    assert aluminium_problems(finding.own, finding.other, finding.record,
+                              dataclasses.replace(later, rate_unc=str(wide))) == [
+        "the mizuno2025 value is within its uncertainty of the record"]
 
 
 def aluminium_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
