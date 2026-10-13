@@ -632,6 +632,24 @@ def test_d2_summary_regenerates_from_the_comparison_and_the_measurement_rows() -
     assert _summary_bytes(rows) == (DATA / "selector_summary.csv").read_bytes()
 
 
+def _second_count(rows: list[dict[str, str]], measured: dict[str, dict[str, str]]) -> dict[str, int]:
+    """The summary's counts over `rows` by a second computation, in floating point."""
+    measured_ratio = [float(row["value_src"]) for row in rows]
+    selector = [float(row["value_g4"]) for row in rows]
+    z_ratio = [int(row["z1"]) / int(row["z2"]) for row in rows]
+    return {
+        "rows": len(rows),
+        "to_oxygen": sum(row["z2"] == "8" and int(row["z1"]) not in (8, *d2.HALOGENS) for row in rows),
+        "hydrogenous": sum("H" in re.findall(r"[A-Z][a-z]?", measured[record]["material_formula"])
+                           for record in (row["record_id"] for row in rows)),
+        "selector_above": sum(s > m for s, m in zip(selector, measured_ratio, strict=True)),
+        "z_ratio_closer": sum(abs(z - m) < abs(s - m)
+                              for z, s, m in zip(z_ratio, selector, measured_ratio, strict=True)),
+        "z_ratio_above": sum(z > m for z, m in zip(z_ratio, measured_ratio, strict=True)),
+        "selector_above_z_ratio": sum(s > z for s, z in zip(selector, z_ratio, strict=True)),
+    }
+
+
 def test_d2_summary_counts_what_its_columns_name_by_a_second_computation() -> None:
     measured = {row["record_id"]: row for row in _reference("measurements.csv")}
     gated = [row for row in _csv("selector_vs_primary.csv") if row["method_gated"] == "true"]
@@ -641,25 +659,33 @@ def test_d2_summary_counts_what_its_columns_name_by_a_second_computation() -> No
         rows = [row for row in gated if scope in ("method_gated", row["class"])]
         measured_ratio = [float(row["value_src"]) for row in rows]
         selector = [float(row["value_g4"]) for row in rows]
-        z_ratio = [int(row["z1"]) / int(row["z2"]) for row in rows]
         quotients = sorted(s / m for s, m in zip(selector, measured_ratio, strict=True))
         middle = len(quotients) // 2
         median = quotients[middle] if len(quotients) % 2 else (quotients[middle - 1] + quotients[middle]) / 2
         for column, value in (("ratio_min", quotients[0]), ("ratio_median", median),
                               ("ratio_max", quotients[-1])):
             assert abs(float(line[column]) - value) <= 0.005 + 1e-12, (scope, column)
-        expected = {
-            "rows": len(rows),
-            "to_oxygen": sum(row["z2"] == "8" and int(row["z1"]) not in (8, *d2.HALOGENS) for row in rows),
-            "hydrogenous": sum("H" in re.findall(r"[A-Z][a-z]?", measured[record]["material_formula"])
-                               for record in (row["record_id"] for row in rows)),
-            "selector_above": sum(s > m for s, m in zip(selector, measured_ratio, strict=True)),
-            "z_ratio_closer": sum(abs(z - m) < abs(s - m)
-                                  for z, s, m in zip(z_ratio, selector, measured_ratio, strict=True)),
-            "z_ratio_above": sum(z > m for z, m in zip(z_ratio, measured_ratio, strict=True)),
-            "selector_above_z_ratio": sum(s > z for s, z in zip(selector, z_ratio, strict=True)),
-        }
+        expected = _second_count(rows, measured)
         assert {key: int(line[key]) for key in expected} == expected, scope
+
+
+def test_d2_summary_counts_an_input_at_each_strict_edge_as_neither_above_nor_closer() -> None:
+    # One gated row exactly at the edge of each strict comparison the summary counts, and one a step past it;
+    # the values are exact in binary, so both computations meet the same edge.
+    cases = {  # column: (value_src, value_g4, z1, z2) at the edge, then past it
+        "selector_above": (("0.5", "0.5", 1, 4), ("0.5", "0.75", 1, 4)),
+        "z_ratio_above": (("0.5", "1.25", 1, 2), ("0.375", "1.25", 1, 2)),
+        "selector_above_z_ratio": (("1.25", "0.5", 1, 2), ("1.25", "0.75", 1, 2)),
+        "z_ratio_closer": (("0.75", "1.0", 1, 2), ("0.75", "1.25", 1, 2)),
+    }
+    measured = {"w": {"record_id": "w", "material_formula": "CO"}}
+    for column, (edge, past) in cases.items():
+        for (value_src, value_g4, z1, z2), expected in ((edge, 0), (past, 1)):
+            row = {"record_id": "w", "method_gated": "true", "class": "w", "value_src": value_src,
+                   "value_g4": value_g4, "z1": str(z1), "z2": str(z2)}
+            (line, _) = d2.summarize([row], list(measured.values()))
+            assert int(line[column]) == expected, (column, value_src, value_g4, "summarize")
+            assert _second_count([row], measured)[column] == expected, (column, value_src, value_g4, "second")
 
 
 def test_d2_the_document_s_words_about_the_gated_rows_hold() -> None:
