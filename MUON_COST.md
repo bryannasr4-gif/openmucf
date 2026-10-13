@@ -74,6 +74,8 @@ listed for scale only. `evidence_status` grades each number: `primary` / `primar
 `derived_here` are sourced; `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
 figure composing one of those is reported as a **bound, never a value**.
 
+**What a row counts, and which machine it prices.** `count_basis` records what one unit of a row's count is. Kelly, Hart & Rose (2021), Kelly / eta_acc minimal-subsystem and Kelly / eta_acc site-wide count negative pions created (`pi_minus_created`), each of which Kelly, Hart & Rose count as a negative muon; Acceleron (2025 deck) counts negative pions and muons leaving the target together (`pi_minus_or_mu_minus_exiting`); the other pinned rows count muons (`muon`). Kelly, Hart & Rose's muons are born in the decay of the negative pions they count, and a pion can be lost to nuclear capture or interaction before it decays, so a cost per pion created is a lower bound on the cost per muon produced and the count basis reverses no bound. It does decide what may be composed: a stage factor is a fraction of one count, and applying a fraction of pions to a cost per muon would count the pion's decay twice, so `ChainEdge.apply_to` refuses it.
+
 Three factors are deliberately kept in their own flagged columns rather than folded into any row's
 value: the **accelerator efficiency** `eta_acc` (Kelly's 0.18) -- applying it produces a
 *separate row in a different numeraire*, never a silent edit to the beam-kinetic one, so both readings
@@ -85,15 +87,15 @@ figure in this document**. T3 facility rows report no cost of this kind themselv
 an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field (verbatim in the CSV).
 
 ## Tier 1 -- purpose-built muon-source design studies
-| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |
-|---|---|---|---|---|---|---|---|
-| Kelly, Hart & Rose (2021) | 4.70 GeV/muon | 4.70 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Bertin et al. (1987) | 7.8 +- 1.8 GeV (n-beam 3.5 GeV/c, rho_0) | 7.80 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Eliezer & Henis (1994) | ~5 GeV (~5000 MeV) per muon | 5.0 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Jandel (1989) | (not pinned) | -- (not pinned) | -- | -- | -- | absent | **yes** |
-| Acceleron (2025 deck) | 3.0 GeV per pi-/muon exiting target | 3.0 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Kelly / eta_acc minimal-subsystem | not published as such (derived here from 4.70 GeV/muon and eta_acc=0.18) | 26.11 | electrical_minimal | produced (lower bound) | mu_minus | derived_here | no |
-| Kelly / eta_acc site-wide | not published as such (derived here from 4.70 GeV/muon and eta_acc(site)=0.104) | 45.19 | electrical_site | produced (lower bound) | mu_minus | derived_here | no |
+| source | value as published | GeV/muon | numeraire | stage | charge | count | evidence | nv |
+|---|---|---|---|---|---|---|---|---|
+| Kelly, Hart & Rose (2021) | 4.70 GeV/muon | 4.70 | beam_kinetic | produced (lower bound) | mu_minus | pi_minus_created | primary | no |
+| Bertin et al. (1987) | 7.8 +- 1.8 GeV (n-beam 3.5 GeV/c, rho_0) | 7.80 | beam_kinetic | produced (lower bound) | mu_minus | muon | primary | no |
+| Eliezer & Henis (1994) | ~5 GeV (~5000 MeV) per muon | 5.0 | beam_kinetic | produced (lower bound) | mu_minus | muon | primary | no |
+| Jandel (1989) | (not pinned) | -- (not pinned) | -- | -- | -- | -- | absent | **yes** |
+| Acceleron (2025 deck) | 3.0 GeV per pi-/muon exiting target | 3.0 | beam_kinetic | produced (lower bound) | mu_minus | pi_minus_or_mu_minus_exiting | primary | no |
+| Kelly / eta_acc minimal-subsystem | not published as such (derived here from 4.70 GeV/muon and eta_acc=0.18) | 26.11 | electrical_minimal | produced (lower bound) | mu_minus | pi_minus_created | derived_here | no |
+| Kelly / eta_acc site-wide | not published as such (derived here from 4.70 GeV/muon and eta_acc(site)=0.104) | 45.19 | electrical_site | produced (lower bound) | mu_minus | pi_minus_created | derived_here | no |
 
 > **AMENDMENT (2026-08-29) -- the Bertin et al. (1987) row is re-typed to stage
 > `produced`, and no published number moves.** That row carried the deprecated alias
@@ -124,21 +126,21 @@ an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field
 > only bounds it from below.
 
 ## Tier 2 -- demonstrated technology
-| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |
-|---|---|---|---|---|---|---|---|
-| muon-collider front end | 0.045 mu/proton (post-cooling); 0.8 mu/proton (at capture) | 178 | beam_kinetic | transported (lower bound) | mu_minus | derived_here | no |
+| source | value as published | GeV/muon | numeraire | stage | charge | count | evidence | nv |
+|---|---|---|---|---|---|---|---|---|
+| muon-collider front end | 0.045 mu/proton (post-cooling); 0.8 mu/proton (at capture) | 178 | beam_kinetic | transported (lower bound) | mu_minus | muon | derived_here | no |
 
 ## Tier 3 -- operating facilities (GeV/muon derived here, at each row's own stage)
 Each GeV/muon below is *implied, derived here* from public beam-power / muon-rate numbers (the full
 arithmetic is in the CSV `derivation` column); no facility reports this quantity. PSI HIMB is mu+-ONLY
 (surface muons) and thus irrelevant to muCF, which needs mu- -- listed for scale only.
 
-| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |
-|---|---|---|---|---|---|---|---|
-| mu2e (Fermilab) | 8 kW @ 8 GeV; ~1e10 stopped mu/s | 4993 | beam_kinetic | stopped_other_target (off-chain) | mu_minus | derived_here | no |
-| COMET (J-PARC) | 0.0035 mu/proton; 56 kW @ 8 GeV | 2286 | beam_kinetic | stopped_other_target (off-chain) | mu_minus | derived_here | no |
-| MuSIC (RCNP) | (10.4 +- 2.7)e5 mu/W (mu+ and mu-) | 6002 | beam_kinetic | transported (lower bound) | mixed | derived_here | no |
-| PSI HIMB | 1.42 MW; 1e10 mu+/s (mu+-only) | 890000 | beam_kinetic | transported (lower bound) | mu_plus_only (not muCF) | derived_here | no |
+| source | value as published | GeV/muon | numeraire | stage | charge | count | evidence | nv |
+|---|---|---|---|---|---|---|---|---|
+| mu2e (Fermilab) | 8 kW @ 8 GeV; ~1e10 stopped mu/s | 4993 | beam_kinetic | stopped_other_target (off-chain) | mu_minus | muon | derived_here | no |
+| COMET (J-PARC) | 0.0035 mu/proton; 56 kW @ 8 GeV | 2286 | beam_kinetic | stopped_other_target (off-chain) | mu_minus | muon | derived_here | no |
+| MuSIC (RCNP) | (10.4 +- 2.7)e5 mu/W (mu+ and mu-) | 6002 | beam_kinetic | transported (lower bound) | mixed | muon | derived_here | no |
+| PSI HIMB | 1.42 MW; 1e10 mu+/s (mu+-only) | 890000 | beam_kinetic | transported (lower bound) | mu_plus_only (not muCF) | muon | derived_here | no |
 
 ## The tier spread: an order-of-magnitude, mixed-basis observation
 ![muon-cost tier spread](figures/muon_cost_gap.png)
@@ -293,16 +295,16 @@ carries `absent` and **no number**: 4 of the 8 edges
 are that kind, and filling one of those cells with a plausible factor is the failure this table
 exists to prevent.
 
-| edge | conversion | factor | evidence | bias | source |
-|---|---|---|---|---|---|
-| `eta_acc_kelly_psi_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.18 | primary_cited | none | KellyHartRose2021 |
-| `eta_acc_kovach_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.183 | primary | none | Kovach2017 |
-| `eta_acc_kovach_site` | `beam_kinetic` -> `electrical_site` (at any stage) | 0.104 | primary | none | Kovach2017 |
-| `delivery_kelly_eta_mu` | `produced` -> `stopped_useful_in_dt` (in any numeraire) | 0.5 | author_declared_arbitrary | unknown | KellyHartRose2021 |
-| `produced_to_captured_absent` | `produced` -> `captured` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
-| `captured_to_transported_absent` | `captured` -> `transported` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
-| `transported_to_moderated_absent` | `transported` -> `moderated` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
-| `moderated_to_stopped_useful_absent` | `moderated` -> `stopped_useful_in_dt` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
+| edge | conversion | factor | evidence | bias | count | source |
+|---|---|---|---|---|---|---|
+| `eta_acc_kelly_psi_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.18 | primary_cited | none | `*` | KellyHartRose2021 |
+| `eta_acc_kovach_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.183 | primary | none | `*` | Kovach2017 |
+| `eta_acc_kovach_site` | `beam_kinetic` -> `electrical_site` (at any stage) | 0.104 | primary | none | `*` | Kovach2017 |
+| `delivery_kelly_eta_mu` | `produced` -> `stopped_useful_in_dt` (in any numeraire) | 0.5 | author_declared_arbitrary | unknown | `pi_minus_created` | KellyHartRose2021 |
+| `produced_to_captured_absent` | `produced` -> `captured` (in any numeraire) | -- (no number) | absent | lower | `*` | Jones1987Erice, KellyHartRose2021 |
+| `captured_to_transported_absent` | `captured` -> `transported` (in any numeraire) | -- (no number) | absent | lower | `*` | Jones1987Erice, KellyHartRose2021 |
+| `transported_to_moderated_absent` | `transported` -> `moderated` (in any numeraire) | -- (no number) | absent | lower | `*` | Jones1987Erice, KellyHartRose2021 |
+| `moderated_to_stopped_useful_absent` | `moderated` -> `stopped_useful_in_dt` (in any numeraire) | -- (no number) | absent | lower | `*` | Jones1987Erice, KellyHartRose2021 |
 
 ### Which conversions are actually sourced
 | conversion | kind | edges that cover it | any sourced? |

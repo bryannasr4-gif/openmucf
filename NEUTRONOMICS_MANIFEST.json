@@ -116,7 +116,7 @@
   "generated_by": "scripts/generate_neutronomics.py",
   "inputs": {
     "gev_to_j": "1.602176634e-10",
-    "muon_cost_csv_sha256": "a5c4959d7df4bbefdd07c87dadd3a35b876b77f427e72bb0afc3803d9985a5e8",
+    "muon_cost_csv_sha256": "49260050d03e1866ad6a1e74e0edc61ae8844e27c2b52ce89a80027e39a19a83",
     "xmu_obs": "113"
   }
 }

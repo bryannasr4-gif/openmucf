@@ -148,6 +148,16 @@
       ],
       "description": "Which muon charge the figure counts. muCF needs mu-; 'mixed' counts mu+ and mu- together (so the mu--only cost is higher by a factor this ledger does not source) and 'mu_plus_only' is irrelevant to muCF and must never enter a muCF cost aggregate -- any statistic this ledger forms over rows: a tier median, a spread, a ratio, or the edge of a prior box drawn over a tier. That is a different bar from the stage rule above: an aggregate is a statistic over a tier's rows and may contain a row that is not itself a point on the muCF chain. Empty only on an unpinned nv row."
     },
+    "count_basis": {
+      "type": "string",
+      "enum": [
+        "pi_minus_created",
+        "pi_minus_or_mu_minus_exiting",
+        "muon",
+        ""
+      ],
+      "description": "What one unit of the row's count is. 'pi_minus_created' = a negative pion created, which the source counts as a negative muon; 'pi_minus_or_mu_minus_exiting' = a negative pion or muon leaving the production target, counted together; 'muon' = a muon of the row's charge_basis. A stage edge names the count its factor is a fraction of, and composition refuses a figure on another count. Empty only on an unpinned needs_verification row."
+    },
     "derivation": {
       "type": "string",
       "description": "Every OURS-normalization step VERBATIM: 'implied, derived here: <formula with numbers>' for facility/derived rows; 'as-published; no OURS-normalization' where the row is copied straight from the source."

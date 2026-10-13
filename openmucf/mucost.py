@@ -78,6 +78,8 @@ TIER_ORDER = ("T1-design-study", "T2-demonstrated-tech", "T3-operating-facility"
 # somewhere that is not D-T fuel. Values on different classes are not commensurable.
 VALID_BASIS_CLASS = {"produced", "collected", "stopped_in_dt", "stopped_other_target", ""}
 VALID_CHARGE_BASIS = {"mu_minus", "mixed", "mu_plus_only", ""}
+#: What one unit of a row's count is (``count_basis``); empty only on an unpinned row.
+VALID_COUNT_BASIS = {"pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon", ""}
 # Classes whose figure understates the true per-stopped-in-D-T cost (collection/stopping fractions < 1).
 LOWER_BOUND_CLASSES = frozenset({"produced", "collected"})
 
@@ -143,6 +145,7 @@ class ChainValue:
     charge_basis: str
     statuses: tuple[str, ...]
     provenance: tuple[str, ...]
+    count_basis: str = ""
 
     @property
     def missing_stages(self) -> tuple[str, ...]:
@@ -256,6 +259,7 @@ class ChainValue:
             charge_basis=self.charge_basis,
             statuses=self.statuses + (status,),
             provenance=self.provenance + (label,),
+            count_basis="muon",
         )
 
     def to_numeraire(self, factor: float, to_numeraire: str, status: str, label: str) -> ChainValue:
@@ -295,6 +299,7 @@ class ChainValue:
             charge_basis=self.charge_basis,
             statuses=self.statuses + (status,),
             provenance=self.provenance + (label,),
+            count_basis=self.count_basis,
         )
 
 
@@ -326,6 +331,7 @@ class MuonCost:
     source_locator: str
     needs_verification: bool
     notes: str
+    count_basis: str = ""
 
     @property
     def has_normalized(self) -> bool:
@@ -414,6 +420,7 @@ class MuonCost:
             charge_basis=self.charge_basis,
             statuses=statuses,
             provenance=provenance,
+            count_basis=self.count_basis,
         )
 
 
@@ -861,6 +868,7 @@ def load_muon_cost(
                 )
             basis_class = (row.get("basis_class") or "").strip()
             charge_basis = (row.get("charge_basis") or "").strip()
+            count_basis = (row.get("count_basis") or "").strip()
             numeraire = (row.get("numeraire") or "").strip()
             stage = (row.get("stage") or "").strip()
             evidence_status = (row.get("evidence_status") or "").strip()
@@ -939,6 +947,16 @@ def load_muon_cost(
                     f"row {i} ({sid}): a pinned normalized value requires both basis_class and "
                     f"charge_basis (empty is allowed only on an unpinned needs_verification row)"
                 )
+            if count_basis not in VALID_COUNT_BASIS:
+                errors.append(
+                    f"row {i} ({sid}): bad count_basis '{count_basis}' "
+                    f"(expected {sorted(VALID_COUNT_BASIS - {''})})"
+                )
+            if has_norm and not count_basis:
+                errors.append(
+                    f"row {i} ({sid}): a pinned value requires a count_basis (empty is allowed "
+                    f"only on an unpinned needs_verification row)"
+                )
             if check_refs and known_keys is not None:
                 for key in re.split(r"[;,]", row.get("source_bibkey") or ""):
                     key = key.strip()
@@ -972,6 +990,7 @@ def load_muon_cost(
                     source_locator=(row.get("source_locator") or "").strip(),
                     needs_verification=nv,
                     notes=(row.get("notes") or "").strip(),
+                    count_basis=count_basis,
                 )
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"row {i} ({sid}): parse error {exc}")
@@ -1009,6 +1028,8 @@ ANY = "*"
 VALID_EDGE_STAGE = set(MUCF_CHAIN) | {ANY}
 VALID_EDGE_NUMERAIRE = (VALID_NUMERAIRE - {""}) | {ANY}
 VALID_EDGE_CHARGE_BASIS = (VALID_CHARGE_BASIS - {""}) | {ANY}
+#: The count a stage edge's factor is a fraction of; ``*`` on a numeraire edge (it counts no particles).
+VALID_EDGE_COUNT_BASIS = (VALID_COUNT_BASIS - {""}) | {ANY}
 
 #: How an edge can move a composed cost away from the truth. ``none`` iff its factor is sourced;
 #: ``lower`` where using the row as written can only understate the cost; ``unknown`` where the
@@ -1052,6 +1073,7 @@ class ChainEdge:
     source_locator: str
     derivation: str
     notes: str
+    count_basis: str = ANY
 
     @property
     def kind(self) -> str:
@@ -1106,6 +1128,16 @@ class ChainEdge:
                 f"edge {self.edge_id!r} does not join here: it starts at "
                 f"({self.from_stage}, {self.from_numeraire}) and the figure sits at "
                 f"({value.stage}, {value.numeraire})"
+            )
+        if (
+            self.kind == STAGE_EDGE
+            and self.count_basis != ANY
+            and self.count_basis != value.count_basis
+        ):
+            raise BasisError(
+                f"edge {self.edge_id!r} is a fraction of {self.count_basis!r} and the figure counts "
+                f"{value.count_basis or 'nothing stated'!r}: a count basis mismatch -- a fraction of "
+                f"pions applied to a cost per muon would count the pion's decay twice"
             )
         if self.kind == NUMERAIRE_EDGE:
             return value.to_numeraire(
@@ -1419,6 +1451,22 @@ def load_muon_cost_chain(
                         f"'{status}' -- a sourced factor biases nothing and an unsourced one always "
                         f"biases somehow"
                     )
+            count = (row.get("count_basis") or "").strip()
+            if count not in VALID_EDGE_COUNT_BASIS:
+                errors.append(
+                    f"row {i} ({eid}): bad count_basis '{count}' "
+                    f"(expected {sorted(VALID_EDGE_COUNT_BASIS)})"
+                )
+            elif moves_stage and has_factor and count == ANY:
+                errors.append(
+                    f"row {i} ({eid}): a stage edge with a factor must name the count it is a "
+                    f"fraction of (got '*')"
+                )
+            elif not moves_stage and moves_num and count != ANY:
+                errors.append(
+                    f"row {i} ({eid}): a numeraire edge counts no particles, so its count_basis "
+                    f"must be '*' (got '{count}')"
+                )
             charge = (row.get("charge_basis") or "").strip()
             if charge not in VALID_EDGE_CHARGE_BASIS:
                 errors.append(
@@ -1455,6 +1503,7 @@ def load_muon_cost_chain(
                     source_locator=locator,
                     derivation=(row.get("derivation") or "").strip(),
                     notes=(row.get("notes") or "").strip(),
+                    count_basis=count,
                 )
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"row {i} ({eid}): parse error {exc}")

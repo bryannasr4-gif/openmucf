@@ -294,6 +294,27 @@ def build_headline(
     # same reason eta_mu is: typing it would let the CSV move while the document kept asserting the
     # old basis, and both the document and the manifest would stay self-consistent while both were stale.
     H["charge_music"] = table["music"].charge_basis
+    # What each pinned row counts, read off the ledger like charge_basis above. The "other pinned rows
+    # count muons" clause is a claim about the rows not named, so it is checked before it is printed.
+    pinned = [r for r in table if r.has_normalized]
+    pi_rows = [LABELS[r.source_id] for r in pinned if r.count_basis == "pi_minus_created"]
+    exit_rows = [LABELS[r.source_id] for r in pinned if r.count_basis == "pi_minus_or_mu_minus_exiting"]
+    other = {r.count_basis for r in pinned} - {"pi_minus_created", "pi_minus_or_mu_minus_exiting"}
+    if not pi_rows or not exit_rows or other != {"muon"}:
+        raise ValueError(f"the count-basis paragraph does not describe these rows (other counts: {other})")
+    H["count_para"] = (
+        "**What a row counts, and which machine it prices.** `count_basis` records what one unit of a "
+        f"row's count is. {_join(pi_rows)} count negative pions created (`pi_minus_created`), each of "
+        f"which Kelly, Hart & Rose count as a negative muon; {_join(exit_rows)} "
+        f"{'counts' if len(exit_rows) == 1 else 'count'} negative pions and muons leaving the target "
+        "together (`pi_minus_or_mu_minus_exiting`); the other pinned rows count muons (`muon`). "
+        "Kelly, Hart & Rose's muons are born in the decay of the negative pions they count, and a "
+        "pion can be lost to nuclear capture or interaction before it decays, so a cost per pion "
+        "created is a lower bound on the cost per muon produced and the count basis reverses no "
+        "bound. It does decide what may be composed: a stage factor is a fraction of one count, and "
+        "applying a fraction of pions to a cost per muon would count the pion's decay twice, so "
+        "`ChainEdge.apply_to` refuses it."
+    )
     H["charge_psi_himb"] = table["psi_himb"].charge_basis
 
     # ---- the Kou-Chen cycle-closure comparison (all derived, nothing transcribed) ----
@@ -703,8 +724,8 @@ def blocked_extensions(chain: mucost.ChainEdgeTable) -> list:
 
 def _edge_table(chain: mucost.ChainEdgeTable) -> str:
     head = (
-        "| edge | conversion | factor | evidence | bias | source |\n"
-        "|---|---|---|---|---|---|\n"
+        "| edge | conversion | factor | evidence | bias | count | source |\n"
+        "|---|---|---|---|---|---|---|\n"
     )
     lines = []
     for e in chain:
@@ -716,7 +737,7 @@ def _edge_table(chain: mucost.ChainEdgeTable) -> str:
         source = e.source_bibkey.replace(";", ", ") if e.source_bibkey else "--"
         lines.append(
             f"| `{e.edge_id}` | {conv} | {factor} | {e.evidence_status} | {e.bias_direction} | "
-            f"{source} |"
+            f"`{e.count_basis}` | {source} |"
         )
     return head + "\n".join(lines)
 
@@ -747,8 +768,8 @@ def _sourced_path_table(paths: list) -> str:
 
 def _tier_table(table: mucost.MuonCostTable, tier: str, H: dict[str, str]) -> str:
     head = (
-        "| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |\n"
-        "|---|---|---|---|---|---|---|---|\n"
+        "| source | value as published | GeV/muon | numeraire | stage | charge | count | evidence | nv |\n"
+        "|---|---|---|---|---|---|---|---|---|\n"
     )
     rows = []
     for r in table.tier(tier):
@@ -768,7 +789,7 @@ def _tier_table(table: mucost.MuonCostTable, tier: str, H: dict[str, str]) -> st
             st += " (off-chain)"
         rows.append(
             f"| {LABELS[r.source_id]} | {r.value_as_published} | {norm} | {num} | {st} | {ch} | "
-            f"{r.evidence_status} | {nv} |"
+            f"{r.count_basis or '--'} | {r.evidence_status} | {nv} |"
         )
     return head + "\n".join(rows)
 
@@ -874,6 +895,8 @@ factor this ledger does not source) and PSI HIMB is `{H['charge_psi_himb']}` -- 
 listed for scale only. `evidence_status` grades each number: `primary` / `primary_cited` /
 `derived_here` are sourced; `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
 figure composing one of those is reported as a **bound, never a value**.
+
+{H['count_para']}
 
 Three factors are deliberately kept in their own flagged columns rather than folded into any row's
 value: the **accelerator efficiency** `eta_acc` (Kelly's {H['kelly_eta_acc']}) -- applying it produces a

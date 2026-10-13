@@ -11,6 +11,7 @@
     "to_numeraire",
     "bias_direction",
     "charge_basis",
+    "count_basis",
     "evidence_status",
     "derivation"
   ],
@@ -67,6 +68,11 @@
       "type": "string",
       "enum": ["mu_minus", "mixed", "mu_plus_only", "*"],
       "description": "Which muon charge the factor was stated for; '*' where the conversion is charge-agnostic, as an accelerator's grid-to-beam efficiency is. A muCF chain needs mu-, so composition admits only 'mu_minus' and '*' and refuses the other two."
+    },
+    "count_basis": {
+      "type": "string",
+      "enum": ["pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon", "*"],
+      "description": "The count a stage edge's factor is a fraction of, on muon_cost.csv's vocabulary; '*' on a numeraire edge, whose efficiency counts no particles, and on an absent edge, which states no factor. Composition refuses a figure counted otherwise: a fraction of pions applied to a cost per muon would count the pion's decay twice. A stage edge yields a cost per muon."
     },
     "conditions": {
       "type": "string",

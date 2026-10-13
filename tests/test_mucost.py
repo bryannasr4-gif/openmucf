@@ -127,7 +127,7 @@ def test_the_schema_required_columns_are_pinned_and_enforced(tmp_path):
         basis_as_published="b", derivation="d", source_bibkey="Bertin1987",
         needs_verification="false", evidence_status="primary",
         recapture_credit_applied="false", normalized_GeV_per_mu="5.0", numeraire="beam_kinetic",
-        stage="produced", basis_class="produced", charge_basis="mu_minus",
+        stage="produced", basis_class="produced", charge_basis="mu_minus", count_basis="muon",
     )
 
     def _write(row, name):
@@ -1296,7 +1296,7 @@ def test_the_float_wallplug_path_cannot_disagree_with_the_typed_conversion(table
 
 CHAIN_COLUMNS = [
     "edge_id", "from_stage", "from_numeraire", "to_stage", "to_numeraire",
-    "factor", "factor_lo", "factor_hi", "bias_direction", "charge_basis",
+    "factor", "factor_lo", "factor_hi", "bias_direction", "charge_basis", "count_basis",
     "conditions", "evidence_status", "source_bibkey", "source_locator", "derivation", "notes",
 ]
 
@@ -1305,7 +1305,7 @@ CHAIN_CONTROL = {
     "edge_id": "control_edge", "from_stage": "*", "from_numeraire": "beam_kinetic",
     "to_stage": "*", "to_numeraire": "electrical_minimal",
     "factor": "0.5", "factor_lo": "", "factor_hi": "",
-    "bias_direction": "none", "charge_basis": "*", "conditions": "synthetic",
+    "bias_direction": "none", "charge_basis": "*", "count_basis": "*", "conditions": "synthetic",
     "evidence_status": "primary", "source_bibkey": "Kovach2017",
     "source_locator": "synthetic fixture, not a reading of the source",
     "derivation": "synthetic fixture", "notes": "",
@@ -1396,7 +1396,7 @@ def test_the_chain_schema_required_columns_are_pinned_and_enforced(tmp_path):
     required = set(schema["required"])
     assert required == {
         "edge_id", "from_stage", "from_numeraire", "to_stage", "to_numeraire",
-        "bias_direction", "charge_basis", "evidence_status", "derivation",
+        "bias_direction", "charge_basis", "count_basis", "evidence_status", "derivation",
     }
     assert required <= set(schema["properties"])
     assert set(schema["properties"]) == set(CHAIN_COLUMNS)
@@ -1565,12 +1565,12 @@ def test_an_unsourced_path_is_a_bound_and_a_fully_sourced_synthetic_one_is_not(t
         dict(CHAIN_CONTROL, edge_id="syn_numeraire", factor="0.20"),
         dict(CHAIN_CONTROL, edge_id="syn_delivery", from_stage="produced",
              to_stage="stopped_useful_in_dt", from_numeraire="*", to_numeraire="*",
-             factor="0.25", charge_basis="mu_minus"),
+             factor="0.25", charge_basis="mu_minus", count_basis="muon"),
     ]
     syn = _load_chain(_write_chain(tmp_path, edges, "synthetic.csv"))
     start = mucost.ChainValue(
         value_GeV=4.0, stage="produced", numeraire=mucost.BEAM_KINETIC, charge_basis="mu_minus",
-        statuses=("primary",), provenance=("synthetic_start",),
+        statuses=("primary",), provenance=("synthetic_start",), count_basis="muon",
     )
     good = mucost.compose_path(start, list(syn))
     assert good.value.value_GeV == 4.0 / 0.20 / 0.25
@@ -1961,6 +1961,8 @@ def test_the_loader_row_rules_fire_on_the_rows_that_break_them(tmp_path):
         (dict(useful_fraction_sourced="true"), "useful_fraction_sourced is only meaningful at stage"),
         (dict(stage=mucost.TERMINAL_STAGE), "useful_fraction_sourced (true/false), never leave it unsaid"),
         (dict(charge_basis=""), "a pinned normalized value requires both basis_class and charge_basis"),
+        (dict(count_basis=""), "a pinned value requires a count_basis"),
+        (dict(count_basis="pions"), "bad count_basis 'pions'"),
     ]
     for i, (mutation, expected) in enumerate(cases):
         bad = tmp_path / f"rule_{i}.csv"
@@ -2019,3 +2021,61 @@ def test_compose_path_refuses_a_return_to_a_coordinate(tmp_path):
         mucost.compose_path(start, [syn["syn_out"], syn["syn_back"]])
     with pytest.raises(BasisError, match="a coordinate it has already left"):
         mucost.compose_path(start, [syn["syn_out"], syn["syn_on"], syn["syn_to_min"]])
+
+
+def test_a_fraction_of_pions_is_never_applied_to_a_cost_per_muon(table, chain):
+    """A stage factor is a fraction of one count, and composition refuses a figure on another.
+
+    Bertin and Acceleron sit at ``produced`` on mu-, so the factor, charge and join checks pass and only
+    the count check can refuse; Kelly counts what the factor is a fraction of and composes.
+    """
+    delivery = chain["delivery_kelly_eta_mu"]
+    assert delivery.count_basis == "pi_minus_created"
+    for sid in ("bertin_1987", "acceleron_2025"):
+        point = table[sid].chain_point()
+        assert point.stage == "produced" and point.charge_basis == "mu_minus"
+        assert point.count_basis != delivery.count_basis
+        with pytest.raises(BasisError, match="count basis"):
+            delivery.apply_to(point)
+    composed = delivery.apply_to(table["kelly_hart_rose_2021"].chain_point())
+    assert composed.count_basis == "muon"
+
+
+def test_the_edge_count_basis_rules_fire_on_the_rows_that_break_them(tmp_path):
+    """A stage edge with a factor names its count; a numeraire edge counts nothing."""
+    stage_edge = dict(CHAIN_CONTROL, edge_id="s", from_stage="produced", to_stage="captured",
+                      from_numeraire="*", to_numeraire="*", count_basis="muon")
+    _load_chain(_write_chain(tmp_path, [CHAIN_CONTROL, stage_edge], "count_ok.csv"))  # control
+    cases = [
+        (dict(stage_edge, count_basis="*"), "must name the count it is a fraction of"),
+        (dict(CHAIN_CONTROL, count_basis="muon"), "a numeraire edge counts no particles"),
+        (dict(CHAIN_CONTROL, count_basis="pions"), "bad count_basis 'pions'"),
+    ]
+    for i, (row, expected) in enumerate(cases):
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            _load_chain(_write_chain(tmp_path, [row], f"count_bad_{i}.csv"))
+
+
+def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
+    """The count-basis paragraph is read off the ledger, and its guard refuses rows it would misdescribe.
+
+    It names the pinned rows counted per negative pion created and per pion-or-muon exiting, and says the
+    other pinned rows count muons; that last clause is about rows it does not name, so the generator checks
+    it and raises rather than print it when a pinned row counts something else.
+    """
+    gen = _load_generator()
+    H = gen.build_headline(table)
+    assert " ".join(H["count_para"].split()) in _normalized("MUON_COST.md")
+    pinned = [r for r in table if r.has_normalized]
+    for r in pinned:
+        named = gen.LABELS[r.source_id] in H["count_para"]
+        assert named == (r.count_basis in {"pi_minus_created", "pi_minus_or_mu_minus_exiting"}), r.source_id
+    assert {r.count_basis for r in pinned} == {"pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon"}
+    # drill: one pinned muon row recounted as nothing the paragraph names, and the generator refuses
+    rows = [dataclasses.replace(r, count_basis="pi_minus_or_mu_minus_exiting") if r.source_id == "bertin_1987"
+            else r for r in table]
+    gen.build_headline(MuonCostTable(rows))  # control: a row moved into a named count still renders
+    rows = [dataclasses.replace(r, count_basis="") if r.source_id == "bertin_1987" else r for r in table]
+    with pytest.raises(ValueError, match="does not describe these rows"):
+        gen.build_headline(MuonCostTable(rows))
+
