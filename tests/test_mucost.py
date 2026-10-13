@@ -2203,7 +2203,7 @@ def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
         gen.build_headline(MuonCostTable(rows))
 
 
-def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv"):
+def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv", stage_first=False):
     """A sourced, bias-none, terminal synthetic path whose figure prices `psi_hipa`."""
     edges = [
         dict(CHAIN_CONTROL, edge_id="syn_numeraire", factor="0.20"),
@@ -2216,7 +2216,7 @@ def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv"):
         value_GeV=4.0, stage="produced", numeraire=mucost.BEAM_KINETIC, charge_basis="mu_minus",
         statuses=("primary",), provenance=("synthetic_start",), count_basis="muon", machine="psi_hipa",
     )
-    return mucost.compose_path(start, list(syn))
+    return mucost.compose_path(start, list(syn)[::-1] if stage_first else list(syn))
 
 
 def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_path, table, chain):
@@ -2232,6 +2232,15 @@ def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_
     with pytest.raises(BasisError, match="machine transfer"):
         moved.value.render_value()
     assert moved.render() == "80.00 GeV (conditional on a machine transfer)"
+    stage_first = _syn_terminal(tmp_path, machine="other_machine", name="syn_first.csv", stage_first=True)
+    assert stage_first.edge_ids == ("syn_delivery", "syn_numeraire")
+    assert stage_first.value.transfers == (("syn_delivery", "this_ledger"),)
+    assert stage_first.bias_direction == "none" and not stage_first.value.is_bound
+    with pytest.raises(BasisError, match="machine transfer"):
+        stage_first.render_value()
+    with pytest.raises(BasisError, match="machine transfer"):
+        stage_first.value.render_value()
+    assert stage_first.render() == stage_first.value.render() == control.render() + mucost.TRANSFER_SUFFIX
     # a direction-unknown figure keeps its marker and gains the suffix
     beam = table["kelly_hart_rose_2021"].chain_point()
     unknown = mucost.compose_path(beam, [chain["eta_acc_kovach_minimal"], chain["delivery_kelly_eta_mu"]])
@@ -2243,6 +2252,14 @@ def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_
     )
     assert mucost.compose_path(beam, [chain["eta_acc_kovach_site"]]).value.transfers == (
         ("eta_acc_kovach_site", "this_ledger"),
+    )
+    delivered = chain["delivery_petrov_via_eliezer_henis"].apply_to(beam)
+    assert delivered.machine == beam.machine and delivered.count_basis == "muon"
+    then = chain["eta_acc_kelly_psi_minimal"].apply_to(delivered)
+    assert then.machine == beam.machine and then.count_basis == "muon"
+    assert then.transfers == (
+        ("delivery_petrov_via_eliezer_henis", "this_ledger"),
+        ("eta_acc_kelly_psi_minimal", "KellyHartRose2021"),
     )
     site = table["kelly_electrical_site"].chain_point()
     assert site.transfers == (("kelly_electrical_site", "this_ledger"),)
