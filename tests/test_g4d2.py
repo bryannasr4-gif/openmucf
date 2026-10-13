@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import importlib.util
+import io
 import json
 import re
 import sys
@@ -405,6 +406,8 @@ def test_d2_comparison_bytes_regenerate_from_the_source_list_and_measurement_row
         monkeypatch: pytest.MonkeyPatch) -> None:
     path = DATA / "selector_vs_primary.csv"
     before = path.read_bytes()
+    summary = DATA / "selector_summary.csv"
+    summary_before = summary.read_bytes()
     original_open = Path.open
     read: set[str] = set()
 
@@ -423,6 +426,7 @@ def test_d2_comparison_bytes_regenerate_from_the_source_list_and_measurement_row
     module.compare()
     assert read == {"sources.csv", "measurements.csv"}
     assert path.read_bytes() == before
+    assert summary.read_bytes() == summary_before
 
 
 def test_d2_independence_and_each_subclass_require_source_evidence() -> None:
@@ -600,3 +604,140 @@ def test_d2_transfer_only_and_unstated_population_rows_stay_ungated_under_both_r
             assert row["gated"] == "false"
             assert row["method_gated"] == "false"
     assert all(populations.values())
+
+
+
+# --------------------------------------------------------------------------------------------
+# The rows the method-aware rule gates: `selector_summary.csv` regenerates from the comparison, its counts
+# hold under a second computation, and every number `DATASET_D2.md` states about those rows is its
+# --------------------------------------------------------------------------------------------
+
+DOCUMENT = ROOT / "DATASET_D2.md"
+
+
+def _summary_bytes(rows: list[dict[str, str]]) -> bytes:
+    out = io.StringIO(newline="")
+    writer = csv.DictWriter(out, fieldnames=d2.SUMMARY_COLUMNS, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return out.getvalue().encode("utf-8")
+
+
+def _summary() -> dict[str, dict[str, str]]:
+    return {row["scope"]: row for row in _csv("selector_summary.csv")}
+
+
+def test_d2_summary_regenerates_from_the_comparison_and_the_measurement_rows() -> None:
+    rows = d2.summarize(_csv("selector_vs_primary.csv"), _reference("measurements.csv"))
+    assert _summary_bytes(rows) == (DATA / "selector_summary.csv").read_bytes()
+
+
+def test_d2_summary_counts_what_its_columns_name_by_a_second_computation() -> None:
+    measured = {row["record_id"]: row for row in _reference("measurements.csv")}
+    gated = [row for row in _csv("selector_vs_primary.csv") if row["method_gated"] == "true"]
+    summary = _summary()
+    assert set(summary) == {"method_gated"} | {row["class"] for row in gated}
+    for scope, line in summary.items():
+        rows = [row for row in gated if scope in ("method_gated", row["class"])]
+        measured_ratio = [float(row["value_src"]) for row in rows]
+        selector = [float(row["value_g4"]) for row in rows]
+        z_ratio = [int(row["z1"]) / int(row["z2"]) for row in rows]
+        quotients = sorted(s / m for s, m in zip(selector, measured_ratio, strict=True))
+        middle = len(quotients) // 2
+        median = quotients[middle] if len(quotients) % 2 else (quotients[middle - 1] + quotients[middle]) / 2
+        for column, value in (("ratio_min", quotients[0]), ("ratio_median", median),
+                              ("ratio_max", quotients[-1])):
+            assert abs(float(line[column]) - value) <= 0.005 + 1e-12, (scope, column)
+        expected = {
+            "rows": len(rows),
+            "to_oxygen": sum(row["z2"] == "8" and int(row["z1"]) not in (8, *d2.HALOGENS) for row in rows),
+            "hydrogenous": sum("H" in re.findall(r"[A-Z][a-z]?", measured[record]["material_formula"])
+                               for record in (row["record_id"] for row in rows)),
+            "selector_above": sum(s > m for s, m in zip(selector, measured_ratio, strict=True)),
+            "z_ratio_closer": sum(abs(z - m) < abs(s - m)
+                                  for z, s, m in zip(z_ratio, selector, measured_ratio, strict=True)),
+            "z_ratio_above": sum(z > m for z, m in zip(z_ratio, measured_ratio, strict=True)),
+            "selector_above_z_ratio": sum(s > z for s, z in zip(selector, z_ratio, strict=True)),
+        }
+        assert {key: int(line[key]) for key in expected} == expected, scope
+
+
+def test_d2_the_document_s_words_about_the_gated_rows_hold() -> None:
+    """`DATASET_D2.md` says each gated row sets an element beside oxygen, that the selector's ratio lies above
+    the measured one on each and that the reduced factor raises it on every row, that the classes are the
+    two it names, and that the row of a material holding hydrogen is the calcium hydroxide row."""
+    summary = _summary()
+    every = summary["method_gated"]
+    assert every["to_oxygen"] == every["selector_above"] == every["selector_above_z_ratio"] == every["rows"]
+    assert set(summary) == {"method_gated", "d2-selector-oxides", "d2-selector-other-compounds"}
+    classes = int(summary["d2-selector-oxides"]["rows"]) + int(summary["d2-selector-other-compounds"]["rows"])
+    assert classes == int(every["rows"])
+    measured = {row["record_id"]: row for row in _reference("measurements.csv")}
+    gated = [row for row in _csv("selector_vs_primary.csv") if row["method_gated"] == "true"]
+    hydrogen = [row for row in gated
+                if "H" in d2.formula_atoms(measured[row["record_id"]]["material_formula"])]
+    other = [row for row in gated if row["class"] == "d2-selector-other-compounds"]
+    assert hydrogen == other
+    assert [measured[row["record_id"]]["material_formula"] for row in other] == ["CaH2O2"]
+    assert "Ca(OH)2" in measured[other[0]["record_id"]]["locator"]
+
+
+def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """``(what, path, pattern, groups, expected)`` for every number `DATASET_D2.md` states about the rows the
+    method-aware rule gates, each read from `selector_summary.csv`. Patterns match the whitespace-collapsed
+    document."""
+    summary = _summary()
+    every = summary["method_gated"]
+    rows = int(every["rows"])
+    path = "DATASET_D2.md"
+    return [
+        ("method-gated rows", path, r"describes those rows: there are (\d+), each", (1,), rows),
+        ("method-gated rows in oxides", path, r"to oxygen; (\d+) are in the class `d2-selector-oxides`", (1,),
+         int(summary["d2-selector-oxides"]["rows"])),
+        ("method-gated rows among other compounds", path,
+         r"and (\d+), of calcium hydroxide, in the class", (1,),
+         int(summary["d2-selector-other-compounds"]["rows"])),
+        ("smallest selector ratio over the measured", path,
+         r"at between ([0-9.]+) and [0-9.]+ times the measured", (1,), every["ratio_min"]),
+        ("largest selector ratio over the measured", path,
+         r"at between [0-9.]+ and ([0-9.]+) times the measured", (1,), every["ratio_max"]),
+        ("median selector ratio over the measured", path, r"and at ([0-9.]+) times it at the median", (1,),
+         every["ratio_median"]),
+        ("rows the ratio of the atomic numbers lies closer on", path,
+         r"lies closer to the measured ratio on (\d+) of them\.", (1,), int(every["z_ratio_closer"])),
+        ("rows the ratio of the atomic numbers lies above", path,
+         r"on every row: on (\d+) the ratio of the atomic numbers", (1,), int(every["z_ratio_above"])),
+        ("rows the factor carries past the measured ratio", path,
+         r"and on the other (\d+) the factor carries", (1,), rows - int(every["z_ratio_above"])),
+        ("rows of a material that holds hydrogen", path,
+         r"Of those rows, (\d+), the calcium hydroxide row,", (1,), int(every["hydrogenous"])),
+        ("rows of a material that holds no hydrogen", path,
+         r"For the (\d+) rows whose material holds no hydrogen", (1,), rows - int(every["hydrogenous"])),
+    ]
+
+
+def _pin_problems(text: str) -> list[str]:
+    collapsed = " ".join(text.split())
+    problems = []
+    for what, _path, pattern, _groups, expected in document_pins():
+        hits = list(re.finditer(pattern, collapsed))
+        if len(hits) != 1:
+            problems.append(f"{what}: matched {len(hits)} times")
+        elif hits[0].group(1) != str(expected):
+            problems.append(f"{what}: states {hits[0].group(1)}, selector_summary.csv gives {expected}")
+    return problems
+
+
+def test_d2_every_number_the_document_states_about_the_gated_rows_is_the_summary_s() -> None:
+    assert _pin_problems(DOCUMENT.read_text(encoding="utf-8")) == []
+
+
+def test_d2_drill_a_changed_count_or_ratio_in_the_document_is_refused() -> None:
+    text = DOCUMENT.read_text(encoding="utf-8")
+    every = _summary()["method_gated"]
+    for stated, what in ((f"there are {every['rows']}, each", "method-gated rows"),
+                         (f"and at {every['ratio_median']} times it at the median", "median selector ratio")):
+        assert text.count(stated) == 1, stated
+        changed = text.replace(stated, stated.replace(every["rows"] if what == "method-gated rows"
+                                                      else every["ratio_median"], "9.99"))
+        assert any(problem.startswith(what) for problem in _pin_problems(changed)), what

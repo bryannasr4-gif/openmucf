@@ -1,0 +1,4 @@
+scope,rows,to_oxygen,hydrogenous,selector_above,ratio_min,ratio_median,ratio_max,z_ratio_closer,z_ratio_above,selector_above_z_ratio
+method_gated,63,63,1,63,1.59,2.96,5.70,63,58,63
+d2-selector-other-compounds,1,1,1,1,3.00,3.00,3.00,1,1,1
+d2-selector-oxides,62,62,0,62,1.59,2.95,5.70,62,57,62

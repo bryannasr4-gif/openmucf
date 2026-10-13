@@ -173,6 +173,12 @@ def compare() -> None:
         print(f"method_reason={reason} rows={count}")
     for screen, count in sorted(screens.items()):
         print(f"screen={screen} rows={count}")
+    with path.open(newline="", encoding="utf-8") as stream:
+        written = list(csv.DictReader(stream))
+    summary_path = ROOT / "data/g4/d2/selector_summary.csv"
+    summary = d2.summarize(written, measurements)
+    write_csv(summary_path, d2.SUMMARY_COLUMNS, summary)
+    print(f"summary_rows={len(summary)} out={summary_path.relative_to(ROOT)}")
 
 
 def main() -> None:

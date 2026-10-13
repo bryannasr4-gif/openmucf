@@ -7,7 +7,7 @@ import math
 import re
 from bisect import bisect_left
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
 
@@ -314,3 +314,64 @@ def load_measurements(path: Path, sources: dict[str, dict[str, str]]) -> list[di
         if source["kind"] == "review" or source["primary_read"] != "true":
             raise ValueError(f"{row['record_id']}: source is not primary-read")
     return rows
+
+
+
+#: The columns of `selector_summary.csv`: one row for every row the method-aware rule gates (`scope`
+#: `method_gated`) and one for each class among them.
+SUMMARY_COLUMNS = (
+    "scope", "rows", "to_oxygen", "hydrogenous", "selector_above", "ratio_min", "ratio_median", "ratio_max",
+    "z_ratio_closer", "z_ratio_above", "selector_above_z_ratio",
+)
+
+
+def _two_places(value: Fraction) -> str:
+    with localcontext() as context:
+        context.prec = 50
+        exact = Decimal(value.numerator) / Decimal(value.denominator)
+        return str(exact.quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN))
+
+
+def summarize(comparisons: list[dict[str, str]], measurements: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Describe the rows the method-aware rule gates, all of them and each class among them: the rows; of
+    those, the rows that set an element other than oxygen or a halogen beside oxygen, the rows of a material
+    that holds hydrogen and the rows whose selector ratio lies above the measured ratio; the smallest, median
+    and largest selector ratio over the measured ratio, to two decimal places; and the rows on which the ratio
+    of the two atomic numbers lies closer to the measured ratio than the selector ratio does, lies above the
+    measured ratio, and lies below the selector ratio."""
+    formulas = {row["record_id"]: row["material_formula"] for row in measurements}
+    gated = [row for row in comparisons if row["method_gated"] == "true"]
+    if not gated:
+        raise ValueError("no row is method-gated")
+    scopes = [("method_gated", gated)]
+    names = sorted({row["class"] for row in gated})
+    scopes += [(name, [row for row in gated if row["class"] == name]) for name in names]
+    out: list[dict[str, str]] = []
+    for scope, rows in scopes:
+        ratios: list[Fraction] = []
+        counts = dict.fromkeys(("to_oxygen", "hydrogenous", "selector_above", "z_ratio_closer",
+                                "z_ratio_above", "selector_above_z_ratio"), 0)
+        for row in rows:
+            printed = re.fullmatch(r"\d+(\.\d+)?", row["value_src"])
+            if not (row["z1"] and row["z2"] and row["value_g4"] and printed):
+                raise ValueError(f"{row['record_id']}: a gated row without a per-atom ratio and a value")
+            z1, z2 = int(row["z1"]), int(row["z2"])
+            measured = decimal_fraction(row["value_src"])
+            selector = decimal_fraction(row["value_g4"])
+            z_ratio = Fraction(z1, z2)
+            ratios.append(selector / measured)
+            counts["to_oxygen"] += z2 == 8 and z1 != 8 and z1 not in HALOGENS
+            counts["hydrogenous"] += "H" in formula_atoms(formulas[row["record_id"]])
+            counts["selector_above"] += selector > measured
+            counts["z_ratio_closer"] += abs(z_ratio - measured) < abs(selector - measured)
+            counts["z_ratio_above"] += z_ratio > measured
+            counts["selector_above_z_ratio"] += selector > z_ratio
+        ratios.sort()
+        middle = len(ratios) // 2
+        median = ratios[middle] if len(ratios) % 2 else (ratios[middle - 1] + ratios[middle]) / 2
+        line = {"scope": scope, "rows": str(len(rows))}
+        line.update({key: str(value) for key, value in counts.items()})
+        line.update({"ratio_min": _two_places(ratios[0]), "ratio_median": _two_places(median),
+                     "ratio_max": _two_places(ratios[-1])})
+        out.append(line)
+    return out
