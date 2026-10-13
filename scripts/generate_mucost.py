@@ -432,16 +432,16 @@ def build_headline(
     carrier_names = _join(
         sorted({LABELS[r.source_id] for r in carriers if r.numeraire == mucost.BEAM_KINETIC})
     )
-    carrier_keys = {r.source_bibkey.split(";")[0].strip() for r in carriers}
+    carrier_keys = {mucost.first_bibkey(r.source_bibkey) for r in carriers}
     # ...and whether those same sources state a delivery factor they call unsourced
     declared_delivery = [
         e for e in chain
         if e.kind == mucost.STAGE_EDGE
         and e.has_factor
         and not e.is_sourced
-        and e.source_bibkey.split(";")[0].strip() in carrier_keys
+        and mucost.first_bibkey(e.source_bibkey) in carrier_keys
     ]
-    n_carriers = len({r.source_bibkey.split(";")[0].strip() for r in carriers})
+    n_carriers = len({mucost.first_bibkey(r.source_bibkey) for r in carriers})
 
     if sourced_links:
         links_clause = (
@@ -471,10 +471,10 @@ def build_headline(
             if len(spanned) == len(links)
             else _join([c["label"] for c in spanned]) + (" is" if len(spanned) == 1 else " are")
         )
-        key = e.source_bibkey.split(";")[0].strip()
+        key = mucost.first_bibkey(e.source_bibkey)
         relayers = [
             LABELS[r.source_id] for r in table
-            if r.numeraire == mucost.BEAM_KINETIC and r.source_bibkey.split(";")[0].strip() == key
+            if r.numeraire == mucost.BEAM_KINETIC and mucost.first_bibkey(r.source_bibkey) == key
         ]
         if len(relayers) != 1:
             raise ValueError(f"{e.edge_id}: expected one beam_kinetic row of the relaying source, got {relayers}")
@@ -694,11 +694,11 @@ def _foreign_delivery(r: mucost.MuonCost, chain: mucost.ChainEdgeTable | None) -
     """The stage factors the row's own source states or relays for a machine other than the row's."""
     if chain is None:
         return ""
-    key = r.source_bibkey.split(";")[0].strip()
+    key = mucost.first_bibkey(r.source_bibkey)
     found = [
         e for e in chain
         if e.kind == mucost.STAGE_EDGE and e.has_factor
-        and e.source_bibkey.split(";")[0].strip() == key and e.machine != r.machine
+        and mucost.first_bibkey(e.source_bibkey) == key and e.machine != r.machine
     ]
     return "; ".join(
         f"the source {'relays' if e.evidence_status == RELAYED_UNREAD else 'states'} `{e.edge_id}` "
@@ -874,7 +874,7 @@ def _maker_label(table: mucost.MuonCostTable, transfers) -> str:
     """Who made a figure's machine transfers: `none`, a source's label, or `this ledger`."""
     if not transfers:
         return "none"
-    by_key = {r.source_bibkey.split(";")[0].strip(): LABELS[r.source_id] for r in table
+    by_key = {mucost.first_bibkey(r.source_bibkey): LABELS[r.source_id] for r in table
               if r.numeraire == mucost.BEAM_KINETIC}
     return _join(sorted({"this ledger" if who == mucost.THIS_LEDGER else by_key.get(who, who)
                          for _, who in transfers}))

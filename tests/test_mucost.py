@@ -1958,6 +1958,16 @@ def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain
     without = mucost.load_muon_cost_chain(csv_path=no_relay)
     assert len(without) == len(chain) - 1
     assert gen.build_headline(table, without)["chain_coverage_sentence"] == COVERAGE_SENTENCE_NO_RELAY
+    relay_cell = {c["source_id"]: c["delivery"]
+                  for c in gen.coverage_rows(table, chain)}["eliezer_henis_1994"]
+    assert "relays `delivery_petrov_via_eliezer_henis`" in relay_cell
+    for sep in (";", ","):
+        edge_chain, node_table, beam_table = _bibkey_variants(tmp_path, table, chain, sep)
+        for t, c in ((table, edge_chain), (node_table, chain)):
+            cells = {row["source_id"]: row["delivery"] for row in gen.coverage_rows(t, c)}
+            assert cells["eliezer_henis_1994"] == relay_cell
+        for t, c in ((table, edge_chain), (node_table, chain), (beam_table, chain)):
+            assert gen.build_headline(t, c)["chain_coverage_sentence"] == COVERAGE_SENTENCE
     # the sentence agrees with the node table's own count of fully-sourced chains
     assert H["n_fully_sourced_chains"] == "0"
     assert f"**{H['n_fully_sourced_chains']} of the {H['n_chain_rows']} pinned rows" in \
@@ -2228,6 +2238,43 @@ def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
             gen.build_headline(MuonCostTable(rows))
 
 
+def _bibkey_variants(tmp_path, table, chain, sep):
+    def rows_of(path):
+        with path.open(newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            return list(reader.fieldnames or []), list(reader)
+
+    def write(name, header, rows):
+        path = tmp_path / f"{name}_{'comma' if sep == ',' else 'semicolon'}.csv"
+        with path.open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+            w.writeheader()
+            w.writerows(rows)
+        return path
+
+    two_keys = table["kelly_electrical_minimal"].source_bibkey
+    assert ";" in two_keys and "," not in two_keys
+    header, edges = rows_of(mucost.MUON_COST_CHAIN_CSV)
+    for e in edges:
+        if e["edge_id"] == "eta_acc_kelly_psi_minimal":
+            e["source_bibkey"] = two_keys.replace(";", sep)
+        elif e["edge_id"] in ("delivery_petrov_via_eliezer_henis", "delivery_kelly_eta_mu"):
+            e["source_bibkey"] = sep.join((e["source_bibkey"], chain["eta_acc_kovach_minimal"].source_bibkey))
+    edge_chain = mucost.load_muon_cost_chain(csv_path=write("edges", header, edges))
+    header, nodes = rows_of(MUON_COST_CSV)
+    for r in nodes:
+        if r["source_bibkey"] == two_keys:
+            r["source_bibkey"] = two_keys.replace(";", sep)
+        elif r["source_id"] == "eliezer_henis_1994":
+            r["source_bibkey"] = sep.join((r["source_bibkey"], chain["eta_acc_kovach_minimal"].source_bibkey))
+    node_table = load_muon_cost(csv_path=write("nodes", header, nodes))
+    for r in nodes:
+        if r["source_id"] == "kelly_hart_rose_2021":
+            r["source_bibkey"] = two_keys.replace(";", sep)
+    beam_table = load_muon_cost(csv_path=write("beam", header, nodes))
+    return edge_chain, node_table, beam_table
+
+
 def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv", stage_first=False):
     """A sourced, bias-none, terminal synthetic path whose figure prices `psi_hipa`."""
     edges = [
@@ -2289,6 +2336,18 @@ def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_
     site = table["kelly_electrical_site"].chain_point()
     assert site.transfers == (("kelly_electrical_site", "this_ledger"),)
     assert "machine transfers: kelly_electrical_site (by this_ledger)" in site.why_bound()
+    gen = _load_generator()
+    for sep in (";", ","):
+        edge_chain, _, beam_table = _bibkey_variants(tmp_path, table, chain, sep)
+        point = edge_chain["eta_acc_kelly_psi_minimal"].apply_to(beam)
+        assert point.transfers == (
+            ("eta_acc_kelly_psi_minimal", table["kelly_hart_rose_2021"].source_bibkey),
+        )
+        assert gen._maker_label(table, point.transfers) == gen.LABELS["kelly_hart_rose_2021"]
+        ordinary = chain["eta_acc_kelly_psi_minimal"].apply_to(
+            beam_table["kelly_hart_rose_2021"].chain_point()
+        )
+        assert gen._maker_label(beam_table, ordinary.transfers) == gen.LABELS["kelly_hart_rose_2021"]
 
 
 #: The retracted universals, and the trust map's conditional cells

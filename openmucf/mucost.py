@@ -103,6 +103,12 @@ TRANSFER_SUFFIX = " (conditional on a machine transfer)"
 # Classes whose figure understates the true per-stopped-in-D-T cost (collection/stopping fractions < 1).
 LOWER_BOUND_CLASSES = frozenset({"produced", "collected"})
 
+
+def first_bibkey(source_bibkey: str) -> str:
+    keys = [k.strip() for k in re.split(r"[;,]", source_bibkey or "") if k.strip()]
+    return keys[0] if keys else ""
+
+
 #: Charge bases barred from every aggregate this package forms -- a tier median, a spread, a ratio, or
 #: the edge of a prior box drawn over a tier. ``muon_cost.schema.json`` states the rule for
 #: ``mu_plus_only`` ("irrelevant to muCF, which needs mu-, and must never enter a muCF cost
@@ -1193,7 +1199,7 @@ class ChainEdge:
         # A factor stated for another machine is a machine transfer (an empty figure machine counts as
         # different). Its source made it only where it applied the factor to this figure's machine.
         if self.machine != value.machine:
-            first = self.source_bibkey.split(";")[0].strip()
+            first = first_bibkey(self.source_bibkey)
             maker = first if value.machine and self.adopted_for == value.machine else THIS_LEDGER
             out = replace(out, transfers=out.transfers + ((self.edge_id, maker),))
         if self.bias_direction == "unknown":
