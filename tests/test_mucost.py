@@ -1944,8 +1944,8 @@ def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain
     relay_cell = {c["source_id"]: c["delivery"]
                   for c in gen.coverage_rows(table, chain)}["eliezer_henis_1994"]
     assert "relays `delivery_petrov_via_eliezer_henis`" in relay_cell
-    for sep in (";", ","):
-        edge_chain, node_table, beam_table = _bibkey_variants(tmp_path, table, chain, sep)
+    for sep, form in [(s, f) for s in (";", ",") for f in ("plain", "padded", "empty_lead")]:
+        edge_chain, node_table, beam_table = _bibkey_variants(tmp_path, table, chain, sep, form)
         for t, c in ((table, edge_chain), (node_table, chain)):
             cells = {row["source_id"]: row["delivery"] for row in gen.coverage_rows(t, c)}
             assert cells["eliezer_henis_1994"] == relay_cell
@@ -2205,39 +2205,43 @@ def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
             gen.build_headline(MuonCostTable(rows))
 
 
-def _bibkey_variants(tmp_path, table, chain, sep):
+def _bibkey_variants(tmp_path, table, chain, sep, form="plain"):
     def rows_of(path):
         with path.open(newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             return list(reader.fieldnames or []), list(reader)
 
     def write(name, header, rows):
-        path = tmp_path / f"{name}_{'comma' if sep == ',' else 'semicolon'}.csv"
+        path = tmp_path / f"{name}_{'comma' if sep == ',' else 'semicolon'}_{form}.csv"
         with path.open("w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
             w.writeheader()
             w.writerows(rows)
         return path
 
+    def join(*keys):
+        lead = sep if form == "empty_lead" else ""
+        return lead + (" " + sep if form == "padded" else sep).join(keys)
+
     two_keys = table["kelly_electrical_minimal"].source_bibkey
     assert ";" in two_keys and "," not in two_keys
     header, edges = rows_of(mucost.MUON_COST_CHAIN_CSV)
     for e in edges:
         if e["edge_id"] == "eta_acc_kelly_psi_minimal":
-            e["source_bibkey"] = two_keys.replace(";", sep)
+            e["source_bibkey"] = join(*two_keys.split(";"))
         elif e["edge_id"] in ("delivery_petrov_via_eliezer_henis", "delivery_kelly_eta_mu"):
-            e["source_bibkey"] = sep.join((e["source_bibkey"], chain["eta_acc_kovach_minimal"].source_bibkey))
+            e["source_bibkey"] = join(e["source_bibkey"], chain["eta_acc_kovach_minimal"].source_bibkey)
     edge_chain = mucost.load_muon_cost_chain(csv_path=write("edges", header, edges))
     header, nodes = rows_of(MUON_COST_CSV)
     for r in nodes:
         if r["source_bibkey"] == two_keys:
-            r["source_bibkey"] = two_keys.replace(";", sep)
+            r["source_bibkey"] = join(*two_keys.split(";"))
         elif r["source_id"] == "eliezer_henis_1994":
-            r["source_bibkey"] = sep.join((r["source_bibkey"], chain["eta_acc_kovach_minimal"].source_bibkey))
+            r["source_bibkey"] = join(r["source_bibkey"], chain["eta_acc_kovach_minimal"].source_bibkey)
     node_table = load_muon_cost(csv_path=write("nodes", header, nodes))
     for r in nodes:
         if r["source_id"] == "kelly_hart_rose_2021":
-            r["source_bibkey"] = two_keys.replace(";", sep)
+            r["source_bibkey"] = join(*two_keys.split(";"))
     beam_table = load_muon_cost(csv_path=write("beam", header, nodes))
     return edge_chain, node_table, beam_table
 
@@ -2300,12 +2304,13 @@ def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_
     assert site.transfers == (("kelly_electrical_site", "this_ledger"),)
     assert "machine transfers: kelly_electrical_site (by this_ledger)" in site.why_bound()
     gen = _load_generator()
-    for sep in (";", ","):
-        edge_chain, _, beam_table = _bibkey_variants(tmp_path, table, chain, sep)
+    for sep, form in [(s, f) for s in (";", ",") for f in ("plain", "padded", "empty_lead")]:
+        edge_chain, _, beam_table = _bibkey_variants(tmp_path, table, chain, sep, form)
         point = edge_chain["eta_acc_kelly_psi_minimal"].apply_to(beam)
         assert point.transfers == (
             ("eta_acc_kelly_psi_minimal", table["kelly_hart_rose_2021"].source_bibkey),
         )
+        assert point.transfers[0][1] in mucost.bibkeys()
         assert gen._maker_label(table, point.transfers) == gen.LABELS["kelly_hart_rose_2021"]
         ordinary = chain["eta_acc_kelly_psi_minimal"].apply_to(
             beam_table["kelly_hart_rose_2021"].chain_point()
