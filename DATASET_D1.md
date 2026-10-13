@@ -476,11 +476,14 @@ values compiled into Geant4, and their Layer-2 files `data/g4/d1/d1_capture.prov
 Geant4 source in `third_party/geant4/` they are generated from.
 `data/g4/d1/geant4_natural_isotopes.csv`, the natural isotopic compositions read from Geant4 builds, is
 offered under the Geant4 Software License v1.0.
+`data/g4/d1/d1_decay_rate.oracle`, the decay rates and nuclear masses read from Geant4 builds, is offered
+under the Geant4 Software License v1.0.
 The files that restate cells of the primaries' tables, `data/g4/d1/capture_rate_cells.csv`,
 `data/g4/d1/zeff_audit.csv`, `data/g4/d1/suzuki1987_*.csv` and `data/g4/d1/mizuno2025_table*.csv`,
 and the `suzuki1987` and `mizuno2025` profiles generated from them,
-`data/g4/d1/d1_capture.suzuki1987.*` and `data/g4/d1/d1_capture.mizuno2025.*`, are offered under no
-licence of this repository.
+`data/g4/d1/d1_capture.suzuki1987.*` and `data/g4/d1/d1_capture.mizuno2025.*`, and the comparison that
+restates their mean lives, `data/g4/d1/mean_life_comparison.csv`, are offered under no licence of this
+repository.
 The other files in `data/g4/d1/` are offered under CC-BY-4.0.
 Values compiled into Geant4 that another file of the dataset repeats are offered under the Geant4
 Software License.
@@ -669,3 +672,85 @@ no isotope of an element `G4NistManager` builds in this Z range gets a computed 
 A Geant4 bug report (2013), <https://bugzilla-geant4.kek.jp/show_bug.cgi?id=1457>, reported incorrect
 capture rates for nuclei the lookup table does not list and plotted the rate averaged over the isotopes
 with their abundances against Z; it is recorded as resolved and fixed.
+
+## 12. Measured mean lives
+
+A negative muon in the ground state of a muonic atom disappears by nuclear capture or by decay, and the
+inverse of the mean life a lifetime measurement gives is the capture rate plus the free muon's decay rate
+times the Huff factor, which accounts for the binding (Suzuki, Measday & Roalsvig, Eq. (4)).
+Geant4 computes that disappearance rate on two routes, each with its own decay rate.
+`G4MuonMinusBoundDecay::ApplyYourself` draws the time of a stop from the sum of `GetMuonCaptureRate(Z, A)`
+and `G4MuonMinusBoundDecay::GetMuonDecayRate(Z, A, muMass, nuclMass)`, and runs in `G4MuonMinusCapture`,
+the process the reference physics lists QBBC and FTFP_BERT give the negative muon at rest
+(`data/g4/d2/selector_bindings.csv`).
+`G4MuonicAtomHelper::ConstructMuonicAtom` gives a muonic atom the inverse of the sum of
+`GetMuonCaptureRate(Z, A)` and `G4MuonicAtomHelper::GetMuonDecayRate(Z)` as its lifetime, which
+`G4MuonicAtomDecay` reads; a user reaches that route by registering `G4MuonMinusAtomicCapture` for the
+negative muon and the `G4MuonicAtomDecayPhysics` constructor, as `cpp/tools/harvest_d2.cc` does for its
+`QBBC+helper` list.
+From the threshold of section 11 on, the first decay rate is a function of Z that its source describes as
+based on a fit to the data referenced in Suzuki, Measday & Roalsvig.
+For every Z this section compares, the second multiplies the free muon's decay rate by the difference
+between unity and 2.5 times the square of the product of the effective charge and the
+fine-structure constant, the small-Z approximation its source attributes to Mukhopadhyay.
+The patches leave both decay functions as they are; the helper's reads the effective charge through
+`GetMuonZeff`, which a patched build with the dataset enabled under `parity` answers from the `muon_zeff`
+table, equal to the compiled-in charge at every Z compared here.
+
+`cpp/tools/harvest_decay.cc` prints both decay rates, with the nuclear mass `G4Nucleus::AtomicMass(A, Z)`
+that `ApplyYourself` passes the first, from unpatched builds of `v11.4.2` and `v11.5.0.beta`, which printed
+the same bytes; `d1_decay_rate.oracle` commits them, and `openmucf/g4/d1_lifetime.py` reproduces every decay
+rate it holds bit for bit, evaluated with the oracle's constants and nuclear-mass inputs.
+`scripts/generate_g4lifetime.py`, a step of `make audit`, writes `mean_life_comparison.csv` from the mean
+lives each source printed for its own measurements: the 57 rows of Tables III and IV of Suzuki,
+Measday and Roalsvig marked as the authors' own (section 5, F-4) that print a capture rate beside the mean
+life, and the 10 rows of Table 1 of Mizuno et al. (section 9).
+The other rows of Tables III and IV give each experiment's capture rate as its authors calculated it, most
+often with their own value of the positive muon's lifetime (p. 2216), so the comparison does not take them.
+For each profile of the capture table and each of those rows, the file gives the measured rate, the inverse
+of the mean life, and, when the row names a nucleus, each route's rate, capture plus decay, for it.
+A row names the nucleus with the printed mass number, or, for a target printed with no mass number or as
+natural, with the mass number of the record the isotope audit of section 6 establishes was measured on the
+element printed with no mass number, or else of the single isotope of a natural composition with a single
+isotope (section 11); its capture rate follows the lookup a patched build runs (section 11).
+A row is compared when a measured value from the row's own source answers it, a profile's row for that
+profile's source or the compiled-in table for Suzuki, Measday and Roalsvig, whom its source comment credits
+(section 5, F-4), measured on the same kind of target, a nuclide or a natural composition, which are the
+same thing for an element with a single isotope; `population` names the reason any other row is not.
+A route's rate is within the band when it differs from the measured rate by no more than three times the
+root sum of squares of the measured rate's uncertainty and the capture rate's tabulated uncertainty; the two
+can rest on the same mean life, so the band errs wide.
+The comparison is of the rates the code returns for a single nucleus, not of a transported simulation of a
+target; a target of natural composition decays as section 11 describes.
+
+| profile | rows compared | within the band, `G4MuonMinusBoundDecay` | within the band, `G4MuonicAtomHelper` |
+|---|---|---|---|
+| `parity` | 51 | 47 | 43 |
+| `mizuno2025` | 54 | 51 | 48 |
+| `suzuki1987` | 51 | 48 | 44 |
+
+Under every profile, each route leaves a compared row outside the band.
+The next table gives those rows: the difference between the route's rate and the measured rate, and the part
+of it that comes from the capture rate, the rate the lookup returns less the rate the source prints beside
+the mean life, each in units of the band's standard deviation and rounded to a tenth.
+
+| route | measurement | target | profiles | difference (σ) | capture part (σ) |
+|---|---|---|---|---|---|
+| `G4MuonMinusBoundDecay` | `suzuki1987` Table III p.2217 row 21 | Be | `parity`, `mizuno2025`, `suzuki1987` | -3.1 | -2.8 |
+| `G4MuonMinusBoundDecay` | `suzuki1987` Table III p.2217 row 39 | 13C | `parity`, `mizuno2025` | -4.2 | -3.6 |
+| `G4MuonMinusBoundDecay` | `suzuki1987` Table IV p.2218 row 16 | Al | `parity`, `suzuki1987` | -3.2 | -3.8 |
+| `G4MuonMinusBoundDecay` | `suzuki1987` Table IV p.2218 row 23 | P | `parity`, `mizuno2025`, `suzuki1987` | -4.6 | -4.5 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 21 | Be | `parity`, `mizuno2025`, `suzuki1987` | -4.6 | -2.8 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 37 | C | `parity`, `mizuno2025`, `suzuki1987` | -4.7 | -1.5 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 39 | 13C | `parity`, `mizuno2025` | -6.1 | -3.6 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 44 | N | `parity`, `mizuno2025`, `suzuki1987` | -3.1 | -0.4 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 49 | O | `parity`, `mizuno2025`, `suzuki1987` | -3.3 | -0.2 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table IV p.2218 row 16 | Al | `parity`, `suzuki1987` | -6.5 | -3.8 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table IV p.2218 row 20 | Si | `parity`, `suzuki1987` | -4.8 | -2.4 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table IV p.2218 row 23 | P | `parity`, `mizuno2025`, `suzuki1987` | -6.1 | -4.5 |
+
+On each row of the table for `G4MuonMinusBoundDecay`, the capture part is the larger part of the difference.
+Of the 57 measurements compared under a profile, the decay rate of `G4MuonicAtomHelper` lies
+below the measured rate less the printed capture rate for 54, and that of
+`G4MuonMinusBoundDecay` for 29.
+No capture rate or profile of this dataset changes with this comparison.

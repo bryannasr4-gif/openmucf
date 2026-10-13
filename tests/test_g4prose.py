@@ -41,6 +41,7 @@ import sys
 
 import test_g4d2 as d2
 import test_g4d3 as d3
+import test_g4lifetime as lifetime
 import test_g4natural as natural
 import test_g4parity as parity
 
@@ -220,6 +221,9 @@ def pin_table() -> list[Pin]:
         table.append(Pin(what, path, pattern, groups, expected))
     # The natural-target section's pins, as its own test module builds them with this file's tokenizer.
     for what, path, pattern, groups, expected in natural.document_pins(NUMERIC):
+        table.append(Pin(what, path, pattern, groups, expected))
+    # The mean-life section's pins, as its own test module builds them with this file's tokenizer.
+    for what, path, pattern, groups, expected in lifetime.document_pins(NUMERIC):
         table.append(Pin(what, path, pattern, groups, expected))
     return table
 
