@@ -296,6 +296,7 @@ ce8bf816c1f332ea3e79ccc2a422484bba82e130	CHANGELOG.md	REGISTERED: 1 -- '<1%', th
 cecb150055a581901915a99ec58d7ba60f464ea4	CHANGELOG.md	REGISTERED: one -- 'one rendered line at a time', how the line guard matches
 cf1029d26128732b2ead8559ef67827f556e3f7a	CHANGELOG.md	REGISTERED: Three -- the three rate-ledger rows the bullet enumerates
 cf7471bfc7a5473c5f61e4e7441d08b64456f74d	CHANGELOG.md	REGISTERED: 1986 -- the year in the benchmark case name `jones-1986`, an identifier
+d04348479193737cacf8f711d79e1d75bc8eb0df	CHANGELOG.md	REGISTERED: two, one -- the routes the entry names, G4MuonMinusBoundDecay::GetMuonDecayRate and G4MuonicAtomHelper::GetMuonDecayRate, and a pronoun for the nucleus a row names
 d04f7c3c548ab2eafd8731c1cfb39b51e62ddc54	CHANGELOG.md	REGISTERED: 0.30 -- the v1 default eta_acc SYSTEMS.md's self-correction finding names
 d0c20777b736d86e487a71bdd4ab4cd6da92dfe9	CHANGELOG.md	REGISTERED: two -- 'the other two' statements
 d45b3c707aea27d18eeed0c9ae22c479c9a3a291	CHANGELOG.md	REGISTERED: zero -- 'zero numeric change', the v1.1.0 notes' statement about the ledger loader
@@ -464,10 +465,12 @@ e8cf6442b39d798f73df0551b2e4d914afd1ff06	DATASET_D1.md	REGISTERED: 38, 88 -- the
 f03c5a1ccf97a52ae30ca7f318dbe9122f9a98a7	DATASET_D1.md	REGISTERED: two -- the two statements the sentence goes on to name (a model failure; a data limitation)
 f2d9fb4a3e4588204ebac632779abf5c6577a748	DATASET_D1.md	REGISTERED: one -- a determiner ('the one property')
 f5d7b0e8a5e2f734db24f64959f0996046e93aee	DATASET_D1.md	REGISTERED: 81, 82, 83 -- atomic numbers labelling the two descents; the effective charges beside them are pinned to the shipped array (T-63's rounded figures, and tests/test_g4prose.py for the second descent's start)
+f6a04be4b92c99781414c0642c0aaca6ba05f2b0	DATASET_D1.md	REGISTERED: two -- a pronoun for the two uncertainties the sentence names
 f80d9d12bccad3370cb99ed85a97abeca67bac49	DATASET_D1.md	REGISTERED: 2, 8, 3, 17, 6, 23, 77, 26, 245, 82, ³ -- the F-1 thresholds, read by T-63 and held to the sweep; ³ is the nuclide label ³H
 f93e626000d5060a5bb131ba0df7ada3d7b9d035	DATASET_D1.md	REGISTERED: 0, 1, 100 -- '0.' is the first element's value as declared (T-44 holds every effective charge to the source literal); the clamp bounds are read on this line by T-63 and held to the declared directive's zmin and zmax
 fa4e454cf7376988fd9aea2dbc833169f0203cf3	DATASET_D1.md	REGISTERED: two -- the two provenance questions the sentence itself names (where the value came from, what established the flag)
 fb75dedfb605f98897d95fabd58e54396f759b86	DATASET_D1.md	REGISTERED: one -- a pronoun ('a bare one')
+fe08442114a364c9c202d999c093b46f310682ee	DATASET_D1.md	REGISTERED: two -- the routes the next sentences name, by G4MuonMinusBoundDecay and G4MuonicAtomHelper; tests/test_g4lifetime.py reads the call each makes in both vendored revisions
 ff75fbe4536b0ca4aee71784da448e67d0842e07	DATASET_D1.md	REGISTERED: 62, 150, 50, 119 -- the record keys (62, 150) and (50, 119) and the nuclide labels Sm-150 and Sn-119; the abundances beside them are T-63's rounded pins, read from the audit rows of those keys
 2651db6c1279516bcfe33fc14e87d8fe3d7bc0df	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 3794b9d6bb93fe775c91043e06e0f136e4951d6b	DATASET_D3.md	REGISTERED: one -- 'more than one distinct gated line', a count threshold

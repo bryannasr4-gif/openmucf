@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The aluminium capture record.** Section 5 of `DATASET_D1.md` registers that the compiled-in aluminium record is the weighted mean of a pair of rows of the published table that print the same mean life and different rates, and its opening and `README.md` count it among the defects; the `parity` profile is unchanged.
 - **Gas mixtures in the atomic-capture corpus.** `openmucf.g4.d2.classify` tests a row's phase before a `+` in its formula, so the mixtures of hydrogen with carbon monoxide or carbon dioxide are classed as gases rather than as powder mixtures; no row's gating, comparison or screen changes.
 
+### Added -- measured mean lives against both bound-decay routes (2026-10-13)
+
+- **Measured mean lives.** `cpp/tools/harvest_decay.cc` reads, from unpatched `v11.4.2` and `v11.5.0.beta` builds that print the same values, the decay rate of a muon bound in a muonic atom on Geant4's two routes, `G4MuonMinusBoundDecay::GetMuonDecayRate` with the nuclear mass it is passed and `G4MuonicAtomHelper::GetMuonDecayRate`; `data/g4/d1/d1_decay_rate.oracle` commits them under the Geant4 Software License, and `openmucf/g4/d1_lifetime.py` reproduces them bit for bit. `scripts/generate_g4lifetime.py`, a step of `make audit`, writes `data/g4/d1/mean_life_comparison.csv`: for each profile of the capture table and each mean life Suzuki, Measday and Roalsvig or Mizuno et al. printed beside a capture rate for their own measurements, each route's rate of capture plus decay for the nucleus the row names, where it names one, against the measured rate. Section 12 of `DATASET_D1.md` describes the comparison, the configuration that reaches each route, and the rows each route leaves outside the band. No `.g4dat` or Layer-2 file changes.
+
 ## [1.3.0] - 2026-09-27
 
 **What this release is.** v1.3.0 ships the muonic-atom data layer for Geant4: its datasets, the dataset read from C++ and from inside Geant4, a transport workflow that builds each revision the patches name with and without them, and a page for Geant4 developers.
