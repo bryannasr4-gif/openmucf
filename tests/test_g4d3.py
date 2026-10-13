@@ -900,6 +900,7 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     gated = [row for row in validation if row["gated"] == "true"]
     within = [row for row in gated if row["within"] == "true"]
     weak = [row for row in gated if row["label"] == md.WEAKLY_SENSITIVE]
+    npol = [row for row in gated if row["npol_keV"]]
     path = "DATASET_D3.md"
     pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
         ("the generator's version", path, r"derived from the output of MuDirac (\d+\.\d+\.\d+)", (1,),
@@ -933,6 +934,11 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
          r"outside it; (\d+) of the gated rows are weakly sensitive", (1,), len(weak)),
         ("weakly sensitive rows within tolerance", path, r"and (\d+) of those lie within tolerance", (1,),
          sum(row["within"] == "true" for row in weak)),
+        ("gated rows whose NPol exceeds the tolerance", path,
+         r"On (\d+) of the \d+ gated rows that carry an `NPol`", (1,),
+         sum(abs(Decimal(row["npol_keV"])) > Decimal(row["tol_keV"]) for row in npol)),
+        ("gated rows that carry an NPol", path, r"On \d+ of the (\d+) gated rows that carry an `NPol`", (1,),
+         len(npol)),
     ]
     table = md.render_validation_table(validation).splitlines()[2:]
     for number, line in enumerate(table, start=1):
@@ -1025,12 +1031,73 @@ def centroid_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
          len(nuclides)),
         ("illustrative ratio mass", path, r"For Pb-(\d+) the row also lists", (1,), ratios[0]["A"]),
     ]
+    pins.extend(margin_summary_pins(compared, margins))
     for name, block in (("centroids", centroids.render_centroids_table(rows)),
                         ("margins", centroids.render_margins_table(margins))):
         for number, line in enumerate(block.splitlines()[2:], start=1):
             pattern, groups = _row_pattern(line)
             pins.append((f"{name} table row {number}", path, pattern, groups, None))
     return pins
+
+
+
+def margin_summary_pins(compared: list[dict[str, str]],
+                        margins: list[dict[str, str]]) -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """The pins of the two sentences after the margins table: the range of the margins over the isotopes
+    `centroid_margins.csv` counts, the largest absolute residuals of the patched and the unpatched cascade
+    with their nuclides, and the rows whose margin exceeds twice the tolerance, taken at its largest over
+    every correlation, plus the size of `dnum_keV` -- the most that moving the value within its band and the
+    shell difference by that shift can take from a margin."""
+    path = "DATASET_D3.md"
+    symbol = {(row["Z"], row["A"]): row["symbol"] for row in _committed_rows(md.INPUTS_RELPATH)}
+    patched = max(margins, key=lambda row: Decimal(row["max_abs_r_d3_keV"]))
+    unpatched = max(compared, key=lambda row: abs(Decimal(row["r_stock_keV"])))
+
+    def outlasts(row: dict[str, str]) -> bool:
+        tolerance = md.TOL_FACTOR * Decimal(row["sigma_keV"] or row["sigma_max_keV"])
+        return Decimal(row["margin_keV"]) > 2 * tolerance + abs(Decimal(row["dnum_keV"]))
+
+    lasting = [row for row in compared if outlasts(row)]
+    (short,) = [row for row in compared if not outlasts(row)]
+    nuclide = symbol[(patched["max_abs_r_d3_Z"], patched["max_abs_r_d3_A"])]
+    return [
+        ("isotopes the margins are over", path,
+         r"the margins over the (\d+) isotopes of `centroid_margins\.csv`", (1,),
+         sum(int(row["isotopes"]) for row in margins)),
+        ("smallest margin", path, r"`centroid_margins\.csv` run from ([0-9.]+) keV to", (1,),
+         min(margins, key=lambda row: Decimal(row["margin_min_keV"]))["margin_min_keV"]),
+        ("largest margin", path, r"run from [0-9.]+ keV to ([0-9.]+) keV, and the patched", (1,),
+         max(margins, key=lambda row: Decimal(row["margin_max_keV"]))["margin_max_keV"]),
+        ("patched cascade's largest absolute residual", path,
+         r"largest absolute residual is ([0-9.]+) keV, for", (1,), patched["max_abs_r_d3_keV"]),
+        ("patched cascade's largest residual, mass number", path,
+         rf"residual is [0-9.]+ keV, for {nuclide}-(\d+), where", (1,), patched["max_abs_r_d3_A"]),
+        ("unpatched cascade's largest absolute residual", path,
+         r"the unpatched cascade's reaches ([0-9.]+) keV", (1,), unpatched["r_stock_keV"].lstrip("-")),
+        ("unpatched cascade's largest residual, mass number", path,
+         rf"reaches [0-9.]+ keV, for {symbol[(unpatched['Z'], unpatched['A'])]}-(\d+)\.", (1,),
+         unpatched["A"]),
+        ("rows whose margin outlasts the band and the shift", path,
+         r"the margin exceeds the sum of both on (\d+) of the \d+ rows", (1,), len(lasting)),
+        ("rows of the margin screen", path,
+         r"the margin exceeds the sum of both on \d+ of the (\d+) rows", (1,), len(compared)),
+        ("the row whose margin does not", path,
+         rf"and not on the row for {symbol[(short['Z'], short['A'])]}-(\d+)\.", (1,), short["A"]),
+    ]
+
+
+def test_t107_drill_a_margin_that_outlasts_nothing_moves_the_count() -> None:
+    from openmucf.g4 import d3_centroids as centroids
+
+    compared = [row for row in _committed_rows(centroids.CENTROIDS_RELPATH) if row["cohort"] != "excluded"]
+    margins = _committed_rows(centroids.MARGINS_RELPATH)
+    stated = {what: expected for what, *_, expected in margin_summary_pins(compared, margins)}
+    first = next(i for i, row in enumerate(compared) if row["cohort"] == "labelled")
+    shrunk = [dict(row, margin_keV="0.000000001") if i == first else row for i, row in enumerate(compared)]
+    with pytest.raises(ValueError):
+        margin_summary_pins(shrunk, margins)
+    count = stated["rows whose margin outlasts the band and the shift"]
+    assert isinstance(count, int) and count == len(compared) - 1
 
 
 def test_t107_the_centroid_tables_are_generated_blocks():
