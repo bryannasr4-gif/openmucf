@@ -168,6 +168,7 @@ class ChainValue:
     count_basis: str = ""
     machine: str = ""
     transfers: tuple[tuple[str, str], ...] = ()
+    unknown_edges: tuple[str, ...] = ()
 
     @property
     def missing_stages(self) -> tuple[str, ...]:
@@ -184,22 +185,7 @@ class ChainValue:
 
     @property
     def direction_is_one_sided(self) -> bool:
-        """False iff a factor whose own source disclaimed it has been COMPOSED into this figure.
-
-        The distinction that matters for direction is not sourced-vs-unsourced, it is
-        omitted-vs-applied. A factor a chain leaves OUT is bounded above by 1, so omitting it can
-        only understate the cost -- that is a one-sided lower bound. A factor a source states, calls
-        arbitrary, and :meth:`compose` then divides by can put the figure above or below the truth,
-        because the true factor may lie either side of the stated one.
-
-        ``author_declared_arbitrary`` is the one status that always means the second thing: it is
-        never added for an omission, only carried in by a factor actually applied. ``assumption`` can
-        mean either -- :meth:`MuonCost.chain_point` adds it for a qualifier the source never
-        established, which is an omission -- so it is not read here, and where a figure is built from
-        the edge table :attr:`ChainPath.bias_direction` remains the fuller answer: it knows which
-        edges were applied and carries each edge's own declared direction.
-        """
-        return "author_declared_arbitrary" not in self.statuses
+        return "author_declared_arbitrary" not in self.statuses and not self.unknown_edges
 
     @property
     def bias_direction(self) -> str:
@@ -254,10 +240,9 @@ class ChainValue:
                 f"refusing to render a figure that rests on a machine transfer as a value "
                 f"({self.value_GeV:.{digits}f} GeV): {self.why_bound()}"
             )
-        if self.is_bound:
+        if self.is_bound or not self.direction_is_one_sided:
             tail = (
-                "Use render() -- a factor composed here is one its own source calls arbitrary, so "
-                "this figure is not a bound in either direction."
+                "Use render() -- this figure is not a bound in either direction."
                 if not self.direction_is_one_sided
                 else (
                     f"Use render() -- this is a one-sided '{self.bias_direction}' bound, so the "
@@ -266,7 +251,8 @@ class ChainValue:
             )
             raise BasisError(
                 f"refusing to render a bound as a value ({self.value_GeV:.{digits}f} GeV at stage "
-                f"'{self.stage}', numeraire '{self.numeraire}'): {self.why_bound()}. {tail}"
+                f"'{self.stage}', numeraire '{self.numeraire}'): {self.why_bound() or 'direction unknown'}. "
+                f"{tail}"
             )
         return f"{self.value_GeV:.{digits}f} GeV"
 
@@ -295,6 +281,7 @@ class ChainValue:
             count_basis="muon",
             machine=self.machine,
             transfers=self.transfers,
+            unknown_edges=self.unknown_edges,
         )
 
     def to_numeraire(self, factor: float, to_numeraire: str, status: str, label: str) -> ChainValue:
@@ -337,6 +324,7 @@ class ChainValue:
             count_basis=self.count_basis,
             machine=self.machine,
             transfers=self.transfers,
+            unknown_edges=self.unknown_edges,
         )
 
 
@@ -1208,6 +1196,8 @@ class ChainEdge:
             first = self.source_bibkey.split(";")[0].strip()
             maker = first if value.machine and self.adopted_for == value.machine else THIS_LEDGER
             out = replace(out, transfers=out.transfers + ((self.edge_id, maker),))
+        if self.bias_direction == "unknown":
+            out = replace(out, unknown_edges=out.unknown_edges + (self.edge_id,))
         return out
 
 
@@ -1257,22 +1247,7 @@ class ChainEdgeTable:
 
 @dataclass(frozen=True)
 class ChainPath:
-    """A composed sequence of edges, its terminal figure, and which way that figure can be wrong.
-
-    :attr:`bias_direction` is the reason this class exists rather than a bare
-    :class:`ChainValue`. Every factor a chain OMITS is bounded above by 1, so an omission can only
-    understate the cost; a factor a source states but calls arbitrary is different in kind: it can
-    move the figure either way, so a path through it is not a one-sided bound and must not be
-    printed with a ">=" marker. ``ChainValue.bias_direction`` reads only its statuses -- enough to
-    see that a factor its own source disclaimed was composed in, not which edge it was or what
-    direction that edge declares -- and :attr:`bias_direction` here reads those statuses AND each
-    applied edge's own declared ``bias_direction``, so an arbitrary factor reaching the figure by
-    any route -- a row typed ``author_declared_arbitrary``, an edge carrying that status whatever
-    direction its source declares, or a factor composed in through :meth:`ChainValue.compose` --
-    grades the path ``'unknown'`` and it prints no marker. The edge declarations add one thing the
-    statuses cannot see: an edge merely assumed but declared ``unknown`` withholds the marker here
-    that the bare value would print.
-    """
+    """A composed sequence of edges, its terminal figure, and which way that figure can be wrong."""
 
     start: ChainValue
     edges: tuple[ChainEdge, ...]

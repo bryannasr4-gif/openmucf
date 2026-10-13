@@ -61,8 +61,7 @@
     "bias_direction": {
       "type": "string",
       "enum": ["lower", "unknown", "none"],
-      "description": "Which way this edge can move a composed cost away from the truth. 'none' iff the factor is sourced. 'lower' where using the row as written can only understate the cost -- an absent factor is bounded above by 1, so omitting it understates, and a factor its source states while calling the result optimistic, or at its own ceiling with the truth below it, understates the same way. 'unknown' where a source declares its value arbitrary and gives no direction: composing such a factor can understate OR overstate, which is strictly weaker than an omitted one, and a chain that uses it is therefore not a one-sided bound at all.",
-      "$comment": "This grades the EDGE. ChainValue.bias_direction grades a composed figure by a different and older rule -- whether it is a bound at all -- so the two answer different questions and ChainPath.bias_direction is the one that reads these cells."
+      "description": "Which way this edge can move a composed cost away from the truth. 'none' iff the factor is sourced. 'lower' where using the row as written can only understate the cost -- an absent factor is bounded above by 1, so omitting it understates, and a factor its source states while calling the result optimistic, or at its own ceiling with the truth below it, understates the same way. 'unknown' where a source declares its value arbitrary and gives no direction: composing such a factor can understate OR overstate, which is strictly weaker than an omitted one, and a chain that uses it is therefore not a one-sided bound at all."
     },
     "charge_basis": {
       "type": "string",

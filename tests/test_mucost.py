@@ -1716,15 +1716,7 @@ def test_a_direction_unknown_path_is_never_printed_with_a_bound_marker(table, ch
 
 
 def test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned(table, chain):
-    """``ChainEdge.apply_to`` returns a bare ChainValue, and that object must not overclaim.
-
-    The composition API has two public routes. ``compose_path`` returns a ``ChainPath``, which reads
-    each edge's own declared direction. ``apply_to`` returns the underlying ``ChainValue``, which
-    has only the statuses -- and for a factor whose own source calls it arbitrary that is enough to
-    know the figure is NOT a one-sided bound. Before this, that route printed ">= 9.40 GeV" and
-    refused with "the true cost can only be higher", both false of the same number the path renderer
-    correctly marked *direction unknown*.
-    """
+    """``ChainEdge.apply_to`` returns a bare ChainValue, and that object must not overclaim."""
     beam = table["kelly_hart_rose_2021"].chain_point()
     arbitrary = chain["delivery_kelly_eta_mu"].apply_to(beam)
     assert arbitrary.is_bound and not arbitrary.direction_is_one_sided
@@ -1761,6 +1753,69 @@ def test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned(table,
     terminal = terminal_row.chain_point()
     assert terminal.stage == mucost.TERMINAL_STAGE and not terminal.missing_stages
     assert "assumption" in terminal.statuses and terminal.direction_is_one_sided
+    sourced_unknown = dataclasses.replace(chain["eta_acc_kovach_site"], bias_direction="unknown")
+    complete = mucost.ChainValue(
+        value_GeV=1.0, stage=mucost.TERMINAL_STAGE, numeraire=mucost.BEAM_KINETIC,
+        charge_basis="mu_minus", statuses=("primary",), provenance=("synthetic",),
+        machine=sourced_unknown.machine,
+    )
+    applied = sourced_unknown.apply_to(complete)
+    assert not applied.is_bound and applied.transfers == ()
+    assert applied.bias_direction == "unknown" and not applied.render().startswith(">= ")
+    with pytest.raises(BasisError, match="not a bound in either direction"):
+        applied.render_value()
+
+
+def _unknown_edge(tmp_path, table, grade, axis):
+    with mucost.MUON_COST_CHAIN_CSV.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        row = next(r for r in reader if r["edge_id"] == "delivery_petrov_via_eliezer_henis")
+    row = dict(row, edge_id="syn_unknown", bias_direction="unknown", evidence_status=grade,
+               machine=table["kelly_hart_rose_2021"].machine)
+    if axis == mucost.NUMERAIRE_EDGE:
+        row.update(from_stage="*", to_stage="*", from_numeraire=mucost.BEAM_KINETIC,
+                   to_numeraire="electrical_minimal", charge_basis="*", count_basis="*")
+    path = tmp_path / f"unknown_{axis}_{grade}.csv"
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+        w.writeheader()
+        w.writerow(row)
+    return mucost.load_muon_cost_chain(csv_path=path)["syn_unknown"]
+
+
+@pytest.mark.parametrize("axis", [mucost.STAGE_EDGE, mucost.NUMERAIRE_EDGE])
+@pytest.mark.parametrize("grade", ["assumption", "relayed_unread"])
+def test_an_applied_unknown_edge_grades_the_bare_value_unknown_through_every_later_step(
+    tmp_path, table, chain, grade, axis
+):
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    edge = _unknown_edge(tmp_path, table, grade, axis)
+    assert edge.kind == axis and edge.evidence_status == grade and edge.bias_direction == "unknown"
+    raw = edge.apply_to(beam)
+    path = mucost.compose_path(beam, [edge])
+    assert raw.value_GeV == path.value.value_GeV == beam.value_GeV / edge.factor
+    assert raw.transfers == () and path.value == raw
+    other = "delivery_petrov_via_eliezer_henis" if axis == mucost.NUMERAIRE_EDGE else "eta_acc_kovach_site"
+    later = chain[other].apply_to(raw)
+    wrapped = mucost.compose_path(later, [])
+    for figure in (raw, path.value, later, wrapped.value):
+        assert figure.bias_direction == edge.bias_direction
+        assert not figure.render().startswith(">= ")
+        assert figure.render().removesuffix(mucost.TRANSFER_SUFFIX) == (
+            f"{figure.value_GeV:.2f} GeV (direction unknown)"
+        )
+        with pytest.raises(BasisError):
+            figure.render_value()
+    for p in (path, wrapped):
+        assert p.bias_direction == edge.bias_direction and p.render() == p.value.render()
+        with pytest.raises(BasisError, match=re.escape("refusing to render a figure graded 'unknown'")):
+            p.render_value()
+    for figure in (raw, path.value):
+        with pytest.raises(BasisError) as exc:
+            figure.render_value()
+        assert "not a bound in either direction" in str(exc.value)
+        assert "can only be higher" not in str(exc.value)
 
 
 def test_an_arbitrary_factor_grades_the_path_unknown_by_every_route(table, chain):
