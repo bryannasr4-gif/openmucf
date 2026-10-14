@@ -43,7 +43,7 @@ shared substrate:
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest                 # the default run deselects the slow marker; pytest -m slow runs it
-pytest -m slow         # the ~9-min twin interval-calibration coverage run (200 seeded MCMC fits)
+pytest -m slow         # the slow tests, the twin interval-calibration coverage run (200 seeded MCMC fits) among them
 ```
 Verified platforms: Linux CI (py3.11/3.12/3.13), Windows x64 (py3.12), and **macOS arm64 / Apple Silicon
 (py3.12)** — every job runs the full suite, and the arm64 job additionally runs `make audit`, so the

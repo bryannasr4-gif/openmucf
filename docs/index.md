@@ -4,7 +4,7 @@
 muon-catalyzed fusion (μCF).**
 
 > Status: **v1 spine complete and validated** (Phases 0–2). The high-density
-> effective-sticking surrogate (Phase 3) is planned next (not yet started; needs HPC + a
+> effective-sticking surrogate (Phase 3) is planned (not yet started; needs HPC + a
 > gold-standard cross-section source). See `MODEL_SPEC.md` for the model
 > formulation, `LITERATURE.md` for the sourced rate ledger, and `CHANGELOG.md` for release history.
 
@@ -53,7 +53,7 @@ for what is deliberately excluded, and `ADOPTERS.md` for who it is for.
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 464 tests: 461 in the default run (460 pass, 1 skipped-blocked), 3 slow deselected; run the slow twin coverage with `pytest -m slow`
+pytest                 # the default run deselects the slow marker; run the slow tests, the twin coverage among them, with `pytest -m slow`
 ```
 
 Reproduce the ledger, findings, and figures:
