@@ -60,6 +60,13 @@ nuclides in one falling order — and refuses the whole dataset with the fatal `
 `G4MuonicData005`, naming the rule and either the file and table or, for the pair of energy
 tables, the profile where any of that does not hold; only a dataset these checks accept reaches
 the `G4MuonicData004` and `G4MuonicData003` refusals above.
+With the opt-in on, once a lookup in the transition seam's tables has given
+`G4EmCaptureCascade::ApplyYourself` the K energy or a shell energy of the nuclide being transported, the
+glue's `CheckCascadeLevels` checks the whole array of level energies the cascade then holds, the tables'
+values and the hydrogen-like ones above them, and raises the fatal `G4Exception` `G4MuonicData005` when a
+level is not a positive finite energy or the levels do not fall from each shell to the next. A dataset
+the checks above accept can reach this refusal during a run: the transport workflow's refusal cases
+reach it on both revisions (`cpp/transport/README.md`).
 `g4-v11.4.2-register-dataset.patch` and
 `g4-v11.5.0.beta-register-dataset.patch` are separate and serve the registered mode only: each
 appends the dataset's `geant4_add_dataset` entry to `G4DatasetDefinitions.cmake`, so a build
@@ -70,10 +77,12 @@ The evidence that a patched build behaves as stated — with the opt-in off, app
 harvest whose whole output is bit-identical to an unpatched build's; with the opt-in on, the
 harvested sweep reproducing the digest recorded by the oracle file beside the dataset
 (`cpp/tools/README.md` describes it), through both compiled-in copies and in both discovery modes —
-is kept outside this repository, except the transport runs `cpp/transport/README.md` describes, whose manifest and check results `cpp/transport/evidence/` holds. That digest is stated here by reference to the oracle file, never
+is kept outside this repository, except the transport runs `cpp/transport/README.md` describes, whose manifest and check results `cpp/transport/evidence/` holds. Because the `parity` tables hold the values compiled into Geant4, that sweep shows that enabling the dataset with them changes no rate it covers, and it cannot tell a rate the table answered from a rate the compiled-in code computed. That digest is stated here by reference to the oracle file, never
 as a literal, and a test holds this file to that.
 The cascade and K-energy harvests of `v11.4.2` and `v11.5.0.beta` were measured the same way: with
 the opt-in off they are bit-identical to an unpatched build's.
+The patched trees were built and tested on Linux only: continuous integration builds the reader and its
+validator, not a patched Geant4, on Linux, macOS and Windows (`cpp/README.md`).
 
 The patch files in this directory, the Geant4 source lines they carry as context and the lines
 they add alike, are offered under the Geant4 Software License, so that they can be taken into
