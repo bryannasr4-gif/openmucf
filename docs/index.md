@@ -1,7 +1,7 @@
 # OpenMuCF
 
 **Open FAIR rate ledger + differentiable cycle / energy-balance auditor for
-muon-catalyzed fusion (μCF).**
+muon-catalyzed fusion (μCF), and external muonic-atom data for Geant4.**
 
 > Status: **v1 spine complete and validated** (Phases 0–2). The high-density
 > effective-sticking surrogate (Phase 3) is planned (not yet started; needs HPC + a

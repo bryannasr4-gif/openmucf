@@ -1,6 +1,6 @@
 # OpenMuCF
 
-**Open FAIR rate ledger + differentiable cycle/energy-balance auditor for muon-catalyzed fusion (μCF).**
+**Open FAIR rate ledger + differentiable cycle/energy-balance auditor for muon-catalyzed fusion (μCF), and external muonic-atom data for Geant4.**
 
 [![Licenses by path](https://img.shields.io/badge/licenses%20by%20path-Apache--2.0%20%C2%B7%20CC--BY--4.0%20%C2%B7%20Geant4%20Software%20License%20%C2%B7%20MIT-blue.svg)](#license)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
