@@ -317,8 +317,8 @@ def load_measurements(path: Path, sources: dict[str, dict[str, str]]) -> list[di
 
 
 
-#: The columns of `selector_summary.csv`: one row for every row the method-aware rule gates (`scope`
-#: `method_gated`) and one for each class among them.
+#: The columns of `selector_summary.csv`: one row that describes all the rows the method-aware rule gates
+#: together (`scope` `method_gated`) and one for each class among them.
 SUMMARY_COLUMNS = (
     "scope", "rows", "to_oxygen", "hydrogenous", "selector_above", "ratio_min", "ratio_median", "ratio_max",
     "z_ratio_closer", "z_ratio_above", "selector_above_z_ratio",
