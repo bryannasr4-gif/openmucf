@@ -107,6 +107,9 @@ record of what moved.
 ## Licensing
 
 The Geant4 Software License in `LICENSE` applies to this directory, to the patch files under
-`../../cpp/patches/`, whose own `LICENSE` is a verbatim copy of it, and to the `parity` tables and their
-Layer-2 files generated from `v11.4.2/G4MuonMinusBoundDecay.cc`. The License section of
-`../../README.md` states the licences of the other paths it names.
+`../../cpp/patches/`, whose own `LICENSE` is a verbatim copy of it, to the `parity` tables
+`../../data/g4/d1/d1_capture.g4dat` and `../../data/g4/d1/d1_zeff.g4dat` and their Layer-2 files
+`../../data/g4/d1/d1_capture.prov.json` and `../../data/g4/d1/d1_zeff.prov.json`, generated from
+`v11.4.2/G4MuonMinusBoundDecay.cc`, and to the natural isotopic compositions and the decay rates read from
+Geant4 builds, `../../data/g4/d1/geant4_natural_isotopes.csv` and `../../data/g4/d1/d1_decay_rate.oracle`.
+The License section of `../../README.md` states the licences of the other paths it names.

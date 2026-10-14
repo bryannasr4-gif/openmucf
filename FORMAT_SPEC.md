@@ -700,5 +700,8 @@ members, not the compressed bytes.
 The `parity` datasets described by this format reproduce values compiled into Geant4, and are
 generated from Geant4 source vendored in `third_party/geant4/` under the Geant4 Software License
 v1.0. The Geant4 Software License applies to that directory, to the patch files under
-`cpp/patches/` and to the `parity` tables with their Layer-2 files; the License section of `README.md`
-states the licences of the other paths it names.
+`cpp/patches/`, to the `parity` tables `data/g4/d1/d1_capture.g4dat` and `data/g4/d1/d1_zeff.g4dat`
+with their Layer-2 files `data/g4/d1/d1_capture.prov.json` and `data/g4/d1/d1_zeff.prov.json`, and to
+the natural isotopic compositions and the decay rates read from Geant4 builds,
+`data/g4/d1/geant4_natural_isotopes.csv` and `data/g4/d1/d1_decay_rate.oracle`; the License section of
+`README.md` states the licences of the other paths it names.

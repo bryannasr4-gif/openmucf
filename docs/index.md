@@ -79,7 +79,13 @@ See also the in-repo references: `README.md`, `MODEL_SPEC.md`, `LITERATURE.md`,
 ## License
 
 Apache-2.0 for code; CC-BY-4.0 for the rate ledger under `openmucf/data/`, the data documents
-generated from it and the files under `data/g4/` that this project computed, harvested or wrote; the
-Geant4 Software License for the Geant4 patches under `cpp/patches/` and the vendored Geant4 files
-under `third_party/geant4/`. The License section of `README.md` names, by path, the muonic-atom files
-offered under another licence or under none.
+generated from it and the files under `data/g4/` that this project computed, harvested or wrote, other
+than those named below or in the License section of `README.md`; the Geant4 Software License for the
+Geant4 patches under `cpp/patches/`, the vendored Geant4 files under `third_party/geant4/`, the `parity`
+tables `data/g4/d1/d1_capture.g4dat` and `data/g4/d1/d1_zeff.g4dat` with their Layer-2 files
+`data/g4/d1/d1_capture.prov.json` and `data/g4/d1/d1_zeff.prov.json`, and the natural isotopic
+compositions and the decay rates read from Geant4 builds, `data/g4/d1/geant4_natural_isotopes.csv` and
+`data/g4/d1/d1_decay_rate.oracle`; MuDirac's MIT License for `data/g4/d3/mudirac_inputs.csv`, which
+repeats the radii MuDirac bundles, and for `data/g4/d3/LICENSE-MUDIRAC`, the text of that licence. The
+License section of `README.md` names, by path, the muonic-atom files offered under no licence of this
+repository.
