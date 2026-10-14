@@ -30,6 +30,26 @@ So the dataset has two layers, shipped together:
 `#SOURCEDIGEST` directive is the SHA-256 of the Layer-2 file's bytes. The two cannot drift without a
 checkable error (`E009`).
 
+**Relation to ENDF-6 and GNDS.** ENDF-6 is widely used for storing and disseminating nuclear data,
+and the Generalized Nuclear Data Structure, GNDS, is envisioned to replace it in the future (Schnabel
+et al., arXiv:2312.08249). Table 3 of the ENDF-6 Formats Manual edited by Brown (2023), which lists the
+sub-libraries ENDF-6 allows, names none for muons or muonic atoms; a muon nuclear data library with
+sub-libraries for muonic X-ray energies and intensities and for the lifetimes of muonic atoms and
+nuclear capture rates is under construction (Watanabe et al., arXiv:2605.15539). Mattoon et al. (2012),
+a work Schnabel et al. cite for the conception of GNDS, describe Generalized Nuclear Data, GND, as a
+structure that, unlike ENDF, does not define how the data are stored in a file: Fudge writes it in XML,
+and other meta-languages such as HDF5 can also store it (doi:10.1016/j.nds.2012.11.008). Separately,
+Geant4's LEND package reads GNDS data through LLNL's GIDI+ libraries and an XML parser that package
+carries (`source/processes/hadronic/models/lend` in Geant4 `v11.4.2`). This format carries its own
+layers instead: Layer 1 is read with the standard library
+alone, as the constraint above requires, and Layer 2 carries the source, uncertainty type, evaluation
+identity and disclosure flags of every record. Its grammar is stated in prose here and held to
+independent readers, the Python reference implementation of section 7 and the C++ validator, by a
+conformance corpus with a recorded verdict for each file;
+endf-parserpy instead describes ENDF-6 in a formal language defined in extended Backus-Naur form and
+reads, writes and validates files from that description (Schnabel et al., arXiv:2312.08249), a method
+this format does not use.
+
 ---
 
 ## 2. Layer 1 -- the `.g4dat` grammar
@@ -104,7 +124,10 @@ is **`E013`, not `E002`**, even though the empty-counts-as-absent rule is what m
 `#SOURCESHA` is never in the always-required set, so its absence is only ever a `#PROFILE` problem.
 
 An analytic fallback is carried as declared data rather than as compiled-in behaviour so that it is
-versioned, testable, swappable and citable like any other row.
+versioned, testable and citable like any other row. In the Geant4 overlay this repository ships, the
+declaration is documentary: a key the selected table has no row for falls through to Geant4's
+compiled-in code, and no declared expression is evaluated. The standalone validator evaluates the
+declaration and requires it to reproduce the sweep digest that the oracle file beside the dataset records.
 
 #### Which values the reader itself checks
 
@@ -521,7 +544,9 @@ Whether a request for (Z, A) may also be answered by the (Z, 0) row of section 6
 consumer's rule and not the format's: that row is a facility the reader offers, and a consumer
 states where it reads it.
 `precedence` (section 3) ranks sources within one file;
-a `#FALLBACK`, where a file declares one, declares the last rung of its profile.
+a `#FALLBACK`, where a file declares one, declares the last rung of its profile; a consumer may evaluate
+it or fall through to its own compiled-in code instead, as the Geant4 overlay this repository ships does
+(section 2.2).
 
 ---
 
@@ -700,5 +725,8 @@ members, not the compressed bytes.
 The `parity` datasets described by this format reproduce values compiled into Geant4, and are
 generated from Geant4 source vendored in `third_party/geant4/` under the Geant4 Software License
 v1.0. The Geant4 Software License applies to that directory, to the patch files under
-`cpp/patches/` and to the `parity` tables with their Layer-2 files; the License section of `README.md`
-states the licences of the other paths it names.
+`cpp/patches/`, to the `parity` tables `data/g4/d1/d1_capture.g4dat` and `data/g4/d1/d1_zeff.g4dat`
+with their Layer-2 files `data/g4/d1/d1_capture.prov.json` and `data/g4/d1/d1_zeff.prov.json`, and to
+the natural isotopic compositions and the decay rates read from Geant4 builds,
+`data/g4/d1/geant4_natural_isotopes.csv` and `data/g4/d1/d1_decay_rate.oracle`; the License section of
+`README.md` states the licences of the other paths it names.

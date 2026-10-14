@@ -162,16 +162,18 @@ CC-BY-4.0 licence in this file to the rate ledger in openmucf/data/, to the
 data documents generated from it and to the files under data/g4/ that this
 project computed, harvested or wrote. It does not apply it to the files that
 the License section of README.md names as restating tables a third party
-publishes, to the parity tables of the D1 dataset, to the natural isotopic
-compositions and the decay rates read from Geant4 builds or to the radii
-MuDirac bundles. The
-parity tables are generated from one unmodified third-party
-source file vendored under a different licence. See third_party/geant4/ --
-the Geant4 Software License v1.0 in third_party/geant4/LICENSE applies to
-that directory, to the patch files under cpp/patches/, to those tables and
-their Layer-2 files, to the natural isotopic compositions read from Geant4
-builds, data/g4/d1/geant4_natural_isotopes.csv, and to the decay rates read
-from Geant4 builds, data/g4/d1/d1_decay_rate.oracle. Values from third-party
+publishes, or to the files named below. The parity tables of the D1 dataset
+are generated from one unmodified third-party source file vendored under a
+different licence. See third_party/geant4/ -- the Geant4 Software License
+v1.0 in third_party/geant4/LICENSE applies to that
+directory, to the patch files under cpp/patches/, to the parity tables
+data/g4/d1/d1_capture.g4dat and data/g4/d1/d1_zeff.g4dat and their Layer-2
+files data/g4/d1/d1_capture.prov.json and data/g4/d1/d1_zeff.prov.json, to
+the natural isotopic compositions read from Geant4 builds,
+data/g4/d1/geant4_natural_isotopes.csv, and to the decay rates read from
+Geant4 builds, data/g4/d1/d1_decay_rate.oracle. MuDirac's MIT License, whose
+text data/g4/d3/LICENSE-MUDIRAC copies, applies to the radii MuDirac bundles
+that data/g4/d3/mudirac_inputs.csv repeats. Values from third-party
 sources are facts: the project
 asserts no rights over them and takes no position on the sources' rights. The
 License section of README.md states the licences by path.

@@ -249,6 +249,8 @@ LICENCE_BY_PATH: dict[str, str | None] = {
     "data/g4/d3/mudirac_inputs.csv": "MIT",
     "data/g4/d3/LICENSE-MUDIRAC": "MIT",
 }
+#: The licence of Geant4 itself, which the patches, the vendored source and the files that restate it carry.
+GEANT4_LICENCE = "Geant4 Software License"
 #: The `parity` tables, which carry the Geant4 Software License inside `data/g4/`.
 PARITY = (
     "data/g4/d1/d1_capture.g4dat", "data/g4/d1/d1_capture.prov.json",
@@ -451,10 +453,29 @@ def _tokens_under(*directories: str) -> tuple[str, ...]:
     return ("data/g4/", *(token for token in LICENCE_BY_PATH if token.startswith(directories)))
 
 
+def _licensed_as(directory: str, licence: str) -> tuple[str, ...]:
+    """The tokens of :data:`LICENCE_BY_PATH` inside `directory`, the directory itself excepted, that carry
+    `licence`: what a statement that says where `licence` applies must name path by path."""
+    return tuple(token for token, carried in LICENCE_BY_PATH.items()
+                 if token.startswith(directory) and token != directory and carried == licence)
+
+
+def _licensed_otherwise(directory: str) -> tuple[str, ...]:
+    """The tokens of :data:`LICENCE_BY_PATH` inside `directory`, the directory itself excepted, that carry a
+    licence of their own other than the directory's: what a statement that grants the directory's licence to
+    the files in it by what they are must name path by path. A token carrying no licence is left to the
+    README's list, which such a statement cites and :func:`check_licences_by_path` holds to every token."""
+    granted = LICENCE_BY_PATH[directory]
+    return tuple(token for token, carried in LICENCE_BY_PATH.items()
+                 if token.startswith(directory) and token != directory and carried not in (None, granted))
+
+
 def licence_statements() -> dict[str, tuple[str, tuple[str, ...]]]:
     """The prose statements of licences by path that :func:`check_licences_by_path` reads, keyed by file:
     each with the text it reads and the paths that text must name. A dataset document names every token of
-    its own directories."""
+    its own directories; a statement that grants the licence of `data/g4/` to the files there by what they
+    are names every file in it that carries another licence, and one that says where the Geant4 Software
+    License applies names every file in `data/g4/` that carries it."""
 
     def read(name: str) -> str:
         return (REPO / name).read_text(encoding="utf-8")
@@ -468,7 +489,7 @@ def licence_statements() -> dict[str, tuple[str, tuple[str, ...]]]:
         "LICENSE-DATA": (
             _note(read("LICENSE-DATA"), "NOTE (not part of the Creative Commons licence)"),
             ("openmucf/data", "data/g4/", "third_party/geant4/", "cpp/patches/",
-             "data/g4/d1/geant4_natural_isotopes.csv", "data/g4/d1/d1_decay_rate.oracle"),
+             *_licensed_otherwise("data/g4/")),
         ),
         "DATASET_D1.md": (
             _section(read("DATASET_D1.md"), "## 8. Licensing"),
@@ -481,13 +502,16 @@ def licence_statements() -> dict[str, tuple[str, tuple[str, ...]]]:
         "DATASET_D3.md": (_section(read("DATASET_D3.md"), "## 8. Licensing"), _tokens_under("data/g4/d3/")),
         "docs/index.md": (
             _section(read("docs/index.md"), "## License"),
-            ("openmucf/data", "cpp/patches/", "third_party/geant4/", "data/g4/"),
+            ("openmucf/data", "cpp/patches/", "third_party/geant4/", "data/g4/",
+             *_licensed_otherwise("data/g4/")),
         ),
         "FORMAT_SPEC.md": (
-            _section(read("FORMAT_SPEC.md"), "## 9. Attribution"), ("third_party/geant4/", "cpp/patches/"),
+            _section(read("FORMAT_SPEC.md"), "## 9. Attribution"),
+            ("third_party/geant4/", "cpp/patches/", *_licensed_as("data/g4/", GEANT4_LICENCE)),
         ),
         "third_party/geant4/README.md": (
-            _section(read("third_party/geant4/README.md"), "## Licensing"), ("cpp/patches/",),
+            _section(read("third_party/geant4/README.md"), "## Licensing"),
+            ("cpp/patches/", *_licensed_as("data/g4/", GEANT4_LICENCE)),
         ),
         "CONTRIBUTING.md": (
             _section(read("CONTRIBUTING.md"), "## 7. Licensing (by artifact type, on purpose)"),
@@ -559,6 +583,29 @@ def test_the_mudirac_licence_text_is_the_release_copy():
     SHA-256 `openmucf.g4.sources.mudirac130.TARBALL_SHA256` pins carries it."""
     payload = (REPO / "data" / "g4" / "d3" / "LICENSE-MUDIRAC").read_bytes()
     assert hashlib.sha256(payload).hexdigest() == MUDIRAC_LICENSE_SHA256
+
+
+def test_drill_a_file_given_a_licence_of_its_own_must_be_named_by_each_statement_that_reaches_it(monkeypatch):
+    """A file under `data/g4/d1/` that :data:`LICENCE_BY_PATH` gives the Geant4 Software License joins the
+    paths that the README's License section, the licensing section of `DATASET_D1.md`, the note of
+    `LICENSE-DATA`, the License section of `docs/index.md`, section 9 of `FORMAT_SPEC.md` and the Licensing
+    section of `third_party/geant4/README.md` must name; one given MuDirac's MIT License joins those of the
+    first four; and each statement that does not name it is refused."""
+    planted = "data/g4/d1/planted_table.csv"
+    reaches = {
+        GEANT4_LICENCE: {"README.md", "DATASET_D1.md", "LICENSE-DATA", "docs/index.md", "FORMAT_SPEC.md",
+                         "third_party/geant4/README.md"},
+        "MIT": {"README.md", "DATASET_D1.md", "LICENSE-DATA", "docs/index.md"},
+    }
+    for licence, expected in reaches.items():
+        monkeypatch.setitem(LICENCE_BY_PATH, planted, licence)
+        refused = set()
+        for name, (text, paths) in licence_statements().items():
+            try:
+                check_licences_by_path(text, paths)
+            except AssertionError:
+                refused.add(name)
+        assert refused == expected, (licence, sorted(refused))
 
 
 def test_drill_a_wrong_or_swapped_licence_by_path_is_refused():

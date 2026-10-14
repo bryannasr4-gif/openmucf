@@ -590,8 +590,8 @@ keyed by exactly that nuclide, and the compiled-in chain where the profile has n
 Where the isotope audit of section 6 establishes that an element's compiled-in record was measured on
 the element printed with no mass number, the row also gives that record and the relative difference
 between the weighted rate and the record's rate.
-That difference is an abundance-weighted first-order estimate against the natural measurement the table
-itself encodes.
+That difference is an abundance-weighted first-order estimate against the measurement the table itself
+encodes; for lead that measurement averages a lead target and a radiogenic-lead target (see below).
 
 It is first-order because Geant4 samples each stop's time from the drawn nucleus's own capture and decay
 rates (`G4MuonMinusBoundDecay::ApplyYourself`, and the lifetime
@@ -656,6 +656,12 @@ gives the `parity` rows, each figure rounded to a tenth of a percent.
 | 80 | Hg | 201 | 13.2 | +12.5 | 1.4 |
 | 81 | Tl | 205 | 70.5 | +3.1 | 1.2 |
 | 82 | Pb | 207 | 22.1 | +5.9 | 0.5 |
+
+The `parity` record for lead equals, at the precision it is printed with, the inverse-variance weighted
+mean of the row of lead printed with no mass number and the row of what a footnote of that table labels
+radiogenic lead, which Table IV of Suzuki, Measday and Roalsvig gives from the same reference
+(`suzuki1987_printed_rows.csv`), so the Pb row's relative difference is measured against a value that
+averages a measurement on lead and a measurement on radiogenic lead.
 
 This section does not revisit the rule that, under every profile but `parity`, an element's
 natural-composition row answers only a request that names it; the next table gives the rows of the

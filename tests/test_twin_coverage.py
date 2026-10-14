@@ -1,7 +1,7 @@
 """Slow gate: interval calibration of the counts-level likelihood (200 seeded replicas).
 
 Marked `slow`: deselected from the default `pytest -q` by the `addopts = "-m 'not slow'"` in
-pyproject.toml; run it explicitly with `pytest -m slow -q` (~9 min). CI runs it in the `slow` job on
+pyproject.toml; run it explicitly with `pytest -m slow -q`. CI runs it in the `slow` job on
 ubuntu-latest and macos-15, which runs on the weekly schedule or on manual dispatch and not on push.
 Its Poisson replicas are deterministic only on a fixed platform.
 

@@ -21,6 +21,7 @@ import pytest
 from openmucf.g4 import d1_natural as natural
 from openmucf.g4 import spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
+from openmucf.g4.sources import suzuki1987
 
 REPO = Path(__file__).resolve().parents[1]
 DOCUMENT = "DATASET_D1.md"
@@ -367,3 +368,71 @@ def test_drill_a_changed_cell_or_count_is_refused():
     count = pins[0]
     moved = re.sub(count[2], lambda m: m[0].replace(m[1], str(int(m[1]) + 1)), collapsed)
     assert int(re.findall(count[2], moved)[0]) != count[4]
+
+
+#: The words of section 11 that say what the `parity` lead record is measured against.
+LEAD_WORDS = (
+    "the inverse-variance weighted mean of the row of lead printed with no mass number and the row of what a "
+    "footnote of that table labels radiogenic lead",
+    "averages a measurement on lead and a measurement on radiogenic lead",
+)
+
+
+def lead_rows() -> tuple[dict[str, str], dict[str, str]]:
+    """The rows of Table IV at the lead record's Z that share a reference with the row the table labels with
+    an `R` prefix: the row on lead printed with no mass number, then that row."""
+    rows = suzuki1987.normalize(suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH))
+    (z,) = {int(row["z"]) for row in compared(study()) if row["symbol"] == "Pb"}
+    (radiogenic,) = [row for row in rows if int(row["Z"]) == z and row["basis_rule"] == "R-prefix"]
+    (plain,) = [row for row in rows if int(row["Z"]) == z and row["refs"] == radiogenic["refs"]
+                and row is not radiogenic]
+    assert plain["target_basis"] == "unspecified" and plain["target_label"] == "Pb", plain
+    return plain, radiogenic
+
+
+def lead_problems(pair: tuple[dict[str, str], dict[str, str]]) -> list[str]:
+    """What would make the section's statement false: the pair's inverse-variance weighted mean and its
+    uncertainty, at the record's printed precision, are not the `parity` lead record."""
+    import decimal
+
+    data = found()
+    (index,) = [i for i, record in enumerate(data.capture_records) if record[0] == int(pair[0]["Z"])]
+    value, unc = (decimal.Decimal(cell) for cell in data.capture_literals[index])
+    weights = [1 / suzuki1987.scaled(row, "rate_unc") ** 2 for row in pair]
+    total = sum(w * suzuki1987.scaled(row, "rate") for w, row in zip(weights, pair, strict=True))
+    mean = total / sum(weights)
+    sigma = 1 / sum(weights).sqrt()
+    if (mean.quantize(value), sigma.quantize(unc)) != (value, unc):
+        return [f"the weighted mean is {mean} +- {sigma}; the record is {value} +- {unc}"]
+    return []
+
+
+def test_the_lead_record_averages_a_lead_row_and_a_radiogenic_lead_row():
+    """Section 11 says, after its table, that the `parity` lead record is the inverse-variance weighted mean,
+    at its printed precision, of a row of Table IV on lead printed with no mass number and a row the table's
+    footnote labels radiogenic lead, from the same reference; recomputed here from the committed transcription
+    and the vendored record."""
+    plain, radiogenic = lead_rows()
+    assert lead_problems((plain, radiogenic)) == []
+    printed = suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH)
+    marker = radiogenic["target_label"].rpartition("^")[2]
+    (footnote,) = [row.note for row in printed
+                   if row.row_kind == "footnote" and row.note.startswith(f"^{marker}R")]
+    assert "radiogenic lead" in footnote, footnote
+    text = (REPO / DOCUMENT).read_text(encoding="utf-8")
+    section = " ".join(text.split("\n## 11. ", 1)[1].split("\n## 12. ", 1)[0].split())
+    table = " ".join(natural.render_table(study()).split())
+    for words in LEAD_WORDS:
+        assert section.count(words) == 1 and section.index(words) > section.index(table), words
+
+
+def test_drill_another_lead_row_in_place_of_the_radiogenic_row_is_refused():
+    """Taking the lead row of another reference in place of the radiogenic-lead row moves the weighted mean
+    off the record."""
+    plain, radiogenic = lead_rows()
+    rows = suzuki1987.normalize(suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH))
+    others = [row for row in rows if row["Z"] == plain["Z"] and row["refs"] != plain["refs"]
+              and row["target_basis"] == "unspecified" and row["rate_unc"]]
+    assert others
+    for other in others:
+        assert lead_problems((plain, other)), other["refs"]

@@ -1,10 +1,10 @@
 # OpenMuCF
 
 **Open FAIR rate ledger + differentiable cycle / energy-balance auditor for
-muon-catalyzed fusion (μCF).**
+muon-catalyzed fusion (μCF), and external muonic-atom data for Geant4.**
 
 > Status: **v1 spine complete and validated** (Phases 0–2). The high-density
-> effective-sticking surrogate (Phase 3) is planned next (not yet started; needs HPC + a
+> effective-sticking surrogate (Phase 3) is planned (not yet started; needs HPC + a
 > gold-standard cross-section source). See `MODEL_SPEC.md` for the model
 > formulation, `LITERATURE.md` for the sourced rate ledger, and `CHANGELOG.md` for release history.
 
@@ -53,7 +53,7 @@ for what is deliberately excluded, and `ADOPTERS.md` for who it is for.
 ```bash
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
-pytest                 # 464 tests: 461 in the default run (460 pass, 1 skipped-blocked), 3 slow deselected; run the slow twin coverage with `pytest -m slow`
+pytest                 # the default run deselects the slow marker; run the slow tests, the twin coverage among them, with `pytest -m slow`
 ```
 
 Reproduce the ledger, findings, and figures:
@@ -79,7 +79,13 @@ See also the in-repo references: `README.md`, `MODEL_SPEC.md`, `LITERATURE.md`,
 ## License
 
 Apache-2.0 for code; CC-BY-4.0 for the rate ledger under `openmucf/data/`, the data documents
-generated from it and the files under `data/g4/` that this project computed, harvested or wrote; the
-Geant4 Software License for the Geant4 patches under `cpp/patches/` and the vendored Geant4 files
-under `third_party/geant4/`. The License section of `README.md` names, by path, the muonic-atom files
-offered under another licence or under none.
+generated from it and the files under `data/g4/` that this project computed, harvested or wrote, other
+than those named below or in the License section of `README.md`; the Geant4 Software License for the
+Geant4 patches under `cpp/patches/`, the vendored Geant4 files under `third_party/geant4/`, the `parity`
+tables `data/g4/d1/d1_capture.g4dat` and `data/g4/d1/d1_zeff.g4dat` with their Layer-2 files
+`data/g4/d1/d1_capture.prov.json` and `data/g4/d1/d1_zeff.prov.json`, and the natural isotopic
+compositions and the decay rates read from Geant4 builds, `data/g4/d1/geant4_natural_isotopes.csv` and
+`data/g4/d1/d1_decay_rate.oracle`; MuDirac's MIT License for `data/g4/d3/mudirac_inputs.csv`, which
+repeats the radii MuDirac bundles, and for `data/g4/d3/LICENSE-MUDIRAC`, the text of that licence. The
+License section of `README.md` names, by path, the muonic-atom files offered under no licence of this
+repository.

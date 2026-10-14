@@ -36,6 +36,34 @@ COPIED = (
         "DATASET_D2.md",
     ),
     (
+        "it does not tell whether the difference arises in the weights or in the steps by which the muon "
+        "reaches that element",
+        "DATASET_D2.md",
+    ),
+    (
+        "an abundance-weighted first-order estimate against the measurement the table itself encodes",
+        "DATASET_D1.md",
+    ),
+    (
+        "answers only a nucleus whose Z and A both match a record, and the Goulard–Primakoff formula "
+        "answers every other",
+        "DATASET_D1.md",
+    ),
+    (
+        "a target of natural composition reaches an element's record only on the stops that draw the "
+        "record's own mass number",
+        "DATASET_D1.md",
+    ),
+    (
+        "The comparison is of the rates the code returns for a single nucleus, not of a transported "
+        "simulation of a target",
+        "DATASET_D1.md",
+    ),
+    (
+        "can rest on the same mean life, so the band errs wide",
+        "DATASET_D1.md",
+    ),
+    (
         "constructs a new muonic atom before it takes the ion table's lock",
         "cpp/transport/README.md",
     ),
@@ -138,7 +166,52 @@ def test_the_selector_comparison_says_what_the_page_says() -> None:
     assert second
     assert {row["method"] for row in second} == {"lifetime"}
     assert {row["method_result"] for row in second} == {"outside"}
-    assert {row["class"] for row in second} <= {"d2-selector-oxides", "d2-selector-other-compounds"}
+    assert {row["class"] for row in second} == {"d2-selector-oxides", "d2-selector-other-compounds"}
+
+
+#: The variable, the patch path and the header the page names, as the page's own commands spell them.
+EXPORTED = re.compile(r"export (\w+)=")
+APPLIED = re.compile(r'"\$PWD/openmucf/(cpp/patches/[\w.-]+\.patch)"')
+INCLUDED = re.compile(r'#include "(\w+\.hh)"')
+
+
+def names_problems(page: str) -> list[str]:
+    """What the page names that the repository does not use: the variable it exports against the one the
+    glue's `G4FindDataDir` call reads, each patch it applies against the files under `cpp/patches/`, and the
+    header its include comment names against the file in which every behaviour patch declares the setter."""
+    problems = []
+    glue = (REPO / "cpp" / "src" / "G4MuonicDataOverlay.cc").read_text(encoding="utf-8")
+    (read,) = re.findall(r'G4FindDataDir\("(\w+)"\)', glue)
+    exported = EXPORTED.findall(page)
+    if exported != [read]:
+        problems.append(f"the page exports {exported}; the glue reads {read}")
+    applied = APPLIED.findall(page)
+    if not applied or not all((REPO / path).is_file() for path in applied):
+        problems.append(f"the page applies {applied}, not files of the repository")
+    declared = set()
+    for patch in sorted(PATCHES.glob("*-muonicdata.patch")):
+        for section in patch.read_text(encoding="utf-8").split("\ndiff --git ")[1:]:
+            if re.search(r"^\+\s*void SetEnableMuonicData\(\s*G4bool val\s*\);", section, re.M):
+                declared.add(section.split()[0].rsplit("/", 1)[1])
+    included = INCLUDED.findall(page)
+    if len(declared) != 1 or included != sorted(declared):
+        problems.append(f"the page includes {included}; the patches declare the setter in {sorted(declared)}")
+    return problems
+
+
+def test_the_variable_patch_paths_and_header_the_page_names_are_the_repository_s() -> None:
+    assert names_problems(_page()) == []
+
+
+def test_drill_a_wrong_variable_patch_path_or_header_on_the_page_is_named() -> None:
+    page = _page()
+    for old, new, word in (
+        ("export G4MUONICDATA=", "export G4MUONICDATA_DIR=", "exports"),
+        ("openmucf/cpp/patches/g4-v11.4.2", "openmucf/cpp/patch/g4-v11.4.2", "applies"),
+        ('#include "G4HadronicParameters.hh"', '#include "G4HadronicProcessStore.hh"', "includes"),
+    ):
+        assert page.count(old) == 1, old
+        assert any(word in problem for problem in names_problems(page.replace(old, new))), old
 
 
 def test_every_multi_line_group_of_the_cascade_comparison_has_an_empty_intersection() -> None:

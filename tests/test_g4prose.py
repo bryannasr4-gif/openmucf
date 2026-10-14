@@ -210,6 +210,7 @@ def pin_table() -> list[Pin]:
                      check_f3.DOCUMENT_MAX_REL.pattern, (1,)))
     table.extend(internal_pins(pins, check_f3))
     table.extend(paper_pins(pins, check_f3))
+    table.extend(narrative_pins())
     # The D3 document's pins, as its own test module builds them.
     for what, path, pattern, groups, expected in d3.document_pins():
         table.append(Pin(what, path, pattern, groups, expected))
@@ -629,6 +630,119 @@ def paper_pins(pins: parity.DocumentPins, check_f3) -> list[Pin]:
             r"the energy the unpatched cascade emits for (\d+)\.", (1,),
             _d3_expected("rows whose unpatched cascade lies within the band")),
     ]
+
+
+DEVELOPER_PAGE = "docs/geant4-developers.md"
+
+
+def narrative_values() -> dict[str, object]:
+    """The figures the draft paper and the developer page restate, each computed here from the module that
+    computes the dataset document's own: the natural-target study (`DATASET_D1.md` section 11), the selector
+    summary (`DATASET_D2.md`), the cascade comparison (`DATASET_D3.md` section 5) and the mean-life comparison
+    (`DATASET_D1.md` section 12). The two kept to fewer places are rounded half-even from the generated
+    values."""
+    rows = natural.study()
+    compared = natural.compared(rows)
+    widest = max(compared, key=lambda row: abs(float(row["relative_difference"])))
+    summary = d2._summary()
+    life = lifetime.comparison()
+    ((_, life_compared, life_bound, life_helper),) = [
+        entry for entry in lifetime.lifetime.summary(life) if entry[0] == "parity"
+    ]
+    counts = lifetime.lifetime.document_counts(life)
+    patched = _d3_expected("patched cascade's largest absolute residual")
+    stock = _d3_expected("unpatched cascade's largest absolute residual")
+    return {
+        "NAT_BEYOND": len(natural.beyond_uncertainty(rows)),
+        "NAT_ELEMENTS": len(compared),
+        "NAT_WIDEST": natural.natural._percent(float(widest["relative_difference"]), sign=True),
+        "NAT_WIDEST_SYMBOL": widest["symbol"],
+        "D2_ROWS": int(summary["method_gated"]["rows"]),
+        "D2_OXIDES": int(summary["d2-selector-oxides"]["rows"]),
+        "D2_MEDIAN": summary["method_gated"]["ratio_median"],
+        "D3_GROUPS_EMPTY": _d3_expected("groups with an empty intersection"),
+        "D3_GROUPS": _d3_expected("multi-line groups"),
+        "D3_CLOSER": _d3_expected("rows whose shell difference is closer than the unpatched cascade"),
+        "D3_GATED": _d3_expected("gated rows in the projection"),
+        "D3_PATCHED_MAX": f"{round(float(patched), 2):.2f}",
+        "D3_STOCK_MAX": f"{round(float(stock)):d}",
+        "LIFE_MULTIPLE": next(
+            e for w, _, _, _, e in lifetime.document_pins(NUMERIC) if w == "the band's multiple"
+        ),
+        "LIFE_BOUND": life_bound,
+        "LIFE_COMPARED": life_compared,
+        "LIFE_HELPER": life_helper,
+        "LIFE_HELPER_BELOW": counts["helper_below"],
+        "LIFE_MEASURED": counts["measured"],
+    }
+
+
+#: ``(what, pattern, key, places, paths)``: each figure the two documents restate, the phrase that states it,
+#: the key of :func:`narrative_values` it is held to, the places it is rounded to (`None` for a count or a
+#: string) and the documents that state it.
+NARRATIVE = (
+    ("elements beyond their record's tabulated uncertainty",
+     r"tabulated relative uncertainty for (\d+) of the \d+ elements with a natural-composition record",
+     "NAT_BEYOND", None, (PAPER, DEVELOPER_PAGE)),
+    ("elements with a natural-composition record",
+     r"tabulated relative uncertainty for \d+ of the (\d+) elements with a natural-composition record",
+     "NAT_ELEMENTS", None, (PAPER, DEVELOPER_PAGE)),
+    ("elements with a natural-composition record, beside the radiogenic-lead qualification",
+     r"of the (\d+) elements with a natural-composition record \(Pb's averages in radiogenic lead\)",
+     "NAT_ELEMENTS", None, (PAPER, DEVELOPER_PAGE)),
+    ("the widest natural-target difference", r"by as much as ([+-][0-9.]+) % for \w+", "NAT_WIDEST", None,
+     (PAPER,)),
+    ("the element of the widest natural-target difference", r"by as much as [+-][0-9.]+ % for (\w+)",
+     "NAT_WIDEST_SYMBOL", None, (PAPER,)),
+    ("method-gated ratios", r"on each of the (\d+) gated ratios of an element to oxygen", "D2_ROWS", None,
+     (PAPER, DEVELOPER_PAGE)),
+    ("the selector's median ratio over the measured", r"at ([0-9.]+) times it at the median", "D2_MEDIAN",
+     None, (PAPER, DEVELOPER_PAGE)),
+    ("method-gated rows in oxides", r"gates (\d+) rows in oxides and the calcium hydroxide row", "D2_OXIDES",
+     None, (DEVELOPER_PAGE,)),
+    ("multi-line groups with an empty intersection", r"as (\d+) of the \d+ multi-line groups show",
+     "D3_GROUPS_EMPTY", None, (PAPER,)),
+    ("multi-line groups", r"as \d+ of the (\d+) multi-line groups show", "D3_GROUPS", None, (PAPER,)),
+    ("rows whose shell difference is closer",
+     r"lies closer than the unpatched cascade's energy on (\d+) of the \d+ gated rows", "D3_CLOSER", None,
+     (PAPER, DEVELOPER_PAGE)),
+    ("gated rows of the shell projection",
+     r"lies closer than the unpatched cascade's energy on \d+ of the (\d+) gated rows", "D3_GATED", None,
+     (PAPER, DEVELOPER_PAGE)),
+    ("the patched cascade's largest absolute residual", r"its largest absolute residual is ([0-9.]+) keV",
+     "D3_PATCHED_MAX", 2, (PAPER, DEVELOPER_PAGE)),
+    ("the unpatched cascade's largest absolute residual",
+     r"where the unpatched cascade's reaches ([0-9.]+) keV", "D3_STOCK_MAX", 0, (PAPER, DEVELOPER_PAGE)),
+    ("the band's multiple", r"lies within (\w+) times the combined uncertainty", "LIFE_MULTIPLE", None,
+     (PAPER, DEVELOPER_PAGE)),
+    ("rows within the band on the bound-decay route",
+     r"combined uncertainty on (\d+) of \d+ compared rows", "LIFE_BOUND", None, (PAPER, DEVELOPER_PAGE)),
+    ("rows compared under parity", r"combined uncertainty on \d+ of (\d+) compared rows", "LIFE_COMPARED",
+     None, (PAPER, DEVELOPER_PAGE)),
+    ("rows within the band on the helper route", r"compared rows and `G4MuonicAtomHelper`'s on (\d+),",
+     "LIFE_HELPER", None, (PAPER, DEVELOPER_PAGE)),
+    ("helper decay rates below", r"less the printed capture rate for (\d+) of the \d+ measurements",
+     "LIFE_HELPER_BELOW", None, (PAPER, DEVELOPER_PAGE)),
+    ("measurements compared", r"less the printed capture rate for \d+ of the (\d+) measurements",
+     "LIFE_MEASURED", None, (PAPER, DEVELOPER_PAGE)),
+)
+
+
+def narrative_pins() -> list[Pin]:
+    """The pins of the figures the draft paper and the developer page restate; a rounded figure is held to the
+    generated value it rounds, at its places."""
+    values = narrative_values()
+    sources = {
+        "D3_PATCHED_MAX": _d3_expected("patched cascade's largest absolute residual"),
+        "D3_STOCK_MAX": _d3_expected("unpatched cascade's largest absolute residual"),
+    }
+    out = []
+    for what, pattern, key, places, paths in NARRATIVE:
+        expected = float(sources[key]) if places is not None else values[key]
+        for path in paths:
+            label = "the paper" if path == PAPER else "the developer page"
+            out.append(Pin(f"{what}, {label}", path, pattern, (1,), expected, places))
+    return out
 
 
 def d3_seam_size_pins(vendored_readme: str) -> list[Pin]:
@@ -1108,6 +1222,33 @@ def test_t75_drill_a_changed_digit_in_a_registered_line_goes_stale_and_unadmitte
     misses, problems = _drill(texses)
     assert any(p.startswith("stale registry row") and claim_sha1(line) in p for p in problems), problems
     assert (path, lineno, flipped) in {(m.token.path, m.token.lineno, m.token.text) for m in misses}
+
+
+def test_t75_drill_a_narrative_figure_moved_off_its_computed_value_is_named():
+    texts = tree_texts()
+    median = str(narrative_values()["D2_MEDIAN"])
+    for path in (PAPER, DEVELOPER_PAGE):
+        stated = f"at {median} times it at the median"
+        assert texts[path].count(stated) == 1, path
+        moved = dict(texts, **{path: texts[path].replace(stated, "at 9.99 times it at the median")})
+        _, problems = pin_spans(moved, pin_table())
+        assert any(p.pin.path == path and p.pin.what.startswith("the selector's median ratio")
+                   for p in problems), path
+
+
+def test_t75_drill_the_radiogenic_lead_qualification_deleted_beside_the_cohort_is_named():
+    """Delete the parenthesis after the natural-composition cohort from either document in an in-memory
+    copy: the pin that holds it beside the cohort names that document, and no other pin moves."""
+    texts = tree_texts()
+    qualification = " (Pb's averages in radiogenic lead)"
+    what = "elements with a natural-composition record, beside the radiogenic-lead qualification"
+    for path, label in ((PAPER, "the paper"), (DEVELOPER_PAGE, "the developer page")):
+        assert texts[path].count(qualification) == 1, path
+        cut = dict(texts, **{path: texts[path].replace(qualification, "")})
+        _, problems = pin_spans(cut, pin_table())
+        assert [p.pin.what for p in problems] == [f"{what}, {label}"], [
+            f"{p.pin.what}: {p.detail}" for p in problems
+        ]
 
 
 def test_t75_every_class_row_matches_its_example_and_admits_a_live_token():

@@ -28,10 +28,14 @@ WORDS_MIN, WORDS_MAX = 750, 1750
 #: The sections only the author writes; each holds exactly this placeholder until then.
 AUTHOR_SECTIONS = ("AI usage disclosure", "Acknowledgements")
 PLACEHOLDER = "<!-- TODO: the author completes this section before any submission. -->"
-#: A sentence saying this work evaluates the data it carries.
+#: A sentence saying this work evaluates the data it carries, in the first person or the third.
 EVALUATION_CLAIM = re.compile(
-    r"\b(?:we|this work|this software|the authors?)\s+(?:have\s+)?evaluat\w*|\bour\s+evaluat\w*", re.I
+    r"\b(?:we|this work|this software|this layer|the layer|this dataset|the dataset|the authors?)"
+    r"\s+(?:(?:has|have)\s+)?evaluat\w*|\bour\s+evaluat\w*|\ban\s+evaluation\s+of\b",
+    re.I,
 )
+#: The sentence the Summary opens with, which says the paper is a draft.
+DRAFT_LABEL = "This paper is a draft and has not been submitted."
 CITATION = re.compile(r"(?<![\w.])@([A-Za-z][\w:-]*\w)")
 BIB_KEY = re.compile(r"^@\w+\{([^,\s]+),", re.M)
 
@@ -93,6 +97,10 @@ def test_no_sentence_claims_an_evaluation():
     assert not hits, hits
 
 
+def test_the_summary_opens_by_saying_the_paper_is_a_draft():
+    assert section(PAPER.read_text(encoding="utf-8"), "Summary").startswith(DRAFT_LABEL + "\n")
+
+
 def test_continuous_integration_builds_the_draft():
     ci = CI.read_text(encoding="utf-8")
     assert "paper-path: paper/muonic-data/paper.md" in ci
@@ -135,5 +143,13 @@ def test_drill_text_in_an_author_section_is_seen():
 
 
 def test_drill_an_evaluation_claim_is_seen():
-    for planted in ("We evaluated muon capture rates.", "Our evaluation of the rates", "this work evaluates"):
+    for planted in ("We evaluated muon capture rates.", "Our evaluation of the rates", "this work evaluates",
+                    "The layer evaluates the data it carries.", "The dataset evaluates muon capture rates.",
+                    "An evaluation of muon capture rates is presented."):
         assert EVALUATION_CLAIM.search(planted), planted
+
+
+def test_drill_a_summary_without_the_draft_label_is_seen():
+    text = PAPER.read_text(encoding="utf-8")
+    assert text.count(DRAFT_LABEL) == 1
+    assert not section(text.replace(DRAFT_LABEL + "\n", ""), "Summary").startswith(DRAFT_LABEL)

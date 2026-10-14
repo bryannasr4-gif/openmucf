@@ -340,7 +340,8 @@ K energy.
 With the opt-in off, the cascade and K-energy harvests of Geant4 v11.4.2 and v11.5.0.beta are
 bit-identical to those of unpatched builds.
 
-By what they represent, the tables suit these uses: the muonic K binding energy, the energy a patched cascade emits between a pair of shells where a detector does not separate the lines that energy stands for, and the energy the cascade deposits; section 5 sets the energy the cascade receives beside measured energies.
+By what they represent, the tables suit these uses: the muonic K binding energy, the single energy a patched cascade emits between a pair of shells for all the lines between them, and the energy the cascade deposits; section 5 sets the energy the cascade receives beside measured energies.
+That energy rests on shell energies that weight the states of a shell by their degeneracies, a convention that implies nothing about the lines' relative intensities (section 5), so a detector that does not separate those lines does not by that alone make it the centroid of the lines it records, whose weights their intensities set.
 They do not suit a spectrum that separates those lines, or the intensities of lines, because the cascade emits a single energy per shell pair and keeps its branching unchanged.
 For separated lines, `mudirac_lines.csv` carries the line energies MuDirac printed (section 2).
 

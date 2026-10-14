@@ -13,6 +13,9 @@ tests read the `+` lines of both behaviour patches and require the README to nam
   the README under its new name.
 * **T-156** -- the `G4MuonicData` codes the patches raise are exactly the codes the README names, and
   the README paragraph that names `CheckComputedCaptureRate` names exactly the codes its body raises.
+* **T-157** -- every check of the glue (a `G4MuonicDataOverlay::Check...` function) that a patch's hunks
+  in existing Geant4 files call, inside an opt-in test or not, is named in the README, and the README
+  paragraphs that name it name every code its body raises.
 
 The drills plant each defect in an in-memory copy -- of a patch, parsed, or of the README -- and
 require the check to name it.
@@ -35,6 +38,7 @@ RETURN = re.compile(rb"^\s*return\s+(\w+)\s*;\s*$")
 CODE = re.compile(r"G4MuonicData\d{3}")
 CAPTURE_RATE = "::GetMuonCaptureRate"
 CHECK = "CheckComputedCaptureRate"
+CHECK_CALL = re.compile(rb"G4MuonicDataOverlay::(Check\w+)\s*\(")
 
 
 def readme() -> str:
@@ -74,7 +78,8 @@ def calls_outside_opt_in(
     """(path, function, called name, arguments, next line) for every call into `G4MuonicDataOverlay`
     on an added line of a file that existed before the patch, outside every
     `if (G4MuonicDataTable::IsEnabled())` block. Braces are tracked over the added lines of each
-    hunk, character by character, so a block that opens and closes on one line is seen; the
+    hunk, character by character, so a block that opens and closes on one line is seen, and a `;` reached
+    after an opt-in test and before any `{` ends that test, so a brace-less test marks no later block; the
     function is the last definition an added line of the hunk opens, else the hunk header's context."""
     out = []
     for path, file in sorted(files.items()):
@@ -93,7 +98,8 @@ def calls_outside_opt_in(
                     function = definition.group(1).decode()
                 events = [(m.start(), 0, m) for m in re.finditer(re.escape(IS_ENABLED), content)]
                 events += [(m.start(), 1, m) for m in OVERLAY_CALL.finditer(content)]
-                events += [(j, 2, None) for j in range(len(content)) if content[j : j + 1] in (b"{", b"}")]
+                marks = (b"{", b"}", b";")
+                events += [(j, 2, None) for j in range(len(content)) if content[j : j + 1] in marks]
                 for position, kind, m in sorted(events, key=lambda e: (e[0], e[1])):
                     if kind == 0:
                         pending = True
@@ -101,6 +107,8 @@ def calls_outside_opt_in(
                         following = hunk.lines[i + 1][1] if i + 1 < len(hunk.lines) else b""
                         args = arguments(content, m.end() - 1)
                         out.append((path, function, m.group(1).decode(), args, following))
+                    elif kind == 2 and content[position : position + 1] == b";":
+                        pending = False
                     elif kind == 2 and content[position : position + 1] == b"{":
                         stack.append(pending)
                         pending = False
@@ -175,7 +183,34 @@ def check_check_codes(tag: str, files: dict[str, overlay.FilePatch], text: str) 
     )
 
 
-# T-155 / T-156 -- the checks on the committed files
+def checks_called(files: dict[str, overlay.FilePatch]) -> set[str]:
+    """The checks of the glue that an added line of a file that existed before the patch calls, inside an
+    opt-in test or not."""
+    return {
+        match.group(1).decode()
+        for file in files.values()
+        if file.old_path != b"/dev/null"
+        for _, content in overlay.added_lines(file)
+        for match in CHECK_CALL.finditer(content)
+    }
+
+
+def check_refusals_named(tag: str, files: dict[str, overlay.FilePatch], text: str) -> None:
+    called = checks_called(files)
+    assert called, f"{tag}: the patch calls no check -- the pattern is broken, not the patch"
+    glue = glue_added_text(files)
+    for name in sorted(called):
+        named = re.compile(rf"[`:]{name}`")
+        assert named.search(text), f"{tag}: the patch calls {name}, which the README does not name"
+        start = glue.index(f"void G4MuonicDataOverlay::{name}(")
+        body = set(CODE.findall(glue[start : glue.index("\n}", start)]))
+        stated = {code for p in re.split(r"\n\s*\n", text) if named.search(p) for code in CODE.findall(p)}
+        assert body and body <= stated, (
+            f"{tag}: {name} raises {sorted(body)}; the README names {sorted(stated)}"
+        )
+
+
+# T-155 / T-156 / T-157 -- the checks on the committed files
 # ----------------------------------------------------
 
 
@@ -198,6 +233,11 @@ def test_t156_the_codes_the_patch_raises_are_the_codes_the_readme_names(tag: str
 @overlay.family
 def test_t156_the_readme_names_the_code_the_computed_rate_check_raises(tag: str):
     check_check_codes(tag, parsed(tag), readme())
+
+
+@overlay.family
+def test_t157_every_check_a_patched_function_calls_is_named_with_the_codes_it_raises(tag: str):
+    check_refusals_named(tag, parsed(tag), readme())
 
 
 # The drills
@@ -325,6 +365,68 @@ def test_t156_drill_the_check_raising_another_code_is_refused(tag: str):
     check_codes_named(tag, files, readme())
     with pytest.raises(AssertionError, match=CHECK):
         check_check_codes(tag, files, readme())
+
+
+@overlay.family
+def test_t155_drill_a_brace_less_opt_in_test_marks_no_later_block(tag: str):
+    inside = b"  if (G4MuonicDataTable::IsEnabled()) (void)0; { " + CALL_LINE.strip() + b" }"
+    files = replaced(tag, CALL_LINE, inside, 2)
+    made = {(function, name) for _, function, name, _, _ in calls_outside_opt_in(files)}
+    assert {function for function, name in made if name == CHECK} == {
+        name for name in README_FUNCTION.findall(readme()) if name.endswith(CAPTURE_RATE)
+    }, made
+
+
+@overlay.family
+def test_t155_drill_a_readme_naming_a_call_or_a_capture_function_the_patch_lacks_is_refused(tag: str):
+    for planted in (" `G4MuonicDataOverlay::Zeff`", " `G4Planted::GetMuonCaptureRate`"):
+        with pytest.raises(AssertionError):
+            check_calls_outside_opt_in(tag, parsed(tag), readme() + planted)
+
+
+def test_t155_drill_the_renamed_definition_named_without_its_backticks_is_refused():
+    ((_, (_, new)),) = overlay.RENAMES.items()
+    name = re.search(rb"::(\w+)\(", new).group(1).decode()
+    with pytest.raises(AssertionError, match=name):
+        check_renames_named(readme().replace(f"`{name}`", name))
+
+
+@overlay.family
+def test_t156_drill_a_readme_naming_a_code_no_patch_raises_is_refused(tag: str):
+    with pytest.raises(AssertionError, match="G4MuonicData009"):
+        check_codes_named(tag, parsed(tag), readme() + " G4MuonicData009")
+
+
+@overlay.family
+def test_t156_drill_the_check_paragraph_naming_a_code_besides_the_check_s_is_refused(tag: str):
+    text = readme()
+    paragraph = next(p for p in re.split(r"\n\s*\n", text) if CHECK in p)
+    with pytest.raises(AssertionError, match=CHECK):
+        check_check_codes(tag, parsed(tag), text.replace(paragraph, paragraph + " G4MuonicData004"))
+
+
+@overlay.family
+def test_t156_drill_the_check_raising_a_further_code_is_refused(tag: str):
+    old = b'Fatal("G4MuonicData005", "under #PROFILE "'
+    files = replaced(tag, old, b'Fatal("G4MuonicData004", "x"); ' + old, 1)
+    with pytest.raises(AssertionError, match=CHECK):
+        check_check_codes(tag, files, readme())
+
+
+@overlay.family
+def test_t157_drill_a_readme_that_no_longer_names_the_level_check_is_refused(tag: str):
+    text = readme()
+    assert text.count("`CheckCascadeLevels`") == 1
+    with pytest.raises(AssertionError, match="CheckCascadeLevels"):
+        check_refusals_named(tag, parsed(tag), text.replace("`CheckCascadeLevels`", "its level check"))
+
+
+@overlay.family
+def test_t157_drill_the_level_check_raising_a_code_its_paragraph_does_not_name_is_refused(tag: str):
+    old = b'Fatal("G4MuonicData005", "the muonic cascade assembled levels that do not fall"'
+    files = replaced(tag, old, old.replace(b"005", b"006"), 1)
+    with pytest.raises(AssertionError, match="CheckCascadeLevels"):
+        check_refusals_named(tag, files, readme())
 
 
 @overlay.family
