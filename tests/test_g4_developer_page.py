@@ -41,7 +41,7 @@ COPIED = (
         "DATASET_D2.md",
     ),
     (
-        "an abundance-weighted first-order estimate against the natural measurement the table itself encodes",
+        "an abundance-weighted first-order estimate against the measurement the table itself encodes",
         "DATASET_D1.md",
     ),
     (

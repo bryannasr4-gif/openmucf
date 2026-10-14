@@ -687,6 +687,9 @@ NARRATIVE = (
     ("elements with a natural-composition record",
      r"tabulated relative uncertainty for \d+ of the (\d+) elements with a natural-composition record",
      "NAT_ELEMENTS", None, (PAPER, DEVELOPER_PAGE)),
+    ("elements with a natural-composition record, beside the radiogenic-lead qualification",
+     r"of the (\d+) elements with a natural-composition record \(Pb's averages in radiogenic lead\)",
+     "NAT_ELEMENTS", None, (PAPER, DEVELOPER_PAGE)),
     ("the widest natural-target difference", r"by as much as ([+-][0-9.]+) % for \w+", "NAT_WIDEST", None,
      (PAPER,)),
     ("the element of the widest natural-target difference", r"by as much as [+-][0-9.]+ % for (\w+)",
@@ -1231,6 +1234,21 @@ def test_t75_drill_a_narrative_figure_moved_off_its_computed_value_is_named():
         _, problems = pin_spans(moved, pin_table())
         assert any(p.pin.path == path and p.pin.what.startswith("the selector's median ratio")
                    for p in problems), path
+
+
+def test_t75_drill_the_radiogenic_lead_qualification_deleted_beside_the_cohort_is_named():
+    """Delete the parenthesis after the natural-composition cohort from either document in an in-memory
+    copy: the pin that holds it beside the cohort names that document, and no other pin moves."""
+    texts = tree_texts()
+    qualification = " (Pb's averages in radiogenic lead)"
+    what = "elements with a natural-composition record, beside the radiogenic-lead qualification"
+    for path, label in ((PAPER, "the paper"), (DEVELOPER_PAGE, "the developer page")):
+        assert texts[path].count(qualification) == 1, path
+        cut = dict(texts, **{path: texts[path].replace(qualification, "")})
+        _, problems = pin_spans(cut, pin_table())
+        assert [p.pin.what for p in problems] == [f"{what}, {label}"], [
+            f"{p.pin.what}: {p.detail}" for p in problems
+        ]
 
 
 def test_t75_every_class_row_matches_its_example_and_admits_a_live_token():

@@ -590,8 +590,8 @@ keyed by exactly that nuclide, and the compiled-in chain where the profile has n
 Where the isotope audit of section 6 establishes that an element's compiled-in record was measured on
 the element printed with no mass number, the row also gives that record and the relative difference
 between the weighted rate and the record's rate.
-That difference is an abundance-weighted first-order estimate against the natural measurement the table
-itself encodes.
+That difference is an abundance-weighted first-order estimate against the measurement the table itself
+encodes; for lead that measurement averages a lead target and a radiogenic-lead target (see below).
 
 It is first-order because Geant4 samples each stop's time from the drawn nucleus's own capture and decay
 rates (`G4MuonMinusBoundDecay::ApplyYourself`, and the lifetime
