@@ -19,13 +19,13 @@ full-text-verified design studies corroborate the same single-GeV scale: **Berti
 all-collected) and **Eliezer & Henis (1994), ~5.0 GeV/muon**
 (DOI 10.13182/FST94-A30300).
 
-**Those single-GeV figures are all at stage `produced`: Kelly, Hart & Rose (2021), Bertin et al. (1987) and Eliezer & Henis (1994) are beam energy per muon PRODUCED.** On Kelly's own
-accelerator efficiency the same muon costs 4.70 /
+**Those single-GeV figures are all at stage `produced`: Kelly, Hart & Rose (2021), Bertin et al. (1987) and Eliezer & Henis (1994) are beam energy per muon PRODUCED.** On the PSI accelerator efficiency Kelly adopts for his own design, the same muon costs 4.70 /
 0.18 = **26.11 GeV per muon produced** in ELECTRICAL energy, and on the
-same primary's site-wide denominator (0.104) it costs **45.19 GeV**
--- and both are still LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T,
-because the capture, transport, moderation and stopping factors (all <= 1) have not been applied. Every
-factor omitted here pushes the cost UP, so the bound is one-sided.
+same primary's site-wide denominator (0.104), which this ledger applies to his design, it costs **45.19 GeV**.
+Both are LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T **only if his
+accelerator is no more efficient than the PSI one**: that efficiency was measured on a different machine
+(a *machine transfer*). Along the chain the bound is one-sided -- the capture, transport, moderation and
+stopping factors (all <= 1) have not been applied, and every one of them pushes the cost UP.
 
 **The tier spread is about three orders of magnitude, on MIXED bases.** The tier-median rises from **4.85
 GeV** (design studies) through **178 GeV** (demonstrated technology, collected-not-stopped)
@@ -71,8 +71,11 @@ on top of the stage-basis error.
 MuSIC's figure is `mixed` (mu+ and mu- together, so the mu--only cost is higher by a
 factor this ledger does not source) and PSI HIMB is `mu_plus_only` -- irrelevant to muCF, which needs mu-, and
 listed for scale only. `evidence_status` grades each number: `primary` / `primary_cited` /
-`derived_here` are sourced; `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
+`derived_here` are sourced; `relayed_unread` (the source states the number and attributes it to a
+primary not read here) / `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
 figure composing one of those is reported as a **bound, never a value**.
+
+**What a row counts, and which machine it prices.** `count_basis` records what one unit of a row's count is. Kelly, Hart & Rose (2021), Kelly / eta_acc minimal-subsystem and Kelly / eta_acc site-wide count negative pions created (`pi_minus_created`), each of which Kelly, Hart & Rose count as a negative muon; Acceleron (2025 deck) counts negative pions and muons leaving the target together (`pi_minus_or_mu_minus_exiting`); the other pinned rows count muons (`muon`). Kelly, Hart & Rose's muons are born in the decay of the negative pions they count, and a pion can be lost to nuclear capture or interaction before it decays, so a cost per pion created is a lower bound on the cost per muon produced and the count basis reverses no bound. It does decide what may be composed: a stage factor is a fraction of one count, and applying a fraction of pions to a cost per muon would count the pion's decay twice, so `ChainEdge.apply_to` refuses it. `machine` records the machine a row prices and the machine each conversion was stated for. A conversion composed onto a figure for another machine is a **machine transfer**: the figure carries it with who made it (a derived row records its own in `machine_transfer`), prints *conditional on a machine transfer*, and is never rendered as a value.
 
 Three factors are deliberately kept in their own flagged columns rather than folded into any row's
 value: the **accelerator efficiency** `eta_acc` (Kelly's 0.18) -- applying it produces a
@@ -85,15 +88,15 @@ figure in this document**. T3 facility rows report no cost of this kind themselv
 an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field (verbatim in the CSV).
 
 ## Tier 1 -- purpose-built muon-source design studies
-| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |
-|---|---|---|---|---|---|---|---|
-| Kelly, Hart & Rose (2021) | 4.70 GeV/muon | 4.70 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Bertin et al. (1987) | 7.8 +- 1.8 GeV (n-beam 3.5 GeV/c, rho_0) | 7.80 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Eliezer & Henis (1994) | ~5 GeV (~5000 MeV) per muon | 5.0 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Jandel (1989) | (not pinned) | -- (not pinned) | -- | -- | -- | absent | **yes** |
-| Acceleron (2025 deck) | 3.0 GeV per pi-/muon exiting target | 3.0 | beam_kinetic | produced (lower bound) | mu_minus | primary | no |
-| Kelly / eta_acc minimal-subsystem | not published as such (derived here from 4.70 GeV/muon and eta_acc=0.18) | 26.11 | electrical_minimal | produced (lower bound) | mu_minus | derived_here | no |
-| Kelly / eta_acc site-wide | not published as such (derived here from 4.70 GeV/muon and eta_acc(site)=0.104) | 45.19 | electrical_site | produced (lower bound) | mu_minus | derived_here | no |
+| source | value as published | GeV/muon | numeraire | stage | charge | count | evidence | nv |
+|---|---|---|---|---|---|---|---|---|
+| Kelly, Hart & Rose (2021) | 4.70 GeV/muon | 4.70 | beam_kinetic | produced (lower bound) | mu_minus | pi_minus_created | primary | no |
+| Bertin et al. (1987) | 7.8 +- 1.8 GeV (n-beam 3.5 GeV/c, rho_0) | 7.80 | beam_kinetic | produced (lower bound) | mu_minus | muon | primary | no |
+| Eliezer & Henis (1994) | ~5 GeV (~5000 MeV) per muon | 5.0 | beam_kinetic | produced (lower bound) | mu_minus | muon | primary | no |
+| Jandel (1989) | (not pinned) | -- (not pinned) | -- | -- | -- | -- | absent | **yes** |
+| Acceleron (2025 deck) | 3.0 GeV per pi-/muon exiting target | 3.0 | beam_kinetic | produced (lower bound) | mu_minus | pi_minus_or_mu_minus_exiting | primary | no |
+| Kelly / eta_acc minimal-subsystem | not published as such (derived here from 4.70 GeV/muon and eta_acc=0.18) | 26.11 | electrical_minimal | produced (lower bound) | mu_minus | pi_minus_created | derived_here | no |
+| Kelly / eta_acc site-wide | not published as such (derived here from 4.70 GeV/muon and eta_acc(site)=0.104) | 45.19 | electrical_site | produced (lower bound) | mu_minus | pi_minus_created | derived_here | no |
 
 > **AMENDMENT (2026-08-29) -- the Bertin et al. (1987) row is re-typed to stage
 > `produced`, and no published number moves.** That row carried the deprecated alias
@@ -114,7 +117,7 @@ an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field
 > flagged a **lower bound** in the table above, exactly like every other PINNED row of its tier --
 > the unpinned one carries no figure to bound.
 > **What moves in this document:** T1's basis composition is now {produced},
-> so the tier is stage-homogeneous within the `beam_kinetic` numeraire,
+> so the tier is stage-homogeneous within the `beam_kinetic` numeraire (it is not count-homogeneous: see the count basis above),
 > and the Headline says so instead of describing a mixture.
 > **What does not:** the value stays 7.80 GeV; the tier medians
 > (4.85, 178 and 4993 GeV) and the 1029.5x spread are
@@ -124,21 +127,21 @@ an ORIGINAL DERIVATION with the arithmetic shown in the row's `derivation` field
 > only bounds it from below.
 
 ## Tier 2 -- demonstrated technology
-| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |
-|---|---|---|---|---|---|---|---|
-| muon-collider front end | 0.045 mu/proton (post-cooling); 0.8 mu/proton (at capture) | 178 | beam_kinetic | transported (lower bound) | mu_minus | derived_here | no |
+| source | value as published | GeV/muon | numeraire | stage | charge | count | evidence | nv |
+|---|---|---|---|---|---|---|---|---|
+| muon-collider front end | 0.045 mu/proton (post-cooling); 0.8 mu/proton (at capture) | 178 | beam_kinetic | transported (lower bound) | mu_minus | muon | derived_here | no |
 
 ## Tier 3 -- operating facilities (GeV/muon derived here, at each row's own stage)
 Each GeV/muon below is *implied, derived here* from public beam-power / muon-rate numbers (the full
 arithmetic is in the CSV `derivation` column); no facility reports this quantity. PSI HIMB is mu+-ONLY
 (surface muons) and thus irrelevant to muCF, which needs mu- -- listed for scale only.
 
-| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |
-|---|---|---|---|---|---|---|---|
-| mu2e (Fermilab) | 8 kW @ 8 GeV; ~1e10 stopped mu/s | 4993 | beam_kinetic | stopped_other_target (off-chain) | mu_minus | derived_here | no |
-| COMET (J-PARC) | 0.0035 mu/proton; 56 kW @ 8 GeV | 2286 | beam_kinetic | stopped_other_target (off-chain) | mu_minus | derived_here | no |
-| MuSIC (RCNP) | (10.4 +- 2.7)e5 mu/W (mu+ and mu-) | 6002 | beam_kinetic | transported (lower bound) | mixed | derived_here | no |
-| PSI HIMB | 1.42 MW; 1e10 mu+/s (mu+-only) | 890000 | beam_kinetic | transported (lower bound) | mu_plus_only (not muCF) | derived_here | no |
+| source | value as published | GeV/muon | numeraire | stage | charge | count | evidence | nv |
+|---|---|---|---|---|---|---|---|---|
+| mu2e (Fermilab) | 8 kW @ 8 GeV; ~1e10 stopped mu/s | 4993 | beam_kinetic | stopped_other_target (off-chain) | mu_minus | muon | derived_here | no |
+| COMET (J-PARC) | 0.0035 mu/proton; 56 kW @ 8 GeV | 2286 | beam_kinetic | stopped_other_target (off-chain) | mu_minus | muon | derived_here | no |
+| MuSIC (RCNP) | (10.4 +- 2.7)e5 mu/W (mu+ and mu-) | 6002 | beam_kinetic | transported (lower bound) | mixed | muon | derived_here | no |
+| PSI HIMB | 1.42 MW; 1e10 mu+/s (mu+-only) | 890000 | beam_kinetic | transported (lower bound) | mu_plus_only (not muCF) | muon | derived_here | no |
 
 ## The tier spread: an order-of-magnitude, mixed-basis observation
 ![muon-cost tier spread](figures/muon_cost_gap.png)
@@ -200,11 +203,11 @@ other two convention-set.
 Against that ceiling, the chain points built from the open-access anchor -- every one of them a
 **bound**, because they all stop at stage `produced`:
 
-| chain point | numeraire | figure | vs 3.06 GeV ceiling | vs 3.90 GeV ceiling |
-|---|---|---|---|---|
-| beam kinetic per mu- produced | `beam_kinetic` | >= 4.70 GeV | 1.54x | 1.21x |
-| electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | >= 26.11 GeV | 8.53x | 6.69x |
-| electrical per mu- produced (site-wide) | `electrical_site` | >= 45.19 GeV | 14.77x | 11.59x |
+| chain point | numeraire | figure | machine transfer made by | vs 3.06 GeV ceiling | vs 3.90 GeV ceiling |
+|---|---|---|---|---|---|
+| beam kinetic per mu- produced | `beam_kinetic` | >= 4.70 GeV | none | 1.54x | 1.21x |
+| electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | >= 26.11 GeV (conditional on a machine transfer) | Kelly, Hart & Rose (2021) | 8.53x | 6.69x |
+| electrical per mu- produced (site-wide) | `electrical_site` | >= 45.19 GeV (conditional on a machine transfer) | this ledger | 14.77x | 11.59x |
 
 Read in the criterion's own coordinates, at `E_use` = 20.4 MeV. **`G_mu` carries two
 distinct meanings in eq.(12) and they must not be substituted into each other:** the row below reports
@@ -228,35 +231,41 @@ retyped.)
 to Kou & Chen's mathematics, every digit of which reproduces. Their own sec.IV places the historical
 anchors below breakeven, saying they "fall near the `G_mu` ~ 0.5-0.6 region"; their Table I `G_mu` column
 prints 0.51 (SIN/Crowe) and 0.61 (LAMPF/Jones), and 0.41 (Petitjean low) is the nearest value it prints
-outside that range. The contribution here is narrower and sharper:
-**the cost convention that puts them there is itself ~5-9x
-optimistic relative to the only anchor in the field whose beam-to-electrical conversion is
-sourced**, so that anchor's `G_mu` is
-~0.068-0.117 rather than ~0.6,
-and the demonstrated sticking sits 7.3-12.6x on the
-forbidden side of the no-go line rather than 1.4x. **Every omitted factor pushes
-the same way**, so this reading is rigorously one-sided: the chain points above are lower bounds, and
-the true costs can only be higher.
+outside that range. The contribution here is narrower. **Without any machine transfer**, the anchor's
+beam energy alone, >= 4.70 GeV per muon produced, is 1.54x the 3.06 GeV ceiling and 1.21x the
+3.90 GeV one. **Conditional on a machine transfer**, the cost convention that puts the historical
+anchors there is ~5-9x optimistic relative to that anchor's electrical cost, so its `G_mu` is
+~0.068-0.117 rather than ~0.6, and the demonstrated sticking sits 7.3-12.6x on the
+forbidden side of the no-go line rather than 1.4x. The electrical figures divide by efficiencies
+measured on the PSI HIPA proton cyclotron: Kelly, Hart & Rose apply its minimal-subsystem figure to their
+own deuteron design (sec.6), and this ledger applies its site-wide figure. **Along the stage axis the
+reading is one-sided**: every chain point above stops at stage `produced`, and each stage factor it
+omits is <= 1, so leaving it out can only understate the cost. **Along the numeraire axis it holds only
+if the transfer does**: the electrical figures are lower bounds if the anchor's accelerator is no more
+efficient than the PSI one. Kelly, Hart & Rose expect accelerator efficiency to decrease at higher beam
+energies (sec.6) and also to improve considerably (sec.7), and Eliezer & Henis take an optimistic
+accelerator efficiency far above the PSI ones in an illustrative energy balance (sec.VII), so these
+sources do not settle the condition.
 
 ## Chain coverage: which conversions are actually sourced
 | source | stage reached | numeraire | beam -> electrical sourced? | produced -> stopped & useful in D-T | fully sourced? |
 |---|---|---|---|---|---|
-| Kelly, Hart & Rose (2021) | produced | `beam_kinetic` | yes (`eta_acc`, from the PSI primary) | stated as one collapsed factor, author_declared_arbitrary | **no** |
+| Kelly, Hart & Rose (2021) | produced | `beam_kinetic` | yes, by a machine transfer (`eta_acc`, from the PSI primary) | stated as one collapsed factor, author_declared_arbitrary | **no** |
 | Bertin et al. (1987) | produced | `beam_kinetic` | absent | absent | **no** |
-| Eliezer & Henis (1994) | produced | `beam_kinetic` | absent | absent | **no** |
+| Eliezer & Henis (1994) | produced | `beam_kinetic` | absent | absent for this row's figure; the source relays `delivery_petrov_via_eliezer_henis` (relayed_unread) for another machine | **no** |
 | Acceleron (2025 deck) | produced | `beam_kinetic` | absent | absent | **no** |
 | muon-collider front end | transported | `beam_kinetic` | absent | absent | **no** |
 | mu2e (Fermilab) | stopped_other_target (NOT on the muCF chain) | `beam_kinetic` | absent | absent | **no** |
 | COMET (J-PARC) | stopped_other_target (NOT on the muCF chain) | `beam_kinetic` | absent | absent | **no** |
 | MuSIC (RCNP) | transported | `beam_kinetic` | absent | absent | **no** |
 | PSI HIMB | transported | `beam_kinetic` | absent | absent | **no** |
-| Kelly / eta_acc minimal-subsystem | produced | `electrical_minimal` | yes (`eta_acc`, from the PSI primary) | absent | **no** |
-| Kelly / eta_acc site-wide | produced | `electrical_site` | yes (`eta_acc`, from the PSI primary) | absent | **no** |
+| Kelly / eta_acc minimal-subsystem | produced | `electrical_minimal` | yes, by a machine transfer (`eta_acc`, from the PSI primary) | absent | **no** |
+| Kelly / eta_acc site-wide | produced | `electrical_site` | yes, by a machine transfer (`eta_acc`, from the PSI primary) | absent | **no** |
 
 **0 of the 9 pinned rows that sit on the muCF chain have a
 fully-sourced chain to a useful stopped muon** (a further 2 rows are not on the chain
-at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states its own
-beam-to-electrical conversion -- Kelly, Hart & Rose, who take 18% from the PSI primary they cite -- and
+at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states a
+beam-to-electrical conversion measured on an accelerator -- Kelly, Hart & Rose, who take 18% from the PSI primary they cite -- and
 that same source states the delivery factor is unknown. 3 rows carry an
 `eta_acc`: his beam row and its two electrical re-expressions, on the two denominators that same PSI
 primary supplies. Kelly adopts the minimally-required-subsystem one; the site-wide figure is the
@@ -267,14 +276,15 @@ honest state of the literature, not a gap in this ledger, and it is why
 
 **What would close this properly.** Each row would have to reach `stopped_useful_in_dt` in a stated
 numeraire with every conversion sourced: beam GeV per mu- produced -> / eta_acc (a numeraire change)
--> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. Only the numeraire change
-is sourceable for any row today (Kelly: 4.70 / 0.18 =
-26.11 GeV). Kelly, Hart & Rose do quote a single collapsed delivery factor,
+-> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. For a row that counts
+mu-, the numeraire change is sourced today only through a machine transfer (Kelly: 4.70 / 0.18 =
+26.11 GeV, on the PSI efficiency he adopts), and no stage factor is sourced: the one stage factor a source here relays, `delivery_petrov_via_eliezer_henis`, comes from a primary not read here. Kelly, Hart & Rose do quote a single collapsed delivery factor,
 `eta_mu` = 0.50, but describe it verbatim as an "arbitrary but reasonable assumption" and state they do
 not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
 into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
 figure above that sits **on the muCF chain** and counts mu- is a **lower bound** on the cost at the
-terminal stage. The 2 off-chain
+terminal stage, in its own numeraire and, where the figure is marked *conditional on a machine
+transfer*, only if that transfer holds. The 2 off-chain
 figures are not bounds on a muCF cost at all: they price stopping a muon somewhere that is not D-T
 fuel, so no chain of sub-unity factors connects them to the quantity this table is about.
 The mu+-only chain figure (PSI HIMB) is excluded on the other axis: it counts no mu-, so its
@@ -289,47 +299,70 @@ source and make the second reading of a conversion inexpressible. An edge moves 
 writes `*` on the other, which reads *any* -- a delivery fraction is dimensionless and holds in any
 numeraire, and an accelerator efficiency applies at any stage, which is the same fact that makes
 wall-plug a numeraire rather than a chain node. Where no source read here states a conversion, the row
-carries `absent` and **no number**: 4 of the 8 edges
+carries `absent` and **no number**: 4 of the 9 edges
 are that kind, and filling one of those cells with a plausible factor is the failure this table
 exists to prevent.
 
-| edge | conversion | factor | evidence | bias | source |
-|---|---|---|---|---|---|
-| `eta_acc_kelly_psi_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.18 | primary_cited | none | KellyHartRose2021 |
-| `eta_acc_kovach_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.183 | primary | none | Kovach2017 |
-| `eta_acc_kovach_site` | `beam_kinetic` -> `electrical_site` (at any stage) | 0.104 | primary | none | Kovach2017 |
-| `delivery_kelly_eta_mu` | `produced` -> `stopped_useful_in_dt` (in any numeraire) | 0.5 | author_declared_arbitrary | unknown | KellyHartRose2021 |
-| `produced_to_captured_absent` | `produced` -> `captured` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
-| `captured_to_transported_absent` | `captured` -> `transported` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
-| `transported_to_moderated_absent` | `transported` -> `moderated` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
-| `moderated_to_stopped_useful_absent` | `moderated` -> `stopped_useful_in_dt` (in any numeraire) | -- (no number) | absent | lower | Jones1987Erice, KellyHartRose2021 |
+| edge | conversion | factor | evidence | bias | count | machine | source |
+|---|---|---|---|---|---|---|---|
+| `eta_acc_kelly_psi_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.18 | primary_cited | none | `*` | psi_hipa | KellyHartRose2021 |
+| `eta_acc_kovach_minimal` | `beam_kinetic` -> `electrical_minimal` (at any stage) | 0.183 | primary | none | `*` | psi_hipa | Kovach2017 |
+| `eta_acc_kovach_site` | `beam_kinetic` -> `electrical_site` (at any stage) | 0.104 | primary | none | `*` | psi_hipa | Kovach2017 |
+| `delivery_kelly_eta_mu` | `produced` -> `stopped_useful_in_dt` (in any numeraire) | 0.5 | author_declared_arbitrary | unknown | `pi_minus_created` | kelly_hart_rose_2021 | KellyHartRose2021 |
+| `delivery_petrov_via_eliezer_henis` | `produced` -> `stopped_useful_in_dt` (in any numeraire) | 0.75 | relayed_unread | lower | `pi_minus_created` | petrov_converter_synthesizer | EliezerHenis1994 |
+| `produced_to_captured_absent` | `produced` -> `captured` (in any numeraire) | -- (no number) | absent | lower | `*` | -- | Jones1987Erice, KellyHartRose2021 |
+| `captured_to_transported_absent` | `captured` -> `transported` (in any numeraire) | -- (no number) | absent | lower | `*` | -- | Jones1987Erice, KellyHartRose2021 |
+| `transported_to_moderated_absent` | `transported` -> `moderated` (in any numeraire) | -- (no number) | absent | lower | `*` | -- | Jones1987Erice, KellyHartRose2021 |
+| `moderated_to_stopped_useful_absent` | `moderated` -> `stopped_useful_in_dt` (in any numeraire) | -- (no number) | absent | lower | `*` | -- | Jones1987Erice, KellyHartRose2021 |
 
 ### Which conversions are actually sourced
 | conversion | kind | edges that cover it | any sourced? |
 |---|---|---|---|
-| `produced` -> `captured` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `produced_to_captured_absent` (absent) | **no** |
-| `captured` -> `transported` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `captured_to_transported_absent` (absent) | **no** |
-| `transported` -> `moderated` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `transported_to_moderated_absent` (absent) | **no** |
-| `moderated` -> `stopped_useful_in_dt` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `moderated_to_stopped_useful_absent` (absent) | **no** |
+| `produced` -> `captured` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `delivery_petrov_via_eliezer_henis` (relayed_unread), `produced_to_captured_absent` (absent) | **no** |
+| `captured` -> `transported` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `delivery_petrov_via_eliezer_henis` (relayed_unread), `captured_to_transported_absent` (absent) | **no** |
+| `transported` -> `moderated` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `delivery_petrov_via_eliezer_henis` (relayed_unread), `transported_to_moderated_absent` (absent) | **no** |
+| `moderated` -> `stopped_useful_in_dt` | stage | `delivery_kelly_eta_mu` (author_declared_arbitrary), `delivery_petrov_via_eliezer_henis` (relayed_unread), `moderated_to_stopped_useful_absent` (absent) | **no** |
 | `beam_kinetic` -> `electrical_minimal` | numeraire | `eta_acc_kelly_psi_minimal` (primary_cited), `eta_acc_kovach_minimal` (primary) | yes |
 | `beam_kinetic` -> `electrical_site` | numeraire | `eta_acc_kovach_site` (primary) | yes |
 
-Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every one of them is a numeraire change: **not one of the 4 stage advances the chain requires is sourced by any primary read here**. Exactly 1 cost source in this compilation (Kelly, Hart & Rose (2021)) states its own beam-to-electrical conversion. That source also states the chain's one delivery factor (`delivery_kelly_eta_mu`), and grades it `author_declared_arbitrary` -- so composing it yields a bound and never a value.
+Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every one of them is a numeraire change: **none of the 4 stage advances the chain requires is sourced**. All 4 are spanned by one collapsed factor, `delivery_petrov_via_eliezer_henis` (bias `lower`), relayed by Eliezer & Henis (1994) from a primary not read here (`relayed_unread`) and stated for a machine no row of this compilation prices; it is not sourced, so a figure composed through it is a bound and never a value, like a figure composed through any other unsourced conversion. Exactly 1 cost source in this compilation (Kelly, Hart & Rose (2021)) states a beam-to-electrical conversion measured on an accelerator. That source also states a delivery factor (`delivery_kelly_eta_mu`), and grades it `author_declared_arbitrary` -- so composing it yields a bound and never a value.
+
+> **AMENDMENT (2026-10-13) -- a stage factor a held source relays is now an edge, under a new evidence
+> grade that is not sourced; the electrical figures state the machine transfer they rest on, and each row
+> records what it counts; no row's value moves.** This section said that not one of the 4 stage
+> advances the chain requires is sourced by any primary read here, and did not say that a source this
+> ledger already carries states one: Eliezer & Henis (1994) relay in sec.VII.A Petrov's calculation
+> that his converter-synthesizer converts about 75% of the negative pions created into muons that take
+> part in d-t catalysis. That factor is now the edge `delivery_petrov_via_eliezer_henis`, graded
+> `relayed_unread` -- a new evidence grade: the source states the number and attributes it to a primary
+> not read here -- because Petrov's paper is not read here, and given bias `lower` because the same
+> paragraph says the results seem to be optimistic. `relayed_unread` is not sourced, so the sentence
+> above, regenerated from both tables, still finds no stage advance sourced, and a figure composed
+> through the edge is a bound, never a value. The electrical figures
+> divide by efficiencies measured on the PSI HIPA proton cyclotron and applied to Kelly, Hart & Rose's
+> design -- by Kelly, Hart & Rose for the minimal-subsystem figure they adopt, and by this ledger for the
+> other two -- and now say so; their one-sidedness is stated for the stage axis only. `count_basis`
+> records that Kelly, Hart & Rose's rows count negative pions created and Acceleron's counts negative
+> pions and muons leaving the target, so T1 is stage-homogeneous but not count-homogeneous; a cost per
+> pion created is a lower bound on the cost per muon produced, so no bound changes direction.
+> **What does not move:** every row's value, the tier medians (4.85, 178 and 4993 GeV), the
+> 1029.5x spread and every number in the Kou-Chen comparison.
 
 ### Where the competing readings lead
-1 conversion carries more than one stated value: `beam_kinetic` -> `electrical_minimal` (`eta_acc_kelly_psi_minimal` = 0.18 and `eta_acc_kovach_minimal` = 0.183). Both readings are carried to the end as separate figures -- no mean is formed and no value is preferred.
+2 conversions carry more than one stated value: `beam_kinetic` -> `electrical_minimal` (`eta_acc_kelly_psi_minimal` = 0.18 and `eta_acc_kovach_minimal` = 0.183) and `produced` -> `stopped_useful_in_dt` (`delivery_kelly_eta_mu` = 0.5 and `delivery_petrov_via_eliezer_henis` = 0.75). No mean is formed and no value is preferred. Both readings of `beam_kinetic` -> `electrical_minimal` are carried to the end as separate figures below; neither reading of `produced` -> `stopped_useful_in_dt` is composed into them, because neither is sourced.
 
 Composing every path out of the open-access anchor row (Kelly, Hart & Rose (2021)) that uses **only
 sourced conversions** gives 3 figures, and the deliverable is the SET of them
 with their provenance -- never a mean, and never one of them singled out:
 
-| conversions applied | coordinate reached | figure |
-|---|---|---|
-| `eta_acc_kovach_minimal` | `produced` / `electrical_minimal` | >= 25.68 GeV |
-| `eta_acc_kelly_psi_minimal` | `produced` / `electrical_minimal` | >= 26.11 GeV |
-| `eta_acc_kovach_site` | `produced` / `electrical_site` | >= 45.19 GeV |
+| conversions applied | coordinate reached | figure | machine transfer made by |
+|---|---|---|---|
+| `eta_acc_kovach_minimal` | `produced` / `electrical_minimal` | >= 25.68 GeV (conditional on a machine transfer) | this ledger |
+| `eta_acc_kelly_psi_minimal` | `produced` / `electrical_minimal` | >= 26.11 GeV (conditional on a machine transfer) | Kelly, Hart & Rose (2021) |
+| `eta_acc_kovach_site` | `produced` / `electrical_site` | >= 45.19 GeV (conditional on a machine transfer) | this ledger |
 
-**Read the marker, and read what is missing.** Each figure above prints `>=` because it is a one-sided **lower** bound: every conversion it omits is <= 1, so leaving it out can only understate the cost.
-Beyond that, the chain could be continued with one conversion stated but not sourced: `delivery_kelly_eta_mu` (author_declared_arbitrary, bias `unknown`). None of the figures here is composed through it. `delivery_kelly_eta_mu` is not even one-sided: its own authors state they do not know the value, so a figure built through it could be too high or too low rather than bounded below. The edge table carries every one of those conversions and the API
-will compose them, marking a result *direction unknown* wherever its edges cannot bound it -- which
+**Read the marker, and read what is missing.** Each figure above prints `>=` because it is a one-sided **lower** bound along the stage axis: every conversion it omits is <= 1, so leaving it out can only understate the cost. Each is also *conditional on a machine transfer*: it divides by an efficiency measured on another machine, so it bounds the cost from below only if that efficiency is no larger on the machine it prices.
+Beyond those, the chain could be continued with 2 conversions stated but not sourced: `delivery_kelly_eta_mu` (author_declared_arbitrary, bias `unknown`) and `delivery_petrov_via_eliezer_henis` (relayed_unread, bias `lower`). None of the figures here is composed through any of them. `delivery_kelly_eta_mu` is not even one-sided: its own authors state they do not know the value, so a figure built through it could be too high or too low rather than bounded below. The edge table carries every one of those conversions and the API
+will compose them, marking a result *direction unknown* wherever its edges cannot bound it, and
+*conditional on a machine transfer* wherever an edge was stated for another machine -- which
 is how this compilation records a factor it may not publish a number from.

@@ -11,6 +11,7 @@
     "to_numeraire",
     "bias_direction",
     "charge_basis",
+    "count_basis",
     "evidence_status",
     "derivation"
   ],
@@ -60,13 +61,25 @@
     "bias_direction": {
       "type": "string",
       "enum": ["lower", "unknown", "none"],
-      "description": "Which way this edge can move a composed cost away from the truth. 'none' iff the factor is sourced. 'lower' where using the row as written can only understate the cost -- an absent factor is bounded above by 1, so omitting it understates, and a factor a source states at its own ceiling while saying the truth lies below it understates the same way. 'unknown' where a source declares its value arbitrary and gives no direction: composing such a factor can understate OR overstate, which is strictly weaker than an omitted one, and a chain that uses it is therefore not a one-sided bound at all.",
-      "$comment": "This grades the EDGE. ChainValue.bias_direction grades a composed figure by a different and older rule -- whether it is a bound at all -- so the two answer different questions and ChainPath.bias_direction is the one that reads these cells."
+      "description": "Which way this edge can move a composed cost away from the truth. 'none' iff the factor is sourced. 'lower' where using the row as written can only understate the cost -- an absent factor is bounded above by 1, so omitting it understates, and a factor its source states while calling the result optimistic, or at its own ceiling with the truth below it, understates the same way. 'unknown' where a source declares its value arbitrary and gives no direction: composing such a factor can understate OR overstate, which is strictly weaker than an omitted one, and a chain that uses it is therefore not a one-sided bound at all."
     },
     "charge_basis": {
       "type": "string",
       "enum": ["mu_minus", "mixed", "mu_plus_only", "*"],
       "description": "Which muon charge the factor was stated for; '*' where the conversion is charge-agnostic, as an accelerator's grid-to-beam efficiency is. A muCF chain needs mu-, so composition admits only 'mu_minus' and '*' and refuses the other two."
+    },
+    "count_basis": {
+      "type": "string",
+      "enum": ["pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon", "*"],
+      "description": "The count a stage edge's factor is a fraction of, on muon_cost.csv's vocabulary; '*' on a numeraire edge, whose efficiency counts no particles, and on an absent edge, which states no factor. Composition refuses a figure counted otherwise: a fraction of pions applied to a cost per muon would count the pion's decay twice. A stage edge yields a cost per muon."
+    },
+    "machine": {
+      "type": "string",
+      "description": "Short key of the machine or design the factor was measured or calculated for, on muon_cost.csv's machine vocabulary. Required where a factor is stated, empty on an absent row. Composing the edge onto a figure for another machine is a machine transfer, which the composed figure carries with who made it."
+    },
+    "adopted_for": {
+      "type": "string",
+      "description": "A machine key the edge's own source applies the factor to, where it does: composing the edge onto that machine is a transfer the source made, and onto any other machine one this ledger makes. Empty where the source applies the factor to no other machine."
     },
     "conditions": {
       "type": "string",
@@ -78,11 +91,12 @@
         "primary",
         "primary_cited",
         "derived_here",
+        "relayed_unread",
         "author_declared_arbitrary",
         "assumption",
         "absent"
       ],
-      "description": "How well-founded this factor is, on the same closed enum and with the same meanings as muon_cost.csv's column of the same name. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attributes it to a primary that has itself been read; 'derived_here' = our arithmetic on published inputs, shown verbatim in derivation; 'author_declared_arbitrary' = the source itself calls the value arbitrary or unknown; 'assumption' = assumed without the source saying so; 'absent' = no source read here states the conversion at all. The last three are NOT SOURCED: a path composing one of them is a BOUND, never a value."
+      "description": "How well-founded this factor is, on the same closed enum and with the same meanings as muon_cost.csv's column of the same name. 'primary' = read from the source's own text/table/figure; 'primary_cited' = the source states it and attributes it to a primary that has itself been read; 'derived_here' = our arithmetic on published inputs, shown verbatim in derivation; 'relayed_unread' = the source states the number and attributes it to a primary not read here; 'author_declared_arbitrary' = the source itself calls the value arbitrary or unknown; 'assumption' = assumed without the source saying so; 'absent' = no source read here states the conversion at all. The last four are NOT SOURCED: a path composing one of them is a BOUND, never a value."
     },
     "source_bibkey": {
       "type": "string",

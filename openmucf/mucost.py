@@ -43,10 +43,24 @@ to :data:`BEAM_KINETIC` -- medianing beam-kinetic and electrical figures togethe
 
 **Composition is basis-typed and refuses to lie.** :class:`ChainValue` carries a figure together with
 its stage, numeraire and the evidence status of every factor composed into it. If any composed factor
-is ``author_declared_arbitrary``/``assumption``/``absent``, or if the chain has not reached the terminal
-stage, the result is a **BOUND, not a value** -- and :meth:`ChainValue.render_value` *raises* rather
-than print it as one. Every omitted factor is <= 1, so the bound is one-sided (costs can only rise).
+is ``relayed_unread``/``author_declared_arbitrary``/``assumption``/``absent``, or if the chain has not
+reached the terminal stage, the result is a **BOUND, not a value** -- and
+:meth:`ChainValue.render_value` *raises* rather than print it as one. Every omitted factor is <= 1, so
+the bound is one-sided along the stage axis (costs can only rise).
 No row in the literature today has a fully-sourced chain, which is the finding, not a gap in the code.
+
+**What a row counts, and which machine it prices.** ``count_basis`` records what one unit of a row's
+count is -- a negative pion created (which Kelly, Hart & Rose count as a muon), a negative pion or muon
+leaving the target, or a muon -- and a stage edge names the count its factor is a fraction of, so
+:meth:`ChainEdge.apply_to` refuses to apply a fraction of pions to a cost per muon, which would count
+the pion's decay twice. ``machine`` records the machine a row prices and the machine each factor was
+stated for; a factor composed onto a figure for another machine is a **machine transfer**, carried on
+the :class:`ChainValue` with who made it. Such a figure prints *conditional on a machine transfer* and
+:meth:`ChainValue.render_value` refuses it, because the figure bounds the cost only if the transferred
+factor holds for the machine it is composed onto. An accelerator efficiency from another machine leaves
+the stage-axis bound one-sided and makes the numeraire change conditional on the transfer; a stage factor
+from another machine, such as ``delivery_petrov_via_eliezer_henis`` composed onto Kelly, Hart & Rose's
+design, makes the stage-axis bound itself conditional on the transfer.
 
 Not part of the eager-import surface (like ``calibrate``/``validate``/``forecast``); reached as a
 submodule. The rate ledger (``openmucf.rates``) remains the source of truth for microscopic physics;
@@ -59,7 +73,7 @@ import csv
 import json
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .rates import bibkeys
@@ -78,8 +92,18 @@ TIER_ORDER = ("T1-design-study", "T2-demonstrated-tech", "T3-operating-facility"
 # somewhere that is not D-T fuel. Values on different classes are not commensurable.
 VALID_BASIS_CLASS = {"produced", "collected", "stopped_in_dt", "stopped_other_target", ""}
 VALID_CHARGE_BASIS = {"mu_minus", "mixed", "mu_plus_only", ""}
+VALID_COUNT_BASIS = {"pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon", ""}
+MACHINE_KEY = re.compile(r"^[a-z0-9_]+$")
+THIS_LEDGER = "this_ledger"
+TRANSFER_SUFFIX = " (conditional on a machine transfer)"
 # Classes whose figure understates the true per-stopped-in-D-T cost (collection/stopping fractions < 1).
 LOWER_BOUND_CLASSES = frozenset({"produced", "collected"})
+
+
+def first_bibkey(source_bibkey: str) -> str:
+    keys = [k.strip() for k in re.split(r"[;,]", source_bibkey or "") if k.strip()]
+    return keys[0] if keys else ""
+
 
 #: Charge bases barred from every aggregate this package forms -- a tier median, a spread, a ratio, or
 #: the edge of a prior box drawn over a tier. ``muon_cost.schema.json`` states the rule for
@@ -108,7 +132,7 @@ VALID_NUMERAIRE = {BEAM_KINETIC, "electrical_minimal", "electrical_site", ""}
 
 #: Statuses that carry real provenance. Anything else makes a composed figure a BOUND.
 SOURCED_STATUSES = frozenset({"primary", "primary_cited", "derived_here"})
-NON_SOURCED_STATUSES = frozenset({"author_declared_arbitrary", "assumption", "absent"})
+NON_SOURCED_STATUSES = frozenset({"relayed_unread", "author_declared_arbitrary", "assumption", "absent"})
 VALID_EVIDENCE_STATUS = SOURCED_STATUSES | NON_SOURCED_STATUSES
 
 #: The deprecated `basis_class` alias -> the `stage` it maps onto. Kept so the two cannot drift.
@@ -143,6 +167,10 @@ class ChainValue:
     charge_basis: str
     statuses: tuple[str, ...]
     provenance: tuple[str, ...]
+    count_basis: str = ""
+    machine: str = ""
+    transfers: tuple[tuple[str, str], ...] = ()
+    unknown_edges: tuple[str, ...] = ()
 
     @property
     def missing_stages(self) -> tuple[str, ...]:
@@ -159,22 +187,7 @@ class ChainValue:
 
     @property
     def direction_is_one_sided(self) -> bool:
-        """False iff a factor whose own source disclaimed it has been COMPOSED into this figure.
-
-        The distinction that matters for direction is not sourced-vs-unsourced, it is
-        omitted-vs-applied. A factor a chain leaves OUT is bounded above by 1, so omitting it can
-        only understate the cost -- that is a one-sided lower bound. A factor a source states, calls
-        arbitrary, and :meth:`compose` then divides by can put the figure above or below the truth,
-        because the true factor may lie either side of the stated one.
-
-        ``author_declared_arbitrary`` is the one status that always means the second thing: it is
-        never added for an omission, only carried in by a factor actually applied. ``assumption`` can
-        mean either -- :meth:`MuonCost.chain_point` adds it for a qualifier the source never
-        established, which is an omission -- so it is not read here, and where a figure is built from
-        the edge table :attr:`ChainPath.bias_direction` remains the fuller answer: it knows which
-        edges were applied and carries each edge's own declared direction.
-        """
-        return "author_declared_arbitrary" not in self.statuses
+        return "author_declared_arbitrary" not in self.statuses and not self.unknown_edges
 
     @property
     def bias_direction(self) -> str:
@@ -197,6 +210,9 @@ class ChainValue:
             why.append("stages not reached: " + ", ".join(self.missing_stages))
         if self.unsourced_statuses:
             why.append("non-sourced factors: " + ", ".join(self.unsourced_statuses))
+        if self.transfers:
+            made = ", ".join(f"{what} (by {who})" for what, who in self.transfers)
+            why.append("machine transfers: " + made)
         return "; ".join(why)
 
     def render(self, digits: int = 2) -> str:
@@ -207,10 +223,11 @@ class ChainValue:
         gets no inequality at all.
         """
         bias = self.bias_direction
+        suffix = TRANSFER_SUFFIX if self.transfers else ""
         if bias == "unknown":
-            return f"{self.value_GeV:.{digits}f} GeV (direction unknown)"
+            return f"{self.value_GeV:.{digits}f} GeV (direction unknown){suffix}"
         prefix = ">= " if bias == "lower" else ""
-        return f"{prefix}{self.value_GeV:.{digits}f} GeV"
+        return f"{prefix}{self.value_GeV:.{digits}f} GeV{suffix}"
 
     def render_value(self, digits: int = 2) -> str:
         """The figure as a plain value. **Raises** :class:`BasisError` if it is only a bound.
@@ -218,10 +235,14 @@ class ChainValue:
         This refusal is the point of the class: it makes the basis error unrepresentable rather than
         merely discouraged, so a caller cannot quote an incomplete or unsourced chain as a result.
         """
-        if self.is_bound:
+        if self.transfers:
+            raise BasisError(
+                f"refusing to render a figure that rests on a machine transfer as a value "
+                f"({self.value_GeV:.{digits}f} GeV): {self.why_bound()}"
+            )
+        if self.is_bound or not self.direction_is_one_sided:
             tail = (
-                "Use render() -- a factor composed here is one its own source calls arbitrary, so "
-                "this figure is not a bound in either direction."
+                "Use render() -- this figure is not a bound in either direction."
                 if not self.direction_is_one_sided
                 else (
                     f"Use render() -- this is a one-sided '{self.bias_direction}' bound, so the "
@@ -230,7 +251,8 @@ class ChainValue:
             )
             raise BasisError(
                 f"refusing to render a bound as a value ({self.value_GeV:.{digits}f} GeV at stage "
-                f"'{self.stage}', numeraire '{self.numeraire}'): {self.why_bound()}. {tail}"
+                f"'{self.stage}', numeraire '{self.numeraire}'): {self.why_bound() or 'direction unknown'}. "
+                f"{tail}"
             )
         return f"{self.value_GeV:.{digits}f} GeV"
 
@@ -256,6 +278,10 @@ class ChainValue:
             charge_basis=self.charge_basis,
             statuses=self.statuses + (status,),
             provenance=self.provenance + (label,),
+            count_basis="muon",
+            machine=self.machine,
+            transfers=self.transfers,
+            unknown_edges=self.unknown_edges,
         )
 
     def to_numeraire(self, factor: float, to_numeraire: str, status: str, label: str) -> ChainValue:
@@ -295,6 +321,10 @@ class ChainValue:
             charge_basis=self.charge_basis,
             statuses=self.statuses + (status,),
             provenance=self.provenance + (label,),
+            count_basis=self.count_basis,
+            machine=self.machine,
+            transfers=self.transfers,
+            unknown_edges=self.unknown_edges,
         )
 
 
@@ -326,6 +356,9 @@ class MuonCost:
     source_locator: str
     needs_verification: bool
     notes: str
+    count_basis: str = ""
+    machine: str = ""
+    machine_transfer: str = ""
 
     @property
     def has_normalized(self) -> bool:
@@ -414,6 +447,9 @@ class MuonCost:
             charge_basis=self.charge_basis,
             statuses=statuses,
             provenance=provenance,
+            count_basis=self.count_basis,
+            machine=self.machine,
+            transfers=((self.source_id, self.machine_transfer),) if self.machine_transfer else (),
         )
 
 
@@ -861,6 +897,9 @@ def load_muon_cost(
                 )
             basis_class = (row.get("basis_class") or "").strip()
             charge_basis = (row.get("charge_basis") or "").strip()
+            count_basis = (row.get("count_basis") or "").strip()
+            machine = (row.get("machine") or "").strip()
+            machine_transfer = (row.get("machine_transfer") or "").strip()
             numeraire = (row.get("numeraire") or "").strip()
             stage = (row.get("stage") or "").strip()
             evidence_status = (row.get("evidence_status") or "").strip()
@@ -939,6 +978,26 @@ def load_muon_cost(
                     f"row {i} ({sid}): a pinned normalized value requires both basis_class and "
                     f"charge_basis (empty is allowed only on an unpinned needs_verification row)"
                 )
+            if count_basis not in VALID_COUNT_BASIS:
+                errors.append(
+                    f"row {i} ({sid}): bad count_basis '{count_basis}' "
+                    f"(expected {sorted(VALID_COUNT_BASIS - {''})})"
+                )
+            if has_norm and not machine:  # g1
+                errors.append(f"row {i} ({sid}): machine is required on a pinned row")
+            if machine and not MACHINE_KEY.match(machine):  # g2
+                errors.append(f"row {i} ({sid}): bad machine '{machine}' (expected {MACHINE_KEY.pattern})")
+            own_keys = {k.strip() for k in re.split(r"[;,]", row.get("source_bibkey") or "") if k.strip()}
+            if machine_transfer not in {"", THIS_LEDGER} | own_keys:  # g3
+                errors.append(
+                    f"row {i} ({sid}): bad machine_transfer '{machine_transfer}' (expected empty, "
+                    f"'{THIS_LEDGER}' or one of the row's own bibkeys)"
+                )
+            if has_norm and not count_basis:
+                errors.append(
+                    f"row {i} ({sid}): a pinned value requires a count_basis (empty is allowed "
+                    f"only on an unpinned needs_verification row)"
+                )
             if check_refs and known_keys is not None:
                 for key in re.split(r"[;,]", row.get("source_bibkey") or ""):
                     key = key.strip()
@@ -972,6 +1031,9 @@ def load_muon_cost(
                     source_locator=(row.get("source_locator") or "").strip(),
                     needs_verification=nv,
                     notes=(row.get("notes") or "").strip(),
+                    count_basis=count_basis,
+                    machine=machine,
+                    machine_transfer=machine_transfer,
                 )
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"row {i} ({sid}): parse error {exc}")
@@ -1009,6 +1071,7 @@ ANY = "*"
 VALID_EDGE_STAGE = set(MUCF_CHAIN) | {ANY}
 VALID_EDGE_NUMERAIRE = (VALID_NUMERAIRE - {""}) | {ANY}
 VALID_EDGE_CHARGE_BASIS = (VALID_CHARGE_BASIS - {""}) | {ANY}
+VALID_EDGE_COUNT_BASIS = (VALID_COUNT_BASIS - {""}) | {ANY}
 
 #: How an edge can move a composed cost away from the truth. ``none`` iff its factor is sourced;
 #: ``lower`` where using the row as written can only understate the cost; ``unknown`` where the
@@ -1052,6 +1115,9 @@ class ChainEdge:
     source_locator: str
     derivation: str
     notes: str
+    count_basis: str = ANY
+    machine: str = ""
+    adopted_for: str = ""
 
     @property
     def kind(self) -> str:
@@ -1107,11 +1173,29 @@ class ChainEdge:
                 f"({self.from_stage}, {self.from_numeraire}) and the figure sits at "
                 f"({value.stage}, {value.numeraire})"
             )
+        if (
+            self.kind == STAGE_EDGE
+            and self.count_basis != ANY
+            and self.count_basis != value.count_basis
+        ):
+            raise BasisError(
+                f"edge {self.edge_id!r} is a fraction of {self.count_basis!r} and the figure counts "
+                f"{value.count_basis or 'nothing stated'!r}: a count basis mismatch -- a fraction of "
+                f"pions applied to a cost per muon would count the pion's decay twice"
+            )
         if self.kind == NUMERAIRE_EDGE:
-            return value.to_numeraire(
+            out = value.to_numeraire(
                 self.factor, self.to_numeraire, self.evidence_status, self.edge_id
             )
-        return value.compose(self.factor, self.to_stage, self.evidence_status, self.edge_id)
+        else:
+            out = value.compose(self.factor, self.to_stage, self.evidence_status, self.edge_id)
+        if self.machine != value.machine:
+            first = first_bibkey(self.source_bibkey)
+            maker = first if value.machine and self.adopted_for == value.machine else THIS_LEDGER
+            out = replace(out, transfers=out.transfers + ((self.edge_id, maker),))
+        if self.bias_direction == "unknown":
+            out = replace(out, unknown_edges=out.unknown_edges + (self.edge_id,))
+        return out
 
 
 class ChainEdgeTable:
@@ -1160,22 +1244,7 @@ class ChainEdgeTable:
 
 @dataclass(frozen=True)
 class ChainPath:
-    """A composed sequence of edges, its terminal figure, and which way that figure can be wrong.
-
-    :attr:`bias_direction` is the reason this class exists rather than a bare
-    :class:`ChainValue`. Every factor a chain OMITS is bounded above by 1, so an omission can only
-    understate the cost; a factor a source states but calls arbitrary is different in kind: it can
-    move the figure either way, so a path through it is not a one-sided bound and must not be
-    printed with a ">=" marker. ``ChainValue.bias_direction`` reads only its statuses -- enough to
-    see that a factor its own source disclaimed was composed in, not which edge it was or what
-    direction that edge declares -- and :attr:`bias_direction` here reads those statuses AND each
-    applied edge's own declared ``bias_direction``, so an arbitrary factor reaching the figure by
-    any route -- a row typed ``author_declared_arbitrary``, an edge carrying that status whatever
-    direction its source declares, or a factor composed in through :meth:`ChainValue.compose` --
-    grades the path ``'unknown'`` and it prints no marker. The edge declarations add one thing the
-    statuses cannot see: an edge merely assumed but declared ``unknown`` withholds the marker here
-    that the bare value would print.
-    """
+    """A composed sequence of edges, its terminal figure, and which way that figure can be wrong."""
 
     start: ChainValue
     edges: tuple[ChainEdge, ...]
@@ -1209,11 +1278,12 @@ class ChainPath:
         either direction), and a fully sourced complete chain prints plainly.
         """
         bias = self.bias_direction
+        suffix = TRANSFER_SUFFIX if self.value.transfers else ""
         if bias == "lower":
-            return f">= {self.value.value_GeV:.{digits}f} GeV"
+            return f">= {self.value.value_GeV:.{digits}f} GeV{suffix}"
         if bias == "unknown":
-            return f"{self.value.value_GeV:.{digits}f} GeV (direction unknown)"
-        return f"{self.value.value_GeV:.{digits}f} GeV"
+            return f"{self.value.value_GeV:.{digits}f} GeV (direction unknown){suffix}"
+        return f"{self.value.value_GeV:.{digits}f} GeV{suffix}"
 
     def render_value(self, digits: int = 2) -> str:
         """The figure as a plain value. **Raises** :class:`BasisError` unless the path earns it."""
@@ -1236,8 +1306,8 @@ def compose_path(start: ChainValue, edges) -> ChainPath:
     The joins must match on the axis each edge moves; ``charge_basis`` must be composable at every
     step and at the start; an edge may appear at most once; and no path may return to a
     (stage, numeraire) coordinate it has already left. An edge with no factor cannot be composed at
-    all. Any ``author_declared_arbitrary``, ``assumption`` or ``absent`` status carried in makes the
-    terminal figure a BOUND, and :meth:`ChainValue.render_value` then refuses it.
+    all. Any ``relayed_unread``, ``author_declared_arbitrary``, ``assumption`` or ``absent`` status carried
+    in makes the terminal figure a BOUND, and :meth:`ChainValue.render_value` then refuses it.
     """
     if start.charge_basis not in COMPOSABLE_CHARGE_BASIS:
         raise BasisError(
@@ -1419,6 +1489,34 @@ def load_muon_cost_chain(
                         f"'{status}' -- a sourced factor biases nothing and an unsourced one always "
                         f"biases somehow"
                     )
+            count = (row.get("count_basis") or "").strip()
+            if count not in VALID_EDGE_COUNT_BASIS:
+                errors.append(
+                    f"row {i} ({eid}): bad count_basis '{count}' "
+                    f"(expected {sorted(VALID_EDGE_COUNT_BASIS)})"
+                )
+            elif moves_stage and has_factor and count == ANY:
+                errors.append(
+                    f"row {i} ({eid}): a stage edge with a factor must name the count it is a "
+                    f"fraction of (got '*')"
+                )
+            elif not moves_stage and moves_num and count != ANY:
+                errors.append(
+                    f"row {i} ({eid}): a numeraire edge counts no particles, so its count_basis "
+                    f"must be '*' (got '{count}')"
+                )
+            machine = (row.get("machine") or "").strip()
+            adopted_for = (row.get("adopted_for") or "").strip()
+            if has_factor and not machine:  # g4
+                errors.append(f"row {i} ({eid}): a stated factor needs a machine")
+            if factor_ok and not has_factor and status == "absent" and machine:  # g5
+                errors.append(f"row {i} ({eid}): an absent row names no machine (got '{machine}')")
+            if machine and not MACHINE_KEY.match(machine):  # g6
+                errors.append(f"row {i} ({eid}): bad machine '{machine}' (expected {MACHINE_KEY.pattern})")
+            if adopted_for and not MACHINE_KEY.match(adopted_for):  # g7
+                errors.append(
+                    f"row {i} ({eid}): bad adopted_for '{adopted_for}' (expected {MACHINE_KEY.pattern})"
+                )
             charge = (row.get("charge_basis") or "").strip()
             if charge not in VALID_EDGE_CHARGE_BASIS:
                 errors.append(
@@ -1455,6 +1553,9 @@ def load_muon_cost_chain(
                     source_locator=locator,
                     derivation=(row.get("derivation") or "").strip(),
                     notes=(row.get("notes") or "").strip(),
+                    count_basis=count,
+                    machine=machine,
+                    adopted_for=adopted_for,
                 )
             except Exception as exc:  # noqa: BLE001
                 errors.append(f"row {i} ({eid}): parse error {exc}")

@@ -127,7 +127,8 @@ def test_the_schema_required_columns_are_pinned_and_enforced(tmp_path):
         basis_as_published="b", derivation="d", source_bibkey="Bertin1987",
         needs_verification="false", evidence_status="primary",
         recapture_credit_applied="false", normalized_GeV_per_mu="5.0", numeraire="beam_kinetic",
-        stage="produced", basis_class="produced", charge_basis="mu_minus",
+        stage="produced", basis_class="produced", charge_basis="mu_minus", count_basis="muon",
+        machine="bogus",
     )
 
     def _write(row, name):
@@ -395,9 +396,6 @@ def test_kelly_wallplug_is_a_one_sided_bound(table):
     the ledger publishes the converted figures as rows of their own rather than folding them into a
     beam-kinetic value -- which is why more than one row carries an eta_acc. Do not restate a count or
     a uniqueness claim here: the document renders those from the ledger, and this docstring cannot.
-    Because Kelly's beam row is per-produced, the
-    remaining (sub-unity) collection and stopping fractions can only raise the true per-stopped-in-D-T
-    cost -- the bound is one-sided.
     """
     kelly = table["kelly_hart_rose_2021"]
     assert kelly.eta_acc_assumption == 0.18
@@ -417,6 +415,7 @@ def test_kelly_wallplug_is_a_one_sided_bound(table):
         assert not math.isnan(elec.eta_acc_assumption)
         assert elec.has_normalized  # else NaN would come from the missing value, not the guard
         assert math.isnan(elec.wallplug_lower_bound_GeV)
+        assert elec.chain_point().transfers, f"{sid}: a PSI efficiency on Kelly's design is a transfer"
 
 
 def test_psi_himb_is_mu_plus_only(table):
@@ -1296,7 +1295,8 @@ def test_the_float_wallplug_path_cannot_disagree_with_the_typed_conversion(table
 
 CHAIN_COLUMNS = [
     "edge_id", "from_stage", "from_numeraire", "to_stage", "to_numeraire",
-    "factor", "factor_lo", "factor_hi", "bias_direction", "charge_basis",
+    "factor", "factor_lo", "factor_hi", "bias_direction", "charge_basis", "count_basis", "machine",
+    "adopted_for",
     "conditions", "evidence_status", "source_bibkey", "source_locator", "derivation", "notes",
 ]
 
@@ -1305,7 +1305,8 @@ CHAIN_CONTROL = {
     "edge_id": "control_edge", "from_stage": "*", "from_numeraire": "beam_kinetic",
     "to_stage": "*", "to_numeraire": "electrical_minimal",
     "factor": "0.5", "factor_lo": "", "factor_hi": "",
-    "bias_direction": "none", "charge_basis": "*", "conditions": "synthetic",
+    "bias_direction": "none", "charge_basis": "*", "count_basis": "*", "machine": "psi_hipa",
+    "adopted_for": "", "conditions": "synthetic",
     "evidence_status": "primary", "source_bibkey": "Kovach2017",
     "source_locator": "synthetic fixture, not a reading of the source",
     "derivation": "synthetic fixture", "notes": "",
@@ -1341,20 +1342,19 @@ def test_the_edge_table_loads_and_every_stated_factor_cites_a_primary(chain):
     hole is the failure this table exists to prevent, and this is where that is checked rather than
     promised.
     """
-    assert len(chain) == 8
+    assert len(chain) == 9
     assert chain.ids() == [
         "eta_acc_kelly_psi_minimal", "eta_acc_kovach_minimal", "eta_acc_kovach_site",
-        "delivery_kelly_eta_mu",
+        "delivery_kelly_eta_mu", "delivery_petrov_via_eliezer_henis",
         "produced_to_captured_absent", "captured_to_transported_absent",
         "transported_to_moderated_absent", "moderated_to_stopped_useful_absent",
     ]
-    # the one stated stage factor spans the WHOLE delivery segment, which is what its source's own
-    # eq.(2) makes it: a factor multiplying the fusion energy is the useful-stopped fraction, not an
-    # arrival fraction. Composing it alongside that source's earlier 100% placeholder for the same
-    # conversion would apply one factor twice, so only one of the two is an edge.
-    delivery = chain["delivery_kelly_eta_mu"]
-    assert (delivery.from_stage, delivery.to_stage) == ("produced", mucost.TERMINAL_STAGE)
-    assert delivery.spans == mucost.MUCF_CHAIN[1:]
+    for eid in ("delivery_kelly_eta_mu", "delivery_petrov_via_eliezer_henis"):
+        delivery = chain[eid]
+        assert (delivery.from_stage, delivery.to_stage) == ("produced", mucost.TERMINAL_STAGE)
+        assert delivery.spans == mucost.MUCF_CHAIN[1:]
+    petrov = chain["delivery_petrov_via_eliezer_henis"]
+    assert petrov.evidence_status == "relayed_unread" and not petrov.is_sourced
     known = mucost.bibkeys()
     for e in chain:
         if e.has_factor:
@@ -1396,7 +1396,7 @@ def test_the_chain_schema_required_columns_are_pinned_and_enforced(tmp_path):
     required = set(schema["required"])
     assert required == {
         "edge_id", "from_stage", "from_numeraire", "to_stage", "to_numeraire",
-        "bias_direction", "charge_basis", "evidence_status", "derivation",
+        "bias_direction", "charge_basis", "count_basis", "evidence_status", "derivation",
     }
     assert required <= set(schema["properties"])
     assert set(schema["properties"]) == set(CHAIN_COLUMNS)
@@ -1439,7 +1439,7 @@ def test_an_edge_moves_exactly_one_axis(tmp_path, chain):
         (dict(from_numeraire="*"), "needs both endpoints named"),
         (dict(from_stage="produced", to_stage="captured", from_numeraire="*", to_numeraire="*",
               factor="", evidence_status="absent", bias_direction="lower", source_bibkey="",
-              source_locator=""), None),  # a legal stage edge: the drill's own control
+              source_locator="", machine=""), None),  # a legal stage edge: the drill's own control
         (dict(from_stage="stopped_other_target", to_stage="*", from_numeraire="*",
               to_numeraire="*"), "bad from_stage"),
     ]
@@ -1465,7 +1465,7 @@ def test_an_absent_edge_carries_no_number_and_refuses_to_compose(tmp_path, chain
     stage_absent = dict(
         CHAIN_CONTROL, edge_id="a", from_stage="produced", to_stage="captured",
         from_numeraire="*", to_numeraire="*", evidence_status="absent", bias_direction="lower",
-        factor="", source_bibkey="", source_locator="",
+        factor="", source_bibkey="", source_locator="", machine="",
     )
     _load_chain(_write_chain(tmp_path, [stage_absent], "absent_ok.csv"))  # control
     for mutation, expected in (
@@ -1565,12 +1565,12 @@ def test_an_unsourced_path_is_a_bound_and_a_fully_sourced_synthetic_one_is_not(t
         dict(CHAIN_CONTROL, edge_id="syn_numeraire", factor="0.20"),
         dict(CHAIN_CONTROL, edge_id="syn_delivery", from_stage="produced",
              to_stage="stopped_useful_in_dt", from_numeraire="*", to_numeraire="*",
-             factor="0.25", charge_basis="mu_minus"),
+             factor="0.25", charge_basis="mu_minus", count_basis="muon"),
     ]
     syn = _load_chain(_write_chain(tmp_path, edges, "synthetic.csv"))
     start = mucost.ChainValue(
         value_GeV=4.0, stage="produced", numeraire=mucost.BEAM_KINETIC, charge_basis="mu_minus",
-        statuses=("primary",), provenance=("synthetic_start",),
+        statuses=("primary",), provenance=("synthetic_start",), count_basis="muon", machine="psi_hipa",
     )
     good = mucost.compose_path(start, list(syn))
     assert good.value.value_GeV == 4.0 / 0.20 / 0.25
@@ -1599,24 +1599,26 @@ def test_competing_edges_are_a_set_of_terminal_figures_and_never_a_mean(table, c
     conversion could not both exist. No mean is formed and no value is preferred.
     """
     competing = chain.competing()
-    assert list(competing) == [("*", "beam_kinetic", "*", "electrical_minimal")]
+    delivery_coord = ("produced", "*", "stopped_useful_in_dt", "*")
+    assert list(competing) == [("*", "beam_kinetic", "*", "electrical_minimal"), delivery_coord]
     rival_ids = [e.edge_id for e in competing[("*", "beam_kinetic", "*", "electrical_minimal")]]
     assert rival_ids == ["eta_acc_kelly_psi_minimal", "eta_acc_kovach_minimal"]
     rivals = [chain[i].factor for i in rival_ids]
     assert rivals == [0.18, 0.183]
+    assert [e.edge_id for e in competing[delivery_coord]] == [
+        "delivery_kelly_eta_mu", "delivery_petrov_via_eliezer_henis"
+    ]
+    assert [e.factor for e in competing[delivery_coord]] == [0.5, 0.75]
 
     beam = table["kelly_hart_rose_2021"].chain_point()
     paths = mucost.enumerate_chain_paths(beam, list(chain))
     figures = [round(p.value.value_GeV, 2) for p in paths]
-    assert len(figures) == len(set(figures)) == 3, "three maximal paths, three distinct figures"
-    # the two rival readings of one conversion reach the SAME coordinate with DIFFERENT numbers
+    assert len(figures) == len(set(figures)) == 6, "six maximal paths, six distinct figures"
     same_coord = [p for p in paths if p.value.numeraire == "electrical_minimal"]
-    assert len(same_coord) == 2
-    assert {round(p.value.value_GeV, 2) for p in same_coord} == {52.22, 51.37}
+    assert len(same_coord) == 4
+    assert {round(p.value.value_GeV, 2) for p in same_coord} == {52.22, 51.37, 34.81, 34.24}
     assert statistics.mean(rivals) not in rivals  # the mean is not a value this table holds
-    for p in paths:  # every figure carries the edges it was built from
-        # one numeraire conversion and the one collapsed delivery factor: the whole chain the
-        # literature can build, which is two edges long and ends on an arbitrary one
+    for p in paths:
         assert len(p.edge_ids) == 2 and p.describe().startswith("kelly_hart_rose_2021 -> ")
         assert p.value.stage == mucost.TERMINAL_STAGE
 
@@ -1699,15 +1701,7 @@ def test_a_direction_unknown_path_is_never_printed_with_a_bound_marker(table, ch
 
 
 def test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned(table, chain):
-    """``ChainEdge.apply_to`` returns a bare ChainValue, and that object must not overclaim.
-
-    The composition API has two public routes. ``compose_path`` returns a ``ChainPath``, which reads
-    each edge's own declared direction. ``apply_to`` returns the underlying ``ChainValue``, which
-    has only the statuses -- and for a factor whose own source calls it arbitrary that is enough to
-    know the figure is NOT a one-sided bound. Before this, that route printed ">= 9.40 GeV" and
-    refused with "the true cost can only be higher", both false of the same number the path renderer
-    correctly marked *direction unknown*.
-    """
+    """``ChainEdge.apply_to`` returns a bare ChainValue, and that object must not overclaim."""
     beam = table["kelly_hart_rose_2021"].chain_point()
     arbitrary = chain["delivery_kelly_eta_mu"].apply_to(beam)
     assert arbitrary.is_bound and not arbitrary.direction_is_one_sided
@@ -1744,6 +1738,69 @@ def test_a_bare_chain_value_never_prints_a_bound_marker_it_has_not_earned(table,
     terminal = terminal_row.chain_point()
     assert terminal.stage == mucost.TERMINAL_STAGE and not terminal.missing_stages
     assert "assumption" in terminal.statuses and terminal.direction_is_one_sided
+    sourced_unknown = dataclasses.replace(chain["eta_acc_kovach_site"], bias_direction="unknown")
+    complete = mucost.ChainValue(
+        value_GeV=1.0, stage=mucost.TERMINAL_STAGE, numeraire=mucost.BEAM_KINETIC,
+        charge_basis="mu_minus", statuses=("primary",), provenance=("synthetic",),
+        machine=sourced_unknown.machine,
+    )
+    applied = sourced_unknown.apply_to(complete)
+    assert not applied.is_bound and applied.transfers == ()
+    assert applied.bias_direction == "unknown" and not applied.render().startswith(">= ")
+    with pytest.raises(BasisError, match="not a bound in either direction"):
+        applied.render_value()
+
+
+def _unknown_edge(tmp_path, table, grade, axis):
+    with mucost.MUON_COST_CHAIN_CSV.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        row = next(r for r in reader if r["edge_id"] == "delivery_petrov_via_eliezer_henis")
+    row = dict(row, edge_id="syn_unknown", bias_direction="unknown", evidence_status=grade,
+               machine=table["kelly_hart_rose_2021"].machine)
+    if axis == mucost.NUMERAIRE_EDGE:
+        row.update(from_stage="*", to_stage="*", from_numeraire=mucost.BEAM_KINETIC,
+                   to_numeraire="electrical_minimal", charge_basis="*", count_basis="*")
+    path = tmp_path / f"unknown_{axis}_{grade}.csv"
+    with path.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+        w.writeheader()
+        w.writerow(row)
+    return mucost.load_muon_cost_chain(csv_path=path)["syn_unknown"]
+
+
+@pytest.mark.parametrize("axis", [mucost.STAGE_EDGE, mucost.NUMERAIRE_EDGE])
+@pytest.mark.parametrize("grade", ["assumption", "relayed_unread"])
+def test_an_applied_unknown_edge_grades_the_bare_value_unknown_through_every_later_step(
+    tmp_path, table, chain, grade, axis
+):
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    edge = _unknown_edge(tmp_path, table, grade, axis)
+    assert edge.kind == axis and edge.evidence_status == grade and edge.bias_direction == "unknown"
+    raw = edge.apply_to(beam)
+    path = mucost.compose_path(beam, [edge])
+    assert raw.value_GeV == path.value.value_GeV == beam.value_GeV / edge.factor
+    assert raw.transfers == () and path.value == raw
+    other = "delivery_petrov_via_eliezer_henis" if axis == mucost.NUMERAIRE_EDGE else "eta_acc_kovach_site"
+    later = chain[other].apply_to(raw)
+    wrapped = mucost.compose_path(later, [])
+    for figure in (raw, path.value, later, wrapped.value):
+        assert figure.bias_direction == edge.bias_direction
+        assert not figure.render().startswith(">= ")
+        assert figure.render().removesuffix(mucost.TRANSFER_SUFFIX) == (
+            f"{figure.value_GeV:.2f} GeV (direction unknown)"
+        )
+        with pytest.raises(BasisError):
+            figure.render_value()
+    for p in (path, wrapped):
+        assert p.bias_direction == edge.bias_direction and p.render() == p.value.render()
+        with pytest.raises(BasisError, match=re.escape("refusing to render a figure graded 'unknown'")):
+            p.render_value()
+    for figure in (raw, path.value):
+        with pytest.raises(BasisError) as exc:
+            figure.render_value()
+        assert "not a bound in either direction" in str(exc.value)
+        assert "can only be higher" not in str(exc.value)
 
 
 def test_an_arbitrary_factor_grades_the_path_unknown_by_every_route(table, chain):
@@ -1835,7 +1892,7 @@ def test_the_edge_csv_is_a_generator_input_bound_by_the_manifest():
     assert inputs["muon_cost_csv_sha256"] == provenance.file_sha256(MUON_COST_CSV)
 
 
-def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain):
+def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain, tmp_path):
     """The document's coverage headline is computed from the CSVs, never typed into the template.
 
     It is the sentence a reader is most likely to quote, so it is the one that must not be able to go
@@ -1869,10 +1926,76 @@ def test_the_chain_coverage_sentence_is_derived_from_the_two_tables(table, chain
     for c in links:
         assert c["edges"], f"{c['label']} has no edge at all, not even an absent one"
         assert not c["sourced"]
+    petrov = chain["delivery_petrov_via_eliezer_henis"]
+    assert all(petrov in c["edges"] for c in links) and not any(petrov in c["sourced"] for c in links)
+    assert sentence == COVERAGE_SENTENCE
+    with mucost.MUON_COST_CHAIN_CSV.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        kept = [r for r in reader if r["edge_id"] != "delivery_petrov_via_eliezer_henis"]
+    no_relay = tmp_path / "no_relay.csv"
+    with no_relay.open("w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+        w.writeheader()
+        w.writerows(kept)
+    without = mucost.load_muon_cost_chain(csv_path=no_relay)
+    assert len(without) == len(chain) - 1
+    assert gen.build_headline(table, without)["chain_coverage_sentence"] == COVERAGE_SENTENCE_NO_RELAY
+    relay_cell = {c["source_id"]: c["delivery"]
+                  for c in gen.coverage_rows(table, chain)}["eliezer_henis_1994"]
+    assert "relays `delivery_petrov_via_eliezer_henis`" in relay_cell
+    for sep, form in [(s, f) for s in (";", ",") for f in ("plain", "padded", "empty_lead")]:
+        edge_chain, node_table, beam_table = _bibkey_variants(tmp_path, table, chain, sep, form)
+        for t, c in ((table, edge_chain), (node_table, chain)):
+            cells = {row["source_id"]: row["delivery"] for row in gen.coverage_rows(t, c)}
+            assert cells["eliezer_henis_1994"] == relay_cell
+        for t, c in ((table, edge_chain), (node_table, chain), (beam_table, chain)):
+            assert gen.build_headline(t, c)["chain_coverage_sentence"] == COVERAGE_SENTENCE
     # the sentence agrees with the node table's own count of fully-sourced chains
     assert H["n_fully_sourced_chains"] == "0"
     assert f"**{H['n_fully_sourced_chains']} of the {H['n_chain_rows']} pinned rows" in \
         (REPO / "MUON_COST.md").read_text(encoding="utf-8")
+    rows = [dataclasses.replace(r, source_bibkey=table["eliezer_henis_1994"].source_bibkey)
+            if r.source_id == "bertin_1987" else r for r in table]
+    with pytest.raises(ValueError, match=re.escape("expected one beam_kinetic row of the relaying source")):
+        gen.build_headline(MuonCostTable(rows), chain)
+    sourced_stage = mucost.ChainEdgeTable([
+        dataclasses.replace(e, evidence_status="primary", bias_direction="none")
+        if e.edge_id == "delivery_petrov_via_eliezer_henis" else e
+        for e in chain if e.edge_id != "delivery_kelly_eta_mu"
+    ])
+    assert all(len({e.is_sourced for e in v}) == 1 for v in sourced_stage.competing().values())
+    with pytest.raises(ValueError, match=re.escape("a stage advance is sourced")):
+        gen.build_headline(table, sourced_stage)
+    mixed = mucost.ChainEdgeTable([
+        dataclasses.replace(e, evidence_status="assumption", bias_direction="unknown")
+        if e.edge_id == "eta_acc_kovach_minimal" else e for e in chain
+    ])
+    with pytest.raises(ValueError, match=re.escape("carries sourced and unsourced readings")):
+        gen.build_headline(table, mixed)
+
+
+COVERAGE_SENTENCE = (
+    "Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 "
+    "numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every "
+    "one of them is a numeraire change: **none of the 4 stage advances the chain requires is sourced**. "
+    "All 4 are spanned by one collapsed factor, `delivery_petrov_via_eliezer_henis` (bias `lower`), "
+    "relayed by Eliezer & Henis (1994) from a primary not read here (`relayed_unread`) and stated for a "
+    "machine no row of this compilation prices; it is not sourced, so a figure composed through it is a "
+    "bound and never a value, like a figure composed through any other unsourced conversion. Exactly 1 "
+    "cost source in this compilation (Kelly, Hart & Rose (2021)) states a beam-to-electrical conversion "
+    "measured on an accelerator. That source also states a delivery factor (`delivery_kelly_eta_mu`), and "
+    "grades it `author_declared_arbitrary` -- so composing it yields a bound and never a value."
+)
+COVERAGE_SENTENCE_NO_RELAY = (
+    "Of the 6 conversions a fully-sourced chain needs -- 4 stage advances along the muCF chain and 2 "
+    "numeraire changes out of `beam_kinetic` -- **2** carry a factor from a primary read here, and every "
+    "one of them is a numeraire change: **none of the 4 stage advances the chain requires is sourced**. "
+    "Exactly 1 cost source in this compilation (Kelly, Hart & Rose (2021)) states a beam-to-electrical "
+    "conversion measured on an accelerator. That source also states a delivery factor "
+    "(`delivery_kelly_eta_mu`), and grades it `author_declared_arbitrary` -- so composing it yields a "
+    "bound and never a value."
+)
 
 
 def test_the_published_figure_set_is_sourced_only_and_is_never_reduced(table, chain):
@@ -1896,6 +2019,7 @@ def test_the_published_figure_set_is_sourced_only_and_is_never_reduced(table, ch
         assert " -> ".join(f"`{e}`" for e in p.edge_ids) in doc
         assert all(chain[e].is_sourced for e in p.edge_ids), "a published path used an unsourced edge"
         assert p.bias_direction == "lower" and p.render().startswith(">= ")
+        assert p.value.transfers and p.render().endswith(mucost.TRANSFER_SUFFIX)
     # the two rival readings of one conversion land at the same coordinate with different numbers,
     # and their mean is nowhere in the document
     rivals = [p for p in paths if p.value.numeraire == "electrical_minimal"]
@@ -1908,6 +2032,13 @@ def test_the_published_figure_set_is_sourced_only_and_is_never_reduced(table, ch
     ledger = {r.normalized_GeV_per_mu for r in table
               if r.has_normalized and r.numeraire != mucost.BEAM_KINETIC}
     assert ledger < published, "the composed set must contain the ledger rows and at least one more"
+    petrov = "delivery_petrov_via_eliezer_henis"
+    assert all(petrov not in p.edge_ids for p in paths)
+    assert petrov in {e.edge_id for e in gen.blocked_extensions(chain)}
+    assert [round(p.value.value_GeV, 2) for p in paths] == [25.68, 26.11, 45.19]
+    stated = {e.source_bibkey.split(";")[0].strip() for e in chain.sourced()}
+    assert [r.source_id for r in table if r.numeraire == mucost.BEAM_KINETIC
+            and r.source_bibkey.split(";")[0].strip() in stated] == [gen.CHAIN_ANCHOR_ID]
 
 
 def test_the_generated_edge_section_says_what_stops_the_chain(table, chain):
@@ -1961,6 +2092,8 @@ def test_the_loader_row_rules_fire_on_the_rows_that_break_them(tmp_path):
         (dict(useful_fraction_sourced="true"), "useful_fraction_sourced is only meaningful at stage"),
         (dict(stage=mucost.TERMINAL_STAGE), "useful_fraction_sourced (true/false), never leave it unsaid"),
         (dict(charge_basis=""), "a pinned normalized value requires both basis_class and charge_basis"),
+        (dict(count_basis=""), "a pinned value requires a count_basis"),
+        (dict(count_basis="pions"), "bad count_basis 'pions'"),
     ]
     for i, (mutation, expected) in enumerate(cases):
         bad = tmp_path / f"rule_{i}.csv"
@@ -2019,3 +2152,315 @@ def test_compose_path_refuses_a_return_to_a_coordinate(tmp_path):
         mucost.compose_path(start, [syn["syn_out"], syn["syn_back"]])
     with pytest.raises(BasisError, match="a coordinate it has already left"):
         mucost.compose_path(start, [syn["syn_out"], syn["syn_on"], syn["syn_to_min"]])
+
+
+def test_a_fraction_of_pions_is_never_applied_to_a_cost_per_muon(table, chain):
+    delivery = chain["delivery_kelly_eta_mu"]
+    assert delivery.count_basis == "pi_minus_created"
+    for sid in ("bertin_1987", "acceleron_2025"):
+        point = table[sid].chain_point()
+        assert point.stage == "produced" and point.charge_basis == "mu_minus"
+        assert point.count_basis != delivery.count_basis
+        with pytest.raises(BasisError, match="count basis"):
+            delivery.apply_to(point)
+    composed = delivery.apply_to(table["kelly_hart_rose_2021"].chain_point())
+    assert composed.count_basis == "muon"
+
+
+def test_the_edge_count_basis_rules_fire_on_the_rows_that_break_them(tmp_path):
+    stage_edge = dict(CHAIN_CONTROL, edge_id="s", from_stage="produced", to_stage="captured",
+                      from_numeraire="*", to_numeraire="*", count_basis="muon")
+    _load_chain(_write_chain(tmp_path, [CHAIN_CONTROL, stage_edge], "count_ok.csv"))  # control
+    cases = [
+        (dict(stage_edge, count_basis="*"), "must name the count it is a fraction of"),
+        (dict(CHAIN_CONTROL, count_basis="muon"), "a numeraire edge counts no particles"),
+        (dict(CHAIN_CONTROL, count_basis="pions"), "bad count_basis 'pions'"),
+    ]
+    for i, (row, expected) in enumerate(cases):
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            _load_chain(_write_chain(tmp_path, [row], f"count_bad_{i}.csv"))
+
+
+def test_the_count_paragraph_names_the_ledger_rows_and_refuses_otherwise(table):
+    gen = _load_generator()
+    H = gen.build_headline(table)
+    assert " ".join(H["count_para"].split()) in _normalized("MUON_COST.md")
+    pinned = [r for r in table if r.has_normalized]
+    for r in pinned:
+        named = gen.LABELS[r.source_id] in H["count_para"]
+        assert named == (r.count_basis in {"pi_minus_created", "pi_minus_or_mu_minus_exiting"}), r.source_id
+    assert {r.count_basis for r in pinned} == {"pi_minus_created", "pi_minus_or_mu_minus_exiting", "muon"}
+    rows = [dataclasses.replace(r, count_basis="pi_minus_or_mu_minus_exiting") if r.source_id == "bertin_1987"
+            else r for r in table]
+    gen.build_headline(MuonCostTable(rows))
+    rows = [dataclasses.replace(r, count_basis="") if r.source_id == "bertin_1987" else r for r in table]
+    with pytest.raises(ValueError, match="does not describe these rows"):
+        gen.build_headline(MuonCostTable(rows))
+    for gone in ("pi_minus_created", "pi_minus_or_mu_minus_exiting"):
+        rows = [dataclasses.replace(r, count_basis="muon") if r.count_basis == gone else r for r in table]
+        kept = {r.count_basis for r in rows if r.has_normalized}
+        assert gone not in kept and kept - {"muon"}
+        refusal = "does not describe these rows (other counts: {'muon'})"
+        with pytest.raises(ValueError, match=re.escape(refusal)):
+            gen.build_headline(MuonCostTable(rows))
+
+
+def _bibkey_variants(tmp_path, table, chain, sep, form="plain"):
+    def rows_of(path):
+        with path.open(newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            return list(reader.fieldnames or []), list(reader)
+
+    def write(name, header, rows):
+        path = tmp_path / f"{name}_{'comma' if sep == ',' else 'semicolon'}_{form}.csv"
+        with path.open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=header, lineterminator="\n")
+            w.writeheader()
+            w.writerows(rows)
+        return path
+
+    def join(*keys):
+        lead = sep if form == "empty_lead" else ""
+        return lead + (" " + sep if form == "padded" else sep).join(keys)
+
+    two_keys = table["kelly_electrical_minimal"].source_bibkey
+    assert ";" in two_keys and "," not in two_keys
+    header, edges = rows_of(mucost.MUON_COST_CHAIN_CSV)
+    for e in edges:
+        if e["edge_id"] == "eta_acc_kelly_psi_minimal":
+            e["source_bibkey"] = join(*two_keys.split(";"))
+        elif e["edge_id"] in ("delivery_petrov_via_eliezer_henis", "delivery_kelly_eta_mu"):
+            e["source_bibkey"] = join(e["source_bibkey"], chain["eta_acc_kovach_minimal"].source_bibkey)
+    edge_chain = mucost.load_muon_cost_chain(csv_path=write("edges", header, edges))
+    header, nodes = rows_of(MUON_COST_CSV)
+    for r in nodes:
+        if r["source_bibkey"] == two_keys:
+            r["source_bibkey"] = join(*two_keys.split(";"))
+        elif r["source_id"] == "eliezer_henis_1994":
+            r["source_bibkey"] = join(r["source_bibkey"], chain["eta_acc_kovach_minimal"].source_bibkey)
+    node_table = load_muon_cost(csv_path=write("nodes", header, nodes))
+    for r in nodes:
+        if r["source_id"] == "kelly_hart_rose_2021":
+            r["source_bibkey"] = join(*two_keys.split(";"))
+    beam_table = load_muon_cost(csv_path=write("beam", header, nodes))
+    return edge_chain, node_table, beam_table
+
+
+def _syn_terminal(tmp_path, machine="psi_hipa", name="syn_t.csv", stage_first=False):
+    edges = [
+        dict(CHAIN_CONTROL, edge_id="syn_numeraire", factor="0.20"),
+        dict(CHAIN_CONTROL, edge_id="syn_delivery", from_stage="produced",
+             to_stage="stopped_useful_in_dt", from_numeraire="*", to_numeraire="*",
+             factor="0.25", charge_basis="mu_minus", count_basis="muon", machine=machine),
+    ]
+    syn = _load_chain(_write_chain(tmp_path, edges, name))
+    start = mucost.ChainValue(
+        value_GeV=4.0, stage="produced", numeraire=mucost.BEAM_KINETIC, charge_basis="mu_minus",
+        statuses=("primary",), provenance=("synthetic_start",), count_basis="muon", machine="psi_hipa",
+    )
+    return mucost.compose_path(start, list(syn)[::-1] if stage_first else list(syn))
+
+
+def test_a_machine_transfer_is_carried_marked_and_never_rendered_as_a_value(tmp_path, table, chain):
+    control = _syn_terminal(tmp_path)
+    assert control.value.transfers == () and control.bias_direction == "none"
+    assert control.render_value() == control.value.render_value() == "80.00 GeV"
+    moved = _syn_terminal(tmp_path, machine="other_machine", name="syn_moved.csv")
+    assert moved.value.transfers == (("syn_delivery", "this_ledger"),)
+    assert moved.bias_direction == "none" and not moved.value.is_bound
+    with pytest.raises(BasisError, match="machine transfer"):
+        moved.render_value()
+    with pytest.raises(BasisError, match="machine transfer"):
+        moved.value.render_value()
+    assert moved.render() == "80.00 GeV (conditional on a machine transfer)"
+    stage_first = _syn_terminal(tmp_path, machine="other_machine", name="syn_first.csv", stage_first=True)
+    assert stage_first.edge_ids == ("syn_delivery", "syn_numeraire")
+    assert stage_first.value.transfers == (("syn_delivery", "this_ledger"),)
+    assert stage_first.bias_direction == "none" and not stage_first.value.is_bound
+    with pytest.raises(BasisError, match="machine transfer"):
+        stage_first.render_value()
+    with pytest.raises(BasisError, match="machine transfer"):
+        stage_first.value.render_value()
+    assert stage_first.render() == stage_first.value.render() == control.render() + mucost.TRANSFER_SUFFIX
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    unknown = mucost.compose_path(beam, [chain["eta_acc_kovach_minimal"], chain["delivery_kelly_eta_mu"]])
+    expected = "51.37 GeV (direction unknown) (conditional on a machine transfer)"
+    assert unknown.render() == unknown.value.render() == expected
+    assert mucost.compose_path(beam, [chain["eta_acc_kelly_psi_minimal"]]).value.transfers == (
+        ("eta_acc_kelly_psi_minimal", "KellyHartRose2021"),
+    )
+    assert mucost.compose_path(beam, [chain["eta_acc_kovach_site"]]).value.transfers == (
+        ("eta_acc_kovach_site", "this_ledger"),
+    )
+    delivered = chain["delivery_petrov_via_eliezer_henis"].apply_to(beam)
+    assert delivered.machine == beam.machine and delivered.count_basis == "muon"
+    then = chain["eta_acc_kelly_psi_minimal"].apply_to(delivered)
+    assert then.machine == beam.machine and then.count_basis == "muon"
+    assert then.transfers == (
+        ("delivery_petrov_via_eliezer_henis", "this_ledger"),
+        ("eta_acc_kelly_psi_minimal", "KellyHartRose2021"),
+    )
+    site = table["kelly_electrical_site"].chain_point()
+    assert site.transfers == (("kelly_electrical_site", "this_ledger"),)
+    assert "machine transfers: kelly_electrical_site (by this_ledger)" in site.why_bound()
+    gen = _load_generator()
+    for sep, form in [(s, f) for s in (";", ",") for f in ("plain", "padded", "empty_lead")]:
+        edge_chain, _, beam_table = _bibkey_variants(tmp_path, table, chain, sep, form)
+        point = edge_chain["eta_acc_kelly_psi_minimal"].apply_to(beam)
+        assert point.transfers == (
+            ("eta_acc_kelly_psi_minimal", table["kelly_hart_rose_2021"].source_bibkey),
+        )
+        assert point.transfers[0][1] in mucost.bibkeys()
+        assert gen._maker_label(table, point.transfers) == gen.LABELS["kelly_hart_rose_2021"]
+        ordinary = chain["eta_acc_kelly_psi_minimal"].apply_to(
+            beam_table["kelly_hart_rose_2021"].chain_point()
+        )
+        assert gen._maker_label(beam_table, ordinary.transfers) == gen.LABELS["kelly_hart_rose_2021"]
+
+
+RETRACTED_C2 = (("MUON_COST.md", "rigorously one-sided"),
+                ("scripts/generate_mucost.py", "rigorously one-sided"),
+                ("MUON_COST.md", "the true costs can only be higher"))
+
+
+def test_the_retracted_one_sided_universals_are_gone_and_the_trust_map_is_conditional():
+    for rel, phrase in RETRACTED_C2:
+        assert phrase not in _normalized(rel), (rel, phrase)
+    for rel in ("README.md", "ADOPTERS.md", "paper/paper.md"):
+        assert "conditional on" in _normalized(rel), rel
+
+
+_NODE_GUARDS = {
+    "g1": ("kelly_hart_rose_2021", dict(machine=""), "machine is required on a pinned row"),
+    "g2": ("kelly_hart_rose_2021", dict(machine="Kelly-HRS"), "bad machine 'Kelly-HRS'"),
+    "g3": ("kelly_electrical_minimal", dict(machine_transfer="Bertin1987"),
+           "bad machine_transfer 'Bertin1987'"),
+}
+_ABSENT_CONTROL = dict(
+    CHAIN_CONTROL, factor="", evidence_status="absent", bias_direction="lower", machine=""
+)
+_EDGE_GUARDS = {
+    "g4": (CHAIN_CONTROL, dict(machine=""), "a stated factor needs a machine"),
+    "g5": (_ABSENT_CONTROL, dict(machine="psi_hipa"), "an absent row names no machine"),
+    "g6": (CHAIN_CONTROL, dict(machine="PSI-HIPA"), "bad machine 'PSI-HIPA'"),
+    "g7": (dict(CHAIN_CONTROL, adopted_for="kelly_hart_rose_2021"), dict(adopted_for="Kelly design"),
+           "bad adopted_for 'Kelly design'"),
+}
+
+
+@pytest.mark.parametrize("gid", sorted(_NODE_GUARDS) + sorted(_EDGE_GUARDS))
+def test_the_machine_columns_refuse_each_bad_cell(tmp_path, gid):
+    if gid in _NODE_GUARDS:
+        sid, bad, expected = _NODE_GUARDS[gid]
+        header, base = _shipped_row(sid)
+        extra = [dict(base, machine_transfer=v) for v in ("this_ledger", "")] if gid == "g3" else []
+        for k, ctl in enumerate([base] + extra):
+            ok = tmp_path / f"{gid}_ok_{k}.csv"
+            _write_csv(ok, header, ctl)
+            load_muon_cost(csv_path=ok, schema_path=MUON_COST_SCHEMA, check_refs=False)
+        path = tmp_path / f"{gid}_bad.csv"
+        _write_csv(path, header, dict(base, **bad))
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            load_muon_cost(csv_path=path, schema_path=MUON_COST_SCHEMA, check_refs=False)
+    else:
+        ctl, bad, expected = _EDGE_GUARDS[gid]
+        _load_chain(_write_chain(tmp_path, [ctl], f"{gid}_ok.csv"))
+        with pytest.raises(ValueError, match=re.escape(expected)):
+            _load_chain(_write_chain(tmp_path, [dict(ctl, **bad)], f"{gid}_bad.csv"))
+
+
+def test_the_petrov_edge_reproduces_its_relayed_figures_and_is_only_a_bound(table, chain):
+    petrov = chain["delivery_petrov_via_eliezer_henis"]
+    assert (petrov.from_stage, petrov.to_stage) == ("produced", mucost.TERMINAL_STAGE)
+    assert petrov.evidence_status == "relayed_unread" and not petrov.is_sourced
+    assert petrov.bias_direction == "lower" and petrov.count_basis == "pi_minus_created"
+    assert not any(r.machine == petrov.machine for r in table), "no row prices Petrov's machine"
+    per_pion = re.search(r"with ([0-9.]+) GeV used to create one negative pion", petrov.source_locator)
+    per_muon = re.search(r"is the ~([0-9.]+) GeV per stopped muon", petrov.derivation)
+    assert per_pion and per_muon
+    assert round(float(per_pion.group(1)) / petrov.factor) == float(per_muon.group(1))
+    beam = table["kelly_hart_rose_2021"].chain_point()
+    path = mucost.compose_path(beam, [petrov])
+    assert path.value.stage == mucost.TERMINAL_STAGE and path.bias_direction == "lower"
+    assert path.value.transfers == (("delivery_petrov_via_eliezer_henis", "this_ledger"),)
+    assert path.render() == path.value.render() == ">= 6.27 GeV (conditional on a machine transfer)"
+    with pytest.raises(BasisError):
+        path.render_value()
+    with pytest.raises(BasisError):
+        path.value.render_value()
+    assert "relayed_unread" in path.value.why_bound()
+    with pytest.raises(BasisError, match="count basis"):
+        petrov.apply_to(table["bertin_1987"].chain_point())
+
+
+def test_a_relayed_unread_edge_is_never_counted_as_sourced(table):
+    gen = _load_generator()
+    syn = mucost.ChainEdge(
+        edge_id="syn_relayed", from_stage="produced", from_numeraire="*",
+        to_stage=mucost.TERMINAL_STAGE, to_numeraire="*", factor=0.75, factor_lo=math.nan,
+        factor_hi=math.nan, bias_direction="lower", charge_basis="mu_minus", conditions="synthetic",
+        evidence_status="relayed_unread", source_bibkey="EliezerHenis1994", source_locator="synthetic",
+        derivation="synthetic", notes="", count_basis="pi_minus_created", machine="kelly_hart_rose_2021",
+    )
+    edges = mucost.ChainEdgeTable([syn])
+    links = [c for c in gen.edge_coverage_rows(table, edges) if c["kind"] == mucost.STAGE_EDGE]
+    assert links and all(syn in c["edges"] for c in links)
+    assert not any(c["sourced"] for c in links), "a relayed_unread factor sourced a stage advance"
+    assert [p.edge_ids for p in gen.sourced_paths(table, edges)] == [()]
+    assert {"primary", "primary_cited", "derived_here"} == mucost.SOURCED_STATUSES
+    assert "relayed_unread" in mucost.NON_SOURCED_STATUSES
+
+
+EVIDENCE_ENUM = ["primary", "primary_cited", "derived_here", "relayed_unread",
+                 "author_declared_arbitrary", "assumption", "absent"]
+
+
+def test_the_evidence_grades_agree_everywhere_and_the_not_sourced_count_is_stated():
+    n_sourced = len(mucost.SOURCED_STATUSES)
+    assert set(EVIDENCE_ENUM[:n_sourced]) == mucost.SOURCED_STATUSES
+    assert set(EVIDENCE_ENUM[n_sourced:]) == mucost.NON_SOURCED_STATUSES
+    node = json.loads(Path(MUON_COST_SCHEMA).read_text(encoding="utf-8"))["properties"]
+    edge = json.loads(Path(mucost.MUON_COST_CHAIN_SCHEMA).read_text(encoding="utf-8"))["properties"]
+    assert node["evidence_status"]["enum"] == EVIDENCE_ENUM
+    assert [x for x in node["eta_mu_evidence_status"]["enum"] if x != ""] == EVIDENCE_ENUM
+    assert edge["evidence_status"]["enum"] == EVIDENCE_ENUM
+    package = json.loads((REPO / "datapackage.json").read_text(encoding="utf-8"))
+    fields = {
+        r["name"]: {f["name"]: f for f in r["schema"]["fields"]}
+        for r in package["resources"] if r["name"] in ("muon-cost", "muon-cost-chain")
+    }
+    assert fields["muon-cost-chain"]["evidence_status"]["constraints"]["enum"] == EVIDENCE_ENUM
+    assert " | ".join(EVIDENCE_ENUM) in fields["muon-cost"]["evidence_status"]["description"]
+    word = _count_word(len(mucost.NON_SOURCED_STATUSES)).lower()
+    for text in (node["evidence_status"]["description"], edge["evidence_status"]["description"]):
+        assert f"The last {word} are NOT SOURCED" in text
+    for name in ("muon-cost", "muon-cost-chain"):
+        assert f"The last {word} are NOT sourced" in fields[name]["evidence_status"]["description"]
+
+
+def test_the_amendment_and_the_t1_clause_are_read_off_the_tables(table, chain):
+    gen = _load_generator()
+    H = gen.build_headline(table, chain)
+    doc = _normalized("MUON_COST.md")
+    petrov = chain[gen.PETROV_EDGE_ID]
+    assert H["petrov_factor_pct"] == f"{petrov.factor * 100:g}"
+    assert f"converts about {H['petrov_factor_pct']}% of the negative pions created" in doc
+    t1 = {r.count_basis for r in table.tier("T1-design-study")
+          if r.has_normalized and r.numeraire == mucost.BEAM_KINETIC}
+    qualifier = " (it is not count-homogeneous: see the count basis above)"
+    assert len(t1) > 1 and H["t1_stage_clause"].endswith(qualifier)
+    assert f"so {H['t1_stage_clause']}," in doc
+    one = "pi_minus_or_mu_minus_exiting"
+    rows = [dataclasses.replace(r, count_basis=one) if r.tier == "T1-design-study" and r.has_normalized
+            and r.numeraire == mucost.BEAM_KINETIC else r for r in table]
+    assert not gen.build_headline(MuonCostTable(rows), chain)["t1_stage_clause"].endswith(qualifier)
+    rows = [dataclasses.replace(r, count_basis="muon") if r.source_id == "kelly_hart_rose_2021" else r
+            for r in table]
+    two = {r.count_basis for r in MuonCostTable(rows).tier("T1-design-study")
+           if r.has_normalized and r.numeraire == mucost.BEAM_KINETIC}
+    assert two == {"muon", "pi_minus_or_mu_minus_exiting"}
+    assert gen.build_headline(MuonCostTable(rows), chain)["t1_stage_clause"].endswith(qualifier)
+    edges = mucost.ChainEdgeTable([dataclasses.replace(e, factor=0.6) if e.edge_id == petrov.edge_id else e
+                                   for e in chain])
+    assert gen.build_headline(table, edges)["petrov_factor_pct"] == "60"
+

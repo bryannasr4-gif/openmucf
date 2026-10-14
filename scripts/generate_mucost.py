@@ -100,10 +100,11 @@ KOUCHEN_CONVENTIONAL_COST_GEV = 5.0
 #: The rows the Headline names as design-study anchors, in the order it names them.
 HEADLINE_ANCHOR_IDS = ("kelly_hart_rose_2021", "bertin_1987", "eliezer_henis_1994")
 
-#: The ledger row the terminal-figure set is composed FROM. Not a preference among rows: it is the
-#: only row whose own source states any conversion at all, so it is the only starting point for which
-#: a composed figure uses that row's own literature rather than borrowing another paper's factor.
+#: The ledger row the terminal-figure set is composed FROM.
 CHAIN_ANCHOR_ID = "kelly_hart_rose_2021"
+
+RELAYED_UNREAD = "relayed_unread"
+PETROV_EDGE_ID = "delivery_petrov_via_eliezer_henis"
 
 
 def _join(items: list[str]) -> str:
@@ -272,6 +273,12 @@ def build_headline(
         if table.is_basis_homogeneous("T1-design-study")
         else "the tier still holds more than one accounting stage within the `beam_kinetic` numeraire"
     )
+    t1_counts = {
+        r.count_basis for r in table.tier("T1-design-study")
+        if r.has_normalized and r.numeraire == mucost.BEAM_KINETIC
+    }
+    if len(t1_counts) > 1:
+        H["t1_stage_clause"] += " (it is not count-homogeneous: see the count basis above)"
     H["t3_classes"] = ", ".join(sorted(table.basis_classes("T3-operating-facility")))
     shared = table.basis_classes("T1-design-study") & table.basis_classes("T3-operating-facility")
     H["shared_classes"] = ", ".join(sorted(shared)) if shared else "none"
@@ -294,6 +301,28 @@ def build_headline(
     # same reason eta_mu is: typing it would let the CSV move while the document kept asserting the
     # old basis, and both the document and the manifest would stay self-consistent while both were stale.
     H["charge_music"] = table["music"].charge_basis
+    pinned = [r for r in table if r.has_normalized]
+    pi_rows = [LABELS[r.source_id] for r in pinned if r.count_basis == "pi_minus_created"]
+    exit_rows = [LABELS[r.source_id] for r in pinned if r.count_basis == "pi_minus_or_mu_minus_exiting"]
+    other = {r.count_basis for r in pinned} - {"pi_minus_created", "pi_minus_or_mu_minus_exiting"}
+    if not pi_rows or not exit_rows or other != {"muon"}:
+        raise ValueError(f"the count-basis paragraph does not describe these rows (other counts: {other})")
+    H["count_para"] = (
+        "**What a row counts, and which machine it prices.** `count_basis` records what one unit of a "
+        f"row's count is. {_join(pi_rows)} count negative pions created (`pi_minus_created`), each of "
+        f"which Kelly, Hart & Rose count as a negative muon; {_join(exit_rows)} "
+        f"{'counts' if len(exit_rows) == 1 else 'count'} negative pions and muons leaving the target "
+        "together (`pi_minus_or_mu_minus_exiting`); the other pinned rows count muons (`muon`). "
+        "Kelly, Hart & Rose's muons are born in the decay of the negative pions they count, and a "
+        "pion can be lost to nuclear capture or interaction before it decays, so a cost per pion "
+        "created is a lower bound on the cost per muon produced and the count basis reverses no "
+        "bound. It does decide what may be composed: a stage factor is a fraction of one count, and "
+        "applying a fraction of pions to a cost per muon would count the pion's decay twice, so "
+        "`ChainEdge.apply_to` refuses it. `machine` records the machine a row prices and the machine "
+        "each conversion was stated for. A conversion composed onto a figure for another machine is a "
+        "**machine transfer**: the figure carries it with who made it (a derived row records its own in "
+        "`machine_transfer`), prints *conditional on a machine transfer*, and is never rendered as a value."
+    )
     H["charge_psi_himb"] = table["psi_himb"].charge_basis
 
     # ---- the Kou-Chen cycle-closure comparison (all derived, nothing transcribed) ----
@@ -312,6 +341,7 @@ def build_headline(
         cv = table[sid].chain_point()
         short = _SHORT[sid]
         H[f"chain_{short}"] = cv.render()  # ">= X.XX GeV" -- the bound marker is part of the pinned string
+        H[f"maker_{short}"] = _maker_label(table, cv.transfers)
         for key, e_use in (("kc", E_USE_KOUCHEN_MEV), ("kelly", E_USE_KELLY_MEV)):
             n_L = eq9_cycle_demand(cv.value_GeV, e_use)
             H[f"ratio_{short}_{key}"] = f"{cv.value_GeV / eq15_max_muon_cost_GeV(e_use):.2f}"
@@ -383,22 +413,24 @@ def build_headline(
     H["n_numeraire_conversions"] = str(len(numeraire_convs))
     H["n_sourced_conversions"] = str(len(sourced))
     H["n_sourced_stage_conversions"] = str(len(sourced_links))
+    if PETROV_EDGE_ID in chain:
+        H["petrov_factor_pct"] = f"{chain[PETROV_EDGE_ID].factor * 100:g}"
 
     # which cost sources state their own beam-to-electrical conversion, read off the ledger
     carriers = [r for r in table if not math.isnan(r.eta_acc_assumption)]
     carrier_names = _join(
         sorted({LABELS[r.source_id] for r in carriers if r.numeraire == mucost.BEAM_KINETIC})
     )
-    carrier_keys = {r.source_bibkey.split(";")[0].strip() for r in carriers}
+    carrier_keys = {mucost.first_bibkey(r.source_bibkey) for r in carriers}
     # ...and whether those same sources state a delivery factor they call unsourced
     declared_delivery = [
         e for e in chain
         if e.kind == mucost.STAGE_EDGE
         and e.has_factor
         and not e.is_sourced
-        and e.source_bibkey.split(";")[0].strip() in carrier_keys
+        and mucost.first_bibkey(e.source_bibkey) in carrier_keys
     ]
-    n_carriers = len({r.source_bibkey.split(";")[0].strip() for r in carriers})
+    n_carriers = len({mucost.first_bibkey(r.source_bibkey) for r in carriers})
 
     if sourced_links:
         links_clause = (
@@ -406,22 +438,45 @@ def build_headline(
             f"sourced: {_join([c['label'] for c in sourced_links])}"
         )
     else:
-        links_clause = (
-            f"**not one of the {len(links)} stage advances the chain requires is sourced by any "
-            f"primary read here**"
-        )
+        links_clause = f"**none of the {len(links)} stage advances the chain requires is sourced**"
     kind_clause = (
         "every one of them is a numeraire change"
         if sourced and all(c["kind"] == mucost.NUMERAIRE_EDGE for c in sourced)
         else _join([c["label"] for c in sourced]) or "none of them"
     )
+    relayed = [
+        e for e in chain
+        if e.kind == mucost.STAGE_EDGE and e.has_factor and e.evidence_status == RELAYED_UNREAD
+    ]
+    relay_sentences = []
+    for e in relayed:
+        if e.is_sourced:
+            raise ValueError(f"{e.edge_id}: a relayed_unread factor is counted as sourced")
+        spanned = [c for c in links if e in c["edges"]]
+        span = (
+            f"All {len(links)} are"
+            if len(spanned) == len(links)
+            else _join([c["label"] for c in spanned]) + (" is" if len(spanned) == 1 else " are")
+        )
+        key = mucost.first_bibkey(e.source_bibkey)
+        relayers = [
+            LABELS[r.source_id] for r in table
+            if r.numeraire == mucost.BEAM_KINETIC and mucost.first_bibkey(r.source_bibkey) == key
+        ]
+        if len(relayers) != 1:
+            raise ValueError(f"{e.edge_id}: expected one beam_kinetic row of the relaying source, got {relayers}")
+        unpriced = not any(r.machine == e.machine for r in table)
+        relay_sentences.append(
+            f"{span} spanned by one {'collapsed ' if len(e.spans) > 1 else ''}factor, `{e.edge_id}` "
+            f"(bias `{e.bias_direction}`), relayed by {relayers[0]} from a primary not read here "
+            f"(`{e.evidence_status}`)"
+            f"{' and stated for a machine no row of this compilation prices' if unpriced else ''}; it is not "
+            "sourced, so a figure composed through it is a bound and never a value, like a figure composed "
+            "through any other unsourced conversion."
+        )
     one_carrier = n_carriers == 1
     one_delivery = len(declared_delivery) == 1
-    how_many_delivery = (
-        "the chain's one delivery factor"
-        if one_delivery
-        else f"{len(declared_delivery)} of the chain's delivery factors"
-    )
+    how_many_delivery = "a delivery factor" if one_delivery else f"{len(declared_delivery)} delivery factors"
     delivery_clause = (
         ""
         if not declared_delivery
@@ -436,16 +491,35 @@ def build_headline(
             f"{'it' if one_delivery else 'them'} yields a bound and never a value."
         )
     )
-    H["chain_coverage_sentence"] = (
-        f"Of the {len(cov)} conversions a fully-sourced chain needs -- {len(links)} stage advances "
-        f"along the muCF chain and {len(numeraire_convs)} numeraire "
-        f"{'change' if len(numeraire_convs) == 1 else 'changes'} out of `beam_kinetic` -- "
-        f"**{len(sourced)}** carry a factor from a primary read here, and {kind_clause}: "
-        f"{links_clause}. Exactly {n_carriers} cost "
-        f"{'source' if n_carriers == 1 else 'sources'} in this compilation "
-        f"({carrier_names}) {'states its' if n_carriers == 1 else 'state their'} own "
-        f"beam-to-electrical conversion.{delivery_clause}"
+    H["chain_coverage_sentence"] = " ".join(
+        [
+            f"Of the {len(cov)} conversions a fully-sourced chain needs -- {len(links)} stage advances "
+            f"along the muCF chain and {len(numeraire_convs)} numeraire "
+            f"{'change' if len(numeraire_convs) == 1 else 'changes'} out of `beam_kinetic` -- "
+            f"**{len(sourced)}** carry a factor from a primary read here, and {kind_clause}: "
+            f"{links_clause}."
+        ]
+        + relay_sentences
+        + [
+            f"Exactly {n_carriers} cost {'source' if n_carriers == 1 else 'sources'} in this compilation "
+            f"({carrier_names}) "
+            f"{'states a beam-to-electrical conversion' if n_carriers == 1 else 'state beam-to-electrical conversions'} "
+            f"measured on an accelerator.{delivery_clause}"
+        ]
     )
+    if sourced_links:
+        raise ValueError("a stage advance is sourced: the closing paragraph's 'no stage factor is sourced' is false")
+    if not relayed:
+        H["close_relay_clause"] = ""
+    elif len(relayed) == 1:
+        H["close_relay_clause"] = (
+            f": the one stage factor a source here relays, `{relayed[0].edge_id}`, comes from a primary not read here"
+        )
+    else:
+        H["close_relay_clause"] = (
+            f": the {len(relayed)} stage factors sources here relay, "
+            f"{_join([f'`{e.edge_id}`' for e in relayed])}, come from primaries not read here"
+        )
 
     # the figures the competing conversions lead to: a SET, with its provenance. Sourced paths only
     # -- the document prints no figure composed through a factor its own authors call arbitrary.
@@ -494,9 +568,15 @@ def build_headline(
     printed_biases = sorted({p.bias_direction for p in paths})
     if printed_biases == ["lower"]:
         H["marker_clause"] = (
-            "Each figure above prints `>=` because it is a one-sided **lower** bound: every "
-            "conversion it omits is <= 1, so leaving it out can only understate the cost."
+            "Each figure above prints `>=` because it is a one-sided **lower** bound along the stage "
+            "axis: every conversion it omits is <= 1, so leaving it out can only understate the cost."
         )
+        if paths and all(p.value.transfers for p in paths):
+            H["marker_clause"] += (
+                " Each is also *conditional on a machine transfer*: it divides by an efficiency "
+                "measured on another machine, so it bounds the cost from below only if that efficiency "
+                "is no larger on the machine it prices."
+            )
     elif printed_biases == ["none"]:
         H["marker_clause"] = (
             "Each figure above prints as a plain value: its path reaches the terminal stage with "
@@ -512,22 +592,40 @@ def build_headline(
         )
     competing = chain.competing()
     H["n_competing_conversions"] = str(len(competing))
-    H["competing_clause"] = (
-        "No conversion in the edge table carries more than one stated value today."
-        if not competing
-        else "{} {} more than one stated value: {}. Both readings are carried to the end as "
-             "separate figures -- no mean is formed and no value is preferred.".format(
-                 len(competing),
-                 "conversion carries" if len(competing) == 1 else "conversions carry",
-                 _join([
-                     "{} ({})".format(
-                         f"`{k[1]}` -> `{k[3]}`" if k[0] == mucost.ANY else f"`{k[0]}` -> `{k[2]}`",
-                         _join([f"`{e.edge_id}` = {e.factor:g}" for e in v]),
-                     )
-                     for k, v in competing.items()
-                 ]),
-             )
-    )
+    if not competing:
+        H["competing_clause"] = "No conversion in the edge table carries more than one stated value today."
+    else:
+
+        def _coord(k: tuple[str, str, str, str]) -> str:
+            return f"`{k[1]}` -> `{k[3]}`" if k[0] == mucost.ANY else f"`{k[0]}` -> `{k[2]}`"
+
+        fates = []
+        for k, v in competing.items():
+            n_sourced = sum(e.is_sourced for e in v)
+            if n_sourced == len(v):
+                fates.append(
+                    f"{'both readings' if len(v) == 2 else f'all {len(v)} readings'} of {_coord(k)} are "
+                    "carried to the end as separate figures below"
+                )
+            elif n_sourced == 0:
+                fates.append(
+                    f"{'neither reading' if len(v) == 2 else 'no reading'} of {_coord(k)} is composed into "
+                    f"them, because {'neither' if len(v) == 2 else 'none'} is sourced"
+                )
+            else:
+                raise ValueError(f"{_coord(k)} carries sourced and unsourced readings; no wording is written for it")
+        fate = "; ".join(fates)
+        H["competing_clause"] = (
+            "{} {} more than one stated value: {}. No mean is formed and no value is preferred. {}.".format(
+                len(competing),
+                "conversion carries" if len(competing) == 1 else "conversions carry",
+                _join([
+                    "{} ({})".format(_coord(k), _join([f"`{e.edge_id}` = {e.factor:g}" for e in v]))
+                    for k, v in competing.items()
+                ]),
+                fate[0].upper() + fate[1:],
+            )
+        )
     return H
 
 
@@ -578,7 +676,25 @@ def _sticking_anchor() -> float:
     return float(load_rates()[STICKING_RATE_SYMBOL].value)
 
 
-def coverage_rows(table: mucost.MuonCostTable) -> list[dict]:
+def _foreign_delivery(r: mucost.MuonCost, chain: mucost.ChainEdgeTable | None) -> str:
+    if chain is None:
+        return ""
+    key = mucost.first_bibkey(r.source_bibkey)
+    found = [
+        e for e in chain
+        if e.kind == mucost.STAGE_EDGE and e.has_factor
+        and mucost.first_bibkey(e.source_bibkey) == key and e.machine != r.machine
+    ]
+    return "; ".join(
+        f"the source {'relays' if e.evidence_status == RELAYED_UNREAD else 'states'} `{e.edge_id}` "
+        f"({e.evidence_status}) for another machine"
+        for e in found
+    )
+
+
+def coverage_rows(
+    table: mucost.MuonCostTable, chain: mucost.ChainEdgeTable | None = None
+) -> list[dict]:
     """Per source: how far the chain actually gets, and which conversions are sourced.
 
     A row is ``complete`` only if it reaches the terminal stage with every factor sourced -- i.e. only
@@ -601,6 +717,9 @@ def coverage_rows(table: mucost.MuonCostTable) -> list[dict]:
             delivery = f"stated as one collapsed factor, {r.eta_mu_evidence_status}"
         else:
             delivery = "absent"
+            foreign = _foreign_delivery(r, chain)
+            if foreign:
+                delivery = f"absent for this row's figure; {foreign}"
         rows.append(
             {
                 "source_id": r.source_id,
@@ -703,8 +822,8 @@ def blocked_extensions(chain: mucost.ChainEdgeTable) -> list:
 
 def _edge_table(chain: mucost.ChainEdgeTable) -> str:
     head = (
-        "| edge | conversion | factor | evidence | bias | source |\n"
-        "|---|---|---|---|---|---|\n"
+        "| edge | conversion | factor | evidence | bias | count | machine | source |\n"
+        "|---|---|---|---|---|---|---|---|\n"
     )
     lines = []
     for e in chain:
@@ -716,7 +835,7 @@ def _edge_table(chain: mucost.ChainEdgeTable) -> str:
         source = e.source_bibkey.replace(";", ", ") if e.source_bibkey else "--"
         lines.append(
             f"| `{e.edge_id}` | {conv} | {factor} | {e.evidence_status} | {e.bias_direction} | "
-            f"{source} |"
+            f"`{e.count_basis}` | {e.machine or '--'} | {source} |"
         )
     return head + "\n".join(lines)
 
@@ -736,19 +855,34 @@ def _edge_coverage_table(rows: list[dict]) -> str:
     return head + "\n".join(lines)
 
 
-def _sourced_path_table(paths: list) -> str:
-    head = "| conversions applied | coordinate reached | figure |\n|---|---|---|\n"
+def _maker_label(table: mucost.MuonCostTable, transfers) -> str:
+    if not transfers:
+        return "none"
+    by_key = {mucost.first_bibkey(r.source_bibkey): LABELS[r.source_id] for r in table
+              if r.numeraire == mucost.BEAM_KINETIC}
+    return _join(sorted({"this ledger" if who == mucost.THIS_LEDGER else by_key.get(who, who)
+                         for _, who in transfers}))
+
+
+def _sourced_path_table(paths: list, table: mucost.MuonCostTable) -> str:
+    head = (
+        "| conversions applied | coordinate reached | figure | machine transfer made by |\n"
+        "|---|---|---|---|\n"
+    )
     lines = []
     for p in paths:
         applied = " -> ".join(f"`{i}`" for i in p.edge_ids)
-        lines.append(f"| {applied} | `{p.value.stage}` / `{p.value.numeraire}` | {p.render()} |")
+        lines.append(
+            f"| {applied} | `{p.value.stage}` / `{p.value.numeraire}` | {p.render()} | "
+            f"{_maker_label(table, p.value.transfers)} |"
+        )
     return head + "\n".join(lines)
 
 
 def _tier_table(table: mucost.MuonCostTable, tier: str, H: dict[str, str]) -> str:
     head = (
-        "| source | value as published | GeV/muon | numeraire | stage | charge | evidence | nv |\n"
-        "|---|---|---|---|---|---|---|---|\n"
+        "| source | value as published | GeV/muon | numeraire | stage | charge | count | evidence | nv |\n"
+        "|---|---|---|---|---|---|---|---|---|\n"
     )
     rows = []
     for r in table.tier(tier):
@@ -768,12 +902,12 @@ def _tier_table(table: mucost.MuonCostTable, tier: str, H: dict[str, str]) -> st
             st += " (off-chain)"
         rows.append(
             f"| {LABELS[r.source_id]} | {r.value_as_published} | {norm} | {num} | {st} | {ch} | "
-            f"{r.evidence_status} | {nv} |"
+            f"{r.count_basis or '--'} | {r.evidence_status} | {nv} |"
         )
     return head + "\n".join(rows)
 
 
-def _coverage_table(table: mucost.MuonCostTable) -> str:
+def _coverage_table(table: mucost.MuonCostTable, chain: mucost.ChainEdgeTable) -> str:
     """Print, per source, how far the chain gets and which conversions are sourced."""
     head = (
         "| source | stage reached | numeraire | beam -> electrical sourced? | "
@@ -781,9 +915,12 @@ def _coverage_table(table: mucost.MuonCostTable) -> str:
         "|---|---|---|---|---|---|\n"
     )
     lines = []
-    for c in coverage_rows(table):
+    for c in coverage_rows(table, chain):
         stage = c["stage"] if c["on_chain"] else f"{c['stage']} (NOT on the muCF chain)"
-        conv = "yes (`eta_acc`, from the PSI primary)" if c["numeraire_sourced"] else "absent"
+        conv = (
+            "yes, by a machine transfer (`eta_acc`, from the PSI primary)"
+            if c["numeraire_sourced"] else "absent"
+        )
         lines.append(
             f"| {c['label']} | {stage} | `{c['numeraire']}` | {conv} | {c['delivery']} | "
             f"{'yes' if c['complete'] else '**no**'} |"
@@ -820,13 +957,13 @@ full-text-verified design studies corroborate the same single-GeV scale: **{LABE
 all-collected) and **{LABELS['eliezer_henis_1994']}, ~{H['norm_eliezer_henis_1994']} GeV/muon**
 (DOI 10.13182/FST94-A30300).
 
-**{H['anchor_basis_sentence']}.** On Kelly's own
-accelerator efficiency the same muon costs {H['norm_kelly_hart_rose_2021']} /
+**{H['anchor_basis_sentence']}.** On the PSI accelerator efficiency Kelly adopts for his own design, the same muon costs {H['norm_kelly_hart_rose_2021']} /
 {H['kelly_eta_acc']} = **{H['kelly_wallplug']} GeV per muon produced** in ELECTRICAL energy, and on the
-same primary's site-wide denominator ({H['kelly_eta_acc_site']}) it costs **{H['kelly_wallplug_site']} GeV**
--- and both are still LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T,
-because the capture, transport, moderation and stopping factors (all <= 1) have not been applied. Every
-factor omitted here pushes the cost UP, so the bound is one-sided.
+same primary's site-wide denominator ({H['kelly_eta_acc_site']}), which this ledger applies to his design, it costs **{H['kelly_wallplug_site']} GeV**.
+Both are LOWER BOUNDS on the electrical cost per mu- actually stopped and useful in D-T **only if his
+accelerator is no more efficient than the PSI one**: that efficiency was measured on a different machine
+(a *machine transfer*). Along the chain the bound is one-sided -- the capture, transport, moderation and
+stopping factors (all <= 1) have not been applied, and every one of them pushes the cost UP.
 
 **The tier spread is about three orders of magnitude, on MIXED bases.** The tier-median rises from **{H['t1_median']}
 GeV** (design studies) through **{H['t2_median']} GeV** (demonstrated technology, collected-not-stopped)
@@ -872,8 +1009,11 @@ on top of the stage-basis error.
 MuSIC's figure is `{H['charge_music']}` (mu+ and mu- together, so the mu--only cost is higher by a
 factor this ledger does not source) and PSI HIMB is `{H['charge_psi_himb']}` -- irrelevant to muCF, which needs mu-, and
 listed for scale only. `evidence_status` grades each number: `primary` / `primary_cited` /
-`derived_here` are sourced; `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
+`derived_here` are sourced; `relayed_unread` (the source states the number and attributes it to a
+primary not read here) / `author_declared_arbitrary` / `assumption` / `absent` are **not**, and any
 figure composing one of those is reported as a **bound, never a value**.
+
+{H['count_para']}
 
 Three factors are deliberately kept in their own flagged columns rather than folded into any row's
 value: the **accelerator efficiency** `eta_acc` (Kelly's {H['kelly_eta_acc']}) -- applying it produces a
@@ -986,11 +1126,11 @@ other two convention-set.
 Against that ceiling, the chain points built from the open-access anchor -- every one of them a
 **bound**, because {H['chain_points_stage_clause']}:
 
-| chain point | numeraire | figure | vs {H['ceiling_kc']} GeV ceiling | vs {H['ceiling_kelly']} GeV ceiling |
-|---|---|---|---|---|
-| beam kinetic per mu- produced | `beam_kinetic` | {H['chain_beam']} | {H['ratio_beam_kc']}x | {H['ratio_beam_kelly']}x |
-| electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | {H['chain_elecmin']} | {H['ratio_elecmin_kc']}x | {H['ratio_elecmin_kelly']}x |
-| electrical per mu- produced (site-wide) | `electrical_site` | {H['chain_elecsite']} | {H['ratio_elecsite_kc']}x | {H['ratio_elecsite_kelly']}x |
+| chain point | numeraire | figure | machine transfer made by | vs {H['ceiling_kc']} GeV ceiling | vs {H['ceiling_kelly']} GeV ceiling |
+|---|---|---|---|---|---|
+| beam kinetic per mu- produced | `beam_kinetic` | {H['chain_beam']} | {H['maker_beam']} | {H['ratio_beam_kc']}x | {H['ratio_beam_kelly']}x |
+| electrical per mu- produced (minimal-subsystem) | `electrical_minimal` | {H['chain_elecmin']} | {H['maker_elecmin']} | {H['ratio_elecmin_kc']}x | {H['ratio_elecmin_kelly']}x |
+| electrical per mu- produced (site-wide) | `electrical_site` | {H['chain_elecsite']} | {H['maker_elecsite']} | {H['ratio_elecsite_kc']}x | {H['ratio_elecsite_kelly']}x |
 
 Read in the criterion's own coordinates, at `E_use` = {H['e_use_kouchen']} MeV. **`G_mu` carries two
 distinct meanings in eq.(12) and they must not be substituted into each other:** the row below reports
@@ -1014,23 +1154,29 @@ retyped.)
 to Kou & Chen's mathematics, every digit of which reproduces. Their own sec.IV places the historical
 anchors below breakeven, saying they "fall near the `G_mu` ~ 0.5-0.6 region"; their Table I `G_mu` column
 prints 0.51 (SIN/Crowe) and 0.61 (LAMPF/Jones), and 0.41 (Petitjean low) is the nearest value it prints
-outside that range. The contribution here is narrower and sharper:
-**the cost convention that puts them there is itself ~{H['optimism_low']}-{H['optimism_high']}x
-optimistic relative to the only anchor in the field whose beam-to-electrical conversion is
-sourced**, so that anchor's `G_mu` is
-~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than ~{H['gmu_conventional_1dp']},
-and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
-forbidden side of the no-go line rather than {H['overshoot_conventional']}x. **Every omitted factor pushes
-the same way**, so this reading is rigorously one-sided: the chain points above are lower bounds, and
-the true costs can only be higher.
+outside that range. The contribution here is narrower. **Without any machine transfer**, the anchor's
+beam energy alone, {H['chain_beam']} per muon produced, is {H['ratio_beam_kc']}x the {H['ceiling_kc']} GeV ceiling and {H['ratio_beam_kelly']}x the
+{H['ceiling_kelly']} GeV one. **Conditional on a machine transfer**, the cost convention that puts the historical
+anchors there is ~{H['optimism_low']}-{H['optimism_high']}x optimistic relative to that anchor's electrical cost, so its `G_mu` is
+~{H['gmu_elecsite_kc']}-{H['gmu_elecmin_kc']} rather than ~{H['gmu_conventional_1dp']}, and the demonstrated sticking sits {H['overshoot_elecmin_kc']}-{H['overshoot_elecsite_kc']}x on the
+forbidden side of the no-go line rather than {H['overshoot_conventional']}x. The electrical figures divide by efficiencies
+measured on the PSI HIPA proton cyclotron: Kelly, Hart & Rose apply its minimal-subsystem figure to their
+own deuteron design (sec.6), and this ledger applies its site-wide figure. **Along the stage axis the
+reading is one-sided**: every chain point above stops at stage `produced`, and each stage factor it
+omits is <= 1, so leaving it out can only understate the cost. **Along the numeraire axis it holds only
+if the transfer does**: the electrical figures are lower bounds if the anchor's accelerator is no more
+efficient than the PSI one. Kelly, Hart & Rose expect accelerator efficiency to decrease at higher beam
+energies (sec.6) and also to improve considerably (sec.7), and Eliezer & Henis take an optimistic
+accelerator efficiency far above the PSI ones in an illustrative energy balance (sec.VII), so these
+sources do not settle the condition.
 
 ## Chain coverage: which conversions are actually sourced
-{_coverage_table(table)}
+{_coverage_table(table, chain)}
 
 **{H['n_fully_sourced_chains']} of the {H['n_chain_rows']} pinned rows that sit on the muCF chain have a
 fully-sourced chain to a useful stopped muon** (a further {H['n_offchain_rows']} rows are not on the chain
-at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states its own
-beam-to-electrical conversion -- Kelly, Hart & Rose, who take 18% from the PSI primary they cite -- and
+at all -- they stop muons outside D-T fuel). Exactly **one source** in this compilation states a
+beam-to-electrical conversion measured on an accelerator -- Kelly, Hart & Rose, who take 18% from the PSI primary they cite -- and
 that same source states the delivery factor is unknown. {H['n_numeraire_sourced']} rows carry an
 `eta_acc`: his beam row and its two electrical re-expressions, on the two denominators that same PSI
 primary supplies. Kelly adopts the minimally-required-subsystem one; the site-wide figure is the
@@ -1041,14 +1187,15 @@ honest state of the literature, not a gap in this ledger, and it is why
 
 **What would close this properly.** Each row would have to reach `stopped_useful_in_dt` in a stated
 numeraire with every conversion sourced: beam GeV per mu- produced -> / eta_acc (a numeraire change)
--> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. Only the numeraire change
-is sourceable for any row today (Kelly: {H['norm_kelly_hart_rose_2021']} / {H['kelly_eta_acc']} =
-{H['kelly_wallplug']} GeV). Kelly, Hart & Rose do quote a single collapsed delivery factor,
+-> / capture -> / transport -> / moderation -> / stopping-in-D-T -> mu--only. For a row that counts
+mu-, the numeraire change is sourced today only through a machine transfer (Kelly: {H['norm_kelly_hart_rose_2021']} / {H['kelly_eta_acc']} =
+{H['kelly_wallplug']} GeV, on the PSI efficiency he adopts), and no stage factor is sourced{H['close_relay_clause']}. Kelly, Hart & Rose do quote a single collapsed delivery factor,
 `eta_mu` = {H['kelly_eta_mu']}, but describe it verbatim as an "arbitrary but reasonable assumption" and state they do
 not know its value; it is therefore recorded in the ledger as `author_declared_arbitrary`, **never folded
 into any figure above and never allowed to headline**. The remaining factors are all <= 1, so every
 figure above that sits **on the muCF chain** and counts mu- is a **lower bound** on the cost at the
-terminal stage. The {H['n_offchain_rows']} off-chain
+terminal stage, in its own numeraire and, where the figure is marked *conditional on a machine
+transfer*, only if that transfer holds. The {H['n_offchain_rows']} off-chain
 figures are not bounds on a muCF cost at all: they price stopping a muon somewhere that is not D-T
 fuel, so no chain of sub-unity factors connects them to the quantity this table is about.
 {H['mu_plus_only_clause']}
@@ -1073,6 +1220,27 @@ exists to prevent.
 
 {H['chain_coverage_sentence']}
 
+> **AMENDMENT (2026-10-13) -- a stage factor a held source relays is now an edge, under a new evidence
+> grade that is not sourced; the electrical figures state the machine transfer they rest on, and each row
+> records what it counts; no row's value moves.** This section said that not one of the {H['n_stage_conversions']} stage
+> advances the chain requires is sourced by any primary read here, and did not say that a source this
+> ledger already carries states one: {LABELS['eliezer_henis_1994']} relay in sec.VII.A Petrov's calculation
+> that his converter-synthesizer converts about {H['petrov_factor_pct']}% of the negative pions created into muons that take
+> part in d-t catalysis. That factor is now the edge `{PETROV_EDGE_ID}`, graded
+> `relayed_unread` -- a new evidence grade: the source states the number and attributes it to a primary
+> not read here -- because Petrov's paper is not read here, and given bias `lower` because the same
+> paragraph says the results seem to be optimistic. `relayed_unread` is not sourced, so the sentence
+> above, regenerated from both tables, still finds no stage advance sourced, and a figure composed
+> through the edge is a bound, never a value. The electrical figures
+> divide by efficiencies measured on the PSI HIPA proton cyclotron and applied to Kelly, Hart & Rose's
+> design -- by Kelly, Hart & Rose for the minimal-subsystem figure they adopt, and by this ledger for the
+> other two -- and now say so; their one-sidedness is stated for the stage axis only. `count_basis`
+> records that Kelly, Hart & Rose's rows count negative pions created and Acceleron's counts negative
+> pions and muons leaving the target, so T1 is stage-homogeneous but not count-homogeneous; a cost per
+> pion created is a lower bound on the cost per muon produced, so no bound changes direction.
+> **What does not move:** every row's value, the tier medians ({H['t1_median']}, {H['t2_median']} and {H['t3_median']} GeV), the
+> {H['gap_ratio']}x spread and every number in the Kou-Chen comparison.
+
 ### Where the competing readings lead
 {H['competing_clause']}
 
@@ -1080,11 +1248,12 @@ Composing every path out of the open-access anchor row ({LABELS[CHAIN_ANCHOR_ID]
 sourced conversions** gives {H['n_sourced_paths']} figures, and the deliverable is the SET of them
 with their provenance -- never a mean, and never one of them singled out:
 
-{_sourced_path_table(sourced_paths(table, chain))}
+{_sourced_path_table(sourced_paths(table, chain), table)}
 
 **Read the marker, and read what is missing.** {H['marker_clause']}
 {H['blocked_clause']} The edge table carries every one of those conversions and the API
-will compose them, marking a result *direction unknown* wherever its edges cannot bound it -- which
+will compose them, marking a result *direction unknown* wherever its edges cannot bound it, and
+*conditional on a machine transfer* wherever an edge was stated for another machine -- which
 is how this compilation records a factor it may not publish a number from.
 """
 
@@ -1164,6 +1333,7 @@ def build_manifest_entries(H: dict[str, str], table: mucost.MuonCostTable) -> li
         _entry("n_absent_edges", rf"\*\*no number\*\*: {re.escape(H['n_absent_edges'])} of the"),
         _entry("n_sourced_conversions", rf"\*\*{re.escape(H['n_sourced_conversions'])}\*\* carry a factor from a primary"),
         _entry("n_sourced_paths", rf"gives {re.escape(H['n_sourced_paths'])} figures"),
+        _entry("petrov_factor_pct", rf"converts about {re.escape(H['petrov_factor_pct'])}% of the negative pions"),
     ]
     for i in range(1, int(H["n_sourced_paths"]) + 1):
         entries.append(_entry(f"sourced_path_{i}", rf"\| {re.escape(H[f'sourced_path_{i}'])} \|"))
