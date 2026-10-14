@@ -26,6 +26,7 @@
 118a097b7e6e5ee82d6824f0c87ee8ccf3ac9075	CHANGELOG.md	REGISTERED: 14, one -- '14 MeV neutron source', NEUTRONOMICS.md's section-1 heading; 'one basis'
 11ec0dc0895c73919a07f95ad42072cf5c1def19	CHANGELOG.md	REGISTERED: one -- 'The one dominant', a description
 124c92e2447a6f1e3f72086bf60c814ebf767f89	CHANGELOG.md	REGISTERED: 18.3, 25.68, 26.11 -- MUON_COST.md's electrical figures on the minimal-subsystem denominator, unrounded and rounded
+12efca588123fab6be4e86f4e3b54dc6d3122667	CHANGELOG.md	REGISTERED: 6 -- part of the name ENDF-6, the format the ENDF-6 Formats Manual specifies; a name, not a quantity
 13dfd08e67345de0da638aafd5f77fabcd7191b5	CHANGELOG.md	REGISTERED: 0.4.1 -- historical: the version the 2026-09-19 D3 fix produced; the changelog-version rule checks it is older than every entry above it
 144910243a4ac1ea1abd96a20ae92f5b57308852	CHANGELOG.md	REGISTERED: two -- 'a two-place diff', an idiom
 14b01095f1ea4509fe85b0e59c8a94b67508ac81	CHANGELOG.md	REGISTERED: 2 -- the conversions carrying a factor from a primary, as MUON_COST.md's chain-coverage sentence counts them
@@ -306,6 +307,7 @@ d7886a188607288856b058688cd324441b05d13c	CHANGELOG.md	REGISTERED: 0.5 -- 'c_t=0.
 d7bb6e6abc39ddc8e49f5501d8a9fc5f46ad7571	CHANGELOG.md	REGISTERED: 5 -- the superseded relative constant, as DESIGN.md's audit section records it
 d8cdaa7730a1de2bc56f28f487158ce70ba10cf1	CHANGELOG.md	REGISTERED: 8 -- the entries of `SENTENCE_OPENERS` in tests/test_ledger_claims.py
 db1eb055ab498ac5539ae1b8821d8149ac11ca04	CHANGELOG.md	REGISTERED: 5, 12 -- the cells that failed on the first other-architecture run, as scripts/generate_design.py's preamble records it
+db9298b17a1f6efa636337742a76899c6e6ba1e8	CHANGELOG.md	REGISTERED: 6 -- part of the name ENDF-6, the format the ENDF-6 Formats Manual specifies; a name, not a quantity
 dd273092273680d58f8c448b96467884c859225c	CHANGELOG.md	REGISTERED: two -- the two byte-identity assertions the bullet describes
 dd9bbfd2fd5c23b9406e40dc33f335b7ab7d94b4	CHANGELOG.md	REGISTERED: 5 -- the superseded relative constant, as DESIGN.md's audit section records it
 e0f50cf1474fad9957fa148a5eba658d154099d0	CHANGELOG.md	REGISTERED: Three -- the three lexical holes the bullet enumerates
