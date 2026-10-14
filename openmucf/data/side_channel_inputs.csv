@@ -1,0 +1,18 @@
+symbol,description,value,unc,distribution,dist_lo,dist_hi,unit,source_bibkey,source_locator,notes
+ct_anchor,Tritium fraction of the liquid fill at the maximum cycle rate,0.3157,-,fixed,,,fraction,Breunlich1987,"Fig. 4(a), the liquid point of maximum cycle rate",read off the figure
+lambda_c_norm_anchor,Normalized cycle rate of that fill,121.711e6,-,fixed,,,s^-1,Breunlich1987,"Fig. 4(a), the liquid point of maximum cycle rate","read off the figure; with the actual maximum rate printed on p.332 it implies phi ~ 1.19, an inference inside the stated phi range"
+lambda_dt_i,"Transfer rate dmu -> tmu, kinetic analysis (i)",280e6,50e6,normal,,,s^-1,Breunlich1987,"Table I, analysis (i)",
+a_q1s_i,"Parameter a of q_1s = 1/(1 + a c_t), kinetic analysis (i)",6.5,3.0,normal,,,dimensionless,Breunlich1987,"Table I, analysis (i)",propagated on a >= 0 (q_1s <= 1)
+lambda_dt_ii,"Transfer rate dmu -> tmu, kinetic analysis (ii)",350e6,50e6,normal,,,s^-1,Breunlich1987,"Table I, analysis (ii)",
+a_q1s_ii,"Parameter a of q_1s = 1/(1 + a c_t), kinetic analysis (ii)",15.0,4.0,normal,,,dimensionless,Breunlich1987,"Table I, analysis (ii)",propagated on a >= 0 (q_1s <= 1)
+lambda_ttmu_table,"ttmu formation rate in liquid T2 at 22.5 K and 1.25 LHD, as tabled",2.84e6,0.32e6,normal,,,s^-1,Bogdanova2009tt,Table 1 (Combined),"read as the rate in the target (Eq. (2) and p.13); the rate ledger's lambda_ttmu is this value over jinr_density_lhd"
+jinr_density_lhd,Density of the JINR liquid-tritium target,1.25,-,fixed,,,LHD,Bogdanova2009tt,sec. 2.3,
+omega_tt,Muon loss per tt fusion,0.139,0.015,normal,,,fraction,Bogdanova2009tt,Table 1 (Combined),the rate ledger's omega_tt carries the same value
+lambda_dmu_flip,dmu hyperfine transition rate,37e6,-,fixed,,,s^-1,BreunlichSIN1986,Table III,"the table's 37 per microsecond read as the dmu hyperfine rate (measured at 35 K), an inference"
+lambda_dd_12,ddmu formation rate from the dmu F = 1/2 state,0.048e6,-,fixed,,,s^-1,BreunlichSIN1986,Table III,the table's lower value of the dmud formation rate
+lambda_dd_32,ddmu formation rate from the dmu F = 3/2 state,3.365e6,-,uniform,2.0e6,4.73e6,s^-1,BreunlichSIN1986,Table III,"upper edge the table's upper value; the lower edge 2.0e6 is assumed (the F = 3/2 rate at 23 K is not in hand)"
+omega_d,Muon loss per dd fusion through the 3He + n branch,0.122,0.0122,normal,,,fraction,Jones1986,"Fig. 4 caption, p.590",uncertainty assumed at 10 %
+br_he3,Branching ratio of dd fusion to 3He + n,0.58,-,fixed,,,fraction,Jones1986,"Eq. (2), p.589",
+k_p,Coefficient of the protium loss per cycle,6.0e6,0.6e6,normal,,,s^-1,Jones1986,p.590,"the printed unit reads 10^-6 s^-1; read as 10^6 s^-1 on dimensional grounds, an inference"
+c_p,Protium fraction of the anchor fill,0.010,-,uniform,0.005,0.015,fraction,Breunlich1987,p.331,range assumed around the stated protium content
+imp,Muon loss per cycle to impurities and 3He,1.0e-4,-,uniform,0.0,2.0e-4,per cycle,Breunlich1987,p.331,the experimental upper limit sets the range
