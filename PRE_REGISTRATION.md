@@ -69,6 +69,15 @@ Formalized in `openmucf/data/validation_targets.csv`; backbone is `MODEL_SPEC.md
 > Pinning the ttμ formation rate leaves the prediction unchanged, since it carries no tt term. The target,
 > its band, its class and the expected FAIL are unchanged.
 
+> **Amendment (2026-10-14, disclosed — the anchor basis of `V_petitjean`):** Breunlich et al. (1987) report the
+> effective sticking after correcting the raw loss per cycle for the dμd, tμt, pμd and pμt fusion losses (p.331)
+> and compute the yield 113 with the raw loss (p.332). `V_petitjean` therefore feeds the channels-OFF engine the
+> total loss per cycle the yield relation uses, W = 1/113 − λ₀/λ_c at the maximum cycle rate, in place of 0.45 %;
+> on the channels-ON page it feeds 0.45 % with the tt channel live. Its target and band are unchanged. On the
+> channels-ON page the Kou–Chen reproduction rows now FAIL, because their closed forms carry no tt loss; they are
+> registered findings there, and their channels-OFF rows are unchanged. The target, band and outcome of
+> `V_petitjean_omega` are unchanged.
+
 ## Falsification target (the headline)
 Re-create, **inside the same transparent model**, the 2026 projections:
 - Yin–Kou–Chen (2605.26432): N_μ "> 500", Q > 2 under four-dimensional synergy.

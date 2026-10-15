@@ -8,9 +8,9 @@ Reproduce one case from an installed package with `openmucf reproduce <case-id>`
 |---|---|---|---|---|---|---|
 | V_kouchen_base | validation | openmucf.validate (validation_targets.csv trust gate) | 114.5 | 112.6 (fed omega_s_eff=0.557%) | +-10% | PASS |
 | V_kouchen_best | validation | openmucf.validate (validation_targets.csv trust gate) | 160.3 | 156.5 (fed omega_s_eff=0.308%) | +-10% | PASS |
-| V_petitjean | validation | openmucf.validate (validation_targets.csv trust gate) | 130.5 | 113 (fed omega_s_eff=0.45%) | [100,150] | PASS |
+| V_petitjean | validation | openmucf.validate (validation_targets.csv trust gate) | 112.7 | 113 (fed W=0.571% total loss per cycle) | [100,150] | PASS |
 | V_yamashita_lcT | validation | openmucf.validate (validation_targets.csv trust gate) | 125.2 | monotone X_mu(T) rise | monotone | PASS |
-| V_breunlich_lambdac | validation | openmucf.validate (validation_targets.csv trust gate) | 1.438e+08 | 1.45e8 s^-1 (max measured cycling rate, liquid; Breunlich 1989) | +-30% | PASS |
+| V_breunlich_lambdac | validation | openmucf.validate (validation_targets.csv trust gate) | 1.438e+08 | 1.45e8 s^-1 (max measured cycling rate, liquid; Breunlich 1987) | +-30% | PASS |
 | V_faifman_peak | validation | openmucf.validate (validation_targets.csv trust gate) | 7.1e+09 | 7.1e9 s^-1 @ 0.423 eV (Fujiwara 2000) | +-25% | PASS |
 | V_nagamine_trend | validation | openmucf.validate (validation_targets.csv trust gate) | n/a | solid D-T (5-16 K): cycling rises & losses fall as T falls (RIKEN-RAL) | qualitative monotone | DEFERRED |
 | jones-1986 | reproduction | Jones1986 (Jones et al., Phys. Rev. Lett. 56, 588 (1986)) | n/a | 150 | n/a | PENDING |

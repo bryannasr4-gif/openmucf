@@ -226,3 +226,11 @@ def test_physics_mutation_flips_verdicts():
         assert res["V_faifman_peak"].passed is False
     finally:
         formation._RESONANCES[1][:] = orig_f1
+
+
+def test_channels_on_expected_outcomes():
+    """VALIDATION_CHANNELS.md: the Kou-Chen +-10% reproduction rows FAIL on the channels-on page, a registered
+    finding (their closed forms carry no tt loss); every other row has its channels-off outcome."""
+    off = {r.target_id: r.passed for r in validate.run(load_rates())}
+    on = {r.target_id: r.passed for r in validate.run(load_rates(), channels="on")}
+    assert on == dict(off, V_kouchen_base=False, V_kouchen_best=False)

@@ -96,23 +96,6 @@ def test_recommended_superseded_pair():
     assert fam_recommended == ["omega_s0"]
 
 
-def test_wsn_loss_channel_rows_load_and_flagged():
-    """The three loss-channel rows load; the two rates are needs_verification and omega_tt is pinned.
-
-    lambda_ttmu ships the documented blocked fallback (0.0 + `blocked:` note); lambda_dhe3 ships a real value
-    from a live open source (Fotev et al., arXiv:2001.09927 = bibkey Fotev2020)."""
-    r = load_rates()
-    for sym in ("lambda_ttmu", "omega_tt", "lambda_dhe3"):
-        assert sym in r, sym
-        assert r[sym].needs_verification is (sym != "omega_tt"), sym
-        assert r[sym].phase and r[sym].target_molecule, sym  # non-empty typed projections
-    assert r.value("lambda_ttmu") == 0.0  # blocked fallback -> refit keys on this (SKIP)
-    assert r["lambda_ttmu"].notes.startswith("blocked:")
-    assert r["lambda_ttmu"].source_bibkey == "Bogdanova2009tt"
-    assert r.value("lambda_dhe3") > 0.0
-    assert r["lambda_dhe3"].source_bibkey == "Fotev2020"
-
-
 def test_lambda_dt_transfer_pinned_to_its_primary():
     """lambda_dt_transfer's pinned state: source, locator, flag, value and uncertainty."""
     dt = load_rates()["lambda_dt_transfer"]
@@ -206,3 +189,21 @@ def test_backfilled_dois_are_wellformed():
         for doi in re.findall(r"\n\s*doi\s*=\s*\{([^}]*)\}", body):
             assert doi.startswith("10."), f"{key}: doi {doi!r} is not a bare DOI"
             assert "doi.org" not in doi and "http" not in doi, f"{key}: doi {doi!r} must not be a URL"
+
+
+def test_ttmu_disclosure_figure_is_generated():
+    """The lambda_ttmu disclosure's one figure "by <x> %" is 100*(page/shipped - 1) to 3 decimals: page =
+    VALIDATION_CHANNELS.md's V_breunlich_lambdac print, shipped = its CALIBRATION_CELLS.json record."""
+    import json
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[1]
+    notes = load_rates()["lambda_ttmu"].notes
+    cells = json.loads((repo / "CALIBRATION_CELLS.json").read_text(encoding="utf-8"))
+    old = cells["shipped_v1_3_0"]["VALIDATION_CHANNELS.md|V_breunlich_lambdac|predicted"]
+    row = [ln for ln in (repo / "VALIDATION_CHANNELS.md").read_text(encoding="utf-8").splitlines()
+           if ln.startswith("| V_breunlich_lambdac |")]
+    assert len(row) == 1
+    new = row[0].split("|")[4].strip()
+    assert "{Vb_pct}" not in notes
+    assert re.findall(r"\bby (-?\d+\.\d{3}) %", notes) == [f"{100.0 * (float(new) / float(old) - 1.0):.3f}"]

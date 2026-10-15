@@ -578,6 +578,18 @@ def _card_scenario_a():
     return {p["target_id"]: p for p in sc[0]["predictions"]}
 
 
+def vb_figures(cells):
+    """(Vb_old, Vb_new, Vb_pct): the shipped print of V_breunlich_lambdac on the channels-on page (the cells'
+    shipped record), the committed page's print, and 100*(new/old - 1) to 3 decimals."""
+    old = cells["shipped_v1_3_0"]["VALIDATION_CHANNELS.md|V_breunlich_lambdac|predicted"]
+    rows = [ln for ln in Path(VALIDATION_CHANNELS_MD).read_text(encoding="utf-8").splitlines()
+            if ln.startswith("| V_breunlich_lambdac |")]
+    if len(rows) != 1:
+        raise ValueError(f"{VALIDATION_CHANNELS_MD}: {len(rows)} V_breunlich_lambdac rows")
+    new = rows[0].split("|")[4].strip()
+    return old, new, f"{100.0 * (float(new) / float(old) - 1.0):.3f}"
+
+
 def build_note(cells):
     """The FC-001 dated note: the card's scenario-A medians at phi = 1.2 beside the corrected basis.
     Raises unless every corrected median lies inside the card's own 95 % interval."""
@@ -599,6 +611,7 @@ def build_note(cells):
         )
     w = calibrate.OBS_W
     lt = cells["legacy_tension"]
+    vb_old, vb_new, vb_pct = vb_figures(cells)
     card_box = POSTERIORS["fc001_card_support"][1]["lam_box"]
     wide_box = POSTERIORS["fc001_widened_support"][1]["lam_box"]
     return (
@@ -620,7 +633,15 @@ def build_note(cells):
         f"{card_box[1]:.3g}] s^-1 | corrected basis, the refit's support [{wide_box[0]:.3g}, {wide_box[1]:.3g}] "
         "s^-1 | card 95 % interval |\n|---|---|---|---|---|\n" + "\n".join(rows) + "\n\n"
         "Every corrected median lies inside the card's own 95 % interval. The scenario-A cycle-rate medians at "
-        "phi = 2.0 and\n2.4 scale by phi/1.2 on either basis.\n"
+        "phi = 2.0 and\n2.4 scale by phi/1.2 on either basis.\n\n"
+        "One figure outside the card moved against an expectation stated before it was computed. With the ttmu "
+        "channel live,\nthe cycle rate the channels-on validation page infers at 300 K and liquid density "
+        "(`V_breunlich_lambdac` in\n`VALIDATION_CHANNELS.md`) had been expected to stay at "
+        f"{vb_old} s^-1; it is {vb_new} s^-1, {vb_pct} %, because ttmu\n"
+        "formation takes atoms from the tmu pool and the muons that do not stick in the tt branch return split "
+        "between the two\nhyperfine states (`openmucf/cycle.py`), which moves the mean d-t cycle time. The card "
+        "does not depend on that page:\n`openmucf.forecast`, which computes it, does not load "
+        "`openmucf.validate`.\n"
     )
 
 

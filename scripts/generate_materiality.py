@@ -7,13 +7,12 @@ operating points, reported as ONE-SIDED "structural sensitivity brackets" (X_mu^
 beside the section-2 forward-UQ CI width for scale. These are NOT error bars and are never combined
 into any likelihood or CI (pre-registered combination rule: side-by-side only).
 
-Two channels, per the loss-channel network:
+Two absorbing channels, per the loss-channel network, each toggled alone:
   * He-3 scavenging (dmu + 3He): LIVE (ledger `lambda_dhe3`=1.92e8 s^-1, Fotev et al. 2020). Toggled at
-    two illustrative static helium fractions c_He in {1e-4, 1e-3}.
-  * ttmu side-branch: BLOCKED. The ledger `lambda_ttmu` row shipped the machine-representable
-    fallback (value 0.0, notes beginning `blocked:`) because no open source pins its x-phi-x-c_t
-    normalization. This generator DETECTS that marker and renders the ttmu rows "blocked -- pending
-    acquisition of <the document named in the row notes>", NEVER a (misleading) zero bracket.
+    two illustrative static helium fractions c_He in {1e-4, 1e-3}, with the tt channel off.
+  * ttmu side-branch: LIVE (ledger `lambda_ttmu`, the JINR preprint's rate read in the target). Toggled
+    with c_He = 0 and recapture off, beside the density-normalized reading of the same table (the
+    tabled rate, `openmucf/data/side_channel_inputs.csv`), a registered systematic.
 
 Everything here runs the v1 cycle model with the loss channel as the ONLY toggle, so "channels OFF" is
 the byte-exact v1 engine and the bracket isolates the single channel's structural effect. Fully
@@ -31,7 +30,7 @@ import math
 import re
 from pathlib import Path
 
-from openmucf import cycle, provenance
+from openmucf import cycle, provenance, sidechannels
 from openmucf.rates import RATES_CSV, load_rates
 
 # --------------------------------------------------------------------------- DECIDED spec parameters
@@ -79,21 +78,40 @@ def he_brackets(rates) -> dict:
 
     Returns ``{op: {"off": X_off, che_level: {"with": X_on, "bracket": X_on - X_off}, ...}}``.
     "off" is the channels-OFF v1 engine (byte-exact v1); "with" toggles ONLY the He-3 channel on at the
-    given static c_He (the ttmu row is inert at 0.0, so include_loss_channels engages He-3 only). The
-    bracket is one-sided and negative (an absorbing loss can only reduce X_mu).
+    given static c_He, with ``lambda_tt`` zeroed. The bracket is one-sided and negative (an absorbing loss
+    can only reduce X_mu).
     """
     out: dict = {}
     for op, (phi, T, c_t) in OPERATING_POINTS.items():
         x_off = float(cycle.fusions_per_muon_from_conditions(rates, T, phi, c_t))
         rec = {"off": x_off}
         for c_he in C_HE_LEVELS:
-            x_on = float(
-                cycle.fusions_per_muon_from_conditions(
-                    rates, T, phi, c_t, include_loss_channels=True, c_he=c_he
-                )
-            )
+            p = cycle.params_from_conditions(rates, T, phi, c_t, include_loss_channels=True, c_he=c_he)
+            p["lambda_tt"] = 0.0
+            x_on = float(cycle.fusions_per_muon_ode(**p))
             rec[c_he] = {"with": x_on, "bracket": x_on - x_off}
         out[op] = rec
+    return out
+
+
+def tt_brackets(rates) -> dict:
+    """Compute the ttmu side-branch brackets at every operating point, the tt channel toggled alone
+    (c_He = 0, recapture off).
+
+    Returns ``{op: {"off": X_off, "in_target": {...}, "density_normalized": {...}}}``, each reading
+    ``{"with": X_on, "bracket": X_on - X_off}``: the ledger's ``lambda_ttmu`` (in-target reading) and the
+    tabled rate of ``side_channel_inputs.csv`` unscaled (density-normalized reading), both x phi x c_t.
+    """
+    tabled = sidechannels.load_inputs()["lambda_ttmu_table"]["value"]
+    out: dict = {}
+    for op, (phi, T, c_t) in OPERATING_POINTS.items():
+        x_off = float(cycle.fusions_per_muon_from_conditions(rates, T, phi, c_t))
+        p = cycle.params_from_conditions(rates, T, phi, c_t, include_loss_channels=True, c_he=0.0)
+        x_in = float(cycle.fusions_per_muon_ode(**p))
+        p["lambda_tt"] = tabled * phi * c_t
+        x_dn = float(cycle.fusions_per_muon_ode(**p))
+        out[op] = {"off": x_off, "in_target": {"with": x_in, "bracket": x_in - x_off},
+                   "density_normalized": {"with": x_dn, "bracket": x_dn - x_off}}
     return out
 
 
@@ -121,40 +139,27 @@ def q1s_brackets(rates) -> dict:
     return out
 
 
-def combined_band(he_br: dict, q1s_br: dict) -> dict:
-    """Combined one-sided downward structural band at the HEADLINE operating points: the sum of the two
-    live channels (3He scavenging at c_He=1e-3 + d-recapture at q_1s=1.0). The ttmu side-branch stays
-    blocked (un-pinned), so the true band can only be MORE negative than this live sum.
+def combined_band(he_br: dict, q1s_br: dict, tt_br: dict) -> dict:
+    """Combined one-sided downward structural band at the HEADLINE operating points: the sum of the ttmu
+    side-branch (in-target reading), 3He scavenging at c_He=1e-3 and d-recapture at q_1s=1.0.
 
-    Returns ``{op: {"he": <3He bracket>, "q1s": <q_1s bracket>, "combined": <sum>, "pct": <% of X_off>}}``.
+    Returns ``{op: {"tt", "he", "q1s": <brackets>, "combined": <sum>, "pct": <% of X_off>}}``.
     """
     out: dict = {}
     for op in HEADLINE_OPS:
         x_off = he_br[op]["off"]
+        tt_b = tt_br[op]["in_target"]["bracket"]
         he_b = he_br[op][1e-3]["bracket"]  # 3He at the larger illustrative helium level
         q_b = q1s_br[op][1.0]["bracket"]  # d-recapture at the maximal q_1s
-        combined = he_b + q_b
-        out[op] = {"he": he_b, "q1s": q_b, "combined": combined, "pct": 100.0 * combined / x_off}
+        combined = tt_b + he_b + q_b
+        out[op] = {"tt": tt_b, "he": he_b, "q1s": q_b, "combined": combined, "pct": 100.0 * combined / x_off}
     return out
 
 
-def tt_blocked_status(rates) -> tuple[bool, str]:
-    """Detect the blocked-fallback marker on the ttmu formation-rate row.
-
-    Returns ``(is_blocked, document_name)``. ``is_blocked`` is True when the ``lambda_ttmu`` ledger row
-    ships value 0.0 with notes beginning ``blocked:`` (the machine-representable fallback). The document
-    name is parsed from the row's own notes ("pending acquisition of <doc>"), so the rendered message
-    names the blocking DOCUMENT (public-doc rule), never a private tracker or a zero bracket.
-    """
-    row = rates.get("lambda_ttmu")
-    if row is None:
-        return (False, "")
-    is_blocked = row.notes.startswith("blocked:") and row.value == 0.0
-    doc = "the primary ttmu tt-fusion tables"
-    m = re.search(r"pending acquisition of (.+?\))", row.notes)
-    if m:
-        doc = m.group(1).strip()
-    return (is_blocked, doc)
+def structural_band_pct(rates) -> float:
+    """The largest magnitude of the combined band over the headline operating points, in % of X_mu (OFF)."""
+    comb = combined_band(he_brackets(rates), q1s_brackets(rates), tt_brackets(rates))
+    return max(abs(comb[op]["pct"]) for op in HEADLINE_OPS)
 
 
 def read_forward_uq_ci(manifest_path=FINDINGS_MANIFEST) -> tuple[int, int]:
@@ -177,9 +182,9 @@ def build_headline(rates) -> dict:
     """Assemble the single-source-of-truth formatted strings shared by the doc and the manifest."""
     br = he_brackets(rates)
     q1s_br = q1s_brackets(rates)
-    comb = combined_band(br, q1s_br)
+    tt_br = tt_brackets(rates)
+    comb = combined_band(br, q1s_br, tt_br)
     ci_lo, ci_hi = read_forward_uq_ci()
-    is_blocked, tt_doc = tt_blocked_status(rates)
 
     H: dict[str, str] = {}
     for op in OPERATING_POINTS:
@@ -192,11 +197,15 @@ def build_headline(rates) -> dict:
             qt = _q1s_tag(q)
             H[f"{op}_{qt}_with"] = f"{q1s_br[op][q]['with']:.3f}"
             H[f"{op}_{qt}_bracket"] = f"{q1s_br[op][q]['bracket']:+.3f}"
+        for rd in ("in_target", "density_normalized"):
+            H[f"{op}_tt_{rd}_with"] = f"{tt_br[op][rd]['with']:.3f}"
+            H[f"{op}_tt_{rd}_bracket"] = f"{tt_br[op][rd]['bracket']:+.3f}"
     for op in HEADLINE_OPS:
         # 3He shown at 2 dp in the combined table (a summary rounding, distinct from the 3-dp section-2
         # figure) so the combined row never re-uses a section-2 bracket string verbatim; q_1s and the
         # combined total keep full 3-dp precision.
         H[f"{op}_comb_he2"] = f"{comb[op]['he']:+.2f}"
+        H[f"{op}_comb_tt"] = f"{comb[op]['tt']:+.3f}"
         H[f"{op}_comb_q1s"] = f"{comb[op]['q1s']:+.3f}"
         H[f"{op}_comb_total"] = f"{comb[op]['combined']:+.3f}"
         H[f"{op}_comb_pct"] = f"{comb[op]['pct']:+.2f}"
@@ -208,9 +217,10 @@ def build_headline(rates) -> dict:
     H["ci_hi"] = f"{ci_hi}"
     H["ci_width"] = f"{ci_hi - ci_lo}"
     H["ingrowth_pct_month"] = f"{ingrowth_pct_per_month():.2f}"
-    H["tt_blocked"] = f"blocked -- pending acquisition of {tt_doc}" if is_blocked else "(ttmu channel LIVE)"
+    H["lambda_ttmu"] = f"{rates.value('lambda_ttmu'):.4g}"  # the ledger value the section-3 prose restates
     H["omega_tt"] = f"{rates.value('omega_tt')}"  # the ledger value the section-3 prose restates
-    H["_tt_is_blocked"] = "1" if is_blocked else "0"  # not a manifest entry; drives rendering only
+    tt_worst = min(HEADLINE_OPS, key=lambda op: tt_br[op]["in_target"]["bracket"])
+    H["tt_max"] = f"{tt_br[tt_worst]['in_target']['bracket']:+.3f}"
     return H
 
 
@@ -230,9 +240,18 @@ def _he_table(H: dict) -> str:
     return head + "\n".join(rows)
 
 
-def _tt_table() -> str:
-    head = "| operating point | ttmu bracket |\n|---|---|\n"
-    rows = [f"| {op_label(op)} | blocked -- pending acquisition |" for op in OPERATING_POINTS]
+def _tt_table(H: dict) -> str:
+    head = (
+        "| operating point | X_mu (channels OFF) | X_mu (tt, in-target reading) | bracket "
+        "| X_mu (tt, density-normalized reading) | bracket |\n|---|---|---|---|---|---|\n"
+    )
+    rows = []
+    for op in OPERATING_POINTS:
+        rows.append(
+            f"| {op_label(op)} | {H[f'{op}_off']} | {H[f'{op}_tt_in_target_with']} "
+            f"| {H[f'{op}_tt_in_target_bracket']} | {H[f'{op}_tt_density_normalized_with']} "
+            f"| {H[f'{op}_tt_density_normalized_bracket']} |"
+        )
     return head + "\n".join(rows)
 
 
@@ -260,7 +279,7 @@ def _combined_table(H: dict) -> str:
     rows = []
     for op in HEADLINE_OPS:
         rows.append(
-            f"| {op_label(op)} | {H[f'{op}_comb_q1s']} | {H[f'{op}_comb_he2']} | blocked "
+            f"| {op_label(op)} | {H[f'{op}_comb_q1s']} | {H[f'{op}_comb_he2']} | {H[f'{op}_comb_tt']} "
             f"| {H[f'{op}_comb_total']} | {H[f'{op}_comb_pct']}% |"
         )
     return head + "\n".join(rows)
@@ -313,16 +332,15 @@ For scale: the FINDINGS.md section-2 forward-UQ 95% CI on X_mu (liquid box) span
 <= ~0.18 in magnitude, i.e. under ~0.6% of that parametric CI width: at present helium levels the 3He
 channel is a small, one-sided structural correction, reported beside the CI and never folded into it.
 
-## 3. ttmu side-branch channel (BLOCKED)
-**ttmu side-branch: {H["tt_blocked"]}.** The ttmu formation-rate row `lambda_ttmu` ships the
-machine-representable fallback value 0.0 (channel inert) because no open source pins its density/c_t
-normalization; the companion loss fraction `omega_tt`={H["omega_tt"]} is recorded for the re-attribution once the
-formation rate is acquired. Toggling `include_loss_channels` therefore leaves X_mu unchanged for this
-channel at every operating point, but a **zero bracket would be misleading** -- it would assert the ttmu
-channel is negligible, which is exactly what is NOT yet established. The bracket is reported as blocked,
-not zero:
+## 3. ttmu side-branch channel (LIVE)
+The ttmu formation rate `lambda_ttmu` = {H["lambda_ttmu"]} s^-1 (JINR preprint E15-2008-99, Table 1, read as the rate in
+the target; rate ledger) and `omega_tt` = {H["omega_tt"]} are live. Each bracket toggles the tt channel alone (c_He = 0,
+recapture off). The density-normalized reading of the same table, which the preprint's systematic (a) supports, is
+a registered systematic and is shown beside it. lambda_ttmu(T) is not modelled: every bracket applies the rate
+measured in liquid T2 at 22.5 K unchanged at 100-800 K. The v1 engine recycles a freed muon straight to the tmu
+pool, which lengthens the tmu dwell and so leans these brackets large.
 
-{_tt_table()}
+{_tt_table(H)}
 
 ## 4. d-recapture / q_1s routing bracket (LIVE)
 The freed muon that survives sticking is, in v1, recycled straight back to the tmu pool (3/4 F=1, 1/4 F=0).
@@ -342,26 +360,26 @@ q_1s brackets share the off-anchor caveat of every off-anchor number here.
 
 ## 5. Combined structural band (headline operating points)
 Summing the two LIVE channels -- 3He scavenging (c_He=1e-3, section 2) and d-recapture (q_1s=1.0,
-section 4) -- with the ttmu side-branch still **blocked** (section 3, un-pinned pending acquisition), the
+section 4) -- with the ttmu side-branch (section 3, in-target reading), the
 one-sided downward structural band across the headline operating points is (3He shown at 2 dp; the
 combined total is the full-precision sum):
 
 {_combined_table(H)}
 
-The band is dominated by d-recapture at the maximal q_1s; 3He is a ~0.1% correction at these helium levels.
-The largest combined live band is **~{H["comb_worst_pct"]}%** of X_mu (at {H["comb_worst_op"]}), consistent
-with the ~10-15% one-sided structural headroom named in MODEL_SPEC section 8 -- and it is a LOWER bound,
-because the ttmu side-branch (blocked) would add further downward. These brackets are reported beside the
+The band is dominated by the ttmu side-branch and by d-recapture at the maximal q_1s; 3He is a ~0.1%
+correction at these helium levels.
+The largest combined band is **{H["comb_worst_pct"]}%** of X_mu (at {H["comb_worst_op"]}), above the ~10-15%
+one-sided structural headroom named in MODEL_SPEC section 8. These brackets are reported beside the
 parametric CI, never convolved into it.
 
 ## 6. Summary (headline operating points OP-B / OP-C / OP-D only)
-Across the headline operating points OP-B (high-T), OP-C (MuFusE mid) and OP-D (MuFusE peak), the live
-absorbing-loss channel (3He scavenging) contributes a one-sided structural bracket no larger than
+Across the headline operating points OP-B (high-T), OP-C (MuFusE mid) and OP-D (MuFusE peak), the 3He
+scavenging channel contributes a one-sided structural bracket no larger than
 about -0.18 X_mu units at 0.1% helium -- under ~0.6% of the section-2 forward-UQ CI width
-({H["ci_width"]}), and smaller still at 0.01% helium. The per-cycle d-recapture routing (section 4) is the
-dominant deferred correction: up to **~{H["comb_worst_pct"]}%** of X_mu combined with 3He at
-{H["comb_worst_op"]} (section 5), one-sided downward. The ttmu side-branch bracket is **blocked -- pending
-acquisition** and is deliberately NOT rendered as a zero. The anchor-adjacent OP-A row is listed for
+({H["ci_width"]}), and smaller still at 0.01% helium. The ttmu side-branch and the per-cycle d-recapture
+routing (section 4) are the dominant deferred corrections: up to **{H["comb_worst_pct"]}%** of X_mu combined
+with 3He at {H["comb_worst_op"]} (section 5), one-sided downward. The ttmu side-branch adds up to {H["tt_max"]} X_mu
+at the headline points (section 3). The anchor-adjacent OP-A row is listed for
 completeness only and carries no headline claim (docs/accounting.md). No bracket on this page is combined
 into any CI or likelihood.
 """
@@ -402,12 +420,6 @@ def build_manifest_entries(H: dict) -> list:
         _entry("ci_hi", rf"spans\s*\[{re.escape(H['ci_lo'])}, {re.escape(H['ci_hi'])}\]"),
         _entry("ci_width", rf"width of \*\*{re.escape(H['ci_width'])}\*\* X_mu units"),
         _entry("ingrowth_pct_month", rf"\*\*{re.escape(H['ingrowth_pct_month'])}%/month\*\*"),
-        _entry(
-            "tt_blocked",
-            rf"ttmu side-branch: {re.escape(H['tt_blocked'])}",
-            source_type="ledger_row",
-            source="openmucf/data/rates.csv:lambda_ttmu",
-        ),
     ]
     return entries
 
@@ -428,7 +440,7 @@ def main() -> None:
     br_summary = {op: H[f"{op}_bracket_{hi_tag}"] for op in OPERATING_POINTS}
     print(f"wrote MATERIALITY.md + MATERIALITY_MANIFEST.json ({len(entries)} entries)")
     print(f"3He brackets @ c_He=1e-3: {br_summary}")
-    print(f"ttmu channel: {H['tt_blocked']}")
+    print(f"ttmu brackets (in-target): { {op: H[f'{op}_tt_in_target_bracket'] for op in OPERATING_POINTS} }")
     print(f"forward-UQ CI width for scale = {H['ci_width']} (X_mu [{H['ci_lo']}, {H['ci_hi']}])")
 
 

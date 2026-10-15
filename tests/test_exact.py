@@ -29,8 +29,8 @@ def _M_from_field(args):
 def _grid_cases(rates):
     """Yield (label, args) over the grid x {channels off, on (hand-forced)} x {recapture off, q_1s=0.7}.
 
-    The ledger ttmu row is blocked (0.0), so the channels-ON cases hand-force representative
-    loss-channel rates -- this exercises the loss accumulators against the oracle, not the ledger.
+    The channels-ON cases hand-force representative loss-channel rates -- this exercises the loss
+    accumulators against the oracle, not the ledger.
     """
     for (T, phi, c_t) in _GRID:
         for chan in (False, True):

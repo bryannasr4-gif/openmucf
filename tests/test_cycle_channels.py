@@ -37,7 +37,7 @@ def test_conservation_with_channels():
     """Muon conservation (incl. the two new accumulators y[6]+y[7]) holds to 1e-9 with channels ON."""
     rt = load_rates()
     p = cycle.params_from_conditions(rt, 300.0, 1.2, 0.5, c_he=0.2, include_loss_channels=True)
-    p["lambda_tt"] = 5.0e6  # force a nonzero tt rate (the ledger tt row is blocked=0.0) to exercise loss_tt
+    p["lambda_tt"] = 5.0e6  # force a nonzero tt rate to exercise loss_tt
     sol = cycle.solve_cycle(**p)
     assert abs(cycle.conservation_residual(sol)) < 1e-9
 

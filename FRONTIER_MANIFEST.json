@@ -134,7 +134,7 @@
     ],
     "lambda_c_nominal_s^-1": 130000000.0,
     "omega_s0_default_fraction": 0.00857,
-    "rates_csv_sha256": "9c53ca9a8b0aad92e3a397937557e0db6f2db2a55648dd494e8314e0d9277678",
+    "rates_csv_sha256": "197e679bda3d83429418e595d12add6d976d543e264631807cd7d5b4b12c71c0",
     "solver_target_q_net": 0.06,
     "x_mu_targets": [
       150.0,

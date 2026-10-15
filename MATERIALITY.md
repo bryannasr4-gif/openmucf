@@ -47,21 +47,20 @@ For scale: the FINDINGS.md section-2 forward-UQ 95% CI on X_mu (liquid box) span
 <= ~0.18 in magnitude, i.e. under ~0.6% of that parametric CI width: at present helium levels the 3He
 channel is a small, one-sided structural correction, reported beside the CI and never folded into it.
 
-## 3. ttmu side-branch channel (BLOCKED)
-**ttmu side-branch: blocked -- pending acquisition of the Matsuzaki/Bom tt-fusion formation-rate tables (Muon Catal. Fusion / JINR).** The ttmu formation-rate row `lambda_ttmu` ships the
-machine-representable fallback value 0.0 (channel inert) because no open source pins its density/c_t
-normalization; the companion loss fraction `omega_tt`=0.139 is recorded for the re-attribution once the
-formation rate is acquired. Toggling `include_loss_channels` therefore leaves X_mu unchanged for this
-channel at every operating point, but a **zero bracket would be misleading** -- it would assert the ttmu
-channel is negligible, which is exactly what is NOT yet established. The bracket is reported as blocked,
-not zero:
+## 3. ttmu side-branch channel (LIVE)
+The ttmu formation rate `lambda_ttmu` = 2.272e+06 s^-1 (JINR preprint E15-2008-99, Table 1, read as the rate in
+the target; rate ledger) and `omega_tt` = 0.139 are live. Each bracket toggles the tt channel alone (c_He = 0,
+recapture off). The density-normalized reading of the same table, which the preprint's systematic (a) supports, is
+a registered systematic and is shown beside it. lambda_ttmu(T) is not modelled: every bracket applies the rate
+measured in liquid T2 at 22.5 K unchanged at 100-800 K. The v1 engine recycles a freed muon straight to the tmu
+pool, which lengthens the tmu dwell and so leans these brackets large.
 
-| operating point | ttmu bracket |
-|---|---|
-| OP-A (phi=1.25, T=300 K, c_t=0.5) -- anchor-adjacent | blocked -- pending acquisition |
-| OP-B (phi=1.2, T=800 K, c_t=0.5) | blocked -- pending acquisition |
-| OP-C (phi=2, T=150 K, c_t=0.5) | blocked -- pending acquisition |
-| OP-D (phi=2.4, T=100 K, c_t=0.5) | blocked -- pending acquisition |
+| operating point | X_mu (channels OFF) | X_mu (tt, in-target reading) | bracket | X_mu (tt, density-normalized reading) | bracket |
+|---|---|---|---|---|---|
+| OP-A (phi=1.25, T=300 K, c_t=0.5) -- anchor-adjacent | 116.164 | 100.784 | -15.379 | 97.553 | -18.610 |
+| OP-B (phi=1.2, T=800 K, c_t=0.5) | 125.231 | 111.284 | -13.947 | 108.268 | -16.963 |
+| OP-C (phi=2, T=150 K, c_t=0.5) | 128.779 | 107.710 | -21.069 | 103.474 | -25.305 |
+| OP-D (phi=2.4, T=100 K, c_t=0.5) | 131.643 | 107.767 | -23.876 | 103.088 | -28.555 |
 
 ## 4. d-recapture / q_1s routing bracket (LIVE)
 The freed muon that survives sticking is, in v1, recycled straight back to the tmu pool (3/4 F=1, 1/4 F=0).
@@ -86,29 +85,29 @@ q_1s brackets share the off-anchor caveat of every off-anchor number here.
 
 ## 5. Combined structural band (headline operating points)
 Summing the two LIVE channels -- 3He scavenging (c_He=1e-3, section 2) and d-recapture (q_1s=1.0,
-section 4) -- with the ttmu side-branch still **blocked** (section 3, un-pinned pending acquisition), the
+section 4) -- with the ttmu side-branch (section 3, in-target reading), the
 one-sided downward structural band across the headline operating points is (3He shown at 2 dp; the
 combined total is the full-precision sum):
 
 | operating point | d-recapture (q_1s=1.0) | 3He (c_He=1e-3) | ttmu | combined (live) | % of X_mu(OFF) |
 |---|---|---|---|---|---|
-| OP-B (phi=1.2, T=800 K, c_t=0.5) | -18.493 | -0.17 | blocked | -18.664 | -14.90% |
-| OP-C (phi=2, T=150 K, c_t=0.5) | -12.485 | -0.18 | blocked | -12.661 | -9.83% |
-| OP-D (phi=2.4, T=100 K, c_t=0.5) | -11.047 | -0.18 | blocked | -11.227 | -8.53% |
+| OP-B (phi=1.2, T=800 K, c_t=0.5) | -18.493 | -0.17 | -13.947 | -32.611 | -26.04% |
+| OP-C (phi=2, T=150 K, c_t=0.5) | -12.485 | -0.18 | -21.069 | -33.730 | -26.19% |
+| OP-D (phi=2.4, T=100 K, c_t=0.5) | -11.047 | -0.18 | -23.876 | -35.103 | -26.67% |
 
-The band is dominated by d-recapture at the maximal q_1s; 3He is a ~0.1% correction at these helium levels.
-The largest combined live band is **~14.9%** of X_mu (at OP-B), consistent
-with the ~10-15% one-sided structural headroom named in MODEL_SPEC section 8 -- and it is a LOWER bound,
-because the ttmu side-branch (blocked) would add further downward. These brackets are reported beside the
+The band is dominated by the ttmu side-branch and by d-recapture at the maximal q_1s; 3He is a ~0.1%
+correction at these helium levels.
+The largest combined band is **26.7%** of X_mu (at OP-D), above the ~10-15%
+one-sided structural headroom named in MODEL_SPEC section 8. These brackets are reported beside the
 parametric CI, never convolved into it.
 
 ## 6. Summary (headline operating points OP-B / OP-C / OP-D only)
-Across the headline operating points OP-B (high-T), OP-C (MuFusE mid) and OP-D (MuFusE peak), the live
-absorbing-loss channel (3He scavenging) contributes a one-sided structural bracket no larger than
+Across the headline operating points OP-B (high-T), OP-C (MuFusE mid) and OP-D (MuFusE peak), the 3He
+scavenging channel contributes a one-sided structural bracket no larger than
 about -0.18 X_mu units at 0.1% helium -- under ~0.6% of the section-2 forward-UQ CI width
-(33), and smaller still at 0.01% helium. The per-cycle d-recapture routing (section 4) is the
-dominant deferred correction: up to **~14.9%** of X_mu combined with 3He at
-OP-B (section 5), one-sided downward. The ttmu side-branch bracket is **blocked -- pending
-acquisition** and is deliberately NOT rendered as a zero. The anchor-adjacent OP-A row is listed for
+(33), and smaller still at 0.01% helium. The ttmu side-branch and the per-cycle d-recapture
+routing (section 4) are the dominant deferred corrections: up to **26.7%** of X_mu combined
+with 3He at OP-D (section 5), one-sided downward. The ttmu side-branch adds up to -23.876 X_mu
+at the headline points (section 3). The anchor-adjacent OP-A row is listed for
 completeness only and carries no headline claim (docs/accounting.md). No bracket on this page is combined
 into any CI or likelihood.

@@ -104,3 +104,36 @@ def test_inputs_csv_rows_are_complete_and_cited():
             assert r["lo"] < r["hi"] and math.isclose(r["value"], 0.5 * (r["lo"] + r["hi"])), sym
         else:
             assert r["distribution"] == "fixed" and r["unc"] is None, sym
+
+
+def ledger_tt_failures(rates, inp):
+    """The ledger's lambda_ttmu must be the tabled rate over the JINR target density (value and unc), and its
+    omega_tt the inputs' value and unc."""
+    bad = []
+    dens = inp["jinr_density_lhd"]["value"]
+    tab = inp["lambda_ttmu_table"]
+    if not math.isclose(rates["lambda_ttmu"].value, tab["value"] / dens, rel_tol=1e-12):
+        bad.append("lambda_ttmu.value")
+    if not math.isclose(rates["lambda_ttmu"].unc, tab["unc"] / dens, rel_tol=1e-12):
+        bad.append("lambda_ttmu.unc")
+    for f in ("value", "unc"):
+        if getattr(rates["omega_tt"], f) != inp["omega_tt"][f]:
+            bad.append(f"omega_tt.{f}")
+    return bad
+
+
+def test_ledger_tt_rows_are_the_side_channel_inputs():
+    from openmucf import load_rates
+
+    assert ledger_tt_failures(load_rates(), sidechannels.load_inputs()) == []
+
+
+@pytest.mark.parametrize("sym, field", [("lambda_ttmu_table", "value"), ("lambda_ttmu_table", "unc"),
+                                        ("omega_tt", "value"), ("omega_tt", "unc")])
+def test_ledger_tt_binding_drill(sym, field):
+    """Drill: an inputs copy with one of the bound values changed is named."""
+    from openmucf import load_rates
+
+    inp = copy.deepcopy(sidechannels.load_inputs())
+    inp[sym][field] *= 1.01
+    assert ledger_tt_failures(load_rates(), inp)
