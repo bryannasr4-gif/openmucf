@@ -43,9 +43,12 @@ reproduction. Quote a MEASURED per-cell standard error (`openmucf.design.median_
 Run from repo root:
 
     python scripts/xray_feasibility.py
+    python scripts/xray_feasibility.py --trap-sweep   # the Kamimura baseline chain at the off-pin seeds 1..100
 """
 
 from __future__ import annotations
+
+import sys
 
 import jax
 import numpy as np
@@ -126,6 +129,25 @@ def r_sd(omega_s0_prior, seed=SEED, num_samples=NUM_SAMPLES, **kw):
     return float(np.asarray(mcmc.get_samples()["R"]).std())
 
 
+TRAP_SEEDS = range(1, 101)  # the off-pin seeds
+
+
+def trap_sweep(seeds=TRAP_SEEDS):
+    """The untruncated Kamimura baseline chain (``model``: R (0.10, 0.60), lambda_c (0.8, 1.6)e8, yield sd 12) at
+    each seed; a chain is trapped when its mean omega_s0 is below zero, past the X_mu pole."""
+    _jaxcfg.require_x64("the trap sweep")
+    trapped = []
+    for seed in seeds:
+        mcmc = MCMC(NUTS(model), num_warmup=NUM_WARMUP, num_samples=NUM_SAMPLES, progress_bar=False)
+        mcmc.run(jax.random.PRNGKey(seed), omega_s0_prior=KAMIMURA_PRIOR)
+        m = float(np.asarray(mcmc.get_samples()["omega_s0_pct"]).mean())
+        print(f"   seed {seed:3d}: mean omega_s0 {m:+.4f}{'   TRAPPED' if m < 0.0 else ''}", flush=True)
+        if m < 0.0:
+            trapped.append(seed)
+    print(f"trapped seeds: {len(trapped)}/{len(seeds)}  {trapped}")
+    return trapped
+
+
 def cell_contraction(omega_s0_prior, base_sd, w, sigma_rel, kappa_mid=KAPPA_MID, seed=SEED):
     """Percent contraction of sd(R) from adding the X-ray term at grid cell (w, sigma_rel)."""
     ratio_true = kappa_mid * (OMEGA_S0_TRUE_PCT / 100.0)  # = kappa_true * omega_s0_true_fraction
@@ -185,10 +207,11 @@ def main():
     print("   PASS: identical to Monte-Carlo noise (|d| < 2 pp) -> the blocked kappa central value is irrelevant.")
 
     # --- sample-count robustness on the best cell (the spec's stability claim) ------------------------
-    # NOTE: the pinned seed (0) is used throughout -- both chains converge cleanly at seed 0. An
-    # exploratory sweep over OFF-pin seeds found the Kamimura BASELINE chain occasionally sticks at the
-    # R=0.10 prior boundary (a NUTS pathology of the base calibrate model, not of the added term), which
-    # is exactly why the repo pins seed 0. Robustness is therefore shown vs SAMPLE COUNT, not vs seed.
+    # NOTE: the pinned seed (0) is used throughout -- both chains converge cleanly at seed 0. Over the
+    # OFF-pin seeds 1..100 the Kamimura BASELINE chain traps at 20 of them: its mean omega_s0 falls below
+    # zero, past the X_mu pole (`python scripts/xray_feasibility.py --trap-sweep`; a NUTS pathology of the
+    # base calibrate model, not of the added term), which is exactly why the repo pins seed 0. Robustness
+    # is therefore shown vs SAMPLE COUNT, not vs seed.
     ratio_true = KAPPA_MID * (OMEGA_S0_TRUE_PCT / 100.0)
     print("\n[sample-count robustness] best-cell contraction at seed 0, num_samples 4000 vs 8000:")
     for name, prior in CHAINS:
@@ -231,4 +254,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if "--trap-sweep" in sys.argv:
+        trap_sweep()
+    else:
+        main()
