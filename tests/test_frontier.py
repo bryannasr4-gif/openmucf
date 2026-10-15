@@ -219,3 +219,30 @@ def test_frontier_manifest_solver_numbers_are_six_sig_figs():
     for key in ("solver_E_mu_GeV", "solver_eta_acc", "solver_R", "solver_lambda_c"):
         digits = H[key].lower().replace("e+", "e").split("e")[0].replace(".", "").replace("-", "").lstrip("0")
         assert len(digits) <= 6, (key, H[key], digits)
+
+
+def test_anchor_table_is_rendered_at_the_fraction():
+    """FRONTIER's side-channel table and floors are r_required at sidechannels.ANCHOR_L_OTHER_FRACTION (a
+    fraction, never the percent): every manifest entry equals its format of the closed form, and so does a
+    fresh build of the generator's headline."""
+    import json
+
+    from openmucf import sidechannels
+
+    m = json.loads((REPO / "FRONTIER_MANIFEST.json").read_text(encoding="utf-8"))
+    ent = {e["id"]: e["value"] for e in m["entries"]}
+    frac = sidechannels.ANCHOR_L_OTHER_FRACTION
+    assert m["inputs"]["l_other_anchor_fraction"] == frac
+    gen = _load_generator()
+    r_col = float(gen.R_COL_REFERENCE)
+    floor = r_required(500.0, math.inf, l_other=frac)
+    expected = {
+        "R_floor_500_anchor": f"{floor:.2f}",
+        "R_X_required_anchor": f"{1.0 - (1.0 - floor) / (1.0 - r_col):.2f}",
+        "R_anchor_500_inf": f"{floor:.4f}",
+        "R_anchor_150_1.45e+08": f"{r_required(150.0, 1.45e8, l_other=frac):.4f}",
+    }
+    fresh = gen.build_headline()
+    for k, v in expected.items():
+        assert ent[k] == v, k
+        assert fresh[k] == v, k

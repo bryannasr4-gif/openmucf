@@ -128,7 +128,7 @@ theory–experiment tension). We do NOT try to resolve it; we quantify how much 
 | J. Cohen (PRA 35, 1419, CTMC) | 1987 | Tested target-structure effects on (αμ) stripping and found them NOT important at the densities studied — the open question is whether that survives the DAC regime. |
 | Froelich & Larson | 1989 | (αμ) stripping by ionization in dense D/T (the dense-regime stripping problem). |
 | Adamczak & Faifman | ~2000s | S(q,ω) / generalized–Van-Hove recasting of resonant dtμ formation (the basis of the *stretch* λ_dtμ(E,φ,T,phase) module; we'd extend to the anharmonic warm-dense fluid). |
-| Petitjean / PSI | 1990s | Experimental ω_s ≈ 0.45% with weak density dependence to ~1.2–1.45 φ (the Phase-3 validation anchor below the DAC regime). |
+| Petitjean / PSI | 1990s | Experimental ω_s with weak density dependence to ~1.2–1.45 φ: the liquid D/T value ≈ 0.45% (Breunlich et al. 1987, p.331) and the solid one at φ = 1.45 (Petitjean 2001, p.198), each after the side-channel fusion losses are subtracted (the Phase-3 validation anchor below the DAC regime). |
 
 **Honest originality position:** none of the above is ours; the contribution is the FIRST **open +
 differentiable + propagated-UQ + provenance** artifact that ties a FAIR rate ledger to a falsification auditor

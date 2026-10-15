@@ -140,9 +140,9 @@ X_μ = Σ_{k≥1} r^{k−1} p_dt = p_dt / (1 − r)
     = 1 / ( ω_s^eff + ω_tt·(λ_tt/λ_c) + λ₀/λ_c ).                         (v2)
 ```
 
-The extra per-cycle loss term **`ω_tt·(λ_tt/λ_c)`** is exactly the `tt_pc` share used in the
-re-attribution refit (`accounting.md`): introducing it forces the fitted ω_s^eff (= ω_s0(1−R)) down so the
-anchor total still reproduces the measured 0.45 %. With λ_tt→0 this collapses to §4's v1 identity. The
+The extra per-cycle loss term **`ω_tt·(λ_tt/λ_c)`** is the tt part of the side-channel loss per cycle
+(`accounting.md`): it adds to ω_s^eff (= ω_s0(1−R)) in the total loss per cycle, and the measured 0.45 % is
+the sticking alone (Breunlich et al. 1987, p.331). With λ_tt→0 this collapses to §4's v1 identity. The
 implementation is `analytic.fusions_per_muon_v2(omega_s_eff, lambda_c, lambda_0, tt_loss_rate, omega_tt)`,
 gated against the ODE (`cycle.py` channels-on, single-pool limit) to **<1 %** (measured worst
 0.0 % over the 3-point (λ_tt, ω_tt) grid).
@@ -152,9 +152,7 @@ from the **dμ** pool (rate λ_He = λ_d³He·φ·c_He), before it ever reaches 
 closed form has *already collapsed* the dμ→tμ isotopic structure into the single pool `m(t)`, so a
 dμ-only hazard has no clean single-pool representative and is **not** included in `fusions_per_muon_v2`.
 ³He scavenging is available only in the full ODE (`cycle.py`, `include_loss_channels=True` with `c_he>0`),
-where the dμ pool is an explicit state. This asymmetry is intentional and is the reason the channels-on
-scoreboard/refit drive the ttμ re-attribution through the closed form but keep ³He an ODE-only,
-burn-time-scenario channel.
+where the dμ pool is an explicit state. This asymmetry is intentional.
 
 ---
 

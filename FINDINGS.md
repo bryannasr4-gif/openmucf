@@ -88,9 +88,8 @@ section 3 -- not "R is the dominant driver" as an unconditional claim.
 
 ## 1c. A five-times-anchored formation scenario (structural bracket, not a prior)
 The multiplier eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate of the cycle engine,
-and that rate is already anchored to the measured room-temperature cycling scale (`formation.py`; the
-`V_faifman_900K` and `V_faifman_lowT` rows of `VALIDATION.md` measure its distance from the bare Faifman
-rate). So eta=1 is the
+and that rate's thermal scale is set so that the cycle at 300 K and liquid density runs near the upper edge of the rate ledger's lambda_c_liquid band, the cycling maximum Breunlich et al. (1987) measured in liquid D/T at 23 K, applied at 300 K (`formation.py`; the `V_faifman_900K` row of
+`VALIDATION.md` measures its distance from the bare Faifman rate). So eta=1 is the
 anchored rate, not bare theory, and eta=5 is a scenario with five times the anchored formation rate; the
 literature's eta=1-vs-5 range (bare theory vs the Yamashita-Kino fit) is relative to the bare rate, and
 this bracket does not span it. Recomputing X_mu through the full cycle ODE at the liquid-density
@@ -108,7 +107,17 @@ occurred in the anchor experiments (one channel, one accounting home), so the et
 enhancement on top of the anchored one; eta is reported as a structural bracket beside the CI, never
 convolved into it.
 
-## 2. Propagated uncertainty (a frozen registered-prior scenario; posterior intervals in CALIBRATION.md)
+## 2. Propagated uncertainty: the calibration posterior, then a frozen registered-prior scenario
+The state-of-knowledge interval is the calibration posterior (`CALIBRATION.md`), at the liquid anchor's
+conditions (D/T at 23 K, phi ~ 1.2): the weak-prior posterior pushed forward to the yield, and to the
+net-electrical gain through the frozen economics boxes of section 1,
+
+| quantity | 2.5% | median | 97.5% |
+|---|---|---|---|
+| X_mu (posterior) | 95 | 110.9 | 129.7 |
+| Q_net (posterior X_mu x frozen economics boxes) | 0.01141 | 0.03895 | 0.1329 |
+
+The box below is a frozen registered-prior scenario, kept for comparison.
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
 posterior). The interval deliberately reflects LIQUID conditions -- the lambda_c band is the ledger's
 liquid-anchor row `lambda_c_liquid` (phi ~ 1.2) and the R box is widened around the liquid-scale
@@ -127,12 +136,9 @@ density dependence.
 
 P(Q_sci > 1) = 0.2% ; P(Q_net > 1) = 0.0%.
 
-State-of-knowledge (posterior) X_mu and Q intervals -- as opposed to the ignorance-box propagation above --
-are reported in CALIBRATION.md ("Posterior pushforward").
-
-Structural, one-sided: the parametric intervals above sit on the v1 reduced network; the known deferred
-channels bias X_mu DOWNWARD by up to ~15% combined (ttmu side-cycle, un-pinned pending acquisition;
-d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-edge-faithful.
+Structural, one-sided: the box intervals above sit on the v1 reduced network; the deferred channels bias
+X_mu DOWNWARD by up to 26.67% combined at the headline operating points of MATERIALITY.md (ttmu
+side-cycle, d-recapture and 3He scavenging, summed in its section 5).
 
 ## 2b. Q_net by muon-cost tier
 
@@ -252,21 +258,27 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Un
   **condition-dependent, never universal**. At the liquid anchor ($\lambda_c$=1.45e8) it is
   **X_mu = 319**; at the SIN 12 K solid non-equilibrated anchor
   ($\lambda_c$=1.93e8, ledger `lambda_c_solid_12K`) it is **X_mu = 424**.
-  Those two anchors are **condition-PAIRED, not independently selectable**: the condition that bought
-  the faster cycle also carried higher measured sticking (0.57% vs 0.45%), so the measured yield rose
-  only 113 -> 124. Even at the +30% reproduction
+  On a common basis the two anchors lose the same fraction of muons per cycle, 0.5710% at the liquid
+  anchor and 0.5706% at the solid one (the solid value is read as that fill's total loss per cycle, an
+  inference: the cited report is not read here), so the measured yield rose from 113 to 124 through
+  the cycle rate. Even at the +30% reproduction
   band on lambda_c the liquid cap is ~414 < 500. Density scaling (lambda_c = phi*lambda_c_tilde) at the
   demonstrated DAC phi=2.4 would lift the decay-only cap to ~440-640 *if phi-linearity holds there* --
   which is precisely the unmeasured question the MuFusE program tests.
-- **What would have to be true** for $N_\mu$=500: the (lambda_c, R) frontier runs from
+- **What would have to be true** for $N_\mu$=500: the (lambda_c, R) frontier, with sticking and decay as the only
+  losses, runs from
   (2.28e8, R -> 1) to (3e8, R = 0.94); and even at infinite lambda_c,
   omega_s_eff <= 0.2% i.e. **R >= 0.77** is required (R >= 0.75-0.79 across the
-  omega_s0-box band -- higher initial sticking needs more reactivation). That **R** is the TOTAL
+  omega_s0-box band -- higher initial sticking needs more reactivation). At the liquid anchor fill's
+  side-channel loss of 0.1388% per cycle the floor is **R >= 0.93**, and R >= 0.86 with only that fill's tt
+  and dd share (0.0795%); with that loss, X_mu = 500 needs lambda_c >= 7.44e+08 s^-1 even at R = 1, against
+  2.28e+08 s^-1 without it. That **R** is the TOTAL
   reactivation. It is NOT comparable to the model-derived collisional value R_col = 0.35
   (Kou-Chen Eq.33): the two act as SUCCESSIVE factors, omega_s_eff = omega_s0 (1-R_col)(1-R_X), so at
   R_col = 0.35 the field-assisted factor alone would have to reach
-  **R_X >= 0.64**. Experiment pins only the product omega_s_eff ~ 0.45%, and our
-  Kamimura-prior calibration posterior gives a total R = 0.46 +- 0.06.
+  **R_X >= 0.64** (R_X >= 0.89 at that side-channel loss). Experiment
+  pins only the product omega_s_eff ~ 0.45%, and our Kamimura-prior calibration posterior gives a total
+  R = 0.47 +- 0.06.
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as

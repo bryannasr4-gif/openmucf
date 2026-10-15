@@ -314,6 +314,150 @@
     },
     {
       "doc": "FINDINGS.md",
+      "id": "structural_band_pct",
+      "pattern": "DOWNWARD by up to 26\\.67% combined",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "26.67"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "W_liquid",
+      "pattern": "per cycle, 0\\.5710% at the liquid",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.5710"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "W_solid",
+      "pattern": "anchor and 0\\.5706% at the solid one",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.5706"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "L_anchor",
+      "pattern": "side-channel loss of 0\\.1388% per cycle",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.1388"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_required_anchor",
+      "pattern": "the floor is \\*\\*R >= 0\\.93\\*\\*",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.93"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_required_intrinsic",
+      "pattern": "and R >= 0\\.86 with only that fill's tt",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.86"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "L_intrinsic",
+      "pattern": "dd share \\(0\\.0795%\\)",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.0795"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "lc_needed_anchor",
+      "pattern": "needs lambda_c >= 7\\.44e\\+08 s\\^-1 even at R = 1",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "7.44e+08"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "lc_needed_free",
+      "pattern": "against\\s+2\\.28e\\+08 s\\^-1 without it",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "2.28e+08"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_X_required_anchor",
+      "pattern": "\\(R_X >= 0\\.89 at that side-channel loss\\)",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.89"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_kamimura",
+      "pattern": "total\\s+R = 0\\.47 \\+- 0\\.06\\.",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.47"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_kamimura_sd",
+      "pattern": "total\\s+R = 0\\.47 \\+- 0\\.06\\.",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.06"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "post_xmu_lo",
+      "pattern": "\\| X_mu \\(posterior\\) \\| 95 \\| 110\\.9 \\| 129\\.7 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "95"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "post_qnet_lo",
+      "pattern": "\\| Q_net \\(posterior X_mu x frozen economics boxes\\) \\| 0\\.01141 \\| 0\\.03895 \\| 0\\.1329 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.01141"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "post_xmu_med",
+      "pattern": "\\| X_mu \\(posterior\\) \\| 95 \\| 110\\.9 \\| 129\\.7 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "110.9"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "post_qnet_med",
+      "pattern": "\\| Q_net \\(posterior X_mu x frozen economics boxes\\) \\| 0\\.01141 \\| 0\\.03895 \\| 0\\.1329 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.03895"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "post_xmu_hi",
+      "pattern": "\\| X_mu \\(posterior\\) \\| 95 \\| 110\\.9 \\| 129\\.7 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "129.7"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "post_qnet_hi",
+      "pattern": "\\| Q_net \\(posterior X_mu x frozen economics boxes\\) \\| 0\\.01141 \\| 0\\.03895 \\| 0\\.1329 \\|",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.1329"
+    },
+    {
+      "doc": "FINDINGS.md",
       "id": "tier_qnet_Pgt1_T1",
       "pattern": "T1\\ design\\ studies,\\ Uniform\\(3\\.0,\\ 6\\.0\\)\\ GeV \\| 0\\.0% \\|",
       "source": "scripts/generate_findings.py",
@@ -451,15 +595,17 @@
   ],
   "generated_by": "scripts/generate_findings.py",
   "inputs": {
+    "calibration_cells_sha256": "6525286d9eba330336b97ea534a639fe5327a3451564a2cf52b022ecb8919a26",
     "muon_cost_csv_sha256": "e1a3a3bd0ff27a2cea70d3a571f7d79cd9842099e7f2ceb04eb850b313af7467",
-    "rates_csv_sha256": "197e679bda3d83429418e595d12add6d976d543e264631807cd7d5b4b12c71c0",
+    "rates_csv_sha256": "f62cdcf00dc365b373e449a38abba9ffe4d14ba60a6ab863bb8f1b8e1b3a38d9",
     "seeds": {
       "breakeven": 1,
       "forward_uq": 0,
       "sobol": 0,
       "tier_panel": 0
     },
+    "side_channel_inputs_csv_sha256": "b97ef7080357ff0c5cf28a4dafd6586f8fd66ba0bafdf5b8027cefe20edf7a1b",
     "uq_params_repr_sha256": "2de22958c76d1e537feafeada7b7fddd7f1f614daeeba628a0006dfe9d0db727",
-    "validation_targets_csv_sha256": "803d51a19f185e7234e6aee76c20378972f4435bd84bdaabccc2e8b67110ac16"
+    "validation_targets_csv_sha256": "ed1fb0e8bdcff8f050a0b5ad9cb4bc727fb6fe22bf2e7060e689ef44b11da2b7"
   }
 }

@@ -310,7 +310,7 @@ def run(rates, targets_csv=None, channels="off"):
             _within(faif_900, float(_f9["value"]), _f9["tolerance"]),
             "independent thermal-formation check: statistical hyperfine mix 3/4 F=1 + 1/4 F=0 of the v1 "
             "formation model vs the ledger's own Faifman1989 900 K rate; registered expected-FAIL (~20x low) "
-            "-- the placeholder's thermal scale is anchored near the measured lambda_c(300 K), not the bare "
+            f"-- the placeholder's thermal scale is {formation.CALIB_ANCHOR}, not the bare "
             "Faifman lambda_dtmu (needs_verification carried from rates.csv).",
             "independent",
         )

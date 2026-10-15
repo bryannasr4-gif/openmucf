@@ -63,12 +63,15 @@ _LOG_VARS = ("E_mu_GeV", "lambda_c")
 # --------------------------------------------------------------------------------------------------
 # Closed-form frontiers (pure-Python float64; byte-stable, may print at full precision)
 # --------------------------------------------------------------------------------------------------
-def r_required(x_mu_target, lambda_c, omega_s0=OMEGA_S0_DEFAULT, lambda_0=LAMBDA_0):
+def r_required(x_mu_target, lambda_c, omega_s0=OMEGA_S0_DEFAULT, lambda_0=LAMBDA_0, l_other=0.0):
     """Reactivation ``R`` required to reach ``x_mu_target`` fusions/muon at cycling rate ``lambda_c``.
 
-    The FINDINGS.md sec.3 identity generalised (inverting ``X = 1/(omega_s0*(1-R) + lambda_0/lambda_c)``):
+    The FINDINGS.md sec.3 identity generalised (inverting ``X = 1/(omega_s0*(1-R) + L + lambda_0/lambda_c)``):
 
-        R = 1 - (1/X - lambda_0/lambda_c) / omega_s0
+        R = 1 - (1/X - lambda_0/lambda_c - L) / omega_s0
+
+    ``l_other`` (L) is a side-channel loss per cycle as a bare FRACTION (``openmucf.sidechannels``
+    ``ANCHOR_L_OTHER_FRACTION``); the default 0.0 is sticking and decay as the only losses.
 
     ``lambda_c`` may be ``math.inf`` -- the decay-free limit that gives the density-independent R floor
     (``R = 1 - (1/X)/omega_s0``). ``omega_s0`` is a bare fraction (default = Kamimura 0.857 %). The result
@@ -76,19 +79,20 @@ def r_required(x_mu_target, lambda_c, omega_s0=OMEGA_S0_DEFAULT, lambda_0=LAMBDA
     the given ``(lambda_c, omega_s0)``. Pure ``float`` arithmetic -> byte-stable cross-architecture.
     """
     inv_lam = 0.0 if math.isinf(lambda_c) else lambda_0 / lambda_c
-    return 1.0 - (1.0 / x_mu_target - inv_lam) / omega_s0
+    return 1.0 - (1.0 / x_mu_target - inv_lam - l_other) / omega_s0
 
 
-def lambda_c_required(x_mu_target, R, omega_s0=OMEGA_S0_DEFAULT, lambda_0=LAMBDA_0):
+def lambda_c_required(x_mu_target, R, omega_s0=OMEGA_S0_DEFAULT, lambda_0=LAMBDA_0, l_other=0.0):
     """Cycling rate ``lambda_c`` required to reach ``x_mu_target`` at reactivation ``R``.
 
-    Inverse of the same forward map: ``lambda_c = lambda_0 / (1/X - omega_s_eff)`` with
-    ``omega_s_eff = omega_s0*(1-R)``. Returns ``math.inf`` when the sticking floor alone already caps the
-    yield at or below the target (``1/X <= omega_s_eff`` i.e. ``x_mu_target >= 1/omega_s_eff``): no finite
-    cycling rate can reach it -- the honest "unreachable at this R" readout. Pure ``float`` arithmetic.
+    Inverse of the same forward map: ``lambda_c = lambda_0 / (1/X - omega_s_eff - L)`` with
+    ``omega_s_eff = omega_s0*(1-R)`` and ``l_other`` (L) a side-channel loss per cycle as a bare FRACTION.
+    Returns ``math.inf`` when the sticking floor alone already caps the yield at or below the target
+    (``1/X <= omega_s_eff`` i.e. ``x_mu_target >= 1/omega_s_eff``): no finite cycling rate can reach it --
+    the honest "unreachable at this R" readout. Pure ``float`` arithmetic.
     """
     ose = effective_sticking(omega_s0, R)
-    denom = 1.0 / x_mu_target - ose
+    denom = 1.0 / x_mu_target - ose - l_other
     return math.inf if denom <= 0.0 else lambda_0 / denom
 
 

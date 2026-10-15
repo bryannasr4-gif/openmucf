@@ -7,7 +7,7 @@
 > registry (deliberately fenced out). A required value outside [0, 1] (for R or eta_acc) or at `inf` (for
 > lambda_c) is the honest readout that the target is unreachable in that variable -- reported, not clamped.
 
-## The (lambda_c, R) reactivation frontier (closed-form)
+## The (lambda_c, R) reactivation frontier, with sticking and decay as the only losses (closed-form)
 For each target yield X_mu, the reactivation `R` that would be required at a given cycling rate `lambda_c`,
 from the identity `R = 1 - (1/X_mu - lambda_0/lambda_c) / omega_s0` (omega_s0 = 0.00857 bare
 fraction, the Kamimura nominal; lambda_0 = 455200 s^-1, the muon decay rate). The `inf` column is
@@ -24,6 +24,17 @@ the loss budget, so less reactivation is required): `d R_required / d lambda_c <
 the honest readout that the target is **unreachable in reactivation alone** at that cycling rate (no
 physical R exceeds 1). Every cell is closed-form float64 algebra -- byte-stable, printed to 4 decimals.
 
+## The frontier at the liquid anchor fill's side-channel loss (closed-form)
+The same identity with the side-channel loss per cycle L of the liquid anchor fill of Breunlich et al. (1987),
+L = 0.1388% (`openmucf.sidechannels`): `R = 1 - (1/X_mu - lambda_0/lambda_c - L) / omega_s0`. L is that
+fill's loss (its tritium fraction, cycle rate and protium content), not a loss carried to other conditions.
+
+| X_mu (target) \ lambda_c [s^-1] | 1.00e+08 | 1.45e+08 | 2.28e+08 | 3.00e+08 | inf |
+|---|---|---|---|---|---|
+| 150 | 0.9152 | 0.7504 | 0.6170 | 0.5611 | 0.3841 |
+| 284 | 1.2822 | 1.1174 | 0.9841 | 0.9281 | 0.7511 |
+| 500 | 1.4597 | 1.2949 | 1.1616 | 1.1056 | 0.9286 |
+
 ## The density-independent R floor (the marquee requirement)
 At X_mu = 500 and `lambda_c -> inf`, the required reactivation is **R >= 0.77** -- the
 decay-free floor, reproduced here bit-for-bit from `openmucf.uq.breakeven_audit` and matching the FINDINGS.md
@@ -33,8 +44,9 @@ is an open question. That floor is on the TOTAL reactivation.
 The model-derived collisional value R_col = **0.35** (Kou-Chen Eq.33) is only the FIRST of two
 SUCCESSIVE factors -- `omega_s_eff = omega_s0 (1-R_col)(1-R_X)` -- so it is not directly comparable to the
 0.77 floor. Read in that decomposition, R_col = 0.35 leaves a required
-field-assisted factor **R_X >= 0.64**. The Kamimura-prior calibration posterior gives a
-total R = **0.46** +- 0.06 (`CALIBRATION.md`), also below the floor.
+field-assisted factor **R_X >= 0.64**. At the anchor fill's side-channel loss (the second
+table) these become **R >= 0.93** and **R_X >= 0.89**. The Kamimura-prior calibration posterior gives a
+total R = **0.47** +- 0.06 (`CALIBRATION.md`), also below the floor.
 Expressed as a requirement, an X_mu = 500 mechanism must push TOTAL reactivation to R ~ 0.9+ at any
 density -- a falsifiable, quantitative bet on the reactivation physics.
 
@@ -60,7 +72,7 @@ digit on its own; it is the general capability, gate-checked against the exact a
 
 ## Figure
 `figures/frontier.png` -- the (lambda_c, R) frontier curves for X_mu in {150, 284, 500} with the measured
-lambda_c band shaded, the **Kamimura-prior calibration posterior cloud** (numpyro NUTS on the
-Petitjean/Breunlich anchors with the Kamimura omega_s0 = 0.857 +- 0.03 % prior; its mean IS the R =
-0.46 marker), and the R_col = 0.35 / R = 0.46 reference markers overlaid --
+lambda_c band shaded, the **Kamimura-prior calibration posterior cloud** (one NUTS chain on
+`openmucf.calibrate.model_w` with the Kamimura omega_s0 = 0.857 +- 0.03 % prior; the R = 0.47
+marker is the posterior mean `CALIBRATION.md` prints), and the R_col = 0.35 / R = 0.47 reference markers overlaid --
 the "what would have to be true" picture. (Regenerated every audit; never byte-diffed.)

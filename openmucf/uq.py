@@ -23,6 +23,7 @@ design-study range, or a systems assumption with no ledger row -- recorded per r
 from __future__ import annotations
 
 import csv
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,6 +35,16 @@ from .constants import E_F_MEV, LAMBDA_0
 # file makes them machine-sourced instead of module literals (regression-locked by
 # tests/test_uq_priors.py::test_params_from_ledger_matches_frozen_literals).
 _PRIORS_CSV = Path(__file__).resolve().parent / "data" / "uq_priors.csv"
+_CELLS_JSON = Path(__file__).resolve().parent.parent / "CALIBRATION_CELLS.json"
+
+
+def _kamimura_r_text() -> str:
+    """The Kamimura-prior calibration posterior's total R as CALIBRATION_CELLS.json records it."""
+    try:
+        r = json.loads(_CELLS_JSON.read_text(encoding="utf-8"))["posteriors"]["kamimura"]["R"]
+    except (OSError, KeyError, ValueError):
+        return "in CALIBRATION.md"
+    return f"R = {r['mean']:.2f} +- {r['sd']:.2f}"
 
 
 @dataclass(frozen=True)
@@ -299,7 +310,7 @@ def breakeven_audit(n=400_000, seed=1):
             "any field-assisted R_X are successive, so at R_col=0.35 the field-assisted factor alone must "
             "reach R_X >= 0.64 -- a required total R is not comparable to R_col; experiment constrains only "
             "the product omega_s_eff ~0.45%, not R itself; our Kamimura-prior posterior gives a total "
-            "R = 0.46 +- 0.06). "
+            f"{_kamimura_r_text()}). "
             "Density scaling (lambda_c = phi*lambda_c_tilde) could supply the lambda_c factor alone at "
             "the demonstrated DAC phi=2.4 -- but even at infinite lambda_c, X_mu=500 needs omega_s_eff "
             "<= 0.2%, i.e. R >= 0.77. The binding requirement is reactivation, at any density."

@@ -44,6 +44,7 @@
 191e23cf84ca251427354529feb05dff8698cbcf	CHANGELOG.md	REGISTERED: 43 -- the spallation comparison, '~43 MeV of beam per neutron' as NEUTRONOMICS.md prints it
 1b8efcbf8566f7602b2635cadbdba61e4f2a5386	CHANGELOG.md	REGISTERED: 126, one -- what the first measurement reported and the one pair it missed, as this entry records that superseded measurement
 1c383bf05d7c10eecb203facd120663ce9879b60	CHANGELOG.md	REGISTERED: ³, 1, 4, 3, 0.18, 0.6 -- the nuclide label ³He; the helium levels c_He = 1e-4 and 1e-3 MATERIALITY.md tabulates; its bracket-size sentence (<= ~0.18, under ~0.6%)
+1d5cbf589368b87c13eed78338be62ef489364db	CHANGELOG.md	REGISTERED: five -- 'a five-times-anchored scenario' names the eta=5 row of FINDINGS.md section 1c
 1f7c21cd3756264c9c317bbb2f678f7d41f8c294	CHANGELOG.md	REGISTERED: 20, 1 -- the replicate base chains, `AUDIT_EIG_REPLICATES` in scripts/generate_design.py, as its comment states; DESIGN.md prints 20
 2087cb71dddadd0ad2a82add96ce66e1c597f4df	CHANGELOG.md	REGISTERED: 0.14, 13.9 -- `omega_tt` = 0.14 in openmucf/data/rates.csv at this release, and the corroborating 13.9(1.5)% its row noted then
 211d9f1db07f859b3f9c1de54568e433884d7ba7	CHANGELOG.md	REGISTERED: 112.6, 156.5, 10 -- Kou–Chen's published yields and the ±10% tolerance, benchmarks/kou-chen-2026.json
@@ -138,7 +139,6 @@
 5e8367a9a4b6816d5fb8ef99040d90436b999b5f	CHANGELOG.md	REGISTERED: 30, 0.5, 7 -- the low-T grid-convergence figures as the v1.1.0 notes recorded them; openmucf/formation.py's grid comment records the same doubling test
 5f2d77c926bec999dd64427fd50f0d1a1ce6ca11	CHANGELOG.md	REGISTERED: 41 -- 41: rows where the key is a label, as this dated entry recorded it (a released line, held by this row and not re-derived)
 5f5b2fbcf4d50d22aa664b677b9242379c420863	CHANGELOG.md	REGISTERED: one -- 'a released one', a pronoun
-5fc4d3199f0998227b108d7a8d0469d512e2285c	CHANGELOG.md	REGISTERED: five -- 'a five-times-anchored scenario' names the eta=5 row of FINDINGS.md section 1c
 60e0f80e740d30071c66833b2d550bd843dbdb41	CHANGELOG.md	REGISTERED: 25.68 -- MUON_COST.md's electrical figure on the unrounded Kovach denominator
 60ef6aaf5d1d2903fc0ad29d113ca348d3910b45	CHANGELOG.md	REGISTERED: four -- the openmucf/data/muon_cost_chain.csv rows carrying a `factor` value
 610d209d84e8caea3ed579b900b4882ca4887953	CHANGELOG.md	REGISTERED: two -- the two routes `ChainPath`'s docstring compares
@@ -631,15 +631,15 @@ ff9e698e73f14f73c93e5f484019640954acc85a	FORMAT_SPEC.md	REGISTERED: three -- the
 610c71cf49f298c421dd5e330935e9c269d9859e	README.md	REGISTERED: two -- 'two-layer': the format's two layers, Layer 1 and Layer 2 of FORMAT_SPEC.md
 61eb74d1dde6030fdfe3e03a6b7fbe7391cb9778	README.md	REGISTERED: one -- 'one-sided', an adjective
 6bddbccfe31ce06ad16ac710a78ab68f1440ea61	README.md	REGISTERED: 200 -- _N_REPLICAS of tests/test_twin_coverage.py::test_interval_calibration_200_replicas, the run this comment names
+755ccaab915f4e9b8caad344c7ec185efd7cf936	README.md	REGISTERED: three, 300 -- 'three published summary statistics' are the calibration's inputs, as CALIBRATION.md states them; 300 K is the temperature of the liquid-density operating point openmucf/validate.py uses; this line is registered in tests/ledger_claims_registry.tsv (same sha1)
 775a6626f0e08ce0bb18b4573fc5d8f1babb7238	README.md	REGISTERED: 5, 10, ³, 2.3, 6 -- the facility-tier rows of MUON_COST.md (mu2e, COMET, MuSIC), each marked '~'; MUON_COST.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
 790683e1e9128c01d8c3ad7a91b92bf6a25b3fc8	README.md	REGISTERED: 114 -- the quickstart's printed yield, approximate ('~'); the same closed-form quantity is the V_kouchen_base reproduction target (112.6, ±10%) in openmucf/data/validation_targets.csv that tests/test_validate.py exercises
 81bddc9a1e881b7b578c506254fbde8391b45bc8	README.md	REGISTERED: one -- a pronoun ('would stop being one')
-86ebe7a651b828e05e09901658eb629a451c0a8f	README.md	REGISTERED: two, 300 -- 'two published summary statistics' are the calibration's inputs (CALIBRATION.md); 300 K is the temperature of the liquid-density operating point openmucf/validate.py uses; this line is registered in tests/ledger_claims_registry.tsv (same sha1)
 8fc88f1f2b7e724850647ec04161945f31c7778b	README.md	REGISTERED: 500, 2 -- figures quoted from the cited preprint (arXiv:2605.26432), attributed to it on the line
+93f4b1b1ab7128f38fc29be43a41ef5fd9365aae	README.md	REGISTERED: ³ -- the mass number of ³He, a nuclide label
 9ceb46b67d5a650fe07bc909d7201423ffd9f64c	README.md	REGISTERED: 300, 1.2, 0.5 -- the quickstart's example inputs: T = 300 K and φ = 1.2 are the liquid operating point openmucf/validate.py anchors, c_t = 0.5 the equal-mixture condition the V_kouchen_base target states (openmucf/data/validation_targets.csv)
 aeb9e6f372250953b1ebf62990b25131becd153b	README.md	REGISTERED: 1.45, 300, 0.8, 41, 44, 30, one, 100 -- the RED tier's scope figures: φ > 1.45, 300 K and T < 100 K are the model's declared support (openmucf/formation.py's scope warning fires at phi > ~1.45 or T < 100 K), corr ≈ +0.8 and the −41% to −44% Yamashita–Kino comparison with its ±30% band come from CALIBRATION.md and VALIDATION.md (V_yamashita_ratio), 'one-shot' is an adjective; this line is registered in tests/ledger_claims_registry.tsv (same sha1)
 ba94c913e68cc0b6a69bfd650b9e0ccc7d7ac484	README.md	REGISTERED: 2367, 3946 -- restates SYSTEMS.md ('~2367 -> ~3946'), regenerated and byte-diffed by make audit; the README's copy is read by no test
-c0283ac0861ab81992b2ee5574ef6bdece8e47b9	README.md	REGISTERED: 15 -- '≈15%' restates MATERIALITY.md's combined deferred-channel headroom, approximate; MATERIALITY.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
 c096165f0e067e86f013389bc0aed417754a91bf	README.md	REGISTERED: 1.2, 2.0, 2.4 -- the density grid the FC-001 card declares (forecasts/FC-001-mufuse.json)
 d66c88be3e3715e14925371ba87697d9284bd61a	README.md	REGISTERED: 1.45, 500, 0 -- restates FINDINGS.md's breakeven falsification (P(X_μ > 500) = 0 at φ ≤ ~1.45), regenerated and byte-diffed by make audit; the README's copy is read by no test
 d9e3e02c10dd9ef8af1ee14eede527877be40a02	README.md	REGISTERED: 2026 -- a calendar year, the date of the events the sentence names
