@@ -18,6 +18,7 @@ input digests the cells record are the live files'.
 
 import contextlib
 import json
+import math
 import platform
 import sys
 from pathlib import Path
@@ -131,6 +132,10 @@ def _rails(post, boxes):
     return False
 
 
+def _sweep_config(r_lbl, o_lbl, l_lbl):
+    return f"R={r_lbl}/os0={o_lbl}/lc={l_lbl}"
+
+
 def _sweep_rows():
     rows = []
     for r_box, r_lbl in _R_BOXES:
@@ -141,7 +146,7 @@ def _sweep_rows():
                 )
                 boxes = {"omega_s0_pct": o_box, "R": r_box, "lambda_c": l_box}
                 rows.append({
-                    "config": f"R={r_lbl}/os0={o_lbl}/lc={l_lbl}",
+                    "config": _sweep_config(r_lbl, o_lbl, l_lbl),
                     "R_box": list(r_box), "os0_box": list(o_box), "lc_box": list(l_box),
                     "corr": float(post["corr_omega_s0_R"]),
                     "R_sd": float(post["R"]["sd"]),
@@ -164,6 +169,10 @@ def _bisect(fun, p, lo, hi, rtol=1e-10):
         else:
             hi = mid
     return 0.5 * (lo + hi)
+
+
+Q_NET_QUANTILES = (0.025, 0.5, 0.975)
+Q_NET_STATS = ("mean", "sd") + tuple(f"q{p}" for p in Q_NET_QUANTILES)
 
 
 def q_net_cells(weak, n=48):
@@ -199,7 +208,7 @@ def q_net_cells(weak, n=48):
         return float((wts * np.interp(q * fac, edges, cdf)).sum())
 
     out = {"mean": float(mean), "sd": float(np.sqrt(e2 - mean * mean))}
-    for p in (0.025, 0.5, 0.975):
+    for p in Q_NET_QUANTILES:
         out[f"q{p}"] = float(_bisect(f_q, p, 1e-5, 2.0))
     return out
 
@@ -700,6 +709,10 @@ def regenerate():
     for key in ("shipped_v1_3_0", "convergence", "audit_scatter"):
         if key in old:
             cells[key] = old[key]
+    probs = convergence_problems(cells, committed_tolerances(cells))
+    if probs:
+        raise SystemExit("regeneration refused: the convergence record does not certify these cells:\n  "
+                         + "\n  ".join(probs))
     ncc, weak_draws = nuts_cross_check(cells["posteriors"])
     bad = {k: calibrate.nuts_gate_failures(v, cells["posteriors"][k]) for k, v in ncc.items()}
     if any(bad.values()):
@@ -909,6 +922,7 @@ def audit():
     problems = input_problems(committed)
     problems += render_problems(committed)
     tol = committed_tolerances(committed)
+    problems += convergence_problems(committed, tol)
     fresh = compute_cells()
     p_a, worst = compare_cells(committed, fresh, tol)
     problems += p_a
@@ -950,33 +964,151 @@ def _class_max(rec):
     return out
 
 
+def _finite(v):
+    """A measured scalar: an int or float (never a bool, None or string) that is finite."""
+    return type(v) in (int, float) and math.isfinite(v)
+
+
+def _criteria():
+    return {"moment": calibrate.CONV_RTOL_MOMENT, "quantile": calibrate.CONV_RTOL_Q,
+            "quantile_L": calibrate.CONV_RTOL_Q_L}
+
+
+_CONV_MEMBERS = [(q, st) for q in calibrate.QUAD_QUANTITIES for st in calibrate.STATS]
+
+
+def _run_problems(name, run):
+    """A convergence run of ``name``: publication resolution RES_PUB, fine resolution twice it, every member of
+    both posteriors a finite number, and every change within its criterion."""
+    probs = []
+    if run.get("res_pub") != RES_PUB:
+        probs.append(f"{name}: res_pub {run.get('res_pub')!r} is not the publication resolution {RES_PUB:g}")
+    if run.get("res_fine") != 2 * RES_PUB:
+        probs.append(f"{name}: res_fine {run.get('res_fine')!r} is not twice the publication resolution")
+    for side in ("pub", "fine"):
+        post = run.get(side) or {}
+        probs += [f"{name}.{side}.{q}.{st}: {post.get(q, {}).get(st)!r} is not a finite number"
+                  for q, st in _CONV_MEMBERS if not _finite(post.get(q, {}).get(st))]
+    if not probs:
+        probs += [f"{name}: {m}" for m in calibrate.convergence_failures(run["pub"], run["fine"])]
+    return probs
+
+
+def _binding_problems(name, pub, live, tol):
+    """The run's publication-resolution posterior must be the live cells' ``name`` posterior: every member and the
+    correlation within the audit tolerance of its class (the rule that accepts a recomputed cell as the same)."""
+    if not isinstance(live, dict):
+        return [f"{name}: the cells hold no {name!r} posterior for the run to certify"]
+    probs = []
+    for q, st in [*_CONV_MEMBERS, ("corr_omega_s0_R", None)]:
+        a = pub.get(q) if st is None else pub.get(q, {}).get(st)
+        b = live.get(q) if st is None else live.get(q, {}).get(st)
+        cls = "moment" if st is None else _quantile_class(q, st)
+        label = q if st is None else f"{q}.{st}"
+        d = calibrate._rel(a, b) if _finite(a) and _finite(b) else math.inf
+        if not d <= tol[cls]:
+            probs.append(f"{name}.{label}: run {a!r} vs cells {b!r}, relative {d:.3g} > tol {tol[cls]:.3g}")
+    return probs
+
+
+def convergence_problems(cells, tol):
+    """The convergence record certifies these cells: its resolutions are the estimator's and twice it, its
+    criteria are the live ones, it holds the run of every CONVERGENCE_POSTERIORS posterior, each run meets
+    _run_problems, the recorded maxima are that run's, and each run's publication posterior is the cells' own."""
+    conv = cells.get("convergence")
+    if not isinstance(conv, dict):
+        return ["convergence: no record"]
+    probs = []
+    res = cells.get("estimator", {}).get("res")
+    if conv.get("res_pub") != RES_PUB or res != RES_PUB:
+        probs.append(f"convergence.res_pub {conv.get('res_pub')!r} / estimator res {res!r} are not {RES_PUB:g}")
+    if conv.get("res_fine") != 2 * RES_PUB:
+        probs.append(f"convergence.res_fine {conv.get('res_fine')!r} is not twice the publication resolution")
+    if conv.get("criteria") != _criteria():
+        probs.append(f"convergence.criteria {conv.get('criteria')!r} are not the live criteria {_criteria()!r}")
+    runs, maxima = conv.get("runs") or {}, conv.get("posteriors") or {}
+    want = sorted(CONVERGENCE_POSTERIORS)
+    if sorted(runs) != want or sorted(maxima) != want:
+        return probs + [f"convergence: runs {sorted(runs)} and maxima {sorted(maxima)} are not {want}"]
+    for name in CONVERGENCE_POSTERIORS:
+        run = dict(runs[name], res_pub=conv.get("res_pub"), res_fine=conv.get("res_fine"))
+        p = _run_problems(name, run)
+        if not p:
+            if _class_max(run) != maxima[name]:
+                p.append(f"{name}: recorded maxima {maxima[name]} are not its run's {_class_max(run)}")
+            p += _binding_problems(name, run["pub"], cells.get("posteriors", {}).get(name), tol)
+        probs += [f"convergence: {m}" for m in p]
+    return probs
+
+
 def record_convergence(paths):
-    recs = {r["name"]: r for r in (load(p) for p in paths)}
-    if sorted(recs) != sorted(CONVERGENCE_POSTERIORS):
-        raise SystemExit(f"convergence runs {sorted(recs)} != {sorted(CONVERGENCE_POSTERIORS)}")
-    bad = {n: calibrate.convergence_failures(r["pub"], r["fine"]) for n, r in recs.items()}
-    if any(bad.values()) or any(r["res_pub"] != RES_PUB for r in recs.values()):
-        raise SystemExit(f"convergence unmet at res {RES_PUB}: {bad}")
+    """Write the convergence record from the ``--converge`` runs: refused unless there is one valid run per
+    CONVERGENCE_POSTERIORS posterior and, when the cells file holds posteriors already, each run's publication
+    posterior is the cells' own. The runs are stored with the record, so every consumer re-checks the binding."""
+    runs = [load(p) for p in paths]
+    recs = {r.get("name"): r for r in runs}
+    if len(recs) != len(runs) or sorted(recs, key=str) != sorted(CONVERGENCE_POSTERIORS):
+        raise SystemExit(f"convergence runs {[r.get('name') for r in runs]} != {sorted(CONVERGENCE_POSTERIORS)}")
+    probs = [m for n in CONVERGENCE_POSTERIORS for m in _run_problems(n, recs[n])]
     cells = load()
+    if not probs and "posteriors" in cells:
+        tol = committed_tolerances(cells)
+        probs = [m for n in CONVERGENCE_POSTERIORS
+                 for m in _binding_problems(n, recs[n]["pub"], cells["posteriors"].get(n), tol)]
+    if probs:
+        raise SystemExit("convergence record refused:\n  " + "\n  ".join(probs))
     cells["convergence"] = {
-        "res_pub": RES_PUB, "res_fine": 2 * RES_PUB,
-        "criteria": {"moment": calibrate.CONV_RTOL_MOMENT, "quantile": calibrate.CONV_RTOL_Q,
-                     "quantile_L": calibrate.CONV_RTOL_Q_L},
-        "posteriors": {n: _class_max(r) for n, r in recs.items()},
+        "res_pub": RES_PUB, "res_fine": 2 * RES_PUB, "criteria": _criteria(),
+        "posteriors": {n: _class_max(recs[n]) for n in CONVERGENCE_POSTERIORS},
+        "runs": {n: {"pub": recs[n]["pub"], "fine": recs[n]["fine"]} for n in CONVERGENCE_POSTERIORS},
     }
     dump(cells, CELLS_JSON)
-    print(json.dumps(cells["convergence"], indent=2, sort_keys=True))
+    print(json.dumps({k: v for k, v in cells["convergence"].items() if k != "runs"}, indent=2, sort_keys=True))
+
+
+def expected_quad_paths():
+    """(path, class) of every scalar `quad_cells` reads from a complete cells record, from the definitions: each
+    POSTERIORS posterior, each sweep config, each Q_NET_STATS stat and each legacy_tension key."""
+    out = set()
+    for name in POSTERIORS:
+        out |= {(f"posteriors.{name}.{q}.{st}", _quantile_class(q, st)) for q, st in _CONV_MEMBERS}
+        out.add((f"posteriors.{name}.corr_omega_s0_R", "moment"))
+    for _, r_lbl in _R_BOXES:
+        for _, o_lbl in _OS0_BOXES:
+            for _, l_lbl in _LC_BOXES:
+                cfg = _sweep_config(r_lbl, o_lbl, l_lbl)
+                out |= {(f"sweep[{cfg}].{k}", "moment") for k in ("corr", "R_sd", "ose_mean", "ose_sd")}
+    out |= {(f"q_net.{st}", _quantile_class("Q_net", st)) for st in Q_NET_STATS}
+    out |= {(f"legacy_tension.{k}", "moment") for k in legacy_tension()}
+    return out
+
+
+def _scatter_side_problems(label, rec):
+    try:
+        got = quad_cells(rec)
+    except (KeyError, TypeError, AttributeError) as e:
+        return [f"{label}: incomplete cells ({type(e).__name__}: {e})"]
+    want = expected_quad_paths()
+    have = {(p, c) for p, _, c in got}
+    probs = [f"{label}: {len(want - have)} scalar(s) missing, e.g. {sorted(want - have)[:3]}"] if want - have else []
+    probs += [f"{label}: {len(have - want)} unexpected scalar(s), e.g. {sorted(have - want)[:3]}"] if have - want else []
+    probs += [f"{label}: {p} = {v!r} is not a finite number" for p, v, _ in got if not _finite(v)]
+    return probs
 
 
 def record_scatter(path):
+    """Write the measured cross-platform scatter: refused unless both records carry exactly the expected scalars,
+    every one finite, and the same exact cells (rails and boxes)."""
     cells, other = load(), load(path)
+    probs = _scatter_side_problems("this platform", cells) + _scatter_side_problems("the other platform", other)
+    if not probs and _exact_cells(cells) != _exact_cells(other):
+        probs.append("exact cells differ between the platforms")
+    if probs:
+        raise SystemExit("scatter record refused:\n  " + "\n  ".join(probs))
     a = {p: v for p, v, _ in quad_cells(cells)}
     scatter = {c: 0.0 for c in QUAD_TOL_CAP}
     for p, v, c in quad_cells(other):
         scatter[c] = max(scatter[c], calibrate._rel(a[p], v))
-    ea, eb = _exact_cells(cells), _exact_cells(other)
-    if ea != eb:
-        raise SystemExit("exact cells differ between the platforms")
     cells["audit_scatter"] = {"platforms": [cells["computed_on"], other["computed_on"]], "scatter": scatter,
                               "tolerance": quad_tolerances(scatter)}
     dump(cells, CELLS_JSON)
@@ -989,7 +1121,7 @@ def main(argv=None):
         audit()
     elif "--render" in argv:
         cells = load()
-        probs = input_problems(cells)
+        probs = input_problems(cells) + convergence_problems(cells, committed_tolerances(cells))
         if probs:
             raise SystemExit("render refused: " + "; ".join(probs))
         render(cells)

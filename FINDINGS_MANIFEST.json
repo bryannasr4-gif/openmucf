@@ -595,7 +595,7 @@
   ],
   "generated_by": "scripts/generate_findings.py",
   "inputs": {
-    "calibration_cells_sha256": "6525286d9eba330336b97ea534a639fe5327a3451564a2cf52b022ecb8919a26",
+    "calibration_cells_sha256": "721e453cb1c9822cd482c7279945c15be59a33e15439ea1c2276a316b59f9f6f",
     "muon_cost_csv_sha256": "e1a3a3bd0ff27a2cea70d3a571f7d79cd9842099e7f2ceb04eb850b313af7467",
     "rates_csv_sha256": "f62cdcf00dc365b373e449a38abba9ffe4d14ba60a6ab863bb8f1b8e1b3a38d9",
     "seeds": {

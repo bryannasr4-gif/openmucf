@@ -156,7 +156,7 @@
   "generated_by": "scripts/generate_frontier.py",
   "inputs": {
     "R_nominal": 0.35,
-    "calibration_cells_sha256": "6525286d9eba330336b97ea534a639fe5327a3451564a2cf52b022ecb8919a26",
+    "calibration_cells_sha256": "721e453cb1c9822cd482c7279945c15be59a33e15439ea1c2276a316b59f9f6f",
     "l_other_anchor_fraction": 0.0013880000000000001,
     "lambda_0_s^-1": 455200.0,
     "lambda_c_grid_s^-1": [

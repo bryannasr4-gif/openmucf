@@ -313,6 +313,9 @@ def test_fc_note_names_each_median_outside_the_card_interval(tmp_path, monkeypat
     cells["posteriors"][name][q]["q0.5"] = factor * (lo if side == "lower" else hi)
     with pytest.raises(ValueError, match=f"{name}.{q}.q0.5 = .* outside the card's 95 % interval"):
         mod.build_note(cells)
+    for run in cells["convergence"]["runs"][name].values():     # the convergence record stays bound
+        run[q]["q0.5"] = cells["posteriors"][name][q]["q0.5"]
+    assert mod.convergence_problems(cells, mod.committed_tolerances(cells)) == []
     mod.dump(cells, mod.CELLS_JSON)
     for path in (mod.CALIBRATION_MD, mod.NOTE_PATH):
         (tmp_path / path).write_text("sentinel\n", encoding="utf-8")
@@ -558,6 +561,9 @@ def test_regenerate_refuses_an_fc_note_failure_before_any_write(tmp_path, monkey
     mod = _in_copy(tmp_path, monkeypatch)
     committed = mod.load()
     upper = mod._card_scenario_a()["lambda_c@phi=1.2"]["ci95"][1]
+    for run in committed["convergence"]["runs"]["fc001_card_support"].values():   # the record stays bound
+        run["lambda_c"]["q0.5"] = 1.01 * upper
+    mod.dump(committed, mod.CELLS_JSON)
 
     def fresh_with_moved_median(posts=None):
         fresh = {k: copy.deepcopy(v) for k, v in committed.items() if k not in _CARRIED}
@@ -573,3 +579,268 @@ def test_regenerate_refuses_an_fc_note_failure_before_any_write(tmp_path, monkey
     with pytest.raises(ValueError, match="fc001_card_support.lambda_c.q0.5"):
         mod.regenerate()
     assert _written(tmp_path, mod) == before
+
+
+# ------------------------------------------------------------------ the measurement records
+def test_expected_scalars_are_what_the_cells_carry():
+    """The scalar set the recorders require is the committed cells' own, and its size follows from the
+    definitions: per posterior every quantity x stat plus the correlation, four per sweep config, the Q_net
+    stats and the legacy-tension keys."""
+    mod = _load_script()
+    cells = _committed_cells()
+    want = mod.expected_quad_paths()
+    assert {(p, c) for p, _, c in mod.quad_cells(cells)} == want
+    n_sweep = len(mod._R_BOXES) * len(mod._OS0_BOXES) * len(mod._LC_BOXES)
+    per_post = len(mod.calibrate.QUAD_QUANTITIES) * len(mod.calibrate.STATS) + 1
+    assert len(want) == (len(mod.POSTERIORS) * per_post + 4 * n_sweep + len(mod.Q_NET_STATS)
+                         + len(mod.legacy_tension()))
+    assert sorted(cells["q_net"]) == sorted(mod.Q_NET_STATS)
+
+
+def test_q_net_cells_write_the_declared_stats():
+    mod = _load_script()
+    post = mod.calibrate.posterior_quadrature(mod.calibrate.WEAK_OMEGA_S0_PRIOR, res=0.1, bins=0.1)
+    assert sorted(mod.q_net_cells(post, n=8)) == sorted(mod.Q_NET_STATS)
+
+
+def _fake_io(mod, monkeypatch, cells, files):
+    """`load()` -> ``cells``; `load(path)` -> ``files[path]``; `dump` records instead of writing."""
+    written = []
+    monkeypatch.setattr(mod, "load", lambda path=None: cells if path is None else files[path])
+    monkeypatch.setattr(mod, "dump", lambda obj, path: written.append((path, copy.deepcopy(obj))))
+    return written
+
+
+def _genuine_runs(cells, mod):
+    """The four convergence runs as `--converge` writes them, from the record the committed cells carry."""
+    conv = cells["convergence"]
+    return {n: {"name": n, "res_pub": conv["res_pub"], "res_fine": conv["res_fine"],
+                "pub": copy.deepcopy(conv["runs"][n]["pub"]), "fine": copy.deepcopy(conv["runs"][n]["fine"])}
+            for n in mod.CONVERGENCE_POSTERIORS}
+
+
+def test_record_convergence_reproduces_the_committed_record(monkeypatch, capsys):
+    """Control: the genuine runs re-record exactly the committed convergence record."""
+    mod = _load_script()
+    cells = _committed_cells()
+    committed = copy.deepcopy(cells["convergence"])
+    del cells["convergence"]
+    runs = _genuine_runs(_committed_cells(), mod)
+    written = _fake_io(mod, monkeypatch, cells, runs)
+    mod.record_convergence(list(runs))
+    assert [p for p, _ in written] == [mod.CELLS_JSON]
+    assert written[0][1]["convergence"] == committed
+    assert mod.convergence_problems(written[0][1], mod.committed_tolerances(written[0][1])) == []
+
+
+@pytest.mark.parametrize("res_pub, res_fine, named", [
+    (1.0, 1.0, "res_fine 1.0 is not twice the publication resolution"),
+    (2.0, 4.0, "res_pub 2.0 is not the publication resolution 1"),
+    (1.0, 3.0, "res_fine 3.0 is not twice the publication resolution"),
+])
+def test_record_convergence_refuses_a_run_off_the_resolution_pair(monkeypatch, res_pub, res_fine, named):
+    """Drill (resolution metadata, each posterior): a run whose fine resolution is not twice the publication
+    resolution, or whose publication resolution is not the estimator's, is refused by name and nothing is
+    written -- however small its recorded changes."""
+    mod = _load_script()
+    cells = _committed_cells()
+    for name in mod.CONVERGENCE_POSTERIORS:
+        runs = _genuine_runs(cells, mod)
+        runs[name]["res_pub"], runs[name]["res_fine"] = res_pub, res_fine
+        written = _fake_io(mod, monkeypatch, copy.deepcopy(cells), runs)
+        with pytest.raises(SystemExit, match=f"{name}: {named}"):
+            mod.record_convergence(list(runs))
+        assert written == []
+
+
+def _members(mod):
+    return [(q, st) for q in mod.calibrate.QUAD_QUANTITIES for st in mod.calibrate.STATS]
+
+
+def test_record_convergence_refuses_runs_of_other_posteriors(monkeypatch):
+    """Drill (binding, all 4 x 7 x 7 members): a run whose publication and fine posteriors both moved 10 % in
+    one member -- converged, but not the posterior the cells hold -- is refused naming that member, nothing
+    written."""
+    mod = _load_script()
+    cells = _committed_cells()
+    admitted = []
+    for name in mod.CONVERGENCE_POSTERIORS:
+        for q, st in _members(mod):
+            runs = _genuine_runs(cells, mod)
+            for side in ("pub", "fine"):
+                runs[name][side][q][st] *= 1.1
+            written = _fake_io(mod, monkeypatch, copy.deepcopy(cells), runs)
+            try:
+                mod.record_convergence(list(runs))
+                admitted.append(f"{name}.{q}.{st}")
+            except SystemExit as e:
+                if f"{name}.{q}.{st}: run" not in str(e) or written:
+                    admitted.append(f"{name}.{q}.{st} (not named, or written)")
+    assert admitted == [], admitted
+    assert len(mod.CONVERGENCE_POSTERIORS) * len(_members(mod)) == 196
+
+
+def test_consumers_refuse_a_record_of_other_posteriors():
+    """Drill (binding at consumption, all 196 members): a record carrying the runs of other posteriors --
+    written before the cells existed -- is refused by the check the audit, the render and the regeneration
+    call."""
+    mod = _load_script()
+    cells = _committed_cells()
+    tol = mod.committed_tolerances(cells)
+    admitted = []
+    for name in mod.CONVERGENCE_POSTERIORS:
+        for q, st in _members(mod):
+            bad = copy.deepcopy(cells)
+            for side in ("pub", "fine"):
+                bad["convergence"]["runs"][name][side][q][st] *= 1.1
+            if not [p for p in mod.convergence_problems(bad, tol) if f"{name}.{q}.{st}: run" in p]:
+                admitted.append(f"{name}.{q}.{st}")
+    assert admitted == [], admitted
+
+
+@pytest.mark.parametrize("corrupt, named", [
+    (lambda c: c["convergence"]["posteriors"]["kamimura"].update(moment=0.0), "kamimura: recorded maxima"),
+    (lambda c: c["convergence"]["runs"].pop("weak"), "convergence: runs"),
+    (lambda c: c["convergence"].pop("runs"), "convergence: runs"),
+    (lambda c: c["convergence"].update(res_fine=1.0), "convergence.res_fine 1.0 is not twice"),
+    (lambda c: c["estimator"].update(res=0.5), "estimator res 0.5"),
+    (lambda c: c["convergence"]["criteria"].update(moment=1e-5), "convergence.criteria"),
+    (lambda c: c["convergence"]["runs"]["weak"]["fine"]["R"].update(sd=float("nan")),
+     "weak.fine.R.sd: nan is not a finite number"),
+    (lambda c: c["convergence"]["runs"]["kamimura"]["pub"]["X_mu"].pop("q0.5"),
+     "kamimura.pub.X_mu.q0.5: None is not a finite number"),
+])
+def test_convergence_check_names_each_defect(corrupt, named):
+    mod = _load_script()
+    cells = _committed_cells()
+    assert mod.convergence_problems(cells, mod.committed_tolerances(cells)) == []
+    corrupt(cells)
+    assert [p for p in mod.convergence_problems(cells, mod.committed_tolerances(_committed_cells()))
+            if named in p], mod.convergence_problems(cells, mod.committed_tolerances(_committed_cells()))
+
+
+def _unbind(mod):
+    cells = mod.load()
+    cells["convergence"]["runs"]["weak"]["pub"]["lambda_c"]["mean"] *= 1.1
+    cells["convergence"]["runs"]["weak"]["fine"]["lambda_c"]["mean"] *= 1.1
+    mod.dump(cells, mod.CELLS_JSON)
+    return cells
+
+
+def test_audit_refuses_a_record_of_other_posteriors(tmp_path, monkeypatch, capsys):
+    mod = _in_copy(tmp_path, monkeypatch)
+    fresh, ncc = _fresh_and_ncc(mod)
+    _unbind(mod)
+    with pytest.raises(SystemExit, match="convergence: weak.lambda_c.mean: run"):
+        _audit_with(mod, monkeypatch, fresh, ncc)
+    assert "audit OK" not in capsys.readouterr().out
+
+
+def test_render_refuses_a_record_of_other_posteriors(tmp_path, monkeypatch):
+    mod = _in_copy(tmp_path, monkeypatch)
+    _unbind(mod)
+    (tmp_path / "CALIBRATION.md").write_text("sentinel\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="render refused: convergence: weak.lambda_c.mean: run"):
+        mod.main(["--render"])
+    assert (tmp_path / "CALIBRATION.md").read_text(encoding="utf-8") == "sentinel\n"
+
+
+def test_regenerate_refuses_a_record_of_other_posteriors_before_sampling(tmp_path, monkeypatch):
+    mod = _in_copy(tmp_path, monkeypatch)
+    _unbind(mod)
+    before = _written(tmp_path, mod)
+    monkeypatch.setattr(mod, "nuts_cross_check", lambda p: pytest.fail("sampled"))
+    with pytest.raises(SystemExit, match="regeneration refused: .*\n.*weak.lambda_c.mean: run"):
+        cells = mod.load()
+        posts = cells["posteriors"]
+        fresh = {k: copy.deepcopy(v) for k, v in cells.items() if k not in _CARRIED}
+        monkeypatch.setattr(mod, "_posterior", lambda name, res=None, **kw: copy.deepcopy(posts[name]))
+        monkeypatch.setattr(mod, "compute_cells", lambda p=None: copy.deepcopy(fresh))
+        mod.regenerate()
+    assert _written(tmp_path, mod) == before
+
+
+# --- the scatter record
+def _set(rec, path, value):
+    """Set the scalar at a quad_cells path ('posteriors.weak.R.sd', 'sweep[cfg].corr', 'q_net.sd', ...)."""
+    if path.startswith("sweep["):
+        cfg, key = path[len("sweep["):].rsplit("].", 1)
+        row = [r for r in rec["sweep"] if r["config"] == cfg]
+        assert len(row) == 1
+        old, row[0][key] = row[0][key], value
+        return old
+    group, rest = path.split(".", 1)
+    node, last = rec[group], rest
+    if group == "posteriors":
+        name, rest = rest.split(".", 1)
+        node, last = rec["posteriors"][name], rest
+        if rest != "corr_omega_s0_R":
+            q, last = rest.split(".", 1)
+            node = node[q]
+    old, node[last] = node[last], value
+    return old
+
+
+def test_record_scatter_measures_a_known_scatter(monkeypatch):
+    """Control: a complete, finite other-platform record that differs in one moment cell by 1e-12 relative
+    records exactly that scatter and the floor tolerance."""
+    mod = _load_script()
+    cells, other = _committed_cells(), _committed_cells()
+    other["posteriors"]["weak"]["X_mu"]["mean"] *= 1 + 1e-12
+    written = _fake_io(mod, monkeypatch, cells, {"other": other})
+    mod.record_scatter("other")
+    rec = written[0][1]["audit_scatter"]
+    assert rec["scatter"]["moment"] == pytest.approx(1e-12, rel=1e-3)
+    assert rec["scatter"]["quantile"] == rec["scatter"]["quantile_L"] == 0.0
+    assert rec["tolerance"] == {"moment": 1e-6, "quantile": 1e-6, "quantile_L": 1e-6}
+
+
+@pytest.mark.parametrize("group, key", _OMISSIONS)
+@pytest.mark.parametrize("side", ["this", "other"])
+def test_record_scatter_refuses_a_missing_group(monkeypatch, group, key, side):
+    """Drill (scatter coverage, 14 homes x both records): a missing group is refused, never measured as
+    zero."""
+    mod = _load_script()
+    cells, other = _committed_cells(), _committed_cells()
+    del (cells if side == "this" else other)[group][key]
+    written = _fake_io(mod, monkeypatch, cells, {"other": other})
+    with pytest.raises(SystemExit, match=f"{'this' if side == 'this' else 'the other'} platform: .*missing"):
+        mod.record_scatter("other")
+    assert written == []
+
+
+def test_record_scatter_refuses_records_missing_the_same_groups(monkeypatch):
+    """Both records without any posterior: equal sets, but 80 of the 380 scalars -- refused."""
+    mod = _load_script()
+    cells, other = _committed_cells(), _committed_cells()
+    cells["posteriors"], other["posteriors"] = {}, {}
+    written = _fake_io(mod, monkeypatch, cells, {"other": other})
+    with pytest.raises(SystemExit, match="300 scalar\\(s\\) missing"):
+        mod.record_scatter("other")
+    assert written == []
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")], ids=["nan", "+inf", "-inf"])
+@pytest.mark.parametrize("side", ["this", "other"])
+def test_record_scatter_refuses_a_nonfinite_scalar_anywhere(monkeypatch, side, value):
+    """Drill (scatter validity, every one of the scalars on both records): a non-finite measurement is refused
+    by path, never reduced into a zero scatter."""
+    mod = _load_script()
+    cells, other = _committed_cells(), _committed_cells()
+    target = cells if side == "this" else other
+    written = _fake_io(mod, monkeypatch, cells, {"other": other})
+    paths = sorted(p for p, _ in mod.expected_quad_paths())
+    admitted = []
+    for path in paths:
+        old = _set(target, path, value)
+        try:
+            mod.record_scatter("other")
+            admitted.append(path)
+        except SystemExit as e:
+            if f"{path} = {value!r} is not a finite number" not in str(e):
+                admitted.append(f"{path} (not named)")
+        finally:
+            _set(target, path, old)
+    assert admitted == [] and written == [], admitted[:5]
+    assert len(paths) == len(mod.quad_cells(_committed_cells()))
+
