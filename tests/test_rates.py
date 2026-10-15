@@ -96,6 +96,22 @@ def test_recommended_superseded_pair():
     assert fam_recommended == ["omega_s0"]
 
 
+def test_loss_channel_rows_load_with_their_sources_and_flags():
+    """The three loss-channel rows load with their typed projections, verification flags and sources.
+
+    The two rates carry needs_verification and omega_tt is pinned; lambda_ttmu cites the JINR tt formation
+    rate (bibkey Bogdanova2009tt) and lambda_dhe3 a positive rate from a live open source (Fotev et al.,
+    arXiv:2001.09927 = bibkey Fotev2020)."""
+    r = load_rates()
+    for sym in ("lambda_ttmu", "omega_tt", "lambda_dhe3"):
+        assert sym in r, sym
+        assert r[sym].needs_verification is (sym != "omega_tt"), sym
+        assert r[sym].phase and r[sym].target_molecule, sym  # non-empty typed projections
+    assert r["lambda_ttmu"].source_bibkey == "Bogdanova2009tt"
+    assert r.value("lambda_dhe3") > 0.0
+    assert r["lambda_dhe3"].source_bibkey == "Fotev2020"
+
+
 def test_lambda_dt_transfer_pinned_to_its_primary():
     """lambda_dt_transfer's pinned state: source, locator, flag, value and uncertainty."""
     dt = load_rates()["lambda_dt_transfer"]
