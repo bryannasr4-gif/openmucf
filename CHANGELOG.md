@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The prior-sweep table** printed its cycle-rate box edges at one significant figure, so the boxes (0.8-1.6)e8 and (0.6-1.8)e8 both read 2e+08; it prints true bounds, and its boxes are now (0.8-2.0)e8 and (0.6-2.4)e8.
 - **The solid anchor.** The 0.57 % of the 12 K solid fill is read as its total loss per cycle, an inference, and the statement that the faster solid cycle carried higher sticking is withdrawn with the test that locked it.
 - **FC-001.** The card is unchanged and scored as registered; `forecasts/FC-001-note-2026-10-14.md` gives its scenario-A medians on the corrected basis, each inside the card's own interval.
-- **The formation anchor** is described once, as `openmucf.formation.CALIB_ANCHOR`, which `FINDINGS.md`, the rate ledger and the validation notes render; the sentence that called it a measured room-temperature scale is corrected, and section 1c no longer cites `V_faifman_lowT`, which compares the unscaled energy-resolved rate.
+- **The formation anchor** is described once, as `openmucf.formation.CALIB_ANCHOR`, which `FINDINGS.md` and the validation notes render; the sentence that called it a measured room-temperature scale is corrected, and section 1c no longer cites `V_faifman_lowT`, which compares the unscaled energy-resolved rate.
 - **Sampler trap rate.** The comment in `scripts/xray_feasibility.py` that said the untruncated Kamimura chain occasionally sticks gives the rate measured over 100 off-pin seeds, and the FC-001 Monte-Carlo-band test runs on the locked toolchain only.
 
 ### Changed -- the public narrative, the licence statements and the repository's identity (2026-10-13)
