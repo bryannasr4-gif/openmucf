@@ -21,6 +21,7 @@ import json
 import math
 import platform
 import sys
+from collections import Counter
 from pathlib import Path
 
 import matplotlib
@@ -136,6 +137,14 @@ def _sweep_config(r_lbl, o_lbl, l_lbl):
     return f"R={r_lbl}/os0={o_lbl}/lc={l_lbl}"
 
 
+def _sweep_grid():
+    """Config name -> its three boxes, in the order `_sweep_rows` computes them."""
+    return {
+        _sweep_config(r_lbl, o_lbl, l_lbl): {"R_box": list(r_box), "os0_box": list(o_box), "lc_box": list(l_box)}
+        for r_box, r_lbl in _R_BOXES for o_box, o_lbl in _OS0_BOXES for l_box, l_lbl in _LC_BOXES
+    }
+
+
 def _sweep_rows():
     rows = []
     for r_box, r_lbl in _R_BOXES:
@@ -155,6 +164,52 @@ def _sweep_rows():
                     "rails": bool(_rails(post, boxes)),
                 })
     return rows
+
+
+SWEEP_SCALARS = ("corr", "R_sd", "ose_mean", "ose_sd")
+SWEEP_FIELDS = ("config", "R_box", "os0_box", "lc_box", "rails", *SWEEP_SCALARS)
+
+
+def sweep_problems(rows):
+    """The sweep as `_sweep_rows` writes it, checked on the raw list before anything keys it by config: one row
+    per grid config, in grid order, each with the fields SWEEP_FIELDS and no other, its config's own boxes and a
+    Boolean railing flag. A repeated config is named, never collapsed into one row. (The four scalars of a row
+    are checked with the other measured scalars, in `record_problems`.)"""
+    if not isinstance(rows, list):
+        return [f"sweep: {type(rows).__name__} is not a list of rows"]
+    grid = _sweep_grid()
+    probs, configs = [], []
+    for i, r in enumerate(rows):
+        if not isinstance(r, dict) or set(r) != set(SWEEP_FIELDS):
+            got = sorted(r) if isinstance(r, dict) else type(r).__name__
+            probs.append(f"sweep row {i}: fields {got} are not {sorted(SWEEP_FIELDS)}")
+            continue
+        cfg = r["config"]
+        if not isinstance(cfg, str):
+            probs.append(f"sweep row {i}: config {cfg!r} is not a name")
+            continue
+        configs.append(cfg)
+        for key, box in grid.get(cfg, {}).items():
+            if r[key] != box:
+                probs.append(f"sweep[{cfg}].{key}: {r[key]!r} is not its config's box {box!r}")
+        if type(r["rails"]) is not bool:
+            probs.append(f"sweep[{cfg}].rails: {r['rails']!r} is not a Boolean")
+    counts = Counter(configs)
+    probs += [f"sweep[{c}]: config repeated on {n} rows" for c, n in counts.items() if n > 1]
+    probs += [f"sweep[{c}]: missing" for c in grid if c not in counts]
+    probs += [f"sweep[{c}]: not a config of the grid" for c in counts if c not in grid]
+    if not probs and configs != list(grid):
+        probs.append(f"sweep: rows {configs} are not in the grid's order {list(grid)}")
+    return probs
+
+
+def checked_sweep(cells):
+    """The sweep rows keyed by config, in grid order, for every reader that keys or renders them: raises
+    ValueError naming each `sweep_problems` defect instead."""
+    probs = sweep_problems(cells.get("sweep"))
+    if probs:
+        raise ValueError("sweep refused: " + "; ".join(probs))
+    return {r["config"]: r for r in cells["sweep"]}
 
 
 def _bisect(fun, p, lo, hi, rtol=1e-10):
@@ -232,17 +287,22 @@ def _computed_on():
             "numpy": np.__version__}
 
 
+def _estimator():
+    """The estimator settings the cells are computed with, as the cells file records them."""
+    return {
+        "res": RES_PUB, "sweep_res": SWEEP_RES, "grid": dict(calibrate.QUAD_GRID),
+        "bins": {k: v[2] for k, v in calibrate.QUAD_BINS.items()},
+        "l_other_pct": list(sidechannels.ANCHOR_L_OTHER_PCT),
+        "lambda_c_box": list(calibrate.LAMBDA_C_PRIOR_W), "covariance": "L3",
+    }
+
+
 def compute_cells(posts=None):
     if posts is None:
         posts = {name: _posterior(name) for name in POSTERIORS}
     return {
         "schema": SCHEMA,
-        "estimator": {
-            "res": RES_PUB, "sweep_res": SWEEP_RES, "grid": dict(calibrate.QUAD_GRID),
-            "bins": {k: v[2] for k, v in calibrate.QUAD_BINS.items()},
-            "l_other_pct": list(sidechannels.ANCHOR_L_OTHER_PCT),
-            "lambda_c_box": list(calibrate.LAMBDA_C_PRIOR_W), "covariance": "L3",
-        },
+        "estimator": _estimator(),
         "posteriors": {name: _cells_of(p) for name, p in posts.items()},
         "sweep": _sweep_rows(),
         "q_net": q_net_cells(posts["weak"]),
@@ -250,6 +310,10 @@ def compute_cells(posts=None):
         "inputs": _inputs(),
         "computed_on": _computed_on(),
     }
+
+
+#: the chains `nuts_cross_check` records
+NUTS_CHAINS = ("weak", "kamimura")
 
 
 def nuts_cross_check(posteriors):
@@ -277,7 +341,19 @@ def dump(cells, path):
 
 
 def load(path=CELLS_JSON):
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    """A cells or run record, refused (ValueError naming the file and the key) if any object in it repeats a key
+    (`openmucf.provenance.load_json`)."""
+    return provenance.load_json(path)
+
+
+def admitted_cells(path=CELLS_JSON):
+    """The committed cells file as a reader outside this script (FINDINGS.md, FRONTIER.md) takes it: loaded by
+    `load` and refused (SystemExit naming each problem) unless `committed_problems` admits it."""
+    cells = load(path)
+    probs = committed_problems(cells)
+    if probs:
+        raise SystemExit(f"{path} refused: " + "; ".join(probs))
+    return cells
 
 
 # ================================================================================= markdown rendering
@@ -327,7 +403,7 @@ def _lead():
 
 
 def _sweep_now(cells):
-    by = {r["config"]: r for r in cells["sweep"]}
+    by = dict(checked_sweep(cells))
     for old, new in _RHO_ROWS.items():
         key = "l2_default" if "L2" in new else "l1_default"
         p = cells["posteriors"][key]
@@ -343,7 +419,7 @@ def _now_value(cells, section, row, col):
         return {"mean": _g(c["mean"]), "sd": _g(c["sd"]), "mcse": None,
                 "95% CI": f"[{_g(c['q0.025'])}, {_g(c['q0.975'])}]"}[col]
     if section == _TITLE_CONV_OLD:
-        d = cells["nuts_cross_check"]["weak" if row == "weak" else "kamimura"]
+        d = cells["nuts_cross_check"][{"weak": "weak", "Kamimura": "kamimura"}[row]]
         return {"max r_hat": f"{d['max_rhat']:.3f}", "min ess": f"{d['min_ess']:.0f}",
                 "divergences": str(d["divergences"])}[col]
     if section == _TITLE_SWEEP_OLD:
@@ -354,13 +430,10 @@ def _now_value(cells, section, row, col):
         return {"corr": f"{r['corr']:.2f}", "R sd": _g(r["R_sd"]), "ose mean": _g(r["ose_mean"]),
                 "ose sd": _g(r["ose_sd"]), "rails?": rails}[col]
     if section == _TITLE_PUSH:
-        if row == _QNET_LABEL_OLD:
-            c = cells["q_net"]
-            sd = c["sd"]
-        else:
-            c = po["weak" if "weak" in row else "kamimura"]["X_mu"]
-            sd = c["sd"]
-        return {"mean": f"{c['mean']:.4g}", "sd": _g(sd), "95% CI": f"[{c['q0.025']:.4g}, {c['q0.975']:.4g}]"}[col]
+        c = {_QNET_LABEL_OLD: cells["q_net"], "X_mu (weak-box posterior)": po["weak"]["X_mu"],
+             "X_mu (Kamimura posterior)": po["kamimura"]["X_mu"]}[row]
+        return {"mean": f"{c['mean']:.4g}", "sd": _g(c["sd"]),
+                "95% CI": f"[{c['q0.025']:.4g}, {c['q0.975']:.4g}]"}[col]
     raise KeyError(section)
 
 
@@ -412,7 +485,7 @@ _BOX_PARAGRAPH = (
 
 
 def _corr_range(cells):
-    corrs = [r["corr"] for r in cells["sweep"]]
+    corrs = [r["corr"] for r in checked_sweep(cells).values()]
     return min(corrs), max(corrs)
 
 
@@ -513,22 +586,23 @@ def _nuts_section(cells):
 
 
 def _sweep_section(cells):
+    sweep = list(checked_sweep(cells).values())
     head = (f"## Prior-sensitivity sweep (weak-prior mode; quadrature at res {cells['estimator']['sweep_res']:g})\n"
             "| config | boxes | corr | R sd | ose mean | ose sd | rails? |\n|---|---|---|---|---|---|---|\n")
     rows = [
         f"| {r['config']} | {_boxes_label(r['R_box'], r['os0_box'], r['lc_box'])} | {r['corr']:.2f} | "
         f"{_g(r['R_sd'])} | {_g(r['ose_mean'])} | {_g(r['ose_sd'])} | {'yes' if r['rails'] else 'no'} |"
-        for r in cells["sweep"]
+        for r in sweep
     ]
     for key, lbl in (("l2_default", "default box; L2 likelihood"), ("l1_default", "default box; L1 likelihood")):
         p = cells["posteriors"][key]
         rows.append(f"| {lbl} | default | {p['corr_omega_s0_R']:.2f} | {_g(p['R']['sd'])} | "
                     f"{_g(p['omega_s_eff_pct']['mean'])} | {_g(p['omega_s_eff_pct']['sd'])} | - |")
-    lo, hi = _corr_range(cells)
-    ose = [r["ose_mean"] for r in cells["sweep"]]
-    n_rail = sum(bool(r["rails"]) for r in cells["sweep"])
+    lo, hi = min(r["corr"] for r in sweep), max(r["corr"] for r in sweep)      # the rows read above, checked once
+    ose = [r["ose_mean"] for r in sweep]
+    n_rail = sum(bool(r["rails"]) for r in sweep)
     rails = ("it is `no` for every config here" if n_rail == 0
-             else f"it is `yes` for {n_rail} of the {len(cells['sweep'])} configs")
+             else f"it is `yes` for {n_rail} of the {len(sweep)} configs")
     close = (
         f"\n\nThe product omega_s0(1-R) (= ose mean) spans [{min(ose):.3g}, {max(ose):.3g}] across the sweep; corr "
         f"and R-width are support-dependent (corr range [{lo:.2f}, {hi:.2f}] across the sweep) -- the degeneracy "
@@ -581,10 +655,17 @@ def build_md(cells):
 
 # ================================================================================= the FC-001 note
 def _card_scenario_a():
-    card = json.loads(Path(forecast.CARD_PATH).read_text(encoding="utf-8"))
+    """The card's scenario-A predictions keyed by target; refused (ValueError) unless the card has one scenario A
+    and no target repeats in it."""
+    card = load(forecast.CARD_PATH)
     sc = [s for s in card["payload"]["scenarios"] if s["name"] == "A"]
-    assert len(sc) == 1
-    return {p["target_id"]: p for p in sc[0]["predictions"]}
+    if len(sc) != 1:
+        raise ValueError(f"{forecast.CARD_PATH}: {len(sc)} scenarios named A")
+    preds = sc[0]["predictions"]
+    out = {p["target_id"]: p for p in preds}
+    if len(out) != len(preds):
+        raise ValueError(f"{forecast.CARD_PATH}: scenario A repeats a target_id")
+    return out
 
 
 def vb_figures(cells):
@@ -709,9 +790,9 @@ def regenerate():
     for key in ("shipped_v1_3_0", "convergence", "audit_scatter"):
         if key in old:
             cells[key] = old[key]
-    probs = convergence_problems(cells, committed_tolerances(cells))
+    probs = record_problems(cells, "computed cells") + convergence_problems(cells, committed_tolerances(cells))
     if probs:
-        raise SystemExit("regeneration refused: the convergence record does not certify these cells:\n  "
+        raise SystemExit("regeneration refused: the cells or the convergence record that would certify them:\n  "
                          + "\n  ".join(probs))
     ncc, weak_draws = nuts_cross_check(cells["posteriors"])
     bad = {k: calibrate.nuts_gate_failures(v, cells["posteriors"][k]) for k, v in ncc.items()}
@@ -719,6 +800,9 @@ def regenerate():
         raise SystemExit(f"NUTS cross-check FAILED: {bad}")
     cells["nuts_cross_check"] = ncc
     cells = json.loads(json.dumps(cells))      # the values the cells file will hold
+    probs = committed_problems(cells)           # what every consumer of the file will check
+    if probs:
+        raise SystemExit("regeneration refused: the record to be written:\n  " + "\n  ".join(probs))
     texts = _render_texts(cells)                # every refusal comes before the first write
     dump(cells, CELLS_JSON)
     for path, text in texts.items():
@@ -831,15 +915,17 @@ def _quantile_class(q, st):
 
 
 def quad_cells(cells):
+    """(path, value, class) of every compared scalar, read through `checked_sweep`: call on a record that
+    `record_problems` admits."""
     out = []
     for name, post in cells["posteriors"].items():
         for q in calibrate.QUAD_QUANTITIES:
             for st in calibrate.STATS:
                 out.append((f"posteriors.{name}.{q}.{st}", post[q][st], _quantile_class(q, st)))
         out.append((f"posteriors.{name}.corr_omega_s0_R", post["corr_omega_s0_R"], "moment"))
-    for r in cells["sweep"]:
-        for k in ("corr", "R_sd", "ose_mean", "ose_sd"):
-            out.append((f"sweep[{r['config']}].{k}", r[k], "moment"))
+    for cfg, r in checked_sweep(cells).items():
+        for k in SWEEP_SCALARS:
+            out.append((f"sweep[{cfg}].{k}", r[k], "moment"))
     for st, v in cells["q_net"].items():
         out.append((f"q_net.{st}", v, _quantile_class("Q_net", st)))
     for k, v in cells["legacy_tension"].items():
@@ -848,34 +934,143 @@ def quad_cells(cells):
 
 
 def _exact_cells(cells):
-    return {f"sweep[{r['config']}].{k}": r[k] for r in cells["sweep"] for k in ("rails", "R_box", "os0_box",
-                                                                              "lc_box")}
+    """The railing flags, compared exactly. (The boxes are their config's own by `sweep_problems`.)"""
+    return {f"sweep[{cfg}].rails": r["rails"] for cfg, r in checked_sweep(cells).items()}
+
+
+#: the computed part of a cells record, and the parts the measurement steps add to it
+_COMPUTED_KEYS = ("schema", "estimator", "posteriors", "sweep", "q_net", "legacy_tension", "inputs", "computed_on")
+_CARRIED_KEYS = ("shipped_v1_3_0", "convergence", "audit_scatter", "nuts_cross_check")
+_PLATFORM_KEYS = ("platform", "python", "numpy")
+
+
+def _raw_scalars(rec):
+    """(key path, value) of every leaf of the measured groups, walked on the raw record: nested objects are
+    descended, anything else is a leaf, and the sweep contributes its rows' SWEEP_SCALARS as ("sweep", config,
+    field) (call on a sweep that `sweep_problems` admits). Paths are tuples of keys, so a key that contains a dot
+    cannot stand in for two levels."""
+    out = []
+
+    def walk(path, node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                walk((*path, k), v)
+        else:
+            out.append((path, node))
+
+    for group in ("posteriors", "q_net", "legacy_tension"):
+        walk((group,), rec[group])
+    out += [(("sweep", r["config"], k), r[k]) for r in rec["sweep"] for k in SWEEP_SCALARS]
+    return out
+
+
+def _expected_leaves():
+    """The key paths `_raw_scalars` must find, from the definitions (the same scalars as `expected_quad_paths`)."""
+    out = set()
+    for name in POSTERIORS:
+        out |= {("posteriors", name, q, st) for q, st in _CONV_MEMBERS}
+        out.add(("posteriors", name, "corr_omega_s0_R"))
+    out |= {("sweep", cfg, k) for cfg in _sweep_grid() for k in SWEEP_SCALARS}
+    out |= {("q_net", st) for st in Q_NET_STATS}
+    out |= {("legacy_tension", k) for k in legacy_tension()}
+    return out
+
+
+def _path_text(path):
+    """A key path as `quad_cells` names it."""
+    if path[0] == "sweep" and len(path) == 3:
+        return f"sweep[{path[1]}].{path[2]}"
+    return ".".join(str(k) for k in path)
+
+
+def _platform_problems(label, on):
+    if not isinstance(on, dict) or set(on) != set(_PLATFORM_KEYS) or not all(isinstance(v, str) for v in on.values()):
+        return [f"{label}: {on!r} is not a platform description {list(_PLATFORM_KEYS)}"]
+    return []
+
+
+def record_problems(rec, label):
+    """A computed cells record, checked on its raw structure before any reader keys or projects it: it holds
+    every computed part and nothing besides them and the parts the measurement steps add; its schema and
+    estimator are the live ones; its sweep passes `sweep_problems`; its measured scalars are those of
+    `_expected_leaves()`, none missing and none extra, each a finite int or float and never a Boolean; and
+    computed_on describes a platform."""
+    if not isinstance(rec, dict):
+        return [f"{label}: {type(rec).__name__} is not a cells record"]
+    probs = [f"{label}: no {k!r}" for k in _COMPUTED_KEYS if k not in rec]
+    probs += [f"{label}: unexpected member {k!r}" for k in sorted(set(rec) - {*_COMPUTED_KEYS, *_CARRIED_KEYS})]
+    if probs:
+        return probs
+    if rec["schema"] != SCHEMA:
+        probs.append(f"{label}: schema {rec['schema']!r} is not {SCHEMA!r}")
+    if rec["estimator"] != _estimator():
+        probs.append(f"{label}: estimator {rec['estimator']!r} is not the live estimator {_estimator()!r}")
+    probs += _platform_problems(f"{label}: computed_on", rec["computed_on"])
+    sweep = sweep_problems(rec["sweep"])
+    if sweep:
+        return probs + [f"{label}: {m}" for m in sweep]
+    got = _raw_scalars(rec)
+    want = _expected_leaves()
+    have = {p for p, _ in got}
+    missing = sorted(_path_text(p) for p in want - have)
+    extra = sorted(_path_text(p) for p in have - want)
+    probs += [f"{label}: {len(missing)} scalar(s) missing, e.g. {missing[:3]}"] if missing else []
+    probs += [f"{label}: {len(extra)} unexpected scalar(s), e.g. {extra[:3]}"] if extra else []
+    probs += [f"{label}: {_path_text(p)} = {v!r} is not a finite number" for p, v in got if not _finite(v)]
+    return probs
 
 
 def compare_cells(committed, fresh, tol):
-    """(a): fresh quadrature cells against the committed ones, each within its class tolerance."""
+    """(a): fresh quadrature cells against the committed ones, each within its class tolerance. Both records are
+    admitted by `record_problems` first, so the two sides hold the same expected cells, read from rows whose
+    configs are unique."""
+    problems = record_problems(committed, "committed") + record_problems(fresh, "fresh")
+    if problems:
+        return problems, {}
     a = {p: (v, c) for p, v, c in quad_cells(committed)}
     b = {p: v for p, v, _ in quad_cells(fresh)}
-    problems, worst = [], {}
-    if set(a) != set(b):
-        problems.append(f"cell sets differ: {sorted(set(a) ^ set(b))[:5]}")
+    worst = {}
     for p, (v, c) in a.items():
-        if p not in b:
-            continue
         d = calibrate._rel(v, b[p])
         if c not in worst or d > worst[c][0]:
             worst[c] = (d, p, v, b[p])
         if not d <= tol[c]:
             problems.append(f"{p}: committed {v!r} vs fresh {b[p]!r}, relative {d:.3g} > tol {tol[c]:.3g}")
     ea, eb = _exact_cells(committed), _exact_cells(fresh)
-    problems += [f"{p}: committed {ea[p]!r} vs fresh {eb.get(p)!r}" for p in ea if ea[p] != eb.get(p)]
+    problems += [f"{p}: committed {ea[p]!r} vs fresh {eb[p]!r}" for p in ea if ea[p] != eb[p]]
     return problems, worst
 
 
+def scatter_record_problems(sc):
+    """The measured scatter as its consumers read it: platforms, scatter and tolerance and no other member; two
+    platform descriptions; one scatter per QUAD_TOL_CAP class, each a finite number at least 0."""
+    if not isinstance(sc, dict) or set(sc) != {"platforms", "scatter", "tolerance"}:
+        got = sorted(sc) if isinstance(sc, dict) else type(sc).__name__
+        return [f"audit_scatter: members {got} are not ['platforms', 'scatter', 'tolerance']"]
+    probs = []
+    plats = sc["platforms"]
+    if not isinstance(plats, list) or len(plats) != 2:
+        probs.append(f"audit_scatter.platforms: {plats!r} is not two platform descriptions")
+    else:
+        for i, on in enumerate(plats):
+            probs += _platform_problems(f"audit_scatter.platforms[{i}]", on)
+    s = sc["scatter"]
+    if not isinstance(s, dict) or set(s) != set(QUAD_TOL_CAP):
+        return probs + [f"audit_scatter.scatter: {s!r} does not hold one value per class {sorted(QUAD_TOL_CAP)}"]
+    probs += [f"audit_scatter.scatter.{c}: {v!r} is not a finite number at least 0" for c, v in s.items()
+              if not (_finite(v) and v >= 0)]
+    return probs
+
+
 def committed_tolerances(cells):
+    """The class tolerances the committed record sets: the floor before a scatter is measured, else the rule of
+    the recorded scatter, which `scatter_record_problems` admits and whose recorded tolerance must be the rule's."""
     sc = cells.get("audit_scatter")
     if sc is None:
         return {c: QUAD_TOL_FLOOR for c in QUAD_TOL_CAP}
+    probs = scatter_record_problems(sc)
+    if probs:
+        raise SystemExit("audit_scatter refused:\n  " + "\n  ".join(probs))
     tol = quad_tolerances(sc["scatter"])
     if sc.get("tolerance") != tol:
         raise SystemExit(f"audit_scatter.tolerance {sc.get('tolerance')} is not the rule's {tol}")
@@ -902,6 +1097,101 @@ def render_problems(cells):
     return probs
 
 
+_NUTS_FIELDS = ("mean", "mcse", "max_rhat", "min_ess", "divergences", "max_abs_dev_over_mcse")
+
+
+def _nuts_offset(d, quad):
+    return max(abs(d["mean"][q] - quad[q]["mean"]) / d["mcse"][q] for q in calibrate.QUAD_QUANTITIES)
+
+
+def nuts_record_problems(cells):
+    """The stored NUTS cross-check as CALIBRATION.md renders it, on a record `record_problems` admits: one record
+    per NUTS_CHAINS chain with the fields _NUTS_FIELDS and no other; a finite mean and a positive finite MCSE per
+    QUAD_QUANTITIES quantity; finite diagnostics and an integer divergence count. It must pass the gate it was
+    written under against the cells' quadrature, and its rendered offset must be the one its means and MCSE give."""
+    rec = cells.get("nuts_cross_check")
+    if not isinstance(rec, dict) or set(rec) != set(NUTS_CHAINS):
+        got = sorted(rec) if isinstance(rec, dict) else rec
+        return [f"nuts_cross_check: chains {got!r} are not {sorted(NUTS_CHAINS)}"]
+    probs = []
+    for name in NUTS_CHAINS:
+        d, lbl = rec[name], f"nuts_cross_check.{name}"
+        if not isinstance(d, dict) or set(d) != set(_NUTS_FIELDS):
+            got = sorted(d) if isinstance(d, dict) else type(d).__name__
+            probs.append(f"{lbl}: fields {got} are not {sorted(_NUTS_FIELDS)}")
+            continue
+        bad = []
+        for key in ("mean", "mcse"):
+            if not isinstance(d[key], dict) or set(d[key]) != set(calibrate.QUAD_QUANTITIES):
+                bad.append(f"{lbl}.{key}: {d[key]!r} does not hold one value per quantity")
+                continue
+            bad += [f"{lbl}.{key}.{q}: {v!r} is not a finite number" for q, v in d[key].items() if not _finite(v)]
+            if key == "mcse":
+                bad += [f"{lbl}.mcse.{q}: {v!r} is not positive" for q, v in d[key].items() if _finite(v) and v <= 0]
+        bad += [f"{lbl}.{key}: {d[key]!r} is not a finite number" for key in ("max_rhat", "min_ess",
+                                                                              "max_abs_dev_over_mcse")
+                if not _finite(d[key])]
+        if type(d["divergences"]) is not int:
+            bad.append(f"{lbl}.divergences: {d['divergences']!r} is not a count")
+        if bad:
+            probs += bad
+            continue
+        quad = cells["posteriors"][name]
+        probs += [f"{lbl}: {m}" for m in calibrate.nuts_gate_failures(d, quad)]
+        if d["max_abs_dev_over_mcse"] != _nuts_offset(d, quad):
+            probs.append(f"{lbl}.max_abs_dev_over_mcse: {d['max_abs_dev_over_mcse']!r} is not its means' offset "
+                         f"{_nuts_offset(d, quad)!r}")
+    return probs
+
+
+#: the two validation-page prints the shipped record carries besides CALIBRATION.md's cells (`vb_figures` reads the
+#: second)
+SHIPPED_VALIDATION_KEYS = ("VALIDATION.md|V_petitjean|predicted", "VALIDATION_CHANNELS.md|V_breunlich_lambdac|predicted")
+
+
+def shipped_problems(cells):
+    """The record of the documents as released (``shipped_v1_3_0``) as the amendment table and the FC-001 note read
+    it, on a record `record_problems` admits: every value a printed string; every key either one of
+    SHIPPED_VALIDATION_KEYS, whose value is a finite number, or a CALIBRATION.md key of exactly four '|'-separated
+    parts that names a cell of this record; and both SHIPPED_VALIDATION_KEYS present."""
+    sh = cells.get("shipped_v1_3_0")
+    if not isinstance(sh, dict):
+        return [f"shipped_v1_3_0: {type(sh).__name__} is not a record"]
+    probs = [f"shipped_v1_3_0: no {k!r}" for k in SHIPPED_VALIDATION_KEYS if k not in sh]
+    for key, val in sh.items():
+        lbl = f"shipped_v1_3_0[{key!r}]"
+        if not isinstance(val, str):
+            probs.append(f"{lbl}: {val!r} is not a printed string")
+        elif key in SHIPPED_VALIDATION_KEYS:
+            try:
+                x = float(val)
+            except ValueError:
+                x = math.nan
+            if not math.isfinite(x):
+                probs.append(f"{lbl}: {val!r} is not a finite number")
+        else:
+            parts = key.split("|")
+            if len(parts) != 4 or parts[0] != CALIBRATION_MD:
+                probs.append(f"{lbl}: not a {CALIBRATION_MD}|section|row|column key")
+                continue
+            try:
+                _now_value(cells, *parts[1:])
+            except (KeyError, TypeError, ValueError) as e:
+                probs.append(f"{lbl}: names no cell of this record ({type(e).__name__}: {e})")
+    return probs
+
+
+def committed_problems(cells):
+    """What a consumer of the committed cells file checks before it renders, compares or samples against it: the
+    computed record (`record_problems`), then the shipped record (`shipped_problems`), the NUTS record
+    (`nuts_record_problems`) and the convergence record (`convergence_problems` at `committed_tolerances`)."""
+    probs = record_problems(cells, "cells")
+    if probs:
+        return probs
+    return (shipped_problems(cells) + nuts_record_problems(cells)
+            + convergence_problems(cells, committed_tolerances(cells)))
+
+
 def nuts_audit_problems(committed, fresh, quad):
     """(c): a fresh NUTS cross-check against the committed record -- max r_hat within its relative class,
     min ess against the one-sided floor, divergences exact -- and the gate against the committed quadrature."""
@@ -919,10 +1209,12 @@ def nuts_audit_problems(committed, fresh, quad):
 
 def audit():
     committed = load()
-    problems = input_problems(committed)
+    admission = committed_problems(committed)
+    problems = input_problems(committed) + admission
+    if admission:       # a record that fails admission is not rendered, recomputed or sampled against
+        raise SystemExit("calibration audit FAILED:\n  " + "\n  ".join(problems))
     problems += render_problems(committed)
     tol = committed_tolerances(committed)
-    problems += convergence_problems(committed, tol)
     fresh = compute_cells()
     p_a, worst = compare_cells(committed, fresh, tol)
     problems += p_a
@@ -933,7 +1225,7 @@ def audit():
     for name, f in ncc.items():
         report.append(f"    [nuts {name}] max r_hat {f['max_rhat']:.4f}  fresh min ess {f['min_ess']:.0f} "
                       f"({f['min_ess'] / AUDIT_ESS_FLOOR:.2f}x the floor)  divergences {f['divergences']}  "
-                      f"max mean offset {max(abs(f['mean'][q] - committed['posteriors'][name][q]['mean']) / f['mcse'][q] for q in calibrate.QUAD_QUANTITIES):.2f} MCSE")
+                      f"max mean offset {_nuts_offset(f, committed['posteriors'][name]):.2f} MCSE")
     if problems:
         raise SystemExit("calibration audit FAILED:\n  " + "\n  ".join(problems) + "\n  per-class worst:\n"
                          + "\n".join(report))
@@ -975,20 +1267,44 @@ def _criteria():
 
 
 _CONV_MEMBERS = [(q, st) for q in calibrate.QUAD_QUANTITIES for st in calibrate.STATS]
+#: every stored member of a run's posterior: each quantity's stats and the omega_s0-R correlation
+_RUN_MEMBERS = [*_CONV_MEMBERS, ("corr_omega_s0_R", None)]
+
+
+def _member(post, q, st):
+    v = post.get(q) if isinstance(post, dict) else None
+    if st is None:
+        return v
+    return v.get(st) if isinstance(v, dict) else None
+
+
+def _posterior_member_problems(label, post):
+    """A stored posterior holds the members _RUN_MEMBERS and no other, each a finite number."""
+    if not isinstance(post, dict):
+        return [f"{label}: {post!r} is not a posterior"]
+    want = {q for q, _ in _RUN_MEMBERS}
+    probs = [f"{label}: unexpected member(s) {sorted(set(post) - want)}"] if set(post) - want else []
+    for q in calibrate.QUAD_QUANTITIES:
+        extra = sorted(set(post[q]) - set(calibrate.STATS)) if isinstance(post.get(q), dict) else []
+        probs += [f"{label}.{q}: unexpected stat(s) {extra}"] if extra else []
+    for q, st in _RUN_MEMBERS:
+        v = _member(post, q, st)
+        if not _finite(v):
+            probs.append(f"{label}.{q}{'' if st is None else '.' + st}: {v!r} is not a finite number")
+    return probs
 
 
 def _run_problems(name, run):
-    """A convergence run of ``name``: publication resolution RES_PUB, fine resolution twice it, every member of
-    both posteriors a finite number, and every change within its criterion."""
+    """A convergence run of ``name``: publication resolution RES_PUB, fine resolution twice it, both posteriors
+    holding exactly their stored members, each a finite number (the correlation included), and every change
+    within its criterion."""
     probs = []
     if run.get("res_pub") != RES_PUB:
         probs.append(f"{name}: res_pub {run.get('res_pub')!r} is not the publication resolution {RES_PUB:g}")
     if run.get("res_fine") != 2 * RES_PUB:
         probs.append(f"{name}: res_fine {run.get('res_fine')!r} is not twice the publication resolution")
     for side in ("pub", "fine"):
-        post = run.get(side) or {}
-        probs += [f"{name}.{side}.{q}.{st}: {post.get(q, {}).get(st)!r} is not a finite number"
-                  for q, st in _CONV_MEMBERS if not _finite(post.get(q, {}).get(st))]
+        probs += _posterior_member_problems(f"{name}.{side}", run.get(side))
     if not probs:
         probs += [f"{name}: {m}" for m in calibrate.convergence_failures(run["pub"], run["fine"])]
     return probs
@@ -1000,9 +1316,8 @@ def _binding_problems(name, pub, live, tol):
     if not isinstance(live, dict):
         return [f"{name}: the cells hold no {name!r} posterior for the run to certify"]
     probs = []
-    for q, st in [*_CONV_MEMBERS, ("corr_omega_s0_R", None)]:
-        a = pub.get(q) if st is None else pub.get(q, {}).get(st)
-        b = live.get(q) if st is None else live.get(q, {}).get(st)
+    for q, st in _RUN_MEMBERS:
+        a, b = _member(pub, q, st), _member(live, q, st)
         cls = "moment" if st is None else _quantile_class(q, st)
         label = q if st is None else f"{q}.{st}"
         d = calibrate._rel(a, b) if _finite(a) and _finite(b) else math.inf
@@ -1011,14 +1326,20 @@ def _binding_problems(name, pub, live, tol):
     return probs
 
 
+_CONV_KEYS = ("res_pub", "res_fine", "criteria", "posteriors", "runs")
+
+
 def convergence_problems(cells, tol):
-    """The convergence record certifies these cells: its resolutions are the estimator's and twice it, its
-    criteria are the live ones, it holds the run of every CONVERGENCE_POSTERIORS posterior, each run meets
-    _run_problems, the recorded maxima are that run's, and each run's publication posterior is the cells' own."""
+    """The convergence record certifies these cells: it holds _CONV_KEYS and no other member, its resolutions are
+    the estimator's and twice it, its criteria are the live ones, it holds the run (pub and fine, nothing else) of
+    every CONVERGENCE_POSTERIORS posterior, each run meets _run_problems, the recorded maxima are that run's, and
+    each run's publication posterior is the cells' own."""
     conv = cells.get("convergence")
     if not isinstance(conv, dict):
         return ["convergence: no record"]
     probs = []
+    if set(conv) - set(_CONV_KEYS):
+        probs.append(f"convergence: unexpected member(s) {sorted(set(conv) - set(_CONV_KEYS))}")
     res = cells.get("estimator", {}).get("res")
     if conv.get("res_pub") != RES_PUB or res != RES_PUB:
         probs.append(f"convergence.res_pub {conv.get('res_pub')!r} / estimator res {res!r} are not {RES_PUB:g}")
@@ -1028,9 +1349,14 @@ def convergence_problems(cells, tol):
         probs.append(f"convergence.criteria {conv.get('criteria')!r} are not the live criteria {_criteria()!r}")
     runs, maxima = conv.get("runs") or {}, conv.get("posteriors") or {}
     want = sorted(CONVERGENCE_POSTERIORS)
-    if sorted(runs) != want or sorted(maxima) != want:
-        return probs + [f"convergence: runs {sorted(runs)} and maxima {sorted(maxima)} are not {want}"]
+    if not isinstance(runs, dict) or not isinstance(maxima, dict) or sorted(runs) != want or sorted(maxima) != want:
+        got = [sorted(x) if isinstance(x, dict) else type(x).__name__ for x in (runs, maxima)]
+        return probs + [f"convergence: runs {got[0]} and maxima {got[1]} are not {want}"]
     for name in CONVERGENCE_POSTERIORS:
+        if not isinstance(runs[name], dict) or set(runs[name]) != {"pub", "fine"}:
+            got = sorted(runs[name]) if isinstance(runs[name], dict) else runs[name]
+            probs.append(f"convergence: {name}: run members {got!r} are not ['fine', 'pub']")
+            continue
         run = dict(runs[name], res_pub=conv.get("res_pub"), res_fine=conv.get("res_fine"))
         p = _run_problems(name, run)
         if not p:
@@ -1046,9 +1372,10 @@ def record_convergence(paths):
     CONVERGENCE_POSTERIORS posterior and, when the cells file holds posteriors already, each run's publication
     posterior is the cells' own. The runs are stored with the record, so every consumer re-checks the binding."""
     runs = [load(p) for p in paths]
-    recs = {r.get("name"): r for r in runs}
-    if len(recs) != len(runs) or sorted(recs, key=str) != sorted(CONVERGENCE_POSTERIORS):
-        raise SystemExit(f"convergence runs {[r.get('name') for r in runs]} != {sorted(CONVERGENCE_POSTERIORS)}")
+    names = [r.get("name") if isinstance(r, dict) else None for r in runs]
+    if len(set(map(str, names))) != len(runs) or sorted(map(str, names)) != sorted(CONVERGENCE_POSTERIORS):
+        raise SystemExit(f"convergence runs {names} != {sorted(CONVERGENCE_POSTERIORS)}")
+    recs = {r["name"]: r for r in runs}
     probs = [m for n in CONVERGENCE_POSTERIORS for m in _run_problems(n, recs[n])]
     cells = load()
     if not probs and "posteriors" in cells:
@@ -1073,36 +1400,23 @@ def expected_quad_paths():
     for name in POSTERIORS:
         out |= {(f"posteriors.{name}.{q}.{st}", _quantile_class(q, st)) for q, st in _CONV_MEMBERS}
         out.add((f"posteriors.{name}.corr_omega_s0_R", "moment"))
-    for _, r_lbl in _R_BOXES:
-        for _, o_lbl in _OS0_BOXES:
-            for _, l_lbl in _LC_BOXES:
-                cfg = _sweep_config(r_lbl, o_lbl, l_lbl)
-                out |= {(f"sweep[{cfg}].{k}", "moment") for k in ("corr", "R_sd", "ose_mean", "ose_sd")}
+    for cfg in _sweep_grid():
+        out |= {(f"sweep[{cfg}].{k}", "moment") for k in SWEEP_SCALARS}
     out |= {(f"q_net.{st}", _quantile_class("Q_net", st)) for st in Q_NET_STATS}
     out |= {(f"legacy_tension.{k}", "moment") for k in legacy_tension()}
     return out
 
 
-def _scatter_side_problems(label, rec):
-    try:
-        got = quad_cells(rec)
-    except (KeyError, TypeError, AttributeError) as e:
-        return [f"{label}: incomplete cells ({type(e).__name__}: {e})"]
-    want = expected_quad_paths()
-    have = {(p, c) for p, _, c in got}
-    probs = [f"{label}: {len(want - have)} scalar(s) missing, e.g. {sorted(want - have)[:3]}"] if want - have else []
-    probs += [f"{label}: {len(have - want)} unexpected scalar(s), e.g. {sorted(have - want)[:3]}"] if have - want else []
-    probs += [f"{label}: {p} = {v!r} is not a finite number" for p, v, _ in got if not _finite(v)]
-    return probs
-
-
 def record_scatter(path):
-    """Write the measured cross-platform scatter: refused unless both records carry exactly the expected scalars,
-    every one finite, and the same exact cells (rails and boxes)."""
+    """Write the measured cross-platform scatter: refused unless both records pass `record_problems`, were computed
+    from the same inputs, and carry the same railing flags."""
     cells, other = load(), load(path)
-    probs = _scatter_side_problems("this platform", cells) + _scatter_side_problems("the other platform", other)
-    if not probs and _exact_cells(cells) != _exact_cells(other):
-        probs.append("exact cells differ between the platforms")
+    probs = record_problems(cells, "this platform") + record_problems(other, "the other platform")
+    if not probs:
+        if cells["inputs"] != other["inputs"]:
+            probs.append(f"the platforms' inputs differ: {cells['inputs']} vs {other['inputs']}")
+        ea, eb = _exact_cells(cells), _exact_cells(other)
+        probs += [f"{p}: this platform {ea[p]!r}, the other platform {eb[p]!r}" for p in ea if ea[p] != eb[p]]
     if probs:
         raise SystemExit("scatter record refused:\n  " + "\n  ".join(probs))
     a = {p: v for p, v, _ in quad_cells(cells)}
@@ -1121,13 +1435,17 @@ def main(argv=None):
         audit()
     elif "--render" in argv:
         cells = load()
-        probs = input_problems(cells) + convergence_problems(cells, committed_tolerances(cells))
+        probs = input_problems(cells) + committed_problems(cells)
         if probs:
             raise SystemExit("render refused: " + "; ".join(probs))
         render(cells)
         print(f"rendered {CALIBRATION_MD} and {NOTE_PATH} from {CELLS_JSON}")
     elif "--cells-out" in argv:
-        dump(compute_cells(), argv[argv.index("--cells-out") + 1])
+        fresh = json.loads(json.dumps(compute_cells()))
+        probs = record_problems(fresh, "computed cells")
+        if probs:
+            raise SystemExit("cells refused: " + "; ".join(probs))
+        dump(fresh, argv[argv.index("--cells-out") + 1])
     elif "--converge" in argv:
         raise SystemExit(converge(argv[argv.index("--converge") + 1], argv[argv.index("--out") + 1]))
     elif "--record-convergence" in argv:

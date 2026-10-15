@@ -42,6 +42,24 @@ def file_sha256(path) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def _refuse_repeated_keys(pairs):
+    keys = [k for k, _ in pairs]
+    repeated = sorted({k for k in keys if keys.count(k) > 1})
+    if repeated:
+        raise ValueError(f"repeated key(s) {repeated} in one JSON object")
+    return dict(pairs)
+
+
+def load_json(path):
+    """The JSON record at ``path``, refused (ValueError naming the file and the key) if any object in it
+    states a key twice: the standard decoder keeps the last value of a repeated key, so the others would go
+    unread."""
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=_refuse_repeated_keys)
+    except ValueError as e:
+        raise ValueError(f"{path}: {e}") from e
+
+
 def _canonical_json(obj) -> str:
     """Deterministic JSON for reviewable diffs: sorted keys, 2-space indent, ASCII-only."""
     return json.dumps(obj, sort_keys=True, indent=2, ensure_ascii=True)
