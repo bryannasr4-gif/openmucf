@@ -115,7 +115,7 @@ def _inputs_copy(tmp_path, edit):
 
 
 def test_load_inputs_refuses_a_symbol_on_two_rows(tmp_path):
-    """Each symbol given a second row (the copy changed): refused naming it, never reduced to the last row."""
+    """Each symbol given a second row: refused naming it, never reduced to the last row."""
     lines = sidechannels.INPUTS_CSV.read_text(encoding="utf-8").splitlines()
     assert sidechannels.load_inputs(_inputs_copy(tmp_path, lambda ls: ls)) == sidechannels.load_inputs()
     symbols = list(sidechannels.load_inputs())
