@@ -597,7 +597,7 @@
   "inputs": {
     "calibration_cells_sha256": "721e453cb1c9822cd482c7279945c15be59a33e15439ea1c2276a316b59f9f6f",
     "muon_cost_csv_sha256": "e1a3a3bd0ff27a2cea70d3a571f7d79cd9842099e7f2ceb04eb850b313af7467",
-    "rates_csv_sha256": "f62cdcf00dc365b373e449a38abba9ffe4d14ba60a6ab863bb8f1b8e1b3a38d9",
+    "rates_csv_sha256": "9af2256b38fadaad3b6dd80f2bc6448a7794d29e5ff12982093a3612769bbff1",
     "seeds": {
       "breakeven": 1,
       "forward_uq": 0,

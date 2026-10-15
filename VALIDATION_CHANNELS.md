@@ -2,7 +2,7 @@
 
 This is the same trust gate run with `include_loss_channels=True` (ttmu side-branch + He-3 scavenging) at the SAME operating points. The channels-OFF `VALIDATION.md` remains the v1 trust gate; this doc is diagnostic.
 
-**Outcome:** the ttmu formation rate `lambda_ttmu` is live (JINR preprint E15-2008-99, read in the target) and the anchors are He-purged (c_He=0), so the tt channel alone separates this scoreboard from the channels-OFF one. The Kou-Chen +-10% rows FAIL here: their closed forms carry no tt loss. That is a registered finding about those closed forms, not a regression of this engine; the channels-OFF scoreboard stays the trust gate. See `docs/accounting.md`.
+**Outcome:** the ttmu formation rate `lambda_ttmu` is live (JINR preprint E15-2008-99, read in the target). These validation runs set c_He=0, so the tt channel alone separates this scoreboard from the channels-OFF one. The Kou-Chen +-10% rows FAIL here: their closed forms carry no tt loss. That is a registered finding about those closed forms, not a regression of this engine; the channels-OFF scoreboard stays the trust gate. See `docs/accounting.md`.
 
 Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** (liquid density at room temperature; see the gate rule for its cycling-rate anchor).
 

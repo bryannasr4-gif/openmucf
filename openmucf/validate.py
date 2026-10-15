@@ -105,8 +105,8 @@ def run(rates, targets_csv=None, channels="off"):
     """Run the engine against the pre-registered targets.
 
     ``channels`` in {"off","on"}: "off" is the v1 trust gate (committed VALIDATION.md); "on" switches
-    ``include_loss_channels=True`` at the SAME operating points. At the anchor conditions the He-3 channel
-    is inert (He-purged fills, c_He=0).
+    ``include_loss_channels=True`` at the SAME operating points. These validation runs set c_He=0, so the
+    He-3 channel is inert; this is a model setting, not a claim of zero experimental loss.
     """
     inc = channels == "on"
     tgt = _load_targets(targets_csv or TARGETS_CSV)
@@ -360,7 +360,7 @@ def report_markdown(results, channels="off") -> str:
             "points. The channels-OFF `VALIDATION.md` remains the v1 trust gate; this doc is diagnostic.",
             "",
             "**Outcome:** the ttmu formation rate `lambda_ttmu` is live (JINR preprint E15-2008-99, read in "
-            "the target) and the anchors are He-purged (c_He=0), so the tt channel alone separates this "
+            "the target). These validation runs set c_He=0, so the tt channel alone separates this "
             "scoreboard from the channels-OFF one. The Kou-Chen +-10% rows FAIL here: their closed forms "
             "carry no tt loss. That is a registered finding about those closed forms, not a regression of "
             "this engine; the channels-OFF scoreboard stays the trust gate. See `docs/accounting.md`.",
