@@ -1840,3 +1840,83 @@ def test_admitted_cells_returns_the_committed_record_and_refuses_a_defect(tmp_pa
     _repeat_in_file(mod, tmp_path)
     with pytest.raises(SystemExit, match=r"CALIBRATION_CELLS.json refused: cells: sweep\[.*config repeated"):
         mod.admitted_cells()
+
+
+def test_findings_reads_the_cells_and_the_targets_through_the_checked_readers():
+    """FINDINGS.md's generator runs its whole computation at import, so its wiring is pinned in its source:
+    the cells file only through the calibration script's admission, the two validation targets only through
+    the loader that refuses a repeated id and the reader that refuses a non-finite value."""
+    src = (_ROOT / "scripts" / "generate_findings.py").read_text(encoding="utf-8")
+    assert "_CELLS = _gen_calibration.admitted_cells(_CELLS_PATH)" in src
+    assert "_TGT = validate._load_targets(TARGETS_CSV)" in src
+    assert '_X_LIQ = validate.target_value(_TGT, "V_petitjean_Xmu")' in src
+    assert '_LC_LIQ = validate.target_value(_TGT, "V_breunlich_lambdac")' in src
+    assert "json.load" not in src and "_CELLS_PATH, encoding" not in src
+
+
+def _load_frontier():
+    spec = importlib.util.spec_from_file_location("_gen_frontier", _ROOT / "scripts" / "generate_frontier.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_frontier_stops_on_a_cells_file_the_calibration_refuses(tmp_path, monkeypatch):
+    """FRONTIER.md's generator, given a cells file with a repeated sweep config, stops naming it before it
+    writes FRONTIER.md."""
+    cal = _in_copy(tmp_path, monkeypatch)
+    cfg = _repeat_in_file(cal, tmp_path)
+    fr = _load_frontier()
+    monkeypatch.setattr(fr, "CELLS_JSON", tmp_path / cal.CELLS_JSON)
+    (tmp_path / "FRONTIER.md").write_text("sentinel\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match=re.escape(f"sweep[{cfg}]: config repeated on 2 rows")):
+        fr.main()
+    assert (tmp_path / "FRONTIER.md").read_text(encoding="utf-8") == "sentinel\n"
+
+
+def test_frontier_takes_the_kamimura_r_through_the_checked_reader():
+    fr = _load_frontier()
+    r = _committed_cells()["posteriors"]["kamimura"]["R"]
+    assert (f"{r['mean']:.2f}", f"{r['sd']:.2f}") == (fr.R_KAMIMURA_REFERENCE, fr.R_KAMIMURA_SD)
+    src = (_ROOT / "scripts" / "generate_frontier.py").read_text(encoding="utf-8")
+    assert "_R_KAM_MEAN, _R_KAM_SD = uq.kamimura_r_from_cells(CELLS_JSON)" in src
+    assert "json.loads" not in src
+
+
+def _cells_text_with_r(tmp_path, key, value):
+    cells = _committed_cells()
+    r = cells["posteriors"]["kamimura"]["R"]
+    if value == "missing":
+        del r[key]
+    else:
+        r[key] = value
+    path = tmp_path / "cells.json"
+    path.write_text(json.dumps(cells), encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize("key", ["mean", "sd"])
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), None, True, "0.47", "missing"],
+                         ids=["nan", "inf", "None", "True", "text", "missing"])
+def test_the_kamimura_r_reader_refuses_each_invalid_member(tmp_path, key, value):
+    from openmucf import uq
+
+    path = _cells_text_with_r(tmp_path, key, value)
+    with pytest.raises(ValueError, match="posteriors.kamimura.R"):
+        uq.kamimura_r_from_cells(path)
+
+
+def test_the_kamimura_r_reader_returns_the_cells_values_and_refuses_a_repeated_key(tmp_path, monkeypatch):
+    from openmucf import uq
+
+    r = _committed_cells()["posteriors"]["kamimura"]["R"]
+    assert uq.kamimura_r_from_cells() == (r["mean"], r["sd"])
+    text = (_ROOT / "CALIBRATION_CELLS.json").read_text(encoding="utf-8")
+    (tmp_path / "cells.json").write_text(_with_repeated_key(text, "posteriors"), encoding="utf-8")
+    with pytest.raises(ValueError, match=r"repeated key\(s\) \['posteriors'\]"):
+        uq.kamimura_r_from_cells(tmp_path / "cells.json")
+    monkeypatch.setattr(uq, "_CELLS_JSON", tmp_path / "cells.json")
+    with pytest.raises(ValueError, match="repeated key"):
+        uq._kamimura_r_text()                     # a malformed file is named, never replaced by the pointer
+    monkeypatch.setattr(uq, "_CELLS_JSON", tmp_path / "absent.json")
+    assert uq._kamimura_r_text() == "in CALIBRATION.md"

@@ -16,6 +16,7 @@ success (see ``tests/test_validate.py::test_expected_fail_guard``).
 from __future__ import annotations
 
 import csv
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -79,9 +80,32 @@ def _xmu_loss(rates, omega_s_eff, T=_OP["T"], include_loss_channels=False):
 
 
 def _load_targets(path=TARGETS_CSV):
-    """Load pre-registered targets (observed value + tolerance) from validation_targets.csv, keyed by id."""
+    """Load pre-registered targets (observed value + tolerance) from validation_targets.csv, keyed by id.
+    Raises ValueError naming the defect for a header that repeats a column or an id on more than one row
+    (keying would keep only the last of either)."""
     with open(path, newline="") as f:
-        return {row["target_id"].strip(): row for row in csv.DictReader(f)}
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        rows = list(reader)
+    repeated = sorted({h for h in header if header.count(h) > 1})
+    if repeated:
+        raise ValueError(f"{path}: column(s) {repeated} repeated in the header")
+    out = {}
+    for row in rows:
+        tid = row["target_id"].strip()
+        if tid in out:
+            raise ValueError(f"{path}: target {tid!r} is on more than one row")
+        out[tid] = row
+    return out
+
+
+def target_value(tgt, target_id):
+    """The observed value of ``target_id`` in ``tgt`` (`_load_targets`) as a finite number; raises ValueError
+    naming the target otherwise."""
+    v = float(tgt[target_id]["value"])
+    if not math.isfinite(v):
+        raise ValueError(f"validation target {target_id}: value {v!r} is not a finite number")
+    return v
 
 
 def _load_yamashita_curve(path=_YAMASHITA_CSV):
@@ -145,7 +169,7 @@ def run(rates, targets_csv=None, channels="off"):
         pj_note = "measured liquid effective sticking"
     else:
         # the source's yield relation at its maximum cycle rate: W = 1/X - lambda_0/lambda_c
-        x_obs, lc_obs = float(tgt["V_petitjean_Xmu"]["value"]), float(tgt["V_breunlich_lambdac"]["value"])
+        x_obs, lc_obs = target_value(tgt, "V_petitjean_Xmu"), target_value(tgt, "V_breunlich_lambdac")
         w_tot = 1.0 / x_obs - lam0 / lc_obs
         x = _xmu(rates, w_tot)
         pj_obs = f"113 (fed W={100.0 * w_tot:.3f}% total loss per cycle)"

@@ -23,7 +23,7 @@ design-study range, or a systems assumption with no ledger row -- recorded per r
 from __future__ import annotations
 
 import csv
-import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -38,13 +38,36 @@ _PRIORS_CSV = Path(__file__).resolve().parent / "data" / "uq_priors.csv"
 _CELLS_JSON = Path(__file__).resolve().parent.parent / "CALIBRATION_CELLS.json"
 
 
-def _kamimura_r_text() -> str:
-    """The Kamimura-prior calibration posterior's total R as CALIBRATION_CELLS.json records it."""
+def kamimura_r_from_cells(path=None) -> tuple[float, float]:
+    """(mean, sd) of the Kamimura-prior calibration posterior's total R as CALIBRATION_CELLS.json records it.
+
+    The file (the repository's own unless ``path`` is given) is read by ``provenance.load_json``, which
+    refuses a repeated key; raises ValueError naming the member when either value is absent or not a finite
+    number (never a Boolean), and FileNotFoundError when there is no cells file.
+    """
+    from .provenance import load_json
+
+    path = _CELLS_JSON if path is None else path
+    cells = load_json(path)
     try:
-        r = json.loads(_CELLS_JSON.read_text(encoding="utf-8"))["posteriors"]["kamimura"]["R"]
-    except (OSError, KeyError, ValueError):
+        r = cells["posteriors"]["kamimura"]["R"]
+        vals = (r["mean"], r["sd"])
+    except (KeyError, TypeError) as e:
+        raise ValueError(f"{path}: no posteriors.kamimura.R mean and sd ({type(e).__name__}: {e})") from e
+    for key, v in zip(("mean", "sd"), vals, strict=True):
+        if type(v) not in (int, float) or not math.isfinite(v):
+            raise ValueError(f"{path}: posteriors.kamimura.R.{key} = {v!r} is not a finite number")
+    return float(vals[0]), float(vals[1])
+
+
+def _kamimura_r_text() -> str:
+    """The Kamimura-prior calibration posterior's total R as CALIBRATION_CELLS.json records it; a pointer to
+    CALIBRATION.md only where the cells file is absent (an installed package)."""
+    try:
+        mean, sd = kamimura_r_from_cells(_CELLS_JSON)
+    except FileNotFoundError:
         return "in CALIBRATION.md"
-    return f"R = {r['mean']:.2f} +- {r['sd']:.2f}"
+    return f"R = {mean:.2f} +- {sd:.2f}"
 
 
 @dataclass(frozen=True)

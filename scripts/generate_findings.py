@@ -6,7 +6,6 @@ python scripts/generate_findings.py
 import csv
 import hashlib
 import importlib.util
-import json
 import math
 import os
 import re
@@ -26,6 +25,7 @@ from openmucf import (  # noqa: E402
     provenance,
     sidechannels,
     uq,
+    validate,
 )
 from openmucf.constants import LAMBDA_0  # noqa: E402
 from openmucf.rates import RATES_CSV, TARGETS_CSV, load_rates  # noqa: E402
@@ -244,8 +244,10 @@ H["R_X_required"] = f"{be['R_X_required_given_R_col']:.2f}"
 # Section 2's posterior and section 3's side-channel floors: the calibration cells, the side-channel loss at
 # the anchor fill, and the closed-form frontier given that loss as a FRACTION.
 _CELLS_PATH = "CALIBRATION_CELLS.json"
-with open(_CELLS_PATH, encoding="utf-8") as _f:
-    _CELLS = json.load(_f)
+_spec = importlib.util.spec_from_file_location("_gen_calibration", "scripts/generate_calibration.py")
+_gen_calibration = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_gen_calibration)
+_CELLS = _gen_calibration.admitted_cells(_CELLS_PATH)      # refused unless the calibration's own check admits it
 for _k, _q in (("lo", "q0.025"), ("med", "q0.5"), ("hi", "q0.975")):
     H[f"post_xmu_{_k}"] = f"{_CELLS['posteriors']['weak']['X_mu'][_q]:.4g}"
     H[f"post_qnet_{_k}"] = f"{_CELLS['q_net'][_q]:.4g}"
@@ -253,10 +255,9 @@ _spec = importlib.util.spec_from_file_location("_gen_materiality", "scripts/gene
 _gen_materiality = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_gen_materiality)
 H["structural_band_pct"] = f"{_gen_materiality.structural_band_pct(_rates):.2f}"
-with open(TARGETS_CSV, encoding="utf-8") as _f:
-    _TGT = {r["target_id"]: r for r in csv.DictReader(_f)}
-_X_LIQ = float(_TGT["V_petitjean_Xmu"]["value"])
-_LC_LIQ = float(_TGT["V_breunlich_lambdac"]["value"])
+_TGT = validate._load_targets(TARGETS_CSV)
+_X_LIQ = validate.target_value(_TGT, "V_petitjean_Xmu")
+_LC_LIQ = validate.target_value(_TGT, "V_breunlich_lambdac")
 _X_SOLID = 124.0  # the published yield of the 12 K solid fill (Crowe1987; rates.csv omega_s_eff_solid_12K)
 H["W_liquid"] = f"{100.0 * (1.0 / _X_LIQ - LAMBDA_0 / _LC_LIQ):.4f}"
 H["W_solid"] = f"{100.0 * (1.0 / _X_SOLID - LAMBDA_0 / _rates.value('lambda_c_solid_12K')):.4f}"

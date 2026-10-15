@@ -23,11 +23,10 @@ to `provenance --check`. Computation lives in importable helpers (no import side
 
 from __future__ import annotations
 
-import json
 import math
 from pathlib import Path
 
-from openmucf import frontier, sidechannels
+from openmucf import frontier, sidechannels, uq
 from openmucf.analytic import effective_sticking, fusions_per_muon
 from openmucf.constants import LAMBDA_0
 from openmucf.frontier import (
@@ -53,9 +52,9 @@ LAMBDA_C_BAND = (1.00e8, 1.45e8)
 # Kamimura-prior calibration posterior mean and sd, read from the calibration cells.
 R_COL_REFERENCE = "0.35"
 CELLS_JSON = Path(__file__).resolve().parents[1] / "CALIBRATION_CELLS.json"
-_R_KAM = json.loads(CELLS_JSON.read_text(encoding="utf-8"))["posteriors"]["kamimura"]["R"]
-R_KAMIMURA_REFERENCE = f"{_R_KAM['mean']:.2f}"
-R_KAMIMURA_SD = f"{_R_KAM['sd']:.2f}"
+_R_KAM_MEAN, _R_KAM_SD = uq.kamimura_r_from_cells(CELLS_JSON)
+R_KAMIMURA_REFERENCE = f"{_R_KAM_MEAN:.2f}"
+R_KAMIMURA_SD = f"{_R_KAM_SD:.2f}"
 # The side-channel loss per cycle at the liquid anchor fill, as the FRACTION frontier.r_required takes.
 L_ANCHOR = sidechannels.ANCHOR_L_OTHER_FRACTION
 # The figure overlays two loss conditions: its curves are r_required at L = 0, its cloud is model_w's posterior.
@@ -335,7 +334,21 @@ def _write_figure(H: dict[str, str]) -> None:
     plt.close(fig)
 
 
+def _admit_calibration_cells(path) -> None:
+    """Stop (SystemExit naming each problem) unless scripts/generate_calibration.py admits the cells file at
+    ``path``: the check its audit and its render run, loaded here so that importing this module stays light."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_gen_calibration", Path(__file__).resolve().parent / "generate_calibration.py"
+    )
+    gen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+    gen.admitted_cells(path)
+
+
 def main() -> None:
+    _admit_calibration_cells(CELLS_JSON)       # before anything is written
     H = build_headline()
     Path("FRONTIER.md").write_text(build_markdown(H), encoding="utf-8")
     entries = build_manifest_entries(H)
