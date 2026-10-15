@@ -30,6 +30,16 @@ from openmucf import (  # noqa: E402
 from openmucf.constants import LAMBDA_0  # noqa: E402
 from openmucf.rates import RATES_CSV, TARGETS_CSV, load_rates  # noqa: E402
 
+# Sections 2 and 3 take the calibration record as the calibration's gate admits it; the gate runs before
+# anything here is computed or written.
+_spec = importlib.util.spec_from_file_location(
+    "_gen_calibration", os.path.join(os.path.dirname(os.path.abspath(__file__)), "generate_calibration.py")
+)
+_gen_calibration = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_gen_calibration)
+_CELLS = _gen_calibration.admit_calibration_cells()
+_R_KAM = _CELLS.data["posteriors"]["kamimura"]["R"]
+
 os.makedirs("figures", exist_ok=True)
 
 sens = uq.local_sensitivities()
@@ -50,7 +60,7 @@ _EQREL_OUTSIDE_TEXT = ",\n".join(
     for p, lo, hi in _EQREL_OUTSIDE
 )
 fw = uq.forward_uq(n=400_000)
-be = uq.breakeven_audit(n=400_000)
+be = uq.breakeven_audit(n=400_000, kamimura_r=(_R_KAM["mean"], _R_KAM["sd"]))
 xchk = uq.cross_check_gradient()
 # The gradient cross-check ships as a BOUND, never a pinned digit: rel_diff is autodiff-vs-analytic noise
 # (~3e-13); its leading digit is env-dependent, so FINDINGS emits the asserted bound, never raw digits.
@@ -243,14 +253,9 @@ H["R_col_ref"] = f"{be['R_col_reference']:.2f}"
 H["R_X_required"] = f"{be['R_X_required_given_R_col']:.2f}"
 # Section 2's posterior and section 3's side-channel floors: the calibration cells, the side-channel loss at
 # the anchor fill, and the closed-form frontier given that loss as a FRACTION.
-_CELLS_PATH = "CALIBRATION_CELLS.json"
-_spec = importlib.util.spec_from_file_location("_gen_calibration", "scripts/generate_calibration.py")
-_gen_calibration = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_gen_calibration)
-_CELLS = _gen_calibration.admitted_cells(_CELLS_PATH)      # refused unless the calibration's own check admits it
 for _k, _q in (("lo", "q0.025"), ("med", "q0.5"), ("hi", "q0.975")):
-    H[f"post_xmu_{_k}"] = f"{_CELLS['posteriors']['weak']['X_mu'][_q]:.4g}"
-    H[f"post_qnet_{_k}"] = f"{_CELLS['q_net'][_q]:.4g}"
+    H[f"post_xmu_{_k}"] = f"{_CELLS.data['posteriors']['weak']['X_mu'][_q]:.4g}"
+    H[f"post_qnet_{_k}"] = f"{_CELLS.data['q_net'][_q]:.4g}"
 _spec = importlib.util.spec_from_file_location("_gen_materiality", "scripts/generate_materiality.py")
 _gen_materiality = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_gen_materiality)
@@ -273,8 +278,8 @@ H["lc_needed_anchor"] = (
     f"{frontier.lambda_c_required(_N_MU, 1.0, l_other=sidechannels.ANCHOR_L_OTHER_FRACTION):.2e}"
 )
 H["lc_needed_free"] = f"{frontier.lambda_c_required(_N_MU, 1.0):.2e}"
-H["R_kamimura"] = f"{_CELLS['posteriors']['kamimura']['R']['mean']:.2f}"
-H["R_kamimura_sd"] = f"{_CELLS['posteriors']['kamimura']['R']['sd']:.2f}"
+H["R_kamimura"] = f"{_R_KAM['mean']:.2f}"
+H["R_kamimura_sd"] = f"{_R_KAM['sd']:.2f}"
 # The rendered box edges, so the document, the provenance paragraphs and the manifest all print the
 # same strings from one place (each edge renders itself; nothing here reformats a value).
 for _t, (_lo, _hi) in _TIER_BOXES.items():
@@ -822,7 +827,7 @@ _manifest_inputs = {
     "muon_cost_csv_sha256": provenance.file_sha256(mucost.MUON_COST_CSV),
     "uq_params_repr_sha256": hashlib.sha256(repr(uq.PARAMS).encode("utf-8")).hexdigest(),
     # sections 2 and 3 read the calibration cells and the side-channel inputs
-    "calibration_cells_sha256": provenance.file_sha256(_CELLS_PATH),
+    "calibration_cells_sha256": _CELLS.sha256,
     "side_channel_inputs_csv_sha256": provenance.file_sha256(sidechannels.INPUTS_CSV),
     "seeds": {"sobol": 0, "forward_uq": 0, "breakeven": 1, "tier_panel": 0},
 }

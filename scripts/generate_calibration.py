@@ -13,15 +13,20 @@ Importable without side effects: all work runs inside functions / ``main()``.
 The published cells (`CALIBRATION_CELLS.json`) come from `openmucf.calibrate.posterior_quadrature`, which is
 deterministic; `--audit` recomputes each one and accepts it within its class tolerance (QUAD_TOL_*), re-renders
 CALIBRATION.md and the FC-001 note and requires byte equality, reruns the NUTS cross-check, and checks that the
-input digests the cells record are the live files'.
+input digests the cells record are the live files'. Every reader that renders, audits or publishes from the cells
+file takes it only through `admit_calibration_cells`; the regeneration, which rewrites the file, renders only from
+the record it writes, once that record (the parts it carries from the old file included) passes the same checks.
 """
 
 import contextlib
+import copy
+import hashlib
 import json
 import math
 import platform
 import sys
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
 import matplotlib
@@ -101,6 +106,16 @@ INPUT_FILES = {
     "uq_priors_csv_sha256": "openmucf/data/uq_priors.csv",
     "fc001_card_sha256": "forecasts/FC-001-mufuse.json",
 }
+#: The documents as released at RELEASED_TAG, whose printed cells the shipped record holds: RELEASED_DOCUMENTS carries
+#: each text verbatim, and each must have the git blob id the tag gives it (`git rev-parse v1.3.0:<document>`).
+RELEASED_TAG = "v1.3.0"
+RELEASED_COMMIT = "66a87e869214713f5e1fbd3a8725a5f78442089d"
+RELEASED_BLOBS = {
+    "CALIBRATION.md": "a8db7f228ed6e670f07db2cf27163e6366f10c9e",
+    "VALIDATION.md": "c5c175161994afe31ad76a6c606e3acbe8ded8a6",
+    "VALIDATION_CHANNELS.md": "931dba6d5dd9bacc40d02ee2fbedadd99fb7543e",
+}
+RELEASED_DOCUMENTS = "data/calibration/released_v1.3.0.json"
 
 
 def lc_label(box):
@@ -335,25 +350,112 @@ def nuts_cross_check(posteriors):
     return rec, weak_draws
 
 
+def _cells_text(cells):
+    """The bytes of a cells file, as text: canonical JSON (sorted keys, indent 2, ASCII) and a final newline."""
+    return json.dumps(cells, sort_keys=True, indent=2, ensure_ascii=True) + "\n"
+
+
 def dump(cells, path):
     with open(path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(json.dumps(cells, sort_keys=True, indent=2, ensure_ascii=True) + "\n")
+        f.write(_cells_text(cells))
 
 
 def load(path=CELLS_JSON):
     """A cells or run record, refused (ValueError naming the file and the key) if any object in it repeats a key
-    (`openmucf.provenance.load_json`)."""
+    (`openmucf.provenance.load_json`). Nothing renders or publishes what this returns: the documents are built only
+    from what `admit_calibration_cells` admits, and the measurement steps that rewrite the cells file
+    (`regenerate`, `record_convergence`, `record_scatter`) admit what they carry or bind."""
     return provenance.load_json(path)
 
 
-def admitted_cells(path=CELLS_JSON):
-    """The committed cells file as a reader outside this script (FINDINGS.md, FRONTIER.md) takes it: loaded by
-    `load` and refused (SystemExit naming each problem) unless `committed_problems` admits it."""
-    cells = load(path)
-    probs = committed_problems(cells)
+# ================================================================================= the admission gate
+class _FrozenDict(dict):
+    """A dict that refuses every change in place; a deep copy of it is an ordinary dict."""
+
+    def _refuse(self, *args, **kwargs):
+        raise TypeError("the admitted calibration cells are read-only")
+
+    __setitem__ = __delitem__ = __ior__ = clear = pop = popitem = setdefault = update = _refuse
+
+    def __copy__(self):
+        return dict(self)
+
+    def __deepcopy__(self, memo):
+        return {k: copy.deepcopy(v, memo) for k, v in self.items()}
+
+    def __reduce__(self):
+        return dict, (dict(self),)
+
+
+class _FrozenList(list):
+    """A list that refuses every change in place; a deep copy of it is an ordinary list."""
+
+    def _refuse(self, *args, **kwargs):
+        raise TypeError("the admitted calibration cells are read-only")
+
+    __setitem__ = __delitem__ = __iadd__ = __imul__ = _refuse
+    append = clear = extend = insert = pop = remove = reverse = sort = _refuse
+
+    def __copy__(self):
+        return list(self)
+
+    def __deepcopy__(self, memo):
+        return [copy.deepcopy(v, memo) for v in self]
+
+    def __reduce__(self):
+        return list, (list(self),)
+
+
+def _freeze(node):
+    if isinstance(node, dict):
+        return _FrozenDict({k: _freeze(v) for k, v in node.items()})
+    if isinstance(node, list):
+        return _FrozenList(_freeze(v) for v in node)
+    return node
+
+
+@dataclass(frozen=True)
+class AdmittedCells:
+    """The cells file as `admit_calibration_cells` admitted it: ``data`` is the record, read-only; ``sha256`` is the
+    digest of the admitted bytes by `openmucf.provenance.file_sha256`'s recipe; ``path`` is the file read."""
+
+    path: str
+    sha256: str
+    data: dict
+
+
+class CellsRefused(SystemExit):
+    """The gate's refusal of a cells file: ``problems`` names each defect."""
+
+    def __init__(self, path, problems):
+        self.problems = list(problems)
+        super().__init__(f"{path} refused: " + "; ".join(self.problems))
+
+
+def _admit_bytes(raw, path, *, sampled=True):
+    """The record ``raw`` (the bytes of a cells file) admitted by `admission_problems`, or CellsRefused."""
+    try:
+        text = raw.decode("utf-8")
+        cells = provenance.loads_json(text, path)
+    except ValueError as e:
+        raise CellsRefused(path, [f"not a JSON record without repeated keys ({e})"]) from None
+    probs = admission_problems(cells, sampled=sampled)
     if probs:
-        raise SystemExit(f"{path} refused: " + "; ".join(probs))
-    return cells
+        raise CellsRefused(path, probs)
+    return AdmittedCells(path=str(path), sha256=provenance.text_sha256(text), data=_freeze(cells))
+
+
+def admit_calibration_cells(path=CELLS_JSON):
+    """The one admission of the calibration cells file: every reader that renders, audits or publishes from it (the
+    render and the audit here, scripts/generate_findings.py and scripts/generate_frontier.py) takes only what this
+    returns. Reads the bytes at ``path`` once, refuses them (CellsRefused, a SystemExit naming each problem) unless
+    `admission_problems` passes the record they hold, and returns that record read-only with the digest of those
+    bytes (`AdmittedCells`)."""
+    try:
+        raw = Path(path).read_bytes()
+    except OSError as e:
+        raise CellsRefused(path, [f"unreadable ({type(e).__name__}: {e})"]) from None
+    return _admit_bytes(raw, path)
 
 
 # ================================================================================= markdown rendering
@@ -780,7 +882,10 @@ def render(cells):
 def regenerate():
     """Compute every cell, run and gate the NUTS cross-check, write the cells file, render the documents and
     the figure. The shipped record, the convergence record and the measured scatter are carried forward from
-    the existing cells file (they are written by the steps that measure them)."""
+    the existing cells file (they are written by the steps that measure them); its computed part is replaced.
+    Before it samples, the new cells and every record carried with them pass the gate's checks, the NUTS record
+    it is about to measure aside (`admission_problems` with ``sampled`` False); the record it writes is then
+    admitted as the exact bytes it writes, and the documents are rendered from what was admitted."""
     old = load()
     for key in ("shipped_v1_3_0", "convergence"):
         if key not in old:
@@ -790,27 +895,29 @@ def regenerate():
     for key in ("shipped_v1_3_0", "convergence", "audit_scatter"):
         if key in old:
             cells[key] = old[key]
-    probs = record_problems(cells, "computed cells") + convergence_problems(cells, committed_tolerances(cells))
+    cells = json.loads(json.dumps(cells))      # the values the cells file will hold
+    probs = admission_problems(cells, sampled=False)
     if probs:
-        raise SystemExit("regeneration refused: the cells or the convergence record that would certify them:\n  "
+        raise SystemExit("regeneration refused: before sampling, the cells or a record carried with them:\n  "
                          + "\n  ".join(probs))
     ncc, weak_draws = nuts_cross_check(cells["posteriors"])
     bad = {k: calibrate.nuts_gate_failures(v, cells["posteriors"][k]) for k, v in ncc.items()}
     if any(bad.values()):
         raise SystemExit(f"NUTS cross-check FAILED: {bad}")
     cells["nuts_cross_check"] = ncc
-    cells = json.loads(json.dumps(cells))      # the values the cells file will hold
-    probs = committed_problems(cells)           # what every consumer of the file will check
-    if probs:
-        raise SystemExit("regeneration refused: the record to be written:\n  " + "\n  ".join(probs))
-    texts = _render_texts(cells)                # every refusal comes before the first write
-    dump(cells, CELLS_JSON)
-    for path, text in texts.items():
-        _write_text(path, text)
+    text = _cells_text(cells)
+    try:
+        admitted = _admit_bytes(text.encode("utf-8"), CELLS_JSON)     # what every consumer of the file will check
+    except CellsRefused as e:
+        raise SystemExit("regeneration refused: the record to be written:\n  " + "\n  ".join(e.problems)) from None
+    texts = _render_texts(admitted.data)        # every refusal comes before the first write
+    _write_text(CELLS_JSON, text)
+    for path, doc in texts.items():
+        _write_text(path, doc)
     _write_figure(weak_draws)
     print(f"wrote {CELLS_JSON}, {CALIBRATION_MD}, {NOTE_PATH} and figures/calibration.png")
     for name in ("weak", "kamimura"):
-        p = cells["posteriors"][name]
+        p = admitted.data["posteriors"][name]
         print(f"[{name}] omega_s_eff {p['omega_s_eff_pct']['mean']:.4f} lambda_c {p['lambda_c']['mean']:.5g} "
               f"R {p['R']['mean']:.4f} X_mu {p['X_mu']['mean']:.4f} | NUTS max r_hat {ncc[name]['max_rhat']:.4f} "
               f"min ess {ncc[name]['min_ess']:.0f} div {ncc[name]['divergences']} "
@@ -1078,9 +1185,11 @@ def committed_tolerances(cells):
 
 
 def input_problems(cells):
-    """(d): every input digest the cells record must be the live file's."""
+    """(d): the cells record one digest per INPUT_FILES file and no other, each the live file's."""
     live = _inputs()
-    rec = cells.get("inputs", {})
+    rec = cells.get("inputs")
+    if not isinstance(rec, dict):
+        return [f"inputs: {rec!r} is not a record of input digests"]
     probs = [f"inputs.{k}: recorded {rec.get(k)} vs live {v}" for k, v in live.items() if rec.get(k) != v]
     probs += [f"inputs.{k}: no such input" for k in rec if k not in live]
     return probs
@@ -1144,52 +1253,131 @@ def nuts_record_problems(cells):
     return probs
 
 
-#: the two validation-page prints the shipped record carries besides CALIBRATION.md's cells (`vb_figures` reads the
-#: second)
-SHIPPED_VALIDATION_KEYS = ("VALIDATION.md|V_petitjean|predicted", "VALIDATION_CHANNELS.md|V_breunlich_lambdac|predicted")
+#: the validation-page prints the shipped record carries besides CALIBRATION.md's cells, as (document, target); the
+#: FC-001 note reads the second (`vb_figures`)
+SHIPPED_VALIDATION = (("VALIDATION.md", "V_petitjean"), ("VALIDATION_CHANNELS.md", "V_breunlich_lambdac"))
+SHIPPED_VALIDATION_KEYS = tuple(f"{doc}|{target}|predicted" for doc, target in SHIPPED_VALIDATION)
 
 
-def shipped_problems(cells):
-    """The record of the documents as released (``shipped_v1_3_0``) as the amendment table and the FC-001 note read
-    it, on a record `record_problems` admits: every value a printed string; every key either one of
-    SHIPPED_VALIDATION_KEYS, whose value is a finite number, or a CALIBRATION.md key of exactly four '|'-separated
-    parts that names a cell of this record; and both SHIPPED_VALIDATION_KEYS present."""
+def git_blob_id(data: bytes) -> str:
+    """The id git gives a file holding ``data``: SHA-1 over the header 'blob <size>' with a NUL, then the bytes."""
+    return hashlib.sha1(b"blob %d\x00" % len(data) + data).hexdigest()
+
+
+def _validation_print(md_text, target):
+    """The `predicted` cell of ``target``'s row of a validation page's table."""
+    lines = md_text.splitlines()
+    head = [ln for ln in lines if ln.startswith("| target |")]
+    rows = [ln for ln in lines if ln.startswith(f"| {target} |")]
+    if len(head) != 1 or len(rows) != 1:
+        raise ValueError(f"{len(head)} header row(s) and {len(rows)} {target} row(s)")
+    cols = [c.strip() for c in head[0].strip().strip("|").split("|")]
+    cells = [c.strip() for c in rows[0].strip().strip("|").split("|")]
+    return cells[cols.index("predicted")]
+
+
+def released_prints(path=RELEASED_DOCUMENTS):
+    """(prints, problems): the record the shipped record must equal, derived from the documents as released. The
+    file at ``path`` must hold RELEASED_TAG, RELEASED_COMMIT and the RELEASED_BLOBS documents, each text with its
+    released git blob id. prints maps "CALIBRATION.md|<section>|<row>|<column>" to every data cell of the released
+    CALIBRATION.md's tables as `_parse_tables` reads them, and "<document>|<target>|predicted" to each
+    SHIPPED_VALIDATION print. When the file fails, prints is None and problems names each failure."""
+    try:
+        rec = provenance.load_json(path)
+    except (OSError, ValueError) as e:
+        return None, [f"{path}: the released documents are unreadable ({type(e).__name__}: {e})"]
+    want = ["commit", "documents", "tag"]
+    if not isinstance(rec, dict) or sorted(rec) != want:
+        got = sorted(rec) if isinstance(rec, dict) else type(rec).__name__
+        return None, [f"{path}: members {got} are not {want}"]
+    probs = []
+    if rec["tag"] != RELEASED_TAG or rec["commit"] != RELEASED_COMMIT:
+        probs.append(f"{path}: {rec['tag']!r} at {rec['commit']!r} is not {RELEASED_TAG} at {RELEASED_COMMIT}")
+    docs = rec["documents"]
+    if not isinstance(docs, dict) or sorted(docs) != sorted(RELEASED_BLOBS):
+        got = sorted(docs) if isinstance(docs, dict) else type(docs).__name__
+        return None, probs + [f"{path}: documents {got} are not {sorted(RELEASED_BLOBS)}"]
+    for name, blob in RELEASED_BLOBS.items():
+        got = git_blob_id(docs[name].encode("utf-8")) if isinstance(docs[name], str) else None
+        if got != blob:
+            probs.append(f"{path}: {name} is not the document released at {RELEASED_TAG} (git blob {got}, "
+                         f"released {blob})")
+    if probs:
+        return None, probs
+    prints = {}
+    for title, header, rows in _parse_tables(docs[CALIBRATION_MD]):
+        if header is None:
+            continue
+        for r in rows:
+            for col, val in zip(header[1:], r[1:], strict=True):
+                key = f"{CALIBRATION_MD}|{title}|{r[0]}|{col}"
+                if key in prints:
+                    return None, [f"{path}: the released {CALIBRATION_MD} prints {key!r} twice"]
+                prints[key] = val
+    for doc, target in SHIPPED_VALIDATION:
+        try:
+            prints[f"{doc}|{target}|predicted"] = _validation_print(docs[doc], target)
+        except ValueError as e:
+            return None, [f"{path}: the released {doc}: {e}"]
+    return prints, []
+
+
+def shipped_problems(cells, *, sampled=True):
+    """The record of the documents as released (``shipped_v1_3_0``), whose values the amendment table prints as
+    "as printed before" and the FC-001 note as the V_breunlich_lambdac print it had, on a record `record_problems`
+    admits: it must be exactly `released_prints()` -- each key derived from the released documents present, no
+    other key, every value the released print -- and each CALIBRATION.md key must name a cell this record renders.
+    With ``sampled`` False (before the NUTS record exists) the released convergence-table keys, whose cells are that
+    record's, are held to the released prints alone; they are resolved once it is stored."""
     sh = cells.get("shipped_v1_3_0")
     if not isinstance(sh, dict):
         return [f"shipped_v1_3_0: {type(sh).__name__} is not a record"]
-    probs = [f"shipped_v1_3_0: no {k!r}" for k in SHIPPED_VALIDATION_KEYS if k not in sh]
-    for key, val in sh.items():
+    want, problems = released_prints()
+    if want is None:
+        return [f"shipped_v1_3_0: not checkable against the released documents: {p}" for p in problems]
+    probs = [f"shipped_v1_3_0: no {k!r} (released {want[k]!r})" for k in sorted(want) if k not in sh]
+    probs += [f"shipped_v1_3_0[{k!r}]: not a cell of the released documents" for k in sorted(sh) if k not in want]
+    for key in sorted(set(sh) & set(want)):
         lbl = f"shipped_v1_3_0[{key!r}]"
-        if not isinstance(val, str):
-            probs.append(f"{lbl}: {val!r} is not a printed string")
-        elif key in SHIPPED_VALIDATION_KEYS:
+        if sh[key] != want[key]:
+            probs.append(f"{lbl}: {sh[key]!r} is not the released print {want[key]!r}")
+        elif key.startswith(f"{CALIBRATION_MD}|") and (sampled or key.split("|")[1] != _TITLE_CONV_OLD):
             try:
-                x = float(val)
-            except ValueError:
-                x = math.nan
-            if not math.isfinite(x):
-                probs.append(f"{lbl}: {val!r} is not a finite number")
-        else:
-            parts = key.split("|")
-            if len(parts) != 4 or parts[0] != CALIBRATION_MD:
-                probs.append(f"{lbl}: not a {CALIBRATION_MD}|section|row|column key")
-                continue
-            try:
-                _now_value(cells, *parts[1:])
+                _now_value(cells, *key.split("|")[1:])
             except (KeyError, TypeError, ValueError) as e:
                 probs.append(f"{lbl}: names no cell of this record ({type(e).__name__}: {e})")
     return probs
 
 
-def committed_problems(cells):
-    """What a consumer of the committed cells file checks before it renders, compares or samples against it: the
-    computed record (`record_problems`), then the shipped record (`shipped_problems`), the NUTS record
-    (`nuts_record_problems`) and the convergence record (`convergence_problems` at `committed_tolerances`)."""
+def scatter_problems(cells):
+    """The measured scatter record and the tolerance it sets (`committed_tolerances`), as problems. A record without
+    one is the record before the scatter is measured, at the floor tolerance."""
+    sc = cells.get("audit_scatter")
+    if sc is None:
+        return []
+    probs = scatter_record_problems(sc)
+    if not probs and sc["tolerance"] != quad_tolerances(sc["scatter"]):
+        probs.append(f"audit_scatter.tolerance {sc['tolerance']} is not the rule's {quad_tolerances(sc['scatter'])}")
+    return probs
+
+
+def admission_problems(cells, *, sampled=True):
+    """Every check of `admit_calibration_cells`, on a record: the computed record (`record_problems`); then its input
+    digests against the live files (`input_problems`), the shipped record against the released documents
+    (`shipped_problems`), the scatter record and its tolerance (`scatter_problems`), the convergence record at that
+    tolerance (`convergence_problems`) and the NUTS record (`nuts_record_problems`). With ``sampled`` False the NUTS
+    record is not checked: that is the regeneration's check before it samples the record it will store."""
     probs = record_problems(cells, "cells")
     if probs:
         return probs
-    return (shipped_problems(cells) + nuts_record_problems(cells)
-            + convergence_problems(cells, committed_tolerances(cells)))
+    probs = input_problems(cells) + shipped_problems(cells, sampled=sampled)
+    scatter = scatter_problems(cells)
+    if scatter:
+        return probs + scatter
+    probs += convergence_problems(cells, committed_tolerances(cells))
+    if sampled:
+        probs += nuts_record_problems(cells)
+    return probs
 
 
 def nuts_audit_problems(committed, fresh, quad):
@@ -1208,12 +1396,11 @@ def nuts_audit_problems(committed, fresh, quad):
 
 
 def audit():
-    committed = load()
-    admission = committed_problems(committed)
-    problems = input_problems(committed) + admission
-    if admission:       # a record that fails admission is not rendered, recomputed or sampled against
-        raise SystemExit("calibration audit FAILED:\n  " + "\n  ".join(problems))
-    problems += render_problems(committed)
+    try:                # a record the gate refuses is not rendered, recomputed or sampled against
+        committed = admit_calibration_cells().data
+    except CellsRefused as e:
+        raise SystemExit("calibration audit FAILED:\n  " + "\n  ".join(e.problems)) from None
+    problems = render_problems(committed)
     tol = committed_tolerances(committed)
     fresh = compute_cells()
     p_a, worst = compare_cells(committed, fresh, tol)
@@ -1369,8 +1556,11 @@ def convergence_problems(cells, tol):
 
 def record_convergence(paths):
     """Write the convergence record from the ``--converge`` runs: refused unless there is one valid run per
-    CONVERGENCE_POSTERIORS posterior and, when the cells file holds posteriors already, each run's publication
-    posterior is the cells' own. The runs are stored with the record, so every consumer re-checks the binding."""
+    CONVERGENCE_POSTERIORS posterior. The cells file is read in one of two stated stages: before the first
+    regeneration it holds none of the computed members (the runs are then recorded alone, and the regeneration
+    binds them before it samples); once it holds any, it must hold the whole computed record, admitted with its
+    live input digests (`record_problems`, `input_problems`), and each run's publication posterior must be the
+    cells' own. The runs are stored with the record, so every consumer re-checks the binding."""
     runs = [load(p) for p in paths]
     names = [r.get("name") if isinstance(r, dict) else None for r in runs]
     if len(set(map(str, names))) != len(runs) or sorted(map(str, names)) != sorted(CONVERGENCE_POSTERIORS):
@@ -1378,7 +1568,10 @@ def record_convergence(paths):
     recs = {r["name"]: r for r in runs}
     probs = [m for n in CONVERGENCE_POSTERIORS for m in _run_problems(n, recs[n])]
     cells = load()
-    if not probs and "posteriors" in cells:
+    computed = any(k in cells for k in _COMPUTED_KEYS)
+    if not probs and computed:
+        probs = record_problems(cells, "cells") or input_problems(cells)
+    if not probs and computed:
         tol = committed_tolerances(cells)
         probs = [m for n in CONVERGENCE_POSTERIORS
                  for m in _binding_problems(n, recs[n]["pub"], cells["posteriors"].get(n), tol)]
@@ -1409,10 +1602,11 @@ def expected_quad_paths():
 
 def record_scatter(path):
     """Write the measured cross-platform scatter: refused unless both records pass `record_problems`, were computed
-    from the same inputs, and carry the same railing flags."""
+    from the same inputs, those the live files have (`input_problems`), and carry the same railing flags."""
     cells, other = load(), load(path)
     probs = record_problems(cells, "this platform") + record_problems(other, "the other platform")
     if not probs:
+        probs += input_problems(cells)
         if cells["inputs"] != other["inputs"]:
             probs.append(f"the platforms' inputs differ: {cells['inputs']} vs {other['inputs']}")
         ea, eb = _exact_cells(cells), _exact_cells(other)
@@ -1434,11 +1628,11 @@ def main(argv=None):
     if "--audit" in argv:
         audit()
     elif "--render" in argv:
-        cells = load()
-        probs = input_problems(cells) + committed_problems(cells)
-        if probs:
-            raise SystemExit("render refused: " + "; ".join(probs))
-        render(cells)
+        try:
+            admitted = admit_calibration_cells()
+        except CellsRefused as e:
+            raise SystemExit("render refused: " + "; ".join(e.problems)) from None
+        render(admitted.data)
         print(f"rendered {CALIBRATION_MD} and {NOTE_PATH} from {CELLS_JSON}")
     elif "--cells-out" in argv:
         fresh = json.loads(json.dumps(compute_cells()))

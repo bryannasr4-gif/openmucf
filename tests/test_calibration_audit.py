@@ -14,6 +14,7 @@ import importlib.util
 import json
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -22,6 +23,12 @@ import openmucf
 
 _ROOT = Path(openmucf.__file__).resolve().parent.parent
 _SCRIPT = _ROOT / "scripts" / "generate_calibration.py"
+
+
+@pytest.fixture(autouse=True)
+def _at_the_repository_root(monkeypatch):
+    """The script reads its inputs and the released documents relative to the working directory."""
+    monkeypatch.chdir(_ROOT)
 
 
 def _load_script():
@@ -234,7 +241,7 @@ def _in_copy(tmp_path, monkeypatch):
     """Run the script's file-reading checks in a tmp copy of the files they read."""
     for rel in ("CALIBRATION.md", "CALIBRATION_CELLS.json", "VALIDATION_CHANNELS.md",
                 "forecasts/FC-001-mufuse.json", "openmucf/data/side_channel_inputs.csv",
-                "openmucf/data/uq_priors.csv"):
+                "openmucf/data/uq_priors.csv", "data/calibration/released_v1.3.0.json"):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(_ROOT / rel, tmp_path / rel)
     mod = _load_script()
@@ -888,7 +895,7 @@ def test_sweep_definitions_are_not_vacuous():
     assert mod.sweep_problems(cells["sweep"]) == []
     assert mod.record_problems(cells, "cells") == []
     assert mod.nuts_record_problems(cells) == []
-    assert mod.committed_problems(cells) == []
+    assert mod.admission_problems(cells) == []
     assert mod.scatter_record_problems(cells["audit_scatter"]) == []
 
 
@@ -1036,7 +1043,7 @@ def test_regenerate_refuses_repeated_sweep_rows_before_sampling(tmp_path, monkey
     monkeypatch.setattr(mod, "compute_cells", lambda posts=None: copy.deepcopy(fresh))
     monkeypatch.setattr(mod, "nuts_cross_check", lambda p: pytest.fail("sampled"))
     before = _written(tmp_path, mod)
-    named = f"computed cells: sweep[{cfg}]: config repeated on 2 rows"
+    named = f"cells: sweep[{cfg}]: config repeated on 2 rows"
     with pytest.raises(SystemExit, match=re.escape(named)):
         mod.regenerate()
     assert _written(tmp_path, mod) == before
@@ -1538,7 +1545,7 @@ def test_audit_refuses_a_nan_scatter_that_would_open_the_tolerance_to_its_cap(tm
     mod.dump(cells, mod.CELLS_JSON)
     mod.render(cells)       # the documents agree with the record, so only admission can refuse it
     fresh["posteriors"]["weak"]["lambda_c"]["mean"] *= 1 + 5e-6
-    with pytest.raises(SystemExit, match="audit_scatter refused:\n  audit_scatter.scatter.moment: nan"):
+    with pytest.raises(SystemExit, match="calibration audit FAILED:\n  audit_scatter.scatter.moment: nan"):
         _audit_with(mod, monkeypatch, fresh, ncc)
     assert "audit OK" not in capsys.readouterr().out
 
@@ -1587,7 +1594,7 @@ def test_the_nuts_record_is_admitted_as_rendered(label, corrupt, named):
     corrupt(cells["nuts_cross_check"])
     probs = mod.nuts_record_problems(cells)
     assert [p for p in probs if p.startswith(named)], probs
-    assert [p for p in mod.committed_problems(cells) if p.startswith(named)]
+    assert [p for p in mod.admission_problems(cells) if p.startswith(named)]
 
 
 def test_the_gate_mean_offset_is_checked_on_the_stored_record():
@@ -1659,7 +1666,7 @@ def test_load_refuses_a_repeated_key(tmp_path, monkeypatch):
     assert (tmp_path / mod.CELLS_JSON).read_text(encoding="utf-8") == text
     (tmp_path / mod.CELLS_JSON).write_text(_with_repeated_key(text, "legacy_tension"), encoding="utf-8")
     (tmp_path / mod.CALIBRATION_MD).write_text("sentinel\n", encoding="utf-8")
-    with pytest.raises(ValueError, match=r"repeated key\(s\) \['legacy_tension'\]"):
+    with pytest.raises(SystemExit, match=r"render refused: .*repeated key\(s\) \['legacy_tension'\]"):
         mod.main(["--render"])
     assert (tmp_path / mod.CALIBRATION_MD).read_text(encoding="utf-8") == "sentinel\n"
 
@@ -1729,20 +1736,102 @@ def _shipped_calibration_keys(cells):
     return sorted(k for k in cells["shipped_v1_3_0"] if k.startswith("CALIBRATION.md|"))
 
 
-def test_the_shipped_record_is_admitted_and_not_vacuous():
-    """Every CALIBRATION.md key of the committed shipped record names a cell of the record, and the two
-    validation-page keys are present: the admission has nothing to refuse, over all of them."""
+def test_the_shipped_record_is_the_released_documents_print_for_print():
+    """The committed shipped record is exactly the record derived from the documents as released: each key
+    the released CALIBRATION.md tables and the two validation rows give, no other, and each value the
+    released print. The domain comes from the released documents, never from the record checked."""
     mod = _load_script()
     cells = _committed_cells()
+    released, problems = mod.released_prints()
+    assert problems == []
+    assert cells["shipped_v1_3_0"] == released
     keys = _shipped_calibration_keys(cells)
-    assert len(keys) + len(mod.SHIPPED_VALIDATION_KEYS) == len(cells["shipped_v1_3_0"])
+    assert len(keys) + len(mod.SHIPPED_VALIDATION_KEYS) == len(released)
     assert keys and all(len(k.split("|")) == 4 for k in keys)
     assert mod.shipped_problems(cells) == []
 
 
+def test_the_git_blob_id_is_gits():
+    """`git_blob_id` gives git's ids for two fixed contents (`git hash-object` of an empty file and of
+    'hello')."""
+    mod = _load_script()
+    assert mod.git_blob_id(b"") == "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    assert mod.git_blob_id(b"hello\n") == "ce013625030ba8dba906f756967f9e9ca394464a"
+
+
+def test_the_released_documents_are_the_tagged_ones():
+    """Where the release is in this checkout's history, RELEASED_COMMIT is the tag's commit and each pinned
+    blob id is the tag's document. (A shallow checkout has no tag: the gate still binds each text to its
+    pinned id.)"""
+    mod = _load_script()
+
+    def git(*args):
+        out = subprocess.run(["git", "-C", str(_ROOT), *args], capture_output=True, text=True)
+        return out.stdout.strip() if out.returncode == 0 else None
+
+    commit = git("rev-parse", "--verify", "--quiet", f"{mod.RELEASED_TAG}^{{commit}}")
+    if not commit:
+        pytest.skip(f"no {mod.RELEASED_TAG} in this checkout's history")
+    assert commit == mod.RELEASED_COMMIT
+    for doc, blob in mod.RELEASED_BLOBS.items():
+        assert git("rev-parse", f"{mod.RELEASED_TAG}:{doc}") == blob, doc
+
+
+def _released_defects():
+    def edit_doc(name, old, new):
+        def f(rec):
+            assert old in rec["documents"][name]
+            rec["documents"][name] = rec["documents"][name].replace(old, new, 1)
+        return f
+
+    return [
+        ("a printed cell of CALIBRATION.md changed", edit_doc("CALIBRATION.md", "| 0.46 |", "| 0.47 |"),
+         "CALIBRATION.md is not the document released at v1.3.0"),
+        ("the V_breunlich_lambdac print changed",
+         edit_doc("VALIDATION_CHANNELS.md", "143822639.2", "143822639.3"),
+         "VALIDATION_CHANNELS.md is not the document released at v1.3.0"),
+        ("a document missing", lambda rec: rec["documents"].pop("VALIDATION.md"), "documents ["),
+        ("a document added", lambda rec: rec["documents"].update(extra="x"), "documents ["),
+        ("another tag", lambda rec: rec.update(tag="v1.2.0"), "is not v1.3.0 at"),
+        ("another commit", lambda rec: rec.update(commit="0" * 40), "is not v1.3.0 at"),
+        ("a member added", lambda rec: rec.update(extra=1), "members ["),
+    ]
+
+
+@pytest.mark.parametrize("label, corrupt, named", _released_defects(),
+                         ids=[d[0] for d in _released_defects()])
+def test_each_released_documents_defect_is_named(tmp_path, monkeypatch, label, corrupt, named):
+    """The released documents file altered in one way: `released_prints` names it, the shipped record cannot
+    be checked, and `--render` refuses without writing."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    p = tmp_path / mod.RELEASED_DOCUMENTS
+    rec = json.loads(p.read_text(encoding="utf-8"))
+    corrupt(rec)
+    p.write_text(json.dumps(rec), encoding="utf-8")
+    prints, problems = mod.released_prints()
+    assert prints is None and [x for x in problems if named in x], problems
+    unchecked = "not checkable against the released documents"
+    assert [x for x in mod.shipped_problems(mod.load()) if unchecked in x]
+    (tmp_path / mod.CALIBRATION_MD).write_text("sentinel\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="render refused: shipped_v1_3_0: not checkable"):
+        mod.main(["--render"])
+    assert (tmp_path / mod.CALIBRATION_MD).read_text(encoding="utf-8") == "sentinel\n"
+
+
+def test_an_absent_or_unreadable_released_documents_file_is_named(tmp_path, monkeypatch):
+    mod = _in_copy(tmp_path, monkeypatch)
+    p = tmp_path / mod.RELEASED_DOCUMENTS
+    text = p.read_text(encoding="utf-8")
+    p.write_text(_with_repeated_key(text, "tag"), encoding="utf-8")
+    assert "repeated key(s) ['tag']" in mod.released_prints()[1][0]
+    p.unlink()
+    prints, problems = mod.released_prints()
+    assert prints is None and "the released documents are unreadable (FileNotFoundError" in problems[0]
+
+
 def test_every_shipped_key_that_names_no_cell_is_refused():
-    """Each CALIBRATION.md key of the shipped record, its row renamed to one the record does not hold, is
-    named; `_moved_rows` would otherwise stop on it with a bare KeyError, or print a cell of another row."""
+    """Each CALIBRATION.md key of the shipped record renamed to a row no released table has: the renamed key
+    is named as no cell of the released documents, and the released key as missing."""
     mod = _load_script()
     base = _committed_cells()
     admitted = []
@@ -1752,27 +1841,44 @@ def test_every_shipped_key_that_names_no_cell_is_refused():
         doc, section, _row, col = key.split("|")
         bad = f"{doc}|{section}|no such row|{col}"
         cells["shipped_v1_3_0"][bad] = cells["shipped_v1_3_0"].pop(key)
-        named = f"shipped_v1_3_0[{bad!r}]: names no cell"
-        if not [p for p in mod.shipped_problems(cells) if p.startswith(named)]:
+        probs = mod.shipped_problems(cells)
+        extra = f"shipped_v1_3_0[{bad!r}]: not a cell of the released documents"
+        if not ([p for p in probs if p.startswith(extra)]
+                and [p for p in probs if p.startswith(f"shipped_v1_3_0: no {key!r}")]):
             admitted.append(key)
     assert admitted == [], admitted[:5]
     assert len(keys) == len(base["shipped_v1_3_0"]) - len(mod.SHIPPED_VALIDATION_KEYS)
+
+
+def test_a_released_cell_the_record_cannot_render_is_named(monkeypatch):
+    """Each released pushforward key, when the renderer no longer knows its section, is named as no cell of
+    the record: the amendment table would otherwise stop on it with a bare KeyError."""
+    mod = _load_script()
+    cells = _committed_cells()
+    push = [k for k in _shipped_calibration_keys(cells) if k.split("|")[1] == mod._TITLE_PUSH]
+    assert push
+    monkeypatch.setattr(mod, "_TITLE_PUSH", "a section the renderer does not know")
+    named = {p.split("]")[0] for p in mod.shipped_problems(cells) if "names no cell of this record" in p}
+    assert named == {f"shipped_v1_3_0[{k!r}" for k in push}
 
 
 def _shipped_defects():
     k0 = "VALIDATION_CHANNELS.md|V_breunlich_lambdac|predicted"
     return [
         ("not a record", lambda sh: [], "shipped_v1_3_0: list is not a record"),
-        ("value not a string", lambda sh: sh.update({sorted(sh)[0]: 0.46}), "is not a printed string"),
+        ("value not a string", lambda sh: sh.update({sorted(sh)[0]: 0.46}), "0.46 is not the released print"),
         ("five parts", lambda sh: sh.update({"CALIBRATION.md|a|b|c|d": "1"}),
-         "not a CALIBRATION.md|section|row|column key"),
+         "not a cell of the released documents"),
         ("other document", lambda sh: sh.update({"FINDINGS.md|a|b|c": "1"}),
-         "not a CALIBRATION.md|section|row|column key"),
+         "not a cell of the released documents"),
         ("unknown section", lambda sh: sh.update({"CALIBRATION.md|No such section|weak|mean": "1"}),
-         "names no cell of this record"),
+         "not a cell of the released documents"),
         ("validation key missing", lambda sh: sh.pop(k0), f"shipped_v1_3_0: no {k0!r}"),
-        ("validation value nan", lambda sh: sh.update({k0: "nan"}), "'nan' is not a finite number"),
-        ("validation value text", lambda sh: sh.update({k0: "n/a"}), "'n/a' is not a finite number"),
+        ("validation value nan", lambda sh: sh.update({k0: "nan"}), "'nan' is not the released print"),
+        ("validation value text", lambda sh: sh.update({k0: "n/a"}), "'n/a' is not the released print"),
+        ("validation value moved", lambda sh: sh.update({k0: "143822639.3"}),
+         "'143822639.3' is not the released print '143822639.2'"),
+        ("empty", lambda sh: sh.clear(), f"shipped_v1_3_0: no {k0!r}"),
     ]
 
 
@@ -1784,7 +1890,7 @@ def test_each_shipped_record_defect_is_named(label, corrupt, named):
     if isinstance(out, list):
         cells["shipped_v1_3_0"] = out
     assert [p for p in mod.shipped_problems(cells) if named in p], mod.shipped_problems(cells)
-    assert [p for p in mod.committed_problems(cells) if named in p]
+    assert [p for p in mod.admission_problems(cells) if named in p]
 
 
 def test_render_and_audit_refuse_a_shipped_key_that_names_no_cell(tmp_path, monkeypatch, capsys):
@@ -1794,7 +1900,8 @@ def test_render_and_audit_refuse_a_shipped_key_that_names_no_cell(tmp_path, monk
     mod.dump(cells, mod.CELLS_JSON)
     for path in (mod.CALIBRATION_MD, mod.NOTE_PATH):
         (tmp_path / path).write_text("sentinel\n", encoding="utf-8")
-    with pytest.raises(SystemExit, match="render refused: shipped_v1_3_0.*names no cell"):
+    with pytest.raises(SystemExit,
+                       match="render refused: shipped_v1_3_0.*not a cell of the released documents"):
         mod.main(["--render"])
     for path in (mod.CALIBRATION_MD, mod.NOTE_PATH):
         assert (tmp_path / path).read_text(encoding="utf-8") == "sentinel\n", path
@@ -1833,25 +1940,43 @@ def test_cells_out_refuses_a_record_the_scatter_recorder_would_refuse(tmp_path, 
     assert mod.record_problems(mod.load(str(tmp_path / "fresh.json")), "fresh") == []
 
 
-# --- readers of the cells file outside this script
-def test_admitted_cells_returns_the_committed_record_and_refuses_a_defect(tmp_path, monkeypatch):
+# --- the gate, and the readers of the cells file outside this script
+def test_the_gate_returns_the_committed_record_read_only_with_its_digest(tmp_path, monkeypatch):
     mod = _in_copy(tmp_path, monkeypatch)
-    assert mod.admitted_cells() == _committed_cells()
+    from openmucf import provenance
+
+    admitted = mod.admit_calibration_cells()
+    assert admitted.data == _committed_cells()
+    assert admitted.sha256 == provenance.file_sha256(tmp_path / mod.CELLS_JSON)
+    with pytest.raises(TypeError, match="read-only"):
+        admitted.data["q_net"]["mean"] = 0.0
+    with pytest.raises(TypeError, match="read-only"):
+        admitted.data["sweep"].append({})
+    with pytest.raises(TypeError, match="read-only"):
+        admitted.data["posteriors"].pop("weak")
+    thawed = copy.deepcopy(admitted.data)
+    thawed["q_net"]["mean"] = 0.0
+    assert admitted.data["q_net"]["mean"] == _committed_cells()["q_net"]["mean"]
     _repeat_in_file(mod, tmp_path)
-    with pytest.raises(SystemExit, match=r"CALIBRATION_CELLS.json refused: cells: sweep\[.*config repeated"):
-        mod.admitted_cells()
+    with pytest.raises(mod.CellsRefused,
+                       match=r"CALIBRATION_CELLS.json refused: cells: sweep\[.*config repeated"):
+        mod.admit_calibration_cells()
 
 
-def test_findings_reads_the_cells_and_the_targets_through_the_checked_readers():
-    """FINDINGS.md's generator runs its whole computation at import, so its wiring is pinned in its source:
-    the cells file only through the calibration script's admission, the two validation targets only through
-    the loader that refuses a repeated id and the reader that refuses a non-finite value."""
+def test_findings_admits_the_cells_before_it_computes_or_writes_anything():
+    """FINDINGS.md's generator runs its whole computation at module level, so where it takes the cells is
+    pinned in its source: the gate is called before the first computation or write, every later read is of
+    the admitted record, and the breakeven note's Kamimura R comes from it. (Its refusals are exercised
+    through the script itself in tests/test_calibration_gate.py.)"""
     src = (_ROOT / "scripts" / "generate_findings.py").read_text(encoding="utf-8")
-    assert "_CELLS = _gen_calibration.admitted_cells(_CELLS_PATH)" in src
+    gate = src.index("_CELLS = _gen_calibration.admit_calibration_cells()")
+    for first in ('os.makedirs("figures"', "uq.local_sensitivities()", "write_manifest(", "open("):
+        assert gate < src.index(first), first
+    assert 'be = uq.breakeven_audit(n=400_000, kamimura_r=(_R_KAM["mean"], _R_KAM["sd"]))' in src
+    assert '"calibration_cells_sha256": _CELLS.sha256,' in src
     assert "_TGT = validate._load_targets(TARGETS_CSV)" in src
     assert '_X_LIQ = validate.target_value(_TGT, "V_petitjean_Xmu")' in src
     assert '_LC_LIQ = validate.target_value(_TGT, "V_breunlich_lambdac")' in src
-    assert "json.load" not in src and "_CELLS_PATH, encoding" not in src
 
 
 def _load_frontier():
@@ -1863,60 +1988,40 @@ def _load_frontier():
 
 def test_frontier_stops_on_a_cells_file_the_calibration_refuses(tmp_path, monkeypatch):
     """FRONTIER.md's generator, given a cells file with a repeated sweep config, stops naming it before it
-    writes FRONTIER.md."""
+    writes FRONTIER.md, its manifest or its figure."""
     cal = _in_copy(tmp_path, monkeypatch)
     cfg = _repeat_in_file(cal, tmp_path)
     fr = _load_frontier()
-    monkeypatch.setattr(fr, "CELLS_JSON", tmp_path / cal.CELLS_JSON)
+    monkeypatch.setattr(fr, "_write_figure", lambda H: pytest.fail("figure drawn"))
     (tmp_path / "FRONTIER.md").write_text("sentinel\n", encoding="utf-8")
     with pytest.raises(SystemExit, match=re.escape(f"sweep[{cfg}]: config repeated on 2 rows")):
         fr.main()
     assert (tmp_path / "FRONTIER.md").read_text(encoding="utf-8") == "sentinel\n"
+    assert not (tmp_path / "FRONTIER_MANIFEST.json").exists()
 
 
-def test_frontier_takes_the_kamimura_r_through_the_checked_reader():
+def test_frontier_reads_the_kamimura_r_from_the_admitted_record_at_call_time(tmp_path, monkeypatch):
+    """Importing FRONTIER.md's generator reads no cells file (it imports with none present), and the
+    Kamimura R of its headline is the admitted record's, at the format FRONTIER.md prints."""
+    monkeypatch.chdir(tmp_path)
     fr = _load_frontier()
+    assert not hasattr(fr, "R_KAMIMURA_REFERENCE") and not hasattr(fr, "CELLS_JSON")
+    with pytest.raises(SystemExit, match="CALIBRATION_CELLS.json refused: unreadable"):
+        fr.admitted_calibration_cells()
+    monkeypatch.chdir(_ROOT)
+    admitted = fr.admitted_calibration_cells()
     r = _committed_cells()["posteriors"]["kamimura"]["R"]
-    assert (f"{r['mean']:.2f}", f"{r['sd']:.2f}") == (fr.R_KAMIMURA_REFERENCE, fr.R_KAMIMURA_SD)
-    src = (_ROOT / "scripts" / "generate_frontier.py").read_text(encoding="utf-8")
-    assert "_R_KAM_MEAN, _R_KAM_SD = uq.kamimura_r_from_cells(CELLS_JSON)" in src
-    assert "json.loads" not in src
+    H = fr.build_headline(admitted)
+    assert (H["R_kamimura"], H["R_kamimura_sd"]) == (f"{r['mean']:.2f}", f"{r['sd']:.2f}")
 
 
-def _cells_text_with_r(tmp_path, key, value):
-    cells = _committed_cells()
-    r = cells["posteriors"]["kamimura"]["R"]
-    if value == "missing":
-        del r[key]
-    else:
-        r[key] = value
-    path = tmp_path / "cells.json"
-    path.write_text(json.dumps(cells), encoding="utf-8")
-    return path
-
-
-@pytest.mark.parametrize("key", ["mean", "sd"])
-@pytest.mark.parametrize("value", [float("nan"), float("inf"), None, True, "0.47", "missing"],
-                         ids=["nan", "inf", "None", "True", "text", "missing"])
-def test_the_kamimura_r_reader_refuses_each_invalid_member(tmp_path, key, value):
+def test_the_breakeven_note_states_the_r_it_is_given_and_otherwise_points_to_calibration():
+    """The package reads no file of the repository root for the note: its Kamimura R is the caller's
+    (FINDINGS.md's generator passes the admitted record's), and without one the note points to
+    CALIBRATION.md."""
     from openmucf import uq
 
-    path = _cells_text_with_r(tmp_path, key, value)
-    with pytest.raises(ValueError, match="posteriors.kamimura.R"):
-        uq.kamimura_r_from_cells(path)
-
-
-def test_the_kamimura_r_reader_returns_the_cells_values_and_refuses_a_repeated_key(tmp_path, monkeypatch):
-    from openmucf import uq
-
-    r = _committed_cells()["posteriors"]["kamimura"]["R"]
-    assert uq.kamimura_r_from_cells() == (r["mean"], r["sd"])
-    text = (_ROOT / "CALIBRATION_CELLS.json").read_text(encoding="utf-8")
-    (tmp_path / "cells.json").write_text(_with_repeated_key(text, "posteriors"), encoding="utf-8")
-    with pytest.raises(ValueError, match=r"repeated key\(s\) \['posteriors'\]"):
-        uq.kamimura_r_from_cells(tmp_path / "cells.json")
-    monkeypatch.setattr(uq, "_CELLS_JSON", tmp_path / "cells.json")
-    with pytest.raises(ValueError, match="repeated key"):
-        uq._kamimura_r_text()                     # a malformed file is named, never replaced by the pointer
-    monkeypatch.setattr(uq, "_CELLS_JSON", tmp_path / "absent.json")
-    assert uq._kamimura_r_text() == "in CALIBRATION.md"
+    assert "posterior gives a total in CALIBRATION.md). " in uq.breakeven_audit(n=100)["note"]
+    note = uq.breakeven_audit(n=100, kamimura_r=(0.4712, 0.0649))["note"]
+    assert "posterior gives a total R = 0.47 +- 0.06). " in note
+    assert not hasattr(uq, "_CELLS_JSON") and not hasattr(uq, "kamimura_r_from_cells")

@@ -26,7 +26,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
-from openmucf import frontier, sidechannels, uq
+from openmucf import frontier, sidechannels
 from openmucf.analytic import effective_sticking, fusions_per_muon
 from openmucf.constants import LAMBDA_0
 from openmucf.frontier import (
@@ -48,13 +48,10 @@ LAMBDA_C_GRID = [1.00e8, 1.45e8, 2.28e8, 3.00e8, math.inf]
 # Measured liquid-condition cycling band (uq_priors.csv lambda_c row); shaded in the figure.
 LAMBDA_C_BAND = (1.00e8, 1.45e8)
 
-# Reference reactivation markers (FINDINGS.md sec.3): the Kou-Chen Eq.33 collisional value, and the
-# Kamimura-prior calibration posterior mean and sd, read from the calibration cells.
+# Reference reactivation markers (FINDINGS.md sec.3): the Kou-Chen Eq.33 collisional value here; the
+# Kamimura-prior calibration posterior mean and sd are read when the headline is built, from the cells the
+# calibration's gate admits (`admitted_calibration_cells`).
 R_COL_REFERENCE = "0.35"
-CELLS_JSON = Path(__file__).resolve().parents[1] / "CALIBRATION_CELLS.json"
-_R_KAM_MEAN, _R_KAM_SD = uq.kamimura_r_from_cells(CELLS_JSON)
-R_KAMIMURA_REFERENCE = f"{_R_KAM_MEAN:.2f}"
-R_KAMIMURA_SD = f"{_R_KAM_SD:.2f}"
 # The side-channel loss per cycle at the liquid anchor fill, as the FRACTION frontier.r_required takes.
 L_ANCHOR = sidechannels.ANCHOR_L_OTHER_FRACTION
 # The figure overlays two loss conditions: its curves are r_required at L = 0, its cloud is model_w's posterior.
@@ -75,10 +72,11 @@ def _lc_label(lc: float) -> str:
     return "inf" if math.isinf(lc) else f"{lc:.2e}"
 
 
-def build_headline() -> dict[str, str]:
+def build_headline(cells) -> dict[str, str]:
     """Single source of truth: every formatted string shared by FRONTIER.md and the manifest.
 
     All values are closed-form (pure-Python float64) -> byte-stable. Nothing here runs a solver or MCMC.
+    ``cells`` is the calibration record as `admitted_calibration_cells` returns it; the Kamimura R is read from it.
     """
     H: dict[str, str] = {}
     sc = SystemChain()
@@ -109,8 +107,9 @@ def build_headline() -> dict[str, str]:
     H["R_X_required"] = (
         f"{1.0 - (1.0 - r_required(500.0, math.inf)) / (1.0 - float(R_COL_REFERENCE)):.2f}"
     )
-    H["R_kamimura"] = R_KAMIMURA_REFERENCE
-    H["R_kamimura_sd"] = R_KAMIMURA_SD
+    r_kam = cells.data["posteriors"]["kamimura"]["R"]
+    H["R_kamimura"] = f"{r_kam['mean']:.2f}"
+    H["R_kamimura_sd"] = f"{r_kam['sd']:.2f}"
 
     # --- nominal operating point (closed-form forward map) ---
     x_nom = float(fusions_per_muon(effective_sticking(OMEGA_S0_DEFAULT, R_NOMINAL), LAMBDA_C_NOMINAL))
@@ -313,8 +312,8 @@ def _write_figure(H: dict[str, str]) -> None:
                label="Kamimura-prior posterior ($L_{other}$ inferred)")
     ax.axhline(float(R_COL_REFERENCE), color="#aa6633", ls="--", lw=1.4,
                label=f"$R_{{col}}={R_COL_REFERENCE}$ (Kou-Chen)")
-    ax.axhline(float(R_KAMIMURA_REFERENCE), color="#227722", ls=":", lw=1.6,
-               label=f"$R={R_KAMIMURA_REFERENCE}$ (Kamimura mean)")
+    ax.axhline(float(H["R_kamimura"]), color="#227722", ls=":", lw=1.6,
+               label=f"$R={H['R_kamimura']}$ (Kamimura mean)")
 
     ax.set_xlabel(r"cycling rate $\lambda_c$ [s$^{-1}$]")
     ax.set_ylabel(r"required reactivation $R$")
@@ -334,9 +333,10 @@ def _write_figure(H: dict[str, str]) -> None:
     plt.close(fig)
 
 
-def _admit_calibration_cells(path) -> None:
-    """Stop (SystemExit naming each problem) unless scripts/generate_calibration.py admits the cells file at
-    ``path``: the check its audit and its render run, loaded here so that importing this module stays light."""
+def admitted_calibration_cells():
+    """The calibration cells as scripts/generate_calibration.py's gate (`admit_calibration_cells`) admits them, or
+    its refusal (a SystemExit naming each problem); that script is loaded here, at call time, so that importing
+    this module stays light and reads no file."""
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -344,12 +344,12 @@ def _admit_calibration_cells(path) -> None:
     )
     gen = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(gen)
-    gen.admitted_cells(path)
+    return gen.admit_calibration_cells()
 
 
 def main() -> None:
-    _admit_calibration_cells(CELLS_JSON)       # before anything is written
-    H = build_headline()
+    cells = admitted_calibration_cells()      # before anything is written
+    H = build_headline(cells)
     Path("FRONTIER.md").write_text(build_markdown(H), encoding="utf-8")
     entries = build_manifest_entries(H)
     inputs = {
@@ -362,7 +362,7 @@ def main() -> None:
         "lambda_c_grid_s^-1": [None if math.isinf(lc) else lc for lc in LAMBDA_C_GRID],
         "solver_target_q_net": SOLVER_TARGET_QNET,
         "l_other_anchor_fraction": L_ANCHOR,
-        "calibration_cells_sha256": file_sha256(CELLS_JSON),
+        "calibration_cells_sha256": cells.sha256,
         "side_channel_inputs_csv_sha256": file_sha256(sidechannels.INPUTS_CSV),
     }
     write_manifest("FRONTIER_MANIFEST.json", entries, inputs, generated_by="scripts/generate_frontier.py")

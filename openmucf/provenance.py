@@ -33,13 +33,18 @@ class ManifestEntry:
     doc: str  # "FINDINGS.md"
 
 
+def text_sha256(text: str) -> str:
+    """SHA-256 over ``text`` LF-normalized and UTF-8 encoded: the recipe of `file_sha256`, for text already
+    read."""
+    return hashlib.sha256(text.replace("\r\n", "\n").encode("utf-8")).hexdigest()
+
+
 def file_sha256(path) -> str:
     """SHA-256 over the LF-normalized UTF-8 text of ``path`` (immune to CRLF checkouts).
 
     Same recipe as ``openmucf.forecast.ledger_sha256`` so digests are comparable across the codebase.
     """
-    text = Path(path).read_bytes().decode("utf-8").replace("\r\n", "\n")
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return text_sha256(Path(path).read_bytes().decode("utf-8"))
 
 
 def _refuse_repeated_keys(pairs):
@@ -50,14 +55,24 @@ def _refuse_repeated_keys(pairs):
     return dict(pairs)
 
 
-def load_json(path):
-    """The JSON record at ``path``, refused (ValueError naming the file and the key) if any object in it
+def loads_json(text: str, label):
+    """The JSON record ``text``, refused (ValueError naming ``label`` and the key) if any object in it
     states a key twice: the standard decoder keeps the last value of a repeated key, so the others would go
     unread."""
     try:
-        return json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=_refuse_repeated_keys)
+        return json.loads(text, object_pairs_hook=_refuse_repeated_keys)
     except ValueError as e:
+        raise ValueError(f"{label}: {e}") from e
+
+
+def load_json(path):
+    """The JSON record at ``path``, refused as `loads_json` refuses it (and, naming the file, if it is not
+    UTF-8)."""
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except UnicodeDecodeError as e:
         raise ValueError(f"{path}: {e}") from e
+    return loads_json(text, path)
 
 
 def _canonical_json(obj) -> str:

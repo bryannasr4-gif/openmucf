@@ -23,7 +23,6 @@ design-study range, or a systems assumption with no ledger row -- recorded per r
 from __future__ import annotations
 
 import csv
-import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -35,39 +34,6 @@ from .constants import E_F_MEV, LAMBDA_0
 # file makes them machine-sourced instead of module literals (regression-locked by
 # tests/test_uq_priors.py::test_params_from_ledger_matches_frozen_literals).
 _PRIORS_CSV = Path(__file__).resolve().parent / "data" / "uq_priors.csv"
-_CELLS_JSON = Path(__file__).resolve().parent.parent / "CALIBRATION_CELLS.json"
-
-
-def kamimura_r_from_cells(path=None) -> tuple[float, float]:
-    """(mean, sd) of the Kamimura-prior calibration posterior's total R as CALIBRATION_CELLS.json records it.
-
-    The file (the repository's own unless ``path`` is given) is read by ``provenance.load_json``, which
-    refuses a repeated key; raises ValueError naming the member when either value is absent or not a finite
-    number (never a Boolean), and FileNotFoundError when there is no cells file.
-    """
-    from .provenance import load_json
-
-    path = _CELLS_JSON if path is None else path
-    cells = load_json(path)
-    try:
-        r = cells["posteriors"]["kamimura"]["R"]
-        vals = (r["mean"], r["sd"])
-    except (KeyError, TypeError) as e:
-        raise ValueError(f"{path}: no posteriors.kamimura.R mean and sd ({type(e).__name__}: {e})") from e
-    for key, v in zip(("mean", "sd"), vals, strict=True):
-        if type(v) not in (int, float) or not math.isfinite(v):
-            raise ValueError(f"{path}: posteriors.kamimura.R.{key} = {v!r} is not a finite number")
-    return float(vals[0]), float(vals[1])
-
-
-def _kamimura_r_text() -> str:
-    """The Kamimura-prior calibration posterior's total R as CALIBRATION_CELLS.json records it; a pointer to
-    CALIBRATION.md only where the cells file is absent (an installed package)."""
-    try:
-        mean, sd = kamimura_r_from_cells(_CELLS_JSON)
-    except FileNotFoundError:
-        return "in CALIBRATION.md"
-    return f"R = {mean:.2f} +- {sd:.2f}"
 
 
 @dataclass(frozen=True)
@@ -266,11 +232,14 @@ def forward_uq(n=400_000, seed=0, blanket_M=1.0):
 
 
 # ------------------------------------------------------------------- breakeven falsification (numpy)
-def breakeven_audit(n=400_000, seed=1):
+def breakeven_audit(n=400_000, seed=1, kamimura_r=None):
     """Honest, uncertainty-propagated verdict on the 2026 N_mu>500 / Q>2 projections.
 
     Under the prior uncertainty ranges, report P(X_mu>500), P(Q_sci>2), P(Q_net>1); then the
     'what-would-have-to-be-true' required (R, lambda_c) to reach X_mu=500, versus what the ledger carries.
+    ``kamimura_r`` is the (mean, sd) of the Kamimura-prior calibration posterior's total R that the note
+    states, as the caller takes it from the admitted calibration cells; without it the note points to
+    CALIBRATION.md.
     """
     d = _draw(n, seed)
     x = xmu(d["omega_s0_pct"], d["R"], d["lambda_c"])
@@ -344,7 +313,9 @@ def breakeven_audit(n=400_000, seed=1):
             "any field-assisted R_X are successive, so at R_col=0.35 the field-assisted factor alone must "
             "reach R_X >= 0.64 -- a required total R is not comparable to R_col; experiment constrains only "
             "the product omega_s_eff ~0.45%, not R itself; our Kamimura-prior posterior gives a total "
-            f"{_kamimura_r_text()}). "
+            + ("in CALIBRATION.md" if kamimura_r is None
+               else f"R = {kamimura_r[0]:.2f} +- {kamimura_r[1]:.2f}")
+            + "). "
             "Density scaling (lambda_c = phi*lambda_c_tilde) could supply the lambda_c factor alone at "
             "the demonstrated DAC phi=2.4 -- but even at infinite lambda_c, X_mu=500 needs omega_s_eff "
             "<= 0.2%, i.e. R >= 0.77. The binding requirement is reactivation, at any density."
