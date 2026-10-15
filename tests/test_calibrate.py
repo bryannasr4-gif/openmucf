@@ -191,6 +191,31 @@ def test_quadrature_reproduces_the_committed_means_at_a_quarter_grid():
         assert post[q]["mean"] == pytest.approx(ref[q]["mean"], rel=1e-5), q
 
 
+_X_BINS = calibrate.QUAD_BINS["X_mu"]
+
+
+def test_quadrature_x_mu_cdf_holds_its_mass_at_a_coarse_grid():
+    """Control for the drill below: on the shipped X_mu edges the cell-integrated CDF runs from 0 to 1."""
+    post = calibrate.posterior_quadrature(calibrate.WEAK_OMEGA_S0_PRIOR, res=0.1, bins=0.1)
+    edges, cdf = post["X_mu_cdf"]
+    assert (edges[0], edges[-1]) == _X_BINS[:2]
+    assert cdf[0] == 0.0
+    assert cdf[-1] == pytest.approx(1.0, abs=1e-12)
+
+
+@pytest.mark.parametrize("lo, hi", [(75.0, _X_BINS[1]), (_X_BINS[0], 160.0)],
+                         ids=["lower_tail", "upper_tail"])
+def test_quadrature_refuses_x_mu_mass_outside_its_cdf_edges(monkeypatch, lo, hi):
+    """Drill (X_mu CDF mass, each tail): edges narrowed on one side so that a small posterior mass, well under
+    1e-5 of the total, falls outside them -> refused (the estimator admits at most 1e-9), never a CDF that
+    silently stops short of 1 (which the Q_net quantiles would read)."""
+    monkeypatch.setitem(calibrate.QUAD_BINS, "X_mu", (lo, hi, _X_BINS[2]))
+    with pytest.raises(ValueError, match="X_mu mass outside its CDF edges") as exc:
+        calibrate.posterior_quadrature(calibrate.WEAK_OMEGA_S0_PRIOR, res=0.1, bins=0.1)
+    lost = float(str(exc.value).split(": ")[1].split(" ")[0])
+    assert 1e-9 < lost < 1e-5, lost
+
+
 def _convergence_drill(q, stat, factor):
     pub = _cells()["posteriors"]["weak"]
     fine = copy.deepcopy(pub)

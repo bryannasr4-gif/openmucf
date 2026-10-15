@@ -295,3 +295,281 @@ def test_sweep_lambda_c_labels_print_true_bounds():
         lo, hi = (float(x) for x in label[len("lc["):-1].split(","))
         assert (lo, hi) == box, label
         assert label in md, label
+
+
+# ------------------------------------------------------------------ the FC-001 note's interval check
+_FC_TARGETS = {"lambda_c": "lambda_c@phi=1.2", "omega_s_eff_pct": "omega_s_eff@phi=1.2"}
+
+
+@pytest.mark.parametrize("name", ["fc001_card_support", "fc001_widened_support"])
+@pytest.mark.parametrize("q", sorted(_FC_TARGETS))
+@pytest.mark.parametrize("side, factor", [("lower", 0.99), ("upper", 1.01)])
+def test_fc_note_names_each_median_outside_the_card_interval(tmp_path, monkeypatch, name, q, side, factor):
+    """Drill (FC note, every member): each corrected scenario-A median moved 1 % past either end of the card's
+    95 % interval is refused by name, and `--render` then writes neither document."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    cells = mod.load()
+    lo, hi = mod._card_scenario_a()[_FC_TARGETS[q]]["ci95"]
+    cells["posteriors"][name][q]["q0.5"] = factor * (lo if side == "lower" else hi)
+    with pytest.raises(ValueError, match=f"{name}.{q}.q0.5 = .* outside the card's 95 % interval"):
+        mod.build_note(cells)
+    mod.dump(cells, mod.CELLS_JSON)
+    for path in (mod.CALIBRATION_MD, mod.NOTE_PATH):
+        (tmp_path / path).write_text("sentinel\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=f"{name}.{q}.q0.5"):
+        mod.main(["--render"])
+    for path in (mod.CALIBRATION_MD, mod.NOTE_PATH):
+        assert (tmp_path / path).read_text(encoding="utf-8") == "sentinel\n", path
+
+
+def test_fc_note_accepts_the_committed_medians(tmp_path, monkeypatch):
+    mod = _in_copy(tmp_path, monkeypatch)
+    assert "Every corrected median lies inside the card's own 95 % interval." in mod.build_note(mod.load())
+
+
+# ------------------------------------------------------------------ the sweep's railing screen
+_RAIL_BOXES = {"omega_s0_pct": (0.50, 1.20), "R": (0.00, 0.80), "lambda_c": (0.8e8, 2.0e8)}
+
+
+def _interior_post(boxes):
+    """95 % intervals at 20 % and 80 % of each box: far from every bound."""
+    return {k: {"q0.025": lo + 0.2 * (hi - lo), "q0.975": lo + 0.8 * (hi - lo)}
+            for k, (lo, hi) in boxes.items()}
+
+
+def test_rails_is_false_away_from_every_bound():
+    assert _load_script()._rails(_interior_post(_RAIL_BOXES), _RAIL_BOXES) is False
+
+
+@pytest.mark.parametrize("param", sorted(_RAIL_BOXES))
+@pytest.mark.parametrize("end", ["q0.025", "q0.975"])
+@pytest.mark.parametrize("frac, railed", [(0.005, True), (0.015, False)])
+def test_rails_flags_one_endpoint_within_one_percent_of_its_own_bound(param, end, frac, railed):
+    """Each of the six interval endpoints alone, 0.5 % of its box width from its bound, rails; at 1.5 % it
+    does not (the screen's 1 % criterion)."""
+    mod = _load_script()
+    post = _interior_post(_RAIL_BOXES)
+    lo, hi = _RAIL_BOXES[param]
+    post[param][end] = lo + frac * (hi - lo) if end == "q0.025" else hi - frac * (hi - lo)
+    assert mod._rails(post, _RAIL_BOXES) is railed
+
+
+def test_sweep_rows_carry_the_railing_screen(monkeypatch):
+    """The sweep writes `rails` from the screen: a quadrature whose R interval reaches one config's R bound
+    rails that config alone."""
+    mod = _load_script()
+    target = (tuple(mod._R_BOXES[0][0]), tuple(mod._OS0_BOXES[0][0]), tuple(mod._LC_BOXES[0][0]))
+
+    def fake_quadrature(prior, *, R_box, lam_box, cov, res):
+        boxes = {"omega_s0_pct": tuple(prior[1:3]), "R": tuple(R_box), "lambda_c": tuple(lam_box)}
+        post = _interior_post(boxes)
+        if (tuple(R_box), tuple(prior[1:3]), tuple(lam_box)) == target:
+            post["R"]["q0.025"] = R_box[0] + 0.005 * (R_box[1] - R_box[0])
+        post.update(corr_omega_s0_R=0.5, omega_s_eff_pct={"mean": 0.45, "sd": 0.05})
+        post["R"]["sd"] = 0.1
+        return post
+
+    monkeypatch.setattr(mod.calibrate, "posterior_quadrature", fake_quadrature)
+    rows = mod._sweep_rows()
+    assert len(rows) == len(mod._R_BOXES) * len(mod._OS0_BOXES) * len(mod._LC_BOXES)
+    railed = [r["config"] for r in rows if r["rails"]]
+    assert railed == [f"R={mod._R_BOXES[0][1]}/os0={mod._OS0_BOXES[0][1]}/lc={mod._LC_BOXES[0][1]}"]
+
+
+# ------------------------------------------------------------------ the audit, through its entry point
+_CARRIED = ("shipped_v1_3_0", "convergence", "audit_scatter", "nuts_cross_check")
+
+
+def _fresh_and_ncc(mod):
+    """The committed cells and NUTS record as a fresh run would return them: every audit check passes."""
+    committed = mod.load()
+    fresh = {k: copy.deepcopy(v) for k, v in committed.items() if k not in _CARRIED}
+    return fresh, copy.deepcopy(committed["nuts_cross_check"])
+
+
+def _audit_with(mod, monkeypatch, fresh, ncc):
+    monkeypatch.setattr(mod, "compute_cells", lambda posts=None: copy.deepcopy(fresh))
+    monkeypatch.setattr(mod, "nuts_cross_check", lambda posteriors: (copy.deepcopy(ncc), None))
+    mod.audit()
+
+
+def test_audit_accepts_the_committed_record(tmp_path, monkeypatch, capsys):
+    mod = _in_copy(tmp_path, monkeypatch)
+    fresh, ncc = _fresh_and_ncc(mod)
+    _audit_with(mod, monkeypatch, fresh, ncc)
+    assert "calibration audit OK" in capsys.readouterr().out
+
+
+def _drift_input(mod, tmp_path, fresh, ncc):
+    p = tmp_path / "openmucf/data/side_channel_inputs.csv"
+    p.write_text(p.read_text(encoding="utf-8").replace("0.3157", "0.3158", 1), encoding="utf-8")
+    return "inputs.side_channel_inputs_csv_sha256: recorded"
+
+
+def _unknown_input(mod, tmp_path, fresh, ncc):
+    cells = mod.load()
+    cells["inputs"]["extra_csv_sha256"] = "0" * 64
+    mod.dump(cells, mod.CELLS_JSON)
+    fresh["inputs"] = cells["inputs"]
+    return "inputs.extra_csv_sha256: no such input"
+
+
+def _drift_render(mod, tmp_path, fresh, ncc):
+    p = tmp_path / "CALIBRATION.md"
+    p.write_text(p.read_text(encoding="utf-8").replace("Estimator:", "Estimator;", 1), encoding="utf-8")
+    return "CALIBRATION.md: differs from the render of the committed cells"
+
+
+def _drift_cell(mod, tmp_path, fresh, ncc):
+    fresh["posteriors"]["weak"]["R"]["q0.025"] *= 1 + 6e-3
+    return "posteriors.weak.R.q0.025: committed"
+
+
+def _drop_cells(mod, tmp_path, fresh, ncc):
+    del fresh["posteriors"]["weak"]
+    return "cell sets differ"
+
+
+def _drift_nuts(mod, tmp_path, fresh, ncc):
+    ncc["kamimura"]["divergences"] = 1
+    return "nuts_cross_check.kamimura.divergences: fresh 1"
+
+
+@pytest.mark.parametrize("corrupt", [_drift_input, _unknown_input, _drift_render, _drift_cell, _drop_cells,
+                                     _drift_nuts])
+def test_audit_refuses_each_problem_alone(tmp_path, monkeypatch, capsys, corrupt):
+    """Drill (audit stop): with every other check passing, one input, render, cell or NUTS problem alone stops
+    `--audit` with that problem named, and nothing prints success."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    fresh, ncc = _fresh_and_ncc(mod)
+    named = corrupt(mod, tmp_path, fresh, ncc)
+    with pytest.raises(SystemExit) as exc:
+        _audit_with(mod, monkeypatch, fresh, ncc)
+    assert str(exc.value).startswith("calibration audit FAILED")
+    assert named in str(exc.value)
+    assert "audit OK" not in capsys.readouterr().out
+
+
+# ------------------------------------------------------------------ the compared and recorded cell sets
+_POSTERIOR_NAMES = ("fc001_card_support", "fc001_widened_support", "kamimura", "l1_default", "l2_default",
+                    "weak")
+_OMISSIONS = ([("posteriors", n) for n in _POSTERIOR_NAMES]
+              + [("q_net", k) for k in ("mean", "sd", "q0.025", "q0.5", "q0.975")]
+              + [("legacy_tension", k) for k in ("x_mu", "z_sigma_at_10", "z_sigma_at_12")])
+
+
+def test_omission_homes_are_every_compared_group():
+    """The omission drills below cover every group `quad_cells` reads: each posterior, q_net stat and legacy
+    tension key of the committed cells."""
+    cells = _committed_cells()
+    homes = {(g, k) for g in ("posteriors", "q_net", "legacy_tension") for k in cells[g]}
+    assert homes == set(_OMISSIONS)
+
+
+@pytest.mark.parametrize("group, key", _OMISSIONS)
+@pytest.mark.parametrize("where", ["fresh", "committed"])
+def test_compare_cells_names_a_missing_group(group, key, where):
+    """Drill (compared coverage): a cell group absent on either side is named, never skipped."""
+    mod = _load_script()
+    committed = _committed_cells()
+    fresh = copy.deepcopy(committed)
+    del (fresh if where == "fresh" else committed)[group][key]
+    problems, _ = mod.compare_cells(committed, fresh, mod.committed_tolerances(_committed_cells()))
+    gone = f"posteriors.{key}.L_pct.mean" if group == "posteriors" else f"{group}.{key}"
+    assert [p for p in problems if p.startswith("cell sets differ") and gone in p], problems
+
+
+def test_input_check_names_an_unknown_recorded_input_and_render_refuses(tmp_path, monkeypatch, capsys):
+    """Drill (unknown input): a digest recorded for a file the calibration does not read is named, and
+    `--render` refuses without writing."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    cells = mod.load()
+    cells["inputs"]["extra_csv_sha256"] = "0" * 64
+    assert mod.input_problems(cells) == ["inputs.extra_csv_sha256: no such input"]
+    mod.dump(cells, mod.CELLS_JSON)
+    (tmp_path / "CALIBRATION.md").write_text("sentinel\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="render refused: inputs.extra_csv_sha256: no such input"):
+        mod.main(["--render"])
+    assert (tmp_path / "CALIBRATION.md").read_text(encoding="utf-8") == "sentinel\n"
+    assert "rendered" not in capsys.readouterr().out
+
+
+# ------------------------------------------------------------------ regeneration, through its entry point
+def _regenerate_with(mod, monkeypatch, ncc):
+    committed = mod.load()
+    fresh = {k: copy.deepcopy(v) for k, v in committed.items() if k not in _CARRIED}
+    figures = []
+    posts = committed["posteriors"]
+    monkeypatch.setattr(mod, "_posterior", lambda name, res=None, **kw: copy.deepcopy(posts[name]))
+    monkeypatch.setattr(mod, "compute_cells", lambda posts=None: copy.deepcopy(fresh))
+    monkeypatch.setattr(mod, "nuts_cross_check", lambda posteriors: (copy.deepcopy(ncc), {"draws": None}))
+    monkeypatch.setattr(mod, "_write_figure", figures.append)
+    mod.regenerate()
+    return figures
+
+
+def _written(tmp_path, mod):
+    return {p: (tmp_path / p).read_bytes() for p in (mod.CELLS_JSON, mod.CALIBRATION_MD, mod.NOTE_PATH)}
+
+
+def test_regenerate_writes_the_committed_record_from_the_committed_cells(tmp_path, monkeypatch, capsys):
+    """Control: a passing cross-check writes the cells, both documents and the figure, and the documents are
+    the committed ones."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    committed = mod.load()
+    docs = {p: (tmp_path / p).read_text(encoding="utf-8") for p in (mod.CALIBRATION_MD, mod.NOTE_PATH)}
+    figures = _regenerate_with(mod, monkeypatch, committed["nuts_cross_check"])
+    assert figures == [{"draws": None}]
+    assert mod.load() == committed
+    for p, text in docs.items():
+        assert (tmp_path / p).read_text(encoding="utf-8") == text, p
+    assert "wrote CALIBRATION_CELLS.json" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("chain, key, value, named", [
+    ("weak", "divergences", 1, "divergences 1 != 0"),
+    ("kamimura", "max_rhat", 1.01, "max_rhat 1.0100 >= 1.01"),
+    ("weak", "min_ess", 400, "min_ess 400 <= 400"),
+    ("kamimura", "mean.lambda_c", 3.5, "lambda_c mean 3.50 MCSE from the quadrature mean"),
+])
+def test_regenerate_stops_on_a_failed_cross_check_before_any_write(tmp_path, monkeypatch, capsys, chain, key,
+                                                                    value, named):
+    """Drill (regeneration stop): one failed NUTS gate member stops regeneration, named, before the cells, the
+    documents or the figure are written."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    committed = mod.load()
+    ncc = copy.deepcopy(committed["nuts_cross_check"])
+    if key == "mean.lambda_c":
+        q = committed["posteriors"][chain]["lambda_c"]["mean"]
+        ncc[chain]["mean"]["lambda_c"] = q + value * ncc[chain]["mcse"]["lambda_c"]
+    else:
+        ncc[chain][key] = value
+    before = _written(tmp_path, mod)
+    with pytest.raises(SystemExit, match="NUTS cross-check FAILED") as exc:
+        _regenerate_with(mod, monkeypatch, ncc)
+    assert named in str(exc.value)
+    assert _written(tmp_path, mod) == before
+    assert not (tmp_path / "figures").exists()
+    assert "wrote" not in capsys.readouterr().out
+
+
+def test_regenerate_refuses_an_fc_note_failure_before_any_write(tmp_path, monkeypatch):
+    """A corrected median outside the card interval stops regeneration before the cells file is written."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    committed = mod.load()
+    upper = mod._card_scenario_a()["lambda_c@phi=1.2"]["ci95"][1]
+
+    def fresh_with_moved_median(posts=None):
+        fresh = {k: copy.deepcopy(v) for k, v in committed.items() if k not in _CARRIED}
+        fresh["posteriors"]["fc001_card_support"]["lambda_c"]["q0.5"] = 1.01 * upper
+        return fresh
+
+    before = _written(tmp_path, mod)
+    monkeypatch.setattr(mod, "_posterior", lambda name, res=None, **kw: None)
+    monkeypatch.setattr(mod, "compute_cells", fresh_with_moved_median)
+    ncc = committed["nuts_cross_check"]
+    monkeypatch.setattr(mod, "nuts_cross_check", lambda p: (copy.deepcopy(ncc), None))
+    monkeypatch.setattr(mod, "_write_figure", lambda draws: pytest.fail("figure written"))
+    with pytest.raises(ValueError, match="fc001_card_support.lambda_c.q0.5"):
+        mod.regenerate()
+    assert _written(tmp_path, mod) == before

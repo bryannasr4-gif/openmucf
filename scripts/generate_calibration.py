@@ -677,9 +677,14 @@ def _write_text(path, text):
         f.write(text)
 
 
+def _render_texts(cells):
+    """Both documents, built before either is written: a refusal (``build_note``) leaves every file as it was."""
+    return {CALIBRATION_MD: build_md(cells), NOTE_PATH: build_note(cells)}
+
+
 def render(cells):
-    _write_text(CALIBRATION_MD, build_md(cells))
-    _write_text(NOTE_PATH, build_note(cells))
+    for path, text in _render_texts(cells).items():
+        _write_text(path, text)
 
 
 def regenerate():
@@ -700,9 +705,11 @@ def regenerate():
     if any(bad.values()):
         raise SystemExit(f"NUTS cross-check FAILED: {bad}")
     cells["nuts_cross_check"] = ncc
+    cells = json.loads(json.dumps(cells))      # the values the cells file will hold
+    texts = _render_texts(cells)                # every refusal comes before the first write
     dump(cells, CELLS_JSON)
-    cells = load()
-    render(cells)
+    for path, text in texts.items():
+        _write_text(path, text)
     _write_figure(weak_draws)
     print(f"wrote {CELLS_JSON}, {CALIBRATION_MD}, {NOTE_PATH} and figures/calibration.png")
     for name in ("weak", "kamimura"):
