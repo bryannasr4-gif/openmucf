@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import csv
+import io
 import math
 import re
 from pathlib import Path
@@ -104,6 +105,64 @@ def test_inputs_csv_rows_are_complete_and_cited():
             assert r["lo"] < r["hi"] and math.isclose(r["value"], 0.5 * (r["lo"] + r["hi"])), sym
         else:
             assert r["distribution"] == "fixed" and r["unc"] is None, sym
+
+
+def _inputs_copy(tmp_path, edit):
+    lines = sidechannels.INPUTS_CSV.read_text(encoding="utf-8").splitlines()
+    path = tmp_path / "inputs.csv"
+    path.write_text("\n".join(edit(lines)) + "\n", encoding="utf-8")
+    return path
+
+
+def test_load_inputs_refuses_a_symbol_on_two_rows(tmp_path):
+    """Each symbol given a second row (the copy changed): refused naming it, never reduced to the last row."""
+    lines = sidechannels.INPUTS_CSV.read_text(encoding="utf-8").splitlines()
+    assert sidechannels.load_inputs(_inputs_copy(tmp_path, lambda ls: ls)) == sidechannels.load_inputs()
+    symbols = list(sidechannels.load_inputs())
+    assert len(symbols) == len(lines) - 1
+    for i, sym in enumerate(symbols, start=1):
+        path = _inputs_copy(tmp_path, lambda ls, i=i: [*ls, ls[i]])
+        with pytest.raises(ValueError, match=f"symbol '{sym}' is on more than one row"):
+            sidechannels.load_inputs(path)
+
+
+@pytest.mark.parametrize("column", ["value", "unc", "dist_lo", "dist_hi"])
+@pytest.mark.parametrize("token", ["nan", "inf", "-inf", "NaN"])
+def test_load_inputs_refuses_a_non_finite_number(tmp_path, column, token):
+    """Each numeric field of each row set to a non-finite number is refused naming the symbol and the column,
+    never carried into a loss."""
+    lines = sidechannels.INPUTS_CSV.read_text(encoding="utf-8").splitlines()
+    header = next(csv.reader([lines[0]]))
+    col = header.index(column)
+    for i in range(1, len(lines)):
+        sym = next(csv.reader([lines[i]]))[header.index("symbol")]
+
+        def edit(ls, i=i):
+            row = next(csv.reader([ls[i]]))
+            row[col] = token
+            buf = io.StringIO()
+            csv.writer(buf, lineterminator="").writerow(row)
+            return [*ls[:i], buf.getvalue(), *ls[i + 1:]]
+        with pytest.raises(ValueError, match=re.escape(f"{sym}.{column}: '{token}' is not a finite number")):
+            sidechannels.load_inputs(_inputs_copy(tmp_path, edit))
+
+
+def test_load_inputs_refuses_a_repeated_header_column(tmp_path):
+    """Each column of the header stated twice (a copy of its values appended): refused naming it, never
+    reduced to the last copy."""
+    lines = sidechannels.INPUTS_CSV.read_text(encoding="utf-8").splitlines()
+    header = next(csv.reader([lines[0]]))
+    for j, name in enumerate(header):
+        def edit(ls, j=j):
+            out = []
+            for ln in ls:
+                row = next(csv.reader([ln]))
+                buf = io.StringIO()
+                csv.writer(buf, lineterminator="").writerow([*row, row[j]])
+                out.append(buf.getvalue())
+            return out
+        with pytest.raises(ValueError, match=re.escape(f"column(s) ['{name}'] repeated in the header")):
+            sidechannels.load_inputs(_inputs_copy(tmp_path, edit))
 
 
 def ledger_tt_failures(rates, inp):

@@ -38,21 +38,45 @@ _STIELTJES_POINTS = 200_001
 
 def _num(s):
     s = s.strip()
-    return None if s in ("", "-") else float(s)
+    if s in ("", "-"):
+        return None
+    v = float(s)
+    if not math.isfinite(v):
+        raise ValueError(f"{s!r} is not a finite number")
+    return v
+
+
+_NUMERIC = (("value", "value"), ("unc", "unc"), ("lo", "dist_lo"), ("hi", "dist_hi"))
 
 
 def load_inputs(path=INPUTS_CSV):
-    """Rows of the inputs CSV keyed by symbol, numeric fields as floats (``None`` where the CSV has none)."""
+    """Rows of the inputs CSV keyed by symbol, numeric fields as finite floats (``None`` where the CSV has
+    none). Raises ValueError naming the defect for a header that repeats a column or a symbol on more than one
+    row (keying would keep only the last of either), and for a numeric field that is not a finite number."""
     with open(path, newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        rows = list(reader)
+    repeated = sorted({h for h in header if header.count(h) > 1})
+    if repeated:
+        raise ValueError(f"{path}: column(s) {repeated} repeated in the header")
     out = {}
     for r in rows:
-        out[r["symbol"]] = {
-            "value": _num(r["value"]),
-            "unc": _num(r["unc"]),
+        sym = r["symbol"]
+        if sym in out:
+            raise ValueError(f"{path}: symbol {sym!r} is on more than one row")
+        rec = {}
+        for key, col in _NUMERIC:
+            try:
+                rec[key] = _num(r[col])
+            except ValueError as e:
+                raise ValueError(f"{path}: {sym}.{col}: {e}") from e
+        out[sym] = {
+            "value": rec["value"],
+            "unc": rec["unc"],
             "distribution": r["distribution"].strip(),
-            "lo": _num(r["dist_lo"]),
-            "hi": _num(r["dist_hi"]),
+            "lo": rec["lo"],
+            "hi": rec["hi"],
             "unit": r["unit"],
             "source_bibkey": r["source_bibkey"],
             "source_locator": r["source_locator"],
