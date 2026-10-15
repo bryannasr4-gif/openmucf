@@ -58,6 +58,9 @@ R_KAMIMURA_REFERENCE = f"{_R_KAM['mean']:.2f}"
 R_KAMIMURA_SD = f"{_R_KAM['sd']:.2f}"
 # The side-channel loss per cycle at the liquid anchor fill, as the FRACTION frontier.r_required takes.
 L_ANCHOR = sidechannels.ANCHOR_L_OTHER_FRACTION
+# The figure overlays two loss conditions: its curves are r_required at L = 0, its cloud is model_w's posterior.
+FIGURE_CONDITIONS = ("Curves assume L=0 (sticking and decay only); the cloud is the corrected anchor-basis "
+                     "posterior with L_other inferred.")
 
 # Solver worked-example target: a modest q_net (above the nominal operating point) chosen so ALL FOUR free
 # variables have a finite, feasible required value -- a clean cross-check of the four inverses at once.
@@ -221,7 +224,7 @@ digit on its own; it is the general capability, gate-checked against the exact a
 lambda_c band shaded, the **Kamimura-prior calibration posterior cloud** (one NUTS chain on
 `openmucf.calibrate.model_w` with the Kamimura omega_s0 = 0.857 +- 0.03 % prior; the R = {H["R_kamimura"]}
 marker is the posterior mean `CALIBRATION.md` prints), and the R_col = {H["R_col"]} / R = {H["R_kamimura"]} reference markers overlaid --
-the "what would have to be true" picture. (Regenerated every audit; never byte-diffed.)
+the "what would have to be true" picture. {FIGURE_CONDITIONS} (Regenerated every audit; never byte-diffed.)
 """
 
 
@@ -302,12 +305,13 @@ def _write_figure(H: dict[str, str]) -> None:
     fig, ax = plt.subplots(figsize=(8.5, 5.5))
     lc_curve = np.linspace(0.9e8, 3.2e8, 400)
     for X in X_MU_TARGETS:
-        Rv = np.array([r_required(X, float(lc)) for lc in lc_curve])
+        Rv = np.array([r_required(X, float(lc), l_other=0.0) for lc in lc_curve])
         Rv[(Rv < 0.0) | (Rv > 1.05)] = np.nan  # only the physical band
-        ax.plot(lc_curve, Rv, lw=2.2, label=rf"$X_\mu={X:.0f}$ frontier")
+        ax.plot(lc_curve, Rv, lw=2.2, label=rf"$X_\mu={X:.0f}$ frontier ($L=0$)")
 
     ax.axvspan(*LAMBDA_C_BAND, color="0.85", alpha=0.6, label="measured $\\lambda_c$ band (liquid)")
-    ax.scatter(lc_post, R_post, s=4, alpha=0.18, color="#3366aa", label="Kamimura-prior posterior")
+    ax.scatter(lc_post, R_post, s=4, alpha=0.18, color="#3366aa",
+               label="Kamimura-prior posterior ($L_{other}$ inferred)")
     ax.axhline(float(R_COL_REFERENCE), color="#aa6633", ls="--", lw=1.4,
                label=f"$R_{{col}}={R_COL_REFERENCE}$ (Kou-Chen)")
     ax.axhline(float(R_KAMIMURA_REFERENCE), color="#227722", ls=":", lw=1.6,
@@ -319,13 +323,14 @@ def _write_figure(H: dict[str, str]) -> None:
     ax.set_xlim(0.9e8, 3.2e8)
     ax.set_title(r'Inverse-design: "what would have to be true" for $X_\mu\in\{150,284,500\}$')
     ax.legend(fontsize=8, loc="upper right")
+    fig.text(0.01, 0.026, FIGURE_CONDITIONS, fontsize=6.5)
     fig.text(
         0.01, 0.005,
         "Frontier curves are closed-form; the posterior cloud is the numpyro NUTS Kamimura-prior "
         "calibration chain (omega_s0=0.857+-0.03%). Requirement form, not a verdict.",
         fontsize=6.5,
     )
-    fig.tight_layout(rect=(0, 0.02, 1, 1))
+    fig.tight_layout(rect=(0, 0.045, 1, 1))
     fig.savefig("figures/frontier.png", dpi=140)
     plt.close(fig)
 

@@ -75,4 +75,4 @@ digit on its own; it is the general capability, gate-checked against the exact a
 lambda_c band shaded, the **Kamimura-prior calibration posterior cloud** (one NUTS chain on
 `openmucf.calibrate.model_w` with the Kamimura omega_s0 = 0.857 +- 0.03 % prior; the R = 0.47
 marker is the posterior mean `CALIBRATION.md` prints), and the R_col = 0.35 / R = 0.47 reference markers overlaid --
-the "what would have to be true" picture. (Regenerated every audit; never byte-diffed.)
+the "what would have to be true" picture. Curves assume L=0 (sticking and decay only); the cloud is the corrected anchor-basis posterior with L_other inferred. (Regenerated every audit; never byte-diffed.)

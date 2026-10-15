@@ -73,8 +73,8 @@ def r_required(x_mu_target, lambda_c, omega_s0=OMEGA_S0_DEFAULT, lambda_0=LAMBDA
     ``l_other`` (L) is a side-channel loss per cycle as a bare FRACTION (``openmucf.sidechannels``
     ``ANCHOR_L_OTHER_FRACTION``); the default 0.0 is sticking and decay as the only losses.
 
-    ``lambda_c`` may be ``math.inf`` -- the decay-free limit that gives the density-independent R floor
-    (``R = 1 - (1/X)/omega_s0``). ``omega_s0`` is a bare fraction (default = Kamimura 0.857 %). The result
+    ``lambda_c`` may be ``math.inf`` -- the decay-free limit that gives the R floor at fixed L
+    (``R = 1 - (1/X - L)/omega_s0``). ``omega_s0`` is a bare fraction (default = Kamimura 0.857 %). The result
     can exceed 1 or go negative: the honest readout that the target is unreachable / trivially reachable at
     the given ``(lambda_c, omega_s0)``. Pure ``float`` arithmetic -> byte-stable cross-architecture.
     """
@@ -87,9 +87,9 @@ def lambda_c_required(x_mu_target, R, omega_s0=OMEGA_S0_DEFAULT, lambda_0=LAMBDA
 
     Inverse of the same forward map: ``lambda_c = lambda_0 / (1/X - omega_s_eff - L)`` with
     ``omega_s_eff = omega_s0*(1-R)`` and ``l_other`` (L) a side-channel loss per cycle as a bare FRACTION.
-    Returns ``math.inf`` when the sticking floor alone already caps the yield at or below the target
-    (``1/X <= omega_s_eff`` i.e. ``x_mu_target >= 1/omega_s_eff``): no finite cycling rate can reach it --
-    the honest "unreachable at this R" readout. Pure ``float`` arithmetic.
+    Returns ``math.inf`` when the combined sticking and side-channel loss floor already caps the yield at or
+    below the target (``1/X <= omega_s_eff + L``): no finite cycling rate can reach it. Pure ``float``
+    arithmetic.
     """
     ose = effective_sticking(omega_s0, R)
     denom = 1.0 / x_mu_target - ose - l_other
