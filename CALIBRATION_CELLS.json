@@ -1,0 +1,1083 @@
+{
+  "audit_scatter": {
+    "platforms": [
+      {
+        "numpy": "2.5.0",
+        "platform": "Windows AMD64",
+        "python": "3.12.10"
+      },
+      {
+        "numpy": "2.5.3",
+        "platform": "Linux x86_64",
+        "python": "3.14.4"
+      }
+    ],
+    "scatter": {
+      "moment": 2.2787743652147208e-14,
+      "quantile": 4.200399767149018e-15,
+      "quantile_L": 0.0
+    },
+    "tolerance": {
+      "moment": 1e-06,
+      "quantile": 1e-06,
+      "quantile_L": 1e-06
+    }
+  },
+  "computed_on": {
+    "numpy": "2.5.0",
+    "platform": "Windows AMD64",
+    "python": "3.12.10"
+  },
+  "convergence": {
+    "criteria": {
+      "moment": 1e-06,
+      "quantile": 0.001,
+      "quantile_L": 0.005
+    },
+    "posteriors": {
+      "fc001_card_support": {
+        "moment": 3.9670868086694636e-07,
+        "quantile": 2.4277238428328264e-05,
+        "quantile_L": 4.9146652972790144e-05
+      },
+      "fc001_widened_support": {
+        "moment": 3.363698057359877e-07,
+        "quantile": 2.0269080724894016e-05,
+        "quantile_L": 0.0001745362055319
+      },
+      "kamimura": {
+        "moment": 3.095813155554648e-07,
+        "quantile": 1.8864319492755102e-05,
+        "quantile_L": 0.0001714803828683479
+      },
+      "weak": {
+        "moment": 1.0842031030554706e-07,
+        "quantile": 1.8921653561678793e-05,
+        "quantile_L": 0.0001530863473269213
+      }
+    },
+    "res_fine": 2.0,
+    "res_pub": 1.0
+  },
+  "estimator": {
+    "bins": {
+      "L_pct": 16000,
+      "W_pct": 130000,
+      "X_mu": 220000,
+      "lambda_c": 120000,
+      "omega_s_eff_pct": 90000
+    },
+    "covariance": "L3",
+    "grid": {
+      "nL": 120,
+      "ne": 8000,
+      "nl": 1600,
+      "ns": 1600
+    },
+    "l_other_pct": [
+      0.1388,
+      0.0197
+    ],
+    "lambda_c_box": [
+      80000000.0,
+      200000000.0
+    ],
+    "res": 1.0,
+    "sweep_res": 0.5
+  },
+  "inputs": {
+    "fc001_card_sha256": "2ea54b650eff34ea38e91c0b0915dde707c40ac91382b4419fe6a8052fa1855f",
+    "side_channel_inputs_csv_sha256": "b97ef7080357ff0c5cf28a4dafd6586f8fd66ba0bafdf5b8027cefe20edf7a1b",
+    "uq_priors_csv_sha256": "b16c20e71482e979126f16895a802f89b8cb44c8d6f6e41f38805fc37f8ba6bd"
+  },
+  "legacy_tension": {
+    "x_mu": 130.90186873702265,
+    "z_sigma_at_10": 1.7901868737022653,
+    "z_sigma_at_12": 1.4918223947518878
+  },
+  "nuts_cross_check": {
+    "kamimura": {
+      "divergences": 0,
+      "max_abs_dev_over_mcse": 1.0861291240466469,
+      "max_rhat": 1.0015487821360778,
+      "mcse": {
+        "L_pct": 0.0002480917144872041,
+        "R": 0.0009717446711667823,
+        "W_pct": 0.0008089086197929201,
+        "X_mu": 0.15084576101022873,
+        "lambda_c": 191909.56200208276,
+        "omega_s0_pct": 0.00041012917812604973,
+        "omega_s_eff_pct": 0.0007631005498301937
+      },
+      "mean": {
+        "L_pct": 0.1370034326699542,
+        "R": 0.47553587005926534,
+        "W_pct": 0.5855875455288869,
+        "X_mu": 111.22385165517325,
+        "lambda_c": 143466695.3019051,
+        "omega_s0_pct": 0.8563926885482509,
+        "omega_s_eff_pct": 0.4485841128589328
+      },
+      "min_ess": 3576.6564821583506
+    },
+    "weak": {
+      "divergences": 0,
+      "max_abs_dev_over_mcse": 1.1495081508044507,
+      "max_rhat": 1.0007177784336339,
+      "mcse": {
+        "L_pct": 0.0002632682235238428,
+        "R": 0.0031299578488130702,
+        "W_pct": 0.0007277198439911436,
+        "X_mu": 0.13941108229874913,
+        "lambda_c": 180654.13918413655,
+        "omega_s0_pct": 0.0035000965084554477,
+        "omega_s_eff_pct": 0.0007148519314867399
+      },
+      "mean": {
+        "L_pct": 0.13732630731828674,
+        "R": 0.4081649784455272,
+        "W_pct": 0.5852875269410766,
+        "X_mu": 111.24669979306695,
+        "lambda_c": 143461495.37458968,
+        "omega_s0_pct": 0.805255550638044,
+        "omega_s_eff_pct": 0.4479612196227898
+      },
+      "min_ess": 2615.585814801677
+    }
+  },
+  "posteriors": {
+    "fc001_card_support": {
+      "L_pct": {
+        "mean": 0.13722237263485276,
+        "q0.025": 0.10148283819506244,
+        "q0.16": 0.11904240698163997,
+        "q0.5": 0.13719655502506609,
+        "q0.84": 0.15538845199781715,
+        "q0.975": 0.1731059654167583,
+        "sd": 0.018271359783928385
+      },
+      "R": {
+        "mean": 0.4672877133323705,
+        "q0.025": 0.35206710968529525,
+        "q0.16": 0.4126455490872517,
+        "q0.5": 0.47074734915880767,
+        "q0.84": 0.521945374092208,
+        "q0.975": 0.563269716072309,
+        "sd": 0.05440576900688377
+      },
+      "W_pct": {
+        "mean": 0.5926065199138738,
+        "q0.025": 0.5159664837665995,
+        "q0.16": 0.5473672617522789,
+        "q0.5": 0.5891253438253224,
+        "q0.84": 0.6379491480281696,
+        "q0.975": 0.6888407418271474,
+        "sd": 0.044898596453981365
+      },
+      "X_mu": {
+        "mean": 109.71707152999288,
+        "q0.025": 94.35933566194636,
+        "q0.16": 101.76931936787955,
+        "q0.5": 109.90623094112655,
+        "q0.84": 117.76587023023282,
+        "q0.975": 123.67925829519416,
+        "sd": 7.703158394465663
+      },
+      "corr_omega_s0_R": 0.3391436154509784,
+      "lambda_c": {
+        "mean": 141457714.57582745,
+        "q0.025": 120866317.92135842,
+        "q0.16": 131219041.61271793,
+        "q0.5": 142000447.52777046,
+        "q0.84": 151974858.4269867,
+        "q0.975": 158237548.71093458,
+        "sd": 9913000.25307737
+      },
+      "omega_s0_pct": {
+        "mean": 0.8558791626440362,
+        "q0.025": 0.7970868173207123,
+        "q0.16": 0.8260600505598504,
+        "q0.5": 0.8558901671493759,
+        "q0.84": 0.8856998960378752,
+        "q0.975": 0.9146085383262883,
+        "sd": 0.02998197679000359
+      },
+      "omega_s_eff_pct": {
+        "mean": 0.4553841472790211,
+        "q0.025": 0.37835637134803995,
+        "q0.16": 0.41130840447261546,
+        "q0.5": 0.45270123562296966,
+        "q0.84": 0.4995094845381172,
+        "q0.975": 0.5473908783540731,
+        "sd": 0.04370052057947064
+      }
+    },
+    "fc001_widened_support": {
+      "L_pct": {
+        "mean": 0.1368714595178042,
+        "q0.025": 0.10120522296972581,
+        "q0.16": 0.11872607776920795,
+        "q0.5": 0.13683786651578878,
+        "q0.84": 0.15503523130992294,
+        "q0.975": 0.17274425359497375,
+        "sd": 0.018254637898793398
+      },
+      "R": {
+        "mean": 0.4730971962865601,
+        "q0.025": 0.3540100800257715,
+        "q0.16": 0.41548905498636196,
+        "q0.5": 0.4756918403853696,
+        "q0.84": 0.5314632206247442,
+        "q0.975": 0.5765090562956084,
+        "sd": 0.05725470397733486
+      },
+      "W_pct": {
+        "mean": 0.5872087975305142,
+        "q0.025": 0.5007005215000547,
+        "q0.16": 0.5386186202145601,
+        "q0.5": 0.5849361258056432,
+        "q0.84": 0.635553642509392,
+        "q0.975": 0.6872155090096688,
+        "sd": 0.04808459626919489
+      },
+      "X_mu": {
+        "mean": 110.87465201665594,
+        "q0.025": 94.58156195731138,
+        "q0.16": 102.14301873156555,
+        "q0.5": 110.6606730476059,
+        "q0.84": 119.68848084815501,
+        "q0.975": 128.18362869520428,
+        "sd": 8.655035521747733
+      },
+      "corr_omega_s0_R": 0.30460131574143506,
+      "lambda_c": {
+        "mean": 143033169.24223828,
+        "q0.025": 121185851.50122514,
+        "q0.16": 131726270.51886941,
+        "q0.5": 142975235.50742552,
+        "q0.84": 154399999.3802697,
+        "q0.975": 165065571.3052707,
+        "sd": 11260923.90168249
+      },
+      "omega_s0_pct": {
+        "mean": 0.8556785600731706,
+        "q0.025": 0.7969643372801175,
+        "q0.16": 0.825904342740325,
+        "q0.5": 0.855691672533201,
+        "q0.84": 0.8854529605868496,
+        "q0.975": 0.9143175330326964,
+        "sd": 0.029937955309655408
+      },
+      "omega_s_eff_pct": {
+        "mean": 0.4503373380127103,
+        "q0.025": 0.3654473731948175,
+        "q0.16": 0.40292889173023033,
+        "q0.5": 0.44864195589820477,
+        "q0.84": 0.4972360695077687,
+        "q0.975": 0.5458724011635954,
+        "sd": 0.04652070651563287
+      }
+    },
+    "kamimura": {
+      "L_pct": {
+        "mean": 0.1370052091583446,
+        "q0.025": 0.10129770521490068,
+        "q0.16": 0.11883177898523332,
+        "q0.5": 0.13697374315921496,
+        "q0.84": 0.1551851759157261,
+        "q0.975": 0.1728909787265309,
+        "sd": 0.0182751983688358
+      },
+      "R": {
+        "mean": 0.4749151730768795,
+        "q0.025": 0.3543630833640021,
+        "q0.16": 0.4160101467394607,
+        "q0.5": 0.47663036815631427,
+        "q0.84": 0.5338411700120445,
+        "q0.975": 0.5857514581384573,
+        "sd": 0.059147190432904145
+      },
+      "W_pct": {
+        "mean": 0.5858959543283925,
+        "q0.025": 0.4947238503633697,
+        "q0.16": 0.5366772933446845,
+        "q0.5": 0.5841503558844079,
+        "q0.84": 0.6351149300108704,
+        "q0.975": 0.6869198237033527,
+        "sd": 0.04923108093525919
+      },
+      "X_mu": {
+        "mean": 111.15178550179557,
+        "q0.025": 94.62209054512846,
+        "q0.16": 102.21172591832241,
+        "q0.5": 110.8031258216392,
+        "q0.84": 120.09750051204031,
+        "q0.975": 129.6421867610873,
+        "sd": 8.964513540671478
+      },
+      "corr_omega_s0_R": 0.3121134396505573,
+      "lambda_c": {
+        "mean": 143352757.00301027,
+        "q0.025": 121244076.87108415,
+        "q0.16": 131819422.85391073,
+        "q0.5": 143158768.37007663,
+        "q0.84": 154891298.6087609,
+        "q0.975": 166547299.91457087,
+        "sd": 11573580.778354986
+      },
+      "omega_s0_pct": {
+        "mean": 0.8559472353032669,
+        "q0.025": 0.7971106852651383,
+        "q0.16": 0.8260946522707105,
+        "q0.5": 0.8559476684381314,
+        "q0.84": 0.8857995519225746,
+        "q0.975": 0.9147811120907969,
+        "sd": 0.030018511973040243
+      },
+      "omega_s_eff_pct": {
+        "mean": 0.44889074517004796,
+        "q0.025": 0.3578932225081447,
+        "q0.16": 0.4009669205880881,
+        "q0.5": 0.4478778096966022,
+        "q0.84": 0.4968194902861057,
+        "q0.975": 0.5455960953130158,
+        "sd": 0.04800229440487178
+      }
+    },
+    "l1_default": {
+      "L_pct": {
+        "mean": 0.13835987925291052,
+        "q0.025": 0.10048089780245566,
+        "q0.16": 0.1191355227331048,
+        "q0.5": 0.1383527469677031,
+        "q0.84": 0.15758131995024444,
+        "q0.975": 0.17628494915192092,
+        "sd": 0.019316398472213645
+      },
+      "R": {
+        "mean": 0.40663882010770175,
+        "q0.025": 0.08561002798448798,
+        "q0.16": 0.22625239600425315,
+        "q0.5": 0.4269625947128032,
+        "q0.84": 0.5750224036626665,
+        "q0.975": 0.6449033754988794,
+        "sd": 0.15818360069576096
+      },
+      "W_pct": {
+        "mean": 0.5849080654059376,
+        "q0.025": 0.4977174613475905,
+        "q0.16": 0.540018585551632,
+        "q0.5": 0.5845421471320585,
+        "q0.84": 0.6297779257650761,
+        "q0.975": 0.6741653736639864,
+        "sd": 0.04506274164240902
+      },
+      "X_mu": {
+        "mean": 111.45432671567754,
+        "q0.025": 100.36328923871382,
+        "q0.16": 105.5537135281585,
+        "q0.5": 111.2600463199319,
+        "q0.84": 117.35545151719745,
+        "q0.975": 123.64332745038627,
+        "sd": 5.943289097695057
+      },
+      "corr_omega_s0_R": 0.9084627104977359,
+      "lambda_c": {
+        "mean": 145494128.23703897,
+        "q0.025": 123036035.19898663,
+        "q0.16": 134006390.2959592,
+        "q0.5": 145439729.93798926,
+        "q0.84": 156979715.5284891,
+        "q0.975": 168263392.91757643,
+        "sd": 11541654.07884052
+      },
+      "omega_s0_pct": {
+        "mean": 0.8010777217036893,
+        "q0.025": 0.5120899220648922,
+        "q0.16": 0.5774172694691414,
+        "q0.5": 0.7764054921877853,
+        "q0.84": 1.043930532184662,
+        "q0.975": 1.1741581931165208,
+        "sd": 0.20027452888200778
+      },
+      "omega_s_eff_pct": {
+        "mean": 0.446548186153027,
+        "q0.025": 0.3629576839595945,
+        "q0.16": 0.40372864871079767,
+        "q0.5": 0.44636897678318044,
+        "q0.84": 0.4893782581340828,
+        "q0.975": 0.5310895000396886,
+        "sd": 0.042968017033217905
+      }
+    },
+    "l2_default": {
+      "L_pct": {
+        "mean": 0.13809935736094375,
+        "q0.025": 0.10074495972609458,
+        "q0.16": 0.11912524630750848,
+        "q0.5": 0.1380859526041389,
+        "q0.84": 0.15708343058987942,
+        "q0.975": 0.1754903298260893,
+        "sd": 0.019064920774112263
+      },
+      "R": {
+        "mean": 0.4080216495217054,
+        "q0.025": 0.09338612202434142,
+        "q0.16": 0.22878308162147276,
+        "q0.5": 0.42807683946629127,
+        "q0.84": 0.5756306375981235,
+        "q0.975": 0.6413393004390225,
+        "sd": 0.15635124837516415
+      },
+      "W_pct": {
+        "mean": 0.5831380917747443,
+        "q0.025": 0.5100985356258668,
+        "q0.16": 0.5443374669949712,
+        "q0.5": 0.5820387263434545,
+        "q0.84": 0.621933613442561,
+        "q0.975": 0.6623475431677253,
+        "sd": 0.03892862135129819
+      },
+      "X_mu": {
+        "mean": 111.19553907450539,
+        "q0.025": 98.24138604251173,
+        "q0.16": 104.26342219399179,
+        "q0.5": 110.95681660486082,
+        "q0.84": 118.12591401531151,
+        "q0.975": 125.5067125088132,
+        "sd": 6.968556732003819
+      },
+      "corr_omega_s0_R": 0.9207064833237699,
+      "lambda_c": {
+        "mean": 142992818.45721436,
+        "q0.025": 125095266.00542477,
+        "q0.16": 133705945.98793922,
+        "q0.5": 142843347.12876454,
+        "q0.84": 152279783.01007244,
+        "q0.975": 161733980.9686759,
+        "sd": 9346956.19304124
+      },
+      "omega_s0_pct": {
+        "mean": 0.8005289282402304,
+        "q0.025": 0.5117666396129303,
+        "q0.16": 0.5765991377200714,
+        "q0.5": 0.775739640131343,
+        "q0.84": 1.0436439679386624,
+        "q0.975": 1.1741078367757392,
+        "sd": 0.20046080387181942
+      },
+      "omega_s_eff_pct": {
+        "mean": 0.44503873441380054,
+        "q0.025": 0.3720582713570922,
+        "q0.16": 0.4069184932102229,
+        "q0.5": 0.444365065711692,
+        "q0.84": 0.4831970964534018,
+        "q0.975": 0.5216535780953291,
+        "sd": 0.03825657546056689
+      }
+    },
+    "weak": {
+      "L_pct": {
+        "mean": 0.13702367834949827,
+        "q0.025": 0.1013257464184384,
+        "q0.16": 0.11885485184369951,
+        "q0.5": 0.13699166735688023,
+        "q0.84": 0.1551972794373901,
+        "q0.975": 0.17289881333842694,
+        "sd": 0.01826919295092717
+      },
+      "R": {
+        "mean": 0.4054999112507625,
+        "q0.025": 0.07939856297257829,
+        "q0.16": 0.22439289633842627,
+        "q0.5": 0.4258882035766756,
+        "q0.84": 0.5746368121008218,
+        "q0.975": 0.6478311409302877,
+        "sd": 0.15958693882420982
+      },
+      "W_pct": {
+        "mean": 0.5851206016277446,
+        "q0.025": 0.4945782704194457,
+        "q0.16": 0.536429244600772,
+        "q0.5": 0.5836377840647898,
+        "q0.84": 0.6337478151437653,
+        "q0.975": 0.6841374861113952,
+        "sd": 0.04860156880089226
+      },
+      "X_mu": {
+        "mean": 111.27838082578079,
+        "q0.025": 95.00107304563329,
+        "q0.16": 102.4257765331596,
+        "q0.5": 110.89623632768766,
+        "q0.84": 120.14993915008664,
+        "q0.975": 129.67786951804416,
+        "sd": 8.883531507898496
+      },
+      "corr_omega_s0_R": 0.8966294127070003,
+      "lambda_c": {
+        "mean": 143505959.7098063,
+        "q0.025": 121675724.53342433,
+        "q0.16": 132072083.39621566,
+        "q0.5": 143277763.23286992,
+        "q0.84": 154956275.65397835,
+        "q0.975": 166590410.9575168,
+        "sd": 11478677.98334547
+      },
+      "omega_s0_pct": {
+        "mean": 0.8018793315436825,
+        "q0.025": 0.5124756025535726,
+        "q0.16": 0.578604045496806,
+        "q0.5": 0.7773954383175241,
+        "q0.84": 1.0443562925251308,
+        "q0.975": 1.1742330080519825,
+        "sd": 0.20001633323226722
+      },
+      "omega_s_eff_pct": {
+        "mean": 0.44809692327824685,
+        "q0.025": 0.3577403479943009,
+        "q0.16": 0.40071736789366413,
+        "q0.5": 0.44737906376386316,
+        "q0.84": 0.49541735573437823,
+        "q0.975": 0.5426228633662699,
+        "sd": 0.04734070064827505
+      }
+    }
+  },
+  "q_net": {
+    "mean": 0.04728125026291695,
+    "q0.025": 0.011409357710210915,
+    "q0.5": 0.03894549688907291,
+    "q0.975": 0.13292690371437707,
+    "sd": 0.031179702057433867
+  },
+  "schema": "openmucf-calibration-cells/1",
+  "shipped_v1_3_0": {
+    "CALIBRATION.md|Convergence diagnostics (4 chains, sequential)|Kamimura|divergences": "0",
+    "CALIBRATION.md|Convergence diagnostics (4 chains, sequential)|Kamimura|max r_hat": "1.000",
+    "CALIBRATION.md|Convergence diagnostics (4 chains, sequential)|Kamimura|min ess": "1e+04",
+    "CALIBRATION.md|Convergence diagnostics (4 chains, sequential)|weak|divergences": "0",
+    "CALIBRATION.md|Convergence diagnostics (4 chains, sequential)|weak|max r_hat": "1.000",
+    "CALIBRATION.md|Convergence diagnostics (4 chains, sequential)|weak|min ess": "5e+03",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|R|95% CI": "[0.346, 0.575]",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|R|mcse": "0.000556",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|R|mean": "0.462",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|R|sd": "0.058",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|omega_s0_pct|95% CI": "[0.798, 0.914]",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|omega_s0_pct|mcse": "0.000291",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|omega_s0_pct|mean": "0.856",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|omega_s0_pct|sd": "0.0298",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|omega_s_eff_pct|95% CI": "[0.367, 0.552]",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|omega_s_eff_pct|mcse": "0.000428",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|omega_s_eff_pct|mean": "0.46",
+    "CALIBRATION.md|Informative omega_s0 prior (Kamimura 0.857+-0.03 %) -- partially resolves it|omega_s_eff_pct|sd": "0.047",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|Q_net (hybrid: posterior kinetics x ignorance-box economics)|95% CI": "[0.01178, 0.1387]",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|Q_net (hybrid: posterior kinetics x ignorance-box economics)|mean": "0.04905",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|Q_net (hybrid: posterior kinetics x ignorance-box economics)|sd": "0.0324",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|X_mu (Kamimura posterior)|95% CI": "[98.6, 133.7]",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|X_mu (Kamimura posterior)|mean": "115.6",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|X_mu (Kamimura posterior)|sd": "9.18",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|X_mu (weak-box posterior)|95% CI": "[98.71, 134.1]",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|X_mu (weak-box posterior)|mean": "115.7",
+    "CALIBRATION.md|Posterior pushforward (state-of-knowledge X_mu and Q_net)|X_mu (weak-box posterior)|sd": "9.25",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=narrow|R sd": "0.109",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=narrow|boxes": "R[0.10,0.60] os0[0.60,1.10] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=narrow|corr": "0.84",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=narrow|ose mean": "0.462",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=narrow|ose sd": "0.0443",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=wide|R sd": "0.11",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=wide|boxes": "R[0.10,0.60] os0[0.60,1.10] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=wide|corr": "0.83",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=wide|ose mean": "0.462",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=wide|ose sd": "0.0463",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=legacy/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=narrow|R sd": "0.136",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=narrow|boxes": "R[0.10,0.60] os0[0.50,1.20] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=narrow|corr": "0.89",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=narrow|ose mean": "0.46",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=narrow|ose sd": "0.0446",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=wide|R sd": "0.136",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=wide|boxes": "R[0.10,0.60] os0[0.50,1.20] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=wide|corr": "0.88",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=wide|ose mean": "0.46",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=wide|ose sd": "0.0449",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=wide/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=narrow|R sd": "0.145",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=narrow|boxes": "R[0.10,0.60] os0[0.40,1.30] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=narrow|corr": "0.90",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=narrow|ose mean": "0.459",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=narrow|ose sd": "0.0458",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=wide|R sd": "0.142",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=wide|boxes": "R[0.10,0.60] os0[0.40,1.30] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=wide|corr": "0.89",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=wide|ose mean": "0.459",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=wide|ose sd": "0.0466",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=legacy/os0=widest/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=narrow|R sd": "0.118",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=narrow|boxes": "R[0.05,0.70] os0[0.60,1.10] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=narrow|corr": "0.85",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=narrow|ose mean": "0.46",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=narrow|ose sd": "0.047",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=wide|R sd": "0.115",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=wide|boxes": "R[0.05,0.70] os0[0.60,1.10] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=wide|corr": "0.84",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=wide|ose mean": "0.458",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=wide|ose sd": "0.0485",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=legacy/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=narrow|R sd": "0.156",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=narrow|boxes": "R[0.05,0.70] os0[0.50,1.20] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=narrow|corr": "0.90",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=narrow|ose mean": "0.457",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=narrow|ose sd": "0.0458",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=wide|R sd": "0.157",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=wide|boxes": "R[0.05,0.70] os0[0.50,1.20] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=wide|corr": "0.90",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=wide|ose mean": "0.456",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=wide|ose sd": "0.0471",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=wide/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=narrow|R sd": "0.171",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=narrow|boxes": "R[0.05,0.70] os0[0.40,1.30] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=narrow|corr": "0.92",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=narrow|ose mean": "0.455",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=narrow|ose sd": "0.0458",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=wide|R sd": "0.173",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=wide|boxes": "R[0.05,0.70] os0[0.40,1.30] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=wide|corr": "0.92",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=wide|ose mean": "0.455",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=wide|ose sd": "0.0478",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=wide/os0=widest/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=narrow|R sd": "0.114",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=narrow|boxes": "R[0.00,0.80] os0[0.60,1.10] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=narrow|corr": "0.84",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=narrow|ose mean": "0.46",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=narrow|ose sd": "0.0468",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=wide|R sd": "0.116",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=wide|boxes": "R[0.00,0.80] os0[0.60,1.10] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=wide|corr": "0.84",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=wide|ose mean": "0.458",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=wide|ose sd": "0.0481",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=legacy/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=narrow|R sd": "0.16",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=narrow|boxes": "R[0.00,0.80] os0[0.50,1.20] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=narrow|corr": "0.90",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=narrow|ose mean": "0.459",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=narrow|ose sd": "0.046",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=wide|R sd": "0.166",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=wide|boxes": "R[0.00,0.80] os0[0.50,1.20] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=wide|corr": "0.90",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=wide|ose mean": "0.459",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=wide|ose sd": "0.0482",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=wide/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=narrow|R sd": "0.186",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=narrow|boxes": "R[0.00,0.80] os0[0.40,1.30] lc[8e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=narrow|corr": "0.92",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=narrow|ose mean": "0.455",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=narrow|ose sd": "0.0451",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=narrow|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=wide|R sd": "0.184",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=wide|boxes": "R[0.00,0.80] os0[0.40,1.30] lc[6e+07,2e+08]",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=wide|corr": "0.92",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=wide|ose mean": "0.455",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=wide|ose sd": "0.0472",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|R=widest/os0=widest/lc=wide|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=+0.5|R sd": "0.158",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=+0.5|boxes": "default; MultivariateNormal obs likelihood",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=+0.5|corr": "0.92",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=+0.5|ose mean": "0.46",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=+0.5|ose sd": "0.0388",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=+0.5|rails?": "no",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=-0.5|R sd": "0.161",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=-0.5|boxes": "default; MultivariateNormal obs likelihood",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=-0.5|corr": "0.90",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=-0.5|ose mean": "0.453",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=-0.5|ose sd": "0.0481",
+    "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|default box; rho_obs=-0.5|rails?": "no",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|R|95% CI": "[0.0682, 0.639]",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|R|mcse": "0.00228",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|R|mean": "0.394",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|R|sd": "0.161",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|lambda_c|95% CI": "[8.26e+07, 1.55e+08]",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|lambda_c|mcse": "2.31e+05",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|lambda_c|mean": "1.14e+08",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|lambda_c|sd": "2.04e+07",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|omega_s0_pct|95% CI": "[0.513, 1.18]",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|omega_s0_pct|mcse": "0.00279",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|omega_s0_pct|mean": "0.805",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|omega_s0_pct|sd": "0.202",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|omega_s_eff_pct|95% CI": "[0.369, 0.548]",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|omega_s_eff_pct|mcse": "0.000389",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|omega_s_eff_pct|mean": "0.458",
+    "CALIBRATION.md|Weak omega_s0 prior (experimental data only) -- exposes the degeneracy|omega_s_eff_pct|sd": "0.0456",
+    "VALIDATION.md|V_petitjean|predicted": "130.5",
+    "VALIDATION_CHANNELS.md|V_breunlich_lambdac|predicted": "143822639.2"
+  },
+  "sweep": [
+    {
+      "R_box": [
+        0.1,
+        0.6
+      ],
+      "R_sd": 0.10723319820071067,
+      "config": "R=legacy/os0=legacy/lc=narrow",
+      "corr": 0.8184562297489747,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.6,
+        1.1
+      ],
+      "ose_mean": 0.4527349201321222,
+      "ose_sd": 0.045767123829184846,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.1,
+        0.6
+      ],
+      "R_sd": 0.10723320887329918,
+      "config": "R=legacy/os0=legacy/lc=wide",
+      "corr": 0.8184554293706229,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.6,
+        1.1
+      ],
+      "ose_mean": 0.45273486974204946,
+      "ose_sd": 0.04576721007122956,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.1,
+        0.6
+      ],
+      "R_sd": 0.13483218582907416,
+      "config": "R=legacy/os0=wide/lc=narrow",
+      "corr": 0.874239209200732,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.5,
+        1.2
+      ],
+      "ose_mean": 0.45092255634524175,
+      "ose_sd": 0.04549113080276953,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.1,
+        0.6
+      ],
+      "R_sd": 0.1348321891411908,
+      "config": "R=legacy/os0=wide/lc=wide",
+      "corr": 0.874238179829836,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.5,
+        1.2
+      ],
+      "ose_mean": 0.4509224642907412,
+      "ose_sd": 0.04549129429316674,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.1,
+        0.6
+      ],
+      "R_sd": 0.14305554047648608,
+      "config": "R=legacy/os0=widest/lc=narrow",
+      "corr": 0.8868293489007025,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.4,
+        1.3
+      ],
+      "ose_mean": 0.4486646519225198,
+      "ose_sd": 0.04737704809865199,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.1,
+        0.6
+      ],
+      "R_sd": 0.14305552364435686,
+      "config": "R=legacy/os0=widest/lc=wide",
+      "corr": 0.88682806105549,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.4,
+        1.3
+      ],
+      "ose_mean": 0.4486645060590158,
+      "ose_sd": 0.04737729504788608,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.05,
+        0.7
+      ],
+      "R_sd": 0.11495433911415713,
+      "config": "R=wide/os0=legacy/lc=narrow",
+      "corr": 0.8390420555980953,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.6,
+        1.1
+      ],
+      "ose_mean": 0.4488786275427107,
+      "ose_sd": 0.047870276788314736,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.05,
+        0.7
+      ],
+      "R_sd": 0.11495443010024348,
+      "config": "R=wide/os0=legacy/lc=wide",
+      "corr": 0.8390402415666929,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.6,
+        1.1
+      ],
+      "ose_mean": 0.44887847640448375,
+      "ose_sd": 0.047870528500400134,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.05,
+        0.7
+      ],
+      "R_sd": 0.15442974172967858,
+      "config": "R=wide/os0=wide/lc=narrow",
+      "corr": 0.8981755443858256,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.5,
+        1.2
+      ],
+      "ose_mean": 0.4474270402955994,
+      "ose_sd": 0.046758602410548813,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.05,
+        0.7
+      ],
+      "R_sd": 0.15442977934468538,
+      "config": "R=wide/os0=wide/lc=wide",
+      "corr": 0.8981742826217325,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.5,
+        1.2
+      ],
+      "ose_mean": 0.4474268871911911,
+      "ose_sd": 0.04675886397578527,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.05,
+        0.7
+      ],
+      "R_sd": 0.17457858647262314,
+      "config": "R=wide/os0=widest/lc=narrow",
+      "corr": 0.9176547054751437,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.4,
+        1.3
+      ],
+      "ose_mean": 0.4447608972483869,
+      "ose_sd": 0.04694491732390299,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.05,
+        0.7
+      ],
+      "R_sd": 0.1745785825068814,
+      "config": "R=wide/os0=widest/lc=wide",
+      "corr": 0.917653565179283,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.4,
+        1.3
+      ],
+      "ose_mean": 0.4447607210675202,
+      "ose_sd": 0.04694521304441371,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.0,
+        0.8
+      ],
+      "R_sd": 0.11523031857760861,
+      "config": "R=widest/os0=legacy/lc=narrow",
+      "corr": 0.8388446338474626,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.6,
+        1.1
+      ],
+      "ose_mean": 0.44888212572273983,
+      "ose_sd": 0.04798732045971324,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.0,
+        0.8
+      ],
+      "R_sd": 0.11523053148681696,
+      "config": "R=widest/os0=legacy/lc=wide",
+      "corr": 0.8388426659565343,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.6,
+        1.1
+      ],
+      "ose_mean": 0.448881903036523,
+      "ose_sd": 0.0479876997876398,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.0,
+        0.8
+      ],
+      "R_sd": 0.15958692031603686,
+      "config": "R=widest/os0=wide/lc=narrow",
+      "corr": 0.8966291598824208,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.5,
+        1.2
+      ],
+      "ose_mean": 0.4480969223940207,
+      "ose_sd": 0.04734070060719195,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.0,
+        0.8
+      ],
+      "R_sd": 0.1595870644607175,
+      "config": "R=widest/os0=wide/lc=wide",
+      "corr": 0.8966278875313415,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.5,
+        1.2
+      ],
+      "ose_mean": 0.44809669939211294,
+      "ose_sd": 0.04734108418383495,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.0,
+        0.8
+      ],
+      "R_sd": 0.18855658722934027,
+      "config": "R=widest/os0=widest/lc=narrow",
+      "corr": 0.9195470891923783,
+      "lc_box": [
+        80000000.0,
+        200000000.0
+      ],
+      "os0_box": [
+        0.4,
+        1.3
+      ],
+      "ose_mean": 0.4448223190821267,
+      "ose_sd": 0.04720707786908543,
+      "rails": false
+    },
+    {
+      "R_box": [
+        0.0,
+        0.8
+      ],
+      "R_sd": 0.18855668119787744,
+      "config": "R=widest/os0=widest/lc=wide",
+      "corr": 0.9195460114327917,
+      "lc_box": [
+        60000000.0,
+        240000000.0
+      ],
+      "os0_box": [
+        0.4,
+        1.3
+      ],
+      "ose_mean": 0.4448220799964665,
+      "ose_sd": 0.0472074808354401,
+      "rails": false
+    }
+  ]
+}

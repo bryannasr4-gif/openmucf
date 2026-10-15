@@ -9,14 +9,18 @@ widening (as before), and `min ess` against silently regaining a committed-vs-fr
 must-not-return direction, which is the one this amendment exists to hold.
 """
 
+import copy
 import importlib.util
+import json
+import shutil
 from pathlib import Path
 
 import pytest
 
 import openmucf
 
-_SCRIPT = Path(openmucf.__file__).resolve().parent.parent / "scripts" / "generate_calibration.py"
+_ROOT = Path(openmucf.__file__).resolve().parent.parent
+_SCRIPT = _ROOT / "scripts" / "generate_calibration.py"
 
 
 def _load_script():
@@ -128,44 +132,166 @@ def test_the_shipped_document_actually_gets_the_floor():
     assert all(mod._within(0.0, v, "ess_floor") for _, v in found), found
 
 
-def _audit_with(tmp_path, monkeypatch, committed_md, fresh_md):
-    """Drive ``audit()`` over a crafted committed/fresh pair -- no MCMC, so what is exercised is exactly
-    the parse -> classify -> compare path the real audit runs (the test_design_audit.py pattern)."""
+def _ncc_pair(min_ess_fresh, min_ess_committed=5000.0):
+    """A committed and a fresh NUTS cross-check record that differ only in min ess (the committed quadrature
+    means are the record's own, so the 3-MCSE gate is met)."""
+    mean = {q: 1.0 for q in ("omega_s_eff_pct", "lambda_c", "omega_s0_pct", "R", "W_pct", "X_mu", "L_pct")}
+    rec = {"max_rhat": 1.001, "min_ess": min_ess_committed, "divergences": 0, "mean": mean,
+           "mcse": dict.fromkeys(mean, 0.01), "max_abs_dev_over_mcse": 0.0}
+    fresh = copy.deepcopy(rec)
+    fresh["min_ess"] = min_ess_fresh
+    quad = {q: {"mean": 1.0} for q in mean}
+    return {"weak": rec}, {"weak": fresh}, {"weak": quad}
+
+
+def test_audit_min_ess_floor_fails_below_and_passes_above():
+    """The floor path: the verdict depends on the FRESH value only.
+
+    A fresh run below the floor fails even when the committed value is identical; a fresh run above it passes
+    even when the committed value is nowhere near -- what a relative band would get wrong.
+    """
     mod = _load_script()
+    committed, fresh, quad = _ncc_pair(1500.0, 1500.0)
+    msg = " ".join(mod.nuts_audit_problems(committed, fresh, quad))
+    assert "BELOW the structural floor 2000" in msg
+    assert "rel." not in msg, "a one-sided cell must never fail with a relative-band message"
+    for c, f in ((1e4, 5e3), (2.2e3, 1e4)):
+        committed, fresh, quad = _ncc_pair(f, c)
+        assert mod.nuts_audit_problems(committed, fresh, quad) == []
+
+
+def test_nuts_audit_names_rhat_and_divergence_drift():
+    mod = _load_script()
+    committed, fresh, quad = _ncc_pair(5000.0)
+    fresh["weak"]["max_rhat"] = 1.001 * 1.03          # outside the 2% class
+    fresh["weak"]["divergences"] = 1
+    probs = mod.nuts_audit_problems(committed, fresh, quad)
+    assert any("max_rhat" in p for p in probs) and any("divergences" in p for p in probs)
+
+
+# ------------------------------------------------------------------ the quadrature cells (tolerance rule)
+def test_quadrature_tolerance_rule_pinned():
+    """The caps, the floor and the scatter factor of the quadrature audit are pinned; the rule is
+    tol = min(cap, max(factor x measured scatter, floor))."""
+    src = _SCRIPT.read_text(encoding="utf-8")
+    assert 'QUAD_TOL_CAP = {"moment": 1e-5, "quantile": 5e-3, "quantile_L": 2e-2}' in src
+    assert "QUAD_TOL_FLOOR = 1e-6" in src
+    assert "QUAD_TOL_SCATTER_FACTOR = 10.0" in src
+    mod = _load_script()
+    assert mod.quad_tolerances({"moment": 0.0, "quantile": 1e-8, "quantile_L": 1.0}) == {
+        "moment": 1e-6, "quantile": 1e-6, "quantile_L": 2e-2}
+    assert mod.quad_tolerances({"moment": 3e-7, "quantile": 2e-4, "quantile_L": 1e-3}) == pytest.approx(
+        {"moment": 3e-6, "quantile": 2e-3, "quantile_L": 1e-2})
+
+
+def _committed_cells():
+    return json.loads((_ROOT / "CALIBRATION_CELLS.json").read_text(encoding="utf-8"))
+
+
+def test_committed_tolerances_follow_the_recorded_scatter():
+    mod = _load_script()
+    cells = _committed_cells()
+    tol = mod.committed_tolerances(cells)
+    assert tol == mod.quad_tolerances(cells["audit_scatter"]["scatter"])
+    cells["audit_scatter"]["tolerance"]["quantile"] *= 2
+    with pytest.raises(SystemExit, match="not the rule"):
+        mod.committed_tolerances(cells)
+
+
+@pytest.mark.parametrize(
+    "path, factor, named",
+    [
+        (("posteriors", "weak", "R", "q0.025"), 1 + 6e-3, True),        # beyond the 5e-3 quantile cap
+        (("posteriors", "kamimura", "lambda_c", "mean"), 1 + 2e-5, True),  # beyond the 1e-5 moment cap
+        (("posteriors", "weak", "L_pct", "q0.5"), 1 + 1e-7, False),    # inside every tolerance
+    ],
+)
+def test_compare_cells_drill(path, factor, named):
+    """Drill (a): a fresh cell perturbed past its class tolerance is named; one inside it is not."""
+    mod = _load_script()
+    committed = _committed_cells()
+    fresh = copy.deepcopy(committed)
+    node = fresh
+    for k in path[:-1]:
+        node = node[k]
+    node[path[-1]] *= factor
+    problems, worst = mod.compare_cells(committed, fresh, mod.committed_tolerances(committed))
+    assert bool([p for p in problems if p.startswith(".".join(path))]) is named
+    assert set(worst) == {"moment", "quantile", "quantile_L"}
+
+
+def test_compare_cells_rails_are_exact():
+    mod = _load_script()
+    committed = _committed_cells()
+    fresh = copy.deepcopy(committed)
+    fresh["sweep"][0]["rails"] = not fresh["sweep"][0]["rails"]
+    problems, _ = mod.compare_cells(committed, fresh, mod.committed_tolerances(committed))
+    assert any(p.startswith(f"sweep[{committed['sweep'][0]['config']}].rails") for p in problems)
+
+
+def _in_copy(tmp_path, monkeypatch):
+    """Run the script's file-reading checks in a tmp copy of the files they read."""
+    for rel in ("CALIBRATION.md", "CALIBRATION_CELLS.json", "VALIDATION_CHANNELS.md",
+                "forecasts/FC-001-mufuse.json", "openmucf/data/side_channel_inputs.csv",
+                "openmucf/data/uq_priors.csv"):
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(_ROOT / rel, tmp_path / rel)
+    mod = _load_script()
+    shutil.copyfile(_ROOT / mod.NOTE_PATH, tmp_path / mod.NOTE_PATH)
     monkeypatch.chdir(tmp_path)
-    Path(mod.CALIBRATION_MD).write_text(committed_md, encoding="utf-8")
-    monkeypatch.setattr(mod, "_all", lambda: (None,) * 8)
-    monkeypatch.setattr(mod, "build_md", lambda *a, **k: fresh_md)
     return mod
 
 
-def _convergence_md(min_ess_cell):
-    return ("# CALIBRATION\n\n## Convergence diagnostics (4 chains, sequential)\n"
-            "| chain | max r_hat | min ess | divergences |\n|---|---|---|---|\n"
-            f"| weak | 1.000 | {min_ess_cell} | 0 |\n")
+def test_committed_documents_are_the_render_of_the_committed_cells(tmp_path, monkeypatch):
+    mod = _in_copy(tmp_path, monkeypatch)
+    assert mod.render_problems(mod.load()) == []
+    assert mod.input_problems(mod.load()) == []
 
 
-def test_audit_min_ess_floor_fails_below_and_passes_above(tmp_path, monkeypatch, capsys):
-    """The floor path end-to-end: the verdict depends on the FRESH value only.
+def test_render_check_names_a_changed_byte(tmp_path, monkeypatch):
+    """Drill (b): CALIBRATION.md one byte off its render is named."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    p = tmp_path / "CALIBRATION.md"
+    t = p.read_text(encoding="utf-8")
+    p.write_text(t.replace("Estimator:", "Estimator;", 1), encoding="utf-8")
+    expected = ["CALIBRATION.md: differs from the render of the committed cells"]
+    assert mod.render_problems(mod.load()) == expected
 
-    A fresh chain below the floor fails even when the committed cell is identical; a fresh chain above it
-    passes even when the committed cell is nowhere near -- which is the whole point of the 2026-08-13
-    re-registration, and what a relative band (>= 20% apart in both directions here) would get wrong.
-    """
-    # (a) fresh below the floor -> FAIL, and the message names the floor, not a band
-    mod = _audit_with(tmp_path, monkeypatch, _convergence_md("1.5e+03"), _convergence_md("1.5e+03"))
-    with pytest.raises(SystemExit) as exc:
-        mod.audit()
-    msg = str(exc.value)
-    assert "BELOW the structural floor 2000" in msg
-    assert "rel." not in msg, "a one-sided cell must never fail with a relative-band message"
 
-    # (b) fresh above the floor -> PASS, with the committed cell far away in BOTH directions (50% and 78%
-    #     relative distance, either of which the superseded 20% band would have red)
-    for committed, fresh in (("1e+04", "5e+03"), ("2.2e+03", "1e+04")):
-        mod = _audit_with(tmp_path, monkeypatch, _convergence_md(committed), _convergence_md(fresh))
-        mod.audit()
-        out = capsys.readouterr().out
-        assert "calibration audit OK" in out
-        assert "one-sided min-ess floor" in out
-        assert "floor=2000" in out and "x the floor" in out    # the headroom is instrumented, not silent
+def test_input_digest_check_names_a_changed_input_and_render_refuses(tmp_path, monkeypatch):
+    """Drill (d): the side-channel inputs with one byte changed -> the digest check names it, and `--render`
+    refuses to write."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    p = tmp_path / "openmucf/data/side_channel_inputs.csv"
+    t = p.read_text(encoding="utf-8")
+    p.write_text(t.replace("0.3157", "0.3158", 1), encoding="utf-8")
+    monkeypatch.setattr(mod, "INPUT_FILES", {k: str(tmp_path / v) for k, v in mod.INPUT_FILES.items()})
+    probs = mod.input_problems(mod.load())
+    assert [x for x in probs if x.startswith("inputs.side_channel_inputs_csv_sha256")]
+    before = (tmp_path / "CALIBRATION.md").read_bytes()
+    with pytest.raises(SystemExit, match="render refused"):
+        mod.main(["--render"])
+    assert (tmp_path / "CALIBRATION.md").read_bytes() == before
+
+
+def test_fc_note_raises_when_a_corrected_median_leaves_the_card_interval(tmp_path, monkeypatch):
+    """Drill (FC note): the widened-support lambda_c median set to 1.01 x the card's 95 % upper bound."""
+    mod = _in_copy(tmp_path, monkeypatch)
+    cells = mod.load()
+    card = mod._card_scenario_a()
+    upper = card["lambda_c@phi=1.2"]["ci95"][1]
+    cells["posteriors"]["fc001_widened_support"]["lambda_c"]["q0.5"] = 1.01 * upper
+    with pytest.raises(ValueError, match="fc001_widened_support.lambda_c.q0.5"):
+        mod.build_note(cells)
+
+
+def test_sweep_lambda_c_labels_print_true_bounds():
+    """Every sweep box renders through lc_label, parses back to the box exactly, and appears in the
+    committed CALIBRATION.md."""
+    mod = _load_script()
+    md = (_ROOT / "CALIBRATION.md").read_text(encoding="utf-8")
+    for box, _name in mod._LC_BOXES:
+        label = mod.lc_label(box)
+        lo, hi = (float(x) for x in label[len("lc["):-1].split(","))
+        assert (lo, hi) == box, label
+        assert label in md, label
