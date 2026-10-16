@@ -7,12 +7,13 @@ reads of the cells file; it is not exhaustive. The runtime ownership test checks
 point opens the file only through the gate. It launches each mode of the calibration script's command line,
 its regeneration, and the FINDINGS.md and FRONTIER.md generators as their own processes, `python <script>
 <arguments>`, on a working copy that carries the openmucf package. A recorder that Python imports at
-interpreter start, before the package or the script, records by Python's `open` audit event every open of
-the file for the whole life of each process and of any Python process it starts; the test accepts only the
-gate's read and the measurement steps' own reads and writes, each as often as stated, and names any process
-started and any fault of the recording's lifetime. The script's numerical engines return the committed
-values in those runs from the moment the script calls its `main`, and run for real, at a reduced size, in a
-process of their own.
+interpreter start records by Python's `open` audit event every open of the file in each process and in any
+Python process it starts. Before loading the script or openmucf, the recorder initializes standard-library
+platform metadata and installs the open-event and process-start hook; the hook remains active through
+shipped module initialization and normal exit. The test accepts only the gate's read and the measurement
+steps' own reads and writes, each as often as stated, and names any process started and any fault of the
+recording's lifetime. The script's numerical engines return the committed values in those runs from the
+moment the script calls its `main`, and run for real, at a reduced size, in a process of their own.
 
 The consumer matrix then runs the actual entry points -- `--render`, `--audit`, the FRONTIER.md generator's
 `main` and the FINDINGS.md generator itself -- on a working copy whose cells file carries one defect at a
@@ -1001,6 +1002,19 @@ ENGINES = ("_posterior", "_sweep_rows", "q_net_cells", "nuts_cross_check", "_wri
 _CONFIG_VAR, _ROOT_VAR = "OPENMUCF_CELLS_OPENS", "OPENMUCF_CELLS_OPENS_ROOT"
 
 
+def _without_wmi():
+    """Written ahead of the recorder in every launch: the platform module's WMI query raises the error a
+    Windows host that denies the query raises (OSError 22, "Windows Error 0x80041003"), so that Python's
+    Windows OS discovery takes its fallback, which runs `ver` through the shell, wherever the test runs. On
+    other systems the discovery queries no WMI and this changes nothing."""
+    import platform
+
+    def denied(*keys):
+        raise OSError(22, "Windows Error 0x80041003")
+
+    platform._wmi_query = denied
+
+
 def _recorder():
     """The recorder, written as its own source and a call into ``sitecustomize.py`` in a directory first on
     the PYTHONPATH of an entry point's process. Python's `site` imports it at interpreter start, before the
@@ -1017,12 +1031,21 @@ def _recorder():
       the openmucf package was imported from.
 
     Where the test asks, it makes the calibration script's ENGINES return the committed values from the moment
-    the script, run as itself, calls its `main`, and reports that it did."""
+    the script, run as itself, calls its `main`, and reports that it did.
+
+    Before it reads its configuration or adds the hook, it asks the platform module for the OS metadata, which
+    the module caches for the life of the process: the real answer, from the standard library alone, with no
+    openmucf module imported. Where Windows denies the WMI query, Python's OS discovery runs `ver` through the
+    shell; the JAX backend asks for that metadata when openmucf is initialized, and that process would
+    otherwise be named as one the entry point started
+    (`test_python_os_discovery_runs_before_the_recording`)."""
     import atexit
     import json
     import os
+    import platform
     import sys
 
+    platform.uname()
     cfg = json.loads(os.environ["OPENMUCF_CELLS_OPENS"])
     root = os.environ.pop("OPENMUCF_CELLS_OPENS_ROOT", "") == "1"     # the processes it starts are not
     fd = os.open(cfg["report"], os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_BINARY", 0))
@@ -1144,6 +1167,19 @@ def _engines_run():
                       "NUTS chains": [sorted(ran["nuts_cross_check"][0]), sorted(gate.NUTS_CHAINS)]}))
 
 
+def _os_discovery():
+    """Written as its own source and a call into a script of the test's, run as its own process in the working
+    copy: asks Python for the OS, as the JAX backend does when openmucf is initialized, then initializes
+    openmucf; with the argument `uncached` it first clears the platform module's cached answer."""
+    import platform
+    import sys
+
+    if sys.argv[1:] == ["uncached"]:
+        platform._uname_cache = None
+    print(platform.system())
+    import openmucf  # noqa: F401
+
+
 def _as_script(f, prefix=""):
     return prefix + inspect.getsource(f) + f"\n\n{f.__name__}()\n"
 
@@ -1255,7 +1291,8 @@ class _EntryCopy:
         self.launches += 1
         shim = self.aside / f"launch_{self.launches}"
         shim.mkdir()
-        (shim / "sitecustomize.py").write_text(_as_script(_recorder, recorder_prefix), encoding="utf-8")
+        recorder = _as_script(_without_wmi) + _as_script(_recorder, recorder_prefix)
+        (shim / "sitecustomize.py").write_text(recorder, encoding="utf-8")
         engines = argv[0] == GATE if engines is None else engines
         cfg = dict(self.watch, report=str(shim / "opens.jsonl"))
         if engines:
@@ -1397,6 +1434,24 @@ def test_the_numerical_engines_open_no_cells_file(entry_copy):
     for what, (got, due) in ran.items():
         assert got == due and got, what
     assert (entry_copy.root / "figures" / "calibration.png").stat().st_size > 0
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Python's OS discovery starts a process only on Windows")
+def test_python_os_discovery_runs_before_the_recording(entry_copy):
+    """Drill: in every launch the WMI query is denied (`_without_wmi`), so Python's Windows OS discovery runs
+    `ver` through the shell. A process that asks for the OS and initializes openmucf starts no process,
+    because the recorder asked before it added its hook; the same process, with the platform module's cached
+    answer cleared after the hook, is named for starting `ver`."""
+    entry_copy.prepare()
+    script = entry_copy.aside / "os_discovery.py"
+    script.write_text(_as_script(_os_discovery), encoding="utf-8")
+    rec, done = entry_copy.launch([str(script)], engines=False)
+    assert ownership_problems(rec, Counter()) == []
+    assert done.returncode == 0 and done.stdout.strip() == "Windows", done.stderr[-3000:]
+    rec, done = entry_copy.launch([str(script), "uncached"], engines=False)
+    assert done.returncode == 0 and done.stdout.strip() == "Windows", done.stderr[-3000:]
+    probs = ownership_problems(rec, Counter())
+    assert [p for p in probs if p.startswith("started a process: ") and '/c "ver"' in p], probs
 
 
 _FRONTIER = "scripts/generate_frontier.py"
