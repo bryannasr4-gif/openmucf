@@ -1671,3 +1671,407 @@ def load_settings_outputs(root: Path, cells: tuple[Cell, ...]) -> SettingsOutput
         if missing:
             raise CellError(f"{Path(name).name} lacks the printed rows of clean runs: {missing[:3]}")
     return SettingsOutputs(runs, headers, lines)
+
+
+# --------------------------------------------------------------------------------------------
+# the patched recipe: MuDirac 1.3.0 with the patch in third_party/mudirac/
+# --------------------------------------------------------------------------------------------
+
+#: The profile the patched recipe's tables carry: MuDirac 1.3.0 with the patch set in
+#: ``third_party/mudirac/``, ``p1`` its first published revision.
+RECIPE_PROFILE = "mudirac130p1"
+PATCH_RELPATH = "third_party/mudirac/mudirac-1.3.0-p1.patch"
+#: Decimals of every printed line, digits of every printed state energy, and significant digits
+#: of every state file's energy header in a recipe run.
+RECIPE_XR_PRECISION = 12
+RECIPE_STATE_PRECISION = 12
+RECIPE_HEADER_PRECISION = 17
+#: The Hartree energy in eV under ``ev_codata2022`` (CODATA 2022) and MuDirac 1.3.0's own
+#: (``lib/constants.hpp``: ``eV = 1.0 / 27.211385``).
+E_H_EV_2022 = 27.211386245981
+E_H_EV_MUDIRAC = 27.211385
+#: The digits of the Riemann zeta function at 3 and 5 that fix the rms radius of the 2pF density
+#: with c = 0 (``fermi2_rms_floor_fm``).
+_ZETA3 = 1.2020569031595942853997381615114
+_ZETA5 = 1.0369277551433699263313654864570
+
+
+@dataclass(frozen=True)
+class Settings:
+    """The numerical settings of a recipe run: ``loggrid_step = 0.005 / 2**k``, ``uehling_steps``
+    ``n_u``, ``uehling_shell_nodes`` ``n_s`` and ``energy_tol = 1e-<t>``."""
+
+    k: int
+    n_u: int
+    n_s: int
+    t: int
+
+    def keywords(self) -> list[tuple[str, str]]:
+        return [("loggrid_step", repr(0.005 / 2 ** self.k)), ("energy_tol", repr(float(f"1e-{self.t}"))),
+                ("uehling_steps", str(self.n_u)), ("uehling_shell_nodes", str(self.n_s))]
+
+
+#: The settings of every production run.
+RECIPE_SETTINGS = Settings(k=3, n_u=60, n_s=12, t=7)
+#: The settings of the `numerics` stage: the uniform-sphere Uehling kernel by Gauss-Legendre in theta
+#: at 64 nodes and the grid and tolerance of the recipe (``uehling_shell_nodes`` has no effect there).
+NUMERICS_STAGE_SETTINGS = Settings(k=3, n_u=64, n_s=12, t=7)
+#: One step finer in each setting, one at a time, beside every production anchor run; the Uehling-free
+#: twin takes only the two that act without the Uehling potential.
+REFINEMENTS = (
+    ("k4", Settings(k=4, n_u=60, n_s=12, t=7)),
+    ("tol8", Settings(k=3, n_u=60, n_s=12, t=8)),
+    ("nu90", Settings(k=3, n_u=90, n_s=12, t=7)),
+    ("ns16", Settings(k=3, n_u=60, n_s=16, t=7)),
+)
+NOU_REFINEMENTS = ("k4", "tol8")
+#: The stages from the shipped input to the recipe, in order: the v1.3.0 input exactly; the numerics
+#: repair (Gauss-Legendre sphere Uehling kernel, Hermite 2pF Coulomb read-back, the hydrogen-like anchor,
+#: 12-decimal prints); the one 2pF density for the Coulomb and Uehling potentials together with the
+#: trapezoidal Uehling quadrature; the 2pF c solved from the intended rms radius; the nuclear mass; and
+#: (the production stage `recipe`) the CODATA 2022 Hartree energy.
+STAGES = ("shipped", "numerics", "density", "rms", "mass")
+STAGE_KEYWORDS: dict[str, tuple[tuple[str, str], ...]] = {
+    "numerics": (("uehling_gauss", "TRUE"),),
+    "density": (("uehling_density", "fermi2"),),
+    "rms": (("uehling_density", "fermi2"), ("fermi2_rms_exact", "TRUE")),
+    "mass": (("uehling_density", "fermi2"), ("fermi2_rms_exact", "TRUE"), ("nuclear_mass", "TRUE")),
+    "recipe": (("uehling_density", "fermi2"), ("fermi2_rms_exact", "TRUE"), ("nuclear_mass", "TRUE"),
+               ("ev_codata2022", "TRUE")),
+}
+#: The production kinds: the anchor kind (the bundled radius, the chain extended by one line to the
+#: hydrogen-like state of shell N_MAX + 1) in place of `base`, then the committed kinds.
+RECIPE_KINDS = ("anchor", "rsig", "r101", *IDEAL_KINDS)
+RECIPE_BATCHES = ("prod", "refine", "rminus", "stages")
+INSIDE_2PF = "INSIDE"
+
+
+def anchor_line() -> str:
+    """The line the anchor kind adds: orbit 2l+1 of shell N_MAX to that of shell N_MAX + 1."""
+    return f"{orbit(N_MAX, True)}-{orbit(N_MAX + 1, True)}"
+
+
+def recipe_rms_fm(row: InputRow, kind: str) -> float:
+    """The intended rms charge radius (fm) of ``kind``, as the float the radius line is made from."""
+    rms = float(row.radius_fm) / SPHERE_FACTOR
+    if kind == "rsig":
+        return rms + float(row.sigma_rms_fm)
+    if kind == "rminus":
+        return rms - float(row.sigma_rms_fm)
+    if kind == "r101":
+        return rms * float(SIZE_FLOOR)
+    return rms
+
+
+def fermi2_rms_floor_fm(fermi_t: str) -> float:
+    """The rms radius (fm) of the 2pF density with c = 0 at thickness ``fermi_t``:
+    a sqrt(12 eta(5)/eta(3)), a = t/(4 ln 3), eta(s) = (1 - 2^(1-s)) zeta(s). No c >= 0 gives a
+    smaller one, so an intended rms at or below it is outside the 2pF domain."""
+    a = float(fermi_t) / (4.0 * math.log(3.0))
+    eta3, eta5 = 0.75 * _ZETA3, (15.0 / 16.0) * _ZETA5
+    return a * math.sqrt(12.0 * eta5 / eta3)
+
+
+def density_domain(row: InputRow, kind: str) -> str:
+    """``INSIDE`` when the kind's intended rms radius exceeds the 2pF floor at the row's thickness,
+    else the label the patched binary gives (``OUTSIDE_2PF_T<t>``) when it keeps MuDirac's own c."""
+    if recipe_rms_fm(row, kind) > fermi2_rms_floor_fm(row.fermi_t_fm):
+        return INSIDE_2PF
+    return f"OUTSIDE_2PF_T{float(row.fermi_t_fm):g}"
+
+
+def render_recipe_input(row: InputRow, kind: str, stage: str, uehling: bool, settings: Settings,
+                        extra: list[str]) -> str:
+    """The input of a patched-recipe run: the renderer's own input for the kind (`base` for the anchor
+    kind), printed at RECIPE_XR_PRECISION / RECIPE_STATE_PRECISION, the anchor kind's extra line and
+    hydrogen-like shell, ``uehling_correction: FALSE`` for an Uehling-free twin, then the header
+    precision, the Hermite read-back, the stage's keywords, the intended rms where the stage solves c
+    from it, and the settings; each key set once."""
+    if kind not in RECIPE_KINDS + RESPONSE_KINDS:
+        raise ValueError(f"unknown recipe kind {kind!r}")
+    if stage not in STAGE_KEYWORDS:
+        raise ValueError(f"unknown recipe stage {stage!r}")
+    out = []
+    for line in render_input(row, "base" if kind == "anchor" else kind, extra).splitlines():
+        if line == "xr_print_precision: 6":
+            line = f"xr_print_precision: {RECIPE_XR_PRECISION}"
+        elif line == "state_print_precision: 6":
+            line = f"state_print_precision: {RECIPE_STATE_PRECISION}"
+        elif line == "uehling_correction: TRUE" and not uehling:
+            line = "uehling_correction: FALSE"
+        elif line.startswith("xr_lines: ") and kind == "anchor":
+            line = f"{line},{anchor_line()}"
+        out.append(line)
+    if kind == "anchor":
+        out.append(f"ideal_atom_minshell: {shell(N_MAX + 1)}")
+    keywords = [("state_header_precision", str(RECIPE_HEADER_PRECISION)), ("fermi2_hermite", "TRUE"),
+                *STAGE_KEYWORDS[stage]]
+    if ("fermi2_rms_exact", "TRUE") in keywords:
+        keywords.append(("fermi2_rms_fm", repr(recipe_rms_fm(row, kind))))
+    keywords += settings.keywords()
+    for key, value in keywords:
+        if any(line.startswith(f"{key}:") for line in out):
+            raise ValueError(f"{key} set twice")
+        out.append(f"{key}: {value}")
+    return "\n".join(out) + "\n"
+
+
+@dataclass(frozen=True)
+class RecipeRun:
+    """One run of a recipe batch: its id, member, kind, stage, Uehling switch, variant and input."""
+
+    run: str
+    row: InputRow
+    kind: str
+    stage: str
+    uehling: bool
+    variant: str
+    text: str
+
+
+def recipe_run_id(row: InputRow, kind: str, uehling: bool, variant: str = "") -> str:
+    """``<Sym><A>_<kind>_<on|off>[_<variant>]``; a stage run is ``<Sym><A>_<stage>``."""
+    if kind == "stage":
+        return run_id(row, variant)
+    return run_id(row, f"{kind}_{'on' if uehling else 'off'}" + (f"_{variant}" if variant else ""))
+
+
+def compared_nuclides(cells: tuple[Cell, ...]) -> list[tuple[int, int]]:
+    """Every (Z, A) the validation cells name, gated or not, ascending."""
+    return sorted({cell.nuclide for cell in cells})
+
+
+def recipe_runs(rows: Sequence[InputRow], cells: tuple[Cell, ...], batch: str) -> list[RecipeRun]:
+    """Every run of ``batch``, in order: `prod` (each member's kinds, the anchor kind for `base`, each
+    with its Uehling-free twin), `refine` (each member's anchor run one step finer per setting, and its
+    twin per twin setting), `rminus` (the radius moved down, where its rms stays inside the 2pF domain)
+    or `stages` (each compared nuclide's run at every stage before the recipe: the shipped input, then
+    the anchor kind)."""
+    validation = set(gated_nuclides(cells))
+    compared = set(compared_nuclides(cells))
+    out: list[RecipeRun] = []
+
+    def add(row: InputRow, kind: str, stage: str, uehling: bool, settings: Settings,
+            variant: str = "") -> None:
+        text = render_recipe_input(row, kind, stage, uehling, settings, extra_lines(cells, row.nuclide))
+        name = recipe_run_id(row, "stage" if stage != "recipe" else kind, uehling, variant)
+        out.append(RecipeRun(name, row, kind, stage, uehling, variant or "prod", text))
+
+    if batch == "prod":
+        for row in rows:
+            for kind in run_kinds(row, validation):
+                for uehling in (True, False):
+                    add(row, "anchor" if kind == "base" else kind, "recipe", uehling, RECIPE_SETTINGS)
+    elif batch == "refine":
+        for row in rows:
+            for tag, settings in REFINEMENTS:
+                add(row, "anchor", "recipe", True, settings, tag)
+            for tag, settings in REFINEMENTS:
+                if tag in NOU_REFINEMENTS:
+                    add(row, "anchor", "recipe", False, settings, tag)
+    elif batch == "rminus":
+        for row in rows:
+            if density_domain(row, "rminus") == INSIDE_2PF:
+                add(row, "rminus", "recipe", True, RECIPE_SETTINGS)
+    elif batch == "stages":
+        for row in rows:
+            if row.nuclide not in compared:
+                continue
+            text = render_input(row, "base", extra_lines(cells, row.nuclide))
+            out.append(RecipeRun(run_id(row, "shipped"), row, "base", "shipped", True, "shipped", text))
+            add(row, "anchor", "numerics", True, NUMERICS_STAGE_SETTINGS, "numerics")
+            for stage in ("density", "rms", "mass"):
+                add(row, "anchor", stage, True, RECIPE_SETTINGS, stage)
+    else:
+        raise ValueError(f"unknown recipe batch {batch!r}")
+    return out
+
+
+# --------------------------------------------------------------------------------------------
+# the printed outputs of a recipe run: completeness first, then the strings
+# --------------------------------------------------------------------------------------------
+
+class IncompleteRunError(Mudirac130Error):
+    """A run's printed outputs lack an expected line or state header, or are malformed."""
+
+
+_SHELLS = "KLMNOPQRS"
+
+
+def iupac_state(label: str) -> tuple[int, int, int]:
+    """``(n, l, 2j)`` of an IUPAC orbit label (orbit 1 is s1/2, 2l is j = l - 1/2, 2l + 1 is j = l + 1/2)."""
+    n = _SHELLS.index(label[0]) + 1
+    number = int(label[1:])
+    ell = number // 2
+    return n, ell, 1 if number == 1 else (2 * ell + 1 if number % 2 else 2 * ell - 1)
+
+
+def _iupac_range(spec: str) -> list[str]:
+    """MuDirac's range spelling: ``L2:L3`` is every orbit from L2 to L3; a single orbit is itself."""
+    parts = spec.split(":")
+    if len(parts) == 1:
+        return parts
+    (n1, _l1, _j1), (n2, _l2, _j2) = iupac_state(parts[0]), iupac_state(parts[1])
+    first, last = int(parts[0][1:]), int(parts[1][1:])
+    out = []
+    for n in range(n1, n2 + 1):
+        for number in range(first if n == n1 else 1, (last if n == n2 else 2 * n - 1) + 1):
+            out.append(f"{_SHELLS[n - 1]}{number}")
+    return out
+
+
+def expected_printed_lines(xr_lines: str) -> list[str]:
+    """Every line a run prints for its ``xr_lines`` keyword, as MuDirac expands it: n2 >= n1,
+    |l2 - l1| = 1 and |j2 - j1| <= 1 (a line with Delta j = 2 has no E1 rate and is not printed)."""
+    out: list[str] = []
+    for item in xr_lines.split(","):
+        low, high = item.split("-")
+        for lo in _iupac_range(low):
+            for hi in _iupac_range(high):
+                (na, la, ja), (nb, lb, jb) = iupac_state(lo), iupac_state(hi)
+                if nb < na or abs(lb - la) != 1 or abs(jb - ja) > 2:
+                    continue
+                out.append(f"{lo}-{hi}")
+    return out
+
+
+def input_keywords(text: str) -> dict[str, str]:
+    """``{key: value}`` of an input file's ``key: value`` lines."""
+    pairs = (line.split(":", 1) for line in text.splitlines() if ":" in line)
+    return {key.strip(): value.strip() for key, value in pairs}
+
+
+def read_recipe_run(directory: Path, run: str, text: str, rc: str, err: str) -> tuple[
+        dict[str, tuple[str, ...]], list[tuple[str, str, str]]]:
+    """The printed state headers ``{orbit: (n, l, s, E, E + mc^2)}`` and lines ``[(line, dE, rate)]`` of
+    one run, after its completeness check: exit status 0 and an empty ``.err``; the ``.xr.out`` ends
+    with a newline after its two header lines; every printed line has exactly the input's decimals and
+    the printed lines are exactly the expected ones (``expected_printed_lines``), once each; every state
+    of an expected line has a header with (n, l, s) matching its label and both energies printed. A
+    run that fails any clause raises IncompleteRunError naming the run and the clause; nothing of it is
+    returned."""
+    def refuse(why: str) -> IncompleteRunError:
+        return IncompleteRunError(f"{run}: {why}")
+    if rc != "0" or err != "0":
+        raise refuse(f"rc={rc} err_bytes={err}")
+    keywords = input_keywords(text)
+    decimals = int(keywords["xr_print_precision"])
+    xr = directory / f"{run}.xr.out"
+    if not xr.is_file():
+        raise refuse("no .xr.out")
+    raw = xr.read_bytes()
+    if not raw.endswith(b"\n"):
+        raise refuse(".xr.out does not end with a newline")
+    rows = raw.decode("ascii").split("\n")[:-1]
+    if len(rows) < 2 or not rows[0].startswith("# Z = ") or not rows[1].startswith("Line\tDeltaE"):
+        raise refuse(".xr.out header malformed")
+    energy = re.compile(rf"[0-9]+\.[0-9]{{{decimals}}}")
+    lines: list[tuple[str, str, str]] = []
+    for row in rows[2:]:
+        fields = [f for f in row.split("\t") if f != ""]
+        if len(fields) != 3 or not _LINE.fullmatch(fields[0]) or not energy.fullmatch(fields[1]) \
+                or not energy.fullmatch(fields[2]):
+            raise refuse(f"malformed printed line {row!r}")
+        lines.append((fields[0], fields[1], fields[2]))
+    expected = expected_printed_lines(keywords["xr_lines"])
+    if sorted(name for name, _e, _r in lines) != sorted(expected):
+        missing = sorted(set(expected) - {name for name, _e, _r in lines})
+        raise refuse(f"printed lines differ from the expected ones (missing {missing[:4]})")
+    headers: dict[str, tuple[str, ...]] = {}
+    for state in sorted({s for line in expected for s in line.split("-")}, key=_orbit_order):
+        path = directory / f"{run}.{state}.out"
+        if not path.is_file():
+            raise refuse(f"no state file for {state}")
+        head = path.read_bytes().decode("ascii").split("\n")[:5]
+        match_state = _STATE_HEADER_LINE.match(head[1]) if len(head) > 2 else None
+        match_energy = _ENERGY_HEADER_LINE.match(head[2]) if len(head) > 2 else None
+        if not (match_state and match_energy):
+            raise refuse(f"state {state} has no complete header")
+        n, ell, two_j = iupac_state(state)
+        s_expected = 1 if (ell == 0 or two_j == 2 * ell + 1) else 0
+        if match_state.groups() != (str(n), str(ell), str(s_expected)):
+            raise refuse(f"state {state} header names n, l, s = {match_state.groups()}")
+        headers[state] = (*match_state.groups(), *match_energy.groups())
+    return headers, lines
+
+
+_STATE_HEADER_LINE = re.compile(r"^# DiracState with n = (\d+), l = (\d+), s = (\d+)$")
+_ENERGY_HEADER_LINE = re.compile(r"^# E = (\S+) \+ mc\^2 = (\S+) eV$")
+
+
+# --------------------------------------------------------------------------------------------
+# the derivation of binding energies from a recipe run's printed strings
+# --------------------------------------------------------------------------------------------
+
+def float_floor_eV(total_eV: str, eh: float) -> Decimal:
+    """ulp(mu c^2), in eV: the spacing of the doubles the binary holds a total energy (binding plus
+    mu c^2, in Hartree) on, which every printed line and header carries whatever its decimals."""
+    total_ha = float(total_eV) / eh
+    return Decimal(2.0 ** (math.floor(math.log2(total_ha)) - 52)) * Decimal(repr(eh))
+
+
+def header_half_unit(text: str) -> Decimal:
+    """Half a unit of the last printed digit of a header energy (fixed or exponent form)."""
+    mantissa, _sep, exponent = text.lstrip("-").lower().partition("e")
+    decimals = len(mantissa.split(".")[1]) if "." in mantissa else 0
+    return Decimal(5) * Decimal(10) ** (int(exponent or 0) - decimals - 1)
+
+
+def derive_recipe_bindings(run: str, kind: str, headers: dict[str, tuple[str, ...]], lines: dict[str, str],
+                           eh: float) -> dict[str, tuple[Decimal, Decimal]]:
+    """``{orbit: (B, rounding)}`` in eV for every circular orbit of shells 1 .. N_MAX of one recipe run.
+
+    The outermost circular orbit (2l+1 of shell N_MAX): for the anchor kind, minus the printed header of
+    the hydrogen-like orbit of shell N_MAX + 1 plus the printed line between them; for every other kind,
+    minus its own printed header. Then the upper orbits downward by adding each printed line and the
+    lower orbits outward from K1 by subtracting each. A printed line carries half a unit of its last
+    decimal plus ``float_floor_eV``; a header the same with its own last digit. Raises DerivationError
+    unless every derived energy lies within its header's rounding, its own rounding and one more line's
+    of its printed header, and every cross line closes within the rounding of its two ends and itself.
+    """
+    chain = chain_states()
+    needed = list(chain) + ([orbit(N_MAX + 1, True)] if kind == "anchor" else [])
+    for state in needed:
+        if state not in headers:
+            raise DerivationError(f"{run}: no printed header for {state}")
+    wanted = upper_chain_lines() + lower_chain_lines() + cross_lines()
+    if kind == "anchor":
+        wanted.append(anchor_line())
+    for line in wanted:
+        if line not in lines:
+            raise DerivationError(f"{run}: no printed line {line}")
+    top = orbit(N_MAX, True)
+    with localcontext() as context:
+        context.prec = _PRECISION
+        floor = float_floor_eV(headers[top][4], eh)
+        rho_line = Decimal(5) * Decimal(10) ** (-RECIPE_XR_PRECISION - 1) + floor
+        if kind == "anchor":
+            outer = orbit(N_MAX + 1, True)
+            b = {top: (-Decimal(headers[outer][3]) + Decimal(lines[anchor_line()]),
+                       header_half_unit(headers[outer][3]) + floor + rho_line)}
+        else:
+            b = {top: (-Decimal(headers[top][3]), header_half_unit(headers[top][3]) + floor)}
+        for n in range(N_MAX - 1, 0, -1):
+            lower, upper = orbit(n, True), orbit(n + 1, True)
+            b[lower] = (b[upper][0] + Decimal(lines[f"{lower}-{upper}"]), b[upper][1] + rho_line)
+        for n in range(1, N_MAX):
+            lower, upper = orbit(n, False), orbit(n + 1, False)
+            b[upper] = (b[lower][0] - Decimal(lines[f"{lower}-{upper}"]), b[lower][1] + rho_line)
+        for state in chain:
+            value, rounding = b[state]
+            header = headers[state][3]
+            gap = abs(value + Decimal(header))
+            if gap > header_half_unit(header) + floor + rounding + rho_line:
+                raise DerivationError(f"{run}: derived {state} lies {gap} eV from its printed header")
+        for line in cross_lines():
+            lower, upper = line.split("-")
+            residual = abs(b[lower][0] - b[upper][0] - Decimal(lines[line]))
+            if residual > b[lower][1] + b[upper][1] + rho_line:
+                raise DerivationError(f"{run}: cross line {line} closes to {residual} eV")
+    return b
+
+
+def recipe_quantities(b: dict[str, tuple[Decimal, Decimal]]) -> tuple[Decimal, tuple[Decimal, ...]]:
+    """``(K, (e2 .. e<N_MAX>))`` in keV from ``derive_recipe_bindings``: the exact decimal eV-to-keV
+    division of the 1s binding energy and of each circular level's (2j+1)-weighted mean."""
+    return quantities({state: value for state, (value, _rounding) in b.items()})

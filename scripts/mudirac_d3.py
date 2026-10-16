@@ -2,10 +2,12 @@
 
     python3 scripts/mudirac_d3.py inputs --radii R --abundant A --iaea I --out data/g4/d3
     python3 scripts/mudirac_d3.py write --kind K [--level L] --dir D
-    python3 scripts/mudirac_d3.py run --mudirac BIN --dir D --jobs N [--shard i/n] [--time-v]
+    python3 scripts/mudirac_d3.py run --mudirac BIN --dir D --jobs N [--shard i/n] [--time-v] [--heads-only]
     python3 scripts/mudirac_d3.py collect --dir D [D ...] --out data/g4/d3
     python3 scripts/mudirac_d3.py collect-numerics --dir D [D ...] --out data/g4/d3
     python3 scripts/mudirac_d3.py geant4-levels --harvest H --out data/g4/d3/geant4_cascade_levels.csv
+    python3 scripts/mudirac_d3.py write-recipe --batch B --dir D
+    python3 scripts/mudirac_d3.py collect-recipe --batch B --dir D [D ...] --out OUT
 
 `inputs` checks the three pinned source files and writes ``mudirac_inputs.csv``. `write` renders one
 ``<run>/<run>.in`` per member for one run kind: a committed or evidence kind over the input set, or
@@ -21,6 +23,18 @@ printed line and the hydrogen-like comparison of the checked shells, each in a f
 tables, with a row of status ``INVALID_PERTURBATION_DOMAIN`` for each member whose ``rminus`` run
 was not made. `geant4-levels` reads the output of ``cpp/tools/harvest_d3.cc`` on a Geant4 build
 without the overlay and writes the cascade's level energies for every gated validation nuclide.
+
+`write-recipe` renders the inputs of one batch of the patched recipe (MuDirac 1.3.0 with the patch in
+``third_party/mudirac/``): ``prod`` (every member's kinds, the anchor kind in place of ``base``, each
+with its Uehling-free twin), ``refine`` (each anchor run one step finer in each setting), ``rminus``
+(the radius moved down, inside the 2pF domain) or ``stages`` (each gated nuclide's anchor run at every
+stage from the shipped input to the recipe). ``--heads-only`` keeps, of every state file a run
+writes, its five header lines, and drops the transition-matrix files: the header and the ``.xr.out``
+are all that is collected. `collect-recipe` re-renders the batch, requires every run of it to be
+listed with the digest of its re-rendered input and to be complete -- exit status 0, an empty
+``.err``, every expected line printed once at the input's decimals and every expected state's header
+-- and refuses, naming the run, otherwise; then it writes the batch's run table, printed state headers
+and printed lines.
 
 The generator itself is not run by the test suite or the audit: its committed outputs are the input
 of record, and ``scripts/generate_g4data.py`` builds the D3 tables from them. This script imports
@@ -126,7 +140,23 @@ def cmd_write_settings(args: argparse.Namespace) -> None:
     print(f"wrote {made} settings inputs for {len(wanted)} nuclides under {args.dir}")
 
 
-def _run_one(binary: str, directory: Path, time_v: bool, timeout: int | None) -> tuple[str, int, str, str, str]:
+def _keep_heads(directory: Path) -> None:
+    """Cut every state file of the run in ``directory`` to its five header lines and drop its
+    transition-matrix files; the ``.xr.out`` is left whole."""
+    run = directory.name
+    for path in directory.glob(f"{run}.*.out"):
+        if path.name == f"{run}.xr.out":
+            continue
+        if path.name.endswith(".tmat.out"):
+            path.unlink()
+            continue
+        with open(path, "rb") as source:
+            head = b"".join(source.readline() for _ in range(5))
+        path.write_bytes(head)
+
+
+def _run_one(binary: str, directory: Path, time_v: bool, timeout: int | None,
+             heads_only: bool = False) -> tuple[str, int, str, str, str]:
     """Run one input: ``(run, rc, err_bytes, wall_s, input_sha256)``; MuDirac gets exactly one
     argument whether or not ``/usr/bin/time -v`` wraps it."""
     run = directory.name
@@ -142,6 +172,8 @@ def _run_one(binary: str, directory: Path, time_v: bool, timeout: int | None) ->
         except subprocess.TimeoutExpired:
             rc = 124
     wall = time.monotonic() - start
+    if heads_only:
+        _keep_heads(directory)
     err = directory / f"{run}.err"
     return run, rc, str(err.stat().st_size) if err.exists() else "missing", f"{wall:.3f}", digest
 
@@ -153,7 +185,8 @@ def cmd_run(args: argparse.Namespace) -> None:
     directories = sorted(p for p in Path(args.dir).iterdir() if (p / f"{p.name}.in").is_file())
     directories = [d for position, d in enumerate(directories) if position % count == index]
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        results = sorted(pool.map(lambda d: _run_one(args.mudirac, d, args.time_v, args.timeout), directories))
+        results = sorted(pool.map(lambda d: _run_one(args.mudirac, d, args.time_v, args.timeout, args.heads_only),
+                                  directories))
     lines = ["\t".join(fields) for run, rc, err, wall, digest in results
              for fields in [(run, str(rc), err, wall, digest)]]
     name = "runs.tsv" if count == 1 else f"runs.{index}of{count}.tsv"
@@ -325,6 +358,70 @@ def cmd_collect(args: argparse.Namespace) -> None:
         print(f"wrote {Path(relpath).name}: {len(table) - 1} rows")
 
 
+def cmd_write_recipe(args: argparse.Namespace) -> None:
+    rows, cells = _inputs_and_cells()
+    runs = md.recipe_runs(rows, cells, args.batch)
+    for r in runs:
+        directory = Path(args.dir) / r.run
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / f"{r.run}.in").write_bytes(r.text.encode("ascii"))
+    print(f"wrote {len(runs)} inputs of recipe batch {args.batch} under {args.dir}")
+
+
+RECIPE_RUNS_COLUMNS = ("run", "Z", "A", "kind", "stage", "uehling", "variant", "density_domain", "rc", "err_bytes",
+                       "wall_s", "input_sha256")
+RECIPE_STATES_COLUMNS = ("run", "state", "n", "l", "s", "binding_eV", "total_eV")
+RECIPE_LINES_COLUMNS = ("run", "line", "delta_e_eV", "w12_per_s")
+
+
+def cmd_collect_recipe(args: argparse.Namespace) -> None:
+    rows, cells = _inputs_and_cells()
+    results = {}
+    for run, directory, rc, err, wall, digest in _results(args.dir):
+        if run in results:
+            raise SystemExit(f"{run}: listed twice in the runs tables")
+        results[run] = (directory, rc, err, wall, digest)
+    expected = md.recipe_runs(rows, cells, args.batch)
+    runs = [list(RECIPE_RUNS_COLUMNS)]
+    states = [list(RECIPE_STATES_COLUMNS)]
+    lines = [list(RECIPE_LINES_COLUMNS)]
+    domains: dict[str, int] = {}
+    for r in expected:
+        if r.run not in results:
+            raise SystemExit(f"no result for {r.run}: run the whole batch before collecting")
+        directory, rc, err, wall, digest = results.pop(r.run)
+        if digest != hashlib.sha256(r.text.encode("ascii")).hexdigest():
+            raise SystemExit(f"{r.run}: the input it ran is not the input the renderer makes now")
+        if r.stage == "shipped":
+            headers = {orbit: header for orbit, header in _state_headers(directory).items()}
+            printed = _lines(directory)
+            if rc != "0" or err != "0":
+                raise SystemExit(f"{r.run}: rc={rc} err_bytes={err}")
+        else:
+            try:
+                headers, printed = md.read_recipe_run(directory, r.run, r.text, rc, err)
+            except md.IncompleteRunError as error:
+                raise SystemExit(f"collect refused: {error}") from error
+        domain = md.density_domain(r.row, r.kind) if r.stage in ("rms", "mass", "recipe") else ""
+        domains[domain] = domains.get(domain, 0) + 1
+        runs.append([r.run, str(r.row.z), str(r.row.a), r.kind, r.stage, "on" if r.uehling else "off", r.variant,
+                     domain, rc, err, wall, digest])
+        for orbit in sorted(headers, key=_orbit_order):
+            states.append([r.run, orbit, *headers[orbit]])
+        for name, delta, rate in printed:
+            lines.append([r.run, name, delta, rate])
+    if results:
+        raise SystemExit(f"runs not in batch {args.batch}: {sorted(results)[:3]}")
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, table in (("runs", runs), ("states", states), ("lines", lines)):
+        path = out / f"mudirac_recipe_{args.batch}_{name}.csv"
+        _write(path, table)
+        print(f"wrote {path.name}: {len(table) - 1} rows, {path.stat().st_size} bytes")
+    print(f"batch {args.batch}: {len(expected)} runs complete; density domain "
+          + ", ".join(f"{k or 'not solved from the rms'} {v}" for k, v in sorted(domains.items())))
+
+
 def cmd_geant4_levels(args: argparse.Namespace) -> None:
     _rows, cells = _inputs_and_cells()
     nuclides = md.gated_nuclides(cells)
@@ -360,6 +457,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--shard", default="0/1")
     p.add_argument("--time-v", action="store_true")
     p.add_argument("--timeout", type=int)
+    p.add_argument("--heads-only", action="store_true")
     p = sub.add_parser("collect")
     p.add_argument("--dir", required=True, nargs="+")
     p.add_argument("--out", required=True)
@@ -372,10 +470,18 @@ def main(argv: list[str] | None = None) -> None:
     p = sub.add_parser("geant4-levels")
     p.add_argument("--harvest", required=True)
     p.add_argument("--out", required=True)
+    p = sub.add_parser("write-recipe")
+    p.add_argument("--batch", required=True, choices=md.RECIPE_BATCHES)
+    p.add_argument("--dir", required=True)
+    p = sub.add_parser("collect-recipe")
+    p.add_argument("--batch", required=True, choices=md.RECIPE_BATCHES)
+    p.add_argument("--dir", required=True, nargs="+")
+    p.add_argument("--out", required=True)
     args = parser.parse_args(argv)
     {"inputs": cmd_inputs, "write": cmd_write, "write-settings": cmd_write_settings,
      "run": cmd_run, "collect": cmd_collect, "collect-numerics": cmd_collect_numerics,
-     "collect-settings": cmd_collect_settings, "geant4-levels": cmd_geant4_levels}[args.command](args)
+     "collect-settings": cmd_collect_settings, "geant4-levels": cmd_geant4_levels,
+     "write-recipe": cmd_write_recipe, "collect-recipe": cmd_collect_recipe}[args.command](args)
 
 
 if __name__ == "__main__":
