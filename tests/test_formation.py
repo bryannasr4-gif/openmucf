@@ -73,3 +73,42 @@ def test_scope_guard_is_jit_safe():
     formation._SCOPE_WARNED = True
     assert val == pytest.approx(float(formation.lambda_dtmu(30.0, 2.0, 0)))
     formation._SCOPE_WARNED = False
+
+
+# The retired description, assembled so that this guard is not a hit of a repository-wide search for it.
+RETIRED = " ".join(("measured", "room-temperature", "cycling"))
+
+
+def anchor_home_failures(repo):
+    """CALIB_ANCHOR is rendered verbatim by FINDINGS.md and VALIDATION.md, and no file of openmucf/, scripts/
+    or the top-level *.md carries the retired description."""
+    from pathlib import Path as _P
+
+    bad = []
+    for doc in ("FINDINGS.md", "VALIDATION.md"):
+        if formation.CALIB_ANCHOR not in (repo / doc).read_text(encoding="utf-8"):
+            bad.append(f"{doc}: CALIB_ANCHOR not rendered")
+    files = [*_P(repo, "openmucf").rglob("*.py"), *_P(repo, "scripts").rglob("*.py"), *_P(repo).glob("*.md")]
+    for f in files:
+        if RETIRED in f.read_text(encoding="utf-8"):
+            bad.append(f"{f.relative_to(repo).as_posix()}: carries the retired description")
+    return bad
+
+
+def test_calib_anchor_has_one_home():
+    from pathlib import Path as _P
+
+    assert anchor_home_failures(_P(formation.__file__).resolve().parents[1]) == []
+
+
+def test_calib_anchor_home_drill(tmp_path):
+    """Drill: a FINDINGS.md that carries the retired description again is named."""
+    import shutil
+    from pathlib import Path as _P
+
+    repo = _P(formation.__file__).resolve().parents[1]
+    for doc in ("FINDINGS.md", "VALIDATION.md"):
+        shutil.copyfile(repo / doc, tmp_path / doc)
+    f = tmp_path / "FINDINGS.md"
+    f.write_text(f.read_text(encoding="utf-8") + f"\nanchored to the {RETIRED} scale\n", encoding="utf-8")
+    assert anchor_home_failures(tmp_path) == ["FINDINGS.md: carries the retired description"]

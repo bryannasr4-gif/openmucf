@@ -119,8 +119,12 @@ each input's declared range, defined in `PARAMS`.
 
 ## `openmucf.calibrate` — Bayesian calibration of cycle parameters (numpyro)
 
-Calibrates (ω_s0, R, λ_c) to the measured effective sticking (0.45 ± 0.05 %) and
-yield (113 ± 12); exposes the ω_s0/R identifiability degeneracy.
+`posterior_quadrature(prior, *, R_box, lam_box, cov, res)` is the published calibration: (ω_s0, R, λ_c,
+L_other) fitted by deterministic quadrature to the effective sticking, the maximum cycle rate and the yield
+Breunlich et al. (1987) print (`OBS_W`), with their common calibration (`observation_covariance`);
+`model_w` / `run_model_w` run the same model under NUTS as a cross-check. The legacy model below
+calibrates (ω_s0, R, λ_c) to the effective sticking and the yield alone and is kept for the frozen
+FC-001 path; both expose the ω_s0/R identifiability degeneracy.
 
 - `model(omega_s_eff_obs=0.45, omega_s_eff_sd=0.05, xmu_obs=113.0, xmu_sd=12.0,
   omega_s0_prior=WEAK_OMEGA_S0_PRIOR, R_prior=R_PRIOR_DEFAULT,

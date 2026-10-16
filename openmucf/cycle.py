@@ -152,6 +152,15 @@ def fusions_per_muon_ode(lambda_0, lambda_dt, lambda_10, lambda_form1, lambda_fo
     return sol.ys[-1, 3]
 
 
+def channel_loss_per_cycle(sol):
+    """Muons lost to the absorbing channels (tt-branch sticking + He-3 scavenging) per d-t fusion, at t1.
+
+    (loss_tt + loss_he) / N_fus of the same solution; 0.0 with the channels off.
+    """
+    y = sol.ys[-1]
+    return float((y[6] + y[7]) / y[3])
+
+
 def conservation_residual(sol):
     """x_dmu + x_tmu1 + x_tmu0 + stuck + dec + loss_tt + loss_he - 1 at the final time (should be ~0).
 

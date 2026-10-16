@@ -26,11 +26,27 @@
     },
     {
       "doc": "FRONTIER.md",
-      "id": "R_kamimura",
-      "pattern": "posterior gives a\\s+total R = \\*\\*0\\.46\\*\\*",
+      "id": "R_floor_500_anchor",
+      "pattern": "these become \\*\\*R >= 0\\.93\\*\\*",
       "source": "scripts/generate_frontier.py",
       "source_type": "derivation",
-      "value": "0.46"
+      "value": "0.93"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_X_required_anchor",
+      "pattern": "and \\*\\*R_X >= 0\\.89\\*\\*",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.89"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_kamimura",
+      "pattern": "posterior gives a\\s+total R = \\*\\*0\\.47\\*\\*",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.47"
     },
     {
       "doc": "FRONTIER.md",
@@ -119,11 +135,29 @@
       "source": "scripts/generate_frontier.py",
       "source_type": "derivation",
       "value": "0.5884"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_anchor_500_inf",
+      "pattern": "side-channel loss \\(closed-form\\)[\\s\\S]*?\\| 500 \\|[^\\n]*0\\.9286",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.9286"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_anchor_150_1.45e+08",
+      "pattern": "side-channel loss \\(closed-form\\)[\\s\\S]*?\\| 150 \\|[^\\n]*0\\.7504",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.7504"
     }
   ],
   "generated_by": "scripts/generate_frontier.py",
   "inputs": {
     "R_nominal": 0.35,
+    "calibration_cells_sha256": "721e453cb1c9822cd482c7279945c15be59a33e15439ea1c2276a316b59f9f6f",
+    "l_other_anchor_fraction": 0.0013880000000000001,
     "lambda_0_s^-1": 455200.0,
     "lambda_c_grid_s^-1": [
       100000000.0,
@@ -134,7 +168,8 @@
     ],
     "lambda_c_nominal_s^-1": 130000000.0,
     "omega_s0_default_fraction": 0.00857,
-    "rates_csv_sha256": "9c53ca9a8b0aad92e3a397937557e0db6f2db2a55648dd494e8314e0d9277678",
+    "rates_csv_sha256": "9af2256b38fadaad3b6dd80f2bc6448a7794d29e5ff12982093a3612769bbff1",
+    "side_channel_inputs_csv_sha256": "b97ef7080357ff0c5cf28a4dafd6586f8fd66ba0bafdf5b8027cefe20edf7a1b",
     "solver_target_q_net": 0.06,
     "x_mu_targets": [
       150.0,

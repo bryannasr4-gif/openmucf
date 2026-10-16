@@ -20,14 +20,13 @@ documented upgrade path (Phase 3).
 The resonance POSITIONS and WIDTHS other than the measured 0.423 eV peak are hand-placed, unsourced
 placeholders chosen so the Maxwell average rises monotonically over 20-800 K; the temperature SHAPE of
 this model is therefore a construction, not a prediction (VALIDATION.md class column:
-`shape (calibrated model)`). The module's thermal output is an effective CYCLE-scale rate (anchored
-near the measured lambda_c(300 K)), NOT the bare Faifman lambda_dtmu, which is 13-30x larger (ledger
+`shape (calibrated model)`). The module's thermal output is an effective CYCLE-scale rate (its thermal
+scale is set as CALIB_ANCHOR states), NOT the bare Faifman lambda_dtmu, which is 13-30x larger (ledger
 rows lambda_dtmu_900K / lambda_dtmu_lowT -- executed as failing targets V_faifman_900K /
 V_faifman_lowT). It is exported under the name lambda_form_eff for this reason. Linear-in-phi by
 construction: inapplicable above the compressed-gas onset (phi > ~1.45); a scope warning fires there.
 
-This model is calibrated so the cycle reproduces the canonical lambda_c(T) band; the F=0 amplitudes are
-set from the room-temperature anchor (see _CALIB below).
+The F=0 amplitudes are set as CALIB_ANCHOR states (see _CALIB below).
 """
 
 from __future__ import annotations
@@ -37,6 +36,14 @@ import jax.numpy as jnp
 from . import _jaxcfg  # noqa: F401  -- MANDATORY float64; this module imports nothing else in-package
 
 K_B = 8.617333e-5  # eV / K
+
+#: Where the thermal scale of this model comes from, stated once: FINDINGS.md section 1c and the
+#: V_faifman_900K note of openmucf.validate render it, and the rate ledger's eta_dtmu row names it.
+CALIB_ANCHOR = (
+    "set so that the cycle at 300 K and liquid density runs near the upper edge of the rate ledger's "
+    "lambda_c_liquid band, the cycling maximum Breunlich et al. (1987) measured in liquid D/T at 23 K, "
+    "applied at 300 K"
+)
 
 # Vesman resonances per hyperfine F: (E_res [eV], amplitude [s^-1], width [eV]).
 _RESONANCES = {

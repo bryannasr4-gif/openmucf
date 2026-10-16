@@ -1,6 +1,8 @@
 """Phase 2.4 trust gate: the reproducible validation targets must pass; the class-tiered
 scoreboard exposes the three registered independent targets that FAIL by design."""
 
+from pathlib import Path
+
 import pytest
 
 from openmucf import load_rates, validate
@@ -226,3 +228,67 @@ def test_physics_mutation_flips_verdicts():
         assert res["V_faifman_peak"].passed is False
     finally:
         formation._RESONANCES[1][:] = orig_f1
+
+
+def test_channels_on_expected_outcomes():
+    """VALIDATION_CHANNELS.md: the Kou-Chen +-10% reproduction rows FAIL on the channels-on page, a registered
+    finding (their closed forms carry no tt loss); every other row has its channels-off outcome."""
+    off = {r.target_id: r.passed for r in validate.run(load_rates())}
+    on = {r.target_id: r.passed for r in validate.run(load_rates(), channels="on")}
+    assert on == dict(off, V_kouchen_base=False, V_kouchen_best=False)
+
+
+# --- the validation targets: keyed by id, read as finite numbers
+def _targets_copy(tmp_path, edit):
+    from openmucf.rates import TARGETS_CSV
+
+    lines = Path(TARGETS_CSV).read_text(encoding="utf-8").splitlines()
+    path = tmp_path / "targets.csv"
+    path.write_text("\n".join(edit(lines)) + "\n", encoding="utf-8")
+    return path
+
+
+def test_load_targets_refuses_an_id_on_two_rows(tmp_path):
+    """Each target given a second row: refused naming it, never reduced to the last row."""
+    ids = list(validate._load_targets())
+    assert validate._load_targets(_targets_copy(tmp_path, lambda ls: ls)) == validate._load_targets()
+    for i, tid in enumerate(ids, start=1):
+        path = _targets_copy(tmp_path, lambda ls, i=i: [*ls, ls[i]])
+        with pytest.raises(ValueError, match=f"target '{tid}' is on more than one row"):
+            validate._load_targets(path)
+    assert len(ids) == len(Path(validate.TARGETS_CSV).read_text(encoding="utf-8").splitlines()) - 1
+
+
+def test_load_targets_refuses_a_repeated_header_column(tmp_path):
+    path = _targets_copy(tmp_path, lambda ls: [ls[0] + ",value", *(ln + ",0" for ln in ls[1:])])
+    with pytest.raises(ValueError, match=r"column\(s\) \['value'\] repeated in the header"):
+        validate._load_targets(path)
+
+
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf"])
+@pytest.mark.parametrize("tid", ["V_petitjean_Xmu", "V_breunlich_lambdac"])
+def test_the_anchor_targets_are_read_as_finite_numbers(tmp_path, tid, value):
+    """The two anchor values the channels-off page feeds V_petitjean (and FINDINGS.md section 3 reads), each
+    set to a non-finite number: refused naming the target, by the reader and by the validation run."""
+    tgt = validate._load_targets()
+    assert validate.target_value(tgt, tid) == float(tgt[tid]["value"])
+    tgt[tid] = dict(tgt[tid], value=value)
+    with pytest.raises(ValueError, match=f"validation target {tid}: value"):
+        validate.target_value(tgt, tid)
+
+    def edit(ls):
+        import csv
+        import io
+
+        out = [ls[0]]
+        for ln in ls[1:]:
+            row = next(csv.reader([ln]))
+            if row[0].strip() == tid:
+                row[next(csv.reader([ls[0]])).index("value")] = value
+                buf = io.StringIO()
+                csv.writer(buf, lineterminator="").writerow(row)
+                ln = buf.getvalue()
+            out.append(ln)
+        return out
+    with pytest.raises(ValueError, match=f"validation target {tid}: value"):
+        validate.run(load_rates(), targets_csv=str(_targets_copy(tmp_path, edit)))

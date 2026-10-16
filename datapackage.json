@@ -188,6 +188,31 @@
       }
     },
     {
+      "name": "side-channel-inputs",
+      "path": "openmucf/data/side_channel_inputs.csv",
+      "profile": "tabular-data-resource",
+      "format": "csv",
+      "mediatype": "text/csv",
+      "encoding": "utf-8",
+      "title": "Inputs of the side-channel loss per cycle at the liquid anchor fill of Breunlich et al. (1987)",
+      "schema": {
+        "primaryKey": "symbol",
+        "fields": [
+          {"name": "symbol", "type": "string", "description": "Machine key of the input, as openmucf.sidechannels reads it."},
+          {"name": "description", "type": "string", "description": "One human-readable line."},
+          {"name": "value", "type": "number", "description": "The value in the stated unit; for a uniform input, the midpoint of its range."},
+          {"name": "unc", "type": "number", "description": "One-sigma uncertainty of a normal input; '-' for a fixed or uniform input.", "constraints": {"required": false}},
+          {"name": "distribution", "type": "string", "description": "How openmucf.sidechannels propagates the input.", "constraints": {"enum": ["normal", "uniform", "fixed"]}},
+          {"name": "dist_lo", "type": "number", "description": "Lower edge of a uniform input's range.", "constraints": {"required": false}},
+          {"name": "dist_hi", "type": "number", "description": "Upper edge of a uniform input's range.", "constraints": {"required": false}},
+          {"name": "unit", "type": "string", "description": "Physical unit."},
+          {"name": "source_bibkey", "type": "string", "description": "Key resolvable in references.bib."},
+          {"name": "source_locator", "type": "string", "description": "Where the value sits inside the source: table, figure, equation or page."},
+          {"name": "notes", "type": "string", "description": "Readings and assumptions of ours, named as such.", "constraints": {"required": false}}
+        ]
+      }
+    },
+    {
       "name": "yamashita-kino-lambda-c-T",
       "path": "openmucf/data/yamashita_kino_lc_T.csv",
       "profile": "tabular-data-resource",

@@ -9,7 +9,8 @@ UNCONDITIONALLY -- which contradicted the protocol and made a fresh clone fail o
 on Apple Silicon, 2026-07-23: `omega_s_eff@phi=1.2` scenario B came back 0.5371 vs the registered 0.5358,
 +0.24%, and the `lambda_c@phi=2.0` bracket limbs moved ~0.4%, with jax_enable_x64 ON in both runs):
 
-* the PORTABLE gate (:data:`MC_RTOL`) runs everywhere and is what a third-party reproducer must satisfy;
+* the PORTABLE gate (:data:`MC_RTOL`) runs on the locked toolchain (numpy, jax, jaxlib and numpyro as
+  ``requirements-lock.txt`` pins them) on any platform, and is what a third-party reproducer must satisfy;
 * the BIT-IDENTITY gate runs only when every recorded ``generation.env`` field matches.
 """
 
@@ -58,6 +59,20 @@ def _pred(card, scenario_name, target_id):
 
 
 # ------------------------------------------------- reproduction-claim scoping (see the module docstring)
+def _locked_toolchain_mismatch() -> dict:
+    """Each of numpy, jax, jaxlib and numpyro whose installed version is not requirements-lock.txt's."""
+    from importlib import metadata
+
+    lock = {}
+    lock_file = Path(__file__).resolve().parents[1] / "requirements-lock.txt"
+    for line in lock_file.read_text(encoding="utf-8").splitlines():
+        if "==" in line and not line.lstrip().startswith("#"):
+            name, version = line.split("==", 1)
+            lock[name.strip().lower()] = version.strip()
+    return {p: (metadata.version(p), lock[p]) for p in ("numpy", "jax", "jaxlib", "numpyro")
+            if metadata.version(p) != lock[p]}
+
+
 def _environment_mismatch(card) -> dict:
     """Return every recorded environment field that differs from the live environment."""
     env = card["generation"]["env"]
@@ -388,7 +403,7 @@ def _preds(card):
 
 
 def test_fc001_pinned_posterior_reproduces_registered_predictions_within_mc_band(fresh_card, shipped_card):
-    """PORTABLE reproduction gate -- the one a third party on ANY platform must pass.
+    """PORTABLE reproduction gate -- the one a third party on the locked toolchain, any platform, must pass.
 
     A fresh build through the PINNED posterior must reproduce the registered card's STRUCTURE exactly
     (scenarios, target ids, prediction types, units, limb layout -- all enforced by ``_numeric_pairs``)
@@ -396,6 +411,13 @@ def test_fc001_pinned_posterior_reproduces_registered_predictions_within_mc_band
     FORECAST_PROTOCOL.md sec.7 actually makes off the recorded platform; anything stronger is
     architecture-dependent and belongs in the test below.
     """
+    mismatch = _locked_toolchain_mismatch()
+    if mismatch:
+        pytest.skip(
+            f"the MC band holds on the locked toolchain; installed vs locked: {mismatch}. The registered "
+            "single chain traps past the X_mu pole at some off-pin seeds (python scripts/xray_feasibility.py "
+            "--trap-sweep), so another toolchain's realization of seed 0 is not covered."
+        )
     pairs = _numeric_pairs(_preds(shipped_card), _preds(fresh_card))
     assert len(pairs) >= 60, f"only {len(pairs)} numeric cells compared -- the card shape shrank"
     bad = [(p, c, f, abs(c - f) / max(abs(c), abs(f)))

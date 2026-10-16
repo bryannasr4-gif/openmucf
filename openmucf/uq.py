@@ -50,12 +50,19 @@ def params_from_ledger(path=None) -> list[Param]:
     """Load the UQ priors from ``openmucf/data/uq_priors.csv`` (host-side read) into ``Param`` objects.
 
     ``Param.note`` is populated from the CSV ``rationale`` column. The file order defines the parameter
-    order used by the Sobol/forward-UQ boxes, so it must match the historical literal order.
+    order used by the Sobol/forward-UQ boxes, so it must match the historical literal order. Raises ValueError
+    naming the defect for a header that repeats a column or a name on more than one row: the readers that key
+    the parameters by name would keep only the last.
     """
     src = Path(path) if path is not None else _PRIORS_CSV
     params: list[Param] = []
     with open(src, newline="") as f:
-        for row in csv.DictReader(f):
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        repeated = sorted({h for h in header if header.count(h) > 1})
+        if repeated:
+            raise ValueError(f"{src}: column(s) {repeated} repeated in the header")
+        for row in reader:
             params.append(
                 Param(
                     name=row["name"].strip(),
@@ -66,6 +73,10 @@ def params_from_ledger(path=None) -> list[Param]:
                     note=row["rationale"].strip(),
                 )
             )
+    names = [p.name for p in params]
+    twice = sorted({n for n in names if names.count(n) > 1})
+    if twice:
+        raise ValueError(f"{src}: parameter(s) {twice} on more than one row")
     return params
 
 
@@ -221,11 +232,14 @@ def forward_uq(n=400_000, seed=0, blanket_M=1.0):
 
 
 # ------------------------------------------------------------------- breakeven falsification (numpy)
-def breakeven_audit(n=400_000, seed=1):
+def breakeven_audit(n=400_000, seed=1, kamimura_r=None):
     """Honest, uncertainty-propagated verdict on the 2026 N_mu>500 / Q>2 projections.
 
     Under the prior uncertainty ranges, report P(X_mu>500), P(Q_sci>2), P(Q_net>1); then the
     'what-would-have-to-be-true' required (R, lambda_c) to reach X_mu=500, versus what the ledger carries.
+    ``kamimura_r`` is the (mean, sd) of the Kamimura-prior calibration posterior's total R that the note
+    states, as the caller takes it from the admitted calibration cells; without it the note points to
+    CALIBRATION.md.
     """
     d = _draw(n, seed)
     x = xmu(d["omega_s0_pct"], d["R"], d["lambda_c"])
@@ -299,7 +313,9 @@ def breakeven_audit(n=400_000, seed=1):
             "any field-assisted R_X are successive, so at R_col=0.35 the field-assisted factor alone must "
             "reach R_X >= 0.64 -- a required total R is not comparable to R_col; experiment constrains only "
             "the product omega_s_eff ~0.45%, not R itself; our Kamimura-prior posterior gives a total "
-            "R = 0.46 +- 0.06). "
+            + ("in CALIBRATION.md" if kamimura_r is None
+               else f"R = {kamimura_r[0]:.2f} +- {kamimura_r[1]:.2f}")
+            + "). "
             "Density scaling (lambda_c = phi*lambda_c_tilde) could supply the lambda_c factor alone at "
             "the demonstrated DAC phi=2.4 -- but even at infinite lambda_c, X_mu=500 needs omega_s_eff "
             "<= 0.2%, i.e. R >= 0.77. The binding requirement is reactivation, at any density."

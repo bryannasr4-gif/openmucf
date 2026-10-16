@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import importlib.util
 import math
+import os
 import tomllib
 from pathlib import Path
 
@@ -36,6 +37,17 @@ from openmucf.systems import SystemChain
 
 REPO = Path(openmucf.__file__).resolve().parent.parent
 _SCRIPT = REPO / "scripts" / "generate_frontier.py"
+
+
+def _admitted(gen):
+    """The calibration cells as the generator takes them: through the calibration's gate, read from the
+    repository root (the gate reads the cells, the inputs and the released documents relative to it)."""
+    cwd = os.getcwd()
+    os.chdir(REPO)
+    try:
+        return gen.admitted_calibration_cells()
+    finally:
+        os.chdir(cwd)
 
 # Solver cross-check target: a modest q_net (above the nominal operating point) chosen so all four free
 # variables have a finite, feasible required value -- matches the generator's SOLVER_TARGET_QNET.
@@ -200,7 +212,7 @@ def test_frontier_md_regenerates_byte_identical():
     """FRONTIER.md rebuilt from the generator equals the committed file byte-for-byte (LF-normalised).
     Closed-form only -- no MCMC/solver in the byte-diffed path."""
     gen = _load_generator()
-    rebuilt = gen.build_markdown(gen.build_headline())
+    rebuilt = gen.build_markdown(gen.build_headline(_admitted(gen)))
     committed = (REPO / "FRONTIER.md").read_bytes().decode("utf-8").replace("\r\n", "\n")
     assert rebuilt == committed
 
@@ -215,7 +227,34 @@ def test_frontier_manifest_solver_numbers_are_six_sig_figs():
     """Every solver-worked-example value shipped in FRONTIER.md is quantised to <= 6 significant
     figures (so the byte-diffed doc cannot depend on iterative-solver noise)."""
     gen = _load_generator()
-    H = gen.build_headline()
+    H = gen.build_headline(_admitted(gen))
     for key in ("solver_E_mu_GeV", "solver_eta_acc", "solver_R", "solver_lambda_c"):
         digits = H[key].lower().replace("e+", "e").split("e")[0].replace(".", "").replace("-", "").lstrip("0")
         assert len(digits) <= 6, (key, H[key], digits)
+
+
+def test_anchor_table_is_rendered_at_the_fraction():
+    """FRONTIER's side-channel table and floors are r_required at sidechannels.ANCHOR_L_OTHER_FRACTION (a
+    fraction, never the percent): every manifest entry equals its format of the closed form, and so does a
+    fresh build of the generator's headline."""
+    import json
+
+    from openmucf import sidechannels
+
+    m = json.loads((REPO / "FRONTIER_MANIFEST.json").read_text(encoding="utf-8"))
+    ent = {e["id"]: e["value"] for e in m["entries"]}
+    frac = sidechannels.ANCHOR_L_OTHER_FRACTION
+    assert m["inputs"]["l_other_anchor_fraction"] == frac
+    gen = _load_generator()
+    r_col = float(gen.R_COL_REFERENCE)
+    floor = r_required(500.0, math.inf, l_other=frac)
+    expected = {
+        "R_floor_500_anchor": f"{floor:.2f}",
+        "R_X_required_anchor": f"{1.0 - (1.0 - floor) / (1.0 - r_col):.2f}",
+        "R_anchor_500_inf": f"{floor:.4f}",
+        "R_anchor_150_1.45e+08": f"{r_required(150.0, 1.45e8, l_other=frac):.4f}",
+    }
+    fresh = gen.build_headline(_admitted(gen))
+    for k, v in expected.items():
+        assert ent[k] == v, k
+        assert fresh[k] == v, k

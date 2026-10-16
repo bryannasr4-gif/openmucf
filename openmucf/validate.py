@@ -16,6 +16,7 @@ success (see ``tests/test_validate.py::test_expected_fail_guard``).
 from __future__ import annotations
 
 import csv
+import math
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -69,10 +70,42 @@ def _xmu(rates, omega_s_eff, T=_OP["T"], include_loss_channels=False):
     )
 
 
+def _xmu_loss(rates, omega_s_eff, T=_OP["T"], include_loss_channels=False):
+    """X_mu and the engine's own per-cycle channel loss (``cycle.channel_loss_per_cycle``), one solution."""
+    p = cycle.params_from_conditions(
+        rates, T, _OP["phi"], _OP["c_t"], omega_s_eff=omega_s_eff, include_loss_channels=include_loss_channels
+    )
+    sol = cycle.solve_cycle(**p)
+    return float(sol.ys[-1, 3]), cycle.channel_loss_per_cycle(sol)
+
+
 def _load_targets(path=TARGETS_CSV):
-    """Load pre-registered targets (observed value + tolerance) from validation_targets.csv, keyed by id."""
+    """Load pre-registered targets (observed value + tolerance) from validation_targets.csv, keyed by id.
+    Raises ValueError naming the defect for a header that repeats a column or an id on more than one row
+    (keying would keep only the last of either)."""
     with open(path, newline="") as f:
-        return {row["target_id"].strip(): row for row in csv.DictReader(f)}
+        reader = csv.DictReader(f)
+        header = list(reader.fieldnames or [])
+        rows = list(reader)
+    repeated = sorted({h for h in header if header.count(h) > 1})
+    if repeated:
+        raise ValueError(f"{path}: column(s) {repeated} repeated in the header")
+    out = {}
+    for row in rows:
+        tid = row["target_id"].strip()
+        if tid in out:
+            raise ValueError(f"{path}: target {tid!r} is on more than one row")
+        out[tid] = row
+    return out
+
+
+def target_value(tgt, target_id):
+    """The observed value of ``target_id`` in ``tgt`` (`_load_targets`) as a finite number; raises ValueError
+    naming the target otherwise."""
+    v = float(tgt[target_id]["value"])
+    if not math.isfinite(v):
+        raise ValueError(f"validation target {target_id}: value {v!r} is not a finite number")
+    return v
 
 
 def _load_yamashita_curve(path=_YAMASHITA_CSV):
@@ -96,11 +129,8 @@ def run(rates, targets_csv=None, channels="off"):
     """Run the engine against the pre-registered targets.
 
     ``channels`` in {"off","on"}: "off" is the v1 trust gate (committed VALIDATION.md); "on" switches
-    ``include_loss_channels=True`` at the SAME operating points. At the anchor conditions the He-3 channel
-    is inert (He-purged fills, c_He=0) and -- while the ttmu formation rate is blocked (lambda_ttmu=0.0) --
-    the tt channel is a no-op, so the channels-on scoreboard currently reproduces channels-off exactly.
-    Once lambda_ttmu is acquired the Kou-Chen +-10% PASSes may convert to documented discrepancies (a
-    FINDING about the tt channel's share, not a regression) -- see the doc header and accounting.md.
+    ``include_loss_channels=True`` at the SAME operating points. These validation runs set c_He=0, so the
+    He-3 channel is inert; this is a model setting, not a claim of zero experimental loss.
     """
     inc = channels == "on"
     tgt = _load_targets(targets_csv or TARGETS_CSV)
@@ -132,15 +162,26 @@ def run(rates, targets_csv=None, channels="off"):
         )
     )
 
-    x = _xmu(rates, 0.0045, include_loss_channels=inc)
+    lam0 = rates.value("lambda_mu_decay")
+    if inc:
+        x = _xmu(rates, 0.0045, include_loss_channels=True)
+        pj_obs = "113 (fed omega_s_eff=0.45% + live tt channel)"
+        pj_note = "measured liquid effective sticking"
+    else:
+        # the source's yield relation at its maximum cycle rate: W = 1/X - lambda_0/lambda_c
+        x_obs, lc_obs = target_value(tgt, "V_petitjean_Xmu"), target_value(tgt, "V_breunlich_lambdac")
+        w_tot = 1.0 / x_obs - lam0 / lc_obs
+        x = _xmu(rates, w_tot)
+        pj_obs = f"113 (fed W={100.0 * w_tot:.3f}% total loss per cycle)"
+        pj_note = "measured liquid yield; fed the total loss per cycle the source's yield relation uses"
     out.append(
         Result(
             "V_petitjean",
-            "113 (fed omega_s_eff=0.45%)",
+            pj_obs,
             x,
             "[100,150]",
             _within(x, float(tgt["V_petitjean_Xmu"]["value"]), tgt["V_petitjean_Xmu"]["tolerance"]),
-            "measured liquid effective sticking",
+            pj_note,
             "reproduction (fed input)",
         )
     )
@@ -161,19 +202,19 @@ def run(rates, targets_csv=None, channels="off"):
         )
     )
 
-    x = _xmu(rates, 0.00557, include_loss_channels=inc)
-    lam0 = rates.value("lambda_mu_decay")
-    implied_lc = lam0 / (1.0 / x - 0.00557)
+    x, loss = _xmu_loss(rates, 0.00557, include_loss_channels=inc)
+    implied_lc = lam0 / (1.0 / x - 0.00557 - loss)
     _bl = tgt["V_breunlich_lambdac"]
     out.append(
         Result(
             "V_breunlich_lambdac",
-            "1.45e8 s^-1 (max measured cycling rate, liquid; Breunlich 1989)",
+            "1.45e8 s^-1 (max measured cycling rate, liquid; Breunlich 1987)",
             implied_lc,
             "+-30%",
             _within(implied_lc, float(_bl["value"]), _bl["tolerance"]),
             "engine-implied cycling rate at (300 K, 1.2 phi, c_t=0.5), inverted from the closed form; "
-            "inherits the formation-scale anchor (see gate rule)",
+            "inherits the formation-scale anchor (see gate rule)"
+            + ("; the engine's own per-cycle channel loss is subtracted before the inversion" if inc else ""),
             "anchor-consistency",
         )
     )
@@ -183,14 +224,12 @@ def run(rates, targets_csv=None, channels="off"):
     # sourced full-curve digitized value (2.358; band [2.09, 2.62], solid-line 2.235), NOT the earlier
     # ~1.45 under-read. The 300 K scale is anchor-fixed (formation._CALIB), so this tests the SHAPE of the
     # lambda_c(T) rise; the corrected target is strictly harder and the engine (~1.31) FAILs it.
-    def _implied_lc(xval):
-        return lam0 / (1.0 / xval - 0.00557)
+    def _implied_lc(xval, loss_val):
+        return lam0 / (1.0 / xval - 0.00557 - loss_val)
 
     yk = _load_yamashita_curve()
-    x300 = _xmu(rates, 0.00557, T=300.0, include_loss_channels=inc)
-    x800 = _xmu(rates, 0.00557, T=800.0, include_loss_channels=inc)
-    lc300 = _implied_lc(x300)
-    ratio = _implied_lc(x800) / lc300
+    lc300 = _implied_lc(*_xmu_loss(rates, 0.00557, T=300.0, include_loss_channels=inc))
+    ratio = _implied_lc(*_xmu_loss(rates, 0.00557, T=800.0, include_loss_channels=inc)) / lc300
     _yr = tgt["V_yamashita_ratio"]
     out.append(
         Result(
@@ -219,7 +258,7 @@ def run(rates, targets_csv=None, channels="off"):
     yk300 = yk[300]
     _curve = []
     for T in (200.0, 400.0, 600.0, 800.0):
-        eng = _implied_lc(_xmu(rates, 0.00557, T=T, include_loss_channels=inc)) / lc300
+        eng = _implied_lc(*_xmu_loss(rates, 0.00557, T=T, include_loss_channels=inc)) / lc300
         dig = yk[int(T)] / yk300
         _curve.append((int(T), eng, dig, _within(eng, dig, "+-30%")))
     curve_passed = all(row[3] for row in _curve)
@@ -295,7 +334,7 @@ def run(rates, targets_csv=None, channels="off"):
             _within(faif_900, float(_f9["value"]), _f9["tolerance"]),
             "independent thermal-formation check: statistical hyperfine mix 3/4 F=1 + 1/4 F=0 of the v1 "
             "formation model vs the ledger's own Faifman1989 900 K rate; registered expected-FAIL (~20x low) "
-            "-- the placeholder's thermal scale is anchored near the measured lambda_c(300 K), not the bare "
+            f"-- the placeholder's thermal scale is {formation.CALIB_ANCHOR}, not the bare "
             "Faifman lambda_dtmu (needs_verification carried from rates.csv).",
             "independent",
         )
@@ -340,17 +379,15 @@ def report_markdown(results, channels="off") -> str:
         lines = [
             "# VALIDATION_CHANNELS.md -- channels-ON variant (auto-generated by `openmucf.validate`)",
             "",
-            "**Loss RE-ATTRIBUTION, not new physics.** This is the same trust gate run with "
+            "This is the same trust gate run with "
             "`include_loss_channels=True` (ttmu side-branch + He-3 scavenging) at the SAME operating "
             "points. The channels-OFF `VALIDATION.md` remains the v1 trust gate; this doc is diagnostic.",
             "",
-            "**Pre-framed outcome:** the ttmu formation rate `lambda_ttmu` is currently BLOCKED "
-            "(0.0, needs_verification -- pending acquisition of the Matsuzaki/Bom tt-fusion tables, "
-            "*Muon Catal. Fusion*) and the validation anchors are He-purged (c_He=0), so the two channels "
-            "are inert here and this scoreboard reproduces the channels-OFF one **exactly**. Once "
-            "`lambda_ttmu` is pinned, the Kou-Chen +-10% PASSes may convert to documented discrepancies -- "
-            "that will be a FINDING about the tt channel's share of their effective numbers, NOT a "
-            "regression (the channels-OFF scoreboard stays the trust gate). See `docs/accounting.md`.",
+            "**Outcome:** the ttmu formation rate `lambda_ttmu` is live (JINR preprint E15-2008-99, read in "
+            "the target). These validation runs set c_He=0, so the tt channel alone separates this "
+            "scoreboard from the channels-OFF one. The Kou-Chen +-10% rows FAIL here: their closed forms "
+            "carry no tt loss. That is a registered finding about those closed forms, not a regression of "
+            "this engine; the channels-OFF scoreboard stays the trust gate. See `docs/accounting.md`.",
             "",
             "Operating point for sticking-controlled checks: **T=300 K, phi=1.2, c_t=0.5** "
             "(liquid density at room temperature; see the gate rule for its cycling-rate anchor).",

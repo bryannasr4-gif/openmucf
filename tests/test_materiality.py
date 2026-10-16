@@ -1,8 +1,8 @@
 """MATERIALITY.md structural sensitivity brackets (scripts/generate_materiality.py).
 
 Brackets are one-sided channel toggles reported side-by-side with the parametric CI, never convolved in.
-The ttmu channel is BLOCKED (ledger lambda_ttmu=0.0, notes begin `blocked:`) and MUST render as
-"blocked -- pending acquisition of <doc>", never a zero bracket; the 3He channel is live.
+Each bracket toggles one channel: the ttmu side-branch (in-target and density-normalized readings, c_He = 0,
+recapture off), 3He scavenging (tt off) or the d-recapture routing.
 """
 
 import importlib.util
@@ -56,19 +56,37 @@ def test_he_brackets_nonpositive_and_monotone():
         assert br[op][1e-4]["with"] == br[op]["off"] + br[op][1e-4]["bracket"]
 
 
-def test_tt_channel_blocked_not_zero():
-    """The ttmu channel is detected as blocked and rendered "blocked -- pending acquisition of <doc>",
-    NEVER a zero bracket."""
+def test_tt_brackets_toggle_the_tt_channel_alone():
+    """The live ttmu channel gives one-sided brackets; the density-normalized reading (the larger rate) loses
+    more; and the combined band is the sum of the three brackets."""
     mod = _load_script()
-    is_blocked, doc = mod.tt_blocked_status(load_rates())
-    assert is_blocked is True
-    assert "Matsuzaki/Bom" in doc  # the document named in the ledger row's own notes (public-doc rule)
-    text = DOC.read_text(encoding="utf-8")
-    assert "ttmu side-branch: blocked -- pending acquisition of" in text
-    # the ttmu table must carry the blocked label, not a numeric (zero) bracket
-    tt_section = text.split("## 3. ttmu")[1].split("## 4.")[0]
-    assert "blocked -- pending acquisition" in tt_section
-    assert "0.000" not in tt_section and "-0.000" not in tt_section
+    rates = load_rates()
+    tt = mod.tt_brackets(rates)
+    for op in mod.OPERATING_POINTS:
+        b_in, b_dn = tt[op]["in_target"]["bracket"], tt[op]["density_normalized"]["bracket"]
+        assert b_dn < b_in < 0.0, op
+        assert tt[op]["in_target"]["with"] == tt[op]["off"] + b_in
+    he, q1s = mod.he_brackets(rates), mod.q1s_brackets(rates)
+    comb = mod.combined_band(he, q1s, tt)
+    for op in mod.HEADLINE_OPS:
+        parts = (tt[op]["in_target"]["bracket"], he[op][1e-3]["bracket"], q1s[op][1.0]["bracket"])
+        assert comb[op]["combined"] == parts[0] + parts[1] + parts[2]
+    assert mod.structural_band_pct(rates) == max(abs(comb[op]["pct"]) for op in mod.HEADLINE_OPS)
+
+
+def test_he_brackets_toggle_the_he_channel_alone():
+    """With the tt channel live in the ledger, the 3He brackets still toggle 3He alone (lambda_tt zeroed)."""
+    from openmucf import cycle
+
+    mod = _load_script()
+    rates = load_rates()
+    br = mod.he_brackets(rates)
+    for op, (phi, T, c_t) in mod.OPERATING_POINTS.items():
+        for c_he in mod.C_HE_LEVELS:
+            p = cycle.params_from_conditions(rates, T, phi, c_t, include_loss_channels=True, c_he=c_he)
+            p["lambda_tt"] = 0.0
+            assert br[op][c_he]["with"] == float(cycle.fusions_per_muon_ode(**p)), (op, c_he)
+            assert p["lambda_he"] > 0.0
 
 
 def test_manifest_checks_clean():

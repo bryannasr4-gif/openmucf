@@ -5,6 +5,7 @@ python scripts/generate_findings.py
 
 import csv
 import hashlib
+import importlib.util
 import math
 import os
 import re
@@ -15,9 +16,29 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from openmucf import cycle, likelihood, mucost, provenance, uq  # noqa: E402
+from openmucf import (  # noqa: E402
+    cycle,
+    formation,
+    frontier,
+    likelihood,
+    mucost,
+    provenance,
+    sidechannels,
+    uq,
+    validate,
+)
 from openmucf.constants import LAMBDA_0  # noqa: E402
 from openmucf.rates import RATES_CSV, TARGETS_CSV, load_rates  # noqa: E402
+
+# Sections 2 and 3 take the calibration record as the calibration's gate admits it; the gate runs before
+# anything here is computed or written.
+_spec = importlib.util.spec_from_file_location(
+    "_gen_calibration", os.path.join(os.path.dirname(os.path.abspath(__file__)), "generate_calibration.py")
+)
+_gen_calibration = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_gen_calibration)
+_CELLS = _gen_calibration.admit_calibration_cells()
+_R_KAM = _CELLS.data["posteriors"]["kamimura"]["R"]
 
 os.makedirs("figures", exist_ok=True)
 
@@ -39,7 +60,7 @@ _EQREL_OUTSIDE_TEXT = ",\n".join(
     for p, lo, hi in _EQREL_OUTSIDE
 )
 fw = uq.forward_uq(n=400_000)
-be = uq.breakeven_audit(n=400_000)
+be = uq.breakeven_audit(n=400_000, kamimura_r=(_R_KAM["mean"], _R_KAM["sd"]))
 xchk = uq.cross_check_gradient()
 # The gradient cross-check ships as a BOUND, never a pinned digit: rel_diff is autodiff-vs-analytic noise
 # (~3e-13); its leading digit is env-dependent, so FINDINGS emits the asserted bound, never raw digits.
@@ -230,6 +251,35 @@ H["R_required_band"] = f"{be['R_required_band_lo']:.2f}-{be['R_required_band_hi'
 # the same requirement in the ledger's TWO-FACTOR form: R_col and R_X are successive, never comparable
 H["R_col_ref"] = f"{be['R_col_reference']:.2f}"
 H["R_X_required"] = f"{be['R_X_required_given_R_col']:.2f}"
+# Section 2's posterior and section 3's side-channel floors: the calibration cells, the side-channel loss at
+# the anchor fill, and the closed-form frontier given that loss as a FRACTION.
+for _k, _q in (("lo", "q0.025"), ("med", "q0.5"), ("hi", "q0.975")):
+    H[f"post_xmu_{_k}"] = f"{_CELLS.data['posteriors']['weak']['X_mu'][_q]:.4g}"
+    H[f"post_qnet_{_k}"] = f"{_CELLS.data['q_net'][_q]:.4g}"
+_spec = importlib.util.spec_from_file_location("_gen_materiality", "scripts/generate_materiality.py")
+_gen_materiality = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_gen_materiality)
+H["structural_band_pct"] = f"{_gen_materiality.structural_band_pct(_rates):.2f}"
+_TGT = validate._load_targets(TARGETS_CSV)
+_X_LIQ = validate.target_value(_TGT, "V_petitjean_Xmu")
+_LC_LIQ = validate.target_value(_TGT, "V_breunlich_lambdac")
+_X_SOLID = 124.0  # the published yield of the 12 K solid fill (Crowe1987; rates.csv omega_s_eff_solid_12K)
+H["W_liquid"] = f"{100.0 * (1.0 / _X_LIQ - LAMBDA_0 / _LC_LIQ):.4f}"
+H["W_solid"] = f"{100.0 * (1.0 / _X_SOLID - LAMBDA_0 / _rates.value('lambda_c_solid_12K')):.4f}"
+_SC = sidechannels.anchor_l_other()
+_N_MU = 500.0  # the projected N_mu of section 3
+_R_ANCHOR = frontier.r_required(_N_MU, math.inf, l_other=sidechannels.ANCHOR_L_OTHER_FRACTION)
+H["L_anchor"] = f"{sidechannels.ANCHOR_L_OTHER_PCT[0]:.4f}"
+H["L_intrinsic"] = f"{_SC['intrinsic_pct']:.4f}"
+H["R_required_anchor"] = f"{_R_ANCHOR:.2f}"
+H["R_required_intrinsic"] = f"{frontier.r_required(_N_MU, math.inf, l_other=_SC['intrinsic_fraction']):.2f}"
+H["R_X_required_anchor"] = f"{1.0 - (1.0 - _R_ANCHOR) / (1.0 - be['R_col_reference']):.2f}"
+H["lc_needed_anchor"] = (
+    f"{frontier.lambda_c_required(_N_MU, 1.0, l_other=sidechannels.ANCHOR_L_OTHER_FRACTION):.2e}"
+)
+H["lc_needed_free"] = f"{frontier.lambda_c_required(_N_MU, 1.0):.2e}"
+H["R_kamimura"] = f"{_R_KAM['mean']:.2f}"
+H["R_kamimura_sd"] = f"{_R_KAM['sd']:.2f}"
 # The rendered box edges, so the document, the provenance paragraphs and the manifest all print the
 # same strings from one place (each edge renders itself; nothing here reformats a value).
 for _t, (_lo, _hi) in _TIER_BOXES.items():
@@ -419,9 +469,8 @@ section 3 -- not "R is the dominant driver" as an unconditional claim.
 
 ## 1c. A five-times-anchored formation scenario (structural bracket, not a prior)
 The multiplier eta (ledger row `eta_dtmu`) rescales the resonant dt-mu FORMATION rate of the cycle engine,
-and that rate is already anchored to the measured room-temperature cycling scale (`formation.py`; the
-`V_faifman_900K` and `V_faifman_lowT` rows of `VALIDATION.md` measure its distance from the bare Faifman
-rate). So eta=1 is the
+and that rate's thermal scale is {formation.CALIB_ANCHOR} (`formation.py`; the `V_faifman_900K` row of
+`VALIDATION.md` measures its distance from the bare Faifman rate). So eta=1 is the
 anchored rate, not bare theory, and eta=5 is a scenario with five times the anchored formation rate; the
 literature's eta=1-vs-5 range (bare theory vs the Yamashita-Kino fit) is relative to the bare rate, and
 this bracket does not span it. Recomputing X_mu through the full cycle ODE at the liquid-density
@@ -439,7 +488,17 @@ occurred in the anchor experiments (one channel, one accounting home), so the et
 enhancement on top of the anchored one; eta is reported as a structural bracket beside the CI, never
 convolved into it.
 
-## 2. Propagated uncertainty (a frozen registered-prior scenario; posterior intervals in CALIBRATION.md)
+## 2. Propagated uncertainty: the calibration posterior, then a frozen registered-prior scenario
+The state-of-knowledge interval is the calibration posterior (`CALIBRATION.md`), at the liquid anchor's
+conditions (D/T at 23 K, phi ~ 1.2): the weak-prior posterior pushed forward to the yield, and to the
+net-electrical gain through the frozen economics boxes of section 1,
+
+| quantity | 2.5% | median | 97.5% |
+|---|---|---|---|
+| X_mu (posterior) | {H["post_xmu_lo"]} | {H["post_xmu_med"]} | {H["post_xmu_hi"]} |
+| Q_net (posterior X_mu x frozen economics boxes) | {H["post_qnet_lo"]} | {H["post_qnet_med"]} | {H["post_qnet_hi"]} |
+
+The box below is a frozen registered-prior scenario, kept for comparison.
 Monte-Carlo propagation of the liquid-density ranges (95% intervals; prior propagation, not a
 posterior). The interval deliberately reflects LIQUID conditions -- the lambda_c band is the ledger's
 liquid-anchor row `lambda_c_liquid` (phi ~ 1.2) and the R box is widened around the liquid-scale
@@ -458,12 +517,9 @@ density dependence.
 
 P(Q_sci > 1) = {H["P_qsci_gt1"]} ; P(Q_net > 1) = {H["P_qnet_gt1"]}.
 
-State-of-knowledge (posterior) X_mu and Q intervals -- as opposed to the ignorance-box propagation above --
-are reported in CALIBRATION.md ("Posterior pushforward").
-
-Structural, one-sided: the parametric intervals above sit on the v1 reduced network; the known deferred
-channels bias X_mu DOWNWARD by up to ~15% combined (ttmu side-cycle, un-pinned pending acquisition;
-d-recapture, bracketed in MATERIALITY.md), so intervals are best read as upper-edge-faithful.
+Structural, one-sided: the box intervals above sit on the v1 reduced network; the deferred channels bias
+X_mu DOWNWARD by up to {H["structural_band_pct"]}% combined at the headline operating points of MATERIALITY.md (ttmu
+side-cycle, d-recapture and 3He scavenging, summed in its section 5).
 
 ## 2b. Q_net by muon-cost tier
 
@@ -572,21 +628,27 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\\mu > 500$, $Q > 2$. U
   **condition-dependent, never universal**. At the liquid anchor ($\\lambda_c$=1.45e8) it is
   **X_mu = {H["cap_zero_sticking"]}**; at the SIN 12 K solid non-equilibrated anchor
   ($\\lambda_c$=1.93e8, ledger `lambda_c_solid_12K`) it is **X_mu = {H["cap_zero_sticking_solid"]}**.
-  Those two anchors are **condition-PAIRED, not independently selectable**: the condition that bought
-  the faster cycle also carried higher measured sticking (0.57% vs 0.45%), so the measured yield rose
-  only 113 -> {H["yield_solid_pair"]}. Even at the +30% reproduction
+  On a common basis the two anchors lose the same fraction of muons per cycle, {H["W_liquid"]}% at the liquid
+  anchor and {H["W_solid"]}% at the solid one (the solid value is read as that fill's total loss per cycle, an
+  inference: the cited report is not read here), so the measured yield rose from 113 to {H["yield_solid_pair"]} through
+  the cycle rate. Even at the +30% reproduction
   band on lambda_c the liquid cap is ~414 < 500. Density scaling (lambda_c = phi*lambda_c_tilde) at the
   demonstrated DAC phi={_PHI_DAC:g} would lift the decay-only cap to ~{H["cap_dac_lo"]}-{H["cap_dac_hi"]} *if phi-linearity holds there* --
   which is precisely the unmeasured question the MuFusE program tests.
-- **What would have to be true** for $N_\\mu$=500: the (lambda_c, R) frontier runs from
+- **What would have to be true** for $N_\\mu$=500: the (lambda_c, R) frontier, with sticking and decay as the only
+  losses, runs from
   (2.28e8, R -> 1) to (3e8, R = {be["R_required_at_lambda_c_3e8"]:.2f}); and even at infinite lambda_c,
   omega_s_eff <= 0.2% i.e. **R >= {H["R_required"]}** is required (R >= {H["R_required_band"]} across the
-  omega_s0-box band -- higher initial sticking needs more reactivation). That **R** is the TOTAL
+  omega_s0-box band -- higher initial sticking needs more reactivation). At the liquid anchor fill's
+  side-channel loss of {H["L_anchor"]}% per cycle the floor is **R >= {H["R_required_anchor"]}**, and R >= {H["R_required_intrinsic"]} with only that fill's tt
+  and dd share ({H["L_intrinsic"]}%); with that loss, X_mu = 500 needs lambda_c >= {H["lc_needed_anchor"]} s^-1 even at R = 1, against
+  {H["lc_needed_free"]} s^-1 without it. That **R** is the TOTAL
   reactivation. It is NOT comparable to the model-derived collisional value R_col = {H["R_col_ref"]}
   (Kou-Chen Eq.33): the two act as SUCCESSIVE factors, omega_s_eff = omega_s0 (1-R_col)(1-R_X), so at
   R_col = {H["R_col_ref"]} the field-assisted factor alone would have to reach
-  **R_X >= {H["R_X_required"]}**. Experiment pins only the product omega_s_eff ~ 0.45%, and our
-  Kamimura-prior calibration posterior gives a total R = 0.46 +- 0.06.
+  **R_X >= {H["R_X_required"]}** (R_X >= {H["R_X_required_anchor"]} at that side-channel loss). Experiment
+  pins only the product omega_s_eff ~ 0.45%, and our Kamimura-prior calibration posterior gives a total
+  R = {H["R_kamimura"]} +- {H["R_kamimura_sd"]}.
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as
@@ -699,7 +761,30 @@ _entries += [
     _entry("eta_bracket_lo", rf"\| 1 \(the anchored rate\) \| {re.escape(H['eta_bracket_lo'])} \|"),
     _entry("eta_bracket_hi", rf"\| 5 \(five times the anchored rate\) \| {re.escape(H['eta_bracket_hi'])} \|"),
     _entry("eta_bracket_width", rf"X_mu\(eta=5\) - X_mu\(eta=1\) = \*\*{re.escape(H['eta_bracket_width'])}\*\*"),
+    _entry("structural_band_pct", rf"DOWNWARD by up to {re.escape(H['structural_band_pct'])}% combined"),
+    _entry("W_liquid", rf"per cycle, {re.escape(H['W_liquid'])}% at the liquid"),
+    _entry("W_solid", rf"anchor and {re.escape(H['W_solid'])}% at the solid one"),
+    _entry("L_anchor", rf"side-channel loss of {re.escape(H['L_anchor'])}% per cycle"),
+    _entry("R_required_anchor", rf"the floor is \*\*R >= {re.escape(H['R_required_anchor'])}\*\*"),
+    _entry("R_required_intrinsic", rf"and R >= {re.escape(H['R_required_intrinsic'])} with only that fill's tt"),
+    _entry("L_intrinsic", rf"dd share \({re.escape(H['L_intrinsic'])}%\)"),
+    _entry("lc_needed_anchor", rf"needs lambda_c >= {re.escape(H['lc_needed_anchor'])} s\^-1 even at R = 1"),
+    _entry("lc_needed_free", rf"against\s+{re.escape(H['lc_needed_free'])} s\^-1 without it"),
+    _entry("R_X_required_anchor", rf"\(R_X >= {re.escape(H['R_X_required_anchor'])} at that side-channel loss\)"),
+    _entry("R_kamimura", rf"total\s+R = {re.escape(H['R_kamimura'])} \+- {re.escape(H['R_kamimura_sd'])}\."),
+    _entry("R_kamimura_sd", rf"total\s+R = {re.escape(H['R_kamimura'])} \+- {re.escape(H['R_kamimura_sd'])}\."),
 ]
+for _k in ("lo", "med", "hi"):
+    _entries.append(_entry(
+        f"post_xmu_{_k}",
+        rf"\| X_mu \(posterior\) \| {re.escape(H['post_xmu_lo'])} \| {re.escape(H['post_xmu_med'])} \| "
+        rf"{re.escape(H['post_xmu_hi'])} \|",
+    ))
+    _entries.append(_entry(
+        f"post_qnet_{_k}",
+        rf"\| Q_net \(posterior X_mu x frozen economics boxes\) \| {re.escape(H['post_qnet_lo'])} \| "
+        rf"{re.escape(H['post_qnet_med'])} \| {re.escape(H['post_qnet_hi'])} \|",
+    ))
 # section 2b (the muon-cost tier panel): anchor each tracked number to its row of the Q_net-by-tier table.
 _tier_rows = {_t: re.escape(_box_label(_t)) for _t in ("T1", "T2", "T3")}
 for _t in ("T1", "T2", "T3"):
@@ -741,6 +826,9 @@ _manifest_inputs = {
     # that CSV as directly as they do on the rate ledger.
     "muon_cost_csv_sha256": provenance.file_sha256(mucost.MUON_COST_CSV),
     "uq_params_repr_sha256": hashlib.sha256(repr(uq.PARAMS).encode("utf-8")).hexdigest(),
+    # sections 2 and 3 read the calibration cells and the side-channel inputs
+    "calibration_cells_sha256": _CELLS.sha256,
+    "side_channel_inputs_csv_sha256": provenance.file_sha256(sidechannels.INPUTS_CSV),
     "seeds": {"sobol": 0, "forward_uq": 0, "breakeven": 1, "tier_panel": 0},
 }
 provenance.write_manifest("FINDINGS_MANIFEST.json", _entries, _manifest_inputs)

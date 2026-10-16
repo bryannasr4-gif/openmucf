@@ -140,9 +140,9 @@ X_μ = Σ_{k≥1} r^{k−1} p_dt = p_dt / (1 − r)
     = 1 / ( ω_s^eff + ω_tt·(λ_tt/λ_c) + λ₀/λ_c ).                         (v2)
 ```
 
-The extra per-cycle loss term **`ω_tt·(λ_tt/λ_c)`** is exactly the `tt_pc` share used in the
-re-attribution refit (`accounting.md`): introducing it forces the fitted ω_s^eff (= ω_s0(1−R)) down so the
-anchor total still reproduces the measured 0.45 %. With λ_tt→0 this collapses to §4's v1 identity. The
+The extra per-cycle loss term **`ω_tt·(λ_tt/λ_c)`** is the tt part of the side-channel loss per cycle
+(`accounting.md`): it adds to ω_s^eff (= ω_s0(1−R)) in the total loss per cycle, and the measured 0.45 % is
+the sticking alone (Breunlich et al. 1987, p.331). With λ_tt→0 this collapses to §4's v1 identity. The
 implementation is `analytic.fusions_per_muon_v2(omega_s_eff, lambda_c, lambda_0, tt_loss_rate, omega_tt)`,
 gated against the ODE (`cycle.py` channels-on, single-pool limit) to **<1 %** (measured worst
 0.0 % over the 3-point (λ_tt, ω_tt) grid).
@@ -152,9 +152,7 @@ from the **dμ** pool (rate λ_He = λ_d³He·φ·c_He), before it ever reaches 
 closed form has *already collapsed* the dμ→tμ isotopic structure into the single pool `m(t)`, so a
 dμ-only hazard has no clean single-pool representative and is **not** included in `fusions_per_muon_v2`.
 ³He scavenging is available only in the full ODE (`cycle.py`, `include_loss_channels=True` with `c_he>0`),
-where the dμ pool is an explicit state. This asymmetry is intentional and is the reason the channels-on
-scoreboard/refit drive the ttμ re-attribution through the closed form but keep ³He an ODE-only,
-burn-time-scenario channel.
+where the dμ pool is an explicit state. This asymmetry is intentional.
 
 ---
 
@@ -237,7 +235,7 @@ fast-fusion limit; reactivation folded into ω_s^eff = ω_s⁰(1−R); energy ba
 | per-cycle d-recapture + q_1s (recycled muons re-enter via dμ) | −6% to −14% (q_1s = 0.4–1.0) | v1 recycles straight to tμ (§3); the formation-scale anchor (`formation._CALIB`) absorbs much of this at 300 K; q_1s (contested cascade ground-state fraction) is ~free for v1 X_μ but multiplies this leg |
 | ttμ side cycle (μ loss to tt fusions, ω_tt ≈ 0.14 measured) | −5% (optimistic ω_tt) to −15% (measured) | the DOMINANT deferred side-cycle loss at c_t≈0.5; one-sided downward — would consume most of the ±10% V4 margin; tt neutrons (≤9.4 MeV continuum) are also the real neutron-count contaminant, not dd |
 | ddμ branch / d-d cycle | ~−0.1% | one-time ~1% dμ branch; negligible for X_μ at c_t=0.5 (matters for interpreting d-d datasets, e.g. Toyama ddμ*/MuFusE DD runs — a v2 goal) |
-| ³He scavenging (t→³He decay, ~0.47%/month; λ_dHe ~ 1.9e8 s⁻¹) + initial He purity + fusion ⁴He | ~−2% (3-day fuel) to ~−14% (30-day, gas/liquid; illustrative — solid targets shed ³He and experiments purge it) | validation anchors use He-purged fuel, so v1 passes are unaffected; a one-line absorbing channel λ_He·φ·c_He(t) is the v2 fix |
+| ³He scavenging (t→³He decay, ~0.47%/month; λ_dHe ~ 1.9e8 s⁻¹) + initial He purity + fusion ⁴He | ~−2% (3-day fuel) to ~−14% (30-day, gas/liquid; illustrative — solid targets shed ³He and experiments purge it) | validation runs set c_he=0, so the explicit He channel does not affect their results; a one-line absorbing channel λ_He·φ·c_He(t) is the v2 fix |
 | epithermal/non-thermal distributions; in-flight μCF; SPM/FIF side-paths; dμ-hyperfine; energy-resolved reactivation R_X(E) | folded into the calibrated formation scale / η band | as before (Yamashita–Kino side-paths; Kou–Chen R_X(E)) |
 | x-ray observables (state-resolved ddμ*/dtμ* populations → 1.6–2.0 keV line intensities) | n/a (new observable) | the J-PARC/TES-facing interop; requires the d-d branch first |
 

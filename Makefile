@@ -140,9 +140,10 @@ g4lifetime:
 	python scripts/generate_g4lifetime.py compare
 
 # Reproducibility gate: regenerate the deterministic docs and fail if they drift from what's committed.
-# CALIBRATION.md and the FC-001 card payload (forecasts/FC-001-mufuse.json) are MCMC-derived and are NOT
-# exact-diffed here; instead the card is checked for hash-consistency and FORECASTS.md (rendered
-# deterministically from the on-disk card, no MCMC) IS exact-diffed. `--audit` runs both without the MCMC.
+# The FC-001 card payload (forecasts/FC-001-mufuse.json) is MCMC-derived and is NOT exact-diffed here;
+# instead the card is checked for hash-consistency and FORECASTS.md (rendered deterministically from the
+# on-disk card, no MCMC) IS exact-diffed. CALIBRATION.md is checked by `generate_calibration.py --audit`
+# below: its quadrature cells recomputed within stated tolerances, the document equal to their render.
 # TWIN_AUDIT.md is deterministic (its section-3 bands are the FC-001 card-interval envelope, no MCMC) and
 # IS exact-diffed; the slow twin coverage MCMC (tests/test_twin_coverage.py) is a `slow` test, never here.
 # MATERIALITY.md is deterministic (one-at-a-time channel toggles through the v1 ODE, no MCMC) and IS

@@ -363,18 +363,18 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_comb_total",
-      "pattern": "OP-B[^\\n]*\\-18\\.664",
+      "pattern": "OP-B[^\\n]*\\-32\\.611",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-18.664"
+      "value": "-32.611"
     },
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_comb_pct",
-      "pattern": "OP-B[^\\n]*\\-14\\.90%",
+      "pattern": "OP-B[^\\n]*\\-26\\.04%",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-14.90"
+      "value": "-26.04"
     },
     {
       "doc": "MATERIALITY.md",
@@ -387,18 +387,18 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_comb_total",
-      "pattern": "OP-C[^\\n]*\\-12\\.661",
+      "pattern": "OP-C[^\\n]*\\-33\\.730",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-12.661"
+      "value": "-33.730"
     },
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_comb_pct",
-      "pattern": "OP-C[^\\n]*\\-9\\.83%",
+      "pattern": "OP-C[^\\n]*\\-26\\.19%",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-9.83"
+      "value": "-26.19"
     },
     {
       "doc": "MATERIALITY.md",
@@ -411,18 +411,18 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_comb_total",
-      "pattern": "OP-D[^\\n]*\\-11\\.227",
+      "pattern": "OP-D[^\\n]*\\-35\\.103",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-11.227"
+      "value": "-35.103"
     },
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_comb_pct",
-      "pattern": "OP-D[^\\n]*\\-8\\.53%",
+      "pattern": "OP-D[^\\n]*\\-26\\.67%",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-8.53"
+      "value": "-26.67"
     },
     {
       "doc": "MATERIALITY.md",
@@ -455,19 +455,11 @@
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "0.47"
-    },
-    {
-      "doc": "MATERIALITY.md",
-      "id": "tt_blocked",
-      "pattern": "ttmu side-branch: blocked\\ \\-\\-\\ pending\\ acquisition\\ of\\ the\\ Matsuzaki/Bom\\ tt\\-fusion\\ formation\\-rate\\ tables\\ \\(Muon\\ Catal\\.\\ Fusion\\ /\\ JINR\\)",
-      "source": "openmucf/data/rates.csv:lambda_ttmu",
-      "source_type": "ledger_row",
-      "value": "blocked -- pending acquisition of the Matsuzaki/Bom tt-fusion formation-rate tables (Muon Catal. Fusion / JINR)"
     }
   ],
   "generated_by": "scripts/generate_materiality.py",
   "inputs": {
-    "findings_manifest_sha256": "077284fe1f3ca9f3d4ce47bd1b9b6c7f0ad908c1a677985646b5255b1fa3e9bb",
-    "rates_csv_sha256": "9c53ca9a8b0aad92e3a397937557e0db6f2db2a55648dd494e8314e0d9277678"
+    "findings_manifest_sha256": "661960993dce0cf9c4a48295ddceeae5194dc943dd909cbc40fdc063362d14d4",
+    "rates_csv_sha256": "9af2256b38fadaad3b6dd80f2bc6448a7794d29e5ff12982093a3612769bbff1"
   }
 }

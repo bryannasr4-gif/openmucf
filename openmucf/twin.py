@@ -151,8 +151,10 @@ def fit_two_exponential(t_edges, counts, t_min, lambda_c=None, background_rate=0
 def disappearance_rate(omega_s_eff, lambda_c, lambda_0=LAMBDA_0) -> float:
     """Analytic muon disappearance rate lambda_n = lambda_0 + omega_s_eff * lambda_c.
 
-    ``omega_s_eff`` is a bare fraction (not percent). This is the closed-form gate target: the two-
-    exponential fit of a synthetic spectrum must recover it to < 1% (gate G-T1).
+    ``omega_s_eff`` is a bare fraction (not percent). The measured slope sees the total loss per cycle W, the
+    sticking plus any side-channel loss (Breunlich et al. 1987, p.330 Eq. (2)), so pass W where those exist.
+    This is the closed-form gate target: the two-exponential fit of a synthetic spectrum must recover it to
+    < 1% (gate G-T1).
     """
     return float(lambda_0 + omega_s_eff * lambda_c)
 
