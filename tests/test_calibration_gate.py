@@ -2,23 +2,23 @@
 scripts/generate_calibration.py, and every reader that renders, audits or publishes from the file takes only
 what it admits.
 
-Three kinds of test hold that. The structural scan checks explicit cells-file references and supported ways to
-access the calibration module; its planted-reader tests exercise those forms. Computed paths and unrecognized
-dynamic imports require separate review. Within those forms, the scan (`cells_file_readers`) names a module of
-openmucf/ or scripts/ other than the gate's that names the file or uses the calibration script for anything
-but its gate, and, inside the script, a second literal of the file's name and a read of the file, or its
-path handed to a call other than the gate, by a function outside the gate and its three measurement steps.
-The runtime ownership test checks that every shipped entry point opens the file only through the gate. It
-runs each mode of the calibration script's command line, its regeneration, and the FINDINGS.md and
-FRONTIER.md generators on a working copy; it records, by Python's `open` audit event, every open of the file
-while each runs, and accepts only the gate's read and the measurement steps' own reads and writes, each as
-often as stated; it also names any process started. The script's numerical engines return the committed
-values in those runs, and run for real, at a reduced size, in a test of their own.
+The runtime ownership test and the consumer matrix hold that. An advisory static scan flags common direct
+reads of the cells file; it is not exhaustive. The runtime ownership test checks that every shipped entry
+point opens the file only through the gate. It runs each mode of the calibration script's command line, its
+regeneration, and the FINDINGS.md and FRONTIER.md generators on a working copy; it records, by Python's
+`open` audit event, every open of the file while each runs, and accepts only the gate's read and the
+measurement steps' own reads and writes, each as often as stated; it also names any process started. The
+script's numerical engines return the committed values in those runs, and run for real, at a reduced size,
+in a test of their own.
+
 The consumer matrix then runs the actual entry points -- `--render`, `--audit`, the FRONTIER.md generator's
 `main` and the FINDINGS.md generator itself -- on a working copy whose cells file carries one defect at a
 time: every print of the documents as released replaced, every one omitted, the record or the released
 documents damaged, each input digest stale, missing or unknown, and each whole record absent. Each must
 stop, naming the defect, before it writes or reports success.
+
+The forms the advisory scan (`advisory_cells_file_scan`) flags are listed in its docstring, and its
+planted-reader tests drill them.
 """
 
 import ast
@@ -56,7 +56,7 @@ _READ_CALLS = frozenset({"open", "read_text", "read_bytes", "load", "loads", "lo
                          "file_sha256"})
 
 
-# ============================================================================ the structural scan
+# ============================================================================ the advisory static scan
 def _modules(root):
     return sorted(p.relative_to(root).as_posix()
                   for d in ("openmucf", "scripts") for p in (root / d).rglob("*.py"))
@@ -266,20 +266,19 @@ def _gate_findings(rel, tree):
     return out
 
 
-def cells_file_readers(root):
-    """The reads of the cells file other than through the gate that the scan recognizes in the modules of
-    openmucf/ and scripts/ under ``root``, as 'path:line: what'. The structural scan checks explicit
-    cells-file references and supported ways to access the calibration module; its planted-reader tests
-    exercise those forms. Computed paths and unrecognized dynamic imports require separate review.
+def advisory_cells_file_scan(root):
+    """What the advisory scan flags in the modules of openmucf/ and scripts/ under ``root``, as 'path:line:
+    what'. An advisory static scan flags common direct reads of the cells file; it is not exhaustive. The
+    runtime ownership test checks that every shipped entry point opens the file only through the gate.
 
-    Outside the calibration script it names: a string or bytes constant naming the file (docstrings aside);
+    Outside the calibration script it flags: a string or bytes constant naming the file (docstrings aside);
     any attribute CELLS_JSON; for each name `_gate_module_names` binds to the script's module, every
     attribute taken from it but GATE_API and every other use of it (`_module_uses`); a string naming the
     script outside those bindings; an import of names from the script but GATE_API, and an `import`
     statement of it; and, by a text scan, any line naming the file that is neither in a docstring nor after a
-    comment sign. Inside the script: a read of the cells file (`_reads_the_cells_file`, with the path and
-    loader names of `_cells_path_names`) in a function that is not one of GATE_READERS, or the file's path
-    passed by such a function to any call but the gate; a function other than `load` and the gate whose
+    comment sign. Inside the script it flags: a read of the cells file (`_reads_the_cells_file`, with the path
+    and loader names of `_cells_path_names`) in a function that is not one of GATE_READERS, or the file's
+    path passed by such a function to any call but the gate; a function other than `load` and the gate whose
     argument defaults to the file; and a string or bytes constant naming the file other than the CELLS_JSON
     definition and docstrings."""
     out = set()
@@ -316,12 +315,12 @@ def cells_file_readers(root):
     return sorted(out)
 
 
-def test_no_module_reads_the_cells_file_but_through_the_gate():
-    assert cells_file_readers(_ROOT) == []
+def test_the_advisory_scan_flags_nothing_in_the_tree():
+    assert advisory_cells_file_scan(_ROOT) == []
 
 
 def test_the_scan_covers_every_module_and_finds_the_gate_and_its_readers():
-    """The scan is not vacuous: it walks every tracked module of openmucf/ and scripts/ (where git is
+    """The advisory scan is not vacuous: it walks every tracked module of openmucf/ and scripts/ (where git is
     present), the gate module is among them, FINDINGS.md's and FRONTIER.md's generators load the script under
     a name the scan recognizes and take only the gate from it, and inside the script the file's name is
     defined once, as CELLS_JSON, and exactly the three measurement steps read the file."""
@@ -489,9 +488,9 @@ def _tree(tmp_path):
 def test_a_planted_read_outside_the_gate_is_named(tmp_path, label, rel, code, named):
     """Drill: each planted way of reading the file outside the gate is named; the tree without it is clean."""
     root = _tree(tmp_path)
-    assert cells_file_readers(root) == []
+    assert advisory_cells_file_scan(root) == []
     (root / rel).write_text(code, encoding="utf-8")
-    assert named in cells_file_readers(root)
+    assert named in advisory_cells_file_scan(root)
 
 
 @pytest.mark.parametrize("label, old, new, named", _GATE_PLANTS, ids=[p[0] for p in _GATE_PLANTS])
@@ -500,7 +499,7 @@ def test_a_planted_read_inside_the_script_is_named(tmp_path, label, old, new, na
     src = (root / GATE).read_text(encoding="utf-8").replace("\r\n", "\n")
     assert src.count(old) == 1, label
     (root / GATE).write_text(src.replace(old, new), encoding="utf-8")
-    assert [f for f in cells_file_readers(root) if named in f], cells_file_readers(root)
+    assert [f for f in advisory_cells_file_scan(root) if named in f], advisory_cells_file_scan(root)
 
 
 _GATE_CLEAN = [
@@ -518,7 +517,7 @@ def test_a_use_of_the_path_inside_the_script_that_reads_nothing_is_clean(tmp_pat
     src = (root / GATE).read_text(encoding="utf-8").replace("\r\n", "\n")
     assert src.count(old) == 1, label
     (root / GATE).write_text(src.replace(old, new), encoding="utf-8")
-    assert cells_file_readers(root) == []
+    assert advisory_cells_file_scan(root) == []
 
 
 @pytest.mark.parametrize("label, rel, plant, at, named", _RETAINED_PLANTS,
@@ -529,11 +528,11 @@ def test_a_retained_reader_appended_to_its_module_is_named(tmp_path, label, rel,
     root = _tree(tmp_path)
     src = (_ROOT / rel).read_text(encoding="utf-8").replace("\r\n", "\n")
     (root / rel).write_text(src, encoding="utf-8")
-    assert cells_file_readers(root) == []
+    assert advisory_cells_file_scan(root) == []
     planted = src + plant
     (root / rel).write_text(planted, encoding="utf-8")
     line = planted.splitlines().index(at) + 1
-    assert f"{rel}:{line}: {named}" in cells_file_readers(root), cells_file_readers(root)
+    assert f"{rel}:{line}: {named}" in advisory_cells_file_scan(root), advisory_cells_file_scan(root)
 
 
 _CLEAN_BINDINGS = [
@@ -552,7 +551,7 @@ def test_the_gate_taken_by_each_supported_binding_is_clean(tmp_path, label, code
     clean."""
     root = _tree(tmp_path)
     (root / "scripts" / "clean.py").write_text(code, encoding="utf-8")
-    assert cells_file_readers(root) == []
+    assert advisory_cells_file_scan(root) == []
 
 
 def test_mentions_that_read_nothing_are_not_named(tmp_path):
@@ -564,7 +563,7 @@ def test_mentions_that_read_nothing_are_not_named(tmp_path):
         + "import json\n\n\ndef f(p):\n    \"\"\"Not the CALIBRATION_CELLS.json file.\"\"\"\n"
         + "    return json.load(open(p))  # never CALIBRATION_CELLS.json\n\n\n"
         + "cells = gen.admit_calibration_cells()\nrefused = gen.CellsRefused\n", encoding="utf-8")
-    assert cells_file_readers(root) == []
+    assert advisory_cells_file_scan(root) == []
 
 
 # ============================================================================ the consumer matrix
@@ -1182,8 +1181,9 @@ def _script(rel):
 
 
 _BY_GATE = ("read", "admit_calibration_cells")
-#: every shipped entry point that may open the cells file: (run it on the working copy, the owned opens of the
-#: cells file it makes, counted)
+#: the shipped entry points, each: (run it on the working copy, the owned opens of the cells file it makes,
+#: counted); they are every mode of the calibration script and each module that binds the script
+#: (`test_the_entry_points_are_every_mode_of_the_script_and_every_module_taking_its_gate`)
 ENTRY_POINTS = {
     "generate_calibration.py --audit": (_gate_main("--audit"), Counter({(*_BY_GATE, "audit"): 1})),
     "generate_calibration.py --render": (_gate_main("--render"), Counter({(*_BY_GATE, "main"): 1})),
