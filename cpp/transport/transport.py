@@ -789,6 +789,24 @@ def d9_check(records: list[list[str]], config: dict[str, list[str]], route: str,
 
 CHECK_IDS = ("events", "route", "target", "particles", "config", "lookups", "levels", "d9",
              "parity", "threads")
+#: The modes whose records `parity` compares with the pristine build's.
+PARITY_COMPARISON_MODES = ("patched-off", "patched-default", "preserved")
+
+
+def compares(check_id: str, mode: str, thread: int) -> bool:
+    """Whether a check compares anything in a cell: not `parity` outside :data:`PARITY_COMPARISON_MODES`
+    (the reference is the cell's own digest), not `lookups` or `d9` outside `enabled`, not `levels` in
+    `pristine` or `preserved` (the cell is the reference), not `threads` at one thread (the cell is the
+    reference). Such a cell's status is `N/A`."""
+    if check_id == "parity":
+        return mode in PARITY_COMPARISON_MODES
+    if check_id in ("lookups", "d9"):
+        return mode == "enabled"
+    if check_id == "levels":
+        return mode not in ("pristine", "preserved")
+    if check_id == "threads":
+        return thread != 1
+    return True
 
 
 def cell_dir(work: Path, tag: str, mode: str, route: str, target: dict[str, int], threads: int) -> Path:
@@ -836,9 +854,8 @@ def check(work: Path, out: Path) -> None:
                                              else (True, "reference"))
                         results["d9"] = (d9_check(records, config, route, target, dataset)
                                          if mode == "enabled" else (True, "not enabled"))
-                        comparison_modes = ("patched-off", "patched-default", "preserved")
                         reference = (records_digest(parsed_records(pristine_dir))
-                                     if mode in comparison_modes else records_digest(records))
+                                     if mode in PARITY_COMPARISON_MODES else records_digest(records))
                         same = records_digest(records) == reference
                         results["parity"] = (same, f"digest={records_digest(records)} reference={reference}")
                         if thread != 1:
@@ -850,8 +867,12 @@ def check(work: Path, out: Path) -> None:
                             results["threads"] = (True, "one-thread reference")
                         for check_id in CHECK_IDS:
                             passed, detail = results[check_id]
-                            status = "INFO" if mode == "preserved" and check_id == "parity" else (
-                                "PASS" if passed else "FAIL")
+                            if not compares(check_id, mode, thread):
+                                status = "N/A"
+                            elif mode == "preserved" and check_id == "parity":
+                                status = "INFO"
+                            else:
+                                status = "PASS" if passed else "FAIL"
                             row = {"tag": tag, "mode": mode, "route": route,
                                    "Z": str(target["Z"]), "A": str(target["A"]), "threads": str(thread),
                                    "check": check_id, "status": status, "detail": detail}

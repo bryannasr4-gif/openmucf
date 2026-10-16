@@ -16,7 +16,7 @@ For each target it requires the capture rate, looked up by nuclide, the effectiv
 
 `transport.py cases` runs the profile-selection, discovery and refusal cases, and a build whose cascade does not call its level check, which shows that the refusal of a level array that does not fall comes from that call.
 
-`evidence/manifest.json` records the sha256 of each patch, of the CMake cache, of each executable and of each library it loads; `evidence/cells.csv` records the result of each check; and a test holds the manifest to the patches, harness and dataset committed beside it.
+`evidence/manifest.json` records the sha256 of each patch, of the CMake cache, of each executable and of each library it loads; `evidence/cells.csv` records the result of each check, `N/A` where the check compares nothing in that cell; and a test holds the manifest to the patches, harness and dataset committed beside it.
 
 ```sh
 python cpp/transport/transport.py stage-dataset --out <dir>

@@ -79,6 +79,38 @@ def synthetic_check_work(tmp_path, monkeypatch, changes=None):
     return tag, route, target
 
 
+#: The cells whose check compares nothing, by (check, mode, thread): stated here from what each check
+#: compares, not read back from `transport.compares`.
+def comparison_less(check: str, mode: str, thread: int) -> bool:
+    return ((check == "parity" and mode in ("pristine", "enabled"))
+            or (check in ("lookups", "d9") and mode != "enabled")
+            or (check == "levels" and mode in ("pristine", "preserved"))
+            or (check == "threads" and thread == 1))
+
+
+def test_t149_a_cell_that_compares_nothing_reads_na(tmp_path, monkeypatch):
+    """`check` writes `N/A` on exactly the cells whose check compares nothing, and `PASS` or `INFO` on every
+    other cell of a clean synthetic matrix; a corrupted record in a cell that is compared still fails."""
+    synthetic_check_work(tmp_path, monkeypatch)
+    out = tmp_path / "cells.csv"
+    transport.check(tmp_path, out)
+    with out.open(newline="", encoding="utf-8") as file:
+        rows = list(csv.DictReader(file))
+    na = {(r["check"], r["mode"], int(r["threads"])) for r in rows if r["status"] == "N/A"}
+    want = {(r["check"], r["mode"], int(r["threads"])) for r in rows
+            if comparison_less(r["check"], r["mode"], int(r["threads"]))}
+    assert na == want and want
+    assert {"parity", "lookups", "d9", "levels", "threads"} == {check for check, _, _ in na}
+    assert all(r["status"] in ("PASS", "INFO") for r in rows if r["status"] != "N/A")
+    for key in na:
+        assert not transport.compares(*key)
+    corrupted = tmp_path / "corrupted"
+    corrupted.mkdir()
+    synthetic_check_work(corrupted, monkeypatch, {("patched-off", 2, "record"): True})
+    with pytest.raises(RuntimeError, match="first gating failure"):
+        transport.check(corrupted, corrupted / "cells.csv")
+
+
 def test_t149_check_wiring_rejects_gating_changes_and_reports_preserved(tmp_path, monkeypatch):
     tag, route, target = synthetic_check_work(
         tmp_path, monkeypatch, {("preserved", 1, "record"): True})
@@ -719,4 +751,8 @@ def test_t149_committed_manifest_ties_builds_dataset_and_cells():
                     row["threads"], row["check"]) for row in rows}
     assert actual_rows == expected_rows
     assert len(rows) == len(actual_rows)
-    assert all(row["status"] in ("PASS", "INFO") for row in rows)
+    for row in rows:
+        if row["mode"] != "case" and comparison_less(row["check"], row["mode"], int(row["threads"])):
+            assert row["status"] == "N/A", row
+        else:
+            assert row["status"] in ("PASS", "INFO"), row
