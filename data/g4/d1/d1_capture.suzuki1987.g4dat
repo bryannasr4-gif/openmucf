@@ -1,11 +1,11 @@
 #GRAMMAR      1.0
 #DATASET      G4MuonicData
-#VERSION      0.5.1
+#VERSION      0.5.2
 #PROFILE      suzuki1987
 #SEAM         d1_nuclear_capture
 #TABLE        nuclear_capture_rate
 #GENERATOR    openmucf-g4 1.3.0
-#SOURCEDIGEST 35faab4c1cb2dd235363af307a41224a5a58960cd21b759ffdec666e0a544047
+#SOURCEDIGEST 23a63e5667fa879a1facee9399586a36419ef5944b0c9e953ead84ef02879bb8
 #UNITS        value=1e6/s unc=1e6/s
 #COLUMNS      Z A value unc
 #VALIDITY     Z:3-83 A:listed

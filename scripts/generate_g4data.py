@@ -102,7 +102,7 @@ SUZUKI_PREPRINT_DIFF = ROOT / suzsrc.PREPRINT_DIFF_RELPATH
 
 #: The version moves with the archive. Plainly distinct
 #: from the example's `0.0.0-example`, and below 1.0.0 because D1 and D3 alone are not the dataset.
-_BASE_DATASET_VERSION = "0.5.0"
+_BASE_DATASET_VERSION = "0.5.1"
 
 
 def _next_patch_version(base: str) -> str:
@@ -967,6 +967,30 @@ def mononuclidic_clauses() -> dict[int, str]:
     return {z: clause for z, (_, clause) in _mononuclidic().items()}
 
 
+#: The licence README.md's License section gives project-authored data under data/g4/, with its URL as
+#: datapackage.json gives it.
+CC_BY = "CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/)"
+_RESTATED = ("offered under no licence of the openmucf repository, as files that restate cells of tables a "
+             "third party publishes")
+#: The licence of every table of a profile, as the License section of README.md states it by path.
+PROFILE_LICENCES = {
+    spec.PARITY_PROFILE: "Geant4 Software License v1.0",
+    mizsrc.PROFILE: _RESTATED,
+    suzsrc.PROFILE: _RESTATED,
+    md.PROFILE: CC_BY + "; the input radii their .prov.json files repeat: MuDirac's MIT License",
+}
+
+
+def _licence_statements(files: list[emit.TableEntry]) -> list[tuple[tuple[str, ...], str]]:
+    """One ``(member names, licence)`` line of the ``LICENSE`` member per table pair, by the profile of the
+    table, then the generated README and History, which are project-authored."""
+    out: list[tuple[tuple[str, ...], str]] = []
+    for layer1, layer2, _table, profile, _seam, _rows in files:
+        out.append(((layer1, layer2), PROFILE_LICENCES[profile]))
+    out.append((("README", "History"), CC_BY))
+    return out
+
+
 def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     """The committed D1 and D3 artifacts keyed by path, plus the archive they describe (not
     committed)."""
@@ -1032,8 +1056,15 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
 
     # README and History are archive members only, like the archive itself: pure functions of the
     # Layer-2 documents and the member names, so nothing about them needs a committed copy.
-    members["README"] = emit.readme_member(name=DATASET_NAME, version=DATASET_VERSION, files=files)
+    members["README"] = emit.readme_member(
+        name=DATASET_NAME, version=DATASET_VERSION, files=files, licence=True
+    )
     members["History"] = emit.history_member(name=DATASET_NAME, version=DATASET_VERSION, files=files)
+    members["LICENSE"] = emit.license_member(
+        name=DATASET_NAME, version=DATASET_VERSION, statements=_licence_statements(files),
+        texts=(("Geant4 Software License v1.0", (ROOT / "third_party/geant4/LICENSE").read_bytes()),
+               ("MuDirac's MIT License", (ROOT / "data/g4/d3/LICENSE-MUDIRAC").read_bytes())),
+    )
     archive = emit.build_tarball(
         members, directory=emit.dataset_directory(DATASET_NAME, DATASET_VERSION)
     )

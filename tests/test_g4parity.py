@@ -2747,7 +2747,7 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
 
 
 # --------------------------------------------------------------------------------------------
-# T-82 -- the shipped D1 archive unpacks to the dataset directory, with README and History
+# T-82 -- the shipped D1 archive unpacks to the dataset directory, with README, History and LICENSE
 # --------------------------------------------------------------------------------------------
 
 
@@ -2781,7 +2781,7 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
         entries = opened.getmembers()
         names = [entry.name for entry in entries]
-        assert names == sorted(f"{directory}/{x}" for x in committed + ["README", "History"])
+        assert names == sorted(f"{directory}/{x}" for x in committed + ["README", "History", "LICENSE"])
         assert not any(entry.isdir() for entry in entries), names
         assert all(len(name.encode("ascii")) <= 100 for name in names), names  # ustar name field
         readme = opened.extractfile(f"{directory}/README").read().decode("ascii")

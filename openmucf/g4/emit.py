@@ -1,7 +1,8 @@
 """openmucf.g4.emit -- the shipping artifacts: a deterministic archive and its registration snippet.
 
 A dataset is shipped as one gzipped tar archive whose members -- the Layer-1 ``.g4dat`` files, the
-Layer-2 ``*.prov.json`` files they were generated from, and a generated ``README`` and ``History`` --
+Layer-2 ``*.prov.json`` files they were generated from, and a generated ``README``, ``History`` and
+``LICENSE`` --
 all sit under one top-level directory named as Geant4's dataset machinery expects after unpacking.
 This module builds that archive, checksums it, and writes the ``geant4_add_dataset(...)`` block a
 build system needs in order to register it.
@@ -43,6 +44,7 @@ __all__ = [
     "dataset_directory",
     "gzip_header",
     "history_member",
+    "license_member",
     "readme_member",
     "tarball_md5",
 ]
@@ -194,9 +196,10 @@ def _ascii_member(lines: Sequence[str]) -> bytes:
     return ("\n".join(lines) + "\n").encode("ascii")
 
 
-def readme_member(*, name: str, version: str, files: Sequence[TableEntry]) -> bytes:
+def readme_member(*, name: str, version: str, files: Sequence[TableEntry], licence: bool = False) -> bytes:
     """The ``README`` member, in the shape of the ``README`` a Geant4 dataset directory carries:
-    the directory's name, what reads the files, the file list, and the attribution notice."""
+    the directory's name, what reads the files, the file list, and the attribution notice. With
+    ``licence`` the file list also names the ``LICENSE`` member (:func:`license_member`)."""
     lines = [
         dataset_directory(name, version),
         "",
@@ -212,6 +215,8 @@ def readme_member(*, name: str, version: str, files: Sequence[TableEntry]) -> by
         lines.append(f"  - {layer2}: Layer 2 for {layer1}")
     lines.append("  - README: this file")
     lines.append("  - History: the version this directory carries and its tables")
+    if licence:
+        lines.append("  - LICENSE: the licence of each file of this directory")
     lines.append("")
     lines.extend(_NOTICE_LINES)
     return _ascii_member(lines)
@@ -227,6 +232,32 @@ def history_member(*, name: str, version: str, files: Sequence[TableEntry]) -> b
     lines = [title, "-" * len(title), "", version]
     for layer1, _layer2, table, profile, _seam, rows in files:
         lines.append(f"  {layer1}: #TABLE {table}, #PROFILE {profile}, {rows} records")
+    return _ascii_member(lines)
+
+
+def license_member(
+    *, name: str, version: str, statements: Sequence[tuple[Sequence[str], str]],
+    texts: Sequence[tuple[str, bytes]],
+) -> bytes:
+    """The ``LICENSE`` member: the licence of each file of the directory, one line per group of files, the
+    sentence on third-party values, and the full text of each licence a line names, LF-joined US-ASCII."""
+    lines = [
+        dataset_directory(name, version),
+        "",
+        "The licence of each file of this directory. A file that also ships under data/g4/ in the openmucf "
+        "repository carries the licence the License section of that repository's README.md states for it "
+        "there.",
+        "",
+    ]
+    lines += [f"  - {', '.join(names)}: {statement}" for names, statement in statements]
+    lines += [
+        "",
+        "Values from third-party sources are facts: the project asserts no rights over them and takes no "
+        "position on the sources' rights.",
+    ]
+    for title, text in texts:
+        body = text.replace(b"\r\n", b"\n").decode("ascii").rstrip("\n")
+        lines += ["", f"--- {title} ---", "", *body.split("\n")]
     return _ascii_member(lines)
 
 

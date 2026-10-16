@@ -660,7 +660,7 @@ line number to report; `E014` is raised by `validate()` and `parse()`, which hav
 ## 8. The archive
 
 A dataset ships as **one gzipped tar archive** holding the Layer-1 `.g4dat` files, the Layer-2
-`*.prov.json` files they were generated from, and a generated `README` and `History` -- with the
+`*.prov.json` files they were generated from, and a generated `README`, `History` and `LICENSE` -- with the
 extension Geant4's dataset machinery expects (`EXTENSION tar.gz`). The archive is **a pure function
 of its members**: nothing about the machine
 that built it may appear in its bytes, or the artifact cannot be checksummed once and shipped, and a
@@ -696,7 +696,10 @@ security boundary.
 
 `README` and `History` are pure functions of the Layer-2 documents and the member names -- the
 dataset, its version, each table's name, profile, seam and record count, and the attribution notice
-of section 9 -- and carry nothing about the machine or the moment that built the archive.
+of section 9 -- and carry nothing about the machine or the moment that built the archive. `LICENSE`
+gives the licence of each other member, as the License section of `README.md` gives it for the file of
+the same name under `data/g4/`, and the texts of the Geant4 Software License and of MuDirac's MIT
+License, copied from `third_party/geant4/LICENSE` and `data/g4/d3/LICENSE-MUDIRAC`.
 
 **The encoding rows matter as much as the value rows**, and they are where a reimplementation goes
 wrong: the numeric-field encoding, the checksum encoding, `devmajor`/`devminor`, the 10240-byte
