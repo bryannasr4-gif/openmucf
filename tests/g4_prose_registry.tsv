@@ -73,6 +73,7 @@
 2f5b237120b0006db7812fbbbbbc81f247f4a476	CHANGELOG.md	REGISTERED: 7.1, 9, 0.423 -- the Fujiwara 2000 resonance peak, `lambda_dtmu_peak` in openmucf/data/rates.csv and the peak openmucf/formation.py declares
 2f7d7491458c0ddb8f6b4e16126736a2091d8fce	CHANGELOG.md	REGISTERED: eight -- eight: fallback constants declared, as this dated entry recorded it (a released line, held by this row and not re-derived)
 2fc057902fe5c80670d7a5021d2f49ed2b435a46	CHANGELOG.md	REGISTERED: 0.0 -- the `lambda_ttmu` placeholder openmucf/data/rates.csv ships
+2fd58414af919cbd2e4a4958d3fe68fe5c58287f	CHANGELOG.md	REGISTERED: 29, 63, 35, 79, two, 82, 207 -- the record keys (29, 63), (35, 79) and (82, 207), rows of isotope_audit.csv; 'two printed rows', the pair each weighted mean combines (tests/test_g4natural.py::test_the_two_open_records_agree_with_the_weighted_means_their_evidence_names)
 304d626a3f087236dfb730250780d6e437372983	CHANGELOG.md	REGISTERED: zero -- 'a misleading zero bracket', a description
 30953f446b4e7a6863377a45c1c5022150ac9618	CHANGELOG.md	REGISTERED: 92, 80, 94 -- the UNREVIEWED cap's path across this release; `LEDGER_CLAIMS_UNREVIEWED_CEILING` in tests/test_ledger_claims.py is its current value
 30af5fbcb12d734d1ee6bb8d481f14648f7e7e9d	CHANGELOG.md	REGISTERED: 1 -- 'η=1', FINDINGS.md's section-1c structural bracket
@@ -324,6 +325,7 @@ e2609569503d85f919f79cc0d2c5482fc56dfa6b	CHANGELOG.md	REGISTERED: 0.555, 0.12, 0
 e52ddcb95b7eb96af3b7157dc3aa4a4c30fbc04d	CHANGELOG.md	REGISTERED: 500, 0, 1.45, 0.77 -- FINDINGS.md section 3: P(X_mu > 500) = 0.0% at liquid density, and the R >= 0.77 requirement
 e55d79ea8d6fac72603c6d4429f3fb4062d2766f	CHANGELOG.md	REGISTERED: 6, 3 -- the v1 state vector's components, indices 0..5 as openmucf/cycle.py's index comment records them; 3 counts each kind its docstring lists, the dynamical muonic-atom states and the accumulators
 e5cfd57c5792cbf2af5144a93d1fa8260528eec6	CHANGELOG.md	REGISTERED: 2.3, 3, 1, 6, 2286, 6002 -- the T3 prior before ('Uniform(2.3e3, 1e6)') and after, as FINDINGS.md's section-2b amendment prints them
+e5d339fd66bc0e7c9ab2405eafab830541fdb378	CHANGELOG.md	REGISTERED: 0.5.2 -- the dataset version scripts/generate_g4data.py DATASET_VERSION gives, which data/g4/d1/geant4_add_dataset.snippet carries
 e5eccfda833ed81773d753adeadad508d998151d	CHANGELOG.md	REGISTERED: 0.088, 92, 1.48 -- the arm64 flag's place in the seed-perturbation distribution, as scripts/generate_design.py's preamble records it
 e6bac5e5c9d5cae5e18fb96d744ab6efe701ae46	CHANGELOG.md	REGISTERED: one, six -- the priors of openmucf/data/uq_priors.csv, six rows, one of them measured
 e774abca1368264c85adf8d1cd42e2b9a92d7113	CHANGELOG.md	REGISTERED: 2.09, 2.62, 2.235, 30 -- the ratio's band and solid-line value as openmucf/validate.py states them, and the ±30% tolerance of VALIDATION.md's V_yamashita_ratio row
