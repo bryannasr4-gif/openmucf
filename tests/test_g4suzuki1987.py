@@ -230,16 +230,21 @@ def test_normalize_refusals(case: str) -> None:
 # T-136: the profile keys are exactly the eligible rows, with exact decimal scaling.
 def test_profile_selection_and_provenance() -> None:
     rows = _normalized()
-    selected = suzuki1987.selected(rows)
+    mono = gen.mononuclidic_keys()
+    clauses = gen.mononuclidic_clauses()
+    selected = suzuki1987.selected(rows, mono)
     eligible = [r for r in rows if r["own_measurement"] == "true"
-                and r["target_basis"] in ("isotope", "natural") and r["rate_unc"]
-                and r["rate_parenthesized"] == "false"]
+                and (r["target_basis"] in ("isotope", "natural")
+                     or (r["target_basis"] == "unspecified" and int(r["Z"]) in mono))
+                and r["rate_unc"] and r["rate_parenthesized"] == "false"]
     assert len(selected) == len(eligible)
+    bare = {key: row for key, row in selected.items() if row["target_basis"] == "unspecified"}
+    assert bare and all(a == mono[z] for z, a in bare)
     layer1_bytes = (DATA.parent / "d1_capture.suzuki1987.g4dat").read_bytes()
     layer2_bytes = (DATA.parent / "d1_capture.suzuki1987.prov.json").read_bytes()
     layer1 = spec.parse(layer1_bytes.decode("ascii"))
     layer2 = provenance.from_json_obj(json.loads(layer2_bytes.decode("ascii")))
-    assert provenance.document_bytes(gen.build_suzuki_capture_document(selected)) == layer2_bytes
+    assert provenance.document_bytes(gen.build_suzuki_capture_document(selected, clauses)) == layer2_bytes
     assert spec.render(gen.build_suzuki_capture_table(
         selected, provenance.source_digest(layer2_bytes)
     )).encode("ascii") == layer1_bytes
@@ -264,7 +269,7 @@ def test_profile_selection_and_provenance() -> None:
         )
         assert proof.unc_type == "table" and proof.needs_verification is False
         assert proof.single_source is (source["refs"] == "a")
-        assert proof.isotope_resolved is (source["target_basis"] == "isotope")
+        assert proof.isotope_resolved is (source["target_basis"] in ("isotope", "unspecified"))
         assert proof.validity_range == f"Z={z} A={a}"
         assert proof.recommendation == ""
         printed_huff = source["huff_factor"] if source["huff_from"] == "printed" else "none on this row"
@@ -272,6 +277,8 @@ def test_profile_selection_and_provenance() -> None:
             f"target label as printed: {source['target_label']}; mean life as printed: "
             f"{source['mean_life_ns']}+-{source['mean_life_unc_ns']} ns; Huff factor as printed: "
             f"{printed_huff}; copy read: page images of the published article"
+            + (f"; key mass number from the isotope audit: {clauses[int(z)]}"
+               if source["target_basis"] == "unspecified" else "")
         )
         assert proof.evaluation_method == (
             f"total capture rate as the primary prints it (Table {source['table']}, column "
@@ -281,19 +288,24 @@ def test_profile_selection_and_provenance() -> None:
 
 
 # T-137: empty and repeated selections cannot become a profile.
-@pytest.mark.parametrize("case", ("empty", "duplicate", "mass"))
+@pytest.mark.parametrize("case", ("empty", "duplicate", "mass", "duplicate single-isotope"))
 def test_selection_refusals(case: str) -> None:
     rows = _normalized()
+    mono = gen.mononuclidic_keys()
     eligible = next(r for r in rows if r["own_measurement"] == "true" and r["target_basis"] == "isotope"
                     and r["rate_unc"] and r["rate_parenthesized"] == "false")
+    bare = next(r for r in rows if r["own_measurement"] == "true" and r["target_basis"] == "unspecified"
+                and int(r["Z"]) in mono and r["rate_unc"] and r["rate_parenthesized"] == "false")
     if case == "empty":
         source = tuple(dict(row, own_measurement="false") for row in rows)
     elif case == "duplicate":
         source = rows + (eligible,)
+    elif case == "duplicate single-isotope":
+        source = rows + (bare,)
     else:
         source = (dict(eligible, target_label="Xx"),)
     with pytest.raises(suzuki1987.Suzuki1987Error):
-        suzuki1987.selected(source)
+        suzuki1987.selected(source, mono)
 
 
 # T-140: each eligibility clause excludes a row without altering the eligible key set.
@@ -301,12 +313,61 @@ def test_selection_refusals(case: str) -> None:
     ("own_measurement", "false"), ("target_basis", "enriched_mixture"),
     ("rate_unc", ""), ("rate_parenthesized", "true"),
 ))
-def test_selection_filters(field: str, value: str) -> None:
+@pytest.mark.parametrize("basis", ("isotope", "unspecified"))
+def test_selection_filters(field: str, value: str, basis: str) -> None:
     rows = _normalized()
-    base = suzuki1987.selected(rows)
-    eligible = next(row for row in rows if row in base.values())
+    mono = gen.mononuclidic_keys()
+    base = suzuki1987.selected(rows, mono)
+    eligible = next(row for row in rows if row in base.values() and row["target_basis"] == basis)
     blocked = dict(eligible, **{field: value})
-    assert suzuki1987.selected(rows + (blocked,)) == base
+    assert suzuki1987.selected(rows + (blocked,), mono) == base
+
+
+# T-158: a row printed with a bare element symbol is admitted only at a Z the caller names mononuclidic,
+# keyed by the mass number it is given; at any other Z it stays out of the profile.
+def test_t158_a_bare_symbol_row_is_keyed_only_at_a_single_isotope_element() -> None:
+    rows = _normalized()
+    mono = gen.mononuclidic_keys()
+    own_bare = [r for r in rows if r["own_measurement"] == "true" and r["target_basis"] == "unspecified"
+                and r["rate_unc"] and r["rate_parenthesized"] == "false"]
+    inside = [r for r in own_bare if int(r["Z"]) in mono]
+    outside = [r for r in own_bare if int(r["Z"]) not in mono]
+    assert inside and outside
+    without = suzuki1987.selected(rows)
+    admitted = suzuki1987.selected(rows, mono)
+    assert set(admitted) - set(without) == {(int(r["Z"]), mono[int(r["Z"])]) for r in inside}
+    assert all(row not in admitted.values() for row in outside)
+    assert all(admitted[key] == row for key, row in without.items())
+
+
+# T-159: the generator refuses an isotope-audit row that calls an element mononuclidic when its clause names
+# another mass number or symbol, or the committed Geant4 composition at that Z is not that single isotope.
+@pytest.mark.parametrize("case", ("two isotopes", "another mass number", "abundance", "clause mass",
+                                  "clause symbol"))
+def test_t159_a_disagreeing_composition_or_clause_stops_the_build(monkeypatch, case: str) -> None:
+    from openmucf.g4 import d1_natural as natural
+
+    audit = d1.load_isotope_audit(gen.ROOT / d1.AUDIT_RELPATH)
+    compositions = natural.load_isotopes(gen.ROOT / natural.ISOTOPES_RELPATH)
+    z, a = (13, 27)
+    assert gen.mononuclidic_keys()[z] == a
+    (member,) = compositions[z]
+    if case == "two isotopes":
+        compositions[z] = (dataclasses.replace(member, abundance=0.5),
+                           dataclasses.replace(member, a=a + 1, abundance=0.5))
+    elif case == "another mass number":
+        compositions[z] = (dataclasses.replace(member, a=a + 1),)
+    elif case == "abundance":
+        compositions[z] = (dataclasses.replace(member, abundance=0.99),)
+    else:
+        old = "Al-27 = 100%" if case == "clause mass" else "(Al-27"
+        new = "Al-28 = 100%" if case == "clause mass" else "(Si-27"
+        assert old in audit[(z, a)].evidence
+        audit[(z, a)] = dataclasses.replace(audit[(z, a)], evidence=audit[(z, a)].evidence.replace(old, new))
+    monkeypatch.setattr(natural, "load_isotopes", lambda _path: compositions)
+    monkeypatch.setattr(d1, "load_isotope_audit", lambda _path: audit)
+    with pytest.raises(SystemExit, match="g4data build FAILED"):
+        gen.mononuclidic_keys()
 
 
 # T-138: comparisons enumerate every compiled-in row at a published Z and expose the printed 236U cell.

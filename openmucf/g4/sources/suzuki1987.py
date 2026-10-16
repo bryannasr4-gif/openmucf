@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -243,13 +244,32 @@ def scaled(row: dict[str, str], column: str) -> Decimal:
     return Decimal(row[column]).scaleb(shift)
 
 
-def selected(rows: tuple[dict[str, str], ...]) -> dict[tuple[int, int], dict[str, str]]:
+def selected(
+    rows: tuple[dict[str, str], ...], mononuclidic: Mapping[int, int] | None = None,
+) -> dict[tuple[int, int], dict[str, str]]:
+    """The profile's rows, keyed (Z, A): this experiment's own rows with a symmetric, non-parenthesized
+    rate whose label identifies an isotope (keyed by its mass number) or a natural composition (A = 0),
+    and, at a Z of ``mononuclidic`` (Z to the mass number of the element's single natural isotope), its
+    own rows printed with the bare element symbol, keyed by that mass number. A key selected twice is
+    refused."""
+    mononuclidic = mononuclidic or {}
     result: dict[tuple[int, int], dict[str, str]] = {}
     for row in rows:
-        if not (row["own_measurement"] == "true" and row["target_basis"] in ("isotope", "natural")
-                and row["rate_unc"] and row["rate_parenthesized"] == "false"):
+        if not (row["own_measurement"] == "true" and row["rate_unc"]
+                and row["rate_parenthesized"] == "false"):
             continue
         z = int(row["Z"])
+        if row["target_basis"] == "unspecified" and z in mononuclidic:
+            key = z, mononuclidic[z]
+            if key in result:
+                raise Suzuki1987Error(
+                    f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}: "
+                    f"duplicate selected key {key}"
+                )
+            result[key] = row
+            continue
+        if row["target_basis"] not in ("isotope", "natural"):
+            continue
         mass = re.match(r"[0-9]+", row["target_label"])
         if row["target_basis"] == "isotope" and mass is None:
             raise Suzuki1987Error(f"{row['target_label']!r}: isotope lacks an integer mass prefix")

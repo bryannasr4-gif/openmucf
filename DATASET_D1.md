@@ -24,7 +24,7 @@ consumer chooses by name rather than by hoping.
 | `d1_gp_sweep.oracle` | a harvested bit-parity fixture (section 4) |
 | `isotope_audit.csv` | the isotope-resolution audit against the primary literature (section 6) |
 | `zeff_audit.csv` | every `Z(Z_eff)` cell of the primary's Tables III and IV as printed, with the cells it underlines (section 5, F-5) |
-| `capture_rate_cells.csv` | every Total Capture Rate cell the primary prints at the Z of a capture row the audit had left open, as printed (section 6) |
+| `capture_rate_cells.csv` | every Total Capture Rate cell the primary prints at the Z of a capture row whose listing alone does not settle it, as printed (section 6) |
 | `geant4_add_dataset.snippet` | the registration block, with the archive's MD5 |
 
 Both tables carry `#PROFILE parity` and `#SOURCESHA 8cc04f65977807f1848da7b958c421cd5e162f26`,
@@ -249,12 +249,12 @@ own reference and the authors' own measurements marked with an asterisk; the abs
 describes what *they* measured, a subset. Between them those two tables span **exactly the same 74
 distinct Z** this table carries — the same set, with the same gaps at Z = 36, 43, 44, 54, 61, 63,
 69–71, 75–78, 84–89 and 91. That is a set equality, not an impression: every one of the 74 was read
-off the page images, and **71 of them carry that table and page in `isotope_audit.csv`'s `locator`
-column**, so the comparison can be repeated from the shipped files. The three that do not are
+off the page images, and **70 of them carry that table and page in `isotope_audit.csv`'s `locator`
+column**, so the comparison can be repeated from the shipped files. The four that do not are
 visible in the file rather than hidden by it: hydrogen and helium carry instead the locator of the
-source that established *their* flag, because Geant4 carves them out to other papers, and
-strontium's single record is unsettled, so it carries no locator at all and names its table and page
-in its `evidence` field instead. Nothing here draws on an unnamed source.
+source that established *their* flag, because Geant4 carves them out to other papers, and the single
+records of copper and strontium are unsettled, so they carry no locator at all and name their table
+and page in their `evidence` field instead. Nothing here draws on an unnamed source.
 
 **F-5 — `zeff[]`'s non-monotonicity is the primary's own. SETTLED against the primary.** The array
 rises monotonically except at exactly two steps: Z=81→82 (34.21 → 34.18) and Z=82→83 (34.18 →
@@ -296,23 +296,25 @@ formula is reported to over-predict the isotopic spread, while **Cu, Sr, Br and 
 authors say the *experiments* are too imprecise — or, for chlorine, questionable — to judge. Only
 the first group is evidence about the model.
 
-What makes it land here is which elements those are. Of the nine the sentence names, **seven carry at
-least one record this audit establishes as a separated isotope** — Cl, Cr, Ni, Cu, Br, U and Pu. The
-two exceptions are instructive rather than incidental. **Ca** appears once, as a record the primary
+What makes it land here is which elements those are. Of the nine the sentence names, **six carry at
+least one record this audit establishes as a separated isotope** — Cl, Cr, Ni, Br, U and Pu. The
+three exceptions are instructive rather than incidental. **Ca** appears once, as a record the primary
 prints with no mass number. **Sr** appears once too, and it is one of the records this dataset **cannot settle** —
 `(38, 88)`, where the primary prints both Sr with no mass number and Sr-88 and the key matches either.
+**Cu** appears once as well, and its record `(29, 63)` cannot be settled either: its value equals none
+of the Total Capture Rate cells Table IV prints at Z=29 (section 6).
 
-Sharper still: **the two records this dataset cannot settle sit at elements this sentence names.**
+Sharper still: **the four records this dataset cannot settle sit at elements this sentence names.**
 
 **Those are not the same uncertainty, and saying so would overstate it.** This dataset cannot settle
-a row because the *key* fails to distinguish two printed entries; the primary doubts the
-*measurements* themselves. The two are independent, and the shipped audit shows it in both
-directions: **Cr** carries exactly the same key ambiguity yet sits in the half of the sentence that
-uses its experiments as evidence *against* the formula, while **Cu** and **Br** carry the primary's
-doubt and are settled here as separated isotopes with no ambiguity at all. What is true is narrower
-and still worth saying: the two overlap at Sr, and they overlap because a separated-isotope
-entry can only be there to be ambiguous with where separated-isotope work was done — which is also
-where these authors had something to say about isotopic effects.
+a row because the *key* fails to distinguish two printed entries, or because its value equals none of
+the Total Capture Rate cells printed at its Z; the primary doubts the *measurements* themselves. The two are independent,
+and the shipped audit shows it in both directions: **Cr** carries an open record yet sits in the half
+of the sentence that uses its experiments as evidence *against* the formula, while **Cl** carries the
+primary's doubt and both its records are settled here as separated isotopes. What is true is narrower
+and still worth saying: the two overlap at Sr, Cu and Br, and they overlap because each open record
+there sits beside a separated-isotope entry, which can only be there where separated-isotope work was
+done — which is also where these authors had something to say about isotopic effects.
 
 **F-7 — `(Z, A)` is a label on most rows, not a target specification.** For **41 of the 90 records**
 the primary shows the measurement was made on an **element printed with no mass number**, not on the nuclide
@@ -372,8 +374,8 @@ draw.
 **In this release the capture flags are established from the primary literature, row by row.** Each
 of the 90 records was checked against the paper its own value is attributed to — the capture table
 to Suzuki, Measday & Roalsvig (1987), hydrogen and helium to the two sources the source comment
-carves them out to. **88 of the 90 are settled and carry `needs_verification: false`; 2 are not and
-still carry `true`.** Of the settled rows, **47 are `isotope_resolved: true`**: 25 because the
+carves them out to. **86 of the 90 are settled and carry `needs_verification: false`; 4 are not and
+carry `true`.** Of the settled rows, **45 are `isotope_resolved: true`**: 23 because the
 primary lists a separated isotope with that mass number (the `(17, 35)` record among them settled to
 that entry by the comparison below), 19 because the element is mononuclidic and so a
 target of that element *is* a single nuclide, and 3 — the hydrogen and helium records — because
@@ -381,6 +383,9 @@ the sources the table carves them out to describe an isotopically distinct targe
 (deuterium-depleted protium; ³He and ⁴He tabulated as separate nuclides). The remaining **41 are
 `false` as an established finding**, because the primary shows the value rests on an element
 printed with no mass number (F-7).
+For `(82, 207)` the value equals, at the precision it is printed with, the inverse-variance weighted mean
+of the row of lead printed with no mass number and a row of radiogenic lead (section 11): a reconstructed
+combination, not a demonstrated history.
 
 **Two different sources are doing work here, and only one of them is the primary.** Whether a
 measurement was made on a separated isotope or on an element printed with no mass number is read from the primary. But
@@ -413,7 +418,15 @@ published article settles them, with the comparison recorded in their `evaluatio
 | record | compiled-in value +- unc | Total Capture Rate cells the primary prints at this Z | equal at the printed precision |
 |---|---|---|---|
 | (24, 52) | 3.465 +- 0.026 | Cr 3.24 +- 0.08 [39]; Cr 3.33 +- 0.06 [48]; Cr 3.472 +- 0.031 [*]; Cr-50 3.825 +- 0.05 [72]; Cr-52 3.452 +- 0.047 [72]; Cr-53 3.297 +- 0.045 [72]; Cr-54 3.057 +- 0.042 [72]; Cr-nat 3.444 +- 0.047 [72] | no cell |
+| (29, 63) | 5.691 +- 0.030 | Cu 5.79 +- 0.16 [39]; Cu 5.47 +- 0.20 [44]; Cu 5.66 +- 0.09 [53]; Cu 5.67 +- 0.09 [48]; Cu 5.676 +- 0.037 [*]; Cu-63 5.72 +- 0.05 [48] | no cell |
+| (35, 79) | 7.223 +- 0.28 | Br-79 7.05 +- 0.35 [54]; Br-81 7.55 +- 0.48 [54]; Br 7.07 +- 0.06 [*] | no cell |
 | (38, 88) | 6.93 +- 0.12 | Sr 7.25 +- 0.14 [48]; Sr 7.02 +- 0.14 [*]; Sr-88 6.61 +- 0.27 [48] | no cell |
+
+The `(29, 63)` and `(35, 79)` records are compared too, although the listing alone would settle each to
+the cell of its separated isotope: the value and uncertainty of each agree, to within a unit of the last
+printed digit, with the inverse-variance weighted mean of two printed rows, Cu printed with no mass number
+and Cu-63, and Br-79 and Br-81, a reconstructed combination, not a demonstrated history
+(`isotope_audit.csv`), and no cell equals either, so both stay open.
 
 The preprint's Table IV prints U-233, U-235 and U-238 cells and no U-236 cell; the published article's Table IV prints a 236U cell, and the compiled-in `(92, 236)` pair equals it alone at the printed precision (`suzuki1987_parity_cells.csv`), so that row is settled to it and its locator cites the published copy.
 
@@ -424,17 +437,17 @@ isotopes — and it was then applied to each *row* of that Z, which does not fol
 those rows can still be the natural-composition entry. The audited flag differs from that rule on
 **26 of the 90 records**, and the three ways it differs are not the same claim:
 
-* **23** the rule called unresolved that the primary establishes as resolved.
+* **22** the rule called unresolved that the primary establishes as resolved.
 * **2** the primary flatly contradicts: it lists "C" and "C-13", and "O" and "O-18", so `(6, 12)`
   and `(8, 16)` are carbon and oxygen printed with no mass number, not C-12 and O-16.
-* **1** — `(24, 52)` — where the primary does not contradict the rule but
+* **2** — `(24, 52)`, `(35, 79)` — where the primary does not contradict the rule but
   **fails to establish the question it was answering**, so the flag falls back to "not established"
-  and `needs_verification` stays `true`. Counting this as "the rule was wrong" would overstate it;
-  counting it as agreement would hide an open question.
+  and `needs_verification` is `true`. Counting these as "the rule was wrong" would overstate it;
+  counting them as agreement would hide an open question.
 
 Not every unsettled row appears in that list, which is not an oversight:
-`(38, 88)` is the only capture record at Z=38, so the old rule called it unresolved as well, and
-rule and audited flag agree. The open rows and the disagreements are different sets and do
+`(29, 63)` and `(38, 88)` are the only capture records at Z=29 and Z=38, so the old rule called them
+unresolved as well, and rule and audited flag agree. The open rows and the disagreements are different sets and do
 not line up row for row.
 
 The `zeff` rows remain `false` throughout, as a fact rather than a default: an effective charge is a
@@ -537,8 +550,9 @@ journal version is unread.
 `data/g4/d1/suzuki1987_printed_rows.csv` records each printed line of Tables III and IV of the published Suzuki, Measday and Roalsvig article from its page images, with table, printed page and row locators.
 Of a caption, the ledger keeps the table's title; of a note or footnote of more than a sentence, only its footnote marker, if any; in place of the text it leaves out, it gives the SHA-256 of that text.
 The generated `suzuki1987_quantity_rows.csv` normalizes the data rows and carries the Huff factor column as printed.
-The `suzuki1987` capture profile selects this experiment's own rows when the printed target label identifies an isotope or natural composition, the rate has a symmetric uncertainty, and the rate is not parenthesized.
+The `suzuki1987` capture profile selects this experiment's own rows when the printed target label identifies an isotope or natural composition, or is the bare symbol of an element with a single natural isotope, the rate has a symmetric uncertainty, and the rate is not parenthesized.
 A bare element symbol stays `unspecified` under this project's source-preserving convention, which records natural composition only where the printed label carries the `nat` prefix; the format itself makes an `A = 0` record the natural-composition row only under `A:natural_and_listed`.
+A row of an element with a single natural isotope is keyed by that isotope's mass number, which the isotope audit of section 6 gives the element from the NIST table and which is the single isotope `geant4_natural_isotopes.csv` records for it, as `mizuno2025` keys its aluminium (section 9).
 `suzuki1987_parity_cells.csv` lists every compiled-in capture record at a Z the published tables print and the published cells equal at their printed precision.
 `suzuki1987_preprint_differences.csv` lists differences against the committed preprint capture and effective-charge cells.
 Its `not_in_committed_preprint_cells` kind means a published capture cell at a covered Z has no paired committed preprint cell.
@@ -550,9 +564,20 @@ The table lists the paired keys whose value or uncertainty differs at the publis
 |---|---|---|---|---|---|
 | 3 | 6 | 6 | 0.004647 ± 0.00012 | 0.004180 ± 0.000450 | Table III p.2217 row 14 |
 | 3 | 7 | 7 | 0.002229 ± 0.00012 | 0.001810 ± 0.000440 | Table III p.2217 row 17 |
+| 4 | 9 | 9 | 0.006107 ± 0.00019 | 0.0074 ± 0.0005 | Table III p.2217 row 21 |
 | 5 | 10 | 10 | 0.02757 ± 0.00063 | 0.0278 ± 0.0007 | Table III p.2217 row 23 |
 | 5 | 11 | 11 | 0.02188 ± 0.00064 | 0.0219 ± 0.0007 | Table III p.2217 row 25 |
 | 6 | 13 | 13 | 0.03474 ± 0.00034 | 0.0376 ± 0.0007 | Table III p.2217 row 39 |
+| 11 | 23 | 23 | 0.3773 ± 0.0014 | 0.3772 ± 0.0014 | Table IV p.2218 row 8 |
+| 13 | 27 | 27 | 0.6985 ± 0.0012 | 0.7054 ± 0.0013 | Table IV p.2218 row 16 |
+| 15 | 31 | 31 | 1.1681 ± 0.0026 | 1.185 ± 0.003 | Table IV p.2218 row 23 |
+| 25 | 55 | 55 | 3.900 ± 0.030 | 3.857 ± 0.037 | Table IV p.2219 row 3 |
+| 27 | 59 | 59 | 4.945 ± 0.025 | 4.940 ± 0.029 | Table IV p.2219 row 10 |
+| 33 | 75 | 75 | 6.094 ± 0.037 | 6.104 ± 0.043 | Table IV p.2219 row 34 |
+| 41 | 93 | 93 | 10.38 ± 0.11 | 10.36 ± 0.17 | Table IV p.2219 row 48 |
+| 53 | 127 | 127 | 11.276 ± 0.098 | 11.58 ± 0.22 | Table IV p.2220 row 14 |
+| 79 | 197 | 197 | 13.35 ± 0.10 | 13.07 ± 0.28 | Table IV p.2220 row 38 |
+| 83 | 209 | 209 | 13.238 ± 0.065 | 13.10 ± 0.18 | Table IV p.2220 row 52 |
 
 ## 11. Natural-composition targets
 
@@ -587,11 +612,12 @@ compiled-in records, the compiled-in chain, which the reference implementation o
 bit for bit at every isotope of these compositions (section 4); under any other profile, the profile's row
 keyed by exactly that nuclide, and the compiled-in chain where the profile has none
 (`cpp/patches/README.md`).
-Where the isotope audit of section 6 establishes that an element's compiled-in record was measured on
-the element printed with no mass number, the row also gives that record and the relative difference
+Where the isotope audit of section 6 establishes that an element's compiled-in record rests on a
+measurement of the element printed with no mass number, the row also gives that record and the relative difference
 between the weighted rate and the record's rate.
 That difference is an abundance-weighted first-order estimate against the measurement the table itself
-encodes; for lead that measurement averages a lead target and a radiogenic-lead target (see below).
+encodes; for lead that value matches a reconstructed combination of a measurement on lead and one on
+radiogenic lead (see below).
 
 It is first-order because Geant4 samples each stop's time from the drawn nucleus's own capture and decay
 rates (`G4MuonMinusBoundDecay::ApplyYourself`, and the lifetime
@@ -661,7 +687,8 @@ The `parity` record for lead equals, at the precision it is printed with, the in
 mean of the row of lead printed with no mass number and the row of what a footnote of that table labels
 radiogenic lead, which Table IV of Suzuki, Measday and Roalsvig gives from the same reference
 (`suzuki1987_printed_rows.csv`), so the Pb row's relative difference is measured against a value that
-averages a measurement on lead and a measurement on radiogenic lead.
+matches a reconstructed combination of a measurement on lead and a measurement on radiogenic lead, not
+a demonstrated history of how the record was obtained.
 
 This section does not revisit the rule that, under every profile but `parity`, an element's
 natural-composition row answers only a request that names it; the next table gives the rows of the
@@ -671,6 +698,8 @@ other profiles with a natural-composition record whose weighted rate differs fro
 |---|---|---|---|---|
 | `mizuno2025` | 14 | Si | 100.0 | +2.1 |
 | `suzuki1987` | 6 | C | 1.1 | 0.0 |
+
+A transported nucleus always carries a mass number, so it can reach the rows of a profile keyed by a mass number: 90 of the 90 rows of `parity`, 5 of the 8 rows of `mizuno2025` and 19 of the 19 rows of `suzuki1987`.
 
 No row of `natural_target_capture.csv` has a positive `nonpositive_share`: under an evaluated profile,
 no isotope of an element `G4NistManager` builds in this Z range gets a computed capture rate that
@@ -716,8 +745,9 @@ often with their own value of the positive muon's lifetime (p. 2216), so the com
 For each profile of the capture table and each of those rows, the file gives the measured rate, the inverse
 of the mean life, and, when the row names a nucleus, each route's rate, capture plus decay, for it.
 A row names the nucleus with the printed mass number, or, for a target printed with no mass number or as
-natural, with the mass number of the record the isotope audit of section 6 establishes was measured on the
-element printed with no mass number, or else of the single isotope of a natural composition with a single
+natural, with the mass number of the record the isotope audit of section 6 establishes rests on a
+measurement of the element printed with no mass number (for lead, a reconstructed combination with
+radiogenic lead: section 11), or else of the single isotope of a natural composition with a single
 isotope (section 11); its capture rate follows the lookup a patched build runs (section 11).
 A row is compared when a measured value from the row's own source answers it, a profile's row for that
 profile's source or the compiled-in table for Suzuki, Measday and Roalsvig, whom its source comment credits
@@ -733,27 +763,29 @@ target; a target of natural composition decays as section 11 describes.
 |---|---|---|---|
 | `parity` | 51 | 47 | 43 |
 | `mizuno2025` | 54 | 51 | 48 |
-| `suzuki1987` | 51 | 48 | 44 |
+| `suzuki1987` | 51 | 51 | 47 |
 
-Under every profile, each route leaves a compared row outside the band.
+Under `parity` and `mizuno2025` each route leaves a compared row outside the band, and under `suzuki1987`
+only `G4MuonicAtomHelper` does; where a row of `suzuki1987` answers a compared row, the lookup returns the
+capture rate the source prints beside the mean life.
 The next table gives those rows: the difference between the route's rate and the measured rate, and the part
 of it that comes from the capture rate, the rate the lookup returns less the rate the source prints beside
 the mean life, each in units of the band's standard deviation and rounded to a tenth.
 
 | route | measurement | target | profiles | difference (σ) | capture part (σ) |
 |---|---|---|---|---|---|
-| `G4MuonMinusBoundDecay` | `suzuki1987` Table III p.2217 row 21 | Be | `parity`, `mizuno2025`, `suzuki1987` | -3.1 | -2.8 |
+| `G4MuonMinusBoundDecay` | `suzuki1987` Table III p.2217 row 21 | Be | `parity`, `mizuno2025` | -3.1 | -2.8 |
 | `G4MuonMinusBoundDecay` | `suzuki1987` Table III p.2217 row 39 | 13C | `parity`, `mizuno2025` | -4.2 | -3.6 |
-| `G4MuonMinusBoundDecay` | `suzuki1987` Table IV p.2218 row 16 | Al | `parity`, `suzuki1987` | -3.2 | -3.8 |
-| `G4MuonMinusBoundDecay` | `suzuki1987` Table IV p.2218 row 23 | P | `parity`, `mizuno2025`, `suzuki1987` | -4.6 | -4.5 |
-| `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 21 | Be | `parity`, `mizuno2025`, `suzuki1987` | -4.6 | -2.8 |
+| `G4MuonMinusBoundDecay` | `suzuki1987` Table IV p.2218 row 16 | Al | `parity` | -3.2 | -3.8 |
+| `G4MuonMinusBoundDecay` | `suzuki1987` Table IV p.2218 row 23 | P | `parity`, `mizuno2025` | -4.6 | -4.5 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 21 | Be | `parity`, `mizuno2025` | -4.6 | -2.8 |
 | `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 37 | C | `parity`, `mizuno2025`, `suzuki1987` | -4.7 | -1.5 |
 | `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 39 | 13C | `parity`, `mizuno2025` | -6.1 | -3.6 |
 | `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 44 | N | `parity`, `mizuno2025`, `suzuki1987` | -3.1 | -0.4 |
 | `G4MuonicAtomHelper` | `suzuki1987` Table III p.2217 row 49 | O | `parity`, `mizuno2025`, `suzuki1987` | -3.3 | -0.2 |
-| `G4MuonicAtomHelper` | `suzuki1987` Table IV p.2218 row 16 | Al | `parity`, `suzuki1987` | -6.5 | -3.8 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table IV p.2218 row 16 | Al | `parity` | -6.5 | -3.8 |
 | `G4MuonicAtomHelper` | `suzuki1987` Table IV p.2218 row 20 | Si | `parity`, `suzuki1987` | -4.8 | -2.4 |
-| `G4MuonicAtomHelper` | `suzuki1987` Table IV p.2218 row 23 | P | `parity`, `mizuno2025`, `suzuki1987` | -6.1 | -4.5 |
+| `G4MuonicAtomHelper` | `suzuki1987` Table IV p.2218 row 23 | P | `parity`, `mizuno2025` | -6.1 | -4.5 |
 
 On each row of the table for `G4MuonMinusBoundDecay`, the capture part is the larger part of the difference.
 Of the 57 measurements compared under a profile, the decay rate of `G4MuonicAtomHelper` lies

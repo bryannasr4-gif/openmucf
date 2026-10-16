@@ -327,6 +327,9 @@ def document_pins(numeric: re.Pattern[str]) -> list[tuple[str, str, str, tuple[i
          r"tabulated relative uncertainty in (\d+) of them", (1,), len(beyond_uncertainty(rows))),
         ("the decay-rate threshold", DOCUMENT, r"wherever Z ≥ (\d+)", (1,), decay_threshold()),
     ]
+    reach = natural.render_reach_sentence(natural.capture_profiles(REPO / "data" / "g4" / "d1"))
+    pattern, groups = _row_pattern(reach, numeric)
+    pins.append(("reachable rows", DOCUMENT, pattern, groups, None))
     for name, block in (("natural-target table", natural.render_table(rows)),
                         ("profile table", natural.render_profile_table(rows))):
         for number, line in enumerate(block.splitlines()[2:], start=1):
@@ -345,6 +348,23 @@ def test_the_document_carries_both_tables_as_generated():
     rows = study()
     for block in (natural.render_table(rows), natural.render_profile_table(rows)):
         assert section.count(block + "\n") == 1
+
+
+def test_the_document_states_the_reachable_rows_of_each_profile_once():
+    """Section 11 carries the sentence `render_reach_sentence` renders, once; each count it states is the
+    number of the profile's records keyed by a mass number, and a count moved by one is no longer the
+    rendered sentence."""
+    tables = natural.capture_profiles(REPO / "data" / "g4" / "d1")
+    sentence = natural.render_reach_sentence(tables)
+    collapsed = " ".join((REPO / DOCUMENT).read_text(encoding="utf-8").split())
+    section = collapsed.split(" ## 11. ", 1)[1].split(" ## 12. ", 1)[0]
+    assert section.count(sentence) == 1 and collapsed.count(sentence) == 1
+    for name, table in tables.items():
+        keyed = sum(1 for _, a, _, _ in table.records if int(a) != 0)
+        assert f"{keyed} of the {len(table.records)} rows of `{name}`" in sentence
+    count = len(natural.profile_rows(tables["parity"]))
+    moved = sentence.replace(f"{count} of the", f"{count + 1} of the", 1)
+    assert moved != sentence and collapsed.replace(sentence, moved).count(sentence) == 0
 
 
 def test_every_pin_of_the_section_states_its_value():
@@ -374,7 +394,7 @@ def test_drill_a_changed_cell_or_count_is_refused():
 LEAD_WORDS = (
     "the inverse-variance weighted mean of the row of lead printed with no mass number and the row of what a "
     "footnote of that table labels radiogenic lead",
-    "averages a measurement on lead and a measurement on radiogenic lead",
+    "matches a reconstructed combination of a measurement on lead and a measurement on radiogenic lead",
 )
 
 
@@ -407,7 +427,7 @@ def lead_problems(pair: tuple[dict[str, str], dict[str, str]]) -> list[str]:
     return []
 
 
-def test_the_lead_record_averages_a_lead_row_and_a_radiogenic_lead_row():
+def test_the_lead_record_equals_the_weighted_mean_of_a_lead_row_and_a_radiogenic_lead_row():
     """Section 11 says, after its table, that the `parity` lead record is the inverse-variance weighted mean,
     at its printed precision, of a row of Table IV on lead printed with no mass number and a row the table's
     footnote labels radiogenic lead, from the same reference; recomputed here from the committed transcription
@@ -436,3 +456,70 @@ def test_drill_another_lead_row_in_place_of_the_radiogenic_row_is_refused():
     assert others
     for other in others:
         assert lead_problems((plain, other)), other["refs"]
+
+
+#: The two records the isotope audit leaves open because each value agrees with a combination of printed rows:
+#: the Table IV labels of the rows its evidence names, the element's row being the one of this experiment.
+OPEN_COMBINATIONS = {(29, 63): ("Cu", "63Cu"), (35, 79): ("79Br", "81Br")}
+
+
+def combination_rows(z: int, labels: tuple[str, ...]) -> list[dict[str, str]]:
+    """The Table IV row of each label at ``z`` that prints a rate and its uncertainty; where a label
+    prints more than one, the row of this experiment."""
+    rows = suzuki1987.normalize(suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH))
+    out = []
+    for label in labels:
+        hits = [row for row in rows if row["table"] == "IV" and int(row["Z"]) == z
+                and row["target_label"] == label and row["rate_unc"]]
+        if len(hits) > 1:
+            hits = [row for row in hits if row["own_measurement"] == "true"]
+        (row,) = hits
+        out.append(row)
+    return out
+
+
+def combination_problems(key: tuple[int, int], rows: list[dict[str, str]]) -> list[str]:
+    """What would make the evidence false: the rows' inverse-variance weighted mean or its uncertainty differs
+    from the record by a unit of the record's last printed digit or more."""
+    import decimal
+
+    data = found()
+    (index,) = [i for i, record in enumerate(data.capture_records) if (record[0], record[1]) == key]
+    value, unc = (decimal.Decimal(cell) for cell in data.capture_literals[index])
+    weights = [1 / suzuki1987.scaled(row, "rate_unc") ** 2 for row in rows]
+    total = sum(w * suzuki1987.scaled(row, "rate") for w, row in zip(weights, rows, strict=True))
+    mean = total / sum(weights)
+    sigma = 1 / sum(weights).sqrt()
+    unit_v = decimal.Decimal(1).scaleb(value.as_tuple().exponent)
+    unit_u = decimal.Decimal(1).scaleb(unc.as_tuple().exponent)
+    if abs(mean - value) >= unit_v or abs(sigma - unc) >= unit_u:
+        return [f"{key}: the weighted mean is {mean} +- {sigma}; the record is {value} +- {unc}"]
+    return []
+
+
+def test_the_two_open_records_agree_with_the_weighted_means_their_evidence_names():
+    """The `(29, 63)` and `(35, 79)` records are open, not isotope-resolved, and name their value a
+    reconstructed combination; each agrees, within a unit of its last printed digit, with the inverse-variance
+    weighted mean of the two Table IV rows its evidence names. The lead record, settled and not
+    isotope-resolved, names its value a reconstructed combination too."""
+    audit = d1.load_isotope_audit(REPO / d1.AUDIT_RELPATH)
+    for key, labels in OPEN_COMBINATIONS.items():
+        finding = audit[key]
+        assert not finding.isotope_resolved and not finding.settled, key
+        assert d1.RECONSTRUCTED_CLAUSE in finding.evidence, key
+        assert combination_problems(key, combination_rows(key[0], labels)) == [], key
+    plain, _ = lead_rows()
+    lead = audit[(int(plain["Z"]), 207)]
+    assert lead.settled and not lead.isotope_resolved and d1.RECONSTRUCTED_CLAUSE in lead.evidence
+
+
+def test_drill_a_copper_row_of_another_reference_in_the_combination_is_refused():
+    """Each Table IV row of Cu printed with no mass number from another reference, taken in place of the
+    row of this experiment, moves the weighted mean off the `(29, 63)` record."""
+    rows = suzuki1987.normalize(suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH))
+    others = [row for row in rows if row["table"] == "IV" and row["Z"] == "29" and row["target_label"] == "Cu"
+              and row["own_measurement"] != "true" and row["rate_unc"]]
+    assert others
+    (isotope,) = combination_rows(29, ("63Cu",))
+    for other in others:
+        assert combination_problems((29, 63), [other, isotope]), other["refs"]

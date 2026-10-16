@@ -688,7 +688,8 @@ NARRATIVE = (
      r"tabulated relative uncertainty for \d+ of the (\d+) elements with a natural-composition record",
      "NAT_ELEMENTS", None, (PAPER, DEVELOPER_PAGE)),
     ("elements with a natural-composition record, beside the radiogenic-lead qualification",
-     r"of the (\d+) elements with a natural-composition record \(Pb's averages in radiogenic lead\)",
+     r"of the (\d+) elements with a natural-composition record "
+     r"\(Pb's matches a radiogenic-lead combination\)",
      "NAT_ELEMENTS", None, (PAPER, DEVELOPER_PAGE)),
     ("the widest natural-target difference", r"by as much as ([+-][0-9.]+) % for \w+", "NAT_WIDEST", None,
      (PAPER,)),
@@ -1240,7 +1241,7 @@ def test_t75_drill_the_radiogenic_lead_qualification_deleted_beside_the_cohort_i
     """Delete the parenthesis after the natural-composition cohort from either document in an in-memory
     copy: the pin that holds it beside the cohort names that document, and no other pin moves."""
     texts = tree_texts()
-    qualification = " (Pb's averages in radiogenic lead)"
+    qualification = " (Pb's matches a radiogenic-lead combination)"
     what = "elements with a natural-composition record, beside the radiogenic-lead qualification"
     for path, label in ((PAPER, "the paper"), (DEVELOPER_PAGE, "the developer page")):
         assert texts[path].count(qualification) == 1, path

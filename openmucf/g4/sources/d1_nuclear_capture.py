@@ -53,6 +53,7 @@ __all__ = [
     "HELPER_RELPATH",
     "HELPER_SHA256",
     "IsotopeAuditRow",
+    "RECONSTRUCTED_CLAUSE",
     "SourceCopy",
     "SourceExtractionError",
     "ZEFF_AUDIT_COLUMNS",
@@ -1097,16 +1098,23 @@ def value_compared(
     )
 
 
+#: The clause an audit row's evidence carries when the compiled-in pair agrees with a combination of printed
+#: rows and equals no printed cell: the listing alone would settle such a row to the cell of its label, so the
+#: comparison with the printed cells decides it instead.
+RECONSTRUCTED_CLAUSE = "a reconstructed combination, not a demonstrated history"
+
+
 def decided_by_value(
     key: tuple[int, int], evidence: str, block: Sequence[CaptureCellRow]
 ) -> bool:
     """Whether a capture record's flag is decided by comparing its value with the printed cells.
 
-    True on the two shapes the isotope audit cannot settle from the listing alone: the primary
+    True on the three shapes the isotope audit cannot settle from the listing alone: the primary
     prints an entry whose label is not a separated-isotope label (in capture_rate_cells.csv, a bare
     element symbol or a ``-nat`` label) AND a separated isotope of the record's ``A``, and ``A`` is
     also the ``round(Ar)`` the audit's evidence states -- so the key names either entry; or no
-    printed label at that Z carries the record's ``A`` at all.
+    printed label at that Z carries the record's ``A`` at all; or the audit's evidence carries
+    :data:`RECONSTRUCTED_CLAUSE`, naming the value a combination of printed rows.
     """
     _, a = key
     labels = [cell.label for cell in block]
@@ -1116,7 +1124,8 @@ def decided_by_value(
     # No `a in separated` conjunct: when `a` is not a separated label, `absent` is already true.
     collision = natural and stated is not None and int(stated.group(1)) == a
     absent = a not in separated
-    return collision or absent
+    reconstructed = RECONSTRUCTED_CLAUSE in evidence
+    return collision or absent or reconstructed
 
 
 def printed_matches(

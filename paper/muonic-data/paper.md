@@ -131,7 +131,7 @@ Geant4's choice of the element whose nucleus takes a stopped muon in a material 
 In a target of natural composition, Geant4's capture-rate table answers only the stops that draw an
 isotope it holds a record for, and the Goulard–Primakoff formula answers the rest; as an
 abundance-weighted first-order estimate against the measurement the table itself encodes, the weighted rate differs from the record's by more than the record's tabulated
-relative uncertainty for 25 of the 41 elements with a natural-composition record (Pb's averages in radiogenic lead), by as much as
+relative uncertainty for 25 of the 41 elements with a natural-composition record (Pb's matches a radiogenic-lead combination), by as much as
 +12.5 % for Hg (`DATASET_D1.md` section 11); a Geant4 bug report had reported incorrect rates
 for unlisted nuclei [@Geant4Bugzilla].
 Under a rule adopted after the comparison had been made, the ratio Geant4's capturing-atom selector

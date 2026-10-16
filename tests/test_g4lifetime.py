@@ -343,7 +343,7 @@ def test_every_class_a_row_can_take_occurs_and_follows_from_the_row():
     lookup and the kind of target; every class occurs."""
     rows = comparison()
     isotopes = natural.load_isotopes(REPO / natural.ISOTOPES_RELPATH)
-    references = natural.natural_references(d1.load_isotope_audit(REPO / d1.AUDIT_RELPATH))
+    references = natural.element_label_records(d1.load_isotope_audit(REPO / d1.AUDIT_RELPATH))
     for row in rows:
         if not row["key_a"]:
             assert row["population"] == lifetime.NO_KEY
@@ -652,13 +652,27 @@ def test_every_pin_of_the_section_states_its_value():
             assert int(hits[0]) == expected, what
 
 
-def test_the_statements_about_every_profile_and_every_row_of_the_table_hold():
-    """Under every profile each route leaves a compared row outside the band, and on each row of the table
-    for `G4MuonMinusBoundDecay` the capture part is larger than the rest of the difference, as the section
-    states."""
+def test_the_statements_about_each_profile_and_every_row_of_the_table_hold():
+    """Under `parity` and `mizuno2025` each route leaves a compared row outside the band, and under
+    `suzuki1987` only `G4MuonicAtomHelper` does; on every compared row a `suzuki1987` row answers, the
+    capture rate the lookup returns is the one the source prints beside the mean life; and on each row of
+    the table for `G4MuonMinusBoundDecay` the capture part is larger than the rest of the difference, as
+    the section states."""
+    from decimal import Decimal
+
     rows = comparison()
-    for name, count, first, second in lifetime.summary(rows):
+    counts = {name: (count, first, second) for name, count, first, second in lifetime.summary(rows)}
+    assert set(counts) == {"parity", "mizuno2025", "suzuki1987"}
+    for name in ("parity", "mizuno2025"):
+        count, first, second = counts[name]
         assert count and first < count and second < count, name
+    count, first, second = counts["suzuki1987"]
+    assert count and first == count and second < count
+    answered = [row for row in lifetime.compared(rows) if row["profile"] == "suzuki1987"
+                and row["lookup"] == lifetime.PROFILE_ROUTE]
+    assert answered
+    for row in answered:
+        assert Decimal(row["capture_rate"]) == Decimal(row["printed_capture_rate"]), row["locator"]
     for route, _, _, _, difference, capture in lifetime.outside(rows):
         if route == "G4MuonMinusBoundDecay":
             assert abs(capture) > abs(difference - capture)
