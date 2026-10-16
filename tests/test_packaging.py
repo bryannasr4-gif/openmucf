@@ -667,6 +667,47 @@ def test_the_archive_licence_member_gives_each_member_the_licence_of_its_file():
                licence_member_problems(drilled, list(members), texts))
 
 
+#: The README sentences that name columns of a file under `data/g4/`, each with that file: the pattern
+#: captures the sentence, and every backquoted name in it that ends `_fm`, `_value` or `_unc` is a column.
+COLUMN_SENTENCES = (
+    (r"Of the file's columns, [^.]+\.", "data/g4/d3/mudirac_inputs.csv"),
+    (r"in `suzuki1987_parity_cells\.csv` those are the [^.]+ columns\.",
+     "data/g4/d1/suzuki1987_parity_cells.csv"),
+)
+
+
+def column_problems(readme: str, headers: dict[str, list[str]]) -> list[str]:
+    """Each column a README sentence of :data:`COLUMN_SENTENCES` names that its file's header (``headers``,
+    path to columns) does not carry, and each such sentence the README lacks or states more than once."""
+    flat = " ".join(readme.split())
+    problems = []
+    for pattern, path in COLUMN_SENTENCES:
+        found = re.findall(pattern, flat)
+        if len(found) != 1:
+            problems.append(f"{path}: {len(found)} sentences match {pattern!r}")
+            continue
+        named = re.findall(r"`([a-z_]+_(?:fm|value|unc))`", found[0])
+        if not named:
+            problems.append(f"{path}: the sentence names no column")
+        problems += [f"{path}: no column {name!r}" for name in named if name not in headers[path]]
+    return problems
+
+
+def test_the_mudirac_inputs_columns_the_readme_names_are_the_files_header():
+    """The columns the License section of the README names -- those of `data/g4/d3/mudirac_inputs.csv`
+    that repeat MuDirac's radii or the IAEA table, and those of `data/g4/d1/suzuki1987_parity_cells.csv`
+    that repeat compiled-in values -- are columns of each file's header; a column renamed in the header is
+    refused."""
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    headers = {path: (REPO / path).read_text(encoding="utf-8").splitlines()[0].split(",")
+               for _, path in COLUMN_SENTENCES}
+    assert column_problems(readme, headers) == []
+    for path, old in (("data/g4/d3/mudirac_inputs.csv", "iaea_rms_fm"),
+                      ("data/g4/d1/suzuki1987_parity_cells.csv", "parity_unc")):
+        renamed = dict(headers, **{path: [name if name != old else old + "_x" for name in headers[path]]})
+        assert any(old in problem for problem in column_problems(readme, renamed)), path
+
+
 def test_the_mudirac_licence_text_is_the_release_copy():
     """`data/g4/d3/LICENSE-MUDIRAC` is MuDirac 1.3.0's `LICENSE` byte for byte, as the release archive whose
     SHA-256 `openmucf.g4.sources.mudirac130.TARBALL_SHA256` pins carries it."""

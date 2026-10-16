@@ -62,9 +62,6 @@ BUILDS = (
     ("unpatched-v11.4.2", "v11.4.2"),
     ("unpatched-v11.5.0.beta", "v11.5.0.beta"),
 )
-#: The flags every build record states; the driver does no arithmetic, so they are a record only.
-COMPILE_FLAGS = "-std=c++17 -O2 -ffp-contract=off"
-
 #: The three routes a lookup can take.
 PROFILE_ROUTE, TABLE_ROUTE, FORMULA_ROUTE = "profile", "table", "formula"
 
@@ -132,7 +129,9 @@ def parse_harvest(text: str) -> tuple[Isotope, ...]:
 
 def harvest(raw: Path, root: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     """The committed rows, from one raw directory per build of :data:`BUILDS`: the isotopes, which
-    every build must print byte for byte alike, and one record per build."""
+    every build must print byte for byte alike, and one record per build, whose compile flags are the ones
+    the harvest wrote beside its output (``flags.txt``; the driver does no arithmetic, so they are a record
+    only). A build without them is refused."""
     harness = hashlib.sha256((root / HARNESS_RELPATH).read_bytes()).hexdigest()
     outputs: list[bytes] = []
     builds: list[dict[str, str]] = []
@@ -144,11 +143,15 @@ def harvest(raw: Path, root: Path) -> tuple[list[dict[str, str]], list[dict[str,
         if (folder / "stderr.txt").read_bytes():
             raise NaturalTargetError(f"{build}: the driver wrote to stderr")
         outputs.append((folder / "natural.txt").read_bytes())
+        flags_path = folder / "flags.txt"
+        flags = flags_path.read_text(encoding="ascii").strip() if flags_path.is_file() else ""
+        if not flags:
+            raise NaturalTargetError(f"{build}: the harvest recorded no compile flags (flags.txt)")
         builds.append({
             "build": build, "revision": revision,
             "geant4_version": (folder / "version.txt").read_text(encoding="ascii").strip(),
             "gcc": (folder / "gcc.txt").read_text(encoding="ascii").strip(),
-            "harness_sha256": harness, "compile_flags": COMPILE_FLAGS,
+            "harness_sha256": harness, "compile_flags": flags,
         })
     if any(output != outputs[0] for output in outputs):
         raise NaturalTargetError("the builds printed different compositions")

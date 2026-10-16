@@ -68,7 +68,7 @@ def test_the_harvest_records_the_committed_driver_on_each_revision():
     for row in builds:
         assert row["harness_sha256"] == harness, row["build"]
         assert row["geant4_version"] == row["revision"].removeprefix("v").removesuffix(".beta"), row
-        assert row["compile_flags"] == natural.COMPILE_FLAGS
+        assert row["compile_flags"] and row["compile_flags"] == builds[0]["compile_flags"], row
 
 
 def test_the_compositions_cover_the_parity_validity_range_each_normalized():
@@ -119,7 +119,8 @@ def test_drill_the_harvest_parser_refuses_what_the_driver_does_not_print(text):
         natural.parse_harvest(text)
 
 
-def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes = b"") -> Path:
+def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes = b"",
+              flags: str | None = "-std=c++17 -O2 -ffp-contract=off\n") -> Path:
     raw = root / "raw"
     for (build, _), output in zip(natural.BUILDS, outputs, strict=True):
         folder = raw / build
@@ -129,20 +130,26 @@ def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes =
         (folder / "version.txt").write_text("11.4.2\n", encoding="ascii")
         (folder / "gcc.txt").write_text("g++\n", encoding="ascii")
         (folder / "stderr.txt").write_bytes(stderr)
+        if flags is not None:
+            (folder / "flags.txt").write_text(flags, encoding="ascii")
     return raw
 
 
 def test_drill_the_harvest_conversion_refuses_differing_builds_a_foreign_driver_and_stderr(tmp_path):
     """The conversion writes rows only when every build compiled the committed driver, wrote nothing to
-    stderr and printed the same bytes; each of the three ways to break that is refused."""
+    stderr, recorded its compile flags and printed the same bytes; each of the five ways to break that is
+    refused."""
     harness = hashlib.sha256((REPO / natural.HARNESS_RELPATH).read_bytes()).hexdigest()
     rows, builds = natural.harvest(_raw_tree(tmp_path / "ok", (_RAW, _RAW), harness), REPO)
     assert [row["a"] for row in rows] == ["1", "2", "4"] and len(builds) == len(natural.BUILDS)
+    assert {row["compile_flags"] for row in builds} == {"-std=c++17 -O2 -ffp-contract=off"}
     assert rows[1]["abundance"] == repr(float.fromhex("0x1p-12"))
     for name, raw in (
         ("differ", _raw_tree(tmp_path / "differ", (_RAW, _RAW.replace("0x1p-12", "0x1p-11")), harness)),
         ("driver", _raw_tree(tmp_path / "driver", (_RAW, _RAW), "0" * 64)),
         ("stderr", _raw_tree(tmp_path / "stderr", (_RAW, _RAW), harness, b"warning\n")),
+        ("no flags", _raw_tree(tmp_path / "noflags", (_RAW, _RAW), harness, flags=None)),
+        ("empty flags", _raw_tree(tmp_path / "emptyflags", (_RAW, _RAW), harness, flags="")),
     ):
         with pytest.raises(natural.NaturalTargetError):
             natural.harvest(raw, REPO)
