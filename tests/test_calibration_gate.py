@@ -4,12 +4,15 @@ what it admits.
 
 The runtime ownership test and the consumer matrix hold that. An advisory static scan flags common direct
 reads of the cells file; it is not exhaustive. The runtime ownership test checks that every shipped entry
-point opens the file only through the gate. It runs each mode of the calibration script's command line, its
-regeneration, and the FINDINGS.md and FRONTIER.md generators on a working copy; it records, by Python's
-`open` audit event, every open of the file while each runs, and accepts only the gate's read and the
-measurement steps' own reads and writes, each as often as stated; it also names any process started. The
-script's numerical engines return the committed values in those runs, and run for real, at a reduced size,
-in a test of their own.
+point opens the file only through the gate. It launches each mode of the calibration script's command line,
+its regeneration, and the FINDINGS.md and FRONTIER.md generators as their own processes, `python <script>
+<arguments>`, on a working copy that carries the openmucf package. A recorder that Python imports at
+interpreter start, before the package or the script, records by Python's `open` audit event every open of
+the file for the whole life of each process and of any Python process it starts; the test accepts only the
+gate's read and the measurement steps' own reads and writes, each as often as stated, and names any process
+started and any fault of the recording's lifetime. The script's numerical engines return the committed
+values in those runs from the moment the script calls its `main`, and run for real, at a reduced size, in a
+process of their own.
 
 The consumer matrix then runs the actual entry points -- `--render`, `--audit`, the FRONTIER.md generator's
 `main` and the FINDINGS.md generator itself -- on a working copy whose cells file carries one defect at a
@@ -22,10 +25,10 @@ planted-reader tests drill them.
 """
 
 import ast
-import contextlib
 import copy
 import functools
 import importlib.util
+import inspect
 import json
 import os
 import runpy
@@ -990,92 +993,193 @@ MEASUREMENT_OPENS = frozenset({
     ("read", "load", "record_convergence"), ("write", "dump", "record_convergence"),
     ("read", "load", "record_scatter"), ("write", "dump", "record_scatter"),
 })
-#: the audit events by which a process starts another
-_SPAWN_EVENTS = frozenset({"subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "os.spawn",
-                           "os.fork", "os.forkpty", "os.startfile", "_winapi.CreateProcess"})
-_WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_APPEND
 _CELLS_FILE = CELLS + ".json"
+#: the calibration script's numerical engines: in the entry-point runs they return the committed record's
+#: values; `test_the_numerical_engines_open_no_cells_file` runs each for real, at a reduced size
+ENGINES = ("_posterior", "_sweep_rows", "q_net_cells", "nuts_cross_check", "_write_figure")
+#: the environment variables that configure the recorder in an entry point's process
+_CONFIG_VAR, _ROOT_VAR = "OPENMUCF_CELLS_OPENS", "OPENMUCF_CELLS_OPENS_ROOT"
 
 
-class _Opens:
-    """One recording: each open of a cells file as (read or write, the qualified names of the calibration
-    script's functions on the stack, innermost first, the path), each process started, and each error of the
-    hook. A cells file is any path whose name is CALIBRATION_CELLS.json, and any path that is the same file
-    on disk as one of ``cells`` (a hard link, a short name); a function is the script's when its code is in
-    one of ``scripts``."""
+def _recorder():
+    """The recorder, written as its own source and a call into ``sitecustomize.py`` in a directory first on
+    the PYTHONPATH of an entry point's process. Python's `site` imports it at interpreter start, before the
+    script, the openmucf package or anything they import runs, and every Python process started from there
+    inherits it through that PYTHONPATH. It adds an audit hook that reports to the file the test names, one
+    JSON line per event:
 
-    def __init__(self, scripts, cells):
-        self.scripts = {os.path.normcase(os.path.realpath(s)) for s in scripts}
-        self.ids = {(st.st_dev, st.st_ino) for st in map(os.stat, cells) if st.st_ino}
-        self.opens, self.spawns, self.errors = [], [], []
-        self.busy = False
-        self._in_script = {}
+    - each open of a cells file: read or write, the qualified names of the calibration script's functions on
+      the stack (innermost first) and the path. A cells file is any path whose name is CALIBRATION_CELLS.json,
+      and any path that is the same file on disk as one of the configured cells files (a hard link, a short
+      name). A function is the script's when its code is in one of the configured scripts;
+    - each process started, and each error of the hook;
+    - the start of the process, with any openmucf module already imported, and its normal end, with the file
+      the openmucf package was imported from.
 
-    def is_cells(self, path):
-        if os.path.normcase(os.path.basename(path)) == os.path.normcase(_CELLS_FILE):
+    Where the test asks, it makes the calibration script's ENGINES return the committed values from the moment
+    the script, run as itself, calls its `main`, and reports that it did."""
+    import atexit
+    import json
+    import os
+    import sys
+
+    cfg = json.loads(os.environ["OPENMUCF_CELLS_OPENS"])
+    root = os.environ.pop("OPENMUCF_CELLS_OPENS_ROOT", "") == "1"     # the processes it starts are not
+    fd = os.open(cfg["report"], os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_BINARY", 0))
+
+    def emit(**event):
+        os.write(fd, (json.dumps({"pid": os.getpid(), "root": root, **event}) + "\n").encode())
+
+    def real(path):
+        return os.path.normcase(os.path.realpath(path))
+
+    scripts = {real(s) for s in cfg["scripts"]}
+    ids = {(st.st_dev, st.st_ino) for st in map(os.stat, cfg["cells"]) if st.st_ino}
+    name = os.path.normcase("CALIBRATION_CELLS.json")
+    write_flags = os.O_WRONLY | os.O_RDWR | os.O_APPEND
+    spawn_events = frozenset({"subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "os.spawn",
+                              "os.fork", "os.forkpty", "os.startfile", "_winapi.CreateProcess"})
+    in_script = {}
+    busy = []
+
+    def is_cells(path):
+        if os.path.normcase(os.path.basename(path)) == name:
             return True
         try:
             st = os.stat(path)
         except (OSError, ValueError):
             return False
-        return (st.st_dev, st.st_ino) in self.ids
+        return (st.st_dev, st.st_ino) in ids
 
-    def in_script(self, filename):
-        if filename not in self._in_script:
-            self._in_script[filename] = os.path.normcase(os.path.realpath(filename)) in self.scripts
-        return self._in_script[filename]
-
-    def record(self, path, mode, flags, frame):
+    def record(path, mode, flags, frame):
         if path is None or isinstance(path, int):       # a descriptor: recorded when opened by its path
             return
         path = os.fsdecode(os.fspath(path))
-        if not self.is_cells(path):
+        if not is_cells(path):
             return
-        write = bool((flags or 0) & _WRITE_FLAGS) or any(c in (mode or "") for c in "wax+")
+        write = bool((flags or 0) & write_flags) or any(c in (mode or "") for c in "wax+")
         chain = []
         while frame is not None:
-            if self.in_script(frame.f_code.co_filename):
+            f = frame.f_code.co_filename
+            if f not in in_script:
+                in_script[f] = real(f) in scripts
+            if in_script[f]:
                 chain.append(frame.f_code.co_qualname)
             frame = frame.f_back
-        self.opens.append(("write" if write else "read", tuple(chain), path))
+        emit(event="open", kind="write" if write else "read", chain=chain, path=path)
+
+    def hook(event, args):
+        if busy or (event != "open" and event not in spawn_events):
+            return
+        busy.append(1)
+        try:
+            if event == "open":
+                try:
+                    frame = sys._getframe(1)
+                except ValueError:      # opened by the interpreter itself (the script), no Python frame
+                    frame = None
+                record(*args[:3], frame)
+            else:
+                emit(event="spawn", what=f"{event} {args!r}"[:300])
+        except Exception as e:      # raised here, it would fail the open it audits instead of the test
+            emit(event="error", what=f"{event}: {type(e).__name__}: {e}")
+        finally:
+            busy.clear()
+
+    if cfg.get("engines"):
+        with open(cfg["engines"]["values"], encoding="utf-8") as f:
+            values = f.read()
+        gate = real(cfg["engines"]["script"])
+        stand_ins = {
+            "_posterior": lambda name, res=None, **kw: json.loads(values)["posteriors"][name],
+            "_sweep_rows": lambda: json.loads(values)["sweep"],
+            "q_net_cells": lambda weak, n=48: json.loads(values)["q_net"],
+            "nuts_cross_check": lambda posteriors: (json.loads(values)["nuts_cross_check"], None),
+            "_write_figure": lambda draws: None,
+        }
+
+        def profile(frame, event, arg):
+            code = frame.f_code
+            if event == "call" and code.co_name == "main" and frame.f_globals.get("__name__") == "__main__" \
+                    and real(code.co_filename) == gate:
+                sys.setprofile(None)
+                missing = sorted(n for n in stand_ins if not callable(frame.f_globals.get(n)))
+                frame.f_globals.update(stand_ins)
+                emit(event="engines", names=sorted(stand_ins), missing=missing)
+
+        sys.setprofile(profile)
+    preloaded = sorted(m for m in sys.modules if m.split(".")[0] == "openmucf")
+    sys.addaudithook(hook)
+    emit(event="start", preloaded=preloaded)
+    atexit.register(lambda: emit(event="end",
+                                 openmucf=getattr(sys.modules.get("openmucf"), "__file__", None)))
 
 
-#: the recording in progress, or None: the hook records only while a test of this module sets it
-_RECORDING = None
-_HOOKED = []
+def _engines_run():
+    """Written as its own source and a call into a script of the test's, run as its own process in the working
+    copy: it loads the working copy's calibration script by its path, runs each of ENGINES for real at a
+    reduced size (the same code, on smaller grids and shorter chains) and prints, as JSON, what each
+    returned against what the script says it must."""
+    import importlib.util
+    import json
+    import sys
+
+    spec = importlib.util.spec_from_file_location("_gen_calibration_engines",
+                                                  "scripts/generate_calibration.py")
+    gate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gate)
+    gate.SWEEP_RES = 0.05
+    gate.NUTS_WARMUP = 20
+    gate.NUTS_SAMPLES = 20
+    with open(sys.argv[1], encoding="utf-8") as f:
+        posteriors = json.load(f)["posteriors"]
+    ran = {"_posterior": {name: gate._posterior(name, res=0.05) for name in gate.POSTERIORS}}
+    ran["_sweep_rows"] = gate._sweep_rows()
+    ran["q_net_cells"] = gate.q_net_cells(ran["_posterior"]["weak"], n=4)
+    ran["nuts_cross_check"] = gate.nuts_cross_check(posteriors)
+    ran["_write_figure"] = gate._write_figure(ran["nuts_cross_check"][1])
+    print(json.dumps({"ran": sorted(ran),
+                      "sweep rows": [len(ran["_sweep_rows"]), len(gate._sweep_grid())],
+                      "Q_net": [sorted(ran["q_net_cells"]), sorted(gate.Q_NET_STATS)],
+                      "NUTS chains": [sorted(ran["nuts_cross_check"][0]), sorted(gate.NUTS_CHAINS)]}))
 
 
-def _audit_hook(event, args):
-    rec = _RECORDING
-    if rec is None or rec.busy or (event != "open" and event not in _SPAWN_EVENTS):
-        return
-    rec.busy = True
-    try:
-        if event == "open":
-            rec.record(*args[:3], sys._getframe(1))
-        else:
-            rec.spawns.append(f"{event} {args!r}"[:300])
-    except Exception as e:      # raised here, it would fail the open it audits instead of this test
-        rec.errors.append(f"{event}: {type(e).__name__}: {e}")
-    finally:
-        rec.busy = False
+def _as_script(f, prefix=""):
+    return prefix + inspect.getsource(f) + f"\n\n{f.__name__}()\n"
 
 
-@contextlib.contextmanager
-def _recording(scripts, cells):
-    """Record Python's `open` audit events (raised by every open through io and os, whatever the spelling) and
-    process starts while the body runs. The hook is added to the process once; outside a recording it returns
-    at once."""
-    global _RECORDING
-    if not _HOOKED:
-        sys.addaudithook(_audit_hook)
-        _HOOKED.append(_audit_hook)
-    rec = _Opens(scripts, cells)
-    _RECORDING = rec
-    try:
-        yield rec
-    finally:
-        _RECORDING = None
+class _Report:
+    """One entry point's recording, read from the recorder's report: the opens of a cells file as (read or
+    write, the calibration script's functions on the stack, the path), the processes started, the errors of
+    the hook, and what is wrong with the recording's lifetime: the entry point's process not recorded from its
+    start, any openmucf module imported before the recorder, no normal end, the openmucf package not the
+    working copy's, or the numerical engines asked to stand in and not standing in from `main` on."""
+
+    def __init__(self, path, root, engines):
+        events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()] \
+            if path.exists() else []
+        self.events = events
+        self.opens = [(e["kind"], tuple(e["chain"]), e["path"]) for e in events if e["event"] == "open"]
+        self.spawns = [e["what"] for e in events if e["event"] == "spawn"]
+        self.errors = [e["what"] for e in events if e["event"] == "error"]
+        mine = [e for e in events if e["root"]]
+        copy_root = os.path.normcase(os.path.realpath(root)) + os.sep
+        lifetime = []
+        starts = [e for e in mine if e["event"] == "start"]
+        if len(starts) != 1:
+            lifetime.append(f"the entry point's process was not recorded from its start "
+                            f"({len(starts)} starts)")
+        elif starts[0]["preloaded"]:
+            lifetime.append(f"openmucf was imported before the recording started: {starts[0]['preloaded']}")
+        ends = [e for e in mine if e["event"] == "end"]
+        if len(ends) != 1:
+            lifetime.append(f"the recording did not last until the process exited ({len(ends)} ends)")
+        elif not os.path.normcase(os.path.realpath(ends[0]["openmucf"] or "")).startswith(copy_root):
+            lifetime.append(f"openmucf was not imported from the working copy: {ends[0]['openmucf']}")
+        stood = [e for e in mine if e["event"] == "engines"]
+        if engines and [(e["names"], e["missing"]) for e in stood] != [(sorted(ENGINES), [])]:
+            lifetime.append(f"the numerical engines did not stand in from `main` on: {stood}")
+        self.lifetime = lifetime
 
 
 def _owner(kind, chain):
@@ -1088,126 +1192,131 @@ def _owner(kind, chain):
     return None
 
 
+def _owned(rec):
+    """The owned opens in ``rec``, counted as (read or write, the opening function, its caller in the
+    script)."""
+    return Counter((kind, *chain[:2]) for kind, chain, _ in rec.opens if _owner(kind, chain) is not None)
+
+
 def ownership_problems(rec, expected):
     """Every open of a cells file in ``rec`` that is neither the gate's read nor a measurement step's own
-    open, every process started and every error of the hook; and the owned opens, counted as (read or write,
-    the opening function, its caller in the script), when they are not ``expected``."""
+    open, every process started, every error of the hook and every fault of the recording's lifetime; and
+    the owned opens, counted, when they are not ``expected``."""
     probs = [f"{kind} of {path} outside the gate (the calibration script's functions on the stack: "
              f"{', '.join(chain) or 'none'})"
              for kind, chain, path in rec.opens if _owner(kind, chain) is None]
     probs += [f"started a process: {s}" for s in rec.spawns]
     probs += [f"the recording failed: {e}" for e in rec.errors]
-    owned = Counter((kind, *chain[:2]) for kind, chain, _ in rec.opens if _owner(kind, chain) is not None)
+    probs += rec.lifetime
+    owned = _owned(rec)
     if owned != expected:
         probs.append(f"the owned opens {sorted(owned.items())} are not {sorted(expected.items())}")
     return probs
 
 
-#: the calibration script's numerical engines: in the entry-point runs they return the committed record's
-#: values; `test_the_numerical_engines_open_no_cells_file` runs each for real, at a reduced size
-ENGINES = ("_posterior", "_sweep_rows", "q_net_cells", "nuts_cross_check", "_write_figure")
-#: the scripts an entry-point run takes from the working copy (FINDINGS.md's generator loads the materiality
+#: the scripts an entry point takes from the working copy (FINDINGS.md's generator loads the materiality
 #: script by its path from the working directory)
 _SCRIPTS = (GATE, "scripts/generate_findings.py", "scripts/generate_frontier.py",
             "scripts/generate_materiality.py")
 
 
-class _Refused(Exception):
-    """An entry point refused the genuine working copy."""
-
-
 class _EntryCopy:
-    """A working copy of every file the entry points read, as the working directory: the gate's inputs and
-    documents, the scripts, the convergence runs and a copy of the cells file for the two recorders, a copy
-    of the cells file under its own name elsewhere and a hard link to it."""
+    """A working copy of every file the entry points read, the openmucf package included, as the working
+    directory; a copy of the cells file under its own name elsewhere, a hard link to it, the convergence runs
+    and a copy of the cells file for the two recorders; and, apart from it, the recorder and the engines'
+    committed values."""
 
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, root, aside):
+        self.root, self.aside = root, aside
         self.cells = root / _CELLS_FILE
-        self.watch = ([root / GATE, _ROOT / GATE], [self.cells, _ROOT / _CELLS_FILE])
-        self.gate = None
+        self.watch = {"scripts": [str(root / GATE), str(_ROOT / GATE)],
+                      "cells": [str(self.cells), str(_ROOT / _CELLS_FILE)]}
+        self.runs = []
+        self.launches = 0
 
     def prepare(self):
-        """Load the working copy's calibration script with ENGINES returning the committed values, and write
-        the files the recorders and the drills take (none of which is read while recording)."""
-        committed = _committed()
-        gate = _load(self.root / GATE, "_gen_calibration_owned")
-        stand_ins = {
-            "_posterior": lambda name, res=None, **kw: copy.deepcopy(committed["posteriors"][name]),
-            "_sweep_rows": lambda: copy.deepcopy(committed["sweep"]),
-            "q_net_cells": lambda weak, n=48: copy.deepcopy(committed["q_net"]),
-            "nuts_cross_check": lambda posteriors: (copy.deepcopy(committed["nuts_cross_check"]), None),
-            "_write_figure": lambda draws: None,
-        }
-        assert set(stand_ins) == set(ENGINES)
-        for name, f in stand_ins.items():
-            assert callable(getattr(gate, name)), name
-            setattr(gate, name, f)
-        self.gate = gate
-        self.runs = [os.path.basename(p) for p in _genuine_run_files(gate, self.root)]
+        """Write the files the recorders and the drills take, from the working copy's cells file as it is."""
+        self.runs = [os.path.basename(p) for p in _genuine_run_files(_load(_ROOT / GATE, "_gen_calibration"),
+                                                                     self.root)]
         shutil.copyfile(self.cells, self.root / "other_platform.json")
         (self.root / "stale").mkdir()
         shutil.copyfile(self.cells, self.root / "stale" / _CELLS_FILE)
         os.link(self.cells, self.root / "linked.json")
+        committed = _committed()
+        (self.aside / "engine_values.json").write_text(
+            json.dumps({k: committed[k] for k in ("posteriors", "sweep", "q_net", "nuts_cross_check")}),
+            encoding="utf-8")
         return self
+
+    def launch(self, argv, *, engines=None, recorder_prefix="", package_from_copy=True):
+        """Run ``python <argv>`` in the working copy as its own process, recorded from interpreter start by
+        `_recorder`; with ``engines`` (by default, when ``argv`` runs the calibration script) the script's
+        ENGINES stand in from its `main` on. Return the `_Report` and the completed process."""
+        self.launches += 1
+        shim = self.aside / f"launch_{self.launches}"
+        shim.mkdir()
+        (shim / "sitecustomize.py").write_text(_as_script(_recorder, recorder_prefix), encoding="utf-8")
+        engines = argv[0] == GATE if engines is None else engines
+        cfg = dict(self.watch, report=str(shim / "opens.jsonl"))
+        if engines:
+            cfg["engines"] = {"script": str(self.root / GATE),
+                              "values": str(self.aside / "engine_values.json")}
+        path = [str(shim), *([str(self.root)] if package_from_copy else [])]
+        env = dict(os.environ, PYTHONPATH=os.pathsep.join(path), PYTHONIOENCODING="utf-8",
+                   **{_CONFIG_VAR: json.dumps(cfg), _ROOT_VAR: "1"})
+        done = subprocess.run([sys.executable, *argv], cwd=self.root, env=env, capture_output=True,
+                              encoding="utf-8", errors="replace", timeout=1800)
+        return _Report(shim / "opens.jsonl", self.root, engines), done
 
 
 @pytest.fixture
-def entry_copy(tmp_path, monkeypatch):
+def entry_copy(tmp_path):
+    # matplotlib builds its font cache the first time it is imported without one, and on Linux runs `fc-list`
+    # to do so: built here, outside the recordings, so that a launch starts no process of matplotlib's
+    importlib.import_module("matplotlib.font_manager")
+    root, aside = tmp_path / "copy", tmp_path / "aside"
     for rel in (*_FILES, *_SCRIPTS, _load(_ROOT / GATE, "_gen_calibration").NOTE_PATH):
-        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(_ROOT / rel, tmp_path / rel)
-    monkeypatch.chdir(tmp_path)
-    return _EntryCopy(tmp_path)
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(_ROOT / rel, root / rel)
+    shutil.copytree(_ROOT / "openmucf", root / "openmucf", dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns("__pycache__"))
+    aside.mkdir()
+    return _EntryCopy(root, aside)
 
 
-def _gate_main(*argv):
-    def run(w):
-        try:
-            w.gate.main(list(argv))
-        except SystemExit as e:
-            if e.code not in (None, 0):     # `--converge` exits 0 when its run meets the criteria
-                raise _Refused(str(e.code)) from None
-    return run
-
-
-def _script(rel):
-    def run(w):
-        try:
-            runpy.run_path(str(w.root / rel), run_name="__main__")
-        except SystemExit as e:
-            raise _Refused(str(e.code)) from None
-    return run
+def _calibration(*args):
+    return lambda w: [GATE, *args]
 
 
 _BY_GATE = ("read", "admit_calibration_cells")
-#: the shipped entry points, each: (run it on the working copy, the owned opens of the cells file it makes,
-#: counted); they are every mode of the calibration script and each module that binds the script
+#: the shipped entry points, each: (its command line, `python` and this, given the working copy; the owned
+#: opens of the cells file it makes, counted); they are every mode of the calibration script and each module
+#: that binds the script by a form the advisory scan recognizes
 #: (`test_the_entry_points_are_every_mode_of_the_script_and_every_module_taking_its_gate`)
 ENTRY_POINTS = {
-    "generate_calibration.py --audit": (_gate_main("--audit"), Counter({(*_BY_GATE, "audit"): 1})),
-    "generate_calibration.py --render": (_gate_main("--render"), Counter({(*_BY_GATE, "main"): 1})),
-    "generate_calibration.py --cells-out": (_gate_main("--cells-out", "computed_cells.json"), Counter()),
-    "generate_calibration.py --converge": (
-        _gate_main("--converge", "weak", "--out", "run_new.json"), Counter()),
+    "generate_calibration.py --audit": (_calibration("--audit"), Counter({(*_BY_GATE, "audit"): 1})),
+    "generate_calibration.py --render": (_calibration("--render"), Counter({(*_BY_GATE, "main"): 1})),
+    "generate_calibration.py --cells-out": (_calibration("--cells-out", "computed_cells.json"), Counter()),
+    "generate_calibration.py --converge": (_calibration("--converge", "weak", "--out", "run_new.json"),
+                                           Counter()),
     "generate_calibration.py --record-convergence": (
-        lambda w: _gate_main("--record-convergence", *w.runs)(w),
+        lambda w: [GATE, "--record-convergence", *w.runs],
         Counter({("read", "load", "record_convergence"): 1, ("write", "dump", "record_convergence"): 1})),
     "generate_calibration.py --record-scatter": (
-        _gate_main("--record-scatter", "other_platform.json"),
+        _calibration("--record-scatter", "other_platform.json"),
         Counter({("read", "load", "record_scatter"): 1, ("write", "dump", "record_scatter"): 1})),
     "generate_calibration.py (regeneration)": (
-        _gate_main(),
+        _calibration(),
         Counter({("read", "load", "regenerate"): 1, ("write", "_write_text", "regenerate"): 1})),
-    "generate_findings.py": (_script("scripts/generate_findings.py"), Counter({_BY_GATE: 1})),
-    "generate_frontier.py": (_script("scripts/generate_frontier.py"), Counter({_BY_GATE: 1})),
+    "generate_findings.py": (lambda w: ["scripts/generate_findings.py"], Counter({_BY_GATE: 1})),
+    "generate_frontier.py": (lambda w: ["scripts/generate_frontier.py"], Counter({_BY_GATE: 1})),
 }
 
 
-def test_the_entry_points_are_every_mode_of_the_script_and_every_module_taking_its_gate():
-    """The runtime test runs every mode the calibration script's `main` tests for in its arguments, its
+def test_the_entry_points_are_every_mode_of_the_script_and_every_module_taking_its_gate(tmp_path):
+    """The runtime test launches every mode the calibration script's `main` tests for in its arguments, its
     regeneration (no mode), and each module of openmucf/ and scripts/ that binds the script by a form the
-    advisory scan recognizes."""
+    advisory scan recognizes, each as a script of the working copy run by `python`."""
     tree = ast.parse((_ROOT / GATE).read_text(encoding="utf-8"))
     main = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main")
     modes = {n.left.value for n in ast.walk(main) if isinstance(n, ast.Compare)
@@ -1218,51 +1327,107 @@ def test_the_entry_points_are_every_mode_of_the_script_and_every_module_taking_i
     binders = {rel for rel in _modules(_ROOT) if rel != GATE
                and _gate_module_names(ast.parse((_ROOT / rel).read_text(encoding="utf-8")))[0]}
     assert binders == {f"scripts/{e}" for e in ENTRY_POINTS if not e.startswith("generate_calibration.py")}
+    w = _EntryCopy(tmp_path, tmp_path)
+    w.runs = ["run.json"]
+    for entry, (argv, _) in ENTRY_POINTS.items():
+        line = argv(w)
+        assert line[0] in _SCRIPTS and line[0].endswith(entry.split()[0]), entry
+        assert [a for a in line[1:] if a in modes] == [m for m in modes if m in entry.split()], entry
 
 
 @pytest.mark.parametrize("entry", sorted(ENTRY_POINTS))
 def test_every_entry_point_opens_the_cells_file_only_through_the_gate(entry_copy, entry):
-    """Each entry point, run on the genuine working copy under the recording, opens a cells file only by the
-    gate's read and the measurement steps' own opens, exactly as often as `ENTRY_POINTS` states, and starts no
-    process."""
+    """Each entry point, launched on the genuine working copy and recorded from interpreter start, opens a
+    cells file only by the gate's read and the measurement steps' own opens, exactly as often as
+    `ENTRY_POINTS` states, starts no process, and exits 0."""
     entry_copy.prepare()
-    run, expected = ENTRY_POINTS[entry]
-    with _recording(*entry_copy.watch) as rec:
-        run(entry_copy)
+    argv, expected = ENTRY_POINTS[entry]
+    rec, done = entry_copy.launch(argv(entry_copy))
     assert ownership_problems(rec, expected) == []
+    assert done.returncode == 0, done.stderr[-3000:]
 
 
-def test_the_numerical_engines_open_no_cells_file(entry_copy, monkeypatch):
-    """The ENGINES the entry-point runs stand in for run here for real, under the same recording, at a reduced
-    size (the same code, on smaller grids and shorter chains): each published posterior's quadrature, the
-    prior-sensitivity sweep, Q_net, the NUTS cross-check and the figure. None opens a cells file or starts a
-    process."""
-    gate = _load(entry_copy.root / GATE, "_gen_calibration_engines")
-    monkeypatch.setattr(gate, "SWEEP_RES", 0.05)
-    monkeypatch.setattr(gate, "NUTS_WARMUP", 20)
-    monkeypatch.setattr(gate, "NUTS_SAMPLES", 20)
-    committed = _committed()
-    ran = {}
-    with _recording(*entry_copy.watch) as rec:
-        ran["_posterior"] = {name: gate._posterior(name, res=0.05) for name in gate.POSTERIORS}
-        ran["_sweep_rows"] = gate._sweep_rows()
-        ran["q_net_cells"] = gate.q_net_cells(ran["_posterior"]["weak"], n=4)
-        ran["nuts_cross_check"] = gate.nuts_cross_check(committed["posteriors"])
-        ran["_write_figure"] = gate._write_figure(ran["nuts_cross_check"][1])
+def _nonfinite_q_net(root):
+    """The committed record but for Q_net's mean, which the gate refuses: not a finite number."""
+    cells = _committed()
+    cells["q_net"]["mean"] = float("nan")
+    (root / _CELLS_FILE).write_text(json.dumps(cells), encoding="utf-8")
+
+
+_NAN_REFUSED = "q_net.mean = nan is not a finite number"
+
+
+@pytest.mark.parametrize("entry", sorted(ENTRY_POINTS))
+def test_no_entry_point_takes_a_refused_record_but_through_its_refusal(entry_copy, entry):
+    """With a cells file whose Q_net mean is not a finite number, each entry point, recorded from interpreter
+    start, opens it only by the gate's read and the measurement steps' own opens, never more often than
+    `ENTRY_POINTS` states, and starts no process. The regeneration, which computes Q_net afresh, writes the
+    computed value in its place; every other entry point that opens the file stops, naming that scalar; one
+    that does not open it exits 0. So no consumer, at start-up or after, takes the refused value
+    unobserved."""
+    _nonfinite_q_net(entry_copy.root)
+    entry_copy.prepare()
+    argv, expected = ENTRY_POINTS[entry]
+    rec, done = entry_copy.launch(argv(entry_copy))
+    owned = _owned(rec)
+    assert ownership_problems(rec, owned) == []
+    assert owned <= expected
+    if entry == "generate_calibration.py (regeneration)":
+        assert done.returncode == 0, done.stderr[-3000:]
+        assert json.loads(entry_copy.cells.read_text(encoding="utf-8"))["q_net"] == _committed()["q_net"]
+    elif expected:
+        assert done.returncode != 0 and _NAN_REFUSED in done.stderr, (done.returncode, done.stderr[-3000:])
+    else:
+        assert not owned and done.returncode == 0, done.stderr[-3000:]
+
+
+def test_the_numerical_engines_open_no_cells_file(entry_copy):
+    """The ENGINES the entry-point runs stand in for run here for real, as their own process recorded from
+    interpreter start, at a reduced size: each published posterior's quadrature, the prior-sensitivity sweep,
+    Q_net, the NUTS cross-check and the figure. None opens a cells file or starts a process, and each returns
+    what the calibration script says it must."""
+    entry_copy.prepare()
+    (entry_copy.aside / "engines_run.py").write_text(_as_script(_engines_run), encoding="utf-8")
+    rec, done = entry_copy.launch([str(entry_copy.aside / "engines_run.py"),
+                                   str(entry_copy.aside / "engine_values.json")], engines=False)
     assert ownership_problems(rec, Counter()) == []
-    assert set(ran) == set(ENGINES)
-    assert len(ran["_sweep_rows"]) == len(gate._sweep_grid())
-    assert set(ran["q_net_cells"]) == set(gate.Q_NET_STATS)
-    assert set(ran["nuts_cross_check"][0]) == set(gate.NUTS_CHAINS)
+    assert done.returncode == 0, done.stderr[-3000:]
+    ran = json.loads(done.stdout.strip().splitlines()[-1])
+    assert ran.pop("ran") == sorted(ENGINES)
+    for what, (got, due) in ran.items():
+        assert got == due and got, what
     assert (entry_copy.root / "figures" / "calibration.png").stat().st_size > 0
 
 
 _FRONTIER = "scripts/generate_frontier.py"
 _FRONTIER_AT = "    cells = admitted_calibration_cells()      # before anything is written\n"
 _RENDER_AT = "def _estimator_section(cells):\n"
-#: (label, script, text, the text that replaces it, entry point, what the problem names): each plants an open
-#: of the cells file outside the gate in the working copy's script; the advisory scan misses several
-_OWNERSHIP_PLANTS = [
+_LAUNCH_AT = 'if __name__ == "__main__":\n    main()\n'
+_UQ = "openmucf/uq.py"
+_UQ_AT = "import csv\n"
+#: (label, file of the working copy, text, the text that replaces it, entry point, what the problem names,
+#: what the planted reader prints on a record the gate refuses): two plant a reader that runs before the
+#: calibration script's `main`, one when the script is launched, one when the openmucf package is initialized
+_STARTUP_PLANTS = [
+    ("the raw loader under another name at launch", GATE, _LAUNCH_AT,
+     'if __name__ == "__main__":\n    reader, = (load,)\n    unchecked = reader()\n'
+     '    print("unchecked Q_net mean:", unchecked["q_net"]["mean"])\n    main()\n',
+     "generate_calibration.py --render",
+     "read of CALIBRATION_CELLS.json outside the gate (the calibration script's functions on the stack: "
+     "load, <module>)", "unchecked Q_net mean: nan"),
+    ("a raw read when the package is initialized", _UQ, _UQ_AT,
+     _UQ_AT + 'import json as _cells_json\n'
+     'with open("_".join(("CALIBRATION", "CELLS")) + ".json") as _cells_fp:\n'
+     '    _unchecked_qnet = _cells_json.load(_cells_fp)["q_net"]["mean"]\n'
+     '    print("unchecked Q_net at import:", _unchecked_qnet)\n',
+     "generate_calibration.py --render",
+     "read of CALIBRATION_CELLS.json outside the gate (the calibration script's functions on the stack: "
+     "<module>)", "unchecked Q_net at import: nan"),
+]
+#: (label, file of the working copy, text, the text that replaces it, entry point, what the problem names):
+#: each plants an open of the cells file outside the gate, or a fault of the recording, in the working copy;
+#: the advisory scan misses several
+_OWNERSHIP_PLANTS = [p[:6] for p in _STARTUP_PLANTS] + [
     ("plain open() in FRONTIER.md's generator", _FRONTIER, _FRONTIER_AT,
      _FRONTIER_AT + '    _raw = open("CALIBRATION_CELLS.json").read()\n', "generate_frontier.py",
      "read of CALIBRATION_CELLS.json outside the gate (the calibration script's functions on the stack: "
@@ -1288,14 +1453,15 @@ _OWNERSHIP_PLANTS = [
      "functions on the stack: _estimator_section, "),
     ("the raw loader as a default argument", GATE, "def render(cells):\n",
      "def _probe(reader=load):\n    return reader()\n\n\ndef render(cells):\n    _probe()\n",
-     "generate_calibration.py --render", "functions on the stack: load, _probe, render, main)"),
+     "generate_calibration.py --render", "functions on the stack: load, _probe, render, main, <module>)"),
     ("a raw read inside the gate's own checks", GATE, "def admission_problems(cells, *, sampled=True):\n",
      "def admission_problems(cells, *, sampled=True):\n    _raw = load()\n",
      "generate_calibration.py --render",
-     "functions on the stack: load, admission_problems, _admit_bytes, admit_calibration_cells, main)"),
+     "functions on the stack: load, admission_problems, _admit_bytes, admit_calibration_cells, main, "
+     "<module>)"),
     ("os.open in the audit", GATE, "def audit():\n",
      'def audit():\n    __import__("os").close(__import__("os").open(CELLS_JSON, 0))\n',
-     "generate_calibration.py --audit", "functions on the stack: audit, main)"),
+     "generate_calibration.py --audit", "functions on the stack: audit, main, <module>)"),
     ("a hard link to the file", _FRONTIER, _FRONTIER_AT,
      _FRONTIER_AT + '    _raw = open("linked.json").read()\n',
      "generate_frontier.py", "read of linked.json outside the gate"),
@@ -1305,7 +1471,7 @@ _OWNERSHIP_PLANTS = [
     ("a write outside the measurement steps", GATE, "def render(cells):\n",
      'def render(cells):\n    dump({}, "CALIBRATION_CELLS.json")\n', "generate_calibration.py --render",
      "write of CALIBRATION_CELLS.json outside the gate (the calibration script's functions on the stack: "
-     "dump, render, main)"),
+     "dump, render, main, <module>)"),
     ("a second raw read in a measurement step", GATE, "    cells, other = load(), load(path)\n",
      "    cells, other = load(), load(path)\n    _again = load()\n",
      "generate_calibration.py --record-scatter",
@@ -1314,36 +1480,76 @@ _OWNERSHIP_PLANTS = [
      _FRONTIER_AT + '    __import__("subprocess").run([__import__("sys").executable, "-c", '
                     '"open(\'CALIBRATION_CELLS.json\').read()"], check=True)\n',
      "generate_frontier.py", "started a process: subprocess.Popen"),
+    ("the file read by a process the entry point starts", _FRONTIER, _FRONTIER_AT,
+     _FRONTIER_AT + '    __import__("subprocess").run([__import__("sys").executable, "-c", '
+                    '"open(\'CALIBRATION_CELLS.json\').read()"], check=True)\n',
+     "generate_frontier.py",
+     "read of CALIBRATION_CELLS.json outside the gate (the calibration script's functions on the stack: "
+     "none)"),
+    ("an open the recorder cannot read", _FRONTIER, _FRONTIER_AT,
+     _FRONTIER_AT + '    __import__("sys").audit("open", 0.5, "r", 0)\n', "generate_frontier.py",
+     "the recording failed: open: TypeError"),
+    ("the process ending without its exit", _FRONTIER, _FRONTIER_AT,
+     _FRONTIER_AT + '    __import__("os")._exit(0)\n', "generate_frontier.py",
+     "the recording did not last until the process exited (0 ends)"),
 ]
+
+
+def _plant(w, rel, old, new, label):
+    path = w.root / rel
+    src = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert src.count(old) == 1, label
+    path.write_text(src.replace(old, new), encoding="utf-8")
 
 
 @pytest.mark.parametrize("label, rel, old, new, entry, named", _OWNERSHIP_PLANTS,
                          ids=[p[0] for p in _OWNERSHIP_PLANTS])
 def test_a_planted_open_of_the_cells_file_is_named_at_run_time(entry_copy, label, rel, old, new, entry,
                                                                named):
-    """Drill: each planted open of a cells file outside the gate, run through its entry point, is named by the
-    same check the entry points pass."""
-    path = entry_copy.root / rel
-    src = path.read_text(encoding="utf-8").replace("\r\n", "\n")
-    assert src.count(old) == 1, label
-    path.write_text(src.replace(old, new), encoding="utf-8")
+    """Drill: each planted open of a cells file outside the gate, or fault of the recording, launched through
+    its entry point, is named by the same check the entry points pass."""
+    _plant(entry_copy, rel, old, new, label)
     entry_copy.prepare()
-    run, expected = ENTRY_POINTS[entry]
-    with _recording(*entry_copy.watch) as rec, contextlib.suppress(Exception):
-        run(entry_copy)
+    argv, expected = ENTRY_POINTS[entry]
+    rec, _ = entry_copy.launch(argv(entry_copy))
     probs = ownership_problems(rec, expected)
     assert [p for p in probs if named in p], probs
 
 
-class _NotAPath:
-    def __fspath__(self):
-        return 0                    # os.fspath refuses it
+@pytest.mark.parametrize("label, rel, old, new, entry, named, printed", _STARTUP_PLANTS,
+                         ids=[p[0] for p in _STARTUP_PLANTS])
+def test_a_start_up_reader_of_a_refused_record_is_named(entry_copy, label, rel, old, new, entry, named,
+                                                        printed):
+    """Drill: a reader planted at launch or at the package's initialization, on a record the gate refuses,
+    receives and prints the refused value before the gate refuses it, and the check names its read."""
+    _plant(entry_copy, rel, old, new, label)
+    _nonfinite_q_net(entry_copy.root)
+    entry_copy.prepare()
+    argv, expected = ENTRY_POINTS[entry]
+    rec, done = entry_copy.launch(argv(entry_copy))
+    assert printed in done.stdout and _NAN_REFUSED in done.stderr and done.returncode != 0, done
+    probs = ownership_problems(rec, expected)
+    assert [p for p in probs if named in p], probs
 
 
-def test_a_failure_of_the_recording_is_a_problem(entry_copy):
-    """Drill: an open the hook cannot read is named as a failure of the recording, not dropped (the hook
-    itself never fails the open it audits)."""
-    with _recording(*entry_copy.watch) as rec:
-        _audit_hook("open", (_NotAPath(), "r", 0))
-    probs = ownership_problems(rec, Counter())
-    assert [p for p in probs if p.startswith("the recording failed: open: TypeError")], probs
+#: (label, how the launch departs from the entry points', what the problem names): each fault of the
+#: recording's lifetime is named
+_LIFETIME_FAULTS = [
+    ("the package imported before the recorder", {"recorder_prefix": "import openmucf\n"},
+     "openmucf was imported before the recording started: ['openmucf'"),
+    ("the package not the working copy's", {"package_from_copy": False},
+     "openmucf was not imported from the working copy"),
+    ("the engines asked for and not standing in", {"engines": True, "argv": ["scripts/generate_frontier.py"]},
+     "the numerical engines did not stand in from `main` on: []"),
+]
+
+
+@pytest.mark.parametrize("label, how, named", _LIFETIME_FAULTS, ids=[f[0] for f in _LIFETIME_FAULTS])
+def test_a_fault_of_the_recordings_lifetime_is_named(entry_copy, label, how, named):
+    """Drill: a launch whose recording starts after the openmucf package was imported, that imports another
+    openmucf than the working copy's, or whose engines were asked to stand in and do not, is named."""
+    entry_copy.prepare()
+    how = dict(how)
+    rec, _ = entry_copy.launch(how.pop("argv", [GATE, "--render"]), **how)
+    probs = ownership_problems(rec, ENTRY_POINTS["generate_calibration.py --render"][1])
+    assert [p for p in probs if named in p], probs
