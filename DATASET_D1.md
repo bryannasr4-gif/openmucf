@@ -702,8 +702,9 @@ other profiles with a natural-composition record whose weighted rate differs fro
 A transported nucleus always carries a mass number, so it can reach the rows of a profile keyed by a mass number: 90 of the 90 rows of `parity`, 5 of the 8 rows of `mizuno2025` and 19 of the 19 rows of `suzuki1987`.
 
 No row of `natural_target_capture.csv` has a positive `nonpositive_share`: under an evaluated profile,
-no isotope of an element `G4NistManager` builds in this Z range gets a computed capture rate that
-`G4MuonicDataOverlay::CheckComputedCaptureRate` refuses with `G4MuonicData005` (`cpp/patches/README.md`).
+no isotope of an element `G4NistManager` builds in this Z range gets a computed capture rate that is not
+a positive finite rate, the rates `G4MuonicDataOverlay::CheckComputedCaptureRate` acts on under such a
+profile (`cpp/patches/README.md`).
 A Geant4 bug report (2013), <https://bugzilla-geant4.kek.jp/show_bug.cgi?id=1457>, reported incorrect
 capture rates for nuclei the lookup table does not list and plotted the rate averaged over the isotopes
 with their abundances against Z; it is recorded as resolved and fixed.

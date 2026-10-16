@@ -881,16 +881,18 @@ g4muonicdata_overlay_case(overlay_semantics_suppressed
   QUERIES ${kshell_args}
   PASS "G4MuonicData005 [^\n]*S006[^\n]*\nCONFIG [^\n]*\nREFUSED [^\n]*S006")
 
-# The computed capture rate: under an evaluated profile a value that is not a positive finite rate
-# is fatal, and under `parity` the compiled-in model's documented output stands.
+# The computed capture rate: under an evaluated profile a value that is not finite is fatal, and a finite
+# value that is not positive stands, with one warning in the process; under `parity` the compiled-in
+# model's documented output stands.
 g4muonicdata_overlay_case(overlay_computed_rate_evaluated
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D1_PROFILE=${d1_profile}"
-  QUERIES checkrate ${evaluated_z} ${evaluated_absent} negative
-  PASS "G4Exception G4MuonicDataOverlay G4MuonicData005 under #PROFILE ${d1_profile}[^\n]*not a positive finite rate")
+  QUERIES checkrate ${evaluated_z} ${evaluated_absent} negative checkrate ${evaluated_z} ${evaluated_absent} negative
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData006 under #PROFILE ${d1_profile}[^\n]*not positive[^\n]*\nCHECKRATE ${evaluated_z} ${evaluated_absent} negative returned\nCHECKRATE ${evaluated_z} ${evaluated_absent} negative returned\n")
+set_tests_properties(overlay_computed_rate_evaluated PROPERTIES FAIL_REGULAR_EXPRESSION "MISMATCH|G4MuonicData005")
 g4muonicdata_overlay_case(overlay_computed_rate_nonfinite
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D1_PROFILE=${d1_profile}"
   QUERIES checkrate ${evaluated_z} ${evaluated_absent} nan
-  PASS "G4Exception G4MuonicDataOverlay G4MuonicData005 [^\n]*not a positive finite rate")
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData005 [^\n]*not a finite rate")
 g4muonicdata_overlay_case(overlay_computed_rate_parity
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE
   QUERIES checkrate ${evaluated_z} ${evaluated_absent} negative checkrate ${evaluated_z} ${evaluated_absent} nan

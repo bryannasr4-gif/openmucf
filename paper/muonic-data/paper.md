@@ -96,8 +96,8 @@ muonic-transition seam each through a profile of its own, chosen by an environme
 where none is set, capture reads `parity` and the transitions keep the compiled-in code.
 A request the selected table finds no row for falls through to the compiled-in code; under
 `parity` the fallback formula is reproduced as it is, including the negative rates the dataset's
-documentation registers, and under the profiles that carry published capture-rate measurements a
-computed rate that is not positive and finite raises a fatal exception.
+documentation registers, and under the profiles carrying published capture-rate measurements a
+non-finite computed rate is fatal and the first non-positive rate raises a warning.
 Before any table is selected, the glue checks what every loaded table means, including its keys,
 the units of the columns a lookup reads and the domain of its values, and refuses the whole dataset
 with a fatal exception naming the rule that failed and the file and table, or the profile, it

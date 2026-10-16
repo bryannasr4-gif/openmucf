@@ -344,8 +344,8 @@ def test_t155_drill_a_readme_that_no_longer_names_the_renamed_definition_is_refu
 
 @overlay.family
 def test_t156_drill_a_code_the_readme_does_not_name_is_named(tag: str):
-    files = replaced(tag, b'Fatal("G4MuonicData004"', b'Fatal("G4MuonicData006"', 3, which=0)
-    with pytest.raises(AssertionError, match="G4MuonicData006"):
+    files = replaced(tag, b'Fatal("G4MuonicData004"', b'Fatal("G4MuonicData007"', 3, which=0)
+    with pytest.raises(AssertionError, match="G4MuonicData007"):
         check_codes_named(tag, files, readme())
 
 

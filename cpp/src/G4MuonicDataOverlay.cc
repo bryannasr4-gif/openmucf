@@ -6,6 +6,7 @@
 #include "G4MuonicDataSemantics.hh"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdlib>
 #include <stdexcept>
@@ -440,10 +441,22 @@ const G4double* G4MuonicDataOverlay::Levels(G4int Z, G4int A, G4int& count) {
 void G4MuonicDataOverlay::CheckComputedCaptureRate(G4int Z, G4int A, G4double rate) {
   const State* state = Access();
   if (state == nullptr || !state->d1Evaluated) return;
-  if (!std::isfinite(rate) || rate <= 0.) {
+  if (!std::isfinite(rate)) {
     Fatal("G4MuonicData005", "under #PROFILE " + state->config.d1Profile + " the dataset has no nuclear capture rate for (Z, A) = (" +
                                  std::to_string(Z) + ", " + std::to_string(A) +
-                                 ") and the compiled-in model computed one that is not a positive finite rate");
+                                 ") and the compiled-in model computed one that is not a finite rate");
+    return;
+  }
+  if (rate <= 0.) {
+    // Reported once per process, from whichever thread meets it first.
+    static std::atomic<bool> reported(false);
+    if (!reported.exchange(true)) {
+      const std::string text = "under #PROFILE " + state->config.d1Profile + " the dataset has no nuclear capture rate for (Z, A) = (" +
+                               std::to_string(Z) + ", " + std::to_string(A) +
+                               ") and the compiled-in model computed one that is not positive; it is used as computed, as under parity, "
+                               "and no later such rate is reported";
+      G4Exception("G4MuonicDataOverlay", "G4MuonicData006", JustWarning, text.c_str());
+    }
   }
 }
 

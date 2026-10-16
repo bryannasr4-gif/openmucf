@@ -33,7 +33,9 @@ under `compiled`, or under a profile that carries none of its tables — the fal
 reproduced as it is, including the negative rates the dataset's documentation registers; under an
 evaluated capture profile, a profile other than `parity` that gives the seam a table,
 `CheckComputedCaptureRate` raises the fatal `G4Exception` `G4MuonicData005` when the rate a
-capture-rate function computed is not a positive finite rate.
+capture-rate function computed is not finite, and leaves a finite rate that is not positive, such as
+the fallback formula's rate for tritium, as computed, raising the warning `G4Exception`
+`G4MuonicData006` the first time in a process that it meets such a rate.
 
 Discovery follows the `G4FindDataDir` lookup Geant4 provides: an exported `G4MUONICDATA`, or, once
 the dataset is registered, the entry under `GEANT4_DATA_DIR` or, when that variable is unset or
