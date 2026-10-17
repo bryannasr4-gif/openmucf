@@ -120,10 +120,15 @@ def test_drill_the_harvest_parser_refuses_what_the_driver_does_not_print(text):
         natural.parse_harvest(text)
 
 
+_FLAGS = "-std=c++17 -O2 -ffp-contract=off\n"
+
+
 def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes = b"",
-              flags: str | None = "-std=c++17 -O2 -ffp-contract=off\n") -> Path:
+              flags: tuple[str | None, ...] = (_FLAGS,) * len(natural.BUILDS)) -> Path:
+    """A raw harvest tree with one folder per build of `natural.BUILDS`; ``flags`` gives each build's own
+    ``flags.txt`` in that order, None leaving the file out."""
     raw = root / "raw"
-    for (build, _), output in zip(natural.BUILDS, outputs, strict=True):
+    for (build, _), output, build_flags in zip(natural.BUILDS, outputs, flags, strict=True):
         folder = raw / build
         folder.mkdir(parents=True)
         (folder / "natural.txt").write_bytes(output.encode("ascii"))
@@ -131,34 +136,60 @@ def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes =
         (folder / "version.txt").write_text("11.4.2\n", encoding="ascii")
         (folder / "gcc.txt").write_text("g++\n", encoding="ascii")
         (folder / "stderr.txt").write_bytes(stderr)
-        if flags is not None:
-            (folder / "flags.txt").write_text(flags, encoding="ascii")
+        if build_flags is not None:
+            (folder / "flags.txt").write_text(build_flags, encoding="ascii")
     return raw
 
 
 def test_drill_the_harvest_conversion_refuses_differing_builds_a_foreign_driver_and_stderr(tmp_path):
     """The conversion writes rows only when every build compiled the committed driver, wrote nothing to
-    stderr, recorded its compile flags and printed the same bytes; each of the five ways to break that is
-    refused. The flags a build record carries are its own `flags.txt`, stripped, whatever they are."""
+    stderr and printed the same bytes; each of the three ways to break that is refused. The two drills below
+    hold each build to its own compile-flag record."""
     harness = hashlib.sha256((REPO / natural.HARNESS_RELPATH).read_bytes()).hexdigest()
     rows, builds = natural.harvest(_raw_tree(tmp_path / "ok", (_RAW, _RAW), harness), REPO)
     assert [row["a"] for row in rows] == ["1", "2", "4"] and len(builds) == len(natural.BUILDS)
-    assert {row["compile_flags"] for row in builds} == {"-std=c++17 -O2 -ffp-contract=off"}
+    assert {row["compile_flags"] for row in builds} == {_FLAGS.strip()}
     assert rows[1]["abundance"] == repr(float.fromhex("0x1p-12"))
-    # The flags each build records are the ones its own flags.txt gives, not a default of the converter.
-    other_raw = _raw_tree(tmp_path / "other", (_RAW, _RAW), harness, flags=" -std=c++17 -O0\n")
-    _, other = natural.harvest(other_raw, REPO)
-    assert [row["compile_flags"] for row in other] == ["-std=c++17 -O0"] * len(natural.BUILDS)
     for name, raw in (
         ("differ", _raw_tree(tmp_path / "differ", (_RAW, _RAW.replace("0x1p-12", "0x1p-11")), harness)),
         ("driver", _raw_tree(tmp_path / "driver", (_RAW, _RAW), "0" * 64)),
         ("stderr", _raw_tree(tmp_path / "stderr", (_RAW, _RAW), harness, b"warning\n")),
-        ("no flags", _raw_tree(tmp_path / "noflags", (_RAW, _RAW), harness, flags=None)),
-        ("empty flags", _raw_tree(tmp_path / "emptyflags", (_RAW, _RAW), harness, flags="")),
     ):
         with pytest.raises(natural.NaturalTargetError):
             natural.harvest(raw, REPO)
         assert name
+
+
+# One flag record per build, no two alike, each padded with whitespace the conversion strips.
+_DISTINCT_FLAGS = tuple(
+    f" -std=c++17 -O{index} -ffp-contract={'off' if index % 2 else 'fast'} \n"
+    for index in range(len(natural.BUILDS))
+)
+
+
+def test_drill_each_build_record_carries_its_own_compile_flags(tmp_path):
+    """Given a different flag record in every build's folder, each build record carries its own, stripped;
+    with the records rotated one build along, each carries the one now in its folder. A conversion that read
+    one build's flags.txt for another build's record fails one of the two."""
+    assert len(natural.BUILDS) >= 2 and len(set(_DISTINCT_FLAGS)) == len(natural.BUILDS)
+    harness = hashlib.sha256((REPO / natural.HARNESS_RELPATH).read_bytes()).hexdigest()
+    rotated = _DISTINCT_FLAGS[1:] + _DISTINCT_FLAGS[:1]
+    for name, given in (("distinct", _DISTINCT_FLAGS), ("rotated", rotated)):
+        _, builds = natural.harvest(_raw_tree(tmp_path / name, (_RAW, _RAW), harness, flags=given), REPO)
+        expected = [(build, flags.strip()) for (build, _), flags in zip(natural.BUILDS, given, strict=True)]
+        assert [(row["build"], row["compile_flags"]) for row in builds] == expected, name
+
+
+@pytest.mark.parametrize("fault", [None, "", " \t\n"], ids=["missing", "empty", "whitespace"])
+@pytest.mark.parametrize("faulty", range(len(natural.BUILDS)), ids=[build for build, _ in natural.BUILDS])
+def test_drill_a_build_without_its_own_compile_flags_is_refused_alone(tmp_path, faulty, fault):
+    """One build's flags.txt is missing, empty or whitespace only while every other build's carries flags: the
+    conversion refuses, naming that build."""
+    harness = hashlib.sha256((REPO / natural.HARNESS_RELPATH).read_bytes()).hexdigest()
+    flags = tuple(fault if index == faulty else given for index, given in enumerate(_DISTINCT_FLAGS))
+    refusal = f"{natural.BUILDS[faulty][0]}: the harvest recorded no compile flags (flags.txt)"
+    with pytest.raises(natural.NaturalTargetError, match=f"^{re.escape(refusal)}$"):
+        natural.harvest(_raw_tree(tmp_path, (_RAW, _RAW), harness, flags=flags), REPO)
 
 
 # --------------------------------------------------------------------------------------------
