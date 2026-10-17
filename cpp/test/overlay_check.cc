@@ -3,13 +3,14 @@
 //
 //   g4muonicdata_overlay_check [--off] [--init] [--setenv NAME=VALUE]... <query>...
 //   query:  rate Z A | zeff Z | kshell Z A | levels Z A
-//           checkrate Z A positive|zero|negative|nan|inf
+//           checkrate Z A positive|zero|negative|nan|inf|neginf
 //           checklevels falling|flat|negative|short
 //
 // The stand-ins are defined in this file: G4FindDataDir reads the environment variable it is given,
-// and G4Exception prints `G4Exception <origin> <code> <description>` and, for a FatalException,
-// exits with status 3 unless OVERLAY_CHECK_SUPPRESS_FATAL is set -- the behaviour of an exception
-// handler that suppresses the abort.
+// and G4Exception prints `G4Exception <origin> <code> <severity> <description>`, the severity by its
+// enumerator's name, and, for a FatalException, exits with status 3 unless
+// OVERLAY_CHECK_SUPPRESS_FATAL is set -- the behaviour of an exception handler that suppresses the
+// abort.
 //
 // The opt-in is set here, before anything else, because the glue answers nothing without it;
 // `--off` leaves it clear, and then no line may report a lookup and no directory may be read.
@@ -43,9 +44,22 @@
 
 const char* G4FindDataDir(const char* name) { return std::getenv(name); }
 
+// The name of a severity, so a test can tell a warning from an abort of any kind.
+static const char* SeverityName(G4ExceptionSeverity severity) {
+  switch (severity) {
+    case FatalException: return "FatalException";
+    case FatalErrorInArgument: return "FatalErrorInArgument";
+    case RunMustBeAborted: return "RunMustBeAborted";
+    case EventMustBeAborted: return "EventMustBeAborted";
+    case JustWarning: return "JustWarning";
+  }
+  return "unknown";
+}
+
 void G4Exception(const char* originOfException, const char* exceptionCode, G4ExceptionSeverity severity,
                  const char* description) {
-  std::printf("G4Exception %s %s %s\n", originOfException, exceptionCode, description);
+  std::printf("G4Exception %s %s %s %s\n", originOfException, exceptionCode, SeverityName(severity),
+              description);
   std::fflush(stdout);
   if (severity == FatalException && std::getenv("OVERLAY_CHECK_SUPPRESS_FATAL") == nullptr) std::exit(3);
 }
@@ -253,6 +267,7 @@ bool ComputedRate(const std::string& token, double& out) {
   else if (token == "negative") out = -1.;
   else if (token == "nan") out = std::nan("");
   else if (token == "inf") out = HUGE_VAL;
+  else if (token == "neginf") out = -HUGE_VAL;
   else return false;
   return true;
 }

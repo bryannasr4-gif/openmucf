@@ -842,11 +842,11 @@ set_tests_properties(overlay_compiled_both_seams PROPERTIES FAIL_REGULAR_EXPRESS
 g4muonicdata_overlay_case(overlay_seam_d1_missing
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D1_PROFILE=${d3_profile}"
   QUERIES ${capture_args}
-  PASS "G4Exception G4MuonicDataOverlay G4MuonicData004 G4MUONICDATA_D1_PROFILE names '${d3_profile}'[^\n]*nuclear_capture_rate")
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData004 FatalException G4MUONICDATA_D1_PROFILE names '${d3_profile}'[^\n]*nuclear_capture_rate")
 g4muonicdata_overlay_case(overlay_seam_d3_missing
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D3_PROFILE=${d1_profile}"
   QUERIES ${kshell_args}
-  PASS "G4Exception G4MuonicDataOverlay G4MuonicData004 G4MUONICDATA_D3_PROFILE names '${d1_profile}'[^\n]*k_shell_energy")
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData004 FatalException G4MUONICDATA_D3_PROFILE names '${d1_profile}'[^\n]*k_shell_energy")
 
 # The opt-in clear: no lookup, no configuration and no I/O, over a directory that cannot be read
 # and over one whose member the reader refuses.
@@ -883,16 +883,31 @@ g4muonicdata_overlay_case(overlay_semantics_suppressed
 
 # The computed capture rate: under an evaluated profile a value that is not finite is fatal, and a finite
 # value that is not positive stands, with one warning in the process; under `parity` the compiled-in
-# model's documented output stands.
+# model's documented output stands. The stand-in prints each exception's severity, so the warning is
+# held to JustWarning and the refusal to FatalException; zero is the edge of "not positive", and an
+# infinite rate of either sign is not finite.
 g4muonicdata_overlay_case(overlay_computed_rate_evaluated
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D1_PROFILE=${d1_profile}"
   QUERIES checkrate ${evaluated_z} ${evaluated_absent} negative checkrate ${evaluated_z} ${evaluated_absent} negative
-  PASS "G4Exception G4MuonicDataOverlay G4MuonicData006 under #PROFILE ${d1_profile}[^\n]*not positive[^\n]*\nCHECKRATE ${evaluated_z} ${evaluated_absent} negative returned\nCHECKRATE ${evaluated_z} ${evaluated_absent} negative returned\n")
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData006 JustWarning under #PROFILE ${d1_profile}[^\n]*not positive[^\n]*\nCHECKRATE ${evaluated_z} ${evaluated_absent} negative returned\nCHECKRATE ${evaluated_z} ${evaluated_absent} negative returned\n")
 set_tests_properties(overlay_computed_rate_evaluated PROPERTIES FAIL_REGULAR_EXPRESSION "MISMATCH|G4MuonicData005")
+g4muonicdata_overlay_case(overlay_computed_rate_zero
+  ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D1_PROFILE=${d1_profile}"
+  QUERIES checkrate ${evaluated_z} ${evaluated_absent} zero checkrate ${evaluated_z} ${evaluated_absent} zero
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData006 JustWarning under #PROFILE ${d1_profile}[^\n]*not positive[^\n]*\nCHECKRATE ${evaluated_z} ${evaluated_absent} zero returned\nCHECKRATE ${evaluated_z} ${evaluated_absent} zero returned\n")
+set_tests_properties(overlay_computed_rate_zero PROPERTIES FAIL_REGULAR_EXPRESSION "MISMATCH|G4MuonicData005")
 g4muonicdata_overlay_case(overlay_computed_rate_nonfinite
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D1_PROFILE=${d1_profile}"
   QUERIES checkrate ${evaluated_z} ${evaluated_absent} nan
-  PASS "G4Exception G4MuonicDataOverlay G4MuonicData005 [^\n]*not a finite rate")
+  PASS "G4Exception G4MuonicDataOverlay G4MuonicData005 FatalException [^\n]*not a finite rate")
+set_tests_properties(overlay_computed_rate_nonfinite PROPERTIES FAIL_REGULAR_EXPRESSION "MISMATCH|G4MuonicData006|returned")
+foreach(token IN ITEMS inf neginf)
+  g4muonicdata_overlay_case(overlay_computed_rate_${token}
+    ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE "G4MUONICDATA_D1_PROFILE=${d1_profile}"
+    QUERIES checkrate ${evaluated_z} ${evaluated_absent} ${token}
+    PASS "G4Exception G4MuonicDataOverlay G4MuonicData005 FatalException [^\n]*not a finite rate")
+  set_tests_properties(overlay_computed_rate_${token} PROPERTIES FAIL_REGULAR_EXPRESSION "MISMATCH|G4MuonicData006|returned")
+endforeach()
 g4muonicdata_overlay_case(overlay_computed_rate_parity
   ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE
   QUERIES checkrate ${evaluated_z} ${evaluated_absent} negative checkrate ${evaluated_z} ${evaluated_absent} nan
@@ -910,7 +925,7 @@ foreach(shape IN ITEMS flat negative short)
   g4muonicdata_overlay_case(overlay_cascade_levels_${shape}
     ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" --unset=G4MUONICDATA_PROFILE
     QUERIES checklevels ${shape}
-    PASS "G4Exception G4MuonicDataOverlay G4MuonicData005 the muonic cascade assembled ")
+    PASS "G4Exception G4MuonicDataOverlay G4MuonicData005 FatalException the muonic cascade assembled ")
 endforeach()
 
 # V-13: the F-3 producer, GCC/Clang only -- the kernel compiled a second time with contraction
