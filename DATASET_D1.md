@@ -762,7 +762,7 @@ root sum of squares of the measured rate's uncertainty and the capture rate's ta
 can rest on the same mean life, so the band errs wide.
 The comparison is of the rates the code returns for a single nucleus, not of a transported simulation of a
 target; a target of natural composition decays as section 11 describes.
-For F-19 the tabulated mean life and capture rate describe the lower hyperfine state (Table III p.2217 note); both Geant4 routes use that rate as a single-state approximation and do not model the hyperfine transition.
+For F-19 the tabulated mean life and capture rate describe the lower hyperfine state (Table III p.2217 note); both Geant4 routes do not model the hyperfine transition.
 
 | profile | rows compared | within the band, `G4MuonMinusBoundDecay` | within the band, `G4MuonicAtomHelper` |
 |---|---|---|---|

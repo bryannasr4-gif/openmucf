@@ -423,10 +423,15 @@ def test_t160_the_fluorine_row_names_the_lower_hyperfine_state_its_note_prints()
     assert {row["locator"] for row in comparison if row["measured_state"]} == {previous.locator}
     root = DATA.parents[3]
     dataset = " ".join((root / "DATASET_D1.md").read_text(encoding="utf-8").split())
-    for heading, following in (("## 10. ", "## 11. "), ("## 12. ", None)):
+    # Section 12 compares every profile's rate, and only the suzuki1987 rate is the tabulated one, so there
+    # the sentence says what both routes do not model without saying they use that rate.
+    all_profiles = STATE_SENTENCE.replace("use that rate as a single-state approximation and ", "", 1)
+    assert all_profiles != STATE_SENTENCE
+    sections = (("## 10. ", "## 11. ", STATE_SENTENCE), ("## 12. ", None, all_profiles))
+    for heading, following, sentence in sections:
         section = dataset.split(heading, 1)[1]
         section = section.split(following, 1)[0] if following else section
-        assert section.count(STATE_SENTENCE) == 1, heading
+        assert section.count(sentence) == 1, heading
     unreleased = (root / "CHANGELOG.md").read_text(encoding="utf-8").split("## [", 2)[1]
     changelog = " ".join(unreleased.split())
     assert changelog.count(STATE_SENTENCE) == 1
