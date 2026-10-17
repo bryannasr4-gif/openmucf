@@ -662,6 +662,7 @@ ff8cb07b29f5d22d1ed175d1a1ec6de323531f9b	FORMAT_SPEC.md	REGISTERED: one -- a pro
 ff9e698e73f14f73c93e5f484019640954acc85a	FORMAT_SPEC.md	REGISTERED: three -- the phases numbered in the list that follows
 0ccdf0a1a697580b0dcf6641da9f8d632e79d931	README.md	REGISTERED: 225 -- the nuclide label Ac-225
 11eca2c304568f729867dead4a32bb3a18259e9c	README.md	EXERCISED: 284 -- tests/test_energy.py::test_scientific_breakeven_is_284
+22ade738afd253c210120ad56ef60261aed054e7	README.md	REGISTERED: 1.3.0 -- MuDirac's release number (mudirac130.MUDIRAC_VERSION), a name
 2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H
 270ca35ad256de5710d36b4f36afa2a020dd721c	README.md	REGISTERED: 1.3.0, six -- MuDirac's release number, as mudirac130.MUDIRAC_VERSION and the patch name carry it; six: the inputs of the patch's default-output check, held by tests/test_packaging.py::test_the_mudirac_patch_directory_carries_the_release_licence_and_its_six_check_inputs
 2d71ec87b4dc7c1ee4c3e123f2b41f9fde467306	README.md	REGISTERED: one -- 'one-off', an adjective
@@ -670,6 +671,7 @@ ff9e698e73f14f73c93e5f484019640954acc85a	FORMAT_SPEC.md	REGISTERED: three -- the
 4995d88bb00dd9c30dc88555a7be48f3726c4bd6	README.md	REGISTERED: 2024 -- a calendar year, the date of the work plan the sentence names
 4f93b378289692f936136db69faead577a670026	README.md	REGISTERED: two -- 'two conforming compiler configurations': the two builds F-3 compares, both named in its block
 58a4ccff88cd73dca6a97c620a4029be6dc88dc7	README.md	REGISTERED: 1 -- the '1' of ω_s0(1−R), the closed form's complement: algebra, not data
+5abbfac1ed33a5156f3f46618c3c4d811b155f2f	README.md	REGISTERED: 1.3.0 -- MuDirac's release number (mudirac130.MUDIRAC_VERSION), a name
 5f92d3269e9e96abc73385adefb4f9ab4eabf560	README.md	REGISTERED: 0.30, 0.18 -- restates SYSTEMS.md ('Our v1 default eta_acc = 0.30 ... PSI-measured value is 0.18'), regenerated and byte-diffed by make audit; the README's copy is read by no test
 610c71cf49f298c421dd5e330935e9c269d9859e	README.md	REGISTERED: two -- 'two-layer': the format's two layers, Layer 1 and Layer 2 of FORMAT_SPEC.md
 61eb74d1dde6030fdfe3e03a6b7fbe7391cb9778	README.md	REGISTERED: one -- 'one-sided', an adjective

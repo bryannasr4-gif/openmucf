@@ -166,8 +166,9 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `openmucf/interop.py` | GEANT4 interop stub — export rates (CSV/JSON), ingest validation spectra |
 | `openmucf/g4/`, `FORMAT_SPEC.md` | the `G4MuonicData` external-data format: `.g4dat` grammar, Layer-2 provenance schema, deterministic archive |
 | `openmucf/g4/sources/`, `third_party/geant4/`, `cpp/tools/` | structural extractors for the vendored upstream source, the pinned source itself, and the harvest drivers |
+| `third_party/mudirac/` | the patch to MuDirac 1.3.0 that the D3 energies are computed with, its build and its keywords |
 | `data/g4/d1/`, `DATASET_D1.md` | the D1 nuclear-capture dataset in `parity` mode + its findings (see below) |
-| `data/g4/d3/`, `DATASET_D3.md` | the D3 muonic energy tables of the `mudirac130` profile, their MuDirac inputs and outputs, and their comparison with measured energies |
+| `data/g4/d3/`, `DATASET_D3.md` | the D3 muonic energy tables of the `mudirac130p1` profile, their MuDirac inputs and outputs, their numerical checks, the cause of each change from the `mudirac130` tables, and their comparison with measured energies |
 | `data/g4/d2/`, `data/g4/reference/d2/`, `DATASET_D2.md` | the capturing-atom selector's harvest and reference, the processes that reach it at rest, and atomic-capture values read in primary publications beside the selector's |
 | `openmucf/data/` | `rates.csv`, `validation_targets.csv`, `references.bib`, schema |
 | `forecasts/`, `FORECASTS.md` | pre-registered, hash-stamped forecast cards (FC-001) + protocol + registry table |
@@ -198,8 +199,8 @@ negative rate silently disables capture entirely), non-finite returns at degener
 coded rejection, and a fallback whose result moves by up to **2980 ulp** between two conforming
 compiler configurations of the same source. See [`DATASET_D1.md`](DATASET_D1.md).
 
-`data/g4/d3/` adds muonic energy tables of a `mudirac130` profile, generated from committed MuDirac
-inputs and printed outputs; see [`DATASET_D3.md`](DATASET_D3.md).
+`data/g4/d3/` adds muonic energy tables of the `mudirac130p1` profile, generated from committed inputs and
+printed outputs of MuDirac 1.3.0 built with the patch in `third_party/mudirac/`; see [`DATASET_D3.md`](DATASET_D3.md).
 
 > This product includes software developed by Members of the Geant4 Collaboration
 > ( http://cern.ch/geant4 ).
