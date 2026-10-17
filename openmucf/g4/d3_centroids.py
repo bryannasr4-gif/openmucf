@@ -19,8 +19,8 @@ RATIO_COLUMNS = ("source", "Z", "A", "quantity", "ratio", "ratio_unc", "label", 
 CENTROID_COLUMNS = (
     "cohort", "source", "Z", "A", "locator", "comparator", "representative", "c_keV", "sigma_keV",
     "sigma_max_keV", "sigma_min_keV", "sigma_0_keV", "q_keV", "s_keV", "r_d3_keV", "r_stock_keV",
-    "margin_keV", "stock_reason", "screen", "dU_keV", "dgrid_keV", "dnum_keV", "u_certified",
-    "screen_at_reference", "npol_keV", "npol_l2_keV", "npol_l3_keV", "ratio", "ratio_unc",
+    "margin_keV", "stock_reason", "screen", "b_num_keV", "numerical_verdict",
+    "npol_keV", "npol_l2_keV", "npol_l3_keV", "ratio", "ratio_unc",
     "ratio_source", "ratio_locator", "ratio_label", "illustrative_c_keV", "illustrative_q_minus_c_keV",
     "excluded_gated", "two_p_rows",
 )
@@ -32,8 +32,7 @@ CENTROID_TABLE_COLUMNS = (
     ("sigma min (keV)", "sigma_min_keV"), ("sigma max (keV)", "sigma_max_keV"),
     ("shell difference (keV)", "q_keV"), ("residual (keV)", "r_d3_keV"),
     ("unpatched residual (keV)", "r_stock_keV"), ("margin (keV)", "margin_keV"),
-    ("screen", "screen"), ("dnum (keV)", "dnum_keV"), ("u_certified", "u_certified"),
-    ("screen at reference", "screen_at_reference"),
+    ("screen", "screen"), ("b_num (keV)", "b_num_keV"), ("numerical check", "numerical_verdict"),
 )
 MARGIN_TABLE_COLUMNS = (
     ("cohort", "cohort"), ("source", "source"), ("isotopes", "isotopes"),
@@ -89,106 +88,16 @@ def _screen(residual: Decimal, sigma: Decimal, minimum: Decimal | None = None) -
     return "correlation-dependent"
 
 
-def onset_and_certificate(values: dict[int, Decimal], target: Decimal) -> tuple[int | None, int | None]:
-    """First unclean or inconsistent U, and the earliest clean doubling certificate below it."""
-    with localcontext() as context:
-        context.prec = 50
-        return _onset_and_certificate(values, target)
-
-
-def _onset_and_certificate(values: dict[int, Decimal], target: Decimal) -> tuple[int | None, int | None]:
-    floor = target / 200
-    onset: int | None = None
-    reference_sign: int | None = None
-    previous: Decimal | None = None
-    for u in range(100, 2401, 100):
-        if u not in values:
-            onset = min(onset, u) if onset is not None else u
-            continue
-        if u == 100 or u - 100 not in values:
-            continue
-        step = values[u] - values[u - 100]
-        if u == 200 and abs(step) >= floor:
-            reference_sign = 1 if step > 0 else -1
-        opposite = (abs(step) >= floor and reference_sign is not None and
-                    (1 if step > 0 else -1) != reference_sign)
-        growth = u >= 300 and previous is not None and abs(step) - abs(previous) >= floor
-        if opposite or growth:
-            onset = min(onset, u) if onset is not None else u
-        previous = step
-    for u in (50, 150, 250, 350, 450, 550):
-        if u not in values:
-            onset = min(onset, u) if onset is not None else u
-    certified = None
-    for u in range(100, 1201, 100):
-        if onset is not None and 2 * u >= onset:
-            continue
-        if not all(k in values for k in (u // 2, u, 2 * u)):
-            continue
-        low = values[u] - values[u // 2]
-        high = values[2 * u] - values[u]
-        if abs(high) < target and abs(high) <= abs(low):
-            certified = u
-            break
-    return onset, certified
-
-
-def _settings_q(settings: md.SettingsOutputs) -> dict[tuple[int, int, str], Decimal]:
-    result: dict[tuple[int, int, str], Decimal] = {}
-    for run in settings.runs.values():
-        if not run.clean:
-            continue
-        try:
-            binding = md.derive_bindings(run.run, settings.headers.get(run.run, {}),
-                                         settings.lines.get(run.run, {}))
-            k, outer = md.quantities(binding)
-        except Exception:
-            continue
-        result[(run.z, run.a, run.setting)] = k - outer[0]
-    return result
-
-
-def _targets(cells: tuple[md.Cell, ...]) -> dict[tuple[int, int], Decimal]:
-    targets = {cell.nuclide: Decimal(cell.unc_kev) / 10 for cell in cells if cell.reason == "centroid"}
-    for l2, l3 in md.doublet_determinations(cells):
-        with localcontext() as context:
-            context.prec = 50
-            sigma = ((Decimal(l2.unc_kev) / 3) ** 2 + (2 * Decimal(l3.unc_kev) / 3) ** 2).sqrt()
-            target = sigma / 10
-        targets[l2.nuclide] = min(targets.get(l2.nuclide, target), target)
-    return targets
-
-
-def numerical_components(root: Path, cells: tuple[md.Cell, ...]) -> tuple[
-    dict[tuple[int, int], tuple[Decimal, Decimal, Decimal, int | None, int | None]], int]:
-    with localcontext() as context:
-        context.prec = 50
-        return _numerical_components(root, cells)
-
-
-def _numerical_components(root: Path, cells: tuple[md.Cell, ...]) -> tuple[
-    dict[tuple[int, int], tuple[Decimal, Decimal, Decimal, int | None, int | None]], int]:
-    settings = md.load_settings_outputs(root, cells)
-    q = _settings_q(settings)
-    targets = _targets(cells)
-    result: dict[tuple[int, int], tuple[Decimal, Decimal, Decimal, int | None, int | None]] = {}
-    for z, a in md.settings_nuclides(cells):
-        ladder = {u: q[(z, a, md.setting_id(0, u))] for u in md.SETTINGS_UEHLING_G0
-                  if (z, a, md.setting_id(0, u)) in q}
-        onset, certified = onset_and_certificate(ladder, targets[(z, a)])
-        if onset is not None and onset <= 1000:
-            raise md.CellError(f"Z={z} A={a}: reference U at or above onset {onset}")
-        if (z, a, md.setting_id(2, 1000)) not in q:
-            raise md.CellError(f"Z={z} A={a}: fine-grid reference is unclean")
-        try:
-            low, mid = ladder[100], ladder[1000]
-        except KeyError as exc:
-            raise md.CellError(f"Z={z} A={a}: numerical endpoint is unclean") from exc
-        fine = q[(z, a, md.setting_id(2, 1000))]
-        du, dgrid = mid - low, fine - mid
-        result[(z, a)] = du, dgrid, du + dgrid, certified, onset
-    return result, sum((run.z, run.a, run.setting) not in q for run in settings.runs.values()
-                       if run.setting.startswith("g0"))
+def numerical_record(root: Path) -> dict[tuple[int, int], tuple[Decimal, str]]:
+    """``{(Z, A): (b_num in keV, verdict)}`` of the consumer quantity ``K-e2`` with the Uehling potential,
+    as ``numerical_check.csv`` carries it; the file's own loader cross-checks it against the outputs."""
+    out: dict[tuple[int, int], tuple[Decimal, str]] = {}
+    path = Path(root) / contract.NUMERICAL_CHECK_RELPATH
+    for where, r in md.read_rows(path, contract.NUMERICAL_CHECK_COLUMNS):
+        if r["quantity"] == "K-e2" and r["uehling"] == "on":
+            key = (md.integer(r["Z"], where, "Z"), md.integer(r["A"], where, "A"))
+            out[key] = (Decimal(r["b_num_eV"]) / 1000, r["verdict"])
+    return out
 
 
 def _illustrative(l2: md.Cell, l3: md.Cell, ratio: dict[str, str], q: Decimal) -> tuple[str, str]:
@@ -203,7 +112,7 @@ def centroid_rows(root: Path) -> list[dict[str, str]]:
     root = Path(root)
     cells = md.load_cells(root / md.CELLS_RELPATH)
     ratios = load_intensity_ratios(root / RATIOS_RELPATH, cells)
-    components, _unclean = numerical_components(root, cells)
+    record = numerical_record(root)
     tables = contract.Tables(contract.read_table_text(root / contract.KSHELL_RELPATH),
                              contract.read_table_text(root / contract.LEVELS_RELPATH))
     stock = md.load_geant4_levels(root / md.GEANT4_LEVELS_RELPATH)
@@ -218,13 +127,15 @@ def centroid_rows(root: Path) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
 
     def common(cohort: str, source: str, z: int, a: int, locator: str, c: Decimal,
-               sigma: Decimal, sigma_min: Decimal | None, dnum: Decimal) -> dict[str, str]:
+               sigma: Decimal, sigma_min: Decimal | None) -> dict[str, str]:
         key = z, a
         q = Decimal(tables.shell(key, 1)) - Decimal(tables.shell(key, 2))
         stock_value = contract.stock_kev(stock[key], 1, 2) if key in stock else None
         residual = q - c
         stock_residual = stock_value - c if stock_value is not None else None
-        du, dgrid, _shift, certified, _onset = components[key]
+        if key not in record:
+            raise md.CellError(f"Z={z} A={a}: numerical_check.csv carries no K-e2 row")
+        b_num, verdict = record[key]
         row = dict.fromkeys(CENTROID_COLUMNS, "")
         row.update(cohort=cohort, source=source, Z=str(z), A=str(a), locator=locator,
                    c_keV=_text(c), q_keV=_text(q), sigma_keV=_text(sigma) if sigma_min is None else "",
@@ -234,9 +145,8 @@ def centroid_rows(root: Path) -> list[dict[str, str]]:
                    margin_keV=(_text(abs(stock_residual) - abs(residual))
                                if stock_residual is not None else ""),
                    stock_reason="" if stock_value is not None else "no C line in the unpatched harvest",
-                   screen=_screen(residual, sigma, sigma_min), dU_keV=_text(du), dgrid_keV=_text(dgrid),
-                   dnum_keV=_text(dnum), u_certified=str(certified) if certified is not None else "none",
-                   screen_at_reference=_screen(residual + dnum, sigma, sigma_min))
+                   screen=_screen(residual, sigma, sigma_min), b_num_keV=_text(b_num),
+                   numerical_verdict=verdict)
         row["_residual_raw"] = str(residual)
         row["_margin_raw"] = str(abs(stock_residual) - abs(residual)) if stock_residual is not None else ""
         return row
@@ -244,9 +154,8 @@ def centroid_rows(root: Path) -> list[dict[str, str]]:
     with localcontext() as context:
         context.prec = 50
         for cell in sorted((c for c in cells if c.reason == "centroid"), key=lambda c: c.nuclide):
-            du, dgrid, dnum, certified, onset = components[cell.nuclide]
             row = common("labelled", cell.source, cell.z, cell.a, cell.locator,
-                         Decimal(cell.value_kev), Decimal(cell.unc_kev), None, dnum)
+                         Decimal(cell.value_kev), Decimal(cell.unc_kev), None)
             row.update(comparator="center of gravity", representative="true", npol_keV=cell.npol_kev)
             rows.append(row)
         grouped: dict[tuple[str, int, int], list[tuple[dict[str, str], Decimal]]] = defaultdict(list)
@@ -257,9 +166,8 @@ def centroid_rows(root: Path) -> list[dict[str, str]]:
             sigma_max = (u2 + 2 * u3) / 3
             sigma_min = abs(u2 - 2 * u3) / 3
             sigma_zero = ((u2 / 3) ** 2 + (2 * u3 / 3) ** 2).sqrt()
-            dnum = components[key][2]
             row = common("constructed", l2.source, l2.z, l2.a, l2.locator, c, sigma_max,
-                         sigma_min, dnum)
+                         sigma_min)
             row.update(comparator="degeneracy-convention centroid", sigma_max_keV=_text(sigma_max),
                        sigma_min_keV=_text(sigma_min), sigma_0_keV=_text(sigma_zero),
                        npol_l2_keV=l2.npol_kev, npol_l3_keV=l3.npol_kev)
@@ -359,32 +267,22 @@ def summary_lines(root: Path) -> list[str]:
     labelled = [r for r in compared if r["cohort"] == "labelled"]
     constructed = [r for r in compared if r["cohort"] == "constructed"]
     excluded = [r for r in rows if r["cohort"] == "excluded"]
-    components, _unclean = numerical_components(root, md.load_cells(root / md.CELLS_RELPATH))
-    onsets = [(onset, z, a) for (z, a), (_du, _dg, _dn, _cert, onset) in components.items()
-              if onset is not None]
-    first = min(onsets)
-    above = sum(abs(Decimal(r["dnum_keV"])) >
-                Decimal(r["sigma_keV"] or r["sigma_max_keV"]) / 10 for r in compared)
+    above = sum(Decimal(r["b_num_keV"]) > Decimal(r["sigma_keV"] or r["sigma_max_keV"]) / 10
+                for r in compared)
     lines = [
         f"d3 centroids: labelled rows {len(labelled)} inside "
         f"{sum(r['screen'] == 'inside' for r in labelled)} "
-        f"outside {sum(r['screen'] == 'outside' for r in labelled)}; at reference inside "
-        f"{sum(r['screen_at_reference'] == 'inside' for r in labelled)} outside "
-        f"{sum(r['screen_at_reference'] == 'outside' for r in labelled)}",
+        f"outside {sum(r['screen'] == 'outside' for r in labelled)}",
         f"d3 centroids: constructed rows {len(constructed)} isotopes "
         f"{len({(r['Z'], r['A']) for r in constructed})} inside "
         f"{sum(r['screen'] == 'inside' for r in constructed)} outside "
         f"{sum(r['screen'] == 'outside' for r in constructed)} correlation-dependent "
-        f"{sum(r['screen'] == 'correlation-dependent' for r in constructed)}; at reference inside "
-        f"{sum(r['screen_at_reference'] == 'inside' for r in constructed)} outside "
-        f"{sum(r['screen_at_reference'] == 'outside' for r in constructed)} correlation-dependent "
-        f"{sum(r['screen_at_reference'] == 'correlation-dependent' for r in constructed)}",
+        f"{sum(r['screen'] == 'correlation-dependent' for r in constructed)}",
         f"d3 centroids: excluded {len(excluded)}: " + "; ".join(
             f"{r['source']} {r['Z']}-{r['A']}" for r in excluded),
-        f"d3 centroids: nuclides {len(components)} u_certified none "
-        f"{sum(cert is None for _du, _dg, _dn, cert, _onset in components.values())}; "
-        f"smallest G0 onset {first[0]} at Z={first[1]} A={first[2]}; "
-        f"|dnum| above a tenth of the largest sigma on {above} of {len(compared)} rows",
+        f"d3 centroids: independent check of K-e2 on {len({(r['Z'], r['A']) for r in compared})} nuclides, "
+        f"verdicts {sorted({r['numerical_verdict'] for r in compared})}; "
+        f"b_num above a tenth of the largest sigma on {above} of {len(compared)} rows",
     ]
     for row in margin_rows(rows):
         lines.append(f"d3 centroids: margin {row['cohort']} {row['source']} isotopes {row['isotopes']} "

@@ -36,7 +36,7 @@ abstract: >-
   error-barred, falsifiable verdicts. It also ships Geant4 muonic-atom data
   as an external, versioned dataset, with provenance and uncertainty
   attached, that a patched Geant4 consults only after an explicit opt-in:
-  D1, nuclear capture, and the D3 energy tables of the mudirac130 profile, in
+  D1, nuclear capture, and the D3 energy tables of the mudirac130p1 profile, in
   the G4MuonicData external-data format, with patches for Geant4 v11.4.2 and
   v11.5.0.beta and a transport workflow that builds each revision the
   patches name with and without them. D2 compares the element Geant4's

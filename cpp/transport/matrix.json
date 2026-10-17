@@ -33,7 +33,7 @@
       "opt_in": "on",
       "profiles": {
         "G4MUONICDATA_D1_PROFILE": "mizuno2025",
-        "G4MUONICDATA_D3_PROFILE": "mudirac130"
+        "G4MUONICDATA_D3_PROFILE": "mudirac130p1"
       }
     },
     "preserved": {"kind": "preserved", "opt_in": "off"}
@@ -51,6 +51,7 @@
     "P10": "missing dataset",
     "P11": "unknown profile",
     "P12": "falling-level refusal",
-    "P13": "removed call site"
+    "P13": "removed call site",
+    "P14": "replaced D3 profile"
   }
 }

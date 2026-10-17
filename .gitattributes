@@ -31,6 +31,9 @@ data/g4/d1/* -text
 # The D3 build, for the same reasons: its CSV inputs are parsed by loaders that refuse CR, and its
 # Layer-2 files are digested byte ranges, so a checkout must not rewrite them.
 data/g4/d3/* -text
+# The copy of release v1.3.0's D3 comparison file, pinned by that file's git blob id: a checkout that rewrote its line
+# endings would break the pin (data/g4/d3/* does not cross into history/).
+data/g4/d3/history/* -text
 # The Geant4 patches: their added-file hunks are the reader's LF bytes and a test compares them
 # byte-for-byte against cpp/include and cpp/src, so a checkout must not rewrite their line endings.
 cpp/patches/*.patch -text
@@ -47,3 +50,9 @@ data/g4/d2/* -text
 cpp/tools/harvest_d2.cc -text
 cpp/tools/harvest_natural.cc -text
 cpp/tools/harvest_decay.cc -text
+# The recipe-run fixture of tests/test_g4d3_recipe.py: the collector reads its files as MuDirac printed them
+# (LF) and refuses a malformed line, so a checkout must not rewrite their line endings.
+tests/fixtures/d3_recipe/** -text
+# The MuDirac patch: `patch -p1` applies it to the release archive's LF sources, so a checkout must not rewrite its
+# line endings; its default-output inputs are MuDirac input files read as written.
+third_party/mudirac/** -text

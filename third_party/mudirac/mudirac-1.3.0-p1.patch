@@ -1,0 +1,1033 @@
+diff -ruN a/lib/atom.cpp b/lib/atom.cpp
+--- a/lib/atom.cpp
++++ b/lib/atom.cpp
+@@ -107,7 +107,13 @@
+ 
+   if ((A > 0) && (reduced_mass) ) {
+     M = getIsotopeMass(Z, A);
+-    mu = effectiveMass(m, M * Physical::amu);
++    if (consistency_opt.nuclear_mass) {
++      // nuclear_mass: M_atom amu - Z m_e + B_e(Z)/c^2 (AME2020 II eqs. 1-2)
++      M_nuc = M * Physical::amu - Z * Physical::m_e + Consistency::electronBindingHa(Z) / (Physical::c * Physical::c);
++      mu = effectiveMass(m, M_nuc);
++    } else {
++      mu = effectiveMass(m, M * Physical::amu);
++    }
+   } else {
+     mu = m;
+   }
+@@ -143,7 +149,13 @@
+   }
+ 
+   if (radius_model == FERMI2) {
+-    V_coulomb = new CoulombFermi2Potential(Z, R, A);
++    // the density record holds the constructor's arguments (MuDirac's defaults unless c is exact)
++    dens.t_arg = Physical::fermi2_t;
++    dens.c_arg = -1;
++    if (consistency_opt.rms_exact && R > 0) {
++      resolveExactC(dens.t_arg, dens.c_arg);
++    }
++    rebuildPotentials();
+   } else {
+     V_coulomb = new CoulombSpherePotential(Z, R);
+   }
+@@ -177,6 +189,9 @@
+     return;
+   }
+ 
++  if (fermi_c  == -1 && consistency_opt.rms_exact) {
++    resolveExactC(thickness, fermi_c); // fermi2_rms_exact (keeps -1 outside the 2pF domain)
++  }
+   if (fermi_c  == -1) {
+ 
+     if (A >= 5.0) {
+@@ -191,8 +206,49 @@
+   fermi2.c = fermi_c/Physical::fm;
+   fermi2.t = thickness/Physical::fm;
+ 
+-  V_coulomb = new CoulombFermi2Potential(Z, R, A, thickness, fermi_c);
++  dens.t_arg = thickness;
++  dens.c_arg = fermi_c;
++  rebuildPotentials();
+   reset();
++}
++
++/**
++ * @brief  fermi2_rms_exact: the exact c for fermi2_rms_fm at this thickness, or MuDirac's rule outside the 2pF domain
++ */
++void Atom::resolveExactC(double thickness, double &fermi_c) {
++  bool inside = false;
++  double cx = Consistency::cExact(consistency_opt.rms_fm * Physical::fm, thickness, inside);
++  if (inside) {
++    fermi_c = cx;
++    dens.domain = "INSIDE";
++  } else {
++    char buf[64];
++    snprintf(buf, sizeof(buf), "OUTSIDE_2PF_T%.6g", thickness / Physical::fm);
++    dens.domain = buf;
++    LOG(WARNING) << "fermi2_rms_fm " << consistency_opt.rms_fm << " fm is at or below rms(c = 0, t): keeping MuDirac's c ("
++                 << dens.domain << ")\n";
++  }
++}
++
++/**
++ * @brief  Build V_C and (when on) V_U from the one density record
++ */
++void Atom::rebuildPotentials() {
++  if (rmodel == FERMI2) {
++    V_coulomb = new CoulombFermi2Potential(Z, R, A, dens.t_arg, dens.c_arg);
++  }
++  if (use_uehling) {
++    if (consistency_opt.density_fermi2 && rmodel == FERMI2) {
++      CoulombFermi2Potential *vc = dynamic_cast<CoulombFermi2Potential *>(V_coulomb);
++      V_uehling_d = UehlingDensityPotential(Z, vc->getc(), vc->getT(), u_steps, consistency_opt.shell_nodes);
++      V_uehling_d.set_exp_cutoffs(u_cut_low, u_cut_high);
++      uehling_is_density = true;
++    } else {
++      V_uehling = UehlingSpherePotential(Z, R, u_steps);
++      V_uehling.set_exp_cutoffs(u_cut_low, u_cut_high);
++      uehling_is_density = false;
++    }
++  }
+ }
+ 
+ void Atom::setFermi2Femto(const double coord_1, const double coord_2, Fermi2CoordinateSystem coord_sys) {
+@@ -214,7 +270,9 @@
+   }
+   LOG(DEBUG) << "creating potential with " << coordinate_system_state << " fermi parameters: " << coord_1 << ", " << coord_2 << "\n";
+   LOG(DEBUG) << "fermi parameters: " << fermi2.c << " fm, " << fermi2.t << " fm \n";
+-  V_coulomb = new CoulombFermi2Potential(Z, R, A, fermi2.t*Physical::fm, fermi2.c *Physical::fm);
++  dens.t_arg = fermi2.t*Physical::fm;
++  dens.c_arg = fermi2.c *Physical::fm;
++  rebuildPotentials(); // the fit path rebuilds V_U too
+   reset();
+ }
+ 
+@@ -258,8 +316,10 @@
+   if (s) {
+     LOG(INFO) << "Initialising Uehling potential with " << usteps
+               << " integration steps\n";
+-    V_uehling = UehlingSpherePotential(Z, R, usteps);
+-    V_uehling.set_exp_cutoffs(cut_low, cut_high);
++    u_steps = usteps;
++    u_cut_low = cut_low;
++    u_cut_high = cut_high;
++    rebuildPotentials(); // V_C and V_U from the density record
+   }
+   reset();
+ }
+@@ -338,7 +398,7 @@
+ 
+   Vout = V_coulomb->V(r);
+   if (use_uehling) {
+-    Vout += V_uehling.V(r);
++    Vout += uehling_is_density ? V_uehling_d.V(r) : V_uehling.V(r);
+   }
+   if (use_econf) {
+     Vout += V_econf.V(r);
+@@ -409,7 +469,7 @@
+                      double radius, double fc, double dx, int ideal_minshell, bool reduced_mass)
+   : Atom(Z, m, A, radius_model, radius, fc, dx, reduced_mass) {
+   restE = mu * pow(Physical::c, 2);
+-  LOG(DEBUG) << "Rest energy = " << restE / Physical::eV << " eV\n";
++  LOG(DEBUG) << "Rest energy = " << restE / Consistency::eV() << " eV\n";
+   idshell = ideal_minshell;
+   if (idshell > 0)
+     LOG(INFO) << "Using hydrogen-like solution for n >= " << idshell
+@@ -1186,7 +1246,7 @@
+     // Compute transition probability
+     tdata.tmat = getTransitionProbabilities(n2, l2, s2, n1, l1, s1);
+ 
+-    LOG(INFO) << "Transition energy = " << (tdata.ds2.E - tdata.ds1.E) / (Physical::eV * 1000) << " kEv\n";
++    LOG(INFO) << "Transition energy = " << (tdata.ds2.E - tdata.ds1.E) / (Consistency::eV() * 1000) << " kEv\n";
+ 
+     transitions.push_back(tdata);
+   }
+diff -ruN a/lib/atom.hpp b/lib/atom.hpp
+--- a/lib/atom.hpp
++++ b/lib/atom.hpp
+@@ -133,6 +133,19 @@
+   // Additional potential terms
+   bool use_uehling = false;
+   UehlingSpherePotential V_uehling;
++  // one density record; V_C and V_U are rebuilt from it by rebuildPotentials() and nothing else
++  struct DensityRecord {
++    double t_arg = Physical::fermi2_t; // thickness passed to CoulombFermi2Potential (Bohr)
++    double c_arg = -1;                 // c passed to it (Bohr; -1: MuDirac's own rule inside the constructor)
++    string domain = "NOT_TESTED";      // INSIDE | OUTSIDE_2PF_T<t fm> | NOT_TESTED (no exact inversion requested)
++  } dens;
++  int u_steps = 100;
++  double u_cut_low = 0.0, u_cut_high = INFINITY;
++  bool uehling_is_density = false;
++  UehlingDensityPotential V_uehling_d;
++  double M_nuc = -1; // nuclear mass (m_e units) under nuclear_mass, else -1
++  void rebuildPotentials();
++  void resolveExactC(double thickness, double &fermi_c);
+   bool use_econf = false;
+   EConfPotential V_econf;
+ 
+@@ -183,6 +196,22 @@
+   };
+   UehlingSpherePotential getPotentialUehling() {
+     return V_uehling;
++  };
++  // read-back of the Uehling potential in use, the density record and the nuclear mass
++  bool getUehlingIsDensity() {
++    return uehling_is_density;
++  };
++  UehlingDensityPotential *getPotentialUehlingDensity() {
++    return &V_uehling_d;
++  };
++  UehlingSpherePotential *getPotentialUehlingSphere() {
++    return &V_uehling;
++  };
++  string getDensityDomain() {
++    return dens.domain;
++  };
++  double getMnuc() {
++    return M_nuc;
+   };
+   EConfPotential getPotentialElectronic() {
+     return V_econf;
+diff -ruN a/lib/config.cpp b/lib/config.cpp
+--- a/lib/config.cpp
++++ b/lib/config.cpp
+@@ -87,6 +87,30 @@
+   // Boolean keywords
+   this->defineBoolNode("devel_EdEscan_log", InputNode<bool>(false, false)); // Make the energy scan logarithmic
+   this->defineBoolNode("reduced_mass", InputNode<bool>(true, false)); // Use the reduced mass
++
++  // numerics keywords (each default keeps MuDirac 1.3.0's arithmetic)
++  this->defineBoolNode("uehling_stable", InputNode<bool>(false, false));
++  this->defineBoolNode("uehling_gauss", InputNode<bool>(false, false));
++  this->defineBoolNode("fermi2_hermite", InputNode<bool>(false, false));
++  this->defineIntNode("fermi2_csteps", InputNode<int>(5000));
++  this->defineDoubleNode("domain_in_eps", InputNode<double>(1e-5));
++  this->defineDoubleNode("domain_out_eps", InputNode<double>(1e-5));
++  this->defineIntNode("state_header_precision", InputNode<int>(-1));
++
++  // Hamiltonian consistency keywords (each default keeps MuDirac 1.3.0's arithmetic)
++  this->defineStringNode("uehling_density", InputNode<string>("sphere", false));
++  this->defineIntNode("uehling_shell_nodes", InputNode<int>(12));
++  this->defineBoolNode("fermi2_rms_exact", InputNode<bool>(false, false));
++  this->defineDoubleNode("fermi2_rms_fm", InputNode<double>(-1));
++  this->defineBoolNode("nuclear_mass", InputNode<bool>(false, false));
++  this->defineBoolNode("ev_codata2022", InputNode<bool>(false, false));
++}
++
++// a refused keyword combination exits with a non-zero status and a logged reason
++static void refuseInput(const string &msg) {
++  cerr << "input refused: " << msg << "\n";
++  LOG(ERROR) << SPECIAL << "input refused: " << msg << "\n";
++  exit(2);
+ }
+ 
+ 
+@@ -155,6 +179,41 @@
+ }
+ 
+ DiracAtom MuDiracInputFile::makeAtom() {
++  // numerics switches, read before any potential is built
++  numerics_opt.uehling_stable = this->getBoolValue("uehling_stable");
++  numerics_opt.uehling_gauss = this->getBoolValue("uehling_gauss");
++  numerics_opt.fermi2_hermite = this->getBoolValue("fermi2_hermite");
++  numerics_opt.fermi2_csteps = this->getIntValue("fermi2_csteps");
++  numerics_opt.state_header_precision = this->getIntValue("state_header_precision");
++  // consistency switches, read before any potential is built
++  // case-insensitive keywords arrive upper-cased (input.cpp:80-81); compare upper-case
++  string udens = upperString(this->getStringValue("uehling_density"));
++  if (udens != "SPHERE" && udens != "FERMI2") {
++    refuseInput("uehling_density must be sphere or fermi2");
++  }
++  consistency_opt.density_fermi2 = (udens == "FERMI2");
++  consistency_opt.shell_nodes = this->getIntValue("uehling_shell_nodes");
++  consistency_opt.rms_exact = this->getBoolValue("fermi2_rms_exact");
++  consistency_opt.rms_fm = this->getDoubleValue("fermi2_rms_fm");
++  consistency_opt.nuclear_mass = this->getBoolValue("nuclear_mass");
++  consistency_opt.ev_codata2022 = this->getBoolValue("ev_codata2022");
++  if (consistency_opt.rms_exact) {
++    double rad = this->getDoubleValue("radius");
++    if (!(consistency_opt.rms_fm > 0) || !(rad > 0)) {
++      refuseInput("fermi2_rms_exact TRUE needs fermi2_rms_fm and radius (a defaultradius run has no intended rms)");
++    }
++    if (!(fabs(rad / sqrt(5.0 / 3.0) - consistency_opt.rms_fm) <= 1e-12 * consistency_opt.rms_fm)) {
++      refuseInput("radius/sqrt(5/3) and fermi2_rms_fm disagree by more than 1e-12 relative");
++    }
++  }
++  if (consistency_opt.density_fermi2) {
++    if (this->getStringValue("nuclear_model") != "FERMI2") {
++      refuseInput("uehling_density fermi2 needs nuclear_model FERMI2");
++    }
++    if (this->getDoubleValue("uehling_lowcut") != 0.0) {
++      refuseInput("uehling_density fermi2 does not support uehling_lowcut");
++    }
++  }
+   // Now extract the relevant parameters
+   int Z = getElementZ(this->getStringValue("element"));
+   double radius = this->getDoubleValue("radius");
+@@ -192,6 +251,8 @@
+   da.maxit_E = this->getIntValue("max_E_iter");
+   da.maxit_nodes = this->getIntValue("max_nodes_iter");
+   da.maxit_state = this->getIntValue("max_state_iter");
++  da.in_eps = this->getDoubleValue("domain_in_eps");
++  da.out_eps = this->getDoubleValue("domain_out_eps");
+ 
+   if (this->getBoolValue("uehling_correction")) {
+     da.setUehling(true, this->getIntValue("uehling_steps"),
+diff -ruN a/lib/consistency.hpp b/lib/consistency.hpp
+--- /dev/null
++++ b/lib/consistency.hpp
+@@ -0,0 +1,39 @@
++/**
++ * Hamiltonian consistency options of the MuDirac 1.3.0 patch, and the exact 2pF helpers. Each default keeps
++ * MuDirac 1.3.0's arithmetic; the README lists the six inputs on which the default output was compared.
++ *
++ *   uehling_density: sphere|fermi2   V_U of the uniform sphere (MuDirac) or of the run's own 2pF charge density
++ *   uehling_shell_nodes: N_s         Gauss-Legendre nodes per s-panel of the 2pF Uehling superposition
++ *   fermi2_rms_exact: TRUE           the 2pF c solved from the exact 2pF moments for fermi2_rms_fm at the run's t
++ *   fermi2_rms_fm: <rms>             the run's intended rms charge radius (fm)
++ *   nuclear_mass: TRUE               mu from the nuclear mass M_atom amu - Z m_e + B_e(Z)/c^2
++ *   ev_codata2022: TRUE              Hartree -> eV with 27.211386245981 (CODATA 2022) on the output paths only
++ */
++#ifndef MUDIRAC_CONSISTENCY_HPP
++#define MUDIRAC_CONSISTENCY_HPP
++#include <string>
++
++struct ConsistencyOptions {
++  bool density_fermi2 = false;
++  int shell_nodes = 12;
++  bool rms_exact = false;
++  double rms_fm = -1;
++  bool nuclear_mass = false;
++  bool ev_codata2022 = false;
++};
++extern ConsistencyOptions consistency_opt;
++
++namespace Consistency {
++const double E_H_EV_2022 = 27.211386245981; // CODATA 2022 Hartree energy in eV
++// Output conversion factor (Hartree per eV): MuDirac's Physical::eV, or the CODATA 2022 value under the keyword
++double eV();
++// Exact rms radius of the 2pF density 1/(1 + exp(4 ln3 (r - c)/t)) by Gauss-Legendre moments (any length unit)
++double rms2pF(double c, double t);
++// The c >= 0 with rms2pF(c, t) = rms; inside = false (and -1 returned) when rms <= rms2pF(0, t)
++double cExact(double rms, double t, bool &inside);
++// Total electron binding energy B_e(Z) in Hartree (AME2020 II eq. 2, eV, converted with E_H_EV_2022)
++double electronBindingHa(int Z);
++// h(x) = (x - 1) + (x + 1) e^{-2x} = 2 e^{-x}(x cosh x - sinh x), series for x < 1
++double hOut(double x);
++} // namespace Consistency
++#endif
+diff -ruN a/lib/numerics.hpp b/lib/numerics.hpp
+--- /dev/null
++++ b/lib/numerics.hpp
+@@ -0,0 +1,21 @@
++/**
++ * Numerics options of the MuDirac 1.3.0 patch. Each default keeps MuDirac 1.3.0's arithmetic.
++ *
++ *   uehling_stable: TRUE          the uniform-sphere Uehling kernel in a cancellation-free form (trapezoid in u)
++ *   uehling_gauss: TRUE           the same kernel by Gauss-Legendre quadrature in theta (u = sin theta), uehling_steps nodes
++ *   fermi2_csteps: <n>            size of the hidden logarithmic grid of the 2pF Coulomb potential (MuDirac: 5000)
++ *   fermi2_hermite: TRUE          2pF Coulomb moments by 4-point Gauss-Legendre per interval, cubic Hermite read-back
++ *   state_header_precision: <n>   significant digits of the energy header of every state file (-1: the stream default)
++ *   domain_in_eps, domain_out_eps the tolerances MuDirac 1.3.0 hard-codes for the inner and outer integration domain
++ */
++#ifndef MUDIRAC_NUMERICS_HPP
++#define MUDIRAC_NUMERICS_HPP
++struct NumericsOptions {
++  bool uehling_stable = false;
++  bool uehling_gauss = false;
++  int fermi2_csteps = 5000;
++  bool fermi2_hermite = false;
++  int state_header_precision = -1;
++};
++extern NumericsOptions numerics_opt;
++#endif
+diff -ruN a/lib/output.cpp b/lib/output.cpp
+--- a/lib/output.cpp
++++ b/lib/output.cpp
+@@ -69,9 +69,12 @@
+   ofstream out(fname);
+ 
+   // Start with writing a header
++  if (numerics_opt.state_header_precision > -1) {
++    out << setprecision(numerics_opt.state_header_precision); // state_header_precision
++  }
+   out << "#####################################################\n";
+   out << "# DiracState with n = " << ds.getn() << ", l = " << ds.getl() << ", s = " << ds.gets() << "\n";
+-  out << "# E = " << ds.bindingE() / Physical::eV << " + mc^2 = " << ds.E / Physical::eV << " eV\n";
++  out << "# E = " << ds.bindingE() / Consistency::eV() << " + mc^2 = " << ds.E / Consistency::eV() << " eV\n";
+   out << "# nodes = " << ds.nodes << ", " << ds.nodesQ << "\n";
+   out << "#####################################################\n";
+ 
+@@ -82,7 +85,7 @@
+ 
+   // Now write down the content
+   for (int i = 0; i < ds.grid.size(); ++i) {
+-    out << ds.grid[i] << '\t' << ds.V[i] / Physical::eV << '\t' << ds.P[i] << '\t' << ds.Q[i] << '\n';
++    out << ds.grid[i] << '\t' << ds.V[i] / Consistency::eV() << '\t' << ds.P[i] << '\t' << ds.Q[i] << '\n';
+   }
+ 
+   out.close();
+@@ -176,7 +179,7 @@
+   maxE = 0;
+ 
+   for (int i = 0; i < N; ++i) {
+-    double E = (transitions[i].ds2.E - transitions[i].ds1.E) / Physical::eV;
++    double E = (transitions[i].ds2.E - transitions[i].ds1.E) / Consistency::eV();
+     minE = min(E, minE);
+     maxE = max(E, maxE);
+ 
+@@ -261,7 +264,7 @@
+       double tRate = transitions[i].tmat.totalRate();
+       if (dE <= 0 || tRate <= 0)
+         continue; // Transition is invisible
+-      out << transitions[i].name << '\t' << dE / Physical::eV;
++      out << transitions[i].name << '\t' << dE / Consistency::eV();
+       out << "\t\t" << tRate * Physical::s << '\n';
+     }
+ 
+diff -ruN a/lib/potential.cpp b/lib/potential.cpp
+--- a/lib/potential.cpp
++++ b/lib/potential.cpp
+@@ -11,6 +11,355 @@
+  */
+ 
+ #include "potential.hpp"
++#include <algorithm>
++#include <cstring>
++
++// Gauss-Legendre nodes and weights on [-1, 1] by Newton iteration on P_n
++static void gaussLegendre(int n, double *x, double *w) {
++  int m = (n + 1) / 2;
++  for (int i = 1; i <= m; ++i) {
++    double z = cos(M_PI * (i - 0.25) / (n + 0.5));
++    double z1, pp;
++    int it = 0;
++    while (true) {
++      double p1 = 1.0, p2 = 0.0, p3;
++      for (int j = 1; j <= n; ++j) {
++        p3 = p2;
++        p2 = p1;
++        p1 = ((2.0 * j - 1.0) * z * p2 - (j - 1.0) * p3) / j;
++      }
++      pp = n * (z * p1 - p2) / (z * z - 1.0);
++      z1 = z;
++      z = z1 - p1 / pp;
++      ++it;
++      if (fabs(z - z1) <= 1e-15 || it >= 100)
++        break;
++    }
++    x[i - 1] = -z;
++    x[n - i] = z;
++    w[i - 1] = w[n - i] = 2.0 / ((1.0 - z * z) * pp * pp);
++  }
++}
++
++NumericsOptions numerics_opt;
++
++// ---------------------------------------------------------------------------------------------------------------
++// Hamiltonian consistency: options, exact 2pF helpers, the Uehling potential of the 2pF density
++// ---------------------------------------------------------------------------------------------------------------
++ConsistencyOptions consistency_opt;
++
++namespace Consistency {
++
++double eV() {
++  return consistency_opt.ev_codata2022 ? 1.0 / E_H_EV_2022 : Physical::eV;
++}
++
++// 2pF shape f(s) = 1/(1 + exp((s - c)/a)) without overflow
++static double fermiShape(double s, double c, double a) {
++  double x = (s - c) / a;
++  if (x > 0) {
++    double e = exp(-x);
++    return e / (1.0 + e);
++  }
++  return 1.0 / (1.0 + exp(x));
++}
++
++double rms2pF(double c, double t) {
++  double a = t / (4 * log(3.0));
++  double top = (c > 0 ? c : 0.0) + 60 * a;
++  int npan = (int)ceil(top / (0.5 * a));
++  double gx[16], gw[16];
++  gaussLegendre(16, gx, gw);
++  double i2 = 0, i4 = 0;
++  for (int p = 0; p < npan; ++p) {
++    double A = top * p / npan, B = top * (p + 1) / npan;
++    double mid = 0.5 * (A + B), half = 0.5 * (B - A);
++    for (int j = 0; j < 16; ++j) {
++      double s = mid + half * gx[j];
++      double f = fermiShape(s, c, a) * half * gw[j];
++      i2 += f * s * s;
++      i4 += f * s * s * s * s;
++    }
++  }
++  return sqrt(i4 / i2);
++}
++
++double cExact(double rms, double t, bool &inside) {
++  double floor0 = rms2pF(0.0, t);
++  if (!(rms > floor0)) {
++    inside = false;
++    return -1;
++  }
++  inside = true;
++  double lo = 0.0, hi = rms * sqrt(5.0 / 3.0) + t;
++  while (rms2pF(hi, t) < rms)
++    hi *= 2;
++  for (int it = 0; it < 400; ++it) {
++    double mid = 0.5 * (lo + hi);
++    if (mid <= lo || mid >= hi)
++      break;
++    if (rms2pF(mid, t) < rms)
++      lo = mid;
++    else
++      hi = mid;
++  }
++  return (fabs(rms2pF(lo, t) - rms) <= fabs(rms2pF(hi, t) - rms)) ? lo : hi;
++}
++
++double electronBindingHa(int Z) {
++  double z = Z;
++  return (14.4381 * pow(z, 2.39) + 1.55468e-6 * pow(z, 5.35)) / E_H_EV_2022;
++}
++
++double hOut(double x) {
++  if (x < 1.0) {
++    static const double cf[11] = {2.0 / 6.0, 4.0 / 120.0, 6.0 / 5040.0, 8.0 / 362880.0, 10.0 / 39916800.0,
++                                  12.0 / 6227020800.0, 14.0 / 1307674368000.0, 16.0 / 355687428096000.0,
++                                  18.0 / 121645100408832000.0, 20.0 / 51090942171709440000.0,
++                                  22.0 / 25852016738884976640000.0};
++    double x2 = x * x, p = x2 * x, acc = 0;
++    for (int m = 0; m < 11; ++m) {
++      acc += cf[m] * p;
++      p *= x2;
++    }
++    return 2 * exp(-x) * acc;
++  }
++  return (x - 1) + (x + 1) * exp(-2 * x);
++}
++
++} // namespace Consistency
++
++static inline uint64_t doubleBits(double r) {
++  uint64_t b;
++  memcpy(&b, &r, sizeof(b));
++  return b;
++}
++
++UehlingDensityPotential::UehlingDensityPotential(double Z, double c, double T, int usteps, int snodes, bool direct) {
++  this->Z = Z;
++  this->c = c;
++  this->T = T;
++  this->direct = direct;
++  nu = usteps;
++  ns = snodes;
++  if (nu < 1 || ns < 1 || T <= 0) {
++    throw invalid_argument("UehlingDensityPotential: invalid uehling_steps, uehling_shell_nodes or thickness");
++  }
++  a = T / (4 * log(3.0));
++  smin = (c - 40 * a > 0) ? c - 40 * a : 0.0;
++  smax = c + 40 * a;
++  npan = (int)ceil((smax - smin) / (2 * a));
++  if (npan < 1)
++    npan = 1;
++  edges = vector<double>(npan + 1);
++  for (int p = 0; p <= npan; ++p)
++    edges[p] = smin + (smax - smin) * p / npan;
++  edges[npan] = smax;
++  gx = vector<double>(ns);
++  gw = vector<double>(ns);
++  gaussLegendre(ns, gx.data(), gw.data());
++  // fixed nodes, panel-major
++  for (int p = 0; p < npan; ++p)
++    panelNodes(edges[p], edges[p + 1], fs, fq, fqn);
++  // base w-rule: nodes w_i = i h0, i = 0..nu (the w = 0 node carries zero weight: sinh^2 0 = 0)
++  const double k = 2 * Physical::c;
++  h0 = 18.0 / nu;
++  for (int i = 0; i <= nu; ++i) {
++    double w = i * h0;
++    double u = 1.0 / cosh(w);
++    double sh = sinh(w), ch = cosh(w);
++    double wt = (i == 0 ? 0.5 * h0 : h0) * (1 + 0.5 * u * u) * sh * sh / (ch * ch * ch);
++    bu.push_back(u);
++    bW.push_back(wt);
++    bku.push_back(k / u);
++    biu.push_back(u / k);
++  }
++  // per-panel sums of the panels above (w.r.t. B_p) and below (w.r.t. A_p): independent of r
++  int nb = nu + 1;
++  Tab = vector<double>((size_t)npan * nb, 0.0);
++  Tbe = vector<double>((size_t)npan * nb, 0.0);
++  QAab = vector<double>(npan, 0.0);
++  QNab = vector<double>(npan, 0.0);
++  QNbe = vector<double>(npan, 0.0);
++  for (int p = 0; p < npan; ++p) {
++    double A = edges[p], B = edges[p + 1];
++    for (int pp = 0; pp < npan; ++pp) {
++      if (pp == p)
++        continue;
++      for (int j = 0; j < ns; ++j) {
++        size_t idx = (size_t)pp * ns + j;
++        double s = fs[idx], q = fq[idx];
++        if (pp > p) {
++          QAab[p] += q;
++          QNab[p] += fqn[idx];
++          for (int i = 1; i < nb; ++i)
++            Tab[(size_t)p * nb + i] += q * exp(-bku[i] * (s - B)) * (s * biu[i] + biu[i] * biu[i]);
++        } else {
++          QNbe[p] += fqn[idx];
++          for (int i = 1; i < nb; ++i)
++            Tbe[(size_t)p * nb + i] += q * exp(-bku[i] * (A - s)) * Consistency::hOut(s * bku[i]);
++        }
++      }
++    }
++  }
++  built = true;
++}
++
++double UehlingDensityPotential::mfp(double s) const {
++  double e = exp(-fabs(s - c) / a);
++  return e / ((1 + e) * (1 + e)) / a;
++}
++
++void UehlingDensityPotential::panelNodes(double A, double B, vector<double> &s, vector<double> &q,
++                                         vector<double> &qn) const {
++  if (!(B > A))
++    return;
++  double mid = 0.5 * (A + B), half = 0.5 * (B - A);
++  for (int j = 0; j < ns; ++j) {
++    double sj = mid + half * gx[j];
++    double w = half * gw[j] * mfp(sj);
++    s.push_back(sj);
++    q.push_back(w);
++    qn.push_back(w * 4 * M_PI * sj * sj * sj / 3.0);
++  }
++}
++
++void UehlingDensityPotential::splitNodes(int p, double r, vector<double> &s, vector<double> &q,
++                                         vector<double> &qn) const {
++  double A = edges[p], B = edges[p + 1];
++  double d = r - A, e = B - r;
++  double sub[9] = {A, r - d / 4, r - d / 16, r - d / 64, r, r + e / 64, r + e / 16, r + e / 4, B};
++  for (int m = 0; m < 8; ++m)
++    panelNodes(sub[m], sub[m + 1], s, q, qn);
++}
++
++double UehlingDensityPotential::shapeCharge() {
++  double t = 0;
++  for (double x : fqn)
++    t += x;
++  return t;
++}
++
++double UehlingDensityPotential::farSum(double r, const vector<double> &s, const vector<double> &q) const {
++  // r at or beyond the s-range: every node has s < r; the w-step shrinks as h0/sqrt(1 + z), z = 2c (r - s_max)
++  const double k = 2 * Physical::c;
++  double z = k * (r - smax);
++  if (!(z > 0)) {
++    double S = 0;
++    for (int i = 1; i <= nu; ++i) {
++      double acc = 0;
++      for (size_t j = 0; j < s.size(); ++j)
++        acc += q[j] * exp(-bku[i] * (r - s[j])) * Consistency::hOut(s[j] * bku[i]);
++      S += bW[i] * biu[i] * biu[i] * acc;
++    }
++    return S;
++  }
++  double h = h0 / sqrt(1 + z);
++  double wmax = acosh(1 + 45.0 / z);
++  if (wmax > 18.0)
++    wmax = 18.0;
++  int n = (int)floor(wmax / h) + 1;
++  double S = 0;
++  for (int i = 1; i < n; ++i) {
++    double w = i * h;
++    double u = 1.0 / cosh(w);
++    double sh = sinh(w), ch = cosh(w);
++    double wt = h * (1 + 0.5 * u * u) * sh * sh / (ch * ch * ch);
++    double ku = k / u, iu = u / k;
++    double acc = 0;
++    for (size_t j = 0; j < s.size(); ++j)
++      acc += q[j] * exp(-ku * (r - s[j])) * Consistency::hOut(s[j] * ku);
++    S += wt * iu * iu * acc;
++  }
++  return S;
++}
++
++double UehlingDensityPotential::computeDirect(double r) {
++  // the plain double sum over the (split) node set and the w-rule: the reference for compute()
++  vector<double> s, q, qn;
++  if (r > smin && r < smax) {
++    int p = (int)(upper_bound(edges.begin(), edges.end(), r) - edges.begin()) - 1;
++    for (int pp = 0; pp < npan; ++pp) {
++      if (pp == p)
++        splitNodes(pp, r, s, q, qn);
++      else
++        panelNodes(edges[pp], edges[pp + 1], s, q, qn);
++    }
++  } else {
++    s = fs;
++    q = fq;
++    qn = fqn;
++  }
++  double Q = 0;
++  for (double x : qn)
++    Q += x;
++  double S = 0;
++  if (r >= smax) {
++    S = farSum(r, s, q);
++  } else {
++    for (int i = 1; i <= nu; ++i) {
++      double ku = bku[i], iu = biu[i];
++      double acc = 0;
++      for (size_t j = 0; j < s.size(); ++j) {
++        double y;
++        if (r <= s[j])
++          y = 2 * r * iu - exp(-ku * (s[j] - r)) * (-expm1(-2 * r * ku)) * (s[j] * iu + iu * iu);
++        else
++          y = iu * iu * exp(-ku * (r - s[j])) * Consistency::hOut(s[j] * ku);
++        acc += q[j] * y;
++      }
++      S += bW[i] * acc;
++    }
++  }
++  return -(2 * Physical::alpha / (3 * Physical::c * r)) * (Z / Q) * S;
++}
++
++double UehlingDensityPotential::compute(double r) {
++  if (direct || r <= smin || r >= smax)
++    return computeDirect(r);
++  // smin < r < smax: panel p holds r; the panels above and below by their precomputed sums, panel p split at r
++  int p = (int)(upper_bound(edges.begin(), edges.end(), r) - edges.begin()) - 1;
++  double A = edges[p], B = edges[p + 1];
++  vector<double> s, q, qn;
++  splitNodes(p, r, s, q, qn);
++  double Q = QNab[p] + QNbe[p];
++  for (double x : qn)
++    Q += x;
++  int nb = nu + 1;
++  double S = 0;
++  for (int i = 1; i < nb; ++i) {
++    double ku = bku[i], iu = biu[i];
++    double above = 2 * r * iu * QAab[p] - (-expm1(-2 * r * ku)) * exp(-ku * (B - r)) * Tab[(size_t)p * nb + i];
++    double below = iu * iu * exp(-ku * (r - A)) * Tbe[(size_t)p * nb + i];
++    double acc = 0;
++    for (size_t j = 0; j < s.size(); ++j) {
++      double y;
++      if (r <= s[j])
++        y = 2 * r * iu - exp(-ku * (s[j] - r)) * (-expm1(-2 * r * ku)) * (s[j] * iu + iu * iu);
++      else
++        y = iu * iu * exp(-ku * (r - s[j])) * Consistency::hOut(s[j] * ku);
++      acc += q[j] * y;
++    }
++    S += bW[i] * (above + below + acc);
++  }
++  return -(2 * Physical::alpha / (3 * Physical::c * r)) * (Z / Q) * S;
++}
++
++double UehlingDensityPotential::V(double r) {
++  if (r <= 0) {
++    throw invalid_argument("UehlingDensityPotential: r must be positive");
++  }
++  if (r > exp_cutoff_high * 0.5 * Physical::alpha) {
++    return 0.0;
++  }
++  uint64_t key = doubleBits(r);
++  auto it = memo.find(key);
++  if (it != memo.end())
++    return it->second;
++  double v = compute(r);
++  memo[key] = v;
++  return v;
++}
+ 
+ /**
+  * @brief  Initialise Coulomb spherical potential
+@@ -80,6 +429,10 @@
+ 
+   LOG(INFO) << "Initialising Coulomb Fermi-2 potential, c = " << c << "\n";
+ 
++  // fermi2_csteps: the size of the hidden grid (default 5000)
++  csteps = numerics_opt.fermi2_csteps;
++  hermite = numerics_opt.fermi2_hermite;
++
+   // Then find the grid
+   grid = logGrid(1e-8, 1e-2, csteps);
+   // And define the density over it
+@@ -108,6 +461,43 @@
+ 
+   // Adjust potential so that it connects well at grid edge
+   VR = -Z / grid[1].back() - Vgrid.back();
++
++  // fermi2_hermite: moments by 4-point Gauss-Legendre per interval, cubic Hermite read-back in x
++  if (hermite) {
++    int N = csteps;
++    double gx[4], gw[4];
++    gaussLegendre(4, gx, gw);
++    double a4 = 4 * log(3.0);
++    vector<double> q2(N), q1(N);
++    double r0 = grid[1][0];
++    double f0 = 1.0 / (1.0 + exp(a4 * (r0 - c) / T));
++    q2[0] = 4 * M_PI * f0 * pow(r0, 3) / 3.0;
++    vector<double> seg1(N - 1);
++    for (int i = 0; i < N - 1; ++i) {
++      double s2 = 0, s1 = 0;
++      for (int j = 0; j < 4; ++j) {
++        double xm = 0.5 * (grid[0][i + 1] + grid[0][i]) + 0.5 * dx * gx[j];
++        double rm = 1e-8 * exp(xm);
++        double fm = 1.0 / (1.0 + exp(a4 * (rm - c) / T));
++        s2 += gw[j] * (4 * M_PI * pow(rm, 3) * fm);
++        s1 += gw[j] * (4 * M_PI * pow(rm, 2) * fm);
++      }
++      q2[i + 1] = q2[i] + s2 * (0.5 * dx);
++      seg1[i] = s1 * (0.5 * dx);
++    }
++    q1[N - 1] = 0;
++    for (int i = N - 2; i >= 0; --i) {
++      q1[i] = q1[i + 1] + seg1[i];
++    }
++    double Qh = q2[N - 1];
++    Vh = vector<double>(N);
++    dVdx = vector<double>(N);
++    for (int i = 0; i < N; ++i) {
++      Vh[i] = -(Z / Qh) * (q2[i] / grid[1][i] + q1[i]);
++      dVdx[i] = (Z / Qh) * q2[i] / grid[1][i];
++    }
++    innerVh = (Z / Qh) * 4 * M_PI * f0 / 6.0;
++  }
+ }
+ 
+ double CoulombFermi2Potential::V(double r) {
+@@ -116,6 +506,21 @@
+     throw invalid_argument("Negative radius not allowed for CoulombPotential");
+   } else if (r > grid[1].back()) {
+     return -Z / r;
++  } else if (hermite) {
++    if (r < grid[1][0]) {
++      return Vh[0] + innerVh * (pow(r, 2) - pow(grid[1][0], 2));
++    }
++    double xi = log(r / grid[1][0]) / dx;
++    int i0 = floor(xi);
++    if (i0 > (int)Vh.size() - 2)
++      i0 = Vh.size() - 2;
++    if (i0 < 0)
++      i0 = 0;
++    double t = xi - i0;
++    double y0 = Vh[i0], y1 = Vh[i0 + 1];
++    double d0 = dVdx[i0] * dx, d1 = dVdx[i0 + 1] * dx;
++    double t2 = t * t, t3 = t * t * t;
++    return (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * d0 + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * d1;
+   } else if (r < grid[1][0]) {
+     return innerV * pow(r, 2) + VR;
+   } else {
+@@ -184,6 +589,24 @@
+   }
+ 
+   K = -2 * pow(Physical::alpha, 2) / 3 * rho;
++
++  // uehling_stable (mode 1) / uehling_gauss (mode 2)
++  mode = (R > 0) ? (numerics_opt.uehling_gauss ? 2 : (numerics_opt.uehling_stable ? 1 : 0)) : 0;
++  if (mode == 2) {
++    int n = usteps;
++    vector<double> gx(n), gw(n);
++    gaussLegendre(n, gx.data(), gw.data());
++    gu = vector<double>(n);
++    gW = vector<double>(n);
++    gu24 = vector<double>(n);
++    for (int j = 0; j < n; ++j) {
++      double th = (gx[j] + 1.0) * (M_PI / 4.0);
++      double u = sin(th), cu = cos(th);
++      gu[j] = u;
++      gW[j] = gw[j] * (M_PI / 4.0) * cu * (cu * (1 + 0.5 * u * u));
++      gu24[j] = pow(u * Physical::alpha, 2.0) / 4.0;
++    }
++  }
+ }
+ 
+ /**
+@@ -292,12 +715,34 @@
+   } else if (r <= exp_cutoff_low * 0.5 * du * Physical::alpha) {
+     return K * uint0;
+   }
++  // uehling_gauss: Gauss-Legendre in theta with the cancellation-free kernel
++  if (mode == 2) {
++    double gans = 0;
++    for (int j = 0; j < (int)gu.size(); ++j) {
++      double u = gu[j];
++      double a = R * u * Physical::alpha / 2;
++      double em = exp(-2 * Physical::c * fabs(R - r) / u);
++      double ep = exp(-2 * Physical::c * (R + r) / u);
++      double y = (r <= R) ? (r * u * Physical::alpha - (em - ep) * (a + gu24[j]))
++                          : (em * (a - gu24[j]) + ep * (a + gu24[j]));
++      gans += y * gW[j];
++    }
++    return K / r * gans;
++  }
+   // Fill in the u integration kernel
+   uarg[0] = 0;
+   for (int i = 1; i < usteps; ++i) {
+     double u = i * du;
+     if (R <= 0) {
+       uarg[i] = ukernel_point(u, r);
++    } else if (mode == 1) {
++      // uehling_stable: r <= R: r u a - (e^{-2c(R-r)/u} - e^{-2c(R+r)/u})(R u a/2 + u^2 a^2/4);
++      //           r >  R: e^{-2c(r-R)/u}(R u a/2 - u^2 a^2/4) + e^{-2c(r+R)/u}(R u a/2 + u^2 a^2/4)
++      double a = R * u * Physical::alpha / 2;
++      double em = exp(-2 * Physical::c * fabs(R - r) / u);
++      double ep = exp(-2 * Physical::c * (R + r) / u);
++      uarg[i] = (r <= R) ? (r * u * Physical::alpha - (em - ep) * (a + u24c2[i]))
++                         : (em * (a - u24c2[i]) + ep * (a + u24c2[i]));
+     } else if (r > R) {
+       uarg[i] = ukernel_r_greater(i, r);
+     } else {
+diff -ruN a/lib/potential.hpp b/lib/potential.hpp
+--- a/lib/potential.hpp
++++ b/lib/potential.hpp
+@@ -18,6 +18,10 @@
+ #include "econfigs.hpp"
+ #include "integrate.hpp"
+ #include "utils.hpp"
++#include "numerics.hpp"
++#include "consistency.hpp"
++#include <cstdint>
++#include <unordered_map>
+ 
+ #include "../vendor/aixlog/aixlog.hpp"
+ 
+@@ -79,11 +83,25 @@
+   double getc() {
+     return c;
+   }
++  // read-back
++  double getT() {
++    return T;
++  }
++  double getZ() {
++    return Z;
++  }
++  double getR() {
++    return R;
++  }
+ 
+  protected:
+   double c, innerV, dx, T;
+   vector<vector<double>> grid;
+   vector<double> Vgrid;
++  // fermi2_hermite
++  bool hermite = false;
++  double innerVh = 0;
++  vector<double> Vh, dVdx;
+ };
+ 
+ /**
+@@ -121,6 +139,58 @@
+   double Z, R, rho, K, V0, du, uint0;
+   int usteps;
+   vector<double> uarg, uker, u24c2, uker_great, uker_small;
++  // uehling_stable (mode 1) / uehling_gauss (mode 2)
++  int mode = 0;
++  vector<double> gu, gW, gu24;
++};
++
++/**
++ * @brief  Uehling potential of the 2pF charge density
++ * @note   Superposition of uniform spheres, V_U(r) = -(2 alpha/(3 c r)) (Z/Q) sum_j w_j (-f'(s_j)) J(r; s_j),
++ * Q = sum_j w_j (4 pi s_j^3/3)(-f'(s_j)), f(s) = 1/(1 + exp((s - c)/a)), a = T/(4 ln 3), with the exact convention
++ * (1/(2c), alpha/c). J(r; s) = Int_0^1 uker(u) y(u) du by the trapezoid rule in w (u = sech w); s by
++ * Gauss-Legendre on panels of width 2a over [max(0, c - 40a), c + 40a], split at s = r with 3 geometric sub-panels
++ * per side. Values memoised per radius (bitwise key), never interpolated.
++ */
++class UehlingDensityPotential : Potential {
++ public:
++  UehlingDensityPotential() {}; // empty until built from a density record
++  UehlingDensityPotential(double Z, double c, double T, int usteps, int snodes, bool direct = false);
++  double V(double r) override;
++  void set_exp_cutoffs(double low, double high) {
++    exp_cutoff_low = low;
++    exp_cutoff_high = high;
++  };
++  // read-back
++  double getZ() { return Z; };
++  double getc() { return c; };
++  double getT() { return T; };
++  double getQtarget() { return Z; };
++  int getNu() { return nu; };
++  int getNs() { return ns; };
++  double getSmax() { return smax; };
++  double shapeCharge(); // Sum w (4 pi s^3/3)(-f') over the fixed panels (Bohr^3)
++  bool isBuilt() { return built; };
++  long memoSize() { return (long)memo.size(); };
++  double computeDirect(double r); // the plain double sum (reference for the rearranged evaluation)
++
++ protected:
++  bool built = false, direct = false;
++  double Z = 1, c = 0, T = 1, a = 1, smin = 0, smax = 0, h0 = 0.18;
++  int nu = 100, ns = 12, npan = 0;
++  double exp_cutoff_high = INFINITY, exp_cutoff_low = 0.0;
++  std::vector<double> gx, gw;           // Gauss-Legendre nodes/weights on [-1, 1], ns points
++  std::vector<double> edges;            // npan + 1 fixed s-panel edges
++  std::vector<double> fs, fq, fqn;      // fixed nodes, panel-major: s, w (-f'), w (4 pi s^3/3)(-f')
++  std::vector<double> bu, bW, bku, biu; // base w-rule: u, weight, k/u, u/k
++  std::vector<double> Tab, Tbe;         // npan x (nu + 1): sums over panels above (w.r.t. B_p) / below (w.r.t. A_p)
++  std::vector<double> QAab, QNab, QNbe; // per panel: sum of q above, sum of qn above, sum of qn below
++  std::unordered_map<uint64_t, double> memo;
++  double compute(double r);
++  void splitNodes(int p, double r, std::vector<double> &s, std::vector<double> &q, std::vector<double> &qn) const;
++  void panelNodes(double A, double B, std::vector<double> &s, std::vector<double> &q, std::vector<double> &qn) const;
++  double mfp(double s) const;
++  double farSum(double r, const std::vector<double> &s, const std::vector<double> &q) const;
+ };
+ 
+ /**
+diff -ruN a/lib/utils.cpp b/lib/utils.cpp
+--- a/lib/utils.cpp
++++ b/lib/utils.cpp
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include "utils.hpp"
++#include "consistency.hpp"
+ 
+ /**
+  * @brief  Compute the effective mass of a two-body system
+@@ -531,6 +532,11 @@
+ }
+ 
+ pair<double, double> fermiParameters(double rms_radius, double theta) {
++  if (consistency_opt.rms_exact) {
++    // fermi2_rms_exact: rms(c, c tan(theta)) = c rms(1, tan(theta)) exactly (2pF moments scale with the length)
++    double c = rms_radius / Consistency::rms2pF(1.0, tan(theta));
++    return {c, c * tan(theta)};
++  }
+   // reusing these calculated trig values
+   double var_cos = cos(theta);
+   double var_sin = sin(theta);
+@@ -541,6 +547,9 @@
+ }
+ 
+ double rmsRadius(double fermi_c, double fermi_t) {
++  if (consistency_opt.rms_exact) {
++    return Consistency::rms2pF(fermi_c, fermi_t); // fermi2_rms_exact: the exact 2pF moments
++  }
+   double t_const = (7.0*M_PI*M_PI)/(16.0*log(3.0)*log(3.0));
+   double r_sq = (3*fermi_c*fermi_c + t_const*fermi_t*fermi_t)*0.2;
+   double rms_radius = sqrt(r_sq);
+diff -ruN a/src/mudirac.cpp b/src/mudirac.cpp
+--- a/src/mudirac.cpp
++++ b/src/mudirac.cpp
+@@ -20,6 +20,13 @@
+ 
+   config.validate(argc, argv, seed);
+   setupLogging(config.getIntValue("verbosity"), seed);
++  // under ev_codata2022 the legacy-factor paths (fitting objective, debug scan) must not run
++  if (config.getBoolValue("ev_codata2022") &&
++      (config.getStringValue("devel_debug_task") != "" || config.getBoolValue("optimise_fermi_parameters"))) {
++    cerr << "input refused: ev_codata2022 refuses devel_debug_task and optimise_fermi_parameters\n";
++    LOG(ERROR) << SPECIAL << "input refused: ev_codata2022 refuses devel_debug_task and optimise_fermi_parameters\n";
++    exit(3);
++  }
+   debugTasks(config);   // runs debug tasks if configured
+   DiracAtom da = config.makeAtom();   // construct the atom
+ 

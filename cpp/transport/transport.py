@@ -26,6 +26,12 @@ PATCHES = ROOT / "cpp" / "patches"
 SNIPPET = ROOT / "data" / "g4" / "d1" / "geant4_add_dataset.snippet"
 SOURCES = ("matrix.json", "g4muonic_transport.cc", "CMakeLists.txt", "transport.py")
 RUNS_DIR = "runs_precreated"
+#: The profiles the `enabled` mode selects, as the matrix names them: every table the checks read, every
+#: expected profile and every case below follows them.
+D1_PROFILE = MATRIX["modes"]["enabled"]["profiles"]["G4MUONICDATA_D1_PROFILE"]
+D3_PROFILE = MATRIX["modes"]["enabled"]["profiles"]["G4MUONICDATA_D3_PROFILE"]
+#: A D3 profile this dataset no longer carries: a configuration naming it must stop, never fall through.
+REPLACED_D3_PROFILE = "mudirac130"
 ATOM_SYMBOLS = ("Al", "Si", "Ag", "Pb")
 
 
@@ -384,7 +390,7 @@ def corrupt_levels(tag: str, work: Path) -> Path:
     config = config_map(cell_output(root / RUNS_DIR / "pristine/bound_decay/82-208/1") / "config.txt")
     pristine_l8 = float.fromhex(config["L"][8])
     e8 = pristine_l8 * 1000.0 / 2.0
-    path = corrupted / source.name / "d3_levels.mudirac130.g4dat"
+    path = corrupted / source.name / f"d3_levels.{D3_PROFILE}.g4dat"
     old = path.read_text(encoding="ascii")
     columns_line = next(line for line in old.splitlines() if line.startswith("#COLUMNS"))
     columns = columns_line.split()[1:]
@@ -416,19 +422,20 @@ def cases(work: Path) -> None:
     target = next(t for t in MATRIX["targets"] if t["Z"] == 47)
     definitions = [
         ("P1", {}, "parity", "compiled", "set", None),
-        ("P2", {"G4MUONICDATA_PROFILE": "mudirac130"}, "compiled", "mudirac130", "set", None),
-        ("P3", {"G4MUONICDATA_D1_PROFILE": "mizuno2025"}, "mizuno2025", "compiled", "set", None),
-        ("P4", {"G4MUONICDATA_D3_PROFILE": "mudirac130"}, "parity", "mudirac130", "set", None),
-        ("P5", {"G4MUONICDATA_D1_PROFILE": "mizuno2025", "G4MUONICDATA_D3_PROFILE": "mudirac130"},
-         "mizuno2025", "mudirac130", "set", None),
-        ("P6", {"G4MUONICDATA_PROFILE": "compiled", "G4MUONICDATA_D1_PROFILE": "mizuno2025"},
-         "mizuno2025", "compiled", "set", None),
-        ("P7", {"G4MUONICDATA_PROFILE": "compiled", "G4MUONICDATA_D3_PROFILE": "mudirac130"},
-         "compiled", "mudirac130", "set", None),
+        ("P2", {"G4MUONICDATA_PROFILE": D3_PROFILE}, "compiled", D3_PROFILE, "set", None),
+        ("P3", {"G4MUONICDATA_D1_PROFILE": D1_PROFILE}, D1_PROFILE, "compiled", "set", None),
+        ("P4", {"G4MUONICDATA_D3_PROFILE": D3_PROFILE}, "parity", D3_PROFILE, "set", None),
+        ("P5", {"G4MUONICDATA_D1_PROFILE": D1_PROFILE, "G4MUONICDATA_D3_PROFILE": D3_PROFILE},
+         D1_PROFILE, D3_PROFILE, "set", None),
+        ("P6", {"G4MUONICDATA_PROFILE": "compiled", "G4MUONICDATA_D1_PROFILE": D1_PROFILE},
+         D1_PROFILE, "compiled", "set", None),
+        ("P7", {"G4MUONICDATA_PROFILE": "compiled", "G4MUONICDATA_D3_PROFILE": D3_PROFILE},
+         "compiled", D3_PROFILE, "set", None),
         ("P8", {"G4MUONICDATA_PROFILE": "compiled"}, "compiled", "compiled", "none", "nodata"),
-        ("P9", {"G4MUONICDATA_D3_PROFILE": "mudirac130"}, "parity", "mudirac130", "set", "explicit"),
-        ("P10", {"G4MUONICDATA_D3_PROFILE": "mudirac130"}, "", "", "", "nodata"),
+        ("P9", {"G4MUONICDATA_D3_PROFILE": D3_PROFILE}, "parity", D3_PROFILE, "set", "explicit"),
+        ("P10", {"G4MUONICDATA_D3_PROFILE": D3_PROFILE}, "", "", "", "nodata"),
         ("P11", {"G4MUONICDATA_PROFILE": "unknown_profile"}, "", "", "", None),
+        ("P14", {"G4MUONICDATA_D3_PROFILE": REPLACED_D3_PROFILE}, "", "", "", None),
     ]
     for tag in MATRIX["revisions"]:
         root = work / tag
@@ -453,7 +460,7 @@ def cases(work: Path) -> None:
             result = subprocess.run(argv, env=env, capture_output=True, text=True, check=False)
             output = result.stdout + result.stderr
             (cell / "stdout.log").write_text(output, encoding="utf-8")
-            if case_id in ("P10", "P11"):
+            if case_id in ("P10", "P11", "P14"):
                 code = "G4MuonicData001" if case_id == "P10" else "G4MuonicData004"
                 ok = result.returncode != 0 and code in output
             else:
@@ -482,7 +489,7 @@ def cases(work: Path) -> None:
             fresh(cell)
             args = cell_argv(Path(spec["binary"]), route, {"Z": 82, "A": 208}, 1, 1, "on", cell)
             env = env_for(Path(spec["install"]), corrupt, work,
-                          {"G4MUONICDATA_D3_PROFILE": "mudirac130"})
+                          {"G4MUONICDATA_D3_PROFILE": D3_PROFILE})
             result = subprocess.run(args, env=env, capture_output=True, text=True, check=False)
             output = result.stdout + result.stderr
             (cell / "stdout.log").write_text(output, encoding="utf-8")
@@ -613,7 +620,7 @@ def config_check(config: dict[str, list[str]], mode: str, version: str) -> tuple
         "preserved": None,
         "patched-off": ["compiled", "compiled", "none", "none"],
         "patched-default": ["parity", "compiled", "set", version],
-        "enabled": ["mizuno2025", "mudirac130", "set", version],
+        "enabled": [D1_PROFILE, D3_PROFILE, "set", version],
     }[mode]
     actual = config.get("CONFIG")
     return actual == expected, f"config={actual} expected={expected}"
@@ -664,9 +671,9 @@ def lookup_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
                  target: dict[str, int], dataset: Path) -> tuple[bool, str]:
     z, a = target["Z"], target["A"]
     requests = {
-        "rate": (dataset / "d1_capture.mizuno2025.g4dat", (z, a), "value", "RATE_BD", 0.001),
+        "rate": (dataset / f"d1_capture.{D1_PROFILE}.g4dat", (z, a), "value", "RATE_BD", 0.001),
         "zeff": (dataset / "d1_zeff.g4dat", (z,), "value", "ZEFF_BD", 1.0),
-        "kshell": (dataset / "d3_kshell.mudirac130.g4dat", (z, a), "value", "KA", 0.001),
+        "kshell": (dataset / f"d3_kshell.{D3_PROFILE}.g4dat", (z, a), "value", "KA", 0.001),
     }
     for name, (path, key, column, config_key, scale) in requests.items():
         hit = None if name == "zeff" else table_value(path, key, column)
@@ -674,10 +681,7 @@ def lookup_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
         line = next((row for row in config.get("_RES_LINES", []) if row[0] == name), None)
         if line is None or line[3] != origin:
             return False, f"{name} origin {line} expected {origin}"
-        if name == "zeff":
-            expected_profile = "mizuno2025"
-        else:
-            expected_profile = "mizuno2025" if name == "rate" else "mudirac130"
+        expected_profile = D1_PROFILE if name in ("zeff", "rate") else D3_PROFILE
         if line[4] != expected_profile or int(line[5]) != int(hit is not None):
             return False, f"{name} resolution {line}"
         if hit is None:
@@ -707,6 +711,24 @@ def lookup_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
     return True, f"rate zeff kshell checked for {z},{a}"
 
 
+def k1_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
+             mode: str, target: dict[str, int], dataset: Path) -> tuple[bool, str]:
+    """The natural-composition K energy, `GetKShellEnergy(Z)`: in `enabled`, the selected D3 profile's (Z, 0)
+    row times 0.001, bit for bit, or the pristine build's value where that profile has no (Z, 0) row, so the
+    compiled-in code runs; in the other patched modes, the pristine build's value."""
+    if "K1" not in config or "K1" not in pristine:
+        return False, f"K1 {config.get('K1')} pristine {pristine.get('K1')}"
+    if mode != "enabled":
+        return config["K1"] == pristine["K1"], f"K1 {config['K1'][0]} vs pristine {pristine['K1'][0]}"
+    natural = table_value(dataset / f"d3_kshell.{D3_PROFILE}.g4dat", (target["Z"], 0), "value")
+    if natural is None:
+        return (config["K1"] == pristine["K1"],
+                f"K1 {config['K1'][0]} vs pristine {pristine['K1'][0]} (no ({target['Z']}, 0) row)")
+    expected = natural * 0.001
+    detail = f"K1 {config['K1'][0]} expected natural row {expected.hex()}"
+    return same_float(config["K1"][0], expected), detail
+
+
 def level_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
                 mode: str, target: dict[str, int], dataset: Path) -> tuple[bool, str]:
     actual = [float.fromhex(value) for value in config["L"]]
@@ -716,8 +738,8 @@ def level_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
     if mode != "enabled":
         return config["L"] == pristine["L"], "off/default level array vs pristine"
     key = target["Z"], target["A"]
-    k = table_value(dataset / "d3_kshell.mudirac130.g4dat", key, "value")
-    levels = table_levels(dataset / "d3_levels.mudirac130.g4dat", key)
+    k = table_value(dataset / f"d3_kshell.{D3_PROFILE}.g4dat", key, "value")
+    levels = table_levels(dataset / f"d3_levels.{D3_PROFILE}.g4dat", key)
     if k is None or levels is None:
         return config["L"] == pristine["L"], "compiled level array vs pristine"
     expected = stock[:]
@@ -728,7 +750,7 @@ def level_check(config: dict[str, list[str]], pristine: dict[str, list[str]],
         differing = [i for i, (a, b) in enumerate(zip(actual, expected, strict=True)) if a != b]
         return False, f"level array differs at {differing}"
     res = next((row for row in config.get("_RES_LINES", []) if row[0] == "levels"), None)
-    if res is None or res[3:] != ["exact", "mudirac130", str(len(levels))]:
+    if res is None or res[3:] != ["exact", D3_PROFILE, str(len(levels))]:
         return False, f"level resolution {res}"
     return True, f"levels=table:{len(levels)} formula:{len(actual) - len(levels) - 1}"
 
@@ -737,7 +759,7 @@ def d9_check(records: list[list[str]], config: dict[str, list[str]], route: str,
              target: dict[str, int], dataset: Path) -> tuple[bool, str]:
     levels = [float.fromhex(value) for value in config["L"]]
     tolerance = 64 * sys.float_info.epsilon * max(levels[0], 0.001)
-    tabulated = table_levels(dataset / "d3_levels.mudirac130.g4dat", (target["Z"], target["A"]))
+    tabulated = table_levels(dataset / f"d3_levels.{D3_PROFILE}.g4dat", (target["Z"], target["A"]))
     count = len(tabulated or [])
     tab = [levels[0]] + [v * 0.001 for v in (tabulated or [])]
     by_event: dict[int, list[list[str]]] = {}
@@ -787,7 +809,7 @@ def d9_check(records: list[list[str]], config: dict[str, list[str]], route: str,
     return True, f"transitions table={classes['table']} mixed={classes['mixed']} formula={classes['formula']}"
 
 
-CHECK_IDS = ("events", "route", "target", "particles", "config", "lookups", "levels", "d9",
+CHECK_IDS = ("events", "route", "target", "particles", "config", "lookups", "k1", "levels", "d9",
              "parity", "threads")
 #: The modes whose records `parity` compares with the pristine build's.
 PARITY_COMPARISON_MODES = ("patched-off", "patched-default", "preserved")
@@ -795,14 +817,14 @@ PARITY_COMPARISON_MODES = ("patched-off", "patched-default", "preserved")
 
 def compares(check_id: str, mode: str, thread: int) -> bool:
     """Whether a check compares anything in a cell: not `parity` outside :data:`PARITY_COMPARISON_MODES`
-    (the reference is the cell's own digest), not `lookups` or `d9` outside `enabled`, not `levels` in
-    `pristine` or `preserved` (the cell is the reference), not `threads` at one thread (the cell is the
+    (the reference is the cell's own digest), not `lookups` or `d9` outside `enabled`, not `k1` or `levels`
+    in `pristine` or `preserved` (the cell is the reference), not `threads` at one thread (the cell is the
     reference). Such a cell's status is `N/A`."""
     if check_id == "parity":
         return mode in PARITY_COMPARISON_MODES
     if check_id in ("lookups", "d9"):
         return mode == "enabled"
-    if check_id == "levels":
+    if check_id in ("k1", "levels"):
         return mode not in ("pristine", "preserved")
     if check_id == "threads":
         return thread != 1
@@ -849,6 +871,8 @@ def check(work: Path, out: Path) -> None:
                         results["config"] = config_check(config, mode, version)
                         results["lookups"] = (lookup_check(config, pristine, target, dataset)
                                               if mode == "enabled" else (True, "not enabled"))
+                        results["k1"] = (k1_check(config, pristine, mode, target, dataset)
+                                         if mode not in ("pristine", "preserved") else (True, "reference"))
                         results["levels"] = (level_check(config, pristine, mode, target, dataset)
                                              if mode not in ("pristine", "preserved")
                                              else (True, "reference"))

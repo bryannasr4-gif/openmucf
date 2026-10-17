@@ -383,7 +383,7 @@ into a reader cannot.
 | `needs_verification` | bool | true if the digit or locator is not yet pinned from the primary text |
 | `recommendation` | string | `recommended`, `superseded`, or empty |
 | `evaluation_id` | string | identifies *which* evaluation this row belongs to |
-| `source_library` | string | `geant4-compiled-in`, `suzuki1987`, `iwamoto2025`, `jendl-mund`, `openmucf`, `mizuno2025`, `mudirac130` |
+| `source_library` | string | `geant4-compiled-in`, `suzuki1987`, `iwamoto2025`, `jendl-mund`, `openmucf`, `mizuno2025`, `mudirac130p1` |
 | `isotope_resolved` | bool | **disclosure**: is this row an isotope-resolved value, or an element value carrying an isotope label? |
 
 `evaluation_id` and `source_library` exist so that **two evaluations of the same `(Z, A)` can
