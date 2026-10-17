@@ -245,15 +245,19 @@ uncertainty among the nuclide's compared cells; for `K`, `e<n>` or a shell diffe
 the larger of 0.000001 keV and 0.000001 times the value.
 It is a check of one step, not an error bound on the table: what one step finer changes bounds nothing about
 the steps beyond it.
-All 7136 values with the Uehling potential, their 7136 twins without it, and all 67 gated solver lines are
-`ONE_STEP_STABLE`; the largest change is 0.656 of its limit, that of the grid step on `K` of Sr-88.
+All 7136 emitted binding energies with the Uehling potential (`K` and each `e<n>` of every kept member), their
+7136 twins without it, and all 67 gated solver lines are `ONE_STEP_STABLE`; the largest change is 0.656 of its
+limit, that of the grid step on `K` of Sr-88.
+The `rsig` runs from which `unc` and `u<n>` come were not refined, so those cells carry no one-step check.
 The second sets values of the production anchor runs beside the values an independent radial Dirac solver
 computed for the same equations (`numerical_check.csv`); that solver is to be released, and the check cannot be
 re-run from this repository today.
-The file carries 5900 rows over 59 nuclides: 20 with which the patched recipe was developed and checked (sets
-`pilot_D`, `pilot_RA` and `pilot_RB`) and a sample of 39 (`audit`) that holds each compared nuclide the
-pilot sets lack and one member for each Z above 82, the highest Z of the compared nuclides, that the input
-set carries.
+The file carries 5900 rows over 59 nuclides in four sets: 6 of the development set (`pilot_D`), on which every
+choice of the patched recipe was made; 8 reserved from those choices (`pilot_RA`), named before any computation
+under the patched Hamiltonian; 6 of a contingency set (`pilot_RB`), left untouched until an amendment of the
+certification rule was frozen and then run once on the frozen recipe; and a sample of 39 (`audit`) that holds
+each compared nuclide the pilot sets lack and one member for each Z above 82, the highest Z of the compared
+nuclides, that the input set carries.
 Each row gives the production value `Q_eV`, which the loader holds to the committed run at the decimals it
 prints, the independent value `Q_ref_eV`, the bound `b_num_eV` on the production value's numerical error, the
 larger of two estimates, and the row's target.

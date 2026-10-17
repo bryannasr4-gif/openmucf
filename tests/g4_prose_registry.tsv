@@ -234,7 +234,6 @@
 9e40493a339c324fc857234b30e5852ef35011fa	CHANGELOG.md	REGISTERED: 25.68, 26.11, 45.19 -- MUON_COST.md's electrical figures per negative muon produced
 9e58684280ea611c0c2f5df4b983816710477202	CHANGELOG.md	REGISTERED: 18.3 -- Kovach et al. (2017)'s efficiency, `eta_acc_kovach_minimal` = 0.183 in openmucf/data/muon_cost_chain.csv
 a08c5031c2980ac019a47e024a7068752d2b1dca	CHANGELOG.md	REGISTERED: Five, four, two -- wrapped arithmetic statements and the files carrying them at this entry's date, a count the sentence states 'at this head'
-a0f34f633300b7c5f8ff357abd4d0699ff748967	CHANGELOG.md	REGISTERED: one, one, two, one -- 'one-step refinement', 'a check of one step': the single refinement step DATASET_D3.md section 5 describes; two: the anchor run and its Uehling-free twin, 'the pairing of the two'
 a19ec5475d82727c02309b1f6b32a0fcc550aa51	CHANGELOG.md	REGISTERED: 0.5.0 -- historical: the version the 2026-09-23 addition of the published capture-rate tables produced; the changelog-version rule checks it is older than every entry above it
 a1d8627fa416a75f014f3159671a6eb850593035	CHANGELOG.md	REGISTERED: three -- the three routes to the marker the sentence enumerates
 a28f89f487dc60ca4643ad2597127de239ee1b2c	CHANGELOG.md	REGISTERED: two -- the two patterns, `STRONG` and `LEDGER`
@@ -291,6 +290,7 @@ c523161f940b687dcfc485d2ac74dcf4fdf83f09	CHANGELOG.md	REGISTERED: 0.84 -- the om
 c52b21f104e914771dbc252226b68c30a5db3660	CHANGELOG.md	REGISTERED: 10, ³ -- the retracted phrase '10³ gap', quoted
 c5e3d37109b142070c9abd49e1aac09044550e32	CHANGELOG.md	REGISTERED: 386 -- the sentence registry's row count before this pass, dated
 c62f067bd535ee99723a7d64476588694f84c09e	CHANGELOG.md	REGISTERED: 5 -- 'η=5', FINDINGS.md's section-1c structural bracket
+c63148c84ab7d1ec273dd0772cf1046090b74925	CHANGELOG.md	REGISTERED: one, one, two, one -- 'one-step refinement', 'a check of one step': the single refinement step DATASET_D3.md section 5 describes; two: the anchor run and its Uehling-free twin, 'the pairing of the two'
 c6aa87eed81ee44f0e9dfba37d0426ea1fa529ba	CHANGELOG.md	REGISTERED: 24.8, one -- DESIGN.md's audit section states the 24.8 sigma; 'the one arm64 EIG flag', a single event
 c6e051aca7a5908a703e01e05ad69d6b4840ea1d	CHANGELOG.md	REGISTERED: one -- 'a beam-kinetic one', a pronoun
 c7a491128b9b1587fed37a87f4bb773c49e4e271	CHANGELOG.md	REGISTERED: three -- 'three orders of magnitude', the separation scripts/generate_calibration.py's floor comment states
@@ -493,7 +493,6 @@ fb75dedfb605f98897d95fabd58e54396f759b86	DATASET_D1.md	REGISTERED: one -- a pron
 fe08442114a364c9c202d999c093b46f310682ee	DATASET_D1.md	REGISTERED: two -- the routes the next sentences name, by G4MuonMinusBoundDecay and G4MuonicAtomHelper; tests/test_g4lifetime.py reads the call each makes in both vendored revisions
 ff75fbe4536b0ca4aee71784da448e67d0842e07	DATASET_D1.md	REGISTERED: 62, 150, 50, 119 -- the record keys (62, 150) and (50, 119) and the nuclide labels Sm-150 and Sn-119; the abundances beside them are T-63's rounded pins, read from the audit rows of those keys
 ff83d36e1c390e35f3c6763ee4cdf8d3e8246540	DATASET_D1.md	REGISTERED: two -- 'the two overlap': the same two uncertainties
-11ebff07b7572ea79e25c48aa17a035fd50d3c3d	DATASET_D3.md	REGISTERED: one -- 'one member for each Z', held by tests/test_g4d3.py::test_t127_the_sample_holds_every_compared_nuclide_the_pilots_lack_and_one_member_per_z_above_them
 133a0621923d9ad4755cfcc585b1a403a488bc04	DATASET_D3.md	REGISTERED: two -- 'the first two' of the settings the sentence lists, k4 and tol8 (mudirac130.NOU_REFINEMENTS)
 16c59275f25f310236ccc8642a7be2b8193b4848	DATASET_D3.md	REGISTERED: 2022 -- the CODATA adjustment year, a name of the constant set (mudirac130.E_H_EV_2022)
 24da4b83c0bd2f49839bb6d82c319b49ab53fd70	DATASET_D3.md	REGISTERED: one -- 'one energy per shell', the single shell energy a patched cascade takes (G4EmCaptureCascade's level array), a description
@@ -511,6 +510,7 @@ ff83d36e1c390e35f3c6763ee4cdf8d3e8246540	DATASET_D1.md	REGISTERED: two -- 'the t
 6739d15a36e2e3578b87514e58299165bf387f70	DATASET_D3.md	REGISTERED: one -- 'the independent one', a pronoun for the independent value
 872806c538987442234a7a0f845ae69e1c19465a	DATASET_D3.md	REGISTERED: two -- the two estimates of a production value's numerical error whose larger is b_num_eV (numerical_check.csv), a description
 895bb7da691d5465720e2284ffd6e4b749ce62c3	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
+926751d11a502e5ad414a6e7187228c916338fbe	DATASET_D3.md	REGISTERED: one -- 'one member for each Z', held by tests/test_g4d3.py::test_t127_the_sample_holds_every_compared_nuclide_the_pilots_lack_and_one_member_per_z_above_them
 92af66bed726e321feb558353ab7d0f3ffb9b20e	DATASET_D3.md	REGISTERED: Two -- the refinement check and the independent solution, which the section goes on to describe
 95074225f3ca58f0853bd51fdb2114144b61bdb1	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
 95b64a653f86894a5f07681ebde979de44abe74e	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
@@ -527,6 +527,7 @@ e54e94f231dcd21a46375ccb22817c29abc9d618	DATASET_D3.md	REGISTERED: one -- 'one-s
 e89fe618ca851636957d81975e880ab0e7de99cc	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s in the title of Table IIIA of Fricke et al.: a transition label, not a quantity
 eb2b059072588b917a9b5a353c4af334629f6b98	DATASET_D3.md	REGISTERED: one, one -- 'one numerical setting one step finer': each refinement run changes a single setting by a single step (mudirac130.REFINEMENTS; tests/test_g4d3.py::test_t121_each_refinement_run_differs_from_its_production_run_in_its_one_setting_only)
 f5628c7e58a3465d06ea82b025bae391520a8dde	DATASET_D3.md	REGISTERED: 4, 3 -- the digits of the seam variable `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
+f6f2f4e395b4a40a4040a117fdf22f3c5f65d42e	DATASET_D3.md	REGISTERED: one -- 'no one-step check', the name of the refinement check of section 5
 f996988331cfa55c9b9af921096e2df91313a9ee	DATASET_D3.md	REGISTERED: 2, zero -- 2pF, the density's name; zero: the half-density radius c at which the 2pF rms is smallest (mudirac130.fermi2_rms_floor_fm), a definition
 00dadc01bf1706031b27157d22db19cab29bdc63	FORMAT_SPEC.md	REGISTERED: One, one -- 'One row per record' and 'exactly one object per Layer-1 record': the rule openmucf/g4/provenance.py's check_against_table enforces
 05b9004f5de8ecf3c87454663ba3da5ae593eb47	FORMAT_SPEC.md	REGISTERED: one -- a pronoun ('declares one', a #FALLBACK)
