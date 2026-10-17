@@ -211,6 +211,27 @@ Every gated row is listed below; the table is generated from `validation.csv`.
 | Saito2025 | 46 | 110 | 4f5/2-3d3/2 | `M4-N6` | 294.9 | 0.2 | 295.24346010610275 | 0.34346010610275 | -5.947824404 | 0.6 | weakly sensitive | true |  |
 
 
+### The change from the `mudirac130` tables
+
+The `mudirac130` tables of release v1.3.0 placed 26 of the 67 gated rows within tolerance;
+`history/validation.mudirac130.csv` is that release's `validation.csv`, byte for byte.
+`change_attribution.csv` follows each compared nuclide through the stages between the two: for each of its
+gated lines, its K–L shell difference where section 6 sets one beside a measured value, and its K and e2, it
+gives the value its v1.3.0 input gives (`shipped_keV`, from the `shipped` run of the `stages` batch, whose lines
+are the model lines `history/validation.mudirac130.csv` carries), the change at each later stage and the
+production value (`new_keV`); the changes of a row sum to its difference exactly.
+`delta_numerics_keV` is the numerics repair: the production runs' grid step and energy tolerance, the
+Gauss–Legendre uniform-sphere Uehling kernel, the Hermite read-back of the 2pF Coulomb potential, printing to
+12 decimals and the hydrogen-like anchor.
+`delta_density_and_quadrature_keV` moves the Uehling potential to the run's own 2pF density and, at once, its
+quadrature from Gauss–Legendre at 64 nodes to the trapezoidal rule at 60 steps with 12 Gauss–Legendre nodes per
+panel of the 2pF superposition, so it is a combined implementation change, not the physical contribution of
+the density alone.
+`delta_rms_keV` solves c for the intended rms radius, `delta_mass_keV` takes the nuclear mass in the reduced
+mass, and `delta_eV_keV` prints through the CODATA 2022 Hartree energy.
+On the gated lines the largest changes are 0.35027263098117 keV from the density and quadrature and
+0.246051995450506 keV from the numerics, both on the Pb-208 `K1-L3` line; no other step moves a gated line by
+more than 0.000517187538091 keV.
 ## 5. The numerical checks
 
 Two checks bound how closely the runs solve the equations their keywords state; neither says how close those
@@ -425,8 +446,8 @@ The Layer-2 files of the `k_shell_energy` and `level_energy` tables repeat those
 input radius, under the same licence.
 The files that restate cells of the comparison sources' tables, or carry them beside the model's values,
 `data/g4/d3/validation_cells.csv`, `data/g4/d3/intensity_ratios.csv`, `data/g4/d3/validation.csv`,
-`data/g4/d3/shell_projection.csv` and `data/g4/d3/consumer_centroids.csv`, are offered under no licence
-of this repository.
+`data/g4/d3/history/validation.mudirac130.csv`, `data/g4/d3/shell_projection.csv` and
+`data/g4/d3/consumer_centroids.csv`, are offered under no licence of this repository.
 The other files of `data/g4/d3/` are offered under CC-BY-4.0.
 The values compiled into Geant4 that `geant4_cascade_levels.csv` repeats are offered under the Geant4
 Software License.

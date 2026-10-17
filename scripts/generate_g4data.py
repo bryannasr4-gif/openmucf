@@ -47,6 +47,7 @@ import tempfile
 from pathlib import Path
 
 import openmucf
+from openmucf.g4 import d3_attribution as d3attr
 from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import emit, provenance, spec
 from openmucf.g4.sources import d1_nuclear_capture as d1src
@@ -815,6 +816,7 @@ D3_VALIDATION = ROOT / md.VALIDATION_RELPATH
 D3_PROJECTION = ROOT / d3c.PROJECTION_RELPATH
 D3_GROUPS = ROOT / d3c.GROUPS_RELPATH
 D3_COMPONENTS = ROOT / d3c.COMPONENTS_RELPATH
+D3_ATTRIBUTION = ROOT / d3attr.ATTRIBUTION_RELPATH
 #: What each table's value columns are, as the per-row method text names them.
 D3_QUANTITY = {
     md.K_TABLE: "The 1s1/2 binding energy in keV is",
@@ -941,6 +943,7 @@ def d3_summary(out: md.Outputs) -> list[str]:
         lines.append(f"d3: bundled rms radius differs from the charge-radii table at 4 decimals: Z={z} A={a} {bundled} vs {table}")
     lines.extend(d3c.summary_lines(ROOT))
     lines.extend(d3centroids.summary_lines(ROOT))
+    lines.extend(d3attr.summary_lines(ROOT, out))
     return lines
 
 
@@ -1104,6 +1107,7 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     artifacts[D3_COMPONENTS] = d3c.render_components(ROOT, bundle)
     artifacts[D3_CENTROIDS] = d3centroids.render_centroids(ROOT)
     artifacts[D3_MARGINS] = d3centroids.render_margins(ROOT)
+    artifacts[D3_ATTRIBUTION] = d3attr.render_attribution(ROOT, outputs)
     return artifacts, archive
 
 

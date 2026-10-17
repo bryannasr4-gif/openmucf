@@ -20,6 +20,7 @@ from decimal import Decimal, localcontext
 import pytest
 import test_g4parity as parity
 
+from openmucf.g4 import d3_attribution as attribution
 from openmucf.g4 import d3_centroids as centroids
 from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import provenance, spec
@@ -1071,6 +1072,7 @@ def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
     pins.extend(numerical_pins())
     pins.extend(contract_pins())
     pins.extend(centroid_pins())
+    pins.extend(attribution_pins())
     return pins
 
 
@@ -2849,3 +2851,172 @@ def test_t130_a_changed_ratio_moves_only_the_illustrative_cells(monkeypatch):
     before, after = different[0]
     columns = {key for key in before if before[key] != after[key]}
     assert columns == {"ratio", "illustrative_c_keV", "illustrative_q_minus_c_keV"}
+
+
+# --------------------------------------------------------------------------------------------
+# T-131 -- each change of a compared energy by cause, and the v1.3.0 comparison kept beside the new one
+# --------------------------------------------------------------------------------------------
+
+ATTRIBUTION = REPO / attribution.ATTRIBUTION_RELPATH
+HISTORY = REPO / attribution.HISTORY_RELPATH
+
+
+def _stage_value(out: md.Outputs, row: md.InputRow, stage: str, quantity: str) -> Decimal:
+    """A quantity of one stage run in keV, computed here: the stage runs of the `stages` batch, the production
+    anchor run last."""
+    run = md.recipe_run_id(row, "anchor", True) if stage == "recipe" else md.run_id(row, stage)
+    with localcontext() as context:
+        context.prec = 50
+        if quantity.startswith("line:"):
+            value = Decimal(out.lines[run][quantity.split(":")[1]]) / 1000
+        else:
+            b = md.run_bindings(out, run)
+            names = quantity.split("-")
+            value = _quantity(b, names[0]) - (_quantity(b, names[1]) if len(names) == 2 else 0)
+        return value.quantize(Decimal("1e-18"))
+
+
+def attribution_problems(rows: list[dict[str, str]]) -> list[str]:
+    """Every row of ``rows`` (the committed `change_attribution.csv`) whose cells the committed stage runs do
+    not give, or whose changes do not sum to its difference exactly, named."""
+    out = _outputs()
+    inputs = {row.nuclide: row for row in out.inputs}
+    cells = out.cells
+    stages = ("shipped", "numerics", "density", "rms", "mass", "recipe")
+    expected_keys = []
+    for key in md.compared_nuclides(cells):
+        lines = []
+        for cell in cells:
+            if cell.gated and cell.nuclide == key and f"line:{cell.quantity}" not in lines:
+                lines.append(f"line:{cell.quantity}")
+        doublets = {l2.nuclide for l2, _ in md.doublet_determinations(cells)}
+        centroid = set(md.centroid_nuclides(cells)) | doublets
+        expected_keys += [(key, q) for q in [*lines, *(["K-e2"] if key in centroid else []), "K", "e2"]]
+    problems = []
+    if [((int(r["Z"]), int(r["A"])), r["quantity"]) for r in rows] != expected_keys:
+        problems.append("the rows are not every compared nuclide's quantities in order")
+    for r in rows:
+        key = (int(r["Z"]), int(r["A"]))
+        values = [_stage_value(out, inputs[key], stage, r["quantity"]) for stage in stages]
+        with localcontext() as context:
+            context.prec = 50
+            want = [values[0], *(after - before for before, after in zip(values, values[1:], strict=False)),
+                    values[-1]]
+            got = [Decimal(r[column]) for column in attribution.ATTRIBUTION_COLUMNS[3:]]
+            if got != want:
+                problems.append(f"Z={key[0]} A={key[1]} {r['quantity']}: cells")
+            elif got[0] + sum(got[1:-1]) != got[-1]:
+                problems.append(f"Z={key[0]} A={key[1]} {r['quantity']}: the changes do not sum to the "
+                                "difference")
+    return problems
+
+
+def test_t131_every_attribution_cell_is_rederived_from_the_stage_runs_and_telescopes_exactly():
+    rows = _committed_csv(ATTRIBUTION)
+    assert tuple(rows[0]) == attribution.ATTRIBUTION_COLUMNS
+    assert "delta_density_and_quadrature_keV" in attribution.ATTRIBUTION_COLUMNS
+    assert attribution_problems(rows) == []
+    assert ATTRIBUTION.read_bytes() == attribution.render_attribution(REPO)
+    compared = len(md.compared_nuclides(_outputs().cells))
+    print(f"\nattribution rows {len(rows)} over {compared} compared nuclides")
+
+
+def test_t131_drill_a_committed_value_moved_by_one_unit_of_its_last_digit_is_refused():
+    """G-binding's drill on the attribution: one change moved by one unit in its last printed digit."""
+    rows = _committed_csv(ATTRIBUTION)
+    moved = [dict(row) for row in rows]
+    cell = moved[0]["delta_rms_keV"]
+    moved[0]["delta_rms_keV"] = str(Decimal(cell) + 2 * _half_unit(cell).copy_sign(1))
+    first = moved[0]
+    assert attribution_problems(moved) == [f"Z={first['Z']} A={first['A']} {first['quantity']}: cells"]
+
+
+def test_t131_the_first_stage_is_the_v1_3_0_model_and_the_last_the_shipped_value():
+    """G-binding: the `shipped_keV` of every gated line is the model line of release v1.3.0's comparison file;
+    the `new_keV` of every gated line is this comparison's model line, of K and e2 the table cell, and of K-e2
+    the shell difference of the centroid comparison at its nine decimals."""
+    history = {(r["Z"], r["A"], r["quantity"]): r for r in _committed_csv(HISTORY) if r["gated"] == "true"}
+    current = {(r["Z"], r["A"], r["quantity"]): r for r in _committed_validation() if r["gated"] == "true"}
+    kshell, levels = _table_cells(KSHELL_LAYER1), _table_cells(LEVELS_LAYER1)
+    centroid_q = {(r["Z"], r["A"]): r["q_keV"] for r in _committed_rows(centroids.CENTROIDS_RELPATH)
+                  if r["q_keV"]}
+    checked = 0
+    for r in _committed_csv(ATTRIBUTION):
+        key = (int(r["Z"]), int(r["A"]))
+        if r["quantity"].startswith("line:"):
+            line = r["quantity"].split(":")[1]
+            assert Decimal(r["shipped_keV"]) == Decimal(history[(r["Z"], r["A"], line)]["model_keV"]), r
+            assert Decimal(r["new_keV"]) == Decimal(current[(r["Z"], r["A"], line)]["model_keV"]), r
+        elif r["quantity"] in ("K", "e2"):
+            cell = kshell[key][0] if r["quantity"] == "K" else levels[key][0]
+            assert float(r["new_keV"]) == float(cell), r
+        else:
+            assert Decimal(r["new_keV"]).quantize(Decimal("1e-9")) == Decimal(centroid_q[(r["Z"], r["A"])]), r
+        checked += 1
+    assert checked == len(_committed_csv(ATTRIBUTION))
+
+
+def test_t131_the_history_copy_is_release_v1_3_0s_comparison_file():
+    assert attribution.HISTORY_BLOB == "c16d0085317c3ae0e1b2fc45e394fffc9aa9084c"
+    assert attribution.history_problems(REPO) == []
+    history = _committed_csv(HISTORY)
+    gated = [r for r in history if r["gated"] == "true"]
+    print(f"\nv1.3.0 comparison: gated {len(gated)} within {sum(r['within'] == 'true' for r in gated)}")
+
+
+def test_t131_drill_one_flipped_byte_of_the_history_copy_is_refused(tmp_path):
+    root = tmp_path
+    target = root / attribution.HISTORY_RELPATH
+    target.parent.mkdir(parents=True)
+    payload = bytearray(HISTORY.read_bytes())
+    target.write_bytes(bytes(payload))
+    assert attribution.history_problems(root) == []
+    payload[100] ^= 0x01
+    target.write_bytes(bytes(payload))
+    assert attribution.history_problems(root) and "is blob" in attribution.history_problems(root)[0]
+
+
+def attribution_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """The pins of the subsection on the change from the `mudirac130` tables, read from the history copy,
+    `change_attribution.csv` and the module's settings."""
+    path = "DATASET_D3.md"
+    history = [r for r in _committed_csv(HISTORY) if r["gated"] == "true"]
+    rows = [r for r in _committed_csv(ATTRIBUTION) if r["quantity"].startswith("line:")]
+
+    def largest(column: str) -> dict[str, str]:
+        return max(rows, key=lambda r: abs(Decimal(r[column])))
+
+    density, numerics = largest("delta_density_and_quadrature_keV"), largest("delta_numerics_keV")
+    where = ("Z", "A", "quantity")
+    assert [density[c] for c in where] == [numerics[c] for c in where]
+    assert inputs_symbol(int(density["Z"])) == "Pb"
+    rest = ("delta_rms_keV", "delta_mass_keV", "delta_eV_keV")
+    other = max(abs(Decimal(r[c])) for r in rows for c in rest)
+    return [
+        ("v1.3.0 rows within tolerance", path, r"placed (\d+) of the \d+ gated rows within tolerance;", (1,),
+         sum(r["within"] == "true" for r in history)),
+        ("v1.3.0 gated rows", path, r"placed \d+ of the (\d+) gated rows within tolerance;", (1,),
+         len(history)),
+        ("the decimals of the numerics stage", path, r"printing to (\d+) decimals and the hydrogen-like",
+         (1,), md.RECIPE_XR_PRECISION),
+        ("the Gauss-Legendre nodes of the numerics stage", path, r"from Gauss–Legendre at (\d+) nodes", (1,),
+         md.NUMERICS_STAGE_SETTINGS.n_u),
+        ("the trapezoidal steps of the recipe", path, r"the trapezoidal rule at (\d+) steps", (1,),
+         md.RECIPE_SETTINGS.n_u),
+        ("the shell nodes of the recipe", path, r"with (\d+) Gauss–Legendre nodes per panel", (1,),
+         md.RECIPE_SETTINGS.n_s),
+        ("the largest density and quadrature change on a gated line", path,
+         r"the largest changes are ([0-9.]+) keV from the density", (1,),
+         density["delta_density_and_quadrature_keV"].lstrip("-")),
+        ("the largest numerics change on a gated line", path,
+         r"keV from the density and quadrature and ([0-9.]+) keV from the numerics", (1,),
+         numerics["delta_numerics_keV"].lstrip("-")),
+        ("their mass number", path, r"both on the Pb-(\d+) `", (1,), density["A"]),
+        ("their line", path, r"both on the Pb-\d+ `([K-Z]\d+-[K-Z]\d+)` line", (1,), density["quantity"][5:]),
+        ("the largest change of any other step on a gated line", path, r"by more than ([0-9.]+) keV\.", (1,),
+         attribution._text(other)),
+    ]
+
+
+def inputs_symbol(z: int) -> str:
+    return next(row.symbol for row in _outputs().inputs if row.z == z)

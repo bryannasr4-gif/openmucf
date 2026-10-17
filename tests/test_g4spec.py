@@ -1077,6 +1077,7 @@ def test_t34_import_fence():
         "emit.py",
         "d3_contract.py",
         "d3_centroids.py",
+        "d3_attribution.py",
         "d2.py",
         "d1_natural.py",
         "d1_lifetime.py",

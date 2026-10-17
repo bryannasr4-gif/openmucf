@@ -510,11 +510,17 @@ ff83d36e1c390e35f3c6763ee4cdf8d3e8246540	DATASET_D1.md	REGISTERED: two -- 'the t
 602155485737a9aa1c6381131f0cd92b4d3ff9da	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 6739d15a36e2e3578b87514e58299165bf387f70	DATASET_D3.md	REGISTERED: one -- 'the independent one', a pronoun for the independent value
 872806c538987442234a7a0f845ae69e1c19465a	DATASET_D3.md	REGISTERED: two -- the two estimates of a production value's numerical error whose larger is b_num_eV (numerical_check.csv), a description
+895bb7da691d5465720e2284ffd6e4b749ce62c3	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
 92af66bed726e321feb558353ab7d0f3ffb9b20e	DATASET_D3.md	REGISTERED: Two -- the refinement check and the independent solution, which the section goes on to describe
+95074225f3ca58f0853bd51fdb2114144b61bdb1	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
 95b64a653f86894a5f07681ebde979de44abe74e	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 987565fed43283a441209a22f9aa5dcd4d8ce6cc	DATASET_D3.md	REGISTERED: one, one -- 'one step', the single refinement step the check takes, a description
+b6e616c9829d83da1c55556a2242bb1571df8c5f	DATASET_D3.md	REGISTERED: two -- 'between the two', the v1.3.0 tables and these, a pronoun
+b79c5114b26edbbbd5dcd866a4dfd81854e6e307	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
+c171a23fb31592cf8cb995e805fa4061fcd20b05	DATASET_D3.md	REGISTERED: one -- 'sets one beside a measured value', a K-L shell difference, a pronoun
 c81f444cfa5a46388e323557e0225ac8a2c67c9a	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
 cc548b9a9e1287f1af82b23ffaf716abcf38f2be	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
+cf9279e149d64fff99dea4bc1f5fb5240d97ce22	DATASET_D3.md	REGISTERED: 2022 -- the CODATA adjustment year, a name of the constant set (mudirac130.E_H_EV_2022)
 d740c76e0828c8f02defb363455e0d3733b0e5eb	DATASET_D3.md	REGISTERED: two -- 'its two circular states', a description
 daacccf759d51544614bfc88c1fec44ac2a591de	DATASET_D3.md	REGISTERED: one -- 'one signed radius response', a description
 e54e94f231dcd21a46375ccb22817c29abc9d618	DATASET_D3.md	REGISTERED: one -- 'one-step changes', the name of the refinement check (section 5)
