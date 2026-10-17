@@ -553,6 +553,7 @@ The generated `suzuki1987_quantity_rows.csv` normalizes the data rows and carrie
 The `suzuki1987` capture profile selects this experiment's own rows when the printed target label identifies an isotope or natural composition, or is the bare symbol of an element with a single natural isotope, the rate has a symmetric uncertainty, and the rate is not parenthesized.
 A bare element symbol stays `unspecified` under this project's source-preserving convention, which records natural composition only where the printed label carries the `nat` prefix; the format itself makes an `A = 0` record the natural-composition row only under `A:natural_and_listed`.
 A row of an element with a single natural isotope is keyed by that isotope's mass number, which the isotope audit of section 6 gives the element from the NIST table and which is the single isotope `geant4_natural_isotopes.csv` records for it, as `mizuno2025` keys its aluminium (section 9).
+For F-19 the tabulated mean life and capture rate describe the lower hyperfine state (Table III p.2217 note); both Geant4 routes use that rate as a single-state approximation and do not model the hyperfine transition.
 `suzuki1987_parity_cells.csv` lists every compiled-in capture record at a Z the published tables print and the published cells equal at their printed precision.
 `suzuki1987_preprint_differences.csv` lists differences against the committed preprint capture and effective-charge cells.
 Its `not_in_committed_preprint_cells` kind means a published capture cell at a covered Z has no paired committed preprint cell.
@@ -754,11 +755,14 @@ A row is compared when a measured value from the row's own source answers it, a 
 profile's source or the compiled-in table for Suzuki, Measday and Roalsvig, whom its source comment credits
 (section 5, F-4), measured on the same kind of target, a nuclide or a natural composition, which are the
 same thing for an element with a single isotope; `population` names the reason any other row is not.
+`measured_state` names the state of the muonic atom that a note of the source says a row's mean life describes,
+where the source names a state.
 A route's rate is within the band when it differs from the measured rate by no more than three times the
 root sum of squares of the measured rate's uncertainty and the capture rate's tabulated uncertainty; the two
 can rest on the same mean life, so the band errs wide.
 The comparison is of the rates the code returns for a single nucleus, not of a transported simulation of a
 target; a target of natural composition decays as section 11 describes.
+For F-19 the tabulated mean life and capture rate describe the lower hyperfine state (Table III p.2217 note); both Geant4 routes use that rate as a single-state approximation and do not model the hyperfine transition.
 
 | profile | rows compared | within the band, `G4MuonMinusBoundDecay` | within the band, `G4MuonicAtomHelper` |
 |---|---|---|---|

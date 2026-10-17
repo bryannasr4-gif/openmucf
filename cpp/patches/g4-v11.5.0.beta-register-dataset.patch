@@ -1,5 +1,5 @@
 diff --git a/cmake/Modules/G4DatasetDefinitions.cmake b/cmake/Modules/G4DatasetDefinitions.cmake
-index fa46fc1956..1a987b36c8 100644
+index fa46fc1956..e8272247d9 100644
 --- a/cmake/Modules/G4DatasetDefinitions.cmake
 +++ b/cmake/Modules/G4DatasetDefinitions.cmake
 @@ -170,3 +170,11 @@ if(GEANT4_INSTALL_DATASETS_URRPT)
@@ -12,5 +12,5 @@ index fa46fc1956..1a987b36c8 100644
 +  FILENAME  G4MuonicData
 +  EXTENSION tar.gz
 +  ENVVAR    G4MUONICDATA
-+  MD5SUM    3c974ab14b33452a62cbb99b098f7758
++  MD5SUM    fb6bfe0b4c30975aa760089f1a5b11ed
 +  )

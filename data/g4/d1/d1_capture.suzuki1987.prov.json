@@ -258,7 +258,7 @@
       "validity_range": "Z=83 A=209"
     },
     "9-19": {
-      "conditions": "target label as printed: F; mean life as printed: 1462.7+-5.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: F is mononuclidic (F-19 = 100% of the natural element)",
+      "conditions": "target label as printed: F; mean life as printed: 1462.7+-5.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: F is mononuclidic (F-19 = 100% of the natural element); lower hyperfine state (Table III p.2217 note following row 54)",
       "evaluation_id": "suzuki1987-tables-iii-iv",
       "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
       "isotope_resolved": true,

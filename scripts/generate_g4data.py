@@ -559,10 +559,14 @@ def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) 
 
 def build_suzuki_capture_document(
     selected: dict[tuple[int, int], dict[str, str]], clauses: dict[int, str] | None = None,
+    states: dict[str, str] | None = None,
 ) -> provenance.ProvDocument:
     """The Layer-2 document of the profile. A row printed with the bare symbol of a mononuclidic element names, in
-    its conditions, the isotope-audit clause (``clauses``, Z to clause) that gives its key mass number."""
+    its conditions, the isotope-audit clause (``clauses``, Z to clause) that gives its key mass number; a row a
+    printed note says gives the lifetime of one state of the muonic atom names that state last (``states``, the
+    row's locator to the state, :func:`openmucf.g4.sources.suzuki1987.measured_states`)."""
     clauses = clauses or {}
+    states = states or {}
     rows = {}
     for (z, a), row in sorted(selected.items()):
         unit = row["rate_unit"]
@@ -578,6 +582,7 @@ def build_suzuki_capture_document(
                 f"{printed_huff}; copy read: page images of the published article"
                 + (f"; key mass number from the isotope audit: {clauses[z]}"
                    if row["target_basis"] == "unspecified" else "")
+                + (f"; {states[locator]}" if locator in states else "")
             ),
             validity_range=f"Z={z} A={a}",
             evaluation_method=(
@@ -1021,7 +1026,8 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
         ),
         (
             D1_SUZUKI_LAYER1, D1_SUZUKI_LAYER2,
-            build_suzuki_capture_document(suzuki_selected, mononuclidic_clauses()),
+            build_suzuki_capture_document(
+                suzuki_selected, mononuclidic_clauses(), suzsrc.measured_states(suzuki_printed)),
             functools.partial(build_suzuki_capture_table, suzuki_selected),
         ),
         (

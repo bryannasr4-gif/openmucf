@@ -86,7 +86,7 @@ POPULATIONS = (COMPARED, OTHER_SOURCE, OTHER_BASIS, FORMULA, NO_KEY)
 ROUTES = (("bound", "G4MuonMinusBoundDecay"), ("helper", "G4MuonicAtomHelper"))
 
 COLUMNS = (
-    "source", "locator", "label", "z", "basis", "key_a", "profile", "lookup", "population",
+    "source", "locator", "label", "z", "basis", "measured_state", "key_a", "profile", "lookup", "population",
     "mean_life_ns", "mean_life_unc_ns", "measured_rate", "measured_rate_unc", "printed_capture_rate",
     "capture_rate", "capture_rate_unc", "decay_rate_bound", "decay_rate_helper", "rate_bound", "rate_helper",
     "within_bound", "within_helper",
@@ -324,11 +324,16 @@ class Measurement:
     mean_life: str
     mean_life_unc: str
     printed_capture_rate: decimal.Decimal
+    #: The state of the muonic atom a note of the source says the mean life describes, when it names one
+    #: (:func:`openmucf.g4.sources.suzuki1987.measured_states`); empty when it names none.
+    state: str = ""
 
 
-def suzuki_measurements(path: Path) -> list[Measurement]:
+def suzuki_measurements(path: Path, states: Mapping[str, str] | None = None) -> list[Measurement]:
     """The rows of Tables III and IV marked as the authors' own measurements that print a mean life, its
-    uncertainty and a capture rate, in the transcription's order."""
+    uncertainty and a capture rate, in the transcription's order, each with the state ``states`` (locator to
+    state) gives its row."""
+    states = states or {}
     out: list[Measurement] = []
     with path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -344,10 +349,11 @@ def suzuki_measurements(path: Path) -> list[Measurement]:
             if prefix is None:
                 raise LifetimeError(f"{row['target_label']!r}: an isotope row without a mass number")
             mass_number = int(prefix.group())
+        locator = f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}"
         out.append(Measurement(
-            SUZUKI, f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}",
-            row["target_label"], int(row["Z"]), row["target_basis"], mass_number,
+            SUZUKI, locator, row["target_label"], int(row["Z"]), row["target_basis"], mass_number,
             row["mean_life_ns"], row["mean_life_unc_ns"], suzuki1987.scaled(row, "rate"),
+            states.get(locator, ""),
         ))
     return out
 
@@ -446,7 +452,8 @@ def comparison_rows(root: Path) -> list[dict[str, str]]:
     for name in tables:
         if name not in (spec.PARITY_PROFILE, SUZUKI, MIZUNO):
             raise LifetimeError(f"profile {name!r}: no measurement source is known for its rows")
-    measurements = suzuki_measurements(root / suzuki1987.QUANTITY_ROWS_RELPATH) + mizuno_measurements(
+    states = suzuki1987.measured_states(suzuki1987.load_printed_rows(root / suzuki1987.PRINTED_ROWS_RELPATH))
+    measurements = suzuki_measurements(root / suzuki1987.QUANTITY_ROWS_RELPATH, states) + mizuno_measurements(
         root / MIZUNO_TABLE1_RELPATH, symbols)
     compiled = {(z, a): unc for z, a, _, unc in found.capture_records}
     rows: list[dict[str, str]] = []
@@ -459,6 +466,7 @@ def comparison_rows(root: Path) -> list[dict[str, str]]:
             row = dict.fromkeys(COLUMNS, "")
             row.update({
                 "source": m.source, "locator": m.locator, "label": m.label, "z": str(m.z), "basis": m.basis,
+                "measured_state": m.state,
                 "profile": name, "mean_life_ns": m.mean_life, "mean_life_unc_ns": m.mean_life_unc,
                 "measured_rate": measured, "measured_rate_unc": measured_unc,
                 "printed_capture_rate": format(m.printed_capture_rate, "f"),

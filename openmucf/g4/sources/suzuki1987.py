@@ -32,6 +32,13 @@ _DECIMAL = r"[0-9]+(?:\.[0-9]+)?"
 _SYMMETRIC = re.compile(rf"({_DECIMAL})\+\-({_DECIMAL})")
 _ASYMMETRIC = re.compile(rf"({_DECIMAL})\+({_DECIMAL})\(-({_DECIMAL})\)")
 _LABEL = re.compile(r"(?:(nat|R|[0-9]+(?:\.[0-9]+)?)?)([A-Z][a-z]?)(?:\^[a-z])?")
+#: The note Table III prints after its F rows, naming the state of the muonic atom whose lifetime those rows
+#: give: ``hf`` is the hyperfine structure of the muonic 1s state (Sec. IV D of the article).
+STATE_NOTE = re.compile(
+    r"\(these ([A-Z][a-z]?) data show the lifetime for the lower hf state; see Sec\. IV D\)\."
+)
+#: Words of a note or footnote that speak of the hyperfine state; such a note must be a :data:`STATE_NOTE`.
+_HYPERFINE_WORDS = re.compile(r"\bhf\b|hyperfine", re.IGNORECASE)
 
 
 class Suzuki1987Error(RuntimeError):
@@ -128,6 +135,41 @@ def _label_parts(label: str, locator: str) -> tuple[str, str, str]:
     if prefix == "R" or "." in prefix:
         return clean, symbol, "enriched_mixture"
     return clean, symbol, "isotope"
+
+
+def measured_states(rows: tuple[PrintedRow, ...]) -> dict[str, str]:
+    """The locator of each data row to the state of the muonic atom a printed note says its mean life and
+    rate describe: every data row of the element group a :data:`STATE_NOTE` directly follows, the group
+    being the rows from the last one that prints a Z, gets
+    ``lower hyperfine state (Table III p.2217 note following row 54)``. A note or footnote that speaks of
+    the hyperfine state in other words, one that does not directly follow a data row, and one whose element
+    is not that of every row of its group are refused."""
+    states: dict[str, str] = {}
+    group: list[PrintedRow] = []
+    previous: PrintedRow | None = None
+    for row in rows:
+        if row.row_kind == "data":
+            if row.z_raw:
+                group = []
+            group.append(row)
+        elif row.row_kind in ("note", "footnote") and _HYPERFINE_WORDS.search(row.note):
+            match = STATE_NOTE.fullmatch(row.note)
+            if match is None or row.row_kind != "note":
+                raise Suzuki1987Error(
+                    f"{row.locator}: a note on the hyperfine state this module does not read")
+            if previous is None or previous.row_kind != "data" or not group:
+                raise Suzuki1987Error(f"{row.locator}: the hyperfine-state note follows no data row")
+            symbols = {_label_parts(member.element_raw, member.locator)[1]
+                       for member in group if member.element_raw}
+            if symbols != {match.group(1)}:
+                raise Suzuki1987Error(
+                    f"{row.locator}: the note names {match.group(1)}, its rows print {symbols}")
+            state = (f"lower hyperfine state (Table {row.table} p.{row.printed_page} note following row "
+                     f"{previous.page_row_ordinal})")
+            for member in group:
+                states[member.locator] = state
+        previous = row
+    return states
 
 
 def _basis_rule(label: str, basis: str) -> str:

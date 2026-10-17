@@ -244,7 +244,9 @@ def test_profile_selection_and_provenance() -> None:
     layer2_bytes = (DATA.parent / "d1_capture.suzuki1987.prov.json").read_bytes()
     layer1 = spec.parse(layer1_bytes.decode("ascii"))
     layer2 = provenance.from_json_obj(json.loads(layer2_bytes.decode("ascii")))
-    assert provenance.document_bytes(gen.build_suzuki_capture_document(selected, clauses)) == layer2_bytes
+    states = suzuki1987.measured_states(_printed())
+    document = gen.build_suzuki_capture_document(selected, clauses, states)
+    assert provenance.document_bytes(document) == layer2_bytes
     assert spec.render(gen.build_suzuki_capture_table(
         selected, provenance.source_digest(layer2_bytes)
     )).encode("ascii") == layer1_bytes
@@ -279,6 +281,8 @@ def test_profile_selection_and_provenance() -> None:
             f"{printed_huff}; copy read: page images of the published article"
             + (f"; key mass number from the isotope audit: {clauses[int(z)]}"
                if source["target_basis"] == "unspecified" else "")
+            + (f"; {states[locator]}"
+               if (locator := proof.source_locator.split(" [", 1)[0]) in states else "")
         )
         assert proof.evaluation_method == (
             f"total capture rate as the primary prints it (Table {source['table']}, column "
@@ -376,6 +380,82 @@ def test_t159_a_disagreeing_composition_or_clause_stops_the_build(monkeypatch, c
     monkeypatch.setattr(d1, "load_isotope_audit", lambda _path: audit)
     with pytest.raises(SystemExit, match="g4data build FAILED"):
         gen.mononuclidic_keys()
+
+
+# T-160: Table III prints, after its F rows, that they give the lifetime of the lower hyperfine state. The
+# fluorine row of the profile names that state, located at the note, in its Layer-2 conditions; the
+# mean-life comparison names it on the row of every profile; DATASET_D1.md and the change log say what both
+# Geant4 routes do with that rate.
+STATE_SENTENCE = (
+    "For F-19 the tabulated mean life and capture rate describe the lower hyperfine state "
+    "(Table III p.2217 note); both Geant4 routes use that rate as a single-state approximation "
+    "and do not model the hyperfine transition."
+)
+
+
+def _state_note() -> suzuki1987.PrintedRow:
+    (note,) = [row for row in _printed()
+               if row.row_kind == "note" and suzuki1987.STATE_NOTE.fullmatch(row.note)]
+    return note
+
+
+def test_t160_the_fluorine_row_names_the_lower_hyperfine_state_its_note_prints() -> None:
+    from openmucf.g4 import d1_lifetime
+
+    note = _state_note()
+    rows = _printed()
+    previous = rows[rows.index(note) - 1]
+    assert note.locator == "Table III p.2217 row 55" and previous.row_kind == "data"
+    assert "lower hf state" in note.note and "F data" in note.note
+    state = f"lower hyperfine state (Table III p.2217 note following row {previous.page_row_ordinal})"
+    states = suzuki1987.measured_states(rows)
+    assert set(states.values()) == {state}
+    layer2_bytes = (DATA.parent / "d1_capture.suzuki1987.prov.json").read_bytes()
+    layer2 = provenance.from_json_obj(json.loads(layer2_bytes))
+    stated = {key: row for key, row in layer2.rows.items() if "hyperfine" in row.conditions}
+    assert list(stated) == ["9-19"]
+    assert stated["9-19"].conditions.endswith(f"; {state}")
+    assert stated["9-19"].source_locator.startswith(f"{previous.locator} ")
+    comparison = d1_lifetime.read_comparison(DATA.parents[3] / d1_lifetime.COMPARISON_RELPATH)
+    fluorine = [row for row in comparison if row["locator"] == previous.locator]
+    assert sorted(row["profile"] for row in fluorine) == sorted({row["profile"] for row in comparison})
+    assert all(row["measured_state"] == state for row in fluorine)
+    assert {row["locator"] for row in comparison if row["measured_state"]} == {previous.locator}
+    root = DATA.parents[3]
+    dataset = " ".join((root / "DATASET_D1.md").read_text(encoding="utf-8").split())
+    for heading, following in (("## 10. ", "## 11. "), ("## 12. ", None)):
+        section = dataset.split(heading, 1)[1]
+        section = section.split(following, 1)[0] if following else section
+        assert section.count(STATE_SENTENCE) == 1, heading
+    unreleased = (root / "CHANGELOG.md").read_text(encoding="utf-8").split("## [", 2)[1]
+    changelog = " ".join(unreleased.split())
+    assert changelog.count(STATE_SENTENCE) == 1
+
+
+@pytest.mark.parametrize("case", ("removed", "upper state", "other element", "after a footnote", "footnote"))
+def test_t160_drill_a_missing_altered_or_misplaced_state_note_is_caught(case: str) -> None:
+    rows = list(_printed())
+    note = _state_note()
+    index = rows.index(note)
+    if case == "removed":
+        del rows[index]
+        states = suzuki1987.measured_states(tuple(rows))
+        assert states == {}
+        selected = suzuki1987.selected(suzuki1987.normalize(tuple(rows)), gen.mononuclidic_keys())
+        document = gen.build_suzuki_capture_document(selected, gen.mononuclidic_clauses(), states)
+        committed = (DATA.parent / "d1_capture.suzuki1987.prov.json").read_bytes()
+        assert provenance.document_bytes(document) != committed
+        return
+    if case == "upper state":
+        rows[index] = dataclasses.replace(note, note=note.note.replace("lower hf", "upper hf"))
+    elif case == "other element":
+        rows[index] = dataclasses.replace(note, note=note.note.replace("these F data", "these Na data"))
+    elif case == "after a footnote":
+        rows.insert(index, rows[index + 1])
+    else:
+        rows[index] = dataclasses.replace(note, row_kind="footnote")
+    with pytest.raises(suzuki1987.Suzuki1987Error):
+        suzuki1987.measured_states(tuple(rows))
 
 
 # T-138: comparisons enumerate every compiled-in row at a published Z and expose the printed 236U cell.
