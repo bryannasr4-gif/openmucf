@@ -726,45 +726,100 @@ def test_drill_each_licence_member_check_refuses_its_own_fault_alone(case: str):
         assert problems == ["the text of MuDirac's MIT License is not the repository copy"], problems
 
 
-#: The README sentences that name columns of a file under `data/g4/`, each with that file: the pattern
-#: captures the sentence, and every backquoted name in it that ends `_fm`, `_value` or `_unc` is a column.
+#: The README sentences that name columns of a file under `data/g4/`, each with that file. Each pattern
+#: captures, as ``columns``, the clause that lists the file's columns; the file's own name, and the
+#: third-party file the mudirac clause cites, lie outside the capture, so every backquoted token inside it is
+#: read as a column name, whatever it ends with.
 COLUMN_SENTENCES = (
-    (r"Of the file's columns, [^.]+\.", "data/g4/d3/mudirac_inputs.csv"),
-    (r"in `suzuki1987_parity_cells\.csv` those are the [^.]+ columns\.",
+    (r"Of `mudirac_inputs\.csv`'s columns, (?P<columns>[^.]+?) repeat the IAEA charge-radii table "
+     r"\(`charge_radii\.csv`\)", "data/g4/d3/mudirac_inputs.csv"),
+    (r"in `suzuki1987_parity_cells\.csv` those are the (?P<columns>[^.]+) columns\.",
      "data/g4/d1/suzuki1987_parity_cells.csv"),
 )
 
 
-def column_problems(readme: str, headers: dict[str, list[str]]) -> list[str]:
-    """Each column a README sentence of :data:`COLUMN_SENTENCES` names that its file's header (``headers``,
-    path to columns) does not carry, and each such sentence the README lacks or states more than once."""
+def column_clauses(readme: str) -> dict[str, list[str]]:
+    """Each file of :data:`COLUMN_SENTENCES` to the column-list clauses the README states for it."""
     flat = " ".join(readme.split())
+    return {path: [m.group("columns") for m in re.finditer(pattern, flat)]
+            for pattern, path in COLUMN_SENTENCES}
+
+
+def column_problems(readme: str, headers: dict[str, list[str]]) -> list[str]:
+    """What makes the README's column sentences false against the files' headers (``headers``, path to
+    columns): a sentence the README lacks or states more than once, a clause with an unpaired backquote or
+    with no backquoted name, and each backquoted name in the clause that the file's header does not carry."""
     problems = []
-    for pattern, path in COLUMN_SENTENCES:
-        found = re.findall(pattern, flat)
-        if len(found) != 1:
-            problems.append(f"{path}: {len(found)} sentences match {pattern!r}")
+    for path, clauses in column_clauses(readme).items():
+        if len(clauses) != 1:
+            problems.append(f"{path}: {len(clauses)} sentences match")
             continue
-        named = re.findall(r"`([a-z_]+_(?:fm|value|unc))`", found[0])
+        clause = clauses[0]
+        if clause.count("`") % 2:
+            problems.append(f"{path}: an unpaired backquote in {clause!r}")
+            continue
+        named = re.findall(r"`([^`]*)`", clause)
         if not named:
             problems.append(f"{path}: the sentence names no column")
         problems += [f"{path}: no column {name!r}" for name in named if name not in headers[path]]
     return problems
 
 
-def test_the_mudirac_inputs_columns_the_readme_names_are_the_files_header():
-    """The columns the License section of the README names -- those of `data/g4/d3/mudirac_inputs.csv`
-    that repeat MuDirac's radii or the IAEA table, and those of `data/g4/d1/suzuki1987_parity_cells.csv`
-    that repeat compiled-in values -- are columns of each file's header; a column renamed in the header is
-    refused."""
+def _readme_and_headers() -> tuple[str, dict[str, list[str]]]:
     readme = (REPO / "README.md").read_text(encoding="utf-8")
     headers = {path: (REPO / path).read_text(encoding="utf-8").splitlines()[0].split(",")
                for _, path in COLUMN_SENTENCES}
+    return readme, headers
+
+
+def test_the_mudirac_inputs_columns_the_readme_names_are_the_files_header():
+    """The columns the License section of the README names -- those of `data/g4/d3/mudirac_inputs.csv`
+    that repeat MuDirac's radii or the IAEA table, and those of `data/g4/d1/suzuki1987_parity_cells.csv`
+    that repeat compiled-in values -- are columns of each file's header. Every name the sentences give, read
+    from the README here, is drilled twice: misspelled in the README, and renamed in its file's header; each
+    is refused by the header check alone."""
+    readme, headers = _readme_and_headers()
     assert column_problems(readme, headers) == []
-    for path, old in (("data/g4/d3/mudirac_inputs.csv", "iaea_rms_fm"),
-                      ("data/g4/d1/suzuki1987_parity_cells.csv", "parity_unc")):
-        renamed = dict(headers, **{path: [name if name != old else old + "_x" for name in headers[path]]})
-        assert any(old in problem for problem in column_problems(readme, renamed)), path
+    flat = " ".join(readme.split())
+    drilled = 0
+    for path, (clause,) in column_clauses(readme).items():
+        names = re.findall(r"`([^`]*)`", clause)
+        assert names, path
+        for name in names:
+            assert clause.count(f"`{name}`") == 1, (path, name)
+            misspelled = flat.replace(clause, clause.replace(f"`{name}`", f"`{name}_bogus`"))
+            assert column_problems(misspelled, headers) == [f"{path}: no column {name + '_bogus'!r}"], name
+            renamed = dict(headers, **{path: [column if column != name else column + "_x"
+                                              for column in headers[path]]})
+            assert column_problems(readme, renamed) == [f"{path}: no column {name!r}"], name
+            drilled += 1
+    assert drilled == sum(len(re.findall(r"`([^`]*)`", c)) for (c,) in column_clauses(readme).values())
+
+
+@pytest.mark.parametrize("case", ("twice", "no backquoted name", "an unknown name alone", "unpaired"))
+def test_drill_a_repeated_column_sentence_or_one_without_a_column_is_refused(case: str):
+    """Each sentence, otherwise correct, stated twice; its clause with no backquoted name; its clause naming
+    only a name its header lacks; and its clause with an unpaired backquote: each is refused, and for that
+    sentence's file alone."""
+    readme, headers = _readme_and_headers()
+    flat = " ".join(readme.split())
+    for pattern, path in COLUMN_SENTENCES:
+        match = re.search(pattern, flat)
+        assert match is not None, path
+        clause = match.group("columns")
+        sentence = match.group(0)
+        if case == "twice":
+            drilled, want = flat + " " + sentence, [f"{path}: 2 sentences match"]
+        elif case == "no backquoted name":
+            drilled = flat.replace(sentence, sentence.replace(clause, "the radii"))
+            want = [f"{path}: the sentence names no column"]
+        elif case == "an unknown name alone":
+            drilled = flat.replace(sentence, sentence.replace(clause, "`bogus`"))
+            want = [f"{path}: no column 'bogus'"]
+        else:
+            drilled = flat.replace(sentence, sentence.replace(clause, clause + " `"))
+            want = [f"{path}: an unpaired backquote in {clause + ' `'!r}"]
+        assert column_problems(drilled, headers) == want, (case, path)
 
 
 def test_the_mudirac_licence_text_is_the_release_copy():
