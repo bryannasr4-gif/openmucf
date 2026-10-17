@@ -1,0 +1,118 @@
+profile,z,a,isotope_resolved,needs_verification,target_kind,target_evidence,value_lineage,lineage_evidence,answer_class
+parity,1,1,true,false,other_primary_isotopic,evaluation_method: the cited primary,other_source,a primary other than the published tables,parity_isotope
+parity,2,3,true,false,other_primary_isotopic,evaluation_method: the cited primary,other_source,a primary other than the published tables,parity_isotope
+parity,2,4,true,false,other_primary_isotopic,evaluation_method: the cited primary,other_source,a primary other than the published tables,parity_isotope
+parity,3,6,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,no_cell,equal to no published cell at its printed precision,parity_isotope_lineage_open
+parity,3,7,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,no_cell,equal to no published cell at its printed precision,parity_isotope_lineage_open
+parity,4,9,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,5,10,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,no_cell,equal to no published cell at its printed precision,parity_isotope_lineage_open
+parity,5,11,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,no_cell,equal to no published cell at its printed precision,parity_isotope_lineage_open
+parity,6,12,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,6,13,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,no_cell,equal to no published cell at its printed precision,parity_isotope_lineage_open
+parity,7,14,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,8,16,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,8,18,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table III p.2217 row 50 18O,parity_isotope
+parity,9,19,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_rounded,Table III p.2217 row 54 F,parity_isotope
+parity,10,20,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,11,23,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,12,24,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,13,27,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,14,28,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,15,31,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,16,32,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,17,35,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2218 row 30 35Cl,parity_isotope
+parity,17,37,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2218 row 31 37Cl,parity_isotope
+parity,18,40,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,19,39,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_rounded,Table IV p.2218 row 36 K,parity_natural
+parity,20,40,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,21,45,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_exact,Table IV p.2218 row 43 Sc,parity_isotope
+parity,22,48,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,23,51,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,24,50,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2218 row 54 50Cr,parity_isotope
+parity,24,52,false,true,unsettled,needs_verification true and no stated combination,no_cell,equal to no published cell at its printed precision,parity_unsettled
+parity,24,53,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2218 row 56 53Cr,parity_isotope
+parity,24,54,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2218 row 57 54Cr,parity_isotope
+parity,25,55,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,26,56,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,27,59,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,28,58,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2219 row 15 58Ni,parity_isotope
+parity,28,60,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2219 row 16 60Ni,parity_isotope
+parity,28,62,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2219 row 17 62Ni,parity_isotope
+parity,29,63,false,true,mixed_composition,evaluation_method states the combination; recomputed,combination_stated,Table IV p.2219 row 23 Cu + Table IV p.2219 row 24 63Cu; inverse-variance weighted mean 5.691569 +- 0.029742,parity_mixed_reconstructed
+parity,30,66,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,31,69,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2219 row 29 Ga,parity_natural
+parity,32,72,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,33,75,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,34,80,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,35,79,false,true,mixed_composition,evaluation_method states the combination; recomputed,combination_stated,Table IV p.2219 row 37 79Br + Table IV p.2219 row 38 81Br; inverse-variance weighted mean 7.223562 +- 0.282803,parity_mixed_reconstructed
+parity,35,81,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_rounded,Table IV p.2219 row 38 81Br,parity_isotope_lineage_open
+parity,37,85,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2219 row 40 Rb,parity_natural
+parity,38,88,false,true,unsettled,needs_verification true and no stated combination,no_cell,equal to no published cell at its printed precision,parity_unsettled
+parity,39,89,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_exact,Table IV p.2219 row 44 Y,parity_isotope
+parity,40,91,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,41,93,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,42,96,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,45,103,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,46,106,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2219 row 53 Pd,parity_natural
+parity,47,107,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,48,112,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,49,115,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,50,119,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,51,121,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,52,128,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,53,127,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,55,133,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_exact,Table IV p.2220 row 15 Cs,parity_isotope
+parity,56,138,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,57,139,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2220 row 18 La,parity_natural
+parity,58,140,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,59,141,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_exact,Table IV p.2220 row 21 Pr,parity_isotope
+parity,60,144,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,62,150,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2220 row 24 Sm,parity_natural
+parity,64,157,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,65,159,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_exact,Table IV p.2220 row 27 Th,parity_isotope
+parity,66,163,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2220 row 28 Dy,parity_natural
+parity,67,165,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_exact,Table IV p.2220 row 29 Ho,parity_isotope
+parity,68,167,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2220 row 30 Er,parity_natural
+parity,72,178,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2220 row 31 Hf,parity_natural
+parity,73,181,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,printed_exact,Table IV p.2220 row 32 Ta,parity_natural
+parity,74,184,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,79,197,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,80,201,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,81,205,false,false,natural_composition,evaluation_method: the primary lists the element with no mass number,no_cell,equal to no published cell at its printed precision,parity_natural
+parity,82,207,false,false,mixed_composition,evaluation_method states the combination; recomputed,combination_stated,Table IV p.2220 row 46 Pb + Table IV p.2220 row 49 RPb^b; inverse-variance weighted mean 13.295000 +- 0.070711,parity_mixed_reconstructed
+parity,83,209,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,no_cell,equal to no published cell at its printed precision,parity_isotope
+parity,90,232,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_rounded,Table IV p.2220 row 58 232Th^c,parity_isotope
+parity,92,238,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,no_cell,equal to no published cell at its printed precision,parity_isotope_lineage_open
+parity,92,233,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,no_cell,equal to no published cell at its printed precision,parity_isotope_lineage_open
+parity,92,235,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,no_cell,equal to no published cell at its printed precision,parity_isotope_lineage_open
+parity,92,236,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2221 row 15 236U^c,parity_isotope
+parity,93,237,true,false,single_isotope_element,geant4_natural_isotopes.csv: one natural isotope,printed_rounded,Table IV p.2221 row 33 237Np^c,parity_isotope
+parity,94,239,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_exact,Table IV p.2221 row 40 239Pu^c,parity_isotope
+parity,94,242,true,false,separated_isotope,evaluation_method: the primary lists the separated isotope,printed_rounded,Table IV p.2221 row 43 242Pu^c,parity_isotope_lineage_open
+mizuno2025,12,0,false,false,natural_composition,printed label 'natMg',printed_exact,"Table 3, Exp. column",evaluated_natural
+mizuno2025,13,27,true,false,separated_isotope,printed label '27Al',printed_exact,"Table 3, Exp. column",evaluated_isotope
+mizuno2025,14,0,false,false,natural_composition,printed label 'natSi',printed_exact,"Table 3, Exp. column",evaluated_natural
+mizuno2025,14,28,true,false,separated_isotope,printed label '28Si',printed_exact,"Table 3, Exp. column",evaluated_isotope
+mizuno2025,14,29,true,false,separated_isotope,printed label '29Si',printed_exact,"Table 3, Exp. column",evaluated_isotope
+mizuno2025,14,30,true,false,separated_isotope,printed label '30Si',printed_exact,"Table 3, Exp. column",evaluated_isotope
+mizuno2025,25,55,true,false,separated_isotope,printed label '55Mn',printed_exact,"Table 3, Exp. column",evaluated_isotope
+mizuno2025,47,0,false,false,natural_composition,printed label 'natAg',printed_exact,"Table 3, Exp. column",evaluated_natural
+suzuki1987,3,6,true,false,separated_isotope,printed label '6Li',printed_exact,Table III p.2217 row 14,evaluated_isotope
+suzuki1987,3,7,true,false,separated_isotope,printed label '7Li',printed_exact,Table III p.2217 row 17,evaluated_isotope
+suzuki1987,4,9,true,false,single_isotope_element,printed label 'Be',printed_exact,Table III p.2217 row 21,evaluated_isotope
+suzuki1987,5,10,true,false,separated_isotope,printed label '10B',printed_exact,Table III p.2217 row 23,evaluated_isotope
+suzuki1987,5,11,true,false,separated_isotope,printed label '11B',printed_exact,Table III p.2217 row 25,evaluated_isotope
+suzuki1987,6,13,true,false,separated_isotope,printed label '13C',printed_exact,Table III p.2217 row 39,evaluated_isotope
+suzuki1987,8,18,true,false,separated_isotope,printed label '18O',printed_exact,Table III p.2217 row 50,evaluated_isotope
+suzuki1987,9,19,true,false,single_isotope_element,printed label 'F',printed_exact,Table III p.2217 row 54,evaluated_isotope
+suzuki1987,11,23,true,false,single_isotope_element,printed label 'Na',printed_exact,Table IV p.2218 row 8,evaluated_isotope
+suzuki1987,13,27,true,false,single_isotope_element,printed label 'Al',printed_exact,Table IV p.2218 row 16,evaluated_isotope
+suzuki1987,15,31,true,false,single_isotope_element,printed label 'P',printed_exact,Table IV p.2218 row 23,evaluated_isotope
+suzuki1987,21,45,true,false,single_isotope_element,printed label 'Sc',printed_exact,Table IV p.2218 row 43,evaluated_isotope
+suzuki1987,25,55,true,false,single_isotope_element,printed label 'Mn',printed_exact,Table IV p.2219 row 3,evaluated_isotope
+suzuki1987,27,59,true,false,single_isotope_element,printed label 'Co',printed_exact,Table IV p.2219 row 10,evaluated_isotope
+suzuki1987,33,75,true,false,single_isotope_element,printed label 'As',printed_exact,Table IV p.2219 row 34,evaluated_isotope
+suzuki1987,41,93,true,false,single_isotope_element,printed label 'Nb',printed_exact,Table IV p.2219 row 48,evaluated_isotope
+suzuki1987,53,127,true,false,single_isotope_element,printed label 'I',printed_exact,Table IV p.2220 row 14,evaluated_isotope
+suzuki1987,79,197,true,false,single_isotope_element,printed label 'Au',printed_exact,Table IV p.2220 row 38,evaluated_isotope
+suzuki1987,83,209,true,false,single_isotope_element,printed label 'Bi',printed_exact,Table IV p.2220 row 52,evaluated_isotope
