@@ -342,8 +342,11 @@ def test_t158_a_bare_symbol_row_is_keyed_only_at_a_single_isotope_element() -> N
 
 # T-159: the generator refuses an isotope-audit row that calls an element mononuclidic when its clause names
 # another mass number or symbol, or the committed Geant4 composition at that Z is not that single isotope.
+# Each case breaks one condition and keeps every other true: "second member" keeps the first member the
+# clause's isotope at abundance 1 and adds another, and "member symbol" gives the one member another symbol
+# at the clause's mass number and abundance 1, the clause unchanged.
 @pytest.mark.parametrize("case", ("two isotopes", "another mass number", "abundance", "clause mass",
-                                  "clause symbol"))
+                                  "clause symbol", "second member", "member symbol"))
 def test_t159_a_disagreeing_composition_or_clause_stops_the_build(monkeypatch, case: str) -> None:
     from openmucf.g4 import d1_natural as natural
 
@@ -359,6 +362,11 @@ def test_t159_a_disagreeing_composition_or_clause_stops_the_build(monkeypatch, c
         compositions[z] = (dataclasses.replace(member, a=a + 1),)
     elif case == "abundance":
         compositions[z] = (dataclasses.replace(member, abundance=0.99),)
+    elif case == "second member":
+        assert member.a == a and member.abundance == 1.0 and member.symbol == "Al"
+        compositions[z] = (member, dataclasses.replace(member, a=a + 1))
+    elif case == "member symbol":
+        compositions[z] = (dataclasses.replace(member, symbol="Si"),)
     else:
         old = "Al-27 = 100%" if case == "clause mass" else "(Al-27"
         new = "Al-28 = 100%" if case == "clause mass" else "(Si-27"

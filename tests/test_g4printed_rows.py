@@ -100,9 +100,9 @@ def test_drill_a_second_sentence_or_a_short_digest_is_refused() -> None:
     """The guards above, shown to fire: a caption's title passes and the same title with a sentence after it
     does not; a one-sentence footnote passes and the same footnote with a second sentence does not; an
     abbreviation's full stop ends no sentence; a second sentence that opens lowercase or with a digit counts;
-    a footnote that keeps a sentence beside its omission mark is refused; an omission mark with a short digest
-    is not read as one; and a
-    capture-branch cell that quotes its source's words, with no mark or with a short digest, is refused."""
+    a footnote or a note that keeps a sentence beside its omission mark is refused, a caption is not held to
+    that rule; an omission mark with a short digest is not read as one; and a capture-branch cell that quotes
+    its source's words, with no mark or with a short digest, is refused."""
     title = "TABLE III. Compendium of total muon capture results for light nuclei."
     assert sentences(quoted(title, "caption")) == 1
     assert sentences(quoted(title + " When underlined it is an estimate.", "caption")) == 2
@@ -115,6 +115,12 @@ def test_drill_a_second_sentence_or_a_short_digest_is_refused() -> None:
     marked = "^a One sentence. [text omitted; sha256 " + "0" * 64 + "]"
     assert marked_note_quotes_text(marked, "footnote")
     assert not marked_note_quotes_text("^a [text omitted; sha256 " + "0" * 64 + "]", "footnote")
+    # The same rule for a note, which carries no marker: a sentence beside the mark is refused, the bare mark
+    # is not; a caption keeps its title beside the mark and is not held to the rule.
+    zeros = "[text omitted; sha256 " + "0" * 64 + "]"
+    assert marked_note_quotes_text("One sentence. " + zeros, "note")
+    assert not marked_note_quotes_text(zeros, "note")
+    assert not marked_note_quotes_text("TABLE IV. A title. " + zeros, "caption")
     assert not OMITTED.search("TABLE III. [text omitted; sha256 0123abcd]")
     mark = "[text omitted; sha256 " + "0" * 64 + "]"
     assert CAPTURE_BRANCH.fullmatch(mark + "; Eqs. (3), (5), (8); a p.7-8")

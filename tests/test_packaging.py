@@ -667,6 +667,65 @@ def test_the_archive_licence_member_gives_each_member_the_licence_of_its_file():
                licence_member_problems(drilled, list(members), texts))
 
 
+def _licence_member_and_texts() -> tuple[str, list[str], dict[str, bytes]]:
+    """The `LICENSE` member of the archive the generator builds, the archive's member names, and the two
+    licence texts it must copy, by title."""
+    import io
+    import tarfile
+
+    _, archive = _archive_generator().build_dataset_artifacts()
+    with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
+        members = {m.name.split("/", 1)[1]: opened.extractfile(m).read() for m in opened.getmembers()}
+    texts = {"Geant4 Software License v1.0": (REPO / "third_party" / "geant4" / "LICENSE").read_bytes(),
+             "MuDirac's MIT License": (REPO / "data" / "g4" / "d3" / "LICENSE-MUDIRAC").read_bytes()}
+    return members["LICENSE"].decode("ascii"), list(members), texts
+
+
+@pytest.mark.parametrize("case", ("member not named", "member absent", "named twice", "another class",
+                                  "text altered", "text missing"))
+def test_drill_each_licence_member_check_refuses_its_own_fault_alone(case: str):
+    """Each check of :func:`licence_member_problems`, given a `LICENSE` member that is correct in every
+    other respect: a member no statement names (`History` dropped from its line), a statement naming a member
+    the archive lacks, a member named on a second line too, a statement giving a profile another licence
+    class, and a licence text altered by one character or left out. Each is refused, and by that check
+    alone."""
+    licence, members, texts = _licence_member_and_texts()
+    assert licence_member_problems(licence, members, texts) == []
+    lines = licence.split("\n")
+    (generated,) = [i for i, line in enumerate(lines) if line.startswith("  - README, History: ")]
+    cc_by = lines[generated].split(": ", 1)[1]
+    if case == "member not named":
+        lines[generated] = f"  - README: {cc_by}"
+    elif case == "member absent":
+        members = [name for name in members if name != "History"]
+    elif case == "named twice":
+        lines.insert(generated + 1, f"  - README: {cc_by}")
+    elif case == "another class":
+        (profile,) = [i for i, line in enumerate(lines) if line.startswith("  - d1_capture.suzuki1987.g4dat")]
+        lines[profile] = lines[profile].split(": ", 1)[0] + f": {cc_by}"
+    elif case == "text altered":
+        (title,) = [i for i, line in enumerate(lines) if line == "--- Geant4 Software License v1.0 ---"]
+        body = title + 2
+        assert lines[body]
+        lines[body] = lines[body][:-1] + ("x" if lines[body][-1] != "x" else "y")
+    else:
+        (title,) = [i for i, line in enumerate(lines) if line == "--- MuDirac's MIT License ---"]
+        lines = lines[:title]
+    problems = licence_member_problems("\n".join(lines), members, texts)
+    if case in ("member not named", "member absent"):
+        assert len(problems) == 1 and problems[0].startswith("named "), problems
+    elif case == "named twice":
+        assert problems == ["README named twice"], problems
+    elif case == "another class":
+        assert [p.split(":", 1)[0] for p in problems] == [
+            "d1_capture.suzuki1987.g4dat", "d1_capture.suzuki1987.prov.json"], problems
+        assert all("gives ['CC-BY-4.0'], G4_DATA gives None" in p for p in problems), problems
+    elif case == "text altered":
+        assert problems == ["the text of Geant4 Software License v1.0 is not the repository copy"], problems
+    else:
+        assert problems == ["the text of MuDirac's MIT License is not the repository copy"], problems
+
+
 #: The README sentences that name columns of a file under `data/g4/`, each with that file: the pattern
 #: captures the sentence, and every backquoted name in it that ends `_fm`, `_value` or `_unc` is a column.
 COLUMN_SENTENCES = (

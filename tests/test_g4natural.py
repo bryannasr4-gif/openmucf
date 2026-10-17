@@ -14,6 +14,7 @@ import hashlib
 import math
 import re
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -138,12 +139,16 @@ def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes =
 def test_drill_the_harvest_conversion_refuses_differing_builds_a_foreign_driver_and_stderr(tmp_path):
     """The conversion writes rows only when every build compiled the committed driver, wrote nothing to
     stderr, recorded its compile flags and printed the same bytes; each of the five ways to break that is
-    refused."""
+    refused. The flags a build record carries are its own `flags.txt`, stripped, whatever they are."""
     harness = hashlib.sha256((REPO / natural.HARNESS_RELPATH).read_bytes()).hexdigest()
     rows, builds = natural.harvest(_raw_tree(tmp_path / "ok", (_RAW, _RAW), harness), REPO)
     assert [row["a"] for row in rows] == ["1", "2", "4"] and len(builds) == len(natural.BUILDS)
     assert {row["compile_flags"] for row in builds} == {"-std=c++17 -O2 -ffp-contract=off"}
     assert rows[1]["abundance"] == repr(float.fromhex("0x1p-12"))
+    # The flags each build records are the ones its own flags.txt gives, not a default of the converter.
+    other_raw = _raw_tree(tmp_path / "other", (_RAW, _RAW), harness, flags=" -std=c++17 -O0\n")
+    _, other = natural.harvest(other_raw, REPO)
+    assert [row["compile_flags"] for row in other] == ["-std=c++17 -O0"] * len(natural.BUILDS)
     for name, raw in (
         ("differ", _raw_tree(tmp_path / "differ", (_RAW, _RAW.replace("0x1p-12", "0x1p-11")), harness)),
         ("driver", _raw_tree(tmp_path / "driver", (_RAW, _RAW), "0" * 64)),
@@ -485,23 +490,62 @@ def combination_rows(z: int, labels: tuple[str, ...]) -> list[dict[str, str]]:
     return out
 
 
-def combination_problems(key: tuple[int, int], rows: list[dict[str, str]]) -> list[str]:
-    """What would make the evidence false: the rows' inverse-variance weighted mean or its uncertainty differs
-    from the record by a unit of the record's last printed digit or more."""
-    import decimal
-
-    data = found()
-    (index,) = [i for i, record in enumerate(data.capture_records) if (record[0], record[1]) == key]
-    value, unc = (decimal.Decimal(cell) for cell in data.capture_literals[index])
-    weights = [1 / suzuki1987.scaled(row, "rate_unc") ** 2 for row in rows]
-    total = sum(w * suzuki1987.scaled(row, "rate") for w, row in zip(weights, rows, strict=True))
-    mean = total / sum(weights)
-    sigma = 1 / sum(weights).sqrt()
-    unit_v = decimal.Decimal(1).scaleb(value.as_tuple().exponent)
-    unit_u = decimal.Decimal(1).scaleb(unc.as_tuple().exponent)
+def record_problems(
+    key: tuple[int, int], value: Decimal, unc: Decimal, mean: Decimal, sigma: Decimal
+) -> list[str]:
+    """What would make the evidence false: the weighted mean ``mean`` differs from the record's ``value``, or
+    its uncertainty ``sigma`` from the record's ``unc``, by a unit of that number's last printed digit or
+    more."""
+    unit_v = Decimal(1).scaleb(value.as_tuple().exponent)
+    unit_u = Decimal(1).scaleb(unc.as_tuple().exponent)
     if abs(mean - value) >= unit_v or abs(sigma - unc) >= unit_u:
         return [f"{key}: the weighted mean is {mean} +- {sigma}; the record is {value} +- {unc}"]
     return []
+
+
+def combination_problems(key: tuple[int, int], rows: list[dict[str, str]]) -> list[str]:
+    """:func:`record_problems` for the record at ``key`` and the inverse-variance weighted mean of
+    ``rows``."""
+    data = found()
+    (index,) = [i for i, record in enumerate(data.capture_records) if (record[0], record[1]) == key]
+    value, unc = (Decimal(cell) for cell in data.capture_literals[index])
+    weights = [1 / suzuki1987.scaled(row, "rate_unc") ** 2 for row in rows]
+    total = sum(w * suzuki1987.scaled(row, "rate") for w, row in zip(weights, rows, strict=True))
+    return record_problems(key, value, unc, total / sum(weights), 1 / sum(weights).sqrt())
+
+
+#: A record as the vendored table prints it, its last digits a unit of 1e-4 (value) and 1e-5 (uncertainty).
+_VALUE, _UNC = Decimal("4.8700"), Decimal("0.03000")
+_UNIT_V, _UNIT_U = Decimal("0.0001"), Decimal("0.00001")
+#: A step far below either unit, to stand just inside or just outside a band edge.
+_TINY = Decimal("1e-20")
+
+
+@pytest.mark.parametrize("sign", (1, -1))
+@pytest.mark.parametrize(
+    "mean_offset,sigma_offset,refused",
+    (
+        (_UNIT_V, 0, True),  # the mean a whole unit off, the uncertainty exact: the band's edge is outside
+        (_UNIT_V - _TINY, 0, False),  # just inside on the mean
+        (_UNIT_V + _TINY, 0, True),  # just outside on the mean
+        (0, _UNIT_U, True),  # the uncertainty a whole unit off, the mean exact
+        (0, _UNIT_U - _TINY, False),  # just inside on the uncertainty
+        (0, _UNIT_U + _TINY, True),  # just outside on the uncertainty
+        (0, 0, False),  # both exact
+    ),
+    ids=("mean-edge", "mean-inside", "mean-outside", "sigma-edge", "sigma-inside", "sigma-outside", "exact"),
+)
+def test_drill_the_weighted_mean_check_refuses_each_coordinate_alone_at_its_edge(
+    sign: int, mean_offset: Decimal, sigma_offset: Decimal, refused: bool
+):
+    """Each of the two criteria of :func:`record_problems` alone, the other number exactly the record's: a
+    difference of exactly one unit of the record's last printed digit is refused (the band is open), one a
+    hair less is admitted and one a hair more refused, on either side of the record."""
+    mean = _VALUE + sign * Decimal(mean_offset)
+    sigma = _UNC + sign * Decimal(sigma_offset)
+    assert _VALUE.as_tuple().exponent == _UNIT_V.as_tuple().exponent == -4
+    assert _UNC.as_tuple().exponent == _UNIT_U.as_tuple().exponent == -5
+    assert bool(record_problems((0, 0), _VALUE, _UNC, mean, sigma)) is refused
 
 
 def test_the_two_open_records_agree_with_the_weighted_means_their_evidence_names():
