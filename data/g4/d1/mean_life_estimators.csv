@@ -1,0 +1,40 @@
+source,scope,fact,value,status,locator
+suzuki1987,all,time_origin,each stopped muon starts its own clock: START is a good stopped muon with no premuon,printed,Phys. Rev. C 35 p.2214 event definition
+suzuki1987,all,beam_structure,one muon at a time from a continuous beam: an event is rejected if another muon stops within 16 (32) us before or after the start,printed,Phys. Rev. C 35 p.2214 event definition
+suzuki1987,all,histogram,four time histograms of 2000 channels of 16 ns (light elements) or 8 ns (heavy elements),printed,Phys. Rev. C 35 p.2214 left column
+suzuki1987,all,gate,32 us gate for lifetimes longer than 300 ns and 16 us for shorter,printed,Phys. Rev. C 35 p.2214 note to the event definition
+suzuki1987,all,fit_program,MINUIT,printed,Phys. Rev. C 35 p.2214 left column
+suzuki1987,all,fit_method,,not_stated,Phys. Rev. C 35 pp.2213-2215
+suzuki1987,all,weighting,,not_stated,Phys. Rev. C 35 pp.2213-2215
+suzuki1987,all,components,the decay in question; the decay from oxygen for the oxide targets; a carbon background; a constant background,printed,Phys. Rev. C 35 p.2214 left column
+suzuki1987,all,constant,the flat background at the end was first determined and then fixed,printed,Phys. Rev. C 35 pp.2214-2215
+suzuki1987,all,carbon_amplitude,obtained from independent runs and fixed for the light elements and the oxide targets; determined simultaneously for heavy metal targets,printed,Phys. Rev. C 35 p.2215 left column
+suzuki1987,all,carbon_fraction,typically 1-2% of the muons stop in carbon,printed,Phys. Rev. C 35 p.2213 right column and p.2215 left column
+suzuki1987,all,carbon_lifetime,,not_stated,Phys. Rev. C 35 pp.2213-2215
+suzuki1987,all,oxygen_lifetime,fixed at the value determined with the water target; the value is not printed in the text,printed,Phys. Rev. C 35 p.2215 left column
+suzuki1987,all,heavy_light_boundary,,not_stated,Phys. Rev. C 35 pp.2213-2215
+suzuki1987,all,fit_range,,not_stated,Phys. Rev. C 35 pp.2213-2215
+suzuki1987,all,target_forms,most targets elemental and self-supporting; powders and liquids: 13C; 18O and 16O agar; H2O; LiF; CaF2; PbF; CCl4; Sc2O3; MnO2; GeO2; Br; I; BaO; NdO; W; HgO,printed,Phys. Rev. C 35 p.2213 right column
+suzuki1987,all,target_form_per_row,,not_stated,Phys. Rev. C 35 Tables III and IV
+suzuki1987,all,nontarget_amplitudes,carbon only (1-2%); oxygen and any other compound partner not printed,printed,Phys. Rev. C 35 pp.2213-2215
+mizuno2025,all,time_origin,approximately 40 ns after the end timing of the second pulse,printed,arXiv:2501.05897v2 p.3 Sec. III
+mizuno2025,all,beam_structure,double-pulse primary beam at 25 Hz; the pulse separation and widths are not printed,printed,arXiv:2501.05897v2 p.2 Sec. II and p.3 Sec. III
+mizuno2025,all,data_window,electron times stored from -7 to 57 us with respect to the beam arrival,printed,arXiv:2501.05897v2 p.3 Sec. II
+mizuno2025,all,fit_method,log-likelihood,printed,arXiv:2501.05897v2 p.3 Sec. III
+mizuno2025,all,weighting,Poisson log-likelihood,printed,arXiv:2501.05897v2 p.3 Sec. III
+mizuno2025,all,components,Eq. (5): a0 exp(-t/tau_nucl) + a1 exp(-t/tau_Ag) + a2 exp(-t/tau_CNO) + a3 exp(-t/tau_bg),printed,arXiv:2501.05897v2 p.3 Eqs. (4) and (5)
+mizuno2025,all,free_parameters,tau_nucl and the coefficients a0-a3,printed,arXiv:2501.05897v2 p.3 below Eq. (5)
+mizuno2025,all,constant,a constant term was not included,printed,arXiv:2501.05897v2 p.3 Sec. III
+mizuno2025,all,tau_Ag,87.0(5) ns,printed,arXiv:2501.05897v2 p.3 Sec. III
+mizuno2025,all,tau_bg,25.8(16) us; the same value for all targets,printed,arXiv:2501.05897v2 p.3 Sec. III
+mizuno2025,in_case,tau_CNO,1.94(8) us,printed,arXiv:2501.05897v2 p.3 Sec. III
+mizuno2025,self_supported,tau_CNO,1.88(5) us (air),printed,arXiv:2501.05897v2 p.4 Sec. III
+mizuno2025,self_supported,omitted,a1 = 0: no Ag component for a self-supported plate without the Ag masks and backing plate,printed,arXiv:2501.05897v2 p.3 below Eq. (5)
+mizuno2025,Table 1 row 10,components,Eq. (4) for the natAg spectrum: a1 exp(-t/tau_Ag) + a2 exp(-t/tau_CNO) + a3 exp(-t/tau_bg) with the three lifetimes deduced by the free fitting,printed,arXiv:2501.05897v2 p.3 Eq. (4)
+mizuno2025,in_case,cno_fraction,approximately 2% of the total count (the natAg spectrum),printed,arXiv:2501.05897v2 p.3 Sec. III
+mizuno2025,self_supported,cno_fraction,approximately 1% stopping probability in air (a GEANT4 estimate),printed,arXiv:2501.05897v2 p.4 Sec. III
+mizuno2025,all,ag_fraction,,not_stated,arXiv:2501.05897v2 Secs. II-III
+mizuno2025,all,bg_fraction,,not_stated,arXiv:2501.05897v2 Secs. II-III
+mizuno2025,all,fit_range,varied within its uncertainty in the uncertainty estimate; the nominal range is not printed,printed,arXiv:2501.05897v2 p.4 Sec. III
+mizuno2025,all,binning,8 ns in the displayed spectra (Fig. 3); not stated for the fit,printed,arXiv:2501.05897v2 p.4 Fig. 3
+mizuno2025,all,target_forms,per target in Table 1 (self-supported plate; powder or plate in the acrylic case),printed,arXiv:2501.05897v2 Table 1

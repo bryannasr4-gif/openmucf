@@ -9,13 +9,20 @@ states (A-share). Each gate has a drill that must turn it red.
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import math
+from decimal import Decimal, localcontext
+from fractions import Fraction
 from pathlib import Path
 
+import pytest
+
+from openmucf.g4 import d1_lifetime as lifetime
 from openmucf.g4 import d1_mixture as mixture
 from openmucf.g4 import d1_natural as natural
 from openmucf.g4 import spec
+from openmucf.g4.sources import d1_nuclear_capture as d1
 
 ROOT = Path(__file__).resolve().parents[1]
 D1 = ROOT / "data" / "g4" / "d1"
@@ -193,3 +200,231 @@ def test_answers_a_share_drill_moved_abundance() -> None:
 def test_answers_route_and_class_agree() -> None:
     for row in _rows("natural_target_answers.csv"):
         assert ROUTE_OF_CLASS.get(row["answer_class"], natural.TABLE_ROUTE) == row["route"], row
+
+
+# --------------------------------------------------------------------------------------------
+# the oracle
+# --------------------------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def oracle() -> mixture.Oracle:
+    return mixture.Oracle(ROOT)
+
+
+def test_oracle_single_isotope_rates_equal_the_mean_life_comparison(oracle: mixture.Oracle) -> None:
+    """(i) For an element with a single natural isotope, each route's rate equals the rate the mean-life
+    comparison gives its row, bit for bit, under every profile."""
+    checked = 0
+    for row in lifetime.read_comparison(ROOT / lifetime.COMPARISON_RELPATH):
+        z = int(row["z"])
+        if not row["key_a"] or len(oracle.isotopes[z]) != 1:
+            continue
+        stopping = oracle.components(row["profile"], mixture.STOPPING, z)[0]
+        atomic = oracle.components(row["profile"], mixture.ATOMIC, z)[0]
+        assert repr(stopping.total * d1.MICROSECOND) == row["rate_bound"], row["locator"]
+        assert repr((1.0 / atomic.tau) * d1.MICROSECOND) == row["rate_helper"], row["locator"]
+        checked += 1
+    assert checked > 0
+
+
+def test_oracle_weighted_capture_rates_equal_the_study(oracle: mixture.Oracle) -> None:
+    """(ii) The abundance-weighted capture rate of the oracle's components equals natural_target_capture.csv's
+    weighted_rate for every profile and element, on both routes."""
+    for row in _rows("natural_target_capture.csv"):
+        z = int(row["z"])
+        for route in mixture.ROUTES:
+            comps = oracle.components(row["profile"], route, z)
+            weighted = math.fsum(
+                i.abundance * c.capture for i, c in zip(oracle.isotopes[z], comps, strict=True)
+            )
+            assert repr(weighted * d1.MICROSECOND) == row["weighted_rate"], (row["profile"], z, route)
+
+
+ESTIMATOR_FAMILIES = {
+    "suzuki-ll-constant": mixture.FitSpec(
+        "ll", 0.0, 9000.0, True, ((1.0, 0.0),), ((1 / 2026.3, 0.02, True), (1 / 1795.4, 0.05, True))
+    ),
+    "suzuki-ls-fixed-carbon": mixture.FitSpec(
+        "ls", 1500.0, 9000.0, False, ((1.0, 0.0),), ((1 / 2026.3, 0.01, False),)
+    ),
+    "mizuno-ll-double-pulse": mixture.FitSpec(
+        "ll",
+        0.0,
+        10000.0,
+        False,
+        ((0.5, 40.0), (0.5, 640.0)),
+        ((1 / 87.0, 0.05, True), (1 / 1940.0, 0.02, True), (1 / 25800.0, 0.05, True)),
+    ),
+}
+
+
+@pytest.mark.parametrize("family", sorted(ESTIMATOR_FAMILIES))
+def test_estimator_returns_a_single_exponential_target_rate(oracle: mixture.Oracle, family: str) -> None:
+    """(iii) Every estimator family returns the rate of a pure single-exponential target, with its non-target
+    components present, to 1e-25, in 45-digit decimals from a start 1e-3 away."""
+    comps = [oracle.components(spec.PARITY_PROFILE, mixture.STOPPING, 13)[0]]
+    with localcontext() as context:
+        context.prec = 45
+        fitted = mixture.fit_rate(comps, ESTIMATOR_FAMILIES[family], conv=Decimal, start=1.001)
+        truth = Decimal(comps[0].rate.numerator) / Decimal(comps[0].rate.denominator)
+        assert abs(fitted / truth - 1) < Decimal("1e-25")
+
+
+def test_estimator_two_component_target_matches_an_independent_quadrature(oracle: mixture.Oracle) -> None:
+    """(iv) On a synthetic two-component target, the fitted rate equals an independent computation (adaptive
+    quadrature and a root of the stationarity equations) to 1e-10, for both methods."""
+    integrate = pytest.importorskip("scipy.integrate")
+    optimize = pytest.importorskip("scipy.optimize")
+    base = oracle.components(spec.PARITY_PROFILE, mixture.STOPPING, 32)
+    comps = [
+        mixture.Component(
+            c.a,
+            Fraction(1, 2),
+            c.capture,
+            c.decay,
+            c.total,
+            c.tau,
+            c.tau_dio,
+            c.tau_nc,
+            c.rate,
+            c.p_dio,
+            c.lookup,
+            c.answer_class,
+            c.record,
+            c.record_unc,
+        )
+        for c in (base[1], base[3])
+    ]
+    rates = [float(c.rate) for c in comps]
+    weights = [float(c.abundance * c.p_dio * c.rate) for c in comps]
+    mu, share = 1 / 2026.3, 0.03
+    count = sum(w / r for w, r in zip(weights, rates, strict=True))
+    amps = [w * (1 - share) / count for w in weights]
+
+    def g(t: float) -> float:
+        return sum(a * math.exp(-r * t) for a, r in zip(amps, rates, strict=True)) + share * mu * math.exp(
+            -mu * t
+        )
+
+    t1, t2 = 0.0, 12 / float(mixture.mean_rate(comps))
+    for method in ("ll", "ls"):
+        ours = mixture.fit_rate(
+            comps, mixture.FitSpec(method, t1, t2, False, ((1.0, 0.0),), ((mu, share, True),))
+        )
+
+        def equations(p: list[float], method: str = method) -> list[float]:
+            lam, a0, b = p
+
+            def m(t: float) -> float:
+                return a0 * math.exp(-lam * t) + b * math.exp(-mu * t)
+
+            def residual(t: float) -> float:
+                return g(t) / m(t) - 1 if method == "ll" else (g(t) - m(t)) / g(t)
+
+            parts = (
+                lambda t: -a0 * t * math.exp(-lam * t),
+                lambda t: math.exp(-lam * t),
+                lambda t: math.exp(-mu * t),
+            )
+            return [
+                integrate.quad(lambda t, d=d: residual(t) * d(t), t1, t2, epsabs=0, epsrel=1e-13, limit=500)[
+                    0
+                ]
+                for d in parts
+            ]
+
+        start = [float(mixture.mean_rate(comps)), sum(amps), share * mu]
+        theirs = optimize.root(equations, start, method="hybr", options={"xtol": 1e-14}).x[0]
+        assert abs(ours / theirs - 1) < 1e-10, (method, ours, theirs)
+
+
+def test_oracle_atomic_branch_is_built_as_the_decay_builds_it(oracle: mixture.Oracle) -> None:
+    """(v) The atomic route's branch expectation is Fraction(l1) / Fraction(l1 + l2) from the stored
+    lifetimes, in the order G4MuonicAtomDecay::DecayIt forms them; lambda_d / (lambda_c + lambda_d) differs
+    from it by less than
+    1e-14 here (information: the drill that substitutes it can change nothing measurable)."""
+    for revision in ("v11.4.2", "v11.5.0.beta"):
+        text = (ROOT / "third_party" / "geant4" / revision / "G4MuonicAtomDecay.cc").read_text(
+            encoding="ascii"
+        )
+        squeezed = "".join(text.split())
+        for statement in (
+            "G4double lambdac = 1./muatom->GetDIOLifeTime();",
+            "G4double lambdad = 1./muatom->GetNCLifeTime();",
+            "G4double lambda = lambdac + lambdad;",
+            "if (G4UniformRand()*lambda < lambdac)",
+        ):
+            assert "".join(statement.split()) in squeezed, (revision, statement)
+    largest = Fraction(0)
+    for z in (3, 17, 32, 47, 82):
+        for c in oracle.components(spec.PARITY_PROFILE, mixture.ATOMIC, z):
+            l1, l2 = 1.0 / c.tau_dio, 1.0 / c.tau_nc
+            assert c.p_dio == Fraction(l1) / Fraction(l1 + l2)
+            largest = max(
+                largest, abs(c.p_dio - Fraction(c.decay) / (Fraction(c.capture) + Fraction(c.decay)))
+            )
+    assert largest < Fraction(1, 10**14)
+
+
+def test_oracle_chi_square_tails_match_scipy() -> None:
+    stats = pytest.importorskip("scipy.stats")
+    for dof in (1, 2, 5, 19, 20):
+        for x in ("0.5", "7.25", "33.0", "71.5"):
+            ours = float(mixture.chi2_sf(Decimal(x), dof))
+            assert abs(ours / stats.chi2.sf(float(x), dof) - 1) < 1e-12, (dof, x)
+        crit = mixture.critical(dof, Decimal("1e-6"))
+        assert crit.lo < Decimal(repr(float(stats.chi2.isf(1e-6, dof)))) * (1 + Decimal("1e-12"))
+        assert crit.hi > Decimal(repr(float(stats.chi2.isf(1e-6, dof)))) * (1 - Decimal("1e-12"))
+    assert abs(mixture.noncentral_sf(40.0, 19, 30.0) / stats.ncx2.sf(40.0, 19, 30.0) - 1) < 1e-9
+
+
+# --------------------------------------------------------------------------------------------
+# the estimators and the policy
+# --------------------------------------------------------------------------------------------
+
+#: The SHA-256 of the committed policy, fixed before any harvest output or comparison existed.
+POLICY_SHA256 = "04bd3151358ca0d73af3755d761a991651b1fe57dfc87e7247e7ffcbccd44884"
+
+
+def test_estimator_labels_follow_the_transcription_mechanically() -> None:
+    facts = mixture.load_estimators(ROOT)
+    refs = mixture.references(ROOT)
+    assert len(refs) == 42 and len({r.z for r in refs}) == 38
+    labels = mixture.load_policy(ROOT)["estimators"]["labels"]  # type: ignore[index]
+    for ref, recorded in zip(refs, labels, strict=True):
+        label, missing = mixture.estimator_label(mixture.row_facts(ROOT, ref, facts))
+        assert (ref.locator, label, missing) == (
+            recorded["locator"],
+            recorded["estimator"],
+            recorded["missing"],
+        )
+
+
+def test_estimator_label_drill_a_fully_printed_row_is_established() -> None:
+    """A row whose every establishing fact were printed would be ESTABLISHED: the rule can return it."""
+    full = {fact: {"status": "printed", "value": "printed value"} for fact in mixture.ESTABLISHING_FACTS}
+    assert mixture.estimator_label(full) == (mixture.ESTABLISHED, [])
+    missing_range = {**full, "fit_range": {"status": "not_stated", "value": ""}}
+    assert mixture.estimator_label(missing_range) == (mixture.SURROGATE, ["fit_range"])
+
+
+def test_policy_is_pinned_and_regenerates() -> None:
+    data = (ROOT / mixture.POLICY_RELPATH).read_bytes()
+    assert hashlib.sha256(data).hexdigest() == POLICY_SHA256
+    policy = mixture.load_policy(ROOT)
+    rebuilt, _ = mixture.build_policy(ROOT, policy["compute"]["ms_per_stop"])  # type: ignore[index]
+    assert mixture.render_policy(rebuilt) == data
+
+
+def test_policy_compute_is_below_the_threshold() -> None:
+    compute = mixture.load_policy(ROOT)["compute"]
+    assert compute["core_hours"] < compute["stop_threshold_core_hours"]  # type: ignore[index]
+
+
+def test_policy_brackets_cover_every_reference_row(oracle: mixture.Oracle) -> None:
+    for ref in mixture.references(ROOT):
+        comps = oracle.components(spec.PARITY_PROFILE, mixture.STOPPING, ref.z)
+        fits, nominal = mixture.bracket(ROOT, ref, float(1 / mixture.mean_rate(comps)))
+        labels = [label for label, _ in fits]
+        assert nominal in labels and len(labels) == len(set(labels)), ref.locator

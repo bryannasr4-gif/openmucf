@@ -304,6 +304,8 @@ PROJECT_AUTHORED = (
     "data/g4/d1/geant4_add_dataset.snippet",
     "data/g4/d1/isotope_audit.csv",
     "data/g4/d1/natural_harvest_builds.csv",
+    "data/g4/d1/mean_life_estimators.csv",
+    "data/g4/d1/natural_mixture_policy.json",
     "data/g4/d1/natural_target_answers.csv",
     "data/g4/d1/natural_target_capture.csv",
     "data/g4/d1/record_classes.csv",

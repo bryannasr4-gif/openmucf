@@ -33,6 +33,7 @@ Standard library only.
 from __future__ import annotations
 
 import csv
+import functools
 import io
 import json
 import math
@@ -40,6 +41,7 @@ import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
+from fractions import Fraction
 from pathlib import Path
 
 from openmucf.g4 import d1_natural as natural
@@ -556,3 +558,1408 @@ def read_csv(path: Path, columns: Sequence[str]) -> list[dict[str, str]]:
     if tuple(reader.fieldnames or ()) != tuple(columns):
         raise MixtureError(f"{path.name} header is {reader.fieldnames!r}")
     return list(reader)
+
+
+# --------------------------------------------------------------------------------------------
+# the mixture a natural target makes, on each route
+# --------------------------------------------------------------------------------------------
+
+STOPPING, ATOMIC = "stopping", "atomic"
+ROUTES = (STOPPING, ATOMIC)
+
+
+@dataclass(frozen=True)
+class Component:
+    """One isotope of a natural target as one route receives it.
+
+    ``capture`` and ``decay`` are the binary64 rates (ns^-1) the call site computes. On the stopping route
+    ``total`` is ``fl(capture + decay)``, the rate ``G4MuonMinusBoundDecay::ApplyYourself`` draws the delay
+    from; on the atomic route ``tau``, ``tau_dio`` and ``tau_nc`` are the lifetimes
+    ``G4MuonicAtomHelper::ConstructMuonicAtom`` stores, and the delay is exponential with rate ``1 / tau``.
+    ``rate`` is the exact rate of the delay distribution and ``p_dio`` the exact probability of the decay
+    branch, from those binary64 values in call-site order. ``abundance`` is the exact probability with which
+    the selector draws the isotope."""
+
+    a: int
+    abundance: Fraction
+    capture: float
+    decay: float
+    total: float
+    tau: float
+    tau_dio: float
+    tau_nc: float
+    rate: Fraction
+    p_dio: Fraction
+    lookup: str
+    answer_class: str
+    record: str
+    record_unc: Decimal | None
+
+
+def stopping_branch(capture: float, total: float) -> Fraction:
+    """The decay-branch probability of ``G4MuonMinusBoundDecay::ApplyYourself``: capture iff
+    ``U * total < capture``."""
+    return 1 - Fraction(capture) / Fraction(total)
+
+
+def atomic_branch(tau_dio: float, tau_nc: float) -> Fraction:
+    """The decay-branch probability of ``G4MuonicAtomDecay::DecayIt``: ``l1 = 1/tau_dio``, ``l2 = 1/tau_nc``,
+    ``l = l1 + l2`` in binary64 in that order, DIO iff ``U * l < l1``."""
+    l1 = 1.0 / tau_dio
+    l2 = 1.0 / tau_nc
+    return Fraction(l1) / Fraction(l1 + l2)
+
+
+class Oracle:
+    """The analytic mixture model from the committed tables: never from a harvest."""
+
+    def __init__(self, root: Path) -> None:
+        from openmucf.g4 import d1_lifetime as lifetime
+
+        self.root = root
+        self.found = d1.load(root / d1.VENDORED_RELPATH)
+        self.helper_found = d1.load_helper(root / d1.HELPER_RELPATH)
+        self.model = natural.reference_model(self.found)
+        self.helper_model = natural.reference_model(self.helper_found)
+        self.zmin, self.zmax = lifetime.helper_clamp(self.helper_found)
+        self.decay_oracle = lifetime.load_oracle(root / lifetime.ORACLE_RELPATH)
+        self.mu_mass = self.decay_oracle.constants["mu_mass"]
+        self.isotopes = natural.load_isotopes(root / natural.ISOTOPES_RELPATH)
+        self.tables = natural.capture_profiles(root / "data" / "g4" / "d1")
+        self.classes = {
+            (r["profile"], int(r["z"]), int(r["a"])): r["answer_class"]
+            for r in read_csv(root / CLASSES_RELPATH, CLASS_COLUMNS)
+        }
+        self.compiled_unc = {(z, a): unc for z, a, _, unc in self.found.capture_records}
+        self._lifetime = lifetime
+
+    def components(self, profile: str, route: str, z: int) -> tuple[Component, ...]:
+        """The isotopes of element ``z`` as ``route`` receives them under ``profile``."""
+        lifetime = self._lifetime
+        table = self.tables[profile]
+        reach = None if profile == spec.PARITY_PROFILE else natural.profile_rows(table)
+        profile_unc = {(int(z_), int(a_)): float(u) for z_, a_, _, u in table.records}
+        members = self.isotopes[z]
+        weight_sum = sum((Fraction(m.abundance) for m in members), Fraction(0))
+        out: list[Component] = []
+        for member in members:
+            a = member.a
+            found = self.found if route == STOPPING else self.helper_found
+            model = self.model if route == STOPPING else self.helper_model
+            looked = natural.lookup(z, a, reach, found.capture_records, model)
+            capture = looked.rate
+            if route == STOPPING:
+                mass = self.decay_oracle.light[(z, a)][0] if z < lifetime.BOUND_THRESHOLD_Z else math.nan
+                decay = lifetime.bound_decay_rate(z, a, self.mu_mass, mass)
+                total = capture + decay
+                tau = tau_dio = tau_nc = math.nan
+                rate, p_dio = Fraction(total), stopping_branch(capture, total)
+            else:
+                decay = lifetime.helper_decay_rate(z, self.helper_found.zeff, self.zmin, self.zmax)
+                total = capture + decay
+                tau = 1.0 / total
+                tau_dio, tau_nc = 1.0 / decay, 1.0 / capture
+                rate, p_dio = 1 / Fraction(tau), atomic_branch(tau_dio, tau_nc)
+            if looked.route == natural.PROFILE_ROUTE:
+                klass, record = self.classes[(profile, z, a)], f"{profile}:{z}-{a}"
+                unc: Decimal | None = Decimal(repr(profile_unc[(z, a)]))
+            elif looked.route == natural.TABLE_ROUTE:
+                klass, record = self.classes[(spec.PARITY_PROFILE, z, a)], f"{spec.PARITY_PROFILE}:{z}-{a}"
+                unc = Decimal(repr(self.compiled_unc[(z, a)]))
+            else:
+                klass, record, unc = FORMULA, "", None
+            out.append(
+                Component(
+                    a,
+                    Fraction(member.abundance) / weight_sum,
+                    capture,
+                    decay,
+                    total,
+                    tau,
+                    tau_dio,
+                    tau_nc,
+                    rate,
+                    p_dio,
+                    looked.route,
+                    klass,
+                    record,
+                    unc,
+                )
+            )
+        return tuple(out)
+
+
+def mean_rate(components: Sequence[Component]) -> Fraction:
+    """``sum a_i rate_i``: the mixture's initial disappearance rate (ns^-1), exact."""
+    return sum((c.abundance * c.rate for c in components), Fraction(0))
+
+
+def capture_fraction(components: Sequence[Component]) -> Fraction:
+    """``sum a_i (1 - p_dio,i)``, exact."""
+    return sum((c.abundance * (1 - c.p_dio) for c in components), Fraction(0))
+
+
+def _dec(value: Fraction | Decimal | float | int) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    if isinstance(value, Fraction):
+        return Decimal(value.numerator) / Decimal(value.denominator)
+    return Decimal(value)
+
+
+def survival(components: Sequence[Component], t: float, prec: int = 50) -> Decimal:
+    """``S(t) = sum a_i exp(-rate_i t)`` at ``prec`` digits."""
+    with localcontext() as context:
+        context.prec = prec
+        return +sum((_dec(c.abundance) * (-_dec(c.rate) * Decimal(t)).exp() for c in components), Decimal(0))
+
+
+def dio_probabilities(
+    components: Sequence[Component], edges: Sequence[float], prec: int = 50
+) -> list[Decimal]:
+    """The probability that a stop decays in orbit with its electron in each interval of ``edges`` (the last
+    interval open to infinity), then the capture probability: ``sum a_i p_i (e^{-r_i t_j} - e^{-r_i t_j+1})``.
+    Each term is evaluated at ``prec`` digits from the exact inputs; the relative error of a probability is
+    below
+    ``10**(5 - prec)``."""
+    with localcontext() as context:
+        context.prec = prec
+        bounds = [Decimal(t) for t in edges]
+        out = [Decimal(0)] * len(bounds)
+        for c in components:
+            weight = _dec(c.abundance * c.p_dio)
+            rate = _dec(c.rate)
+            tails = [(-rate * b).exp() for b in bounds] + [Decimal(0)]
+            for j in range(len(bounds)):
+                out[j] += weight * (tails[j] - tails[j + 1])
+        out.append(_dec(capture_fraction(components)))
+        return [+p for p in out]
+
+
+# --------------------------------------------------------------------------------------------
+# the estimator: the rate a lifetime fit extracts from an expected time spectrum
+# --------------------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class FitSpec:
+    """One fit of an expected decay-electron time spectrum.
+
+    The spectrum is the target's DIO-electron density, aged by each beam pulse (``pulses``: weight and age of
+    the stops at the time origin), scaled to the count share left by the nuisance components, plus each
+    nuisance component ``(rate, count share)`` (rates in ns^-1; a count share is of the total count from the
+    time origin to infinity). The model fitted on ``[t1, t2]`` is a free-rate, free-amplitude exponential for
+    the target, plus, for each nuisance component, an exponential of its rate with a free amplitude
+    (``free_nuisance``) or with its amplitude fixed at the true value, plus a free constant when ``constant``.
+    ``method`` is ``ll`` (expected Poisson log-likelihood) or ``ls`` (least squares weighted by the expected
+    counts)."""
+
+    method: str
+    t1: float
+    t2: float
+    constant: bool
+    pulses: tuple[tuple[float, float], ...]
+    nuisance: tuple[tuple[float, float, bool], ...]
+
+
+def _gauss_legendre(order: int, conv, exp_unused=None):  # type: ignore[no-untyped-def]
+    """Nodes and weights of ``order``-point Gauss-Legendre quadrature on [-1, 1], by Newton iteration on the
+    Legendre polynomial, in the number type ``conv`` makes."""
+    nodes, weights = [], []
+    one, two = conv(1), conv(2)
+    pi = _pi(conv)
+    for i in range(1, order + 1):
+        x = _cos(pi * (conv(i) - conv(1) / conv(4)) / (conv(order) + conv(1) / conv(2)), conv)
+        for _ in range(100):
+            p0, p1 = one, x
+            for k in range(2, order + 1):
+                p0, p1 = p1, ((two * k - 1) * x * p1 - (k - 1) * p0) / k
+            dp = order * (x * p1 - p0) / (x * x - one)
+            step = p1 / dp
+            x -= step
+            if abs(step) < conv(10) ** -60 or (isinstance(x, float) and abs(step) < 1e-16):
+                break
+        p0, p1 = one, x
+        for k in range(2, order + 1):
+            p0, p1 = p1, ((two * k - 1) * x * p1 - (k - 1) * p0) / k
+        dp = order * (x * p1 - p0) / (x * x - one)
+        nodes.append(x)
+        weights.append(two / ((one - x * x) * dp * dp))
+    return nodes, weights
+
+
+def _pi(conv):  # type: ignore[no-untyped-def]
+    if conv is float:
+        return math.pi
+
+    # Machin: pi = 16 atan(1/5) - 4 atan(1/239)
+    def atan_inv(n: int) -> Decimal:
+        x = Decimal(1) / n
+        x2 = x * x
+        term, total, k = x, x, 1
+        limit = Decimal(10) ** -(localcontext_prec() + 5)
+        while True:
+            term *= -x2
+            add = term / (2 * k + 1)
+            if abs(add) < limit:
+                break
+            total += add
+            k += 1
+        return total
+
+    return 16 * atan_inv(5) - 4 * atan_inv(239)
+
+
+def _cos(x, conv):  # type: ignore[no-untyped-def]
+    if conv is float:
+        return math.cos(x)
+    term, total, k = Decimal(1), Decimal(1), 0
+    while True:
+        k += 2
+        term *= -x * x / ((k - 1) * k)
+        if term == 0 or abs(term) < Decimal(10) ** -(2 * localcontext_prec()):
+            break
+        total += term
+    return total
+
+
+def localcontext_prec() -> int:
+    import decimal
+
+    return decimal.getcontext().prec
+
+
+def _exp(x, conv):  # type: ignore[no-untyped-def]
+    return math.exp(x) if conv is float else x.exp()
+
+
+class _Quadrature:
+    def __init__(self, t1, t2, fastest, conv, order: int = 16) -> None:  # type: ignore[no-untyped-def]
+        base_nodes, base_weights = _gauss_legendre(order, conv)
+        span = t2 - t1
+        panels = max(4, int(math.ceil(float(span) * float(fastest) / 4.0)))
+        h = span / panels
+        self.t, self.w = [], []
+        for p in range(panels):
+            lo = t1 + h * p
+            for x, w in zip(base_nodes, base_weights, strict=True):
+                self.t.append(lo + h * (x + 1) / 2)
+                self.w.append(w * h / 2)
+
+
+def fit_rate(components: Sequence[Component], spec_: FitSpec, conv=float, start: float = 1.0):  # type: ignore[no-untyped-def]
+    """The target rate (ns^-1) the fit ``spec_`` extracts from the expected spectrum of ``components``, in the
+    number type ``conv`` makes (``float`` or ``Decimal``); Newton's iteration starts from ``start`` times the
+    spectrum's initial target rate."""
+    rates = [conv(c.rate.numerator) / conv(c.rate.denominator) for c in components]
+    weights = [
+        conv((c.abundance * c.p_dio * c.rate).numerator) / conv((c.abundance * c.p_dio * c.rate).denominator)
+        for c in components
+    ]
+    return _fit(rates, weights, spec_, conv, start)
+
+
+def _fit(rates, weights, spec_: FitSpec, conv, start: float = 1.0):  # type: ignore[no-untyped-def]
+    zero, one = conv(0), conv(1)
+    # age the target by each pulse and normalise it to the count share the nuisance components leave
+    aged = [
+        sum((conv(q) * w * _exp(-r * conv(s), conv) for q, s in spec_.pulses), zero)
+        for r, w in zip(rates, weights, strict=True)
+    ]
+    count = sum((w / r for w, r in zip(aged, rates, strict=True)), zero)
+    share = one - sum((conv(f) for _, f, _ in spec_.nuisance), zero)
+    target_amp = [w * share / count for w in aged]
+    nuis = [(conv(mu), conv(f) * conv(mu), free) for mu, f, free in spec_.nuisance]
+    fastest = max([float(r) for r in rates] + [float(mu) for mu, _, _ in nuis])
+    quad = _Quadrature(conv(spec_.t1), conv(spec_.t2), fastest, conv)
+    nodes, qw = quad.t, quad.w
+    truth = [
+        sum((a * _exp(-r * t, conv) for a, r in zip(target_amp, rates, strict=True)), zero)
+        + sum((b * _exp(-mu * t, conv) for mu, b, _ in nuis), zero)
+        for t in nodes
+    ]
+    fixed = [sum((b * _exp(-mu * t, conv) for mu, b, free in nuis if not free), zero) for t in nodes]
+    free_basis = [[_exp(-mu * t, conv) for t in nodes] for mu, _, free in nuis if free]
+    if spec_.constant:
+        free_basis.append([one for _ in nodes])
+    # parameters: rate, target amplitude, then one amplitude per free basis function
+    lam = (
+        conv(start)
+        * sum((a * r for a, r in zip(target_amp, rates, strict=True)), zero)
+        / sum(target_amp, zero)
+    )
+    amp = sum(target_amp, zero)
+    coef = [b for mu, b, free in nuis if free] + ([zero] if spec_.constant else [])
+    n_par = 2 + len(coef)
+    tol = conv(10) ** -(localcontext_prec() - 6) if conv is not float else 1e-15
+    slack = conv(10) ** -(localcontext_prec() - 4) if conv is not float else 1e-13
+
+    def evaluate(lam, amp, coef):  # type: ignore[no-untyped-def]
+        """The objective, its gradient and Hessian; ``None`` where the model is not positive on a node of a
+        likelihood fit."""
+        grad = [zero] * n_par
+        hess = [[zero] * n_par for _ in range(n_par)]
+        objective = zero
+        magnitude = zero
+        for k, t in enumerate(nodes):
+            e = _exp(-lam * t, conv)
+            m = amp * e + fixed[k] + sum((c * col[k] for c, col in zip(coef, free_basis, strict=True)), zero)
+            g = truth[k]
+            d = [-amp * t * e, e] + [col[k] for col in free_basis]
+            d2_ll = amp * t * t * e
+            d2_la = -t * e
+            w = qw[k]
+            if spec_.method == "ll":
+                if m <= 0:
+                    return None
+                term = w * (g * _log(m, conv) - m)
+                objective += term
+                magnitude += abs(term) + w * m
+                r = g / m - one
+                s = g / (m * m)
+                factor = one
+            else:
+                objective -= w * (g - m) * (g - m) / g
+                magnitude += w * (g + m)
+                r = (g - m) / g
+                s = one / g
+                factor = conv(2)
+            for p in range(n_par):
+                grad[p] += factor * w * r * d[p]
+                for q in range(p, n_par):
+                    hess[p][q] -= factor * w * s * d[p] * d[q]
+            hess[0][0] += factor * w * r * d2_ll
+            hess[0][1] += factor * w * r * d2_la
+        for p in range(n_par):
+            for q in range(p):
+                hess[p][q] = hess[q][p]
+        return objective, grad, hess, magnitude
+
+    state = evaluate(lam, amp, coef)
+    if state is None:
+        raise MixtureError("the starting model is not positive")
+    # Newton's method with Levenberg-Marquardt damping: a step that does not ascend is retried with the
+    # diagonal of the negated Hessian scaled up, which tames the near-degenerate directions free nuisance
+    # amplitudes and a free constant can make over a short window
+    damping = zero
+    for _ in range(400):
+        objective, grad, hess, magnitude = state
+        neg = [[-h for h in row] for row in hess]
+        for _retry in range(80):
+            matrix = [
+                [neg[p][q] * (one + damping) if p == q else neg[p][q] for q in range(n_par)]
+                for p in range(n_par)
+            ]
+            try:
+                step = _solve(matrix, grad)
+            except MixtureError:
+                step = None
+            if step is not None:
+                trial = (lam + step[0], amp + step[1], [c + s for c, s in zip(coef, step[2:], strict=True)])
+                new_state = evaluate(*trial)
+                if new_state is not None and new_state[0] >= objective - slack * magnitude:
+                    break
+            damping = conv(1) / 1000 if damping == 0 else damping * 10
+        else:
+            raise MixtureError("the fit found no ascent step")
+        moved = abs(trial[0] - lam)
+        lam, amp, coef = trial
+        state = new_state
+        if moved <= tol * abs(lam) and damping < conv(1) / 1000:
+            return lam
+        damping = zero if damping <= conv(1) / 1000 else damping / 100
+    raise MixtureError("the fit did not converge")
+
+
+def _log(x, conv):  # type: ignore[no-untyped-def]
+    return math.log(x) if conv is float else x.ln()
+
+
+def _solve(matrix, vector):  # type: ignore[no-untyped-def]
+    """Gaussian elimination with partial pivoting."""
+    n = len(vector)
+    a = [row[:] + [vector[i]] for i, row in enumerate(matrix)]
+    for col in range(n):
+        pivot = max(range(col, n), key=lambda r: abs(a[r][col]))
+        a[col], a[pivot] = a[pivot], a[col]
+        if a[col][col] == 0:
+            raise MixtureError("singular normal matrix")
+        for r in range(col + 1, n):
+            f = a[r][col] / a[col][col]
+            for c in range(col, n + 1):
+                a[r][c] -= f * a[col][c]
+    x = [a[0][0] * 0] * n
+    for r in range(n - 1, -1, -1):
+        x[r] = (a[r][n] - sum((a[r][c] * x[c] for c in range(r + 1, n)), a[0][0] * 0)) / a[r][r]
+    return x
+
+
+# --------------------------------------------------------------------------------------------
+# exact statistics
+# --------------------------------------------------------------------------------------------
+
+
+@functools.cache
+def _decimal_pi(prec: int) -> Decimal:
+    with localcontext() as context:
+        context.prec = prec + 10
+        value = _pi(Decimal)
+    with localcontext() as context:
+        context.prec = prec
+        return +value
+
+
+def _erfc(z: Decimal, prec: int) -> Decimal:
+    """``erfc(z)`` for ``z >= 0`` by the Maclaurin series of erf at enough guard digits to absorb its
+    cancellation."""
+    guard = int(float(z) ** 2 / 2.302585) + 20
+    with localcontext() as context:
+        context.prec = prec + guard
+        z2 = z * z
+        term, total, n = z, z, 0
+        while True:
+            n += 1
+            term *= -z2 / n
+            add = term / (2 * n + 1)
+            total += add
+            if abs(add) < Decimal(10) ** -(prec + guard):
+                break
+        pi = _decimal_pi(prec + guard)
+        value = 1 - 2 * total / pi.sqrt()
+    with localcontext() as context:
+        context.prec = prec
+        return +value
+
+
+def chi2_sf(x: Decimal, dof: int, prec: int = 60) -> Decimal:
+    """The upper tail ``P(X > x)`` of the chi-square distribution with ``dof`` degrees of freedom: for even
+    ``dof = 2m`` it is ``e^{-y} sum_{j<m} y^j / j!`` with ``y = x/2``; for odd ``dof = 2m + 1`` it is
+    ``erfc(sqrt y) + e^{-y} sum_{j<m} y^{j+1/2} / Gamma(j + 3/2)``."""
+    with localcontext() as context:
+        context.prec = prec + 20
+        y = x / 2
+        if dof % 2 == 0:
+            term, total = Decimal(1), Decimal(1)
+            for j in range(1, dof // 2):
+                term *= y / j
+                total += term
+            value = (-y).exp() * total
+        else:
+            pi = _decimal_pi(prec + 20)
+            term = y.sqrt() / (pi.sqrt() / 2)  # y^{1/2} / Gamma(3/2)
+            total = Decimal(0)
+            for j in range(dof // 2):
+                total += term
+                term *= y / (Decimal(j) + Decimal(3) / 2)
+            value = _erfc(y.sqrt(), prec + 20) + (-y).exp() * total
+    with localcontext() as context:
+        context.prec = prec
+        return +value
+
+
+@dataclass(frozen=True)
+class Critical:
+    """An enclosure ``[lo, hi]`` of the chi-square critical value at upper-tail probability ``alpha``,
+    certified
+    by ``sf(lo) > alpha > sf(hi)``."""
+
+    dof: int
+    alpha: Decimal
+    lo: Decimal
+    hi: Decimal
+
+
+def critical(dof: int, alpha: Decimal, width: Decimal = Decimal("1e-20")) -> Critical:
+    lo, hi = Decimal(0), Decimal(max(10, 4 * dof + 200))
+    while hi - lo > width:
+        mid = (lo + hi) / 2
+        if chi2_sf(mid, dof) > alpha:
+            lo = mid
+        else:
+            hi = mid
+    if not (chi2_sf(lo, dof) > alpha > chi2_sf(hi, dof)):
+        raise MixtureError(f"the critical value for {dof} dof is not enclosed")
+    return Critical(dof, alpha, lo, hi)
+
+
+def pearson(counts: Sequence[int], probabilities: Sequence[Fraction | Decimal]) -> tuple[Decimal, Decimal]:
+    """Pearson's X^2 of ``counts`` against ``probabilities`` (which sum to one), as an enclosure: exact from
+    fractions, or from 50-digit decimals with a bound of ``1e-30`` on the error."""
+    n = sum(counts)
+    fractions = [p for p in probabilities if isinstance(p, Fraction)]
+    if len(fractions) == len(probabilities):
+        exact = sum(
+            ((Fraction(k) - n * p) ** 2 / (n * p) for k, p in zip(counts, fractions, strict=True)),
+            Fraction(0),
+        )
+        with localcontext() as context:
+            context.prec = 60
+            lo = Decimal(exact.numerator) / Decimal(exact.denominator)
+        return lo - Decimal("1e-50"), lo + Decimal("1e-50")
+    with localcontext() as context:
+        context.prec = 60
+        value = sum(
+            (
+                (Decimal(k) - n * _dec(p)) ** 2 / (n * _dec(p))
+                for k, p in zip(counts, probabilities, strict=True)
+            ),
+            Decimal(0),
+        )
+    return value - Decimal("1e-30"), value + Decimal("1e-30")
+
+
+def verdict(x2: tuple[Decimal, Decimal], crit: Critical) -> str:
+    """``pass`` when the statistic lies below the critical value, ``fail`` when above it, ``refuse`` when the
+    enclosures overlap."""
+    if x2[1] < crit.lo:
+        return "pass"
+    if x2[0] > crit.hi:
+        return "fail"
+    return "refuse"
+
+
+# --------------------------------------------------------------------------------------------
+# power (sizing only, binary64)
+# --------------------------------------------------------------------------------------------
+
+
+def _gamma_q(s: float, x: float) -> float:
+    """The regularized upper incomplete gamma function Q(s, x), by the series or the continued fraction."""
+    if x <= 0:
+        return 1.0
+    if x < s + 1:
+        term = total = 1.0 / s
+        k = s
+        while abs(term) > abs(total) * 1e-17:
+            k += 1
+            term *= x / k
+            total += term
+        return 1.0 - total * math.exp(-x + s * math.log(x) - math.lgamma(s))
+    b = x + 1 - s
+    c = 1e300
+    d = 1 / b
+    h = d
+    for i in range(1, 100000):
+        an = -i * (i - s)
+        b += 2
+        d = an * d + b
+        d = 1e-300 if abs(d) < 1e-300 else d
+        c = b + an / c
+        c = 1e-300 if abs(c) < 1e-300 else c
+        d = 1 / d
+        delta = d * c
+        h *= delta
+        if abs(delta - 1) < 1e-16:
+            break
+    return math.exp(-x + s * math.log(x) - math.lgamma(s)) * h
+
+
+def noncentral_sf(x: float, dof: int, nc: float) -> float:
+    """``P(X > x)`` for the noncentral chi-square with ``dof`` degrees of freedom and noncentrality ``nc``:
+    the
+    Poisson-weighted sum of central tails."""
+    half = nc / 2
+    total = 0.0
+    j_max = int(half + 12 * math.sqrt(half + 1) + 40)
+    for j in range(j_max):
+        log_w = (
+            -half + (j * math.log(half) if half > 0 else (0.0 if j == 0 else -math.inf)) - math.lgamma(j + 1)
+        )
+        total += math.exp(log_w) * _gamma_q(dof / 2 + j, x / 2)
+    return total
+
+
+def required_noncentrality(dof: int, crit: float, power: float = 0.99) -> float:
+    """The noncentrality at which a test with ``dof`` degrees of freedom and critical value ``crit`` has the
+    given power."""
+    lo, hi = 0.0, 1.0
+    while noncentral_sf(crit, dof, hi) < power:
+        hi *= 2
+    while hi - lo > 1e-7 * hi:
+        mid = (lo + hi) / 2
+        if noncentral_sf(crit, dof, mid) < power:
+            lo = mid
+        else:
+            hi = mid
+    return hi
+
+
+# --------------------------------------------------------------------------------------------
+# the measured mean lives and the estimators their sources describe
+# --------------------------------------------------------------------------------------------
+
+ESTIMATORS_RELPATH = "data/g4/d1/mean_life_estimators.csv"
+POLICY_RELPATH = "data/g4/d1/natural_mixture_policy.json"
+ESTIMATOR_COLUMNS = ("source", "scope", "fact", "value", "status", "locator")
+ESTIMATOR_STATUSES = ("printed", "not_stated")
+#: The inputs an estimator's asymptotic expectation needs (section 4 of the scientific contract): it is
+#: ESTABLISHED for a row only when each is printed for that row.
+ESTABLISHING_FACTS = (
+    "components",
+    "fit_method",
+    "weighting",
+    "fit_range",
+    "nontarget_amplitudes",
+    "beam_structure",
+)
+ESTABLISHED, SURROGATE = "ESTABLISHED", "SURROGATE"
+SUZUKI, MIZUNO = suzuki1987.PROFILE, mizuno2025.PROFILE
+
+
+@dataclass(frozen=True)
+class Reference:
+    """One measured mean life of a target of natural composition: a source's own row of an element with more
+    than one natural isotope, printed with no mass number or as natural."""
+
+    source: str
+    locator: str
+    label: str
+    z: int
+    basis: str
+    key_a: int | None
+    measured_rate: str
+    measured_rate_unc: str
+
+
+def references(root: Path) -> list[Reference]:
+    """The rows of ``mean_life_comparison.csv`` under ``parity`` whose target is printed with no mass number
+    or
+    as natural, of an element whose natural composition has more than one isotope, in the comparison's
+    order."""
+    from openmucf.g4 import d1_lifetime as lifetime
+
+    isotopes = natural.load_isotopes(root / natural.ISOTOPES_RELPATH)
+    out: list[Reference] = []
+    for row in lifetime.read_comparison(root / lifetime.COMPARISON_RELPATH):
+        if row["profile"] != spec.PARITY_PROFILE or row["basis"] not in ("unspecified", "natural"):
+            continue
+        if len(isotopes[int(row["z"])]) < 2:
+            continue
+        out.append(
+            Reference(
+                row["source"],
+                row["locator"],
+                row["label"],
+                int(row["z"]),
+                row["basis"],
+                int(row["key_a"]) if row["key_a"] else None,
+                row["measured_rate"],
+                row["measured_rate_unc"],
+            )
+        )
+    return out
+
+
+def load_estimators(root: Path) -> list[dict[str, str]]:
+    """The committed transcription of each source's estimator, refusing an unknown status or a printed fact
+    with
+    no value."""
+    rows = read_csv(root / ESTIMATORS_RELPATH, ESTIMATOR_COLUMNS)
+    for row in rows:
+        if row["status"] not in ESTIMATOR_STATUSES:
+            raise MixtureError(f"estimator fact {row['fact']!r}: status {row['status']!r}")
+        if (row["status"] == "printed") != bool(row["value"]):
+            raise MixtureError(
+                f"estimator fact {row['fact']!r}: a printed fact carries its value, no other does"
+            )
+        if not row["locator"]:
+            raise MixtureError(f"estimator fact {row['fact']!r}: no locator")
+    return rows
+
+
+def _facts(
+    rows: Sequence[Mapping[str, str]], source: str, scopes: Sequence[str]
+) -> dict[str, Mapping[str, str]]:
+    """A source's facts for a row, the most specific scope winning."""
+    out: dict[str, Mapping[str, str]] = {}
+    for scope in scopes:
+        for row in rows:
+            if row["source"] == source and row["scope"] == scope:
+                out[row["fact"]] = row
+    return out
+
+
+def _mizuno_form(root: Path, locator: str) -> str:
+    """``in_case`` or ``self_supported``, from the target form Table 1 prints for the row."""
+    number = int(locator.rsplit(" ", 1)[1])
+    rows = mizuno2025.load_table1(root / "data" / "g4" / "d1" / "mizuno2025_table1.csv")
+    return "in_case" if "case" in rows[number - 1].form else "self_supported"
+
+
+def row_facts(root: Path, ref: Reference, rows: Sequence[Mapping[str, str]]) -> dict[str, Mapping[str, str]]:
+    if ref.source == SUZUKI:
+        return _facts(rows, SUZUKI, ("all", ref.locator))
+    return _facts(rows, MIZUNO, ("all", _mizuno_form(root, ref.locator), ref.locator))
+
+
+def estimator_label(facts: Mapping[str, Mapping[str, str]]) -> tuple[str, list[str]]:
+    """ESTABLISHED when every establishing fact is printed and states what the expectation needs; otherwise
+    SURROGATE, with the facts that are missing. A fact whose printed value says a needed part is not printed
+    (the
+    nominal fit range, an amplitude, the pulse separation) counts as missing."""
+    missing: list[str] = []
+    for fact in ESTABLISHING_FACTS:
+        row = facts.get(fact)
+        if (
+            row is None
+            or row["status"] != "printed"
+            or "not printed" in row["value"]
+            or "not stated" in row["value"]
+        ):
+            missing.append(fact)
+    for fact in ("cno_fraction", "ag_fraction", "bg_fraction", "carbon_fraction"):
+        row = facts.get(fact)
+        if row is not None and (
+            row["status"] != "printed" or "approximately" in row["value"] or "typically" in row["value"]
+        ):
+            missing.append(fact)
+    return (ESTABLISHED if not missing else SURROGATE), missing
+
+
+def _quantity_mean_life(root: Path, locator: str) -> float:
+    for row in _quantity_rows(root):
+        if f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}" == locator:
+            return float(row["mean_life_ns"])
+    raise MixtureError(f"no mean life at {locator}")
+
+
+def _printed_ns(text: str) -> float:
+    """The central value of a printed lifetime such as ``87.0(5) ns`` or ``1.94(8) us``, in ns."""
+    match = re.match(r"([0-9.]+)\([0-9]+\) (ns|us)", text)
+    if match is None:
+        raise MixtureError(f"unreadable printed lifetime {text!r}")
+    return float(match[1]) * (1000.0 if match[2] == "us" else 1.0)
+
+
+# --------------------------------------------------------------------------------------------
+# the surrogate brackets
+# --------------------------------------------------------------------------------------------
+
+#: The compound each element of a Suzuki row was measured in, where the source's list of powders and liquids
+#: names one (p.2213), and the Cr2O3 of its Fig. 3 (p.2214): the partner whose muonic decay the fit carries.
+SUZUKI_PARTNERS = {17: "C", 20: "F", 24: "O", 32: "O", 56: "O", 60: "O", 80: "O", 82: "F"}
+#: The Table III rows whose mean life gives each partner's lifetime (carbon, oxygen, fluorine as printed).
+PARTNER_LOCATORS = {
+    "C": "Table III p.2217 row 37",
+    "O": "Table III p.2217 row 49",
+    "F": "Table III p.2217 row 54",
+}
+DEFAULT_SHARES = (0.0, 0.05, 0.20)
+# : The beam of a pulsed source when the separation is not printed: one prompt pulse, or two equal pulses this
+# far
+#: apart (a policy value: the source prints no separation).
+PULSE_SEPARATION_NS = 600.0
+MIZUNO_ORIGIN_NS = 40.0
+
+
+def bracket(root: Path, ref: Reference, tau_bar: float) -> tuple[list[tuple[str, FitSpec]], str]:
+    """Every fit of the row's surrogate bracket as ``(label, spec)``, and the label of the nominal fit (the
+    one the tabulated-uncertainty derivatives are taken at). Lifetimes come from the printed rows and the
+    transcription; shares and ranges not printed take the policy's values."""
+    rows = load_estimators(root)
+    facts = row_facts(root, ref, rows)
+    out: list[tuple[str, FitSpec]] = []
+    ranges = [(t1, t2) for t1 in (0.0, 2.0) for t2 in (6.0, 12.0)]
+    if ref.source == SUZUKI:
+        carbon_rate = 1.0 / _quantity_mean_life(root, PARTNER_LOCATORS["C"])
+        partner = SUZUKI_PARTNERS.get(ref.z)
+        partner_shares = DEFAULT_SHARES if partner else (0.0,)
+        # a carbon target's scintillator background is muonic carbon itself: a free carbon amplitude would be
+        # the target's own exponential, so a carbon row carries no carbon component
+        carbon_options: list[tuple[bool | None, float]] = (
+            [(None, 0.0)]
+            if ref.z == 6
+            else [(free, share) for free in (True, False) for share in (0.01, 0.02)]
+        )
+        for method in ("ll", "ls"):
+            for constant in (False, True):
+                for t1, t2 in ranges:
+                    for carbon_free, carbon in carbon_options:
+                        for share in partner_shares:
+                            nuis: list[tuple[float, float, bool]] = []
+                            c_share = carbon + (share if partner == "C" else 0.0)
+                            if carbon_free is not None:
+                                nuis.append((carbon_rate, c_share, carbon_free))
+                            if partner and partner != "C":
+                                rate = 1.0 / _quantity_mean_life(root, PARTNER_LOCATORS[partner])
+                                nuis.append((rate, share, True))
+                            label = (
+                                f"{method} const={int(constant)} t1={t1:g} t2={t2:g} carbon="
+                                + (
+                                    "none"
+                                    if carbon_free is None
+                                    else f"{'free' if carbon_free else 'fixed'}:{carbon:g}"
+                                )
+                                + (f" {partner}={share:g}" if partner else "")
+                            )
+                            out.append(
+                                (
+                                    label,
+                                    FitSpec(
+                                        method,
+                                        t1 * tau_bar,
+                                        t2 * tau_bar,
+                                        constant,
+                                        ((1.0, 0.0),),
+                                        tuple(nuis),
+                                    ),
+                                )
+                            )
+        nominal = (
+            "ll const=0 t1=0 t2=12 carbon="
+            + ("none" if ref.z == 6 else "free:0.01")
+            + (f" {partner}=0.05" if partner else "")
+        )
+        return out, nominal
+    form = _mizuno_form(root, ref.locator)
+    tau_ag = _printed_ns(facts["tau_Ag"]["value"])
+    tau_cno = _printed_ns(facts["tau_CNO"]["value"])
+    tau_bg = _printed_ns(facts["tau_bg"]["value"])
+    printed_cno = 0.02 if form == "in_case" else 0.01
+    natag = ref.label == "natAg"
+    ag_shares = DEFAULT_SHARES if (form == "in_case" and not natag) else (None,)
+    beams = {
+        "single": ((1.0, MIZUNO_ORIGIN_NS),),
+        "double": ((0.5, MIZUNO_ORIGIN_NS), (0.5, MIZUNO_ORIGIN_NS + PULSE_SEPARATION_NS)),
+    }
+    for t1, t2 in ranges:
+        for cno in (printed_cno / 2, printed_cno, 2 * printed_cno):
+            for ag in ag_shares:
+                for bg in DEFAULT_SHARES:
+                    for beam_name, pulses in beams.items():
+                        nuis = [(1.0 / tau_cno, cno, True), (1.0 / tau_bg, bg, True)]
+                        if ag is not None:
+                            nuis.insert(0, (1.0 / tau_ag, ag, True))
+                        label = (
+                            f"ll t1={t1:g} t2={t2:g} cno={cno:g}"
+                            + (f" ag={ag:g}" if ag is not None else "")
+                            + f" bg={bg:g} beam={beam_name}"
+                        )
+                        out.append(
+                            (label, FitSpec("ll", t1 * tau_bar, t2 * tau_bar, False, pulses, tuple(nuis)))
+                        )
+    nominal = (
+        f"ll t1=0 t2=12 cno={printed_cno:g}"
+        + (" ag=0.05" if ag_shares != (None,) else "")
+        + " bg=0.05 beam=single"
+    )
+    return out, nominal
+
+
+# --------------------------------------------------------------------------------------------
+# the harvest roster and the policy
+# --------------------------------------------------------------------------------------------
+
+REVISIONS = ("v11.4.2", "v11.5.0.beta")
+SEED_BASE, Z_STRIDE, ROUTE_STRIDE = 1_000_000_000, 10_000_000, 5_000_000
+IDENTITY_SEED_BASE, PILOT_SEED_BASE = 2_000_000_000, 3_000_000_000
+
+
+def seed_base(z: int, route: str, base: int = SEED_BASE) -> int:
+    """The seed of event 0 of a cell; event ``k`` is seeded ``seed_base + k``. Every profile, revision and
+    kind
+    of build uses the same seeds for one element and route, so their cells are comparable stop for stop."""
+    return base + z * Z_STRIDE + ROUTES.index(route) * ROUTE_STRIDE
+
+
+def roster(root: Path) -> dict[str, list[int]]:
+    """The elements harvested under each profile, by rule: under ``parity`` every element of a reference row,
+    lithium and boron, and aluminium and gold (single-isotope controls); under each evaluated profile every
+    element with more than one natural isotope that the profile's rows answer some stops of, and one element
+    it answers none of (``suzuki1987``: lead; ``mizuno2025``: magnesium, whose natural-composition row no
+    transported
+    nucleus requests)."""
+    isotopes = natural.load_isotopes(root / natural.ISOTOPES_RELPATH)
+    refs = references(root)
+    parity = sorted({r.z for r in refs} | {3, 5, 13, 79})
+    out = {spec.PARITY_PROFILE: parity}
+    answers_rows = read_csv(root / ANSWERS_RELPATH, ANSWER_COLUMNS)
+    controls = {SUZUKI: 82, MIZUNO: 12}
+    for name in natural.capture_profiles(root / "data" / "g4" / "d1"):
+        if name == spec.PARITY_PROFILE:
+            continue
+        touched = sorted(
+            {
+                int(r["z"])
+                for r in answers_rows
+                if r["profile"] == name
+                and r["route"] == natural.PROFILE_ROUTE
+                and len(isotopes[int(r["z"])]) > 1
+            }
+        )
+        if controls[name] in touched:
+            raise MixtureError(f"{name}: the control element is touched")
+        out[name] = sorted(touched + [controls[name]])
+    return out
+
+
+def cells(root: Path, policy: Mapping[str, object] | None = None) -> list[dict[str, object]]:
+    """Every production cell: profile, route, revision, element, events, seed."""
+    out: list[dict[str, object]] = []
+    big = (
+        {}
+        if policy is None
+        else {
+            (d["profile"], d["z"], d["route"]): d["events"]
+            for d in policy["drill_cells"]  # type: ignore[attr-defined]
+        }
+    )
+    isotopes = natural.load_isotopes(root / natural.ISOTOPES_RELPATH)
+    for profile, zs in roster(root).items():
+        for z in zs:
+            for route in ROUTES:
+                for revision in REVISIONS:
+                    out.append(
+                        {
+                            "profile": profile,
+                            "route": route,
+                            "revision": revision,
+                            "z": z,
+                            "symbol": isotopes[z][0].symbol,
+                            "events": big.get((profile, z, route), 100_000),
+                            "seed_base": seed_base(z, route),
+                        }
+                    )
+    return out
+
+
+#: The bins of the harvest's distribution tests.
+TIME_BINS, DIO_BINS, WINDOW_BINS = 20, 20, 20
+WINDOW = (2.0, 12.0)
+FAMILY_ALPHA = Decimal("0.001")
+POWER = 0.99
+
+
+def time_edges() -> list[Decimal]:
+    """The edges of the equal-probability bins of Exp(1): ``u_j = -ln(1 - j/B)`` for ``j = 1..B-1``."""
+    with localcontext() as context:
+        context.prec = 50
+        return [-(1 - Decimal(j) / TIME_BINS).ln() for j in range(1, TIME_BINS)]
+
+
+def dio_edges(components: Sequence[Component]) -> list[float]:
+    """The binary64 edges of the DIO-time bins of a cell: ``0`` and ``-ln(1 - j/B) / lambda_bar`` for
+    ``j = 1..B-1``, the last bin open."""
+    lam = _dec(mean_rate(components))
+    with localcontext() as context:
+        context.prec = 50
+        return [0.0] + [float(-(1 - Decimal(j) / DIO_BINS).ln() / lam) for j in range(1, DIO_BINS)]
+
+
+def window_edges(components: Sequence[Component]) -> list[float]:
+    """The binary64 edges of the window bins: equal probability for Exp(lambda_bar) truncated to
+    ``[2 tau_bar, 12 tau_bar]``, the window's ends included."""
+    lam = _dec(mean_rate(components))
+    with localcontext() as context:
+        context.prec = 50
+        lo, hi = Decimal(WINDOW[0]), Decimal(WINDOW[1])
+        span = 1 - (lo - hi).exp()
+        return [
+            float((lo - (1 - span * Decimal(j) / WINDOW_BINS).ln()) / lam) for j in range(WINDOW_BINS + 1)
+        ]
+
+
+def window_probabilities(components: Sequence[Component], edges: Sequence[float]) -> list[Decimal]:
+    """The DIO-time distribution conditional on the window, in the window's bins."""
+    full = dio_probabilities(components, list(edges))
+    inside = full[:-2]  # the last edge's open interval and the capture category are outside
+    with localcontext() as context:
+        context.prec = 50
+        total = sum(inside, Decimal(0))
+        return [+(p / total) for p in inside]
+
+
+def _float_probs_time_alt(components: Sequence[Component]) -> list[float]:
+    """G-time bin probabilities when every delay is drawn from Exp(lambda_bar) instead of the drawn isotope's
+    rate, the statistic still scaling each delay by the drawn isotope's rate."""
+    lam = float(mean_rate(components))
+    edges = [0.0] + [float(u) for u in time_edges()] + [math.inf]
+    out = []
+    for j in range(TIME_BINS):
+        p = 0.0
+        for c in components:
+            r = float(c.rate)
+            lo = math.exp(-edges[j] * lam / r)
+            hi = 0.0 if edges[j + 1] == math.inf else math.exp(-edges[j + 1] * lam / r)
+            p += float(c.abundance) * (lo - hi)
+        out.append(p)
+    return out
+
+
+def _single_exponential(components: Sequence[Component]) -> list[Component]:
+    """The mixture replaced by one component at its mean rate with its DIO fraction: the drill oracle."""
+    lam = mean_rate(components)
+    dio = 1 - capture_fraction(components)
+    c = components[0]
+    return [
+        Component(
+            0,
+            Fraction(1),
+            c.capture,
+            c.decay,
+            c.total,
+            c.tau,
+            c.tau_dio,
+            c.tau_nc,
+            lam,
+            dio,
+            "",
+            "",
+            "",
+            None,
+        )
+    ]
+
+
+def _without_fallback(components: Sequence[Component]) -> list[Component]:
+    """The mixture without its formula-answered components, renormalized: the omitted-fallback drill
+    oracle."""
+    kept = [c for c in components if c.answer_class != FORMULA]
+    total = sum((c.abundance for c in kept), Fraction(0))
+    return [
+        Component(
+            c.a,
+            c.abundance / total,
+            c.capture,
+            c.decay,
+            c.total,
+            c.tau,
+            c.tau_dio,
+            c.tau_nc,
+            c.rate,
+            c.p_dio,
+            c.lookup,
+            c.answer_class,
+            c.record,
+            c.record_unc,
+        )
+        for c in kept
+    ]
+
+
+def _nc(observed: Sequence[float], expected: Sequence[float], n: float) -> float:
+    return n * sum((o - e) ** 2 / e for o, e in zip(observed, expected, strict=True) if e > 0)
+
+
+def drill_noncentralities(components: Sequence[Component], n: float) -> dict[str, float]:
+    """The noncentrality each statistical drill gives its gate on a cell of ``n`` stops."""
+    out: dict[str, float] = {}
+    out["G-time:exp_lambda_bar"] = _nc(_float_probs_time_alt(components), [1.0 / TIME_BINS] * TIME_BINS, n)
+    edges = dio_edges(components)
+    truth = [float(p) for p in dio_probabilities(components, edges, prec=30)]
+    single = [float(p) for p in dio_probabilities(_single_exponential(components), edges, prec=30)]
+    out["G-DIO:single_exponential"] = _nc(truth, single, n)
+    if any(c.answer_class == FORMULA for c in components) and any(
+        c.answer_class != FORMULA for c in components
+    ):
+        omitted = [float(p) for p in dio_probabilities(_without_fallback(components), edges, prec=30)]
+        out["G-DIO:omitted_fallback"] = _nc(truth, omitted, n)
+        out["G-sel:formula_stops_removed"] = n * float(
+            sum(c.abundance for c in components if c.answer_class == FORMULA)
+        )
+    wedges = window_edges(components)
+    wtruth = [float(p) for p in window_probabilities(components, wedges)]
+    wsingle = [float(p) for p in window_probabilities(_single_exponential(components), wedges)]
+    inside = float(sum(dio_probabilities(components, wedges, prec=30)[:-2]))
+    out["G-win:single_exponential"] = _nc(wtruth, wsingle, n * inside)
+    return out
+
+
+DRILL_DOF = {
+    "G-time:exp_lambda_bar": TIME_BINS - 1,
+    "G-DIO:single_exponential": DIO_BINS,
+    "G-DIO:omitted_fallback": DIO_BINS,
+    "G-win:single_exponential": WINDOW_BINS - 1,
+}
+#: The fraction of one isotope's captures the branch drill turns into decays, and the share of stops the time
+#: drill draws its resampled delays with (the seed of its generator).
+BRANCH_SWAP_FRACTION = Fraction(1, 20)
+DRILL_SEED = 20261017
+
+
+#: Every drill of the harvest gates: the gate it targets, the cell it runs on (the statistical ones are the
+#: cells the power calculation names) and what it plants. Each runs through the whole chain of gates,
+#: recording the first that turns red, and against its target gate alone, which must turn red.
+DRILL_PLAN = [
+    {
+        "drill": "rate_substitution",
+        "gate": "G-rate",
+        "z": 26,
+        "side": "oracle",
+        "plants": "the natural iron record's capture rate given to iron-54",
+    },
+    {
+        "drill": "fallback_dropped",
+        "gate": "G-set",
+        "z": 50,
+        "side": "oracle",
+        "plants": "the formula-answered components dropped and the rest renormalized",
+    },
+    {
+        "drill": "formula_stops_removed",
+        "gate": "G-sel",
+        "z": 50,
+        "side": "harvest copy",
+        "plants": "the formula-answered stops removed",
+    },
+    {
+        "drill": "branch_swap",
+        "gate": "G-branch",
+        "z": 29,
+        "side": "harvest copy",
+        "plants": "a twentieth of the most abundant isotope's captures turned into decays",
+    },
+    {
+        "drill": "exp_lambda_bar",
+        "gate": "G-time",
+        "z": 29,
+        "side": "harvest copy",
+        "plants": "every delay drawn again from Exp(lambda_bar), the statistic still scaling by the drawn "
+        "isotope's rate",
+    },
+    {
+        "drill": "single_exponential",
+        "gate": "G-DIO",
+        "z": 17,
+        "side": "oracle",
+        "plants": "the mixture replaced by Exp(lambda_bar) with the same decay fraction",
+    },
+    {
+        "drill": "omitted_fallback",
+        "gate": "G-DIO",
+        "z": 12,
+        "side": "oracle",
+        "plants": "the oracle without its formula-answered components",
+    },
+    {
+        "drill": "single_exponential_window",
+        "gate": "G-win",
+        "z": 17,
+        "side": "oracle",
+        "plants": "the mixture replaced by Exp(lambda_bar) with the same decay fraction, in the window",
+    },
+    {
+        "drill": "atomic_expectation",
+        "gate": "G-branch",
+        "z": 29,
+        "side": "oracle",
+        "plants": "the atomic branch expectation replaced by lambda_d / (lambda_c + lambda_d): information "
+        "only, the largest binary64 difference is reported",
+    },
+]
+
+
+def tests_of(n_isotopes: int) -> tuple[str, ...]:
+    """The distribution tests of a cell of an element with ``n_isotopes`` natural isotopes."""
+    return (("G-sel",) if n_isotopes > 1 else ()) + ("G-branch", "G-time", "G-DIO", "G-win")
+
+
+def build_policy(root: Path, throughput_ms_per_stop: float) -> tuple[dict[str, object], list[str]]:
+    """The comparison policy, and the lines of the power calculation it rests on."""
+    oracle = Oracle(root)
+    rost = roster(root)
+    base_cells = cells(root)
+    isotopes = oracle.isotopes
+    n_tests = sum(len(tests_of(len(isotopes[int(str(c["z"]))]))) for c in base_cells)
+    alpha = FAMILY_ALPHA / n_tests
+    dofs = sorted(
+        {TIME_BINS - 1, DIO_BINS, WINDOW_BINS - 1}
+        | {len(isotopes[z]) - 1 for z in rost[spec.PARITY_PROFILE] if len(isotopes[z]) > 1}
+        | {len(isotopes[z]) for zs in rost.values() for z in zs}
+    )
+    crits = {dof: critical(dof, alpha) for dof in dofs}
+    log: list[str] = [
+        f"tests M={n_tests} over {len(base_cells)} production cells; family alpha {FAMILY_ALPHA}; "
+        f"per-test alpha {alpha:.6e}"
+    ]
+    for dof, crit in crits.items():
+        log.append(f"critical dof={dof} [{crit.lo:.12f}, {crit.hi:.12f}]")
+    required = {dof: required_noncentrality(dof, float(crit.hi), POWER) for dof, crit in crits.items()}
+    for dof, value in required.items():
+        log.append(f"required noncentrality for power {POWER} at dof={dof}: {value:.3f}")
+    # every parity cell: the noncentrality of each statistical drill at 1e5 stops, the omitted share G-sel
+    # detects
+    # and the single-exponential distinguishability
+    drills: dict[tuple[str, str], list[tuple[float, int]]] = {}
+    per_cell: list[dict[str, object]] = []
+    for z in rost[spec.PARITY_PROFILE]:
+        for route in ROUTES:
+            comps = oracle.components(spec.PARITY_PROFILE, route, z)
+            ncs = drill_noncentralities(comps, 1.0e5)
+            k = len(comps)
+            sel_dof = k - 1
+            min_share = (required[sel_dof] / (1.0e5 + required[sel_dof])) if k > 1 else None
+            single = ncs["G-DIO:single_exponential"]
+            per_cell.append(
+                {
+                    "z": z,
+                    "route": route,
+                    "n": 100_000,
+                    "min_detectable_omitted_share": None if min_share is None else float(f"{min_share:.6g}"),
+                    "single_exponential_noncentrality": float(f"{single:.6g}"),
+                    "single_exponential_power": float(
+                        f"{noncentral_sf(float(crits[DIO_BINS].hi), DIO_BINS, single):.6g}"
+                    ),
+                }
+            )
+            for name, value in ncs.items():
+                drills.setdefault((name, route), []).append((value, z))
+            log.append(
+                f"cell parity z={z} {route}: "
+                + " ".join(f"{k_}={v:.3f}" for k_, v in ncs.items())
+                + (f" min_omitted_share={min_share:.3e}" if min_share is not None else "")
+            )
+    drill_cells: dict[tuple[str, int, str], int] = {}
+    chosen: list[dict[str, object]] = []
+    for (name, route), values in sorted(drills.items()):
+        best_value, best_z = max(values)
+        # removing the formula-answered stops: the statistic's dof is that cell's isotope count less one
+        dof = len(isotopes[best_z]) - 1 if name.startswith("G-sel") else DRILL_DOF[name]
+        crit_hi = float(crits[dof].hi)
+        events = 100_000
+        power = noncentral_sf(crit_hi, dof, best_value)
+        if power < POWER:
+            events = 1_000_000
+            power = noncentral_sf(crit_hi, dof, best_value * 10)
+        if power < POWER:
+            raise MixtureError(f"{name} {route}: no cell reaches power {POWER} at 1e6 stops")
+        if events > 100_000:
+            drill_cells[(spec.PARITY_PROFILE, best_z, route)] = events
+        chosen.append(
+            {
+                "drill": name,
+                "route": route,
+                "z": best_z,
+                "events": events,
+                "dof": dof,
+                "noncentrality_at_1e5": float(f"{best_value:.6g}"),
+                "power": float(f"{power:.6g}"),
+            }
+        )
+        log.append(f"drill {name} {route}: z={best_z} events={events} power={power:.6f}")
+    policy_cells = [
+        {"profile": p, "z": z, "route": r, "events": e} for (p, z, r), e in sorted(drill_cells.items())
+    ]
+    total_events = sum(
+        drill_cells.get((str(c["profile"]), int(str(c["z"])), str(c["route"])), 100_000) for c in base_cells
+    )
+    pristine_events = 4 * len(ROUTES) * len(REVISIONS) * 10_000
+    identity_events = len(REVISIONS) * len(ROUTES) * (4 * 3 + 2) * 2_500
+    core_hours = (total_events + pristine_events + 3 * identity_events) * throughput_ms_per_stop / 1000 / 3600
+    log.append(
+        f"compute: production stops {total_events}, pristine {pristine_events}, identity {identity_events} "
+        f"(counted 3x for state hashing) at {throughput_ms_per_stop:.4f} ms per stop = {core_hours:.2f} "
+        "core-hours"
+    )
+    refs = references(root)
+    est_rows = load_estimators(root)
+    labels = []
+    for ref in refs:
+        label, missing = estimator_label(row_facts(root, ref, est_rows))
+        labels.append(
+            {
+                "source": ref.source,
+                "locator": ref.locator,
+                "label": ref.label,
+                "z": ref.z,
+                "estimator": label,
+                "missing": missing,
+            }
+        )
+    policy: dict[str, object] = {
+        "contract": "data/g4/d1 natural-target mixtures: harvest gates, statistics, drills and the "
+        "comparison of measured mean lives; every value fixed before any harvest output or comparison exists",
+        "roster": {k: v for k, v in rost.items()},
+        "routes": list(ROUTES),
+        "revisions": list(REVISIONS),
+        "events_default": 100_000,
+        "drill_cells": policy_cells,
+        "pristine_controls": {"elements": [3, 32, 47, 82], "events": 10_000},
+        "identity": {"elements": [3, 32, 47, 82], "events": 2_500, "drill_element": 32, "drill_a": 74},
+        "seeds": {
+            "production_base": SEED_BASE,
+            "z_stride": Z_STRIDE,
+            "route_stride": ROUTE_STRIDE,
+            "identity_base": IDENTITY_SEED_BASE,
+            "pilot_base": PILOT_SEED_BASE,
+        },
+        "bins": {"time": TIME_BINS, "dio": DIO_BINS, "window": WINDOW_BINS},
+        "window_over_tau_bar": list(WINDOW),
+        "branch_min_expected": 5,
+        "statistics": {
+            "tests": n_tests,
+            "family_alpha": str(FAMILY_ALPHA),
+            "per_test_alpha": str(alpha),
+            "critical": {str(d): [str(c.lo), str(c.hi)] for d, c in crits.items()},
+            "rule": "pass if the X^2 enclosure lies below the critical enclosure, fail if above, "
+            "refuse if they overlap",
+        },
+        "power": {"target": POWER, "drills": chosen, "cells": per_cell},
+        "drills": {"branch_swap_fraction": str(BRANCH_SWAP_FRACTION), "seed": DRILL_SEED, "plan": DRILL_PLAN},
+        "estimators": {
+            "labels": labels,
+            "rule": "ESTABLISHED only when the component set, method, weighting, fit range, non-target "
+            "amplitudes and beam structure are all printed; otherwise SURROGATE",
+            "surrogate": {
+                "suzuki1987": {
+                    "method": ["ll", "ls"],
+                    "constant": [False, True],
+                    "t1_over_tau_bar": [0, 2],
+                    "t2_over_tau_bar": [6, 12],
+                    "carbon": ["free", "fixed"],
+                    "carbon_share": [0.01, 0.02],
+                    "carbon_target": "a carbon row carries no carbon component: its background is muonic "
+                    "carbon",
+                    "partners": {str(k): v for k, v in SUZUKI_PARTNERS.items()},
+                    "partner_share": list(DEFAULT_SHARES),
+                    "partner_lifetime_rows": PARTNER_LOCATORS,
+                    "beam": "one stop per clock start (printed)",
+                },
+                "mizuno2025": {
+                    "method": ["ll"],
+                    "constant": [False],
+                    "t1_over_tau_bar": [0, 2],
+                    "t2_over_tau_bar": [6, 12],
+                    "cno_share": "printed approximate share x {0.5, 1, 2}",
+                    "ag_share": list(DEFAULT_SHARES),
+                    "bg_share": list(DEFAULT_SHARES),
+                    "origin_ns": MIZUNO_ORIGIN_NS,
+                    "beam": f"one prompt pulse, or two equal prompt pulses {PULSE_SEPARATION_NS:g} ns apart "
+                    "(policy value: the separation is not printed)",
+                    "natAg": "the CNO and background lifetimes fixed at the printed values of the free fit",
+                },
+            },
+            "lambda_fit": "the midpoint of the bracket's range of fitted rates",
+            "sigma_win": "half the bracket's range (0 for an ESTABLISHED estimator)",
+            "sigma_tab": "linear propagation of each answering record's tabulated uncertainty, fully "
+            "correlated over the isotopes one record answers and independent across records, at the "
+            "nominal fit",
+        },
+        "band": {
+            "k": 3,
+            "rule": "WITHIN iff |lambda_fit - lambda_meas| <= 3 sqrt(sigma_meas^2 + sigma_tab^2 + "
+            "sigma_win^2), decided on squares in exact decimals",
+        },
+        "qualification": "printed nat, formula share 0, estimator ESTABLISHED, and no answering record in "
+        + ", ".join(DISQUALIFYING),
+        "science": "per profile and route: family all SCIENCE_FAIL if any distinct row is OUTSIDE, else "
+        "UNQUALIFIED; family qualified SCIENCE_PASS or SCIENCE_FAIL, or SCREEN_VACUOUS when it admits no row",
+        "compute": {
+            "ms_per_stop": throughput_ms_per_stop,
+            "core_hours": float(f"{core_hours:.4g}"),
+            "stop_threshold_core_hours": 150,
+        },
+    }
+    return policy, log
+
+
+def render_policy(policy: Mapping[str, object]) -> bytes:
+    return (json.dumps(policy, indent=1, sort_keys=True) + "\n").encode("ascii")
+
+
+def load_policy(root: Path) -> dict[str, object]:
+    raw = (root / POLICY_RELPATH).read_bytes()
+    if b"\r" in raw:
+        raise MixtureError("the policy contains CR")
+    policy: dict[str, object] = json.loads(raw.decode("ascii"))
+    return policy
