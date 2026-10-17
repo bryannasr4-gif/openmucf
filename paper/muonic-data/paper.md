@@ -33,7 +33,7 @@ uncertainty attached, that a patched Geant4 consults only after an explicit opt-
 It carries the capture data in a `parity` profile that reproduces the values compiled into Geant4
 bit for bit on the builds its documentation names and in profiles that carry published
 capture-rate measurements, and it carries muonic binding energies derived from the output of
-MuDirac, a Dirac-equation solver for muonic atoms [@Sturniolo2021; @Liborio2026].
+a patched MuDirac, a muonic-atom Dirac solver [@Sturniolo2021; @Liborio2026].
 The dataset name `G4MuonicData` and the environment variable `G4MUONICDATA` are provisional
 placeholders, pending discussion with the Geant4 collaboration.
 
@@ -113,7 +113,7 @@ lets continuous integration check parity with no Geant4 installed.
 The patches are cut against Geant4 v11.4.2 and v11.5.0.beta, and a separate patch for each revision
 registers the dataset so that Geant4 resolves it under `GEANT4_DATA_DIR`, from an archive that
 unpacks to a `G4MuonicData<version>` directory.
-Under the `mudirac130` profile the patched cascade takes the K energy and the energy of every shell
+Under the `mudirac130p1` profile the patched cascade takes the K energy and the energy of every shell
 above it up to the chain's last from the tables, and keeps its hydrogen-like formula for the shells
 above those and its branching and random draws unchanged.
 
@@ -142,13 +142,13 @@ hydroxide row transfer of the muon from hydrogen may explain it (`DATASET_D2.md`
 The MuDirac output behind the binding-energy tables is compared with the measured energies of
 Fricke et al. [@Fricke1995] and Saito et al. [@Saito2025], each as printed, at a
 tolerance of 3 times the printed standard uncertainty: of the 67 gated rows, the line MuDirac
-prints lies within it for 26, the shell difference the patched cascade receives for 1, and the
+prints lies within it for 30, the shell difference the patched cascade receives for 1, and the
 energy the unpatched cascade emits for 0.
 A cascade that emits a single energy per pair of shells cannot lie within the band of every line it
 stands for, as 29 of the 29 multi-line groups show; yet the shell difference lies closer than the
 unpatched cascade's energy on 42 of the 67 gated rows, and in a retrospective comparison of the K–L
-difference that qualifies no accuracy, its largest absolute residual is 4.26 keV where the unpatched
-cascade's reaches 227 keV (`DATASET_D3.md` section 5).
+difference that qualifies no accuracy, its largest absolute residual is 4.84 keV where the unpatched
+cascade's reaches 227 keV (`DATASET_D3.md` section 6).
 The rows outside tolerance are registered disagreements, and none is fitted away.
 Geant4 computes a bound muon's disappearance rate in `G4MuonMinusBoundDecay`, which the reference
 physics lists reach, and in `G4MuonicAtomHelper`, which needs `G4MuonMinusAtomicCapture` and the

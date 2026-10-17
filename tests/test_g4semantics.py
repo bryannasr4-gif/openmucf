@@ -430,13 +430,18 @@ def test_t116_drill_d1_value_unit_the_lookup_does_not_read_raises_s004(mutable: 
     assert codes_of(mutable)[0] == "S004"
 
 
+#: The first k-shell record split into its keys, value, gap and uncertainty, however many spaces separate
+#: them: a reader must not depend on the alignment (FORMAT_SPEC.md).
+_KSHELL_RECORD = re.compile(r"( *[0-9]+ +[0-9]+ +)([^ ]+)( +)([^ ]+)")
+
+
 def test_t117_a_negative_binding_energy_raises_s005(mutable: pathlib.Path):
     member = kshell_member(mutable)
     line = first_record_line(member)
-    head, _, rest = line.rpartition(" ")
-    keys, gap, value = head.rpartition(" ")
-    assert value and gap, line
-    replace_once(member, line, f"{keys}{gap[:-1]}-{value} {rest}")
+    match = _KSHELL_RECORD.fullmatch(line)
+    assert match, line
+    keys, value, gap, unc = match.groups()
+    replace_once(member, line, f"{keys}-{value}{gap}{unc}")
     assert codes_of(mutable)[0] == "S005"
 
 
@@ -454,9 +459,10 @@ def test_t117_drill_d1_negative_value_raises_s005(mutable: pathlib.Path, table: 
 def test_t118_a_k_energy_below_its_next_level_raises_s006(mutable: pathlib.Path):
     member = kshell_member(mutable)
     line = first_record_line(member)
-    head, _, unc = line.rpartition(" ")
-    keys, gap, _value = head.rpartition(" ")
-    replace_once(member, line, f"{keys}{gap}{unc} {unc}")
+    match = _KSHELL_RECORD.fullmatch(line)
+    assert match, line
+    keys, _value, gap, unc = match.groups()
+    replace_once(member, line, f"{keys}{unc}{gap}{unc}")
     codes = codes_of(mutable)
     assert codes and codes[0] == "S006", codes
 

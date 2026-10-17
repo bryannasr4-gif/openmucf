@@ -102,17 +102,31 @@ SUZUKI_PREPRINT_DIFF = ROOT / suzsrc.PREPRINT_DIFF_RELPATH
 
 #: The version moves with the archive. Plainly distinct
 #: from the example's `0.0.0-example`, and below 1.0.0 because D1 and D3 alone are not the dataset.
-_BASE_DATASET_VERSION = "0.5.1"
+#: The base is the last release of the archive; a change that keeps every configuration working
+#: advances its patch number, one that can break a pinned configuration (a profile replaced) its minor.
+_BASE_DATASET_VERSION = "0.5.2"
 
 
-def _next_patch_version(base: str) -> str:
+def _version_parts(base: str) -> list[int]:
     parts = base.split(".")
     if len(parts) != 3 or not all(part.isdecimal() for part in parts):
         raise ValueError("base DATASET_VERSION must be MAJOR.MINOR.PATCH")
-    return f"{parts[0]}.{parts[1]}.{int(parts[2]) + 1}"
+    return [int(part) for part in parts]
 
 
-DATASET_VERSION = _next_patch_version(_BASE_DATASET_VERSION)
+def _next_patch_version(base: str) -> str:
+    major, minor, patch = _version_parts(base)
+    return f"{major}.{minor}.{patch + 1}"
+
+
+def _next_minor_version(base: str) -> str:
+    major, minor, _patch = _version_parts(base)
+    return f"{major}.{minor + 1}.0"
+
+
+#: The D3 profile mudirac130 is replaced by mudirac130p1: a configuration that names the old profile
+#: stops with the overlay's unknown-profile error, so the minor number moves.
+DATASET_VERSION = _next_minor_version(_BASE_DATASET_VERSION)
 D1_SEAM = "d1_nuclear_capture"
 #: The release we actually read -- we vendored it. NOT the papers Geant4 cites: those are carried as
 #: quoted upstream text in `conditions`, because citing a paper this project has not opened would be
@@ -782,7 +796,7 @@ def build_suzuki_preprint_differences(
 
 
 # --------------------------------------------------------------------------------------------
-# D3 -- the mudirac130 energy tables, from the committed MuDirac inputs and printed outputs
+# D3 -- the energy tables of the patched MuDirac profile, from the committed inputs and printed outputs
 # --------------------------------------------------------------------------------------------
 
 D3DIR = ROOT / md.D3_RELDIR
@@ -810,17 +824,18 @@ D3_QUANTITY = {
     ),
 }
 D3_METHOD = (
-    "{quantity} derived from the line energies MuDirac printed for run {base} by exact decimal sums "
-    "anchored on the printed header of the outermost circular state, each derived energy checked "
-    "against its own printed header."
+    "{quantity} derived from the line energies the patched MuDirac printed for run {anchor} by exact "
+    "decimal sums anchored on the binding energy of the hydrogen-like orbit S17, which the run prints to "
+    "17 significant digits, plus the printed line R15-S17; each derived energy is checked against its own "
+    "printed header."
 )
 #: What each table's uncertainty columns are, by table: the column word, then one template.
 D3_UNC_COLUMN = {md.K_TABLE: "unc", md.LEVEL_TABLE: "Each u<n>"}
 D3_UNC = (
     "{column} is the absolute change of the same quantity in run {rsig}, whose rms radius is moved by "
     "its charge-radii table uncertainty, measured through the printed line energies with the energy "
-    "of the outermost circular state held fixed, and never less than {floor} keV"
-    "; nothing else is propagated."
+    "of the outermost circular state held fixed, and never less than {floor} keV, the rounding of the "
+    "printed lines summed; nothing else is propagated."
 )
 D3_NATURAL = "This A = 0 row carries the values of A={a}, the isotope MuDirac's abundance file names for Z={z}."
 
@@ -837,21 +852,24 @@ def build_d3_document(out: md.Outputs, table_name: str) -> provenance.ProvDocume
     rows = {}
     for record in _d3_rows(out):
         source = inputs[(record.z, record.carries)]
-        base, rsig = md.run_id(source, "base"), md.run_id(source, "rsig")
-        rendered = md.render_input(source, "base", md.extra_lines(cells, source.nuclide))
-        method = D3_METHOD.format(quantity=D3_QUANTITY[table_name], base=base) + " " + D3_UNC.format(
-            column=D3_UNC_COLUMN[table_name], rsig=rsig, floor=format(md.UNC_FLOOR_KEV, "f")
+        anchor, rsig = md.recipe_run_id(source, "anchor", True), md.recipe_run_id(source, "rsig", True)
+        rendered = md.render_recipe_input(source, "anchor", "recipe", True, md.RECIPE_SETTINGS,
+                                          md.extra_lines(cells, source.nuclide))
+        floor = md.unc_floor_kev(out, (anchor, rsig))
+        method = D3_METHOD.format(quantity=D3_QUANTITY[table_name], anchor=anchor) + " " + D3_UNC.format(
+            column=D3_UNC_COLUMN[table_name], rsig=rsig, floor=format(floor, "f")
         )
         if record.a == 0:
             method += " " + D3_NATURAL.format(a=record.carries, z=record.z)
         rows[f"{record.z}-{record.a}"] = provenance.ProvRow(
             source_bibkey=md.BIBKEY,
             source_locator=(
-                f"runs {base} and {rsig}: their rows of {md.STATES_RELPATH} and {md.LINES_RELPATH}, "
-                f"inputs rendered from {md.INPUTS_RELPATH}"
+                f"runs {anchor} and {rsig}: their rows of {md.RUNS_RELPATH}, {md.STATES_RELPATH} and "
+                f"{md.LINES_RELPATH}, inputs rendered from {md.INPUTS_RELPATH}"
             ),
             unc_type="model",
-            conditions=f"MuDirac {md.MUDIRAC_VERSION} input: " + "; ".join(rendered.splitlines()),
+            conditions=(f"MuDirac {md.MUDIRAC_VERSION} with {md.PATCH_RELPATH} applied, input: "
+                        + "; ".join(rendered.splitlines())),
             validity_range=(
                 f"Z={record.z} A=0 (carries A={record.carries})" if record.a == 0
                 else f"Z={record.z} A={record.a}"
@@ -917,14 +935,8 @@ def d3_summary(out: md.Outputs) -> list[str]:
     rows, dropped = md.table_rows(out)
     isotopes = sum(1 for r in rows if r.a != 0)
     lines = [f"d3: members {len(out.inputs)} kept {isotopes} dropped {len(dropped)} natural rows {len(rows) - isotopes}"]
-    inputs = {row.nuclide: row for row in out.inputs}
     for (z, a), reason in dropped.items():
-        row = inputs[(z, a)]
-        lines.append(
-            f"d3: dropped Z={z} A={a}: {reason} (sphere radius {row.radius_fm} fm, threshold "
-            f"{md.fermi2_c_threshold(row.fermi_t_fm)!r} fm)"
-            if reason == md.DROP_FERMI2_C else f"d3: dropped Z={z} A={a}: {reason}"
-        )
+        lines.append(f"d3: dropped Z={z} A={a}: {reason}")
     for z, a, bundled, table in md.radius_disagreements(out.inputs):
         lines.append(f"d3: bundled rms radius differs from the charge-radii table at 4 decimals: Z={z} A={a} {bundled} vs {table}")
     lines.extend(d3c.summary_lines(ROOT))

@@ -35,7 +35,7 @@ def tiny_records() -> list[list[str]]:
 def tiny_config() -> dict[str, list[str]]:
     return {"PROCESSES": ["muMinusCaptureAtRest"],
             "MATERIAL": ["1", "1", "13", "27", float(1).hex()],
-            "PARTICLES": ["ok"], "CONFIG": ["mizuno2025", "mudirac130", "set", "x"]}
+            "PARTICLES": ["ok"], "CONFIG": ["mizuno2025", "mudirac130p1", "set", "x"]}
 
 
 def synthetic_check_work(tmp_path, monkeypatch, changes=None):
@@ -47,7 +47,7 @@ def synthetic_check_work(tmp_path, monkeypatch, changes=None):
     minimal.update(revisions={tag: MATRIX["revisions"][tag]}, routes=[route], targets=[target],
                    threads=[1, 2, 4], events=1, cases={})
     monkeypatch.setattr(transport, "MATRIX", minimal)
-    for name in ("route_check", "lookup_check", "level_check", "d9_check"):
+    for name in ("route_check", "lookup_check", "k1_check", "level_check", "d9_check"):
         monkeypatch.setattr(transport, name, lambda *args: (True, "synthetic"))
     stage = tmp_path / "dataset"
     stage.mkdir()
@@ -70,7 +70,7 @@ def synthetic_check_work(tmp_path, monkeypatch, changes=None):
                      f"PARTICLES {changes.get((mode, thread, 'particles'), 'ok')}"]
             values = {"patched-off": ["compiled", "compiled", "none", "none"],
                       "patched-default": ["parity", "compiled", "set", "synthetic"],
-                      "enabled": ["mizuno2025", "mudirac130", "set", "synthetic"]}.get(mode)
+                      "enabled": ["mizuno2025", "mudirac130p1", "set", "synthetic"]}.get(mode)
             if changes.get((mode, thread, "config")):
                 values = None
             if values:
@@ -84,7 +84,7 @@ def synthetic_check_work(tmp_path, monkeypatch, changes=None):
 def comparison_less(check: str, mode: str, thread: int) -> bool:
     return ((check == "parity" and mode in ("pristine", "enabled"))
             or (check in ("lookups", "d9") and mode != "enabled")
-            or (check == "levels" and mode in ("pristine", "preserved"))
+            or (check in ("k1", "levels") and mode in ("pristine", "preserved"))
             or (check == "threads" and thread == 1))
 
 
@@ -100,7 +100,7 @@ def test_t149_a_cell_that_compares_nothing_reads_na(tmp_path, monkeypatch):
     want = {(r["check"], r["mode"], int(r["threads"])) for r in rows
             if comparison_less(r["check"], r["mode"], int(r["threads"]))}
     assert na == want and want
-    assert {"parity", "lookups", "d9", "levels", "threads"} == {check for check, _, _ in na}
+    assert {"parity", "lookups", "k1", "d9", "levels", "threads"} == {check for check, _, _ in na}
     assert all(r["status"] in ("PASS", "INFO") for r in rows if r["status"] != "N/A")
     for key in na:
         assert not transport.compares(*key)
@@ -181,9 +181,9 @@ def test_t149_same_writer_level_spelling_stays_distinct(tmp_path):
     config = {"L": ["0x1p+0"]}
     target = {"Z": 13, "A": 27}
     assert not transport.level_check(config, pristine, "patched-off", target, tmp_path)[0]
-    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_kshell.mudirac130p1.g4dat").write_text(
         "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
-    (tmp_path / "d3_levels.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_levels.mudirac130p1.g4dat").write_text(
         "#COLUMNS Z A e2\n82 208 1\n", encoding="ascii")
     assert not transport.level_check(config, pristine, "enabled", target, tmp_path)[0]
 
@@ -202,13 +202,13 @@ def test_t149_enabled_level_array_and_resolution_are_required(tmp_path):
     levels = [float(value) for value in range(14, 0, -1)]
     columns = " ".join(f"e{i}" for i in range(2, 9))
     values = " ".join(str(value * 1000) for value in levels[1:8])
-    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_kshell.mudirac130p1.g4dat").write_text(
         "#COLUMNS Z A value\n13 27 14000\n", encoding="ascii")
-    (tmp_path / "d3_levels.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_levels.mudirac130p1.g4dat").write_text(
         f"#COLUMNS Z A {columns}\n13 27 {values}\n", encoding="ascii")
     pristine = {"L": [value.hex() for value in levels]}
     config = {"L": pristine["L"][:],
-              "_RES_LINES": [["levels", "13", "27", "exact", "mudirac130", "7"]]}
+              "_RES_LINES": [["levels", "13", "27", "exact", "mudirac130p1", "7"]]}
     target = {"Z": 13, "A": 27}
     assert transport.level_check(config, pristine, "enabled", target, tmp_path)[0]
     config["L"][1] = float(12).hex()
@@ -223,7 +223,7 @@ def test_t149_same_writer_lookup_fallback_spelling_stays_distinct(tmp_path):
         "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
     (tmp_path / "d1_zeff.g4dat").write_text(
         "#COLUMNS Z value\n82 1\n", encoding="ascii")
-    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_kshell.mudirac130p1.g4dat").write_text(
         "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
     pristine = {key: [float(1).hex()] for key in
                 ("RATE_BD", "RATE_HELPER", "ZEFF_BD", "ZEFF_HELPER", "K1")}
@@ -233,7 +233,7 @@ def test_t149_same_writer_lookup_fallback_spelling_stays_distinct(tmp_path):
     config["_RES_LINES"] = [
         ["rate", "13", "27", "compiled", "mizuno2025", "0"],
         ["zeff", "13", "0", "compiled", "mizuno2025", "0"],
-        ["kshell", "13", "27", "compiled", "mudirac130", "0"],
+        ["kshell", "13", "27", "compiled", "mudirac130p1", "0"],
     ]
     assert not transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
     config["RATE_BD"] = [float(1).hex()]
@@ -372,14 +372,14 @@ def test_t149_wrong_lookup_origin_fails(tmp_path):
     (tmp_path / "d1_capture.mizuno2025.g4dat").write_text(
         "#COLUMNS Z A value\n13 27 0.7\n", encoding="ascii")
     (tmp_path / "d1_zeff.g4dat").write_text("#COLUMNS Z value\n13 11\n", encoding="ascii")
-    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_kshell.mudirac130p1.g4dat").write_text(
         "#COLUMNS Z A value\n13 27 400\n", encoding="ascii")
     config = {"RATE_BD": [(0.7 / 1000.0).hex()], "RATE_HELPER": [(0.7 / 1000.0).hex()],
               "ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(11).hex()],
               "KA": [(400 * 0.001).hex()],
               "_RES_LINES": [["rate", "13", "27", "exact", "mizuno2025", "1"],
                              ["zeff", "13", "0", "compiled", "mizuno2025", "0"],
-                             ["kshell", "13", "27", "exact", "mudirac130", "1"]]}
+                             ["kshell", "13", "27", "exact", "mudirac130p1", "1"]]}
     pristine = {"ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(11).hex()],
                 "K1": [(400 * 0.001).hex()]}
     assert transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
@@ -391,14 +391,14 @@ def test_t149_compiled_helper_uses_its_own_pristine_kernel(tmp_path):
     (tmp_path / "d1_capture.mizuno2025.g4dat").write_text(
         "#COLUMNS Z A value\n13 27 0.7\n", encoding="ascii")
     (tmp_path / "d1_zeff.g4dat").write_text("#COLUMNS Z value\n13 11\n", encoding="ascii")
-    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_kshell.mudirac130p1.g4dat").write_text(
         "#COLUMNS Z A value\n13 27 400\n", encoding="ascii")
     config = {"RATE_BD": [(0.7 / 1000.0).hex()], "RATE_HELPER": [(0.7 / 1000.0).hex()],
               "ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(12).hex()],
               "KA": [(400 * 0.001).hex()],
               "_RES_LINES": [["rate", "13", "27", "exact", "mizuno2025", "1"],
                              ["zeff", "13", "0", "compiled", "mizuno2025", "0"],
-                             ["kshell", "13", "27", "exact", "mudirac130", "1"]]}
+                             ["kshell", "13", "27", "exact", "mudirac130p1", "1"]]}
     pristine = {"ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(12).hex()]}
     assert transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
 
@@ -425,7 +425,7 @@ def test_t149_corrupt_levels_uses_last_tabulated_column(tmp_path):
     data = stage / "G4MuonicDatasynthetic"
     data.mkdir(parents=True)
     transport.save(stage / "stage.json", {"name": "G4MuonicData", "version": "synthetic"})
-    levels = data / "d3_levels.mudirac130.g4dat"
+    levels = data / "d3_levels.mudirac130p1.g4dat"
     levels.write_text("#COLUMNS Z A e2 e3 e4 e5 e6 e7 e8\n"
                       "82 0 700 600 500 400 350 300 250\n"
                       "82 208 700 600 500 400 350 300 250\n", encoding="ascii")
@@ -455,7 +455,7 @@ def cascade_fixture(tmp_path):
     dataset.mkdir()
     columns = " ".join(f"e{i}" for i in range(2, 9))
     values = " ".join(str(i * 1000) for i in range(13, 6, -1))
-    (dataset / "d3_levels.mudirac130.g4dat").write_text(
+    (dataset / "d3_levels.mudirac130p1.g4dat").write_text(
         f"#COLUMNS Z A {columns}\n13 27 {values}\n", encoding="ascii")
     levels = [float(i) for i in range(14, 0, -1)]
     config = {"L": [value.hex() for value in levels]}
@@ -522,7 +522,7 @@ def test_t149_cascade_floor_and_transition_classes(tmp_path):
     target = {"Z": 13, "A": 27}
     ok, detail = transport.d9_check(records, config, "bound_decay", target, dataset)
     assert ok and "mixed=1" in detail
-    tabulated = dataset / "d3_levels.mudirac130.g4dat"
+    tabulated = dataset / "d3_levels.mudirac130p1.g4dat"
     text = tabulated.read_text(encoding="ascii")
     tabulated.write_text(text.replace("7000", "7100"), encoding="ascii")
     assert not transport.d9_check(records, config, "bound_decay", target, dataset)[0]
@@ -560,7 +560,7 @@ def test_t149_rate_division_and_kshell_scale(tmp_path):
         f"#COLUMNS Z A value\n14 0 {value!r}\n", encoding="ascii")
     (tmp_path / "d1_zeff.g4dat").write_text(
         "#COLUMNS Z value\n82 11\n", encoding="ascii")
-    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_kshell.mudirac130p1.g4dat").write_text(
         f"#COLUMNS Z A value\n14 0 {value!r}\n", encoding="ascii")
     config = {"RATE_BD": [(value / 1000.0).hex()],
               "RATE_HELPER": [(value / 1000.0).hex()],
@@ -568,7 +568,7 @@ def test_t149_rate_division_and_kshell_scale(tmp_path):
               "KA": [(value * 0.001).hex()],
               "_RES_LINES": [["rate", "14", "0", "exact", "mizuno2025", "1"],
                              ["zeff", "14", "0", "compiled", "mizuno2025", "0"],
-                             ["kshell", "14", "0", "exact", "mudirac130", "1"]]}
+                             ["kshell", "14", "0", "exact", "mudirac130p1", "1"]]}
     pristine = {"ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(11).hex()]}
     target = {"Z": 14, "A": 0}
     assert transport.lookup_check(config, pristine, target, tmp_path)[0]
@@ -596,7 +596,7 @@ def test_t149_kshell_fallback_uses_pristine_k1(tmp_path):
         "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
     (tmp_path / "d1_zeff.g4dat").write_text(
         "#COLUMNS Z value\n82 1\n", encoding="ascii")
-    (tmp_path / "d3_kshell.mudirac130.g4dat").write_text(
+    (tmp_path / "d3_kshell.mudirac130p1.g4dat").write_text(
         "#COLUMNS Z A value\n82 208 1\n", encoding="ascii")
     one = float(1).hex()
     two = float(2).hex()
@@ -604,10 +604,98 @@ def test_t149_kshell_fallback_uses_pristine_k1(tmp_path):
               "ZEFF_HELPER": [one], "KA": [one],
               "_RES_LINES": [["rate", "13", "27", "compiled", "mizuno2025", "0"],
                              ["zeff", "13", "0", "compiled", "mizuno2025", "0"],
-                             ["kshell", "13", "27", "compiled", "mudirac130", "0"]]}
+                             ["kshell", "13", "27", "compiled", "mudirac130p1", "0"]]}
     pristine = {"RATE_BD": [one], "RATE_HELPER": [one], "ZEFF_BD": [one],
                 "ZEFF_HELPER": [one], "K1": [one], "KA": [two]}
     assert transport.lookup_check(config, pristine, {"Z": 13, "A": 27}, tmp_path)[0]
+
+
+def test_t149_the_checks_read_the_profiles_the_matrix_selects():
+    """The enabled mode's profiles come from `matrix.json`, the D3 one the profile the dataset ships, and the
+    replaced profile is a case of its own whose run must stop with the overlay's unknown-profile code."""
+    profiles = MATRIX["modes"]["enabled"]["profiles"]
+    selected = (profiles["G4MUONICDATA_D1_PROFILE"], profiles["G4MUONICDATA_D3_PROFILE"])
+    assert selected == (transport.D1_PROFILE, transport.D3_PROFILE)
+    shipped = {path.name.split(".")[1] for path in (ROOT / "data/g4/d3").glob("d3_kshell.*.g4dat")}
+    assert shipped == {transport.D3_PROFILE}
+    assert transport.REPLACED_D3_PROFILE not in shipped
+    assert MATRIX["cases"]["P14"] == "replaced D3 profile"
+    source = SOURCE.read_text(encoding="utf-8")
+    assert '("P14", {"G4MUONICDATA_D3_PROFILE": REPLACED_D3_PROFILE}' in source
+    assert 'if case_id in ("P10", "P11", "P14"):' in source
+
+
+def k1_fixture(tmp_path, natural: bool):
+    rows = "#COLUMNS Z A value\n13 0 400.5\n13 27 400.5\n" if natural else "#COLUMNS Z A value\n13 27 400.5\n"
+    (tmp_path / f"d3_kshell.{transport.D3_PROFILE}.g4dat").write_text(rows, encoding="ascii")
+    pristine = {"K1": [(0.47).hex()]}
+    return pristine, {"Z": 13, "A": 27}
+
+
+def test_t149_k1_is_the_natural_row_times_a_thousandth_or_the_pristine_value(tmp_path):
+    pristine, target = k1_fixture(tmp_path, natural=True)
+    exact = {"K1": [(400.5 * 0.001).hex()]}
+    assert transport.k1_check(exact, pristine, "enabled", target, tmp_path)[0]
+    assert not transport.k1_check(pristine, pristine, "enabled", target, tmp_path)[0]
+    for mode in ("patched-off", "patched-default"):
+        assert transport.k1_check(pristine, pristine, mode, target, tmp_path)[0]
+        assert not transport.k1_check(exact, pristine, mode, target, tmp_path)[0]
+    assert not transport.k1_check({}, pristine, "enabled", target, tmp_path)[0]
+    pristine, target = k1_fixture(tmp_path, natural=False)
+    assert transport.k1_check(pristine, pristine, "enabled", target, tmp_path)[0]
+    assert not transport.k1_check(exact, pristine, "enabled", target, tmp_path)[0]
+
+
+def test_t149_drill_a_k1_moved_by_two_to_the_minus_forty_fails_while_the_lookups_pass(tmp_path):
+    """A K1 a factor 1 + 2^-40 off the natural row: the lookups check, which reads K1 only on its fallback,
+    passes on the same config; the K1 check fails."""
+    pristine, target = k1_fixture(tmp_path, natural=True)
+    (tmp_path / f"d1_capture.{transport.D1_PROFILE}.g4dat").write_text(
+        "#COLUMNS Z A value\n13 27 0.7\n", encoding="ascii")
+    (tmp_path / "d1_zeff.g4dat").write_text("#COLUMNS Z value\n13 11\n", encoding="ascii")
+    good = 400.5 * 0.001
+    config = {"RATE_BD": [(0.7 / 1000.0).hex()], "RATE_HELPER": [(0.7 / 1000.0).hex()],
+              "ZEFF_BD": [float(11).hex()], "ZEFF_HELPER": [float(11).hex()],
+              "KA": [good.hex()], "K1": [(good * (1 + 2 ** -40)).hex()],
+              "_RES_LINES": [["rate", "13", "27", "exact", transport.D1_PROFILE, "1"],
+                             ["zeff", "13", "0", "compiled", transport.D1_PROFILE, "0"],
+                             ["kshell", "13", "27", "exact", transport.D3_PROFILE, "1"]]}
+    pristine.update(ZEFF_BD=[float(11).hex()], ZEFF_HELPER=[float(11).hex()])
+    assert transport.lookup_check(config, pristine, target, tmp_path)[0]
+    assert not transport.k1_check(config, pristine, "enabled", target, tmp_path)[0]
+    config["K1"] = [good.hex()]
+    assert transport.k1_check(config, pristine, "enabled", target, tmp_path)[0]
+
+
+def levels_fixture(tmp_path):
+    """A table row for (13, 27) and a consumer level array that carries it: K and e2 .. e8 from the table
+    times 0.001, the formula's levels above."""
+    k, levels = 470.0, [120.0, 53.0, 30.0, 19.0, 13.0, 9.6, 7.4]
+    (tmp_path / f"d3_kshell.{transport.D3_PROFILE}.g4dat").write_text(
+        f"#COLUMNS Z A value\n13 27 {k!r}\n", encoding="ascii")
+    (tmp_path / f"d3_levels.{transport.D3_PROFILE}.g4dat").write_text(
+        "#COLUMNS Z A " + " ".join(f"e{n}" for n in range(2, 9)) + "\n13 27 "
+        + " ".join(repr(v) for v in levels) + "\n", encoding="ascii")
+    stock = [0.5 / n ** 2 for n in range(1, 15)]
+    actual = [k * 0.001] + [v * 0.001 for v in levels] + stock[8:]
+    config = {"L": [v.hex() for v in actual],
+              "_RES_LINES": [["levels", "13", "27", "exact", transport.D3_PROFILE, str(len(levels))]]}
+    return config, {"L": [v.hex() for v in stock]}, {"Z": 13, "A": 27}
+
+
+def test_t149_drill_the_consumer_array_moved_with_the_table_fixed_fails_the_levels_check(tmp_path):
+    """The levels check compares the array the cascade holds with the table it should carry, the table
+    fixed: the array passes as harvested; its K entry a factor 1 + 2^-40 off, or the whole array times
+    1000, fails."""
+    config, pristine, target = levels_fixture(tmp_path)
+    assert transport.level_check(config, pristine, "enabled", target, tmp_path)[0]
+    moved = dict(config)
+    values = [float.fromhex(v) for v in config["L"]]
+    moved["L"] = [(values[0] * (1 + 2 ** -40)).hex(), *config["L"][1:]]
+    assert not transport.level_check(moved, pristine, "enabled", target, tmp_path)[0]
+    scaled = dict(config)
+    scaled["L"] = [(v * 1000.0).hex() for v in values]
+    assert not transport.level_check(scaled, pristine, "enabled", target, tmp_path)[0]
 
 
 def test_t149_manifest_resolves_libraries_from_build_install(monkeypatch, tmp_path):

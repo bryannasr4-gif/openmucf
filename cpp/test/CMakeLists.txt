@@ -291,11 +291,11 @@ g4muonicdata_validity_case(validate_validity_without_range "A"
 g4muonicdata_validity_case(validate_validity_assigned_twice "A:listed A:natural_and_listed"
   "V-15 FAIL 'd1_capture.evaluated.g4dat' #VALIDITY assigns 'A' twice\n")
 
-# The D3 energy tables of the mudirac130 profile: V-14 over a seam parity carries no table in, and
+# The D3 energy tables of the mudirac130p1 profile: V-14 over a seam parity carries no table in, and
 # V-15 and V-16 over the two tables. Every directory below is assembled at configure time from the
 # shipped D1 pair and the shipped D3 files; a changed member is one stated edit of a shipped file.
-set(G4MUONICDATA_D3_KSHELL "${G4MUONICDATA_D3_DIR}/d3_kshell.mudirac130.g4dat")
-set(G4MUONICDATA_D3_LEVELS "${G4MUONICDATA_D3_DIR}/d3_levels.mudirac130.g4dat")
+set(G4MUONICDATA_D3_KSHELL "${G4MUONICDATA_D3_DIR}/d3_kshell.mudirac130p1.g4dat")
+set(G4MUONICDATA_D3_LEVELS "${G4MUONICDATA_D3_DIR}/d3_levels.mudirac130p1.g4dat")
 set(G4MUONICDATA_D1_CAPTURE "${G4MUONICDATA_D1_DIR}/d1_capture.g4dat")
 set(G4MUONICDATA_D1_ZEFF "${G4MUONICDATA_D1_DIR}/d1_zeff.g4dat")
 get_filename_component(G4MUONICDATA_D1_CAPTURE_NAME "${G4MUONICDATA_D1_CAPTURE}" NAME)
@@ -318,7 +318,7 @@ function(g4muonicdata_write_member dir name text)
   configure_file("${CMAKE_BINARY_DIR}/${name}.in" "${dir}/${name}" @ONLY NEWLINE_STYLE LF)
 endfunction()
 
-# The full shipped set: V-14 naming every shipped profile, V-16 passing over mudirac130.
+# The full shipped set: V-14 naming every shipped profile, V-16 passing over mudirac130p1.
 set(G4MUONICDATA_SHIPPED_PROFILES)
 foreach(member IN LISTS G4MUONICDATA_DATASET_MEMBERS)
   if(member MATCHES "\\.g4dat$")
@@ -332,7 +332,7 @@ list(SORT G4MUONICDATA_SHIPPED_PROFILES)
 list(JOIN G4MUONICDATA_SHIPPED_PROFILES "," G4MUONICDATA_SHIPPED_PROFILE_LIST)
 add_test(NAME validate_d3_profiles COMMAND g4muonicdata_validate ${G4MUONICDATA_VALIDATE_ARGS})
 set_tests_properties(validate_d3_profiles PROPERTIES
-  PASS_REGULAR_EXPRESSION "V-14 PASS profiles=${G4MUONICDATA_SHIPPED_PROFILE_LIST} pairs=[0-9]+\nV-15 PASS [^\n]*\nV-16 PASS profiles=mudirac130 keys=[0-9]+\n"
+  PASS_REGULAR_EXPRESSION "V-14 PASS profiles=${G4MUONICDATA_SHIPPED_PROFILE_LIST} pairs=[0-9]+\nV-15 PASS [^\n]*\nV-16 PASS profiles=mudirac130p1 keys=[0-9]+\n"
   FAIL_REGULAR_EXPRESSION " FAIL ")
 
 # The assembled dataset with one byte appended to the level table's Layer-2 file: V-04 checks
@@ -340,10 +340,10 @@ set_tests_properties(validate_d3_profiles PROPERTIES
 set(dir "${CMAKE_BINARY_DIR}/d3_digest_mismatch")
 file(REMOVE_RECURSE "${dir}")
 file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
-if(NOT EXISTS "${dir}/d3_levels.mudirac130.prov.json")
-  message(FATAL_ERROR "the digest case needs d3_levels.mudirac130.prov.json in the assembled dataset")
+if(NOT EXISTS "${dir}/d3_levels.mudirac130p1.prov.json")
+  message(FATAL_ERROR "the digest case needs d3_levels.mudirac130p1.prov.json in the assembled dataset")
 endif()
-file(APPEND "${dir}/d3_levels.mudirac130.prov.json" " ")
+file(APPEND "${dir}/d3_levels.mudirac130p1.prov.json" " ")
 add_test(NAME validate_d3_digest_mismatch
          COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
 set_tests_properties(validate_d3_digest_mismatch PROPERTIES
@@ -356,18 +356,18 @@ file(COPY ${G4MUONICDATA_SHIPPED_FILES} "${G4MUONICDATA_D3_KSHELL}" DESTINATION 
 file(READ "${G4MUONICDATA_D3_LEVELS}" levels)
 string(REGEX MATCH "\n[^#\n][^\n]*\n" first_record "${levels}")
 if(first_record STREQUAL "")
-  message(FATAL_ERROR "d3_levels.mudirac130.g4dat has no record line")
+  message(FATAL_ERROR "d3_levels.mudirac130p1.g4dat has no record line")
 endif()
 string(FIND "${levels}" "${first_record}" at)
 string(LENGTH "${first_record}" length)
 string(SUBSTRING "${levels}" 0 ${at} head)
 math(EXPR rest_at "${at} + ${length} - 1")
 string(SUBSTRING "${levels}" ${rest_at} -1 tail)
-g4muonicdata_write_member("${dir}" "d3_levels.mudirac130.g4dat" "${head}${tail}")
+g4muonicdata_write_member("${dir}" "d3_levels.mudirac130p1.g4dat" "${head}${tail}")
 add_test(NAME validate_d3_key_sets_differ
          COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
 set_tests_properties(validate_d3_key_sets_differ PROPERTIES
-  PASS_REGULAR_EXPRESSION "V-16 FAIL '#PROFILE mudirac130': k_shell_energy and level_energy differ first at key [0-9]+-[0-9]+ [(]carried by k_shell_energy only[)]\n")
+  PASS_REGULAR_EXPRESSION "V-16 FAIL '#PROFILE mudirac130p1': k_shell_energy and level_energy differ first at key [0-9]+-[0-9]+ [(]carried by k_shell_energy only[)]\n")
 
 # The k-shell table alone beside the D1 pair: V-16 names the missing table.
 set(dir "${CMAKE_BINARY_DIR}/d3_one_table")
@@ -376,7 +376,7 @@ file(COPY ${G4MUONICDATA_SHIPPED_FILES} "${G4MUONICDATA_D3_KSHELL}" DESTINATION 
 add_test(NAME validate_d3_one_table
          COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
 set_tests_properties(validate_d3_one_table PROPERTIES
-  PASS_REGULAR_EXPRESSION "V-16 FAIL '#PROFILE mudirac130' carries '#TABLE k_shell_energy' but not '#TABLE level_energy'\n")
+  PASS_REGULAR_EXPRESSION "V-16 FAIL '#PROFILE mudirac130p1' carries '#TABLE k_shell_energy' but not '#TABLE level_energy'\n")
 
 # The k-shell table's A = 0 rows under A:listed: V-15 names the range.
 set(dir "${CMAKE_BINARY_DIR}/d3_natural_under_listed")
@@ -385,14 +385,14 @@ file(COPY ${G4MUONICDATA_SHIPPED_FILES} "${G4MUONICDATA_D3_LEVELS}" DESTINATION 
 file(READ "${G4MUONICDATA_D3_KSHELL}" kshell)
 string(FIND "${kshell}" " A:most_abundant_and_listed\n" at)
 if(at EQUAL -1)
-  message(FATAL_ERROR "d3_kshell.mudirac130.g4dat does not assign A:most_abundant_and_listed")
+  message(FATAL_ERROR "d3_kshell.mudirac130p1.g4dat does not assign A:most_abundant_and_listed")
 endif()
 string(REPLACE " A:most_abundant_and_listed\n" " A:listed\n" kshell "${kshell}")
-g4muonicdata_write_member("${dir}" "d3_kshell.mudirac130.g4dat" "${kshell}")
+g4muonicdata_write_member("${dir}" "d3_kshell.mudirac130p1.g4dat" "${kshell}")
 add_test(NAME validate_d3_natural_under_listed
          COMMAND g4muonicdata_validate "${dir}" --oracle "${G4MUONICDATA_ORACLE}" --conformance "${G4MUONICDATA_CONFORMANCE_DIR}")
 set_tests_properties(validate_d3_natural_under_listed PROPERTIES
-  PASS_REGULAR_EXPRESSION "V-15 FAIL under A:listed: 'd3_kshell.mudirac130.g4dat' carries [0-9]+ A = 0 row")
+  PASS_REGULAR_EXPRESSION "V-15 FAIL under A:listed: 'd3_kshell.mudirac130p1.g4dat' carries [0-9]+ A = 0 row")
 
 # The Geant4-facing glue the patches add (cpp/src/G4MuonicDataOverlay.cc), compiled against the
 # stand-in Geant4 headers under g4stub/ and run over the assembled dataset: each case checks what
@@ -433,12 +433,12 @@ foreach(line IN LISTS kshell_lines)
   endif()
 endforeach()
 if(natural_z STREQUAL "")
-  message(FATAL_ERROR "d3_kshell.mudirac130.g4dat has no (Z, 0) record")
+  message(FATAL_ERROR "d3_kshell.mudirac130p1.g4dat has no (Z, 0) record")
 endif()
 # A mass number equal to that Z, which no record of that Z carries, so it resolves to (Z, 0).
 foreach(line IN LISTS kshell_lines)
   if(line MATCHES "^ *${natural_z} +${natural_z} ")
-    message(FATAL_ERROR "d3_kshell.mudirac130.g4dat lists (${natural_z}, ${natural_z}); the unlisted key needs another A")
+    message(FATAL_ERROR "d3_kshell.mudirac130p1.g4dat lists (${natural_z}, ${natural_z}); the unlisted key needs another A")
   endif()
 endforeach()
 set(unlisted_key "${natural_z} ${natural_z}")
@@ -528,10 +528,10 @@ file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
 file(READ "${G4MUONICDATA_D3_KSHELL}" kshell)
 string(FIND "${kshell}" " value=keV " at)
 if(at EQUAL -1)
-  message(FATAL_ERROR "d3_kshell.mudirac130.g4dat does not assign value=keV")
+  message(FATAL_ERROR "d3_kshell.mudirac130p1.g4dat does not assign value=keV")
 endif()
 string(REPLACE " value=keV " " value=eV " kshell "${kshell}")
-g4muonicdata_write_member("${dir}" "d3_kshell.mudirac130.g4dat" "${kshell}")
+g4muonicdata_write_member("${dir}" "d3_kshell.mudirac130p1.g4dat" "${kshell}")
 g4muonicdata_overlay_case(overlay_units_mismatch
   ENV "G4MUONICDATA=${dir}" "G4MUONICDATA_PROFILE=${d3_profile}"
   QUERIES ${kshell_args}
@@ -544,12 +544,12 @@ file(READ "${G4MUONICDATA_D3_LEVELS}" levels)
 foreach(old IN ITEMS " e2 " " e2=keV ")
   string(FIND "${levels}" "${old}" at)
   if(at EQUAL -1)
-    message(FATAL_ERROR "d3_levels.mudirac130.g4dat does not carry '${old}'")
+    message(FATAL_ERROR "d3_levels.mudirac130p1.g4dat does not carry '${old}'")
   endif()
 endforeach()
 string(REPLACE " e2 " " f2 " levels "${levels}")
 string(REPLACE " e2=keV " " f2=keV " levels "${levels}")
-g4muonicdata_write_member("${dir}" "d3_levels.mudirac130.g4dat" "${levels}")
+g4muonicdata_write_member("${dir}" "d3_levels.mudirac130p1.g4dat" "${levels}")
 g4muonicdata_overlay_case(overlay_no_e2
   ENV "G4MUONICDATA=${dir}" "G4MUONICDATA_PROFILE=${d3_profile}"
   QUERIES ${levels_args}
@@ -581,7 +581,7 @@ foreach(member IN LISTS G4MUONICDATA_DATASET_MEMBERS)
     list(APPEND tabbed_members "${name}")
   endif()
 endforeach()
-foreach(name IN ITEMS d1_capture.g4dat d3_kshell.mudirac130.g4dat d3_levels.mudirac130.g4dat)
+foreach(name IN ITEMS d1_capture.g4dat d3_kshell.mudirac130p1.g4dat d3_levels.mudirac130p1.g4dat)
   if(NOT name IN_LIST tabbed_members)
     message(FATAL_ERROR "the tab case needs a multi-assignment #UNITS line in ${name}")
   endif()
@@ -678,11 +678,12 @@ foreach(member IN ITEMS CAPTURE ZEFF)
     "${semantics_d1_units_line}" "${semantics_d1_units_prefixed}" S004)
 endforeach()
 
-# S005 and S006 over the first k-shell record: its binding energy negated in place, and its binding
-# energy replaced by its own uncertainty field, which is below the level the same key lists under
-# `e2`. Both are built from that record's fields, so neither states a value.
+# S005 and S006 over the first k-shell record: its binding energy negated, and its binding energy
+# replaced by its own uncertainty field, which is below the level the same key lists under `e2`. Both
+# are built from that record's fields, so neither states a value. The fields are split on the spaces
+# between them, however many there are: a reader must not depend on the alignment (FORMAT_SPEC.md).
 list(GET kshell_lines 0 semantics_first_record)
-string(REGEX MATCH "^( *[0-9]+ +[0-9]+ +) ([^ ]+)( +)([^ ]+)$" semantics_match "${semantics_first_record}")
+string(REGEX MATCH "^( *[0-9]+ +[0-9]+ +)([^ ]+)( +)([^ ]+)$" semantics_match "${semantics_first_record}")
 if(semantics_match STREQUAL "")
   message(FATAL_ERROR "the semantic cases need the first k-shell record as `Z A value unc`")
 endif()
@@ -693,7 +694,7 @@ set(semantics_unc "${CMAKE_MATCH_4}")
 g4muonicdata_semantics_case(validate_semantics_value "${G4MUONICDATA_D3_KSHELL_NAME}"
   "${semantics_first_record}" "${semantics_head}-${semantics_value}${semantics_gap}${semantics_unc}" S005)
 g4muonicdata_semantics_case(validate_semantics_pair "${G4MUONICDATA_D3_KSHELL_NAME}"
-  "${semantics_first_record}" "${semantics_head} ${semantics_unc}${semantics_gap}${semantics_unc}" S006)
+  "${semantics_first_record}" "${semantics_head}${semantics_unc}${semantics_gap}${semantics_unc}" S006)
 
 g4muonicdata_record_lines("${G4MUONICDATA_D1_CAPTURE}" semantics_capture_records)
 list(GET semantics_capture_records 0 semantics_capture_first_record)

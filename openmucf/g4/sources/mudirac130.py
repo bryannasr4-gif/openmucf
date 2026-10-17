@@ -1,7 +1,8 @@
-"""The ``mudirac130`` profile: MuDirac 1.3.0 run as a generator whose inputs and printed outputs are data.
+"""MuDirac 1.3.0, with the patch in ``third_party/mudirac/``, run as a generator whose inputs and printed
+outputs are data: the ``mudirac130p1`` profile of the D3 tables.
 
-The D3 energy tables are not transcribed and not computed here. MuDirac 1.3.0 is run outside this
-package on inputs this module renders from ``data/g4/d3/mudirac_inputs.csv``; every state header and
+The D3 energy tables are not transcribed and not computed here. The patched MuDirac 1.3.0 is run outside
+this package on inputs this module renders from ``data/g4/d3/mudirac_inputs.csv``; every state header and
 every line it prints is committed as a CSV beside them, and this module turns those printed strings
 into the two tables by exact decimal arithmetic whose checks raise rather than warn.
 
@@ -21,19 +22,22 @@ import hashlib
 import io
 import math
 import re
+import weakref
 from collections.abc import Sequence
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from decimal import Decimal, localcontext
 from pathlib import Path
 
-PROFILE = "mudirac130"
+#: The profile the tables carry: MuDirac 1.3.0 with the patch set in ``third_party/mudirac/``, ``p1`` its
+#: first published revision.
+PROFILE = "mudirac130p1"
 SEAM = "d3_transitions"
 #: The bibliography key of the generator's reference.
 BIBKEY = "Sturniolo2021"
 MUDIRAC_VERSION = "1.3.0"
 #: The pinned identities of the generator's release and of the three input files the input set is
-#: built from: the release archive, the two data files it bundles (by git blob id) and the charge
-#: radii table whose uncertainty column gives the radius shift of the `rsig` runs.
+#: built from: the release archive the patch applies to, the two data files it bundles (by git blob id)
+#: and the charge radii table whose uncertainty column gives the radius shift of the `rsig` runs.
 TARBALL_SHA256 = "e50e346c3b9dedb29c11685d42fa9042ee92fd89240aaf07c8fd2342187bece0"
 RADII_BLOB = "92c402f80690adcefc6aaa6e23529418c4660160"
 ABUNDANT_BLOB = "2f714ca6282681fa73488189e197eceab3ab6dcd"
@@ -61,25 +65,18 @@ INPUTS_RELPATH = f"{D3_RELDIR}/mudirac_inputs.csv"
 RUNS_RELPATH = f"{D3_RELDIR}/mudirac_runs.csv"
 STATES_RELPATH = f"{D3_RELDIR}/mudirac_states.csv"
 LINES_RELPATH = f"{D3_RELDIR}/mudirac_lines.csv"
-NMAX_RELPATH = f"{D3_RELDIR}/mudirac_nmax_check.csv"
 CELLS_RELPATH = f"{D3_RELDIR}/validation_cells.csv"
 ORIGIN_RELPATH = f"{D3_RELDIR}/validation_radius_origin.csv"
 VALIDATION_RELPATH = f"{D3_RELDIR}/validation.csv"
 GEANT4_LEVELS_RELPATH = f"{D3_RELDIR}/geant4_cascade_levels.csv"
 
-#: The run kinds whose results are committed, in their order: the bundled radius, the rms radius
+#: The kinds the renderer writes for each member, in their order: the bundled radius, the rms radius
 #: moved by its uncertainty, the rms radius times SIZE_FLOOR (validation nuclides only), and one
-#: hydrogen-like run per checked shell.
+#: hydrogen-like run per checked shell. The recipe runs the first as the anchor kind.
 IDEAL_KINDS = tuple(f"ideal{n}" for n in range(IDEAL_FROM, N_MAX + 1))
 COMMITTED_KINDS = ("base", "rsig", "r101", *IDEAL_KINDS)
-#: Runs made for the evidence only and never committed: the base input a second time, and the
-#: base input without its radius line.
-EVIDENCE_KINDS = ("again", "defaultradius")
-#: The kinds whose printed states and lines are committed.
-PRINTED_KINDS = ("base", "rsig", "r101")
-#: The kind run beside the committed ones to measure the other sign of the radius response: the
-#: rms radius moved down by its uncertainty, where `rsig` moves it up. Its printed strings are
-#: committed in the numerics tables, never read by the table derivation.
+#: The kind run beside them to measure the other sign of the radius response: the rms radius moved
+#: down by its uncertainty, where `rsig` moves it up.
 RESPONSE_KINDS = ("rminus",)
 
 INPUTS_COLUMNS = (
@@ -327,12 +324,6 @@ def doublet_determinations(cells: tuple[Cell, ...]) -> list[tuple[Cell, Cell]]:
             if l2 is not None and l3 is not None]
 
 
-def settings_nuclides(cells: tuple[Cell, ...]) -> list[tuple[int, int]]:
-    """The labelled and complete-doublet nuclides that need settings runs."""
-    return sorted(set(centroid_nuclides(cells)) |
-                  {l2.nuclide for l2, _l3 in doublet_determinations(cells)})
-
-
 def load_validation(
     cells_path: Path, origin_path: Path
 ) -> tuple[tuple[Cell, ...], dict[tuple[int, int], RadiusOrigin]]:
@@ -526,8 +517,8 @@ def run_kinds(row: InputRow, validation: set[tuple[int, int]]) -> list[str]:
     return [kind for kind in COMMITTED_KINDS if kind != "r101" or row.nuclide in validation]
 
 
-def run_radius(row: InputRow, kind: str) -> str | None:
-    """The radius line's value for ``kind``; None where the input carries no radius line."""
+def run_radius(row: InputRow, kind: str) -> str:
+    """The radius line's value for ``kind``."""
     rms = float(row.radius_fm) / SPHERE_FACTOR
     if kind == "rsig":
         return repr((rms + float(row.sigma_rms_fm)) * SPHERE_FACTOR)
@@ -535,8 +526,6 @@ def run_radius(row: InputRow, kind: str) -> str | None:
         return repr((rms - float(row.sigma_rms_fm)) * SPHERE_FACTOR)
     if kind == "r101":
         return repr(rms * float(SIZE_FLOOR) * SPHERE_FACTOR)
-    if kind == "defaultradius":
-        return None
     return row.radius_fm
 
 
@@ -544,7 +533,7 @@ def render_input(row: InputRow, kind: str, extra: list[str]) -> str:
     """The MuDirac input file of ``row`` under ``kind``: the fixed settings in their order, the kind's
     radius, the circular chain plus ``extra`` (none on a hydrogen-like run), and on a hydrogen-like
     run the shell from which the atom is hydrogen-like."""
-    if kind not in COMMITTED_KINDS + EVIDENCE_KINDS + RESPONSE_KINDS:
+    if kind not in COMMITTED_KINDS + RESPONSE_KINDS:
         raise ValueError(f"unknown run kind {kind!r}")
     lines = [
         f"element: {row.symbol}",
@@ -554,9 +543,7 @@ def render_input(row: InputRow, kind: str, extra: list[str]) -> str:
         "reduced_mass: TRUE",
         "optimise_fermi_parameters: FALSE",
     ]
-    radius = run_radius(row, kind)
-    if radius is not None:
-        lines.append(f"radius: {radius}")
+    lines.append(f"radius: {run_radius(row, kind)}")
     ideal = kind in IDEAL_KINDS
     lines += [
         f"fermi_t: {row.fermi_t_fm}",
@@ -577,39 +564,44 @@ def mudirac_argv(binary: str, infile: str) -> list[str]:
 
 
 # --------------------------------------------------------------------------------------------
-# the printed outputs
+# the committed outputs of the recipe runs
 # --------------------------------------------------------------------------------------------
 
-RUNS_COLUMNS = ("run", "Z", "A", "kind", "rc", "err_bytes")
-STATES_COLUMNS = ("run", "Z", "A", "kind", "state", "n", "l", "s", "binding_eV", "total_eV")
-LINES_COLUMNS = ("run", "Z", "A", "kind", "line", "delta_e_eV", "w12_per_s")
-NMAX_COLUMNS = ("Z", "A", "n", "state", "full_binding_eV", "ideal_binding_eV")
+#: One row per run of every recipe batch, in the batches' order; what the collector recorded, the
+#: domain label of a run whose c is solved from its intended rms radius, and the printed total
+#: energy of its outermost circular state, from which the float resolution of its energies follows.
+RUNS_COLUMNS = (
+    "run", "Z", "A", "kind", "stage", "uehling", "variant", "density_domain", "rc", "err_bytes", "wall_s",
+    "input_sha256", "r15_total_eV",
+)
+#: The printed state headers and printed lines of every run, as printed, grouped by run in the run
+#: table's order: what the tables and their checks read (``committed_view``). The transition rates
+#: MuDirac prints beside the lines are not committed: no table reads them.
+STATES_COLUMNS = ("run", "state", "n", "l", "s", "binding_eV")
+LINES_COLUMNS = ("run", "line", "delta_e_eV")
+#: The circular states of the checked shells, the only printed values of a hydrogen-like run read.
+CHECKED_STATES = tuple(state for n in range(IDEAL_FROM, N_MAX + 1) for state in circular_orbits(n))
+
+
+def committed_view(kind: str, printed_lines: Sequence[str]) -> tuple[list[str], set[str]]:
+    """``(lines, states)`` of a complete run that are committed: of a hydrogen-like run, no line and the
+    circular states of the checked shells (the keep rule's comparison reads nothing else); of every other
+    run, every printed line and the states those lines join."""
+    if kind in IDEAL_KINDS:
+        return [], set(CHECKED_STATES)
+    return list(printed_lines), {state for line in printed_lines for state in line.split("-")}
 
 _ORBIT = re.compile(r"[K-Z][0-9]+")
 _COUNT = re.compile(r"0|[1-9][0-9]*")
 _SIGNED_COUNT = re.compile(r"0|-?[1-9][0-9]*")
-#: A state energy as MuDirac prints it: six significant digits, in either %g form.
+#: A state energy as MuDirac prints it, in either %g form.
 _PRINTED = re.compile(r"-?[0-9]+(\.[0-9]+)?(e[+-][0-9]+)?")
-#: A line energy as MuDirac prints it at the precision the inputs request.
-_LINE_ENERGY = re.compile(r"[0-9]+\.[0-9]{6}")
-#: Half a unit of the last decimal a line energy is printed with, in eV.
+_SHA256_TEXT = re.compile(r"[0-9a-f]{64}")
+_WALL = re.compile(r"[0-9]+\.[0-9]{3}")
+#: The decimals of a printed line of a run of the shipped stage (the v1.3.0 input) and of every other run.
+SHIPPED_XR_PRECISION = 6
+#: Half a unit of the last decimal a line of the shipped stage is printed with, in eV.
 LINE_HALF_UNIT = Decimal("0.0000005")
-#: The least uncertainty a `unc` or `u<n>` cell carries, in keV. A quantity measured with the
-#: outermost circular state held fixed sums at most twice (N_MAX - 1) printed lines -- the
-#: N_MAX - 1 upper-chain lines down to K1, then the N_MAX - 1 lower-chain lines out again -- each
-#: within LINE_HALF_UNIT of the value MuDirac computed; a (2j+1) mean is a convex combination of two
-#: such sums and is bounded the same way; and the change is taken between two runs, each rounded
-#: independently.
-UNC_FLOOR_KEV = 4 * (N_MAX - 1) * LINE_HALF_UNIT / 1000
-#: Why a nuclide the keep rule refuses is dropped, when its failure is that the Fermi parameter c
-#: MuDirac computes by default from the sphere radius is not a real number.
-DROP_FERMI2_C = "FERMI2 default c not real: sphere radius below sqrt(7/3)*pi*t/(4 ln 3) at t = fermi_t"
-#: The lowest mass number for which MuDirac's documented default c is the square-root form.
-FERMI2_SQRT_FROM_A = 5
-#: Why a member is dropped when MuDirac's documented default c is set by its mass number alone.
-DROP_FERMI2_FROM_A = (
-    "FERMI2 default c set by the mass number alone (A below FERMI2_SQRT_FROM_A)"
-)
 
 
 @dataclass(frozen=True)
@@ -618,184 +610,142 @@ class RunRow:
     z: int
     a: int
     kind: str
+    stage: str
+    uehling: bool
+    variant: str
+    density_domain: str
     rc: int
     err_bytes: int
+    wall_s: str
+    input_sha256: str
+    r15_total: str
 
     @property
     def clean(self) -> bool:
         return self.rc == 0 and self.err_bytes == 0
 
 
-@dataclass(frozen=True)
-class NmaxRow:
-    z: int
-    a: int
-    n: int
-    state: str
-    full: str
-    ideal: str
-
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Outputs:
-    """The committed run table, printed state headers, printed lines and hydrogen-like comparison."""
+    """The committed run table, printed state headers and printed lines, cross-checked against the
+    runs the input set implies. Compared by identity, so the derivations below are cached per instance."""
 
     inputs: tuple[InputRow, ...]
+    cells: tuple[Cell, ...]
     runs: dict[str, RunRow]
-    #: ``{run: {orbit: printed header energy E}}`` of every base, rsig and r101 run.
+    #: ``{run: {orbit: printed binding energy E}}``.
     headers: dict[str, dict[str, str]]
-    #: ``{run: {line: printed level difference}}`` of the same runs.
+    #: ``{run: {line: printed level difference}}``.
     lines: dict[str, dict[str, str]]
-    nmax: tuple[NmaxRow, ...]
 
 
 def _orbit_order(state: str) -> tuple[int, int]:
     return (ord(state[0]), int(state[1:]))
 
 
-def _run_key(z: int, a: int, kind: str) -> tuple[int, int, int]:
-    return (z, a, COMMITTED_KINDS.index(kind))
+def _grouped(path: Path, columns: tuple[str, ...], order: dict[str, int], check) -> dict[str, dict[str, str]]:
+    """Rows of a states or lines file grouped by run, each run's rows contiguous and the runs in the
+    run table's order; ``check(where, record)`` returns ``(key, value)`` for one row."""
+    out: dict[str, dict[str, str]] = {}
+    previous = -1
+    for where, r in read_rows(path, columns):
+        run = r["run"]
+        if run not in order:
+            raise CellError(f"{where}: run {run!r} is not in {Path(RUNS_RELPATH).name}")
+        position = order[run]
+        if position < previous or (position != previous and run in out):
+            raise OrderError(f"{where}: rows are grouped by run in the run table's order")
+        previous = position
+        key, value = check(where, r)
+        if key in out.setdefault(run, {}):
+            raise DuplicateKeyError(f"{where}: duplicate {key} of {run}")
+        out[run][key] = value
+    return out
 
 
-def _nuclide_kind(where: str, r: dict[str, str], kinds: tuple[str, ...]) -> tuple[int, int, str]:
-    z, a = integer(r["Z"], where, "Z"), integer(r["A"], where, "A")
-    if r["kind"] not in kinds:
-        raise CellError(f"{where}: kind {r['kind']!r} is not one of {kinds!r}")
-    return z, a, r["kind"]
+def load_outputs(root: Path) -> Outputs:
+    """Every committed output CSV, cross-checked against the input set.
 
-
-def load_runs(path: Path) -> dict[str, RunRow]:
-    """Parse ``mudirac_runs.csv``: one row per committed run, ordered by (Z, A, kind order)."""
-    out: dict[str, RunRow] = {}
-    previous: tuple[int, int, int] | None = None
-    for where, r in read_rows(path, RUNS_COLUMNS):
-        z, a, kind = _nuclide_kind(where, r, COMMITTED_KINDS)
-        if not r["run"].endswith(f"{a}_{kind}"):
-            raise CellError(f"{where}: run {r['run']!r} does not name A={a} and kind {kind}")
+    The run table lists exactly the runs ``recipe_runs`` implies for every batch, in order, each with
+    the digest of the input the renderer makes now, its implied kind, stage, switch, variant and
+    domain label, a clean exit and an empty ``.err``. Each run's committed lines and state headers are
+    exactly its ``committed_view`` of the lines its input's ``xr_lines`` implies, the lines printed with
+    its input's decimals and every header with (n, l, s) matching its label.
+    """
+    root = Path(root)
+    inputs = load_inputs(root / INPUTS_RELPATH)
+    cells, _origins = load_validation(root / CELLS_RELPATH, root / ORIGIN_RELPATH)
+    expected = [r for batch in RECIPE_BATCHES for r in recipe_runs(inputs, cells, batch)]
+    listed = read_rows(root / RUNS_RELPATH, RUNS_COLUMNS)
+    if len(listed) != len(expected):
+        raise CellError(
+            f"{Path(RUNS_RELPATH).name} lists {len(listed)} runs; the input set implies {len(expected)}"
+        )
+    runs: dict[str, RunRow] = {}
+    texts: dict[str, str] = {}
+    for (where, r), want in zip(listed, expected, strict=True):
+        if r["run"] != want.run:
+            raise CellError(f"{where}: run {r['run']!r} where the input set implies {want.run!r}")
+        domain = density_domain(want.row, want.kind) if want.stage in ("rms", "mass", "recipe") else ""
+        implied = {"Z": str(want.row.z), "A": str(want.row.a), "kind": want.kind, "stage": want.stage,
+                   "uehling": "on" if want.uehling else "off", "variant": want.variant,
+                   "density_domain": domain,
+                   "input_sha256": hashlib.sha256(want.text.encode("ascii")).hexdigest()}
+        for column, value in implied.items():
+            if r[column] != value:
+                raise CellError(f"{where}: {column} {r[column]!r}, implied {value!r}")
         if not _SIGNED_COUNT.fullmatch(r["rc"]) or not _COUNT.fullmatch(r["err_bytes"]):
             raise CellError(
                 f"{where}: rc and err_bytes must be integers, got {r['rc']!r}, {r['err_bytes']!r}"
             )
-        if r["run"] in out:
-            raise DuplicateKeyError(f"{where}: duplicate run {r['run']!r}")
-        order = _run_key(z, a, kind)
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: rows are ordered by (Z, A, kind)")
-        previous = order
-        out[r["run"]] = RunRow(r["run"], z, a, kind, int(r["rc"]), int(r["err_bytes"]))
-    return out
+        if not _WALL.fullmatch(r["wall_s"]) or not _PRINTED.fullmatch(r["r15_total_eV"]):
+            raise CellError(f"{where}: wall_s and r15_total_eV must be printed numbers")
+        row = RunRow(r["run"], want.row.z, want.row.a, want.kind, want.stage, want.uehling, want.variant,
+                     domain,
+                     int(r["rc"]), int(r["err_bytes"]), r["wall_s"], r["input_sha256"], r["r15_total_eV"])
+        if not row.clean:
+            raise CellError(
+                f"{where}: rc={row.rc} err_bytes={row.err_bytes}; the collector admits clean runs only"
+            )
+        runs[row.run] = row
+        texts[row.run] = want.text
+    order = {run: i for i, run in enumerate(runs)}
 
-
-def load_states(path: Path) -> dict[str, dict[str, str]]:
-    """Parse ``mudirac_states.csv``: printed header energies, by run then orbit, ordered."""
-    out: dict[str, dict[str, str]] = {}
-    previous: tuple[int, int, int, int, int] | None = None
-    for where, r in read_rows(path, STATES_COLUMNS):
-        z, a, kind = _nuclide_kind(where, r, PRINTED_KINDS)
+    def state_row(where: str, r: dict[str, str]) -> tuple[str, str]:
         if not _ORBIT.fullmatch(r["state"]):
             raise CellError(f"{where}: state must be an IUPAC orbit, got {r['state']!r}")
-        for column in ("n", "l", "s"):
-            if not _SIGNED_COUNT.fullmatch(r[column]):
-                raise CellError(f"{where}: {column} must be an integer, got {r[column]!r}")
-        for column in ("binding_eV", "total_eV"):
-            if not _PRINTED.fullmatch(r[column]):
-                raise CellError(f"{where}: {column} must be a printed number, got {r[column]!r}")
-        if r["state"] in out.get(r["run"], {}):
-            raise DuplicateKeyError(f"{where}: duplicate state {r['run']} {r['state']}")
-        order = (*_run_key(z, a, kind), *_orbit_order(r["state"]))
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: rows are ordered by (Z, A, kind, orbit)")
-        previous = order
-        out.setdefault(r["run"], {})[r["state"]] = r["binding_eV"]
-    return out
+        n, ell, two_j = iupac_state(r["state"])
+        s_expected = 1 if (ell == 0 or two_j == 2 * ell + 1) else 0
+        if (r["n"], r["l"], r["s"]) != (str(n), str(ell), str(s_expected)):
+            raise CellError(f"{where}: n, l, s {r['n']}, {r['l']}, {r['s']} do not match {r['state']}")
+        if not _PRINTED.fullmatch(r["binding_eV"]):
+            raise CellError(f"{where}: binding_eV must be a printed number, got {r['binding_eV']!r}")
+        return r["state"], r["binding_eV"]
 
-
-def load_lines(path: Path) -> dict[str, dict[str, str]]:
-    """Parse ``mudirac_lines.csv``: printed line energies, by run then line, runs ordered."""
-    out: dict[str, dict[str, str]] = {}
-    previous: tuple[int, int, int] | None = None
-    for where, r in read_rows(path, LINES_COLUMNS):
-        z, a, kind = _nuclide_kind(where, r, PRINTED_KINDS)
+    def line_row(where: str, r: dict[str, str]) -> tuple[str, str]:
         if not _LINE.fullmatch(r["line"]):
             raise CellError(f"{where}: line must be orbit-orbit, got {r['line']!r}")
-        if not _LINE_ENERGY.fullmatch(r["delta_e_eV"]):
-            raise CellError(f"{where}: delta_e_eV must be printed with six decimals, got {r['delta_e_eV']!r}")
-        if not _UNSIGNED_DECIMAL.fullmatch(r["w12_per_s"]):
-            raise CellError(f"{where}: w12_per_s must be a printed decimal, got {r['w12_per_s']!r}")
-        if r["line"] in out.get(r["run"], {}):
-            raise DuplicateKeyError(f"{where}: duplicate line {r['run']} {r['line']}")
-        order = _run_key(z, a, kind)
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: rows are ordered by (Z, A, kind)")
-        previous = order
-        out.setdefault(r["run"], {})[r["line"]] = r["delta_e_eV"]
-    return out
+        decimals = SHIPPED_XR_PRECISION if runs[r["run"]].stage == "shipped" else RECIPE_XR_PRECISION
+        if not re.fullmatch(rf"[0-9]+\.[0-9]{{{decimals}}}", r["delta_e_eV"]):
+            raise CellError(f"{where}: delta_e_eV must carry {decimals} decimals, got {r['delta_e_eV']!r}")
+        return r["line"], r["delta_e_eV"]
 
-
-def load_nmax(path: Path) -> tuple[NmaxRow, ...]:
-    """Parse ``mudirac_nmax_check.csv``: both circular states of every checked shell, per member."""
-    out: list[NmaxRow] = []
-    previous: tuple[int, int, int, int, int] | None = None
-    for where, r in read_rows(path, NMAX_COLUMNS):
-        z, a, n = integer(r["Z"], where, "Z"), integer(r["A"], where, "A"), integer(r["n"], where, "n")
-        if not IDEAL_FROM <= n <= N_MAX or r["state"] not in circular_orbits(n):
-            raise CellError(f"{where}: shell {n} state {r['state']!r} is not a checked circular state")
-        for column in ("full_binding_eV", "ideal_binding_eV"):
-            if r[column] and not _PRINTED.fullmatch(r[column]):
-                raise CellError(f"{where}: {column} must be empty or a printed number, got {r[column]!r}")
-        order = (z, a, n, *_orbit_order(r["state"]))
-        if previous is not None and order == previous:
-            raise DuplicateKeyError(f"{where}: duplicate row ({z}, {a}, {r['state']})")
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: rows are ordered by (Z, A, n, orbit)")
-        previous = order
-        out.append(NmaxRow(z, a, n, r["state"], r["full_binding_eV"], r["ideal_binding_eV"]))
-    return tuple(out)
-
-
-def expected_runs(
-    inputs: tuple[InputRow, ...], validation: set[tuple[int, int]]
-) -> list[tuple[str, int, int, str]]:
-    """Every committed run the input set implies, ``(run, Z, A, kind)``, in the run table's order."""
-    return [(run_id(row, kind), row.z, row.a, kind) for row in inputs for kind in run_kinds(row, validation)]
-
-
-def load_outputs(root: Path) -> Outputs:
-    """Every committed output CSV, cross-checked against the input set: the run table holds exactly
-    the runs the inputs imply, every printed-kind run's states and lines belong to a listed run, and
-    the hydrogen-like comparison covers every member's checked shells."""
-    root = Path(root)
-    inputs = load_inputs(root / INPUTS_RELPATH)
-    cells, _origins = load_validation(root / CELLS_RELPATH, root / ORIGIN_RELPATH)
-    runs = load_runs(root / RUNS_RELPATH)
-    expected = expected_runs(inputs, set(gated_nuclides(cells)))
-    listed = [(r.run, r.z, r.a, r.kind) for r in runs.values()]
-    if listed != expected:
-        missing = sorted(set(expected) - set(listed))[:3]
-        extra = sorted(set(listed) - set(expected))[:3]
-        raise CellError(f"{Path(RUNS_RELPATH).name} does not list exactly the implied runs: "
-                        f"missing {missing}, unexpected {extra}")
-    headers = load_states(root / STATES_RELPATH)
-    lines = load_lines(root / LINES_RELPATH)
-    for name, table in ((STATES_RELPATH, headers), (LINES_RELPATH, lines)):
-        stray = sorted(run for run in table if run not in runs or runs[run].kind not in PRINTED_KINDS)
-        if stray:
-            raise CellError(
-                f"{Path(name).name} carries runs the run table does not list as printed: {stray[:3]}"
-            )
-    nmax = load_nmax(root / NMAX_RELPATH)
-    keys = [(r.z, r.a, r.n, r.state) for r in nmax]
-    implied = [(row.z, row.a, n, state) for row in inputs for n in range(IDEAL_FROM, N_MAX + 1)
-               for state in circular_orbits(n)]
-    if keys != implied:
-        raise CellError(
-            f"{Path(NMAX_RELPATH).name} does not hold both circular states of every checked shell"
-        )
-    return Outputs(inputs, runs, headers, lines, nmax)
+    headers = _grouped(root / STATES_RELPATH, STATES_COLUMNS, order, state_row)
+    lines = _grouped(root / LINES_RELPATH, LINES_COLUMNS, order, line_row)
+    for run in runs:
+        want_lines, want_states = committed_view(
+            runs[run].kind, expected_printed_lines(input_keywords(texts[run])["xr_lines"]))
+        if sorted(lines.get(run, {})) != sorted(want_lines):
+            raise CellError(f"{run}: the committed lines are not the lines its input implies")
+        if set(headers.get(run, {})) != want_states:
+            raise CellError(f"{run}: the committed states are not the states its committed view names")
+        if list(headers[run]) != sorted(headers[run], key=_orbit_order):
+            raise OrderError(f"{run}: state rows are in orbit order")
+    return Outputs(inputs, cells, runs, headers, lines)
 
 
 # --------------------------------------------------------------------------------------------
-# the derivation of the tables from the printed strings
+# the derivation of binding energies from the printed strings
 # --------------------------------------------------------------------------------------------
 
 #: Enough digits that no quotient below is rounded before its final conversion to a float.
@@ -807,7 +757,7 @@ class DerivationError(Mudirac130Error):
 
 
 def half_unit_6sig(text: str) -> Decimal:
-    """Half a unit of the sixth significant digit of a printed state energy."""
+    """Half a unit of the sixth significant digit of a printed state energy (the shipped stage)."""
     return Decimal(5) * Decimal(10) ** (Decimal(text).adjusted() - 6)
 
 
@@ -832,19 +782,17 @@ def chain_states() -> list[str]:
 
 
 def header_bound(header: str, anchor: str) -> Decimal:
-    """How far a derived binding energy may lie from its printed header: half a sixth-digit unit of
-    the header and of the anchor, plus half a printed unit for each line summed along the chain."""
+    """Shipped stage: how far a derived binding energy may lie from its printed header -- half a
+    sixth-digit unit of the header and of the anchor, plus half a printed unit per line summed."""
     return half_unit_6sig(header) + half_unit_6sig(anchor) + 2 * N_MAX * LINE_HALF_UNIT
 
 
 def derive_bindings(run: str, headers: dict[str, str], lines: dict[str, str]) -> dict[str, Decimal]:
-    """Positive binding energies (eV) of every circular orbit of one run, from its printed strings.
-
-    Anchor: orbit 2l+1 of shell N_MAX, B = -(its header). Upper orbits downward by adding each
-    printed line; lower orbits outward from K1 by subtracting each. Raises unless every derived
-    energy lies within ``header_bound`` of its own header and every cross line closes within the
-    rounding of the lines summed around it.
-    """
+    """The shipped stage's derivation (the v1.3.0 tables'): positive binding energies (eV) of every
+    circular orbit of one run of the shipped input, anchored on the printed six-digit header of orbit
+    2l+1 of shell N_MAX; upper orbits downward by adding each printed line, lower orbits outward from
+    K1 by subtracting each. Raises unless every derived energy lies within ``header_bound`` of its own
+    header and every cross line closes within the rounding of the lines summed around it."""
     for state in chain_states():
         if state not in headers:
             raise DerivationError(f"{run}: no printed header for {state}")
@@ -890,8 +838,8 @@ def quantities(b: dict[str, Decimal]) -> tuple[Decimal, tuple[Decimal, ...]]:
 
 
 def relative(b: dict[str, Decimal]) -> dict[str, Decimal]:
-    """Every state's binding energy (eV) minus the anchor's: what the printed lines alone give, with
-    the energy of the outermost circular state held fixed, so the anchor's printed header drops out."""
+    """Every state's binding energy (eV) minus the outermost circular state's: what the printed lines
+    alone give, so the anchor drops out."""
     anchor = b[orbit(N_MAX, True)]
     with localcontext() as context:
         context.prec = _PRECISION
@@ -899,17 +847,64 @@ def relative(b: dict[str, Decimal]) -> dict[str, Decimal]:
 
 
 def uncertainties(
-    base: dict[str, Decimal], moved: dict[str, Decimal]
+    base: dict[str, Decimal], moved: dict[str, Decimal], floor_kev: Decimal
 ) -> tuple[Decimal, tuple[Decimal, ...]]:
     """``(unc, (u2 .. u<N_MAX>))`` in keV: the absolute change of each quantity between the base and
-    the moved run, both measured relative to the anchor, and never less than UNC_FLOOR_KEV."""
+    the moved run, both measured relative to the outermost circular state, and never less than
+    ``floor_kev``."""
     k, levels = quantities(relative(base))
     k_moved, levels_moved = quantities(relative(moved))
     with localcontext() as context:
         context.prec = _PRECISION
-        return max(abs(k_moved - k), UNC_FLOOR_KEV), tuple(
-            max(abs(m - e), UNC_FLOOR_KEV) for m, e in zip(levels_moved, levels, strict=True)
+        return max(abs(k_moved - k), floor_kev), tuple(
+            max(abs(m - e), floor_kev) for m, e in zip(levels_moved, levels, strict=True)
         )
+
+
+def eh_of(stage: str) -> float:
+    """The Hartree energy in eV a run's printed energies were converted with."""
+    return E_H_EV_2022 if stage == "recipe" else E_H_EV_MUDIRAC
+
+
+_BINDINGS: weakref.WeakKeyDictionary[Outputs, dict[str, dict[str, Decimal]]] = weakref.WeakKeyDictionary()
+_TABLES: weakref.WeakKeyDictionary[Outputs, tuple[list[TableRow], dict[tuple[int, int], str]]] = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def run_bindings(out: Outputs, run: str) -> dict[str, Decimal]:
+    """The derived binding energies (eV) of every circular orbit of one committed run: the shipped
+    stage by the v1.3.0 derivation, every other run by ``derive_recipe_bindings``."""
+    cache = _BINDINGS.setdefault(out, {})
+    if run not in cache:
+        r = out.runs[run]
+        if r.stage == "shipped":
+            cache[run] = derive_bindings(run, out.headers[run], out.lines[run])
+        else:
+            b = derive_recipe_bindings(run, r.kind, out.headers[run], out.lines[run], r.r15_total,
+                                       eh_of(r.stage))
+            cache[run] = {state: value for state, (value, _rounding) in b.items()}
+    return cache[run]
+
+
+def line_rounding_ev(out: Outputs, run: str) -> Decimal:
+    """What one printed line of a recipe run carries: half a unit of its last decimal plus the float
+    resolution of the total energies it is the difference of."""
+    r = out.runs[run]
+    with localcontext() as context:
+        context.prec = _PRECISION
+        half_unit = Decimal(5) * Decimal(10) ** (-RECIPE_XR_PRECISION - 1)
+        return half_unit + float_floor_eV(r.r15_total, eh_of(r.stage))
+
+
+def unc_floor_kev(out: Outputs, runs: Sequence[str]) -> Decimal:
+    """The least uncertainty a ``unc`` or ``u<n>`` cell carries, in keV: a quantity measured with the
+    outermost circular state held fixed sums at most twice (N_MAX - 1) printed lines, each within one
+    line's rounding of the value MuDirac computed; a (2j+1) mean is bounded the same way; and the
+    change is taken between two runs, each rounded independently."""
+    with localcontext() as context:
+        context.prec = _PRECISION
+        return 4 * (N_MAX - 1) * max(line_rounding_ev(out, run) for run in runs) / 1000
 
 
 # --------------------------------------------------------------------------------------------
@@ -917,65 +912,51 @@ def uncertainties(
 # --------------------------------------------------------------------------------------------
 
 
-def fermi2_c_threshold(fermi_t: str) -> float:
-    """The sphere radius (fm) below which MuDirac's documented default Fermi parameter
-    c = sqrt(R^2 - 7/3 (pi t / (4 ln 3))^2) is not a real number."""
-    return math.sqrt(7.0 / 3.0) * math.pi * float(fermi_t) / (4.0 * math.log(3.0))
-
-
-def fermi2_c_from_a(row: InputRow) -> bool:
-    return row.a < FERMI2_SQRT_FROM_A
-
-
-def fermi2_c_not_real(row: InputRow) -> bool:
-    return row.a >= FERMI2_SQRT_FROM_A and float(row.radius_fm) < fermi2_c_threshold(row.fermi_t_fm)
-
-
 def keep_failures(out: Outputs, row: InputRow) -> list[str]:
     """Every clause of the keep rule ``row`` fails; empty when it is kept.
 
-    The base, rsig and hydrogen-like runs exit 0 with an empty error file; for every checked shell
-    both circular states of the base run lie within NMAX_BOUND (relative) of the hydrogen-like run's;
-    the derivation holds on the base and rsig runs.
+    The anchor and rsig runs' intended rms radii lie inside the 2pF domain; for every checked shell,
+    on both Uehling switches, both circular states of the anchor run lie within NMAX_BOUND (relative)
+    of the hydrogen-like run's; the derivation holds on the anchor and rsig runs, on both switches.
+    The collector admits only complete runs, and ``load_outputs`` refuses any other.
     """
     failures = []
-    for kind in ("base", "rsig", *IDEAL_KINDS):
-        run = out.runs[run_id(row, kind)]
-        if not run.clean:
-            failures.append(f"{kind} rc={run.rc} err_bytes={run.err_bytes}")
-    for check in out.nmax:
-        if check.z != row.z or check.a != row.a:
-            continue
-        if not check.full or not check.ideal:
-            failures.append(f"shell {check.n} {check.state} header missing")
-            continue
-        with localcontext() as context:
-            context.prec = _PRECISION
-            relative = abs(Decimal(check.full) - Decimal(check.ideal)) / abs(Decimal(check.ideal))
-        if relative >= NMAX_BOUND:
-            failures.append(f"shell {check.n} {check.state} differs from hydrogen-like by {relative:.6f}")
-    for kind in ("base", "rsig"):
-        name = run_id(row, kind)
-        try:
-            derive_bindings(name, out.headers.get(name, {}), out.lines.get(name, {}))
-        except DerivationError as error:
-            failures.append(str(error))
+    for kind in ("anchor", "rsig"):
+        domain = density_domain(row, kind)
+        if domain != INSIDE_2PF:
+            failures.append(
+                f"{kind} density_domain {domain}: intended rms {recipe_rms_fm(row, kind)!r} fm at or below "
+                "the "
+                f"2pF floor {fermi2_rms_floor_fm(row.fermi_t_fm)!r} fm at t = {row.fermi_t_fm} fm"
+            )
+    if failures:
+        return failures
+    for uehling in (True, False):
+        anchor = recipe_run_id(row, "anchor", uehling)
+        for n in range(IDEAL_FROM, N_MAX + 1):
+            ideal = recipe_run_id(row, f"ideal{n}", uehling)
+            for state in circular_orbits(n):
+                full, hydrogenic = Decimal(out.headers[anchor][state]), Decimal(out.headers[ideal][state])
+                with localcontext() as context:
+                    context.prec = _PRECISION
+                    rel = abs(full - hydrogenic) / abs(hydrogenic)
+                if rel >= NMAX_BOUND:
+                    failures.append(f"{ideal} shell {n} {state} differs from hydrogen-like by {rel:.6f}")
+        for kind in ("anchor", "rsig"):
+            try:
+                run_bindings(out, recipe_run_id(row, kind, uehling))
+            except DerivationError as error:
+                failures.append(str(error))
     return failures
 
 
 def drop_reasons(out: Outputs) -> dict[tuple[int, int], str]:
-    """``{(Z, A): reason}`` of every member dropped. Two classes are computed from the inputs: a member
-    whose default Fermi parameter is set by its mass number alone is dropped with DROP_FERMI2_FROM_A
-    whether or not it fails the keep rule; a member the keep rule drops has DROP_FERMI2_C when its
-    default Fermi parameter is not real at its sphere radius, else the failed clauses."""
+    """``{(Z, A): reason}`` of every member the keep rule drops: its failed clauses."""
     reasons = {}
     for row in out.inputs:
-        if fermi2_c_from_a(row):
-            reasons[row.nuclide] = DROP_FERMI2_FROM_A
-            continue
         failures = keep_failures(out, row)
         if failures:
-            reasons[row.nuclide] = DROP_FERMI2_C if fermi2_c_not_real(row) else "; ".join(failures)
+            reasons[row.nuclide] = "; ".join(failures)
     return reasons
 
 
@@ -1000,18 +981,23 @@ class TableRow:
 def table_rows(out: Outputs) -> tuple[list[TableRow], dict[tuple[int, int], str]]:
     """The rows both tables carry, ascending by (Z, A), and the dropped members with their reasons.
 
-    Every kept member gives its (Z, A) row; the (Z, 0) row of a Z copies the row of the isotope the
-    abundance file names for it, when that isotope is kept.
+    Every kept member gives its (Z, A) row from its anchor run with the Uehling potential: K and the
+    level means of ``quantities``, and as uncertainties the change of each in its rsig run, floored at
+    ``unc_floor_kev``. The (Z, 0) row of a Z copies the row of the isotope the abundance file names
+    for it, when that isotope is kept.
     """
+    if out in _TABLES:
+        cached_rows, cached_dropped = _TABLES[out]
+        return list(cached_rows), dict(cached_dropped)
     dropped = drop_reasons(out)
     isotopes: list[TableRow] = []
     for row in out.inputs:
         if row.nuclide in dropped:
             continue
-        base, moved = (derive_bindings(run_id(row, kind), out.headers[run_id(row, kind)],
-                                       out.lines[run_id(row, kind)]) for kind in ("base", "rsig"))
+        base_run, moved_run = recipe_run_id(row, "anchor", True), recipe_run_id(row, "rsig", True)
+        base, moved = run_bindings(out, base_run), run_bindings(out, moved_run)
         k, levels = quantities(base)
-        k_unc, level_uncs = uncertainties(base, moved)
+        k_unc, level_uncs = uncertainties(base, moved, unc_floor_kev(out, (base_run, moved_run)))
         isotopes.append(TableRow(
             row.z, row.a, row.a, float(k), float(k_unc),
             tuple(float(e) for e in levels),
@@ -1028,7 +1014,15 @@ def table_rows(out: Outputs) -> tuple[list[TableRow], dict[tuple[int, int], str]
             r = kept[(z, a)]
             rows.append(TableRow(z, 0, a, r.k, r.k_unc, r.levels, r.level_uncs))
     rows.sort(key=lambda r: (r.z, r.a))
+    _TABLES[out] = (list(rows), dict(dropped))
     return rows, dropped
+
+
+def kept_members(out: Outputs) -> list[InputRow]:
+    """The members the tables keep -- the A > 0 rows of ``table_rows`` -- as input rows, in order."""
+    rows, _dropped = table_rows(out)
+    inputs = {row.nuclide: row for row in out.inputs}
+    return [inputs[(r.z, r.a)] for r in rows if r.a > 0]
 
 
 # --------------------------------------------------------------------------------------------
@@ -1152,9 +1146,9 @@ def _decimal_text(value: Decimal) -> str:
 
 
 def line_energy_kev(out: Outputs, row: InputRow, kind: str, line: str) -> Decimal:
-    """The printed energy of ``line`` in ``row``'s run of ``kind``, in keV. Raises when MuDirac did
-    not print that line for that run."""
-    run = run_id(row, kind)
+    """The printed energy of ``line`` in ``row``'s production run of ``kind`` with the Uehling potential,
+    in keV. Raises when MuDirac did not print that line for that run."""
+    run = recipe_run_id(row, kind, True)
     printed = out.lines.get(run, {})
     if line not in printed:
         raise CellError(f"{run} printed no line {line}")
@@ -1196,7 +1190,7 @@ def validation_rows(
         }
         if cell.gated:
             member = inputs[cell.nuclide]
-            model = line_energy_kev(out, member, "base", cell.quantity)
+            model = line_energy_kev(out, member, "anchor", cell.quantity)
             residual = model - Decimal(cell.value_kev)
             d_sigma = line_energy_kev(out, member, "rsig", cell.quantity) - model
             d_floor = line_energy_kev(out, member, "r101", cell.quantity) - model
@@ -1257,420 +1251,6 @@ def render_validation_table(rows: list[dict[str, str]]) -> str:
         cells = [f"`{row[column]}`" if column == "quantity" else row[column] for _, column in TABLE_COLUMNS]
         lines.append("| " + " | ".join(cells) + " |")
     return "\n".join(lines) + "\n"
-
-
-# --------------------------------------------------------------------------------------------
-# the runs made beside the committed ones: the radius moved the other way, and the settings refined
-# --------------------------------------------------------------------------------------------
-
-NUMERICS_RUNS_RELPATH = f"{D3_RELDIR}/mudirac_numerics_runs.csv"
-NUMERICS_STATES_RELPATH = f"{D3_RELDIR}/mudirac_numerics_states.csv"
-NUMERICS_LINES_RELPATH = f"{D3_RELDIR}/mudirac_numerics_lines.csv"
-
-NUMERICS_RUNS_COLUMNS = (
-    "run", "Z", "A", "kind", "level", "status", "rc", "err_bytes", "wall_s", "input_sha256",
-)
-NUMERICS_STATES_COLUMNS = (
-    "run", "Z", "A", "kind", "level", "state", "n", "l", "s", "binding_eV", "total_eV",
-)
-NUMERICS_LINES_COLUMNS = ("run", "Z", "A", "kind", "level", "line", "delta_e_eV", "w12_per_s")
-
-#: The kinds of the numerics tables, in their order: the rms radius moved down by its uncertainty
-#: (level 0 only), and the base input with its three numerical settings refined together to a level.
-NUMERICS_KINDS = ("rminus", "grid")
-#: The refinement levels run over every kept member, and the further levels run only over the
-#: members named after them.
-NUMERICS_LEVELS_ALL = (0, 1, 2)
-NUMERICS_LEVELS_DEEP = (3, 4)
-NUMERICS_DEEP_NUCLIDES = ((3, 6), (29, 63), (46, 104), (82, 208))
-#: The three keywords refined together. The base renderer never emits them, so at level 0 each is
-#: written at the value MuDirac 1.3.0 documents as its default (`lib/config.cpp`: energy_tol 1e-7,
-#: loggrid_step 0.005, uehling_steps 100) and no key is ever set twice.
-NUMERICS_KEYS = ("loggrid_step", "uehling_steps", "energy_tol")
-
-SETTINGS_UEHLING_G0 = tuple(sorted(set((50, 150, 250, 350, 450, 550)) | set(range(100, 2401, 100))))
-SETTINGS = tuple((0, u) for u in SETTINGS_UEHLING_G0) + ((2, 1000),)
-SETTINGS_RUNS_RELPATH = f"{D3_RELDIR}/mudirac_settings_runs.csv"
-SETTINGS_STATES_RELPATH = f"{D3_RELDIR}/mudirac_settings_states.csv"
-SETTINGS_LINES_RELPATH = f"{D3_RELDIR}/mudirac_settings_lines.csv"
-SETTINGS_RUNS_COLUMNS = ("run", "Z", "A", "setting", "loggrid_step", "uehling_steps", "energy_tol",
-                         "rc", "err_bytes", "wall_s", "input_sha256")
-SETTINGS_STATES_COLUMNS = ("run", "Z", "A", "setting", "state", "n", "l", "s", "binding_eV", "total_eV")
-SETTINGS_LINES_COLUMNS = ("run", "Z", "A", "setting", "line", "delta_e_eV", "w12_per_s")
-
-
-def setting_id(level: int, uehling: int) -> str:
-    return f"g{level}u{uehling:04d}"
-
-
-def settings_run_id(row: InputRow, level: int, uehling: int) -> str:
-    return run_id(row, setting_id(level, uehling))
-
-
-def settings_values(level: int, uehling: int) -> tuple[str, str, str]:
-    return (repr(0.005 / 2 ** level), str(uehling), repr(1e-7))
-
-
-def render_settings_input(row: InputRow, level: int, uehling: int, extra: list[str]) -> str:
-    """The base input plus the named numerical settings, each key set once."""
-    if (level, uehling) not in SETTINGS:
-        raise ValueError(f"unknown setting {setting_id(level, uehling)}")
-    text = render_input(row, "base", extra)
-    for key in NUMERICS_KEYS:
-        if f"{key}:" in text:
-            raise ValueError(f"the base input already sets {key}")
-    return text + "".join(f"{key}: {value}\n" for key, value in zip(
-        NUMERICS_KEYS, settings_values(level, uehling), strict=True))
-#: A numerics run row's status: the run was made, or the moved radius left the model's domain and
-#: no run was made.
-RAN = "RAN"
-INVALID_PERTURBATION_DOMAIN = "INVALID_PERTURBATION_DOMAIN"
-NUMERICS_STATUSES = (RAN, INVALID_PERTURBATION_DOMAIN)
-_SHA256 = re.compile(r"[0-9a-f]{64}")
-
-
-def numerics_settings(level: int) -> list[str]:
-    """The three refined keyword lines at ``level``: the grid step halved, the Uehling steps doubled
-    and the convergence tolerance tightened tenfold per level, each number as Python prints it."""
-    return [
-        f"loggrid_step: {0.005 / 2 ** level!r}",
-        f"uehling_steps: {100 * 2 ** level}",
-        f"energy_tol: {1e-7 / 10 ** level!r}",
-    ]
-
-
-def render_numerics_input(row: InputRow, level: int, extra: list[str]) -> str:
-    """The base input of ``row`` followed by the three settings of ``level``. Raises if the base
-    renderer already sets one of the three keys, so a key is never set twice in one input."""
-    text = render_input(row, "base", extra)
-    for key in NUMERICS_KEYS:
-        if f"{key}:" in text:
-            raise ValueError(f"the base input already sets {key}")
-    return text + "\n".join(numerics_settings(level)) + "\n"
-
-
-def rminus_in_domain(row: InputRow) -> bool:
-    """Whether the rms radius moved down by its uncertainty stays positive and keeps the default
-    Fermi parameter c real; where it does not, the `rminus` run is not made."""
-    rms = float(row.radius_fm) / SPHERE_FACTOR
-    if rms - float(row.sigma_rms_fm) <= 0:
-        return False
-    moved = run_radius(row, "rminus")
-    assert moved is not None
-    return not fermi2_c_not_real(replace(row, radius_fm=moved))
-
-
-def numerics_run_id(row: InputRow, kind: str, level: int) -> str:
-    """``<Sym><A>_rminus`` or ``<Sym><A>_grid<level>``."""
-    return run_id(row, kind if kind == "rminus" else f"{kind}{level}")
-
-
-def kept_members(out: Outputs) -> list[InputRow]:
-    """The members the tables keep -- the A > 0 rows of ``table_rows`` -- as input rows, in order."""
-    rows, _dropped = table_rows(out)
-    inputs = {row.nuclide: row for row in out.inputs}
-    return [inputs[(r.z, r.a)] for r in rows if r.a > 0]
-
-
-def numerics_levels(row: InputRow) -> list[int]:
-    """The refinement levels run for ``row``."""
-    deep = row.nuclide in NUMERICS_DEEP_NUCLIDES
-    return [*NUMERICS_LEVELS_ALL, *(NUMERICS_LEVELS_DEEP if deep else ())]
-
-
-def expected_numerics_runs(kept: list[InputRow]) -> list[tuple[str, int, int, str, int]]:
-    """Every numerics run the kept members imply, ``(run, Z, A, kind, level)``, in the run table's
-    order: per member the radius moved down, then each refinement level."""
-    out: list[tuple[str, int, int, str, int]] = []
-    for row in kept:
-        out.append((numerics_run_id(row, "rminus", 0), row.z, row.a, "rminus", 0))
-        for level in numerics_levels(row):
-            out.append((numerics_run_id(row, "grid", level), row.z, row.a, "grid", level))
-    return out
-
-
-@dataclass(frozen=True)
-class NumericsRun:
-    run: str
-    z: int
-    a: int
-    kind: str
-    level: int
-    status: str
-    rc: int | None
-    err_bytes: int | None
-    wall_s: str
-    input_sha256: str
-
-    @property
-    def clean(self) -> bool:
-        return self.status == RAN and self.rc == 0 and self.err_bytes == 0
-
-
-@dataclass(frozen=True)
-class NumericsOutputs:
-    """The numerics run table and the printed state headers and lines of every run made."""
-
-    runs: dict[str, NumericsRun]
-    headers: dict[str, dict[str, str]]
-    lines: dict[str, dict[str, str]]
-
-
-def _numerics_key(z: int, a: int, kind: str, level: int) -> tuple[int, int, int, int]:
-    return (z, a, NUMERICS_KINDS.index(kind), level)
-
-
-def _numerics_nuclide(where: str, r: dict[str, str]) -> tuple[int, int, str, int]:
-    z, a, kind = _nuclide_kind(where, r, NUMERICS_KINDS)
-    if not _COUNT.fullmatch(r["level"]):
-        raise CellError(f"{where}: level must be a count, got {r['level']!r}")
-    level = int(r["level"])
-    if kind == "rminus" and level != 0:
-        raise CellError(f"{where}: an rminus run is level 0, got {level}")
-    suffix = f"{a}_rminus" if kind == "rminus" else f"{a}_grid{level}"
-    if not r["run"].endswith(suffix):
-        raise CellError(f"{where}: run {r['run']!r} does not name A={a}, kind {kind} and level {level}")
-    return z, a, kind, level
-
-
-def load_numerics_runs(path: Path) -> dict[str, NumericsRun]:
-    """Parse ``mudirac_numerics_runs.csv``: one row per run the kept members imply, ordered by
-    (Z, A, kind order, level); a run made carries its rc, error-file size, wall time and input
-    digest, a run not made carries the domain status and nothing else."""
-    out: dict[str, NumericsRun] = {}
-    previous: tuple[int, int, int, int] | None = None
-    for where, r in read_rows(path, NUMERICS_RUNS_COLUMNS):
-        z, a, kind, level = _numerics_nuclide(where, r)
-        if r["status"] not in NUMERICS_STATUSES:
-            raise CellError(f"{where}: status {r['status']!r} is not one of {NUMERICS_STATUSES!r}")
-        rc: int | None = None
-        err: int | None = None
-        if r["status"] == RAN:
-            if not _SIGNED_COUNT.fullmatch(r["rc"]) or not _COUNT.fullmatch(r["err_bytes"]):
-                raise CellError(
-                    f"{where}: rc and err_bytes must be integers, got {r['rc']!r}, {r['err_bytes']!r}"
-                )
-            if not _UNSIGNED_DECIMAL.fullmatch(r["wall_s"]):
-                raise CellError(f"{where}: wall_s must be a printed decimal, got {r['wall_s']!r}")
-            if not _SHA256.fullmatch(r["input_sha256"]):
-                raise CellError(f"{where}: input_sha256 must be 64 hex digits, got {r['input_sha256']!r}")
-            rc, err = int(r["rc"]), int(r["err_bytes"])
-        else:
-            if kind != "rminus":
-                raise CellError(f"{where}: only an rminus run can be {INVALID_PERTURBATION_DOMAIN}")
-            if any(r[column] for column in ("rc", "err_bytes", "wall_s", "input_sha256")):
-                raise CellError(f"{where}: a run not made carries no rc, err_bytes, wall_s or input_sha256")
-        if r["run"] in out:
-            raise DuplicateKeyError(f"{where}: duplicate run {r['run']!r}")
-        order = _numerics_key(z, a, kind, level)
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: rows are ordered by (Z, A, kind, level)")
-        previous = order
-        out[r["run"]] = NumericsRun(r["run"], z, a, kind, level, r["status"], rc, err, r["wall_s"],
-                                    r["input_sha256"])
-    return out
-
-
-def load_numerics_states(path: Path) -> dict[str, dict[str, str]]:
-    """Parse ``mudirac_numerics_states.csv``: printed header energies by run then orbit, ordered."""
-    out: dict[str, dict[str, str]] = {}
-    previous: tuple[int, int, int, int, int, int] | None = None
-    for where, r in read_rows(path, NUMERICS_STATES_COLUMNS):
-        z, a, kind, level = _numerics_nuclide(where, r)
-        if not _ORBIT.fullmatch(r["state"]):
-            raise CellError(f"{where}: state must be an IUPAC orbit, got {r['state']!r}")
-        for column in ("n", "l", "s"):
-            if not _SIGNED_COUNT.fullmatch(r[column]):
-                raise CellError(f"{where}: {column} must be an integer, got {r[column]!r}")
-        for column in ("binding_eV", "total_eV"):
-            if not _PRINTED.fullmatch(r[column]):
-                raise CellError(f"{where}: {column} must be a printed number, got {r[column]!r}")
-        if r["state"] in out.get(r["run"], {}):
-            raise DuplicateKeyError(f"{where}: duplicate state {r['run']} {r['state']}")
-        order = (*_numerics_key(z, a, kind, level), *_orbit_order(r["state"]))
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: rows are ordered by (Z, A, kind, level, orbit)")
-        previous = order
-        out.setdefault(r["run"], {})[r["state"]] = r["binding_eV"]
-    return out
-
-
-def load_numerics_lines(path: Path) -> dict[str, dict[str, str]]:
-    """Parse ``mudirac_numerics_lines.csv``: printed line energies by run then line, runs ordered."""
-    out: dict[str, dict[str, str]] = {}
-    previous: tuple[int, int, int, int] | None = None
-    for where, r in read_rows(path, NUMERICS_LINES_COLUMNS):
-        z, a, kind, level = _numerics_nuclide(where, r)
-        if not _LINE.fullmatch(r["line"]):
-            raise CellError(f"{where}: line must be orbit-orbit, got {r['line']!r}")
-        if not _LINE_ENERGY.fullmatch(r["delta_e_eV"]):
-            raise CellError(f"{where}: delta_e_eV must be printed with six decimals, got {r['delta_e_eV']!r}")
-        if not _UNSIGNED_DECIMAL.fullmatch(r["w12_per_s"]):
-            raise CellError(f"{where}: w12_per_s must be a printed decimal, got {r['w12_per_s']!r}")
-        if r["line"] in out.get(r["run"], {}):
-            raise DuplicateKeyError(f"{where}: duplicate line {r['run']} {r['line']}")
-        order = _numerics_key(z, a, kind, level)
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: rows are ordered by (Z, A, kind, level)")
-        previous = order
-        out.setdefault(r["run"], {})[r["line"]] = r["delta_e_eV"]
-    return out
-
-
-def load_numerics_outputs(root: Path, out: Outputs) -> NumericsOutputs:
-    """The three numerics CSVs under ``root``, cross-checked against the committed outputs: the run
-    table lists exactly the runs the kept members imply, a run not made is exactly one whose moved
-    radius leaves the domain, and every run with states or lines is a listed run that was made."""
-    root = Path(root)
-    runs = load_numerics_runs(root / NUMERICS_RUNS_RELPATH)
-    kept = kept_members(out)
-    expected = expected_numerics_runs(kept)
-    listed = [(r.run, r.z, r.a, r.kind, r.level) for r in runs.values()]
-    if listed != expected:
-        missing = sorted(set(expected) - set(listed))[:3]
-        extra = sorted(set(listed) - set(expected))[:3]
-        raise CellError(f"{Path(NUMERICS_RUNS_RELPATH).name} does not list exactly the implied runs: "
-                        f"missing {missing}, unexpected {extra}")
-    inputs = {row.nuclide: row for row in kept}
-    for run in runs.values():
-        if run.kind == "rminus" and (run.status == RAN) != rminus_in_domain(inputs[(run.z, run.a)]):
-            raise CellError(f"{run.run}: status {run.status} disagrees with the domain rule")
-    headers = load_numerics_states(root / NUMERICS_STATES_RELPATH)
-    lines = load_numerics_lines(root / NUMERICS_LINES_RELPATH)
-    for name, table in ((NUMERICS_STATES_RELPATH, headers), (NUMERICS_LINES_RELPATH, lines)):
-        stray = sorted(run for run in table if run not in runs or runs[run].status != RAN)
-        if stray:
-            raise CellError(
-                f"{Path(name).name} carries runs the run table does not list as made: {stray[:3]}"
-            )
-    return NumericsOutputs(runs, headers, lines)
-
-
-@dataclass(frozen=True)
-class SettingsRun:
-    run: str
-    z: int
-    a: int
-    setting: str
-    rc: int
-    err_bytes: int | None
-    wall_s: str
-    input_sha256: str
-
-    @property
-    def clean(self) -> bool:
-        return self.rc == 0 and self.err_bytes == 0
-
-
-@dataclass(frozen=True)
-class SettingsOutputs:
-    runs: dict[str, SettingsRun]
-    headers: dict[str, dict[str, str]]
-    lines: dict[str, dict[str, str]]
-
-
-def _setting_fields(where: str, r: dict[str, str]) -> tuple[int, int, str, int, int]:
-    z, a = integer(r["Z"], where, "Z"), integer(r["A"], where, "A")
-    setting = r["setting"]
-    match = re.fullmatch(r"g([0-9]+)u([0-9]{4})", setting)
-    if match is None:
-        raise CellError(f"{where}: unknown setting {setting!r}")
-    level, uehling = int(match[1]), int(match[2])
-    if (level, uehling) not in SETTINGS or setting != setting_id(level, uehling):
-        raise CellError(f"{where}: unknown setting {setting!r}")
-    if not r["run"].endswith(f"{a}_{setting}"):
-        raise CellError(f"{where}: run does not name A and setting")
-    return z, a, setting, level, uehling
-
-
-def _settings_order(z: int, a: int, level: int, uehling: int) -> tuple[int, int, int, int]:
-    return z, a, level, uehling
-
-
-def load_settings_runs(path: Path) -> dict[str, SettingsRun]:
-    """Parse settings run records and refuse malformed identities and status cells."""
-    out: dict[str, SettingsRun] = {}
-    previous: tuple[int, int, int, int] | None = None
-    for where, r in read_rows(path, SETTINGS_RUNS_COLUMNS):
-        z, a, setting, level, uehling = _setting_fields(where, r)
-        if tuple(r[key] for key in NUMERICS_KEYS) != settings_values(level, uehling):
-            raise CellError(f"{where}: setting columns disagree with {setting}")
-        if not _SIGNED_COUNT.fullmatch(r["rc"]):
-            raise CellError(f"{where}: rc must be an integer")
-        if r["err_bytes"] != "missing" and not _COUNT.fullmatch(r["err_bytes"]):
-            raise CellError(f"{where}: err_bytes must be an integer or missing")
-        if not _UNSIGNED_DECIMAL.fullmatch(r["wall_s"]):
-            raise CellError(f"{where}: wall_s must be a printed decimal")
-        if not _SHA256.fullmatch(r["input_sha256"]):
-            raise CellError(f"{where}: input_sha256 must be 64 hex digits")
-        if r["run"] in out:
-            raise DuplicateKeyError(f"{where}: duplicate run {r['run']}")
-        order = _settings_order(z, a, level, uehling)
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: settings runs are ordered by (Z, A, level, U)")
-        previous = order
-        err = None if r["err_bytes"] == "missing" else int(r["err_bytes"])
-        out[r["run"]] = SettingsRun(r["run"], z, a, setting, int(r["rc"]), err, r["wall_s"],
-                                    r["input_sha256"])
-    return out
-
-
-def _load_settings_printed(path: Path, columns: tuple[str, ...], states: bool) -> dict[str, dict[str, str]]:
-    out: dict[str, dict[str, str]] = {}
-    previous: tuple[int, int, int, int, int, int] | None = None
-    for where, r in read_rows(path, columns):
-        z, a, _setting, level, uehling = _setting_fields(where, r)
-        key = r["state"] if states else r["line"]
-        if states:
-            if not _ORBIT.fullmatch(key):
-                raise CellError(f"{where}: state must be an IUPAC orbit")
-            for column in ("n", "l", "s"):
-                if not _SIGNED_COUNT.fullmatch(r[column]):
-                    raise CellError(f"{where}: {column} must be an integer")
-            for column in ("binding_eV", "total_eV"):
-                if not _PRINTED.fullmatch(r[column]):
-                    raise CellError(f"{where}: {column} must be a printed number")
-        else:
-            if not _LINE.fullmatch(key):
-                raise CellError(f"{where}: line must be orbit-orbit")
-            if not _LINE_ENERGY.fullmatch(r["delta_e_eV"]):
-                raise CellError(f"{where}: delta_e_eV must be printed with six decimals")
-            if not _UNSIGNED_DECIMAL.fullmatch(r["w12_per_s"]):
-                raise CellError(f"{where}: w12_per_s must be a printed decimal")
-        if key in out.get(r["run"], {}):
-            raise DuplicateKeyError(f"{where}: duplicate {key} for {r['run']}")
-        orbit = _orbit_order(key) if states else (0, 0)
-        order = (*_settings_order(z, a, level, uehling), *orbit)
-        if previous is not None and order < previous:
-            raise OrderError(f"{where}: settings rows are ordered by (Z, A, level, U, orbit)")
-        previous = order
-        out.setdefault(r["run"], {})[key] = r["binding_eV" if states else "delta_e_eV"]
-    return out
-
-
-def load_settings_outputs(root: Path, cells: tuple[Cell, ...]) -> SettingsOutputs:
-    """Cross-check the settings files against their implied run set and clean-run status."""
-    root = Path(root)
-    runs = load_settings_runs(root / SETTINGS_RUNS_RELPATH)
-    kept = {row.nuclide: row for row in kept_members(load_outputs(root))}
-    wanted = settings_nuclides(cells)
-    if not set(wanted) <= set(kept):
-        raise CellError(f"settings nuclides not kept: {sorted(set(wanted) - set(kept))}")
-    expected = [(settings_run_id(kept[key], level, uehling), *key, setting_id(level, uehling))
-                for key in wanted for level, uehling in SETTINGS]
-    listed = [(run.run, run.z, run.a, run.setting) for run in runs.values()]
-    if listed != expected:
-        raise CellError("settings run table does not list exactly the implied runs")
-    headers = _load_settings_printed(root / SETTINGS_STATES_RELPATH, SETTINGS_STATES_COLUMNS, True)
-    lines = _load_settings_printed(root / SETTINGS_LINES_RELPATH, SETTINGS_LINES_COLUMNS, False)
-    for name, table in ((SETTINGS_STATES_RELPATH, headers), (SETTINGS_LINES_RELPATH, lines)):
-        stray = sorted(run for run in table if run not in runs or not runs[run].clean)
-        if stray:
-            raise CellError(f"{Path(name).name} carries unlisted or unclean runs: {stray[:3]}")
-        missing = sorted(run for run in runs if runs[run].clean and run not in table)
-        if missing:
-            raise CellError(f"{Path(name).name} lacks the printed rows of clean runs: {missing[:3]}")
-    return SettingsOutputs(runs, headers, lines)
 
 
 # --------------------------------------------------------------------------------------------
@@ -2007,7 +1587,9 @@ def float_floor_eV(total_eV: str, eh: float) -> Decimal:
     """ulp(mu c^2), in eV: the spacing of the doubles the binary holds a total energy (binding plus
     mu c^2, in Hartree) on, which every printed line and header carries whatever its decimals."""
     total_ha = float(total_eV) / eh
-    return Decimal(2.0 ** (math.floor(math.log2(total_ha)) - 52)) * Decimal(repr(eh))
+    with localcontext() as context:
+        context.prec = _PRECISION
+        return Decimal(2.0 ** (math.floor(math.log2(total_ha)) - 52)) * Decimal(repr(eh))
 
 
 def header_half_unit(text: str) -> Decimal:
@@ -2017,15 +1599,16 @@ def header_half_unit(text: str) -> Decimal:
     return Decimal(5) * Decimal(10) ** (int(exponent or 0) - decimals - 1)
 
 
-def derive_recipe_bindings(run: str, kind: str, headers: dict[str, tuple[str, ...]], lines: dict[str, str],
-                           eh: float) -> dict[str, tuple[Decimal, Decimal]]:
+def derive_recipe_bindings(run: str, kind: str, headers: dict[str, str], lines: dict[str, str],
+                           total_eV: str, eh: float) -> dict[str, tuple[Decimal, Decimal]]:
     """``{orbit: (B, rounding)}`` in eV for every circular orbit of shells 1 .. N_MAX of one recipe run.
 
     The outermost circular orbit (2l+1 of shell N_MAX): for the anchor kind, minus the printed header of
     the hydrogen-like orbit of shell N_MAX + 1 plus the printed line between them; for every other kind,
     minus its own printed header. Then the upper orbits downward by adding each printed line and the
     lower orbits outward from K1 by subtracting each. A printed line carries half a unit of its last
-    decimal plus ``float_floor_eV``; a header the same with its own last digit. Raises DerivationError
+    decimal plus ``float_floor_eV`` of ``total_eV``, the run's printed total energy of that orbit;
+    a header the same with its own last digit. Raises DerivationError
     unless every derived energy lies within its header's rounding, its own rounding and one more line's
     of its printed header, and every cross line closes within the rounding of its two ends and itself.
     """
@@ -2043,14 +1626,14 @@ def derive_recipe_bindings(run: str, kind: str, headers: dict[str, tuple[str, ..
     top = orbit(N_MAX, True)
     with localcontext() as context:
         context.prec = _PRECISION
-        floor = float_floor_eV(headers[top][4], eh)
+        floor = float_floor_eV(total_eV, eh)
         rho_line = Decimal(5) * Decimal(10) ** (-RECIPE_XR_PRECISION - 1) + floor
         if kind == "anchor":
             outer = orbit(N_MAX + 1, True)
-            b = {top: (-Decimal(headers[outer][3]) + Decimal(lines[anchor_line()]),
-                       header_half_unit(headers[outer][3]) + floor + rho_line)}
+            b = {top: (-Decimal(headers[outer]) + Decimal(lines[anchor_line()]),
+                       header_half_unit(headers[outer]) + floor + rho_line)}
         else:
-            b = {top: (-Decimal(headers[top][3]), header_half_unit(headers[top][3]) + floor)}
+            b = {top: (-Decimal(headers[top]), header_half_unit(headers[top]) + floor)}
         for n in range(N_MAX - 1, 0, -1):
             lower, upper = orbit(n, True), orbit(n + 1, True)
             b[lower] = (b[upper][0] + Decimal(lines[f"{lower}-{upper}"]), b[upper][1] + rho_line)
@@ -2059,7 +1642,7 @@ def derive_recipe_bindings(run: str, kind: str, headers: dict[str, tuple[str, ..
             b[upper] = (b[lower][0] - Decimal(lines[f"{lower}-{upper}"]), b[lower][1] + rho_line)
         for state in chain:
             value, rounding = b[state]
-            header = headers[state][3]
+            header = headers[state]
             gap = abs(value + Decimal(header))
             if gap > header_half_unit(header) + floor + rounding + rho_line:
                 raise DerivationError(f"{run}: derived {state} lies {gap} eV from its printed header")

@@ -1,40 +1,30 @@
-"""Run MuDirac 1.3.0 over the D3 input set and commit what it prints.
+"""Run the patched MuDirac 1.3.0 over the D3 input set and commit what it prints.
 
     python3 scripts/mudirac_d3.py inputs --radii R --abundant A --iaea I --out data/g4/d3
-    python3 scripts/mudirac_d3.py write --kind K [--level L] --dir D
-    python3 scripts/mudirac_d3.py run --mudirac BIN --dir D --jobs N [--shard i/n] [--time-v] [--heads-only]
-    python3 scripts/mudirac_d3.py collect --dir D [D ...] --out data/g4/d3
-    python3 scripts/mudirac_d3.py collect-numerics --dir D [D ...] --out data/g4/d3
-    python3 scripts/mudirac_d3.py geant4-levels --harvest H --out data/g4/d3/geant4_cascade_levels.csv
     python3 scripts/mudirac_d3.py write-recipe --batch B --dir D
-    python3 scripts/mudirac_d3.py collect-recipe --batch B --dir D [D ...] --out OUT
+    python3 scripts/mudirac_d3.py run --mudirac BIN --dir D --jobs N [--shard i/n] [--time-v] [--heads-only]
+    python3 scripts/mudirac_d3.py collect-recipe --dir D [D ...] --out data/g4/d3
+    python3 scripts/mudirac_d3.py geant4-levels --harvest H --out data/g4/d3/geant4_cascade_levels.csv
 
-`inputs` checks the three pinned source files and writes ``mudirac_inputs.csv``. `write` renders one
-``<run>/<run>.in`` per member for one run kind: a committed or evidence kind over the input set, or
-``rminus`` (the radius moved down, over the kept members whose moved radius stays in the model's
-domain) or ``grid`` at ``--level`` (the base input with its three numerical settings refined, over
-the kept members that level is run for). `run` runs MuDirac once per input with exactly one
-argument, the input file, and records each exit status, ``.err`` size, wall time and input digest in
-``D/runs.tsv`` (``D/runs.<i>of<n>.tsv`` for the shard ``i/n`` of the sorted inputs); ``--time-v``
-wraps each run in ``/usr/bin/time -v`` so its peak memory is kept beside it. `collect` reads the run
-directories of the committed kinds and writes the run table, every printed state header, every
-printed line and the hydrogen-like comparison of the checked shells, each in a fixed order.
-`collect-numerics` does the same for the ``rminus`` and ``grid`` directories into the three numerics
-tables, with a row of status ``INVALID_PERTURBATION_DOMAIN`` for each member whose ``rminus`` run
-was not made. `geant4-levels` reads the output of ``cpp/tools/harvest_d3.cc`` on a Geant4 build
-without the overlay and writes the cascade's level energies for every gated validation nuclide.
-
-`write-recipe` renders the inputs of one batch of the patched recipe (MuDirac 1.3.0 with the patch in
-``third_party/mudirac/``): ``prod`` (every member's kinds, the anchor kind in place of ``base``, each
-with its Uehling-free twin), ``refine`` (each anchor run one step finer in each setting), ``rminus``
-(the radius moved down, inside the 2pF domain) or ``stages`` (each gated nuclide's anchor run at every
-stage from the shipped input to the recipe). ``--heads-only`` keeps, of every state file a run
-writes, its five header lines, and drops the transition-matrix files: the header and the ``.xr.out``
-are all that is collected. `collect-recipe` re-renders the batch, requires every run of it to be
-listed with the digest of its re-rendered input and to be complete -- exit status 0, an empty
-``.err``, every expected line printed once at the input's decimals and every expected state's header
--- and refuses, naming the run, otherwise; then it writes the batch's run table, printed state headers
-and printed lines.
+`inputs` checks the three pinned source files and writes ``mudirac_inputs.csv``. `write-recipe` renders
+the inputs of one batch of the recipe (MuDirac 1.3.0 built with the patch in ``third_party/mudirac/``):
+``prod`` (every member's kinds, the anchor kind in place of ``base``, each with its Uehling-free twin),
+``refine`` (each anchor run one step finer in each setting), ``rminus`` (the radius moved down, where
+its rms stays inside the 2pF domain) or ``stages`` (each compared nuclide's run at every stage from the
+shipped input to the recipe). `run` runs MuDirac once per input with exactly one argument, the input
+file, and records each exit status, ``.err`` size, wall time and input digest in ``D/runs.tsv``
+(``D/runs.<i>of<n>.tsv`` for the shard ``i/n`` of the sorted inputs); ``--time-v`` wraps each run in
+``/usr/bin/time -v`` so its peak memory is kept beside it, and ``--heads-only`` keeps, of every state
+file a run writes, its five header lines and drops the transition-matrix files. `collect-recipe`
+re-renders every batch and requires every run to be listed with the digest of its re-rendered input
+and to be complete -- exit status 0, an empty ``.err``, every expected line printed once at its input's
+decimals and every expected state's header -- and refuses, naming the run, otherwise; then it writes
+the run table and, of each run, the printed state headers and line energies its committed view names,
+in the batches' order: of a hydrogen-like run the checked shells' circular states, of every other run
+every printed line and the states it joins (the printed transition rates are not committed: no table
+reads them). `geant4-levels` reads the output of
+``cpp/tools/harvest_d3.cc`` on a Geant4 build without the overlay and writes the cascade's level
+energies for every gated validation nuclide.
 
 The generator itself is not run by the test suite or the audit: its committed outputs are the input
 of record, and ``scripts/generate_g4data.py`` builds the D3 tables from them. This script imports
@@ -47,7 +37,6 @@ import argparse
 import concurrent.futures
 import hashlib
 import importlib.util
-import re
 import subprocess
 import sys
 import time
@@ -61,10 +50,6 @@ assert _SPEC is not None and _SPEC.loader is not None
 md = importlib.util.module_from_spec(_SPEC)
 sys.modules["mudirac130"] = md
 _SPEC.loader.exec_module(md)
-
-_STATE_FILE = re.compile(r"\.([K-Z][0-9]+)\.out$")
-_STATE_HEADER = re.compile(r"^# DiracState with n = (\S+), l = (\S+), s = (\S+)$")
-_ENERGY_HEADER = re.compile(r"^# E = (\S+) \+ mc\^2 = (\S+) eV$")
 
 
 def _write(path: Path, rows: list[list[str]]) -> None:
@@ -86,58 +71,6 @@ def _inputs_and_cells():
     rows = md.load_inputs(ROOT / md.INPUTS_RELPATH)
     cells, _origins = md.load_validation(ROOT / md.CELLS_RELPATH, ROOT / md.ORIGIN_RELPATH)
     return rows, cells
-
-
-def _numerics_members(args: argparse.Namespace, cells) -> list[tuple[str, object, str]]:
-    """``(run, row, input text)`` of every ``rminus`` or ``grid`` run of ``args.level`` to make."""
-    out = []
-    for row in md.kept_members(md.load_outputs(ROOT)):
-        extra = md.extra_lines(cells, row.nuclide)
-        if args.kind == "rminus":
-            if not md.rminus_in_domain(row):
-                continue
-            out.append((md.numerics_run_id(row, "rminus", 0), row, md.render_input(row, "rminus", extra)))
-        elif args.level in md.numerics_levels(row):
-            out.append((md.numerics_run_id(row, "grid", args.level), row,
-                        md.render_numerics_input(row, args.level, extra)))
-    return out
-
-
-def cmd_write(args: argparse.Namespace) -> None:
-    rows, cells = _inputs_and_cells()
-    validation = set(md.gated_nuclides(cells))
-    if args.kind in md.RESPONSE_KINDS + ("grid",):
-        inputs = _numerics_members(args, cells)
-    else:
-        inputs = [(md.run_id(row, args.kind), row, md.render_input(row, args.kind, md.extra_lines(cells, row.nuclide)))
-                  for row in rows
-                  if args.kind not in md.COMMITTED_KINDS or args.kind in md.run_kinds(row, validation)]
-    for run, _row, text in inputs:
-        directory = Path(args.dir) / run
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / f"{run}.in").write_bytes(text.encode("ascii"))
-    print(f"wrote {len(inputs)} inputs of kind {args.kind} level {args.level} under {args.dir}")
-
-
-def cmd_write_settings(args: argparse.Namespace) -> None:
-    _rows, cells = _inputs_and_cells()
-    kept = {row.nuclide: row for row in md.kept_members(md.load_outputs(ROOT))}
-    wanted = md.settings_nuclides(cells)
-    if not set(wanted) <= set(kept):
-        raise SystemExit(f"settings nuclides not kept: {sorted(set(wanted) - set(kept))}")
-    made = 0
-    for key in wanted:
-        row = kept[key]
-        extra = md.extra_lines(cells, key)
-        for level, uehling in md.SETTINGS:
-            setting = md.setting_id(level, uehling)
-            run = md.settings_run_id(row, level, uehling)
-            directory = Path(args.dir) / setting / run
-            directory.mkdir(parents=True, exist_ok=True)
-            text = md.render_settings_input(row, level, uehling, extra)
-            (directory / f"{run}.in").write_bytes(text.encode("ascii"))
-            made += 1
-    print(f"wrote {made} settings inputs for {len(wanted)} nuclides under {args.dir}")
 
 
 def _keep_heads(directory: Path) -> None:
@@ -199,163 +132,16 @@ def cmd_run(args: argparse.Namespace) -> None:
         print(f"  {run} rc={rc} err_bytes={err}")
 
 
-def _state_headers(directory: Path) -> dict[str, tuple[str, ...]]:
-    """``{orbit: (n, l, s, E, E + mc^2)}`` from every state file of one run, as printed."""
-    out = {}
-    for path in directory.iterdir():
-        match = _STATE_FILE.search(path.name)
-        if not match or not path.name.startswith(directory.name + "."):
-            continue
-        state = energy = None
-        for line in path.read_text("ascii").splitlines()[:4]:
-            state = state or _STATE_HEADER.match(line)
-            energy = energy or _ENERGY_HEADER.match(line)
-        if not (state and energy):
-            raise SystemExit(f"{path}: no state header")
-        out[match.group(1)] = (*state.groups(), *energy.groups())
-    return out
-
-
-def _orbit_order(orbit: str) -> tuple[int, int]:
-    return (ord(orbit[0]), int(orbit[1:]))
-
-
-def _lines(directory: Path) -> list[tuple[str, str, str]]:
-    """Every row of the run's ``.xr.out`` after its two header lines, as printed and in order."""
-    path = directory / f"{directory.name}.xr.out"
-    if not path.exists():
-        return []
-    out = []
-    for line in path.read_text("ascii").splitlines()[2:]:
-        fields = line.split()
-        if len(fields) != 3:
-            raise SystemExit(f"{path}: unexpected row {line!r}")
-        out.append((fields[0], fields[1], fields[2]))
-    return out
-
-
 def _results(directories: list[str]) -> list[tuple[str, Path, str, str, str, str]]:
     """Every ``(run, directory, rc, err_bytes, wall_s, input_sha256)`` the ``runs*.tsv`` files of
-    ``directories`` record; a file written before wall time and digest were kept gives empty ones."""
+    ``directories`` record."""
     out = []
     for directory in directories:
         for table in sorted(Path(directory).glob("runs*.tsv")):
             for line in table.read_text("ascii").splitlines():
-                fields = line.split("\t")
-                run, rc, err = fields[:3]
-                wall, digest = (fields[3], fields[4]) if len(fields) >= 5 else ("", "")
+                run, rc, err, wall, digest = line.split("\t")
                 out.append((run, Path(directory) / run, rc, err, wall, digest))
     return out
-
-
-def cmd_collect_numerics(args: argparse.Namespace) -> None:
-    results = {run: (directory, rc, err, wall, digest)
-               for run, directory, rc, err, wall, digest in _results(args.dir)}
-    kept = md.kept_members(md.load_outputs(ROOT))
-    runs = [list(md.NUMERICS_RUNS_COLUMNS)]
-    states = [list(md.NUMERICS_STATES_COLUMNS)]
-    lines = [list(md.NUMERICS_LINES_COLUMNS)]
-    made = {}
-    invalid = 0
-    rows = {row.nuclide: row for row in kept}
-    for run, z, a, kind, level in md.expected_numerics_runs(kept):
-        key = [str(z), str(a), kind, str(level)]
-        if kind == "rminus" and not md.rminus_in_domain(rows[(z, a)]):
-            runs.append([run, *key, md.INVALID_PERTURBATION_DOMAIN, "", "", "", ""])
-            invalid += 1
-            continue
-        if run not in results:
-            raise SystemExit(f"no result for {run}: run every kind and level before collecting")
-        directory, rc, err, wall, digest = results[run]
-        if not wall or not digest:
-            raise SystemExit(f"{run}: its runs table carries no wall time or input digest")
-        runs.append([run, *key, md.RAN, rc, err, wall, digest])
-        made[f"{kind}{level}"] = made.get(f"{kind}{level}", 0) + 1
-        headers = _state_headers(directory)
-        for orbit in sorted(headers, key=_orbit_order):
-            states.append([run, *key, orbit, *headers[orbit]])
-        for name, delta, rate in _lines(directory):
-            lines.append([run, *key, name, delta, rate])
-    out = Path(args.out)
-    for relpath, table in ((md.NUMERICS_RUNS_RELPATH, runs), (md.NUMERICS_STATES_RELPATH, states),
-                           (md.NUMERICS_LINES_RELPATH, lines)):
-        _write(out / Path(relpath).name, table)
-        print(f"wrote {Path(relpath).name}: {len(table) - 1} rows, "
-              f"{(out / Path(relpath).name).stat().st_size} bytes")
-    print(f"kept members {len(kept)}; runs made per kind and level: "
-          + ", ".join(f"{k} {v}" for k, v in sorted(made.items()))
-          + f"; {md.INVALID_PERTURBATION_DOMAIN} {invalid}")
-
-
-def cmd_collect_settings(args: argparse.Namespace) -> None:
-    _rows, cells = _inputs_and_cells()
-    kept = {row.nuclide: row for row in md.kept_members(md.load_outputs(ROOT))}
-    wanted = md.settings_nuclides(cells)
-    results = {run: (directory, rc, err, wall, digest)
-               for run, directory, rc, err, wall, digest in _results(
-                   [str(p) for p in Path(args.dir).glob("g*") if p.is_dir()])}
-    runs = [list(md.SETTINGS_RUNS_COLUMNS)]
-    states = [list(md.SETTINGS_STATES_COLUMNS)]
-    lines = [list(md.SETTINGS_LINES_COLUMNS)]
-    for key in wanted:
-        row = kept[key]
-        for level, uehling in md.SETTINGS:
-            setting = md.setting_id(level, uehling)
-            run = md.settings_run_id(row, level, uehling)
-            if run not in results:
-                raise SystemExit(f"no result for {run}")
-            directory, rc, err, wall, digest = results.pop(run)
-            runs.append([run, str(row.z), str(row.a), setting, *md.settings_values(level, uehling),
-                         rc, err, wall, digest])
-            if rc == "0" and err == "0":
-                for orbit, header in sorted(_state_headers(directory).items(), key=lambda item: _orbit_order(item[0])):
-                    states.append([run, str(row.z), str(row.a), setting, orbit, *header])
-                for name, delta, rate in _lines(directory):
-                    lines.append([run, str(row.z), str(row.a), setting, name, delta, rate])
-    if results:
-        raise SystemExit(f"unexpected settings results: {sorted(results)[:3]}")
-    out = Path(args.out)
-    for relpath, table in ((md.SETTINGS_RUNS_RELPATH, runs), (md.SETTINGS_STATES_RELPATH, states),
-                           (md.SETTINGS_LINES_RELPATH, lines)):
-        _write(out / Path(relpath).name, table)
-        print(f"wrote {Path(relpath).name}: {len(table) - 1} rows")
-
-
-def cmd_collect(args: argparse.Namespace) -> None:
-    rows, cells = _inputs_and_cells()
-    validation = set(md.gated_nuclides(cells))
-    by_kind = {}
-    for run, directory, rc, err, _wall, _digest in _results(args.dir):
-        by_kind[run] = (directory, rc, err)
-    runs = [["run", "Z", "A", "kind", "rc", "err_bytes"]]
-    states = [["run", "Z", "A", "kind", "state", "n", "l", "s", "binding_eV", "total_eV"]]
-    lines = [["run", "Z", "A", "kind", "line", "delta_e_eV", "w12_per_s"]]
-    nmax = [["Z", "A", "n", "state", "full_binding_eV", "ideal_binding_eV"]]
-    headers = {}
-    for row in rows:
-        key = [str(row.z), str(row.a)]
-        for kind in md.run_kinds(row, validation):
-            run = md.run_id(row, kind)
-            if run not in by_kind:
-                raise SystemExit(f"no result for {run}: run every committed kind before collecting")
-            directory, rc, err = by_kind[run]
-            runs.append([run, *key, kind, rc, err])
-            headers[run] = _state_headers(directory)
-            if kind in md.PRINTED_KINDS:
-                for orbit in sorted(headers[run], key=_orbit_order):
-                    states.append([run, *key, kind, orbit, *headers[run][orbit]])
-                for name, delta, rate in _lines(directory):
-                    lines.append([run, *key, kind, name, delta, rate])
-        for n in range(md.IDEAL_FROM, md.N_MAX + 1):
-            full, ideal = headers[md.run_id(row, "base")], headers[md.run_id(row, f"ideal{n}")]
-            for orbit in md.circular_orbits(n):
-                nmax.append([*key, str(n), orbit, full.get(orbit, ("",) * 5)[3],
-                             ideal.get(orbit, ("",) * 5)[3]])
-    out = Path(args.out)
-    for relpath, table in ((md.RUNS_RELPATH, runs), (md.STATES_RELPATH, states), (md.LINES_RELPATH, lines),
-                           (md.NMAX_RELPATH, nmax)):
-        _write(out / Path(relpath).name, table)
-        print(f"wrote {Path(relpath).name}: {len(table) - 1} rows")
 
 
 def cmd_write_recipe(args: argparse.Namespace) -> None:
@@ -368,12 +154,6 @@ def cmd_write_recipe(args: argparse.Namespace) -> None:
     print(f"wrote {len(runs)} inputs of recipe batch {args.batch} under {args.dir}")
 
 
-RECIPE_RUNS_COLUMNS = ("run", "Z", "A", "kind", "stage", "uehling", "variant", "density_domain", "rc", "err_bytes",
-                       "wall_s", "input_sha256")
-RECIPE_STATES_COLUMNS = ("run", "state", "n", "l", "s", "binding_eV", "total_eV")
-RECIPE_LINES_COLUMNS = ("run", "line", "delta_e_eV", "w12_per_s")
-
-
 def cmd_collect_recipe(args: argparse.Namespace) -> None:
     rows, cells = _inputs_and_cells()
     results = {}
@@ -381,45 +161,40 @@ def cmd_collect_recipe(args: argparse.Namespace) -> None:
         if run in results:
             raise SystemExit(f"{run}: listed twice in the runs tables")
         results[run] = (directory, rc, err, wall, digest)
-    expected = md.recipe_runs(rows, cells, args.batch)
-    runs = [list(RECIPE_RUNS_COLUMNS)]
-    states = [list(RECIPE_STATES_COLUMNS)]
-    lines = [list(RECIPE_LINES_COLUMNS)]
-    domains: dict[str, int] = {}
-    for r in expected:
-        if r.run not in results:
-            raise SystemExit(f"no result for {r.run}: run the whole batch before collecting")
-        directory, rc, err, wall, digest = results.pop(r.run)
-        if digest != hashlib.sha256(r.text.encode("ascii")).hexdigest():
-            raise SystemExit(f"{r.run}: the input it ran is not the input the renderer makes now")
-        if r.stage == "shipped":
-            headers = {orbit: header for orbit, header in _state_headers(directory).items()}
-            printed = _lines(directory)
-            if rc != "0" or err != "0":
-                raise SystemExit(f"{r.run}: rc={rc} err_bytes={err}")
-        else:
+    runs = [list(md.RUNS_COLUMNS)]
+    states = [list(md.STATES_COLUMNS)]
+    lines = [list(md.LINES_COLUMNS)]
+    made: dict[str, int] = {}
+    for batch in md.RECIPE_BATCHES:
+        for r in md.recipe_runs(rows, cells, batch):
+            if r.run not in results:
+                raise SystemExit(f"no result for {r.run}: run every batch before collecting")
+            directory, rc, err, wall, digest = results.pop(r.run)
+            if digest != hashlib.sha256(r.text.encode("ascii")).hexdigest():
+                raise SystemExit(f"{r.run}: the input it ran is not the input the renderer makes now")
             try:
                 headers, printed = md.read_recipe_run(directory, r.run, r.text, rc, err)
             except md.IncompleteRunError as error:
                 raise SystemExit(f"collect refused: {error}") from error
-        domain = md.density_domain(r.row, r.kind) if r.stage in ("rms", "mass", "recipe") else ""
-        domains[domain] = domains.get(domain, 0) + 1
-        runs.append([r.run, str(r.row.z), str(r.row.a), r.kind, r.stage, "on" if r.uehling else "off", r.variant,
-                     domain, rc, err, wall, digest])
-        for orbit in sorted(headers, key=_orbit_order):
-            states.append([r.run, orbit, *headers[orbit]])
-        for name, delta, rate in printed:
-            lines.append([r.run, name, delta, rate])
+            domain = md.density_domain(r.row, r.kind) if r.stage in ("rms", "mass", "recipe") else ""
+            runs.append([r.run, str(r.row.z), str(r.row.a), r.kind, r.stage, "on" if r.uehling else "off", r.variant,
+                         domain, rc, err, wall, digest, headers[md.orbit(md.N_MAX, True)][4]])
+            view_lines, view_states = md.committed_view(r.kind, [name for name, _e, _r in printed])
+            for orbit in sorted(view_states, key=lambda s: (ord(s[0]), int(s[1:]))):
+                states.append([r.run, orbit, *headers[orbit][:4]])
+            for name, delta, _rate in printed:
+                if name in view_lines:
+                    lines.append([r.run, name, delta])
+            made[batch] = made.get(batch, 0) + 1
     if results:
-        raise SystemExit(f"runs not in batch {args.batch}: {sorted(results)[:3]}")
+        raise SystemExit(f"runs in no batch: {sorted(results)[:3]}")
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    for name, table in (("runs", runs), ("states", states), ("lines", lines)):
-        path = out / f"mudirac_recipe_{args.batch}_{name}.csv"
+    for relpath, table in ((md.RUNS_RELPATH, runs), (md.STATES_RELPATH, states), (md.LINES_RELPATH, lines)):
+        path = out / Path(relpath).name
         _write(path, table)
         print(f"wrote {path.name}: {len(table) - 1} rows, {path.stat().st_size} bytes")
-    print(f"batch {args.batch}: {len(expected)} runs complete; density domain "
-          + ", ".join(f"{k or 'not solved from the rms'} {v}" for k, v in sorted(domains.items())))
+    print("runs complete per batch: " + ", ".join(f"{b} {n}" for b, n in made.items()))
 
 
 def cmd_geant4_levels(args: argparse.Namespace) -> None:
@@ -443,12 +218,8 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--abundant", required=True)
     p.add_argument("--iaea", required=True)
     p.add_argument("--out", required=True)
-    p = sub.add_parser("write")
-    p.add_argument("--kind", required=True,
-                   choices=md.COMMITTED_KINDS + md.EVIDENCE_KINDS + md.RESPONSE_KINDS + ("grid",))
-    p.add_argument("--level", type=int, default=0)
-    p.add_argument("--dir", required=True)
-    p = sub.add_parser("write-settings")
+    p = sub.add_parser("write-recipe")
+    p.add_argument("--batch", required=True, choices=md.RECIPE_BATCHES)
     p.add_argument("--dir", required=True)
     p = sub.add_parser("run")
     p.add_argument("--mudirac", required=True)
@@ -458,30 +229,15 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--time-v", action="store_true")
     p.add_argument("--timeout", type=int)
     p.add_argument("--heads-only", action="store_true")
-    p = sub.add_parser("collect")
+    p = sub.add_parser("collect-recipe")
     p.add_argument("--dir", required=True, nargs="+")
-    p.add_argument("--out", required=True)
-    p = sub.add_parser("collect-numerics")
-    p.add_argument("--dir", required=True, nargs="+")
-    p.add_argument("--out", required=True)
-    p = sub.add_parser("collect-settings")
-    p.add_argument("--dir", required=True)
     p.add_argument("--out", required=True)
     p = sub.add_parser("geant4-levels")
     p.add_argument("--harvest", required=True)
     p.add_argument("--out", required=True)
-    p = sub.add_parser("write-recipe")
-    p.add_argument("--batch", required=True, choices=md.RECIPE_BATCHES)
-    p.add_argument("--dir", required=True)
-    p = sub.add_parser("collect-recipe")
-    p.add_argument("--batch", required=True, choices=md.RECIPE_BATCHES)
-    p.add_argument("--dir", required=True, nargs="+")
-    p.add_argument("--out", required=True)
     args = parser.parse_args(argv)
-    {"inputs": cmd_inputs, "write": cmd_write, "write-settings": cmd_write_settings,
-     "run": cmd_run, "collect": cmd_collect, "collect-numerics": cmd_collect_numerics,
-     "collect-settings": cmd_collect_settings, "geant4-levels": cmd_geant4_levels,
-     "write-recipe": cmd_write_recipe, "collect-recipe": cmd_collect_recipe}[args.command](args)
+    {"inputs": cmd_inputs, "write-recipe": cmd_write_recipe, "run": cmd_run, "collect-recipe": cmd_collect_recipe,
+     "geant4-levels": cmd_geant4_levels}[args.command](args)
 
 
 if __name__ == "__main__":

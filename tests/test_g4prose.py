@@ -638,7 +638,7 @@ DEVELOPER_PAGE = "docs/geant4-developers.md"
 def narrative_values() -> dict[str, object]:
     """The figures the draft paper and the developer page restate, each computed here from the module that
     computes the dataset document's own: the natural-target study (`DATASET_D1.md` section 11), the selector
-    summary (`DATASET_D2.md`), the cascade comparison (`DATASET_D3.md` section 5) and the mean-life comparison
+    summary (`DATASET_D2.md`), the cascade comparison (`DATASET_D3.md` section 6) and the mean-life comparison
     (`DATASET_D1.md` section 12). The two kept to fewer places are rounded half-even from the generated
     values."""
     rows = natural.study()

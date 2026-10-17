@@ -204,23 +204,23 @@ def test_r09_the_collector_refuses_a_run_whose_input_is_not_the_one_rendered_now
     row = _row(rows, 82, 208)
     one = [r for r in md.recipe_runs([row], cells, "prod") if r.run == RUN]
     adapter = sys.modules["mudirac130"]   # the adapter module the script loaded by path
-    monkeypatch.setattr(adapter, "recipe_runs", lambda _rows, _cells, _batch: one)
+    monkeypatch.setattr(adapter, "recipe_runs", lambda _rows, _cells, batch: one if batch == "prod" else [])
     d = _copy_run(tmp_path)
     digest = hashlib.sha256(_text().encode("ascii")).hexdigest()
     (tmp_path / "runs.tsv").write_bytes(f"{RUN}\t0\t0\t7.0\t{digest}\n".encode("ascii"))
     out = tmp_path / "out"
-    script.main(["collect-recipe", "--batch", "prod", "--dir", str(tmp_path), "--out", str(out)])
-    assert (out / "mudirac_recipe_prod_lines.csv").read_text().count("\n") == 1 + len(md.read_recipe_run(
+    script.main(["collect-recipe", "--dir", str(tmp_path), "--out", str(out)])
+    assert (out / "mudirac_lines.csv").read_text().count("\n") == 1 + len(md.read_recipe_run(
         d, RUN, _text(), "0", "0")[1])
     (tmp_path / "runs.tsv").write_bytes(f"{RUN}\t0\t0\t7.0\t{'0' * 64}\n".encode("ascii"))
     with pytest.raises(SystemExit, match="not the input the renderer makes now"):
-        script.main(["collect-recipe", "--batch", "prod", "--dir", str(tmp_path), "--out", str(out)])
+        script.main(["collect-recipe", "--dir", str(tmp_path), "--out", str(out)])
     (tmp_path / "runs.tsv").write_bytes(f"{RUN}\t0\t0\t7.0\t{digest}\n".encode("ascii"))
     xr = d / f"{RUN}.xr.out"
     lines = xr.read_bytes().decode("ascii").split("\n")
     xr.write_bytes("\n".join(lines[:4] + lines[5:]).encode("ascii"))
     with pytest.raises(SystemExit, match=f"collect refused: {RUN}"):
-        script.main(["collect-recipe", "--batch", "prod", "--dir", str(tmp_path), "--out", str(out)])
+        script.main(["collect-recipe", "--dir", str(tmp_path), "--out", str(out)])
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -228,35 +228,35 @@ def test_r09_the_collector_refuses_a_run_whose_input_is_not_the_one_rendered_now
 # ----------------------------------------------------------------------------------------------------
 
 def _printed():
+    """The fixture's printed state energies, printed lines and printed total of the outermost circular state,
+    as the committed files carry them."""
     headers, lines = md.read_recipe_run(FIXTURE, RUN, _text(), "0", "0")
-    return headers, {name: energy for name, energy, _rate in lines}
+    return ({state: h[3] for state, h in headers.items()}, {name: energy for name, energy, _rate in lines},
+            headers[md.orbit(md.N_MAX, True)][4])
 
 
 def test_r10_the_anchor_is_the_hydrogen_like_header_plus_its_line_and_the_chain_telescopes():
-    headers, lines = _printed()
-    b = md.derive_recipe_bindings(RUN, "anchor", headers, lines, md.E_H_EV_2022)
+    headers, lines, total = _printed()
+    b = md.derive_recipe_bindings(RUN, "anchor", headers, lines, total, md.E_H_EV_2022)
     top, outer = md.orbit(md.N_MAX, True), md.orbit(md.N_MAX + 1, True)
-    assert b[top][0] == -Decimal(headers[outer][3]) + Decimal(lines[md.anchor_line()])
+    assert b[top][0] == -Decimal(headers[outer]) + Decimal(lines[md.anchor_line()])
     assert b["K1"][0] == b[top][0] + sum(Decimal(lines[ln]) for ln in md.upper_chain_lines())
     k, levels = md.recipe_quantities(b)
     assert k == b["K1"][0] / 1000
     assert len(levels) == md.N_MAX - 1
-    floor = md.float_floor_eV(headers[top][4], md.E_H_EV_2022)
+    floor = md.float_floor_eV(total, md.E_H_EV_2022)
     assert Decimal("1.2e-8") < floor < Decimal("1.3e-8")
 
 
 def test_r11_a_header_moved_beyond_its_rounding_breaks_the_derivation():
-    headers, lines = _printed()
+    headers, lines, total = _printed()
     outer = md.orbit(md.N_MAX + 1, True)
-    moved = dict(headers)
-    h = list(moved[outer])
-    h[3] = str(Decimal(h[3]) + Decimal("1e-6"))
-    moved[outer] = tuple(h)
+    moved = {**headers, outer: str(Decimal(headers[outer]) + Decimal("1e-6"))}
     with pytest.raises(md.DerivationError, match=RUN):
-        md.derive_recipe_bindings(RUN, "anchor", moved, lines, md.E_H_EV_2022)
+        md.derive_recipe_bindings(RUN, "anchor", moved, lines, total, md.E_H_EV_2022)
     with pytest.raises(md.DerivationError, match="no printed line"):
         short = {k: v for k, v in lines.items() if k != md.anchor_line()}
-        md.derive_recipe_bindings(RUN, "anchor", headers, short, md.E_H_EV_2022)
+        md.derive_recipe_bindings(RUN, "anchor", headers, short, total, md.E_H_EV_2022)
 
 
 def test_r12_the_header_half_unit_is_half_the_last_printed_digit():

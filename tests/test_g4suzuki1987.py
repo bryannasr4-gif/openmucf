@@ -552,14 +552,18 @@ def test_audit_checks_suzuki_pair(monkeypatch: pytest.MonkeyPatch) -> None:
 
 # T-142: a base release has three numeric components before its patch is advanced.
 def test_version_bump_rejects_a_short_or_nonnumeric_base() -> None:
+    """The dataset version is one minor step above the base (a profile was replaced), and both steps refuse
+    a base that is not MAJOR.MINOR.PATCH."""
     parts = gen._BASE_DATASET_VERSION.split(".")
-    assert f"{parts[0]}.{parts[1]}.{int(parts[2]) + 1}" == gen.DATASET_VERSION
-    with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
-        gen._next_patch_version(".".join(parts[:-1]))
-    with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
-        gen._next_patch_version(".".join((*parts, "0")))
-    with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
-        gen._next_patch_version(".".join((parts[0], "word", parts[-1])))
+    assert f"{parts[0]}.{int(parts[1]) + 1}.0" == gen.DATASET_VERSION
+    assert gen._next_patch_version(gen._BASE_DATASET_VERSION) == f"{parts[0]}.{parts[1]}.{int(parts[2]) + 1}"
+    for step in (gen._next_patch_version, gen._next_minor_version):
+        with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
+            step(".".join(parts[:-1]))
+        with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
+            step(".".join((*parts, "0")))
+        with pytest.raises(ValueError, match="MAJOR.MINOR.PATCH"):
+            step(".".join((parts[0], "word", parts[-1])))
 
 
 # T-143: an equal value with a different uncertainty is not an equal published cell.

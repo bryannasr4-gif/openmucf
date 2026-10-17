@@ -58,7 +58,7 @@ __all__ = [
 #: a transport code does today is an evaluation like any other, and saying so is the honest label.
 SOURCE_LIBRARIES = (
     "geant4-compiled-in", "suzuki1987", "iwamoto2025", "jendl-mund", "openmucf", "mizuno2025",
-    "mudirac130",
+    "mudirac130p1",
 )
 #: Same vocabulary as the rate ledger's schema.
 UNC_TYPES = ("stat", "exp", "theory", "theory-spread", "model", "table", "estimate", "exact")
