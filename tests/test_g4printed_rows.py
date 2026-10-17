@@ -34,8 +34,9 @@ MARKER = re.compile(r"^\^[a-z]")
 #: Abbreviations whose full stop ends no sentence.
 ABBREVIATIONS = ("Ref.", "Refs.", "Sec.", "Eq.", "Eqs.", "Fig.", "viz.", "e.g.", "i.e.")
 #: A sentence end: a full stop, question or exclamation mark, a closing parenthesis after it or not, white
-#: space, and a capital letter, an opening parenthesis or a footnote marker.
-SENTENCE_END = re.compile(r"[.!?]\)?\s+(?=[A-Z(^])")
+#: space, and any character that is not white space -- a sentence may open with a lowercase letter or a
+#: digit. A semicolon ends no sentence: the ledgers use it inside one.
+SENTENCE_END = re.compile(r"[.!?]\)?\s+(?=\S)")
 
 
 def _rows(relpath: str) -> list[dict[str, str]]:
@@ -57,14 +58,22 @@ def quoted(cell: str, kind: str) -> str:
     return (LABEL if kind == "caption" else MARKER).sub("", text, count=1)
 
 
+def marked_note_quotes_text(cell: str, kind: str) -> bool:
+    """Whether a note or footnote cell that leaves text out still quotes some beside its omission mark: a
+    ledger keeps only the marker of a note or footnote of more than a sentence."""
+    return kind in ("note", "footnote") and bool(OMITTED.search(cell)) and bool(quoted(cell, kind).strip())
+
+
 def test_printed_ledgers_quote_a_table_title_or_one_sentence() -> None:
     """Every caption, note and footnote cell of both ledgers quotes at most one sentence beyond its label or
-    marker, and every `normalization` cell of the measurement rows is one sentence."""
+    marker, a note or footnote that leaves text out quotes nothing beyond its marker, and every
+    `normalization` cell of the measurement rows is one sentence."""
     for relpath in LEDGERS:
         rows = [row for row in _rows(relpath) if row["row_kind"] in PROSE_KINDS]
         assert rows, relpath
         for row in rows:
             assert sentences(quoted(row["note"], row["row_kind"])) == 1, (relpath, row["note"])
+            assert not marked_note_quotes_text(row["note"], row["row_kind"]), (relpath, row["note"])
     for row in _rows(MEASUREMENTS):
         assert sentences(row["normalization"]) == 1, (row["record_id"], row["normalization"])
 
@@ -90,8 +99,10 @@ def test_every_omission_mark_names_a_sha256() -> None:
 def test_drill_a_second_sentence_or_a_short_digest_is_refused() -> None:
     """The guards above, shown to fire: a caption's title passes and the same title with a sentence after it
     does not; a one-sentence footnote passes and the same footnote with a second sentence does not; an
-    abbreviation's full stop ends no sentence; an omission mark with a short digest is not read as one; and a
-    capture-branch cell that quotes its source's words, with no mark or with a short digest, is refused."""
+    abbreviation's full stop ends no sentence; a second sentence that opens lowercase or with a digit counts;
+    a footnote or a note that keeps a sentence beside its omission mark is refused, a caption is not held to
+    that rule; an omission mark with a short digest is not read as one; and a capture-branch cell that quotes
+    its source's words, with no mark or with a short digest, is refused."""
     title = "TABLE III. Compendium of total muon capture results for light nuclei."
     assert sentences(quoted(title, "caption")) == 1
     assert sentences(quoted(title + " When underlined it is an estimate.", "caption")) == 2
@@ -99,6 +110,17 @@ def test_drill_a_second_sentence_or_a_short_digest_is_refused() -> None:
     assert sentences(quoted(footnote, "footnote")) == 1
     assert sentences(quoted(footnote + " See Ref. 26 for details.", "footnote")) == 2
     assert sentences("(these F data show the lifetime for the lower hf state; see Sec. IV D).") == 1
+    assert sentences(quoted(footnote + " see Ref. 26 for details.", "footnote")) == 2
+    assert sentences(quoted(footnote + " 26 is the reference.", "footnote")) == 2
+    marked = "^a One sentence. [text omitted; sha256 " + "0" * 64 + "]"
+    assert marked_note_quotes_text(marked, "footnote")
+    assert not marked_note_quotes_text("^a [text omitted; sha256 " + "0" * 64 + "]", "footnote")
+    # The same rule for a note, which carries no marker: a sentence beside the mark is refused, the bare mark
+    # is not; a caption keeps its title beside the mark and is not held to the rule.
+    zeros = "[text omitted; sha256 " + "0" * 64 + "]"
+    assert marked_note_quotes_text("One sentence. " + zeros, "note")
+    assert not marked_note_quotes_text(zeros, "note")
+    assert not marked_note_quotes_text("TABLE IV. A title. " + zeros, "caption")
     assert not OMITTED.search("TABLE III. [text omitted; sha256 0123abcd]")
     mark = "[text omitted; sha256 " + "0" * 64 + "]"
     assert CAPTURE_BRANCH.fullmatch(mark + "; Eqs. (3), (5), (8); a p.7-8")

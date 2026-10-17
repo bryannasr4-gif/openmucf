@@ -86,7 +86,7 @@ POPULATIONS = (COMPARED, OTHER_SOURCE, OTHER_BASIS, FORMULA, NO_KEY)
 ROUTES = (("bound", "G4MuonMinusBoundDecay"), ("helper", "G4MuonicAtomHelper"))
 
 COLUMNS = (
-    "source", "locator", "label", "z", "basis", "key_a", "profile", "lookup", "population",
+    "source", "locator", "label", "z", "basis", "measured_state", "key_a", "profile", "lookup", "population",
     "mean_life_ns", "mean_life_unc_ns", "measured_rate", "measured_rate_unc", "printed_capture_rate",
     "capture_rate", "capture_rate_unc", "decay_rate_bound", "decay_rate_helper", "rate_bound", "rate_helper",
     "within_bound", "within_helper",
@@ -324,11 +324,16 @@ class Measurement:
     mean_life: str
     mean_life_unc: str
     printed_capture_rate: decimal.Decimal
+    #: The state of the muonic atom a note of the source says the mean life describes, when it names one
+    #: (:func:`openmucf.g4.sources.suzuki1987.measured_states`); empty when it names none.
+    state: str = ""
 
 
-def suzuki_measurements(path: Path) -> list[Measurement]:
+def suzuki_measurements(path: Path, states: Mapping[str, str] | None = None) -> list[Measurement]:
     """The rows of Tables III and IV marked as the authors' own measurements that print a mean life, its
-    uncertainty and a capture rate, in the transcription's order."""
+    uncertainty and a capture rate, in the transcription's order, each with the state ``states`` (locator to
+    state) gives its row."""
+    states = states or {}
     out: list[Measurement] = []
     with path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -344,10 +349,11 @@ def suzuki_measurements(path: Path) -> list[Measurement]:
             if prefix is None:
                 raise LifetimeError(f"{row['target_label']!r}: an isotope row without a mass number")
             mass_number = int(prefix.group())
+        locator = f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}"
         out.append(Measurement(
-            SUZUKI, f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}",
-            row["target_label"], int(row["Z"]), row["target_basis"], mass_number,
+            SUZUKI, locator, row["target_label"], int(row["Z"]), row["target_basis"], mass_number,
             row["mean_life_ns"], row["mean_life_unc_ns"], suzuki1987.scaled(row, "rate"),
+            states.get(locator, ""),
         ))
     return out
 
@@ -372,9 +378,9 @@ def key_mass_number(
     measurement: Measurement, references: Mapping[int, int], isotopes: Mapping[int, Sequence[natural.Isotope]]
 ) -> int | None:
     """The mass number Geant4 is asked about for the nucleus a measurement names: the printed one; for a
-    target printed with no mass number or as natural, the record the isotope audit establishes was measured
-    on the element printed with no mass number, or else the single isotope of a natural composition that
-    has one; otherwise none."""
+    target printed with no mass number or as natural, the record the isotope audit establishes rests on a
+    measurement of the element printed with no mass number, or else the single isotope of a natural
+    composition that has one; otherwise none."""
     if measurement.mass_number is not None:
         return measurement.mass_number
     if measurement.z in references:
@@ -439,14 +445,15 @@ def comparison_rows(root: Path) -> list[dict[str, str]]:
     mu_mass = oracle.constants["mu_mass"]
     isotopes = natural.load_isotopes(root / natural.ISOTOPES_RELPATH)
     symbols = {members[0].symbol: z for z, members in isotopes.items()}
-    references = natural.natural_references(d1.load_isotope_audit(root / d1.AUDIT_RELPATH))
+    references = natural.element_label_records(d1.load_isotope_audit(root / d1.AUDIT_RELPATH))
     tables = natural.capture_profiles(root / "data" / "g4" / "d1")
     zeff_table = {int(z): float(value) for z, value in spec.parse(
         (root / "data" / "g4" / "d1" / "d1_zeff.g4dat").read_bytes().decode("ascii")).records}
     for name in tables:
         if name not in (spec.PARITY_PROFILE, SUZUKI, MIZUNO):
             raise LifetimeError(f"profile {name!r}: no measurement source is known for its rows")
-    measurements = suzuki_measurements(root / suzuki1987.QUANTITY_ROWS_RELPATH) + mizuno_measurements(
+    states = suzuki1987.measured_states(suzuki1987.load_printed_rows(root / suzuki1987.PRINTED_ROWS_RELPATH))
+    measurements = suzuki_measurements(root / suzuki1987.QUANTITY_ROWS_RELPATH, states) + mizuno_measurements(
         root / MIZUNO_TABLE1_RELPATH, symbols)
     compiled = {(z, a): unc for z, a, _, unc in found.capture_records}
     rows: list[dict[str, str]] = []
@@ -459,6 +466,7 @@ def comparison_rows(root: Path) -> list[dict[str, str]]:
             row = dict.fromkeys(COLUMNS, "")
             row.update({
                 "source": m.source, "locator": m.locator, "label": m.label, "z": str(m.z), "basis": m.basis,
+                "measured_state": m.state,
                 "profile": name, "mean_life_ns": m.mean_life, "mean_life_unc_ns": m.mean_life_unc,
                 "measured_rate": measured, "measured_rate_unc": measured_unc,
                 "printed_capture_rate": format(m.printed_capture_rate, "f"),
@@ -490,6 +498,9 @@ def comparison_rows(root: Path) -> list[dict[str, str]]:
             elif route.route == TABLE_ROUTE:
                 unc = compiled[(m.z, a)]
                 value_source = TABLE_SOURCE if m.z >= TABLE_SOURCE_MIN_Z else ""
+                # A record resting on a measurement of the element printed with no mass number counts as a
+                # natural composition; lead's matches a reconstructed combination with a radiogenic-lead row
+                # (DATASET_D1.md section 11).
                 value_basis = "natural" if references.get(m.z) == a else "isotope"
             row.update({
                 "key_a": str(a), "lookup": route.route,

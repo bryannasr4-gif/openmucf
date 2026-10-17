@@ -400,14 +400,14 @@
     "29-63": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists the separated isotope Cu-63.",
-      "isotope_resolved": true,
-      "needs_verification": false,
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary lists BOTH Cu with no mass number and the separated isotope Cu-63; the compiled-in value and uncertainty equal none of the Total Capture Rate value and uncertainty pairs its Table IV prints at this Z (capture_rate_cells.csv; the published article's Table IV p.2219 prints the same pairs), the nearest in value being the Cu row of this experiment, and agree to within a unit of their last printed digit with the inverse-variance weighted mean of that row and the Cu-63 row, a reconstructed combination, not a demonstrated history -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.26. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true. Compared with every Total Capture Rate cell the primary prints at Z=29 (Suzuki 1987 (TRI-PP-87-5) Table IV p.26 [copy read: preprint-scan]): Cu 5.79 +- 0.16 [39]; Cu 5.47 +- 0.20 [44]; Cu 5.66 +- 0.09 [53]; Cu 5.67 +- 0.09 [48]; Cu 5.676 +- 0.037 [*]; Cu-63 5.72 +- 0.05 [48]; the compiled-in 5.691 +- 0.030 equals no cell at the primary's printed precision.",
+      "isotope_resolved": false,
+      "needs_verification": true,
       "recommendation": "",
       "single_source": false,
       "source_bibkey": "geant4_v11_4_2",
       "source_library": "geant4-compiled-in",
-      "source_locator": "third_party/geant4/v11.4.2/G4MuonMinusBoundDecay.cc:244 (upstream git blob 29bd73719cd619de34ef83ca5ca076ceadf1cc5a); isotope_resolved established by Suzuki 1987 (TRI-PP-87-5) Table IV p.26 [copy read: preprint-scan]",
+      "source_locator": "third_party/geant4/v11.4.2/G4MuonMinusBoundDecay.cc:244 (upstream git blob 29bd73719cd619de34ef83ca5ca076ceadf1cc5a)",
       "unc_type": "table",
       "validity_range": "Z=29 A=63; outside the listed keys the goulard_primakoff fallback applies"
     },
@@ -512,14 +512,14 @@
     "35-79": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists the separated isotope Br-79.",
-      "isotope_resolved": true,
-      "needs_verification": false,
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved is NOT established for this record: the primary lists BOTH the separated isotopes Br-79 and Br-81 and Br with no mass number; the compiled-in value and uncertainty equal none of the Total Capture Rate value and uncertainty pairs its Table IV prints at this Z (capture_rate_cells.csv; the published article's Table IV p.2219 prints the same pairs), the nearest in value being the Br row of this experiment, and agree to within a unit of their last printed digit with the inverse-variance weighted mean of the Br-79 row and the Br-81 row, a reconstructed combination, not a demonstrated history -- see Suzuki 1987 (TRI-PP-87-5) Table IV p.26. It is therefore false in this field's stated sense -- not established, which is not the same claim as established-to-be-unresolved -- and needs_verification is true. Compared with every Total Capture Rate cell the primary prints at Z=35 (Suzuki 1987 (TRI-PP-87-5) Table IV p.26 [copy read: preprint-scan]): Br-79 7.05 +- 0.35 [54]; Br-81 7.55 +- 0.48 [54]; Br 7.07 +- 0.06 [*]; the compiled-in 7.223 +- 0.28 equals no cell at the primary's printed precision.",
+      "isotope_resolved": false,
+      "needs_verification": true,
       "recommendation": "",
       "single_source": false,
       "source_bibkey": "geant4_v11_4_2",
       "source_library": "geant4-compiled-in",
-      "source_locator": "third_party/geant4/v11.4.2/G4MuonMinusBoundDecay.cc:250 (upstream git blob 29bd73719cd619de34ef83ca5ca076ceadf1cc5a); isotope_resolved established by Suzuki 1987 (TRI-PP-87-5) Table IV p.26 [copy read: preprint-scan]",
+      "source_locator": "third_party/geant4/v11.4.2/G4MuonMinusBoundDecay.cc:250 (upstream git blob 29bd73719cd619de34ef83ca5ca076ceadf1cc5a)",
       "unc_type": "table",
       "validity_range": "Z=35 A=79; outside the listed keys the goulard_primakoff fallback applies"
     },
@@ -1114,7 +1114,7 @@
     "82-207": {
       "conditions": "quoted from the upstream source comment: \"Mu- capture data from T. Suzuki, D. F. Measday, J.P. Roalsvig Phys.Rev. C35 (1987) 2212 weighted average of the two most precise measurements\". Upstream does not state what kind of uncertainty cRErr is, so unc_type is table; Geant4 itself never reads cRErr.",
       "evaluation_id": "g4-11.4.2-boundDecay-capRates",
-      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists Pb with no mass number at this Z -- also RPb (radiogenic lead), which this mass number does not match -- so the value rests on an element target, not a separated isotope; Pb-207 is 22.10% of natural Pb, not the most abundant nuclide (Pb-208, 52.4%).",
+      "evaluation_method": "compiled-in constant table transcribed by Geant4; reproduced here bit-for-bit, not re-evaluated. isotope_resolved was established by reading the primary literature this record's value is attributed to, not derived from the shape of this table: the primary lists Pb with no mass number at this Z -- also RPb (radiogenic lead), which this mass number does not match -- so the value rests on no separated isotope; it equals, at the precision it is printed with, the inverse-variance weighted mean of the published article's row of Pb printed with no mass number and its row of radiogenic lead (Phys. Rev. C 35, 2212, Table IV p.2220 rows 46 and 49), a reconstructed combination, not a demonstrated history; Pb-207 is 22.10% of natural Pb, not the most abundant nuclide (Pb-208, 52.4%).",
       "isotope_resolved": false,
       "needs_verification": false,
       "recommendation": "",
@@ -1267,5 +1267,5 @@
     }
   },
   "seam": "d1_nuclear_capture",
-  "version": "0.5.1"
+  "version": "0.5.2"
 }

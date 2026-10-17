@@ -14,6 +14,7 @@ import hashlib
 import math
 import re
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -68,7 +69,7 @@ def test_the_harvest_records_the_committed_driver_on_each_revision():
     for row in builds:
         assert row["harness_sha256"] == harness, row["build"]
         assert row["geant4_version"] == row["revision"].removeprefix("v").removesuffix(".beta"), row
-        assert row["compile_flags"] == natural.COMPILE_FLAGS
+        assert row["compile_flags"] and row["compile_flags"] == builds[0]["compile_flags"], row
 
 
 def test_the_compositions_cover_the_parity_validity_range_each_normalized():
@@ -119,9 +120,15 @@ def test_drill_the_harvest_parser_refuses_what_the_driver_does_not_print(text):
         natural.parse_harvest(text)
 
 
-def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes = b"") -> Path:
+_FLAGS = "-std=c++17 -O2 -ffp-contract=off\n"
+
+
+def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes = b"",
+              flags: tuple[str | None, ...] = (_FLAGS,) * len(natural.BUILDS)) -> Path:
+    """A raw harvest tree with one folder per build of `natural.BUILDS`; ``flags`` gives each build's own
+    ``flags.txt`` in that order, None leaving the file out."""
     raw = root / "raw"
-    for (build, _), output in zip(natural.BUILDS, outputs, strict=True):
+    for (build, _), output, build_flags in zip(natural.BUILDS, outputs, flags, strict=True):
         folder = raw / build
         folder.mkdir(parents=True)
         (folder / "natural.txt").write_bytes(output.encode("ascii"))
@@ -129,15 +136,19 @@ def _raw_tree(root: Path, outputs: tuple[str, str], digest: str, stderr: bytes =
         (folder / "version.txt").write_text("11.4.2\n", encoding="ascii")
         (folder / "gcc.txt").write_text("g++\n", encoding="ascii")
         (folder / "stderr.txt").write_bytes(stderr)
+        if build_flags is not None:
+            (folder / "flags.txt").write_text(build_flags, encoding="ascii")
     return raw
 
 
 def test_drill_the_harvest_conversion_refuses_differing_builds_a_foreign_driver_and_stderr(tmp_path):
     """The conversion writes rows only when every build compiled the committed driver, wrote nothing to
-    stderr and printed the same bytes; each of the three ways to break that is refused."""
+    stderr and printed the same bytes; each of the three ways to break that is refused. The two drills below
+    hold each build to its own compile-flag record."""
     harness = hashlib.sha256((REPO / natural.HARNESS_RELPATH).read_bytes()).hexdigest()
     rows, builds = natural.harvest(_raw_tree(tmp_path / "ok", (_RAW, _RAW), harness), REPO)
     assert [row["a"] for row in rows] == ["1", "2", "4"] and len(builds) == len(natural.BUILDS)
+    assert {row["compile_flags"] for row in builds} == {_FLAGS.strip()}
     assert rows[1]["abundance"] == repr(float.fromhex("0x1p-12"))
     for name, raw in (
         ("differ", _raw_tree(tmp_path / "differ", (_RAW, _RAW.replace("0x1p-12", "0x1p-11")), harness)),
@@ -147,6 +158,38 @@ def test_drill_the_harvest_conversion_refuses_differing_builds_a_foreign_driver_
         with pytest.raises(natural.NaturalTargetError):
             natural.harvest(raw, REPO)
         assert name
+
+
+# One flag record per build, no two alike, each padded with whitespace the conversion strips.
+_DISTINCT_FLAGS = tuple(
+    f" -std=c++17 -O{index} -ffp-contract={'off' if index % 2 else 'fast'} \n"
+    for index in range(len(natural.BUILDS))
+)
+
+
+def test_drill_each_build_record_carries_its_own_compile_flags(tmp_path):
+    """Given a different flag record in every build's folder, each build record carries its own, stripped;
+    with the records rotated one build along, each carries the one now in its folder. A conversion that read
+    one build's flags.txt for another build's record fails one of the two."""
+    assert len(natural.BUILDS) >= 2 and len(set(_DISTINCT_FLAGS)) == len(natural.BUILDS)
+    harness = hashlib.sha256((REPO / natural.HARNESS_RELPATH).read_bytes()).hexdigest()
+    rotated = _DISTINCT_FLAGS[1:] + _DISTINCT_FLAGS[:1]
+    for name, given in (("distinct", _DISTINCT_FLAGS), ("rotated", rotated)):
+        _, builds = natural.harvest(_raw_tree(tmp_path / name, (_RAW, _RAW), harness, flags=given), REPO)
+        expected = [(build, flags.strip()) for (build, _), flags in zip(natural.BUILDS, given, strict=True)]
+        assert [(row["build"], row["compile_flags"]) for row in builds] == expected, name
+
+
+@pytest.mark.parametrize("fault", [None, "", " \t\n"], ids=["missing", "empty", "whitespace"])
+@pytest.mark.parametrize("faulty", range(len(natural.BUILDS)), ids=[build for build, _ in natural.BUILDS])
+def test_drill_a_build_without_its_own_compile_flags_is_refused_alone(tmp_path, faulty, fault):
+    """One build's flags.txt is missing, empty or whitespace only while every other build's carries flags: the
+    conversion refuses, naming that build."""
+    harness = hashlib.sha256((REPO / natural.HARNESS_RELPATH).read_bytes()).hexdigest()
+    flags = tuple(fault if index == faulty else given for index, given in enumerate(_DISTINCT_FLAGS))
+    refusal = f"{natural.BUILDS[faulty][0]}: the harvest recorded no compile flags (flags.txt)"
+    with pytest.raises(natural.NaturalTargetError, match=f"^{re.escape(refusal)}$"):
+        natural.harvest(_raw_tree(tmp_path, (_RAW, _RAW), harness, flags=flags), REPO)
 
 
 # --------------------------------------------------------------------------------------------
@@ -327,6 +370,9 @@ def document_pins(numeric: re.Pattern[str]) -> list[tuple[str, str, str, tuple[i
          r"tabulated relative uncertainty in (\d+) of them", (1,), len(beyond_uncertainty(rows))),
         ("the decay-rate threshold", DOCUMENT, r"wherever Z ≥ (\d+)", (1,), decay_threshold()),
     ]
+    reach = natural.render_reach_sentence(natural.capture_profiles(REPO / "data" / "g4" / "d1"))
+    pattern, groups = _row_pattern(reach, numeric)
+    pins.append(("reachable rows", DOCUMENT, pattern, groups, None))
     for name, block in (("natural-target table", natural.render_table(rows)),
                         ("profile table", natural.render_profile_table(rows))):
         for number, line in enumerate(block.splitlines()[2:], start=1):
@@ -345,6 +391,23 @@ def test_the_document_carries_both_tables_as_generated():
     rows = study()
     for block in (natural.render_table(rows), natural.render_profile_table(rows)):
         assert section.count(block + "\n") == 1
+
+
+def test_the_document_states_the_reachable_rows_of_each_profile_once():
+    """Section 11 carries the sentence `render_reach_sentence` renders, once; each count it states is the
+    number of the profile's records keyed by a mass number, and a count moved by one is no longer the
+    rendered sentence."""
+    tables = natural.capture_profiles(REPO / "data" / "g4" / "d1")
+    sentence = natural.render_reach_sentence(tables)
+    collapsed = " ".join((REPO / DOCUMENT).read_text(encoding="utf-8").split())
+    section = collapsed.split(" ## 11. ", 1)[1].split(" ## 12. ", 1)[0]
+    assert section.count(sentence) == 1 and collapsed.count(sentence) == 1
+    for name, table in tables.items():
+        keyed = sum(1 for _, a, _, _ in table.records if int(a) != 0)
+        assert f"{keyed} of the {len(table.records)} rows of `{name}`" in sentence
+    count = len(natural.profile_rows(tables["parity"]))
+    moved = sentence.replace(f"{count} of the", f"{count + 1} of the", 1)
+    assert moved != sentence and collapsed.replace(sentence, moved).count(sentence) == 0
 
 
 def test_every_pin_of_the_section_states_its_value():
@@ -374,7 +437,7 @@ def test_drill_a_changed_cell_or_count_is_refused():
 LEAD_WORDS = (
     "the inverse-variance weighted mean of the row of lead printed with no mass number and the row of what a "
     "footnote of that table labels radiogenic lead",
-    "averages a measurement on lead and a measurement on radiogenic lead",
+    "matches a reconstructed combination of a measurement on lead and a measurement on radiogenic lead",
 )
 
 
@@ -407,7 +470,7 @@ def lead_problems(pair: tuple[dict[str, str], dict[str, str]]) -> list[str]:
     return []
 
 
-def test_the_lead_record_averages_a_lead_row_and_a_radiogenic_lead_row():
+def test_the_lead_record_equals_the_weighted_mean_of_a_lead_row_and_a_radiogenic_lead_row():
     """Section 11 says, after its table, that the `parity` lead record is the inverse-variance weighted mean,
     at its printed precision, of a row of Table IV on lead printed with no mass number and a row the table's
     footnote labels radiogenic lead, from the same reference; recomputed here from the committed transcription
@@ -436,3 +499,109 @@ def test_drill_another_lead_row_in_place_of_the_radiogenic_row_is_refused():
     assert others
     for other in others:
         assert lead_problems((plain, other)), other["refs"]
+
+
+#: The two records the isotope audit leaves open because each value agrees with a combination of printed rows:
+#: the Table IV labels of the rows its evidence names, the element's row being the one of this experiment.
+OPEN_COMBINATIONS = {(29, 63): ("Cu", "63Cu"), (35, 79): ("79Br", "81Br")}
+
+
+def combination_rows(z: int, labels: tuple[str, ...]) -> list[dict[str, str]]:
+    """The Table IV row of each label at ``z`` that prints a rate and its uncertainty; where a label
+    prints more than one, the row of this experiment."""
+    rows = suzuki1987.normalize(suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH))
+    out = []
+    for label in labels:
+        hits = [row for row in rows if row["table"] == "IV" and int(row["Z"]) == z
+                and row["target_label"] == label and row["rate_unc"]]
+        if len(hits) > 1:
+            hits = [row for row in hits if row["own_measurement"] == "true"]
+        (row,) = hits
+        out.append(row)
+    return out
+
+
+def record_problems(
+    key: tuple[int, int], value: Decimal, unc: Decimal, mean: Decimal, sigma: Decimal
+) -> list[str]:
+    """What would make the evidence false: the weighted mean ``mean`` differs from the record's ``value``, or
+    its uncertainty ``sigma`` from the record's ``unc``, by a unit of that number's last printed digit or
+    more."""
+    unit_v = Decimal(1).scaleb(value.as_tuple().exponent)
+    unit_u = Decimal(1).scaleb(unc.as_tuple().exponent)
+    if abs(mean - value) >= unit_v or abs(sigma - unc) >= unit_u:
+        return [f"{key}: the weighted mean is {mean} +- {sigma}; the record is {value} +- {unc}"]
+    return []
+
+
+def combination_problems(key: tuple[int, int], rows: list[dict[str, str]]) -> list[str]:
+    """:func:`record_problems` for the record at ``key`` and the inverse-variance weighted mean of
+    ``rows``."""
+    data = found()
+    (index,) = [i for i, record in enumerate(data.capture_records) if (record[0], record[1]) == key]
+    value, unc = (Decimal(cell) for cell in data.capture_literals[index])
+    weights = [1 / suzuki1987.scaled(row, "rate_unc") ** 2 for row in rows]
+    total = sum(w * suzuki1987.scaled(row, "rate") for w, row in zip(weights, rows, strict=True))
+    return record_problems(key, value, unc, total / sum(weights), 1 / sum(weights).sqrt())
+
+
+#: A record as the vendored table prints it, its last digits a unit of 1e-4 (value) and 1e-5 (uncertainty).
+_VALUE, _UNC = Decimal("4.8700"), Decimal("0.03000")
+_UNIT_V, _UNIT_U = Decimal("0.0001"), Decimal("0.00001")
+#: A step far below either unit, to stand just inside or just outside a band edge.
+_TINY = Decimal("1e-20")
+
+
+@pytest.mark.parametrize("sign", (1, -1))
+@pytest.mark.parametrize(
+    "mean_offset,sigma_offset,refused",
+    (
+        (_UNIT_V, 0, True),  # the mean a whole unit off, the uncertainty exact: the band's edge is outside
+        (_UNIT_V - _TINY, 0, False),  # just inside on the mean
+        (_UNIT_V + _TINY, 0, True),  # just outside on the mean
+        (0, _UNIT_U, True),  # the uncertainty a whole unit off, the mean exact
+        (0, _UNIT_U - _TINY, False),  # just inside on the uncertainty
+        (0, _UNIT_U + _TINY, True),  # just outside on the uncertainty
+        (0, 0, False),  # both exact
+    ),
+    ids=("mean-edge", "mean-inside", "mean-outside", "sigma-edge", "sigma-inside", "sigma-outside", "exact"),
+)
+def test_drill_the_weighted_mean_check_refuses_each_coordinate_alone_at_its_edge(
+    sign: int, mean_offset: Decimal, sigma_offset: Decimal, refused: bool
+):
+    """Each of the two criteria of :func:`record_problems` alone, the other number exactly the record's: a
+    difference of exactly one unit of the record's last printed digit is refused (the band is open), one a
+    hair less is admitted and one a hair more refused, on either side of the record."""
+    mean = _VALUE + sign * Decimal(mean_offset)
+    sigma = _UNC + sign * Decimal(sigma_offset)
+    assert _VALUE.as_tuple().exponent == _UNIT_V.as_tuple().exponent == -4
+    assert _UNC.as_tuple().exponent == _UNIT_U.as_tuple().exponent == -5
+    assert bool(record_problems((0, 0), _VALUE, _UNC, mean, sigma)) is refused
+
+
+def test_the_two_open_records_agree_with_the_weighted_means_their_evidence_names():
+    """The `(29, 63)` and `(35, 79)` records are open, not isotope-resolved, and name their value a
+    reconstructed combination; each agrees, within a unit of its last printed digit, with the inverse-variance
+    weighted mean of the two Table IV rows its evidence names. The lead record, settled and not
+    isotope-resolved, names its value a reconstructed combination too."""
+    audit = d1.load_isotope_audit(REPO / d1.AUDIT_RELPATH)
+    for key, labels in OPEN_COMBINATIONS.items():
+        finding = audit[key]
+        assert not finding.isotope_resolved and not finding.settled, key
+        assert d1.RECONSTRUCTED_CLAUSE in finding.evidence, key
+        assert combination_problems(key, combination_rows(key[0], labels)) == [], key
+    plain, _ = lead_rows()
+    lead = audit[(int(plain["Z"]), 207)]
+    assert lead.settled and not lead.isotope_resolved and d1.RECONSTRUCTED_CLAUSE in lead.evidence
+
+
+def test_drill_a_copper_row_of_another_reference_in_the_combination_is_refused():
+    """Each Table IV row of Cu printed with no mass number from another reference, taken in place of the
+    row of this experiment, moves the weighted mean off the `(29, 63)` record."""
+    rows = suzuki1987.normalize(suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH))
+    others = [row for row in rows if row["table"] == "IV" and row["Z"] == "29" and row["target_label"] == "Cu"
+              and row["own_measurement"] != "true" and row["rate_unc"]]
+    assert others
+    (isotope,) = combination_rows(29, ("63Cu",))
+    for other in others:
+        assert combination_problems((29, 63), [other, isotope]), other["refs"]

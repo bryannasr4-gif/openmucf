@@ -76,7 +76,9 @@ class G4MuonicDataTable {
 
   // Overlay opt-in: a plain process-wide flag, set and cleared by a consumer. Nothing in this
   // reader consults it; it exists so a consumer that falls through to compiled-in values can make
-  // that fall-through explicit.
+  // that fall-through explicit. The flag is not synchronised: set or clear it before any thread
+  // that reads it starts, never while one runs. G4HadronicParameters::SetEnableMuonicData, which
+  // the patches add to Geant4, changes it only on the master thread in the PreInit state.
   static void Enable();
   static void Disable();
   static bool IsEnabled();

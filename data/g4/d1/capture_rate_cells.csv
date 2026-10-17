@@ -12,6 +12,15 @@ Z,label,dagger,rate,rate_unc,bracketed,refs,locator,copy_read
 24,Cr-53,false,3.297,0.045,false,72,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
 24,Cr-54,false,3.057,0.042,false,72,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
 24,Cr-nat,false,3.444,0.047,false,72,Suzuki 1987 (TRI-PP-87-5) Table IV p.25,preprint-scan
+29,Cu,false,5.79,0.16,false,39,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+29,Cu,false,5.47,0.20,false,44,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+29,Cu,false,5.66,0.09,false,53,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+29,Cu,false,5.67,0.09,false,48,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+29,Cu,false,5.676,0.037,false,*,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+29,Cu-63,false,5.72,0.05,false,48,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+35,Br-79,false,7.05,0.35,false,54,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+35,Br-81,false,7.55,0.48,false,54,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
+35,Br,false,7.07,0.06,false,*,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
 38,Sr,false,7.25,0.14,false,48,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
 38,Sr,false,7.02,0.14,false,*,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan
 38,Sr-88,false,6.61,0.27,false,48,Suzuki 1987 (TRI-PP-87-5) Table IV p.26,preprint-scan

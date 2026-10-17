@@ -18,10 +18,10 @@ index fa725ef8f1..c4a04cccbe 100644
  #endif
 diff --git a/source/particles/management/include/G4MuonicDataOverlay.hh b/source/particles/management/include/G4MuonicDataOverlay.hh
 new file mode 100644
-index 0000000000..dafb708af9
+index 0000000000..c9eb032600
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataOverlay.hh
-@@ -0,0 +1,100 @@
+@@ -0,0 +1,103 @@
 +// G4MuonicDataOverlay -- the Geant4-facing glue between the G4MuonicData dataset reader and the
 +// compiled-in muon-capture and muonic-atom energy code paths.
 +//
@@ -29,9 +29,9 @@ index 0000000000..dafb708af9
 +// Geant4 needs: dataset discovery through G4FindDataDir, the semantic layer
 +// (G4MuonicDataSemantics) applied to every loaded table before any of them is selected, a fatal
 +// G4Exception when the opt-in was requested but the dataset is absent, invalid or does not mean
-+// what a consumer may read, and keyed lookups that say which rung answered. Nothing here is
-+// reached unless G4MuonicDataTable::Enable() has been called: with the opt-in off every entry
-+// point below does nothing and performs no I/O.
++// what a consumer may read, and keyed lookups that say which rung answered. With the opt-in off
++// (G4MuonicDataTable::Enable() not called) every entry point below returns without reading the
++// dataset or performing I/O; CheckComputedCaptureRate is the one the patched code calls even then.
 +//
 +// Two seams are selected independently. G4MUONICDATA_D1_PROFILE names the profile the nuclear
 +// capture seam reads through and G4MUONICDATA_D3_PROFILE the one the muonic-transition seam reads
@@ -114,6 +114,9 @@ index 0000000000..dafb708af9
 +  // A capture rate the consumer computed itself, once the dataset had no record for the nuclide.
 +  // A no-op unless the effective D1 profile is an evaluated one: under `parity` and under the
 +  // compiled-in seam the documented Goulard-Primakoff output, negative values included, stands.
++  // Under an evaluated profile a rate that is not finite is fatal (G4MuonicData005); a finite rate
++  // that is not positive stands as computed, and the first such rate in the process raises the
++  // warning G4MuonicData006.
 +  static void CheckComputedCaptureRate(G4int Z, G4int A, G4double rate);
 +  // The assembled muonic-cascade level array, after at least one lookup overlaid part of it: the
 +  // whole array must be finite, positive and strictly falling, boundary between overlaid and
@@ -176,10 +179,10 @@ index 0000000000..9ca4ab0746
 +#endif
 diff --git a/source/particles/management/include/G4MuonicDataTable.hh b/source/particles/management/include/G4MuonicDataTable.hh
 new file mode 100644
-index 0000000000..4ef3c90314
+index 0000000000..4b7fce2d9f
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataTable.hh
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,100 @@
 +// G4MuonicDataTable -- a standard-library-only C++17 reader for the Layer-1 `.g4dat` grammar.
 +//
 +// This is the C++ counterpart of `openmucf/g4/spec.py`, the reference implementation of
@@ -258,7 +261,9 @@ index 0000000000..4ef3c90314
 +
 +  // Overlay opt-in: a plain process-wide flag, set and cleared by a consumer. Nothing in this
 +  // reader consults it; it exists so a consumer that falls through to compiled-in values can make
-+  // that fall-through explicit.
++  // that fall-through explicit. The flag is not synchronised: set or clear it before any thread
++  // that reads it starts, never while one runs. G4HadronicParameters::SetEnableMuonicData, which
++  // the patches add to Geant4, changes it only on the master thread in the PreInit state.
 +  static void Enable();
 +  static void Disable();
 +  static bool IsEnabled();
@@ -391,10 +396,10 @@ index 8c2c37a99c..b00cb6d8bc 100644
                                            G4double Xuser)
 diff --git a/source/particles/management/src/G4MuonicDataOverlay.cc b/source/particles/management/src/G4MuonicDataOverlay.cc
 new file mode 100644
-index 0000000000..31ed6849af
+index 0000000000..030ca9679a
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicDataOverlay.cc
-@@ -0,0 +1,469 @@
+@@ -0,0 +1,482 @@
 +// G4MuonicDataOverlay -- implementation. See the header for what this class is for.
 +#include "G4MuonicDataOverlay.hh"
 +
@@ -403,6 +408,7 @@ index 0000000000..31ed6849af
 +#include "G4MuonicDataSemantics.hh"
 +
 +#include <algorithm>
++#include <atomic>
 +#include <cmath>
 +#include <cstdlib>
 +#include <stdexcept>
@@ -837,10 +843,22 @@ index 0000000000..31ed6849af
 +void G4MuonicDataOverlay::CheckComputedCaptureRate(G4int Z, G4int A, G4double rate) {
 +  const State* state = Access();
 +  if (state == nullptr || !state->d1Evaluated) return;
-+  if (!std::isfinite(rate) || rate <= 0.) {
++  if (!std::isfinite(rate)) {
 +    Fatal("G4MuonicData005", "under #PROFILE " + state->config.d1Profile + " the dataset has no nuclear capture rate for (Z, A) = (" +
 +                                 std::to_string(Z) + ", " + std::to_string(A) +
-+                                 ") and the compiled-in model computed one that is not a positive finite rate");
++                                 ") and the compiled-in model computed one that is not a finite rate");
++    return;
++  }
++  if (rate <= 0.) {
++    // Reported once per process, from whichever thread meets it first.
++    static std::atomic<bool> reported(false);
++    if (!reported.exchange(true)) {
++      const std::string text = "under #PROFILE " + state->config.d1Profile + " the dataset has no nuclear capture rate for (Z, A) = (" +
++                               std::to_string(Z) + ", " + std::to_string(A) +
++                               ") and the compiled-in model computed one that is not positive; it is used as computed, as under parity, "
++                               "and no later such rate is reported";
++      G4Exception("G4MuonicDataOverlay", "G4MuonicData006", JustWarning, text.c_str());
++    }
 +  }
 +}
 +

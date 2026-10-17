@@ -41,6 +41,7 @@ import filecmp
 import functools
 import io
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -101,7 +102,7 @@ SUZUKI_PREPRINT_DIFF = ROOT / suzsrc.PREPRINT_DIFF_RELPATH
 
 #: The version moves with the archive. Plainly distinct
 #: from the example's `0.0.0-example`, and below 1.0.0 because D1 and D3 alone are not the dataset.
-_BASE_DATASET_VERSION = "0.5.0"
+_BASE_DATASET_VERSION = "0.5.1"
 
 
 def _next_patch_version(base: str) -> str:
@@ -557,8 +558,15 @@ def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) 
 
 
 def build_suzuki_capture_document(
-    selected: dict[tuple[int, int], dict[str, str]],
+    selected: dict[tuple[int, int], dict[str, str]], clauses: dict[int, str] | None = None,
+    states: dict[str, str] | None = None,
 ) -> provenance.ProvDocument:
+    """The Layer-2 document of the profile. A row printed with the bare symbol of a mononuclidic element names, in
+    its conditions, the isotope-audit clause (``clauses``, Z to clause) that gives its key mass number; a row a
+    printed note says gives the lifetime of one state of the muonic atom names that state last (``states``, the
+    row's locator to the state, :func:`openmucf.g4.sources.suzuki1987.measured_states`)."""
+    clauses = clauses or {}
+    states = states or {}
     rows = {}
     for (z, a), row in sorted(selected.items()):
         unit = row["rate_unit"]
@@ -572,6 +580,9 @@ def build_suzuki_capture_document(
                 f"target label as printed: {row['target_label']}; mean life as printed: "
                 f"{row['mean_life_ns']}+-{row['mean_life_unc_ns']} ns; Huff factor as printed: "
                 f"{printed_huff}; copy read: page images of the published article"
+                + (f"; key mass number from the isotope audit: {clauses[z]}"
+                   if row["target_basis"] == "unspecified" else "")
+                + (f"; {states[locator]}" if locator in states else "")
             ),
             validity_range=f"Z={z} A={a}",
             evaluation_method=(
@@ -583,7 +594,7 @@ def build_suzuki_capture_document(
             recommendation="",
             evaluation_id=suzsrc.EVALUATION_ID,
             source_library=suzsrc.PROFILE,
-            isotope_resolved=row["target_basis"] == "isotope",
+            isotope_resolved=a != 0,
         )
     return provenance.ProvDocument(
         dataset=DATASET_NAME,
@@ -921,6 +932,70 @@ def d3_summary(out: md.Outputs) -> list[str]:
     return lines
 
 
+#: The evidence wording of an isotope-audit row whose element has a single natural isotope, e.g.
+#: "Al is mononuclidic (Al-27 = 100% of the natural element)": the symbol, the isotope's symbol and mass number.
+MONO_PATTERN = re.compile(r"([A-Z][a-z]?) is mononuclidic \(([A-Z][a-z]?)-([0-9]+) = 100% of the natural element\)")
+
+
+def _mononuclidic() -> dict[int, tuple[int, str]]:
+    """Z to (A, clause) for every isotope-audit row whose evidence states the element mononuclidic. The clause must
+    name the row's own A and symbol, and the committed Geant4 composition at that Z must be that single isotope at
+    abundance 1; anything else stops the build."""
+    from openmucf.g4 import d1_natural as natural
+
+    audit = d1src.load_isotope_audit(ROOT / d1src.AUDIT_RELPATH)
+    compositions = natural.load_isotopes(ROOT / natural.ISOTOPES_RELPATH)
+    out: dict[int, tuple[int, str]] = {}
+    for (z, a), row in sorted(audit.items()):
+        m = MONO_PATTERN.search(row.evidence)
+        if not m:
+            continue
+        members = compositions.get(z, ())
+        if not (m.group(1) == m.group(2) and int(m.group(3)) == a and len(members) == 1
+                and members[0].symbol == m.group(1) and members[0].a == a and members[0].abundance == 1.0):
+            raise SystemExit(f"g4data build FAILED: the isotope audit calls ({z}, {a}) mononuclidic ({m.group(0)!r}) "
+                             f"and the Geant4 composition at Z={z} is {members!r}")
+        if z in out:
+            raise SystemExit(f"g4data build FAILED: two isotope-audit rows call Z={z} mononuclidic")
+        out[z] = (a, m.group(0))
+    return out
+
+
+def mononuclidic_keys() -> dict[int, int]:
+    """Z to the mass number of the single natural isotope, for every element the isotope audit calls mononuclidic
+    and the committed Geant4 composition agrees."""
+    return {z: a for z, (a, _) in _mononuclidic().items()}
+
+
+def mononuclidic_clauses() -> dict[int, str]:
+    """Z to the isotope-audit clause that gives the element's single natural isotope (:func:`mononuclidic_keys`)."""
+    return {z: clause for z, (_, clause) in _mononuclidic().items()}
+
+
+#: The licence README.md's License section gives project-authored data under data/g4/, with its URL as
+#: datapackage.json gives it.
+CC_BY = "CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/)"
+_RESTATED = ("offered under no licence of the openmucf repository, as files that restate cells of tables a "
+             "third party publishes")
+#: The licence of every table of a profile, as the License section of README.md states it by path.
+PROFILE_LICENCES = {
+    spec.PARITY_PROFILE: "Geant4 Software License v1.0",
+    mizsrc.PROFILE: _RESTATED,
+    suzsrc.PROFILE: _RESTATED,
+    md.PROFILE: CC_BY + "; the input radii their .prov.json files repeat: MuDirac's MIT License",
+}
+
+
+def _licence_statements(files: list[emit.TableEntry]) -> list[tuple[tuple[str, ...], str]]:
+    """One ``(member names, licence)`` line of the ``LICENSE`` member per table pair, by the profile of the
+    table, then the generated README and History, which are project-authored."""
+    out: list[tuple[tuple[str, ...], str]] = []
+    for layer1, layer2, _table, profile, _seam, _rows in files:
+        out.append(((layer1, layer2), PROFILE_LICENCES[profile]))
+    out.append((("README", "History"), CC_BY))
+    return out
+
+
 def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     """The committed D1 and D3 artifacts keyed by path, plus the archive they describe (not
     committed)."""
@@ -930,7 +1005,7 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     mizuno = mizsrc.load(MIZUNO_TABLE1_PATH, MIZUNO_TABLE3_PATH)
     suzuki_printed = suzsrc.load_printed_rows(SUZUKI_PRINTED_PATH)
     suzuki_rows = suzsrc.normalize(suzuki_printed)
-    suzuki_selected = suzsrc.selected(suzuki_rows)
+    suzuki_selected = suzsrc.selected(suzuki_rows, mononuclidic_keys())
     outputs = md.load_outputs(ROOT)
 
     members: dict[str, bytes] = {}
@@ -951,7 +1026,8 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
         ),
         (
             D1_SUZUKI_LAYER1, D1_SUZUKI_LAYER2,
-            build_suzuki_capture_document(suzuki_selected),
+            build_suzuki_capture_document(
+                suzuki_selected, mononuclidic_clauses(), suzsrc.measured_states(suzuki_printed)),
             functools.partial(build_suzuki_capture_table, suzuki_selected),
         ),
         (
@@ -986,8 +1062,15 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
 
     # README and History are archive members only, like the archive itself: pure functions of the
     # Layer-2 documents and the member names, so nothing about them needs a committed copy.
-    members["README"] = emit.readme_member(name=DATASET_NAME, version=DATASET_VERSION, files=files)
+    members["README"] = emit.readme_member(
+        name=DATASET_NAME, version=DATASET_VERSION, files=files, licence=True
+    )
     members["History"] = emit.history_member(name=DATASET_NAME, version=DATASET_VERSION, files=files)
+    members["LICENSE"] = emit.license_member(
+        name=DATASET_NAME, version=DATASET_VERSION, statements=_licence_statements(files),
+        texts=(("Geant4 Software License v1.0", (ROOT / "third_party/geant4/LICENSE").read_bytes()),
+               ("MuDirac's MIT License", (ROOT / "data/g4/d3/LICENSE-MUDIRAC").read_bytes())),
+    )
     archive = emit.build_tarball(
         members, directory=emit.dataset_directory(DATASET_NAME, DATASET_VERSION)
     )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -31,6 +32,13 @@ _DECIMAL = r"[0-9]+(?:\.[0-9]+)?"
 _SYMMETRIC = re.compile(rf"({_DECIMAL})\+\-({_DECIMAL})")
 _ASYMMETRIC = re.compile(rf"({_DECIMAL})\+({_DECIMAL})\(-({_DECIMAL})\)")
 _LABEL = re.compile(r"(?:(nat|R|[0-9]+(?:\.[0-9]+)?)?)([A-Z][a-z]?)(?:\^[a-z])?")
+#: The note Table III prints after its F rows, naming the state of the muonic atom whose lifetime those rows
+#: give: ``hf`` is the hyperfine structure of the muonic 1s state (Sec. IV D of the article).
+STATE_NOTE = re.compile(
+    r"\(these ([A-Z][a-z]?) data show the lifetime for the lower hf state; see Sec\. IV D\)\."
+)
+#: Words of a note or footnote that speak of the hyperfine state; such a note must be a :data:`STATE_NOTE`.
+_HYPERFINE_WORDS = re.compile(r"\bhf\b|hyperfine", re.IGNORECASE)
 
 
 class Suzuki1987Error(RuntimeError):
@@ -127,6 +135,41 @@ def _label_parts(label: str, locator: str) -> tuple[str, str, str]:
     if prefix == "R" or "." in prefix:
         return clean, symbol, "enriched_mixture"
     return clean, symbol, "isotope"
+
+
+def measured_states(rows: tuple[PrintedRow, ...]) -> dict[str, str]:
+    """The locator of each data row to the state of the muonic atom a printed note says its mean life and
+    rate describe: every data row of the element group a :data:`STATE_NOTE` directly follows, the group
+    being the rows from the last one that prints a Z, gets
+    ``lower hyperfine state (Table III p.2217 note following row 54)``. A note or footnote that speaks of
+    the hyperfine state in other words, one that does not directly follow a data row, and one whose element
+    is not that of every row of its group are refused."""
+    states: dict[str, str] = {}
+    group: list[PrintedRow] = []
+    previous: PrintedRow | None = None
+    for row in rows:
+        if row.row_kind == "data":
+            if row.z_raw:
+                group = []
+            group.append(row)
+        elif row.row_kind in ("note", "footnote") and _HYPERFINE_WORDS.search(row.note):
+            match = STATE_NOTE.fullmatch(row.note)
+            if match is None or row.row_kind != "note":
+                raise Suzuki1987Error(
+                    f"{row.locator}: a note on the hyperfine state this module does not read")
+            if previous is None or previous.row_kind != "data" or not group:
+                raise Suzuki1987Error(f"{row.locator}: the hyperfine-state note follows no data row")
+            symbols = {_label_parts(member.element_raw, member.locator)[1]
+                       for member in group if member.element_raw}
+            if symbols != {match.group(1)}:
+                raise Suzuki1987Error(
+                    f"{row.locator}: the note names {match.group(1)}, its rows print {symbols}")
+            state = (f"lower hyperfine state (Table {row.table} p.{row.printed_page} note following row "
+                     f"{previous.page_row_ordinal})")
+            for member in group:
+                states[member.locator] = state
+        previous = row
+    return states
 
 
 def _basis_rule(label: str, basis: str) -> str:
@@ -243,13 +286,32 @@ def scaled(row: dict[str, str], column: str) -> Decimal:
     return Decimal(row[column]).scaleb(shift)
 
 
-def selected(rows: tuple[dict[str, str], ...]) -> dict[tuple[int, int], dict[str, str]]:
+def selected(
+    rows: tuple[dict[str, str], ...], mononuclidic: Mapping[int, int] | None = None,
+) -> dict[tuple[int, int], dict[str, str]]:
+    """The profile's rows, keyed (Z, A): this experiment's own rows with a symmetric, non-parenthesized
+    rate whose label identifies an isotope (keyed by its mass number) or a natural composition (A = 0),
+    and, at a Z of ``mononuclidic`` (Z to the mass number of the element's single natural isotope), its
+    own rows printed with the bare element symbol, keyed by that mass number. A key selected twice is
+    refused."""
+    mononuclidic = mononuclidic or {}
     result: dict[tuple[int, int], dict[str, str]] = {}
     for row in rows:
-        if not (row["own_measurement"] == "true" and row["target_basis"] in ("isotope", "natural")
-                and row["rate_unc"] and row["rate_parenthesized"] == "false"):
+        if not (row["own_measurement"] == "true" and row["rate_unc"]
+                and row["rate_parenthesized"] == "false"):
             continue
         z = int(row["Z"])
+        if row["target_basis"] == "unspecified" and z in mononuclidic:
+            key = z, mononuclidic[z]
+            if key in result:
+                raise Suzuki1987Error(
+                    f"Table {row['table']} p.{row['printed_page']} row {row['page_row_ordinal']}: "
+                    f"duplicate selected key {key}"
+                )
+            result[key] = row
+            continue
+        if row["target_basis"] not in ("isotope", "natural"):
+            continue
         mass = re.match(r"[0-9]+", row["target_label"])
         if row["target_basis"] == "isotope" and mass is None:
             raise Suzuki1987Error(f"{row['target_label']!r}: isotope lacks an integer mass prefix")

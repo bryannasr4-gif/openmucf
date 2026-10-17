@@ -5,6 +5,90 @@
   ],
   "profile": "suzuki1987",
   "rows": {
+    "11-23": {
+      "conditions": "target label as printed: Na; mean life as printed: 1204.0+-2.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: Na is mononuclidic (Na-23 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2218 row 8 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=11 A=23"
+    },
+    "13-27": {
+      "conditions": "target label as printed: Al; mean life as printed: 864.0+-1.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: Al is mononuclidic (Al-27 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2218 row 16 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=13 A=27"
+    },
+    "15-31": {
+      "conditions": "target label as printed: P; mean life as printed: 611.2+-1.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: P is mononuclidic (P-31 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2218 row 23 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=15 A=31"
+    },
+    "21-45": {
+      "conditions": "target label as printed: Sc; mean life as printed: 316.6+-2.5 ns; Huff factor as printed: 0.983; copy read: page images of the published article; key mass number from the isotope audit: Sc is mononuclidic (Sc-45 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2218 row 43 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=21 A=45"
+    },
+    "25-55": {
+      "conditions": "target label as printed: Mn; mean life as printed: 232.5+-2.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: Mn is mononuclidic (Mn-55 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2219 row 3 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=25 A=55"
+    },
+    "27-59": {
+      "conditions": "target label as printed: Co; mean life as printed: 185.8+-1.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: Co is mononuclidic (Co-59 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2219 row 10 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=27 A=59"
+    },
     "3-6": {
       "conditions": "target label as printed: 6Li; mean life as printed: 2177.0+-2.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
       "evaluation_id": "suzuki1987-tables-iii-iv",
@@ -32,6 +116,48 @@
       "source_locator": "Table III p.2217 row 17 [copy read: published-scan]",
       "unc_type": "table",
       "validity_range": "Z=3 A=7"
+    },
+    "33-75": {
+      "conditions": "target label as printed: As; mean life as printed: 152.9+-1.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: As is mononuclidic (As-75 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2219 row 34 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=33 A=75"
+    },
+    "4-9": {
+      "conditions": "target label as printed: Be; mean life as printed: 2162.1+-2.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: Be is mononuclidic (Be-9 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table III p.2217 row 21 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=4 A=9"
+    },
+    "41-93": {
+      "conditions": "target label as printed: Nb; mean life as printed: 92.7+-1.5 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: Nb is mononuclidic (Nb-93 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2219 row 48 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=41 A=93"
     },
     "5-10": {
       "conditions": "target label as printed: 10B; mean life as printed: 2070.7+-3.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
@@ -61,6 +187,20 @@
       "unc_type": "table",
       "validity_range": "Z=5 A=11"
     },
+    "53-127": {
+      "conditions": "target label as printed: I; mean life as printed: 83.4+-1.5 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: I is mononuclidic (I-127 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2220 row 14 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=53 A=127"
+    },
     "6-13": {
       "conditions": "target label as printed: 13C; mean life as printed: 2029.1+-3.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
       "evaluation_id": "suzuki1987-tables-iii-iv",
@@ -75,6 +215,20 @@
       "unc_type": "table",
       "validity_range": "Z=6 A=13"
     },
+    "79-197": {
+      "conditions": "target label as printed: Au; mean life as printed: 74.3+-1.5 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: Au is mononuclidic (Au-197 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2220 row 38 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=79 A=197"
+    },
     "8-18": {
       "conditions": "target label as printed: 18O; mean life as printed: 1844.0+-4.5 ns; Huff factor as printed: none on this row; copy read: page images of the published article",
       "evaluation_id": "suzuki1987-tables-iii-iv",
@@ -88,8 +242,36 @@
       "source_locator": "Table III p.2217 row 50 [copy read: published-scan]",
       "unc_type": "table",
       "validity_range": "Z=8 A=18"
+    },
+    "83-209": {
+      "conditions": "target label as printed: Bi; mean life as printed: 74.2+-1.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: Bi is mononuclidic (Bi-209 = 100% of the natural element)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table IV, column 'Total capture rate (10^6/s)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table IV p.2220 row 52 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=83 A=209"
+    },
+    "9-19": {
+      "conditions": "target label as printed: F; mean life as printed: 1462.7+-5.0 ns; Huff factor as printed: none on this row; copy read: page images of the published article; key mass number from the isotope audit: F is mononuclidic (F-19 = 100% of the natural element); lower hyperfine state (Table III p.2217 note following row 54)",
+      "evaluation_id": "suzuki1987-tables-iii-iv",
+      "evaluation_method": "total capture rate as the primary prints it (Table III, column 'Total capture rate (s^-1)'), scaled exactly to 1e6/s; not re-derived here",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Suzuki1987",
+      "source_library": "suzuki1987",
+      "source_locator": "Table III p.2217 row 54 [copy read: published-scan]",
+      "unc_type": "table",
+      "validity_range": "Z=9 A=19"
     }
   },
   "seam": "d1_nuclear_capture",
-  "version": "0.5.1"
+  "version": "0.5.2"
 }

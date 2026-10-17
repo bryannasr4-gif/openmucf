@@ -230,16 +230,23 @@ def test_normalize_refusals(case: str) -> None:
 # T-136: the profile keys are exactly the eligible rows, with exact decimal scaling.
 def test_profile_selection_and_provenance() -> None:
     rows = _normalized()
-    selected = suzuki1987.selected(rows)
+    mono = gen.mononuclidic_keys()
+    clauses = gen.mononuclidic_clauses()
+    selected = suzuki1987.selected(rows, mono)
     eligible = [r for r in rows if r["own_measurement"] == "true"
-                and r["target_basis"] in ("isotope", "natural") and r["rate_unc"]
-                and r["rate_parenthesized"] == "false"]
+                and (r["target_basis"] in ("isotope", "natural")
+                     or (r["target_basis"] == "unspecified" and int(r["Z"]) in mono))
+                and r["rate_unc"] and r["rate_parenthesized"] == "false"]
     assert len(selected) == len(eligible)
+    bare = {key: row for key, row in selected.items() if row["target_basis"] == "unspecified"}
+    assert bare and all(a == mono[z] for z, a in bare)
     layer1_bytes = (DATA.parent / "d1_capture.suzuki1987.g4dat").read_bytes()
     layer2_bytes = (DATA.parent / "d1_capture.suzuki1987.prov.json").read_bytes()
     layer1 = spec.parse(layer1_bytes.decode("ascii"))
     layer2 = provenance.from_json_obj(json.loads(layer2_bytes.decode("ascii")))
-    assert provenance.document_bytes(gen.build_suzuki_capture_document(selected)) == layer2_bytes
+    states = suzuki1987.measured_states(_printed())
+    document = gen.build_suzuki_capture_document(selected, clauses, states)
+    assert provenance.document_bytes(document) == layer2_bytes
     assert spec.render(gen.build_suzuki_capture_table(
         selected, provenance.source_digest(layer2_bytes)
     )).encode("ascii") == layer1_bytes
@@ -264,7 +271,7 @@ def test_profile_selection_and_provenance() -> None:
         )
         assert proof.unc_type == "table" and proof.needs_verification is False
         assert proof.single_source is (source["refs"] == "a")
-        assert proof.isotope_resolved is (source["target_basis"] == "isotope")
+        assert proof.isotope_resolved is (source["target_basis"] in ("isotope", "unspecified"))
         assert proof.validity_range == f"Z={z} A={a}"
         assert proof.recommendation == ""
         printed_huff = source["huff_factor"] if source["huff_from"] == "printed" else "none on this row"
@@ -272,6 +279,10 @@ def test_profile_selection_and_provenance() -> None:
             f"target label as printed: {source['target_label']}; mean life as printed: "
             f"{source['mean_life_ns']}+-{source['mean_life_unc_ns']} ns; Huff factor as printed: "
             f"{printed_huff}; copy read: page images of the published article"
+            + (f"; key mass number from the isotope audit: {clauses[int(z)]}"
+               if source["target_basis"] == "unspecified" else "")
+            + (f"; {states[locator]}"
+               if (locator := proof.source_locator.split(" [", 1)[0]) in states else "")
         )
         assert proof.evaluation_method == (
             f"total capture rate as the primary prints it (Table {source['table']}, column "
@@ -281,19 +292,24 @@ def test_profile_selection_and_provenance() -> None:
 
 
 # T-137: empty and repeated selections cannot become a profile.
-@pytest.mark.parametrize("case", ("empty", "duplicate", "mass"))
+@pytest.mark.parametrize("case", ("empty", "duplicate", "mass", "duplicate single-isotope"))
 def test_selection_refusals(case: str) -> None:
     rows = _normalized()
+    mono = gen.mononuclidic_keys()
     eligible = next(r for r in rows if r["own_measurement"] == "true" and r["target_basis"] == "isotope"
                     and r["rate_unc"] and r["rate_parenthesized"] == "false")
+    bare = next(r for r in rows if r["own_measurement"] == "true" and r["target_basis"] == "unspecified"
+                and int(r["Z"]) in mono and r["rate_unc"] and r["rate_parenthesized"] == "false")
     if case == "empty":
         source = tuple(dict(row, own_measurement="false") for row in rows)
     elif case == "duplicate":
         source = rows + (eligible,)
+    elif case == "duplicate single-isotope":
+        source = rows + (bare,)
     else:
         source = (dict(eligible, target_label="Xx"),)
     with pytest.raises(suzuki1987.Suzuki1987Error):
-        suzuki1987.selected(source)
+        suzuki1987.selected(source, mono)
 
 
 # T-140: each eligibility clause excludes a row without altering the eligible key set.
@@ -301,12 +317,150 @@ def test_selection_refusals(case: str) -> None:
     ("own_measurement", "false"), ("target_basis", "enriched_mixture"),
     ("rate_unc", ""), ("rate_parenthesized", "true"),
 ))
-def test_selection_filters(field: str, value: str) -> None:
+@pytest.mark.parametrize("basis", ("isotope", "unspecified"))
+def test_selection_filters(field: str, value: str, basis: str) -> None:
     rows = _normalized()
-    base = suzuki1987.selected(rows)
-    eligible = next(row for row in rows if row in base.values())
+    mono = gen.mononuclidic_keys()
+    base = suzuki1987.selected(rows, mono)
+    eligible = next(row for row in rows if row in base.values() and row["target_basis"] == basis)
     blocked = dict(eligible, **{field: value})
-    assert suzuki1987.selected(rows + (blocked,)) == base
+    assert suzuki1987.selected(rows + (blocked,), mono) == base
+
+
+# T-158: a row printed with a bare element symbol is admitted only at a Z the caller names mononuclidic,
+# keyed by the mass number it is given; at any other Z it stays out of the profile.
+def test_t158_a_bare_symbol_row_is_keyed_only_at_a_single_isotope_element() -> None:
+    rows = _normalized()
+    mono = gen.mononuclidic_keys()
+    own_bare = [r for r in rows if r["own_measurement"] == "true" and r["target_basis"] == "unspecified"
+                and r["rate_unc"] and r["rate_parenthesized"] == "false"]
+    inside = [r for r in own_bare if int(r["Z"]) in mono]
+    outside = [r for r in own_bare if int(r["Z"]) not in mono]
+    assert inside and outside
+    without = suzuki1987.selected(rows)
+    admitted = suzuki1987.selected(rows, mono)
+    assert set(admitted) - set(without) == {(int(r["Z"]), mono[int(r["Z"])]) for r in inside}
+    assert all(row not in admitted.values() for row in outside)
+    assert all(admitted[key] == row for key, row in without.items())
+
+
+# T-159: the generator refuses an isotope-audit row that calls an element mononuclidic when its clause names
+# another mass number or symbol, or the committed Geant4 composition at that Z is not that single isotope.
+# Each case breaks one condition and keeps every other true: "second member" keeps the first member the
+# clause's isotope at abundance 1 and adds another, and "member symbol" gives the one member another symbol
+# at the clause's mass number and abundance 1, the clause unchanged.
+@pytest.mark.parametrize("case", ("two isotopes", "another mass number", "abundance", "clause mass",
+                                  "clause symbol", "second member", "member symbol"))
+def test_t159_a_disagreeing_composition_or_clause_stops_the_build(monkeypatch, case: str) -> None:
+    from openmucf.g4 import d1_natural as natural
+
+    audit = d1.load_isotope_audit(gen.ROOT / d1.AUDIT_RELPATH)
+    compositions = natural.load_isotopes(gen.ROOT / natural.ISOTOPES_RELPATH)
+    z, a = (13, 27)
+    assert gen.mononuclidic_keys()[z] == a
+    (member,) = compositions[z]
+    if case == "two isotopes":
+        compositions[z] = (dataclasses.replace(member, abundance=0.5),
+                           dataclasses.replace(member, a=a + 1, abundance=0.5))
+    elif case == "another mass number":
+        compositions[z] = (dataclasses.replace(member, a=a + 1),)
+    elif case == "abundance":
+        compositions[z] = (dataclasses.replace(member, abundance=0.99),)
+    elif case == "second member":
+        assert member.a == a and member.abundance == 1.0 and member.symbol == "Al"
+        compositions[z] = (member, dataclasses.replace(member, a=a + 1))
+    elif case == "member symbol":
+        compositions[z] = (dataclasses.replace(member, symbol="Si"),)
+    else:
+        old = "Al-27 = 100%" if case == "clause mass" else "(Al-27"
+        new = "Al-28 = 100%" if case == "clause mass" else "(Si-27"
+        assert old in audit[(z, a)].evidence
+        audit[(z, a)] = dataclasses.replace(audit[(z, a)], evidence=audit[(z, a)].evidence.replace(old, new))
+    monkeypatch.setattr(natural, "load_isotopes", lambda _path: compositions)
+    monkeypatch.setattr(d1, "load_isotope_audit", lambda _path: audit)
+    with pytest.raises(SystemExit, match="g4data build FAILED"):
+        gen.mononuclidic_keys()
+
+
+# T-160: Table III prints, after its F rows, that they give the lifetime of the lower hyperfine state. The
+# fluorine row of the profile names that state, located at the note, in its Layer-2 conditions; the
+# mean-life comparison names it on the row of every profile; DATASET_D1.md and the change log say what both
+# Geant4 routes do with that rate.
+STATE_SENTENCE = (
+    "For F-19 the tabulated mean life and capture rate describe the lower hyperfine state "
+    "(Table III p.2217 note); both Geant4 routes use that rate as a single-state approximation "
+    "and do not model the hyperfine transition."
+)
+
+
+def _state_note() -> suzuki1987.PrintedRow:
+    (note,) = [row for row in _printed()
+               if row.row_kind == "note" and suzuki1987.STATE_NOTE.fullmatch(row.note)]
+    return note
+
+
+def test_t160_the_fluorine_row_names_the_lower_hyperfine_state_its_note_prints() -> None:
+    from openmucf.g4 import d1_lifetime
+
+    note = _state_note()
+    rows = _printed()
+    previous = rows[rows.index(note) - 1]
+    assert note.locator == "Table III p.2217 row 55" and previous.row_kind == "data"
+    assert "lower hf state" in note.note and "F data" in note.note
+    state = f"lower hyperfine state (Table III p.2217 note following row {previous.page_row_ordinal})"
+    states = suzuki1987.measured_states(rows)
+    assert set(states.values()) == {state}
+    layer2_bytes = (DATA.parent / "d1_capture.suzuki1987.prov.json").read_bytes()
+    layer2 = provenance.from_json_obj(json.loads(layer2_bytes))
+    stated = {key: row for key, row in layer2.rows.items() if "hyperfine" in row.conditions}
+    assert list(stated) == ["9-19"]
+    assert stated["9-19"].conditions.endswith(f"; {state}")
+    assert stated["9-19"].source_locator.startswith(f"{previous.locator} ")
+    comparison = d1_lifetime.read_comparison(DATA.parents[3] / d1_lifetime.COMPARISON_RELPATH)
+    fluorine = [row for row in comparison if row["locator"] == previous.locator]
+    assert sorted(row["profile"] for row in fluorine) == sorted({row["profile"] for row in comparison})
+    assert all(row["measured_state"] == state for row in fluorine)
+    assert {row["locator"] for row in comparison if row["measured_state"]} == {previous.locator}
+    root = DATA.parents[3]
+    dataset = " ".join((root / "DATASET_D1.md").read_text(encoding="utf-8").split())
+    # Section 12 compares every profile's rate, and only the suzuki1987 rate is the tabulated one, so there
+    # the sentence says what both routes do not model without saying they use that rate.
+    all_profiles = STATE_SENTENCE.replace("use that rate as a single-state approximation and ", "", 1)
+    assert all_profiles != STATE_SENTENCE
+    sections = (("## 10. ", "## 11. ", STATE_SENTENCE), ("## 12. ", None, all_profiles))
+    for heading, following, sentence in sections:
+        section = dataset.split(heading, 1)[1]
+        section = section.split(following, 1)[0] if following else section
+        assert section.count(sentence) == 1, heading
+    unreleased = (root / "CHANGELOG.md").read_text(encoding="utf-8").split("## [", 2)[1]
+    changelog = " ".join(unreleased.split())
+    assert changelog.count(STATE_SENTENCE) == 1
+
+
+@pytest.mark.parametrize("case", ("removed", "upper state", "other element", "after a footnote", "footnote"))
+def test_t160_drill_a_missing_altered_or_misplaced_state_note_is_caught(case: str) -> None:
+    rows = list(_printed())
+    note = _state_note()
+    index = rows.index(note)
+    if case == "removed":
+        del rows[index]
+        states = suzuki1987.measured_states(tuple(rows))
+        assert states == {}
+        selected = suzuki1987.selected(suzuki1987.normalize(tuple(rows)), gen.mononuclidic_keys())
+        document = gen.build_suzuki_capture_document(selected, gen.mononuclidic_clauses(), states)
+        committed = (DATA.parent / "d1_capture.suzuki1987.prov.json").read_bytes()
+        assert provenance.document_bytes(document) != committed
+        return
+    if case == "upper state":
+        rows[index] = dataclasses.replace(note, note=note.note.replace("lower hf", "upper hf"))
+    elif case == "other element":
+        rows[index] = dataclasses.replace(note, note=note.note.replace("these F data", "these Na data"))
+    elif case == "after a footnote":
+        rows.insert(index, rows[index + 1])
+    else:
+        rows[index] = dataclasses.replace(note, row_kind="footnote")
+    with pytest.raises(suzuki1987.Suzuki1987Error):
+        suzuki1987.measured_states(tuple(rows))
 
 
 # T-138: comparisons enumerate every compiled-in row at a published Z and expose the printed 236U cell.

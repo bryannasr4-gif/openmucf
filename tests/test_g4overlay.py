@@ -690,6 +690,7 @@ def test_t72_the_glue_files_are_identical_across_families_and_read_the_profile_v
         b"G4MuonicData003",
         b"G4MuonicData004",
         b"G4MuonicData005",
+        b"G4MuonicData006",
     ], codes
 
 

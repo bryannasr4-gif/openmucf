@@ -578,6 +578,250 @@ def test_every_file_under_data_g4_carries_the_licence_its_class_gives_it():
     check_g4_data_inventory(g4_data_files(), G4_DATA)
 
 
+def _archive_generator():
+    """`scripts/generate_g4data.py`, loaded by path -- `scripts/` is a directory, not a package."""
+    import importlib.util
+
+    module_spec = importlib.util.spec_from_file_location("generate_g4data_licence", REPO / "scripts" /
+                                                         "generate_g4data.py")
+    assert module_spec and module_spec.loader
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
+    return module
+
+
+#: The words of a `LICENSE`-member statement that give each class of :data:`G4_DATA`.
+MEMBER_CLASS = (("Geant4 Software License", "Geant4 Software License"), ("CC-BY-4.0", "CC-BY-4.0"),
+                ("offered under no licence of the openmucf repository", None))
+
+
+def licence_member_problems(text: str, members: list[str], texts: dict[str, bytes]) -> list[str]:
+    """What makes the archive's `LICENSE` member (``text``) false against the repository: a member other than
+    `LICENSE` that no statement line names, or that two name; a statement whose opening words give a member a
+    class other than the one :data:`G4_DATA` gives the file of that name under `data/g4/` (`README` and
+    `History`, generated for the archive, are project-authored: CC-BY-4.0); a licence text not byte-equal to
+    the repository file it copies (``texts``: title to bytes)."""
+    problems: list[str] = []
+    named: dict[str, str] = {}
+    for line in text.splitlines():
+        match = re.fullmatch(r"  - ([^:]+): (.+)", line)
+        if match:
+            for name in match.group(1).split(", "):
+                if name in named:
+                    problems.append(f"{name} named twice")
+                named[name] = match.group(2)
+    if sorted(named) != sorted(m for m in members if m != "LICENSE"):
+        problems.append(f"named {sorted(named)} != members {sorted(members)}")
+    for name, statement in named.items():
+        classes = [cls for words, cls in MEMBER_CLASS if statement.startswith(words)]
+        paths = [path for path in G4_DATA if path.endswith(f"/{name}")]
+        if name in ("README", "History"):
+            want: str | None = "CC-BY-4.0"
+        else:
+            want = G4_DATA[paths[0]] if len(paths) == 1 else "?"
+        if classes != [want]:
+            problems.append(f"{name}: statement {statement[:60]!r} gives {classes}, G4_DATA gives {want!r}")
+    for title, data in texts.items():
+        body = data.replace(b"\r\n", b"\n").decode("ascii").rstrip("\n")
+        if f"\n--- {title} ---\n\n{body}\n" not in text + "\n":
+            problems.append(f"the text of {title} is not the repository copy")
+    return problems
+
+
+def test_the_archive_licence_member_gives_each_member_the_licence_of_its_file():
+    """The `LICENSE` member of the archive the snippet registers names every other member once, gives each
+    the licence class :data:`G4_DATA` gives the file of that name under `data/g4/`, copies the Geant4
+    Software License and MuDirac's MIT License byte for byte, and the README names it; one profile given
+    another licence in `PROFILE_LICENCES` is refused."""
+    import io
+    import tarfile
+
+    gen = _archive_generator()
+    _, archive = gen.build_dataset_artifacts()
+    with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
+        members = {m.name.split("/", 1)[1]: opened.extractfile(m).read() for m in opened.getmembers()}
+    texts = {"Geant4 Software License v1.0": (REPO / "third_party" / "geant4" / "LICENSE").read_bytes(),
+             "MuDirac's MIT License": (REPO / "data" / "g4" / "d3" / "LICENSE-MUDIRAC").read_bytes()}
+    licence = members["LICENSE"].decode("ascii")
+    assert licence_member_problems(licence, list(members), texts) == []
+    readme = members["README"].decode("ascii").splitlines()
+    assert "  - LICENSE: the licence of each file of this directory" in readme
+    listed = re.compile(r"  - (\S+\.g4dat): #TABLE (\S+), #PROFILE (\S+), #SEAM (\S+), (\d+) records")
+    files = [(m.group(1), f"{m.group(1)[:-len('.g4dat')]}.prov.json", m.group(2), m.group(3), m.group(4),
+              int(m.group(5)))
+             for line in readme if (m := listed.fullmatch(line))]
+    rebuilt = gen.emit.license_member(
+        name=gen.DATASET_NAME, version=gen.DATASET_VERSION, statements=gen._licence_statements(files),
+        texts=tuple(texts.items()),
+    )
+    assert rebuilt == members["LICENSE"]
+    profile = "suzuki1987"
+    flipped = dict(gen.PROFILE_LICENCES, **{profile: gen.CC_BY})
+    gen.PROFILE_LICENCES = flipped
+    drilled = gen.emit.license_member(
+        name=gen.DATASET_NAME, version=gen.DATASET_VERSION, statements=gen._licence_statements(files),
+        texts=tuple(texts.items()),
+    ).decode("ascii")
+    assert drilled != licence
+    assert any(problem.startswith(f"d1_capture.{profile}") for problem in
+               licence_member_problems(drilled, list(members), texts))
+
+
+def _licence_member_and_texts() -> tuple[str, list[str], dict[str, bytes]]:
+    """The `LICENSE` member of the archive the generator builds, the archive's member names, and the two
+    licence texts it must copy, by title."""
+    import io
+    import tarfile
+
+    _, archive = _archive_generator().build_dataset_artifacts()
+    with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
+        members = {m.name.split("/", 1)[1]: opened.extractfile(m).read() for m in opened.getmembers()}
+    texts = {"Geant4 Software License v1.0": (REPO / "third_party" / "geant4" / "LICENSE").read_bytes(),
+             "MuDirac's MIT License": (REPO / "data" / "g4" / "d3" / "LICENSE-MUDIRAC").read_bytes()}
+    return members["LICENSE"].decode("ascii"), list(members), texts
+
+
+@pytest.mark.parametrize("case", ("member not named", "member absent", "named twice", "another class",
+                                  "text altered", "text missing"))
+def test_drill_each_licence_member_check_refuses_its_own_fault_alone(case: str):
+    """Each check of :func:`licence_member_problems`, given a `LICENSE` member that is correct in every
+    other respect: a member no statement names (`History` dropped from its line), a statement naming a member
+    the archive lacks, a member named on a second line too, a statement giving a profile another licence
+    class, and a licence text altered by one character or left out. Each is refused, and by that check
+    alone."""
+    licence, members, texts = _licence_member_and_texts()
+    assert licence_member_problems(licence, members, texts) == []
+    lines = licence.split("\n")
+    (generated,) = [i for i, line in enumerate(lines) if line.startswith("  - README, History: ")]
+    cc_by = lines[generated].split(": ", 1)[1]
+    if case == "member not named":
+        lines[generated] = f"  - README: {cc_by}"
+    elif case == "member absent":
+        members = [name for name in members if name != "History"]
+    elif case == "named twice":
+        lines.insert(generated + 1, f"  - README: {cc_by}")
+    elif case == "another class":
+        (profile,) = [i for i, line in enumerate(lines) if line.startswith("  - d1_capture.suzuki1987.g4dat")]
+        lines[profile] = lines[profile].split(": ", 1)[0] + f": {cc_by}"
+    elif case == "text altered":
+        (title,) = [i for i, line in enumerate(lines) if line == "--- Geant4 Software License v1.0 ---"]
+        body = title + 2
+        assert lines[body]
+        lines[body] = lines[body][:-1] + ("x" if lines[body][-1] != "x" else "y")
+    else:
+        (title,) = [i for i, line in enumerate(lines) if line == "--- MuDirac's MIT License ---"]
+        lines = lines[:title]
+    problems = licence_member_problems("\n".join(lines), members, texts)
+    if case in ("member not named", "member absent"):
+        assert len(problems) == 1 and problems[0].startswith("named "), problems
+    elif case == "named twice":
+        assert problems == ["README named twice"], problems
+    elif case == "another class":
+        assert [p.split(":", 1)[0] for p in problems] == [
+            "d1_capture.suzuki1987.g4dat", "d1_capture.suzuki1987.prov.json"], problems
+        assert all("gives ['CC-BY-4.0'], G4_DATA gives None" in p for p in problems), problems
+    elif case == "text altered":
+        assert problems == ["the text of Geant4 Software License v1.0 is not the repository copy"], problems
+    else:
+        assert problems == ["the text of MuDirac's MIT License is not the repository copy"], problems
+
+
+#: The README sentences that name columns of a file under `data/g4/`, each with that file. Each pattern
+#: captures, as ``columns``, the clause that lists the file's columns; the file's own name, and the
+#: third-party file the mudirac clause cites, lie outside the capture, so every backquoted token inside it is
+#: read as a column name, whatever it ends with.
+COLUMN_SENTENCES = (
+    (r"Of `mudirac_inputs\.csv`'s columns, (?P<columns>[^.]+?) repeat the IAEA charge-radii table "
+     r"\(`charge_radii\.csv`\)", "data/g4/d3/mudirac_inputs.csv"),
+    (r"in `suzuki1987_parity_cells\.csv` those are the (?P<columns>[^.]+) columns\.",
+     "data/g4/d1/suzuki1987_parity_cells.csv"),
+)
+
+
+def column_clauses(readme: str) -> dict[str, list[str]]:
+    """Each file of :data:`COLUMN_SENTENCES` to the column-list clauses the README states for it."""
+    flat = " ".join(readme.split())
+    return {path: [m.group("columns") for m in re.finditer(pattern, flat)]
+            for pattern, path in COLUMN_SENTENCES}
+
+
+def column_problems(readme: str, headers: dict[str, list[str]]) -> list[str]:
+    """What makes the README's column sentences false against the files' headers (``headers``, path to
+    columns): a sentence the README lacks or states more than once, a clause with an unpaired backquote or
+    with no backquoted name, and each backquoted name in the clause that the file's header does not carry."""
+    problems = []
+    for path, clauses in column_clauses(readme).items():
+        if len(clauses) != 1:
+            problems.append(f"{path}: {len(clauses)} sentences match")
+            continue
+        clause = clauses[0]
+        if clause.count("`") % 2:
+            problems.append(f"{path}: an unpaired backquote in {clause!r}")
+            continue
+        named = re.findall(r"`([^`]*)`", clause)
+        if not named:
+            problems.append(f"{path}: the sentence names no column")
+        problems += [f"{path}: no column {name!r}" for name in named if name not in headers[path]]
+    return problems
+
+
+def _readme_and_headers() -> tuple[str, dict[str, list[str]]]:
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    headers = {path: (REPO / path).read_text(encoding="utf-8").splitlines()[0].split(",")
+               for _, path in COLUMN_SENTENCES}
+    return readme, headers
+
+
+def test_the_mudirac_inputs_columns_the_readme_names_are_the_files_header():
+    """The columns the License section of the README names -- those of `data/g4/d3/mudirac_inputs.csv`
+    that repeat MuDirac's radii or the IAEA table, and those of `data/g4/d1/suzuki1987_parity_cells.csv`
+    that repeat compiled-in values -- are columns of each file's header. Every name the sentences give, read
+    from the README here, is drilled twice: misspelled in the README, and renamed in its file's header; each
+    is refused by the header check alone."""
+    readme, headers = _readme_and_headers()
+    assert column_problems(readme, headers) == []
+    flat = " ".join(readme.split())
+    drilled = 0
+    for path, (clause,) in column_clauses(readme).items():
+        names = re.findall(r"`([^`]*)`", clause)
+        assert names, path
+        for name in names:
+            assert clause.count(f"`{name}`") == 1, (path, name)
+            misspelled = flat.replace(clause, clause.replace(f"`{name}`", f"`{name}_bogus`"))
+            assert column_problems(misspelled, headers) == [f"{path}: no column {name + '_bogus'!r}"], name
+            renamed = dict(headers, **{path: [column if column != name else column + "_x"
+                                              for column in headers[path]]})
+            assert column_problems(readme, renamed) == [f"{path}: no column {name!r}"], name
+            drilled += 1
+    assert drilled == sum(len(re.findall(r"`([^`]*)`", c)) for (c,) in column_clauses(readme).values())
+
+
+@pytest.mark.parametrize("case", ("twice", "no backquoted name", "an unknown name alone", "unpaired"))
+def test_drill_a_repeated_column_sentence_or_one_without_a_column_is_refused(case: str):
+    """Each sentence, otherwise correct, stated twice; its clause with no backquoted name; its clause naming
+    only a name its header lacks; and its clause with an unpaired backquote: each is refused, and for that
+    sentence's file alone."""
+    readme, headers = _readme_and_headers()
+    flat = " ".join(readme.split())
+    for pattern, path in COLUMN_SENTENCES:
+        match = re.search(pattern, flat)
+        assert match is not None, path
+        clause = match.group("columns")
+        sentence = match.group(0)
+        if case == "twice":
+            drilled, want = flat + " " + sentence, [f"{path}: 2 sentences match"]
+        elif case == "no backquoted name":
+            drilled = flat.replace(sentence, sentence.replace(clause, "the radii"))
+            want = [f"{path}: the sentence names no column"]
+        elif case == "an unknown name alone":
+            drilled = flat.replace(sentence, sentence.replace(clause, "`bogus`"))
+            want = [f"{path}: no column 'bogus'"]
+        else:
+            drilled = flat.replace(sentence, sentence.replace(clause, clause + " `"))
+            want = [f"{path}: an unpaired backquote in {clause + ' `'!r}"]
+        assert column_problems(drilled, headers) == want, (case, path)
+
+
 def test_the_mudirac_licence_text_is_the_release_copy():
     """`data/g4/d3/LICENSE-MUDIRAC` is MuDirac 1.3.0's `LICENSE` byte for byte, as the release archive whose
     SHA-256 `openmucf.g4.sources.mudirac130.TARBALL_SHA256` pins carries it."""

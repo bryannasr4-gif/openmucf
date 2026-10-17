@@ -5,9 +5,9 @@
 // Geant4 needs: dataset discovery through G4FindDataDir, the semantic layer
 // (G4MuonicDataSemantics) applied to every loaded table before any of them is selected, a fatal
 // G4Exception when the opt-in was requested but the dataset is absent, invalid or does not mean
-// what a consumer may read, and keyed lookups that say which rung answered. Nothing here is
-// reached unless G4MuonicDataTable::Enable() has been called: with the opt-in off every entry
-// point below does nothing and performs no I/O.
+// what a consumer may read, and keyed lookups that say which rung answered. With the opt-in off
+// (G4MuonicDataTable::Enable() not called) every entry point below returns without reading the
+// dataset or performing I/O; CheckComputedCaptureRate is the one the patched code calls even then.
 //
 // Two seams are selected independently. G4MUONICDATA_D1_PROFILE names the profile the nuclear
 // capture seam reads through and G4MUONICDATA_D3_PROFILE the one the muonic-transition seam reads
@@ -90,6 +90,9 @@ class G4MuonicDataOverlay {
   // A capture rate the consumer computed itself, once the dataset had no record for the nuclide.
   // A no-op unless the effective D1 profile is an evaluated one: under `parity` and under the
   // compiled-in seam the documented Goulard-Primakoff output, negative values included, stands.
+  // Under an evaluated profile a rate that is not finite is fatal (G4MuonicData005); a finite rate
+  // that is not positive stands as computed, and the first such rate in the process raises the
+  // warning G4MuonicData006.
   static void CheckComputedCaptureRate(G4int Z, G4int A, G4double rate);
   // The assembled muonic-cascade level array, after at least one lookup overlaid part of it: the
   // whole array must be finite, positive and strictly falling, boundary between overlaid and

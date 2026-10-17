@@ -1938,7 +1938,7 @@ def test_t62_every_primary_the_audit_cites_resolves_in_the_bibliography():
 
 #: Atomic numbers for the elements the primary's quoted sentence names. Reference data, not a
 #: count: WHICH elements the sentence names is read out of the quotation in the document itself,
-#: so the "nine" and the "seven" below are both derived rather than asserted here.
+#: so the "nine" and the "six" below are both derived rather than asserted here.
 SYMBOL_Z = {
     "Ca": 20, "Cr": 24, "Ni": 28, "U": 92, "Pu": 94, "Cu": 29, "Sr": 38, "Br": 35, "Cl": 17,
 }
@@ -2008,7 +2008,7 @@ def zeff_covered_split(zs, zeff_table) -> tuple[set[int], set[int], set[int]]:
 def suzuki_section_rows(doc: str) -> list[tuple[str, str, str]]:
     """Pin the complete published-profile disagreement table to two shipped sources."""
     printed = suzuki1987.load_printed_rows(REPO / suzuki1987.PRINTED_ROWS_RELPATH)
-    selected = suzuki1987.selected(suzuki1987.normalize(printed))
+    selected = suzuki1987.selected(suzuki1987.normalize(printed), generator_module().mononuclidic_keys())
     found = d1.load(VENDORED)
     literals = {
         (z, a): literal
@@ -2093,7 +2093,7 @@ def document_pins() -> DocumentPins:
     external table. Section 5's finding partition is counted from the document's own `F-n` headings,
     so it checks that the summary agrees with the section rather than with anything that ships. And
     the count of elements the primary's sentence names is read out of the quotation in that same
-    document: only the *seven of them carrying a separated-isotope record* reaches the audit, while
+    document: only the *six of them carrying a separated-isotope record* reaches the audit, while
     the *nine* is the document checked against itself.
 
     The ruling if this fails after a deliberate rewording: move the anchor in the same commit, never
@@ -2187,7 +2187,7 @@ def document_pins() -> DocumentPins:
     preceding_steps = [round(zeff[z] - zeff[z - 1], 2) for z in (78, 79, 80)]
 
     # Which elements the primary's sentence names is read out of the document's own quotation. Be
-    # precise about what that buys: the SEVEN reaches the shipped audit, because carrying a
+    # precise about what that buys: the SIX reaches the shipped audit, because carrying a
     # separated-isotope record is a fact about the CSV. The NINE does not -- it is the document
     # checked against itself, and is listed among this test's non-independences for that reason.
     quotation = re.search(r"> Now for muon capture (.+?) Read it precisely", doc)
@@ -2747,7 +2747,7 @@ def test_t63_the_documents_published_counts_are_the_shipped_datas_counts():
 
 
 # --------------------------------------------------------------------------------------------
-# T-82 -- the shipped D1 archive unpacks to the dataset directory, with README and History
+# T-82 -- the shipped D1 archive unpacks to the dataset directory, with README, History and LICENSE
 # --------------------------------------------------------------------------------------------
 
 
@@ -2781,7 +2781,7 @@ def test_t82_the_d1_archive_unpacks_to_the_dataset_directory_with_readme_and_his
     with tarfile.open(fileobj=io.BytesIO(archive)) as opened:
         entries = opened.getmembers()
         names = [entry.name for entry in entries]
-        assert names == sorted(f"{directory}/{x}" for x in committed + ["README", "History"])
+        assert names == sorted(f"{directory}/{x}" for x in committed + ["README", "History", "LICENSE"])
         assert not any(entry.isdir() for entry in entries), names
         assert all(len(name.encode("ascii")) <= 100 for name in names), names  # ustar name field
         readme = opened.extractfile(f"{directory}/README").read().decode("ascii")
@@ -3869,6 +3869,27 @@ def test_t101_each_conjunct_of_the_comparison_rule_decides_a_derived_block():
         assert d1.decided_by_value(key, evidence, blocks[key[0]]), key
         stripped = re.sub(r"round\(Ar\)=\d+", "", evidence)
         assert d1.decided_by_value(key, stripped, blocks[key[0]]), key
+
+
+def test_t101_the_reconstructed_shape_decides_each_row_whose_evidence_carries_its_clause():
+    """(d) the reconstructed shape of `decided_by_value`: an audit row whose Z carries a block of printed
+    cells and whose evidence carries `d1.RECONSTRUCTED_CLAUSE` is decided by value, is open, and equals no
+    printed cell at its Z; with the clause removed from its evidence, and neither other shape holding, it is
+    not decided."""
+    audit = audit_rows()
+    blocks = d1.cells_by_z(capture_cells())
+    values = {(z, a): (value, unc) for z, a, value, unc in extraction().capture_records}
+    shaped = [key for key, finding in audit.items()
+              if key[0] in blocks and d1.RECONSTRUCTED_CLAUSE in finding.evidence]
+    assert shaped, "no audit row at a block of printed cells carries the reconstructed clause"
+    for key in shaped:
+        evidence = audit[key].evidence
+        assert d1.decided_by_value(key, evidence, blocks[key[0]]), key
+        assert not audit[key].settled, key
+        assert d1.printed_matches(*values[key], blocks[key[0]]) == (), key
+        stripped = evidence.replace(d1.RECONSTRUCTED_CLAUSE, "")
+        assert stripped != evidence
+        assert not d1.decided_by_value(key, stripped, blocks[key[0]]), key
 
 
 # T-146: element-only evidence cannot silently assert natural composition.
