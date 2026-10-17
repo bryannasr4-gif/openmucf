@@ -224,6 +224,7 @@ LICENCE_BY_PATH: dict[str, str | None] = {
     "openmucf/data": "CC-BY-4.0",
     "cpp/patches/": "Geant4 Software License",
     "third_party/geant4/": "Geant4 Software License",
+    "third_party/mudirac/": "MIT",
     "data/g4/": "CC-BY-4.0",
     "data/g4/d1/capture_rate_cells.csv": None,
     "data/g4/d1/zeff_audit.csv": None,
@@ -827,6 +828,38 @@ def test_the_mudirac_licence_text_is_the_release_copy():
     SHA-256 `openmucf.g4.sources.mudirac130.TARBALL_SHA256` pins carries it."""
     payload = (REPO / "data" / "g4" / "d3" / "LICENSE-MUDIRAC").read_bytes()
     assert hashlib.sha256(payload).hexdigest() == MUDIRAC_LICENSE_SHA256
+
+
+#: The six inputs of the MuDirac patch's default-output check, which its README names by count.
+MUDIRAC_DEFAULT_CHECK = (
+    "Ag107_ideal7.in", "He3_base.in", "Pb208_g0u0100.in", "Si28_g2u1000.in", "U238_rsig.in",
+    "Zr90_g0u1000.in",
+)
+
+
+def test_the_mudirac_patch_directory_carries_the_release_licence_and_its_six_check_inputs():
+    """`third_party/mudirac/` carries MuDirac 1.3.0's `LICENSE` byte for byte; the patch has LF line ends,
+    as `patch -p1` applies it to the release archive's sources, and creates only its two option headers;
+    the README's default-output sentence names six inputs, and `default_check/` holds exactly those six
+    MuDirac inputs, each setting none of the keywords the patch adds."""
+    directory = REPO / "third_party" / "mudirac"
+    licence = (directory / "LICENSE").read_bytes()
+    assert licence == (REPO / "data" / "g4" / "d3" / "LICENSE-MUDIRAC").read_bytes()
+    assert hashlib.sha256(licence).hexdigest() == MUDIRAC_LICENSE_SHA256
+    patch = (directory / "mudirac-1.3.0-p1.patch").read_bytes()
+    assert b"\r" not in patch
+    created = re.findall(rb"^--- /dev/null\n\+\+\+ b/(\S+)$", patch, re.MULTILINE)
+    assert sorted(created) == [b"lib/consistency.hpp", b"lib/numerics.hpp"]
+    readme = (directory / "README.md").read_text(encoding="utf-8")
+    assert "on the six inputs in\n[`default_check/`](default_check/)" in readme
+    assert tuple(sorted(p.name for p in (directory / "default_check").iterdir())) == MUDIRAC_DEFAULT_CHECK
+    added = set(re.findall(r"^\| `([a-z0-9_]+)`", readme, re.MULTILINE))
+    added |= {"domain_in_eps", "domain_out_eps"}
+    for name in MUDIRAC_DEFAULT_CHECK:
+        text = (directory / "default_check" / name).read_bytes()
+        assert b"\r" not in text
+        keys = {line.split(":")[0] for line in text.decode("ascii").splitlines()}
+        assert keys & added == set(), (name, keys & added)
 
 
 def test_drill_a_file_given_a_licence_of_its_own_must_be_named_by_each_statement_that_reaches_it(monkeypatch):

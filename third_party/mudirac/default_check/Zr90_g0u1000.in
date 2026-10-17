@@ -1,0 +1,15 @@
+element: Zr
+isotope: 90
+nuclear_model: FERMI2
+uehling_correction: TRUE
+reduced_mass: TRUE
+optimise_fermi_parameters: FALSE
+radius: 5.511771699432648
+fermi_t: 2.3
+output: 2
+xr_print_precision: 6
+state_print_precision: 6
+xr_lines: K1-L2:L3,L2:L3-M4:M5,M4:M5-N6:N7,N6:N7-O8:O9,O8:O9-P10:P11,P10:P11-Q12:Q13,Q12:Q13-R14:R15
+loggrid_step: 0.005
+uehling_steps: 1000
+energy_tol: 1e-07

@@ -638,6 +638,7 @@ ff9e698e73f14f73c93e5f484019640954acc85a	FORMAT_SPEC.md	REGISTERED: three -- the
 0ccdf0a1a697580b0dcf6641da9f8d632e79d931	README.md	REGISTERED: 225 -- the nuclide label Ac-225
 11eca2c304568f729867dead4a32bb3a18259e9c	README.md	EXERCISED: 284 -- tests/test_energy.py::test_scientific_breakeven_is_284
 2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H
+270ca35ad256de5710d36b4f36afa2a020dd721c	README.md	REGISTERED: 1.3.0, six -- MuDirac's release number, as mudirac130.MUDIRAC_VERSION and the patch name carry it; six: the inputs of the patch's default-output check, held by tests/test_packaging.py::test_the_mudirac_patch_directory_carries_the_release_licence_and_its_six_check_inputs
 2d71ec87b4dc7c1ee4c3e123f2b41f9fde467306	README.md	REGISTERED: one -- 'one-off', an adjective
 3130be08714748b5864be19c6126fc77084b4f22	README.md	REGISTERED: 114, 1, 0.557 -- '~114' as on the previous line; '(1-R_col)' is the complement in the pushforward's formula; 0.557% is the effective sticking the V_kouchen_base target's conditions state (openmucf/data/validation_targets.csv)
 468ee2cf3a0429b1232cdb37cf5f51db663b55d0	README.md	REGISTERED: 0.94, 3, 8 -- restates FINDINGS.md's requirements form (R = 0.94 at λ_c = 3e8), regenerated and byte-diffed by make audit; the README's copy is read by no test
@@ -686,3 +687,32 @@ fdbe4baad131c8649d1244c5af11ac9620c5b1e0	docs/geant4-developers.md	REGISTERED: 4
 296a39d306a076df7dc3a5e59057d4db560c0316	paper/muonic-data/paper.md	REGISTERED: 6 -- part of the name ENDF-6, the format the ENDF-6 Formats Manual specifies; a name, not a quantity
 af07cde6aa19f388476de4a17366a0b9dda6b70a	third_party/geant4/README.md	REGISTERED: 0 -- the NUL byte git's blob header ends with, spelled as the escape in the example
 c1c07f3c544b0b7083668ddf28de06790c656456	third_party/geant4/README.md	REGISTERED: three -- the lines of the fenced hashlib example that follows
+06dc68bbf2bf97c33deba555db17b3f676934240	third_party/mudirac/README.md	REGISTERED: 1.3.0, one, 1.3.0 -- the release number in the patch's file name and in the release it patches (mudirac130.MUDIRAC_VERSION); one: the file is a single cumulative diff against the release archive
+1645777e8f79cb9db33e42c6e649a2dd382e4bb1	third_party/mudirac/README.md	REGISTERED: 1, 5, 1.3.0, 1, 5 -- the default 1e-5 of both domain tolerances (the patch's lib/config.cpp) and the value MuDirac 1.3.0's lib/atom.hpp fixes for in_eps and out_eps; MuDirac's release number
+1e5cd1c66e23ba9354eab155e402fda036728ebe	third_party/mudirac/README.md	REGISTERED: 5000, 2 -- the default of fermi2_csteps, the hidden-grid size MuDirac compiles in, kept by the patch's keyword default; 2pF: the Fermi density's name
+2533bca707d0320aacebc4ce8940ed31626ad573	third_party/mudirac/README.md	REGISTERED: 2022 -- the CODATA adjustment year, a name of the constant set (lib/consistency.hpp E_H_EV_2022)
+2a7e790692ecb3d88020a0b15997f4594ce94606	third_party/mudirac/README.md	REGISTERED: 1.3.0 -- the release archive's file name in a command
+32e3d14de5ddfa0690e1c134b48bc394000f97d8	third_party/mudirac/README.md	REGISTERED: 2 -- 2pF, a name
+386b30364594961342f3efd5c5984bcfc1049f2e	third_party/mudirac/README.md	REGISTERED: 12, 2 -- the default of uehling_shell_nodes in the patch's lib/config.cpp; 2pF, a name
+4560649b0725d3f2e8af080fa1db822e643ebd1f	third_party/mudirac/README.md	REGISTERED: 2, 2 -- 2pF twice, a name
+45c3e2b1bf1e0ce3b6b7ab7d599c8f6d27bb2182	third_party/mudirac/README.md	REGISTERED: 1 -- the default -1 of fermi2_rms_fm in the patch's lib/config.cpp, read only when fermi2_rms_exact is set
+4a812d4bc76ec6da65151fe5d36342d11719c65e	third_party/mudirac/README.md	REGISTERED: zero -- 'non-zero exit status', the refusal's exit in the patch's refuseInput
+4c59af2330fd1fdb3a50038dcee9409342b27040	third_party/mudirac/README.md	REGISTERED: 1.3.0 -- MuDirac's release number (mudirac130.MUDIRAC_VERSION), a name
+5a85ada79d1def035267b01ee355eb2de7297147	third_party/mudirac/README.md	REGISTERED: one, 1.3.0 -- the one input-file argument of a MuDirac run (mudirac130.mudirac_argv); MuDirac's release number
+5c89cead91683318be6ff2f112d690690188761e	third_party/mudirac/README.md	REGISTERED: six -- the files of default_check/, held by tests/test_packaging.py::test_the_mudirac_patch_directory_carries_the_release_licence_and_its_six_check_inputs
+615b757a1ddf5318dfb6fc8281e7ffe3ab5cba0b	third_party/mudirac/README.md	REGISTERED: 2, 1, 2 -- the square in c^2 and the equations 1-2 of AME2020 II, a citation locator (the patch's lib/consistency.hpp electronBindingHa)
+6483727024b48f3e276c7df07e3d1c28a2d0ead2	third_party/mudirac/README.md	REGISTERED: 2022, 27.211386245981 -- the CODATA 2022 Hartree energy in eV, as the patch's lib/consistency.hpp E_H_EV_2022 and mudirac130.E_H_EV_2022 hold it
+6dafbccfa77f8ec758b370af2652d7b5207d0a50	third_party/mudirac/README.md	REGISTERED: 1.3.0, six -- MuDirac's release number; six: the files of default_check/, held by tests/test_packaging.py::test_the_mudirac_patch_directory_carries_the_release_licence_and_its_six_check_inputs
+72f55d3c0b00b31ed77605498423b95643c39b11	third_party/mudirac/README.md	REGISTERED: 1.3.0 -- the directory the release archive unpacks to, a name
+77d898f699d44fcf2f1d1ee026510ee4e049b226	third_party/mudirac/README.md	REGISTERED: one -- one density record from which the patch builds both potentials (lib/atom.hpp DensityRecord, rebuildPotentials)
+931804f7a1292e24cc28d7ffbfecaf3ae7ec981f	third_party/mudirac/README.md	REGISTERED: 1.3.0 -- the release archive's file name, a name; the digest beside it is mudirac130.TARBALL_SHA256
+ac56457aa66243812b7e19e58afb835f56d1cdac	third_party/mudirac/README.md	REGISTERED: one, three -- the three kinds of default the list below names, one of which each keyword takes
+adadf35b2a50327fdceea6876921e0ddaecf29e1	third_party/mudirac/README.md	REGISTERED: 1.3.0 -- MuDirac's release number
+b2fb9e3a4e508367adfb73839785f62a0d041aa1	third_party/mudirac/README.md	REGISTERED: 130, 1, two -- the profile token mudirac130p1, a name (mudirac130.RECIPE_PROFILE); two: the two groups of changes the paragraph lists
+c10509daaef85d1bfb1ae9d0293db17d2656c734	third_party/mudirac/README.md	REGISTERED: 2, 4 -- 2pF, a name; the 4-point Gauss-Legendre rule per interval of the fermi2_hermite moments in the patch
+c8f016cf691f1f28b9b127cdb47d3b9a3f2643c1	third_party/mudirac/README.md	REGISTERED: zero -- 'non-zero uehling_lowcut', the refusal's condition in the patch's lib/config.cpp
+d53a240c78464191253310f6b4f37607f57c5411	third_party/mudirac/README.md	REGISTERED: 2, one -- 2pF, a name; one: the density both potentials use (lib/atom.cpp rebuildPotentials)
+d5da702b7e9a2f40974122fd4af131e79e3db51e	third_party/mudirac/README.md	REGISTERED: 1.3.0 -- the patch's file name in a command, a name
+d63a002b90cc5474ce3798eb6734620e3f6e4f44	third_party/mudirac/README.md	REGISTERED: 1.3.0, 1.3.0 -- MuDirac's release number and its archive's file name; the archive's digest is mudirac130.TARBALL_SHA256
+eb8993719a7e013c18d02f9a65ef432c2017697a	third_party/mudirac/README.md	REGISTERED: 1, 1 -- the default -1 of state_header_precision and its meaning, as the patch's lib/numerics.hpp and lib/output.cpp hold it
+fdd39858c4af3656634cd5bcfd1a2e3256146960	third_party/mudirac/README.md	REGISTERED: 5, 3, 1, 12 -- sqrt(5/3), the sphere-to-rms factor, and the 1e-12 relative tolerance of the radius check, as the patch's lib/config.cpp states them

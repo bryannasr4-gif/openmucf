@@ -51,7 +51,7 @@ REPO = pathlib.Path(__file__).resolve().parents[1]
 #: this check would vouch for.
 PROSE_PATHS = (
     "DATASET_D1.md", "README.md", "cpp/tools/README.md", "cpp/README.md", "CHANGELOG.md",
-    "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md",
+    "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md", "third_party/mudirac/README.md",
     "cpp/transport/README.md", "DATASET_D2.md",
     "paper/muonic-data/paper.md", "FORMAT_SPEC.md", "docs/geant4-developers.md",
 )

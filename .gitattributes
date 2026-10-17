@@ -50,3 +50,6 @@ cpp/tools/harvest_decay.cc -text
 # The recipe-run fixture of tests/test_g4d3_recipe.py: the collector reads its files as MuDirac printed them
 # (LF) and refuses a malformed line, so a checkout must not rewrite their line endings.
 tests/fixtures/d3_recipe/** -text
+# The MuDirac patch: `patch -p1` applies it to the release archive's LF sources, so a checkout must not rewrite its
+# line endings; its default-output inputs are MuDirac input files read as written.
+third_party/mudirac/** -text
