@@ -428,3 +428,332 @@ def test_policy_brackets_cover_every_reference_row(oracle: mixture.Oracle) -> No
         fits, nominal = mixture.bracket(ROOT, ref, float(1 / mixture.mean_rate(comps)))
         labels = [label for label, _ in fits]
         assert nominal in labels and len(labels) == len(set(labels)), ref.locator
+
+
+# --------------------------------------------------------------------------------------------
+# the harvest at the call sites: gates recomputed from the committed summary
+# --------------------------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def harvest() -> dict[str, dict[str, dict[str, str]]]:
+    return mixture.load_harvest(ROOT)
+
+
+@pytest.fixture(scope="module")
+def policy() -> dict[str, object]:
+    return mixture.load_policy(ROOT)
+
+
+def _cells(policy: dict[str, object]) -> list[dict[str, object]]:
+    return mixture.cells(ROOT, policy)
+
+
+def _profile_of(cell: dict[str, object]) -> str:
+    return str(cell["profile"])
+
+
+def test_harvest_covers_every_cell_of_the_policy(harvest: dict, policy: dict) -> None:
+    expected = {mixture.cell_name(c): c for c in _cells(policy)}
+    controls = policy["pristine_controls"]
+    for z in controls["elements"]:
+        for route in mixture.ROUTES:
+            for revision in mixture.REVISIONS:
+                expected[f"pristine:{route}:{revision}:{z}"] = {"events": controls["events"]}
+    production = {k for k in harvest if not k.startswith("identity")}
+    assert production == set(expected)
+    for name, cell in expected.items():
+        assert int(harvest[name]["meta"]["events"]) == cell["events"], name
+
+
+def test_harvest_call_sites_agree_with_each_other_and_the_transport(harvest: dict) -> None:
+    """In every cell the selector's nucleus is the decay's, the decay's branch is the transported outcome, and
+    the
+    transported decay electron leaves at the delay the call site drew, on every stop; no time falls on a bin
+    edge."""
+    for name, stats in harvest.items():
+        if name.startswith("identity"):
+            continue
+        meta = stats["meta"]
+        for key in (
+            "mismatch_selector_vs_decay",
+            "mismatch_branch_vs_outcome",
+            "mismatch_delay_vs_electron",
+            "time_ties",
+        ):
+            assert meta[key] == "0", (name, key)
+
+
+def test_harvest_builds_record_the_committed_harness() -> None:
+    builds = mixture.read_csv(ROOT / mixture.BUILDS_RELPATH, mixture.BUILD_COLUMNS)
+    source = hashlib.sha256((ROOT / mixture.HARNESS_RELPATH).read_bytes()).hexdigest()
+    assert {b["source_sha256"] for b in builds} == {source}
+    assert {(b["revision"], b["kind"], b["drill"]) for b in builds} == {
+        (r, k, "none") for r in mixture.REVISIONS for k in ("pristine", "patched")
+    } | {(r, "patched", d) for r in mixture.REVISIONS for d in ("extra_draw", "early_return")}
+    for b in builds:
+        assert "-ffp-contract=off" in b["compile_flags"]
+        assert ("-DHARVEST_MIXTURE_PATCHED" in b["compile_flags"]) == (b["kind"] == "patched")
+
+
+def _components(oracle: mixture.Oracle, name: str) -> tuple[str, list[mixture.Component]]:
+    profile, route, _, z = name.split(":")
+    profile = spec.PARITY_PROFILE if profile == "pristine" else profile
+    return route, list(oracle.components(profile, route, int(z)))
+
+
+def test_gate_every_cell_recomputes_to_its_committed_verdict(harvest: dict, policy: dict, oracle) -> None:
+    """Every gate of every cell, recomputed exactly from the committed summary, the policy and the oracle,
+    gives
+    the verdict the summary commits; G-rate and G-set pass on every cell."""
+    for name, stats in harvest.items():
+        if name.startswith("identity"):
+            continue
+        route, comps = _components(oracle, name)
+        verdicts = mixture.evaluate_cell(stats, route, comps, policy)
+        assert {g: v["verdict"] for g, v in verdicts.items()} == stats["verdict"], name
+        assert verdicts["G-rate"]["verdict"] == "pass" and verdicts["G-set"]["verdict"] == "pass", name
+
+
+def test_gate_identity_controls(harvest: dict) -> None:
+    """The random-engine streams, the base delegation and the transported records of every revision, route
+    and element of the identity runs; the untouched evaluated cells repeat the parity cells; the pristine
+    controls equal the first stops of the patched parity cells."""
+    entries = [v["identity"] for k, v in harvest.items() if k.startswith("identity:")]
+    assert len(entries) == 16
+    for e in entries:
+        assert e["rng_identical"] == e["base_delegation"] == e["transport_identical"] == "True"
+        assert e["rng_patched_hooked"] == e["rng_patched_unhooked"] == e["rng_pristine_hooked"]
+        assert (
+            e["transport_patched_hooked"] == e["transport_patched_unhooked"] == e["transport_pristine_hooked"]
+        )
+        assert e["entry_mismatch"] == e["exit_mismatch"] == "0" and e["hook_calls"] == e["base_calls"]
+    for profile, z in (("suzuki1987", 82), ("mizuno2025", 12)):
+        for route in mixture.ROUTES:
+            for revision in mixture.REVISIONS:
+                a = harvest[f"{profile}:{route}:{revision}:{z}"]["meta"]["stops_sha256"]
+                b = harvest[f"parity:{route}:{revision}:{z}"]["meta"]["stops_sha256"]
+                assert a == b, (profile, route, revision)
+    for name, stats in harvest.items():
+        if name.startswith("pristine:"):
+            parity = harvest["parity:" + name.split(":", 1)[1]]
+            assert stats["meta"]["stops_sha256"] == parity["meta"]["first_lines_sha256"], name
+
+
+def test_drill_identity_hooks(harvest: dict) -> None:
+    """A hook that draws one extra random number after the base call turns the engine-stream identity red; one
+    that returns before the base call on germanium-74 turns the base-delegation count red."""
+    drills = [v["identity"] for k, v in harvest.items() if k.startswith("identity_drill:")]
+    assert len(drills) == 4
+    for d in drills:
+        assert d["extra_draw_rng_red"] == "True" and d["extra_draw_rng"] != d["reference_rng"]
+        assert d["early_return_delegation_red"] == "True"
+        assert int(d["early_return_hook_calls"]) > int(d["early_return_base_calls"])
+
+
+def test_gate_hooks_draw_no_random_number() -> None:
+    """The hook classes call no random-number function (static check of the region between SPY-BEGIN and
+    SPY-END, the drill macros excluded)."""
+    text = (ROOT / mixture.HARNESS_RELPATH).read_text(encoding="ascii")
+    region = text[text.index("// SPY-BEGIN") : text.index("// SPY-END")]
+    kept, skip = [], False
+    for line in region.splitlines():
+        if line.startswith("#ifdef HARVEST_MIXTURE_DRILL"):
+            skip = True
+        elif line.startswith("#endif"):
+            skip = False
+        elif not skip:
+            kept.append(line)
+    for token in ("G4UniformRand", "G4Random", "CLHEP::Rand", "flat(", "G4RandFlat", "G4Log(G4Uniform"):
+        assert token not in "\n".join(kept), token
+    assert text.count("G4ElementSelector::SelectZandA(track, target)") == 1
+    assert text.count("G4MuonMinusBoundDecay::ApplyYourself(projectile, nucleus)") == 1
+
+
+# --------------------------------------------------------------------------------------------
+# drills of the harvest gates: each planted defect turns its gate red, alone and through the chain
+# --------------------------------------------------------------------------------------------
+
+
+def _replace_capture(components: list[mixture.Component], a: int, capture: float, route: str) -> list:
+    out = []
+    for c in components:
+        if c.a != a:
+            out.append(c)
+            continue
+        total = capture + c.decay
+        if route == mixture.STOPPING:
+            out.append(
+                mixture.Component(
+                    c.a,
+                    c.abundance,
+                    capture,
+                    c.decay,
+                    total,
+                    c.tau,
+                    c.tau_dio,
+                    c.tau_nc,
+                    Fraction(total),
+                    mixture.stopping_branch(capture, total),
+                    c.lookup,
+                    c.answer_class,
+                    c.record,
+                    c.record_unc,
+                )
+            )
+        else:
+            tau = 1.0 / total
+            out.append(
+                mixture.Component(
+                    c.a,
+                    c.abundance,
+                    capture,
+                    c.decay,
+                    total,
+                    tau,
+                    c.tau_dio,
+                    1.0 / capture,
+                    1 / Fraction(tau),
+                    mixture.atomic_branch(c.tau_dio, 1.0 / capture),
+                    c.lookup,
+                    c.answer_class,
+                    c.record,
+                    c.record_unc,
+                )
+            )
+    return out
+
+
+def _copy(stats: dict) -> dict:
+    return {k: dict(v) for k, v in stats.items()}
+
+
+def _time_resampled(stats: dict, components: list[mixture.Component], seed: int) -> dict:
+    """The G-time bins when every stop's delay is drawn again from Exp(lambda_bar), the statistic still
+    scaling
+    by the drawn isotope's rate."""
+    import random
+
+    rng = random.Random(seed)
+    lam = float(mixture.mean_rate(components))
+    bins = [0] * mixture.TIME_BINS
+    for c in components:
+        rate = float(c.rate)
+        for _ in range(int(stats["count"].get(str(c.a), "0"))):
+            u = rate * rng.expovariate(lam)
+            bins[min(int((1.0 - math.exp(-u)) * mixture.TIME_BINS), mixture.TIME_BINS - 1)] += 1
+    out = _copy(stats)
+    out["time"] = {str(j): str(n) for j, n in enumerate(bins)}
+    return out
+
+
+def drill_cases(harvest: dict, policy: dict, oracle: mixture.Oracle) -> list[dict[str, object]]:
+    """Every drill of the policy's plan on each cell it names (both revisions and both routes), as the planted
+    summary and oracle, the target gate and the chain's first red gate."""
+    cases: list[dict[str, object]] = []
+    alpha = str(policy["statistics"]["per_test_alpha"])
+    for entry in policy["drills"]["plan"]:
+        for revision in mixture.REVISIONS:
+            for route in mixture.ROUTES:
+                name = f"parity:{route}:{revision}:{entry['z']}"
+                stats = harvest[name]
+                comps = list(oracle.components(spec.PARITY_PROFILE, route, int(entry["z"])))
+                drill, gate = entry["drill"], entry["gate"]
+                planted_stats, planted = _copy(stats), comps
+                if drill == "rate_substitution":
+                    natural_rate = next(c.capture for c in comps if c.a == 56)
+                    planted = _replace_capture(comps, 54, natural_rate, route)
+                elif drill == "fallback_dropped":
+                    planted = mixture._without_fallback(comps)
+                elif drill == "formula_stops_removed":
+                    for c in comps:
+                        if c.answer_class == mixture.FORMULA:
+                            planted_stats["count"].pop(str(c.a), None)
+                elif drill == "branch_swap":
+                    top = max(comps, key=lambda c: int(stats["count"][str(c.a)]))
+                    cap = int(stats["branch"][f"{top.a}:N"])
+                    moved = int(Fraction(policy["drills"]["branch_swap_fraction"]) * cap)
+                    planted_stats["branch"][f"{top.a}:N"] = str(cap - moved)
+                    planted_stats["branch"][f"{top.a}:D"] = str(int(stats["branch"][f"{top.a}:D"]) + moved)
+                elif drill == "exp_lambda_bar":
+                    planted_stats = _time_resampled(stats, comps, int(policy["drills"]["seed"]))
+                elif drill == "single_exponential":
+                    planted = mixture._single_exponential(comps)
+                elif drill == "omitted_fallback":
+                    planted = mixture._without_fallback(comps)
+                elif drill == "single_exponential_window":
+                    pass  # the window's oracle is replaced below
+                elif drill == "atomic_expectation":
+                    if route != mixture.ATOMIC:
+                        continue
+                    alt = mixture.gate_branch(
+                        stats,
+                        comps,
+                        alpha,
+                        branch_expectation=lambda c: (
+                            Fraction(c.decay) / (Fraction(c.capture) + Fraction(c.decay))
+                        ),
+                    )
+                    base = mixture.gate_branch(stats, comps, alpha)
+                    largest = max(
+                        abs(c.p_dio - Fraction(c.decay) / (Fraction(c.capture) + Fraction(c.decay)))
+                        for c in comps
+                    )
+                    cases.append(
+                        {
+                            "drill": drill,
+                            "cell": name,
+                            "gate": gate,
+                            "information": True,
+                            "alone": alt["verdict"],
+                            "unchanged": alt["verdict"] == base["verdict"],
+                            "largest_difference": float(largest),
+                        }
+                    )
+                    continue
+                if drill == "single_exponential_window":
+                    wedges = mixture.window_edges(comps)
+                    probs = mixture.window_probabilities(mixture._single_exponential(comps), wedges)
+                    counts = [int(stats["win"][str(j)]) for j in range(len(wedges) - 1)]
+                    alone = mixture._x2_verdict(counts, probs, alpha)
+                    chain = {
+                        g: v["verdict"] for g, v in mixture.evaluate_cell(stats, route, comps, policy).items()
+                    }
+                    chain["G-win"] = alone["verdict"]
+                    first = next((g for g in mixture.GATES if chain.get(g, "pass") != "pass"), None)
+                else:
+                    verdicts = mixture.evaluate_cell(planted_stats, route, planted, policy)
+                    alone = verdicts[gate]
+                    first = mixture.first_red(verdicts)
+                    if gate == "G-DIO":
+                        # the harvested counts in the harvest's own bins against the drill oracle's
+                        # probabilities
+                        # there, so the statistic, not the bin check, has to turn red
+                        dedges = [
+                            float.fromhex(stats["dio_edge"][str(j)]) for j in range(len(stats["dio_edge"]))
+                        ]
+                        counts = [int(stats["dio"][str(j)]) for j in range(len(dedges))] + [
+                            int(stats["dio"]["capture"])
+                        ]
+                        alone = mixture._x2_verdict(counts, mixture.dio_probabilities(planted, dedges), alpha)
+                cases.append(
+                    {
+                        "drill": drill,
+                        "cell": name,
+                        "gate": gate,
+                        "alone": alone["verdict"],
+                        "first_red": first,
+                        "x2": alone.get("x2", ""),
+                        "information": False,
+                    }
+                )
+    return cases
+
+
+def test_drill_every_harvest_gate_turns_red(harvest: dict, policy: dict, oracle) -> None:
+    cases = drill_cases(harvest, policy, oracle)
+    graded = [c for c in cases if not c["information"]]
+    assert graded and all(c["alone"] == "fail" for c in graded), [c for c in graded if c["alone"] != "fail"]
+    assert all(c["first_red"] is not None for c in graded)
+    info = [c for c in cases if c["information"]]
+    assert info and all(c["unchanged"] for c in info)

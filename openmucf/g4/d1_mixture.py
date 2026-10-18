@@ -34,15 +34,17 @@ from __future__ import annotations
 
 import csv
 import functools
+import hashlib
 import io
 import json
 import math
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
+from typing import Any
 
 from openmucf.g4 import d1_natural as natural
 from openmucf.g4 import spec
@@ -1795,7 +1797,9 @@ def build_policy(root: Path, throughput_ms_per_stop: float) -> tuple[dict[str, o
                     "z": z,
                     "route": route,
                     "n": 100_000,
-                    "min_detectable_omitted_share": None if min_share is None else float(f"{min_share:.6g}"),
+                    "min_detectable_omitted_share": (
+                        None if min_share is None else float(f"{min_share:.6g}")
+                    ),
                     "single_exponential_noncentrality": float(f"{single:.6g}"),
                     "single_exponential_power": float(
                         f"{noncentral_sf(float(crits[DIO_BINS].hi), DIO_BINS, single):.6g}"
@@ -1868,7 +1872,8 @@ def build_policy(root: Path, throughput_ms_per_stop: float) -> tuple[dict[str, o
         )
     policy: dict[str, object] = {
         "contract": "data/g4/d1 natural-target mixtures: harvest gates, statistics, drills and the "
-        "comparison of measured mean lives; every value fixed before any harvest output or comparison exists",
+        "comparison of measured mean lives; every value fixed before any harvest output or comparison "
+        "exists",
         "roster": {k: v for k, v in rost.items()},
         "routes": list(ROUTES),
         "revisions": list(REVISIONS),
@@ -1925,6 +1930,7 @@ def build_policy(root: Path, throughput_ms_per_stop: float) -> tuple[dict[str, o
                     "bg_share": list(DEFAULT_SHARES),
                     "origin_ns": MIZUNO_ORIGIN_NS,
                     "beam": f"one prompt pulse, or two equal prompt pulses {PULSE_SEPARATION_NS:g} ns apart "
+                    ""
                     "(policy value: the separation is not printed)",
                     "natAg": "the CNO and background lifetimes fixed at the printed values of the free fit",
                 },
@@ -1943,7 +1949,8 @@ def build_policy(root: Path, throughput_ms_per_stop: float) -> tuple[dict[str, o
         "qualification": "printed nat, formula share 0, estimator ESTABLISHED, and no answering record in "
         + ", ".join(DISQUALIFYING),
         "science": "per profile and route: family all SCIENCE_FAIL if any distinct row is OUTSIDE, else "
-        "UNQUALIFIED; family qualified SCIENCE_PASS or SCIENCE_FAIL, or SCREEN_VACUOUS when it admits no row",
+        "UNQUALIFIED; family qualified SCIENCE_PASS or SCIENCE_FAIL, or SCREEN_VACUOUS when it admits no "
+        "row",
         "compute": {
             "ms_per_stop": throughput_ms_per_stop,
             "core_hours": float(f"{core_hours:.4g}"),
@@ -1963,3 +1970,427 @@ def load_policy(root: Path) -> dict[str, object]:
         raise MixtureError("the policy contains CR")
     policy: dict[str, object] = json.loads(raw.decode("ascii"))
     return policy
+
+
+# --------------------------------------------------------------------------------------------
+# the harvest: raw cells to the committed summary
+# --------------------------------------------------------------------------------------------
+
+HARVEST_RELPATH = "data/g4/d1/natural_mixture_harvest.csv"
+BUILDS_RELPATH = "data/g4/d1/natural_mixture_builds.csv"
+HARNESS_RELPATH = "cpp/tools/harvest_mixture.cc"
+HARVEST_COLUMNS = ("cell", "stat", "key", "value")
+BUILD_COLUMNS = (
+    "build",
+    "revision",
+    "kind",
+    "drill",
+    "geant4_version",
+    "gcc",
+    "compile_flags",
+    "source_sha256",
+    "binary_sha256",
+    "libraries_sha256",
+)
+#: The lines of a cell whose stream decides the pristine-against-patched identity of the controls.
+CONTROL_LINES = 10_000
+
+
+def cell_name(cell: Mapping[str, object]) -> str:
+    return f"{cell['profile']}:{cell['route']}:{cell['revision']}:{cell['z']}"
+
+
+def _bin_of_time(u_float: float, exact: Callable[[], Fraction]) -> int | None:
+    """The G-time bin of ``u`` (equal-probability bins of Exp(1)): decided from the binary64 product
+    ``u_float`` unless it lies within 1e-9 of an edge, and then from the exact ``u`` in 60-digit decimals, or
+    ``None`` when
+    ``u`` lies within 1e-40 of an edge (the statistic then refuses rather than guess)."""
+    q = 1.0 - math.exp(-u_float)
+    j = int(q * TIME_BINS)
+    if abs(q * TIME_BINS - round(q * TIME_BINS)) > 1e-9:
+        return min(j, TIME_BINS - 1)
+    u = exact()
+    with localcontext() as context:
+        context.prec = 60
+        value = 1 - (-(Decimal(u.numerator) / Decimal(u.denominator))).exp()
+        scaled = value * TIME_BINS
+        nearest = scaled.to_integral_value()
+        if abs(scaled - nearest) < Decimal("1e-40"):
+            return None
+        return min(int(scaled), TIME_BINS - 1)
+
+
+def _exact_product(a: float, b: float) -> Fraction:
+    return Fraction(a) * Fraction(b)
+
+
+def _exact_quotient(a: float, b: float) -> Fraction:
+    return Fraction(a) / Fraction(b)
+
+
+def _bin_of(t: float, edges: Sequence[float]) -> int:
+    """The index of the interval of ``edges`` holding ``t`` (the last open), by binary64 comparison."""
+    j = 0
+    while j + 1 < len(edges) and t >= edges[j + 1]:
+        j += 1
+    return j
+
+
+def rate_digest(values: Iterable[str]) -> str:
+    """``<number of distinct values>:<SHA-256>`` of the distinct values a call site returned for one isotope
+    and field, each read as a binary64 and written canonically (``float.hex``), joined by ``|`` in sorted
+    order: the
+    summary keeps the identity of the values, not the values."""
+    canonical = sorted({float.fromhex(v).hex() for v in values})
+    return f"{len(canonical)}:{hashlib.sha256('|'.join(canonical).encode('ascii')).hexdigest()}"
+
+
+def summarize_cell(
+    raw_stops: bytes, route: str, components: Sequence[Component]
+) -> dict[str, dict[str, str]]:
+    """The statistics of one cell from its stops file: per-isotope counts, branch counts and distinct rates
+    from the call sites, the G-time bins of every stop, the G-DIO and window bins of the transported decay
+    electrons,
+    the consistency of the call sites with each other and with the transported output, and digests."""
+    counts: dict[int, int] = {}
+    branches: dict[str, int] = {}
+    rates: dict[str, set[str]] = {}
+    time_bins = [0] * TIME_BINS
+    ties = 0
+    dedges = dio_edges(components)
+    wedges = window_edges(components)
+    dio_bins = [0] * (len(dedges) + 1)
+    win_bins = [0] * (len(wedges) - 1)
+    outside = 0
+    delays: list[float] = []
+    electron_times: list[float] = []
+    mismatch = {"selector_vs_decay": 0, "branch_vs_outcome": 0, "delay_vs_electron": 0}
+    events = 0
+    text = raw_stops.decode("ascii")
+    for line in text.splitlines():
+        f = line.split()
+        events += 1
+        sel_z, sel_a, z, a = int(f[1]), int(f[2]), int(f[3]), int(f[4])
+        if (sel_z, sel_a) != (z, a):
+            mismatch["selector_vs_decay"] += 1
+        counts[a] = counts.get(a, 0) + 1
+        if route == STOPPING:
+            capture, decay, before, after = (float.fromhex(x) for x in f[5:9])
+            branch = "D" if f[9] == "0" else "N"
+            for name, value in (("capture", f[5]), ("decay", f[6])):
+                rates.setdefault(f"{a}:{name}", set()).add(value)
+            total = capture + decay
+            delay = after - before
+            u_float = total * delay
+            exact = functools.partial(_exact_product, total, delay)
+
+            outcome, electron = f[10], f[11]
+            if electron != "-" and float.fromhex(electron) != after:
+                mismatch["delay_vs_electron"] += 1
+        else:
+            tau = float.fromhex(f[5])
+            for name, value in (("tau", f[5]), ("tau_dio", f[6]), ("tau_nc", f[7])):
+                rates.setdefault(f"{a}:{name}", set()).add(value)
+            delay = float.fromhex(f[9])
+            atom_time = float.fromhex(f[10])
+            branch = f[11]
+            u_float = delay / tau
+            exact = functools.partial(_exact_quotient, delay, tau)
+
+            outcome, electron = f[12], f[13]
+            if electron != "-" and float.fromhex(electron) != atom_time + delay:
+                mismatch["delay_vs_electron"] += 1
+        key = f"{a}:{branch}"
+        branches[key] = branches.get(key, 0) + 1
+        if branch != outcome:
+            mismatch["branch_vs_outcome"] += 1
+        delays.append(delay)
+        j = _bin_of_time(u_float, exact)
+        if j is None:
+            ties += 1
+        else:
+            time_bins[j] += 1
+        if outcome == "D" and electron != "-":
+            t = float.fromhex(electron)
+            electron_times.append(t)
+            dio_bins[_bin_of(t, dedges)] += 1
+            if wedges[0] <= t < wedges[-1]:
+                win_bins[_bin_of(t, wedges[:-1])] += 1
+            else:
+                outside += 1
+        else:
+            dio_bins[-1] += 1
+            outside += 1
+    first = "\n".join(text.splitlines()[:CONTROL_LINES]) + "\n"
+    out: dict[str, dict[str, str]] = {
+        "meta": {
+            "events": str(events),
+            "stops_sha256": hashlib.sha256(raw_stops).hexdigest(),
+            "first_lines_sha256": hashlib.sha256(first.encode("ascii")).hexdigest(),
+            "time_ties": str(ties),
+            "mean_delay_ns": repr(math.fsum(delays) / len(delays)),
+            "mean_electron_time_ns": repr(math.fsum(electron_times) / len(electron_times)),
+            **{f"mismatch_{k}": str(v) for k, v in mismatch.items()},
+        },
+        "count": {str(a): str(n) for a, n in sorted(counts.items())},
+        "branch": {
+            k: str(v) for k, v in sorted(branches.items(), key=lambda kv: (int(kv[0].split(":")[0]), kv[0]))
+        },
+        "rate": {
+            k: rate_digest(v)
+            for k, v in sorted(rates.items(), key=lambda kv: (int(kv[0].split(":")[0]), kv[0]))
+        },
+        "time": {str(j): str(n) for j, n in enumerate(time_bins)},
+        "dio": {**{str(j): str(n) for j, n in enumerate(dio_bins[:-1])}, "capture": str(dio_bins[-1])},
+        "dio_edge": {str(j): e.hex() for j, e in enumerate(dedges)},
+        "win": {**{str(j): str(n) for j, n in enumerate(win_bins)}, "outside": str(outside)},
+        "win_edge": {str(j): e.hex() for j, e in enumerate(wedges)},
+    }
+    return out
+
+
+def summarize_cells(root: Path, plan: Mapping[str, Any], out_dir: Path) -> None:
+    """The committed harvest and build files from the raw cells ``plan`` lists (``cells``: each with its
+    ``dir``;
+    ``builds``: each build directory; ``identity``: the W1 comparison)."""
+    import gzip
+
+    oracle = Oracle(root)
+    policy = load_policy(root)
+    rows: list[dict[str, str]] = []
+    cells_ = plan["cells"]
+    for cell in cells_:
+        name = cell_name(cell)
+        directory = Path(cell["dir"])
+        run = json.loads((directory / "run.json").read_text(encoding="utf-8"))
+        build = json.loads((Path(cell["build_dir"]) / "build.json").read_text(encoding="utf-8"))
+        raw = gzip.decompress((directory / "raw" / "stops.txt.gz").read_bytes())
+        if hashlib.sha256(raw).hexdigest() != run["files"]["stops.txt"]:
+            raise MixtureError(f"{name}: the stops file is not the one the run recorded")
+        profile = str(cell["profile"]) if cell["profile"] != "pristine" else spec.PARITY_PROFILE
+        comps = oracle.components(profile, str(cell["route"]), int(cell["z"]))
+        stats = summarize_cell(raw, str(cell["route"]), comps)
+        stats["meta"].update(
+            {
+                "build": Path(cell["build_dir"]).name,
+                "seed_base": str(cell["seed_base"]),
+                "wall_s": f"{run['wall_s']:.3f}",
+                "compile_flags": build["compile_flags"],
+                "binary_sha256": build["binary_sha256"],
+            }
+        )
+        verdicts = evaluate_cell(stats, str(cell["route"]), comps, policy)
+        stats["verdict"] = {gate: v["verdict"] for gate, v in verdicts.items()}
+        stats["x2"] = {gate: v["x2"] for gate, v in verdicts.items() if "x2" in v}
+        stats["dof"] = {gate: v["dof"] for gate, v in verdicts.items() if "dof" in v}
+        print(
+            f"CELL {name} events={stats['meta']['events']} "
+            + " ".join(f"{g}={v}" for g, v in stats["verdict"].items()),
+            flush=True,
+        )
+        for stat, values in stats.items():
+            for key, value in values.items():
+                rows.append({"cell": name, "stat": stat, "key": key, "value": value})
+    identity = plan.get("identity")
+    if identity:
+        for entry in identity["cells"]:
+            name = f"identity:{entry['route']}:{entry['revision']}:{entry['symbol']}"
+            for key in sorted(entry):
+                if key not in ("route", "revision", "symbol"):
+                    rows.append({"cell": name, "stat": "identity", "key": key, "value": str(entry[key])})
+        for entry in identity["drills"]:
+            name = f"identity_drill:{entry['route']}:{entry['revision']}"
+            for key in sorted(entry):
+                if key not in ("route", "revision"):
+                    rows.append({"cell": name, "stat": "identity", "key": key, "value": str(entry[key])})
+    source = hashlib.sha256((root / HARNESS_RELPATH).read_bytes()).hexdigest()
+    builds: list[dict[str, str]] = []
+    for build_dir in plan["builds"]:
+        info = json.loads((Path(build_dir) / "build.json").read_text(encoding="utf-8"))
+        if info["source_sha256"] != source:
+            raise MixtureError(f"{build_dir}: the build compiled another source than {HARNESS_RELPATH}")
+        libs = hashlib.sha256(
+            json.dumps([(x["soname"], x["sha256"]) for x in info["libraries"]]).encode()
+        ).hexdigest()
+        name = Path(build_dir).name
+        builds.append(
+            {
+                "build": name,
+                "revision": name.split("-")[0],
+                "kind": info["kind"],
+                "drill": info["drill"],
+                "geant4_version": info["geant4_version"],
+                "gcc": info["gcc"],
+                "compile_flags": info["compile_flags"],
+                "source_sha256": info["source_sha256"],
+                "binary_sha256": info["binary_sha256"],
+                "libraries_sha256": libs,
+            }
+        )
+    (out_dir / Path(HARVEST_RELPATH).name).write_bytes(render_csv(rows, HARVEST_COLUMNS))
+    (out_dir / Path(BUILDS_RELPATH).name).write_bytes(render_csv(builds, BUILD_COLUMNS))
+    print(f"SUMMARIZED cells={len(cells_)} rows={len(rows)} builds={len(builds)}")
+
+
+def load_harvest(root: Path) -> dict[str, dict[str, dict[str, str]]]:
+    """The committed harvest by cell, then statistic, then key."""
+    out: dict[str, dict[str, dict[str, str]]] = {}
+    for row in read_csv(root / HARVEST_RELPATH, HARVEST_COLUMNS):
+        out.setdefault(row["cell"], {}).setdefault(row["stat"], {})[row["key"]] = row["value"]
+    return out
+
+
+# --------------------------------------------------------------------------------------------
+# the gates, recomputed from the committed harvest, the policy and the oracle
+# --------------------------------------------------------------------------------------------
+
+GATES = ("G-rate", "G-set", "G-sel", "G-branch", "G-time", "G-DIO", "G-win")
+
+
+@functools.cache
+def _critical(dof: int, alpha: str) -> Critical:
+    return critical(dof, Decimal(alpha))
+
+
+def gate_rate(
+    stats: Mapping[str, Mapping[str, str]], route: str, components: Sequence[Component]
+) -> list[str]:
+    """Every isotope and field whose harvested call-site values are not exactly the oracle's binary64 value:
+    the
+    summary's digest must be that of the one value the oracle computes."""
+    failures = []
+    by_a = {c.a: c for c in components}
+    for key, value in stats["rate"].items():
+        a, field = key.split(":")
+        c = by_a.get(int(a))
+        if c is None:
+            failures.append(f"{key}: no oracle component")
+            continue
+        expected = {
+            "capture": c.capture,
+            "decay": c.decay,
+            "tau": c.tau,
+            "tau_dio": c.tau_dio,
+            "tau_nc": c.tau_nc,
+        }[field]
+        if value != rate_digest([expected.hex()]):
+            failures.append(f"{key}: harvested {value} oracle {rate_digest([expected.hex()])}")
+    return failures
+
+
+def gate_set(stats: Mapping[str, Mapping[str, str]], components: Sequence[Component]) -> list[str]:
+    harvested = {int(a) for a in stats["count"]}
+    model = {c.a for c in components}
+    return [] if harvested == model else [f"harvested {sorted(harvested)} oracle {sorted(model)}"]
+
+
+def _x2_verdict(counts: Sequence[int], probs: Sequence[Fraction | Decimal], alpha: str) -> dict[str, str]:
+    dof = len(counts) - 1
+    lo, hi = pearson(counts, probs)
+    crit = _critical(dof, alpha)
+    return {
+        "x2": f"{(lo + hi) / 2:.6f}",
+        "dof": str(dof),
+        "critical": f"{crit.lo:.6f}",
+        "verdict": verdict((lo, hi), crit),
+    }
+
+
+def gate_sel(
+    stats: Mapping[str, Mapping[str, str]], components: Sequence[Component], alpha: str
+) -> dict[str, str]:
+    counts = [int(stats["count"].get(str(c.a), "0")) for c in components]
+    return _x2_verdict(counts, [c.abundance for c in components], alpha)
+
+
+def gate_branch(
+    stats: Mapping[str, Mapping[str, str]],
+    components: Sequence[Component],
+    alpha: str,
+    min_expected: int = 5,
+    branch_expectation=None,
+) -> dict[str, str]:  # type: ignore[no-untyped-def]
+    """Pearson's X^2 over the isotopes, each a binomial of its own count with the exact decay probability; an
+    isotope whose smaller expected count is below ``min_expected`` is left out and counted."""
+    x2_lo = x2_hi = Decimal(0)
+    used = left = 0
+    for c in components:
+        dio = int(stats["branch"].get(f"{c.a}:D", "0"))
+        cap = int(stats["branch"].get(f"{c.a}:N", "0"))
+        n = dio + cap
+        p = c.p_dio if branch_expectation is None else branch_expectation(c)
+        if n == 0 or min(n * p, n * (1 - p)) < min_expected:
+            left += 1
+            continue
+        lo, hi = pearson([dio, cap], [p, 1 - p])
+        x2_lo += lo
+        x2_hi += hi
+        used += 1
+    crit = _critical(used, alpha)
+    return {
+        "x2": f"{(x2_lo + x2_hi) / 2:.6f}",
+        "dof": str(used),
+        "left_out": str(left),
+        "critical": f"{crit.lo:.6f}",
+        "verdict": verdict((x2_lo, x2_hi), crit),
+    }
+
+
+def gate_time(stats: Mapping[str, Mapping[str, str]], alpha: str) -> dict[str, str]:
+    counts = [int(stats["time"][str(j)]) for j in range(TIME_BINS)]
+    result = _x2_verdict(counts, [Fraction(1, TIME_BINS)] * TIME_BINS, alpha)
+    if int(stats["meta"]["time_ties"]):
+        result["verdict"] = "refuse"
+    return result
+
+
+def gate_dio(
+    stats: Mapping[str, Mapping[str, str]], components: Sequence[Component], alpha: str
+) -> dict[str, str]:
+    edges = [float.fromhex(stats["dio_edge"][str(j)]) for j in range(len(stats["dio_edge"]))]
+    if edges != dio_edges(components):
+        return {"verdict": "fail", "reason": "the summary's bins are not the oracle's"}
+    probs = dio_probabilities(components, edges)
+    counts = [int(stats["dio"][str(j)]) for j in range(len(edges))] + [int(stats["dio"]["capture"])]
+    return _x2_verdict(counts, probs, alpha)
+
+
+def gate_win(
+    stats: Mapping[str, Mapping[str, str]], components: Sequence[Component], alpha: str
+) -> dict[str, str]:
+    edges = [float.fromhex(stats["win_edge"][str(j)]) for j in range(len(stats["win_edge"]))]
+    if edges != window_edges(components):
+        return {"verdict": "fail", "reason": "the summary's bins are not the oracle's"}
+    probs = window_probabilities(components, edges)
+    counts = [int(stats["win"][str(j)]) for j in range(len(edges) - 1)]
+    return _x2_verdict(counts, probs, alpha)
+
+
+def evaluate_cell(
+    stats: Mapping[str, Mapping[str, str]],
+    route: str,
+    components: Sequence[Component],
+    policy: Mapping[str, Any],
+) -> dict[str, dict[str, str]]:
+    """Every gate of one cell, in chain order."""
+    alpha = str(policy["statistics"]["per_test_alpha"])
+    rate = gate_rate(stats, route, components)
+    out: dict[str, dict[str, str]] = {
+        "G-rate": {"verdict": "pass" if not rate else "fail", "detail": "; ".join(rate)}
+    }
+    setf = gate_set(stats, components)
+    out["G-set"] = {"verdict": "pass" if not setf else "fail", "detail": "; ".join(setf)}
+    if len(components) > 1:
+        out["G-sel"] = gate_sel(stats, components, alpha)
+    out["G-branch"] = gate_branch(stats, components, alpha, int(policy["branch_min_expected"]))
+    out["G-time"] = gate_time(stats, alpha)
+    out["G-DIO"] = gate_dio(stats, components, alpha)
+    out["G-win"] = gate_win(stats, components, alpha)
+    return out
+
+
+def first_red(verdicts: Mapping[str, Mapping[str, str]]) -> str | None:
+    for gate in GATES:
+        if gate in verdicts and verdicts[gate]["verdict"] != "pass":
+            return gate
+    return None
