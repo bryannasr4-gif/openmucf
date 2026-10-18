@@ -112,12 +112,12 @@ mismatch go away — the reference implementation is the thing being tested.
 ## Natural-target mixtures
 
 `harvest_mixture.cc` transports negative muons that start at rest at the centre of a box of a
-single-element NIST material, `G4_<symbol>`, in one single-threaded process, on the stopping route (QBBC as
+single-element NIST material, `G4_<symbol>`, in a single-threaded process, on the stopping route (QBBC as
 built) or the atomic route (`G4MuonMinusAtomicCapture` and `G4MuonicAtomDecay`, registered as
 `G4MuonicAtomDecayPhysics` registers it). With `--hooks on`, classes derived from the stock
 `G4ElementSelector`, `G4MuonMinusBoundDecay` and `G4MuonicAtomDecay` record, at each call site, the nucleus
 the selector drew, the rates or lifetimes the call site uses, the delay it sampled and the branch it took,
-then call the stock method once and return its result; with `--hooks off` the stock classes run alone. One
+then call the stock method once and return its result; with `--hooks off` the stock classes run alone. A
 line per event gives those fields and, from the transported secondaries alone, the outcome of the stop and
 the time of its decay electron, as exact hexadecimal floats. `G4MuonMinusAtomicCapture` declares
 `SetElementSelector` inline and neither revision defines it, so the file supplies the definition
@@ -128,7 +128,7 @@ hook entry equals the state at base entry and the state at base return the state
 
 `mixture_harvest.py` builds the source against an installation with the flags it records in the build's
 own `build.json` (with the compiler, the Geant4 version and the digest of every library the binary
-loads), runs one cell and records its argument vector, wall time and the digest of what it wrote, and
+loads), runs a cell and records its argument vector, wall time and the digest of what it wrote, and
 summarizes raw cells into `data/g4/d1/natural_mixture_harvest.csv` and
 `data/g4/d1/natural_mixture_builds.csv` through `openmucf/g4/d1_mixture.py`. A summary reads each build's
 flags from that build's record, never from a constant. `DATASET_D1.md` section 13 describes what the

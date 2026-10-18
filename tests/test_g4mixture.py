@@ -9,9 +9,11 @@ states (A-share). Each gate has a drill that must turn it red.
 from __future__ import annotations
 
 import csv
+import functools
 import hashlib
 import io
 import math
+import re
 from decimal import Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
@@ -757,3 +759,210 @@ def test_drill_every_harvest_gate_turns_red(harvest: dict, policy: dict, oracle)
     assert all(c["first_red"] is not None for c in graded)
     info = [c for c in cases if c["information"]]
     assert info and all(c["unchanged"] for c in info)
+
+
+# --------------------------------------------------------------------------------------------
+# the comparison with the measured mean lives
+# --------------------------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def comparison() -> list[dict[str, str]]:
+    return mixture.with_measured(
+        ROOT, mixture.read_csv(ROOT / mixture.COMPARISON_RELPATH, mixture.COMPARISON_COLUMNS)
+    )
+
+
+NUMERIC_COLUMNS = {
+    "fit_rate",
+    "fit_rate_min",
+    "fit_rate_max",
+    "sigma_tab",
+    "sigma_win",
+    "mean_rate",
+    "alias_rate",
+    "difference",
+    "difference_sigma",
+    "part_estimator",
+    "part_composition",
+    "part_single_nucleus",
+    "part_merged",
+    "formula_share",
+    "same_source_share",
+}
+
+
+def test_compare_regenerates_within_tolerance() -> None:
+    """The comparison regenerates with every number within a relative 1e-9 (the solver's last digits may
+    differ
+    between platforms) and every other field, the verdicts among them, exactly."""
+    committed = mixture.read_csv(ROOT / mixture.COMPARISON_RELPATH, mixture.COMPARISON_COLUMNS)
+    rows = mixture.comparison_rows(ROOT)
+    assert len(rows) == len(committed)
+    for new, old in zip(rows, committed, strict=True):
+        for column in mixture.COMPARISON_COLUMNS:
+            if column in NUMERIC_COLUMNS and old[column]:
+                assert float(new[column]) == pytest.approx(float(old[column]), rel=1e-9, abs=1e-15), column
+            else:
+                assert new[column] == old[column], (old["locator"], column)
+
+
+def _sigma(row: dict[str, str]) -> float:
+    return math.sqrt(sum(float(row[k]) ** 2 for k in ("measured_rate_unc", "sigma_tab", "sigma_win")))
+
+
+def test_compare_verdicts_follow_the_band(comparison: list[dict[str, str]]) -> None:
+    for row in comparison:
+        inside = mixture._within(
+            row["fit_rate"],
+            row["measured_rate"],
+            (row["measured_rate_unc"], row["sigma_tab"], row["sigma_win"]),
+        )
+        assert row["verdict"] == ("WITHIN" if inside else "OUTSIDE"), row["locator"]
+
+
+def test_compare_parts_add_up_to_the_difference(comparison: list[dict[str, str]]) -> None:
+    for row in comparison:
+        parts = [row["part_estimator"]] + (
+            [row["part_merged"]]
+            if row["part_merged"]
+            else [row["part_composition"], row["part_single_nucleus"]]
+        )
+        total = math.fsum(float(p) for p in parts)
+        assert abs(total - float(row["difference"])) <= 1e-12 * max(1.0, abs(float(row["measured_rate"]))), (
+            row
+        )
+
+
+def test_compare_counts_and_qualification(comparison: list[dict[str, str]]) -> None:
+    """42 measurements of 38 elements under three profiles and two routes; every estimator a surrogate; no row
+    qualifies, so the qualified family is vacuous, reported as such."""
+    assert len({(r["source"], r["locator"]) for r in comparison}) == 42
+    assert len({r["z"] for r in comparison}) == 38
+    assert {r["estimator"] for r in comparison} == {mixture.SURROGATE}
+    assert all(r["qualified"] == "false" for r in comparison)
+    for verdicts in mixture.science(comparison).values():
+        assert verdicts["qualified"] == "SCREEN_VACUOUS"
+        assert verdicts["all"] == ("SCIENCE_FAIL" if verdicts["outside"] else "UNQUALIFIED")
+
+
+def test_drill_band_shift_both_ways(comparison: list[dict[str, str]]) -> None:
+    """A measured value moved to the band's edge plus a hair, either way, is OUTSIDE; minus a hair, WITHIN."""
+    for row in comparison[:12]:
+        fit, sd = float(row["fit_rate"]), _sigma(row)
+        sig = (row["measured_rate_unc"], row["sigma_tab"], row["sigma_win"])
+        for sign in (1, -1):
+            assert not mixture._within(row["fit_rate"], repr(fit + sign * 3 * sd * (1 + 1e-9)), sig)
+            assert mixture._within(row["fit_rate"], repr(fit + sign * 3 * sd * (1 - 1e-9)), sig)
+
+
+def test_drill_initial_rate_in_place_of_the_fit(comparison: list[dict[str, str]]) -> None:
+    """Replacing the estimator's rate by the mixture's initial rate changes the published file wherever the
+    two differ by more than a tenth of the band's standard deviation; there are such rows, so the estimator is
+    not a
+    no-op in this comparison."""
+    moved = [r for r in comparison if abs(float(r["fit_rate"]) - float(r["mean_rate"])) > 0.1 * _sigma(r)]
+    assert moved
+    for row in moved:
+        old = float(row["difference_sigma"])
+        new = (float(row["mean_rate"]) - float(row["measured_rate"])) / _sigma(row)
+        assert abs(new - old) > 0.1
+
+
+def test_compare_same_source_shares(comparison: list[dict[str, str]]) -> None:
+    """A Suzuki row answered by the compiled-in table, or any row answered by its own source's profile, is
+    same-source on that share; a Mizuno row under parity is answered by another source's records."""
+    for row in comparison:
+        share = float(row["same_source_share"])
+        if row["source"] == "mizuno2025" and row["profile"] == "parity":
+            assert share == 0.0
+        if row["source"] == "suzuki1987" and row["profile"] == "parity":
+            assert share == pytest.approx(1.0 - float(row["formula_share"]))
+
+
+# --------------------------------------------------------------------------------------------
+# the document
+# --------------------------------------------------------------------------------------------
+
+DOCUMENT = "DATASET_D1.md"
+_SPELLED = re.compile(
+    r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|"
+    r"fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|"
+    r"hundred|thousand|million)"
+    r"(?:-(?:one|two|three|four|five|six|seven|eight|nine))*\b",
+    re.IGNORECASE,
+)
+
+
+def _line_pattern(line: str, numeric: re.Pattern[str]) -> tuple[str, tuple[int, ...]]:
+    """A pattern matching ``line`` whitespace-collapsed, with every numeric token and spelled number a
+    group."""
+    collapsed = " ".join(line.split())
+    spans = sorted(
+        {m.span() for m in numeric.finditer(collapsed)} | {m.span() for m in _SPELLED.finditer(collapsed)}
+    )
+    parts, groups, at = [], [], 0
+    for index, (start, end) in enumerate(spans, start=1):
+        parts.append(re.escape(collapsed[at:start]))
+        parts.append(f"({re.escape(collapsed[start:end])})")
+        groups.append(index)
+        at = end
+    parts.append(re.escape(collapsed[at:]))
+    return "".join(parts), tuple(groups)
+
+
+@functools.cache
+def _section() -> str:
+    return mixture.render_section(ROOT)
+
+
+def document_pins(numeric: re.Pattern[str]) -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """``(what, path, pattern, groups, expected)`` for every number section 13 of DATASET_D1.md states: one
+    row per line of the generated section that carries a number, every number a group (the section is required
+    to be the
+    generated text, so each number is the generator's), and one per pointer sentence of sections 11 and 12."""
+    number = re.match(r"## (\d+)\. ", mixture.SECTION_HEADING)
+    assert number is not None
+    pins: list[tuple[str, str, str, tuple[int, ...], object]] = [
+        (
+            "section 13 pointer, section 11",
+            DOCUMENT,
+            r"Section (\d+) gives the class of record",
+            (1,),
+            number[1],
+        ),
+        (
+            "section 13 pointer, section 12",
+            DOCUMENT,
+            r"Section (\d+) compares the transported mixture",
+            (1,),
+            number[1],
+        ),
+    ]
+    for index, line in enumerate(_section().splitlines(), start=1):
+        pattern, groups = _line_pattern(line, numeric)
+        if groups:
+            pins.append((f"section 13 line {index}", DOCUMENT, pattern, groups, None))
+    return pins
+
+
+def test_document_section_13_is_the_generated_text() -> None:
+    text = (ROOT / DOCUMENT).read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert text.count("\n" + mixture.SECTION_HEADING + "\n") == 1
+    assert "## 13. " + text.split("\n## 13. ", 1)[1] == _section()
+
+
+def test_document_pointer_sentences_one_each() -> None:
+    text = (ROOT / DOCUMENT).read_text(encoding="utf-8").replace("\r\n", "\n")
+    eleven = text.split("\n## 11. ", 1)[1].split("\n## 12. ", 1)[0]
+    twelve = text.split("\n## 12. ", 1)[1].split("\n## 13. ", 1)[0]
+    assert eleven.count("Section 13") == 1 and twelve.count("Section 13") == 1
+
+
+def test_document_pins_match_once() -> None:
+    collapsed = " ".join((ROOT / DOCUMENT).read_text(encoding="utf-8").split())
+    for what, _, pattern, _, expected in document_pins(re.compile(r"[0-9][0-9,.]*[0-9]|[0-9]|[⁰¹²³⁴⁵⁶⁷⁸⁹]+")):
+        hits = list(re.finditer(pattern, collapsed))
+        assert len(hits) == 1, what
+        if expected is not None:
+            assert hits[0].group(1) == expected, what

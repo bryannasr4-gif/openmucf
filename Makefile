@@ -150,10 +150,14 @@ stoppedmu:
 # The natural-target answer classes: each compiled-in record and evaluated-profile row classified by the kind of
 # target and the lineage of its value, as the committed provenance rows, printed cells and transcriptions
 # establish them, and for each profile and isotope of each element the class of the record that answers it.
-# Exact decimal and fraction arithmetic, no solver or sampling; both files join the git-diff list below, and
-# tests/test_g4mixture.py regenerates them.
+# Exact decimal and fraction arithmetic, no sampling; both class files join the git-diff list below, and
+# tests/test_g4mixture.py regenerates them. Then the comparison of the measured mean lives of natural targets
+# with the rate each source's estimator, or its stated surrogate, extracts from the analytic mixture: a solver
+# (damped Newton on fixed quadrature) whose last digits can differ between platforms' libm, so it is NOT
+# byte-diffed; tests/test_g4mixture.py regenerates it and holds every number to a relative 1e-9 and every
+# verdict exactly.
 g4mixture:
-	python scripts/generate_g4mixture.py classes answers
+	python scripts/generate_g4mixture.py classes answers compare
 
 # Reproducibility gate: regenerate the deterministic docs and fail if they drift from what's committed.
 # The FC-001 card payload (forecasts/FC-001-mufuse.json) is MCMC-derived and is NOT exact-diffed here;

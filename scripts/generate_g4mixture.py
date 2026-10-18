@@ -4,7 +4,8 @@
 both are steps ``make audit`` runs. ``estimators`` prints, for each measured mean life of a natural target, the
 facts its source prints about its fit and the label (ESTABLISHED or SURROGATE) they give it. ``policy --ms-per-stop
 <ms>`` writes ``data/g4/d1/natural_mixture_policy.json`` from the committed files and the measured cost of a
-transported stop, and prints the power calculation behind it.
+transported stop, and prints the power calculation behind it. ``compare`` writes
+``data/g4/d1/natural_mixture_comparison.csv``, a step ``make audit`` runs.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("steps", nargs="+", choices=("classes", "answers", "estimators", "policy"))
+    parser.add_argument("steps", nargs="+", choices=("classes", "answers", "estimators", "policy", "compare"))
     parser.add_argument("--ms-per-stop", type=float)
     args = parser.parse_args()
     if "classes" in args.steps or "answers" in args.steps:
@@ -62,6 +63,16 @@ def main() -> None:
         (ROOT / mixture.POLICY_RELPATH).write_bytes(data)
         print("\n".join(log))
         print(f"policy {mixture.POLICY_RELPATH} sha256 {hashlib.sha256(data).hexdigest()}")
+    if "compare" in args.steps:
+        compare()
+
+
+def compare() -> None:
+    rows = mixture.comparison_rows(ROOT)
+    (ROOT / mixture.COMPARISON_RELPATH).write_bytes(mixture.render_csv(rows, mixture.COMPARISON_COLUMNS))
+    print(f"comparison rows={len(rows)} distinct={len({r['comparison'] for r in rows})}")
+    for key, value in mixture.science(rows).items():
+        print(f"science {key}: {value}")
 
 
 if __name__ == "__main__":

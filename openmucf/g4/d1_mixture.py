@@ -32,6 +32,7 @@ Standard library only.
 
 from __future__ import annotations
 
+import collections
 import csv
 import functools
 import hashlib
@@ -2394,3 +2395,689 @@ def first_red(verdicts: Mapping[str, Mapping[str, str]]) -> str | None:
         if gate in verdicts and verdicts[gate]["verdict"] != "pass":
             return gate
     return None
+
+
+# --------------------------------------------------------------------------------------------
+# the comparison with the measured mean lives
+# --------------------------------------------------------------------------------------------
+
+COMPARISON_RELPATH = "data/g4/d1/natural_mixture_comparison.csv"
+COMPARISON_COLUMNS = (
+    "source",
+    "locator",
+    "label",
+    "z",
+    "profile",
+    "route",
+    "estimator",
+    "fit_rate",
+    "fit_rate_min",
+    "fit_rate_max",
+    "sigma_tab",
+    "sigma_win",
+    "mean_rate",
+    "alias_rate",
+    "difference",
+    "difference_sigma",
+    "part_estimator",
+    "part_composition",
+    "part_single_nucleus",
+    "part_merged",
+    "formula_share",
+    "same_source_share",
+    "classes",
+    "qualified",
+    "verdict",
+    "comparison",
+)
+#: Rates in the comparison are in 1e6/s; the oracle's are ns^-1.
+PER_MICROSECOND = d1.MICROSECOND
+
+
+def _perturbed(components: Sequence[Component], record: str, route: str, h: float) -> list[Component]:
+    """The components with the capture rate of every isotope ``record`` answers scaled by ``1 + h``, the
+    route's
+    rate and decay probability recomputed in exact arithmetic (a real-valued perturbation, for
+    derivatives)."""
+    out = []
+    for c in components:
+        if c.record != record:
+            out.append(c)
+            continue
+        capture = Fraction(c.capture) * (1 + Fraction(h))
+        total = capture + Fraction(c.decay)
+        out.append(
+            Component(
+                c.a,
+                c.abundance,
+                c.capture,
+                c.decay,
+                c.total,
+                c.tau,
+                c.tau_dio,
+                c.tau_nc,
+                total,
+                Fraction(c.decay) / total,
+                c.lookup,
+                c.answer_class,
+                c.record,
+                c.record_unc,
+            )
+        )
+    return out
+
+
+def _within(rate: str, measured: str, sigmas: Sequence[str], k: int = 3) -> bool:
+    with localcontext() as context:
+        context.prec = 400
+        difference = Decimal(rate) - Decimal(measured)
+        bound = sum((Decimal(s) ** 2 for s in sigmas), Decimal(0))
+        return difference * difference <= k * k * bound
+
+
+def comparison_rows(root: Path) -> list[dict[str, str]]:
+    """One row per measured mean life of a natural target, profile and route: the rate the source's estimator
+    (or its surrogate bracket) extracts from the transported mixture's expected spectrum, its uncertainties,
+    the
+    verdict and the parts of the difference."""
+    from openmucf.g4 import d1_lifetime as lifetime
+
+    oracle = Oracle(root)
+    policy = load_policy(root)
+    labels = {(r["source"], r["locator"]): r for r in policy["estimators"]["labels"]}  # type: ignore[index]
+    measured_rows = {
+        (r["source"], r["locator"], r["profile"]): r
+        for r in lifetime.read_comparison(root / lifetime.COMPARISON_RELPATH)
+    }
+    cache: dict[tuple[object, ...], tuple[float, float, float, list[tuple[str, float, Decimal]]]] = {}
+    rows: list[dict[str, str]] = []
+    ids: dict[tuple[object, ...], int] = {}
+    for ref in references(root):
+        label = labels[(ref.source, ref.locator)]
+        for profile in oracle.tables:
+            for route in ROUTES:
+                comps = oracle.components(profile, route, ref.z)
+                key = (
+                    ref.source,
+                    ref.locator,
+                    route,
+                    tuple((c.a, c.abundance, c.rate, c.p_dio) for c in comps),
+                )
+                if key not in cache:
+                    tau_bar = float(1 / mean_rate(comps))
+                    fits, nominal = bracket(root, ref, tau_bar)
+                    values = {name: fit_rate(comps, spec_) for name, spec_ in fits}
+                    lo, hi = min(values.values()), max(values.values())
+                    spec_nominal = dict(fits)[nominal]
+                    contributions: list[tuple[str, float, Decimal]] = []
+                    for record in sorted({c.record for c in comps if c.record}):
+                        unc = next(c.record_unc for c in comps if c.record == record)
+                        h = 1e-6
+                        up = fit_rate(_perturbed(comps, record, route, h), spec_nominal)
+                        down = fit_rate(_perturbed(comps, record, route, -h), spec_nominal)
+                        capture = next(c.capture for c in comps if c.record == record)
+                        derivative = (up - down) / (2 * h * capture)
+                        contributions.append((record, derivative, unc))  # type: ignore[arg-type]
+                    cache[key] = (lo, hi, values[nominal], contributions)
+                lo, hi, _, contributions = cache[key]
+                fit = (lo + hi) / 2 * PER_MICROSECOND
+                sigma_win = (hi - lo) / 2 * PER_MICROSECOND
+                sigma_tab = math.sqrt(math.fsum((d * float(u)) ** 2 for _, d, u in contributions))
+                lam_bar = float(mean_rate(comps)) * PER_MICROSECOND
+                measured = float(ref.measured_rate)
+                sigma_meas = float(ref.measured_rate_unc)
+                alias = ""
+                parts = {
+                    "part_estimator": fit - lam_bar,
+                    "part_composition": math.nan,
+                    "part_single_nucleus": math.nan,
+                    "part_merged": math.nan,
+                }
+                source_row = measured_rows[(ref.source, ref.locator, profile)]
+                if source_row["key_a"]:
+                    alias_value = float(source_row["rate_bound" if route == STOPPING else "rate_helper"])
+                    alias = repr(alias_value)
+                    parts["part_composition"] = lam_bar - alias_value
+                    parts["part_single_nucleus"] = alias_value - measured
+                else:
+                    parts["part_merged"] = lam_bar - measured
+                sigma = math.sqrt(sigma_meas**2 + sigma_tab**2 + sigma_win**2)
+                formula = sum((c.abundance for c in comps if c.answer_class == FORMULA), Fraction(0))
+                # a record whose value the compared source's own measurements produced: the compiled-in table,
+                # whose source comment credits Suzuki, Measday and Roalsvig from Z = 3 on, and each evaluated
+                # profile's rows for its own source; a capture rate such a source derives from its own mean
+                # life
+                # is not an independent check of that mean life
+                same_source = sum(
+                    (
+                        c.abundance
+                        for c in comps
+                        if (c.lookup == natural.TABLE_ROUTE and ref.source == SUZUKI and ref.z >= 3)
+                        or (c.lookup == natural.PROFILE_ROUTE and profile == ref.source)
+                    ),
+                    Fraction(0),
+                )
+                shares: dict[str, Fraction] = {}
+                for c in comps:
+                    shares[c.answer_class] = shares.get(c.answer_class, Fraction(0)) + c.abundance
+                touched = ";".join(f"{k}={float(v):.6g}" for k, v in sorted(shares.items()) if v)
+                qualified = (
+                    ref.basis == "natural"
+                    and formula == 0
+                    and label["estimator"] == ESTABLISHED
+                    and not any(shares.get(k, 0) for k in DISQUALIFYING)
+                )
+                inside = _within(
+                    repr(fit), ref.measured_rate, (ref.measured_rate_unc, repr(sigma_tab), repr(sigma_win))
+                )
+                identity = (
+                    ref.source,
+                    ref.locator,
+                    route,
+                    key[3],
+                    repr(fit),
+                    repr(sigma_win),
+                    tuple((r, repr(d), str(u)) for r, d, u in contributions),
+                    ref.measured_rate,
+                    ref.measured_rate_unc,
+                )
+                comparison = ids.setdefault(identity, len(ids) + 1)
+                rows.append(
+                    {
+                        "source": ref.source,
+                        "locator": ref.locator,
+                        "label": ref.label,
+                        "z": str(ref.z),
+                        "profile": profile,
+                        "route": route,
+                        "estimator": label["estimator"],
+                        "fit_rate": repr(fit),
+                        "fit_rate_min": repr(lo * PER_MICROSECOND),
+                        "fit_rate_max": repr(hi * PER_MICROSECOND),
+                        "sigma_tab": repr(sigma_tab),
+                        "sigma_win": repr(sigma_win),
+                        "mean_rate": repr(lam_bar),
+                        "alias_rate": alias,
+                        "difference": repr(fit - measured),
+                        "difference_sigma": repr((fit - measured) / sigma),
+                        **{k: ("" if math.isnan(v) else repr(v)) for k, v in parts.items()},
+                        "formula_share": repr(float(formula)),
+                        "same_source_share": repr(float(same_source)),
+                        "classes": touched,
+                        "qualified": "true" if qualified else "false",
+                        "verdict": "WITHIN" if inside else "OUTSIDE",
+                        "comparison": str(comparison),
+                    }
+                )
+    return rows
+
+
+def with_measured(root: Path, rows: Sequence[Mapping[str, str]]) -> list[dict[str, str]]:
+    """The comparison rows with each measurement's rate and uncertainty joined from
+    ``mean_life_comparison.csv``,
+    which restates them; the comparison file itself carries only this project's values."""
+    measured = {(r.source, r.locator): (r.measured_rate, r.measured_rate_unc) for r in references(root)}
+    out = []
+    for row in rows:
+        rate, unc = measured[(row["source"], row["locator"])]
+        out.append({**row, "measured_rate": rate, "measured_rate_unc": unc})
+    return out
+
+
+def science(rows: Sequence[Mapping[str, str]]) -> dict[str, dict[str, object]]:
+    """The verdict of each family per profile and route, over distinct comparisons."""
+    out: dict[str, dict[str, object]] = {}
+    for profile in dict.fromkeys(r["profile"] for r in rows):
+        for route in ROUTES:
+            mine = {r["comparison"]: r for r in rows if r["profile"] == profile and r["route"] == route}
+            outside = sorted({r["comparison"] for r in mine.values() if r["verdict"] == "OUTSIDE"}, key=int)
+            qualified = [r for r in mine.values() if r["qualified"] == "true"]
+            if not qualified:
+                family_q = "SCREEN_VACUOUS"
+            else:
+                family_q = (
+                    "SCIENCE_FAIL" if any(r["verdict"] == "OUTSIDE" for r in qualified) else "SCIENCE_PASS"
+                )
+            out[f"{profile}:{route}"] = {
+                "all": "SCIENCE_FAIL" if outside else "UNQUALIFIED",
+                "qualified": family_q,
+                "distinct": len(mine),
+                "outside": len(outside),
+                "qualified_rows": len(qualified),
+            }
+    return out
+
+
+# --------------------------------------------------------------------------------------------
+# the document: DATASET_D1.md section 13, generated
+# --------------------------------------------------------------------------------------------
+
+SECTION_HEADING = "## 13. Natural targets: what answers them, the call-site harvest and measured mean lives"
+CLASS_TEXT = {
+    EVALUATED_ISOTOPE: "a row of the selected evaluated profile keyed by the nuclide",
+    PARITY_ISOTOPE: (
+        "a compiled-in record of a separated isotope, of an element with a single natural isotope or of an "
+        "isotope "
+        "another primary tabulates, whose value equals a printed cell"
+    ),
+    LINEAGE_OPEN: (
+        "a compiled-in record of a separated isotope whose value equals a printed cell only at that cell's "
+        "printed "
+        "precision, or equals no printed cell"
+    ),
+    MIXED: (
+        "a compiled-in record whose value is a stated inverse-variance combination of printed rows measured "
+        ""
+        "on "
+        "targets of different composition, recomputed and reproduced"
+    ),
+    PARITY_NATURAL: "a compiled-in record of the element printed with no mass number",
+    UNSETTLED: "a compiled-in record whose flag is not established and whose evidence states no combination",
+    FORMULA: "the Goulard-Primakoff formula",
+}
+GATE_TEXT = {
+    "G-rate": "every harvested rate or lifetime against the model's binary64 value",
+    "G-set": "the isotopes drawn against the model's components",
+    "G-sel": "the isotope counts against the abundances",
+    "G-branch": "each isotope's branch counts against its exact decay probability",
+    "G-time": "every stop's delay scaled by its isotope's rate, in equal-probability bins of Exp(1)",
+    "G-DIO": "the transported decay-electron times and the capture count against the mixture",
+    "G-win": "the transported decay-electron times inside the window from two to twelve mean lives",
+}
+
+
+def _pct(value: float) -> str:
+    text = format(100.0 * value, ".1f")
+    return "0.0" if text == "-0.0" else text
+
+
+def _sigma(value: str, sd: float) -> str:
+    """``value / sd`` to a tenth, signed; a value that rounds to zero is ``0.0``."""
+    text = format(float(value) / sd, "+.1f")
+    return "0.0" if text in ("+0.0", "-0.0") else text
+
+
+def _row_sd(row: Mapping[str, str]) -> float:
+    return math.sqrt(sum(float(row[k]) ** 2 for k in ("measured_rate_unc", "sigma_tab", "sigma_win")))
+
+
+def _keys(rows: Sequence[Mapping[str, str]], klass: str) -> str:
+    keys = [
+        f"`({r['z']}, {r['a']})`"
+        for r in rows
+        if r["profile"] == spec.PARITY_PROFILE and r["answer_class"] == klass
+    ]
+    return ", ".join(keys[:-1]) + (" and " if len(keys) > 1 else "") + keys[-1]
+
+
+def _section_classes(root: Path, refs: Sequence[Reference]) -> list[str]:
+    classes = read_csv(root / CLASSES_RELPATH, CLASS_COLUMNS)
+    answers_rows = read_csv(root / ANSWERS_RELPATH, ANSWER_COLUMNS)
+    isotopes = natural.load_isotopes(root / natural.ISOTOPES_RELPATH)
+    shares = class_shares(answers_rows, isotopes)
+    profiles = list(dict.fromkeys(r["profile"] for r in answers_rows))
+    lines = [
+        "### 13.1 What answers a natural target",
+        "",
+        "| class | answer | records, `parity` | rows, evaluated profiles |",
+        "|---|---|---|---|",
+    ]
+    for klass in CLASSES:
+        if klass == FORMULA:
+            counts = ("-", "-")
+        else:
+            counts = (
+                str(
+                    sum(
+                        1
+                        for r in classes
+                        if r["profile"] == spec.PARITY_PROFILE and r["answer_class"] == klass
+                    )
+                ),
+                str(
+                    sum(
+                        1
+                        for r in classes
+                        if r["profile"] != spec.PARITY_PROFILE and r["answer_class"] == klass
+                    )
+                ),
+            )
+        lines.append(f"| `{klass}` | {CLASS_TEXT[klass]} | {counts[0]} | {counts[1]} |")
+    n_natural_rows = sum(1 for r in classes if r["answer_class"] == EVALUATED_NATURAL)
+    open_records = [
+        r for r in classes if r["profile"] == spec.PARITY_PROFILE and r["answer_class"] == LINEAGE_OPEN
+    ]
+    lines += [
+        "",
+        f"The evaluated profiles' {n_natural_rows} rows keyed `A = 0` answer no transported nucleus, which "
+        "always "
+        "carries a mass number (section 11).",
+        "The `isotope_resolved` flag of section 6 says what kind of target a record's value was measured "
+        "on; "
+        "it does "
+        "not establish the value's lineage.",
+        f"The {len(open_records)} records of a separated isotope whose value equals a published cell only "
+        "at "
+        "the "
+        f"cell's printed precision, or equals none, are `{LINEAGE_OPEN}`: {_keys(classes, LINEAGE_OPEN)}.",
+        f"The records {_keys(classes, MIXED)} are `{MIXED}`: the evidence of each states, and the generator "
+        ""
+        "recomputes and reproduces within the tolerance it states, an inverse-variance weighted mean of "
+        "printed rows "
+        "measured on targets of different composition (sections 6 and 11).",
+        f"The records {_keys(classes, UNSETTLED)} are `{UNSETTLED}`.",
+        "",
+        "Under every profile but `parity`, a nuclide the profile keys no row for falls through to the "
+        "compiled-in "
+        "record of that nuclide where there is one, and to the formula where there is none: the parity path "
+        ""
+        "(`cpp/patches/README.md`).",
+    ]
+    for name in profiles:
+        if name == spec.PARITY_PROFILE:
+            continue
+        own = sum(1 for (p, _), d in shares.items() if p == name and d[EVALUATED_ISOTOPE] > 0)
+        aliased = sum(1 for (p, _), d in shares.items() if p == name and d[PARITY_NATURAL] > 0)
+        lines.append(
+            f"Under `{name}`, its own rows answer some stops of {own} of the {len(isotopes)} elements, and "
+            "a "
+            f"`{PARITY_NATURAL}` record answers some stops of {aliased}."
+        )
+    lines += [
+        "The next table gives, for each element of a measured mean life of section 13.3, the share of stops "
+        ""
+        "each "
+        "class answers under `parity`, and under an evaluated profile wherever it differs, in percent "
+        "rounded "
+        ""
+        "to a "
+        "tenth.",
+        "",
+        "| Z | element | profile | " + " | ".join(f"`{k}`" for k in CLASSES) + " |",
+        "|---|---|---|" + "---|" * len(CLASSES),
+    ]
+    for z in sorted({r.z for r in refs}):
+        base = shares[(spec.PARITY_PROFILE, z)]
+        for name in profiles:
+            d = shares[(name, z)]
+            if name != spec.PARITY_PROFILE and d == base:
+                continue
+            cells_ = " | ".join(_pct(d[k]) for k in CLASSES)
+            lines.append(f"| {z} | {isotopes[z][0].symbol} | `{name}` | {cells_} |")
+    return lines
+
+
+def _section_harvest(policy: Mapping[str, Any], harvest: Mapping[str, Any]) -> list[str]:
+    cells_ = [k for k in harvest if not k.startswith("identity")]
+    production = [k for k in cells_ if not k.startswith("pristine:")]
+    controls = [k for k in cells_ if k.startswith("pristine:")]
+    roster_ = policy["roster"]
+    big = policy["drill_cells"]
+    stops = sum(int(harvest[k]["meta"]["events"]) for k in production)
+    wall = math.fsum(float(harvest[k]["meta"]["wall_s"]) for k in cells_)
+    gates: dict[str, collections.Counter[str]] = {g: collections.Counter() for g in GATES}
+    for k in cells_:
+        for gate, v in harvest[k]["verdict"].items():
+            gates[gate][v] += 1
+    identity = [v["identity"] for k, v in harvest.items() if k.startswith("identity:")]
+    identical = sum(
+        1
+        for e in identity
+        if e["rng_identical"] == e["base_delegation"] == e["transport_identical"] == "True"
+    )
+    streams: dict[tuple[str, str, str], set[str]] = {}
+    for k in production:
+        profile, route, _, z = k.split(":")
+        streams.setdefault((profile, route, z), set()).add(harvest[k]["meta"]["stops_sha256"])
+    same = sum(1 for v in streams.values() if len(v) == 1)
+    lines = [
+        "### 13.2 The harvest at the call sites",
+        "",
+        "This harvest checks the sampler against the analytic model and nothing about physics.",
+        "`cpp/tools/harvest_mixture.cc` transports negative muons that start at rest at t = 0 in a box of "
+        "the "
+        ""
+        "NIST "
+        "material of one element, one single-threaded process per cell, through the patched builds of "
+        "`v11.4.2` and "
+        "`v11.5.0.beta` on the stopping route and the atomic route.",
+        f"It harvests {len(roster_['parity'])} elements under `parity`, {len(roster_['suzuki1987'])} under "
+        f"`suzuki1987` and {len(roster_['mizuno2025'])} under `mizuno2025`, with the stops "
+        f"`natural_mixture_policy.json` fixed before any harvest ran: {policy['events_default']} per cell, "
+        "and "
+        f"{big[0]['events']} on the {len(big)} cells its power calculation names; {stops} stops in "
+        f"{len(production)} cells.",
+        "Classes derived from the stock `G4ElementSelector`, `G4MuonMinusBoundDecay` and "
+        "`G4MuonicAtomDecay` "
+        "record "
+        "the nucleus drawn, the rates or lifetimes used, the delay sampled and the branch taken at each "
+        "call "
+        "site, "
+        "then call the stock method once; the transported decay electrons and capture outcomes come from "
+        "the "
+        "secondaries alone.",
+        "`natural_mixture_harvest.csv` holds the summary of every cell and `natural_mixture_builds.csv` the "
+        ""
+        "builds; "
+        "a test recomputes every gate exactly from them, the policy and the analytic model.",
+        "In every cell the selector's nucleus is the decay's, the call site's branch is the transported "
+        "outcome and "
+        "the transported decay electron leaves at the delay the call site drew, on every stop.",
+        "",
+        "| gate | compares | cells | pass | fail | refuse |",
+        "|---|---|---|---|---|---|",
+    ]
+    for gate in GATES:
+        c = gates[gate]
+        lines.append(
+            f"| {gate} | {GATE_TEXT[gate]} | {sum(c.values())} | {c['pass']} | {c['fail']} | {c['refuse']} |"
+        )
+    lines += [
+        "",
+        f"The {len(controls)} control cells, run on the unpatched builds, write the same stops as the first "
+        ""
+        "stops of "
+        "the patched `parity` cells, and the evaluated-profile cells of the element each profile does not "
+        "touch write "
+        "the same stops as its `parity` cells.",
+        f"In {identical} of {len(identity)} identity runs the random engine's state at every track start, "
+        "step end "
+        "and event end is the same with the hooks on as with the stock classes alone, each hook calls its "
+        "base method "
+        "once per call, and the transported records are the same hooked, unhooked and on the unpatched "
+        "build.",
+        f"Of the {len(streams)} groups of one profile, route and element, {same} wrote the same stops on "
+        "both "
+        ""
+        ""
+        "revisions, so their two cells are one sample.",
+        f"The cells took {wall / 3600:.1f} core-hours.",
+    ]
+    return lines
+
+
+def _section_comparison(
+    root: Path,
+    policy: Mapping[str, Any],
+    harvest: Mapping[str, Any],
+    rows: Sequence[Mapping[str, str]],
+    refs: Sequence[Reference],
+) -> list[str]:
+    distinct = len({r["comparison"] for r in rows})
+    labels = {(x["source"], x["locator"]): x["estimator"] for x in policy["estimators"]["labels"]}
+    surrogate = sum(1 for r in refs if labels[(r.source, r.locator)] == SURROGATE)
+    lines = [
+        "### 13.3 Measured mean lives",
+        "",
+        f"`natural_mixture_comparison.csv` compares {len(refs)} measured mean lives of targets of natural "
+        f"composition, of {len({r.z for r in refs})} elements, with the transported mixture: the rows of "
+        "section 12 "
+        "printed with no mass number or as natural, of an element with more than one natural isotope.",
+        "The rate compared is the one the source's lifetime fit would extract from the expected "
+        "decay-electron "
+        "spectrum of the mixture, not the mixture's initial rate.",
+        f"`mean_life_estimators.csv` records what each source prints about its fit; for {surrogate} of the "
+        f"{len(refs)} it does not print everything the fit's expectation needs, so the comparison uses a "
+        "surrogate "
+        "estimator: the source's stated components with each unprinted input bracketed as the policy fixes, "
+        ""
+        "the "
+        "fitted rate the middle of the bracket's range and half the range an uncertainty of its own.",
+        "A row is within the band when the rate differs from the measured rate by at most three times "
+        "the root "
+        "sum of squares of the measurement's uncertainty, the propagated tabulated uncertainty of the "
+        "records "
+        ""
+        "that "
+        "answer it and the surrogate's.",
+        f"Profiles and routes that give a measurement the same mixture and the same uncertainties give it "
+        "one "
+        ""
+        ""
+        f"comparison: {distinct} distinct comparisons.",
+        "",
+        "| profile | route | distinct comparisons | within | outside | qualified |",
+        "|---|---|---|---|---|---|",
+    ]
+    for key, v in science(rows).items():
+        profile, route = key.split(":")
+        within = int(str(v["distinct"])) - int(str(v["outside"]))
+        lines.append(
+            f"| `{profile}` | {route} | {v['distinct']} | {within} | {v['outside']} | {v['qualified_rows']} |"
+        )
+    lines += [
+        "",
+        "No row qualifies for an accuracy verdict, which needs a target printed as natural, no stop "
+        "answered "
+        "by the "
+        f"formula, an established estimator and no answering record in `{LINEAGE_OPEN}`, `{MIXED}` or "
+        f"`{UNSETTLED}`: "
+        "the qualified family admits no row and is reported as vacuous, not as a pass.",
+    ]
+    same = [r for r in rows if float(r["same_source_share"]) > 0]
+    lines += [
+        f"On {len(same)} of the {len(rows)} rows some stops are answered by a record whose value the "
+        "compared "
+        ""
+        ""
+        "source's own measurements produced (the compiled-in table, whose source comment credits Suzuki, "
+        "Measday and "
+        "Roalsvig, for their rows; an evaluated profile for its own source's rows), and `same_source_share` "
+        ""
+        "gives "
+        "that share.",
+        "Such a source derives its capture rate from its own mean life (Suzuki, Measday & Roalsvig, Eq. "
+        "(4)), "
+        ""
+        "so on "
+        "those shares a row compares a source with itself, not with an independent measurement, and the "
+        "band "
+        "errs "
+        "wide.",
+    ]
+    oracle = Oracle(root)
+    for route in ROUTES:
+        comps = oracle.components(spec.PARITY_PROFILE, route, 12)
+        lam = float(mean_rate(comps)) * PER_MICROSECOND
+        life = float(sum((c.abundance / c.rate for c in comps), Fraction(0)))
+        delay = float(harvest[f"parity:{route}:v11.4.2:12"]["meta"]["mean_delay_ns"])
+        parts = [
+            f"`{r['source']}` {r['locator']} measured {1000 / float(r['measured_rate']):.1f} ns and fitted "
+            f"{1000 / float(r['fit_rate']):.1f} ns, {_sigma(r['difference'], _row_sd(r))} σ"
+            for r in rows
+            if r["z"] == "12" and r["profile"] == spec.PARITY_PROFILE and r["route"] == route
+        ]
+        lines.append(
+            f"For natural magnesium on the {route} route under `parity`, the mixture's initial rate is "
+            f"{lam:.4f} per µs "
+            f"and its mean life {life:.1f} ns, where the transported stops' mean delay is {delay:.1f} ns; "
+            + "; ".join(parts)
+            + "."
+        )
+    outside_rows = [r for r in rows if r["verdict"] == "OUTSIDE"]
+    lines += [
+        "",
+        "Each row outside the band splits its difference into the estimator's part (the fitted rate less "
+        "the "
+        "mixture's initial rate), the composition's part (that initial rate less the route's rate of the "
+        "nucleus "
+        "section 12 compares) and section 12's single-nucleus part, or, for a row section 12 gives no "
+        "nucleus, the "
+        "last two merged; each is in units of the band's standard deviation and rounded to a tenth, and "
+        "every "
+        ""
+        "row's "
+        "estimator is a surrogate.",
+        "",
+        "| measurement | target | route | profiles | difference (σ) | estimator (σ) | composition (σ) | "
+        "single nucleus (σ) |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    groups: dict[tuple[str, ...], list[str]] = {}
+    for r in outside_rows:
+        sd = _row_sd(r)
+        merged = not r["part_single_nucleus"]
+        group_key: tuple[str, ...] = (
+            f"`{r['source']}` {r['locator']}",
+            r["label"],
+            r["route"],
+            _sigma(r["difference"], sd),
+            _sigma(r["part_estimator"], sd),
+            _sigma(r["part_merged"] if merged else r["part_composition"], sd),
+            "merged" if merged else _sigma(r["part_single_nucleus"], sd),
+        )
+        groups.setdefault(group_key, []).append(f"`{r['profile']}`")
+    for entry, profs in groups.items():
+        lines.append(
+            f"| {entry[0]} | {entry[1]} | {entry[2]} | {', '.join(profs)} | " + " | ".join(entry[3:]) + " |"
+        )
+    lines += [
+        "",
+        "Every reference is exposed: the profiles and the compiled-in records rest on the same "
+        "measurements, "
+        "so the "
+        "comparison is retrospective, never a validation.",
+        "Compounds, enriched targets, stops after t = 0, detector acceptance and hyperfine effects lie "
+        "outside it, and "
+        "a sample printed with no mass number is taken to be of natural composition.",
+        "No capture rate or profile of the dataset changes with this section.",
+    ]
+    return lines
+
+
+def render_section(root: Path) -> str:
+    """Section 13 of DATASET_D1.md, every number generated from the committed files."""
+    policy = load_policy(root)
+    harvest = load_harvest(root)
+    rows = with_measured(root, read_csv(root / COMPARISON_RELPATH, COMPARISON_COLUMNS))
+    refs = references(root)
+    lines = [
+        SECTION_HEADING,
+        "",
+        "A stop in a target of natural composition draws an isotope with the element's relative abundance, "
+        "and the "
+        "isotope's capture rate comes from whichever rung of the lookup answers it (section 11).",
+        "`record_classes.csv` classifies every compiled-in record and every row of an evaluated profile by "
+        "two axes "
+        "the committed evidence establishes, the kind of target the value was measured on and the lineage "
+        "of "
+        "the "
+        "value, and gives each an answer class; `natural_target_answers.csv` gives, for each profile and "
+        "each "
+        ""
+        "isotope "
+        "of each element of the `parity` table's validity range, the route the lookup takes and the class "
+        "that "
+        "answers it.",
+        "`scripts/generate_g4mixture.py`, a step of `make audit`, writes both from the provenance rows, the "
+        ""
+        "published "
+        "cells each record equals (`suzuki1987_parity_cells.csv`) and the transcriptions, and a test that "
+        "shares no "
+        "code with it asserts the class of every compiled-in record from that evidence.",
+        "",
+    ]
+    lines += _section_classes(root, refs) + [""]
+    lines += _section_harvest(policy, harvest) + [""]
+    lines += _section_comparison(root, policy, harvest, rows, refs)
+    return "\n".join(lines) + "\n"

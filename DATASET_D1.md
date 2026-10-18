@@ -619,6 +619,8 @@ between the weighted rate and the record's rate.
 That difference is an abundance-weighted first-order estimate against the measurement the table itself
 encodes; for lead that value matches a reconstructed combination of a measurement on lead and one on
 radiogenic lead (see below).
+Section 13 gives the class of record that answers each isotope of a natural target and compares the
+transported mixture with the measured mean lives of natural targets.
 
 It is first-order because Geant4 samples each stop's time from the drawn nucleus's own capture and decay
 rates (`G4MuonMinusBoundDecay::ApplyYourself`, and the lifetime
@@ -762,6 +764,7 @@ root sum of squares of the measured rate's uncertainty and the capture rate's ta
 can rest on the same mean life, so the band errs wide.
 The comparison is of the rates the code returns for a single nucleus, not of a transported simulation of a
 target; a target of natural composition decays as section 11 describes.
+Section 13 compares the transported mixture of each natural target with its measured mean life.
 For F-19 the tabulated mean life and capture rate describe the lower hyperfine state (Table III p.2217 note); both Geant4 routes do not model the hyperfine transition.
 
 | profile | rows compared | within the band, `G4MuonMinusBoundDecay` | within the band, `G4MuonicAtomHelper` |
@@ -797,3 +800,161 @@ Of the 57 measurements compared under a profile, the decay rate of `G4MuonicAtom
 below the measured rate less the printed capture rate for 54, and that of
 `G4MuonMinusBoundDecay` for 29.
 No capture rate or profile of this dataset changes with this comparison.
+
+## 13. Natural targets: what answers them, the call-site harvest and measured mean lives
+
+A stop in a target of natural composition draws an isotope with the element's relative abundance, and the isotope's capture rate comes from whichever rung of the lookup answers it (section 11).
+`record_classes.csv` classifies every compiled-in record and every row of an evaluated profile by two axes the committed evidence establishes, the kind of target the value was measured on and the lineage of the value, and gives each an answer class; `natural_target_answers.csv` gives, for each profile and each isotope of each element of the `parity` table's validity range, the route the lookup takes and the class that answers it.
+`scripts/generate_g4mixture.py`, a step of `make audit`, writes both from the provenance rows, the published cells each record equals (`suzuki1987_parity_cells.csv`) and the transcriptions, and a test that shares no code with it asserts the class of every compiled-in record from that evidence.
+
+### 13.1 What answers a natural target
+
+| class | answer | records, `parity` | rows, evaluated profiles |
+|---|---|---|---|
+| `evaluated_isotope` | a row of the selected evaluated profile keyed by the nuclide | 0 | 24 |
+| `parity_isotope` | a compiled-in record of a separated isotope, of an element with a single natural isotope or of an isotope another primary tabulates, whose value equals a printed cell | 35 | 0 |
+| `parity_isotope_lineage_open` | a compiled-in record of a separated isotope whose value equals a printed cell only at that cell's printed precision, or equals no printed cell | 10 | 0 |
+| `parity_mixed_reconstructed` | a compiled-in record whose value is a stated inverse-variance combination of printed rows measured on targets of different composition, recomputed and reproduced | 3 | 0 |
+| `parity_natural` | a compiled-in record of the element printed with no mass number | 40 | 0 |
+| `parity_unsettled` | a compiled-in record whose flag is not established and whose evidence states no combination | 2 | 0 |
+| `formula` | the Goulard-Primakoff formula | - | - |
+
+The evaluated profiles' 3 rows keyed `A = 0` answer no transported nucleus, which always carries a mass number (section 11).
+The `isotope_resolved` flag of section 6 says what kind of target a record's value was measured on; it does not establish the value's lineage.
+The 10 records of a separated isotope whose value equals a published cell only at the cell's printed precision, or equals none, are `parity_isotope_lineage_open`: `(3, 6)`, `(3, 7)`, `(5, 10)`, `(5, 11)`, `(6, 13)`, `(35, 81)`, `(92, 238)`, `(92, 233)`, `(92, 235)` and `(94, 242)`.
+The records `(29, 63)`, `(35, 79)` and `(82, 207)` are `parity_mixed_reconstructed`: the evidence of each states, and the generator recomputes and reproduces within the tolerance it states, an inverse-variance weighted mean of printed rows measured on targets of different composition (sections 6 and 11).
+The records `(24, 52)` and `(38, 88)` are `parity_unsettled`.
+
+Under every profile but `parity`, a nuclide the profile keys no row for falls through to the compiled-in record of that nuclide where there is one, and to the formula where there is none: the parity path (`cpp/patches/README.md`).
+Under `mizuno2025`, its own rows answer some stops of 3 of the 94 elements, and a `parity_natural` record answers some stops of 39.
+Under `suzuki1987`, its own rows answer some stops of 17 of the 94 elements, and a `parity_natural` record answers some stops of 40.
+The next table gives, for each element of a measured mean life of section 13.3, the share of stops each class answers under `parity`, and under an evaluated profile wherever it differs, in percent rounded to a tenth.
+
+| Z | element | profile | `evaluated_isotope` | `parity_isotope` | `parity_isotope_lineage_open` | `parity_mixed_reconstructed` | `parity_natural` | `parity_unsettled` | `formula` |
+|---|---|---|---|---|---|---|---|---|---|
+| 6 | C | `parity` | 0.0 | 0.0 | 1.1 | 0.0 | 98.9 | 0.0 | 0.0 |
+| 6 | C | `suzuki1987` | 1.1 | 0.0 | 0.0 | 0.0 | 98.9 | 0.0 | 0.0 |
+| 7 | N | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 99.6 | 0.0 | 0.4 |
+| 8 | O | `parity` | 0.0 | 0.2 | 0.0 | 0.0 | 99.8 | 0.0 | 0.0 |
+| 8 | O | `suzuki1987` | 0.2 | 0.0 | 0.0 | 0.0 | 99.8 | 0.0 | 0.0 |
+| 12 | Mg | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 79.0 | 0.0 | 21.0 |
+| 14 | Si | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 92.2 | 0.0 | 7.8 |
+| 14 | Si | `mizuno2025` | 100.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
+| 16 | S | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 94.9 | 0.0 | 5.1 |
+| 17 | Cl | `parity` | 0.0 | 100.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |
+| 19 | K | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 93.3 | 0.0 | 6.7 |
+| 20 | Ca | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 96.9 | 0.0 | 3.1 |
+| 22 | Ti | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 73.7 | 0.0 | 26.3 |
+| 23 | V | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 99.8 | 0.0 | 0.2 |
+| 24 | Cr | `parity` | 0.0 | 16.2 | 0.0 | 0.0 | 0.0 | 83.8 | 0.0 |
+| 26 | Fe | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 91.8 | 0.0 | 8.2 |
+| 28 | Ni | `parity` | 0.0 | 97.9 | 0.0 | 0.0 | 0.0 | 0.0 | 2.1 |
+| 29 | Cu | `parity` | 0.0 | 0.0 | 0.0 | 69.2 | 0.0 | 0.0 | 30.8 |
+| 30 | Zn | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 27.9 | 0.0 | 72.1 |
+| 32 | Ge | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 27.5 | 0.0 | 72.5 |
+| 34 | Se | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 49.6 | 0.0 | 50.4 |
+| 35 | Br | `parity` | 0.0 | 0.0 | 49.3 | 50.7 | 0.0 | 0.0 | 0.0 |
+| 38 | Sr | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 82.6 | 17.4 |
+| 40 | Zr | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 11.2 | 0.0 | 88.8 |
+| 42 | Mo | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 16.7 | 0.0 | 83.3 |
+| 47 | Ag | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 51.8 | 0.0 | 48.2 |
+| 48 | Cd | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 24.1 | 0.0 | 75.9 |
+| 49 | In | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 95.7 | 0.0 | 4.3 |
+| 50 | Sn | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 8.6 | 0.0 | 91.4 |
+| 51 | Sb | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 57.2 | 0.0 | 42.8 |
+| 52 | Te | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 31.7 | 0.0 | 68.3 |
+| 56 | Ba | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 71.7 | 0.0 | 28.3 |
+| 58 | Ce | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 88.5 | 0.0 | 11.6 |
+| 60 | Nd | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 23.8 | 0.0 | 76.2 |
+| 64 | Gd | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 15.7 | 0.0 | 84.4 |
+| 66 | Dy | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 24.9 | 0.0 | 75.1 |
+| 68 | Er | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 22.9 | 0.0 | 77.1 |
+| 74 | W | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 30.6 | 0.0 | 69.4 |
+| 80 | Hg | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 13.2 | 0.0 | 86.8 |
+| 81 | Tl | `parity` | 0.0 | 0.0 | 0.0 | 0.0 | 70.5 | 0.0 | 29.5 |
+| 82 | Pb | `parity` | 0.0 | 0.0 | 0.0 | 22.1 | 0.0 | 0.0 | 77.9 |
+
+### 13.2 The harvest at the call sites
+
+This harvest checks the sampler against the analytic model and nothing about physics.
+`cpp/tools/harvest_mixture.cc` transports negative muons that start at rest at t = 0 in a box of the NIST material of one element, one single-threaded process per cell, through the patched builds of `v11.4.2` and `v11.5.0.beta` on the stopping route and the atomic route.
+It harvests 42 elements under `parity`, 5 under `suzuki1987` and 2 under `mizuno2025`, with the stops `natural_mixture_policy.json` fixed before any harvest ran: 100000 per cell, and 1000000 on the 4 cells its power calculation names; 26800000 stops in 196 cells.
+Classes derived from the stock `G4ElementSelector`, `G4MuonMinusBoundDecay` and `G4MuonicAtomDecay` record the nucleus drawn, the rates or lifetimes used, the delay sampled and the branch taken at each call site, then call the stock method once; the transported decay electrons and capture outcomes come from the secondaries alone.
+`natural_mixture_harvest.csv` holds the summary of every cell and `natural_mixture_builds.csv` the builds; a test recomputes every gate exactly from them, the policy and the analytic model.
+In every cell the selector's nucleus is the decay's, the call site's branch is the transported outcome and the transported decay electron leaves at the delay the call site drew, on every stop.
+
+| gate | compares | cells | pass | fail | refuse |
+|---|---|---|---|---|---|
+| G-rate | every harvested rate or lifetime against the model's binary64 value | 212 | 212 | 0 | 0 |
+| G-set | the isotopes drawn against the model's components | 212 | 212 | 0 | 0 |
+| G-sel | the isotope counts against the abundances | 204 | 204 | 0 | 0 |
+| G-branch | each isotope's branch counts against its exact decay probability | 212 | 212 | 0 | 0 |
+| G-time | every stop's delay scaled by its isotope's rate, in equal-probability bins of Exp(1) | 212 | 212 | 0 | 0 |
+| G-DIO | the transported decay-electron times and the capture count against the mixture | 212 | 212 | 0 | 0 |
+| G-win | the transported decay-electron times inside the window from two to twelve mean lives | 212 | 212 | 0 | 0 |
+
+The 16 control cells, run on the unpatched builds, write the same stops as the first stops of the patched `parity` cells, and the evaluated-profile cells of the element each profile does not touch write the same stops as its `parity` cells.
+In 16 of 16 identity runs the random engine's state at every track start, step end and event end is the same with the hooks on as with the stock classes alone, each hook calls its base method once per call, and the transported records are the same hooked, unhooked and on the unpatched build.
+Of the 98 groups of one profile, route and element, 98 wrote the same stops on both revisions, so their two cells are one sample.
+The cells took 5.1 core-hours.
+
+### 13.3 Measured mean lives
+
+`natural_mixture_comparison.csv` compares 42 measured mean lives of targets of natural composition, of 38 elements, with the transported mixture: the rows of section 12 printed with no mass number or as natural, of an element with more than one natural isotope.
+The rate compared is the one the source's lifetime fit would extract from the expected decay-electron spectrum of the mixture, not the mixture's initial rate.
+`mean_life_estimators.csv` records what each source prints about its fit; for 42 of the 42 it does not print everything the fit's expectation needs, so the comparison uses a surrogate estimator: the source's stated components with each unprinted input bracketed as the policy fixes, the fitted rate the middle of the bracket's range and half the range an uncertainty of its own.
+A row is within the band when the rate differs from the measured rate by at most three times the root sum of squares of the measurement's uncertainty, the propagated tabulated uncertainty of the records that answer it and the surrogate's.
+Profiles and routes that give a measurement the same mixture and the same uncertainties give it one comparison: 92 distinct comparisons.
+
+| profile | route | distinct comparisons | within | outside | qualified |
+|---|---|---|---|---|---|
+| `parity` | stopping | 42 | 30 | 12 | 0 |
+| `parity` | atomic | 42 | 26 | 16 | 0 |
+| `mizuno2025` | stopping | 42 | 33 | 9 | 0 |
+| `mizuno2025` | atomic | 42 | 29 | 13 | 0 |
+| `suzuki1987` | stopping | 42 | 30 | 12 | 0 |
+| `suzuki1987` | atomic | 42 | 26 | 16 | 0 |
+
+No row qualifies for an accuracy verdict, which needs a target printed as natural, no stop answered by the formula, an established estimator and no answering record in `parity_isotope_lineage_open`, `parity_mixed_reconstructed` or `parity_unsettled`: the qualified family admits no row and is reported as vacuous, not as a pass.
+On 230 of the 252 rows some stops are answered by a record whose value the compared source's own measurements produced (the compiled-in table, whose source comment credits Suzuki, Measday and Roalsvig, for their rows; an evaluated profile for its own source's rows), and `same_source_share` gives that share.
+Such a source derives its capture rate from its own mean life (Suzuki, Measday & Roalsvig, Eq. (4)), so on those shares a row compares a source with itself, not with an independent measurement, and the band errs wide.
+For natural magnesium on the stopping route under `parity`, the mixture's initial rate is 0.9069 per µs and its mean life 1107.7 ns, where the transported stops' mean delay is 1113.1 ns; `suzuki1987` Table IV p.2218 row 12 measured 1067.2 ns and fitted 1111.2 ns, -3.4 σ; `mizuno2025` Table 1 row 6 measured 1065.5 ns and fitted 1104.0 ns, -5.0 σ.
+For natural magnesium on the atomic route under `parity`, the mixture's initial rate is 0.9017 per µs and its mean life 1114.1 ns, where the transported stops' mean delay is 1116.2 ns; `suzuki1987` Table IV p.2218 row 12 measured 1067.2 ns and fitted 1117.7 ns, -3.8 σ; `mizuno2025` Table 1 row 6 measured 1065.5 ns and fitted 1110.2 ns, -5.8 σ.
+
+Each row outside the band splits its difference into the estimator's part (the fitted rate less the mixture's initial rate), the composition's part (that initial rate less the route's rate of the nucleus section 12 compares) and section 12's single-nucleus part, or, for a row section 12 gives no nucleus, the last two merged; each is in units of the band's standard deviation and rounded to a tenth, and every row's estimator is a surrogate.
+
+| measurement | target | route | profiles | difference (σ) | estimator (σ) | composition (σ) | single nucleus (σ) |
+|---|---|---|---|---|---|---|---|
+| `suzuki1987` Table III p.2217 row 37 | C | atomic | `parity`, `mizuno2025` | -4.8 | 0.0 | -0.1 | -4.7 |
+| `suzuki1987` Table III p.2217 row 37 | C | atomic | `suzuki1987` | -4.7 | 0.0 | 0.0 | -4.7 |
+| `suzuki1987` Table III p.2217 row 44 | N | atomic | `parity`, `mizuno2025`, `suzuki1987` | -3.1 | 0.0 | -0.1 | -3.1 |
+| `suzuki1987` Table III p.2217 row 49 | O | atomic | `parity`, `mizuno2025`, `suzuki1987` | -3.3 | 0.0 | 0.0 | -3.3 |
+| `suzuki1987` Table IV p.2218 row 12 | Mg | stopping | `parity`, `mizuno2025`, `suzuki1987` | -3.4 | -0.6 | -2.6 | -0.1 |
+| `suzuki1987` Table IV p.2218 row 12 | Mg | atomic | `parity`, `mizuno2025`, `suzuki1987` | -3.8 | -0.6 | -2.6 | -0.6 |
+| `suzuki1987` Table IV p.2218 row 20 | Si | stopping | `parity`, `suzuki1987` | -3.2 | -0.8 | -1.8 | -0.6 |
+| `suzuki1987` Table IV p.2218 row 20 | Si | atomic | `parity`, `suzuki1987` | -3.7 | -0.8 | -1.8 | -1.1 |
+| `suzuki1987` Table IV p.2218 row 29 | Cl | stopping | `parity`, `mizuno2025`, `suzuki1987` | +3.7 | -0.8 | +4.5 | merged |
+| `suzuki1987` Table IV p.2218 row 29 | Cl | atomic | `parity`, `mizuno2025`, `suzuki1987` | +3.6 | -0.8 | +4.4 | merged |
+| `suzuki1987` Table IV p.2218 row 36 | K | atomic | `parity`, `mizuno2025`, `suzuki1987` | -3.5 | -0.8 | -2.0 | -0.7 |
+| `suzuki1987` Table IV p.2219 row 23 | Cu | stopping | `parity`, `mizuno2025`, `suzuki1987` | -3.6 | -1.1 | -2.5 | merged |
+| `suzuki1987` Table IV p.2219 row 23 | Cu | atomic | `parity`, `mizuno2025`, `suzuki1987` | -3.6 | -1.1 | -2.6 | merged |
+| `suzuki1987` Table IV p.2219 row 28 | Zn | stopping | `parity`, `mizuno2025`, `suzuki1987` | -3.6 | -1.0 | -2.3 | -0.2 |
+| `suzuki1987` Table IV p.2219 row 28 | Zn | atomic | `parity`, `mizuno2025`, `suzuki1987` | -3.7 | -1.0 | -2.3 | -0.3 |
+| `suzuki1987` Table IV p.2219 row 31 | Ge | stopping | `parity`, `mizuno2025`, `suzuki1987` | -3.2 | -0.6 | -2.6 | 0.0 |
+| `suzuki1987` Table IV p.2219 row 31 | Ge | atomic | `parity`, `mizuno2025`, `suzuki1987` | -3.3 | -0.6 | -2.5 | -0.1 |
+| `suzuki1987` Table IV p.2220 row 36 | W | stopping | `parity`, `mizuno2025`, `suzuki1987` | +3.4 | -0.4 | +2.4 | +1.5 |
+| `suzuki1987` Table IV p.2220 row 36 | W | atomic | `parity`, `mizuno2025`, `suzuki1987` | +3.4 | -0.4 | +2.4 | +1.5 |
+| `suzuki1987` Table IV p.2220 row 40 | Hg | stopping | `parity`, `mizuno2025`, `suzuki1987` | +4.8 | -0.4 | +5.2 | 0.0 |
+| `suzuki1987` Table IV p.2220 row 40 | Hg | atomic | `parity`, `mizuno2025`, `suzuki1987` | +4.8 | -0.4 | +5.2 | 0.0 |
+| `suzuki1987` Table IV p.2220 row 48 | Pb | stopping | `parity`, `mizuno2025`, `suzuki1987` | +6.3 | -0.2 | +4.2 | +2.2 |
+| `suzuki1987` Table IV p.2220 row 48 | Pb | atomic | `parity`, `mizuno2025`, `suzuki1987` | +6.3 | -0.2 | +4.2 | +2.2 |
+| `mizuno2025` Table 1 row 4 | natSi | stopping | `parity`, `suzuki1987` | -5.2 | -0.6 | -2.7 | -1.9 |
+| `mizuno2025` Table 1 row 4 | natSi | atomic | `parity`, `suzuki1987` | -6.0 | -0.6 | -2.7 | -2.7 |
+| `mizuno2025` Table 1 row 5 | natSi | stopping | `parity`, `suzuki1987` | -4.8 | -0.6 | -2.2 | -2.0 |
+| `mizuno2025` Table 1 row 5 | natSi | atomic | `parity`, `suzuki1987` | -5.4 | -0.6 | -2.2 | -2.6 |
+| `mizuno2025` Table 1 row 6 | natMg | stopping | `parity`, `mizuno2025`, `suzuki1987` | -5.0 | -0.2 | -4.4 | -0.4 |
+| `mizuno2025` Table 1 row 6 | natMg | atomic | `parity`, `mizuno2025`, `suzuki1987` | -5.8 | -0.1 | -4.4 | -1.2 |
+
+Every reference is exposed: the profiles and the compiled-in records rest on the same measurements, so the comparison is retrospective, never a validation.
+Compounds, enriched targets, stops after t = 0, detector acceptance and hyperfine effects lie outside it, and a sample printed with no mass number is taken to be of natural composition.
+No capture rate or profile of the dataset changes with this section.

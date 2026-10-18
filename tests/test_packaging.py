@@ -306,6 +306,7 @@ PROJECT_AUTHORED = (
     "data/g4/d1/natural_harvest_builds.csv",
     "data/g4/d1/mean_life_estimators.csv",
     "data/g4/d1/natural_mixture_builds.csv",
+    "data/g4/d1/natural_mixture_comparison.csv",
     "data/g4/d1/natural_mixture_harvest.csv",
     "data/g4/d1/natural_mixture_policy.json",
     "data/g4/d1/natural_target_answers.csv",
