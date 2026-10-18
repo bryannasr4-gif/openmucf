@@ -1932,6 +1932,7 @@ def build_policy(root: Path, throughput_ms_per_stop: float) -> tuple[dict[str, o
                     "origin_ns": MIZUNO_ORIGIN_NS,
                     "beam": f"one prompt pulse, or two equal prompt pulses {PULSE_SEPARATION_NS:g} ns apart "
                     ""
+                    ""
                     "(policy value: the separation is not printed)",
                     "natAg": "the CNO and background lifetimes fixed at the printed values of the free fit",
                 },
@@ -2710,6 +2711,7 @@ CLASS_TEXT = {
     MIXED: (
         "a compiled-in record whose value is a stated inverse-variance combination of printed rows measured "
         ""
+        ""
         "on "
         "targets of different composition, recomputed and reproduced"
     ),
@@ -2804,6 +2806,7 @@ def _section_classes(root: Path, refs: Sequence[Reference]) -> list[str]:
         f"cell's printed precision, or equals none, are `{LINEAGE_OPEN}`: {_keys(classes, LINEAGE_OPEN)}.",
         f"The records {_keys(classes, MIXED)} are `{MIXED}`: the evidence of each states, and the generator "
         ""
+        ""
         "recomputes and reproduces within the tolerance it states, an inverse-variance weighted mean of "
         "printed rows "
         "measured on targets of different composition (sections 6 and 11).",
@@ -2812,6 +2815,7 @@ def _section_classes(root: Path, refs: Sequence[Reference]) -> list[str]:
         "Under every profile but `parity`, a nuclide the profile keys no row for falls through to the "
         "compiled-in "
         "record of that nuclide where there is one, and to the formula where there is none: the parity path "
+        ""
         ""
         "(`cpp/patches/README.md`).",
     ]
@@ -2827,6 +2831,7 @@ def _section_classes(root: Path, refs: Sequence[Reference]) -> list[str]:
         )
     lines += [
         "The next table gives, for each element of a measured mean life of section 13.3, the share of stops "
+        ""
         ""
         "each "
         "class answers under `parity`, and under an evaluated profile wherever it differs, in percent "
@@ -2877,18 +2882,23 @@ def _section_harvest(policy: Mapping[str, Any], harvest: Mapping[str, Any]) -> l
         "",
         "This harvest checks the sampler against the analytic model and nothing about physics.",
         "`cpp/tools/harvest_mixture.cc` transports negative muons that start at rest at t = 0 in a box of "
-        "the "
-        ""
-        "NIST "
+        "the NIST "
         "material of one element, one single-threaded process per cell, through the patched builds of "
-        "`v11.4.2` and "
-        "`v11.5.0.beta` on the stopping route and the atomic route.",
+        "`v11.4.2` "
+        "and `v11.5.0.beta` on the stopping route and the atomic route.",
+        "Because every muon starts at t = 0, the harvest does not cover stops that begin later, whose "
+        "timing it "
+        "does not test.",
         f"It harvests {len(roster_['parity'])} elements under `parity`, {len(roster_['suzuki1987'])} under "
         f"`suzuki1987` and {len(roster_['mizuno2025'])} under `mizuno2025`, with the stops "
-        f"`natural_mixture_policy.json` fixed before any harvest ran: {policy['events_default']} per cell, "
+        "`natural_mixture_policy.json` fixed before the production harvest ran and before the comparison "
+        "was "
+        f"computed: {policy['events_default']} per cell, and {big[0]['events']} on the {len(big)} cells its "
+        "power "
+        f"calculation names; {stops} stops in {len(production)} cells.",
+        "A throughput run of the harness on aluminium, silver and lead, whose stops were discarded unread, "
         "and "
-        f"{big[0]['events']} on the {len(big)} cells its power calculation names; {stops} stops in "
-        f"{len(production)} cells.",
+        "smoke runs of the harness came before the policy was committed.",
         "Classes derived from the stock `G4ElementSelector`, `G4MuonMinusBoundDecay` and "
         "`G4MuonicAtomDecay` "
         "record "
@@ -2899,6 +2909,7 @@ def _section_harvest(policy: Mapping[str, Any], harvest: Mapping[str, Any]) -> l
         "the "
         "secondaries alone.",
         "`natural_mixture_harvest.csv` holds the summary of every cell and `natural_mixture_builds.csv` the "
+        ""
         ""
         "builds; "
         "a test recomputes every gate exactly from them, the policy and the analytic model.",
@@ -2917,6 +2928,7 @@ def _section_harvest(policy: Mapping[str, Any], harvest: Mapping[str, Any]) -> l
     lines += [
         "",
         f"The {len(controls)} control cells, run on the unpatched builds, write the same stops as the first "
+        ""
         ""
         "stops of "
         "the patched `parity` cells, and the evaluated-profile cells of the element each profile does not "
@@ -2938,6 +2950,59 @@ def _section_harvest(policy: Mapping[str, Any], harvest: Mapping[str, Any]) -> l
     return lines
 
 
+def magnesium_observables(
+    oracle: Oracle, harvest: Mapping[str, Any], rows: Sequence[Mapping[str, str]], route: str
+) -> dict[str, float | str]:
+    """Three distinct observables of natural magnesium under ``parity`` on ``route``, each with what the
+    harvest or the measurement sets beside it: the mixture's initial rate (per microsecond) and its distance
+    from the Suzuki row's measured rate in units of that measurement's uncertainty combined with the
+    magnesium-24 record's tabulated uncertainty; the all-stop mean life ``sum a_i / rate_i`` (ns) and the
+    transported stops' mean delay; and the mean decay-electron time ``sum a_i p_i / rate_i / sum a_i p_i``
+    (ns)
+    and the transported decay electrons' mean time."""
+    comps = oracle.components(spec.PARITY_PROFILE, route, 12)
+    initial = float(mean_rate(comps)) * PER_MICROSECOND
+    all_stop = float(sum((c.abundance / c.rate for c in comps), Fraction(0)))
+    weight = sum((c.abundance * c.p_dio for c in comps), Fraction(0))
+    electron = float(sum((c.abundance * c.p_dio / c.rate for c in comps), Fraction(0)) / weight)
+    suzuki = next(
+        r
+        for r in rows
+        if r["z"] == "12"
+        and r["source"] == SUZUKI
+        and r["profile"] == spec.PARITY_PROFILE
+        and r["route"] == route
+    )
+    record = next(c for c in comps if c.record == f"{spec.PARITY_PROFILE}:12-24")
+    sd = math.hypot(float(suzuki["measured_rate_unc"]), float(str(record.record_unc)))
+    meta = harvest[f"parity:{route}:v11.4.2:12"]["meta"]
+    return {
+        "initial_rate": initial,
+        "initial_sigma": (initial - float(suzuki["measured_rate"])) / sd,
+        "reference": f"`{suzuki['source']}` {suzuki['locator']}",
+        "all_stop_mean": all_stop,
+        "all_stop_harvested": float(meta["mean_delay_ns"]),
+        "electron_mean": electron,
+        "electron_harvested": float(meta["mean_electron_time_ns"]),
+    }
+
+
+def magnesium_sentence(obs: Mapping[str, float | str], route: str) -> str:
+    return (
+        f"For natural magnesium on the {route} route under `parity`, three observables are distinct: the "
+        f"mixture's initial rate, {float(obs['initial_rate']):.4f} per µs, "
+        f"{float(obs['initial_sigma']):+.2f} σ from "
+        f"the measured rate of {obs['reference']} with that measurement's uncertainty and the tabulated "
+        "uncertainty "
+        f"of the magnesium-24 record combined; its all-stop mean life, {float(obs['all_stop_mean']):.2f} "
+        "ns, beside a "
+        f"mean delay of {float(obs['all_stop_harvested']):.2f} ns over the transported stops; and its mean "
+        f"decay-electron time, {float(obs['electron_mean']):.2f} ns, beside "
+        f"{float(obs['electron_harvested']):.2f} ns "
+        "over the transported decay electrons."
+    )
+
+
 def _section_comparison(
     root: Path,
     policy: Mapping[str, Any],
@@ -2953,29 +3018,31 @@ def _section_comparison(
         "",
         f"`natural_mixture_comparison.csv` compares {len(refs)} measured mean lives of targets of natural "
         f"composition, of {len({r.z for r in refs})} elements, with the transported mixture: the rows of "
-        "section 12 "
-        "printed with no mass number or as natural, of an element with more than one natural isotope.",
-        "The rate compared is the one the source's lifetime fit would extract from the expected "
-        "decay-electron "
-        "spectrum of the mixture, not the mixture's initial rate.",
+        "section "
+        "12 printed with no mass number or as natural, of an element with more than one natural isotope.",
+        "The rate compared is the one the specified surrogate extracts from the expected decay-electron "
+        "spectrum "
+        "of the mixture, not the mixture's initial rate.",
         f"`mean_life_estimators.csv` records what each source prints about its fit; for {surrogate} of the "
         f"{len(refs)} it does not print everything the fit's expectation needs, so the comparison uses a "
         "surrogate "
         "estimator: the source's stated components with each unprinted input bracketed as the policy fixes, "
-        ""
         "the "
-        "fitted rate the middle of the bracket's range and half the range an uncertainty of its own.",
-        "A row is within the band when the rate differs from the measured rate by at most three times "
-        "the root "
+        "fitted rate the middle of the bracket's range and half the range an allowance of its own.",
+        "The surrogate has two known simplifications: it takes each non-target component's share of stopped "
+        ""
+        "muons as its share of decay-electron counts, and it does not represent the constant background a "
+        "source "
+        "fixed in its fit. The registered results below are kept as computed; a corrected analysis is a "
+        "separate "
+        "one.",
+        "A row is within the band when the rate differs from the measured rate by at most three times the "
+        "root "
         "sum of squares of the measurement's uncertainty, the propagated tabulated uncertainty of the "
         "records "
-        ""
-        "that "
-        "answer it and the surrogate's.",
+        "that answer it and the surrogate's allowance.",
         f"Profiles and routes that give a measurement the same mixture and the same uncertainties give it "
         "one "
-        ""
-        ""
         f"comparison: {distinct} distinct comparisons.",
         "",
         "| profile | route | distinct comparisons | within | outside | qualified |",
@@ -2987,55 +3054,42 @@ def _section_comparison(
         lines.append(
             f"| `{profile}` | {route} | {v['distinct']} | {within} | {v['outside']} | {v['qualified_rows']} |"
         )
-    lines += [
-        "",
-        "No row qualifies for an accuracy verdict, which needs a target printed as natural, no stop "
-        "answered "
-        "by the "
-        f"formula, an established estimator and no answering record in `{LINEAGE_OPEN}`, `{MIXED}` or "
-        f"`{UNSETTLED}`: "
-        "the qualified family admits no row and is reported as vacuous, not as a pass.",
-    ]
     same = [r for r in rows if float(r["same_source_share"]) > 0]
     lines += [
-        f"On {len(same)} of the {len(rows)} rows some stops are answered by a record whose value the "
-        "compared "
-        ""
-        ""
-        "source's own measurements produced (the compiled-in table, whose source comment credits Suzuki, "
-        "Measday and "
-        "Roalsvig, for their rows; an evaluated profile for its own source's rows), and `same_source_share` "
-        ""
-        "gives "
-        "that share.",
+        "",
+        "A row qualifies for an accuracy verdict only with a target printed as natural, no stop answered by "
+        "the "
+        f"formula, an established estimator and no answering record in `{LINEAGE_OPEN}`, `{MIXED}` or "
+        f"`{UNSETTLED}`; no row does.",
+        f"The comparison flags {len(same)} of the {len(rows)} rows (`same_source_share`) on which some "
+        "stops are "
+        "answered by a record whose value the compared source's own measurements produced: the compiled-in "
+        "table, "
+        "whose source comment credits Suzuki, Measday and Roalsvig, for their rows, and an evaluated "
+        "profile for "
+        "its own source's rows.",
+        "The flag records membership of a profile or a source, not a graph of covariances, and a row "
+        "without it "
+        "is not thereby independent.",
         "Such a source derives its capture rate from its own mean life (Suzuki, Measday & Roalsvig, Eq. "
-        "(4)), "
-        ""
-        "so on "
-        "those shares a row compares a source with itself, not with an independent measurement, and the "
-        "band "
-        "errs "
-        "wide.",
+        "(4)), so "
+        "on the flagged shares a row compares a source with itself; leaving that covariance out can make "
+        "the band "
+        "wider than an independent comparison would need, while uncertainty the physical model lacks can "
+        "make it "
+        "too narrow.",
     ]
     oracle = Oracle(root)
     for route in ROUTES:
-        comps = oracle.components(spec.PARITY_PROFILE, route, 12)
-        lam = float(mean_rate(comps)) * PER_MICROSECOND
-        life = float(sum((c.abundance / c.rate for c in comps), Fraction(0)))
-        delay = float(harvest[f"parity:{route}:v11.4.2:12"]["meta"]["mean_delay_ns"])
-        parts = [
-            f"`{r['source']}` {r['locator']} measured {1000 / float(r['measured_rate']):.1f} ns and fitted "
-            f"{1000 / float(r['fit_rate']):.1f} ns, {_sigma(r['difference'], _row_sd(r))} σ"
+        lines.append(magnesium_sentence(magnesium_observables(oracle, harvest, rows, route), route))
+        fits = [
+            f"`{r['source']}` {r['locator']} measured {1000 / float(r['measured_rate']):.1f} ns and the "
+            "surrogate "
+            f"fitted {1000 / float(r['fit_rate']):.1f} ns, {_sigma(r['difference'], _row_sd(r))} σ"
             for r in rows
             if r["z"] == "12" and r["profile"] == spec.PARITY_PROFILE and r["route"] == route
         ]
-        lines.append(
-            f"For natural magnesium on the {route} route under `parity`, the mixture's initial rate is "
-            f"{lam:.4f} per µs "
-            f"and its mean life {life:.1f} ns, where the transported stops' mean delay is {delay:.1f} ns; "
-            + "; ".join(parts)
-            + "."
-        )
+        lines.append(f"On the {route} route, " + "; ".join(fits) + ".")
     outside_rows = [r for r in rows if r["verdict"] == "OUTSIDE"]
     lines += [
         "",
@@ -3047,9 +3101,12 @@ def _section_comparison(
         "nucleus, the "
         "last two merged; each is in units of the band's standard deviation and rounded to a tenth, and "
         "every "
-        ""
-        "row's "
-        "estimator is a surrogate.",
+        "row's estimator is a surrogate.",
+        "The composition's part is an algebraic difference from that single-nucleus rate, not a measure of "
+        "what "
+        "the formula-answered isotopes cause: the chlorine row, which no formula answers, lies outside the "
+        "band "
+        "too.",
         "",
         "| measurement | target | route | profiles | difference (σ) | estimator (σ) | composition (σ) | "
         "single nucleus (σ) |",
@@ -3075,14 +3132,36 @@ def _section_comparison(
         )
     lines += [
         "",
-        "Every reference is exposed: the profiles and the compiled-in records rest on the same "
-        "measurements, "
-        "so the "
-        "comparison is retrospective, never a validation.",
         "Compounds, enriched targets, stops after t = 0, detector acceptance and hyperfine effects lie "
-        "outside it, and "
-        "a sample printed with no mass number is taken to be of natural composition.",
+        "outside it, "
+        "and a sample printed with no mass number is taken to be of natural composition.",
         "No capture rate or profile of the dataset changes with this section.",
+        "",
+        "### 13.4 What the results show",
+        "",
+        "The call-site harvest verifies isotope selection, rates, branch probabilities and transported "
+        "delays "
+        "against the implemented mixture model for the tested conditions, with muons starting at t = 0. It "
+        "is an "
+        "engineering verification. The lifetime comparison is retrospective and uses surrogate estimators "
+        "for "
+        "every reference. Under the frozen surrogate policy, every profile and route has at least one "
+        "OUTSIDE "
+        "comparison; the registered all-family outcome remains SCIENCE_FAIL. These outcomes are conditional "
+        "on the "
+        "specified estimator assumptions. The bracket half-range is an uncalibrated sensitivity allowance, "
+        "so the "
+        "normalized discrepancies are policy scores rather than statistical significances. No row enters "
+        "the "
+        "registered accuracy screen, whose outcome is SCREEN_VACUOUS. The results do not establish "
+        "rejection under "
+        "every admissible experimental estimator. Post-hoc sensitivity probes of the surrogate choices "
+        "exist; they "
+        "are not part of the registered verdict, and a separately preregistered analysis will follow. "
+        "Source "
+        "dependence is flagged where answering records may reuse reference measurements; all references "
+        "used here "
+        "are exposed and cannot validate a correction selected using this comparison.",
     ]
     return lines
 
@@ -3112,6 +3191,7 @@ def render_section(root: Path) -> str:
         "that "
         "answers it.",
         "`scripts/generate_g4mixture.py`, a step of `make audit`, writes both from the provenance rows, the "
+        ""
         ""
         "published "
         "cells each record equals (`suzuki1987_parity_cells.csv`) and the transcriptions, and a test that "

@@ -878,7 +878,9 @@ The next table gives, for each element of a measured mean life of section 13.3, 
 
 This harvest checks the sampler against the analytic model and nothing about physics.
 `cpp/tools/harvest_mixture.cc` transports negative muons that start at rest at t = 0 in a box of the NIST material of one element, one single-threaded process per cell, through the patched builds of `v11.4.2` and `v11.5.0.beta` on the stopping route and the atomic route.
-It harvests 42 elements under `parity`, 5 under `suzuki1987` and 2 under `mizuno2025`, with the stops `natural_mixture_policy.json` fixed before any harvest ran: 100000 per cell, and 1000000 on the 4 cells its power calculation names; 26800000 stops in 196 cells.
+Because every muon starts at t = 0, the harvest does not cover stops that begin later, whose timing it does not test.
+It harvests 42 elements under `parity`, 5 under `suzuki1987` and 2 under `mizuno2025`, with the stops `natural_mixture_policy.json` fixed before the production harvest ran and before the comparison was computed: 100000 per cell, and 1000000 on the 4 cells its power calculation names; 26800000 stops in 196 cells.
+A throughput run of the harness on aluminium, silver and lead, whose stops were discarded unread, and smoke runs of the harness came before the policy was committed.
 Classes derived from the stock `G4ElementSelector`, `G4MuonMinusBoundDecay` and `G4MuonicAtomDecay` record the nucleus drawn, the rates or lifetimes used, the delay sampled and the branch taken at each call site, then call the stock method once; the transported decay electrons and capture outcomes come from the secondaries alone.
 `natural_mixture_harvest.csv` holds the summary of every cell and `natural_mixture_builds.csv` the builds; a test recomputes every gate exactly from them, the policy and the analytic model.
 In every cell the selector's nucleus is the decay's, the call site's branch is the transported outcome and the transported decay electron leaves at the delay the call site drew, on every stop.
@@ -901,9 +903,10 @@ The cells took 5.1 core-hours.
 ### 13.3 Measured mean lives
 
 `natural_mixture_comparison.csv` compares 42 measured mean lives of targets of natural composition, of 38 elements, with the transported mixture: the rows of section 12 printed with no mass number or as natural, of an element with more than one natural isotope.
-The rate compared is the one the source's lifetime fit would extract from the expected decay-electron spectrum of the mixture, not the mixture's initial rate.
-`mean_life_estimators.csv` records what each source prints about its fit; for 42 of the 42 it does not print everything the fit's expectation needs, so the comparison uses a surrogate estimator: the source's stated components with each unprinted input bracketed as the policy fixes, the fitted rate the middle of the bracket's range and half the range an uncertainty of its own.
-A row is within the band when the rate differs from the measured rate by at most three times the root sum of squares of the measurement's uncertainty, the propagated tabulated uncertainty of the records that answer it and the surrogate's.
+The rate compared is the one the specified surrogate extracts from the expected decay-electron spectrum of the mixture, not the mixture's initial rate.
+`mean_life_estimators.csv` records what each source prints about its fit; for 42 of the 42 it does not print everything the fit's expectation needs, so the comparison uses a surrogate estimator: the source's stated components with each unprinted input bracketed as the policy fixes, the fitted rate the middle of the bracket's range and half the range an allowance of its own.
+The surrogate has two known simplifications: it takes each non-target component's share of stopped muons as its share of decay-electron counts, and it does not represent the constant background a source fixed in its fit. The registered results below are kept as computed; a corrected analysis is a separate one.
+A row is within the band when the rate differs from the measured rate by at most three times the root sum of squares of the measurement's uncertainty, the propagated tabulated uncertainty of the records that answer it and the surrogate's allowance.
 Profiles and routes that give a measurement the same mixture and the same uncertainties give it one comparison: 92 distinct comparisons.
 
 | profile | route | distinct comparisons | within | outside | qualified |
@@ -915,13 +918,17 @@ Profiles and routes that give a measurement the same mixture and the same uncert
 | `suzuki1987` | stopping | 42 | 30 | 12 | 0 |
 | `suzuki1987` | atomic | 42 | 26 | 16 | 0 |
 
-No row qualifies for an accuracy verdict, which needs a target printed as natural, no stop answered by the formula, an established estimator and no answering record in `parity_isotope_lineage_open`, `parity_mixed_reconstructed` or `parity_unsettled`: the qualified family admits no row and is reported as vacuous, not as a pass.
-On 230 of the 252 rows some stops are answered by a record whose value the compared source's own measurements produced (the compiled-in table, whose source comment credits Suzuki, Measday and Roalsvig, for their rows; an evaluated profile for its own source's rows), and `same_source_share` gives that share.
-Such a source derives its capture rate from its own mean life (Suzuki, Measday & Roalsvig, Eq. (4)), so on those shares a row compares a source with itself, not with an independent measurement, and the band errs wide.
-For natural magnesium on the stopping route under `parity`, the mixture's initial rate is 0.9069 per µs and its mean life 1107.7 ns, where the transported stops' mean delay is 1113.1 ns; `suzuki1987` Table IV p.2218 row 12 measured 1067.2 ns and fitted 1111.2 ns, -3.4 σ; `mizuno2025` Table 1 row 6 measured 1065.5 ns and fitted 1104.0 ns, -5.0 σ.
-For natural magnesium on the atomic route under `parity`, the mixture's initial rate is 0.9017 per µs and its mean life 1114.1 ns, where the transported stops' mean delay is 1116.2 ns; `suzuki1987` Table IV p.2218 row 12 measured 1067.2 ns and fitted 1117.7 ns, -3.8 σ; `mizuno2025` Table 1 row 6 measured 1065.5 ns and fitted 1110.2 ns, -5.8 σ.
+A row qualifies for an accuracy verdict only with a target printed as natural, no stop answered by the formula, an established estimator and no answering record in `parity_isotope_lineage_open`, `parity_mixed_reconstructed` or `parity_unsettled`; no row does.
+The comparison flags 230 of the 252 rows (`same_source_share`) on which some stops are answered by a record whose value the compared source's own measurements produced: the compiled-in table, whose source comment credits Suzuki, Measday and Roalsvig, for their rows, and an evaluated profile for its own source's rows.
+The flag records membership of a profile or a source, not a graph of covariances, and a row without it is not thereby independent.
+Such a source derives its capture rate from its own mean life (Suzuki, Measday & Roalsvig, Eq. (4)), so on the flagged shares a row compares a source with itself; leaving that covariance out can make the band wider than an independent comparison would need, while uncertainty the physical model lacks can make it too narrow.
+For natural magnesium on the stopping route under `parity`, three observables are distinct: the mixture's initial rate, 0.9069 per µs, -13.79 σ from the measured rate of `suzuki1987` Table IV p.2218 row 12 with that measurement's uncertainty and the tabulated uncertainty of the magnesium-24 record combined; its all-stop mean life, 1107.65 ns, beside a mean delay of 1113.09 ns over the transported stops; and its mean decay-electron time, 1113.24 ns, beside 1119.66 ns over the transported decay electrons.
+On the stopping route, `suzuki1987` Table IV p.2218 row 12 measured 1067.2 ns and the surrogate fitted 1111.2 ns, -3.4 σ; `mizuno2025` Table 1 row 6 measured 1065.5 ns and the surrogate fitted 1104.0 ns, -5.0 σ.
+For natural magnesium on the atomic route under `parity`, three observables are distinct: the mixture's initial rate, 0.9017 per µs, -16.16 σ from the measured rate of `suzuki1987` Table IV p.2218 row 12 with that measurement's uncertainty and the tabulated uncertainty of the magnesium-24 record combined; its all-stop mean life, 1114.07 ns, beside a mean delay of 1116.23 ns over the transported stops; and its mean decay-electron time, 1119.77 ns, beside 1122.89 ns over the transported decay electrons.
+On the atomic route, `suzuki1987` Table IV p.2218 row 12 measured 1067.2 ns and the surrogate fitted 1117.7 ns, -3.8 σ; `mizuno2025` Table 1 row 6 measured 1065.5 ns and the surrogate fitted 1110.2 ns, -5.8 σ.
 
 Each row outside the band splits its difference into the estimator's part (the fitted rate less the mixture's initial rate), the composition's part (that initial rate less the route's rate of the nucleus section 12 compares) and section 12's single-nucleus part, or, for a row section 12 gives no nucleus, the last two merged; each is in units of the band's standard deviation and rounded to a tenth, and every row's estimator is a surrogate.
+The composition's part is an algebraic difference from that single-nucleus rate, not a measure of what the formula-answered isotopes cause: the chlorine row, which no formula answers, lies outside the band too.
 
 | measurement | target | route | profiles | difference (σ) | estimator (σ) | composition (σ) | single nucleus (σ) |
 |---|---|---|---|---|---|---|---|
@@ -955,6 +962,9 @@ Each row outside the band splits its difference into the estimator's part (the f
 | `mizuno2025` Table 1 row 6 | natMg | stopping | `parity`, `mizuno2025`, `suzuki1987` | -5.0 | -0.2 | -4.4 | -0.4 |
 | `mizuno2025` Table 1 row 6 | natMg | atomic | `parity`, `mizuno2025`, `suzuki1987` | -5.8 | -0.1 | -4.4 | -1.2 |
 
-Every reference is exposed: the profiles and the compiled-in records rest on the same measurements, so the comparison is retrospective, never a validation.
 Compounds, enriched targets, stops after t = 0, detector acceptance and hyperfine effects lie outside it, and a sample printed with no mass number is taken to be of natural composition.
 No capture rate or profile of the dataset changes with this section.
+
+### 13.4 What the results show
+
+The call-site harvest verifies isotope selection, rates, branch probabilities and transported delays against the implemented mixture model for the tested conditions, with muons starting at t = 0. It is an engineering verification. The lifetime comparison is retrospective and uses surrogate estimators for every reference. Under the frozen surrogate policy, every profile and route has at least one OUTSIDE comparison; the registered all-family outcome remains SCIENCE_FAIL. These outcomes are conditional on the specified estimator assumptions. The bracket half-range is an uncalibrated sensitivity allowance, so the normalized discrepancies are policy scores rather than statistical significances. No row enters the registered accuracy screen, whose outcome is SCREEN_VACUOUS. The results do not establish rejection under every admissible experimental estimator. Post-hoc sensitivity probes of the surrogate choices exist; they are not part of the registered verdict, and a separately preregistered analysis will follow. Source dependence is flagged where answering records may reuse reference measurements; all references used here are exposed and cannot validate a correction selected using this comparison.

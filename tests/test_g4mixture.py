@@ -989,3 +989,67 @@ def test_document_pins_match_once() -> None:
         assert len(hits) == 1, what
         if expected is not None:
             assert hits[0].group(1) == expected, what
+
+
+def _magnesium_expected(oracle: mixture.Oracle, route: str) -> dict[str, str]:
+    """The three magnesium observables computed here from their definitions, formatted as the document states
+    them: the initial rate sum a_i rate_i, the all-stop mean sum a_i / rate_i, and the decay-electron mean
+    sum a_i p_i / rate_i / sum a_i p_i."""
+    comps = oracle.components(spec.PARITY_PROFILE, route, 12)
+    initial = sum((c.abundance * c.rate for c in comps), Fraction(0)) * 1000
+    all_stop = sum((c.abundance / c.rate for c in comps), Fraction(0))
+    electron = sum((c.abundance * c.p_dio / c.rate for c in comps), Fraction(0)) / sum(
+        (c.abundance * c.p_dio for c in comps), Fraction(0)
+    )
+    return {
+        "initial": f"{float(initial):.4f}",
+        "all_stop": f"{float(all_stop):.2f}",
+        "electron": f"{float(electron):.2f}",
+    }
+
+
+_MAGNESIUM = re.compile(
+    r"For natural magnesium on the (\w+) route under `parity`, three observables are distinct: the mixture's "
+    r"initial rate, ([0-9.]+) per µs, [+-][0-9.]+ σ .*?; its all-stop mean life, ([0-9.]+) ns, .*?; "
+    r"and its mean decay-electron time, ([0-9.]+) ns,"
+)
+
+
+def magnesium_failures(text: str, oracle: mixture.Oracle) -> list[str]:
+    failures = []
+    found = {m[1]: m for m in _MAGNESIUM.finditer(text)}
+    for route in mixture.ROUTES:
+        if route not in found:
+            failures.append(f"{route}: no magnesium sentence")
+            continue
+        want = _magnesium_expected(oracle, route)
+        got = {"initial": found[route][2], "all_stop": found[route][3], "electron": found[route][4]}
+        failures += [
+            f"{route} {k}: states {got[k]}, the definition gives {v}" for k, v in want.items() if got[k] != v
+        ]
+    return failures
+
+
+def test_document_magnesium_observables(oracle: mixture.Oracle) -> None:
+    """Section 13 states natural magnesium's initial rate, all-stop mean life and decay-electron mean time as
+    three
+    distinct observables, each the value its own definition gives."""
+    assert magnesium_failures(_section(), oracle) == []
+
+
+def test_drill_magnesium_observables_interchanged(oracle: mixture.Oracle, harvest: dict) -> None:
+    """A sentence that states the all-stop mean in place of the decay-electron mean, or the reverse, is
+    named."""
+    rows = mixture.with_measured(
+        ROOT, mixture.read_csv(ROOT / mixture.COMPARISON_RELPATH, mixture.COMPARISON_COLUMNS)
+    )
+    for route in mixture.ROUTES:
+        obs = dict(mixture.magnesium_observables(oracle, harvest, rows, route))
+        obs["all_stop_mean"], obs["electron_mean"] = obs["electron_mean"], obs["all_stop_mean"]
+        swapped = _section().replace(
+            mixture.magnesium_sentence(mixture.magnesium_observables(oracle, harvest, rows, route), route),
+            mixture.magnesium_sentence(obs, route),
+        )
+        failures = magnesium_failures(swapped, oracle)
+        assert any(f.startswith(f"{route} all_stop") for f in failures), failures
+        assert any(f.startswith(f"{route} electron") for f in failures), failures
