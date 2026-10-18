@@ -17,6 +17,7 @@ import importlib.util
 import io
 import json
 import math
+import re
 import subprocess
 import sys
 from collections import Counter
@@ -1271,3 +1272,230 @@ def test_t8_the_regenerated_comparison_and_verdicts_are_the_committed_files(tmp_
     )
     assert (tmp_path / "comparison.csv").read_bytes() == (DATA / "comparison.csv").read_bytes()
     assert (tmp_path / "verdicts.csv").read_bytes() == (DATA / "verdicts.csv").read_bytes()
+
+
+# --------------------------------------------------------------------------------------------
+# T9 - T12 -- the generated document
+# --------------------------------------------------------------------------------------------
+DOCUMENT = "BENCHMARK_STOPPED_MU.md"
+
+
+@functools.lru_cache(maxsize=1)
+def rendered():
+    return gen.document()
+
+
+def fresh_inputs():
+    return copy.deepcopy(gen.load_inputs())
+
+
+def test_t9_the_committed_document_is_the_rendered_document():
+    assert (REPO / DOCUMENT).read_text(encoding="utf-8") == rendered().text
+
+
+def test_t9_the_generator_writes_the_three_files_byte_for_byte(tmp_path, monkeypatch):
+    monkeypatch.setattr(gen, "DATA", DATA)
+    out = {}
+
+    def capture(path, fields, rows):
+        stream = io.StringIO(newline="")
+        writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+        out[Path(path).name] = stream.getvalue().encode("utf-8")
+
+    monkeypatch.setattr(gen, "write_csv", capture)
+    monkeypatch.setattr(gen, "DOCUMENT", tmp_path / DOCUMENT)
+    gen.compare()
+    assert out["comparison.csv"] == (DATA / "comparison.csv").read_bytes()
+    assert out["verdicts.csv"] == (DATA / "verdicts.csv").read_bytes()
+    # The generator writes LF; the committed file is read with universal newlines, so a checkout that writes
+    # CRLF compares equal while any other byte of difference does not (the CSV files are -text: bytes as
+    # committed).
+    assert (tmp_path / DOCUMENT).read_bytes() == (REPO / DOCUMENT).read_text(encoding="utf-8").encode("utf-8")
+
+
+def rejudge(inp) -> None:
+    inp.verdicts = sm.judge(inp.policy, inp.rows)
+
+
+def test_t10_a_revision_that_differs_lists_the_pair_and_every_row():
+    base = rendered().text
+    assert "so the tables below list the" in base
+    assert "| predicate | target | revision | configuration |" not in base
+    inp = fresh_inputs()
+    v2 = inp.policy["setup"]["versions"][1]
+    [row] = [r for r in inp.rows if r["row_id"] == f"alcap.Al.p|{v2}|bertini"]
+    row["x"] = "0.02664"
+    rejudge(inp)
+    text = gen.render(inp).text
+    assert "These " in text and "row pairs differ between the revisions" in text
+    assert "| predicate | target | revision | configuration |" in text
+    setup = inp.policy["setup"]
+    for v in setup["versions"]:
+        assert text.count(f"| `alcap.Al.p` | Al-27 | {v} |") == len(setup["configs"])
+
+
+def test_t10_a_line_yield_beyond_its_error_is_stated_with_its_error():
+    base = rendered().text
+    zero = base.count("the net line yield consistent with zero")
+    assert zero >= 1
+    inp = fresh_inputs()
+    for r in inp.rows:
+        if r["predicate"] == "gamma.Al.1808" and r["config"] == "bertini":
+            r["x"] = str(5 * Decimal(r["x_se"]))
+    rejudge(inp)
+    text = gen.render(inp).text
+    assert text.count("the net line yield consistent with zero") == zero - 1
+    x = next(r["x"] for r in inp.rows if r["predicate"] == "gamma.Al.1808" and r["config"] == "bertini")
+    assert f"x = {x} ± " in text
+
+
+def test_t10_an_alternative_value_that_crosses_a_band_is_listed():
+    assert "changes 0 of their verdicts." in rendered().text
+    inp = fresh_inputs()
+    for cell in inp.cells.values():
+        if "alternative" in cell:
+            cell["alternative"]["quantities"]["nmean.Pb"]["x"] = "1.71"
+    text = gen.render(inp).text
+    changed = sum(1 for c in inp.cells.values() if "alternative" in c)
+    assert f"changes {changed} of their verdicts:" in text
+    assert "FAIL under the rule, PASS under the alternative." in text
+
+
+def test_t10_a_reproduced_chunk_that_differs_is_named():
+    assert "gave compact text with the sha256 the committed cell records" in rendered().text
+    inp = fresh_inputs()
+    inp.reproduced[0]["compact_text_sha256"] = "0" * 64
+    text = gen.render(inp).text
+    assert "which the committed cell does not record" in text
+    assert "gave compact text with the sha256 the committed cell records" not in text
+
+
+def test_t10_the_chunk_body_statement_follows_the_bodies():
+    inp = fresh_inputs()
+    same, diff = gen.body_pairs(inp)
+    assert diff and f"{same} have identical compact bodies" in rendered().text
+    v1, v2 = inp.policy["setup"]["versions"]
+    for (v, c, t), cell in inp.cells.items():
+        if v == v2:
+            for a, b in zip(cell["chunks"], inp.cells[(v1, c, t)]["chunks"], strict=True):
+                a["compact_body_sha256"] = b["compact_body_sha256"]
+    text = gen.render(inp).text
+    assert f"All {same + diff} pairs of chunks" in text
+
+
+def test_t10_a_rebuild_that_differs_is_stated():
+    assert "the rebuild of the committed sources is byte-identical" in rendered().text
+    inp = fresh_inputs()
+    inp.builds[1]["rebuilt_binary_sha256"] = "f" * 64
+    text = gen.render(inp).text
+    assert "differs from the binary that made the committed cells" in text
+
+
+def document_pins(numeric):
+    """`(what, path, pattern, groups, expected)` for every line of the document that carries a slot: the
+    line, whitespace-collapsed and escaped, with each span the data filled as a captured group. The values
+    themselves are held by the byte-for-byte regeneration of the document (T9); ``numeric`` is the prose
+    check's tokenizer, kept in the signature the other document modules share."""
+    r = rendered()
+    lines = r.text.splitlines()
+    by_line: dict[int, list[tuple[int, int]]] = {}
+    for lineno, start, end in r.slots:
+        by_line.setdefault(lineno, []).append((start, end))
+    pins = []
+    for lineno, spans in sorted(by_line.items()):
+        line = lines[lineno - 1]
+        assert line == " ".join(line.split()), "a generated line carries whitespace the collapse would change"
+        parts, at = [], 0
+        for start, end in sorted(spans):
+            parts.append(re.escape(line[at:start]))
+            parts.append(f"({re.escape(line[start:end])})")
+            at = end
+        parts.append(re.escape(line[at:]))
+        pins.append(
+            (f"{DOCUMENT} line {lineno}", DOCUMENT, "".join(parts), tuple(range(1, len(spans) + 1)), None)
+        )
+    return pins
+
+
+def test_t11_every_slot_line_has_a_pin_whose_groups_are_its_slots():
+    r = rendered()
+    lines = r.text.splitlines()
+    pins = document_pins(None)
+    assert len(pins) == len({lineno for lineno, _, _ in r.slots})
+    for what, _, pattern, groups, _ in pins:
+        lineno = int(what.rsplit(" ", 1)[1])
+        hit = re.fullmatch(pattern, lines[lineno - 1])
+        assert hit is not None, what
+        assert [hit.span(g) for g in groups] == sorted((s, e) for n, s, e in r.slots if n == lineno), what
+
+
+def test_t11_drill_a_digit_in_a_template_literal_is_left_to_the_census(monkeypatch):
+    import test_g4prose as prose
+
+    original = gen.Writer.line
+
+    def planted(self, *parts):
+        if parts and parts[0] == "**The verdicts.** Of the ":
+            parts = (*parts, " (7 in all)")
+        original(self, *parts)
+
+    monkeypatch.setattr(gen.Writer, "line", planted)
+    rendered.cache_clear()
+    try:
+        r = gen.document()
+        monkeypatch.setattr(gen, "document", lambda: r)
+        pins = [prose.Pin(w, p, pat, g, e) for w, p, pat, g, e in document_pins(prose.NUMERIC)]
+        open_tokens, problems = prose.unadmitted_by_pins_and_classes(
+            {DOCUMENT: r.text}, pins, prose.read_classes()
+        )
+        assert not problems
+        lineno = next(i for i, line in enumerate(r.text.splitlines(), 1) if "(7 in all)" in line)
+        assert [t.text for t in open_tokens[(DOCUMENT, lineno)]] == ["7"]
+    finally:
+        rendered.cache_clear()
+
+
+@pytest.mark.parametrize("path", [DOCUMENT, "cpp/stopped_muon/README.md"])
+def test_t12_the_document_and_the_application_readme_carry_none_of_the_excluded_words(path):
+    text = (REPO / path).read_text(encoding="utf-8")
+    assert gen.forbidden_hits(text) == []
+    assert gen.forbidden_hits(text + "\nthe first capture") == ["first"]
+
+
+def test_t10_a_cell_run_with_the_dataset_opt_in_on_is_refused():
+    inp = fresh_inputs()
+    opt = inp.policy["setup"]["harness_options"]
+    opt[opt.index("--opt-in") + 1] = "on"
+    with pytest.raises(ValueError, match="opt-in on"):
+        gen.render(inp)
+
+
+def test_t10_a_rescue_bracket_on_a_row_that_is_not_a_neutron_mean_is_refused():
+    inp = fresh_inputs()
+    [row] = [r for r in inp.policy["rows"] if r["row_id"].startswith("alcap.Al.p|")][:1]
+    row["rescue"] = True
+    with pytest.raises(ValueError, match="not the neutron-mean rows"):
+        gen.render(inp)
+
+
+def test_t10_cells_without_an_event_lacking_an_outcome_say_none():
+    assert "\n- none.\n" not in rendered().text
+    inp = fresh_inputs()
+    for cell in inp.cells.values():
+        cell["n_no_outcome"] = 0
+        cell["no_outcome_events"] = []
+        cell.pop("alternative", None)
+    text = gen.render(inp).text
+    assert "\n- none.\n" in text
+    assert "the alternative values of the 0 rows of these cells changes 0 of their verdicts." in text
+
+
+def test_t10_the_single_isotope_is_called_natural_only_when_the_natural_element_has_that_isotope_alone():
+    sentence = "is also the element of natural composition"
+    assert rendered().text.count(sentence) == 1
+    inp = fresh_inputs()
+    [al] = [r for r in inp.natural if r["z"] == "13"]
+    inp.natural.append(dict(al, a="26", abundance="0.0"))
+    assert sentence not in gen.render(inp).text

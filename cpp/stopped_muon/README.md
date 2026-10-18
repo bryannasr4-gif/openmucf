@@ -82,6 +82,10 @@ re-run chunk to the file `--out` names.
 - `comparison.csv` and `verdicts.csv`: the cells set beside the measured yields and the verdict of each row under the
   pre-registration's rule, which `scripts/generate_stopped_mu.py compare` writes as a step of `make audit`.
 
+The same command generates `BENCHMARK_STOPPED_MU.md` from these files and the natural compositions of
+`data/g4/d1/geant4_natural_isotopes.csv`: the setup, the rule and when each part of it was fixed, the verdicts with
+the comparison behind them, and the reproduction.
+
 The compact files themselves are not committed; a re-run is compared with the committed record through the sha256 of
 each chunk's compact text.
 

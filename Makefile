@@ -139,10 +139,11 @@ g4natural:
 g4lifetime:
 	python scripts/generate_g4lifetime.py compare
 
-# The stopped-muon benchmark: the comparison of the committed cells with the measured yields and the verdict
-# of each row under the pre-registration's rule, from data/g4/stopped_mu/cells.jsonl and preregistration.json
-# (both committed and never regenerated here), decided in exact arithmetic with no float deciding a byte;
-# both files join the git-diff list below, and tests/test_stopped_mu.py regenerates them.
+# The stopped-muon benchmark: the comparison of the committed cells with the measured yields, the verdict
+# of each row under the pre-registration's rule and BENCHMARK_STOPPED_MU.md, from
+# data/g4/stopped_mu/cells.jsonl, preregistration.json, builds.csv and reproduced.csv and the natural compositions
+# of data/g4/d1/geant4_natural_isotopes.csv (all committed and never regenerated here), decided in exact arithmetic with no float deciding a byte; the three generated files
+# join the git-diff list below, and tests/test_stopped_mu.py regenerates them.
 stoppedmu:
 	python scripts/generate_stopped_mu.py compare
 
@@ -158,7 +159,7 @@ stoppedmu:
 audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics g4data g4conformance g4d2 g4natural g4lifetime stoppedmu
 	python scripts/generate_forecast.py --audit
 	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json NEUTRONOMICS_MANIFEST.json DESIGN_MANIFEST.json
-	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/d1_capture.mizuno2025.g4dat data/g4/d1/d1_capture.mizuno2025.prov.json data/g4/d1/mizuno2025_table1.csv data/g4/d1/mizuno2025_table3.csv data/g4/d1/suzuki1987_printed_rows.csv data/g4/d1/suzuki1987_quantity_rows.csv data/g4/d1/suzuki1987_parity_cells.csv data/g4/d1/suzuki1987_preprint_differences.csv data/g4/d1/d1_capture.suzuki1987.g4dat data/g4/d1/d1_capture.suzuki1987.prov.json data/g4/d1/zeff_audit.csv data/g4/d1/capture_rate_cells.csv data/g4/d1/geant4_add_dataset.snippet data/g4/d3 data/g4/d2/selector_vs_primary.csv data/g4/d2/selector_summary.csv data/g4/d1/natural_target_capture.csv data/g4/d1/mean_life_comparison.csv data/g4/stopped_mu/comparison.csv data/g4/stopped_mu/verdicts.csv tests/fixtures/g4dat_conformance
+	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/d1_capture.mizuno2025.g4dat data/g4/d1/d1_capture.mizuno2025.prov.json data/g4/d1/mizuno2025_table1.csv data/g4/d1/mizuno2025_table3.csv data/g4/d1/suzuki1987_printed_rows.csv data/g4/d1/suzuki1987_quantity_rows.csv data/g4/d1/suzuki1987_parity_cells.csv data/g4/d1/suzuki1987_preprint_differences.csv data/g4/d1/d1_capture.suzuki1987.g4dat data/g4/d1/d1_capture.suzuki1987.prov.json data/g4/d1/zeff_audit.csv data/g4/d1/capture_rate_cells.csv data/g4/d1/geant4_add_dataset.snippet data/g4/d3 data/g4/d2/selector_vs_primary.csv data/g4/d2/selector_summary.csv data/g4/d1/natural_target_capture.csv data/g4/d1/mean_life_comparison.csv data/g4/stopped_mu/comparison.csv data/g4/stopped_mu/verdicts.csv BENCHMARK_STOPPED_MU.md tests/fixtures/g4dat_conformance
 	python scripts/generate_g4data.py --audit
 	python scripts/generate_g4dat_conformance.py --audit
 	python scripts/generate_calibration.py --audit

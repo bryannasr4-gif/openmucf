@@ -170,6 +170,7 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `data/g4/d1/`, `DATASET_D1.md` | the D1 nuclear-capture dataset in `parity` mode + its findings (see below) |
 | `data/g4/d3/`, `DATASET_D3.md` | the D3 muonic energy tables of the `mudirac130p1` profile, their MuDirac inputs and outputs, their numerical checks, the cause of each change from the `mudirac130` tables, and their comparison with measured energies |
 | `data/g4/d2/`, `data/g4/reference/d2/`, `DATASET_D2.md` | the capturing-atom selector's harvest and reference, the processes that reach it at rest, and atomic-capture values read in primary publications beside the selector's |
+| `cpp/stopped_muon/`, `data/g4/stopped_mu/`, `BENCHMARK_STOPPED_MU.md` | the stopped-muon benchmark: the Geant4 application, its reduced outputs, the rule fixed before the runs and the generated comparison with measured yields |
 | `openmucf/data/` | `rates.csv`, `validation_targets.csv`, `references.bib`, schema |
 | `forecasts/`, `FORECASTS.md` | pre-registered, hash-stamped forecast cards (FC-001) + protocol + registry table |
 | `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + mixed-basis tier spread, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
@@ -207,6 +208,10 @@ printed outputs of MuDirac 1.3.0 built with the patch in `third_party/mudirac/`;
 
 The dataset name `G4MuonicData` and the environment variable `G4MUONICDATA` are **provisional
 placeholders**, pending discussion with the Geant4 collaboration.
+
+## Stopped negative muons in Geant4 — a benchmark against measurement
+[`BENCHMARK_STOPPED_MU.md`](BENCHMARK_STOPPED_MU.md) compares the products that unpatched Geant4 v11.4.2 and v11.5.0.beta return when the nucleus of a single-element target captures a stopped negative muon with measured yields of charged particles, γ rays and neutrons, under a rule fixed before the runs and a later addition that the document discloses.
+The application that made the outputs is in `cpp/stopped_muon/`, and the document is generated from the outputs committed in `data/g4/stopped_mu/`.
 
 ## Honest positioning
 OpenMuCF introduces **no new fundamental μCF physics** — the cycle is textbook and the reactivation transport

@@ -44,6 +44,7 @@ import test_g4d3 as d3
 import test_g4lifetime as lifetime
 import test_g4natural as natural
 import test_g4parity as parity
+import test_stopped_mu as stopped_mu
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 
@@ -54,6 +55,7 @@ PROSE_PATHS = (
     "third_party/geant4/README.md", "cpp/patches/README.md", "DATASET_D3.md", "third_party/mudirac/README.md",
     "cpp/transport/README.md", "DATASET_D2.md",
     "paper/muonic-data/paper.md", "FORMAT_SPEC.md", "docs/geant4-developers.md", "cpp/stopped_muon/README.md",
+    "BENCHMARK_STOPPED_MU.md",
 )
 #: Documents that may carry no registry row: every token in them is pinned or class-admitted.
 REGISTRY_FREE = ("cpp/README.md",)
@@ -77,6 +79,10 @@ def test_t74_geant4_developer_page_enumerated():
 
 def test_t74_stopped_muon_application_readme_enumerated():
     assert "cpp/stopped_muon/README.md" in PROSE_PATHS
+
+
+def test_t74_stopped_muon_benchmark_enumerated():
+    assert "BENCHMARK_STOPPED_MU.md" in PROSE_PATHS
 
 
 CLASSES = pathlib.Path(__file__).with_name("g4_prose_classes.tsv")
@@ -229,6 +235,9 @@ def pin_table() -> list[Pin]:
         table.append(Pin(what, path, pattern, groups, expected))
     # The mean-life section's pins, as its own test module builds them with this file's tokenizer.
     for what, path, pattern, groups, expected in lifetime.document_pins(NUMERIC):
+        table.append(Pin(what, path, pattern, groups, expected))
+    # The stopped-muon benchmark's pins, one per line of its generated document that carries a slot.
+    for what, path, pattern, groups, expected in stopped_mu.document_pins(NUMERIC):
         table.append(Pin(what, path, pattern, groups, expected))
     return table
 
