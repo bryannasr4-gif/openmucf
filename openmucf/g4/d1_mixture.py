@@ -2253,15 +2253,30 @@ def _critical(dof: int, alpha: str) -> Critical:
     return critical(dof, Decimal(alpha))
 
 
+#: The call-site fields each route records for every drawn isotope.
+RATE_FIELDS = {STOPPING: ("capture", "decay"), ATOMIC: ("tau", "tau_dio", "tau_nc")}
+
+
 def gate_rate(
     stats: Mapping[str, Mapping[str, str]], route: str, components: Sequence[Component]
 ) -> list[str]:
     """Every isotope and field whose harvested call-site values are not exactly the oracle's binary64 value:
-    the
-    summary's digest must be that of the one value the oracle computes."""
+    the summary's digest must be that of the one value the oracle computes, and the summary must carry a
+    digest
+    for every field of every isotope the oracle and the harvest name, and for no other."""
     failures = []
     by_a = {c.a: c for c in components}
-    for key, value in stats["rate"].items():
+    fields = RATE_FIELDS[route]
+    drawn = {int(a) for a in stats.get("count", {})} | set(by_a)
+    expected_keys = {f"{a}:{field}" for a in drawn for field in fields}
+    present = set(stats.get("rate", {}))
+    for key in sorted(expected_keys - present, key=lambda k: (int(k.split(":")[0]), k)):
+        failures.append(f"{key}: no harvested digest")
+    for key in sorted(present - expected_keys):
+        failures.append(f"{key}: a digest for no field of this route")
+    for key, value in stats.get("rate", {}).items():
+        if key not in expected_keys:
+            continue
         a, field = key.split(":")
         c = by_a.get(int(a))
         if c is None:
@@ -2282,7 +2297,11 @@ def gate_rate(
 def gate_set(stats: Mapping[str, Mapping[str, str]], components: Sequence[Component]) -> list[str]:
     harvested = {int(a) for a in stats["count"]}
     model = {c.a for c in components}
-    return [] if harvested == model else [f"harvested {sorted(harvested)} oracle {sorted(model)}"]
+    failures = [] if harvested == model else [f"harvested {sorted(harvested)} oracle {sorted(model)}"]
+    total = sum(int(n) for n in stats["count"].values())
+    if total != int(stats["meta"]["events"]):
+        failures.append(f"isotope counts sum to {total}, the cell has {stats['meta']['events']} events")
+    return failures
 
 
 def _x2_verdict(counts: Sequence[int], probs: Sequence[Fraction | Decimal], alpha: str) -> dict[str, str]:
@@ -2315,6 +2334,14 @@ def gate_branch(
     isotope whose smaller expected count is below ``min_expected`` is left out and counted."""
     x2_lo = x2_hi = Decimal(0)
     used = left = 0
+    unreconciled = []
+    for a, count in stats["count"].items():
+        branches = int(stats["branch"].get(f"{a}:D", "0")) + int(stats["branch"].get(f"{a}:N", "0"))
+        if branches != int(count):
+            unreconciled.append(f"{a}: {branches} branches for {count} stops")
+    total = sum(int(n) for n in stats["branch"].values())
+    if total != int(stats["meta"]["events"]):
+        unreconciled.append(f"branch counts sum to {total}, the cell has {stats['meta']['events']} events")
     for c in components:
         dio = int(stats["branch"].get(f"{c.a}:D", "0"))
         cap = int(stats["branch"].get(f"{c.a}:N", "0"))
@@ -2328,13 +2355,16 @@ def gate_branch(
         x2_hi += hi
         used += 1
     crit = _critical(used, alpha)
-    return {
+    result = {
         "x2": f"{(x2_lo + x2_hi) / 2:.6f}",
         "dof": str(used),
         "left_out": str(left),
         "critical": f"{crit.lo:.6f}",
         "verdict": verdict((x2_lo, x2_hi), crit),
     }
+    if unreconciled:
+        result.update({"verdict": "fail", "reason": "; ".join(unreconciled)})
+    return result
 
 
 def gate_time(stats: Mapping[str, Mapping[str, str]], alpha: str) -> dict[str, str]:
@@ -2342,6 +2372,8 @@ def gate_time(stats: Mapping[str, Mapping[str, str]], alpha: str) -> dict[str, s
     result = _x2_verdict(counts, [Fraction(1, TIME_BINS)] * TIME_BINS, alpha)
     if int(stats["meta"]["time_ties"]):
         result["verdict"] = "refuse"
+    if sum(counts) + int(stats["meta"]["time_ties"]) != int(stats["meta"]["events"]):
+        result.update({"verdict": "fail", "reason": "the delay bins do not hold every stop"})
     return result
 
 
@@ -2353,7 +2385,12 @@ def gate_dio(
         return {"verdict": "fail", "reason": "the summary's bins are not the oracle's"}
     probs = dio_probabilities(components, edges)
     counts = [int(stats["dio"][str(j)]) for j in range(len(edges))] + [int(stats["dio"]["capture"])]
-    return _x2_verdict(counts, probs, alpha)
+    result = _x2_verdict(counts, probs, alpha)
+    if sum(counts) != int(stats["meta"]["events"]):
+        result.update(
+            {"verdict": "fail", "reason": "the decay-electron bins and captures do not hold every stop"}
+        )
+    return result
 
 
 def gate_win(
@@ -2364,7 +2401,12 @@ def gate_win(
         return {"verdict": "fail", "reason": "the summary's bins are not the oracle's"}
     probs = window_probabilities(components, edges)
     counts = [int(stats["win"][str(j)]) for j in range(len(edges) - 1)]
-    return _x2_verdict(counts, probs, alpha)
+    result = _x2_verdict(counts, probs, alpha)
+    if sum(counts) + int(stats["win"]["outside"]) != int(stats["meta"]["events"]):
+        result.update(
+            {"verdict": "fail", "reason": "the window bins and the stops outside do not hold every stop"}
+        )
+    return result
 
 
 def evaluate_cell(

@@ -761,6 +761,29 @@ def test_drill_every_harvest_gate_turns_red(harvest: dict, policy: dict, oracle)
     assert info and all(c["unchanged"] for c in info)
 
 
+@pytest.mark.parametrize("route", ["stopping", "atomic"])
+def test_drill_missing_data_turns_a_gate_red(
+    harvest: dict, policy: dict, oracle: mixture.Oracle, route: str
+) -> None:
+    """A summary that lacks data cannot pass: every rate digest removed from a cell, one isotope's rate
+    digests
+    removed, or one isotope's branch counts removed each turns a gate red, and the complete summary passes."""
+    name = f"parity:{route}:v11.4.2:32"
+    stats = harvest[name]
+    comps = list(oracle.components(spec.PARITY_PROFILE, route, 32))
+    assert mixture.first_red(mixture.evaluate_cell(stats, route, comps, policy)) is None
+    top = max(comps, key=lambda c: int(stats["count"][str(c.a)]))
+    no_rates = _copy(stats)
+    no_rates["rate"] = {}
+    one_isotope = _copy(stats)
+    one_isotope["rate"] = {k: v for k, v in stats["rate"].items() if not k.startswith(f"{top.a}:")}
+    no_branches = _copy(stats)
+    no_branches["branch"] = {k: v for k, v in stats["branch"].items() if not k.startswith(f"{top.a}:")}
+    for planted, gate in ((no_rates, "G-rate"), (one_isotope, "G-rate"), (no_branches, "G-branch")):
+        verdicts = mixture.evaluate_cell(planted, route, comps, policy)
+        assert verdicts[gate]["verdict"] == "fail", (gate, verdicts[gate])
+
+
 # --------------------------------------------------------------------------------------------
 # the comparison with the measured mean lives
 # --------------------------------------------------------------------------------------------
