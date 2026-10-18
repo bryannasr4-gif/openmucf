@@ -1,9 +1,9 @@
-"""Classify and reduce the records of the stopped-muon benchmark, with the standard library alone.
+"""Classify, reduce and judge the records of the stopped-muon benchmark, with the standard library alone.
 
 The benchmark stops a negative muon at the centre of a single-element box, lets Geant4 transport it with the
 transport harness of ``cpp/stopped_muon/`` and scores the secondaries Geant4 creates at the capture step
-against measured yields. Every window, PDG code, line energy, guard and the capture count are read from the
-pre-registration, a JSON file the caller names (``load_policy(path)``); this module
+against measured yields. Every window, PDG code, line energy, guard, the capture count and every constant of
+the rule are read from the pre-registration, a JSON file the caller names (``load_policy(path)``); this module
 reads no path of its own and imports nothing from ``openmucf``, so it runs under any Python 3.11+ and can be
 loaded by path where the package is not installed.
 
@@ -42,13 +42,30 @@ import random
 from collections import Counter
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
-from decimal import ROUND_HALF_EVEN, Decimal, localcontext
+from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, TextIO
 
 ROUTES = ("bound_decay", "muonic_atom_helper")
 NO_OUTCOME_MODES = ("exclude", "as_capture")
+COMPARISON_COLUMNS = (
+    "row_id",
+    "predicate",
+    "family",
+    "target",
+    "version",
+    "config",
+    "n_capt",
+    "x",
+    "x_se",
+    "ref",
+    "ref_stat",
+    "ref_syst",
+    "rescue_lo",
+    "rescue_hi",
+)
+VERDICT_COLUMNS = ("row_id", "verdict", "kind", "pull")
 
 
 class Malformed(Exception):
@@ -901,3 +918,199 @@ def differing_fields(a: dict[str, Any], b: dict[str, Any], keys: Iterable[str]) 
     """The keys among ``keys`` whose values differ between the two records (a missing key differs)."""
     marker = object()
     return [k for k in keys if a.get(k, marker) != b.get(k, marker)]
+
+
+# ------------------------------------------------------------------------------------------------- cells
+def cell_key(cell: dict[str, Any]) -> tuple[str, str, str]:
+    return cell["version"], cell["config"], cell["target"]
+
+
+def admit_cell(cell: dict[str, Any], policy: Policy) -> None:
+    """Refuse a reduced cell the comparison may not use, naming the clause."""
+    key = " ".join(cell_key(cell))
+    n_sel = int(policy["setup"]["captures_per_configuration"])
+    if cell["N_capt"] != n_sel:
+        raise Refused(f"{key}: N_capt {cell['N_capt']} != {n_sel}")
+    if cell["captures_total"] < n_sel:
+        raise Refused(f"{key}: captures_total {cell['captures_total']} < {n_sel}")
+    if cell["X"] != 0:
+        raise Refused(f"{key}: X {cell['X']}")
+    if cell["problems"]:
+        raise Refused(f"{key}: problems {cell['problems']}")
+    max_ext = int(policy["guards"]["max_extension_chunks"])
+    if (
+        cell["extension_chunks"] > max_ext
+        or sum(c["extension"] for c in cell["chunks"]) != cell["extension_chunks"]
+    ):
+        raise Refused(f"{key}: extension chunks {cell['extension_chunks']}")
+    nxt = 0
+    for c in cell["chunks"]:
+        if c["offset"] != nxt:
+            raise Refused(f"{key}: chunk {c['chunk']} offset {c['offset']} != {nxt}")
+        nxt += c["events"]
+    if cell["stops_total"] != nxt:
+        raise Refused(f"{key}: stops_total {cell['stops_total']} != chunk events {nxt}")
+    if cell["events_total"] + cell["n_no_outcome"] != cell["stops_total"]:
+        raise Refused(f"{key}: events_total + n_no_outcome != stops_total")
+    if cell["captures_total"] + cell["decays_total"] + cell["X"] != cell["events_total"]:
+        raise Refused(f"{key}: captures + decays + X != events_total")
+    if cell["n_no_outcome"] != len(cell["no_outcome_events"]):
+        raise Refused(f"{key}: n_no_outcome != its event list")
+    if Fraction(cell["n_no_outcome"], cell["stops_total"]) > Fraction(
+        policy["rule"]["no_outcome"]["rate_limit"]
+    ):
+        raise Refused(f"{key}: no-outcome rate above the limit")
+    if cell["target"] in gamma_targets(policy):
+        for line in policy["gamma"]["lines_MeV"]:
+            if not cell["line_guard"][line]["ok"]:
+                raise Refused(f"{key}: line guard {line}")
+            if not cell["tag_width"][line]["ok"]:
+                raise Refused(f"{key}: tag width {line}")
+
+
+def load_cells(path: str | Path, policy: Policy) -> dict[tuple[str, str, str], dict[str, Any]]:
+    """The reduced cells of ``path`` (one JSON object per line), each admitted, exactly one per version x
+    configuration x target of the policy."""
+    cells: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        cell = json.loads(line)
+        key = cell_key(cell)
+        if key in cells:
+            raise Refused(f"cell {key} appears twice")
+        admit_cell(cell, policy)
+        cells[key] = cell
+    setup = policy["setup"]
+    want = {
+        (v, c, t["target"]) for v in setup["versions"] for c in setup["configs"] for t in setup["targets"]
+    }
+    if set(cells) != want:
+        missing, extra = sorted(want - set(cells)), sorted(set(cells) - want)
+        raise Refused(f"cells differ from the policy's matrix: missing {missing[:3]} extra {extra[:3]}")
+    return cells
+
+
+# ------------------------------------------------------------------------------------------------- the rule
+def edges(ref: str, stat: str, syst: str, xse: str, policy: Policy) -> tuple[str, str]:
+    """The rescue bracket [L(r_lo), U(r_hi)], L rounded down and U up at the policy's quantum."""
+    rule = policy["rule"]
+    with localcontext() as ctx:
+        ctx.prec = 60
+        k = Decimal(rule["k_fail"])
+        rlo, rhi = Decimal(rule["efficiency_bracket"]["r_lo"]), Decimal(rule["efficiency_bracket"]["r_hi"])
+        q = Decimal(rule["rescue_quantum"])
+        r, st, sy, xs = (Decimal(v) for v in (ref, stat, syst, xse))
+        lo = rlo * r - k * ((rlo * st) ** 2 + (rlo * sy) ** 2 + xs**2).sqrt()
+        hi = rhi * r + k * ((rhi * st) ** 2 + (rhi * sy) ** 2 + xs**2).sqrt()
+        return str(lo.quantize(q, rounding=ROUND_FLOOR)), str(hi.quantize(q, rounding=ROUND_CEILING))
+
+
+def comparison_rows(
+    policy: Policy, cells: dict[tuple[str, str, str], dict[str, Any]]
+) -> list[dict[str, str]]:
+    """One comparison row per row of the policy, in its order: the model x and x_se of the row's cell, the
+    reference cells of the policy and, for a rescue row, the rescue edges."""
+    out = []
+    for fr in policy["rows"]:
+        key = (fr["version"], fr["config"], fr["target"])
+        cell = cells.get(key)
+        if cell is None:
+            raise Refused(f"{fr['row_id']}: cell {key} missing")
+        admit_cell(cell, policy)
+        q = cell["quantities"].get(fr["predicate"])
+        if q is None:
+            raise Refused(f"{fr['row_id']}: quantity {fr['predicate']} absent from the cell")
+        lo, hi = (
+            edges(fr["ref"], fr["ref_stat"], fr["ref_syst"], q["x_se"], policy) if fr["rescue"] else ("", "")
+        )
+        out.append(
+            {
+                "row_id": fr["row_id"],
+                "predicate": fr["predicate"],
+                "family": fr["family"],
+                "target": fr["target"],
+                "version": fr["version"],
+                "config": fr["config"],
+                "n_capt": str(cell["N_capt"]),
+                "x": q["x"],
+                "x_se": q["x_se"],
+                "ref": str(fr["ref"]),
+                "ref_stat": str(fr["ref_stat"]),
+                "ref_syst": str(fr["ref_syst"]),
+                "rescue_lo": lo,
+                "rescue_hi": hi,
+            }
+        )
+    return out
+
+
+@dataclass(frozen=True)
+class Verdict:
+    row_id: str
+    verdict: str
+    kind: str
+    pull: str
+
+
+def _pull(d: Fraction, s2: Fraction) -> str:
+    """(x - ref)/sigma_tot to 2 decimals, half-even, decided exactly: with t = d^2/s2 the square of the pull,
+    the hundredths n = floor(100 |pull|) = isqrt(floor(10000 t)), and |pull| is compared with the midpoint
+    (2n + 1)/200 through squares, so no rounding of a square root decides a digit."""
+    if s2 == 0:
+        raise Refused("sigma_tot is zero")
+    t = d * d / s2
+    n = math.isqrt(math.floor(t * 10000))
+    mid = Fraction(2 * n + 1, 200) ** 2
+    if t > mid or (t == mid and n % 2 == 1):
+        n += 1
+    return f"{'-' if d < 0 else ''}{n // 100}.{n % 100:02d}"
+
+
+def judge_row(row: dict[str, str], k_pass: Fraction, k_fail: Fraction) -> Verdict:
+    d = Fraction(row["x"]) - Fraction(row["ref"])
+    s2 = Fraction(row["ref_stat"]) ** 2 + Fraction(row["ref_syst"]) ** 2 + Fraction(row["x_se"]) ** 2
+    within_pass = d * d <= k_pass * k_pass * s2
+    within_fail = d * d <= k_fail * k_fail * s2
+    rescue = row["rescue_lo"] != ""
+    inside_bracket = rescue and Fraction(row["rescue_lo"]) <= Fraction(row["x"]) <= Fraction(row["rescue_hi"])
+    if within_pass:
+        verdict, kind = "PASS", "pass"
+    elif not within_fail and not inside_bracket:
+        verdict, kind = "FAIL", "fail"
+    else:
+        verdict, kind = "UNQUALIFIED", "tension" if within_fail else "efficiency_limited"
+    return Verdict(row["row_id"], verdict, kind, _pull(d, s2))
+
+
+def judge(policy: Policy, comparison: list[dict[str, str]]) -> list[Verdict]:
+    """The verdict of every row, in the policy's order. The roster is the policy's rows: a missing, extra or
+    repeated row, a reference cell or identity field that differs from the policy, or a rescue edge that
+    differs from its recomputation is refused (``Refused``), never judged."""
+    got: dict[str, dict[str, str]] = {}
+    for r in comparison:
+        if tuple(r) != COMPARISON_COLUMNS:
+            raise Refused(f"comparison columns are not {COMPARISON_COLUMNS}")
+        if r["row_id"] in got:
+            raise Refused(f"row {r['row_id']} appears twice")
+        got[r["row_id"]] = r
+    roster = {fr["row_id"]: fr for fr in policy["rows"]}
+    extra = sorted(set(got) - set(roster))
+    if extra:
+        raise Refused(f"rows not in the pre-registration: {extra[:3]}")
+    k_pass, k_fail = Fraction(policy["rule"]["k_pass"]), Fraction(policy["rule"]["k_fail"])
+    out = []
+    for fr in policy["rows"]:
+        row = got.get(fr["row_id"])
+        if row is None:
+            raise Refused(f"row {fr['row_id']} missing")
+        for k in ("predicate", "family", "target", "version", "config", "ref", "ref_stat", "ref_syst"):
+            if row[k] != str(fr[k]):
+                raise Refused(f"{fr['row_id']}: {k} {row[k]!r} differs from the pre-registration's {fr[k]!r}")
+        if fr["rescue"]:
+            want = edges(fr["ref"], fr["ref_stat"], fr["ref_syst"], row["x_se"], policy)
+            got_edges = (row["rescue_lo"], row["rescue_hi"])
+            if got_edges != want:
+                raise Refused(f"{fr['row_id']}: rescue edges {got_edges} differ from {want}")
+        elif row["rescue_lo"] or row["rescue_hi"]:
+            raise Refused(f"{fr['row_id']}: rescue edges on a row without a bracket")
+        out.append(judge_row(row, k_pass, k_fail))
+    return out

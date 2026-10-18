@@ -38,7 +38,9 @@ apply here unchanged; for a natural target the harness creates a muonic atom for
 ## Building, running and re-running a cell
 
 `stopped_muon.py` uses the standard library alone and loads `openmucf/g4/stopped_mu.py` by path, so it runs where the
-package is not installed. `run` and `reproduce` take the pre-registration as `--prereg <file>`.
+package is not installed. `run` and `reproduce` take the pre-registration as `--prereg <file>`, by default the
+committed `data/g4/stopped_mu/preregistration.json`, and `reproduce` reads the committed cells from `--cells <file>`,
+by default `data/g4/stopped_mu/cells.jsonl`.
 
 ```sh
 python3 cpp/stopped_muon/stopped_muon.py build --install <prefix> --build <dir>
@@ -66,6 +68,22 @@ each re-run compact file with the committed sha256, reduces the re-run chunks an
 multiplicities, f2, counts and events without an outcome with the committed record. It prints `REPRODUCED` when every
 comparison is equal and `DIFFERS` with what differs otherwise, exits nonzero on any difference, and appends a line per
 re-run chunk to the file `--out` names.
+
+## The committed outputs
+
+`data/g4/stopped_mu/` holds what this application made and the comparison made from it:
+
+- `preregistration.json`: the setup, the measured anchors, the predicates, the rows and the rule, fixed before the
+  runs apart from the treatment of events without an outcome, which the file marks as fixed after part of the matrix
+  had been run;
+- `cells.jsonl`: the reduced record of every cell, with the sha256 of each chunk's compact text;
+- `builds.csv`: the builds that made the cells and a rebuild of the committed sources;
+- `reproduced.csv`: the chunks re-run with the committed application;
+- `comparison.csv` and `verdicts.csv`: the cells set beside the measured yields and the verdict of each row under the
+  pre-registration's rule, which `scripts/generate_stopped_mu.py compare` writes as a step of `make audit`.
+
+The compact files themselves are not committed; a re-run is compared with the committed record through the sha256 of
+each chunk's compact text.
 
 ## The environment
 

@@ -1,5 +1,5 @@
-"""The stopped-muon benchmark: its classifier, reducer and gamma-line tag (`openmucf/g4/stopped_mu.py`) and
-its driver (`cpp/stopped_muon/stopped_muon.py`).
+"""The stopped-muon benchmark: its classifier, reducer, gamma-line tag and rule (`openmucf/g4/stopped_mu.py`),
+its driver (`cpp/stopped_muon/stopped_muon.py`) and the committed files of `data/g4/stopped_mu/`.
 
 Every test here calls the function it checks with the input it names, so no earlier guard pre-empts it. The
 synthetic policy is written in this file; each value it carries is one the function under test must read from
@@ -9,8 +9,13 @@ it.
 from __future__ import annotations
 
 import ast
+import copy
+import csv
+import functools
+import hashlib
 import importlib.util
 import io
+import json
 import math
 import subprocess
 import sys
@@ -768,3 +773,501 @@ def test_t14_a_cell_field_that_differs_is_named():
     a = {"quantities": {"x": {"x": "1"}}, "neutron_hist": {"0": 1}, "f2": {"x": "1"}, "N_capt": 4}
     assert drv.compare_cell(a, dict(a)) == []
     assert drv.compare_cell(dict(a, neutron_hist={"0": 2}), a) == ["neutron_hist"]
+
+
+# --------------------------------------------------------------------------------------------
+# the committed files
+# --------------------------------------------------------------------------------------------
+DATA = REPO / "data" / "g4" / "stopped_mu"
+PREREG = DATA / "preregistration.json"
+#: The committed pre-registration, pinned: any later edit of it is a visible diff of this line.
+PREREG_SHA256 = "44a3944f4b4b2eea5f9d5326db141534b92dd8e8a3f178ef42d79dec773fa200"
+gen = _load("generate_stopped_mu_under_test", REPO / "scripts" / "generate_stopped_mu.py")
+
+
+def read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as stream:
+        return list(csv.DictReader(stream))
+
+
+@functools.lru_cache(maxsize=1)
+def policy() -> dict:
+    return sm.load_policy(PREREG)
+
+
+@functools.lru_cache(maxsize=1)
+def cells() -> dict:
+    return sm.load_cells(DATA / "cells.jsonl", policy())
+
+
+def cells_copy() -> list[dict]:
+    return [json.loads(line) for line in (DATA / "cells.jsonl").read_text(encoding="utf-8").splitlines()]
+
+
+# --------------------------------------------------------------------------------------------
+# T1, T2 -- the sources and every chunk are bound to the builds
+# --------------------------------------------------------------------------------------------
+def source_mismatches(builds: list[dict[str, str]], source: bytes, cmakelists: bytes) -> list[str]:
+    s, c = hashlib.sha256(source).hexdigest(), hashlib.sha256(cmakelists).hexdigest()
+    return [b["tag"] for b in builds if b["source_sha256"] != s or b["cmakelists_sha256"] != c]
+
+
+def test_t1_the_committed_sources_are_the_sources_of_every_build():
+    builds = read_csv(DATA / "builds.csv")
+    assert [b["tag"] for b in builds] == [policy()["setup"]["tags"][v] for v in policy()["setup"]["versions"]]
+    source = (REPO / "cpp" / "stopped_muon" / "g4muonic_transport.cc").read_bytes()
+    cmakelists = (REPO / "cpp" / "stopped_muon" / "CMakeLists.txt").read_bytes()
+    assert source_mismatches(builds, source, cmakelists) == []
+    changed = source[:100] + bytes([source[100] ^ 1]) + source[101:]
+    assert source_mismatches(builds, changed, cmakelists) == [b["tag"] for b in builds]
+
+
+def chunk_mismatches(cell_list: list[dict], builds: list[dict[str, str]], tags: dict[str, str]) -> list[str]:
+    ref = {b["tag"]: b["reference_binary_sha256"] for b in builds}
+    return [
+        f"{c['version']}/{c['config']}/{c['target']}/{ch['chunk']}"
+        for c in cell_list
+        for ch in c["chunks"]
+        if ch["binary_sha256"] != ref[tags[c["version"]]]
+    ]
+
+
+def test_t2_every_chunk_names_its_revisions_reference_binary():
+    builds = read_csv(DATA / "builds.csv")
+    tags = policy()["setup"]["tags"]
+    listed = cells_copy()
+    assert chunk_mismatches(listed, builds, tags) == []
+    assert sum(len(c["chunks"]) for c in listed) == sum(len(c["chunks"]) for c in cells().values())
+    listed[5]["chunks"][1]["binary_sha256"] = "0" * 64
+    assert chunk_mismatches(listed, builds, tags) == [
+        f"{listed[5]['version']}/{listed[5]['config']}/{listed[5]['target']}/chunk1"
+    ]
+
+
+def test_t2_the_reproduced_chunks_are_committed_chunks_of_the_rebuilt_binaries():
+    builds = {b["tag"]: b for b in read_csv(DATA / "builds.csv")}
+    tags = policy()["setup"]["tags"]
+    rows = read_csv(DATA / "reproduced.csv")
+    assert rows and tuple(rows[0]) == drv.REPRODUCED_COLUMNS
+    for r in rows:
+        cell = cells()[(r["version"], r["config"], r["target"])]
+        [ch] = [c for c in cell["chunks"] if c["chunk"] == r["chunk"]]
+        assert (int(r["offset"]), int(r["events"])) == (ch["offset"], ch["events"])
+        assert r["binary_sha256"] == builds[tags[r["version"]]]["rebuilt_binary_sha256"]
+
+
+# --------------------------------------------------------------------------------------------
+# T3 -- cell admission
+# --------------------------------------------------------------------------------------------
+def test_t3_the_committed_cells_are_the_policys_matrix_and_every_one_is_admitted():
+    setup = policy()["setup"]
+    want = {
+        (v, c, t["target"]) for v in setup["versions"] for c in setup["configs"] for t in setup["targets"]
+    }
+    assert set(cells()) == want
+    assert len(cells()) == len(setup["versions"]) * len(setup["configs"]) * len(setup["targets"])
+
+
+def _a_cell(key=("11.4.2", "bertini_pc", "natPb")) -> dict:
+    return copy.deepcopy(cells()[key])
+
+
+#: One fault per admission clause, each built so that only its own clause can refuse it.
+ADMISSION_FAULTS = [
+    ("captures", lambda c: c.update(N_capt=c["N_capt"] - 1), "N_capt"),
+    ("X", lambda c: c.update(X=1), "X 1"),
+    ("problems", lambda c: c.update(problems=["a refusal"]), "problems"),
+    ("extensions", lambda c: c.update(extension_chunks=2), "extension chunks"),
+    ("contiguity", lambda c: c["chunks"][1].update(offset=c["chunks"][1]["offset"] + 1), "offset"),
+    ("stops", lambda c: c.update(stops_total=c["stops_total"] + 1), r"stops_total \d+ != chunk events"),
+    (
+        "events",
+        lambda c: c.update(events_total=c["events_total"] + 1, decays_total=c["decays_total"] + 1),
+        r"events_total \+ n_no_outcome",
+    ),
+    ("classes", lambda c: c.update(decays_total=c["decays_total"] + 1), r"captures \+ decays"),
+    ("no-outcome list", lambda c: c.update(no_outcome_events=[]), "event list"),
+    (
+        "short",
+        lambda c: c.update(
+            captures_total=c["N_capt"] - 1,
+            decays_total=c["decays_total"] + c["captures_total"] - c["N_capt"] + 1,
+        ),
+        "captures_total",
+    ),
+]
+
+
+@pytest.mark.parametrize("clause, change, match", ADMISSION_FAULTS, ids=[f[0] for f in ADMISSION_FAULTS])
+def test_t3_each_admission_clause_refuses_its_fault(clause, change, match):
+    cell = _a_cell()
+    sm.admit_cell(cell, policy())
+    change(cell)
+    with pytest.raises(sm.Refused, match=match):
+        sm.admit_cell(cell, policy())
+
+
+def _rate_cell(n: int) -> dict:
+    """The natPb cell recut to 106000 stops with ``n`` events without an outcome, every other clause kept."""
+    cell = _a_cell()
+    cell["chunks"][0]["events"] = 2000
+    cell["chunks"][1].update(offset=2000, events=104000)
+    cell["stops_total"] = 106000
+    cell["n_no_outcome"], cell["no_outcome_events"] = n, list(range(n))
+    cell["events_total"] = 106000 - n
+    cell["decays_total"] = cell["events_total"] - cell["captures_total"]
+    return cell
+
+
+def test_t3_the_no_outcome_rate_is_admitted_at_its_limit_and_refused_one_event_above():
+    limit = Fraction(policy()["rule"]["no_outcome"]["rate_limit"])
+    assert Fraction(106, 106000) == limit
+    sm.admit_cell(_rate_cell(106), policy())
+    with pytest.raises(sm.Refused, match="no-outcome rate"):
+        sm.admit_cell(_rate_cell(107), policy())
+
+
+@pytest.mark.parametrize("gate", ["line_guard", "tag_width"])
+def test_t3_an_al27_cell_whose_line_gate_refused_is_not_admitted(gate):
+    cell = _a_cell(("11.4.2", "bertini", "Al-27"))
+    sm.admit_cell(cell, policy())
+    cell[gate]["gamma.Al.1129"]["ok"] = False
+    with pytest.raises(sm.Refused, match=gate.replace("_", " ")):
+        sm.admit_cell(cell, policy())
+
+
+def test_t3_a_missing_or_repeated_cell_is_refused(tmp_path):
+    lines = (DATA / "cells.jsonl").read_text(encoding="utf-8").splitlines()
+    (tmp_path / "missing.jsonl").write_text("\n".join(lines[1:]) + "\n", encoding="utf-8")
+    with pytest.raises(sm.Refused, match="missing"):
+        sm.load_cells(tmp_path / "missing.jsonl", policy())
+    (tmp_path / "twice.jsonl").write_text("\n".join([lines[0], *lines]) + "\n", encoding="utf-8")
+    with pytest.raises(sm.Refused, match="twice"):
+        sm.load_cells(tmp_path / "twice.jsonl", policy())
+
+
+# --------------------------------------------------------------------------------------------
+# T4 -- the pre-registration
+# --------------------------------------------------------------------------------------------
+def q6(x: Fraction) -> str:
+    with localcontext() as ctx:
+        ctx.prec = 60
+        return str(
+            (Decimal(x.numerator) / Decimal(x.denominator)).quantize(
+                Decimal("0.000001"), rounding=ROUND_HALF_EVEN
+            )
+        )
+
+
+def derived_references(pol: dict) -> dict[str, tuple[str, str, str]]:
+    """Every predicate's (ref, ref_stat, ref_syst) derived from its anchors: AlCap yields per thousand
+    captures divided by 1000, gamma yields in percent divided by 100, neutron means and TWIST yields as
+    printed, f2 from the printed distribution as S*F2/m1^2 with sigma linearised in independent errors on each
+    printed cell."""
+    anchors = {a["anchor_id"]: a for a in pol["anchors"]}
+    out = {}
+    for p in pol["predicates"]:
+        fam = p["family"]
+        if fam in ("alcap", "gamma", "nmean", "twist"):
+            [aid] = p["anchor_ids"]
+            a = anchors[aid]
+            div = {"alcap": 1000, "gamma": 100}.get(fam, 1)
+            ref, st = Fraction(a["value"]) / div, Fraction(a["sigma_stat"]) / div
+            sy = Fraction(a["sigma_syst"] or "0") / div
+            out[p["predicate"]] = (ref, st, sy)
+        else:
+            cells_ = [
+                (
+                    int(aid.rsplit(".", 1)[1]),
+                    Fraction(anchors[aid]["value"]),
+                    Fraction(anchors[aid]["sigma_stat"]),
+                )
+                for aid in p["anchor_ids"]
+            ]
+            S = sum(v for _, v, _ in cells_)
+            m1 = sum(k * v for k, v, _ in cells_)
+            F2 = sum(k * (k - 1) * v for k, v, _ in cells_)
+            var = sum(
+                (F2 / m1**2 + S * k * (k - 1) / m1**2 - 2 * S * F2 * k / m1**3) ** 2 * s**2
+                for k, _, s in cells_
+            )
+            with localcontext() as ctx:
+                ctx.prec = 60
+                sigma = (Decimal(var.numerator) / Decimal(var.denominator)).sqrt()
+            out[p["predicate"]] = (S * F2 / m1**2, sigma, Fraction(0))
+    return out
+
+
+def reference_mismatches(pol: dict) -> list[str]:
+    bad = []
+    for p in pol["predicates"]:
+        ref, st, sy = derived_references(pol)[p["predicate"]]
+        if p["family"] == "f2":
+            with localcontext() as ctx:
+                ctx.prec = 60
+                sig6 = str(st.quantize(Decimal("0.000001"), rounding=ROUND_HALF_EVEN))
+            if (p["ref"], p["ref_stat"], p["ref_syst"]) != (q6(ref), sig6, "0"):
+                bad.append(p["predicate"])
+        elif (Fraction(p["ref"]), Fraction(p["ref_stat"]), Fraction(p["ref_syst"])) != (ref, st, sy):
+            bad.append(p["predicate"])
+    return bad
+
+
+def test_t4_the_committed_pre_registration_is_the_pinned_file():
+    assert hashlib.sha256(PREREG.read_bytes()).hexdigest() == PREREG_SHA256
+
+
+def test_t4_the_rows_are_every_predicate_on_every_revision_and_configuration():
+    pol = policy()
+    setup = pol["setup"]
+    want = [
+        f"{p['predicate']}|{v}|{c}"
+        for p in pol["predicates"]
+        for v in setup["versions"]
+        for c in setup["configs"]
+    ]
+    assert sorted(r["row_id"] for r in pol["rows"]) == sorted(want)
+    by = {p["predicate"]: p for p in pol["predicates"]}
+    for r in pol["rows"]:
+        p = by[r["predicate"]]
+        assert r["row_id"] == f"{r['predicate']}|{r['version']}|{r['config']}"
+        assert (r["family"], r["target"], r["ref"], r["ref_stat"], r["ref_syst"]) == (
+            p["family"],
+            p["target"],
+            p["ref"],
+            p["ref_stat"],
+            p["ref_syst"],
+        )
+        assert r["rescue"] is (p["family"] == "nmean")
+    targets = {t["target"]: t["basis"] for t in setup["targets"]}
+    assert all(p["basis"] == targets[p["target"]] for p in pol["predicates"])
+
+
+def test_t4_every_reference_derives_from_its_anchors_and_a_perturbed_anchor_is_caught():
+    pol = policy()
+    assert reference_mismatches(pol) == []
+    for aid, pred in (("alcap.Ti.d", "alcap.Ti.d"), ("pn545.Ag.3", "f2.Ag"), ("nmean.Pb", "nmean.Pb")):
+        bad = copy.deepcopy(pol)
+        [a] = [x for x in bad["anchors"] if x["anchor_id"] == aid]
+        a["value"] = str(Decimal(a["value"]) + Decimal("0.001"))
+        assert reference_mismatches(bad) == [pred]
+
+
+def test_t4_the_twist_thresholds_follow_from_the_momentum_cuts_and_masses():
+    pol = policy()
+    tw = pol["twist"]
+    particle = {"twist.Al.p": "proton", "twist.Al.d": "deuteron"}
+    for p in pol["predicates"]:
+        if p["family"] != "twist":
+            continue
+        with localcontext() as ctx:
+            ctx.prec = 60
+            pc = Decimal(tw["momentum_cut_MeV_per_c"][p["predicate"]])
+            m = Decimal(tw["masses_MeV"][particle[p["predicate"]]])
+            ke = ((pc * pc + m * m).sqrt() - m).quantize(Decimal("0.000001"), rounding=ROUND_HALF_EVEN)
+        assert p["ke_lo_MeV"] == str(ke) and p["lower_edge"] == "exclusive" and p["ke_hi_MeV"] == ""
+
+
+# --------------------------------------------------------------------------------------------
+# T8 -- the rule
+# --------------------------------------------------------------------------------------------
+def sigma2(r: dict) -> Fraction:
+    return Fraction(r["ref_stat"]) ** 2 + Fraction(r["ref_syst"]) ** 2
+
+
+def placed(
+    x: Fraction,
+    r: dict,
+    *,
+    beyond: int | None = None,
+    within: int | None = None,
+    inside: bool | None = None,
+    edges: tuple[str, str] | None = None,
+) -> None:
+    """Assert, before any verdict, that a fixture sits where it claims (raises AssertionError as a fixture
+    error)."""
+    d2 = (x - Fraction(r["ref"])) ** 2
+    if beyond is not None:
+        assert d2 > beyond * beyond * sigma2(r), ("fixture inside the band", r["row_id"], beyond)
+    if within is not None:
+        assert d2 <= within * within * sigma2(r), ("fixture outside the band", r["row_id"], within)
+    if inside is not None:
+        assert edges is not None
+        assert (Fraction(edges[0]) <= x <= Fraction(edges[1])) is inside, ("fixture bracket", r["row_id"])
+
+
+def as_decimal(x: Fraction) -> str:
+    """A terminating fraction as its exact decimal string."""
+    with localcontext() as ctx:
+        ctx.prec = 80
+        d = Decimal(x.numerator) / Decimal(x.denominator)
+    assert Fraction(d) == x, "not a terminating decimal"
+    return format(d.normalize(), "f")
+
+
+def comparison_of(pol: dict, xs: dict[str, str]) -> list[dict[str, str]]:
+    out = []
+    for r in pol["rows"]:
+        lo, hi = sm.edges(r["ref"], r["ref_stat"], r["ref_syst"], "0", pol) if r["rescue"] else ("", "")
+        out.append(
+            {
+                "row_id": r["row_id"],
+                "predicate": r["predicate"],
+                "family": r["family"],
+                "target": r["target"],
+                "version": r["version"],
+                "config": r["config"],
+                "n_capt": "100000",
+                "x": xs.get(r["row_id"], r["ref"]),
+                "x_se": "0",
+                "ref": r["ref"],
+                "ref_stat": r["ref_stat"],
+                "ref_syst": r["ref_syst"],
+                "rescue_lo": lo,
+                "rescue_hi": hi,
+            }
+        )
+    return out
+
+
+def verdicts_of(pol: dict, xs: dict[str, str]) -> dict[str, tuple[str, str]]:
+    return {v.row_id: (v.verdict, v.kind) for v in sm.judge(pol, comparison_of(pol, xs))}
+
+
+def sigma_tot(r: dict) -> Decimal:
+    with localcontext() as ctx:
+        ctx.prec = 60
+        return (Decimal(r["ref_stat"]) ** 2 + Decimal(r["ref_syst"]) ** 2).sqrt()
+
+
+def q12(x: Decimal) -> str:
+    with localcontext() as ctx:
+        ctx.prec = 60
+        return str(x.quantize(Decimal("1e-12")))
+
+
+def test_t8_every_row_passes_at_its_reference_and_is_tension_at_two_and_a_half_sigma():
+    pol = policy()
+    assert {v for v, _ in verdicts_of(pol, {}).values()} == {"PASS"}
+    xs = {}
+    for r in pol["rows"]:
+        with localcontext() as ctx:
+            ctx.prec = 60
+            x = q12(Decimal(r["ref"]) + Decimal("2.5") * sigma_tot(r))
+        placed(Fraction(x), r, beyond=2, within=3)
+        xs[r["row_id"]] = x
+    got = verdicts_of(pol, xs)
+    assert set(got.values()) == {("UNQUALIFIED", "tension")}
+    assert len(got) == len(pol["rows"])
+
+
+def test_t8_rows_without_a_bracket_fail_four_sigma_away_on_either_side():
+    pol = policy()
+    rows = [r for r in pol["rows"] if not r["rescue"]]
+    assert rows
+    for sign in (1, -1):
+        xs = {}
+        for r in rows:
+            x = Fraction(r["ref"]) + sign * 4 * (Fraction(r["ref_stat"]) + Fraction(r["ref_syst"]))
+            placed(x, r, beyond=3)
+            xs[r["row_id"]] = as_decimal(x)
+        got = verdicts_of(pol, xs)
+        assert {got[r["row_id"]] for r in rows} == {("FAIL", "fail")}
+
+
+def test_t8_rows_with_a_bracket_are_efficiency_limited_inside_it_and_fail_beyond_it():
+    pol = policy()
+    rows = [r for r in pol["rows"] if r["rescue"]]
+    assert rows and all(r["family"] == "nmean" for r in rows)
+    cases = {"efficiency_limited": [], "fail": []}
+    for r in rows:
+        lo, hi = sm.edges(r["ref"], r["ref_stat"], r["ref_syst"], "0", pol)
+        s = Fraction(r["ref_stat"]) + Fraction(r["ref_syst"])
+        ref = Fraction(r["ref"])
+        for sign in (1, -1):  # ref +- 4 sigma_tot lies inside the bracket on these rows
+            with localcontext() as ctx:
+                ctx.prec = 60
+                x = Fraction(q12(Decimal(r["ref"]) + sign * 4 * sigma_tot(r)))
+            placed(x, r, beyond=3, inside=True, edges=(lo, hi))
+            cases["efficiency_limited"].append((r["row_id"], x))
+        for x in ((ref + 3 * s + Fraction(hi)) / 2, (ref - 3 * s + Fraction(lo)) / 2):
+            placed(x, r, beyond=3, inside=True, edges=(lo, hi))
+            cases["efficiency_limited"].append((r["row_id"], x))
+        for x in (Fraction(hi) + s, Fraction(lo) - s):
+            placed(x, r, beyond=3, inside=False, edges=(lo, hi))
+            cases["fail"].append((r["row_id"], x))
+    for kind, fixtures in cases.items():
+        for i in range(4 if kind == "efficiency_limited" else 2):
+            xs = {rid: as_decimal(x) for rid, x in fixtures[i :: 4 if kind == "efficiency_limited" else 2]}
+            got = verdicts_of(pol, xs)
+            assert {got[rid] for rid in xs} == {("UNQUALIFIED" if kind != "fail" else "FAIL", kind)}, (
+                kind,
+                i,
+            )
+
+
+def two_row_policy() -> dict:
+    pol = copy.deepcopy(policy())
+    base = {
+        "family": "x",
+        "target": "T",
+        "version": "V",
+        "config": "c",
+        "ref": "1",
+        "ref_stat": "0.03",
+        "ref_syst": "0.04",
+    }
+    pol["rows"] = [
+        dict(base, row_id="plain", predicate="plain", rescue=False),
+        dict(base, row_id="bracket", predicate="bracket", rescue=True),
+    ]
+    return pol
+
+
+def test_t8_the_band_and_bracket_edges_are_inside_and_one_quantum_beyond_them_is_not():
+    pol = two_row_policy()
+    assert sm.edges("1", "0.03", "0.04", "0", pol) == ("0.712640000000", "1.566875000000")
+
+    def verdict(row, x):
+        return verdicts_of(pol, {row: x})[row]
+
+    assert verdict("plain", "1.10") == ("PASS", "pass") and verdict("plain", "0.90") == ("PASS", "pass")
+    assert verdict("plain", "1.100000000001") == ("UNQUALIFIED", "tension")
+    assert verdict("plain", "1.15") == ("UNQUALIFIED", "tension")
+    assert verdict("plain", "1.150000000001") == ("FAIL", "fail")
+    assert verdict("bracket", "1.566875") == ("UNQUALIFIED", "efficiency_limited")
+    assert verdict("bracket", "0.71264") == ("UNQUALIFIED", "efficiency_limited")
+    assert verdict("bracket", "1.566875000001") == ("FAIL", "fail")
+    assert verdict("bracket", "0.712639999999") == ("FAIL", "fail")
+
+
+@pytest.mark.parametrize("fault", ["missing", "extra", "repeated", "ref", "edge", "edge on plain row"])
+def test_t8_a_roster_fault_is_refused_never_judged(fault):
+    pol = two_row_policy()
+    rows = comparison_of(pol, {})
+    if fault == "missing":
+        rows = rows[1:]
+    elif fault == "extra":
+        rows.append(dict(rows[0], row_id="other"))
+    elif fault == "repeated":
+        rows.append(dict(rows[0]))
+    elif fault == "ref":
+        rows[0]["ref"] = "1.1"
+    elif fault == "edge":
+        rows[1]["rescue_hi"] = "1.566875000002"
+    elif fault == "edge on plain row":
+        rows[0]["rescue_lo"] = "0.5"
+    with pytest.raises(sm.Refused):
+        sm.judge(pol, rows)
+
+
+def test_t8_the_regenerated_comparison_and_verdicts_are_the_committed_files(tmp_path):
+    _, _, rows, verdicts = gen.comparison()
+    gen.write_csv(tmp_path / "comparison.csv", sm.COMPARISON_COLUMNS, rows)
+    gen.write_csv(
+        tmp_path / "verdicts.csv",
+        sm.VERDICT_COLUMNS,
+        [{"row_id": v.row_id, "verdict": v.verdict, "kind": v.kind, "pull": v.pull} for v in verdicts],
+    )
+    assert (tmp_path / "comparison.csv").read_bytes() == (DATA / "comparison.csv").read_bytes()
+    assert (tmp_path / "verdicts.csv").read_bytes() == (DATA / "verdicts.csv").read_bytes()
