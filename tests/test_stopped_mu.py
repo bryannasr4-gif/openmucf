@@ -1702,6 +1702,112 @@ def test_t10_a_reproduced_chunk_that_differs_is_named():
     text = gen.render(inp).text
     assert "which the committed cell does not record" in text
     assert "gave compact text with the sha256 the committed cell records" not in text
+    assert "was run with binary sha256" not in text
+
+
+def test_t10_the_committed_reproduction_is_admitted_with_no_fault():
+    inp = fresh_inputs()
+    cells_, faults = gen.reproduction(inp)
+    assert faults == []
+    assert cells_ == list(dict.fromkeys((r["version"], r["config"], r["target"]) for r in inp.reproduced))
+    assert len(inp.reproduced) == sum(len(inp.cells[k]["chunks"]) for k in cells_)
+
+
+def test_t10_a_chunk_run_with_another_binary_is_named_without_denying_its_compact_text():
+    inp = fresh_inputs()
+    r = inp.reproduced[0]
+    want = next(b for b in inp.builds if b["tag"] == inp.policy["setup"]["tags"][r["version"]])
+    assert r["binary_sha256"] == want["rebuilt_binary_sha256"]
+    r["binary_sha256"] = "e" * 64
+    text = gen.render(inp).text
+    line = (
+        f"- {r['version']} {r['config']} {r['target']} {r['chunk']} was run with binary sha256 {'e' * 64}, "
+        f"which differs from the recorded rebuilt binary sha256 {want['rebuilt_binary_sha256']}."
+    )
+    assert line in text.splitlines()
+    assert "which the committed cell does not record" not in text
+    assert "gave compact text with the sha256 the committed cell records" not in text
+
+
+def _reproduction_fault(inp, fault: str) -> None:
+    rows = inp.reproduced
+    cell_of = {(r["version"], r["config"], r["target"]) for r in rows}
+    if fault == "empty":
+        rows.clear()
+    elif fault == "missing row":
+        del rows[1]
+    elif fault == "duplicate row":
+        rows[1] = dict(rows[0])
+    elif fault == "repeated row":
+        rows.insert(1, dict(rows[0]))
+    elif fault == "unknown cell":
+        rows.append(dict(rows[0], target="natXx"))
+    elif fault == "unknown chunk":
+        rows[1] = dict(rows[1], chunk="chunk7")
+    elif fault == "offset":
+        rows[1]["offset"] = str(int(rows[1]["offset"]) + 1)
+    elif fault == "events":
+        rows[1]["events"] = str(int(rows[1]["events"]) + 1)
+    elif fault == "coverage":
+        # every row of the cells of the second revision dropped: that revision is not covered
+        v2 = inp.policy["setup"]["versions"][1]
+        assert any(k[0] == v2 for k in cell_of)
+        rows[:] = [r for r in rows if r["version"] != v2]
+    elif fault == "no-outcome coverage":
+        # every row of the cells holding an event without an outcome replaced by the rows of a cell of the
+        # same revision, configuration and target basis that holds none, so only that coverage is lost
+        basis = {t["target"]: t["basis"] for t in inp.policy["setup"]["targets"]}
+        held = {k for k in cell_of if inp.cells[k]["n_no_outcome"]}
+        assert held
+        rows[:] = [r for r in rows if (r["version"], r["config"], r["target"]) not in held]
+        for k in held:
+            other = next(
+                key
+                for key, c in sorted(inp.cells.items())
+                if key[:2] == k[:2] and not c["n_no_outcome"] and basis[key[2]] == basis[k[2]]
+            )
+            rows += [
+                {
+                    "version": other[0],
+                    "config": other[1],
+                    "target": other[2],
+                    "chunk": ch["chunk"],
+                    "offset": str(ch["offset"]),
+                    "events": str(ch["events"]),
+                    "compact_text_sha256": ch["compact_text_sha256"],
+                    "binary_sha256": next(
+                        b["rebuilt_binary_sha256"]
+                        for b in inp.builds
+                        if b["tag"] == inp.policy["setup"]["tags"][other[0]]
+                    ),
+                }
+                for ch in inp.cells[other]["chunks"]
+            ]
+
+
+REPRODUCTION_FAULTS = [
+    ("empty", "vacuous"),
+    ("missing row", "lists the chunks"),
+    ("duplicate row", "lists the chunks"),
+    ("repeated row", "lists the chunks"),
+    ("unknown cell", "which the committed cells do not hold"),
+    ("unknown chunk", "lists the chunks"),
+    ("offset", r"chunk1 offset \d+, the committed chunk"),
+    ("events", r"chunk1 events \d+, the committed chunk"),
+    ("coverage", "do not cover the revisions"),
+    ("no-outcome coverage", "do not cover the events without an outcome of"),
+]
+
+
+@pytest.mark.parametrize("fault, match", REPRODUCTION_FAULTS, ids=[f[0] for f in REPRODUCTION_FAULTS])
+def test_t10_a_reproduction_record_the_screen_cannot_judge_is_refused_before_the_document(fault, match):
+    inp = fresh_inputs()
+    gen.reproduction(inp)
+    _reproduction_fault(inp, fault)
+    with pytest.raises(ValueError, match=match):
+        gen.reproduction(inp)
+    with pytest.raises(ValueError, match=match):
+        gen.render(inp)
 
 
 def test_t10_the_chunk_body_statement_follows_the_bodies():

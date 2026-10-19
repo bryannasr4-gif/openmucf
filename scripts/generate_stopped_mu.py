@@ -288,6 +288,64 @@ def body_pairs(inp: Inputs) -> tuple[int, int]:
     return same, differ
 
 
+def reproduction(inp: Inputs) -> tuple[list[tuple[str, str, str]], list[tuple[dict[str, str], str]]]:
+    """Admit `reproduced.csv` before the document states anything about it: the reproduced cells in file order
+    and, for every re-run chunk whose compact text or binary differs from the record, the row and ``compact``
+    or ``binary``.
+
+    Raises ``ValueError`` for a record the screen cannot judge: no row at all; a row of a cell the committed
+    cells do not hold; a reproduced cell whose rows are not exactly its committed chunks, each once; a row whose
+    offset or event count differs from its committed chunk's; or reproduced cells that do not cover every
+    revision, every configuration, every target basis and, when a committed cell holds an event without an
+    outcome, a cell that holds one."""
+    if not inp.reproduced:
+        raise ValueError("reproduced.csv lists no chunk: the reproduction screen would be vacuous")
+    setup = inp.policy["setup"]
+    tags = setup["tags"]
+    builds = {b["tag"]: b for b in inp.builds}
+    by_cell: dict[tuple[str, str, str], list[dict[str, str]]] = {}
+    for r in inp.reproduced:
+        key = (r["version"], r["config"], r["target"])
+        if key not in inp.cells:
+            raise ValueError(f"reproduced.csv names {'/'.join(key)}, which the committed cells do not hold")
+        by_cell.setdefault(key, []).append(r)
+    faults: list[tuple[dict[str, str], str]] = []
+    for key, rows in by_cell.items():
+        cell = inp.cells[key]
+        listed = [r["chunk"] for r in rows]
+        committed = [c["chunk"] for c in cell["chunks"]]
+        if sorted(listed) != sorted(committed):  # as multisets: a missing, an extra and a repeated row differ
+            raise ValueError(
+                f"reproduced.csv lists the chunks {listed} of {'/'.join(key)}, whose committed chunks are {committed}"
+            )
+        for r in rows:
+            [ch] = [c for c in cell["chunks"] if c["chunk"] == r["chunk"]]
+            for field in ("offset", "events"):
+                if r[field] != str(ch[field]):
+                    raise ValueError(
+                        f"reproduced.csv gives {'/'.join(key)} {r['chunk']} {field} {r[field]}, the committed "
+                        f"chunk {ch[field]}"
+                    )
+            if r["compact_text_sha256"] != ch["compact_text_sha256"]:
+                faults.append((r, "compact"))
+            if r["binary_sha256"] != builds[tags[r["version"]]]["rebuilt_binary_sha256"]:
+                faults.append((r, "binary"))
+    basis = {t["target"]: t["basis"] for t in setup["targets"]}
+    covered = {
+        "revisions": ({k[0] for k in by_cell}, set(setup["versions"])),
+        "configurations": ({k[1] for k in by_cell}, set(setup["configs"])),
+        "target bases": ({basis[k[2]] for k in by_cell}, set(basis.values())),
+        "events without an outcome": (
+            {bool(inp.cells[k]["n_no_outcome"]) for k in by_cell} & {True},
+            {bool(c["n_no_outcome"]) for c in inp.cells.values()} & {True},
+        ),
+    }
+    short = [what for what, (got, want) in covered.items() if got != want]
+    if short:
+        raise ValueError(f"the reproduced cells do not cover the {', '.join(short)} of the committed cells")
+    return list(by_cell), faults
+
+
 def render(inp: Inputs) -> Rendered:
     pol = inp.policy
     setup, rule = pol["setup"], pol["rule"]
@@ -945,20 +1003,7 @@ def render(inp: Inputs) -> Rendered:
     w.blank()
     tags = setup["tags"]
     builds = {b["tag"]: b for b in inp.builds}
-    rep_cells: list[tuple[str, str, str]] = []
-    for r in inp.reproduced:
-        key = (r["version"], r["config"], r["target"])
-        if key not in rep_cells:
-            rep_cells.append(key)
-    bad = []
-    for r in inp.reproduced:
-        cell = inp.cells[(r["version"], r["config"], r["target"])]
-        [ch] = [c for c in cell["chunks"] if c["chunk"] == r["chunk"]]
-        if (
-            r["compact_text_sha256"] != ch["compact_text_sha256"]
-            or r["binary_sha256"] != builds[tags[r["version"]]]["rebuilt_binary_sha256"]
-        ):
-            bad.append(r)
+    rep_cells, bad = reproduction(inp)
     w.line(
         "The cells ",
         *joined([" ".join(k) for k in rep_cells]),
@@ -971,8 +1016,8 @@ def render(inp: Inputs) -> Rendered:
         else " chunks gave compact text "
         "with the sha256 the committed cell records, so the re-run cells reduce to the committed records.",
     )
-    for r in bad:
-        w.line(
+    for r, kind in bad:
+        chunk: list[str | Slot] = [
             "- ",
             S(r["version"]),
             " ",
@@ -981,10 +1026,23 @@ def render(inp: Inputs) -> Rendered:
             S(r["target"]),
             " ",
             S(r["chunk"]),
-            " gave compact text with sha256 ",
-            S(r["compact_text_sha256"]),
-            ", which the committed cell does not record.",
-        )
+        ]
+        if kind == "compact":
+            w.line(
+                *chunk,
+                " gave compact text with sha256 ",
+                S(r["compact_text_sha256"]),
+                ", which the committed cell does not record.",
+            )
+        else:
+            w.line(
+                *chunk,
+                " was run with binary sha256 ",
+                S(r["binary_sha256"]),
+                ", which differs from the recorded rebuilt binary sha256 ",
+                S(builds[tags[r["version"]]]["rebuilt_binary_sha256"]),
+                ".",
+            )
     w.blank()
     w.line("The builds (`data/g4/stopped_mu/builds.csv`):")
     w.blank()
