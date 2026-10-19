@@ -8,6 +8,7 @@ it.
 
 from __future__ import annotations
 
+import argparse
 import ast
 import copy
 import csv
@@ -24,6 +25,7 @@ from collections import Counter
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -1937,3 +1939,543 @@ def test_t10_the_single_isotope_is_called_natural_only_when_the_natural_element_
     [al] = [r for r in inp.natural if r["z"] == "13"]
     inp.natural.append(dict(al, a="26", abundance="0.0"))
     assert sentence not in gen.render(inp).text
+
+
+# --------------------------------------------------------------------------------------------
+# T15 -- every comparator at its equality edge, and every member of a binding on its own
+# --------------------------------------------------------------------------------------------
+def binary_policy(**gamma_overrides: str) -> dict:
+    """The synthetic policy with a gamma part whose values are exact binary fractions, so that every distance
+    a comparator sees below is computed without rounding: A = 32 and 1 MeV per u make the recoil of a 2 MeV
+    transition 4 / 64 = 0.0625 MeV, so E_t = 1.9375 MeV."""
+    pol = synthetic_policy(captures=4)
+    pol["gamma"].update(
+        {
+            "lines_MeV": {"gamma.Al.1808": "2", "gamma.Al.1129": "1"},
+            "mev_per_u": "1",
+            "residual_z_a": [12, 32],
+            "tag_half_width_MeV": "0.0625",
+            "sideband_MeV": ["0.125", "0.5"],
+        }
+    )
+    pol["guards"]["per_line"].update({"fraction": "0.5", "beta_max": "0.0625"})
+    pol["guards"]["tag_width"].update({"inner_MeV": "0.125"})
+    for key, value in gamma_overrides.items():
+        pol["guards"]["tag_width" if key == "inner_MeV" else "per_line"][key] = value
+    return pol
+
+
+RES32 = 1000120320  # the (Z, A) = (12, 32) residual of the binary policy
+
+
+def at_rest_capture(*photons: float, residual: str | None = None, desc: str = "") -> str:
+    """A compact capture line: a residual at rest (beta 0, so a photon's rest-frame energy is its energy) and
+    photons of the given energies."""
+    res = residual or f"{RES32}:{h(0.0)}:{h(0.0)}:{h(0.0)}:{h(0.0)}"
+    toks = [res] + [f"22:{h(e)}:{h(e)}:{h(0.0)}:{h(0.0)}" for e in photons]
+    return f"0 C {h(0.0)} " + " ".join(toks) + desc
+
+
+def test_t15_the_binary_policy_is_exact():
+    gp = sm.gamma_params(binary_policy())
+    assert sm.e_t(gp.lines["gamma.Al.1808"], gp) == 1.9375
+    assert (gp.tag_half, gp.sb_lo, gp.sb_hi, gp.inner) == (0.0625, 0.125, 0.5, 0.125)
+    assert 1.9375 * gp.guard_beta_max + gp.tag_half == 0.18359375
+
+
+UP = math.inf
+
+
+@pytest.mark.parametrize(
+    "energy, w, s",
+    [
+        (2.0, 1, 0),  # |E* - E_t| = the tag half-width: in the tag
+        (math.nextafter(2.0, UP), 0, 0),
+        (2.0625, 0, 0),  # = the lower sideband edge, which the sideband excludes
+        (math.nextafter(2.0625, UP), 0, 1),
+        (2.4375, 0, 1),  # = the upper sideband edge, which the sideband includes
+        (math.nextafter(2.4375, UP), 0, 0),
+    ],
+)
+def test_t15_the_tag_and_sideband_edges_of_a_capture(energy, w, s):
+    gp = sm.gamma_params(binary_policy())
+    prods, _ = sm.parse_line(at_rest_capture(energy))
+    assert sm.capture_counts(prods, 1.9375, gp) == (w, s, 0.0)
+
+
+@pytest.mark.parametrize(
+    "energy, n1, n3, s",
+    [
+        (2.0, 1, 0, 0),  # = the tag half-width: in the tag
+        (math.nextafter(2.0, UP), 0, 1, 0),
+        (2.0625, 0, 1, 0),  # = the inner edge, which the inner band includes
+        (math.nextafter(2.0625, UP), 0, 0, 1),
+        (2.4375, 0, 0, 1),  # = the upper sideband edge
+        (math.nextafter(2.4375, UP), 0, 0, 0),
+    ],
+)
+def test_t15_the_bands_of_the_tag_width_gate(energy, n1, n3, s):
+    gp = sm.gamma_params(binary_policy())
+    ok, got_n1, got_n3, expect = sm.tag_width_gate([at_rest_capture(energy)], gp.lines["gamma.Al.1808"], gp)
+    assert (got_n1, got_n3, expect) == (n1, n3, gp.cont_num * s / gp.cont_den)
+    assert ok
+
+
+def test_t15_the_lower_sideband_edge_of_the_tag_width_gate_with_an_inner_band_below_it():
+    # With the committed inner edge equal to the lower sideband edge, |E* - E_t| = sb_lo falls in the inner
+    # band, and the strict lower sideband edge cannot change a count; an inner edge below the sideband
+    # exposes it.
+    gp = sm.gamma_params(binary_policy(inner_MeV="0.09375"))
+    for energy, s in ((2.0625, 0), (math.nextafter(2.0625, UP), 1)):
+        _, n1, n3, expect = sm.tag_width_gate([at_rest_capture(energy)], gp.lines["gamma.Al.1808"], gp)
+        assert (n1, n3, expect) == (0, 0, gp.cont_num * s / gp.cont_den)
+
+
+@pytest.mark.parametrize("n3, ok", [(15, True), (16, False)])
+def test_t15_the_tag_width_gate_admits_its_threshold_and_refuses_one_count_more(n3, ok):
+    gp = sm.gamma_params(binary_policy())
+    # 20 sideband photons predict a continuum of 4 x 20 / 20 = 4 counts: the threshold is
+    # 4 + 3 sqrt(4) + 5 = 15
+    lines = [at_rest_capture(*([2.25] * 20 + [2.03125] * n3))]
+    good, n1, got_n3, expect = sm.tag_width_gate(lines, gp.lines["gamma.Al.1808"], gp)
+    assert (n1, got_n3, expect) == (0, n3, 4.0)
+    assert expect + gp.k * math.sqrt(expect) + gp.offset == 15
+    assert good is ok
+
+
+def descendant(ke: float, dt: float) -> str:
+    return f" g22:{h(ke)}:{h(dt)}:{RES32}"
+
+
+@pytest.mark.parametrize(
+    "ke, dt, counted",
+    [
+        (1.9375, 1000.0, False),  # emitted exactly the window after the capture: outside it
+        (1.9375, math.nextafter(1000.0, 0.0), True),
+        (2.12109375, 10.0, True),  # |E - E_t| = E_t beta_max + the tag half-width: inside the energy window
+        (math.nextafter(2.12109375, UP), 10.0, False),
+    ],
+)
+def test_t15_the_time_and_energy_edges_of_a_descendant(ke, dt, counted):
+    gp = sm.gamma_params(binary_policy())
+    lines = [at_rest_capture(2.0, desc=descendant(ke, dt))]
+    ok, c, d, bmax = sm.line_guard(lines, gp.lines["gamma.Al.1808"], gp)
+    assert (c, d, bmax) == (1, int(counted), 0.0)
+    assert ok  # one descendant against one tagged photon is exactly the fraction 0.5
+
+
+@pytest.mark.parametrize("d_line, ok", [(1, True), (2, False)])
+def test_t15_the_descendant_fraction_is_admitted_at_its_limit(d_line, ok):
+    gp = sm.gamma_params(binary_policy())
+    lines = [at_rest_capture(2.0, desc=descendant(1.9375, 10.0) * d_line)]
+    good, c, d, bmax = sm.line_guard(lines, gp.lines["gamma.Al.1808"], gp)
+    assert (c, d, bmax) == (1, d_line, 0.0)
+    assert Fraction(d, c + d) == (Fraction(1, 2) if ok else Fraction(2, 3))
+    assert good is ok
+
+
+def test_t15_a_tagged_residual_at_exactly_the_beta_limit_is_refused():
+    # A residual of KE 0.5 MeV and momentum 4 MeV/c along z: m = (16 - 0.25) / 1 = 15.75, E = 16.25 and
+    # beta = 4 / 16.25, its velocity a single component, so |beta| is that quotient exactly.
+    beta = 4.0 / 16.25
+    g = 1 / math.sqrt(1 - beta * beta)
+    e = 1.9375 / g  # along x, perpendicular to the residual's velocity: rest-frame energy g e = E_t
+    res = f"{RES32}:{h(0.5)}:{h(0.0)}:{h(0.0)}:{h(4.0)}"
+    line = f"0 C {h(0.0)} {res} 22:{h(e)}:{h(e)}:{h(0.0)}:{h(0.0)}"
+    for beta_max, ok in ((repr(beta), False), (repr(math.nextafter(beta, UP)), True)):
+        gp = sm.gamma_params(binary_policy(beta_max=beta_max))
+        good, c, d, bmax = sm.line_guard([line], gp.lines["gamma.Al.1808"], gp)
+        assert (c, d, bmax) == (1, 0, beta)
+        assert (bmax == float(beta_max)) is (not ok)
+        assert good is ok
+
+
+@pytest.mark.parametrize("offset, kept", [(1000.0, False), (math.nextafter(1000.0, 0.0), True)])
+def test_t15_the_classifier_keeps_a_descendant_photon_only_inside_the_window(offset, kept):
+    lines = [
+        "T 0 1 0 13 - - 0x0p+0 0x0p+0\n",
+        "S 0 1 1 muMinusCaptureAtRest 0x0p+0 0x0p+0 1\n",
+        c_line(0, 1, 0, 1000120260, NC, 0.25, 0.0),
+        f"T 0 2 1 1000120260 muMinusCaptureAtRest {NC} {h(0.25)} {h(0.0)}\n",
+        f"T 0 3 2 22 - - {h(1.80874)} {h(offset)}\n",
+        "E 0 1000 3\n",
+    ]
+    got, st = run_stream(lines, "bound_decay", 1)
+    assert float(synthetic_policy()["classification"]["descendant_photon_window_ns"]) == 1000.0
+    assert (f"g22:{h(1.80874)}:{h(offset)}:1000120260" in got[1]) is kept
+    assert st["g_tokens"] == int(kept)
+
+
+def test_t15_one_extension_chunk_is_admitted_by_the_reducer():
+    parts = [
+        chunk("chunk0", 0, [cap(0, CAPTURES[0]), cap(1, CAPTURES[1])]),
+        chunk("chunk1", 2, [cap(2, CAPTURES[2]), cap(3, CAPTURES[3])], extension=True),
+    ]
+    cell, status = reduce(parts)
+    assert synthetic_policy()["guards"]["max_extension_chunks"] == 1
+    assert (status, cell["problems"], cell["extension_chunks"]) == ("accepted", [], 1)
+
+
+def _extensions(cell: dict, flags: tuple[bool, ...], count: int) -> dict:
+    for c, flag in zip(cell["chunks"], flags, strict=True):
+        c["extension"] = flag
+    cell["extension_chunks"] = count
+    return cell
+
+
+def test_t15_admission_takes_one_extension_chunk_and_refuses_two_and_a_wrong_tally():
+    assert policy()["guards"]["max_extension_chunks"] == 1
+    assert len(_a_cell()["chunks"]) == 2
+    sm.admit_cell(_extensions(_a_cell(), (False, True), 1), policy())
+    with pytest.raises(sm.Refused, match="extension chunks 2"):
+        sm.admit_cell(_extensions(_a_cell(), (True, True), 2), policy())  # the tally holds: the limit refuses
+    with pytest.raises(sm.Refused, match="extension chunks 0"):
+        sm.admit_cell(
+            _extensions(_a_cell(), (False, True), 0), policy()
+        )  # within the limit: the tally refuses
+
+
+def test_t15_a_cell_with_exactly_the_policys_captures_is_admitted():
+    cell = _a_cell()
+    n_sel = int(policy()["setup"]["captures_per_configuration"])
+    surplus = cell["captures_total"] - n_sel
+    assert surplus > 0
+    cell.update(captures_total=n_sel, decays_total=cell["decays_total"] + surplus)
+    sm.admit_cell(cell, policy())
+
+
+@pytest.mark.parametrize(
+    "d, pull",
+    [("1.005", "1.00"), ("-1.005", "-1.00"), ("1.015", "1.02"), ("-1.015", "-1.02"), ("1.025", "1.02")],
+)
+def test_t15_a_pull_exactly_at_a_midpoint_rounds_half_even(d, pull):
+    assert sm._pull(Fraction(d), Fraction(1)) == pull
+
+
+def test_t15_a_line_yield_exactly_at_its_band_is_called_consistent_with_zero_and_one_step_beyond_is_not():
+    phrase = "the net line yield consistent with zero"
+    base = rendered().text.count(phrase)
+    k = Decimal(policy()["rule"]["k_pass"])
+    for step, change in ((Decimal(0), 0), (Decimal("1e-15"), -1)):
+        inp = fresh_inputs()
+        rows = [r for r in inp.rows if r["predicate"] == "gamma.Al.1808" and r["config"] == "bertini"]
+        assert rows and all(abs(Fraction(r["x"])) <= Fraction(k) * Fraction(r["x_se"]) for r in rows)
+        for r in rows:
+            r["x"] = str(k * Decimal(r["x_se"]) + step)
+            assert (Fraction(r["x"]) == Fraction(k) * Fraction(r["x_se"])) is (step == 0)
+        rejudge(inp)
+        assert gen.render(inp).text.count(phrase) == base + change
+
+
+def test_t15_a_changed_cmakelists_is_caught_by_its_own_pin():
+    builds = read_csv(DATA / "builds.csv")
+    source = (REPO / "cpp" / "stopped_muon" / "g4muonic_transport.cc").read_bytes()
+    cmakelists = (REPO / "cpp" / "stopped_muon" / "CMakeLists.txt").read_bytes()
+    assert source_mismatches(builds, source, cmakelists) == []
+    changed = cmakelists[:10] + bytes([cmakelists[10] ^ 1]) + cmakelists[11:]
+    assert source_mismatches(builds, source, changed) == [b["tag"] for b in builds]
+
+
+#: The seven fields of a compact header, held here: (position, a value differing from the reference's).
+HEADER_FIELDS = [
+    ("#", 0, "%"),
+    ("version", 1, "B"),
+    ("config", 2, "bertini_pc"),
+    ("target", 3, "Al-27"),
+    ("offset", 4, "1"),
+    ("events", 5, "4"),
+    ("route", 6, "muonic_atom_helper"),
+]
+
+
+@pytest.mark.parametrize("field, at, value", HEADER_FIELDS, ids=[f[0] for f in HEADER_FIELDS])
+def test_t15_each_field_of_a_chunk_header_is_bound(field, at, value):
+    body = [cap(i, CAPTURES[i]) for i in range(5)]
+    good = chunk("chunk0", 0, body)
+    assert reduce([good])[1] == "accepted"
+    head = good.lines[0].split()
+    assert head[at] != value
+    head[at] = value
+    bad = sm.Chunk(chunk="chunk0", offset=0, events=5, extension=False, lines=[" ".join(head), *body])
+    with pytest.raises(sm.Refused, match="header"):
+        reduce([bad])
+
+
+def test_t15_a_chunk_with_fewer_events_than_its_header_is_refused():
+    body = [cap(i, CAPTURES[i]) for i in range(5)]
+    short = sm.Chunk(
+        chunk="chunk0",
+        offset=0,
+        events=6,
+        extension=False,
+        lines=["# A bertini natSi 0 6 bound_decay", *body],
+    )
+    with pytest.raises(sm.Refused, match="5 events, 6 in meta"):
+        reduce([short])
+
+
+#: The identity and reference fields of a comparison row that the rule binds to the pre-registration, held
+#: here, each with a value differing from the two-row policy's.
+ROSTER_FIELDS = [
+    ("predicate", "other"),
+    ("family", "y"),
+    ("target", "U"),
+    ("version", "W"),
+    ("config", "d"),
+    ("ref", "1.1"),
+    ("ref_stat", "0.031"),
+    ("ref_syst", "0.041"),
+]
+
+
+@pytest.mark.parametrize("field, value", ROSTER_FIELDS, ids=[f[0] for f in ROSTER_FIELDS])
+def test_t15_each_roster_field_of_a_row_is_bound_to_the_pre_registration(field, value):
+    pol = two_row_policy()
+    rows = comparison_of(pol, {})
+    sm.judge(pol, rows)
+    assert rows[0]["row_id"] == "plain" and rows[0][field] != value
+    rows[0][field] = value
+    with pytest.raises(sm.Refused, match=f"plain: {field} "):
+        sm.judge(pol, rows)
+
+
+@pytest.mark.parametrize("fault", ["extra column", "columns reordered", "upper edge on a plain row"])
+def test_t15_a_comparison_row_of_another_shape_is_refused(fault):
+    pol = two_row_policy()
+    rows = comparison_of(pol, {})
+    if fault == "extra column":
+        rows[0]["note"] = ""
+    elif fault == "columns reordered":
+        rows[0] = dict(reversed(list(rows[0].items())))
+    else:
+        rows[0]["rescue_hi"] = "1.5"
+    with pytest.raises(sm.Refused, match="rescue edges on a row" if fault.startswith("upper") else "columns"):
+        sm.judge(pol, rows)
+
+
+def test_t15_a_cell_outside_the_policys_matrix_is_refused(tmp_path):
+    lines = (DATA / "cells.jsonl").read_text(encoding="utf-8").splitlines()
+    extra = json.loads(lines[0])
+    extra["target"] = "natZz"
+    sm.admit_cell(extra, policy())
+    (tmp_path / "extra.jsonl").write_text("\n".join([*lines, json.dumps(extra)]) + "\n", encoding="utf-8")
+    with pytest.raises(sm.Refused, match=r"extra \[\('[^']+', '[^']+', 'natZz'\)\]"):
+        sm.load_cells(tmp_path / "extra.jsonl", policy())
+
+
+#: The phrases the document never uses, held here independently of the generator.
+FORBIDDEN_PHRASES = (
+    "first",
+    "nobody noticed",
+    "no published comparison",
+    "still unfixed",
+    "caused",
+    "introduced",
+    "regression",
+    "absent",
+    "every physics list",
+    "all physics lists",
+)
+
+
+@pytest.mark.parametrize("phrase", FORBIDDEN_PHRASES)
+def test_t15_each_excluded_phrase_is_found_on_its_own(phrase):
+    assert gen.forbidden_hits(f"A sentence with {phrase.upper()} in it.") == [phrase]
+    assert gen.forbidden_hits(f"A sentence with x{phrase}x in it.") == []
+
+
+@pytest.mark.parametrize("field", ["x", "x_se", "ref", "ref_stat", "ref_syst"])
+def test_t15_a_revision_pair_that_differs_in_one_field_alone_is_listed(field):
+    inp = fresh_inputs()
+    v1, v2 = inp.policy["setup"]["versions"]
+    rid1, rid2 = f"alcap.Al.p|{v1}|bertini", f"alcap.Al.p|{v2}|bertini"
+    assert gen.revision_pairs(inp)[1] == []
+    before = {v.row_id: v.verdict for v in inp.verdicts}[rid2]
+    [row] = [r for r in inp.rows if r["row_id"] == rid2]
+    assert not row["rescue_lo"]
+    new = str(Decimal(row[field]) + Decimal("1e-9"))
+    row[field] = new
+    if field.startswith("ref"):
+        [fr] = [r for r in inp.policy["rows"] if r["row_id"] == rid2]
+        fr[field] = new  # the reference cell of this row's own pre-registration row, so the rule judges it
+    rejudge(inp)
+    assert {v.row_id: v.verdict for v in inp.verdicts}[rid2] == before  # the verdict does not change
+    assert gen.revision_pairs(inp)[1] == [rid1]
+
+
+def al27_width_chunk() -> sm.Chunk:
+    """Four Al-27 captures, each with a neutron and two photons 2 keV from E_t in the rest frame of a residual
+    at rest: 8 counts between the tag and the inner edge against an expected continuum of 0 and an offset of
+    5."""
+    gp = sm.gamma_params(synthetic_policy())
+    e = sm.e_t(gp.lines["gamma.Al.1808"], gp) + 0.002
+    res = f"1000120260:{h(0.0)}:{h(0.0)}:{h(0.0)}:{h(0.0)} 2112:{h(1.0)}:{P0.replace(' ', ':')}"
+    body = [
+        f"{i} C {h(0.0)} {res} " + " ".join([f"22:{h(e)}:{h(e)}:{h(0.0)}:{h(0.0)}"] * 2) for i in range(4)
+    ]
+    return chunk("chunk0", 0, body, target="Al-27")
+
+
+def test_t15_a_refused_tag_width_gate_refuses_the_reduced_cell():
+    cell, status = reduce([al27_width_chunk()], policy=synthetic_policy(captures=4), target="Al-27")
+    assert cell["line_guard"]["gamma.Al.1808"]["ok"] is True
+    assert cell["tag_width"]["gamma.Al.1808"] == {
+        "ok": False,
+        "n_1keV": 0,
+        "n_1to3keV": 8,
+        "continuum_expected": 0.0,
+    }
+    assert status == "refused"
+    assert cell["problems"] == ["tag-width gate refused gamma.Al.1808: n1=0 n3=8 expected 0.0"]
+
+
+# ---- the driver, its harness replaced by a stand-in that writes what the harness writes
+class StandIn:
+    """A stand-in for the harness: the DATASET lines of the binding, and on a run a records file of
+    ``records`` (one file per name in ``files``), config.txt and the return code ``rc``."""
+
+    def __init__(
+        self, records: list[str], datasets: str, rc: int = 0, files: tuple[str, ...] = ("records-0.txt",)
+    ):
+        self.records, self.datasets, self.rc, self.files = records, datasets, rc, files
+
+    def run(self, argv, **kwargs):
+        if "--print-datasets" in argv:
+            return subprocess.CompletedProcess(argv, 0, stdout=self.datasets, stderr="")
+        out = Path(argv[argv.index("--out") + 1])
+        for name in self.files:
+            (out / name).write_text("".join(self.records), encoding="ascii", newline="\n")
+        (out / "config.txt").write_text(self.datasets, encoding="utf-8")
+        return subprocess.CompletedProcess(argv, self.rc)
+
+
+def stand_in(monkeypatch, records, **kwargs) -> StandIn:
+    pol = synthetic_policy(captures=4)
+    fake = StandIn(records, dataset_text(drv.binding(pol, "A", "/data")), **kwargs)
+    monkeypatch.setattr(drv, "subprocess", SimpleNamespace(run=fake.run, STDOUT=subprocess.STDOUT))
+    return fake
+
+
+def chunk_kwargs(tmp_path: Path) -> dict:
+    binary = tmp_path / "g4muonic_transport"
+    binary.write_bytes(b"a stand-in binary")
+    return dict(
+        binary=str(binary),
+        install="/inst",
+        data="/data",
+        work=tmp_path / "work",
+        version="A",
+        config="bertini",
+        target="Al-27",
+        offset=0,
+        events=4,
+        chunk=0,
+    )
+
+
+def test_t15_the_driver_runs_a_chunk_through_the_stand_in(tmp_path, monkeypatch):
+    stand_in(monkeypatch, al27_capture_stream())
+    meta = drv.run_chunk(synthetic_policy(captures=4), **chunk_kwargs(tmp_path))
+    assert (meta["stats"]["C"], meta["stats"]["D"], meta["stats"]["X"]) == (4, 0, 0)
+    with pytest.raises(drv.Refusal, match="chunk directory exists"):
+        drv.run_chunk(synthetic_policy(captures=4), **chunk_kwargs(tmp_path))
+
+
+@pytest.mark.parametrize(
+    "fault, kwargs, match",
+    [
+        ("harness rc", {"rc": 1}, "harness rc 1"),
+        ("no record file", {"files": ()}, "expected one worker record file"),
+        (
+            "two record files",
+            {"files": ("records-0.txt", "records-1.txt")},
+            "expected one worker record file",
+        ),
+    ],
+    ids=["harness rc", "no record file", "two record files"],
+)
+def test_t15_the_driver_refuses_a_failed_run_or_an_unexpected_record_file(
+    tmp_path, monkeypatch, fault, kwargs, match
+):
+    stand_in(monkeypatch, al27_capture_stream(), **kwargs)
+    with pytest.raises(drv.Refusal, match=match):
+        drv.run_chunk(synthetic_policy(captures=4), **chunk_kwargs(tmp_path))
+
+
+def committed_record(tmp_path: Path, monkeypatch, records: list[str]) -> tuple[Path, Path, str]:
+    """(pre-registration file, cells file, status): the cell the stand-in's records reduce to, written as the
+    committed record a reproduction compares with."""
+    pol = synthetic_policy(captures=4)
+    prereg = tmp_path / "prereg.json"
+    prereg.write_text(json.dumps(pol), encoding="utf-8")
+    stand_in(monkeypatch, records)
+    kw = chunk_kwargs(tmp_path)
+    kw["work"] = tmp_path / "first"
+    meta = drv.run_chunk(pol, **kw)
+    cell, status = drv.reduce_work(pol, kw["work"], "A", "bertini", "Al-27", [meta])
+    cell["chunks"][0]["compact_text_sha256"] = meta["compact_text_sha256"]
+    cells_file = tmp_path / "cells.jsonl"
+    cells_file.write_text(json.dumps(cell) + "\n", encoding="utf-8")
+    return prereg, cells_file, status
+
+
+def reproduce_args(tmp_path: Path, prereg: Path, cells_file: Path, cell: str = "A/bertini/Al-27"):
+    return argparse.Namespace(
+        prereg=str(prereg),
+        cell=cell,
+        cells=str(cells_file),
+        binary=str(tmp_path / "g4muonic_transport"),
+        install="/inst",
+        data="/data",
+        work=str(tmp_path / "again"),
+        out=str(tmp_path / "reproduced.csv"),
+    )
+
+
+def test_t15_a_reproduction_equal_field_by_field_but_refused_reports_its_status(
+    tmp_path, monkeypatch, capsys
+):
+    prereg, cells_file, status = committed_record(tmp_path, monkeypatch, al27_capture_stream())
+    assert status == "refused"  # the line guard refuses the descendant of event 0
+    assert drv.reproduce(reproduce_args(tmp_path, prereg, cells_file)) == 1
+    out = capsys.readouterr().out
+    assert [ln for ln in out.splitlines() if ln.startswith("DIFFERS")] == [
+        "DIFFERS A/bertini/Al-27 status refused"
+    ]
+
+
+def test_t15_a_reproduction_of_an_accepted_cell_is_reproduced(tmp_path, monkeypatch, capsys):
+    clean = edited(without(al27_capture_stream(), "T 0 9 3 22 "), "E 0 1000 ", 3, "7")
+    prereg, cells_file, status = committed_record(tmp_path, monkeypatch, clean)
+    assert status == "accepted"
+    assert drv.reproduce(reproduce_args(tmp_path, prereg, cells_file)) == 0
+    assert "REPRODUCED A/bertini/Al-27: 1 chunks" in capsys.readouterr().out
+
+
+def test_t15_the_driver_refuses_a_cell_it_cannot_name_or_find(tmp_path, monkeypatch):
+    prereg, cells_file, _ = committed_record(tmp_path, monkeypatch, al27_capture_stream())
+    with pytest.raises(drv.Refusal, match="--cell is"):
+        drv.reproduce(reproduce_args(tmp_path, prereg, cells_file, cell="A/bertini"))
+    with pytest.raises(drv.Refusal, match="no committed cell A/bertini/natSi"):
+        drv.reproduce(reproduce_args(tmp_path, prereg, cells_file, cell="A/bertini/natSi"))
+
+
+def test_t15_the_refusals_that_need_no_records(tmp_path):
+    with pytest.raises(sm.Refused, match="route must be one of"):
+        sm.classify_stream(
+            iter([]),
+            io.StringIO(),
+            route="bound",
+            version="A",
+            config="bertini",
+            target="Al-27",
+            offset=0,
+            events=0,
+            policy=synthetic_policy(),
+        )
+    with pytest.raises(ValueError, match="not a capture line"):
+        sm.parse_line("0 D")
+    with pytest.raises(drv.Refusal, match="capture fraction 0"):
+        drv.extension_events(synthetic_policy(), 0, 100)
+    with pytest.raises(drv.Refusal, match="no Geant4 CMake package"):
+        drv.build(argparse.Namespace(install=str(tmp_path), build=str(tmp_path / "b"), jobs=1))
