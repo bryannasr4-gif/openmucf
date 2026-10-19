@@ -16,7 +16,11 @@ float)::
     E <event> <seed> <tracks>
 
 S lines are written for the muon and for muonic atoms only, each followed by the C lines of its secondaries;
-the E line closes an event.
+the E line closes an event. Every integer field is written in canonical decimal (no sign on a positive value,
+no leading zero) and every float as C99 ``%a`` output. The classifier refuses (``Malformed``) a stream that
+departs from this: a field count or a field lexeme other than these, an S line not followed by exactly its
+``<n secondaries>`` C lines of its own track numbered 0, 1, ..., or an E line whose ``<tracks>`` differs from
+the number of T lines of its event.
 
 Compact format (one line per event, the event number global: chunk offset + local event id), opened by the
 header ``# <version> <config> <target> <offset> <events> <route>``::
@@ -39,6 +43,7 @@ import hashlib
 import json
 import math
 import random
+import re
 from collections import Counter
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
@@ -97,8 +102,8 @@ class _Classes:
     capture_process: str
     product_suffix: str
     decay_suffix: str
-    helper_decay_pdg: str
-    photon_pdg: str
+    helper_decay_pdg: int
+    photon_pdg: int
     nucleus_pdg_min: int
     window_ns: float
 
@@ -109,11 +114,36 @@ def _classes(policy: Policy) -> _Classes:
         c["capture_process"],
         c["product_model_suffix"],
         c["decay_model_suffix"],
-        str(c["helper_decay_pdg"]),
-        str(c["photon_pdg"]),
+        int(c["helper_decay_pdg"]),
+        int(c["photon_pdg"]),
         int(c["nucleus_pdg_min"]),
         float(c["descendant_photon_window_ns"]),
     )
+
+
+#: The fields after the kind of each record line: i an integer in canonical decimal, h a C99 hexadecimal float
+#: as ``%a`` writes it, w a word.
+RECORD_FIELDS = {"T": "iiiiwwhh", "S": "iiiwhhi", "C": "iiiiwhhhhh", "E": "iii"}
+_INT = re.compile(r"0|-?[1-9][0-9]*")
+_HEX = re.compile(r"-?0x[0-9a-f]+(?:\.[0-9a-f]+)?p[+-][0-9]+")
+
+
+def record_fields(line: str) -> list[str]:
+    """The fields of one record line, its kind first, each checked against ``RECORD_FIELDS``."""
+    p = line.split()
+    layout = RECORD_FIELDS.get(p[0]) if p else None
+    if layout is None:
+        raise Malformed(f"unknown record line {line[:60]!r}")
+    if len(p) != len(layout) + 1:
+        if p[0] == "C" and len(p) == 8:
+            raise Malformed(f"C-line without momenta ({len(p)} fields)")
+        raise Malformed(f"{p[0]}-line with {len(p)} fields")
+    for i, (tok, kind) in enumerate(zip(p[1:], layout, strict=True), 1):
+        if kind == "i" and not _INT.fullmatch(tok):
+            raise Malformed(f"{p[0]}-line field {i} {tok!r} is not an integer in canonical decimal")
+        if kind == "h" and not _HEX.fullmatch(tok):
+            raise Malformed(f"{p[0]}-line field {i} {tok!r} is not a C99 hexadecimal float")
+    return p
 
 
 def new_stats() -> dict[str, Any]:
@@ -146,29 +176,47 @@ def classify_event(
     st: dict[str, Any],
     policy: Policy,
     classes: _Classes | None = None,
+    tracks: int | None = None,
 ) -> str:
-    """The compact line of one event from its T/S/C record lines (``ev`` is the run's local event id)."""
+    """The compact line of one event from its T/S/C record lines (``ev`` is the run's local event id;
+    ``tracks``, the count of its E line, must equal the number of its T lines when given)."""
     k = classes or _classes(policy)
     gev = offset + ev
     steps: list[list[Any]] = []  # [track, process, [C fields]]
     tlines: list[list[str]] = []
+    declared: int | None = None  # the secondaries of the S line whose C lines may follow; None after a T line
+
+    def close_step() -> None:
+        if declared is not None and len(steps[-1][2]) != declared:
+            raise Malformed(f"S-line declares {declared} secondaries, {len(steps[-1][2])} C-lines follow it")
+
     for line in lines:
         st["lines"][line[0]] += 1
-        p = line.split()
+        p = record_fields(line)
+        if p[0] == "E":
+            raise Malformed("E-line inside an event")
         if int(p[1]) != ev:
             raise Malformed(f"line of event {p[1]} inside event {ev}")
+        if p[0] == "C":
+            if declared is None or steps[-1][0] != int(p[2]):
+                raise Malformed("C-line not after its S-line")
+            cs = steps[-1][2]
+            if int(p[3]) != len(cs):
+                raise Malformed(f"C-line numbered {p[3]} where {len(cs)} is next")
+            if len(cs) == declared:
+                raise Malformed(f"more C-lines than the {declared} secondaries the S-line declares")
+            cs.append(p)
+            continue
+        close_step()
         if p[0] == "S":
             steps.append([int(p[2]), p[4], []])
-        elif p[0] == "C":
-            if len(p) != 11:
-                raise Malformed(f"C-line without momenta ({len(p)} fields)")
-            if not steps or steps[-1][0] != int(p[2]):
-                raise Malformed("C-line not after its S-line")
-            steps[-1][2].append(p)
+            declared = int(p[7])
         else:
-            if len(p) != 9:
-                raise Malformed(f"T-line with {len(p)} fields")
+            declared = None
             tlines.append(p)
+    close_step()
+    if tracks is not None and len(tlines) != tracks:
+        raise Malformed(f"E-line of event {ev} counts {tracks} tracks, {len(tlines)} T-lines read")
     if route == "bound_decay":
         caps = [s for s in steps if s[0] == 1 and s[1] == k.capture_process]
         if len(caps) != 1:
@@ -198,7 +246,7 @@ def classify_event(
             st["capture_step_models"][p[5]] += 1
         if not prods:
             return _x(gev, "no_products", st)
-        if any(p[4] == k.helper_decay_pdg for p in prods):
+        if any(int(p[4]) == k.helper_decay_pdg for p in prods):
             for p in prods:
                 st["pdg_D"][int(p[4])] += 1
             st["D"] += 1
@@ -210,16 +258,16 @@ def classify_event(
     for p in prods:
         st["pdg_C"][int(p[4])] += 1
         toks.append(f"{p[4]}:{p[6]}:{p[8]}:{p[9]}:{p[10]}")
-    nuclei = {}
+    nuclei: dict[int, str] = {}
     for t in tlines:
         if int(t[3]) == cap_track and int(t[4]) >= k.nucleus_pdg_min:
-            nuclei[t[2]] = t[4]
+            nuclei[int(t[2])] = t[4]
     if nuclei:
         for t in tlines:
-            if t[4] == k.photon_pdg and t[3] in nuclei:
+            if int(t[4]) == k.photon_pdg and int(t[3]) in nuclei:
                 dt = float.fromhex(t[8]) - t_cap
                 if dt < k.window_ns:
-                    toks.append(f"g22:{t[7]}:{dt.hex()}:{nuclei[t[3]]}")
+                    toks.append(f"g22:{t[7]}:{dt.hex()}:{nuclei[int(t[3])]}")
                     st["g_tokens"] += 1
     st["C"] += 1
     return f"{gev} C {t_cap.hex()} " + " ".join(toks)
@@ -243,8 +291,10 @@ def classify_stream(
 ) -> dict[str, Any]:
     """Classify a record stream into compact lines written to ``out`` (header first); return the tallies.
 
-    Raises ``Malformed`` for a line of an unknown kind, an event out of order, record lines after the last E
-    line, a count of events other than ``events`` or any line that does not parse."""
+    Raises ``Malformed`` for a line of an unknown kind or that does not follow the record format (the field
+    counts and lexemes, the C lines of each S line and the track count of each E line; see the module
+    docstring), an event out of order, record lines after the last E line or a count of events other than
+    ``events``. A malformed stream stops the classification: no compact line is written for its event."""
     if route not in ROUTES:
         raise Refused(f"route must be one of {ROUTES}")
     k = _classes(policy)
@@ -257,10 +307,11 @@ def classify_stream(
             st["bytes"] += len(line)
             c = line[0]
             if c == "E":
-                ev = int(line.split()[1])
+                p = record_fields(line)
+                ev = int(p[1])
                 if ev != expect_ev:
                     raise Malformed(f"event {ev} where {expect_ev} expected")
-                out.write(classify_event(buf, ev, offset, route, st, policy, k) + "\n")
+                out.write(classify_event(buf, ev, offset, route, st, policy, k, tracks=int(p[3])) + "\n")
                 st["events"] += 1
                 expect_ev += 1
                 buf = []

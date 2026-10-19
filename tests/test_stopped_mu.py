@@ -202,11 +202,14 @@ def bound_decay_events() -> tuple[list[str], list[str]]:
         c_line(0, 1, 1, 2112, NC, 2.5, 800.0, f"{h(1.0)} {h(2.0)} {h(3.0)}"),
         c_line(0, 1, 2, 1000120260, NC, 0.25, 700.0, f"{h(-4.0)} {h(0.5)} {h(0.0)}"),
         c_line(0, 1, 3, 22, NC, 1.5, 750.0, f"{h(0.0)} {h(1.5)} {h(0.0)}"),
+        f"T 0 5 1 22 muMinusCaptureAtRest {NC} {h(1.5)} {h(750.0)}\n",
+        f"T 0 4 1 2112 muMinusCaptureAtRest {NC} {h(2.5)} {h(800.0)}\n",
         f"T 0 3 1 1000120260 muMinusCaptureAtRest {NC} {h(0.25)} {h(700.0)}\n",
         f"T 0 9 3 22 - - {h(1.80874)} {h(1100.0)}\n",
         f"T 0 10 3 22 - - {h(1.12959)} {h(2200.0)}\n",
+        f"T 0 2 1 11 muMinusCaptureAtRest {EM} {h(0.01)} {h(0.0)}\n",
         f"T 0 11 1 22 - - {h(0.4)} {h(710.0)}\n",
-        "E 0 1000 6\n",
+        "E 0 1000 8\n",
     ]
     want.append(
         f"0 C {h(700.0)} 2112:{h(2.5)}:{h(1.0)}:{h(2.0)}:{h(3.0)} "
@@ -215,29 +218,37 @@ def bound_decay_events() -> tuple[list[str], list[str]]:
     )
     # event 1: a decay in orbit
     lines += [
+        "T 1 1 0 13 - - 0x0p+0 0x0p+0\n",
         "S 1 1 1 muMinusCaptureAtRest 0x0p+0 0x0p+0 2\n",
         c_line(1, 1, 0, 11, DIO, 40.0, 900.0),
         c_line(1, 1, 1, 14, DIO, 30.0, 900.0),
+        f"T 1 3 1 14 muMinusCaptureAtRest {DIO} {h(30.0)} {h(900.0)}\n",
+        f"T 1 2 1 11 muMinusCaptureAtRest {DIO} {h(40.0)} {h(900.0)}\n",
         "E 1 1001 3\n",
     ]
     want.append("1 D")
     # event 2: both a capture product and a decay product -> X
     lines += [
+        "T 2 1 0 13 - - 0x0p+0 0x0p+0\n",
         "S 2 1 1 muMinusCaptureAtRest 0x0p+0 0x0p+0 2\n",
         c_line(2, 1, 0, 2112, NC, 1.0, 900.0),
         c_line(2, 1, 1, 11, DIO, 30.0, 900.0),
+        f"T 2 3 1 11 muMinusCaptureAtRest {DIO} {h(30.0)} {h(900.0)}\n",
+        f"T 2 2 1 2112 muMinusCaptureAtRest {NC} {h(1.0)} {h(900.0)}\n",
         "E 2 1002 3\n",
     ]
     want.append("2 X capture_and_dio")
     # event 3: only the electromagnetic cascade -> no outcome
     lines += [
+        "T 3 1 0 13 - - 0x0p+0 0x0p+0\n",
         "S 3 1 1 muMinusCaptureAtRest 0x0p+0 0x0p+0 1\n",
         c_line(3, 1, 0, 22, EM, 0.3, 0.0),
+        f"T 3 2 1 22 muMinusCaptureAtRest {EM} {h(0.3)} {h(0.0)}\n",
         "E 3 1003 2\n",
     ]
     want.append("3 X no_outcome")
     # event 4: the muon never reaches the capture process
-    lines += ["S 4 1 1 Decay 0x0p+0 0x0p+0 0\n", "E 4 1004 1\n"]
+    lines += ["T 4 1 0 13 - - 0x0p+0 0x0p+0\n", "S 4 1 1 Decay 0x0p+0 0x0p+0 0\n", "E 4 1004 1\n"]
     want.append("4 X capture_steps=0")
     return lines, want
 
@@ -248,32 +259,49 @@ def helper_events() -> tuple[list[str], list[str]]:
     atom = "MuAtom"
     # event 0: the muonic atom (track 2) captures: products of its LAST step
     lines += [
+        "T 0 1 0 13 - - 0x0p+0 0x0p+0\n",
         "S 0 1 1 muMinusAtomicCaptureAtRest 0x0p+0 0x0p+0 1\n",
         c_line(0, 1, 0, 1000130279, atom, 0.0, 0.0),
+        f"T 0 2 1 1000130279 muMinusAtomicCaptureAtRest {atom} {h(0.0)} {h(0.0)}\n",
         "S 0 2 1 Transportation 0x0p+0 0x0p+0 1\n",
         c_line(0, 2, 0, 22, "x", 0.1, 5.0),
         "S 0 2 2 muonicAtomDecay 0x0p+0 0x0p+0 2\n",
         c_line(0, 2, 0, 2112, "model_G4MuMinusCapturePrecompound", 3.0, 600.0),
         c_line(0, 2, 1, 14, "model_G4MuMinusCapturePrecompound", 90.0, 500.0),
-        "E 0 1000 4\n",
+        f"T 0 5 2 14 muonicAtomDecay model_G4MuMinusCapturePrecompound {h(90.0)} {h(500.0)}\n",
+        f"T 0 4 2 2112 muonicAtomDecay model_G4MuMinusCapturePrecompound {h(3.0)} {h(600.0)}\n",
+        f"T 0 3 2 22 Transportation x {h(0.1)} {h(5.0)}\n",
+        "E 0 1000 5\n",
     ]
     want.append(f"0 C {h(500.0)} 2112:{h(3.0)}:{P0.replace(' ', ':')} 14:{h(90.0)}:{P0.replace(' ', ':')}")
     # event 1: a decay, told by its electron antineutrino (PDG -12)
     lines += [
+        "T 1 1 0 13 - - 0x0p+0 0x0p+0\n",
+        f"T 1 2 1 1000130279 muMinusAtomicCaptureAtRest {atom} {h(0.0)} {h(0.0)}\n",
         "S 1 2 1 muonicAtomDecay 0x0p+0 0x0p+0 2\n",
         c_line(1, 2, 0, 11, "model_DIO", 40.0, 900.0),
         c_line(1, 2, 1, -12, "model_DIO", 30.0, 900.0),
-        "E 1 1001 3\n",
+        f"T 1 4 2 -12 muonicAtomDecay model_DIO {h(30.0)} {h(900.0)}\n",
+        f"T 1 3 2 11 muonicAtomDecay model_DIO {h(40.0)} {h(900.0)}\n",
+        "E 1 1001 4\n",
     ]
     want.append("1 D")
     # event 2: no products
-    lines += ["S 2 2 1 muonicAtomDecay 0x0p+0 0x0p+0 0\n", "E 2 1002 1\n"]
+    lines += [
+        "T 2 1 0 13 - - 0x0p+0 0x0p+0\n",
+        f"T 2 2 1 1000130279 muMinusAtomicCaptureAtRest {atom} {h(0.0)} {h(0.0)}\n",
+        "S 2 2 1 muonicAtomDecay 0x0p+0 0x0p+0 0\n",
+        "E 2 1002 2\n",
+    ]
     want.append("2 X no_products")
     # event 3: two muonic-atom tracks
     lines += [
+        "T 3 1 0 13 - - 0x0p+0 0x0p+0\n",
+        f"T 3 2 1 1000130279 muMinusAtomicCaptureAtRest {atom} {h(0.0)} {h(0.0)}\n",
         "S 3 2 1 muonicAtomDecay 0x0p+0 0x0p+0 0\n",
+        f"T 3 3 1 1000130279 muMinusAtomicCaptureAtRest {atom} {h(0.0)} {h(0.0)}\n",
         "S 3 3 1 muonicAtomDecay 0x0p+0 0x0p+0 0\n",
-        "E 3 1003 2\n",
+        "E 3 1003 3\n",
     ]
     want.append("3 X atom_tracks=2")
     return lines, want
@@ -347,6 +375,244 @@ def test_t5_malformed_streams_are_refused(case):
         lines.insert(0, c_line(0, 1, 0, 2112, NC, 1.0, 1.0))
     with pytest.raises(sm.Malformed, match="without momenta" if case == "no momenta" else None):
         run_stream(lines, "bound_decay", events)
+
+
+def record_count_mismatches(lines: list[str]) -> tuple[int, int, int]:
+    """(S lines whose C-line count differs from the count they declare, S lines whose C lines are not
+    numbered 0, 1, ..., E lines whose track count differs from the T lines of their event), counted
+    independently of the classifier: a C line belongs to the last S line of its event, whatever lies between
+    them."""
+    s_bad = k_bad = e_bad = 0
+    t = 0
+    step: list[str] | None = None
+    ks: list[int] = []
+
+    def end_step() -> None:
+        nonlocal s_bad, k_bad
+        if step is not None:
+            s_bad += int(step[7]) != len(ks)
+            k_bad += ks != list(range(len(ks)))
+
+    for line in lines:
+        f = line.split()
+        if f[0] == "T":
+            t += 1
+        elif f[0] == "S":
+            end_step()
+            step, ks = f, []
+        elif f[0] == "C":
+            ks.append(int(f[3]))
+        elif f[0] == "E":
+            end_step()
+            step, ks = None, []
+            e_bad += int(f[3]) != t
+            t = 0
+    return s_bad, k_bad, e_bad
+
+
+def test_t5_the_hand_fixtures_follow_the_record_counts():
+    for lines, _ in (bound_decay_events(), helper_events()):
+        assert record_count_mismatches(lines) == (0, 0, 0)
+
+
+def edited(lines: list[str], prefix: str, field: int, value: str) -> list[str]:
+    """``lines`` with field ``field`` of the one line starting with ``prefix`` set to ``value``."""
+    [i] = [j for j, ln in enumerate(lines) if ln.startswith(prefix)]
+    f = lines[i].split()
+    f[field] = value
+    return [*lines[:i], " ".join(f) + "\n", *lines[i + 1 :]]
+
+
+def without(lines: list[str], prefix: str) -> list[str]:
+    [i] = [j for j, ln in enumerate(lines) if ln.startswith(prefix)]
+    return lines[:i] + lines[i + 1 :]
+
+
+def missing_neutron_renumbered(lines: list[str]) -> list[str]:
+    """Event 0 without its neutron C line, the C lines after it renumbered so the ordinals stay 0, 1, 2."""
+    out = without(lines, "C 0 1 1 2112 ")
+    out = edited(out, "C 0 1 2 1000120260 ", 3, "1")
+    return edited(out, "C 0 1 3 22 ", 3, "2")
+
+
+def duplicate_neutron(lines: list[str]) -> list[str]:
+    """Event 0 with its photon C line replaced by a copy of its neutron C line: the S line's count holds."""
+    [n] = [ln for ln in lines if ln.startswith("C 0 1 1 2112 ")]
+    [i] = [j for j, ln in enumerate(lines) if ln.startswith("C 0 1 3 22 ")]
+    return [*lines[:i], n, *lines[i + 1 :]]
+
+
+def t_line_between_s_and_c(lines: list[str]) -> list[str]:
+    """Event 1 with the muon's T line moved from before its S line to between the S line and its C lines."""
+    out = without(lines, "T 1 1 0 13 ")
+    i = out.index("S 1 1 1 muMinusCaptureAtRest 0x0p+0 0x0p+0 2\n")
+    return [*out[: i + 1], "T 1 1 0 13 - - 0x0p+0 0x0p+0\n", *out[i + 1 :]]
+
+
+def renumbered_event(lines: list[str], old: str, new: str) -> list[str]:
+    """Every line of event ``old``, its E line included, renumbered to ``new``."""
+    out = []
+    for ln in lines:
+        f = ln.split()
+        out.append(" ".join([f[0], new, *f[2:]]) + "\n" if f[1] == old else ln)
+    return out
+
+
+#: (name, the corrupted bound_decay stream, the clause that must refuse it, the independent record counts of
+#: the corrupted stream or None). Each corruption keeps every other count, ordinal and field of the stream
+#: consistent, so only its own clause can refuse it.
+RECORD_FAULTS = [
+    (
+        "missing C, ordinals renumbered",
+        missing_neutron_renumbered,
+        "declares 4 secondaries, 3 C-lines",
+        (1, 0, 0),
+    ),
+    ("duplicate C, S count unchanged", duplicate_neutron, "C-line numbered 1 where 3 is next", (0, 1, 0)),
+    (
+        "missing T, E count unchanged",
+        lambda ls: without(ls, "T 0 9 3 22 "),
+        "counts 8 tracks, 7 T-lines",
+        (0, 0, 1),
+    ),
+    (
+        "photon PDG +22",
+        lambda ls: edited(ls, "T 0 9 3 22 ", 4, "+22"),
+        r"'\+22' is not an integer",
+        (0, 0, 0),
+    ),
+    (
+        "nucleus track ID +3",
+        lambda ls: edited(ls, "T 0 3 1 1000120260 ", 2, "+3"),
+        r"'\+3' is not an integer",
+        (0, 0, 0),
+    ),
+    ("parent ID +3", lambda ls: edited(ls, "T 0 9 3 22 ", 3, "+3"), r"'\+3' is not an integer", (0, 0, 0)),
+    ("leading zero", lambda ls: edited(ls, "T 0 9 3 22 ", 3, "03"), "'03' is not an integer", (0, 0, 0)),
+    (
+        "decimal float",
+        lambda ls: edited(ls, "C 0 1 1 2112 ", 6, "2.5"),
+        "'2.5' is not a C99 hexadecimal",
+        (0, 0, 0),
+    ),
+    (
+        "T with 10 fields",
+        lambda ls: edited(ls, "T 0 9 3 22 ", 8, f"{h(1100.0)} 0"),
+        "T-line with 10 fields",
+        None,
+    ),
+    ("S with 7 fields", lambda ls: edited(ls, "S 4 1 1 Decay ", 7, ""), "S-line with 7 fields", None),
+    ("E with 3 fields", lambda ls: edited(ls, "E 4 1004 ", 3, ""), "E-line with 3 fields", None),
+    ("more C than declared", lambda ls: edited(ls, "S 1 1 1 ", 7, "1"), "more C-lines than the 1", (1, 0, 0)),
+    (
+        "C of another track",
+        lambda ls: edited(ls, "C 0 1 0 11 ", 2, "3"),
+        "C-line not after its S-line",
+        (0, 0, 0),
+    ),
+    # the T line closes the S line's C lines, whose count then falls short of the declared 2
+    ("C after a T line", t_line_between_s_and_c, "declares 2 secondaries, 0 C-lines", (0, 0, 0)),
+    (
+        "T of another event",
+        lambda ls: edited(ls, "T 0 11 1 22 ", 1, "4"),
+        "line of event 4 inside event 0",
+        (0, 0, 0),
+    ),
+    (
+        "E out of order, body consistent",
+        lambda ls: renumbered_event(ls, "1", "7"),
+        "event 7 where 1 expected",
+        (0, 0, 0),
+    ),
+]
+
+
+@pytest.mark.parametrize("name, corrupt, match, counts", RECORD_FAULTS, ids=[f[0] for f in RECORD_FAULTS])
+def test_t5_a_record_that_departs_from_the_format_is_refused_by_its_own_clause(name, corrupt, match, counts):
+    lines, _ = bound_decay_events()
+    run_stream(lines, "bound_decay", 5)
+    bad = corrupt(list(lines))
+    assert bad != lines
+    if counts is not None:
+        assert record_count_mismatches(bad) == counts, name
+    with pytest.raises(sm.Malformed, match=match):
+        run_stream(bad, "bound_decay", 5)
+
+
+def test_t5_the_c_after_t_fixture_moves_only_the_muon_track_line():
+    lines, _ = bound_decay_events()
+    bad = t_line_between_s_and_c(lines)
+    assert sorted(bad) == sorted(lines)
+    i = bad.index("S 1 1 1 muMinusCaptureAtRest 0x0p+0 0x0p+0 2\n")
+    assert bad[i + 1].startswith("T 1 1 0 13") and bad[i + 2].startswith("C 1 1 0 11 ")
+
+
+def test_t5_a_helper_decay_pdg_written_with_a_leading_zero_is_refused():
+    lines, want = helper_events()
+    got, _ = run_stream(lines, "muonic_atom_helper", 4)
+    assert got[2] == want[1] == "1 D"
+    bad = edited(lines, "C 1 2 1 -12 ", 4, "-012")
+    assert record_count_mismatches(bad) == (0, 0, 0)
+    with pytest.raises(sm.Malformed, match="'-012' is not an integer"):
+        run_stream(bad, "muonic_atom_helper", 4)
+
+
+def al27_capture_stream() -> list[str]:
+    """Event 0 of the bound_decay fixture (a capture whose 26Mg residual emits a 1808.74 keV photon 400 ns
+    after it) and three captures without photons, all with consistent counts."""
+    lines, _ = bound_decay_events()
+    out = lines[: lines.index("E 0 1000 8\n") + 1]
+    for ev in (1, 2, 3):
+        out += [
+            f"T {ev} 1 0 13 - - 0x0p+0 0x0p+0\n",
+            f"S {ev} 1 1 muMinusCaptureAtRest 0x0p+0 0x0p+0 2\n",
+            c_line(ev, 1, 0, 2112, NC, 1.0, 900.0),
+            c_line(ev, 1, 1, 1000120260, NC, 0.25, 900.0),
+            f"T {ev} 3 1 1000120260 muMinusCaptureAtRest {NC} {h(0.25)} {h(900.0)}\n",
+            f"T {ev} 2 1 2112 muMinusCaptureAtRest {NC} {h(1.0)} {h(900.0)}\n",
+            f"E {ev} {1000 + ev} 3\n",
+        ]
+    return out
+
+
+def classify_and_reduce(lines: list[str]):
+    pol = synthetic_policy(captures=4)
+    out = io.StringIO()
+    sm.classify_stream(
+        iter(lines),
+        out,
+        route="bound_decay",
+        version="A",
+        config="bertini",
+        target="Al-27",
+        offset=0,
+        events=4,
+        policy=pol,
+    )
+    compact = out.getvalue().splitlines()
+    chunk0 = sm.Chunk(chunk="chunk0", offset=0, events=4, extension=False, lines=compact)
+    return sm.reduce_cell([chunk0], version="A", config="bertini", target="Al-27", policy=pol)
+
+
+@pytest.mark.parametrize(
+    "name", ["missing T, E count unchanged", "photon PDG +22", "nucleus track ID +3", "parent ID +3"]
+)
+def test_t5_a_descendant_that_refuses_its_line_is_never_hidden_by_an_altered_record(name):
+    stream = al27_capture_stream()
+    assert record_count_mismatches(stream) == (0, 0, 0)
+    cell, status = classify_and_reduce(stream)
+    assert cell["line_guard"]["gamma.Al.1808"] == {"ok": False, "C_line": 0, "D_line": 1, "beta_max": 0.0}
+    assert status == "refused" and cell["problems"] == [
+        "line guard refused gamma.Al.1808: C=0 D=1 beta_max=0.0"
+    ]
+    # The same capture without the descendant, its E line counting one track fewer, is accepted: the line
+    # guard alone refused the stream above.
+    clean = without(stream, "T 0 9 3 22 ")
+    clean = edited(clean, "E 0 1000 ", 3, "7")
+    assert classify_and_reduce(clean)[1] == "accepted"
+    [(_, corrupt, match, _)] = [f for f in RECORD_FAULTS if f[0] == name]
+    with pytest.raises(sm.Malformed, match=match):
+        classify_and_reduce(corrupt(stream))
 
 
 # --------------------------------------------------------------------------------------------
