@@ -989,6 +989,72 @@ def test_t14_the_dataset_lines_must_equal_the_binding():
             drv.check_datasets(bad, want, "after the run")
 
 
+#: The twelve dataset variables, held here independently of the pre-registration and of the driver.
+DATASET_VARIABLES = (
+    "G4NEUTRONHPDATA",
+    "G4LEDATA",
+    "G4LEVELGAMMADATA",
+    "G4RADIOACTIVEDATA",
+    "G4PARTICLEXSDATA",
+    "G4PIIDATA",
+    "G4REALSURFACEDATA",
+    "G4SAIDXSDATA",
+    "G4ABLADATA",
+    "G4INCLDATA",
+    "G4ENSDFSTATEDATA",
+    "G4CHANNELINGDATA",
+)
+
+
+def dataset_text(binding: dict[str, str]) -> str:
+    """The DATASET lines the harness writes for ``binding``: ``DATASET <variable> <directory>``, one space."""
+    return "".join(f"DATASET {var} {path}\n" for var, path in binding.items())
+
+
+@pytest.mark.parametrize("when", ["before the run", "after the run"])
+def test_t14_a_data_root_with_a_space_is_read_whole_and_still_compared_exactly(when):
+    pol = policy()
+    assert tuple(pol["setup"]["datasets"]["variables"]) == DATASET_VARIABLES
+    want = drv.binding(pol, "11.4.2", "/data root")
+    assert all(
+        path == f"/data root/{pol['setup']['datasets']['binding']['11.4.2'][v]}" for v, path in want.items()
+    )
+    good = dataset_text(want)
+    assert drv.dataset_lines(good) == want
+    drv.check_datasets(good, want, when)
+    first, second = DATASET_VARIABLES[:2]
+    faults = {
+        "differing suffix": good.replace(f" {want[first]}\n", f" {want[first]}2\n"),
+        "missing variable": "".join(
+            ln + "\n" for ln in good.splitlines() if not ln.startswith(f"DATASET {first} ")
+        ),
+        "wrong order": dataset_text({second: want[second], first: want[first], **want}),
+        "duplicate variable": good + f"DATASET {first} {want[first]}\n",
+        "no directory": good.replace(f"DATASET {first} {want[first]}\n", f"DATASET {first}\n"),
+    }
+    for name, text in faults.items():
+        assert text != good, name
+        with pytest.raises(drv.Refusal):
+            drv.check_datasets(text, want, when)
+
+
+@pytest.mark.parametrize("variable", DATASET_VARIABLES)
+def test_t14_each_dataset_directory_is_compared_with_its_binding(variable):
+    want = drv.binding(policy(), "11.4.2", "/data root")
+    got = dict(want, **{variable: want[variable] + "-other"})
+    with pytest.raises(drv.Refusal, match=f"after the run: {variable} "):
+        drv.check_datasets(dataset_text(got), want, "after the run")
+
+
+def test_t14_a_binding_whose_variables_differ_from_the_list_is_refused():
+    pol = copy.deepcopy(policy())
+    dirs = pol["setup"]["datasets"]["binding"]["11.4.2"]
+    first = next(iter(dirs))
+    pol["setup"]["datasets"]["binding"]["11.4.2"] = {k: dirs[k] for k in [*list(dirs)[1:], first]}
+    with pytest.raises(drv.Refusal, match="binding's variables"):
+        drv.binding(pol, "11.4.2", "/data")
+
+
 def test_t14_the_parser_offers_no_capture_count(capsys):
     argv = [
         "run",

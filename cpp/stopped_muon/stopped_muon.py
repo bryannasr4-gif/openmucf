@@ -176,11 +176,13 @@ def environment(
 
 
 def dataset_lines(text: str) -> dict[str, str]:
+    """The variable and directory of every ``DATASET <variable> <directory>`` line the harness writes: the
+    directory is the whole rest of the line, so a path with spaces is read as it was written."""
     out: dict[str, str] = {}
     for line in text.splitlines():
-        f = line.split()
-        if f and f[0] == "DATASET":
-            if len(f) != 3 or f[1] in out:
+        f = line.split(" ", 2)
+        if f[0] == "DATASET":
+            if len(f) != 3 or not f[1] or not f[2] or f[1] in out:
                 raise Refusal(f"malformed DATASET line {line!r}")
             out[f[1]] = f[2]
     return out
