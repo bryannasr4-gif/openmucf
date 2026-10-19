@@ -170,7 +170,7 @@ FC-001 is **registered** at `v1.0.0` — Zenodo DOI [10.5281/zenodo.21251512](ht
 | `data/g4/d1/`, `DATASET_D1.md` | the D1 nuclear-capture dataset in `parity` mode + its findings (see below) |
 | `data/g4/d3/`, `DATASET_D3.md` | the D3 muonic energy tables of the `mudirac130p1` profile, their MuDirac inputs and outputs, their numerical checks, the cause of each change from the `mudirac130` tables, and their comparison with measured energies |
 | `data/g4/d2/`, `data/g4/reference/d2/`, `DATASET_D2.md` | the capturing-atom selector's harvest and reference, the processes that reach it at rest, and atomic-capture values read in primary publications beside the selector's |
-| `cpp/stopped_muon/`, `data/g4/stopped_mu/`, `BENCHMARK_STOPPED_MU.md` | the stopped-muon benchmark: the Geant4 application, its reduced outputs, the rule fixed before the runs and the generated comparison with measured yields |
+| `cpp/stopped_muon/`, `data/g4/stopped_mu/`, `BENCHMARK_STOPPED_MU.md` | the stopped-muon benchmark: the Geant4 application, its reduced outputs, the rule and the generated comparison with measured yields |
 | `openmucf/data/` | `rates.csv`, `validation_targets.csv`, `references.bib`, schema |
 | `forecasts/`, `FORECASTS.md` | pre-registered, hash-stamped forecast cards (FC-001) + protocol + registry table |
 | `MUON_COST.md`, `SYSTEMS.md`, `FRONTIER.md`, `NEUTRONOMICS.md`, `DESIGN.md`, `docs/xray_feasibility.md` | auto-generated analysis docs: muon-cost ledger + mixed-basis tier spread, energy-balance/Rosetta, inverse-design frontiers, neutrons-per-joule league table, experiment-design ranking, X-ray-feasibility scan |
