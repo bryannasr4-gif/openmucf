@@ -508,7 +508,9 @@ def render(inp: Inputs) -> Rendered:
     w.line(
         "Each row compares the model's x, with its sampling standard error x_se, with a measured reference ref "
         "of statistical and systematic uncertainty ref_stat and ref_syst, through σ_tot, the square root of the "
-        "sum of the squares of ref_stat, ref_syst and x_se. A row is PASS when |x − ref| ≤ ",
+        "sum of the squares of ref_stat, ref_syst and x_se. Where a source supplies an unseparated error, "
+        "ref_stat stores it as a bookkeeping component; this does not assert a source-provided "
+        "statistical/systematic split. A row is PASS when |x − ref| ≤ ",
         S(rule["k_pass"]),
         " σ_tot. It is FAIL when |x − ref| > ",
         S(rule["k_fail"]),
@@ -521,7 +523,7 @@ def render(inp: Inputs) -> Rendered:
     )
     w.blank()
     w.line(
-        "The rescue bracket [L, U] of a neutron-mean row is the union of its ",
+        "The rescue bracket [L, U] of a neutron-mean row is a conservative envelope of the union of its ",
         S(rule["k_fail"]),
         " σ bands over r = ε₀/ε, with ε₀ = ",
         S(eb["eps0"]),
@@ -529,9 +531,9 @@ def render(inp: Inputs) -> Rendered:
         S(eb["eps_lo"]),
         ", ",
         S(eb["eps_hi"]),
-        "], a design range fixed with the rule: r runs from r_lo = ",
+        "], a design range fixed with the rule: the endpoint ratios are enclosed by r_lo = ",
         S(eb["r_lo"]),
-        " to r_hi = ",
+        " (rounded down) and r_hi = ",
         S(eb["r_hi"]),
         ", L is the lower edge of the band about r_lo ref, with ref_stat and "
         "ref_syst scaled by r_lo, and U the upper edge of the band about r_hi ref, scaled by r_hi, L rounded down "
@@ -779,8 +781,8 @@ def render(inp: Inputs) -> Rendered:
         " are efficiency-limited: they lie beyond ",
         S(rule["k_fail"]),
         " σ_tot of the mean at the published "
-        "efficiency but inside the rescue bracket, so the measured mean cannot exclude them once the detection "
-        "efficiency is allowed anywhere in the bracket.",
+        "efficiency but inside the conservative rescue envelope, so the rule does not exclude them over "
+        "its design range of detection efficiencies.",
     )
     w.blank()
     gp = sm.gamma_params(pol)
@@ -856,8 +858,9 @@ def render(inp: Inputs) -> Rendered:
         " of the ",
         S(len(nmean_rows)),
         " neutron-mean rows of the table are. The f2 rows compare the second factorial moment "
-        "of the multiplicity divided by the square of its mean, a statistic that a constant per-neutron "
-        "detection efficiency leaves unchanged, with the same statistic of the measured distributions. The "
+        "of the multiplicity divided by the square of its mean, with the same statistic of the measured "
+        "distributions. Independent binomial detection of each neutron at a constant probability is "
+        "sufficient to leave f2 unchanged and is the working assumption here. The "
         "table gives each row's x, reference and bracket; no ratio of x to the reference is formed here.",
     )
     w.blank()
@@ -980,8 +983,9 @@ def render(inp: Inputs) -> Rendered:
         " neutrons, while the model's f2 keeps every multiplicity; the f2 references for lead and silver "
         "are those of the detected distributions at efficiency ",
         S(eb["eps0"]),
-        ", equal to the true f2 only if "
-        "every neutron is detected with the same probability independently of the others; the efficiency bracket "
+        "; the working assumption of independent binomial detection at a constant probability is sufficient "
+        "for equality with the true f2. The predicate annotations use this sufficient condition as a "
+        "working assumption; the efficiency bracket "
         "is a fixed design range, not an uncertainty a source states; this benchmark does not establish the "
         "mechanism behind any disagreement.",
     )
