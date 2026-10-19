@@ -304,6 +304,7 @@ RESTATED = (
 )
 #: The other files under `data/g4/`: what this project computed, harvested from Geant4 or MuDirac, or wrote.
 PROJECT_AUTHORED = (
+    "data/g4/d1/bound_rates_policy.json",
     "data/g4/d1/d1_gp_sweep.oracle",
     "data/g4/d1/geant4_add_dataset.snippet",
     "data/g4/d1/isotope_audit.csv",

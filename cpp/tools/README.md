@@ -159,3 +159,27 @@ python3 cpp/tools/mixture_harvest.py run --build <build> --route stopping --symb
     --events <n> --seed-base <seed> --data <GEANT4_DATA_DIR> --profile parity --out <cell>
 python3 cpp/tools/mixture_harvest.py summarize --cells <plan.json> --out data/g4/d1
 ```
+
+## Bound-decay prescriptions
+
+`repro_bound_rates.cc` prints, for each nuclide on its command line or in its default list, what a Geant4
+build gives a negative muon bound in the ground state of a muonic atom on the stopping route and on the atomic
+route, read through public functions only: the nuclear mass `G4Nucleus::AtomicMass(A, Z)` returns, which the
+stopping route passes to its decay rate, and the mass `G4NucleiProperties::GetNuclearMass(A, Z)` returns; the
+capture and decay rates of `G4MuonMinusBoundDecay` and of `G4MuonicAtomHelper`; the stopping route's lifetime;
+the lifetime, DIO lifetime and nuclear-capture lifetime of the muonic atom `G4IonTable::GetMuonicAtom(Z, A)`
+constructs; and the ratio each route's branch test compares a uniform number with. It carries no capture or
+decay formula of its own, and a test holds it to that.
+
+`openmucf/g4/d1_boundrates.py` evaluates a single rate pair for both routes, the helper's capture rate and the
+stopping route's decay rate below the threshold of `G4MuonMinusBoundDecay::GetMuonDecayRate`, from the
+committed decay-rate oracle and the vendored sources. `data/g4/d1/bound_rates_policy.json`, which
+`scripts/generate_g4boundrates.py` generates, registers how a harvest is to verify a build that gives both
+routes that pair: the groups, seeds and start times, the frozen pairs, the statistical limits and the
+tolerances. Agreement with that pair is agreement with a prescription given its inputs; it is not a statement
+of physical accuracy.
+
+```sh
+g++ -std=c++17 -O2 repro_bound_rates.cc -o repro_bound_rates $(geant4-config --cflags --libs)
+./repro_bound_rates            # or: ./repro_bound_rates <Z> <A> ...
+```
