@@ -1812,6 +1812,82 @@ def test_t10_a_reproduction_record_the_screen_cannot_judge_is_refused_before_the
         gen.render(inp)
 
 
+@pytest.mark.parametrize(
+    "old, replacement, configurations, bases, clause",
+    [
+        (
+            ("11.5.0.beta", "precompound", "natSi"),
+            ("11.5.0.beta", "bertini_pc", "natPb"),
+            {"bertini", "bertini_pc"},
+            {"natural", "single_isotope"},
+            "configurations",
+        ),
+        (
+            ("11.4.2", "bertini", "Al-27"),
+            ("11.4.2", "bertini", "natSi"),
+            {"bertini", "bertini_pc", "precompound"},
+            {"natural"},
+            "target bases",
+        ),
+    ],
+    ids=["configuration coverage", "target basis coverage"],
+)
+def test_t10_a_complete_reproduction_missing_only_one_coverage_dimension_is_refused(
+    old, replacement, configurations, bases, clause
+):
+    inp = fresh_inputs()
+    original = copy.deepcopy(inp.reproduced)
+    retained = [r for r in original if (r["version"], r["config"], r["target"]) != old]
+    assert len(retained) < len(original)
+    version, config, target = replacement
+    binary = next(
+        b["rebuilt_binary_sha256"] for b in inp.builds if b["tag"] == inp.policy["setup"]["tags"][version]
+    )
+    # These complete synthetic records exercise coverage; they are not additional native executions.
+    inp.reproduced = retained + [
+        {
+            "version": version,
+            "config": config,
+            "target": target,
+            "chunk": ch["chunk"],
+            "offset": str(ch["offset"]),
+            "events": str(ch["events"]),
+            "compact_text_sha256": ch["compact_text_sha256"],
+            "binary_sha256": binary,
+        }
+        for ch in inp.cells[replacement]["chunks"]
+    ]
+    assert inp.reproduced[: len(retained)] == retained
+    keys = {(r["version"], r["config"], r["target"]) for r in inp.reproduced}
+    assert keys == {(r["version"], r["config"], r["target"]) for r in retained} | {replacement}
+    assert len(keys) == 3 and old not in keys
+    # Independently check complete, distinct, hash-consistent chunks before exercising the coverage guard.
+    for key in keys:
+        rows = [r for r in inp.reproduced if (r["version"], r["config"], r["target"]) == key]
+        chunks = inp.cells[key]["chunks"]
+        assert Counter(r["chunk"] for r in rows) == Counter(ch["chunk"] for ch in chunks)
+        assert all(n == 1 for n in Counter(r["chunk"] for r in rows).values())
+        for r in rows:
+            [ch] = [ch for ch in chunks if ch["chunk"] == r["chunk"]]
+            assert (r["offset"], r["events"], r["compact_text_sha256"]) == (
+                str(ch["offset"]), str(ch["events"]), ch["compact_text_sha256"]
+            )
+            assert r["binary_sha256"] == next(
+                b["rebuilt_binary_sha256"]
+                for b in inp.builds
+                if b["tag"] == inp.policy["setup"]["tags"][key[0]]
+            )
+    assert {k[0] for k in keys} == {"11.4.2", "11.5.0.beta"}
+    assert {k[1] for k in keys} == configurations
+    target_basis = {t["target"]: t["basis"] for t in inp.policy["setup"]["targets"]}
+    assert {target_basis[k[2]] for k in keys} == bases
+    assert any(inp.cells[k]["n_no_outcome"] for k in keys)
+    message = f"the reproduced cells do not cover the {clause} of the committed cells"
+    for consumer in (gen.reproduction, gen.render):
+        with pytest.raises(ValueError, match=f"^{re.escape(message)}$"):
+            consumer(inp)
+
+
 def test_t10_the_chunk_body_statement_follows_the_bodies():
     inp = fresh_inputs()
     same, diff = gen.body_pairs(inp)
