@@ -117,7 +117,8 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   ~2367 → ~3946 fusions/muon (linear in η_acc).
 
 Structural, one-sided: the parametric intervals above sit on the v1 reduced network; the known deferred
-channels bias X_μ DOWNWARD (ttμ side-cycle, d-recapture and ³He scavenging, summed in `MATERIALITY.md` §5).
+channels bias X_μ DOWNWARD (ttμ side-cycle, d-recapture and ³He scavenging; `MATERIALITY.md` §5 runs them
+together and gives their joint response beside the sum of each alone).
 
 Headline findings run on the closed form; the differentiable ODE engine is the
 structural workhorse for trajectories/twin/UQ cross-checks and is gated against an exact linear-algebra

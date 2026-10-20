@@ -136,9 +136,11 @@ density dependence.
 
 P(Q_sci > 1) = 0.2% ; P(Q_net > 1) = 0.0%.
 
-Structural, one-sided: the box intervals above sit on the v1 reduced network; the deferred channels bias
-X_mu DOWNWARD by up to 26.67% combined at the headline operating points of MATERIALITY.md (ttmu
-side-cycle, d-recapture and 3He scavenging, summed in its section 5).
+Structural, one-sided: the box intervals above sit on the v1 reduced network; switched on together at the
+headline operating points of MATERIALITY.md (its section 5: ttmu side-cycle at the in-target reading,
+d-recapture at q_1s = 1.0 and 3He scavenging at c_He = 1e-3), the deferred channels bias X_mu DOWNWARD by
+27.92% to 28.93%, and by 29.54% to 31.65% with the density-normalized ttmu reading; their one-at-a-time
+brackets sum to 26.04% to 26.67%.
 
 ## 2b. Q_net by muon-cost tier
 

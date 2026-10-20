@@ -260,6 +260,20 @@ _spec = importlib.util.spec_from_file_location("_gen_materiality", "scripts/gene
 _gen_materiality = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_gen_materiality)
 H["structural_band_pct"] = f"{_gen_materiality.structural_band_pct(_rates):.2f}"
+# Section 2's structural sentence: the three deferred channels switched on together at MATERIALITY.md's headline
+# operating points (its section 5), beside the sum of their one-at-a-time brackets; every figure is a magnitude
+# (each response is one-sided downward), the smallest and the largest over those points.
+_JR = _gen_materiality.joint_response(_rates)
+_COMB = _gen_materiality.combined_band(
+    _gen_materiality.he_brackets(_rates), _gen_materiality.q1s_brackets(_rates), _gen_materiality.tt_brackets(_rates)
+)
+H["joint_c_he"] = _gen_materiality._che_label(_gen_materiality.JOINT_C_HE)
+H["joint_q1s"] = f"{_gen_materiality.JOINT_Q1S:.1f}"
+H["joint_pct_lo"] = f"{min(abs(_r['pct']) for _r in _JR.values()):.2f}"
+H["joint_pct_hi"] = f"{max(abs(_r['pct']) for _r in _JR.values()):.2f}"
+H["joint_dn_pct_lo"] = f"{min(abs(_r['pct_dn']) for _r in _JR.values()):.2f}"
+H["joint_dn_pct_hi"] = f"{max(abs(_r['pct_dn']) for _r in _JR.values()):.2f}"
+H["sum_pct_lo"] = f"{min(abs(_c['pct']) for _c in _COMB.values()):.2f}"
 _TGT = validate._load_targets(TARGETS_CSV)
 _X_LIQ = validate.target_value(_TGT, "V_petitjean_Xmu")
 _LC_LIQ = validate.target_value(_TGT, "V_breunlich_lambdac")
@@ -517,9 +531,11 @@ density dependence.
 
 P(Q_sci > 1) = {H["P_qsci_gt1"]} ; P(Q_net > 1) = {H["P_qnet_gt1"]}.
 
-Structural, one-sided: the box intervals above sit on the v1 reduced network; the deferred channels bias
-X_mu DOWNWARD by up to {H["structural_band_pct"]}% combined at the headline operating points of MATERIALITY.md (ttmu
-side-cycle, d-recapture and 3He scavenging, summed in its section 5).
+Structural, one-sided: the box intervals above sit on the v1 reduced network; switched on together at the
+headline operating points of MATERIALITY.md (its section 5: ttmu side-cycle at the in-target reading,
+d-recapture at q_1s = {H["joint_q1s"]} and 3He scavenging at c_He = {H["joint_c_he"]}), the deferred channels bias X_mu DOWNWARD by
+{H["joint_pct_lo"]}% to {H["joint_pct_hi"]}%, and by {H["joint_dn_pct_lo"]}% to {H["joint_dn_pct_hi"]}% with the density-normalized ttmu reading; their one-at-a-time
+brackets sum to {H["sum_pct_lo"]}% to {H["structural_band_pct"]}%.
 
 ## 2b. Q_net by muon-cost tier
 
@@ -761,7 +777,23 @@ _entries += [
     _entry("eta_bracket_lo", rf"\| 1 \(the anchored rate\) \| {re.escape(H['eta_bracket_lo'])} \|"),
     _entry("eta_bracket_hi", rf"\| 5 \(five times the anchored rate\) \| {re.escape(H['eta_bracket_hi'])} \|"),
     _entry("eta_bracket_width", rf"X_mu\(eta=5\) - X_mu\(eta=1\) = \*\*{re.escape(H['eta_bracket_width'])}\*\*"),
-    _entry("structural_band_pct", rf"DOWNWARD by up to {re.escape(H['structural_band_pct'])}% combined"),
+    _entry("joint_q1s", rf"d-recapture at q_1s = {re.escape(H['joint_q1s'])} and 3He scavenging at c_He ="),
+    _entry("joint_c_he", rf"3He scavenging at c_He = {re.escape(H['joint_c_he'])}\), the deferred channels"),
+    _entry("joint_pct_lo", rf"DOWNWARD by\s+{re.escape(H['joint_pct_lo'])}% to {re.escape(H['joint_pct_hi'])}%, and by"),
+    _entry("joint_pct_hi", rf"DOWNWARD by\s+{re.escape(H['joint_pct_lo'])}% to {re.escape(H['joint_pct_hi'])}%, and by"),
+    _entry(
+        "joint_dn_pct_lo",
+        rf"and by {re.escape(H['joint_dn_pct_lo'])}% to {re.escape(H['joint_dn_pct_hi'])}% with the density-normalized",
+    ),
+    _entry(
+        "joint_dn_pct_hi",
+        rf"and by {re.escape(H['joint_dn_pct_lo'])}% to {re.escape(H['joint_dn_pct_hi'])}% with the density-normalized",
+    ),
+    _entry("sum_pct_lo", rf"brackets sum to {re.escape(H['sum_pct_lo'])}% to {re.escape(H['structural_band_pct'])}%\."),
+    _entry(
+        "structural_band_pct",
+        rf"brackets sum to {re.escape(H['sum_pct_lo'])}% to {re.escape(H['structural_band_pct'])}%\.",
+    ),
     _entry("W_liquid", rf"per cycle, {re.escape(H['W_liquid'])}% at the liquid"),
     _entry("W_solid", rf"anchor and {re.escape(H['W_solid'])}% at the solid one"),
     _entry("L_anchor", rf"side-channel loss of {re.escape(H['L_anchor'])}% per cycle"),

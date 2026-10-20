@@ -3,7 +3,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_off",
-      "pattern": "OP-A[^\\n]*116\\.164",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){0} 116\\.164 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "116.164"
@@ -11,7 +11,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_with_c1em04",
-      "pattern": "OP-A[^\\n]*116\\.148",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){1} 116\\.148 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "116.148"
@@ -19,7 +19,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_bracket_c1em04",
-      "pattern": "OP-A[^\\n]*\\-0\\.016",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-0\\.016 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.016"
@@ -27,7 +27,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_with_c1em03",
-      "pattern": "OP-A[^\\n]*116\\.005",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){3} 116\\.005 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "116.005"
@@ -35,15 +35,47 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_bracket_c1em03",
-      "pattern": "OP-A[^\\n]*\\-0\\.159",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-0\\.159 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.159"
     },
     {
       "doc": "MATERIALITY.md",
+      "id": "OP-A_tt_in_target_with",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){1} 100\\.784 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "100.784"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_tt_in_target_bracket",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-15\\.379 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-15.379"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_tt_density_normalized_with",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){3} 97\\.553 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "97.553"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-A_tt_density_normalized_bracket",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-18\\.610 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-18.610"
+    },
+    {
+      "doc": "MATERIALITY.md",
       "id": "OP-A_q04_with",
-      "pattern": "OP-A[^\\n]*109\\.407",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){1} 109\\.407 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "109.407"
@@ -51,7 +83,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_q04_bracket",
-      "pattern": "OP-A[^\\n]*\\-6\\.756",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-6\\.756 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-6.756"
@@ -59,7 +91,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_q07_with",
-      "pattern": "OP-A[^\\n]*104\\.835",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){3} 104\\.835 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "104.835"
@@ -67,7 +99,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_q07_bracket",
-      "pattern": "OP-A[^\\n]*\\-11\\.329",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-11\\.329 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-11.329"
@@ -75,7 +107,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_q10_with",
-      "pattern": "OP-A[^\\n]*100\\.629",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){5} 100\\.629 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "100.629"
@@ -83,7 +115,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-A_q10_bracket",
-      "pattern": "OP-A[^\\n]*\\-15\\.535",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-A [^|\\n]*\\|(?:[^|\\n]*\\|){6} \\-15\\.535 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-15.535"
@@ -91,7 +123,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_off",
-      "pattern": "OP-B[^\\n]*125\\.231",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){0} 125\\.231 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "125.231"
@@ -99,7 +131,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_with_c1em04",
-      "pattern": "OP-B[^\\n]*125\\.214",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){1} 125\\.214 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "125.214"
@@ -107,7 +139,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_bracket_c1em04",
-      "pattern": "OP-B[^\\n]*\\-0\\.017",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-0\\.017 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.017"
@@ -115,7 +147,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_with_c1em03",
-      "pattern": "OP-B[^\\n]*125\\.060",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){3} 125\\.060 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "125.060"
@@ -123,15 +155,47 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_bracket_c1em03",
-      "pattern": "OP-B[^\\n]*\\-0\\.171",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-0\\.171 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.171"
     },
     {
       "doc": "MATERIALITY.md",
+      "id": "OP-B_tt_in_target_with",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){1} 111\\.284 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "111.284"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_tt_in_target_bracket",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-13\\.947 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-13.947"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_tt_density_normalized_with",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){3} 108\\.268 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "108.268"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_tt_density_normalized_bracket",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-16\\.963 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-16.963"
+    },
+    {
+      "doc": "MATERIALITY.md",
       "id": "OP-B_q04_with",
-      "pattern": "OP-B[^\\n]*117\\.115",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){1} 117\\.115 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "117.115"
@@ -139,7 +203,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_q04_bracket",
-      "pattern": "OP-B[^\\n]*\\-8\\.116",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-8\\.116 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-8.116"
@@ -147,7 +211,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_q07_with",
-      "pattern": "OP-B[^\\n]*111\\.686",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){3} 111\\.686 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "111.686"
@@ -155,7 +219,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_q07_bracket",
-      "pattern": "OP-B[^\\n]*\\-13\\.545",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-13\\.545 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-13.545"
@@ -163,7 +227,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_q10_with",
-      "pattern": "OP-B[^\\n]*106\\.738",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){5} 106\\.738 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "106.738"
@@ -171,7 +235,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_q10_bracket",
-      "pattern": "OP-B[^\\n]*\\-18\\.493",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){6} \\-18\\.493 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-18.493"
@@ -179,7 +243,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_off",
-      "pattern": "OP-C[^\\n]*128\\.779",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){0} 128\\.779 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "128.779"
@@ -187,7 +251,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_with_c1em04",
-      "pattern": "OP-C[^\\n]*128\\.761",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){1} 128\\.761 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "128.761"
@@ -195,7 +259,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_bracket_c1em04",
-      "pattern": "OP-C[^\\n]*\\-0\\.018",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-0\\.018 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.018"
@@ -203,7 +267,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_with_c1em03",
-      "pattern": "OP-C[^\\n]*128\\.603",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){3} 128\\.603 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "128.603"
@@ -211,15 +275,47 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_bracket_c1em03",
-      "pattern": "OP-C[^\\n]*\\-0\\.176",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-0\\.176 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.176"
     },
     {
       "doc": "MATERIALITY.md",
+      "id": "OP-C_tt_in_target_with",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){1} 107\\.710 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "107.710"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_tt_in_target_bracket",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-21\\.069 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-21.069"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_tt_density_normalized_with",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){3} 103\\.474 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "103.474"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_tt_density_normalized_bracket",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-25\\.305 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-25.305"
+    },
+    {
+      "doc": "MATERIALITY.md",
       "id": "OP-C_q04_with",
-      "pattern": "OP-C[^\\n]*123\\.477",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){1} 123\\.477 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "123.477"
@@ -227,7 +323,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_q04_bracket",
-      "pattern": "OP-C[^\\n]*\\-5\\.302",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-5\\.302 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-5.302"
@@ -235,7 +331,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_q07_with",
-      "pattern": "OP-C[^\\n]*119\\.778",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){3} 119\\.778 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "119.778"
@@ -243,7 +339,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_q07_bracket",
-      "pattern": "OP-C[^\\n]*\\-9\\.001",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-9\\.001 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-9.001"
@@ -251,7 +347,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_q10_with",
-      "pattern": "OP-C[^\\n]*116\\.294",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){5} 116\\.294 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "116.294"
@@ -259,7 +355,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_q10_bracket",
-      "pattern": "OP-C[^\\n]*\\-12\\.485",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){6} \\-12\\.485 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-12.485"
@@ -267,7 +363,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_off",
-      "pattern": "OP-D[^\\n]*131\\.643",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){0} 131\\.643 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "131.643"
@@ -275,7 +371,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_with_c1em04",
-      "pattern": "OP-D[^\\n]*131\\.625",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){1} 131\\.625 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "131.625"
@@ -283,7 +379,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_bracket_c1em04",
-      "pattern": "OP-D[^\\n]*\\-0\\.018",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-0\\.018 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.018"
@@ -291,7 +387,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_with_c1em03",
-      "pattern": "OP-D[^\\n]*131\\.463",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){3} 131\\.463 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "131.463"
@@ -299,15 +395,47 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_bracket_c1em03",
-      "pattern": "OP-D[^\\n]*\\-0\\.180",
+      "pattern": "\\n## 2\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-0\\.180 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-0.180"
     },
     {
       "doc": "MATERIALITY.md",
+      "id": "OP-D_tt_in_target_with",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){1} 107\\.767 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "107.767"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_tt_in_target_bracket",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-23\\.876 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-23.876"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_tt_density_normalized_with",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){3} 103\\.088 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "103.088"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_tt_density_normalized_bracket",
+      "pattern": "\\n## 3\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-28\\.555 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-28.555"
+    },
+    {
+      "doc": "MATERIALITY.md",
       "id": "OP-D_q04_with",
-      "pattern": "OP-D[^\\n]*126\\.990",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){1} 126\\.990 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "126.990"
@@ -315,7 +443,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_q04_bracket",
-      "pattern": "OP-D[^\\n]*\\-4\\.653",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-4\\.653 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-4.653"
@@ -323,7 +451,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_q07_with",
-      "pattern": "OP-D[^\\n]*123\\.710",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){3} 123\\.710 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "123.710"
@@ -331,7 +459,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_q07_bracket",
-      "pattern": "OP-D[^\\n]*\\-7\\.933",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-7\\.933 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-7.933"
@@ -339,7 +467,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_q10_with",
-      "pattern": "OP-D[^\\n]*120\\.596",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){5} 120\\.596 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "120.596"
@@ -347,23 +475,39 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_q10_bracket",
-      "pattern": "OP-D[^\\n]*\\-11\\.047",
+      "pattern": "\\n## 4\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(recapture\\ OFF\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){6} \\-11\\.047 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-11.047"
     },
     {
       "doc": "MATERIALITY.md",
-      "id": "OP-B_comb_q1s",
-      "pattern": "OP-B[^\\n]*\\-18\\.493",
+      "id": "OP-B_joint_with",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){1} 90\\.262 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-18.493"
+      "value": "90.262"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_joint",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-34\\.969 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-34.969"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_joint_pct",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){3} \\-27\\.92% \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-27.92"
     },
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_comb_total",
-      "pattern": "OP-B[^\\n]*\\-32\\.611",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-32\\.611 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-32.611"
@@ -371,23 +515,103 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-B_comb_pct",
-      "pattern": "OP-B[^\\n]*\\-26\\.04%",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){5} \\-26\\.04% \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-26.04"
     },
     {
       "doc": "MATERIALITY.md",
-      "id": "OP-C_comb_q1s",
-      "pattern": "OP-C[^\\n]*\\-12\\.485",
+      "id": "OP-B_joint_dn",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){6} \\-36\\.995 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-12.485"
+      "value": "-36.995"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_joint_dn_pct",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){7} \\-29\\.54% \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-29.54"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_alone_tt",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){0} \\-13\\.947 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-13.947"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_given_tt",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){1} \\-9\\.125 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-9.125"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_alone_q1s",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-18\\.493 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-18.493"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_given_q1s",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){3} \\-20\\.870 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-20.870"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_alone_he",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-0\\.171 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.171"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_given_he",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-B [^|\\n]*\\|(?:[^|\\n]*\\|){5} \\-6\\.034 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-6.034"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_joint_with",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){1} 92\\.336 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "92.336"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_joint",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-36\\.443 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-36.443"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_joint_pct",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){3} \\-28\\.30% \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-28.30"
     },
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_comb_total",
-      "pattern": "OP-C[^\\n]*\\-33\\.730",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-33\\.730 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-33.730"
@@ -395,23 +619,103 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-C_comb_pct",
-      "pattern": "OP-C[^\\n]*\\-26\\.19%",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){5} \\-26\\.19% \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-26.19"
     },
     {
       "doc": "MATERIALITY.md",
-      "id": "OP-D_comb_q1s",
-      "pattern": "OP-D[^\\n]*\\-11\\.047",
+      "id": "OP-C_joint_dn",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){6} \\-39\\.613 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
-      "value": "-11.047"
+      "value": "-39.613"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_joint_dn_pct",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){7} \\-30\\.76% \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-30.76"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_alone_tt",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){0} \\-21\\.069 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-21.069"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_given_tt",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){1} \\-15\\.290 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-15.290"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_alone_q1s",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-12\\.485 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-12.485"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_given_q1s",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){3} \\-15\\.227 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-15.227"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_alone_he",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-0\\.176 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.176"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_given_he",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-C [^|\\n]*\\|(?:[^|\\n]*\\|){5} \\-6\\.329 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-6.329"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_joint_with",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){1} 93\\.560 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "93.560"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_joint",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-38\\.083 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-38.083"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_joint_pct",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){3} \\-28\\.93% \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-28.93"
     },
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_comb_total",
-      "pattern": "OP-D[^\\n]*\\-35\\.103",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-35\\.103 \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-35.103"
@@ -419,10 +723,74 @@
     {
       "doc": "MATERIALITY.md",
       "id": "OP-D_comb_pct",
-      "pattern": "OP-D[^\\n]*\\-26\\.67%",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){5} \\-26\\.67% \\|",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "-26.67"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_joint_dn",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){6} \\-41\\.672 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-41.672"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_joint_dn_pct",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| X_mu\\ \\(channels\\ OFF\\)\\ \\|\\ X_mu\\ \\(all\\ three\\ on\\) \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){7} \\-31\\.65% \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-31.65"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_alone_tt",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){0} \\-23\\.876 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-23.876"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_given_tt",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){1} \\-17\\.743 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-17.743"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_alone_q1s",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){2} \\-11\\.047 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-11.047"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_given_q1s",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){3} \\-14\\.059 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-14.059"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_alone_he",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){4} \\-0\\.180 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-0.180"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_given_he",
+      "pattern": "\\n## 5\\. [^\\n]*\\n(?:(?!\\n## )[\\s\\S])*?\\n\\| operating point \\| ttmu\\ alone \\|[^\\n]*\\n(?:\\|[^\\n]*\\n)*?\\| OP\\-D [^|\\n]*\\|(?:[^|\\n]*\\|){5} \\-6\\.503 \\|",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-6.503"
     },
     {
       "doc": "MATERIALITY.md",
@@ -455,11 +823,179 @@
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "0.47"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_alone_max",
+      "pattern": "Every 3He bracket above is at most 0\\.180 in magnitude",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "0.180"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_alone_ci_pct",
+      "pattern": "in magnitude, 0\\.55%\\s+of\\s+that parametric CI width",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "0.55"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "joint_c_he",
+      "pattern": "3He scavenging \\(c_He=1e\\-3\\) and d-recapture",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "1e-3"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "joint_q1s",
+      "pattern": "and d-recapture \\(q_1s=1\\.0\\) are switched",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "1.0"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_alone_xmu_pct",
+      "pattern": "3He alone removes at most 0\\.14% of X_mu",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "0.14"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_given_min",
+      "pattern": "3He lowers X_mu by 6\\.034 to 6\\.503 X_mu units \\(",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "6.034"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_given_max",
+      "pattern": "3He lowers X_mu by 6\\.034 to 6\\.503 X_mu units \\(",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "6.503"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_given_pct_min",
+      "pattern": "X_mu units \\(4\\.82% to 4\\.94%\\)",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "4.82"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_given_pct_max",
+      "pattern": "X_mu units \\(4\\.82% to 4\\.94%\\)",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "4.94"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "joint_pct_min",
+      "pattern": "runs from 27\\.92% \\(OP\\-B\\) to",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "27.92"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "joint_pct_min_op",
+      "pattern": "runs from 27\\.92% \\(OP\\-B\\) to",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "OP-B"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "joint_pct_max",
+      "pattern": "\\) to 28\\.93% \\(OP\\-D\\) of X_mu",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "28.93"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "joint_pct_max_op",
+      "pattern": "\\) to 28\\.93% \\(OP\\-D\\) of X_mu",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "OP-D"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "comb_worst_pct2",
+      "pattern": "MODEL_SPEC section 8; the one-at-a-time brackets sum to at most 26\\.67%\\.",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "26.67"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_head_max",
+      "pattern": "structural bracket of at most 0\\.180 X_mu units in",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "0.180"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "he_head_ci_pct",
+      "pattern": "helium -- 0\\.55% of the section-2 forward-UQ CI width",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "0.55"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "tt_max",
+      "pattern": "in-target reading, adds up to\\s+\\-23\\.876 X_mu at the headline points",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "-23.876"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-B_joint_mag",
+      "pattern": "lower X_mu by 27\\.92%, 28\\.30% and 28\\.93% at OP-B, OP-C and OP-D \\(section 5\\)",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "27.92"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-C_joint_mag",
+      "pattern": "lower X_mu by 27\\.92%, 28\\.30% and 28\\.93% at OP-B, OP-C and OP-D \\(section 5\\)",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "28.30"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "OP-D_joint_mag",
+      "pattern": "lower X_mu by 27\\.92%, 28\\.30% and 28\\.93% at OP-B, OP-C and OP-D \\(section 5\\)",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "28.93"
+    },
+    {
+      "doc": "MATERIALITY.md",
+      "id": "comb_worst_pct2_summary",
+      "pattern": "one-at-a-time brackets sum to at most 26\\.67%\\. The ttmu side-branch alone",
+      "source": "scripts/generate_materiality.py",
+      "source_type": "derivation",
+      "value": "26.67"
     }
   ],
   "generated_by": "scripts/generate_materiality.py",
   "inputs": {
-    "findings_manifest_sha256": "661960993dce0cf9c4a48295ddceeae5194dc943dd909cbc40fdc063362d14d4",
+    "findings_manifest_sha256": "96272d9f01f0bf4c010c7934fcda02c6c450dc3532e03373d2e9d8c645189192",
     "rates_csv_sha256": "9af2256b38fadaad3b6dd80f2bc6448a7794d29e5ff12982093a3612769bbff1"
   }
 }
