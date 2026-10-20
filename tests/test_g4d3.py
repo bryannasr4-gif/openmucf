@@ -2132,6 +2132,7 @@ def _component_problems(records: list[dict]) -> list[str]:
                                "nuclear charge distributions other than 2pF",
                                "numerical settings beyond one refinement step"],
         "total_sigma_keV": None, "model_uncertainty": "unknown",
+        "numerical_check_status": d3c.load_numerical_check_status(REPO, set(_checks()))["status"],
         "inputs_sha256": hashlib.sha256((NL.join(digests) + NL).encode("ascii")).hexdigest(),
     }
     if header != expected_header:

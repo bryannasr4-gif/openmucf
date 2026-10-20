@@ -319,6 +319,7 @@ PROJECT_AUTHORED = (
     "data/g4/d3/mudirac_runs.csv",
     "data/g4/d3/mudirac_states.csv",
     "data/g4/d3/numerical_check.csv",
+    "data/g4/d3/numerical_check_status.json",
     "data/g4/d3/reference/README.md",
     "data/g4/d3/reference/cases.json",
     "data/g4/d3/reference/expected_keys.json",

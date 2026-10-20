@@ -106,5 +106,9 @@ serialized estimator bound. Nearest-rounded summary cells are not exact bounds o
 certificate inputs. The loader reconstructs and verifies every serialized field and the verdict;
 correctly encoded adverse evaluations remain adverse.
 
+These records reproduce the archived verdicts and summaries exactly. A fresh solve of the same rows did not reproduce
+the archived reference estimates; `data/g4/d3/numerical_check_status.json` records it, and `DATASET_D3.md` section
+5 states what the estimates do and do not establish.
+
 First-party calculation records and this description are CC-BY-4.0 under `LICENSE-DATA`.
 Reused upstream radii retain the notices and source limits stated in `README.md` and `LICENSE-MUDIRAC`.

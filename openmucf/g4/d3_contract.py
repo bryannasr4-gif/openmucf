@@ -22,6 +22,7 @@ import json
 from dataclasses import dataclass, replace
 from decimal import Decimal, localcontext
 from pathlib import Path
+from typing import Any
 
 from openmucf.g4 import d3_numerical as numerical
 from openmucf.g4.sources import mudirac130 as md
@@ -332,6 +333,67 @@ def require_numerical_qualification(checks: dict[tuple[int, int, bool, str], Che
         raise md.CellError(f"numerical publication refused: empty population or failing records {failed}")
 
 
+NUMERICAL_CHECK_STATUS_RELPATH = f"{md.D3_RELDIR}/numerical_check_status.json"
+NUMERICAL_CHECK_STATUSES = ("REPRODUCTION_FAILED",)
+
+
+def load_numerical_check_status(root: Path, keys: set[numerical.Key]) -> dict[str, Any]:
+    """Validate the failed fresh-solve record against the evaluated historical population."""
+    try:
+        status = json.loads((Path(root) / NUMERICAL_CHECK_STATUS_RELPATH).read_text(encoding="ascii"),
+                            parse_float=Decimal)
+        fresh = status["fresh_solve"]
+        failures = fresh["failures"]
+        population = fresh["population"]
+        criteria = fresh["criteria"]
+        tolerance = Decimal(criteria["reproduction_tolerance_of_target"])
+        limit = Decimal(criteria["reference_limit_of_target"])
+
+        def numbers(value: Any) -> list[Decimal]:
+            if isinstance(value, dict):
+                return [n for child in value.values() for n in numbers(child)]
+            if isinstance(value, list):
+                return [n for child in value for n in numbers(child)]
+            return [Decimal(value)] if isinstance(value, (int, float, Decimal)) else []
+
+        numeric = numbers(status) + [tolerance, limit]
+        checks = [
+            ("schema", type(status["schema"]) is int and status["schema"] == 1),
+            ("status vocabulary", status["status"] in NUMERICAL_CHECK_STATUSES),
+            ("population", population["rows"] == len(keys)
+             and population["cases"] == len({key[:2] for key in keys})),
+            ("nonempty failure count", bool(failures) and fresh["failed_rows"] == len(failures)),
+            ("finite nonnegative numbers", all(n.is_finite() and n >= 0 for n in numeric)),
+        ]
+        recorded = [(r["Z"], r["A"], r["uehling"] == "on", r["quantity"]) for r in failures]
+        checks.append(("failure inventory", len(recorded) == len(set(recorded))
+                       and set(recorded) <= keys
+                       and all(r["uehling"] in ("off", "on") for r in failures)))
+        for row in failures:
+            changes = (row["b_ref_change_of_target"], row["b_num_change_of_target"])
+            flags = []
+            if changes[0] > tolerance:
+                flags.append("b_ref_eV")
+            if changes[1] > tolerance:
+                flags.append("b_num_eV")
+            if row["fresh_b_ref_of_target"] > limit:
+                flags.append("reference_sharpness")
+            if row["fresh_verdict"] != "QUALIFIED":
+                flags.append("fresh_certificate")
+            checks.extend([
+                ("fresh verdict vocabulary", row["fresh_verdict"] in ("QUALIFIED", "NUMERICAL_FAIL")),
+                ("derived failure flags", bool(flags) and row["flags"] == sorted(flags)),
+                ("maximum change", all(fresh["maximum_change_of_target"] >= n
+                                       for n in (*changes, fresh["maximum_q_ref_change_of_target"]))),
+            ])
+        invalid = [name for name, valid in checks if not valid]
+        if invalid:
+            raise md.CellError(f"numerical check status: {', '.join(invalid)}")
+        return status
+    except (OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
+        raise md.CellError(f"numerical check status: {error}") from error
+
+
 # --------------------------------------------------------------------------------------------
 # everything the artifacts read, loaded once
 # --------------------------------------------------------------------------------------------
@@ -351,6 +413,7 @@ class Bundle:
     #: Per kept member and switch: the derived bindings of each one-step refinement.
     refinements: dict[tuple[int, int], dict[bool, dict[str, dict[str, Decimal]]]]
     checks: dict[tuple[int, int, bool, str], CheckRow]
+    numerical_check_status: dict[str, Any]
 
     def row(self, key: tuple[int, int]) -> md.InputRow:
         return next(row for row in self.kept if row.nuclide == key)
@@ -382,7 +445,8 @@ def load_bundle(root: Path) -> Bundle:
             for uehling in (True, False)
         }
     checks = load_numerical_check(root, outputs)
-    return Bundle(outputs, tables, cells, origins, stock, kept, bindings, refinements, checks)
+    status = load_numerical_check_status(root, set(checks))
+    return Bundle(outputs, tables, cells, origins, stock, kept, bindings, refinements, checks, status)
 
 
 def _bundle(root: Path, bundle: Bundle | None) -> Bundle:
@@ -711,7 +775,7 @@ NOT_COMPUTED_REASONS = {
 #: The files the records are computed from, digested together into the header record.
 COMPONENT_INPUTS = (
     KSHELL_RELPATH, LEVELS_RELPATH, md.INPUTS_RELPATH, md.RUNS_RELPATH, md.STATES_RELPATH, md.LINES_RELPATH,
-    NUMERICAL_CHECK_RELPATH,
+    NUMERICAL_CHECK_RELPATH, NUMERICAL_CHECK_STATUS_RELPATH,
     "data/g4/d3/reference/cases.json", "data/g4/d3/reference/payloads.jsonl",
     "data/g4/d3/reference/runs.jsonl", "data/g4/d3/reference/expected_keys.json",
     "data/g4/d3/reference/protocol.json",
@@ -726,7 +790,8 @@ def inputs_sha256(root: Path) -> str:
     return hashlib.sha256(("\n".join(digests) + "\n").encode("ascii")).hexdigest()
 
 
-def header_record(root: Path) -> dict[str, object]:
+def header_record(root: Path, bundle: Bundle | None = None) -> dict[str, object]:
+    bundle = _bundle(root, bundle)
     return {
         "record": "header", "profile": md.PROFILE, "radius_perturbation": RADIUS_PERTURBATION,
         "baseline_includes_uehling": BASELINE_INCLUDES_UEHLING, "assembly_rule": ASSEMBLY_RULE,
@@ -734,6 +799,7 @@ def header_record(root: Path) -> dict[str, object]:
         "refinement_limits": {k: str(v) for k, v in REFINEMENT_LIMITS.items()},
         "omitted_components": list(OMITTED_COMPONENTS), "total_sigma_keV": None,
         "model_uncertainty": "unknown", "inputs_sha256": inputs_sha256(root),
+        "numerical_check_status": bundle.numerical_check_status["status"],
     }
 
 
@@ -774,7 +840,7 @@ def components(root: Path, bundle: Bundle | None = None) -> list[dict[str, objec
     isotope it carries."""
     root = Path(root)
     bundle = _bundle(root, bundle)
-    out: list[dict[str, object]] = [header_record(root)]
+    out: list[dict[str, object]] = [header_record(root, bundle)]
     for row in bundle.kept:
         key = row.nuclide
         on_run, off_run = md.recipe_run_id(row, "anchor", True), md.recipe_run_id(row, "anchor", False)
