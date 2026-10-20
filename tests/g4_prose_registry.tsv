@@ -666,6 +666,7 @@ ff9e698e73f14f73c93e5f484019640954acc85a	FORMAT_SPEC.md	REGISTERED: three -- the
 22ade738afd253c210120ad56ef60261aed054e7	README.md	REGISTERED: 1.3.0 -- MuDirac's release number (mudirac130.MUDIRAC_VERSION), a name
 2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H
 270ca35ad256de5710d36b4f36afa2a020dd721c	README.md	REGISTERED: 1.3.0, six -- MuDirac's release number, as mudirac130.MUDIRAC_VERSION and the patch name carry it; six: the inputs of the patch's default-output check, held by tests/test_packaging.py::test_the_mudirac_patch_directory_carries_the_release_licence_and_its_six_check_inputs
+28a6d0d0d36f3379fa8446918898de6dd4e9dddb	README.md	REGISTERED: 0.6.0 -- the dataset version of the D3 tables on the default branch, the #VERSION of data/g4/d3/d3_kshell.mudirac130p1.g4dat; tests/test_release_metadata.py binds this clause to that #VERSION
 2d71ec87b4dc7c1ee4c3e123f2b41f9fde467306	README.md	REGISTERED: one -- 'one-off', an adjective
 3130be08714748b5864be19c6126fc77084b4f22	README.md	REGISTERED: 114, 1, 0.557 -- '~114' as on the previous line; '(1-R_col)' is the complement in the pushforward's formula; 0.557% is the effective sticking the V_kouchen_base target's conditions state (openmucf/data/validation_targets.csv)
 468ee2cf3a0429b1232cdb37cf5f51db663b55d0	README.md	REGISTERED: 0.94, 3, 8 -- restates FINDINGS.md's requirements form (R = 0.94 at λ_c = 3e8), regenerated and byte-diffed by make audit; the README's copy is read by no test
@@ -698,6 +699,7 @@ e3fd28cba23d87ba142c75fac3c3fb4a855bb8d9	README.md	REGISTERED: 6, 5, 1 -- restat
 e52326badfd61270409743256330b494a0f4e7ef	README.md	REGISTERED: 4.70, 10, ³ -- restates MUON_COST.md's anchor row (Kelly, Hart & Rose: 4.70 GeV/muon) and the order of magnitude between its tiers ('~10³×'); MUON_COST.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
 e8c6140271a87d224d031623162ae2c83169e9c4	README.md	REGISTERED: ³ -- the mass number of ³He, a nuclide label
 f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
+ff26f89f848d3a34d6d2227564f3fd18987804e0	README.md	REGISTERED: 0.5.1 -- the dataset version of the D3 tables release v1.3.0 holds, the topmost '`#VERSION` becomes 0.5.1' of the [1.3.0] section of CHANGELOG.md; tests/test_release_metadata.py binds this clause to that section
 21ffeec98e1eab90e7c9b55fc3e79d25073d0a52	cpp/patches/README.md	REGISTERED: one -- the single call the sentence quotes, SetEnableMuonicData(true)
 5037f1b272e701d700f2d7777c22812316bdf1e7	cpp/patches/README.md	REGISTERED: 4, 3 -- the digits of the seam variables `G4MUONICDATA_D1_PROFILE` and `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells them: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
 7adbc79d41e9978fcb2c79814f8ae1f02434411b	cpp/patches/README.md	REGISTERED: one -- the boolean the patch adds to G4HadronicParameters

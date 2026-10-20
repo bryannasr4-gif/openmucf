@@ -229,6 +229,9 @@ If you use OpenMuCF, please cite it via [`CITATION.cff`](CITATION.cff) (GitHub r
 repository" button from it). Archived on Zenodo — cite the exact release **v1.3.0** via DOI
 [10.5281/zenodo.22995079](https://doi.org/10.5281/zenodo.22995079), or the version-independent concept DOI
 [10.5281/zenodo.21251511](https://doi.org/10.5281/zenodo.21251511) to always resolve to the latest version.
+Release v1.3.0 holds the D3 tables of the `mudirac130` profile at dataset version 0.5.1. The changes that
+[`CHANGELOG.md`](CHANGELOG.md) lists under Unreleased are in no release yet, among them the `mudirac130p1`
+profile at dataset version 0.6.0; to cite them, cite the release together with the commit you used.
 
 ## License
 - **Code** — the `openmucf/` package, `scripts/`, tests, and all software not named below: **Apache-2.0** (see [`LICENSE`](LICENSE)).
