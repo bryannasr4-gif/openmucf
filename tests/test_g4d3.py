@@ -963,7 +963,7 @@ def _keyword(name: str) -> str:
 
 @functools.lru_cache(maxsize=1)
 def document_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
-    """``(what, path, pattern, groups, expected)`` for every number `DATASET_D3.md` states: one row
+    """``(what, path, pattern, groups, expected)`` for the dataset and changelog status: one row
     per comparison-table row (every numeric token a group, its value the generated block's), and
     one per count or constant of the prose, `expected` read from the module or the committed files.
     Patterns match the whitespace-collapsed document."""
@@ -1083,8 +1083,10 @@ def _committed_rows(relpath: str) -> list[dict[str, str]]:
 
 
 def numerical_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
-    """The pins of the section on the numerical checks, read from `components.jsonl`, `shell_projection.csv`
-    and `numerical_check.csv`; each count it states of a verdict is held to every record carrying it."""
+    """Pins from the component, projection and numerical-check records, including the status file.
+
+    Each count of a verdict is held to every record carrying it.
+    """
     path = "DATASET_D3.md"
     records = [r for r in _component_records(COMPONENTS) if "quantity" in r]
     projection = _committed_rows(d3c.PROJECTION_RELPATH)
@@ -1114,7 +1116,54 @@ def numerical_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
         difference = abs(Decimal(far["Q_eV"]) - Decimal(far["Q_ref_eV"]))
     assert (far["uehling"], far["quantity"]) == ("on", "level:K1"), far
     compared = md.compared_nuclides(md.load_cells(CELLS))
-    return [
+    status = d3c.load_numerical_check_status(REPO, set(_checks()))["fresh_solve"]
+    failures = status["failures"]
+    adverse = [r for r in failures if r["fresh_verdict"] != "QUALIFIED"]
+    sharpest = max(failures, key=lambda r: r["fresh_b_ref_of_target"])
+    fresh_ceiling = (sharpest["fresh_b_ref_of_target"] * 1000).to_integral_value(
+        rounding="ROUND_CEILING") / 1000
+    q_change = status["maximum_q_ref_change_of_target"]
+    q_quantum = Decimal(1).scaleb(q_change.adjusted() - 1)
+    q_ceiling = q_change.quantize(q_quantum, rounding="ROUND_CEILING")
+    words = {1: "one", **NUMBER_WORDS}
+    status_pins = [
+        ("fresh solve population", path, r"A fresh solve of all (\d+) rows", (1,),
+         status["population"]["rows"]),
+        ("fresh solve reproduction tolerance", path,
+         r"reproduction tolerance of ([0-9.]+) of the target", (1,),
+         status["criteria"]["reproduction_tolerance_of_target"]),
+        ("fresh solve failed rows", path, r"of the target on (\d+) rows", (1,), status["failed_rows"]),
+        ("lowest failing Z", path, r"all of nuclides with Z from (\d+) to \d+", (1,),
+         min(r["Z"] for r in failures)),
+        ("highest failing Z", path, r"all of nuclides with Z from \d+ to (\d+)", (1,),
+         max(r["Z"] for r in failures)),
+        ("fresh adverse row count", path, r"on (\w+) of them,", (1,), words[len(adverse)]),
+        ("fresh adverse quantity", path, r"on \w+ of them, `([^`]+)` of", (1,), sharpest["quantity"]),
+        ("fresh adverse element", path, r"on \w+ of them, `[^`]+` of ([A-Z][a-z]?)-\d+", (1,),
+         symbols[sharpest["Z"], sharpest["A"]]),
+        ("fresh adverse mass", path, r"on \w+ of them, `[^`]+` of [A-Z][a-z]?-(\d+)", (1,), sharpest["A"]),
+        ("fresh reference estimate rounded up", path,
+         r"the fresh `b_ref_eV` is ([0-9.]+) of the target", (1,),
+         format(fresh_ceiling, "f")),
+        ("fresh reference qualification limit", path, r"above the limit of ([0-9.]+) a", (1,),
+         status["criteria"]["reference_limit_of_target"]),
+        ("fresh reference value change rounded up", path,
+         r"themselves changed by at most ([0-9.e+-]+) of", (1,),
+         format(q_ceiling, ".1e")),
+        ("fresh workers", path, r"the fresh solve ran (\w+) workers", (1,),
+         words[status["environment"]["workers"]]),
+        ("fresh BLAS threads", path, r"workers with (\w+) BLAS thread", (1,),
+         words[status["environment"]["blas_threads_per_worker"]]),
+    ]
+    changelog_pins = [
+        ("fresh changelog failed rows", "CHANGELOG.md", r"tolerance on (\d+) of the \d+ rows", (1,),
+         status["failed_rows"]),
+        ("fresh changelog population", "CHANGELOG.md", r"tolerance on \d+ of the (\d+) rows", (1,),
+         status["population"]["rows"]),
+        ("fresh changelog adverse count", "CHANGELOG.md", r"rows, and on (\w+) of them", (1,),
+         words[len(adverse)]),
+    ]
+    return changelog_pins + status_pins + [
         ("components with the Uehling potential, one step stable", path,
          r"All (\d+) emitted binding energies with the Uehling potential", (1,), len(records)),
         ("components without it, one step stable", path, r"their (\d+) twins without it", (1,), len(records)),
@@ -1391,7 +1440,8 @@ def test_t144_changelog_versions_track_the_shipped_version_and_history():
 
 def test_t107_every_pin_matches_once_and_states_its_value():
     assert not _pin_problems(_document_text())
-    assert {pin[1] for pin in document_pins()} == {"DATASET_D3.md"}
+    assert not _pin_problems((REPO / "CHANGELOG.md").read_text(encoding="utf-8"), "CHANGELOG.md")
+    assert {pin[1] for pin in document_pins()} == {"DATASET_D3.md", "CHANGELOG.md"}
     print(f"\ndocument pins: {len(document_pins())}")
 
 
@@ -1835,6 +1885,8 @@ def _d3_copy(tmp_path: pathlib.Path) -> pathlib.Path:
     for source in D3DIR.iterdir():
         if source.is_file():
             (target / source.name).write_bytes(source.read_bytes())
+    import shutil
+    shutil.copytree(D3DIR / "reference", target / "reference")
     return tmp_path
 
 
@@ -2130,6 +2182,7 @@ def _component_problems(records: list[dict]) -> list[str]:
                                "nuclear charge distributions other than 2pF",
                                "numerical settings beyond one refinement step"],
         "total_sigma_keV": None, "model_uncertainty": "unknown",
+        "numerical_check_status": d3c.load_numerical_check_status(REPO, set(_checks()))["status"],
         "inputs_sha256": hashlib.sha256((NL.join(digests) + NL).encode("ascii")).hexdigest(),
     }
     if header != expected_header:
@@ -3027,3 +3080,63 @@ def attribution_pins() -> list[tuple[str, str, str, tuple[int, ...], object]]:
 
 def inputs_symbol(z: int) -> str:
     return next(row.symbol for row in _outputs().inputs if row.z == z)
+
+
+@pytest.mark.parametrize("change,pin", [
+    ("rows", "fresh solve population"), ("tolerance", "fresh solve reproduction tolerance"),
+    ("failed", "fresh solve failed rows"), ("lowest", "lowest failing Z"),
+    ("highest", "highest failing Z"), ("adverse", "fresh adverse row count"),
+    ("quantity", "fresh adverse quantity"), ("element", "fresh adverse element"),
+    ("mass", "fresh adverse mass"), ("reference", "fresh reference estimate rounded up"),
+    ("limit", "fresh reference qualification limit"),
+    ("q_change", "fresh reference value change rounded up"),
+    ("workers", "fresh workers"), ("threads", "fresh BLAS threads"),
+])
+def test_numerical_status_pins_read_live_record(monkeypatch, change, pin):
+    from copy import deepcopy
+
+    status = deepcopy(d3c.load_numerical_check_status(REPO, set(_checks())))
+    fresh = status["fresh_solve"]
+    sharpest = max(fresh["failures"], key=lambda r: r["fresh_b_ref_of_target"])
+    if change == "rows":
+        fresh["population"]["rows"] += 1
+    elif change == "tolerance":
+        fresh["criteria"]["reproduction_tolerance_of_target"] = str(
+            Decimal(fresh["criteria"]["reproduction_tolerance_of_target"]) * 2)
+    elif change == "failed":
+        fresh["failed_rows"] -= 1
+    elif change == "lowest":
+        min(fresh["failures"], key=lambda r: r["Z"])["Z"] -= 1
+    elif change == "highest":
+        max(fresh["failures"], key=lambda r: r["Z"])["Z"] += 1
+    elif change == "adverse":
+        next(r for r in fresh["failures"] if r["fresh_verdict"] == "QUALIFIED")[
+            "fresh_verdict"] = "NUMERICAL_FAIL"
+    elif change == "quantity":
+        sharpest["quantity"] += "-changed"
+    elif change in ("element", "mass"):
+        other = next(r for r in _outputs().inputs
+                     if r.z != sharpest["Z"] and r.a != sharpest["A"])
+        sharpest["Z"], sharpest["A"] = other.z, other.a
+    elif change == "reference":
+        sharpest["fresh_b_ref_of_target"] *= 2
+    elif change == "limit":
+        fresh["criteria"]["reference_limit_of_target"] = str(
+            Decimal(fresh["criteria"]["reference_limit_of_target"]) * 2)
+    elif change == "q_change":
+        fresh["maximum_q_ref_change_of_target"] *= 2
+    elif change == "workers":
+        fresh["environment"]["workers"] += 1
+    else:
+        fresh["environment"]["blas_threads_per_worker"] += 1
+    monkeypatch.setattr(d3c, "load_numerical_check_status", lambda root, keys: status)
+    document_pins.cache_clear()
+    try:
+        assert any(p.startswith(pin + ": states") for p in _pin_problems(_document_text()))
+        if change in ("rows", "failed", "adverse"):
+            label = {"rows": "population", "failed": "failed rows", "adverse": "adverse count"}[change]
+            changelog = (REPO / "CHANGELOG.md").read_text(encoding="utf-8")
+            assert any(p.startswith(f"fresh changelog {label}: states")
+                       for p in _pin_problems(changelog, "CHANGELOG.md"))
+    finally:
+        document_pins.cache_clear()
