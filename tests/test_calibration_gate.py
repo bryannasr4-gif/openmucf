@@ -5,18 +5,22 @@ what it admits.
 The runtime ownership test and the consumer matrix hold that. An advisory static scan flags common direct
 reads of the cells file; it is not exhaustive. The runtime ownership test checks that every shipped entry
 point opens the file only through the gate. It launches each mode of the calibration script's command line,
-its regeneration, and the FINDINGS.md and FRONTIER.md generators as their own processes, `python <script>
-<arguments>`, on a working copy that carries the openmucf package. A recorder that Python imports at
+its regeneration, the FINDINGS.md and FRONTIER.md generators and both modes of the DESIGN.md generator (its
+regeneration and `--audit`) as their own processes, `python <script> <arguments>`, on a working copy that
+carries the openmucf package. A recorder that Python imports at
 interpreter start records by Python's `open` audit event every open of the file in each process and in any
 Python process it starts. Before loading the script or openmucf, the recorder initializes standard-library
 platform metadata and installs the open-event and process-start hook; the hook remains active through
 shipped module initialization and normal exit. The test accepts only the gate's read and the measurement
 steps' own reads and writes, each as often as stated, and names any process started and any fault of the
 recording's lifetime. The script's numerical engines return the committed values in those runs from the
-moment the script calls its `main`, and run for real, at a reduced size, in a process of their own.
+moment the script calls its `main`, and run for real, at a reduced size, in a process of their own. In the
+DESIGN.md generator's runs its computation (`compute`, the NUTS ranking) is replaced from its `main` on by a
+stand-in that records that it was reached and exits; the gate's read must come first.
 
 The consumer matrix then runs the actual entry points -- `--render`, `--audit`, the FRONTIER.md generator's
-`main` and the FINDINGS.md generator itself -- on a working copy whose cells file carries one defect at a
+`main`, the FINDINGS.md generator itself and the DESIGN.md generator's `main` in both modes, its computation
+replaced by a marker -- on a working copy whose cells file carries one defect at a
 time: every print of the documents as released replaced, every one omitted, the record or the released
 documents damaged, each input digest stale, missing or unknown, and each whole record absent. Each must
 stop, naming the defect, before it writes or reports success.
@@ -334,7 +338,7 @@ def test_the_scan_covers_every_module_and_finds_the_gate_and_its_readers():
                          capture_output=True, text=True)
     if git.returncode == 0 and git.stdout:
         assert {f for f in git.stdout.splitlines() if f.endswith(".py")} <= set(mods)
-    for rel in ("scripts/generate_findings.py", "scripts/generate_frontier.py"):
+    for rel in ("scripts/generate_findings.py", "scripts/generate_frontier.py", "scripts/generate_design.py"):
         tree = ast.parse((_ROOT / rel).read_text(encoding="utf-8"))
         names, named = _gate_module_names(tree)
         assert names and named, rel
@@ -598,7 +602,7 @@ def work(tmp_path, monkeypatch):
     """A working copy of every file the gate and the two calibration documents read, as the working
     directory; FRONTIER.md's figure and FINDINGS.md's first computation stand in as markers."""
     gate = _load(_ROOT / GATE, "_gen_calibration")
-    for rel in (*_FILES, gate.NOTE_PATH):
+    for rel in (*_FILES, "DESIGN.md", "DESIGN_MANIFEST.json", gate.NOTE_PATH):
         (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(_ROOT / rel, tmp_path / rel)
     monkeypatch.chdir(tmp_path)
@@ -609,7 +613,7 @@ def work(tmp_path, monkeypatch):
 
 
 _OUTPUTS = ("CALIBRATION.md", "FRONTIER.md", "FRONTIER_MANIFEST.json", "FINDINGS.md",
-            "FINDINGS_MANIFEST.json")
+            "FINDINGS_MANIFEST.json", "DESIGN.md", "DESIGN_MANIFEST.json")
 
 
 def _outputs(root, gate):
@@ -647,7 +651,16 @@ def _findings(gate, fr, root):
     runpy.run_path(str(_ROOT / "scripts" / "generate_findings.py"), run_name="__main__")
 
 
-CONSUMERS = {"render": _render, "audit": _audit, "frontier": _frontier, "findings": _findings}
+def _design(mode):
+    def run(gate, fr, root):
+        gd = _load(_ROOT / "scripts" / "generate_design.py", "_gen_design")
+        gd.compute = _raise_reached
+        gd.main(mode)
+    return run
+
+
+CONSUMERS = {"render": _render, "audit": _audit, "frontier": _frontier, "findings": _findings,
+             "design": _design([]), "design --audit": _design(["--audit"])}
 
 
 def _refusals(work, fixtures, consumer):
@@ -857,6 +870,11 @@ def test_every_consumer_takes_the_genuine_record(work, monkeypatch):
     with pytest.raises(_Reached):
         runpy.run_path(str(_ROOT / "scripts" / "generate_findings.py"), run_name="__main__")
     assert not (root / "FINDINGS.md").exists()
+    for mode in ("design", "design --audit"):
+        before = _outputs(root, gate)
+        with pytest.raises(_Reached):
+            CONSUMERS[mode](gate, fr, root)
+        assert _outputs(root, gate) == before, mode
 
 
 # ============================================================================ the measurement steps
@@ -1031,7 +1049,10 @@ def _recorder():
       the openmucf package was imported from.
 
     Where the test asks, it makes the calibration script's ENGINES return the committed values from the moment
-    the script, run as itself, calls its `main`, and reports that it did.
+    the script, run as itself, calls its `main`, and reports that it did. Where the test asks for the design
+    stand-in, it replaces the DESIGN.md generator's `compute` from the moment that script, run as itself,
+    calls its `main`, by a function that reports `design_compute` and exits 0, and reports that it stood in
+    (naming `compute` if the script had none). The two stand-ins are not asked for in one launch.
 
     Before it reads its configuration or adds the hook, it asks the platform module for the OS metadata, which
     the module caches for the life of the process: the real answer, from the standard library alone, with no
@@ -1131,6 +1152,23 @@ def _recorder():
                 emit(event="engines", names=sorted(stand_ins), missing=missing)
 
         sys.setprofile(profile)
+    if cfg.get("design"):
+        design_script = real(cfg["design"])
+
+        def computed(*args, **kwargs):
+            emit(event="design_compute")
+            raise SystemExit(0)
+
+        def design_profile(frame, event, arg):
+            code = frame.f_code
+            if event == "call" and code.co_name == "main" and frame.f_globals.get("__name__") == "__main__" \
+                    and real(code.co_filename) == design_script:
+                sys.setprofile(None)
+                missing = [] if callable(frame.f_globals.get("compute")) else ["compute"]
+                frame.f_globals["compute"] = computed
+                emit(event="design_stand_in", missing=missing)
+
+        sys.setprofile(design_profile)
     preloaded = sorted(m for m in sys.modules if m.split(".")[0] == "openmucf")
     sys.addaudithook(hook)
     emit(event="start", preloaded=preloaded)
@@ -1189,7 +1227,8 @@ class _Report:
     write, the calibration script's functions on the stack, the path), the processes started, the errors of
     the hook, and what is wrong with the recording's lifetime: the entry point's process not recorded from its
     start, any openmucf module imported before the recorder, no normal end, the openmucf package not the
-    working copy's, or the numerical engines asked to stand in and not standing in from `main` on."""
+    working copy's, or the numerical engines or the design computation asked to stand in and not standing in
+    from `main` on. ``design_computed`` counts the design stand-in's `design_compute` reports."""
 
     def __init__(self, path, root, engines):
         events = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()] \
@@ -1215,6 +1254,10 @@ class _Report:
         stood = [e for e in mine if e["event"] == "engines"]
         if engines and [(e["names"], e["missing"]) for e in stood] != [(sorted(ENGINES), [])]:
             lifetime.append(f"the numerical engines did not stand in from `main` on: {stood}")
+        self.design_computed = len([e for e in mine if e["event"] == "design_compute"])
+        design = [e for e in mine if e["event"] == "design_stand_in"]
+        if Path(path).parent.joinpath("design").exists() and [e["missing"] for e in design] != [[]]:
+            lifetime.append(f"the design computation did not stand in from `main` on: {design}")
         self.lifetime = lifetime
 
 
@@ -1252,8 +1295,11 @@ def ownership_problems(rec, expected):
 
 #: the scripts an entry point takes from the working copy (FINDINGS.md's generator loads the materiality
 #: script by its path from the working directory)
+_DESIGN = "scripts/generate_design.py"
 _SCRIPTS = (GATE, "scripts/generate_findings.py", "scripts/generate_frontier.py",
-            "scripts/generate_materiality.py")
+            "scripts/generate_materiality.py", _DESIGN)
+#: the design documents its audit reads before it computes
+_DESIGN_FILES = ("DESIGN.md", "DESIGN_MANIFEST.json")
 
 
 class _EntryCopy:
@@ -1284,17 +1330,23 @@ class _EntryCopy:
             encoding="utf-8")
         return self
 
-    def launch(self, argv, *, engines=None, recorder_prefix="", package_from_copy=True):
+    def launch(self, argv, *, engines=None, design=None, recorder_prefix="", package_from_copy=True):
         """Run ``python <argv>`` in the working copy as its own process, recorded from interpreter start by
         `_recorder`; with ``engines`` (by default, when ``argv`` runs the calibration script) the script's
-        ENGINES stand in from its `main` on. Return the `_Report` and the completed process."""
+        ENGINES stand in from its `main` on, and with ``design`` (by default, when ``argv`` runs the DESIGN.md
+        generator) its `compute` does. Return the `_Report` and the completed process."""
         self.launches += 1
         shim = self.aside / f"launch_{self.launches}"
         shim.mkdir()
+        design = argv[0] == _DESIGN if design is None else design
+        if design:  # the report reads this marker as "the design stand-in was asked for"
+            (shim / "design").write_text("", encoding="utf-8")
         recorder = _as_script(_without_wmi) + _as_script(_recorder, recorder_prefix)
         (shim / "sitecustomize.py").write_text(recorder, encoding="utf-8")
         engines = argv[0] == GATE if engines is None else engines
         cfg = dict(self.watch, report=str(shim / "opens.jsonl"))
+        if design:
+            cfg["design"] = str(self.root / _DESIGN)
         if engines:
             cfg["engines"] = {"script": str(self.root / GATE),
                               "values": str(self.aside / "engine_values.json")}
@@ -1312,7 +1364,7 @@ def entry_copy(tmp_path):
     # to do so: built here, outside the recordings, so that a launch starts no process of matplotlib's
     importlib.import_module("matplotlib.font_manager")
     root, aside = tmp_path / "copy", tmp_path / "aside"
-    for rel in (*_FILES, *_SCRIPTS, _load(_ROOT / GATE, "_gen_calibration").NOTE_PATH):
+    for rel in (*_FILES, *_SCRIPTS, *_DESIGN_FILES, _load(_ROOT / GATE, "_gen_calibration").NOTE_PATH):
         (root / rel).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(_ROOT / rel, root / rel)
     shutil.copytree(_ROOT / "openmucf", root / "openmucf", dirs_exist_ok=True,
@@ -1347,6 +1399,8 @@ ENTRY_POINTS = {
         Counter({("read", "load", "regenerate"): 1, ("write", "_write_text", "regenerate"): 1})),
     "generate_findings.py": (lambda w: ["scripts/generate_findings.py"], Counter({_BY_GATE: 1})),
     "generate_frontier.py": (lambda w: ["scripts/generate_frontier.py"], Counter({_BY_GATE: 1})),
+    "generate_design.py (regeneration)": (lambda w: [_DESIGN], Counter({_BY_GATE: 1})),
+    "generate_design.py --audit": (lambda w: [_DESIGN, "--audit"], Counter({_BY_GATE: 1})),
 }
 
 
@@ -1363,7 +1417,8 @@ def test_the_entry_points_are_every_mode_of_the_script_and_every_module_taking_i
         == {e for e in ENTRY_POINTS if e.startswith("generate_calibration.py")}
     binders = {rel for rel in _modules(_ROOT) if rel != GATE
                and _gate_module_names(ast.parse((_ROOT / rel).read_text(encoding="utf-8")))[0]}
-    assert binders == {f"scripts/{e}" for e in ENTRY_POINTS if not e.startswith("generate_calibration.py")}
+    assert binders == {f"scripts/{e.split()[0]}" for e in ENTRY_POINTS
+                       if not e.startswith("generate_calibration.py")}
     w = _EntryCopy(tmp_path, tmp_path)
     w.runs = ["run.json"]
     for entry, (argv, _) in ENTRY_POINTS.items():
@@ -1382,6 +1437,7 @@ def test_every_entry_point_opens_the_cells_file_only_through_the_gate(entry_copy
     rec, done = entry_copy.launch(argv(entry_copy))
     assert ownership_problems(rec, expected) == []
     assert done.returncode == 0, done.stderr[-3000:]
+    assert rec.design_computed == (argv(entry_copy)[0] == _DESIGN), entry
 
 
 def _nonfinite_q_net(root):
@@ -1414,6 +1470,7 @@ def test_no_entry_point_takes_a_refused_record_but_through_its_refusal(entry_cop
         assert json.loads(entry_copy.cells.read_text(encoding="utf-8"))["q_net"] == _committed()["q_net"]
     elif expected:
         assert done.returncode != 0 and _NAN_REFUSED in done.stderr, (done.returncode, done.stderr[-3000:])
+        assert rec.design_computed == 0, entry
     else:
         assert not owned and done.returncode == 0, done.stderr[-3000:]
 
@@ -1596,13 +1653,17 @@ _LIFETIME_FAULTS = [
      "openmucf was not imported from the working copy"),
     ("the engines asked for and not standing in", {"engines": True, "argv": ["scripts/generate_frontier.py"]},
      "the numerical engines did not stand in from `main` on: []"),
+    ("the design computation asked for and not standing in",
+     {"design": True, "argv": ["scripts/generate_frontier.py"]},
+     "the design computation did not stand in from `main` on: []"),
 ]
 
 
 @pytest.mark.parametrize("label, how, named", _LIFETIME_FAULTS, ids=[f[0] for f in _LIFETIME_FAULTS])
 def test_a_fault_of_the_recordings_lifetime_is_named(entry_copy, label, how, named):
     """Drill: a launch whose recording starts after the openmucf package was imported, that imports another
-    openmucf than the working copy's, or whose engines were asked to stand in and do not, is named."""
+    openmucf than the working copy's, or whose engines or design computation were asked to stand in and do
+    not, is named."""
     entry_copy.prepare()
     how = dict(how)
     rec, _ = entry_copy.launch(how.pop("argv", [GATE, "--render"]), **how)

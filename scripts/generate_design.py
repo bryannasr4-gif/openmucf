@@ -92,7 +92,7 @@ from pathlib import Path
 
 import numpy as np
 
-from openmucf import design
+from openmucf import calibrate, design
 from openmucf.provenance import ManifestEntry, file_sha256, write_manifest
 from openmucf.rates import RATES_CSV
 
@@ -413,8 +413,50 @@ def _eig_table(H: dict, cand_ids) -> str:
     return "| candidate | EIG [bits] |\n|---|---|\n" + "\n".join(rows)
 
 
-def build_markdown(H: dict, res: dict) -> str:
+#: The row of the prior-sensitivity sweep whose boxes are the design's omega_s0 and R pins, and the key prefix of
+#: that row's print in the record of release v1.3.0 (`CALIBRATION_CELLS.json` ["shipped_v1_3_0"]).
+BASIS_ROW = "R=legacy/os0=legacy/lc=narrow"
+V130_SWEEP = "CALIBRATION.md|Prior-sensitivity sweep (weak-prior mode; 4 chains x 1000)|"
+
+
+def _edge(x: float) -> str:
+    """A cycle-rate box edge as the sweep prints one, e.g. 8e+07, 1.6e+08."""
+    return f"{x:.2g}"
+
+
+def basis_slots(cells) -> dict:
+    """The figures of the Method and Basis paragraphs: the design's pinned boxes and observations, the
+    omega_s0/R correlation and box label that release v1.3.0's sweep printed for those boxes (read from the record
+    of that release), and the corrected sweep's row for the same omega_s0 and R boxes. ``cells`` is the record as
+    `admitted_calibration_cells` admits it (the admission checks the sweep rows: one per configuration of the
+    grid, each with its configuration's boxes)."""
+    shipped = cells.data["shipped_v1_3_0"]
+    rows = [r for r in cells.data["sweep"] if r["config"] == BASIS_ROW]
+    if len(rows) != 1:
+        raise ValueError(f"the admitted record holds {len(rows)} sweep rows {BASIS_ROW}, not one")
+    row = rows[0]
+    boxes = shipped[f"{V130_SWEEP}{BASIS_ROW}|boxes"]
+    lc = re.fullmatch(r"R\[[^]]*\] os0\[[^]]*\] lc\[([^,\]]+),([^\]]+)\]", boxes)
+    if lc is None:
+        raise ValueError(f"the released sweep row {BASIS_ROW} prints boxes {boxes!r}, not an R, os0, lc triple")
+    return {
+        "os0_lo": f"{design.BASE_PRIOR[1]:.2f}", "os0_hi": f"{design.BASE_PRIOR[2]:.2f}",
+        "R_lo": f"{design._R_LO:.2f}", "R_hi": f"{design._R_HI:.2f}",
+        "lc_lo": _edge(design._LAMBDA_C_LO), "lc_hi": _edge(design._LAMBDA_C_HI),
+        "obs": f"{design._OBS['omega_s_eff_obs']:g}", "obs_sd": f"{design._OBS['omega_s_eff_sd']:g}",
+        "xmu": f"{design._OBS['xmu_obs']:g}", "xmu_sd": f"{design._OBS['xmu_sd']:g}",
+        "row": BASIS_ROW,
+        "v130_corr": shipped[f"{V130_SWEEP}{BASIS_ROW}|corr"],
+        "v130_lc_hi": lc.group(2),
+        "obs_w_xmu_sd": f"{calibrate.OBS_W['xmu_sd']:g}",
+        "sweep_lc_lo": _edge(row["lc_box"][0]), "sweep_lc_hi": _edge(row["lc_box"][1]),
+        "sweep_corr": f"{row['corr']:.2f}",
+    }
+
+
+def build_markdown(H: dict, res: dict, cells) -> str:
     cand_ids = res["cand_ids"]
+    B = basis_slots(cells)
     s = res["settings"]
     reg = res["registry"]
     labels = {c: design._resolve(c) for c in cand_ids}
@@ -442,17 +484,32 @@ def build_markdown(H: dict, res: dict) -> str:
 > as a finding.
 
 **Method (no new physics).** Both metrics run over a weak-prior calibration posterior on the boxes
-`openmucf.design` pins -- Uniform omega_s0 ({design.BASE_PRIOR[1]:.2f}, {design.BASE_PRIOR[2]:.2f}) and Uniform R
-({design._R_LO:.2f}, {design._R_HI:.2f}), the `openmucf.calibrate` boxes before they were widened, not its
-current defaults (`CALIBRATION.md` states both) -- the chain with the +0.84 omega_s0/R degeneracy ridge
-that `CALIBRATION.md`'s prior-sensitivity sweep reports for these boxes, the same chain the X-ray verdict
-was decided on. A candidate is only an ADDED future
+`openmucf.design` pins -- Uniform omega_s0 ({B["os0_lo"]}, {B["os0_hi"]}), Uniform R ({B["R_lo"]}, {B["R_hi"]}) and Uniform lambda_c
+({B["lc_lo"]}, {B["lc_hi"]}) s^-1, the `openmucf.calibrate` boxes before they were widened, not its current defaults
+(`CALIBRATION.md` states both) -- under the likelihood of `openmucf.calibrate.model`: the effective sticking
+{B["obs"]} +- {B["obs_sd"]} % taken as the whole loss per cycle and the yield {B["xmu"]} +- {B["xmu_sd"]}, with no cycle-rate measurement. That is
+the posterior whose omega_s0/R correlation the prior-sensitivity sweep of `CALIBRATION.md` as released in v1.3.0
+printed as +{B["v130_corr"]} for these boxes (its row {B["row"]}, whose cycle-rate box that release
+printed at one significant figure as {B["v130_lc_hi"]}), and the same chain the X-ray verdict was decided on. A candidate
+is only an ADDED future
 observable `y ~ Normal(mu(theta), sigma)` at a stated design point; nothing about the calibration data or
 the forward map changes. The PRIMARY metric is the preposterior median posterior-sd contraction from
 refitting with that observable appended (`openmucf.design.sd_contraction`); the SECONDARY metric is the
 nested-Monte-Carlo Expected Information Gain in bits (`openmucf.design.eig_nested_mc`). Pinned settings:
 n_outer={s['n_outer']}, n_inner={s['n_inner']} (EIG), n_synth={s['n_synth']} synthetic datasets, chains
 num_warmup={s['num_warmup']}/num_samples={s['num_samples']}, seed={res['seed']}.
+
+**Basis: the likelihood before the anchor-basis correction.** This ranking has not been recomputed on the
+corrected calibration that `CALIBRATION.md` has used since its amendment of 2026-10-14
+(`openmucf.calibrate.posterior_quadrature`), in which the effective sticking and the side-channel loss at the
+anchor fill together make the loss per cycle, the measured cycle rate enters the likelihood and the yield carries
+its printed +-{B["obs_w_xmu_sd"]}. Its prior-sensitivity sweep gives that posterior on this page's omega_s0 and R boxes, with the
+cycle-rate box ({B["sweep_lc_lo"]}, {B["sweep_lc_hi"]}) s^-1 the corrected calibration uses because the narrower box truncates its
+posterior, an omega_s0/R correlation of {B["sweep_corr"]}: the degeneracy this design exists to break remains. A recompute
+would also change C1's observable, whose disappearance slope takes the effective sticking alone as the loss per
+cycle and would need the side-channel loss at its design point, which the corrected calibration does not carry
+to other conditions. It could move every number below, and the C4 inclusion verdict of `docs/xray_feasibility.md`,
+which ran on the same likelihood and boxes.
 
 ## Candidate registry
 | candidate | observable | design point | status |
@@ -627,10 +684,25 @@ def _manifest_inputs() -> dict:
 
 
 # ============================================================================ regenerate / audit
+def admitted_calibration_cells():
+    """The calibration cells as scripts/generate_calibration.py's gate (`admit_calibration_cells`) admits
+    them, or its refusal (a SystemExit naming each problem); loaded at call time, so that importing this
+    module stays light and reads no file."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_gen_calibration", Path(__file__).resolve().parent / "generate_calibration.py"
+    )
+    gen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+    return gen.admit_calibration_cells()
+
+
 def regenerate() -> None:
+    cells = admitted_calibration_cells()      # before anything is computed or written
     res = compute()
     H, _ = build_headline(res)
-    Path(DESIGN_MD).write_text(build_markdown(H, res), encoding="utf-8")
+    Path(DESIGN_MD).write_text(build_markdown(H, res, cells), encoding="utf-8")
     entries = build_manifest_entries(H, res["cand_ids"])
     write_manifest(DESIGN_MANIFEST, entries, _manifest_inputs(), generated_by="scripts/generate_design.py")
     print(f"wrote {DESIGN_MD} + {DESIGN_MANIFEST} ({len(entries)} tracked numbers)")
@@ -698,6 +770,7 @@ def audit() -> None:
     Every band and every margin is printed, so a CI log on ANY platform is evidence about how the
     tolerances are actually sized -- the instrumentation the 2026-07-23 cross-arch audit found missing.
     """
+    admitted_calibration_cells()      # before anything is read, computed or reported
     committed = _read_committed_manifest()
     # EVERY audited cell's band is derived from a published per-cell SE, so every audited cell must have
     # one. Stated as a general rule rather than a list of prefixes (2026-08-12: the EIG family joined the

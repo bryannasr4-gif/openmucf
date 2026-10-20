@@ -49,10 +49,11 @@ from .constants import LAMBDA_0
 
 # --- pre-registered design settings (do not adjust after seeing outputs) ------------------------------
 # Base knowledge = the WEAK-prior calibration chain on calibrate's boxes BEFORE they were widened
-# (omega_s0 here; R in _R_LO/_R_HI below): the omega_s0/R degeneracy this design exists to break (the
-# +0.84 ridge CALIBRATION.md's prior-sensitivity sweep reports for these boxes; the same chain the X-ray
-# feasibility study used). calibrate.py's current defaults are wider; this pin is one of the
-# pre-registered settings above.
+# (omega_s0 here; R in _R_LO/_R_HI below), under calibrate.model's likelihood, the one before the
+# anchor-basis correction: the omega_s0/R degeneracy this design exists to break (DESIGN.md prints the
+# correlation the v1.3.0 prior-sensitivity sweep reported for this chain; the same chain the X-ray
+# feasibility study used). calibrate.py's current defaults are wider; this pin is one of the pre-registered
+# settings above.
 BASE_PRIOR = ("uniform", 0.60, 1.10)
 NUM_WARMUP = 1000        # mirrors scripts/generate_calibration.py + forecast.py chains
 NUM_SAMPLES = 4000

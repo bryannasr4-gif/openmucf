@@ -105,9 +105,10 @@ make calibration   # Bayesian calibration + identifiability -> CALIBRATION.md
 ```
 
 `make calibration` regenerates `CALIBRATION.md`, which shows the key
-identifiability result: experiment pins the effective sticking (ω_s^eff ≈ 0.461%)
-and λ_c, but the ω_s0/R split stays degenerate (correlation +0.84) — the
-quantitative reason the Phase-3 microscopic surrogate is needed.
+identifiability result: experiment pins the effective sticking (ω_s^eff ≈ 0.45%)
+and λ_c, but the ω_s0/R split stays degenerate (correlation 0.90 on the default prior boxes,
+0.82 to 0.92 across the prior-sensitivity sweep) — the quantitative reason the Phase-3 microscopic
+surrogate is needed.
 
 ## Where to go next
 

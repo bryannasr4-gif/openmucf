@@ -12,17 +12,32 @@
 > as a finding.
 
 **Method (no new physics).** Both metrics run over a weak-prior calibration posterior on the boxes
-`openmucf.design` pins -- Uniform omega_s0 (0.60, 1.10) and Uniform R
-(0.10, 0.60), the `openmucf.calibrate` boxes before they were widened, not its
-current defaults (`CALIBRATION.md` states both) -- the chain with the +0.84 omega_s0/R degeneracy ridge
-that `CALIBRATION.md`'s prior-sensitivity sweep reports for these boxes, the same chain the X-ray verdict
-was decided on. A candidate is only an ADDED future
+`openmucf.design` pins -- Uniform omega_s0 (0.60, 1.10), Uniform R (0.10, 0.60) and Uniform lambda_c
+(8e+07, 1.6e+08) s^-1, the `openmucf.calibrate` boxes before they were widened, not its current defaults
+(`CALIBRATION.md` states both) -- under the likelihood of `openmucf.calibrate.model`: the effective sticking
+0.45 +- 0.05 % taken as the whole loss per cycle and the yield 113 +- 12, with no cycle-rate measurement. That is
+the posterior whose omega_s0/R correlation the prior-sensitivity sweep of `CALIBRATION.md` as released in v1.3.0
+printed as +0.84 for these boxes (its row R=legacy/os0=legacy/lc=narrow, whose cycle-rate box that release
+printed at one significant figure as 2e+08), and the same chain the X-ray verdict was decided on. A candidate
+is only an ADDED future
 observable `y ~ Normal(mu(theta), sigma)` at a stated design point; nothing about the calibration data or
 the forward map changes. The PRIMARY metric is the preposterior median posterior-sd contraction from
 refitting with that observable appended (`openmucf.design.sd_contraction`); the SECONDARY metric is the
 nested-Monte-Carlo Expected Information Gain in bits (`openmucf.design.eig_nested_mc`). Pinned settings:
 n_outer=256, n_inner=256 (EIG), n_synth=64 synthetic datasets, chains
 num_warmup=1000/num_samples=4000, seed=0.
+
+**Basis: the likelihood before the anchor-basis correction.** This ranking has not been recomputed on the
+corrected calibration that `CALIBRATION.md` has used since its amendment of 2026-10-14
+(`openmucf.calibrate.posterior_quadrature`), in which the effective sticking and the side-channel loss at the
+anchor fill together make the loss per cycle, the measured cycle rate enters the likelihood and the yield carries
+its printed +-10. Its prior-sensitivity sweep gives that posterior on this page's omega_s0 and R boxes, with the
+cycle-rate box (8e+07, 2e+08) s^-1 the corrected calibration uses because the narrower box truncates its
+posterior, an omega_s0/R correlation of 0.82: the degeneracy this design exists to break remains. A recompute
+would also change C1's observable, whose disappearance slope takes the effective sticking alone as the loss per
+cycle and would need the side-channel loss at its design point, which the corrected calibration does not carry
+to other conditions. It could move every number below, and the C4 inclusion verdict of `docs/xray_feasibility.md`,
+which ran on the same likelihood and boxes.
 
 ## Candidate registry
 | candidate | observable | design point | status |

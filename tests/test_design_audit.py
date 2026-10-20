@@ -8,7 +8,9 @@ doc<->manifest render deterministically, carry the mandated verbatim paragraphs,
 the pure rendering path).
 """
 
+import functools
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
@@ -26,6 +28,18 @@ def _load_script():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+@functools.lru_cache(maxsize=1)
+def _admitted_cells():
+    """The calibration record as the generator takes it, through the calibration's gate, admitted once from
+    the repository root (the gate reads the cells, its inputs and the released documents relative to it)."""
+    cwd = os.getcwd()
+    os.chdir(_SCRIPT.parent.parent)
+    try:
+        return _load_script().admitted_calibration_cells()
+    finally:
+        os.chdir(cwd)
 
 
 def _mock_res(*, resolved_flip: bool = False, negative_delta: bool = False,
@@ -174,8 +188,8 @@ def test_design_doc_and_manifest_render_deterministically(tmp_path):
     res = _mock_res()
     h1, _ = mod.build_headline(res)
     h2, _ = mod.build_headline(res)
-    md1 = mod.build_markdown(h1, res)
-    md2 = mod.build_markdown(h2, res)
+    md1 = mod.build_markdown(h1, res, _admitted_cells())
+    md2 = mod.build_markdown(h2, res, _admitted_cells())
     assert md1 == md2  # deterministic given the result
 
     # verbatim estimand-discipline paragraph
@@ -379,6 +393,9 @@ def _audit_against(tmp_path, monkeypatch, committed_res, fresh_res):
     write_manifest(mod.DESIGN_MANIFEST, entries, mod._manifest_inputs(),
                    generated_by="scripts/generate_design.py")
     monkeypatch.setattr(mod, "compute", lambda *a, **k: fresh_res)
+    # the scratch directory holds no calibration record: the gate is substituted here, and the refusal
+    # matrix of tests/test_calibration_gate.py is what tests it
+    monkeypatch.setattr(mod, "admitted_calibration_cells", lambda: None)
     return mod
 
 
@@ -439,6 +456,9 @@ def test_every_audited_cell_publishes_an_se(tmp_path, monkeypatch):
     write_manifest(mod.DESIGN_MANIFEST, entries, mod._manifest_inputs(),
                    generated_by="scripts/generate_design.py")
     monkeypatch.setattr(mod, "compute", lambda *a, **k: _mock_res())
+    # the scratch directory holds no calibration record: the gate is substituted here, and the refusal
+    # matrix of tests/test_calibration_gate.py is what tests it
+    monkeypatch.setattr(mod, "admitted_calibration_cells", lambda: None)
     with pytest.raises(SystemExit) as exc:
         mod.audit()
     assert "regenerate" in str(exc.value) and "eig_C1" in str(exc.value)
