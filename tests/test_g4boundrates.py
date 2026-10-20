@@ -219,6 +219,578 @@ def test_oracle_is_the_one_the_policy_names(policy: dict) -> None:
 
 
 # --------------------------------------------------------------------------------------------
+# the summarizer and the gates, on synthetic records with known answers
+# --------------------------------------------------------------------------------------------
+
+#: The capture model's local time in the synthetic records: negative, like the cascade model's default, so the
+#: clamp of the stopping caller cannot hide a fixture's clock defect.
+MODEL_TAU = -1.0
+#: The same on the atomic route: not negative, the case the frozen clock predictions assume there (the
+#: physically correct time and the delivered time then agree at t0 = 0).
+ATOM_MODEL_TAU = 0.25
+
+
+def write_stream(directory: Path, route: str, pair: bound.Pair, n: int, t0: float, seed: int = 7, *,  # noqa: C901
+                 first: int = 0, mutate=None, constant_delay: bool = False,  # type: ignore[no-untyped-def]
+                 physical_atom_clock: bool = False, shift: float = 0.0,
+                 consumed: tuple[float, float] | None = None) -> Path:
+    """The stops.txt, bound.txt and bound_summary.txt a trace build writes for ``n`` events with the switch
+    on, drawn here from the competing exponentials of ``pair`` (or of ``consumed``, the pair the consumer is
+    made to use). The atomic records carry the implementation's clock (atom created at 2 t0) unless
+    ``physical_atom_clock``; ``shift`` moves every atomic product time; ``constant_delay`` makes every delay
+    1/Lambda. ``mutate(lines)`` may edit the bound lines before they are written."""
+    import random
+
+    rng = random.Random(seed)
+    c, d = consumed if consumed is not None else (pair.capture, pair.decay)
+    lam = c + d
+    tau, tau_dio, tau_nc = 1.0 / lam, 1.0 / d, 1.0 / c
+    raw = directory / "raw"
+    raw.mkdir(parents=True)
+    stops, lines = [], []
+    za = f"{pair.z} {pair.a}"
+    sums: dict[str, list[float]] = {"all": [], "capture": [], "decay": []}
+    captures = 0
+    for k in range(n):
+        i = first + k
+        elapsed = 1.0 / lam if constant_delay else max(rng.expovariate(lam), 1.5)
+        captured = rng.random() * lam < c
+        captures += captured
+        taus = [MODEL_TAU if route == bound.STOPPING else ATOM_MODEL_TAU] * 2 if captured else []
+        branch = "N" if captured else "D"
+        if route == bound.STOPPING:
+            products = [t0 + max(elapsed + t, 0.0) for t in taus]
+            electron = None if captured else t0 + elapsed
+            e = electron.hex() if electron is not None else "-"
+            stops.append(f"{i} {za} {za} {c.hex()} {d.hex()} {0.0.hex()} {elapsed.hex()} "
+                         f"{1 if captured else 0} {branch} {e}")
+            fields = ["S", str(i), str(pair.z), str(pair.a), 0.0.hex(), elapsed.hex(), branch,
+                      "P", "1", "0", "0", c.hex(), d.hex()]
+        else:
+            counter = elapsed / tau
+            elapsed = counter * tau
+            create = (t0 if physical_atom_clock else 2.0 * t0) + shift
+            if physical_atom_clock:
+                products = [t0 + elapsed + max(t, 0.0) + shift for t in taus]
+                electron = None if captured else t0 + elapsed + shift
+            else:
+                products = [create + max(elapsed + t, 0.0) for t in taus]
+                electron = None if captured else create + elapsed
+            e = electron.hex() if electron is not None else "-"
+            mid = [tau.hex(), tau_dio.hex(), tau_nc.hex(), counter.hex(), elapsed.hex(), create.hex(), branch]
+            stops.append(" ".join([str(i), za, za, *mid, branch, e]))
+            if k == 0:
+                lines.append(f"C {i} helper {pair.z} {pair.a} 0 {c.hex()} {d.hex()}")
+            fields = ["A", str(i), str(pair.z), str(pair.a), create.hex(), *mid, branch]
+        sums["all"].append(elapsed)
+        sums["capture" if captured else "decay"].append(elapsed)
+        fields += ["M", "1" if captured else "0", str(len(taus)), *(t.hex() for t in taus),
+                   "N", str(len(products)), *(t.hex() for t in products), "E", e]
+        lines.append(" ".join(fields))
+    if mutate is not None:
+        lines = mutate(lines)
+    (raw / "stops.txt").write_text("\n".join(stops) + "\n", encoding="ascii")
+    (raw / "bound.txt").write_text("\n".join(lines) + "\n", encoding="ascii")
+    (raw / "bound_summary.txt").write_text(
+        f"events {n}\ncaptures {captures}\nsum_all {math.fsum(sums['all']).hex()}\n"
+        f"sum_capture {math.fsum(sums['capture']).hex()}\nsum_decay {math.fsum(sums['decay']).hex()}\n",
+        encoding="ascii")
+    return raw
+
+
+@pytest.fixture(scope="module")
+def c12(policy: dict) -> bound.Pair:
+    return bound.frozen_pair(policy, "C-12")
+
+
+def _summary(tmp_path: Path, route: str, pair: bound.Pair, n: int = 4000, t0: float = 250.0,
+             **kw) -> dict:  # type: ignore[no-untyped-def]
+    raw = write_stream(tmp_path / "chunk", route, pair, n, t0, **kw)
+    return bound.merge([bound.summarize_chunk(raw, route, pair, t0, kw.get("first", 0), n)])
+
+
+def _section(line: str, tag: str) -> tuple[list[str], int]:
+    t = line.split()
+    return t, t.index(tag)
+
+
+@pytest.mark.parametrize("route", bound.ROUTES)
+def test_a_correct_stream_passes_every_gate_and_only_the_predicted_clocks_fail(
+        tmp_path: Path, c12: bound.Pair, route: str) -> None:
+    s = _summary(tmp_path, route, c12, t0=250.0)
+    assert bound.gate_complete(s, 4000)["verdict"] == "pass", bound.gate_complete(s, 4000)
+    assert bound.gate_rate(s, route)["verdict"] == "pass"
+    assert int(s["rate_exact"]) == 4000
+    dist = bound.gate_distribution(s, 36)
+    assert {v["verdict"] for v in dist.values()} == {"pass"}, dist
+    clocks = bound.gate_clocks({250: s}, route)
+    assert clocks["delivery"]["verdict"] == "pass", clocks["delivery"]
+    for key, v in clocks["physical"].items():
+        assert v["as_predicted"], (key, v)
+
+
+def test_the_physical_clock_passes_a_correct_atomic_clock_and_fails_a_shifted_one(tmp_path: Path,
+                                                                                   c12: bound.Pair) -> None:
+    """A synthetic atomic stream with the physically correct clock (atom at t0, decay at t0 + T, capture
+    products at t0 + T + max(tau, 0)) passes the physical gate; the same stream with every atomic product
+    moved by 5 ns fails it. The reference origin is t0, never a product's own time."""
+    good = _summary(tmp_path / "good", bound.ATOMIC, c12, physical_atom_clock=True)
+    phys = bound.gate_clocks({250: good}, bound.ATOMIC)["physical"]
+    assert all(v["verdict"] == "pass" for v in phys.values()), phys
+    bad = _summary(tmp_path / "bad", bound.ATOMIC, c12, physical_atom_clock=True, shift=5.0)
+    phys = bound.gate_clocks({250: bad}, bound.ATOMIC)["physical"]
+    assert all(v["verdict"] == "fail" for v in phys.values()), phys
+
+
+def _move_electron(change):  # type: ignore[no-untyped-def]
+    def mutate(lines: list[str]) -> list[str]:
+        out = []
+        for line in lines:
+            t = line.split()
+            if t[0] == "S" and t[-1] != "-":
+                t[-1] = change(float.fromhex(t[-1]), float.fromhex(t[5])).hex()
+            out.append(" ".join(t))
+        return out
+    return mutate
+
+
+def _move_products(change):  # type: ignore[no-untyped-def]
+    def mutate(lines: list[str]) -> list[str]:
+        out = []
+        for line in lines:
+            t = line.split()
+            if t[0] == "S":
+                n = t.index("N", t.index("M"))
+                for j in range(n + 2, n + 2 + int(t[n + 1])):
+                    t[j] = change(float.fromhex(t[j]), float.fromhex(t[5])).hex()
+            out.append(" ".join(t))
+        return out
+    return mutate
+
+
+@pytest.mark.parametrize("label, mutate", [
+    ("t0 omitted", _move_electron(lambda t, T: t - 250.0)),
+    ("t0 doubled", _move_electron(lambda t, T: t + 250.0)),
+    ("sampled delay omitted", _move_electron(lambda t, T: t - T)),
+    ("sampled delay doubled", _move_electron(lambda t, T: t + T)),
+    ("t0 omitted from the capture products", _move_products(lambda t, T: t - 250.0)),
+])
+def test_drill_each_clock_defect_turns_the_delivery_gate_red(tmp_path: Path, c12: bound.Pair, label: str,
+                                                             mutate) -> None:  # type: ignore[no-untyped-def]
+    s = _summary(tmp_path, bound.STOPPING, c12, mutate=mutate)
+    assert bound.gate_clocks({250: s}, bound.STOPPING)["delivery"]["verdict"] == "fail", label
+
+
+def test_drill_the_constant_delay_stream_passes_the_mean_test_and_fails_the_distribution(
+        tmp_path: Path, c12: bound.Pair) -> None:
+    """Every delay 1/Lambda, the branch counts and the clocks correct: the scaled sum of all delays sits at
+    its mean, inside its gamma interval, and the distribution family fails."""
+    from scipy import stats
+
+    s = _summary(tmp_path, bound.STOPPING, c12, n=20000, constant_delay=True)
+    n = int(s["events"])
+    u = c12.total * float.fromhex(s["sums"]["all"])
+    alpha = 0.001 / 48
+    assert stats.gamma.ppf(alpha / 2, n) <= u <= stats.gamma.isf(alpha / 2, n)
+    assert bound.gate_complete(s, n)["verdict"] == "pass"
+    assert bound.gate_rate(s, bound.STOPPING)["verdict"] == "pass"
+    assert bound.gate_distribution(s, 36)["all"]["verdict"] == "fail"
+
+
+def _unobserve_rates(lines: list[str]) -> list[str]:
+    out = []
+    for line in lines:
+        t, p = _section(line, "P") if line.startswith("S") else (line.split(), -1)
+        out.append(" ".join(t[:p + 1] + ["x"] + t[p + 6:]) if p >= 0 else line)
+    return out
+
+
+def _erase_outcome(lines: list[str]) -> list[str]:
+    out = []
+    for i, line in enumerate(lines):
+        t = line.split()
+        if i == 3:
+            n = t.index("N", t.index("M"))
+            t = t[:n] + ["N", "0", "E", "-"]
+        out.append(" ".join(t))
+    return out
+
+
+@pytest.mark.parametrize("label, mutate, problem", [
+    ("every rate record removed", _unobserve_rates, "wiring_unobserved"),
+    ("one event's record removed", lambda ls: ls[:10] + ls[11:], "missing"),
+    ("an event duplicated", lambda ls: ls + ls[5:6], "duplicates"),
+    ("an outcome erased, never counted as capture", _erase_outcome, "outcome_none"),
+])
+def test_drill_missing_duplicate_or_unobserved_records_fail_completeness(tmp_path: Path, c12: bound.Pair,
+                                                                          label: str, mutate,  # type: ignore[no-untyped-def]
+                                                                          problem: str) -> None:
+    s = _summary(tmp_path, bound.STOPPING, c12, mutate=mutate)
+    verdict = bound.gate_complete(s, 4000)
+    assert verdict["verdict"] == "fail", label
+    assert any(problem in p for p in verdict["problems"]), (label, verdict)
+
+
+def test_drill_a_lost_branch_count_or_an_overlapping_range_fails_completeness(tmp_path: Path,
+                                                                              c12: bound.Pair) -> None:
+    raw = write_stream(tmp_path / "a", bound.STOPPING, c12, 2000, 0.0)
+    text = (raw / "bound_summary.txt").read_text().splitlines()
+    (raw / "bound_summary.txt").write_text("\n".join(x for x in text if not x.startswith("captures")) + "\n")
+    s = bound.merge([bound.summarize_chunk(raw, bound.STOPPING, c12, 0.0, 0, 2000)])
+    assert "the in-process sums disagree with the records" in bound.gate_complete(s, 2000)["problems"]
+    a = bound.summarize_chunk(write_stream(tmp_path / "b", bound.STOPPING, c12, 2000, 0.0), bound.STOPPING,
+                              c12, 0.0, 0, 2000)
+    b = bound.summarize_chunk(write_stream(tmp_path / "c", bound.STOPPING, c12, 2000, 0.0, first=1000),
+                              bound.STOPPING, c12, 0.0, 1000, 2000)
+    merged = bound.merge([a, b])
+    assert merged["chunk_overlap"] == 1000
+    assert any("more than one chunk" in p for p in bound.gate_complete(merged, 4000)["problems"])
+
+
+def test_drill_compensation_keeps_the_lifetime_and_fails_the_rates(tmp_path: Path, c12: bound.Pair) -> None:
+    """The consumer given the atomic route's former decay rate, the difference moved into capture: the total
+    agrees with the reference, the pair (and the two partial lifetimes) do not."""
+    from openmucf.g4 import d1_lifetime as lt
+
+    helper = d1.load_helper(ROOT / d1.HELPER_RELPATH)
+    zmin, zmax = lt.helper_clamp(helper)
+    d_bad = lt.helper_decay_rate(6, helper.zeff, zmin, zmax)
+    c_bad = c12.capture + (c12.decay - d_bad)
+    for route in bound.ROUTES:
+        s = _summary(tmp_path / route, route, c12, consumed=(c_bad, d_bad))
+        assert bound.gate_rate(s, route)["verdict"] == "fail", route
+        comps = [float.fromhex(x) for x in s["rate_components"]]
+        total = comps[2] if route == bound.STOPPING else comps[0]
+        assert total <= bound.RATE_RTOL < max(comps), (route, comps)
+
+
+def test_drill_a_stopping_stream_without_the_provider_call_fails_the_wiring_alone(tmp_path: Path,
+                                                                                  c12: bound.Pair) -> None:
+    """The stopping consumer that never asks the provider, with the switch on: completeness and the
+    distribution pass (its own pair is the stopping prescription), and the wiring gate fails."""
+    s = _summary(tmp_path, bound.STOPPING, c12, mutate=lambda ls: [line.replace(" P 1 0 0 ", " P 0 0 -1 ")
+                                                                   for line in ls])
+    verdict = bound.gate_rate(s, bound.STOPPING)
+    assert verdict["verdict"] == "fail" and any("wiring" in p for p in verdict["problems"]), verdict
+    assert bound.gate_complete(s, 4000)["verdict"] == "pass"
+    assert {v["verdict"] for v in bound.gate_distribution(s, 36).values()} == {"pass"}
+
+
+# --------------------------------------------------------------------------------------------
+# one-defect fixtures: each guard of the summarizer and the gates names its own problem
+# --------------------------------------------------------------------------------------------
+
+
+def _first_line(tag: str, which, edit):  # type: ignore[no-untyped-def]
+    """A ``mutate`` for :func:`write_stream`: ``edit`` (tokens -> tokens) applied to the first bound line of
+    kind ``tag`` that ``which`` (tokens -> bool) selects."""
+    def mutate(lines: list[str]) -> list[str]:
+        out, done = [], False
+        for line in lines:
+            t = line.split()
+            if not done and t[0] == tag and which(t):
+                t, done = edit(t), True
+            out.append(" ".join(t))
+        assert done, tag
+        return out
+    return mutate
+
+
+def _captured(t: list[str]) -> bool:
+    return t[t.index("N", t.index("M")) + 1] != "0"
+
+
+def _decayed(t: list[str]) -> bool:
+    return not _captured(t)
+
+
+def _set(index_of, value: str):  # type: ignore[no-untyped-def]
+    def edit(t: list[str]) -> list[str]:
+        t = list(t)
+        t[index_of(t)] = value
+        return t
+    return edit
+
+
+def _drop_one_tau(t: list[str]) -> list[str]:
+    m = t.index("M")
+    return t[:m + 2] + ["1", t[m + 3]] + t[m + 5:]
+
+
+def _unobserve_model(t: list[str]) -> list[str]:
+    m = t.index("M")
+    return t[:m + 1] + ["x"] + t[m + 3:]
+
+
+def _append(make):  # type: ignore[no-untyped-def]
+    return lambda lines: lines + [make(lines)]
+
+
+def _helper_line(lines: list[str]) -> str:
+    t = lines[0].split()
+    return f"C {t[1]} helper 6 12 0 0x1p-5 0x1p-1"
+
+
+#: (label, route, mutate, the problem the completeness gate must name)
+COMPLETENESS_DEFECTS = [
+    ("an event outside the chunk's range", bound.STOPPING,
+     _append(lambda ls: " ".join(["S", "4005", *ls[-1].split()[2:]])), "out_of_range"),
+    ("an unreadable record", bound.STOPPING, _append(lambda ls: "S x"), "malformed"),
+    ("a capture that also delivers a decay electron", bound.STOPPING,
+     _first_line("S", _captured, _set(lambda t: len(t) - 1, (260.0).hex())), "outcome_both"),
+    ("a decay whose branch says capture", bound.STOPPING, _first_line("S", _decayed, _set(lambda t: 6, "N")),
+     "branch_outcome_mismatch"),
+    ("a capture with no capture-model call", bound.STOPPING,
+     _first_line("S", _captured, _set(lambda t: t.index("M") + 1, "0")), "model_missing"),
+    ("a capture whose model times and products differ in number", bound.STOPPING,
+     _first_line("S", _captured, _drop_one_tau), "model_product_mismatch"),
+    ("an event whose capture model was not observed", bound.STOPPING,
+     _first_line("S", _decayed, _unobserve_model), "model_unobserved"),
+    ("a record of another nuclide", bound.STOPPING, _first_line("S", lambda t: True, _set(lambda t: 3, "13")),
+     "branch counts do not add up to the events"),
+    ("an atomic record that disagrees with its stops record", bound.ATOMIC,
+     _first_line("A", _decayed, _set(lambda t: 11, "N")), "stops_bound_mismatch"),
+]
+
+
+@pytest.mark.parametrize("label, route, mutate, problem", COMPLETENESS_DEFECTS,
+                         ids=[c[0] for c in COMPLETENESS_DEFECTS])
+def test_drill_each_record_defect_is_named_by_the_completeness_gate(  # type: ignore[no-untyped-def]
+        tmp_path: Path, c12: bound.Pair, label: str, route: str, mutate, problem: str) -> None:
+    clean = _summary(tmp_path / "clean", route, c12)
+    assert bound.gate_complete(clean, 4000)["verdict"] == "pass"
+    s = _summary(tmp_path / "defect", route, c12, mutate=mutate)
+    verdict = bound.gate_complete(s, 4000)
+    assert verdict["verdict"] == "fail" and any(problem in p for p in verdict["problems"]), (label, verdict)
+
+
+def test_drill_a_stops_record_that_disagrees_with_the_bound_record_is_named(tmp_path: Path,
+                                                                            c12: bound.Pair) -> None:
+    raw = write_stream(tmp_path / "a", bound.STOPPING, c12, 2000, 0.0)
+    lines = (raw / "stops.txt").read_text(encoding="ascii").splitlines()
+    t = lines[0].split()
+    t[7] = (2.0 ** -30).hex()  # the time before ApplyYourself, as the stops file records it
+    lines[0] = " ".join(t)
+    (raw / "stops.txt").write_text("\n".join(lines) + "\n", encoding="ascii")
+    s = bound.merge([bound.summarize_chunk(raw, bound.STOPPING, c12, 0.0, 0, 2000)])
+    assert any("stops_bound_mismatch" in p for p in bound.gate_complete(s, 2000)["problems"])
+
+
+def test_drill_an_extra_stops_record_or_a_missing_chunk_is_named(tmp_path: Path, c12: bound.Pair) -> None:
+    raw = write_stream(tmp_path / "a", bound.STOPPING, c12, 2000, 0.0)
+    with (raw / "stops.txt").open("a", encoding="ascii") as handle:
+        handle.write("2000 6 12 6 12 0x0p+0 0x0p+0 0x0p+0 0x1p+1 0 D 0x1p+1\n")
+    s = bound.merge([bound.summarize_chunk(raw, bound.STOPPING, c12, 0.0, 0, 2000)])
+    assert "stops lines 2001 != 2000" in bound.gate_complete(s, 2000)["problems"]
+    one = bound.summarize_chunk(write_stream(tmp_path / "b", bound.STOPPING, c12, 2000, 0.0), bound.STOPPING,
+                                c12, 0.0, 0, 2000)
+    assert "events 2000 != 4000" in bound.gate_complete(bound.merge([one]), 4000)["problems"]
+
+
+#: (label, route, how the stream is made, the problem the rate gate must name)
+RATE_DEFECTS = [
+    ("a provider call from another caller", bound.STOPPING,
+     {"mutate": _append(lambda ls: "C 3 other 6 12 0 0x1p-5 0x1p-1")}, "unexpected caller"),
+    ("a helper call on the stopping route", bound.STOPPING, {"mutate": _append(_helper_line)},
+     "helper calls on the stopping route"),
+    ("the atomic route without its helper call", bound.ATOMIC,
+     {"mutate": lambda ls: [x for x in ls if not x.startswith("C ")]}, "0 helper calls in 1 processes"),
+    ("atoms whose lifetimes are not the helper call's pair", bound.ATOMIC,
+     {"mutate": lambda ls: [_bump_helper_capture(x) if x.startswith("C ") else x for x in ls]},
+     "stored lifetimes differ from the helper call's pair"),
+    ("a stopping pair 1e-8 off", bound.STOPPING, {"consumed_scale": 1 + 1e-8}, "outside the rate tolerance"),
+    ("an atomic pair 1e-8 off", bound.ATOMIC, {"consumed_scale": 1 + 1e-8}, "outside the rate tolerance"),
+]
+
+
+def _bump_helper_capture(line: str) -> str:
+    t = line.split()
+    t[6] = (float.fromhex(t[6]) * (1 + 1e-12)).hex()
+    return " ".join(t)
+
+
+def _rate_summary(tmp_path: Path, route: str, pair: bound.Pair, how: dict) -> dict:
+    scale = how.get("consumed_scale")
+    consumed = (pair.capture * scale, pair.decay) if scale is not None else None
+    return _summary(tmp_path, route, pair, mutate=how.get("mutate"), consumed=consumed)
+
+
+@pytest.mark.parametrize("label, route, how, problem", RATE_DEFECTS, ids=[c[0] for c in RATE_DEFECTS])
+def test_drill_each_rate_or_wiring_defect_is_named_by_the_rate_gate(
+        tmp_path: Path, c12: bound.Pair, label: str, route: str, how: dict, problem: str) -> None:
+    verdict = bound.gate_rate(_rate_summary(tmp_path, route, c12, how), route)
+    assert verdict["verdict"] == "fail" and any(problem in p for p in verdict["problems"]), (label, verdict)
+
+
+@pytest.mark.parametrize("route", bound.ROUTES)
+def test_a_pair_inside_the_rate_tolerance_passes(tmp_path: Path, c12: bound.Pair, route: str) -> None:
+    s = _rate_summary(tmp_path, route, c12, {"consumed_scale": 1 + 1e-10})
+    assert bound.gate_rate(s, route)["verdict"] == "pass"
+    assert int(s["rate_exact"]) == 0
+
+
+def test_drill_an_empty_stream_or_a_bin_tie_never_passes_the_distribution(tmp_path: Path,
+                                                                          c12: bound.Pair) -> None:
+    s = _summary(tmp_path, bound.STOPPING, c12)
+    empty = {**s, "bins": {**s["bins"], "capture": [0] * bound.TIME_BINS}}
+    out = bound.gate_distribution(empty, 36)
+    assert out["capture"] == {"verdict": "fail", "reason": "empty stream"}
+    assert {v["verdict"] for v in bound.gate_distribution({**s, "bin_ties": 1}, 36).values()} == {"refuse"}
+
+
+def test_drill_a_clock_category_with_no_item_fails_delivery(tmp_path: Path, c12: bound.Pair) -> None:
+    s = _summary(tmp_path, bound.STOPPING, c12)
+    none = {**s, "clocks": {**s["clocks"], "stop_capture": bound.ClockTally().as_dict()}}
+    clocks = bound.gate_clocks({250: none}, bound.STOPPING)
+    assert "t0=250 stop_capture: no item" in clocks["delivery"]["problems"]
+    assert clocks["physical"]["stop_capture@250"]["verdict"] == "no_item"
+
+# --------------------------------------------------------------------------------------------
+# the results generator, end to end on a synthetic harvest of every group at a reduced count
+# --------------------------------------------------------------------------------------------
+
+#: Events per stratum of the synthetic harvest; the frozen limits are recomputed for it the way the policy
+#: step computes them, so that only the count differs from the registered plan.
+SYNTHETIC_STRATUM = 3000
+
+
+def _generator():  # type: ignore[no-untyped-def]
+    path = ROOT / "scripts/generate_g4boundrates.py"
+    spec = importlib.util.spec_from_file_location("generate_g4boundrates_test", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _synthetic_harvest(tmp_path: Path, policy: dict, *, skip_group: int | None = None,
+                       registered_counts: bool = False) -> Path:
+    """A repository root holding the theory status, a policy whose groups have ``SYNTHETIC_STRATUM`` events
+    per stratum (unless ``registered_counts``) and the harvest summary of correct synthetic chunks of every
+    group but ``skip_group``."""
+    from scipy import stats
+
+    root = tmp_path / "root"
+    (root / "data/g4/d1").mkdir(parents=True)
+    (root / bound.THEORY_RELPATH).write_bytes((ROOT / bound.THEORY_RELPATH).read_bytes())
+    small = json.loads(json.dumps(policy))
+    n = 3 * SYNTHETIC_STRATUM
+    if not registered_counts:
+        alpha = float(small["statistics"]["primary"]["per_test_alpha"])
+        for g in small["groups"]:
+            g["events"] = n
+            for st in g["strata"]:
+                st["count"] = SYNTHETIC_STRATUM
+        for label, limits in small["statistics"]["primary"]["limits"].items():
+            p = float(bound.frozen_pair(small, label).p_capture)
+            limits["capture_count"] = [int(stats.binom.ppf(alpha / 2, n, p)),
+                                       int(stats.binom.isf(alpha / 2, n, p))]
+            limits["sum_all"] = [repr(float(stats.gamma.ppf(alpha / 2, n))),
+                                 repr(float(stats.gamma.isf(alpha / 2, n)))]
+    (root / bound.POLICY_RELPATH).write_bytes(bound.render_policy(small))
+    chunks = []
+    for g in small["groups"]:
+        if g["group"] == skip_group:
+            continue
+        pair = bound.frozen_pair(small, g["isotope"])
+        for k, st in enumerate(g["strata"]):
+            cell = tmp_path / "cells" / f"g{g['group']:02d}_{k}"
+            write_stream(cell, g["route"], pair, SYNTHETIC_STRATUM, float(st["t0_ns"]),
+                         seed=100 * g["group"] + k, first=st["first"])
+            (cell / "run.json").write_text(json.dumps({"build_binary_sha256": "synthetic", "files": {}}),
+                                           encoding="utf-8")
+            chunks.append({"group": g["group"], "first": st["first"], "count": SYNTHETIC_STRATUM,
+                           "t0_ns": st["t0_ns"], "cell": str(cell)})
+    bound.summarize_plan(root, {"switch_on": True, "chunks": chunks}, root / "data/g4/d1")
+    return root
+
+
+def test_a_correct_synthetic_harvest_gives_four_separate_statuses_and_only_the_predicted_clock_failures(
+        tmp_path: Path, policy: dict) -> None:
+    results = _generator().build_results(_synthetic_harvest(tmp_path, policy))
+    assert results["RATE_RESULTS"]["status"] == "PASS", results["RATE_RESULTS"]
+    assert results["TRANSPORT_RESULTS"]["status"] == "PASS"
+    assert results["TRANSPORT_RESULTS"]["primary_rejections"] == []
+    assert results["TRANSPORT_RESULTS"]["distribution_rejections"] == []
+    clocks = results["CLOCK_RESULTS"]
+    assert clocks["delivery_status"] == "PASS"
+    assert clocks["not_as_predicted"] == []
+    # the frozen predictions make the physical status FAIL however correct the delivery is
+    assert clocks["physical_status"] == "FAIL" and clocks["physical_failures"]
+    expected_fail = {(cat, t0) for cat, by_t0 in bound.PREDICTED_PHYSICAL.items() for t0, v in by_t0.items()
+                     if v == "fail"}
+    assert {tuple(f.rsplit(":", 1)[1].split("@")) for f in clocks["physical_failures"]} == {
+        (cat, str(t0)) for cat, t0 in expected_fail}
+    assert results["THEORY_STATUS"]["status"] == "NOT_ESTABLISHED"
+    assert results["THEORY_STATUS"]["screen"] == "SCREEN_VACUOUS"
+
+
+def test_drill_a_missing_group_or_the_registered_count_unmet_fails_rates_and_transport(
+        tmp_path: Path, policy: dict) -> None:
+    gen = _generator()
+    missing = gen.build_results(_synthetic_harvest(tmp_path / "a", policy, skip_group=5))
+    name = bound.group_name(policy["groups"][5])
+    assert missing["RATE_RESULTS"]["status"] == "FAIL"
+    assert missing["RATE_RESULTS"]["groups"][name]["complete"]["problems"] == [
+        "the summary has no cell for this group"]
+    assert missing["TRANSPORT_RESULTS"]["status"] == "FAIL"
+    rejected = missing["TRANSPORT_RESULTS"]["primary_rejections"]
+    assert {r.split(":", 3)[3] for r in rejected} == set(bound.PRIMARY_TESTS)
+    assert {r.rsplit(":", 1)[0] for r in rejected} == {name}
+    assert missing["CLOCK_RESULTS"]["delivery_status"] == "FAIL"
+    # the same correct chunks graded against the registered counts: never complete, never inside the limits
+    short = gen.build_results(_synthetic_harvest(tmp_path / "b", policy, registered_counts=True))
+    assert short["RATE_RESULTS"]["status"] == "FAIL"
+    for group in policy["groups"]:
+        problems = short["RATE_RESULTS"]["groups"][bound.group_name(group)]["complete"]["problems"]
+        assert f"events {3 * SYNTHETIC_STRATUM} != {group['events']}" in problems
+    assert short["TRANSPORT_RESULTS"]["status"] == "FAIL"
+
+
+def test_drill_an_empty_branch_fails_its_conditional_test(policy: dict) -> None:
+    from scipy import stats
+
+    gen = _generator()
+    pair = bound.frozen_pair(policy, "C-12")
+    limits = policy["statistics"]["primary"]["limits"]["C-12"]
+    alpha = float(policy["statistics"]["primary"]["per_test_alpha"])
+    g = {"events": 10, "captures": 0, "sums": {"all": (10 / pair.total).hex(), "capture": (0.0).hex(),
+                                                 "decay": (10 / pair.total).hex()}}
+    out = gen.primary_tests(stats, g, pair, limits, alpha)
+    assert out["sum_capture"]["verdict"] == "fail" and out["sum_capture"]["reason"] == "empty branch"
+
+@pytest.mark.parametrize("label, change, test", [
+    ("one capture above the interval", lambda g, lim: {**g, "captures": lim["capture_count"][1] + 1},
+     "capture_count"),
+    ("all delays 10% long", lambda g, lim: _scale_sum(g, "all", 1.1), "sum_all"),
+    ("capture delays 50% long", lambda g, lim: _scale_sum(g, "capture", 1.5), "sum_capture"),
+    ("decay delays 10% long", lambda g, lim: _scale_sum(g, "decay", 1.1), "sum_decay"),
+])
+def test_drill_each_registered_test_rejects_its_statistic_outside_the_interval(  # type: ignore[no-untyped-def]
+        tmp_path: Path, policy: dict, c12: bound.Pair, label: str, change, test: str) -> None:
+    from scipy import stats
+
+    gen = _generator()
+    n = 3 * SYNTHETIC_STRATUM
+    alpha = float(policy["statistics"]["primary"]["per_test_alpha"])
+    p = float(c12.p_capture)
+    limits = {"capture_count": [int(stats.binom.ppf(alpha / 2, n, p)), int(stats.binom.isf(alpha / 2, n, p))],
+              "sum_all": [repr(float(stats.gamma.ppf(alpha / 2, n))),
+                          repr(float(stats.gamma.isf(alpha / 2, n)))]}
+    g = _summary(tmp_path, bound.STOPPING, c12, n=n)
+    assert {v["verdict"] for v in gen.primary_tests(stats, g, c12, limits, alpha).values()} == {"pass"}
+    out = gen.primary_tests(stats, change(g, limits), c12, limits, alpha)
+    assert out[test]["verdict"] == "fail", (label, out[test])
+
+
+def _scale_sum(g: dict, stream: str, factor: float) -> dict:
+    sums = dict(g["sums"])
+    sums[stream] = (float.fromhex(sums[stream]) * factor).hex()
+    if stream != "all":
+        sums["all"] = math.fsum(float.fromhex(sums[k]) for k in ("capture", "decay")).hex()
+    return {**g, "sums": sums}
+
+# --------------------------------------------------------------------------------------------
 # the theory admission gate
 # --------------------------------------------------------------------------------------------
 
@@ -265,3 +837,15 @@ def _without(m: dict, term: str) -> dict:
 ])
 def test_drill_the_theory_gate_refuses_each_defect(label: str, change, status: str) -> None:  # type: ignore[no-untyped-def]
     assert bound.theory_admission(change(_complete_manifest()))["status"] == status, label
+
+
+def test_the_running_sum_is_exactly_rounded() -> None:
+    import random
+
+    rng = random.Random(11)
+    values = [rng.expovariate(0.0005) * (1e6 if i % 97 == 0 else 1.0) for i in range(20000)]
+    values += [1e20, 1.0, -1e20]
+    acc = bound.ExactSum()
+    for v in values:
+        acc.add(v)
+    assert acc.value() == math.fsum(values)

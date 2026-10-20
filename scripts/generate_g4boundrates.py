@@ -108,6 +108,106 @@ def build_policy(root: Path) -> dict[str, Any]:
     return policy
 
 
+def primary_tests(stats: Any, g: dict[str, Any], pair: bound.Pair, limits: dict[str, Any],
+                  alpha: float) -> dict[str, dict[str, Any]]:
+    """The four registered tests of one group, from its merged statistics: the capture count against its
+    frozen binomial interval; ``Lambda * sum(T)`` over all stops against the frozen Gamma(N, 1) interval; over the
+    capture and the decay stops against Gamma(K, 1) and Gamma(N - K, 1) at the observed K. Two-sided p-values are
+    reported beside each verdict; an empty branch fails."""
+    n, k = int(g["events"]), int(g["captures"])
+    lam = pair.total
+    u = {name: lam * float.fromhex(g["sums"][name]) for name in bound.STREAMS}
+    p = float(pair.p_capture)
+    lo, hi = limits["capture_count"]
+    out: dict[str, dict[str, Any]] = {}
+    p_k = min(1.0, 2 * min(float(stats.binom.cdf(k, n, p)), float(stats.binom.sf(k - 1, n, p))))
+    out["capture_count"] = {"statistic": str(k), "interval": [str(lo), str(hi)], "p_two_sided": repr(p_k),
+                            "verdict": "pass" if lo <= k <= hi else "fail"}
+    for name, shape, frozen in (("sum_all", n, limits["sum_all"]), ("sum_capture", k, None),
+                                ("sum_decay", n - k, None)):
+        stream = {"sum_all": "all", "sum_capture": "capture", "sum_decay": "decay"}[name]
+        if shape <= 0:
+            out[name] = {"statistic": repr(u[stream]), "interval": None, "p_two_sided": None,
+                         "verdict": "fail", "reason": "empty branch"}
+            continue
+        if frozen is not None:
+            q_lo, q_hi = (float(x) for x in frozen)
+        else:
+            q_lo, q_hi = float(stats.gamma.ppf(alpha / 2, shape)), float(stats.gamma.isf(alpha / 2, shape))
+        pv = min(1.0, 2 * min(float(stats.gamma.cdf(u[stream], shape)), float(stats.gamma.sf(u[stream], shape))))
+        out[name] = {"statistic": repr(u[stream]), "shape": str(shape), "interval": [repr(q_lo), repr(q_hi)],
+                     "p_two_sided": repr(pv), "verdict": "pass" if q_lo <= u[stream] <= q_hi else "fail"}
+    return out
+
+
+def build_results(root: Path) -> dict[str, Any]:
+    """The four result families from the committed summary, the policy and the theory status, each with its own
+    status: the rates (and the wiring and completeness they rest on), the transport sampling, the clocks, and the
+    theory. One family's status never stands in for another's."""
+    import json
+
+    stats = _stats()
+    policy = bound.load_policy(root)
+    harvest = bound.load_harvest(root)
+    theory = json.loads((root / bound.THEORY_RELPATH).read_text(encoding="utf-8"))
+    alpha = float(policy["statistics"]["primary"]["per_test_alpha"])
+    n_dist = int(policy["statistics"]["distribution"]["count"])
+    rate: dict[str, Any] = {}
+    transport: dict[str, Any] = {}
+    clock: dict[str, Any] = {}
+    for group in policy["groups"]:
+        name = bound.group_name(group)
+        if name not in harvest:
+            missing = {"verdict": "fail", "problems": ["the summary has no cell for this group"]}
+            rate[name] = {"complete": missing, "rate": missing}
+            transport[name] = {"primary": {t: {"verdict": "fail", "reason": "missing cell"}
+                                           for t in bound.PRIMARY_TESTS},
+                               "distribution": {s: {"verdict": "fail", "reason": "missing cell"}
+                                                for s in bound.STREAMS}, "strata": {}}
+            clock[name] = {"delivery": missing, "physical": {}, "physical_verdict": "fail"}
+            continue
+        cell = harvest[name]
+        g = cell["group"]
+        switch_on = cell["meta"]["switch_on"] == "True"
+        pair = bound.frozen_pair(policy, group["isotope"])
+        rate[name] = {"complete": bound.gate_complete(g, int(group["events"])),
+                      "rate": bound.gate_rate(g, group["route"], switch_on)}
+        transport[name] = {"primary": primary_tests(stats, g, pair,
+                                                    policy["statistics"]["primary"]["limits"][group["isotope"]],
+                                                    alpha),
+                           "distribution": bound.gate_distribution(g, n_dist),
+                           "strata": {t0: {"events": cell[f"stratum_{t0}"]["events"],
+                                           "captures": cell[f"stratum_{t0}"]["captures"]}
+                                      for t0 in bound.T0_NS if f"stratum_{t0}" in cell}}
+        clock[name] = bound.gate_clocks({t0: cell[f"stratum_{t0}"] for t0 in bound.T0_NS
+                                         if f"stratum_{t0}" in cell}, group["route"])
+
+    def status(ok: bool) -> str:
+        return "PASS" if ok else "FAIL"
+
+    rate_ok = all(v["complete"]["verdict"] == "pass" and v["rate"]["verdict"] == "pass" for v in rate.values())
+    rejections = [f"{name}:{test}" for name, v in transport.items() for test, r in v["primary"].items()
+                  if r["verdict"] != "pass"]
+    dist_rejections = [f"{name}:{stream}" for name, v in transport.items()
+                       for stream, r in v["distribution"].items() if r["verdict"] != "pass"]
+    delivery_ok = all(v["delivery"]["verdict"] == "pass" for v in clock.values())
+    physical_fail = sorted(f"{name}:{key}" for name, v in clock.items() for key, r in v["physical"].items()
+                           if r["verdict"] != "pass")
+    unexpected = sorted(f"{name}:{key}" for name, v in clock.items() for key, r in v["physical"].items()
+                        if not r["as_predicted"])
+    return {
+        "RATE_RESULTS": {"status": status(rate_ok), "groups": rate},
+        "TRANSPORT_RESULTS": {"status": status(not rejections and not dist_rejections),
+                              "primary_rejections": rejections, "distribution_rejections": dist_rejections,
+                              "groups": transport},
+        "CLOCK_RESULTS": {"delivery_status": status(delivery_ok),
+                          "physical_status": "FAIL" if physical_fail else "PASS",
+                          "physical_failures": physical_fail, "not_as_predicted": unexpected, "groups": clock},
+        "THEORY_STATUS": {"status": theory["status"], "accuracy": theory["accuracy"],
+                          "qualified_roster": theory["qualified_roster"], "screen": theory["screen"]},
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("steps", nargs="+", choices=("policy", "results"))
@@ -121,7 +221,14 @@ def main() -> None:
         print(f"policy groups={len(policy['groups'])} primary={policy['statistics']['primary']['count']} "
               f"distribution={policy['statistics']['distribution']['count']}")
     if "results" in args.steps:
-        raise SystemExit("results: the harvest summary is not committed yet")
+        import json
+
+        results = build_results(ROOT)
+        (ROOT / bound.RESULTS_RELPATH).write_text(json.dumps(results, indent=1, sort_keys=True) + "\n",
+                                                  encoding="ascii", newline="\n")
+        for family in ("RATE_RESULTS", "TRANSPORT_RESULTS", "CLOCK_RESULTS", "THEORY_STATUS"):
+            r = results[family]
+            print(family, {k: v for k, v in r.items() if k != "groups"})
 
 
 if __name__ == "__main__":

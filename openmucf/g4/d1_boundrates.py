@@ -15,18 +15,25 @@ what the verification of that pair needs without Geant4:
   given those inputs; it says nothing about the physical accuracy of the prescription or of the inputs.
 * :func:`groups` and :data:`POLICY_RELPATH` -- the verification policy: the 12 groups (isotope x revision x
   route), their events, seeds and start-time strata, the frozen reference pairs, the statistical limits and
-  the tolerances. ``scripts/generate_g4boundrates.py`` generates it; it is committed before the production
-  harvest runs.
+  the tolerances. ``scripts/generate_g4boundrates.py`` generates it; it was committed before the production
+  harvest ran.
+* :func:`summarize_chunk` and :func:`merge` -- the sufficient statistics of a harvest chunk and of a group,
+  from the files ``cpp/tools/harvest_mixture.cc`` writes with ``--bound-record on``. Standard library only, so
+  they run on a Geant4 host.
+* the gates, from the committed summary: rates, completeness, the waiting-time distribution family and the two
+  clock questions (the time the observed implementation delivers, and the physically correct time).
 
 Rates are in ns^-1, Geant4's unit; times in ns.
 """
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import math
-from collections.abc import Mapping
+import struct
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
@@ -40,6 +47,11 @@ from openmucf.g4.sources import d1_nuclear_capture as d1
 
 #: The committed policy, relative to the repository root.
 POLICY_RELPATH = "data/g4/d1/bound_rates_policy.json"
+#: The committed summary of the harvest and the builds it ran on.
+HARVEST_RELPATH = "data/g4/d1/bound_rates_harvest.csv"
+BUILDS_RELPATH = "data/g4/d1/bound_rates_builds.csv"
+#: The committed results: four families with separate status fields.
+RESULTS_RELPATH = "data/g4/d1/bound_rates_results.json"
 #: The status of the theory budget the physical-accuracy question needs.
 THEORY_RELPATH = "data/g4/d1/bound_rates_theory.json"
 
@@ -280,6 +292,613 @@ def frozen_pair(policy: Mapping[str, Any], label: str) -> Pair:
 
 
 # --------------------------------------------------------------------------------------------
+# the raw records of a chunk
+# --------------------------------------------------------------------------------------------
+
+
+def _open_text(path: Path) -> Iterator[str]:
+    gz = path.with_name(path.name + ".gz")
+    if gz.is_file():
+        with gzip.open(gz, "rt", encoding="ascii") as handle:
+            yield from handle
+    elif path.is_file():
+        with path.open(encoding="ascii") as handle:
+            yield from handle
+    else:
+        raise BoundRateError(f"missing {path}")
+
+
+def _hex(token: str) -> float:
+    if token in ("x", "-"):
+        raise BoundRateError(f"unobserved field {token!r} where a value is required")
+    return float.fromhex(token)
+
+
+def clock_tolerance(*times: float) -> float:
+    """``1e-6 ns + 64 eps max |t|`` over the times a comparison involves."""
+    return CLOCK_ABS_NS + CLOCK_EPS_FACTOR * EPS * max(abs(t) for t in times)
+
+
+@dataclass
+class ClockTally:
+    """Delivery and physical-clock residuals of one category."""
+
+    n: int = 0
+    fail_delivery: int = 0
+    fail_physical: int = 0
+    max_ratio_delivery: float = 0.0
+    max_ratio_physical: float = 0.0
+    max_abs_physical: float = 0.0
+
+    def add(self, observed: float, delivery: float, physical: float, *inputs: float) -> None:
+        self.n += 1
+        tol = clock_tolerance(observed, delivery, physical, *inputs)
+        rd = abs(observed - delivery)
+        rp = abs(observed - physical)
+        self.fail_delivery += rd > tol
+        self.fail_physical += rp > tol
+        self.max_ratio_delivery = max(self.max_ratio_delivery, rd / tol)
+        self.max_ratio_physical = max(self.max_ratio_physical, rp / tol)
+        self.max_abs_physical = max(self.max_abs_physical, rp)
+
+    def merge(self, other: ClockTally) -> None:
+        self.n += other.n
+        self.fail_delivery += other.fail_delivery
+        self.fail_physical += other.fail_physical
+        self.max_ratio_delivery = max(self.max_ratio_delivery, other.max_ratio_delivery)
+        self.max_ratio_physical = max(self.max_ratio_physical, other.max_ratio_physical)
+        self.max_abs_physical = max(self.max_abs_physical, other.max_abs_physical)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"n": self.n, "fail_delivery": self.fail_delivery, "fail_physical": self.fail_physical,
+                "max_ratio_delivery": self.max_ratio_delivery.hex(),
+                "max_ratio_physical": self.max_ratio_physical.hex(),
+                "max_abs_physical_ns": self.max_abs_physical.hex()}
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> ClockTally:
+        return cls(int(d["n"]), int(d["fail_delivery"]), int(d["fail_physical"]),
+                   float.fromhex(d["max_ratio_delivery"]), float.fromhex(d["max_ratio_physical"]),
+                   float.fromhex(d["max_abs_physical_ns"]))
+
+
+class ExactSum:
+    """An exactly rounded running sum (Shewchuk's partials, as ``math.fsum`` keeps them), so a chunk's delays
+    need not be held in memory."""
+
+    def __init__(self) -> None:
+        self.partials: list[float] = []
+
+    def add(self, x: float) -> None:
+        i = 0
+        for y in self.partials:
+            if abs(x) < abs(y):
+                x, y = y, x
+            hi = x + y
+            lo = y - (hi - x)
+            if lo:
+                self.partials[i] = lo
+                i += 1
+            x = hi
+        self.partials[i:] = [x]
+
+    def value(self) -> float:
+        return math.fsum(self.partials)
+
+
+class _StopsCursor:
+    """The stops file read in step with the bound record: both list events in increasing order, so the line of
+    an event is found by advancing; a stops line no bound line asks for is passed over and still counted."""
+
+    def __init__(self, path: Path) -> None:
+        self._lines = _open_text(path)
+        self._pending: list[str] | None = None
+        self.count = 0
+
+    def _next(self) -> list[str] | None:
+        for line in self._lines:
+            f = line.split()
+            if f:
+                self.count += 1
+                return f
+        return None
+
+    def find(self, event: int) -> list[str] | None:
+        while True:
+            if self._pending is None:
+                self._pending = self._next()
+                if self._pending is None:
+                    return None
+            at = int(self._pending[0])
+            if at == event:
+                found, self._pending = self._pending, None
+                return found
+            if at > event:
+                return None
+            self._pending = None
+
+    def drain(self) -> int:
+        while self._next() is not None:
+            pass
+        return self.count
+
+
+def _bin(u: float) -> int | None:
+    """The equal-probability Exp(1) bin of ``u``, with the inherited exact rule near an edge."""
+    return mixture._bin_of_time(u, lambda: Fraction(u))
+
+
+def pair_digest(values: Sequence[float]) -> str:
+    """SHA-256 over the big-endian binary64 bytes of ``values``."""
+    h = hashlib.sha256()
+    for v in values:
+        h.update(struct.pack(">d", v))
+    return h.hexdigest()
+
+
+def summarize_chunk(raw: Path, route: str, ref: Pair, t0_ns: float, first: int, count: int,
+                    switch_on: bool = True) -> dict[str, Any]:
+    """The sufficient statistics of one chunk: ``raw`` holds ``stops.txt``, ``bound.txt`` and
+    ``bound_summary.txt`` (each possibly gzipped). ``ref`` is the frozen pair, ``t0_ns`` the stratum's start
+    time, ``first`` and ``count`` the chunk's absolute events. Every malformed, missing, duplicate or
+    unexpected record is counted, never coerced."""
+    lam = ref.total
+    want = ((ref.capture, ref.decay) if route == STOPPING else ref.lifetimes)
+    s: dict[str, Any] = {"route": route, "t0_ns": t0_ns, "first": first, "count": count,
+                         "events": 0, "duplicates": 0, "out_of_range": 0, "malformed": 0,
+                         "captures": 0, "decays": 0, "outcome_none": 0, "outcome_both": 0,
+                         "branch_outcome_mismatch": 0, "stops_bound_mismatch": 0,
+                         "rate_fail": 0, "rate_exact": 0, "rate_max_rel": 0.0, "rate_components": [],
+                         "wiring_fail": 0, "provider_calls_helper": 0, "provider_calls_other": 0,
+                         "helper_pair_exact": 0, "lifetimes_from_call_fail": 0,
+                         "model_missing": 0, "model_product_mismatch": 0, "bin_ties": 0,
+                         "wiring_unobserved": 0, "model_unobserved": 0}
+    bins = {k: [0] * TIME_BINS for k in STREAMS}
+    sums = {k: ExactSum() for k in STREAMS}
+    clocks = {c: ClockTally() for c in CLOCK_CATEGORIES}
+    seen = bytearray(count)  # the chunk's own events, one byte each
+    seen_outside: set[int] = set()
+    stops = _StopsCursor(raw / "stops.txt")
+    helper_pair: tuple[float, float] | None = None
+    for line in _open_text(raw / "bound.txt"):
+        f = line.split()
+        if not f:
+            continue
+        try:
+            if f[0] == "C":
+                if f[2] == "helper":
+                    s["provider_calls_helper"] += 1
+                    if f[5] == "0":
+                        helper_pair = (_hex(f[6]), _hex(f[7]))
+                        s["helper_pair_exact"] += helper_pair == (ref.capture, ref.decay)
+                else:
+                    s["provider_calls_other"] += 1
+                continue
+            if (route == STOPPING) != (f[0] == "S"):
+                s["malformed"] += 1
+                continue
+            event = int(f[1])
+            inside = first <= event < first + count
+            if (seen[event - first] if inside else event in seen_outside):
+                s["duplicates"] += 1
+                continue
+            if inside:
+                seen[event - first] = 1
+            else:
+                seen_outside.add(event)
+                s["out_of_range"] += 1
+            s["events"] += 1
+            z, a = int(f[2]), int(f[3])
+            m = f.index("M")
+            n = f.index("N", m)
+            e = f.index("E", n)
+            model_seen = f[m + 1] != "x"
+            model_calls = int(f[m + 1]) if model_seen else 0
+            k = int(f[m + 2]) if model_seen else 0
+            taus = [_hex(t) for t in f[m + 3:m + 3 + k]]
+            s["model_unobserved"] += not model_seen
+            np_ = int(f[n + 1])
+            products = [_hex(t) for t in f[n + 2:n + 2 + np_]]
+            electron = None if f[e + 1] == "-" else _hex(f[e + 1])
+            stop_line = stops.find(event)
+            if (z, a) != (ref.z, ref.a) or stop_line is None:
+                s["stops_bound_mismatch"] += 1
+                continue
+            if route == STOPPING:
+                t_before, t_after = _hex(f[4]), _hex(f[5])
+                outcome = f[6]
+                elapsed = t_after - t_before
+                captured = stop_line[9] == "1"
+                if [stop_line[3], stop_line[4], stop_line[7], stop_line[8]] != [f[2], f[3], f[4], f[5]]:
+                    s["stops_bound_mismatch"] += 1
+                p = f.index("P")
+                if f[p + 1] == "x":
+                    s["wiring_unobserved"] += 1
+                    calls = other = status = -1
+                else:
+                    calls, other, status = int(f[p + 1]), int(f[p + 2]), int(f[p + 3])
+                if calls < 0:
+                    pass
+                elif switch_on:
+                    ok = calls == 1 and other == 0 and status == 0
+                    s["wiring_fail"] += not ok
+                    if ok:
+                        got = (_hex(f[p + 4]), _hex(f[p + 5]))
+                        s["rate_exact"] += got == want
+                        rels = [abs(g - w) / abs(w) for g, w in zip(got + (got[0] + got[1],),
+                                                                     want + (ref.total,), strict=True)]
+                        _component_max(s, rels)
+                        rel = max(rels[:2])
+                        s["rate_max_rel"] = max(s["rate_max_rel"], rel)
+                        s["rate_fail"] += not rel <= RATE_RTOL
+                else:
+                    s["wiring_fail"] += calls != 0 or other != 0
+            else:
+                t_create = _hex(f[4])
+                got3 = (_hex(f[5]), _hex(f[6]), _hex(f[7]))
+                counter, elapsed, t_atom = _hex(f[8]), _hex(f[9]), _hex(f[10])
+                branch, outcome = f[11], f[12]
+                captured = branch == "N"
+                if stop_line[5:12] != f[5:12]:
+                    s["stops_bound_mismatch"] += 1
+                if elapsed != counter * got3[0]:
+                    s["stops_bound_mismatch"] += 1
+                s["rate_exact"] += got3 == want
+                rels = [abs(g - w) / abs(w) for g, w in zip(got3, want, strict=True)]
+                _component_max(s, rels)
+                rel = max(rels)
+                s["rate_max_rel"] = max(s["rate_max_rel"], rel)
+                s["rate_fail"] += not rel <= RATE_RTOL
+                if switch_on and helper_pair is not None:
+                    c_, d_ = helper_pair
+                    s["lifetimes_from_call_fail"] += got3 != (1.0 / (c_ + d_), 1.0 / d_, 1.0 / c_)
+            has_dio = electron is not None
+            has_capture = np_ > 0
+            if has_dio and has_capture:
+                s["outcome_both"] += 1
+            elif not has_dio and not has_capture:
+                s["outcome_none"] += 1
+            if captured != has_capture or captured == has_dio or outcome != ("N" if captured else "D"):
+                s["branch_outcome_mismatch"] += 1
+            if captured:
+                s["captures"] += 1
+                if model_seen and model_calls < 1:
+                    s["model_missing"] += 1
+                if model_seen and k != np_:
+                    s["model_product_mismatch"] += 1
+            else:
+                s["decays"] += 1
+            stream = "capture" if captured else "decay"
+            sums["all"].add(elapsed)
+            sums[stream].add(elapsed)
+            j = _bin(lam * elapsed)
+            if j is None:
+                s["bin_ties"] += 1
+            else:
+                bins["all"][j] += 1
+                bins[stream][j] += 1
+            # clocks
+            if route == STOPPING:
+                if has_dio and electron is not None:
+                    clocks["stop_dio"].add(electron, t0_ns + elapsed, t0_ns + elapsed, elapsed)
+                if has_capture and model_seen and k == np_:
+                    for tau, t in zip(taus, products, strict=True):
+                        clocks["stop_capture"].add(t, t0_ns + max(elapsed + tau, 0.0),
+                                                   t0_ns + elapsed + max(tau, 0.0), elapsed, tau)
+            else:
+                clocks["atom_creation"].add(t_create, 2.0 * t0_ns, t0_ns)
+                if has_dio and electron is not None:
+                    clocks["atom_dio"].add(electron, t_atom + elapsed, t0_ns + elapsed, elapsed, t_atom)
+                if has_capture and model_seen and k == np_:
+                    for tau, t in zip(taus, products, strict=True):
+                        clocks["atom_capture"].add(t, t_atom + max(elapsed + tau, 0.0),
+                                                   t0_ns + elapsed + max(tau, 0.0), elapsed, tau, t_atom)
+        except (ValueError, IndexError, BoundRateError):
+            s["malformed"] += 1
+    s["missing"] = count - sum(seen)
+    s["stops_lines"] = stops.drain()
+    s["sums"] = {k: v.value().hex() for k, v in sums.items()}
+    s["bins"] = bins
+    s["clocks"] = {c: t.as_dict() for c, t in clocks.items()}
+    s["rate_max_rel"] = float(s["rate_max_rel"]).hex()
+    s["rate_components"] = [float(x).hex() for x in s["rate_components"]]
+    totals: dict[str, str] = {}
+    try:
+        for line in _open_text(raw / "bound_summary.txt"):
+            key, value = line.split()
+            totals[key] = value
+    except (BoundRateError, ValueError):
+        totals = {}
+    s["process"] = totals
+    wanted = {"events", "captures"} | {f"sum_{k}" for k in STREAMS}
+    s["process_agrees"] = wanted <= set(totals) and (
+        int(totals["events"]) == s["events"] and int(totals["captures"]) == s["captures"]
+        and all(_close(float.fromhex(totals[f"sum_{k}"]), float.fromhex(s["sums"][k])) for k in STREAMS)
+    )
+    return s
+
+
+#: The components :func:`summarize_chunk` compares, by route: the stopping route's pair and their sum; the
+#: atomic route's lifetime, DIO lifetime and nuclear-capture lifetime.
+COMPONENTS = {STOPPING: ("capture", "decay", "total"), ATOMIC: ("lifetime", "dio_lifetime", "nc_lifetime")}
+
+
+def _component_max(s: dict[str, Any], rels: Sequence[float]) -> None:
+    """The largest relative deviation seen so far of each compared component."""
+    cur = s["rate_components"]
+    s["rate_components"] = [max(a, b) for a, b in zip(cur, rels, strict=True)] if cur else list(rels)
+
+
+def _close(a: float, b: float) -> bool:
+    """Two compensated sums of the same values agree to 1e-12 relative (or both are zero)."""
+    return a == b or abs(a - b) <= 1e-12 * max(abs(a), abs(b))
+
+
+# --------------------------------------------------------------------------------------------
+# merging chunks into a group
+# --------------------------------------------------------------------------------------------
+
+_COUNTERS = ("events", "duplicates", "out_of_range", "malformed", "captures", "decays", "outcome_none",
+             "outcome_both", "branch_outcome_mismatch", "stops_bound_mismatch", "rate_fail", "rate_exact",
+             "wiring_fail", "provider_calls_helper", "provider_calls_other", "helper_pair_exact",
+             "lifetimes_from_call_fail", "model_missing", "model_product_mismatch", "bin_ties", "missing",
+             "stops_lines", "wiring_unobserved", "model_unobserved")
+
+
+def merge(chunk_stats: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """The statistics of a set of chunks (a stratum or a group): counters added, sums added with ``fsum`` over
+    the chunk sums (each exactly rounded within its chunk), bins added, clock maxima taken."""
+    if not chunk_stats:
+        raise BoundRateError("no chunk to merge")
+    out: dict[str, Any] = {k: sum(int(c[k]) for c in chunk_stats) for k in _COUNTERS}
+    out["chunks"] = len(chunk_stats)
+    # the chunks' event ranges must not overlap: a range harvested twice is a duplicated seed range
+    spans = sorted((int(c["first"]), int(c["first"]) + int(c["count"])) for c in chunk_stats)
+    out["chunk_overlap"] = sum(max(0, prev[1] - cur[0]) for prev, cur in zip(spans, spans[1:], strict=False))
+    out["process_agrees"] = all(bool(c["process_agrees"]) for c in chunk_stats)
+    out["rate_max_rel"] = max(float.fromhex(c["rate_max_rel"]) for c in chunk_stats).hex()
+    comps = [c["rate_components"] for c in chunk_stats if c["rate_components"]]
+    out["rate_components"] = ([max(float.fromhex(v[i]) for v in comps).hex() for i in range(len(comps[0]))]
+                              if comps else [])
+    out["sums"] = {k: math.fsum(float.fromhex(c["sums"][k]) for c in chunk_stats).hex() for k in STREAMS}
+    out["bins"] = {k: [sum(c["bins"][k][j] for c in chunk_stats) for j in range(TIME_BINS)] for k in STREAMS}
+    clocks = {}
+    for cat in CLOCK_CATEGORIES:
+        tally = ClockTally()
+        for c in chunk_stats:
+            tally.merge(ClockTally.from_dict(c["clocks"][cat]))
+        clocks[cat] = tally.as_dict()
+    out["clocks"] = clocks
+    return out
+
+
+# --------------------------------------------------------------------------------------------
+# gates
+# --------------------------------------------------------------------------------------------
+
+
+def gate_complete(stats: Mapping[str, Any], events: int) -> dict[str, Any]:
+    """Every event present once, with one terminal outcome observed in the transported products, its branch
+    reconciled with that outcome, the stops and bound records consistent, the capture model observed for every
+    capture, and the in-process sums equal to the ones recomputed from the records."""
+    problems = [k for k in ("duplicates", "out_of_range", "malformed", "outcome_none", "outcome_both",
+                            "branch_outcome_mismatch", "stops_bound_mismatch", "model_missing",
+                            "model_product_mismatch", "missing", "wiring_unobserved", "model_unobserved")
+                if int(stats[k])]
+    if int(stats["events"]) != events:
+        problems.append(f"events {stats['events']} != {events}")
+    if int(stats["captures"]) + int(stats["decays"]) != int(stats["events"]):
+        problems.append("branch counts do not add up to the events")
+    if int(stats["stops_lines"]) != events:
+        problems.append(f"stops lines {stats['stops_lines']} != {events}")
+    if not stats["process_agrees"]:
+        problems.append("the in-process sums disagree with the records")
+    if int(stats.get("chunk_overlap", 0)):
+        problems.append(f"{stats['chunk_overlap']} events harvested by more than one chunk")
+    return {"verdict": "pass" if not problems else "fail", "problems": problems}
+
+
+def gate_rate(stats: Mapping[str, Any], route: str, switch_on: bool = True) -> dict[str, Any]:
+    """Every event's consumed rates (stopping: the pair returned to ``ApplyYourself``; atomic: the three
+    stored lifetimes) within relative 1e-9 of the reference, and the wiring: on the stopping route one
+    common-status call per event from bound decay and none from elsewhere; on the atomic route one helper call
+    per process whose pair gives the stored lifetimes bit for bit."""
+    problems = []
+    n = int(stats["events"])
+    if int(stats["rate_fail"]):
+        problems.append(f"{stats['rate_fail']} events outside the rate tolerance")
+    if int(stats["wiring_fail"]):
+        problems.append(f"{stats['wiring_fail']} events with a wiring fault")
+    if int(stats["provider_calls_other"]):
+        problems.append(f"{stats['provider_calls_other']} provider calls from an unexpected caller")
+    if switch_on and route == ATOMIC:
+        if int(stats["provider_calls_helper"]) != int(stats["chunks"]):
+            problems.append(f"{stats['provider_calls_helper']} helper calls in {stats['chunks']} processes")
+        if int(stats["lifetimes_from_call_fail"]):
+            problems.append("stored lifetimes differ from the helper call's pair")
+    if switch_on and route == STOPPING and int(stats["provider_calls_helper"]):
+        problems.append("helper calls on the stopping route")
+    return {"verdict": "pass" if not problems else "fail", "problems": problems,
+            "exact_events": int(stats["rate_exact"]), "events": n,
+            "max_relative_deviation": stats["rate_max_rel"]}
+
+
+def gate_distribution(stats: Mapping[str, Any], n_tests: int) -> dict[str, dict[str, str]]:
+    """The three Pearson tests of the scaled delays in equal-probability bins of Exp(1)."""
+    alpha = per_test_alpha(n_tests)
+    crit = mixture.critical(TIME_BINS - 1, alpha)
+    out = {}
+    for stream in STREAMS:
+        counts = [int(c) for c in stats["bins"][stream]]
+        if sum(counts) == 0:
+            out[stream] = {"verdict": "fail", "reason": "empty stream"}
+            continue
+        x2 = mixture.pearson(counts, [Fraction(1, TIME_BINS)] * TIME_BINS)
+        verdict = mixture.verdict(x2, crit)
+        if int(stats["bin_ties"]):
+            verdict = "refuse"
+        out[stream] = {"verdict": verdict, "x2": str(x2[0].quantize(Decimal("1e-6"))),
+                       "critical_lo": str(crit.lo.quantize(Decimal("1e-6"))), "n": str(sum(counts))}
+    return out
+
+
+def gate_clocks(strata: Mapping[int, Mapping[str, Any]], route: str) -> dict[str, Any]:
+    """Delivery (every category, every stratum: zero failures) and physical correctness (each category and
+    stratum's verdict beside the one predicted before the harvest)."""
+    cats = (("stop_dio", "stop_capture") if route == STOPPING
+            else ("atom_creation", "atom_dio", "atom_capture"))
+    delivery_problems = []
+    physical: dict[str, dict[str, Any]] = {}
+    for t0, stats in sorted(strata.items()):
+        for cat in cats:
+            tally = ClockTally.from_dict(stats["clocks"][cat])
+            if tally.n == 0:
+                delivery_problems.append(f"t0={t0} {cat}: no item")
+            if tally.fail_delivery:
+                delivery_problems.append(f"t0={t0} {cat}: {tally.fail_delivery} of {tally.n}")
+            observed = "fail" if tally.fail_physical else "pass"
+            if tally.n == 0:
+                observed = "no_item"
+            predicted = PREDICTED_PHYSICAL[cat][int(t0)]
+            physical[f"{cat}@{t0}"] = {"verdict": observed, "predicted": predicted,
+                                       "as_predicted": observed == predicted, "n": tally.n,
+                                       "fail": tally.fail_physical,
+                                       "max_abs_residual_ns": float.fromhex(
+                                           stats["clocks"][cat]["max_abs_physical_ns"]).hex()}
+    delivery = {"verdict": "pass" if not delivery_problems else "fail", "problems": delivery_problems}
+    any_fail = any(v["verdict"] != "pass" for v in physical.values())
+    return {"delivery": delivery, "physical": physical,
+            "physical_verdict": "fail" if any_fail else "pass"}
+
+
+# --------------------------------------------------------------------------------------------
+# the committed summary: rows of (cell, stat, key, value)
+# --------------------------------------------------------------------------------------------
+
+HARVEST_COLUMNS = ("cell", "stat", "key", "value")
+BUILD_COLUMNS = ("build", "revision", "kind", "trace", "drill", "install_kind", "geant4_version", "gcc",
+                 "compile_flags", "source_sha256", "binary_sha256", "particles_sha256", "hadronic_sha256")
+
+
+def stats_rows(cell: str, stat: str, stats: Mapping[str, Any]) -> list[dict[str, str]]:
+    """One block of statistics (a stratum or a group) as rows; nested fields are dotted keys."""
+    rows = []
+    for key in _COUNTERS + ("chunks", "chunk_overlap"):
+        rows.append({"cell": cell, "stat": stat, "key": key, "value": str(int(stats[key]))})
+    rows.append({"cell": cell, "stat": stat, "key": "process_agrees",
+                 "value": str(bool(stats["process_agrees"]))})
+    rows.append({"cell": cell, "stat": stat, "key": "rate_max_rel", "value": str(stats["rate_max_rel"])})
+    rows.append({"cell": cell, "stat": stat, "key": "rate_components",
+                 "value": " ".join(stats["rate_components"])})
+    for k in STREAMS:
+        rows.append({"cell": cell, "stat": stat, "key": f"sum.{k}", "value": str(stats["sums"][k])})
+        for j, count in enumerate(stats["bins"][k]):
+            rows.append({"cell": cell, "stat": stat, "key": f"bin.{k}.{j}", "value": str(int(count))})
+    for cat in CLOCK_CATEGORIES:
+        for field, value in stats["clocks"][cat].items():
+            rows.append({"cell": cell, "stat": stat, "key": f"clock.{cat}.{field}", "value": str(value)})
+    return rows
+
+
+def rows_stats(rows: Sequence[Mapping[str, str]]) -> dict[str, Any]:
+    """The inverse of :func:`stats_rows` for the rows of one (cell, stat)."""
+    values = {r["key"]: r["value"] for r in rows}
+    out: dict[str, Any] = {key: int(values[key]) for key in _COUNTERS + ("chunks", "chunk_overlap")}
+    out["process_agrees"] = values["process_agrees"] == "True"
+    out["rate_max_rel"] = values["rate_max_rel"]
+    out["rate_components"] = values["rate_components"].split()
+    out["sums"] = {k: values[f"sum.{k}"] for k in STREAMS}
+    out["bins"] = {k: [int(values[f"bin.{k}.{j}"]) for j in range(TIME_BINS)] for k in STREAMS}
+    clocks: dict[str, dict[str, Any]] = {}
+    for cat in CLOCK_CATEGORIES:
+        fields = {key.split(".", 2)[2]: value for key, value in values.items()
+                  if key.startswith(f"clock.{cat}.")}
+        clocks[cat] = {f: (int(v) if f in ("n", "fail_delivery", "fail_physical") else v)
+                       for f, v in fields.items()}
+    out["clocks"] = clocks
+    return out
+
+
+def render_csv(rows: Sequence[Mapping[str, str]], columns: Sequence[str]) -> bytes:
+    return mixture.render_csv(rows, columns)
+
+
+def read_csv(path: Path, columns: Sequence[str]) -> list[dict[str, str]]:
+    return mixture.read_csv(path, columns)
+
+
+def load_harvest(root: Path) -> dict[str, dict[str, dict[str, Any]]]:
+    """``{cell: {stat: statistics}}`` from the committed summary; the ``meta`` stat stays a flat dict."""
+    grouped: dict[tuple[str, str], list[dict[str, str]]] = {}
+    for row in read_csv(root / HARVEST_RELPATH, HARVEST_COLUMNS):
+        grouped.setdefault((row["cell"], row["stat"]), []).append(row)
+    out: dict[str, dict[str, dict[str, Any]]] = {}
+    for (cell, stat), rows in grouped.items():
+        out.setdefault(cell, {})[stat] = ({r["key"]: r["value"] for r in rows} if stat == "meta"
+                                          else rows_stats(rows))
+    return out
+
+
+def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path) -> None:
+    """Summarize every chunk a plan names and write the summary and builds files into ``out_dir``. A plan is
+    ``{"switch_on": bool, "chunks": [{"group": g, "first": i, "count": n, "t0_ns": t, "cell": dir}], "builds":
+    {revision: build dir}}``; a chunk's ``cell`` holds the ``run.json`` and ``raw/`` of
+    ``cpp/tools/mixture_harvest.py run``. Each chunk's statistics are also written as JSON beside it, and with
+    ``"reuse": true`` a chunk whose JSON exists is read back rather than summarized again."""
+    policy = load_policy(root)
+    by_group: dict[int, list[dict[str, Any]]] = {}
+    meta: dict[int, dict[str, str]] = {}
+    for chunk in plan["chunks"]:
+        g = int(chunk["group"])
+        group = policy["groups"][g]
+        cell = Path(chunk["cell"])
+        saved = cell / "bound_stats.json"
+        if plan.get("reuse") and saved.is_file():
+            stats = json.loads(saved.read_text(encoding="ascii"))
+        else:
+            stats = summarize_chunk(cell / "raw", group["route"], frozen_pair(policy, group["isotope"]),
+                                    float(chunk["t0_ns"]), int(chunk["first"]), int(chunk["count"]),
+                                    bool(plan["switch_on"]))
+            saved.write_text(json.dumps(stats, sort_keys=True) + "\n", encoding="ascii")
+        run = json.loads((cell / "run.json").read_text(encoding="utf-8"))
+        by_group.setdefault(g, []).append(stats)
+        m = meta.setdefault(g, {"binary_sha256": run["build_binary_sha256"], "files": ""})
+        if m["binary_sha256"] != run["build_binary_sha256"]:
+            raise BoundRateError(f"group {g}: chunks from different binaries")
+        m["files"] += "".join(f"{name}={digest};" for name, digest in sorted(run["files"].items()))
+    rows: list[dict[str, str]] = []
+    for g in sorted(by_group):
+        group = policy["groups"][g]
+        name = group_name(group)
+        chunk_stats = sorted(by_group[g], key=lambda s: int(s["first"]))
+        rows.append({"cell": name, "stat": "meta", "key": "binary_sha256", "value": meta[g]["binary_sha256"]})
+        rows.append({"cell": name, "stat": "meta", "key": "chunk_files_sha256",
+                     "value": hashlib.sha256(meta[g]["files"].encode("ascii")).hexdigest()})
+        rows.append({"cell": name, "stat": "meta", "key": "switch_on", "value": str(bool(plan["switch_on"]))})
+        rows += stats_rows(name, "group", merge(chunk_stats))
+        for t0 in T0_NS:
+            part = [s for s in chunk_stats if int(float(s["t0_ns"])) == t0]
+            if part:
+                rows += stats_rows(name, f"stratum_{t0}", merge(part))
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / Path(HARVEST_RELPATH).name).write_bytes(render_csv(rows, HARVEST_COLUMNS))
+    build_rows = []
+    for revision, build_dir in sorted(plan.get("builds", {}).items()):
+        info = json.loads((Path(build_dir) / "build.json").read_text(encoding="utf-8"))
+        libs = {Path(lib["path"]).name: lib["sha256"] for lib in info["libraries"]}
+        build_rows.append({
+            "build": Path(build_dir).name, "revision": revision, "kind": info["kind"],
+            "trace": str(bool(info.get("trace", False))), "drill": info["drill"],
+            "install_kind": "bound-rate patched", "geant4_version": info["geant4_version"],
+            "gcc": info["gcc"],
+            "compile_flags": info["compile_flags"], "source_sha256": info["source_sha256"],
+            "binary_sha256": info["binary_sha256"], "particles_sha256": libs.get("libG4particles.so", ""),
+            "hadronic_sha256": libs.get("libG4processes_hadronic.so", "")})
+    if build_rows:
+        (out_dir / Path(BUILDS_RELPATH).name).write_bytes(render_csv(build_rows, BUILD_COLUMNS))
+
+
+# --------------------------------------------------------------------------------------------
 # the theory admission gate
 # --------------------------------------------------------------------------------------------
 
@@ -327,3 +946,63 @@ def theory_admission(manifest: Mapping[str, Any]) -> dict[str, Any]:
         status = "ADMITTED"
     return {"status": status, "problems": problems, "roster": roster}
 
+
+# --------------------------------------------------------------------------------------------
+# drills
+# --------------------------------------------------------------------------------------------
+
+#: The committed drill summaries (same rows as the harvest summary) and the identity verdicts.
+DRILLS_RELPATH = "data/g4/d1/bound_rates_drills.csv"
+IDENTITY_RELPATH = "data/g4/d1/bound_rates_identity.csv"
+IDENTITY_VERDICTS_RELPATH = "data/g4/d1/bound_rates_identity_verdicts.csv"
+IDENTITY_DRILLS_RELPATH = "data/g4/d1/bound_rates_identity_drills.csv"
+SWEEP_RELPATH = "data/g4/d1/bound_rates_sweep.csv"
+DEFAULTS_RELPATH = "data/g4/d1/bound_rates_harness_defaults.csv"
+#: The families a drill can be intended to turn red.
+FAMILIES = ("complete", "rate", "wiring", "transport", "distribution", "delivery")
+
+
+def drill_families(stats: Mapping[str, Any], meta: Mapping[str, str], pair: Pair, stats_mod: Any,
+                   n_primary: int = 48, n_distribution: int = 36) -> dict[str, str]:
+    """Every family's verdict for one drill or control run: completeness, the rate values, the wiring, the
+    four registered tests at the run's own N (``stats_mod`` supplies the binomial and gamma functions), the
+    distribution family and the delivered clock."""
+    route = meta["route"]
+    n = int(meta["events"])
+    switch_on = meta["switch_on"] == "True"
+    out = {"complete": gate_complete(stats, n)["verdict"]}
+    out["rate"] = "fail" if int(stats["rate_fail"]) else "pass"
+    wiring = bool(int(stats["wiring_fail"]) or int(stats["provider_calls_other"])
+                  or int(stats["wiring_unobserved"]))
+    if switch_on and route == ATOMIC:
+        wiring = wiring or int(stats["provider_calls_helper"]) != int(stats["chunks"]) or bool(
+            int(stats["lifetimes_from_call_fail"]))
+    out["wiring"] = "fail" if wiring else "pass"
+    alpha = float(per_test_alpha(n_primary))
+    k = int(stats["captures"])
+    p = float(pair.p_capture)
+    lo = int(stats_mod.binom.ppf(alpha / 2, n, p))
+    hi = int(stats_mod.binom.isf(alpha / 2, n, p))
+    verdicts = [lo <= k <= hi]
+    for stream, shape in (("all", n), ("capture", k), ("decay", n - k)):
+        if shape <= 0:
+            verdicts.append(False)
+            continue
+        u = pair.total * float.fromhex(stats["sums"][stream])
+        verdicts.append(float(stats_mod.gamma.ppf(alpha / 2, shape)) <= u
+                        <= float(stats_mod.gamma.isf(alpha / 2, shape)))
+    dist = gate_distribution(stats, n_distribution)
+    out["distribution"] = "pass" if all(v["verdict"] == "pass" for v in dist.values()) else "fail"
+    out["transport"] = "pass" if all(verdicts) and out["distribution"] == "pass" else "fail"
+    clocks = gate_clocks({0: stats}, route)
+    out["delivery"] = clocks["delivery"]["verdict"]
+    return out
+
+
+def drill_outcome(kind: str, intended: str, families: Mapping[str, str]) -> str:
+    """``red`` when every intended family failed (a drill) or ``green`` when every family passed (a control,
+    or a drill whose intended set is ``none``); anything else is a problem, named."""
+    wanted = [] if intended == "none" else intended.split(",")
+    if kind == "control" or not wanted:
+        return "green" if all(v == "pass" for v in families.values()) else "unexpected red"
+    return "red" if all(families[f] == "fail" for f in wanted) else "not red"
