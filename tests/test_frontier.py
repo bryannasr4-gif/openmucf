@@ -5,7 +5,10 @@ bit-for-bit (regression lock to openmucf.uq.breakeven_audit); the closed-form an
 solver paths agree to < 1e-9 (relative) for every free variable, with q_net(inverse) == target to < 1e-12;
 the (lambda_c, R) frontier is monotone decreasing in lambda_c; the Newton solver converges (no NaNs) from
 the documented initialisations across the grid; the optimistix dependency is DECLARED (import + pyproject);
-and FRONTIER.md + its manifest regenerate deterministically and verify. NO verdict-shaped surface is built
+and FRONTIER.md + its manifest regenerate deterministically and verify; and the requirement sentences of
+FRONTIER.md and FINDINGS.md state each floor with the side-channel loss it holds at, recomputed here by
+plain arithmetic, with the adverse fact that rules out a universal floor above the sticking-only one pinned.
+NO verdict-shaped surface is built
 (the inverse-design fence): the module exposes only inverse-design functions.
 """
 
@@ -14,6 +17,7 @@ from __future__ import annotations
 import importlib.util
 import math
 import os
+import re
 import tomllib
 from pathlib import Path
 
@@ -258,3 +262,106 @@ def test_anchor_table_is_rendered_at_the_fraction():
     for k, v in expected.items():
         assert ent[k] == v, k
         assert fresh[k] == v, k
+
+
+# ------------------------------------------------------------------ the floor and the loss it holds at
+# FRONTIER.md's requirement sentence and FINDINGS.md's section-3 verdict state the X_mu = 500 floor with the
+# side-channel loss it holds at. The figures are recomputed here by plain arithmetic,
+# R = 1 - (1/X - L)/omega_s0 at lambda_c -> inf, independently of r_required.
+_REQUIREMENT_DRILLS = {
+    # the sentences this check replaced: a universal floor stated without the loss it holds at
+    "FRONTIER.md": (
+        "Expressed as a requirement, an X_mu = 500 mechanism must push TOTAL reactivation to R ~ 0.9+ "
+        "at any\ndensity -- a falsifiable, quantitative bet on the reactivation physics.\n"
+    ),
+    "FINDINGS.md": (
+        "**Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit "
+        "does not\nevaluate the polarization / field-assisted-recovery mechanisms it invokes -- but "
+        "expressed as\nrequirements, any such mechanism must push reactivation to R ~ 0.9+ (density "
+        "scaling can raise the cycling\nrate, but the required-R floor is independent of lambda_c; "
+        "whether density raises R itself is an open\nquestion). That turns a headline into a "
+        "falsifiable, quantitative bet on **exactly the\n"
+    ),
+}
+_OPENERS = {"FRONTIER.md": "Expressed as a requirement", "FINDINGS.md": "**Verdict.**"}
+
+
+def _l_anchor() -> float:
+    from openmucf import sidechannels
+
+    return sidechannels.ANCHOR_L_OTHER_FRACTION
+
+
+def _requirement_paragraph(text: str, doc: str) -> str:
+    """The paragraph that opens with the document's requirement marker, whitespace-normalised."""
+    text = text.replace("\r\n", "\n")
+    start = text.index(_OPENERS[doc])
+    end = text.find("\n\n", start)
+    return " ".join(text[start : end if end >= 0 else len(text)].split())
+
+
+def requirement_failures(text: str, doc: str) -> list[str]:
+    """What the requirement paragraph of ``doc`` lacks: the floor at zero side-channel loss with its
+    condition, the floor at the anchor fill's loss with its condition, and the rise per 0.1 % of loss; and
+    any floor it states that is neither of the two, or a "0.9+" requirement."""
+    par = _requirement_paragraph(text, doc)
+    floor0 = f"{1.0 - (1.0 / 500.0) / OMEGA_S0_DEFAULT:.2f}"
+    floor_a = f"{1.0 - (1.0 / 500.0 - _l_anchor()) / OMEGA_S0_DEFAULT:.2f}"
+    rise = f"{0.001 / OMEGA_S0_DEFAULT:.2f}"
+    need = {
+        "floor at zero side-channel loss": (
+            rf"R >= {re.escape(floor0)} at any density when sticking and decay are the only losses"
+        ),
+        "floor at the anchor fill's loss": (
+            rf"R >= {re.escape(floor_a)} at the (liquid )?anchor fill's side-channel loss"
+        ),
+        "rise of the floor": (
+            rf"each 0\.1% of side-channel loss per cycle raises that floor by {re.escape(rise)},"
+        ),
+        "scope of the loss": r"the loss away from that fill is not established here",
+    }
+    bad = [f"{doc}: {what} missing" for what, pat in need.items() if not re.search(pat, par)]
+    stray = sorted(set(re.findall(r"R >= (\d\.\d+)", par)) - {floor0, floor_a})
+    bad += [f"{doc}: states a floor R >= {s} that is neither floor" for s in stray]
+    if re.search(r"0\.9\+|~ ?0\.9\b", par):
+        bad.append(f"{doc}: states a 0.9+ requirement")
+    return bad
+
+
+def test_requirement_states_each_floor_with_its_loss():
+    for doc in ("FRONTIER.md", "FINDINGS.md"):
+        assert requirement_failures((REPO / doc).read_text(encoding="utf-8"), doc) == []
+
+
+def test_requirement_drill_refuses_the_universal_floor():
+    """Drill: the sentences this check replaced are refused, and so is the corrected paragraph with its
+    anchor-fill floor dropped, a 0.9+ restored, or a third floor stated without its loss."""
+    floor_a = f"{r_required(500.0, math.inf, l_other=_l_anchor()):.2f}"
+    for doc, old in _REQUIREMENT_DRILLS.items():
+        assert requirement_failures(old, doc), doc
+        par = _requirement_paragraph((REPO / doc).read_text(encoding="utf-8"), doc)
+        dropped = par.replace(f"and to R >= {floor_a} at", "and at")
+        assert dropped != par, doc
+        assert requirement_failures(dropped, doc), doc
+        assert requirement_failures(par + " In short, R ~ 0.9+.", doc), doc
+        assert requirement_failures(par + " Some readings need R >= 0.95.", doc), doc
+
+
+def test_no_universal_floor_above_the_sticking_only_one():
+    """The adverse fact behind the conditional statement: above the sticking-only floor, R = 0.85 already
+    gives X_mu > 500 at lambda_c = 2e9 s^-1 with no side-channel loss, so no floor above it holds at any
+    density."""
+    assert r_required(500.0, math.inf) < 0.85
+    assert float(fusions_per_muon(effective_sticking(OMEGA_S0_DEFAULT, 0.85), 2e9)) > 500.0
+
+
+def test_floor_rise_is_one_figure_in_both_documents():
+    """FINDINGS.md and FRONTIER.md state one rise of the floor for one step of loss: the closed form."""
+    import json
+
+    def values(name):
+        return {e["id"]: e["value"] for e in json.loads((REPO / name).read_text(encoding="utf-8"))["entries"]}
+
+    f, g = values("FINDINGS_MANIFEST.json"), values("FRONTIER_MANIFEST.json")
+    assert f["R_floor_rise"] == g["R_floor_rise"] == f"{0.001 / OMEGA_S0_DEFAULT:.2f}"
+    assert f["L_step_pct"] == g["L_step_pct"] == "0.1"

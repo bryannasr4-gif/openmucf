@@ -410,6 +410,38 @@
     },
     {
       "doc": "FINDINGS.md",
+      "id": "R_required_verdict",
+      "pattern": "push reactivation to R >= 0\\.77 at any density when sticking and decay\\s+are the only losses",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.77"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_required_anchor_verdict",
+      "pattern": "and to R >= 0\\.93 at the liquid anchor fill's side-channel loss;",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.93"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "L_step_pct",
+      "pattern": "each 0\\.1% of side-channel\\s+loss per cycle raises that floor by 0\\.12,",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.1"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_floor_rise",
+      "pattern": "each 0\\.1% of side-channel\\s+loss per cycle raises that floor by 0\\.12,",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.12"
+    },
+    {
+      "doc": "FINDINGS.md",
       "id": "R_required_intrinsic",
       "pattern": "and R >= 0\\.86 with only that fill's tt",
       "source": "scripts/generate_findings.py",

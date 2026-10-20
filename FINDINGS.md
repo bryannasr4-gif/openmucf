@@ -284,9 +284,11 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Un
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as
-requirements, any such mechanism must push reactivation to R ~ 0.9+ (density scaling can raise the cycling
-rate, but the required-R floor is independent of lambda_c; whether density raises R itself is an open
-question). That turns a headline into a falsifiable, quantitative bet on **exactly the
+requirements, any such mechanism must push reactivation to R >= 0.77 at any density when sticking and decay
+are the only losses, and to R >= 0.93 at the liquid anchor fill's side-channel loss; each 0.1% of side-channel
+loss per cycle raises that floor by 0.12, and the loss away from that fill is not established here (density
+scaling can raise the cycling rate, but the required-R floor is independent of lambda_c; whether density
+raises R itself is an open question). That turns a headline into a falsifiable, quantitative bet on **exactly the
 quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking surrogate will forecast.**
 (Figure `figures/breakeven.png`.)
 

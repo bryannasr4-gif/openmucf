@@ -47,8 +47,11 @@ SUCCESSIVE factors -- `omega_s_eff = omega_s0 (1-R_col)(1-R_X)` -- so it is not 
 field-assisted factor **R_X >= 0.64**. At the anchor fill's side-channel loss (the second
 table) these become **R >= 0.93** and **R_X >= 0.89**. The Kamimura-prior calibration posterior gives a
 total R = **0.47** +- 0.06 (`CALIBRATION.md`), also below the floor.
-Expressed as a requirement, an X_mu = 500 mechanism must push TOTAL reactivation to R ~ 0.9+ at any
-density -- a falsifiable, quantitative bet on the reactivation physics.
+Expressed as a requirement, an X_mu = 500 mechanism must push TOTAL reactivation to R >= 0.77 at any
+density when sticking and decay are the only losses, and to R >= 0.93 at the anchor fill's
+side-channel loss (the second table); each 0.1% of side-channel loss per cycle raises that floor by
+0.12, and the loss away from that fill is not established here -- a falsifiable, quantitative bet
+on the reactivation physics.
 
 ## Solver-backed general inverse (optimistix Newton over the q_net graph)
 `openmucf.frontier.solve_inverse` inverts the full differentiable `systems.q_net` graph for ONE free

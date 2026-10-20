@@ -286,6 +286,13 @@ _R_ANCHOR = frontier.r_required(_N_MU, math.inf, l_other=sidechannels.ANCHOR_L_O
 H["L_anchor"] = f"{sidechannels.ANCHOR_L_OTHER_PCT[0]:.4f}"
 H["L_intrinsic"] = f"{_SC['intrinsic_pct']:.4f}"
 H["R_required_anchor"] = f"{_R_ANCHOR:.2f}"
+# The verdict states the floor with the loss it holds at, and its rise for each _L_STEP of side-channel loss per
+# cycle (a FRACTION; 0.1%): linear in that loss at lambda_c -> inf, so the same rise at every loss.
+_L_STEP = 0.001
+H["L_step_pct"] = f"{100.0 * _L_STEP:.1f}"
+H["R_floor_rise"] = (
+    f"{frontier.r_required(_N_MU, math.inf, l_other=_L_STEP) - frontier.r_required(_N_MU, math.inf):.2f}"
+)
 H["R_required_intrinsic"] = f"{frontier.r_required(_N_MU, math.inf, l_other=_SC['intrinsic_fraction']):.2f}"
 H["R_X_required_anchor"] = f"{1.0 - (1.0 - _R_ANCHOR) / (1.0 - be['R_col_reference']):.2f}"
 H["lc_needed_anchor"] = (
@@ -668,9 +675,11 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\\mu > 500$, $Q > 2$. U
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as
-requirements, any such mechanism must push reactivation to R ~ 0.9+ (density scaling can raise the cycling
-rate, but the required-R floor is independent of lambda_c; whether density raises R itself is an open
-question). That turns a headline into a falsifiable, quantitative bet on **exactly the
+requirements, any such mechanism must push reactivation to R >= {H["R_required"]} at any density when sticking and decay
+are the only losses, and to R >= {H["R_required_anchor"]} at the liquid anchor fill's side-channel loss; each {H["L_step_pct"]}% of side-channel
+loss per cycle raises that floor by {H["R_floor_rise"]}, and the loss away from that fill is not established here (density
+scaling can raise the cycling rate, but the required-R floor is independent of lambda_c; whether density
+raises R itself is an open question). That turns a headline into a falsifiable, quantitative bet on **exactly the
 quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking surrogate will forecast.**
 (Figure `figures/breakeven.png`.)
 
@@ -705,10 +714,10 @@ with open("FINDINGS.md", "w") as f:
 
 # --------------------------------------------------------- machine-checkable provenance manifest
 # Built from the SAME H used for the document above, so every tracked value is identical by construction.
-def _entry(entry_id, pattern):
+def _entry(entry_id, pattern, key=None):
     return provenance.ManifestEntry(
         id=entry_id,
-        value=H[entry_id],
+        value=H[key or entry_id],
         pattern=pattern,
         source_type="derivation",
         source="scripts/generate_findings.py",
@@ -798,6 +807,28 @@ _entries += [
     _entry("W_solid", rf"anchor and {re.escape(H['W_solid'])}% at the solid one"),
     _entry("L_anchor", rf"side-channel loss of {re.escape(H['L_anchor'])}% per cycle"),
     _entry("R_required_anchor", rf"the floor is \*\*R >= {re.escape(H['R_required_anchor'])}\*\*"),
+    # the verdict: each floor with the loss it holds at, and the rise of the floor with that loss
+    _entry(
+        "R_required_verdict",
+        rf"push reactivation to R >= {re.escape(H['R_required'])} at any density when sticking and decay\s+"
+        rf"are the only losses",
+        key="R_required",
+    ),
+    _entry(
+        "R_required_anchor_verdict",
+        rf"and to R >= {re.escape(H['R_required_anchor'])} at the liquid anchor fill's side-channel loss;",
+        key="R_required_anchor",
+    ),
+    _entry(
+        "L_step_pct",
+        rf"each {re.escape(H['L_step_pct'])}% of side-channel\s+loss per cycle raises that floor by "
+        rf"{re.escape(H['R_floor_rise'])},",
+    ),
+    _entry(
+        "R_floor_rise",
+        rf"each {re.escape(H['L_step_pct'])}% of side-channel\s+loss per cycle raises that floor by "
+        rf"{re.escape(H['R_floor_rise'])},",
+    ),
     _entry("R_required_intrinsic", rf"and R >= {re.escape(H['R_required_intrinsic'])} with only that fill's tt"),
     _entry("L_intrinsic", rf"dd share \({re.escape(H['L_intrinsic'])}%\)"),
     _entry("lc_needed_anchor", rf"needs lambda_c >= {re.escape(H['lc_needed_anchor'])} s\^-1 even at R = 1"),
