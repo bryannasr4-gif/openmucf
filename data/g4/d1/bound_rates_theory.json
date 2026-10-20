@@ -1,0 +1,37 @@
+{
+ "accuracy": "not established: no term of the physical uncertainty budget is bounded, and no independent reference is registered",
+ "qualified_roster": [],
+ "references": [],
+ "screen": "SCREEN_VACUOUS",
+ "sources": [
+  {
+   "citation": "H. C. von Baeyer and D. Leiter, Nuclear recoil corrections to the lifetime of bound muons, Phys. Rev. A 19, 1371 (1979)",
+   "doi": "10.1103/PhysRevA.19.1371",
+   "read": false,
+   "role": "the source the comment of G4MuonMinusBoundDecay::GetMuonDecayRate attributes the below-threshold form to; its equation, assumptions, remainder and domain were not read for this record"
+  },
+  {
+   "citation": "N. C. Mukhopadhyay, Nuclear muon capture, Phys. Rep. 30, 1 (1977)",
+   "doi": "10.1016/0370-1573(77)90073-4",
+   "read": false,
+   "role": "the source the comment of G4MuonicAtomHelper::GetMuonDecayRate attributes its form to; not read for this record"
+  },
+  {
+   "arxiv": "1406.3575",
+   "citation": "A. Czarnecki, M. Dowling, X. Garcia i Tormo, W. J. Marciano and R. Szafron, Michel decay spectrum for a muon bound to a nucleus, Phys. Rev. D 90, 093002 (2014)",
+   "doi": "10.1103/PhysRevD.90.093002",
+   "read": true,
+   "role": "context only: it describes the binding effects on the total decay rate as approximately cancelling, the difference from the free rate being mainly time dilation, and its convolution formula neither covers the high-energy end of the spectrum nor includes all corrections of order (Z alpha)^2, so it bounds no term of the total rate"
+  }
+ ],
+ "status": "NOT_ESTABLISHED",
+ "terms": {
+  "binding_expansion": {"source": null, "value": null},
+  "equation": {"source": null, "value": null},
+  "finite_size": {"source": null, "value": null},
+  "numerical": {"source": null, "value": null},
+  "nuclear_mass": {"source": null, "value": null},
+  "radiative": {"source": null, "value": null},
+  "recoil": {"source": null, "value": null}
+ }
+}

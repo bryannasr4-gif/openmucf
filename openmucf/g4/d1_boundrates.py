@@ -40,6 +40,8 @@ from openmucf.g4.sources import d1_nuclear_capture as d1
 
 #: The committed policy, relative to the repository root.
 POLICY_RELPATH = "data/g4/d1/bound_rates_policy.json"
+#: The status of the theory budget the physical-accuracy question needs.
+THEORY_RELPATH = "data/g4/d1/bound_rates_theory.json"
 
 STOPPING, ATOMIC = mixture.STOPPING, mixture.ATOMIC
 ROUTES = (STOPPING, ATOMIC)
@@ -275,3 +277,53 @@ def frozen_pair(policy: Mapping[str, Any], label: str) -> Pair:
     r = policy["references"][label]
     return Pair(int(r["z"]), int(r["a"]), float.fromhex(r["mass_mev"]), float.fromhex(r["capture"]),
                 float.fromhex(r["decay"]))
+
+
+# --------------------------------------------------------------------------------------------
+# the theory admission gate
+# --------------------------------------------------------------------------------------------
+
+#: The terms a physical uncertainty budget of the prescription must bound before any nuclide is admitted.
+REQUIRED_TERMS = ("equation", "binding_expansion", "recoil", "nuclear_mass", "finite_size", "radiative",
+                  "numerical")
+
+
+def theory_admission(manifest: Mapping[str, Any]) -> dict[str, Any]:
+    """Whether a theory-budget manifest admits any nuclide to a physical-accuracy comparison.
+
+    Every term of :data:`REQUIRED_TERMS` must be present with a value and a source (a term with no value is
+    unbounded; a value with no source, a zero included, is refused, because an unknown term cannot be zero);
+    every admitted nuclide must lie in the provider's domain; every reference must be independent of the
+    evaluated formula and not exposed before the manifest was frozen. A manifest that fails any of these
+    admits nothing (``NOT_ESTABLISHED``); one that passes them with an empty roster is ``SCREEN_VACUOUS``;
+    otherwise ``ADMITTED``."""
+    problems: list[str] = []
+    terms = manifest.get("terms", {})
+    for name in REQUIRED_TERMS:
+        term = terms.get(name)
+        if term is None:
+            problems.append(f"{name}: missing")
+        elif term.get("value") in (None, "", "unbounded"):
+            problems.append(f"{name}: unbounded")
+        elif not term.get("source"):
+            problems.append(f"{name}: a value with no source")
+    roster = list(manifest.get("qualified_roster", []))
+    for label in roster:
+        z, a = (int(x) for x in str(label).split("-"))
+        if not in_domain(z, a):
+            problems.append(f"{label}: outside the provider's domain")
+    for ref in manifest.get("references", []):
+        if not ref.get("independent", False):
+            problems.append(f"reference {ref.get('id')}: shares the evaluated formula or its inputs")
+        if ref.get("exposed", True):
+            problems.append(f"reference {ref.get('id')}: exposed before the manifest was frozen")
+    if roster and not manifest.get("references"):
+        problems.append("an admitted nuclide with no reference")
+    if problems:
+        status = "NOT_ESTABLISHED"
+    elif not roster:
+        status = "SCREEN_VACUOUS"
+    else:
+        status = "ADMITTED"
+    return {"status": status, "problems": problems, "roster": roster}
+

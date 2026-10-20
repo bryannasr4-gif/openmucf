@@ -216,3 +216,52 @@ def test_oracle_is_the_one_the_policy_names(policy: dict) -> None:
     assert policy["inputs"]["oracle"] == lifetime.ORACLE_RELPATH
     digest = hashlib.sha256((ROOT / lifetime.ORACLE_RELPATH).read_bytes()).hexdigest()
     assert policy["inputs"]["oracle_sha256"] == digest
+
+
+# --------------------------------------------------------------------------------------------
+# the theory admission gate
+# --------------------------------------------------------------------------------------------
+
+
+def _complete_manifest() -> dict:
+    terms = {name: {"value": "1e-6", "source": "a stated derivation"} for name in bound.REQUIRED_TERMS}
+    return {"terms": terms, "qualified_roster": ["6-12"],
+            "references": [{"id": "independent width", "independent": True, "exposed": False}]}
+
+
+def test_the_committed_theory_status_is_what_the_gate_gives() -> None:
+    manifest = json.loads((ROOT / bound.THEORY_RELPATH).read_text(encoding="utf-8"))
+    verdict = bound.theory_admission(manifest)
+    assert verdict["status"] == manifest["status"] == "NOT_ESTABLISHED"
+    assert manifest["screen"] == "SCREEN_VACUOUS" and manifest["qualified_roster"] == []
+    assert len(verdict["problems"]) == len(bound.REQUIRED_TERMS)
+
+
+def _without(m: dict, term: str) -> dict:
+    return {**m, "terms": {k: v for k, v in m["terms"].items() if k != term}}
+
+
+@pytest.mark.parametrize("label, change, status", [
+    ("complete", lambda m: m, "ADMITTED"),
+    ("complete, empty roster", lambda m: {**m, "qualified_roster": []}, "SCREEN_VACUOUS"),
+    ("a required term removed", lambda m: _without(m, "radiative"), "NOT_ESTABLISHED"),
+    ("an unknown term replaced by zero",
+     lambda m: {**m, "terms": {**m["terms"], "recoil": {"value": "0", "source": None}}}, "NOT_ESTABLISHED"),
+    ("an unsupported nuclide admitted", lambda m: {**m, "qualified_roster": ["14-28"]}, "NOT_ESTABLISHED"),
+    ("a dependent reference",
+     lambda m: {**m, "references": [{"id": "same formula", "independent": False, "exposed": False}]},
+     "NOT_ESTABLISHED"),
+    ("an exposed reference as a holdout",
+     lambda m: {**m, "references": [{"id": "residuals", "independent": True, "exposed": True}]},
+     "NOT_ESTABLISHED"),
+    ("a sourced term with no value",
+     lambda m: {**m, "terms": {**m["terms"], "recoil": {"value": None, "source": "a stated derivation"}}},
+     "NOT_ESTABLISHED"),
+    ("a reference that does not state its independence",
+     lambda m: {**m, "references": [{"id": "unstated", "exposed": False}]}, "NOT_ESTABLISHED"),
+    ("a reference that does not state its exposure",
+     lambda m: {**m, "references": [{"id": "unstated", "independent": True}]}, "NOT_ESTABLISHED"),
+    ("an admitted nuclide with no reference", lambda m: {**m, "references": []}, "NOT_ESTABLISHED"),
+])
+def test_drill_the_theory_gate_refuses_each_defect(label: str, change, status: str) -> None:  # type: ignore[no-untyped-def]
+    assert bound.theory_admission(change(_complete_manifest()))["status"] == status, label
