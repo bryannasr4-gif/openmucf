@@ -88,15 +88,16 @@ def _screen(residual: Decimal, sigma: Decimal, minimum: Decimal | None = None) -
     return "correlation-dependent"
 
 
-def numerical_record(root: Path) -> dict[tuple[int, int], tuple[Decimal, str]]:
-    """``{(Z, A): (b_num in keV, verdict)}`` of the consumer quantity ``K-e2`` with the Uehling potential,
-    as ``numerical_check.csv`` carries it; the file's own loader cross-checks it against the outputs."""
+def numerical_record(root: Path, bundle: contract.Bundle | None = None
+                     ) -> dict[tuple[int, int], tuple[Decimal, str]]:
+    """Evaluated historical estimate in keV, with the computed K-e2 verdict."""
     out: dict[tuple[int, int], tuple[Decimal, str]] = {}
-    path = Path(root) / contract.NUMERICAL_CHECK_RELPATH
-    for where, r in md.read_rows(path, contract.NUMERICAL_CHECK_COLUMNS):
-        if r["quantity"] == "K-e2" and r["uehling"] == "on":
-            key = (md.integer(r["Z"], where, "Z"), md.integer(r["A"], where, "A"))
-            out[key] = (Decimal(r["b_num_eV"]) / 1000, r["verdict"])
+    checks = (contract.load_numerical_check(root, md.load_outputs(root))
+              if bundle is None else bundle.checks)
+    for r in checks.values():
+        if r.quantity == "K-e2" and r.uehling:
+            key = r.z, r.a
+            out[key] = (Decimal(r.b_num_ev) / 1000, r.verdict)
     return out
 
 
@@ -107,12 +108,12 @@ def _illustrative(l2: md.Cell, l3: md.Cell, ratio: dict[str, str], q: Decimal) -
     return ";".join(_text(v) for v in values), ";".join(_text(q - v) for v in values)
 
 
-def centroid_rows(root: Path) -> list[dict[str, str]]:
+def centroid_rows(root: Path, bundle: contract.Bundle | None = None) -> list[dict[str, str]]:
     """The labelled, complete-doublet and excluded cohorts in the frozen order."""
     root = Path(root)
     cells = md.load_cells(root / md.CELLS_RELPATH)
     ratios = load_intensity_ratios(root / RATIOS_RELPATH, cells)
-    record = numerical_record(root)
+    record = numerical_record(root) if bundle is None else numerical_record(root, bundle)
     tables = contract.Tables(contract.read_table_text(root / contract.KSHELL_RELPATH),
                              contract.read_table_text(root / contract.LEVELS_RELPATH))
     stock = md.load_geant4_levels(root / md.GEANT4_LEVELS_RELPATH)
@@ -236,12 +237,12 @@ def margin_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     return out
 
 
-def render_centroids(root: Path) -> bytes:
-    return _csv(CENTROID_COLUMNS, centroid_rows(root))
+def render_centroids(root: Path, bundle: contract.Bundle | None = None) -> bytes:
+    return _csv(CENTROID_COLUMNS, centroid_rows(root, bundle))
 
 
-def render_margins(root: Path) -> bytes:
-    return _csv(MARGIN_COLUMNS, margin_rows(centroid_rows(root)))
+def render_margins(root: Path, bundle: contract.Bundle | None = None) -> bytes:
+    return _csv(MARGIN_COLUMNS, margin_rows(centroid_rows(root, bundle)))
 
 
 def _render_table(rows: list[dict[str, str]], columns: tuple[tuple[str, str], ...]) -> str:

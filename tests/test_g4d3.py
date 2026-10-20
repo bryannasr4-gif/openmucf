@@ -1835,6 +1835,8 @@ def _d3_copy(tmp_path: pathlib.Path) -> pathlib.Path:
     for source in D3DIR.iterdir():
         if source.is_file():
             (target / source.name).write_bytes(source.read_bytes())
+    import shutil
+    shutil.copytree(D3DIR / "reference", target / "reference")
     return tmp_path
 
 

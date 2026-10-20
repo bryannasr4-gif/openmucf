@@ -1016,6 +1016,8 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     committed)."""
     from openmucf.g4 import d3_centroids as d3centroids
 
+    bundle = d3c.load_bundle(ROOT)
+    d3c.require_numerical_qualification(bundle.checks)
     found = d1src.load(VENDORED_PATH)  # checks the upstream pins before anything is generated
     mizuno = mizsrc.load(MIZUNO_TABLE1_PATH, MIZUNO_TABLE3_PATH)
     suzuki_printed = suzsrc.load_printed_rows(SUZUKI_PRINTED_PATH)
@@ -1101,12 +1103,11 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     artifacts[SUZUKI_PARITY_CELLS] = build_suzuki_parity_cells(found, suzuki_rows)
     artifacts[SUZUKI_PREPRINT_DIFF] = build_suzuki_preprint_differences(suzuki_printed, suzuki_rows)
     artifacts[D3_VALIDATION] = md.build_validation(ROOT)
-    bundle = d3c.load_bundle(ROOT)
     artifacts[D3_PROJECTION] = d3c.render_projection(ROOT, bundle)
     artifacts[D3_GROUPS] = d3c.render_groups(ROOT, bundle)
     artifacts[D3_COMPONENTS] = d3c.render_components(ROOT, bundle)
-    artifacts[D3_CENTROIDS] = d3centroids.render_centroids(ROOT)
-    artifacts[D3_MARGINS] = d3centroids.render_margins(ROOT)
+    artifacts[D3_CENTROIDS] = d3centroids.render_centroids(ROOT, bundle)
+    artifacts[D3_MARGINS] = d3centroids.render_margins(ROOT, bundle)
     artifacts[D3_ATTRIBUTION] = d3attr.render_attribution(ROOT, outputs)
     return artifacts, archive
 

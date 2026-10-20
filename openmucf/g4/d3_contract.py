@@ -10,7 +10,7 @@ an independent solver where ``numerical_check.csv`` carries one, and the legacy 
 under the name of what it is. No total uncertainty is produced, no tolerance moves and no central
 value moves.
 
-Standard library plus ``openmucf.g4.sources.mudirac130`` only.
+Standard library plus the D3 source and numerical evaluator modules.
 """
 
 from __future__ import annotations
@@ -19,10 +19,11 @@ import csv
 import hashlib
 import io
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, localcontext
 from pathlib import Path
 
+from openmucf.g4 import d3_numerical as numerical
 from openmucf.g4.sources import mudirac130 as md
 
 PROJECTION_RELPATH = f"{md.D3_RELDIR}/shell_projection.csv"
@@ -233,6 +234,10 @@ class CheckRow:
     input_sha256: str
     probe_c: str
     probe_t: str
+    q_full_ev: float = 0.0
+    b_num_full_ev: float = 0.0
+    q_ref_full_ev: float = 0.0
+    b_ref_full_ev: float = 0.0
 
 
 def committed_q_ev(outputs: md.Outputs, run: str, quantity: str) -> Decimal:
@@ -297,7 +302,34 @@ def load_numerical_check(root: Path, outputs: md.Outputs) -> dict[tuple[int, int
     for nuclide, probed in pairs.items():
         if len(probed) != 1:
             raise md.CellError(f"{nuclide}: the twins carry different probed (c, t): {sorted(probed)}")
+    try:
+        evaluated = numerical.evaluate_all(Path(root))
+    except numerical.EvidenceError as error:
+        raise md.CellError(f"numerical evidence: {error}") from error
+    if set(out) != set(evaluated):
+        raise md.CellError("numerical_check.csv: keys differ from the frozen expected inventory")
+    for key, row in out.items():
+        result = evaluated[key]
+        actual = dict(zip(NUMERICAL_CHECK_COLUMNS, (
+            row.set, str(row.z), str(row.a), "anchor", "on" if row.uehling else "off", row.quantity,
+            row.q_ev, row.q_ref_ev, row.b_ref_ev, row.b_num_ev, row.target_ev, row.verdict,
+            row.bue_1_ev, row.run, row.input_sha256, row.probe_c, row.probe_t,
+        ), strict=True))
+        expected = result.historical_summary()
+        for column in NUMERICAL_CHECK_COLUMNS:
+            if actual[column] != expected[column]:
+                raise md.CellError(f"numerical_check.csv {key}: {column} disagrees with evaluated evidence")
+        out[key] = replace(row, q_full_ev=result.q_ev, q_ref_full_ev=result.q_ref_ev,
+                           b_ref_full_ev=result.b_ref_ev, b_num_full_ev=result.b_num_ev,
+                           verdict=result.verdict)
     return out
+
+
+def require_numerical_qualification(checks: dict[tuple[int, int, bool, str], CheckRow]) -> None:
+    """Publication requires a nonempty, completely qualified evaluated population."""
+    failed = [key for key, row in checks.items() if row.verdict != "QUALIFIED"]
+    if not checks or failed:
+        raise md.CellError(f"numerical publication refused: empty population or failing records {failed}")
 
 
 # --------------------------------------------------------------------------------------------
@@ -680,6 +712,9 @@ NOT_COMPUTED_REASONS = {
 COMPONENT_INPUTS = (
     KSHELL_RELPATH, LEVELS_RELPATH, md.INPUTS_RELPATH, md.RUNS_RELPATH, md.STATES_RELPATH, md.LINES_RELPATH,
     NUMERICAL_CHECK_RELPATH,
+    "data/g4/d3/reference/cases.json", "data/g4/d3/reference/payloads.jsonl",
+    "data/g4/d3/reference/runs.jsonl", "data/g4/d3/reference/expected_keys.json",
+    "data/g4/d3/reference/protocol.json",
 )
 
 
