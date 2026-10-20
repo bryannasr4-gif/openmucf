@@ -541,6 +541,44 @@ def test_t5_a_record_that_departs_from_the_format_is_refused_by_its_own_clause(n
         run_stream(bad, "bound_decay", 5)
 
 
+@pytest.fixture
+def final_capture_block():
+    original, _ = bound_decay_events()
+    end = next(i for i, line in enumerate(original) if line.startswith("E "))
+    event = original[:end]
+    reordered = (
+        [line for line in event if line.startswith("T ")]
+        + [line for line in event if line.startswith(("S ", "C "))]
+        + original[end:]
+    )
+    return original, reordered, missing_neutron_renumbered(reordered)
+
+
+def test_t5_a_short_final_capture_block_is_refused_after_the_last_record(final_capture_block):
+    original, complete, short = final_capture_block
+    events = sum(line.startswith("E ") for line in original)
+
+    def compact(lines):
+        out = io.StringIO()
+        sm.classify_stream(
+            lines, out, route="bound_decay", version="A", config="bertini", target="Al-27",
+            offset=0, events=events, policy=synthetic_policy(),
+        )
+        return out.getvalue()
+
+    assert sorted(complete) == sorted(original)
+    assert record_count_mismatches(complete) == (0, 0, 0)
+    assert compact(complete) == compact(original)
+    assert record_count_mismatches(short) == (1, 0, 0)
+    end = next(i for i, line in enumerate(short) if line.startswith("E "))
+    assert short[end - 1].startswith("C ")
+    declared = int(next(line for line in complete if line.startswith("S ")).split()[7])
+    with pytest.raises(
+        sm.Malformed, match=f"^S-line declares {declared} secondaries, {declared - 1} C-lines follow it$",
+    ):
+        compact(short)
+
+
 def test_t5_the_c_after_t_fixture_moves_only_the_muon_track_line():
     lines, _ = bound_decay_events()
     bad = t_line_between_s_and_c(lines)
@@ -1663,6 +1701,22 @@ def test_t10_a_revision_that_differs_lists_the_pair_and_every_row():
     row["x"] = "0.02664"
     rejudge(inp)
     text = gen.render(inp).text
+    v1 = inp.policy["setup"]["versions"][0]
+    [other] = [
+        r for r in inp.rows
+        if (r["predicate"], r["config"], r["version"]) == (row["predicate"], row["config"], v1)
+    ]
+    verdicts = {v.row_id: v.verdict for v in inp.verdicts}
+    assert (
+        f"- `{row['predicate']}`, `{row['config']}`: x {other['x']} ({verdicts[other['row_id']]}) "
+        f"on Geant4 {v1} and {row['x']} ({verdicts[row['row_id']]}) on Geant4 {v2}."
+        in text.splitlines()
+    )
+    _, differ = gen.revision_pairs(inp)
+    assert (
+        f"These {len(differ)} row pairs differ between the revisions, "
+        "so the tables below list every row:\n\n- " in text
+    )
     assert "These " in text and "row pairs differ between the revisions" in text
     assert "| predicate | target | revision | configuration |" in text
     setup = inp.policy["setup"]
@@ -1729,6 +1783,54 @@ def test_t10_a_chunk_run_with_another_binary_is_named_without_denying_its_compac
     assert line in text.splitlines()
     assert "which the committed cell does not record" not in text
     assert "gave compact text with the sha256 the committed cell records" not in text
+
+
+@pytest.fixture
+def differing_rebuild():
+    inp = fresh_inputs()
+    version = inp.reproduced[0]["version"]
+    tag = inp.policy["setup"]["tags"][version]
+    [build] = [b for b in inp.builds if b["tag"] == tag]
+    reference = build["reference_binary_sha256"]
+    build["rebuilt_binary_sha256"] = hashlib.sha256(
+        (reference + " distinct rebuild").encode("ascii")
+    ).hexdigest()
+    assert build["rebuilt_binary_sha256"] != reference
+    rows = [r for r in inp.reproduced if r["version"] == version]
+    assert rows and all(r["binary_sha256"] == reference for r in rows)
+    return inp, build, rows
+
+
+@pytest.mark.parametrize("binary_column", ["reference_binary_sha256", "rebuilt_binary_sha256"])
+def test_t10_reproduction_binds_each_chunk_to_the_rebuilt_binary(differing_rebuild, binary_column):
+    inp, build, rows = differing_rebuild
+    for row in rows:
+        row["binary_sha256"] = build[binary_column]
+    _, faults = gen.reproduction(inp)
+    text = gen.render(inp).text
+    success = (
+        "chunks gave compact text with the sha256 the committed cell records, "
+        "so the re-run cells reduce to the committed records."
+    )
+    assert f"The rebuild of {build['tag']} differs from the binary that made the committed cells" in text
+    [build_row] = [line for line in text.splitlines() if line.startswith(f"| {build['tag']} |")]
+    assert [column.strip() for column in build_row.split("|")][-3:-1] == [
+        f"`{build['reference_binary_sha256']}`", f"`{build['rebuilt_binary_sha256']}`",
+    ]
+    if binary_column == "reference_binary_sha256":
+        assert faults == [(row, "binary") for row in rows]
+        expected = [
+            f"- {r['version']} {r['config']} {r['target']} {r['chunk']} was run with binary sha256 "
+            f"{build['reference_binary_sha256']}, which differs from the recorded rebuilt binary sha256 "
+            f"{build['rebuilt_binary_sha256']}."
+            for r in rows
+        ]
+        assert [line for line in text.splitlines() if " was run with binary sha256 " in line] == expected
+        assert success not in text
+    else:
+        assert faults == []
+        assert "was run with binary sha256" not in text
+        assert success in text
 
 
 def _reproduction_fault(inp, fault: str) -> None:
@@ -2524,8 +2626,19 @@ def test_t15_a_reproduction_of_an_accepted_cell_is_reproduced(tmp_path, monkeypa
     clean = edited(without(al27_capture_stream(), "T 0 9 3 22 "), "E 0 1000 ", 3, "7")
     prereg, cells_file, status = committed_record(tmp_path, monkeypatch, clean)
     assert status == "accepted"
-    assert drv.reproduce(reproduce_args(tmp_path, prereg, cells_file)) == 0
-    assert "REPRODUCED A/bertini/Al-27: 1 chunks" in capsys.readouterr().out
+    args = reproduce_args(tmp_path, prereg, cells_file)
+    Path(args.out).write_text("", encoding="utf-8")
+    assert drv.reproduce(args) == 0
+    committed = json.loads(cells_file.read_text(encoding="utf-8"))
+    count = len(committed["chunks"])
+    assert (
+        f"REPRODUCED {args.cell}: {count} chunks, compact text and every compared field equal"
+        in capsys.readouterr().out.splitlines()
+    )
+    with Path(args.out).open(encoding="utf-8", newline="") as stream:
+        rows = csv.DictReader(stream)
+        assert rows.fieldnames == list(drv.REPRODUCED_COLUMNS)
+        assert len(list(rows)) == count
 
 
 def test_t15_the_driver_refuses_a_cell_it_cannot_name_or_find(tmp_path, monkeypatch):
@@ -2555,3 +2668,334 @@ def test_t15_the_refusals_that_need_no_records(tmp_path):
         drv.extension_events(synthetic_policy(), 0, 100)
     with pytest.raises(drv.Refusal, match="no Geant4 CMake package"):
         drv.build(argparse.Namespace(install=str(tmp_path), build=str(tmp_path / "b"), jobs=1))
+
+
+def test_sweep_classify_event_reads_classes_from_the_policy_when_omitted():
+    lines, want = bound_decay_events()
+    end = next(i for i, line in enumerate(lines) if line.startswith("E "))
+    stats = sm.new_stats()
+    assert sm.classify_event(lines[:end], 0, 0, "bound_decay", stats, synthetic_policy()) == want[0]
+
+
+@pytest.mark.parametrize(
+    "fixture, route", [(bound_decay_events, "bound_decay"), (helper_events, "muonic_atom_helper")]
+)
+def test_sweep_particle_statistics_use_pdg_codes_for_captures_and_decays(fixture, route):
+    lines, want = fixture()
+    compact, stats = run_stream(lines, route, sum(line.startswith("E ") for line in lines))
+    assert compact[1:] == want
+    expected_c = Counter(
+        int(token.split(":")[0])
+        for line in want if line.split()[1] == "C"
+        for token in line.split()[3:] if not token.startswith("g")
+    )
+    expected_d = Counter(int(line.split()[4]) for line in lines if line.startswith("C 1 "))
+    assert expected_c and expected_d
+    assert stats["pdg_C"] == expected_c
+    assert stats["pdg_D"] == expected_d
+
+
+def test_sweep_the_classifier_includes_a_nucleus_at_the_policy_cutoff():
+    lines, want = bound_decay_events()
+    pol = synthetic_policy()
+    [residual_track] = [line for line in lines if line.startswith("T 0 3 1 ")]
+    pol["classification"]["nucleus_pdg_min"] = int(residual_track.split()[4])
+    compact, _ = run_stream(lines, "bound_decay", sum(line.startswith("E ") for line in lines), policy=pol)
+    assert compact[1:] == want
+
+
+def test_sweep_residual_selection_includes_the_policy_cutoff():
+    pol = binary_policy()
+    pol["classification"]["nucleus_pdg_min"] = RES32
+    prods, _ = sm.parse_line(at_rest_capture(1.9375))
+    assert sm.residual(prods, sm.gamma_params(pol)) == prods[0]
+
+
+@pytest.mark.parametrize("zero", [0.0, -0.0, Decimal("0"), Decimal("-0")])
+def test_sweep_zero_has_one_canonical_display(zero):
+    assert sm.sig(zero) == "0"
+    assert gen.sig(str(zero), 12) == "0"
+
+
+def test_sweep_a_population_without_neutrons_has_no_factorial_ratio():
+    with pytest.raises(sm.Refused, match="^f2 undefined: no neutron in the selected population$"):
+        sm.f2_stats({0: 5})
+    assert sm.p_obs_ratio({0: 5}, "0.5") is None
+
+
+def test_sweep_a_capture_without_products_is_valid_compact_text():
+    assert sm.parse_line(f"0 C {h(0.0)}") == ([], [])
+
+
+@pytest.mark.parametrize("line", ["0 C", f"0 D {h(0.0)}"])
+def test_sweep_short_or_non_capture_compact_records_are_refused(line):
+    with pytest.raises(ValueError, match="^not a capture line$"):
+        sm.parse_line(line)
+
+
+@pytest.mark.parametrize("population", [1, 2])
+def test_sweep_line_yield_records_tagged_residual_speed_and_single_capture_error(population):
+    beta = 4.0 / 16.25
+    g = 1 / math.sqrt(1 - beta * beta)
+    energy = 1.9375 / g
+    res = f"{RES32}:{h(0.5)}:{h(0.0)}:{h(0.0)}:{h(4.0)}"
+    line = f"0 C {h(0.0)} {res} 22:{h(energy)}:{h(energy)}:{h(0.0)}:{h(0.0)}"
+    gp = sm.gamma_params(binary_policy())
+    result = sm.line_yield([line] * population, gp.lines["gamma.Al.1808"], gp)
+    assert (result["n"], result["w"], result["s"], result["mean"]) == (population, population, 0, 1.0)
+    assert result["beta_max_tagged"] == beta
+    assert math.isnan(result["se"]) if population == 1 else result["se"] == 0.0
+
+
+@pytest.mark.parametrize("residual", [None, RES32 - 10])
+def test_sweep_tag_width_ignores_captures_without_the_selected_residual(residual):
+    gp = sm.gamma_params(binary_policy())
+    line = f"0 C {h(0.0)} 22:{h(1.9375)}:{h(1.9375)}:{h(0.0)}:{h(0.0)}"
+    if residual is not None:
+        line += f" {residual}:{h(0.0)}:{h(0.0)}:{h(0.0)}:{h(0.0)}"
+    assert sm.tag_width_gate([line], gp.lines["gamma.Al.1808"], gp) == (True, 0, 0, 0.0)
+
+
+def test_sweep_tag_width_counts_photons_and_ignores_other_particles_at_the_line_energy():
+    gp = sm.gamma_params(binary_policy())
+    photon = at_rest_capture(1.9375)
+    neutron = photon.replace(" 22:", " 2112:")
+    assert photon != neutron
+    assert sm.tag_width_gate([photon], gp.lines["gamma.Al.1808"], gp) == (True, 1, 0, 0.0)
+    assert sm.tag_width_gate([neutron], gp.lines["gamma.Al.1808"], gp) == (True, 0, 0, 0.0)
+
+
+def test_sweep_the_reducer_records_a_residual_at_the_policy_cutoff():
+    pol = synthetic_policy()
+    cutoff = 1000140280
+    pol["classification"]["nucleus_pdg_min"] = cutoff
+    body = [cap(i, products) for i, products in enumerate(CAPTURES[:4])]
+    cell, status = reduce([chunk("chunk0", 0, body)], policy=pol)
+    assert status == "accepted"
+    assert cell["residuals_top"] == {str(cutoff): 1, "none": len(body) - 1}
+    assert cell["residuals_distinct"] == 2
+
+
+def test_sweep_refused_x_events_include_the_first_two_examples():
+    body = [f"{ev} X reason_{ev}" for ev in range(7)]
+    cell, status = reduce([chunk("chunk0", 0, body)])
+    assert status == "refused"
+    assert cell["problems"] == [f"X={len(body)} ({body[:2]})"]
+
+
+def test_sweep_every_factorial_predicate_receives_the_reduced_quantity():
+    pol = synthetic_policy()
+    body = [cap(i, products) for i, products in enumerate(CAPTURES[:4])]
+    cell, status = reduce([chunk("chunk0", 0, body)], policy=pol)
+    assert status == "accepted"
+    keys = [p["predicate"] for p in pol["predicates"] if p["family"] == "f2"]
+    assert keys
+    for key in keys:
+        assert cell["quantities"][key] == cell["f2"]
+
+
+def test_sweep_the_line_shape_sample_contains_decoys_and_continuum():
+    gp = sm.gamma_params(synthetic_policy())
+    lines, _, _ = sm.synth("at_rest", 10, gp)
+    products = [sm.parse_line(line)[0] for line in lines]
+    assert any(
+        [p[1] for p in ps if p[0] == gp.photon_pdg] == [sm.e_t(next(iter(gp.lines.values())), gp)]
+        and sm.za(sm.residual(ps, gp)[0]) == gp.residual
+        for ps in products
+    )
+    decoys = [ps for ps in products if sm.za(sm.residual(ps, gp)[0]) == (gp.residual[0], gp.residual[1] - 1)]
+    assert len(decoys) == 1
+    [upper] = [sm.e_t(de, gp) for de in list(gp.lines.values())[:1]]
+    assert [p[1] for p in decoys[0] if p[0] == gp.photon_pdg] == [upper]
+    continuum = max(([p[1] for p in ps if p[0] == gp.photon_pdg] for ps in products), key=len)
+    assert len(continuum) > len(gp.lines)
+    for de in gp.lines.values():
+        energy = sm.e_t(de, gp)
+        assert any(abs(e - energy) <= gp.tag_half for e in continuum)
+        assert any(gp.sb_lo < abs(e - energy) <= gp.sb_hi for e in continuum)
+    assert max(continuum) > upper + gp.sb_hi
+
+
+@pytest.mark.parametrize("missing", ["cell", "quantity"])
+def test_sweep_missing_comparison_inputs_are_named_refusals(missing):
+    pol, cells, _, _ = gen.comparison()
+    row = pol["rows"][0]
+    key = (row["version"], row["config"], row["target"])
+    if missing == "cell":
+        del cells[key]
+        message = f"{row['row_id']}: cell {key} missing"
+    else:
+        cell = cells[key]
+        del cell["quantities"][row["predicate"]]
+        sm.admit_cell(cell, pol)
+        message = f"{row['row_id']}: quantity {row['predicate']} absent from the cell"
+    with pytest.raises(sm.Refused, match=f"^{re.escape(message)}$"):
+        sm.comparison_rows(pol, cells)
+
+
+@pytest.mark.parametrize("strict", [False, True])
+def test_sweep_a_finite_window_excludes_its_upper_edge(strict):
+    assert sm.in_window(math.nextafter(2.0, 0.0), 1.0, 2.0, strict)
+    assert not sm.in_window(2.0, 1.0, 2.0, strict)
+
+
+def test_sweep_empty_chunks_and_unknown_compact_kinds_are_named_refusals():
+    with pytest.raises(sm.Refused, match="no chunk$"):
+        reduce([])
+    with pytest.raises(sm.Refused, match="malformed compact line"):
+        reduce([chunk("chunk0", 0, [f"0 Q {h(0.0)}"])])
+    with pytest.raises(sm.Refused, match="^sigma_tot is zero$"):
+        sm._pull(Fraction(1), Fraction(0))
+
+
+@pytest.mark.parametrize("missing", ["flags", "multithreading", "both"])
+def test_sweep_install_flags_refuse_each_missing_cmake_setting(tmp_path, missing):
+    package = tmp_path / "lib" / "cmake" / "Geant4" / "Geant4Config.cmake"
+    package.parent.mkdir(parents=True)
+    flags = 'set(Geant4_CXX_FLAGS "-std=c++17")\n'
+    mt = "set(Geant4_multithreaded_FOUND ON)\n"
+    package.write_text(flags + mt, encoding="utf-8")
+    assert drv.install_flags(tmp_path) == ("-std=c++17", "ON")
+    package.write_text(
+        flags if missing == "multithreading" else mt if missing == "flags" else "", encoding="utf-8"
+    )
+    with pytest.raises(drv.Refusal, match="does not set Geant4_CXX_FLAGS and Geant4_multithreaded_FOUND"):
+        drv.install_flags(tmp_path)
+
+
+@pytest.mark.parametrize("short", [False, True])
+def test_sweep_run_executes_the_second_chunk_and_extends_only_a_short_cell(tmp_path, monkeypatch, short):
+    pol = synthetic_policy()
+    monkeypatch.setattr(drv.sm, "load_policy", lambda path: pol)
+    monkeypatch.setattr(drv, "second_chunk_events", lambda policy, captures: 3)
+    monkeypatch.setattr(drv, "extension_events", lambda policy, captures, events: 2)
+    calls = []
+
+    def run_chunk(policy, **kwargs):
+        calls.append(kwargs)
+        cell_dir = tmp_path / kwargs["version"] / kwargs["config"] / kwargs["target"]
+        cell_dir.mkdir(parents=True, exist_ok=True)
+        return dict(kwargs, stats={"C": 1}, compact_text_sha256="a" * 64, compact_body_sha256="b" * 64)
+
+    def reduce_work(policy, work, version, config, target, metas):
+        status = "short" if short and len(metas) == 2 else "accepted"
+        return {
+            "chunks": [{} for m in metas], "N_capt": pol["setup"]["captures_per_configuration"],
+            "events_total": sum(m["events"] for m in metas), "captures_total": 3, "problems": [],
+        }, status
+
+    monkeypatch.setattr(drv, "run_chunk", run_chunk)
+    monkeypatch.setattr(drv, "reduce_work", reduce_work)
+    args = argparse.Namespace(
+        prereg="policy.json", work=str(tmp_path), binary="app", install="install", data="data",
+        version="A", config="bertini", target="natSi",
+    )
+    assert drv.run(args) == 0
+    expected = [(0, drv.PILOT_STOPS, False), (drv.PILOT_STOPS, 3, False)]
+    if short:
+        expected.append((drv.PILOT_STOPS + 3, 2, True))
+    assert [(c["offset"], c["events"], c.get("extension", False)) for c in calls] == expected
+    record = json.loads((tmp_path / "A/bertini/natSi/cell.json").read_text(encoding="utf-8"))
+    assert len(record["chunks"]) == len(expected)
+    assert all(c["compact_text_sha256"] == "a" * 64 for c in record["chunks"])
+
+
+@pytest.mark.parametrize("script", [DRIVER_PATH, REPO / "scripts/generate_stopped_mu.py"])
+def test_sweep_each_command_line_entry_point_reaches_its_parser(script):
+    result = subprocess.run(
+        [sys.executable, str(script), "--help"], capture_output=True, text=True, timeout=30
+    )
+    assert result.returncode == 0
+    assert "usage:" in result.stdout
+    if script == DRIVER_PATH:
+        help_text = " ".join(result.stdout.split())
+        assert "configure and build the application against a Geant4 install" in help_text
+
+
+def test_sweep_the_generator_command_dispatches_the_requested_policy(tmp_path, monkeypatch):
+    prereg = tmp_path / "policy.json"
+    calls = []
+    monkeypatch.setattr(gen, "compare", lambda path: calls.append(path))
+    monkeypatch.setattr(sys, "argv", ["generate_stopped_mu.py", "compare", "--prereg", str(prereg)])
+    gen.main()
+    assert calls == [prereg]
+
+
+@pytest.mark.parametrize("fault", ["compact", "missing field", "alternative"])
+def test_sweep_reproduction_names_each_difference_even_when_other_fields_match(
+    tmp_path, monkeypatch, capsys, fault
+):
+    clean = edited(without(al27_capture_stream(), "T 0 9 3 22 "), "E 0 1000 ", 3, "7")
+    prereg, cells_file, status = committed_record(tmp_path, monkeypatch, clean)
+    assert status == "accepted"
+    cell = json.loads(cells_file.read_text(encoding="utf-8"))
+    if fault == "compact":
+        chunk_ = cell["chunks"][0]
+        actual = chunk_["compact_text_sha256"]
+        changed = hashlib.sha256((actual + " other compact text").encode("ascii")).hexdigest()
+        assert changed != actual
+        chunk_["compact_text_sha256"] = changed
+        difference = f"{chunk_['chunk']} compact_text_sha256 {actual} != {changed}"
+    elif fault == "missing field":
+        del cell["neutron_hist"]
+        difference = "field neutron_hist"
+    else:
+        cell["alternative"] = {key: copy.deepcopy(cell[key]) for key in sm.ALTERNATIVE_FIELDS}
+        assert cell["N_capt"] > 0
+        cell["alternative"]["neutron_hist"] = {"0": cell["N_capt"]}
+        assert cell["alternative"]["neutron_hist"] != cell["neutron_hist"]
+        difference = "alternative neutron_hist"
+    cells_file.write_text(json.dumps(cell) + "\n", encoding="utf-8")
+    args = reproduce_args(tmp_path, prereg, cells_file)
+    assert drv.reproduce(args) == 1
+    assert [line for line in capsys.readouterr().out.splitlines() if line.startswith("DIFFERS")] == [
+        f"DIFFERS {args.cell} {difference}"
+    ]
+
+
+def test_sweep_revision_pairs_start_with_every_first_revision_row_once():
+    inp = fresh_inputs()
+    first, second = inp.policy["setup"]["versions"]
+    pairs, differ = gen.revision_pairs(inp)
+    assert [a["row_id"] for a, _ in pairs] == [r["row_id"] for r in inp.rows if r["version"] == first]
+    assert pairs and differ == []
+    for a, b in pairs:
+        assert (a["version"], b["version"]) == (first, second)
+        assert (a["predicate"], a["config"], a["target"]) == (b["predicate"], b["config"], b["target"])
+
+
+def test_sweep_collapsed_rows_follow_the_first_revision_order():
+    inp = fresh_inputs()
+    first, second = inp.policy["setup"]["versions"]
+    inp.rows[:] = [r for r in inp.rows if r["version"] == first] + list(
+        reversed([r for r in inp.rows if r["version"] == second])
+    )
+    assert gen.render(inp).text == rendered().text
+
+
+@pytest.mark.parametrize("text", ["a  b", " a", "a ", "a\tb"])
+def test_sweep_generated_lines_refuse_noncanonical_whitespace(text):
+    writer = gen.Writer()
+    writer.line("a b")
+    assert writer.rendered().text == "a b\n"
+    with pytest.raises(AssertionError, match="whitespace in a generated line"):
+        writer.line(text)
+
+
+def test_sweep_per_revision_counts_use_the_named_revision_when_totals_differ():
+    inp = fresh_inputs()
+    first, second = inp.policy["setup"]["versions"]
+    old = {v.row_id: v.verdict for v in inp.verdicts}
+    row = next(r for r in inp.rows if r["version"] == second and old[r["row_id"]] == "FAIL")
+    row["x"] = row["ref"]
+    rejudge(inp)
+    versions = {r["row_id"]: r["version"] for r in inp.rows}
+    counts = {version: Counter(v.verdict for v in inp.verdicts if versions[v.row_id] == version)
+              for version in (first, second)}
+    assert counts[first] != counts[second]
+    text = gen.render(inp).text
+    for version, count in counts.items():
+        assert (
+            f"- Geant4 {version}: {count['FAIL']} FAIL, {count['PASS']} PASS, "
+            f"{count['UNQUALIFIED']} UNQUALIFIED." in text.splitlines()
+        )
