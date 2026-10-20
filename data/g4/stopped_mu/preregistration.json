@@ -1,0 +1,3499 @@
+{
+ "title": "Capture products of stopped negative muons in Geant4 11.4.2 and 11.5.0.beta against measured yields",
+ "about": "The setup, the measured anchors, the predicates, the rows and the rule of the benchmark, as fixed in four parts before and during the runs (see fixed). Each row compares one quantity of one configuration of one Geant4 revision with its measured reference.",
+ "fixed": [
+  {
+   "part": "rule",
+   "fixed_utc": "2026-10-13T14:21:38Z",
+   "post_data": false,
+   "relation_to_data": "fixed before any Geant4 run of the benchmark",
+   "contents": "the setup, the anchors, the rule, and the 25 predicates with their 150 rows"
+  },
+  {
+   "part": "addition 1",
+   "fixed_utc": "2026-10-13T15:07:41Z",
+   "post_data": false,
+   "relation_to_data": "fixed before any Geant4 run of the benchmark",
+   "contents": "the f2 statistic on the full multiplicity, the gamma-line tag in the residual's rest frame, the per-line guards, the dataset binding and the 17 targets that are run"
+  },
+  {
+   "part": "addition 2",
+   "fixed_utc": "2026-10-14T00:04:20Z",
+   "post_data": false,
+   "relation_to_data": "fixed before any Geant4 run of the benchmark",
+   "contents": "the f2.Pb and f2.Ag predicates and their 12 rows, from Table IV of MacDonald et al."
+  },
+  {
+   "part": "addition 3",
+   "fixed_utc": "2026-10-14T01:00:16Z",
+   "post_data": true,
+   "relation_to_data": "fixed after data: after chunk 0 of all 102 cells, after 22 accepted cells of 11.4.2 and after the cell 11.4.2 bertini_pc natPb had been refused for its event 85953, whose capture step returned neither nuclear-capture nor decay products",
+   "contents": "the treatment of events without an outcome and its rate guard (no_outcome)",
+   "erratum": "the rate guard is a limit on how often such events may occur, not a guarantee that excluding them changes no verdict: counting such an event as a capture with no products moves it into the earliest 100000 captures and moves the last capture out, which can shift a quantity by more than the rate alone suggests; whether a verdict changes is measured by re-running the rule under that alternative treatment"
+  }
+ ],
+ "seen_before_fixing": [
+  {
+   "part": "rule",
+   "seen": "a preliminary Geant4 11.4.2 run of aluminium-27, lead-208 and silver-107 targets: aluminium proton, gamma-line and neutron yields and the lead-208 and silver-107 neutron means",
+   "what_was_chosen_without_it": "the windows, k and the efficiency bracket were chosen from the sources and the study design, not from these numbers"
+  },
+  {
+   "part": "addition 2",
+   "seen": "the lead-208 neutron multiplicity of the preliminary run (its f2) and the silver-107 neutron mean",
+   "what_was_chosen_without_it": "the statistic, its support and the uncertainty model were fixed before the source was read; only the transcription and the arithmetic are new"
+  }
+ ],
+ "setup": {
+  "physics_list": "QBBC",
+  "primary": "a negative muon of zero kinetic energy at the centre of the box",
+  "geometry": {
+   "shape": "cube",
+   "half_side_m": "1",
+   "density_g_per_cm3": "1",
+   "material": "one element: a single-isotope target is built from its Z and A; a natural target is the element G4NistManager::FindOrBuildElement builds, with its natural isotopic composition"
+  },
+  "threads": 1,
+  "seed_base": 8675309,
+  "seed_stride": 1000003,
+  "event_seed": "seed_base + the global event number: a chunk that starts at event offset is run with --seed-base seed_base + offset, and the harness seeds event i of a run with its --seed-base + i (the --seed-stride value is passed and multiplied by zero)",
+  "captures_per_configuration": 100000,
+  "versions": [
+   "11.4.2",
+   "11.5.0.beta"
+  ],
+  "tags": {
+   "11.4.2": "v11.4.2",
+   "11.5.0.beta": "v11.5.0.beta"
+  },
+  "configs": [
+   "bertini",
+   "bertini_pc",
+   "precompound"
+  ],
+  "configurations": {
+   "bertini": {
+    "route": "bound_decay",
+    "environment": {},
+    "capture": "G4MuonMinusCapture -> G4CascadeInterface (Bertini)",
+    "reached": "what an unmodified QBBC application receives"
+   },
+   "bertini_pc": {
+    "route": "bound_decay",
+    "environment": {
+     "G4CASCADE_USE_PRECOMPOUND": "1"
+    },
+    "capture": "G4MuonMinusCapture -> G4CascadeInterface (Bertini) with the precompound de-excitation the variable switches on",
+    "reached": "what an unmodified QBBC application receives with the environment variable set"
+   },
+   "precompound": {
+    "route": "muonic_atom_helper",
+    "environment": {},
+    "capture": "G4MuonicAtomDecay -> G4MuMinusCapturePrecompound",
+    "reached": "opt-in by constructor registration: QBBC's stopping constructor replaced by G4StoppingPhysics(\"stopping\", 1, false), whose third argument switches muon capture at rest off in that constructor; a constructor that adds G4MuonMinusAtomicCapture as the mu- rest process; and G4MuonicAtomDecayPhysics"
+   }
+  },
+  "harness_options": [
+   "--opt-in",
+   "off",
+   "--threads",
+   "1",
+   "--momenta",
+   "--record-datasets"
+  ],
+  "opt_in": "--opt-in off on every cell: the switch exists only in a build that carries the dataset patches, and an unpatched build refuses on; no patched behaviour is scored",
+  "targets": [
+   {
+    "target": "Al-27",
+    "basis": "single_isotope",
+    "arguments": [
+     "--Z",
+     "13",
+     "--A",
+     "27"
+    ]
+   },
+   {
+    "target": "natSi",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Si"
+    ]
+   },
+   {
+    "target": "natTi",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Ti"
+    ]
+   },
+   {
+    "target": "natCa",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Ca"
+    ]
+   },
+   {
+    "target": "natFe",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Fe"
+    ]
+   },
+   {
+    "target": "natAg",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Ag"
+    ]
+   },
+   {
+    "target": "natAu",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Au"
+    ]
+   },
+   {
+    "target": "natPb",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Pb"
+    ]
+   },
+   {
+    "target": "Si-28",
+    "basis": "single_isotope",
+    "arguments": [
+     "--Z",
+     "14",
+     "--A",
+     "28"
+    ]
+   },
+   {
+    "target": "Ti-48",
+    "basis": "single_isotope",
+    "arguments": [
+     "--Z",
+     "22",
+     "--A",
+     "48"
+    ]
+   },
+   {
+    "target": "Cu-63",
+    "basis": "single_isotope",
+    "arguments": [
+     "--Z",
+     "29",
+     "--A",
+     "63"
+    ]
+   },
+   {
+    "target": "Pb-208",
+    "basis": "single_isotope",
+    "arguments": [
+     "--Z",
+     "82",
+     "--A",
+     "208"
+    ]
+   },
+   {
+    "target": "natCu",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Cu"
+    ]
+   },
+   {
+    "target": "natMo",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "Mo"
+    ]
+   },
+   {
+    "target": "natW",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "W"
+    ]
+   },
+   {
+    "target": "natI",
+    "basis": "natural",
+    "arguments": [
+     "--element",
+     "I"
+    ]
+   },
+   {
+    "target": "C-12",
+    "basis": "single_isotope",
+    "arguments": [
+     "--Z",
+     "6",
+     "--A",
+     "12"
+    ]
+   }
+  ],
+  "scored_targets": [
+   "Al-27",
+   "natAg",
+   "natAu",
+   "natCa",
+   "natFe",
+   "natPb",
+   "natSi",
+   "natTi"
+  ],
+  "datasets": {
+   "variables": [
+    "G4NEUTRONHPDATA",
+    "G4LEDATA",
+    "G4LEVELGAMMADATA",
+    "G4RADIOACTIVEDATA",
+    "G4PARTICLEXSDATA",
+    "G4PIIDATA",
+    "G4REALSURFACEDATA",
+    "G4SAIDXSDATA",
+    "G4ABLADATA",
+    "G4INCLDATA",
+    "G4ENSDFSTATEDATA",
+    "G4CHANNELINGDATA"
+   ],
+   "binding": {
+    "11.4.2": {
+     "G4NEUTRONHPDATA": "G4NDL4.7.1",
+     "G4LEDATA": "G4EMLOW8.8",
+     "G4LEVELGAMMADATA": "PhotonEvaporation6.1.2",
+     "G4RADIOACTIVEDATA": "RadioactiveDecay6.1.2",
+     "G4PARTICLEXSDATA": "G4PARTICLEXS4.2",
+     "G4PIIDATA": "G4PII1.3",
+     "G4REALSURFACEDATA": "RealSurface2.2",
+     "G4SAIDXSDATA": "G4SAIDDATA2.0",
+     "G4ABLADATA": "G4ABLA3.3",
+     "G4INCLDATA": "G4INCL1.3",
+     "G4ENSDFSTATEDATA": "G4ENSDFSTATE3.0",
+     "G4CHANNELINGDATA": "G4CHANNELING2.0"
+    },
+    "11.5.0.beta": {
+     "G4NEUTRONHPDATA": "G4NDL4.7.1",
+     "G4LEDATA": "G4EMLOW9.0",
+     "G4LEVELGAMMADATA": "PhotonEvaporation6.1.2",
+     "G4RADIOACTIVEDATA": "RadioactiveDecay6.1.2",
+     "G4PARTICLEXSDATA": "G4PARTICLEXS4.2",
+     "G4PIIDATA": "G4PII1.3",
+     "G4REALSURFACEDATA": "RealSurface2.2",
+     "G4SAIDXSDATA": "G4SAIDDATA2.0",
+     "G4ABLADATA": "G4ABLA3.3",
+     "G4INCLDATA": "G4INCL1.3",
+     "G4ENSDFSTATEDATA": "G4ENSDFSTATE3.0",
+     "G4CHANNELINGDATA": "G4CHANNELING2.0"
+    }
+   },
+   "unset": [
+    "GEANT4_DATA_DIR",
+    "every variable matching ^G4.*DATA$",
+    "G4CASCADE_*",
+    "G4NUCMODEL_*"
+   ],
+   "check": "before a run the directory G4FindDataDir returns for each variable must equal the binding, and after the run the DATASET lines the run records must equal it again"
+  }
+ },
+ "classification": {
+  "population": "the earliest captures_per_configuration nuclear captures of the cell, in global event order; every event must classify as exactly one capture or one decay",
+  "bound_decay": "the primary's (track 1) single step whose process is muMinusCaptureAtRest; its secondaries whose creator model ends _NuclearCapture are the products, _DIO a decay; _EMCascade secondaries are ignored; both or neither is not a capture or a decay",
+  "muonic_atom_helper": "the muonic atom is the single non-primary track with recorded steps; the secondaries of its last step are the products; a decay iff they include PDG -12; no products is not a capture or a decay",
+  "capture_process": "muMinusCaptureAtRest",
+  "product_model_suffix": "_NuclearCapture",
+  "decay_model_suffix": "_DIO",
+  "helper_decay_pdg": -12,
+  "neutron_pdg": 2112,
+  "photon_pdg": 22,
+  "nucleus_pdg_min": 1000000000,
+  "t_capture": "the smallest global time among the products",
+  "descendant_photon_window_ns": "1000",
+  "descendant_photons": "photons whose parent is a nucleus created by the capturing track, emitted less than descendant_photon_window_ns after the capture"
+ },
+ "gamma": {
+  "lines_MeV": {
+   "gamma.Al.1808": "1.80874",
+   "gamma.Al.1129": "1.12959"
+  },
+  "level_data": "PhotonEvaporation6.1.2 z12.a26, sha256 198a0686299f645915ded04cb7c3d5186f2f1dcda330a8797eafe62d9d4dd7d6, identical in both data roots",
+  "mev_per_u": "931.494",
+  "residual_z_a": [
+   12,
+   26
+  ],
+  "tag_half_width_MeV": "0.001",
+  "sideband_MeV": [
+   "0.003",
+   "0.013"
+  ],
+  "sideband_scale": [
+   2,
+   20
+  ],
+  "normalisation": "per nuclear capture: Measday et al. give the yields \"per capture\" (Table VI) and normalise them through the capture probability of Table III; the ENSDF evaluation repeats the values as \"Percent yield per muon capture\""
+ },
+ "twist": {
+  "masses_MeV": {
+   "proton": "938.272",
+   "deuteron": "1875.613"
+  },
+  "momentum_cut_MeV_per_c": {
+   "twist.Al.p": "80",
+   "twist.Al.d": "130"
+  },
+  "ke_threshold": "KE = sqrt(p^2 + m^2) - m, rounded to 6 decimals; a secondary counts if KE > threshold"
+ },
+ "anchors": [
+  {
+   "anchor_id": "alcap.Al.p",
+   "family": "alcap",
+   "element": "Al",
+   "quantity": "protons emitted per thousand muon captures with energy from 3.5 to 20.0 MeV",
+   "window_lo": "3.5",
+   "window_hi": "20.0",
+   "value": "26.64",
+   "sigma_stat": "0.28",
+   "sigma_syst": "0.77",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Al.d",
+   "family": "alcap",
+   "element": "Al",
+   "quantity": "deuterons emitted per thousand muon captures with energy from 4.5 to 17.0 MeV",
+   "window_lo": "4.5",
+   "window_hi": "17.0",
+   "value": "8.46",
+   "sigma_stat": "0.09",
+   "sigma_syst": "0.24",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Al.t",
+   "family": "alcap",
+   "element": "Al",
+   "quantity": "tritons emitted per thousand muon captures with energy from 5.0 to 17.0 MeV",
+   "window_lo": "5.0",
+   "window_hi": "17.0",
+   "value": "2.58",
+   "sigma_stat": "0.04",
+   "sigma_syst": "0.09",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Al.a",
+   "family": "alcap",
+   "element": "Al",
+   "quantity": "alphas emitted per thousand muon captures with energy from 15.0 to 20.0 MeV",
+   "window_lo": "15.0",
+   "window_hi": "20.0",
+   "value": "0.44",
+   "sigma_stat": "0.01",
+   "sigma_syst": "0.09",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Si.p",
+   "family": "alcap",
+   "element": "Si",
+   "quantity": "protons emitted per thousand muon captures with energy from 4.0 to 20.0 MeV",
+   "window_lo": "4.0",
+   "window_hi": "20.0",
+   "value": "52.46",
+   "sigma_stat": "0.62",
+   "sigma_syst": "1.82",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Si.d",
+   "family": "alcap",
+   "element": "Si",
+   "quantity": "deuterons emitted per thousand muon captures with energy from 5.0 to 17.0 MeV",
+   "window_lo": "5.0",
+   "window_hi": "17.0",
+   "value": "9.80",
+   "sigma_stat": "0.22",
+   "sigma_syst": "0.41",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Si.t",
+   "family": "alcap",
+   "element": "Si",
+   "quantity": "tritons emitted per thousand muon captures with energy from 6.0 to 17.0 MeV",
+   "window_lo": "6.0",
+   "window_hi": "17.0",
+   "value": "1.70",
+   "sigma_stat": "0.08",
+   "sigma_syst": "0.10",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Si.a",
+   "family": "alcap",
+   "element": "Si",
+   "quantity": "alphas emitted per thousand muon captures with energy from 15.0 to 20.0 MeV",
+   "window_lo": "15.0",
+   "window_hi": "20.0",
+   "value": "0.57",
+   "sigma_stat": "0.03",
+   "sigma_syst": "0.10",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Ti.p",
+   "family": "alcap",
+   "element": "Ti",
+   "quantity": "protons emitted per thousand muon captures with energy from 3.5 to 20.0 MeV",
+   "window_lo": "3.5",
+   "window_hi": "20.0",
+   "value": "26.48",
+   "sigma_stat": "0.35",
+   "sigma_syst": "0.80",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Ti.d",
+   "family": "alcap",
+   "element": "Ti",
+   "quantity": "deuterons emitted per thousand muon captures with energy from 4.5 to 17.0 MeV",
+   "window_lo": "4.5",
+   "window_hi": "17.0",
+   "value": "5.02",
+   "sigma_stat": "0.10",
+   "sigma_syst": "0.20",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Ti.t",
+   "family": "alcap",
+   "element": "Ti",
+   "quantity": "tritons emitted per thousand muon captures with energy from 5.0 to 17.0 MeV",
+   "window_lo": "5.0",
+   "window_hi": "17.0",
+   "value": "1.36",
+   "sigma_stat": "0.05",
+   "sigma_syst": "0.07",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "alcap.Ti.a",
+   "family": "alcap",
+   "element": "Ti",
+   "quantity": "alphas emitted per thousand muon captures with energy from 15.0 to 20.0 MeV",
+   "window_lo": "15.0",
+   "window_hi": "20.0",
+   "value": "0.45",
+   "sigma_stat": "0.02",
+   "sigma_syst": "0.05",
+   "unit": "per_1000_captures",
+   "source": "alcap2022",
+   "locator": "Table V, yields \"[per thousand muon captures]\" in the printed energy window"
+  },
+  {
+   "anchor_id": "twist.Al.p",
+   "family": "twist",
+   "element": "Al",
+   "quantity": "protons emitted per capture with momentum above 80 MeV/c",
+   "window_lo": "80",
+   "window_hi": "",
+   "value": "0.0322",
+   "sigma_stat": "0.0007",
+   "sigma_syst": "0.0022",
+   "unit": "per_capture",
+   "source": "gaponenko2020",
+   "locator": "abstract, yields per capture above the printed momentum"
+  },
+  {
+   "anchor_id": "twist.Al.d",
+   "family": "twist",
+   "element": "Al",
+   "quantity": "deuterons emitted per capture with momentum above 130 MeV/c",
+   "window_lo": "130",
+   "window_hi": "",
+   "value": "0.0122",
+   "sigma_stat": "0.0009",
+   "sigma_syst": "0.0006",
+   "unit": "per_capture",
+   "source": "gaponenko2020",
+   "locator": "abstract, yields per capture above the printed momentum"
+  },
+  {
+   "anchor_id": "gamma.Al.1808",
+   "family": "gamma",
+   "element": "Al",
+   "quantity": "the 1808.68 keV gamma ray of 26Mg, percent yield per muon capture",
+   "window_lo": "1808.68",
+   "window_hi": "",
+   "value": "51",
+   "sigma_stat": "5",
+   "sigma_syst": "",
+   "unit": "percent_per_muon_capture",
+   "source": "ensdf2016",
+   "locator": "the gamma-ray table of the dataset, \"Percent yield per muon capture\""
+  },
+  {
+   "anchor_id": "gamma.Al.1129",
+   "family": "gamma",
+   "element": "Al",
+   "quantity": "the 1129.61 keV gamma ray of 26Mg, percent yield per muon capture",
+   "window_lo": "1129.61",
+   "window_hi": "",
+   "value": "14.8",
+   "sigma_stat": "1.5",
+   "sigma_syst": "",
+   "unit": "percent_per_muon_capture",
+   "source": "ensdf2016",
+   "locator": "the gamma-ray table of the dataset, \"Percent yield per muon capture\""
+  },
+  {
+   "anchor_id": "nmean.Al",
+   "family": "nmean",
+   "element": "Al",
+   "quantity": "mean number of neutrons emitted per muon capture",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "1.26",
+   "sigma_stat": "0.06",
+   "sigma_syst": "",
+   "unit": "neutrons_per_capture",
+   "source": "blackwell2015",
+   "locator": "Table 2.6, citing Singer; the \"Literature\" column of Table 4.1 gives the same value"
+  },
+  {
+   "anchor_id": "nmean.Si",
+   "family": "nmean",
+   "element": "Si",
+   "quantity": "mean number of neutrons emitted per muon capture",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.86",
+   "sigma_stat": "0.07",
+   "sigma_syst": "",
+   "unit": "neutrons_per_capture",
+   "source": "blackwell2015",
+   "locator": "Table 2.6, citing Singer; the \"Literature\" column of Table 4.1 gives the same value"
+  },
+  {
+   "anchor_id": "nmean.Ca",
+   "family": "nmean",
+   "element": "Ca",
+   "quantity": "mean number of neutrons emitted per muon capture",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.75",
+   "sigma_stat": "0.03",
+   "sigma_syst": "",
+   "unit": "neutrons_per_capture",
+   "source": "blackwell2015",
+   "locator": "Table 2.6, citing Singer; the \"Literature\" column of Table 4.1 gives the same value"
+  },
+  {
+   "anchor_id": "nmean.Fe",
+   "family": "nmean",
+   "element": "Fe",
+   "quantity": "mean number of neutrons emitted per muon capture",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "1.12",
+   "sigma_stat": "0.04",
+   "sigma_syst": "",
+   "unit": "neutrons_per_capture",
+   "source": "blackwell2015",
+   "locator": "Table 2.6, citing Singer; the \"Literature\" column of Table 4.1 gives the same value"
+  },
+  {
+   "anchor_id": "nmean.Ag",
+   "family": "nmean",
+   "element": "Ag",
+   "quantity": "mean number of neutrons emitted per muon capture",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "1.61",
+   "sigma_stat": "0.06",
+   "sigma_syst": "",
+   "unit": "neutrons_per_capture",
+   "source": "blackwell2015",
+   "locator": "Table 2.6, citing Singer; the \"Literature\" column of Table 4.1 gives the same value"
+  },
+  {
+   "anchor_id": "nmean.Au",
+   "family": "nmean",
+   "element": "Au",
+   "quantity": "mean number of neutrons emitted per muon capture",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "1.66",
+   "sigma_stat": "0.04",
+   "sigma_syst": "",
+   "unit": "neutrons_per_capture",
+   "source": "blackwell2015",
+   "locator": "Table 2.6, citing Singer; the \"Literature\" column of Table 4.1 gives the same value"
+  },
+  {
+   "anchor_id": "nmean.Pb",
+   "family": "nmean",
+   "element": "Pb",
+   "quantity": "mean number of neutrons emitted per muon capture",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "1.71",
+   "sigma_stat": "0.07",
+   "sigma_syst": "",
+   "unit": "neutrons_per_capture",
+   "source": "blackwell2015",
+   "locator": "Table 2.6, citing Singer; the \"Literature\" column of Table 4.1 gives the same value"
+  },
+  {
+   "anchor_id": "pn.Al.0",
+   "family": "pn",
+   "element": "Al",
+   "quantity": "evaluated probability, in percent, that a capture emits 0 neutrons",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "9",
+   "sigma_stat": "6",
+   "sigma_syst": "",
+   "unit": "percent",
+   "source": "mizuno2025",
+   "locator": "p. 15, the evaluated distribution of neutron multiplicity, \"assuming that higher neutron emissions exceeding three did not occur\""
+  },
+  {
+   "anchor_id": "pn.Al.1",
+   "family": "pn",
+   "element": "Al",
+   "quantity": "evaluated probability, in percent, that a capture emits 1 neutrons",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "75",
+   "sigma_stat": "10",
+   "sigma_syst": "",
+   "unit": "percent",
+   "source": "mizuno2025",
+   "locator": "p. 15, the evaluated distribution of neutron multiplicity, \"assuming that higher neutron emissions exceeding three did not occur\""
+  },
+  {
+   "anchor_id": "pn.Al.2",
+   "family": "pn",
+   "element": "Al",
+   "quantity": "evaluated probability, in percent, that a capture emits 2 neutrons",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "5",
+   "sigma_stat": "10",
+   "sigma_syst": "",
+   "unit": "percent",
+   "source": "mizuno2025",
+   "locator": "p. 15, the evaluated distribution of neutron multiplicity, \"assuming that higher neutron emissions exceeding three did not occur\""
+  },
+  {
+   "anchor_id": "pn.Al.3",
+   "family": "pn",
+   "element": "Al",
+   "quantity": "evaluated probability, in percent, that a capture emits 3 neutrons",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "9",
+   "sigma_stat": "6",
+   "sigma_syst": "",
+   "unit": "percent",
+   "source": "mizuno2025",
+   "locator": "p. 15, the evaluated distribution of neutron multiplicity, \"assuming that higher neutron emissions exceeding three did not occur\""
+  },
+  {
+   "anchor_id": "pn.Si.0",
+   "family": "pn",
+   "element": "Si",
+   "quantity": "evaluated probability, in percent, that a capture emits 0 neutrons",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "36",
+   "sigma_stat": "6",
+   "sigma_syst": "",
+   "unit": "percent",
+   "source": "mizuno2025",
+   "locator": "p. 15, the evaluated distribution of neutron multiplicity, \"assuming that higher neutron emissions exceeding three did not occur\""
+  },
+  {
+   "anchor_id": "pn.Si.1",
+   "family": "pn",
+   "element": "Si",
+   "quantity": "evaluated probability, in percent, that a capture emits 1 neutrons",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "49",
+   "sigma_stat": "10",
+   "sigma_syst": "",
+   "unit": "percent",
+   "source": "mizuno2025",
+   "locator": "p. 15, the evaluated distribution of neutron multiplicity, \"assuming that higher neutron emissions exceeding three did not occur\""
+  },
+  {
+   "anchor_id": "pn.Si.2",
+   "family": "pn",
+   "element": "Si",
+   "quantity": "evaluated probability, in percent, that a capture emits 2 neutrons",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "14",
+   "sigma_stat": "6",
+   "sigma_syst": "",
+   "unit": "percent",
+   "source": "mizuno2025",
+   "locator": "p. 15, the evaluated distribution of neutron multiplicity, \"assuming that higher neutron emissions exceeding three did not occur\""
+  },
+  {
+   "anchor_id": "pn.Si.3",
+   "family": "pn",
+   "element": "Si",
+   "quantity": "evaluated probability, in percent, that a capture emits 3 neutrons",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "1",
+   "sigma_stat": "1",
+   "sigma_syst": "",
+   "unit": "percent",
+   "source": "mizuno2025",
+   "locator": "p. 15, the evaluated distribution of neutron multiplicity, \"assuming that higher neutron emissions exceeding three did not occur\""
+  },
+  {
+   "anchor_id": "pn545.Ag.0",
+   "family": "pn545",
+   "element": "Ag",
+   "quantity": "fraction of captures with 0 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.360",
+   "sigma_stat": "0.021",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Ag.1",
+   "family": "pn545",
+   "element": "Ag",
+   "quantity": "fraction of captures with 1 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.456",
+   "sigma_stat": "0.023",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Ag.2",
+   "family": "pn545",
+   "element": "Ag",
+   "quantity": "fraction of captures with 2 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.144",
+   "sigma_stat": "0.017",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Ag.3",
+   "family": "pn545",
+   "element": "Ag",
+   "quantity": "fraction of captures with 3 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.031",
+   "sigma_stat": "0.009",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Ag.4",
+   "family": "pn545",
+   "element": "Ag",
+   "quantity": "fraction of captures with 4 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.007",
+   "sigma_stat": "0.005",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Ag.5",
+   "family": "pn545",
+   "element": "Ag",
+   "quantity": "fraction of captures with 5 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.002",
+   "sigma_stat": "0.004",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Ag.6",
+   "family": "pn545",
+   "element": "Ag",
+   "quantity": "fraction of captures with 6 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.001",
+   "sigma_stat": "0.003",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Pb.0",
+   "family": "pn545",
+   "element": "Pb",
+   "quantity": "fraction of captures with 0 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.324",
+   "sigma_stat": "0.022",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Pb.1",
+   "family": "pn545",
+   "element": "Pb",
+   "quantity": "fraction of captures with 1 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.483",
+   "sigma_stat": "0.025",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Pb.2",
+   "family": "pn545",
+   "element": "Pb",
+   "quantity": "fraction of captures with 2 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.137",
+   "sigma_stat": "0.018",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Pb.3",
+   "family": "pn545",
+   "element": "Pb",
+   "quantity": "fraction of captures with 3 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.045",
+   "sigma_stat": "0.010",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  },
+  {
+   "anchor_id": "pn545.Pb.4",
+   "family": "pn545",
+   "element": "Pb",
+   "quantity": "fraction of captures with 4 detected neutrons at efficiency 0.545, corrected for background, target-out and decay",
+   "window_lo": "",
+   "window_hi": "",
+   "value": "0.011",
+   "sigma_stat": "0.006",
+   "sigma_syst": "",
+   "unit": "fraction of captures",
+   "source": "macdonald1965",
+   "locator": "Table IV (PDF page 31, printed page 25), \"Corrected experimental results adjusted to 0.545 efficiency.\""
+  }
+ ],
+ "predicates": [
+  {
+   "predicate": "alcap.Al.p",
+   "family": "alcap",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "pdg": 2212,
+   "ke_lo_MeV": "3.5",
+   "ke_hi_MeV": "20.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 2212 and 3.5 <= KE/MeV < 20.0",
+   "ref": "0.02664",
+   "ref_stat": "0.00028",
+   "ref_syst": "0.00077",
+   "anchor_ids": [
+    "alcap.Al.p"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Si.p",
+   "family": "alcap",
+   "target": "natSi",
+   "basis": "natural",
+   "pdg": 2212,
+   "ke_lo_MeV": "4.0",
+   "ke_hi_MeV": "20.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 2212 and 4.0 <= KE/MeV < 20.0",
+   "ref": "0.05246",
+   "ref_stat": "0.00062",
+   "ref_syst": "0.00182",
+   "anchor_ids": [
+    "alcap.Si.p"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Ti.p",
+   "family": "alcap",
+   "target": "natTi",
+   "basis": "natural",
+   "pdg": 2212,
+   "ke_lo_MeV": "3.5",
+   "ke_hi_MeV": "20.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 2212 and 3.5 <= KE/MeV < 20.0",
+   "ref": "0.02648",
+   "ref_stat": "0.00035",
+   "ref_syst": "0.0008",
+   "anchor_ids": [
+    "alcap.Ti.p"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Al.d",
+   "family": "alcap",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "pdg": 1000010020,
+   "ke_lo_MeV": "4.5",
+   "ke_hi_MeV": "17.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000010020 and 4.5 <= KE/MeV < 17.0",
+   "ref": "0.00846",
+   "ref_stat": "0.00009",
+   "ref_syst": "0.00024",
+   "anchor_ids": [
+    "alcap.Al.d"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Si.d",
+   "family": "alcap",
+   "target": "natSi",
+   "basis": "natural",
+   "pdg": 1000010020,
+   "ke_lo_MeV": "5.0",
+   "ke_hi_MeV": "17.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000010020 and 5.0 <= KE/MeV < 17.0",
+   "ref": "0.0098",
+   "ref_stat": "0.00022",
+   "ref_syst": "0.00041",
+   "anchor_ids": [
+    "alcap.Si.d"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Ti.d",
+   "family": "alcap",
+   "target": "natTi",
+   "basis": "natural",
+   "pdg": 1000010020,
+   "ke_lo_MeV": "4.5",
+   "ke_hi_MeV": "17.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000010020 and 4.5 <= KE/MeV < 17.0",
+   "ref": "0.00502",
+   "ref_stat": "0.0001",
+   "ref_syst": "0.0002",
+   "anchor_ids": [
+    "alcap.Ti.d"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Al.t",
+   "family": "alcap",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "pdg": 1000010030,
+   "ke_lo_MeV": "5.0",
+   "ke_hi_MeV": "17.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000010030 and 5.0 <= KE/MeV < 17.0",
+   "ref": "0.00258",
+   "ref_stat": "0.00004",
+   "ref_syst": "0.00009",
+   "anchor_ids": [
+    "alcap.Al.t"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Si.t",
+   "family": "alcap",
+   "target": "natSi",
+   "basis": "natural",
+   "pdg": 1000010030,
+   "ke_lo_MeV": "6.0",
+   "ke_hi_MeV": "17.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000010030 and 6.0 <= KE/MeV < 17.0",
+   "ref": "0.0017",
+   "ref_stat": "0.00008",
+   "ref_syst": "0.0001",
+   "anchor_ids": [
+    "alcap.Si.t"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Ti.t",
+   "family": "alcap",
+   "target": "natTi",
+   "basis": "natural",
+   "pdg": 1000010030,
+   "ke_lo_MeV": "5.0",
+   "ke_hi_MeV": "17.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000010030 and 5.0 <= KE/MeV < 17.0",
+   "ref": "0.00136",
+   "ref_stat": "0.00005",
+   "ref_syst": "0.00007",
+   "anchor_ids": [
+    "alcap.Ti.t"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Al.a",
+   "family": "alcap",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "pdg": 1000020040,
+   "ke_lo_MeV": "15.0",
+   "ke_hi_MeV": "20.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000020040 and 15.0 <= KE/MeV < 20.0",
+   "ref": "0.00044",
+   "ref_stat": "0.00001",
+   "ref_syst": "0.00009",
+   "anchor_ids": [
+    "alcap.Al.a"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Si.a",
+   "family": "alcap",
+   "target": "natSi",
+   "basis": "natural",
+   "pdg": 1000020040,
+   "ke_lo_MeV": "15.0",
+   "ke_hi_MeV": "20.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000020040 and 15.0 <= KE/MeV < 20.0",
+   "ref": "0.00057",
+   "ref_stat": "0.00003",
+   "ref_syst": "0.0001",
+   "anchor_ids": [
+    "alcap.Si.a"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "alcap.Ti.a",
+   "family": "alcap",
+   "target": "natTi",
+   "basis": "natural",
+   "pdg": 1000020040,
+   "ke_lo_MeV": "15.0",
+   "ke_hi_MeV": "20.0",
+   "lower_edge": "inclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000020040 and 15.0 <= KE/MeV < 20.0",
+   "ref": "0.00045",
+   "ref_stat": "0.00002",
+   "ref_syst": "0.00005",
+   "anchor_ids": [
+    "alcap.Ti.a"
+   ],
+   "data_quantity": "anchor value / 1000, sigma_stat / 1000, sigma_syst / 1000"
+  },
+  {
+   "predicate": "twist.Al.p",
+   "family": "twist",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "pdg": 2212,
+   "ke_lo_MeV": "3.404349",
+   "ke_hi_MeV": "",
+   "lower_edge": "exclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 2212 and KE/MeV > 3.404349 (momentum > 80 MeV/c)",
+   "ref": "0.0322",
+   "ref_stat": "0.0007",
+   "ref_syst": "0.0022",
+   "anchor_ids": [
+    "twist.Al.p"
+   ],
+   "data_quantity": "anchor value as printed, per capture"
+  },
+  {
+   "predicate": "twist.Al.d",
+   "family": "twist",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "pdg": 1000010020,
+   "ke_lo_MeV": "4.499796",
+   "ke_hi_MeV": "",
+   "lower_edge": "exclusive",
+   "model_quantity": "per-capture count of capture-step secondaries with PDG 1000010020 and KE/MeV > 4.499796 (momentum > 130 MeV/c)",
+   "ref": "0.0122",
+   "ref_stat": "0.0009",
+   "ref_syst": "0.0006",
+   "anchor_ids": [
+    "twist.Al.d"
+   ],
+   "data_quantity": "anchor value as printed, per capture"
+  },
+  {
+   "predicate": "gamma.Al.1808",
+   "family": "gamma",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "model_quantity": "per-capture count of capture-step photons tagged to the transition in the 26Mg rest frame: photons with |E* - E_t| <= 1 keV minus (2/20) x photons with 3 < |E* - E_t| <= 13 keV, in captures whose residual nucleus (the product nucleus of largest A, then largest Z) is 26Mg; E* is the photon energy in the residual's final rest frame and E_t = dE - dE^2/(2 M) with M = 26 x 931.494 MeV",
+   "normalisation": "per nuclear capture",
+   "ref": "0.51",
+   "ref_stat": "0.05",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "gamma.Al.1808"
+   ],
+   "data_quantity": "anchor value / 100, sigma_stat / 100, read per nuclear capture"
+  },
+  {
+   "predicate": "gamma.Al.1129",
+   "family": "gamma",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "model_quantity": "per-capture count of capture-step photons tagged to the transition in the 26Mg rest frame: photons with |E* - E_t| <= 1 keV minus (2/20) x photons with 3 < |E* - E_t| <= 13 keV, in captures whose residual nucleus (the product nucleus of largest A, then largest Z) is 26Mg; E* is the photon energy in the residual's final rest frame and E_t = dE - dE^2/(2 M) with M = 26 x 931.494 MeV",
+   "normalisation": "per nuclear capture",
+   "ref": "0.148",
+   "ref_stat": "0.015",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "gamma.Al.1129"
+   ],
+   "data_quantity": "anchor value / 100, sigma_stat / 100, read per nuclear capture"
+  },
+  {
+   "predicate": "nmean.Al",
+   "family": "nmean",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "model_quantity": "per-capture mean number of capture-step secondaries with PDG 2112",
+   "efficiency_bracket": true,
+   "ref": "1.26",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "nmean.Al"
+   ],
+   "data_quantity": "anchor value as printed"
+  },
+  {
+   "predicate": "nmean.Si",
+   "family": "nmean",
+   "target": "natSi",
+   "basis": "natural",
+   "model_quantity": "per-capture mean number of capture-step secondaries with PDG 2112",
+   "efficiency_bracket": true,
+   "ref": "0.86",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "nmean.Si"
+   ],
+   "data_quantity": "anchor value as printed"
+  },
+  {
+   "predicate": "nmean.Ca",
+   "family": "nmean",
+   "target": "natCa",
+   "basis": "natural",
+   "model_quantity": "per-capture mean number of capture-step secondaries with PDG 2112",
+   "efficiency_bracket": true,
+   "ref": "0.75",
+   "ref_stat": "0.03",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "nmean.Ca"
+   ],
+   "data_quantity": "anchor value as printed"
+  },
+  {
+   "predicate": "nmean.Fe",
+   "family": "nmean",
+   "target": "natFe",
+   "basis": "natural",
+   "model_quantity": "per-capture mean number of capture-step secondaries with PDG 2112",
+   "efficiency_bracket": true,
+   "ref": "1.12",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "nmean.Fe"
+   ],
+   "data_quantity": "anchor value as printed"
+  },
+  {
+   "predicate": "nmean.Ag",
+   "family": "nmean",
+   "target": "natAg",
+   "basis": "natural",
+   "model_quantity": "per-capture mean number of capture-step secondaries with PDG 2112",
+   "efficiency_bracket": true,
+   "ref": "1.61",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "nmean.Ag"
+   ],
+   "data_quantity": "anchor value as printed"
+  },
+  {
+   "predicate": "nmean.Au",
+   "family": "nmean",
+   "target": "natAu",
+   "basis": "natural",
+   "model_quantity": "per-capture mean number of capture-step secondaries with PDG 2112",
+   "efficiency_bracket": true,
+   "ref": "1.66",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "nmean.Au"
+   ],
+   "data_quantity": "anchor value as printed"
+  },
+  {
+   "predicate": "nmean.Pb",
+   "family": "nmean",
+   "target": "natPb",
+   "basis": "natural",
+   "model_quantity": "per-capture mean number of capture-step secondaries with PDG 2112",
+   "efficiency_bracket": true,
+   "ref": "1.71",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "nmean.Pb"
+   ],
+   "data_quantity": "anchor value as printed"
+  },
+  {
+   "predicate": "f2.Al",
+   "family": "f2",
+   "target": "Al-27",
+   "basis": "single_isotope",
+   "model_quantity": "f2 = E[n(n-1)] / E[n]^2 over the full capture-step neutron multiplicity n (no clipping); x_se by the delta method on (n, n(n-1))",
+   "ref": "0.500000",
+   "ref_stat": "0.161464",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "pn.Al.0",
+    "pn.Al.1",
+    "pn.Al.2",
+    "pn.Al.3"
+   ],
+   "data_quantity": "S*F2/m1^2 of the evaluated P(n), n = 0..3 (S = sum P_n, m1 = sum n P_n, F2 = sum n(n-1) P_n), sigma linearised in independent errors on each printed P_n, both rounded to 6 decimals; the source assumes that no capture emits more than three neutrons"
+  },
+  {
+   "predicate": "f2.Si",
+   "family": "f2",
+   "target": "natSi",
+   "basis": "natural",
+   "model_quantity": "f2 = E[n(n-1)] / E[n]^2 over the full capture-step neutron multiplicity n (no clipping); x_se by the delta method on (n, n(n-1))",
+   "ref": "0.531250",
+   "ref_stat": "0.120304",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "pn.Si.0",
+    "pn.Si.1",
+    "pn.Si.2",
+    "pn.Si.3"
+   ],
+   "data_quantity": "S*F2/m1^2 of the evaluated P(n), n = 0..3 (S = sum P_n, m1 = sum n P_n, F2 = sum n(n-1) P_n), sigma linearised in independent errors on each printed P_n, both rounded to 6 decimals; the source assumes that no capture emits more than three neutrons"
+  },
+  {
+   "predicate": "f2.Pb",
+   "family": "f2",
+   "target": "natPb",
+   "basis": "natural",
+   "model_quantity": "f2 = E[n(n-1)] / E[n]^2 over the full capture-step neutron multiplicity n (no clipping); x_se by the delta method on (n, n(n-1))",
+   "ref": "0.771605",
+   "ref_stat": "0.061115",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "pn545.Pb.0",
+    "pn545.Pb.1",
+    "pn545.Pb.2",
+    "pn545.Pb.3",
+    "pn545.Pb.4"
+   ],
+   "data_quantity": "S*F2/m1^2 of the whole printed detected distribution (Pb F_0..F_4, Ag F_0..F_6), sigma linearised in independent errors on each printed F_n, both rounded to 6 decimals; equal to the f2 of the true distribution only if every neutron is detected with the same probability, independently of the others"
+  },
+  {
+   "predicate": "f2.Ag",
+   "family": "f2",
+   "target": "natAg",
+   "basis": "natural",
+   "model_quantity": "f2 = E[n(n-1)] / E[n]^2 over the full capture-step neutron multiplicity n (no clipping); x_se by the delta method on (n, n(n-1))",
+   "ref": "0.809920",
+   "ref_stat": "0.125519",
+   "ref_syst": "0",
+   "anchor_ids": [
+    "pn545.Ag.0",
+    "pn545.Ag.1",
+    "pn545.Ag.2",
+    "pn545.Ag.3",
+    "pn545.Ag.4",
+    "pn545.Ag.5",
+    "pn545.Ag.6"
+   ],
+   "data_quantity": "S*F2/m1^2 of the whole printed detected distribution (Pb F_0..F_4, Ag F_0..F_6), sigma linearised in independent errors on each printed F_n, both rounded to 6 decimals; equal to the f2 of the true distribution only if every neutron is detected with the same probability, independently of the others"
+  }
+ ],
+ "amendments": [
+  {
+   "what": "gamma.Al.1808, gamma.Al.1129 model_quantity",
+   "replaced_by": "addition 1",
+   "superseded": "per-capture mean of w - (6/40) s: w = capture-step photons with |E - 1808.68| <= 3 keV, s = capture-step photons with 3 < |E - 1808.68| <= 23 keV; per-capture mean of w - (6/40) s: w = capture-step photons with |E - 1129.61| <= 3 keV, s = capture-step photons with 3 < |E - 1129.61| <= 23 keV",
+   "now": "per-capture count of capture-step photons tagged to the transition in the 26Mg rest frame: photons with |E* - E_t| <= 1 keV minus (2/20) x photons with 3 < |E* - E_t| <= 13 keV, in captures whose residual nucleus (the product nucleus of largest A, then largest Z) is 26Mg; E* is the photon energy in the residual's final rest frame and E_t = dE - dE^2/(2 M) with M = 26 x 931.494 MeV"
+  },
+  {
+   "what": "f2.Al, f2.Si model_quantity",
+   "replaced_by": "addition 1",
+   "superseded": "f2 = E[n'(n'-1)] / E[n']^2 with n' = min(n, 3) (the data's 'no n >= 4' convention), n = capture-step neutrons; x_se by the delta method",
+   "now": "f2 = E[n(n-1)] / E[n]^2 over the full capture-step neutron multiplicity n (no clipping); x_se by the delta method on (n, n(n-1))"
+  },
+  {
+   "what": "the descendant-photon guard",
+   "replaced_by": "addition 1",
+   "superseded": "photons from capture-product nuclei within 1000 ns exceeding 1 % of capture-step photons in a pilot cell",
+   "now": "the per-line guard and the tag-width gate of guards, on the selected population of every Al-27 cell"
+  },
+  {
+   "what": "the dataset environment",
+   "replaced_by": "addition 1",
+   "superseded": "GEANT4_DATA_DIR alone",
+   "now": "the 12-variable binding of setup.datasets"
+  },
+  {
+   "what": "f2.Pb, f2.Ag",
+   "replaced_by": "addition 2",
+   "superseded": "registered and not read: no open copy of the multiplicity distributions had been found",
+   "now": "two predicates and 12 rows from Table IV of MacDonald et al."
+  },
+  {
+   "what": "an event whose capture step returns neither capture products nor a decay",
+   "replaced_by": "addition 3",
+   "superseded": "a refusal of the cell",
+   "now": "excluded from both denominators and reported (rule.no_outcome); a fixing made after data"
+  }
+ ],
+ "rows": [
+  {
+   "row_id": "alcap.Al.p|11.4.2|bertini",
+   "predicate": "alcap.Al.p",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.02664",
+   "ref_stat": "0.00028",
+   "ref_syst": "0.00077",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.p|11.4.2|bertini_pc",
+   "predicate": "alcap.Al.p",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.02664",
+   "ref_stat": "0.00028",
+   "ref_syst": "0.00077",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.p|11.4.2|precompound",
+   "predicate": "alcap.Al.p",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.02664",
+   "ref_stat": "0.00028",
+   "ref_syst": "0.00077",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.p|11.5.0.beta|bertini",
+   "predicate": "alcap.Al.p",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.02664",
+   "ref_stat": "0.00028",
+   "ref_syst": "0.00077",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.p|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Al.p",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.02664",
+   "ref_stat": "0.00028",
+   "ref_syst": "0.00077",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.p|11.5.0.beta|precompound",
+   "predicate": "alcap.Al.p",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.02664",
+   "ref_stat": "0.00028",
+   "ref_syst": "0.00077",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.p|11.4.2|bertini",
+   "predicate": "alcap.Si.p",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.05246",
+   "ref_stat": "0.00062",
+   "ref_syst": "0.00182",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.p|11.4.2|bertini_pc",
+   "predicate": "alcap.Si.p",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.05246",
+   "ref_stat": "0.00062",
+   "ref_syst": "0.00182",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.p|11.4.2|precompound",
+   "predicate": "alcap.Si.p",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.05246",
+   "ref_stat": "0.00062",
+   "ref_syst": "0.00182",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.p|11.5.0.beta|bertini",
+   "predicate": "alcap.Si.p",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.05246",
+   "ref_stat": "0.00062",
+   "ref_syst": "0.00182",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.p|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Si.p",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.05246",
+   "ref_stat": "0.00062",
+   "ref_syst": "0.00182",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.p|11.5.0.beta|precompound",
+   "predicate": "alcap.Si.p",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.05246",
+   "ref_stat": "0.00062",
+   "ref_syst": "0.00182",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.p|11.4.2|bertini",
+   "predicate": "alcap.Ti.p",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.02648",
+   "ref_stat": "0.00035",
+   "ref_syst": "0.0008",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.p|11.4.2|bertini_pc",
+   "predicate": "alcap.Ti.p",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.02648",
+   "ref_stat": "0.00035",
+   "ref_syst": "0.0008",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.p|11.4.2|precompound",
+   "predicate": "alcap.Ti.p",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.02648",
+   "ref_stat": "0.00035",
+   "ref_syst": "0.0008",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.p|11.5.0.beta|bertini",
+   "predicate": "alcap.Ti.p",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.02648",
+   "ref_stat": "0.00035",
+   "ref_syst": "0.0008",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.p|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Ti.p",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.02648",
+   "ref_stat": "0.00035",
+   "ref_syst": "0.0008",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.p|11.5.0.beta|precompound",
+   "predicate": "alcap.Ti.p",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.02648",
+   "ref_stat": "0.00035",
+   "ref_syst": "0.0008",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.d|11.4.2|bertini",
+   "predicate": "alcap.Al.d",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.00846",
+   "ref_stat": "0.00009",
+   "ref_syst": "0.00024",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.d|11.4.2|bertini_pc",
+   "predicate": "alcap.Al.d",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.00846",
+   "ref_stat": "0.00009",
+   "ref_syst": "0.00024",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.d|11.4.2|precompound",
+   "predicate": "alcap.Al.d",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.00846",
+   "ref_stat": "0.00009",
+   "ref_syst": "0.00024",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.d|11.5.0.beta|bertini",
+   "predicate": "alcap.Al.d",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.00846",
+   "ref_stat": "0.00009",
+   "ref_syst": "0.00024",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.d|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Al.d",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.00846",
+   "ref_stat": "0.00009",
+   "ref_syst": "0.00024",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.d|11.5.0.beta|precompound",
+   "predicate": "alcap.Al.d",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.00846",
+   "ref_stat": "0.00009",
+   "ref_syst": "0.00024",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.d|11.4.2|bertini",
+   "predicate": "alcap.Si.d",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.0098",
+   "ref_stat": "0.00022",
+   "ref_syst": "0.00041",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.d|11.4.2|bertini_pc",
+   "predicate": "alcap.Si.d",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.0098",
+   "ref_stat": "0.00022",
+   "ref_syst": "0.00041",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.d|11.4.2|precompound",
+   "predicate": "alcap.Si.d",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.0098",
+   "ref_stat": "0.00022",
+   "ref_syst": "0.00041",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.d|11.5.0.beta|bertini",
+   "predicate": "alcap.Si.d",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.0098",
+   "ref_stat": "0.00022",
+   "ref_syst": "0.00041",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.d|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Si.d",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.0098",
+   "ref_stat": "0.00022",
+   "ref_syst": "0.00041",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.d|11.5.0.beta|precompound",
+   "predicate": "alcap.Si.d",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.0098",
+   "ref_stat": "0.00022",
+   "ref_syst": "0.00041",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.d|11.4.2|bertini",
+   "predicate": "alcap.Ti.d",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.00502",
+   "ref_stat": "0.0001",
+   "ref_syst": "0.0002",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.d|11.4.2|bertini_pc",
+   "predicate": "alcap.Ti.d",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.00502",
+   "ref_stat": "0.0001",
+   "ref_syst": "0.0002",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.d|11.4.2|precompound",
+   "predicate": "alcap.Ti.d",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.00502",
+   "ref_stat": "0.0001",
+   "ref_syst": "0.0002",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.d|11.5.0.beta|bertini",
+   "predicate": "alcap.Ti.d",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.00502",
+   "ref_stat": "0.0001",
+   "ref_syst": "0.0002",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.d|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Ti.d",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.00502",
+   "ref_stat": "0.0001",
+   "ref_syst": "0.0002",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.d|11.5.0.beta|precompound",
+   "predicate": "alcap.Ti.d",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.00502",
+   "ref_stat": "0.0001",
+   "ref_syst": "0.0002",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.t|11.4.2|bertini",
+   "predicate": "alcap.Al.t",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.00258",
+   "ref_stat": "0.00004",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.t|11.4.2|bertini_pc",
+   "predicate": "alcap.Al.t",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.00258",
+   "ref_stat": "0.00004",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.t|11.4.2|precompound",
+   "predicate": "alcap.Al.t",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.00258",
+   "ref_stat": "0.00004",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.t|11.5.0.beta|bertini",
+   "predicate": "alcap.Al.t",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.00258",
+   "ref_stat": "0.00004",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.t|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Al.t",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.00258",
+   "ref_stat": "0.00004",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.t|11.5.0.beta|precompound",
+   "predicate": "alcap.Al.t",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.00258",
+   "ref_stat": "0.00004",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.t|11.4.2|bertini",
+   "predicate": "alcap.Si.t",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.0017",
+   "ref_stat": "0.00008",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.t|11.4.2|bertini_pc",
+   "predicate": "alcap.Si.t",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.0017",
+   "ref_stat": "0.00008",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.t|11.4.2|precompound",
+   "predicate": "alcap.Si.t",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.0017",
+   "ref_stat": "0.00008",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.t|11.5.0.beta|bertini",
+   "predicate": "alcap.Si.t",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.0017",
+   "ref_stat": "0.00008",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.t|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Si.t",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.0017",
+   "ref_stat": "0.00008",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.t|11.5.0.beta|precompound",
+   "predicate": "alcap.Si.t",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.0017",
+   "ref_stat": "0.00008",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.t|11.4.2|bertini",
+   "predicate": "alcap.Ti.t",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.00136",
+   "ref_stat": "0.00005",
+   "ref_syst": "0.00007",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.t|11.4.2|bertini_pc",
+   "predicate": "alcap.Ti.t",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.00136",
+   "ref_stat": "0.00005",
+   "ref_syst": "0.00007",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.t|11.4.2|precompound",
+   "predicate": "alcap.Ti.t",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.00136",
+   "ref_stat": "0.00005",
+   "ref_syst": "0.00007",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.t|11.5.0.beta|bertini",
+   "predicate": "alcap.Ti.t",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.00136",
+   "ref_stat": "0.00005",
+   "ref_syst": "0.00007",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.t|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Ti.t",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.00136",
+   "ref_stat": "0.00005",
+   "ref_syst": "0.00007",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.t|11.5.0.beta|precompound",
+   "predicate": "alcap.Ti.t",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.00136",
+   "ref_stat": "0.00005",
+   "ref_syst": "0.00007",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.a|11.4.2|bertini",
+   "predicate": "alcap.Al.a",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.00044",
+   "ref_stat": "0.00001",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.a|11.4.2|bertini_pc",
+   "predicate": "alcap.Al.a",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.00044",
+   "ref_stat": "0.00001",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.a|11.4.2|precompound",
+   "predicate": "alcap.Al.a",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.00044",
+   "ref_stat": "0.00001",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.a|11.5.0.beta|bertini",
+   "predicate": "alcap.Al.a",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.00044",
+   "ref_stat": "0.00001",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.a|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Al.a",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.00044",
+   "ref_stat": "0.00001",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Al.a|11.5.0.beta|precompound",
+   "predicate": "alcap.Al.a",
+   "family": "alcap",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.00044",
+   "ref_stat": "0.00001",
+   "ref_syst": "0.00009",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.a|11.4.2|bertini",
+   "predicate": "alcap.Si.a",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.00057",
+   "ref_stat": "0.00003",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.a|11.4.2|bertini_pc",
+   "predicate": "alcap.Si.a",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.00057",
+   "ref_stat": "0.00003",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.a|11.4.2|precompound",
+   "predicate": "alcap.Si.a",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.00057",
+   "ref_stat": "0.00003",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.a|11.5.0.beta|bertini",
+   "predicate": "alcap.Si.a",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.00057",
+   "ref_stat": "0.00003",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.a|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Si.a",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.00057",
+   "ref_stat": "0.00003",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Si.a|11.5.0.beta|precompound",
+   "predicate": "alcap.Si.a",
+   "family": "alcap",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.00057",
+   "ref_stat": "0.00003",
+   "ref_syst": "0.0001",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.a|11.4.2|bertini",
+   "predicate": "alcap.Ti.a",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.00045",
+   "ref_stat": "0.00002",
+   "ref_syst": "0.00005",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.a|11.4.2|bertini_pc",
+   "predicate": "alcap.Ti.a",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.00045",
+   "ref_stat": "0.00002",
+   "ref_syst": "0.00005",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.a|11.4.2|precompound",
+   "predicate": "alcap.Ti.a",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.00045",
+   "ref_stat": "0.00002",
+   "ref_syst": "0.00005",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.a|11.5.0.beta|bertini",
+   "predicate": "alcap.Ti.a",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.00045",
+   "ref_stat": "0.00002",
+   "ref_syst": "0.00005",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.a|11.5.0.beta|bertini_pc",
+   "predicate": "alcap.Ti.a",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.00045",
+   "ref_stat": "0.00002",
+   "ref_syst": "0.00005",
+   "rescue": false
+  },
+  {
+   "row_id": "alcap.Ti.a|11.5.0.beta|precompound",
+   "predicate": "alcap.Ti.a",
+   "family": "alcap",
+   "target": "natTi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.00045",
+   "ref_stat": "0.00002",
+   "ref_syst": "0.00005",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.p|11.4.2|bertini",
+   "predicate": "twist.Al.p",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.0322",
+   "ref_stat": "0.0007",
+   "ref_syst": "0.0022",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.p|11.4.2|bertini_pc",
+   "predicate": "twist.Al.p",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.0322",
+   "ref_stat": "0.0007",
+   "ref_syst": "0.0022",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.p|11.4.2|precompound",
+   "predicate": "twist.Al.p",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.0322",
+   "ref_stat": "0.0007",
+   "ref_syst": "0.0022",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.p|11.5.0.beta|bertini",
+   "predicate": "twist.Al.p",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.0322",
+   "ref_stat": "0.0007",
+   "ref_syst": "0.0022",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.p|11.5.0.beta|bertini_pc",
+   "predicate": "twist.Al.p",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.0322",
+   "ref_stat": "0.0007",
+   "ref_syst": "0.0022",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.p|11.5.0.beta|precompound",
+   "predicate": "twist.Al.p",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.0322",
+   "ref_stat": "0.0007",
+   "ref_syst": "0.0022",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.d|11.4.2|bertini",
+   "predicate": "twist.Al.d",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.0122",
+   "ref_stat": "0.0009",
+   "ref_syst": "0.0006",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.d|11.4.2|bertini_pc",
+   "predicate": "twist.Al.d",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.0122",
+   "ref_stat": "0.0009",
+   "ref_syst": "0.0006",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.d|11.4.2|precompound",
+   "predicate": "twist.Al.d",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.0122",
+   "ref_stat": "0.0009",
+   "ref_syst": "0.0006",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.d|11.5.0.beta|bertini",
+   "predicate": "twist.Al.d",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.0122",
+   "ref_stat": "0.0009",
+   "ref_syst": "0.0006",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.d|11.5.0.beta|bertini_pc",
+   "predicate": "twist.Al.d",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.0122",
+   "ref_stat": "0.0009",
+   "ref_syst": "0.0006",
+   "rescue": false
+  },
+  {
+   "row_id": "twist.Al.d|11.5.0.beta|precompound",
+   "predicate": "twist.Al.d",
+   "family": "twist",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.0122",
+   "ref_stat": "0.0009",
+   "ref_syst": "0.0006",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1808|11.4.2|bertini",
+   "predicate": "gamma.Al.1808",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.51",
+   "ref_stat": "0.05",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1808|11.4.2|bertini_pc",
+   "predicate": "gamma.Al.1808",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.51",
+   "ref_stat": "0.05",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1808|11.4.2|precompound",
+   "predicate": "gamma.Al.1808",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.51",
+   "ref_stat": "0.05",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1808|11.5.0.beta|bertini",
+   "predicate": "gamma.Al.1808",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.51",
+   "ref_stat": "0.05",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1808|11.5.0.beta|bertini_pc",
+   "predicate": "gamma.Al.1808",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.51",
+   "ref_stat": "0.05",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1808|11.5.0.beta|precompound",
+   "predicate": "gamma.Al.1808",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.51",
+   "ref_stat": "0.05",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1129|11.4.2|bertini",
+   "predicate": "gamma.Al.1129",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.148",
+   "ref_stat": "0.015",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1129|11.4.2|bertini_pc",
+   "predicate": "gamma.Al.1129",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.148",
+   "ref_stat": "0.015",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1129|11.4.2|precompound",
+   "predicate": "gamma.Al.1129",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.148",
+   "ref_stat": "0.015",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1129|11.5.0.beta|bertini",
+   "predicate": "gamma.Al.1129",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.148",
+   "ref_stat": "0.015",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1129|11.5.0.beta|bertini_pc",
+   "predicate": "gamma.Al.1129",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.148",
+   "ref_stat": "0.015",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "gamma.Al.1129|11.5.0.beta|precompound",
+   "predicate": "gamma.Al.1129",
+   "family": "gamma",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.148",
+   "ref_stat": "0.015",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "nmean.Al|11.4.2|bertini",
+   "predicate": "nmean.Al",
+   "family": "nmean",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "1.26",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Al|11.4.2|bertini_pc",
+   "predicate": "nmean.Al",
+   "family": "nmean",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "1.26",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Al|11.4.2|precompound",
+   "predicate": "nmean.Al",
+   "family": "nmean",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "1.26",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Al|11.5.0.beta|bertini",
+   "predicate": "nmean.Al",
+   "family": "nmean",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "1.26",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Al|11.5.0.beta|bertini_pc",
+   "predicate": "nmean.Al",
+   "family": "nmean",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "1.26",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Al|11.5.0.beta|precompound",
+   "predicate": "nmean.Al",
+   "family": "nmean",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "1.26",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Si|11.4.2|bertini",
+   "predicate": "nmean.Si",
+   "family": "nmean",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.86",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Si|11.4.2|bertini_pc",
+   "predicate": "nmean.Si",
+   "family": "nmean",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.86",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Si|11.4.2|precompound",
+   "predicate": "nmean.Si",
+   "family": "nmean",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.86",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Si|11.5.0.beta|bertini",
+   "predicate": "nmean.Si",
+   "family": "nmean",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.86",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Si|11.5.0.beta|bertini_pc",
+   "predicate": "nmean.Si",
+   "family": "nmean",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.86",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Si|11.5.0.beta|precompound",
+   "predicate": "nmean.Si",
+   "family": "nmean",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.86",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ca|11.4.2|bertini",
+   "predicate": "nmean.Ca",
+   "family": "nmean",
+   "target": "natCa",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.75",
+   "ref_stat": "0.03",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ca|11.4.2|bertini_pc",
+   "predicate": "nmean.Ca",
+   "family": "nmean",
+   "target": "natCa",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.75",
+   "ref_stat": "0.03",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ca|11.4.2|precompound",
+   "predicate": "nmean.Ca",
+   "family": "nmean",
+   "target": "natCa",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.75",
+   "ref_stat": "0.03",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ca|11.5.0.beta|bertini",
+   "predicate": "nmean.Ca",
+   "family": "nmean",
+   "target": "natCa",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.75",
+   "ref_stat": "0.03",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ca|11.5.0.beta|bertini_pc",
+   "predicate": "nmean.Ca",
+   "family": "nmean",
+   "target": "natCa",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.75",
+   "ref_stat": "0.03",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ca|11.5.0.beta|precompound",
+   "predicate": "nmean.Ca",
+   "family": "nmean",
+   "target": "natCa",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.75",
+   "ref_stat": "0.03",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Fe|11.4.2|bertini",
+   "predicate": "nmean.Fe",
+   "family": "nmean",
+   "target": "natFe",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "1.12",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Fe|11.4.2|bertini_pc",
+   "predicate": "nmean.Fe",
+   "family": "nmean",
+   "target": "natFe",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "1.12",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Fe|11.4.2|precompound",
+   "predicate": "nmean.Fe",
+   "family": "nmean",
+   "target": "natFe",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "1.12",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Fe|11.5.0.beta|bertini",
+   "predicate": "nmean.Fe",
+   "family": "nmean",
+   "target": "natFe",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "1.12",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Fe|11.5.0.beta|bertini_pc",
+   "predicate": "nmean.Fe",
+   "family": "nmean",
+   "target": "natFe",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "1.12",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Fe|11.5.0.beta|precompound",
+   "predicate": "nmean.Fe",
+   "family": "nmean",
+   "target": "natFe",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "1.12",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ag|11.4.2|bertini",
+   "predicate": "nmean.Ag",
+   "family": "nmean",
+   "target": "natAg",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "1.61",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ag|11.4.2|bertini_pc",
+   "predicate": "nmean.Ag",
+   "family": "nmean",
+   "target": "natAg",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "1.61",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ag|11.4.2|precompound",
+   "predicate": "nmean.Ag",
+   "family": "nmean",
+   "target": "natAg",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "1.61",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ag|11.5.0.beta|bertini",
+   "predicate": "nmean.Ag",
+   "family": "nmean",
+   "target": "natAg",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "1.61",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ag|11.5.0.beta|bertini_pc",
+   "predicate": "nmean.Ag",
+   "family": "nmean",
+   "target": "natAg",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "1.61",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Ag|11.5.0.beta|precompound",
+   "predicate": "nmean.Ag",
+   "family": "nmean",
+   "target": "natAg",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "1.61",
+   "ref_stat": "0.06",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Au|11.4.2|bertini",
+   "predicate": "nmean.Au",
+   "family": "nmean",
+   "target": "natAu",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "1.66",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Au|11.4.2|bertini_pc",
+   "predicate": "nmean.Au",
+   "family": "nmean",
+   "target": "natAu",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "1.66",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Au|11.4.2|precompound",
+   "predicate": "nmean.Au",
+   "family": "nmean",
+   "target": "natAu",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "1.66",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Au|11.5.0.beta|bertini",
+   "predicate": "nmean.Au",
+   "family": "nmean",
+   "target": "natAu",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "1.66",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Au|11.5.0.beta|bertini_pc",
+   "predicate": "nmean.Au",
+   "family": "nmean",
+   "target": "natAu",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "1.66",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Au|11.5.0.beta|precompound",
+   "predicate": "nmean.Au",
+   "family": "nmean",
+   "target": "natAu",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "1.66",
+   "ref_stat": "0.04",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Pb|11.4.2|bertini",
+   "predicate": "nmean.Pb",
+   "family": "nmean",
+   "target": "natPb",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "1.71",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Pb|11.4.2|bertini_pc",
+   "predicate": "nmean.Pb",
+   "family": "nmean",
+   "target": "natPb",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "1.71",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Pb|11.4.2|precompound",
+   "predicate": "nmean.Pb",
+   "family": "nmean",
+   "target": "natPb",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "1.71",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Pb|11.5.0.beta|bertini",
+   "predicate": "nmean.Pb",
+   "family": "nmean",
+   "target": "natPb",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "1.71",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Pb|11.5.0.beta|bertini_pc",
+   "predicate": "nmean.Pb",
+   "family": "nmean",
+   "target": "natPb",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "1.71",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "nmean.Pb|11.5.0.beta|precompound",
+   "predicate": "nmean.Pb",
+   "family": "nmean",
+   "target": "natPb",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "1.71",
+   "ref_stat": "0.07",
+   "ref_syst": "0",
+   "rescue": true
+  },
+  {
+   "row_id": "f2.Al|11.4.2|bertini",
+   "predicate": "f2.Al",
+   "family": "f2",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.500000",
+   "ref_stat": "0.161464",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Al|11.4.2|bertini_pc",
+   "predicate": "f2.Al",
+   "family": "f2",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.500000",
+   "ref_stat": "0.161464",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Al|11.4.2|precompound",
+   "predicate": "f2.Al",
+   "family": "f2",
+   "target": "Al-27",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.500000",
+   "ref_stat": "0.161464",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Al|11.5.0.beta|bertini",
+   "predicate": "f2.Al",
+   "family": "f2",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.500000",
+   "ref_stat": "0.161464",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Al|11.5.0.beta|bertini_pc",
+   "predicate": "f2.Al",
+   "family": "f2",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.500000",
+   "ref_stat": "0.161464",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Al|11.5.0.beta|precompound",
+   "predicate": "f2.Al",
+   "family": "f2",
+   "target": "Al-27",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.500000",
+   "ref_stat": "0.161464",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Si|11.4.2|bertini",
+   "predicate": "f2.Si",
+   "family": "f2",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.531250",
+   "ref_stat": "0.120304",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Si|11.4.2|bertini_pc",
+   "predicate": "f2.Si",
+   "family": "f2",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.531250",
+   "ref_stat": "0.120304",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Si|11.4.2|precompound",
+   "predicate": "f2.Si",
+   "family": "f2",
+   "target": "natSi",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.531250",
+   "ref_stat": "0.120304",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Si|11.5.0.beta|bertini",
+   "predicate": "f2.Si",
+   "family": "f2",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.531250",
+   "ref_stat": "0.120304",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Si|11.5.0.beta|bertini_pc",
+   "predicate": "f2.Si",
+   "family": "f2",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.531250",
+   "ref_stat": "0.120304",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Si|11.5.0.beta|precompound",
+   "predicate": "f2.Si",
+   "family": "f2",
+   "target": "natSi",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.531250",
+   "ref_stat": "0.120304",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Pb|11.4.2|bertini",
+   "predicate": "f2.Pb",
+   "family": "f2",
+   "target": "natPb",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.771605",
+   "ref_stat": "0.061115",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Pb|11.4.2|bertini_pc",
+   "predicate": "f2.Pb",
+   "family": "f2",
+   "target": "natPb",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.771605",
+   "ref_stat": "0.061115",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Pb|11.4.2|precompound",
+   "predicate": "f2.Pb",
+   "family": "f2",
+   "target": "natPb",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.771605",
+   "ref_stat": "0.061115",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Pb|11.5.0.beta|bertini",
+   "predicate": "f2.Pb",
+   "family": "f2",
+   "target": "natPb",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.771605",
+   "ref_stat": "0.061115",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Pb|11.5.0.beta|bertini_pc",
+   "predicate": "f2.Pb",
+   "family": "f2",
+   "target": "natPb",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.771605",
+   "ref_stat": "0.061115",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Pb|11.5.0.beta|precompound",
+   "predicate": "f2.Pb",
+   "family": "f2",
+   "target": "natPb",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.771605",
+   "ref_stat": "0.061115",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Ag|11.4.2|bertini",
+   "predicate": "f2.Ag",
+   "family": "f2",
+   "target": "natAg",
+   "version": "11.4.2",
+   "config": "bertini",
+   "ref": "0.809920",
+   "ref_stat": "0.125519",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Ag|11.4.2|bertini_pc",
+   "predicate": "f2.Ag",
+   "family": "f2",
+   "target": "natAg",
+   "version": "11.4.2",
+   "config": "bertini_pc",
+   "ref": "0.809920",
+   "ref_stat": "0.125519",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Ag|11.4.2|precompound",
+   "predicate": "f2.Ag",
+   "family": "f2",
+   "target": "natAg",
+   "version": "11.4.2",
+   "config": "precompound",
+   "ref": "0.809920",
+   "ref_stat": "0.125519",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Ag|11.5.0.beta|bertini",
+   "predicate": "f2.Ag",
+   "family": "f2",
+   "target": "natAg",
+   "version": "11.5.0.beta",
+   "config": "bertini",
+   "ref": "0.809920",
+   "ref_stat": "0.125519",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Ag|11.5.0.beta|bertini_pc",
+   "predicate": "f2.Ag",
+   "family": "f2",
+   "target": "natAg",
+   "version": "11.5.0.beta",
+   "config": "bertini_pc",
+   "ref": "0.809920",
+   "ref_stat": "0.125519",
+   "ref_syst": "0",
+   "rescue": false
+  },
+  {
+   "row_id": "f2.Ag|11.5.0.beta|precompound",
+   "predicate": "f2.Ag",
+   "family": "f2",
+   "target": "natAg",
+   "version": "11.5.0.beta",
+   "config": "precompound",
+   "ref": "0.809920",
+   "ref_stat": "0.125519",
+   "ref_syst": "0",
+   "rescue": false
+  }
+ ],
+ "rule": {
+  "k_pass": "2",
+  "k_fail": "3",
+  "sigma_tot": "sqrt(ref_stat^2 + ref_syst^2 + x_se^2)",
+  "edges": "inside: |x - ref| = k sigma_tot is within the band",
+  "pass": "|x - ref| <= k_pass sigma_tot",
+  "fail": "|x - ref| > k_fail sigma_tot and, for a row with rescue true, x outside [rescue_lo, rescue_hi]",
+  "unqualified": "otherwise: tension if |x - ref| <= k_fail sigma_tot, efficiency-limited if beyond k_fail sigma_tot but inside the rescue bracket",
+  "efficiency_bracket": {
+   "eps0": "0.545",
+   "eps_lo": "0.40",
+   "eps_hi": "0.65",
+   "r_lo": "0.8384",
+   "r_hi": "1.3625",
+   "r": "r = eps0 / eps over [eps_lo, eps_hi]; r_lo = 0.545/0.65 rounded down, r_hi = 0.545/0.40"
+  },
+  "rescue_edges": "rescue_lo = r_lo ref - k_fail sqrt((r_lo ref_stat)^2 + (r_lo ref_syst)^2 + x_se^2) rounded down at 1e-12; rescue_hi = r_hi ref + k_fail sqrt((r_hi ref_stat)^2 + (r_hi ref_syst)^2 + x_se^2) rounded up at 1e-12; both edges belong to the bracket",
+  "rescue_quantum": "1e-12",
+  "refusals": "a missing row, an extra row, a reference cell that differs from this file or a rescue edge that differs from its recomputation is a refusal, never a verdict",
+  "no_outcome": {
+   "rule": "an event whose capture step returns neither capture products nor a decay (no_outcome) is neither a capture nor a decay: it is excluded from both denominators (events and captures) and reported per cell as n_no_outcome with its event ids, beside stops_total; the population is the earliest captures of the remaining events",
+   "rate_limit": "0.001",
+   "guard": "n_no_outcome / stops_total above rate_limit in any cell refuses the cell; exactly rate_limit passes",
+   "post_data": true,
+   "alternative": "the same event counted as a capture with no products, which enters the earliest captures and moves the last one out; the rule is re-run on the alternative values"
+  }
+ },
+ "guards": {
+  "per_line": {
+   "fraction": "0.01",
+   "beta_max": "0.02",
+   "rule": "on the selected population of every Al-27 cell, for each line: refuse if D_line > 0 and D_line > fraction (C_line + D_line), where C_line counts tagged capture-step photons and D_line descendant photons of a 26Mg parent within E_t x beta_max + the tag half-width of E_t, or if a tagged residual moves with beta >= beta_max"
+  },
+  "tag_width": {
+   "inner_MeV": "0.003",
+   "continuum_scale": [
+    4,
+    20
+   ],
+   "k": "3",
+   "offset": "5",
+   "rule": "on every Al-27 cell, for each line: refuse if the count with 1 < |E* - E_t| <= 3 keV exceeds the continuum the sidebands predict there (4 keV x s / 20 keV) by more than k sqrt(continuum) + offset"
+  },
+  "max_extension_chunks": 1,
+  "extension": "a cell short of captures_per_configuration after its planned chunks takes at most max_extension_chunks further chunk"
+ },
+ "sources": {
+  "alcap2022": {
+   "citation": "A. Edmonds et al. (AlCap Collaboration), Phys. Rev. C 105, 035501 (2022), arXiv:2110.10228",
+   "copy": "arXiv",
+   "url": "https://arxiv.org/abs/2110.10228"
+  },
+  "gaponenko2020": {
+   "citation": "A. Gaponenko et al., Phys. Rev. C 101, 035502 (2020), arXiv:1908.06902",
+   "copy": "arXiv",
+   "url": "https://arxiv.org/abs/1908.06902"
+  },
+  "ensdf2016": {
+   "citation": "M. S. Basunia and A. M. Hurst, Nucl. Data Sheets 134, 1 (2016): the ENSDF 27Al(mu-,nu n gamma) dataset, from Measday et al., Phys. Rev. C 76, 035504 (2007)",
+   "copy": "NNDC ENSDF",
+   "url": "https://www.nndc.bnl.gov/ensdf/"
+  },
+  "measday2007": {
+   "citation": "D. F. Measday, T. J. Stocki, B. A. Moftah and H. Tam, Phys. Rev. C 76, 035504 (2007)",
+   "copy": "a conference-site copy",
+   "url": ""
+  },
+  "blackwell2015": {
+   "citation": "T. Blackwell, PhD thesis, University of Sheffield (2015), quoting Singer (1974) for the measured means of MacDonald et al.",
+   "copy": "White Rose eTheses",
+   "url": "https://etheses.whiterose.ac.uk/id/eprint/10432/1/Tim_Blackwell_PhD_Thesis.pdf"
+  },
+  "mizuno2025": {
+   "citation": "R. Mizuno et al. (2025), arXiv:2507.19753, quoting MacDonald et al. as evaluated by Measday",
+   "copy": "arXiv",
+   "url": "https://arxiv.org/abs/2507.19753"
+  },
+  "macdonald1965": {
+   "citation": "B. MacDonald, J. A. Diaz, S. N. Kaplan and R. V. Pyle, \"Neutrons from negative-muon capture\", UCRL-11243 Rev., Lawrence Radiation Laboratory (1965); Phys. Rev. 139, B1253 (1965)",
+   "copy": "eScholarship",
+   "url": "https://escholarship.org/content/qt4c38f2gw/qt4c38f2gw.pdf"
+  }
+ }
+}

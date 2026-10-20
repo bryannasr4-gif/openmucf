@@ -11,6 +11,7 @@ configure time from `data/g4/d1/` and `data/g4/d3/`.
 and the committed oracle. `patches/` is the overlay: the patches that let a Geant4 build read the
 dataset behind an explicit opt-in.
 `transport/` builds Geant4 with and without the patches and compares the events the builds transport (`transport/README.md`).
+`stopped_muon/` builds the application whose committed outputs `BENCHMARK_STOPPED_MU.md` compares with measurements (`stopped_muon/README.md`).
 
 Build and run the validator from the repository root:
 

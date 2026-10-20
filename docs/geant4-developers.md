@@ -36,6 +36,10 @@ Exporting `G4MUONICDATA_D3_PROFILE=mudirac130p1` too gives the cascade the K and
 - **Threading race.** Multithreaded runs on the `muonic_atom_helper` route aborted with `PART122` in unpatched v11.4.2 and v11.5.0.beta, because `G4IonTable::GetMuonicAtom` constructs a new muonic atom before it takes the ion table's lock; the harness pre-creates it on the master thread ([`cpp/transport/README.md`](../cpp/transport/README.md)).
 - **Capture defects.** Building the `parity` profile registered defects in the fallback, disclosed rather than fixed: negative capture rates on part of the swept box, tritium among them, though how many of those points are bound nuclides is not established (F-1); non-finite returns at degenerate inputs that nothing rejects, a missing input validation (F-2); and results that move between conforming compiler configurations, a build-reproducibility matter the documentation calls physically negligible (F-3) ([`DATASET_D1.md`](../DATASET_D1.md) section 5).
 
+## Stopped-muon benchmark
+
+[`BENCHMARK_STOPPED_MU.md`](../BENCHMARK_STOPPED_MU.md) compares what unpatched Geant4 v11.4.2 and v11.5.0.beta return at the capture of a stopped negative muon with measured yields, under a rule fixed before the runs and a later addition it discloses; it is generated from the outputs of the application in [`cpp/stopped_muon/`](../cpp/stopped_muon/README.md).
+
 ## Taking it upstream
 
 - **Reader.** `G4MuonicDataTable`, a standard-library-only C++17 reader for the `.g4dat` grammar of [`FORMAT_SPEC.md`](../FORMAT_SPEC.md), has no Geant4 dependency; CI runs its standalone validator on Linux, macOS and Windows ([`cpp/README.md`](../cpp/README.md)).

@@ -43,12 +43,18 @@ cpp/patches/*.patch -text
 # under third_party/geant4/, so a checkout must not rewrite its line endings.
 cpp/patches/LICENSE -text
 cpp/transport/** -text
+# The stopped-muon application: the driver records beside every chunk it runs the sha256 of the binary built
+# from these exact bytes, so a checkout must not rewrite them.
+cpp/stopped_muon/** -text
 # The vendored upstream sources: each one's IDENTITY is its bytes. Each is pinned by its upstream
 # git blob id, which is a hash of exactly those bytes, so a checkout that rewrote its line endings
 # would break the pin and with it the entire parity chain -- and would do so silently.
 # tests/test_g4parity.py asserts each file carries no CR, so deleting this line names its own cause.
 third_party/geant4/** -text
 data/g4/d2/* -text
+# The stopped-muon benchmark's files: a test pins the pre-registration's sha256 and every reduced cell
+# records the sha256 of its chunks' compact text, so a checkout must not rewrite their bytes.
+data/g4/stopped_mu/* -text
 cpp/tools/harvest_d2.cc -text
 cpp/tools/harvest_natural.cc -text
 cpp/tools/harvest_decay.cc -text

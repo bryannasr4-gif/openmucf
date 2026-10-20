@@ -24,7 +24,7 @@ import importlib as _importlib
 from types import ModuleType
 
 _SUBMODULES = ("spec", "provenance", "emit", "d3_contract", "d3_numerical", "d3_centroids", "d3_attribution",
-               "d2", "d1_natural", "d1_lifetime")
+               "d2", "d1_natural", "d1_lifetime", "stopped_mu")
 
 
 def __getattr__(name: str) -> ModuleType:
@@ -41,4 +41,4 @@ def __dir__() -> list[str]:
 
 
 __all__ = ["d1_lifetime", "d1_natural", "d2", "d3_attribution", "d3_centroids", "d3_contract", "d3_numerical",
-           "emit", "provenance", "spec"]
+           "emit", "provenance", "spec", "stopped_mu"]

@@ -1082,6 +1082,7 @@ def test_t34_import_fence():
         "d2.py",
         "d1_natural.py",
         "d1_lifetime.py",
+        "stopped_mu.py",
         "sources/__init__.py",
         "sources/d1_nuclear_capture.py",
         "sources/mizuno2025.py",
