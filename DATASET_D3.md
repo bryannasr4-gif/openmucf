@@ -234,8 +234,8 @@ On the gated lines the largest changes are 0.35027263098117 keV from the density
 more than 0.000517187538091 keV.
 ## 5. The numerical checks
 
-Two checks bound how closely the runs solve the equations their keywords state; neither says how close those
-equations are to the atom, which section 4 leaves open.
+Two checks test how closely the runs solve the equations their keywords state; neither says how close those
+equations are to the atom, which section 4 leaves open, and neither is a validated bound on the numerical error.
 The first repeats each member's anchor run with one numerical setting one step finer at a time: the grid step
 halved (`k4`), the energy tolerance tightened tenfold (`tol8`), the Uehling steps raised from 60 to 90 (`nu90`)
 and the shell nodes from 12 to 16 (`ns16`); the twin without the Uehling potential is repeated with the first two.
@@ -250,8 +250,10 @@ All 7136 emitted binding energies with the Uehling potential (`K` and each `e<n>
 limit, that of the grid step on `K` of Sr-88.
 The `rsig` runs from which `unc` and `u<n>` come were not refined, so those cells carry no one-step check.
 The second sets values of the production anchor runs beside the values an independent radial Dirac solver
-computed for the same equations (`numerical_check.csv`); that solver is to be released, and the check cannot be
-re-run from this repository today.
+computed for the same equations (`numerical_check.csv`).
+That solver is to be released; the reference results it archived, the producer runs the check reads and the
+rule that classifies a row are in `data/g4/d3/reference/`, and the loader recomputes each row's verdict and
+numerical summary from them (`openmucf/g4/d3_numerical.py`) and refuses a row whose stored values differ.
 The file carries 5900 rows over 59 nuclides in four sets: 6 of the development set (`pilot_D`), on which every
 choice of the patched recipe was made; 8 reserved from those choices (`pilot_RA`), named before any computation
 under the patched Hamiltonian; 6 of a contingency set (`pilot_RB`), left untouched until an amendment of the
@@ -259,11 +261,29 @@ certification rule was frozen and then run once on the frozen recipe; and a samp
 each compared nuclide the pilot sets lack and one member for each Z above 82, the highest Z of the compared
 nuclides, that the input set carries.
 Each row gives the production value `Q_eV`, which the loader holds to the committed run at the decimals it
-prints, the independent value `Q_ref_eV`, the bound `b_num_eV` on the production value's numerical error, the
-larger of two estimates, and the row's target.
-Every row is `QUALIFIED`, with `b_num_eV` at most 0.194 of the target; the largest difference between a
+prints, the independent value `Q_ref_eV`, `b_num_eV`, the larger of two estimates of the production value's
+numerical error, and the row's target.
+Recomputed from the archived results, every row is `QUALIFIED`, with `b_num_eV` at most 0.194 of the
+target; the largest difference between a
 production value and the independent one is 0.429360 eV, on the K level of U-238 with the Uehling potential,
 against a target of 12.13 eV.
+These verdicts describe the archived results only, and neither `b_ref_eV` nor `b_num_eV` is a validated error bound:
+`numerical_check_status.json` gives the check the status `REPRODUCTION_FAILED`.
+A fresh solve of all 5900 rows with the same equations, settings and reference methods changed `b_ref_eV`,
+the independent solver's estimate of its own error that enters `b_num_eV`, by more than the registered
+reproduction tolerance of 0.01 of the target on 55 rows, all of nuclides with Z from 2 to 11; on one of
+them, `e3-e4` of Be-9
+without the Uehling potential, the fresh `b_ref_eV` is 0.253 of the target, above the limit of 0.2 a
+`QUALIFIED` row requires.
+The independent values `Q_ref_eV` themselves changed by at most 2.7e-9 of the target.
+`b_ref_eV` is the largest displacement of the independent value under the solver's own refinement
+variants and under a second, basis-set method inside it, whose own numerical error was never bounded
+(`data/g4/d3/reference/README.md`); the
+archived solve did not record its thread count, and the fresh solve ran four workers with one BLAS thread
+each.
+Until a corrected computation replaces them, `b_ref_eV` and `b_num_eV` are historical estimates and the
+verdicts historical classifications; no table value comes from the independent solver, so none changes
+with this status.
 The first-order Uehling expectation, `bue_1_eV`, comes with the independent solution and is carried only on
 its rows with the Uehling potential; the Uehling contribution under other nuclear charge shapes is not computed, because no table and
 no check reads it and alone it would leave out the larger sensitivity of the Coulomb potential to the shape
@@ -354,9 +374,10 @@ Fricke et al. (1995) title their Table IIIA "Muonic 2p → 1s Transition Energie
 value in its column `E_exp` an "Experimental energy"; neither the explanation of that table nor their section 4
 states whether the photon recoil has been taken out of a value, and the screen subtracts no recoil
 from either side.
-Each row also carries `b_num_keV`, the bound `numerical_check.csv` gives on the numerical error of the
-nuclide's K–L shell difference with the Uehling potential, and its verdict, never added to an uncertainty.
-That bound exceeds a tenth of the row's uncertainty, taken at its largest over every correlation, on 0
+Each row also carries `b_num_keV`, the historical estimate `numerical_check.csv` gives of the numerical
+error of the nuclide's K–L shell difference with the Uehling potential, and its historical verdict
+(section 5), never added to an uncertainty.
+That estimate exceeds a tenth of the row's uncertainty, taken at its largest over every correlation, on 0
 of the 27 rows.
 `centroid_margins.csv` gives, per cohort and source, the smallest, median and largest margin, the
 unpatched cascade's absolute residual minus the patched one's, over the isotopes, each counted once,
@@ -368,7 +389,7 @@ give, for illustration only and never screened.
 Neither the nuclear-polarization corrections Fricke et al. print, listed beside each of their rows,
 nor electron screening enters the shell difference, a centroid or a band.
 
-| cohort | source | Z | A | value (keV) | sigma (keV) | sigma min (keV) | sigma max (keV) | shell difference (keV) | residual (keV) | unpatched residual (keV) | margin (keV) | screen | b_num (keV) | numerical check |
+| cohort | source | Z | A | value (keV) | sigma (keV) | sigma min (keV) | sigma max (keV) | shell difference (keV) | residual (keV) | unpatched residual (keV) | margin (keV) | screen | b_num (keV) | historical numerical check |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | labelled | Fricke1995 | 4 | 9 | 33.402000000 | 0.010000000 |  |  | 33.392643350 | -0.009356650 | -1.510349355 | 1.500992705 | inside | 0.000000051 | QUALIFIED |
 | labelled | Fricke1995 | 6 | 12 | 75.258200000 | 0.000500000 |  |  | 75.261104401 | 0.002904401 | -2.329588794 | 2.326684393 | outside | 0.000000465 | QUALIFIED |
@@ -407,7 +428,7 @@ nor electron screening enters the shell difference, a centroid or a band.
 
 
 As part of this retrospective analysis, and qualifying no accuracy, the margins over the 26 isotopes of `centroid_margins.csv` run from 1.500992705 keV to 225.804443757 keV, and the patched cascade's largest absolute residual is 4.839010510 keV, for Tl-205, where the unpatched cascade's reaches 227.374463435 keV, for Pb-208.
-Moving the value anywhere within its band changes a margin by at most twice the tolerance, and moving the shell difference by `b_num_keV` changes it by at most that bound; with the tolerance taken at its largest over every correlation, the margin exceeds the sum of both on 26 of the 27 rows, and not on the row for Pd-110.
+Moving the value anywhere within its band changes a margin by at most twice the tolerance, and moving the shell difference by `b_num_keV` changes it by at most that amount; with the tolerance taken at its largest over every correlation, the margin exceeds the sum of both on 26 of the 27 rows, and not on the row for Pd-110.
 
 ## 7. Findings
 

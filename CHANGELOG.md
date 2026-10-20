@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed -- the status of the D3 independent numerical check (2026-10-20)
+
+- **Verdicts recomputed.** The loader of `numerical_check.csv` recomputes each row's verdict and numerical summary from the archived reference results, producer runs and rule now in `data/g4/d3/reference/` (`openmucf/g4/d3_numerical.py`) and refuses a row whose stored values differ; the K-L shell differences of `consumer_centroids.csv` take the recomputed verdict, and the dataset build stops on an empty population or a row that is not `QUALIFIED`.
+- **Status.** A fresh solve did not reproduce the archived reference estimates within the registered tolerance on 55 of the 5900 rows, and on one of them its reference estimate is above the limit a `QUALIFIED` row requires. `numerical_check_status.json` records that solve, the header of `components.jsonl` carries its status `REPRODUCTION_FAILED`, and `DATASET_D3.md` section 5 states that `b_ref_eV` and `b_num_eV` are historical estimates, not validated error bounds, and the verdicts historical classifications. The D3 tables, their Layer-2 files and the dataset archive are unchanged.
+
 ### Added -- a benchmark of stopped negative muons in Geant4 against measurement (2026-10-18)
 
 - **`BENCHMARK_STOPPED_MU.md`** compares the capture products of a negative muon stopped in a single-element target, as unpatched Geant4 v11.4.2 and v11.5.0.beta return them under the QBBC physics list on the default route, with and without the precompound de-excitation of the Bertini cascade, and on the muonic-atom route, with measured yields of protons, deuterons, tritons and alphas, of γ lines of the residual magnesium nucleus and of neutrons. The rule, the reference values and the targets are those of `data/g4/stopped_mu/preregistration.json`, fixed before the runs, apart from the treatment of events without an outcome, which the document discloses as fixed after part of the matrix had been run. `scripts/generate_stopped_mu.py`, a step of `make audit`, writes the document, `comparison.csv` and `verdicts.csv` from the committed outputs.

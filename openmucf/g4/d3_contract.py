@@ -10,7 +10,7 @@ an independent solver where ``numerical_check.csv`` carries one, and the legacy 
 under the name of what it is. No total uncertainty is produced, no tolerance moves and no central
 value moves.
 
-Standard library plus ``openmucf.g4.sources.mudirac130`` only.
+Standard library plus the D3 source and numerical evaluator modules.
 """
 
 from __future__ import annotations
@@ -19,10 +19,12 @@ import csv
 import hashlib
 import io
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal, localcontext
 from pathlib import Path
+from typing import Any
 
+from openmucf.g4 import d3_numerical as numerical
 from openmucf.g4.sources import mudirac130 as md
 
 PROJECTION_RELPATH = f"{md.D3_RELDIR}/shell_projection.csv"
@@ -233,6 +235,10 @@ class CheckRow:
     input_sha256: str
     probe_c: str
     probe_t: str
+    q_full_ev: float = 0.0
+    b_num_full_ev: float = 0.0
+    q_ref_full_ev: float = 0.0
+    b_ref_full_ev: float = 0.0
 
 
 def committed_q_ev(outputs: md.Outputs, run: str, quantity: str) -> Decimal:
@@ -297,7 +303,95 @@ def load_numerical_check(root: Path, outputs: md.Outputs) -> dict[tuple[int, int
     for nuclide, probed in pairs.items():
         if len(probed) != 1:
             raise md.CellError(f"{nuclide}: the twins carry different probed (c, t): {sorted(probed)}")
+    try:
+        evaluated = numerical.evaluate_all(Path(root))
+    except numerical.EvidenceError as error:
+        raise md.CellError(f"numerical evidence: {error}") from error
+    if set(out) != set(evaluated):
+        raise md.CellError("numerical_check.csv: keys differ from the frozen expected inventory")
+    for key, row in out.items():
+        result = evaluated[key]
+        actual = dict(zip(NUMERICAL_CHECK_COLUMNS, (
+            row.set, str(row.z), str(row.a), "anchor", "on" if row.uehling else "off", row.quantity,
+            row.q_ev, row.q_ref_ev, row.b_ref_ev, row.b_num_ev, row.target_ev, row.verdict,
+            row.bue_1_ev, row.run, row.input_sha256, row.probe_c, row.probe_t,
+        ), strict=True))
+        expected = result.historical_summary()
+        for column in NUMERICAL_CHECK_COLUMNS:
+            if actual[column] != expected[column]:
+                raise md.CellError(f"numerical_check.csv {key}: {column} disagrees with evaluated evidence")
+        out[key] = replace(row, q_full_ev=result.q_ev, q_ref_full_ev=result.q_ref_ev,
+                           b_ref_full_ev=result.b_ref_ev, b_num_full_ev=result.b_num_ev,
+                           verdict=result.verdict)
     return out
+
+
+def require_numerical_qualification(checks: dict[tuple[int, int, bool, str], CheckRow]) -> None:
+    """Publication requires a nonempty, completely qualified evaluated population."""
+    failed = [key for key, row in checks.items() if row.verdict != "QUALIFIED"]
+    if not checks or failed:
+        raise md.CellError(f"numerical publication refused: empty population or failing records {failed}")
+
+
+NUMERICAL_CHECK_STATUS_RELPATH = f"{md.D3_RELDIR}/numerical_check_status.json"
+NUMERICAL_CHECK_STATUSES = ("REPRODUCTION_FAILED",)
+
+
+def load_numerical_check_status(root: Path, keys: set[numerical.Key]) -> dict[str, Any]:
+    """Validate the failed fresh-solve record against the evaluated historical population."""
+    try:
+        status = json.loads((Path(root) / NUMERICAL_CHECK_STATUS_RELPATH).read_text(encoding="ascii"),
+                            parse_float=Decimal)
+        fresh = status["fresh_solve"]
+        failures = fresh["failures"]
+        population = fresh["population"]
+        criteria = fresh["criteria"]
+        tolerance = Decimal(criteria["reproduction_tolerance_of_target"])
+        limit = Decimal(criteria["reference_limit_of_target"])
+
+        def numbers(value: Any) -> list[Decimal]:
+            if isinstance(value, dict):
+                return [n for child in value.values() for n in numbers(child)]
+            if isinstance(value, list):
+                return [n for child in value for n in numbers(child)]
+            return [Decimal(value)] if isinstance(value, (int, float, Decimal)) else []
+
+        numeric = numbers(status) + [tolerance, limit]
+        checks = [
+            ("schema", type(status["schema"]) is int and status["schema"] == 1),
+            ("status vocabulary", status["status"] in NUMERICAL_CHECK_STATUSES),
+            ("population", population["rows"] == len(keys)
+             and population["cases"] == len({key[:2] for key in keys})),
+            ("nonempty failure count", bool(failures) and fresh["failed_rows"] == len(failures)),
+            ("finite nonnegative numbers", all(n.is_finite() and n >= 0 for n in numeric)),
+        ]
+        recorded = [(r["Z"], r["A"], r["uehling"] == "on", r["quantity"]) for r in failures]
+        checks.append(("failure inventory", len(recorded) == len(set(recorded))
+                       and set(recorded) <= keys
+                       and all(r["uehling"] in ("off", "on") for r in failures)))
+        for row in failures:
+            changes = (row["b_ref_change_of_target"], row["b_num_change_of_target"])
+            flags = []
+            if changes[0] > tolerance:
+                flags.append("b_ref_eV")
+            if changes[1] > tolerance:
+                flags.append("b_num_eV")
+            if row["fresh_b_ref_of_target"] > limit:
+                flags.append("reference_sharpness")
+            if row["fresh_verdict"] != "QUALIFIED":
+                flags.append("fresh_certificate")
+            checks.extend([
+                ("fresh verdict vocabulary", row["fresh_verdict"] in ("QUALIFIED", "NUMERICAL_FAIL")),
+                ("derived failure flags", bool(flags) and row["flags"] == sorted(flags)),
+                ("maximum change", all(fresh["maximum_change_of_target"] >= n
+                                       for n in (*changes, fresh["maximum_q_ref_change_of_target"]))),
+            ])
+        invalid = [name for name, valid in checks if not valid]
+        if invalid:
+            raise md.CellError(f"numerical check status: {', '.join(invalid)}")
+        return status
+    except (OSError, ValueError, KeyError, TypeError, ArithmeticError) as error:
+        raise md.CellError(f"numerical check status: {error}") from error
 
 
 # --------------------------------------------------------------------------------------------
@@ -319,6 +413,7 @@ class Bundle:
     #: Per kept member and switch: the derived bindings of each one-step refinement.
     refinements: dict[tuple[int, int], dict[bool, dict[str, dict[str, Decimal]]]]
     checks: dict[tuple[int, int, bool, str], CheckRow]
+    numerical_check_status: dict[str, Any]
 
     def row(self, key: tuple[int, int]) -> md.InputRow:
         return next(row for row in self.kept if row.nuclide == key)
@@ -350,7 +445,8 @@ def load_bundle(root: Path) -> Bundle:
             for uehling in (True, False)
         }
     checks = load_numerical_check(root, outputs)
-    return Bundle(outputs, tables, cells, origins, stock, kept, bindings, refinements, checks)
+    status = load_numerical_check_status(root, set(checks))
+    return Bundle(outputs, tables, cells, origins, stock, kept, bindings, refinements, checks, status)
 
 
 def _bundle(root: Path, bundle: Bundle | None) -> Bundle:
@@ -679,7 +775,10 @@ NOT_COMPUTED_REASONS = {
 #: The files the records are computed from, digested together into the header record.
 COMPONENT_INPUTS = (
     KSHELL_RELPATH, LEVELS_RELPATH, md.INPUTS_RELPATH, md.RUNS_RELPATH, md.STATES_RELPATH, md.LINES_RELPATH,
-    NUMERICAL_CHECK_RELPATH,
+    NUMERICAL_CHECK_RELPATH, NUMERICAL_CHECK_STATUS_RELPATH,
+    "data/g4/d3/reference/cases.json", "data/g4/d3/reference/payloads.jsonl",
+    "data/g4/d3/reference/runs.jsonl", "data/g4/d3/reference/expected_keys.json",
+    "data/g4/d3/reference/protocol.json",
 )
 
 
@@ -691,7 +790,8 @@ def inputs_sha256(root: Path) -> str:
     return hashlib.sha256(("\n".join(digests) + "\n").encode("ascii")).hexdigest()
 
 
-def header_record(root: Path) -> dict[str, object]:
+def header_record(root: Path, bundle: Bundle | None = None) -> dict[str, object]:
+    bundle = _bundle(root, bundle)
     return {
         "record": "header", "profile": md.PROFILE, "radius_perturbation": RADIUS_PERTURBATION,
         "baseline_includes_uehling": BASELINE_INCLUDES_UEHLING, "assembly_rule": ASSEMBLY_RULE,
@@ -699,6 +799,7 @@ def header_record(root: Path) -> dict[str, object]:
         "refinement_limits": {k: str(v) for k, v in REFINEMENT_LIMITS.items()},
         "omitted_components": list(OMITTED_COMPONENTS), "total_sigma_keV": None,
         "model_uncertainty": "unknown", "inputs_sha256": inputs_sha256(root),
+        "numerical_check_status": bundle.numerical_check_status["status"],
     }
 
 
@@ -739,7 +840,7 @@ def components(root: Path, bundle: Bundle | None = None) -> list[dict[str, objec
     isotope it carries."""
     root = Path(root)
     bundle = _bundle(root, bundle)
-    out: list[dict[str, object]] = [header_record(root)]
+    out: list[dict[str, object]] = [header_record(root, bundle)]
     for row in bundle.kept:
         key = row.nuclide
         on_run, off_run = md.recipe_run_id(row, "anchor", True), md.recipe_run_id(row, "anchor", False)

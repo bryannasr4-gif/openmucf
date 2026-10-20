@@ -1076,6 +1076,7 @@ def test_t34_import_fence():
         "provenance.py",
         "emit.py",
         "d3_contract.py",
+        "d3_numerical.py",
         "d3_centroids.py",
         "d3_attribution.py",
         "d2.py",

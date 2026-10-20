@@ -31,6 +31,8 @@ data/g4/d1/* -text
 # The D3 build, for the same reasons: its CSV inputs are parsed by loaders that refuse CR, and its
 # Layer-2 files are digested byte ranges, so a checkout must not rewrite them.
 data/g4/d3/* -text
+# The primitive numerical evidence carries digested bytes in a nested directory.
+data/g4/d3/reference/** -text
 # The copy of release v1.3.0's D3 comparison file, pinned by that file's git blob id: a checkout that rewrote its line
 # endings would break the pin (data/g4/d3/* does not cross into history/).
 data/g4/d3/history/* -text
