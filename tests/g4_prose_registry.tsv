@@ -495,6 +495,7 @@ ff75fbe4536b0ca4aee71784da448e67d0842e07	DATASET_D1.md	REGISTERED: 62, 150, 50, 
 ff83d36e1c390e35f3c6763ee4cdf8d3e8246540	DATASET_D1.md	REGISTERED: two -- 'the two overlap': the same two uncertainties
 133a0621923d9ad4755cfcc585b1a403a488bc04	DATASET_D3.md	REGISTERED: two -- 'the first two' of the settings the sentence lists, k4 and tol8 (mudirac130.NOU_REFINEMENTS)
 16c59275f25f310236ccc8642a7be2b8193b4848	DATASET_D3.md	REGISTERED: 2022 -- the CODATA adjustment year, a name of the constant set (mudirac130.E_H_EV_2022)
+234b84337edc0b858269d23ad9ffa6f8411d85c2	DATASET_D3.md	REGISTERED: two -- the estimates whose larger is b_num_eV in numerical_check.csv; this describes historical estimates, as DATASET_D3.md states
 24da4b83c0bd2f49839bb6d82c319b49ab53fd70	DATASET_D3.md	REGISTERED: one -- 'one energy per shell', the single shell energy a patched cascade takes (G4EmCaptureCascade's level array), a description
 2651db6c1279516bcfe33fc14e87d8fe3d7bc0df	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 3794b9d6bb93fe775c91043e06e0f136e4951d6b	DATASET_D3.md	REGISTERED: one -- 'more than one distinct gated line', a count threshold
@@ -508,10 +509,9 @@ ff83d36e1c390e35f3c6763ee4cdf8d3e8246540	DATASET_D1.md	REGISTERED: two -- 'the t
 5ce1cafc0df71b1a5304d413126337852fc8d8e0	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
 602155485737a9aa1c6381131f0cd92b4d3ff9da	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 6739d15a36e2e3578b87514e58299165bf387f70	DATASET_D3.md	REGISTERED: one -- 'the independent one', a pronoun for the independent value
-872806c538987442234a7a0f845ae69e1c19465a	DATASET_D3.md	REGISTERED: two -- the two estimates of a production value's numerical error whose larger is b_num_eV (numerical_check.csv), a description
+83f534fe7aaaee724f49e93b5da2876c73e6fac7	DATASET_D3.md	REGISTERED: Two -- the refinement check and independent solution described by DATASET_D3.md; neither is asserted to be a validated bound
 895bb7da691d5465720e2284ffd6e4b749ce62c3	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
 926751d11a502e5ad414a6e7187228c916338fbe	DATASET_D3.md	REGISTERED: one -- 'one member for each Z', held by tests/test_g4d3.py::test_t127_the_sample_holds_every_compared_nuclide_the_pilots_lack_and_one_member_per_z_above_them
-92af66bed726e321feb558353ab7d0f3ffb9b20e	DATASET_D3.md	REGISTERED: Two -- the refinement check and the independent solution, which the section goes on to describe
 95074225f3ca58f0853bd51fdb2114144b61bdb1	DATASET_D3.md	REGISTERED: 2 -- 2pF, a name
 95b64a653f86894a5f07681ebde979de44abe74e	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
 987565fed43283a441209a22f9aa5dcd4d8ce6cc	DATASET_D3.md	REGISTERED: one, one -- 'one step', the single refinement step the check takes, a description

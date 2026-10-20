@@ -32,7 +32,7 @@ CENTROID_TABLE_COLUMNS = (
     ("sigma min (keV)", "sigma_min_keV"), ("sigma max (keV)", "sigma_max_keV"),
     ("shell difference (keV)", "q_keV"), ("residual (keV)", "r_d3_keV"),
     ("unpatched residual (keV)", "r_stock_keV"), ("margin (keV)", "margin_keV"),
-    ("screen", "screen"), ("b_num (keV)", "b_num_keV"), ("numerical check", "numerical_verdict"),
+    ("screen", "screen"), ("b_num (keV)", "b_num_keV"), ("historical numerical check", "numerical_verdict"),
 )
 MARGIN_TABLE_COLUMNS = (
     ("cohort", "cohort"), ("source", "source"), ("isotopes", "isotopes"),
