@@ -7,7 +7,9 @@ CALIBRATION.md as released in v1.3.0, and its Basis paragraph gives the correlat
 prints for the same omega_s0 and R boxes. Both figures are read here from the calibration record as the
 calibration's gate admits it (the released print from ``shipped_v1_3_0``, the corrected one from the sweep
 rows), independently of the generator's own reading, and every figure the two paragraphs print must be the
-record's or the design's pins. No NUTS runs.
+record's or the design's pins. The design basis check traces the models used by the base posterior and
+refits and compares their prior supports and observed likelihood inputs with the published basis. No NUTS
+runs.
 """
 
 from __future__ import annotations
@@ -157,3 +159,160 @@ def test_basis_drill_refuses_an_altered_record():
         edit(data)
         assert data != base
         assert basis_failures(_design_md(), data)
+
+
+# ------------------------------------------------------------------ the models the sampler actually receives
+# The checks above read the published figures against the design's declared pins. These read them against the
+# models `openmucf.design.base_posterior` and `openmucf.design._refit_sd` actually hand to the sampler: the
+# sampler boundary (numpyro's MCMC and NUTS, as `openmucf.calibrate` and the refit take them) is replaced by a
+# stand-in that traces the received model with numpyro's handlers and stops before any chain is drawn.
+class _Received(Exception):
+    def __init__(self, sites):
+        super().__init__("the sampler received a model")
+        self.sites = sites
+
+
+class _TraceNUTS:
+    def __init__(self, model, *args, **kwargs):
+        self.model = model
+
+
+class _TraceMCMC:
+    def __init__(self, kernel, *args, **kwargs):
+        self.model = kernel.model
+
+    def run(self, rng_key, *args, extra_fields=(), **kwargs):
+        from numpyro import handlers
+
+        trace = handlers.trace(handlers.seed(self.model, rng_seed=0)).get_trace(*args, **kwargs)
+        sites = {}
+        for name, site in trace.items():
+            if site["type"] != "sample":
+                continue
+            fn = site["fn"]
+            rec = {"dist": type(fn).__name__, "observed": bool(site["is_observed"])}
+            for attr in ("low", "high", "loc", "scale"):
+                if hasattr(fn, attr) and getattr(fn, attr) is not None:
+                    rec[attr] = float(getattr(fn, attr))
+            if rec["observed"]:
+                rec["value"] = float(site["value"])
+            sites[name] = rec
+        raise _Received(sites)
+
+
+def received_models(monkeypatch) -> dict:
+    """``{model name: {site: description}}`` for the base posterior and every refit of every registered
+    candidate in both classes, each traced at the sampler boundary."""
+    import numpyro.infer
+
+    for mod in (calibrate, numpyro.infer):
+        monkeypatch.setattr(mod, "MCMC", _TraceMCMC)
+        monkeypatch.setattr(mod, "NUTS", _TraceNUTS)
+    out = {}
+    calls = {"base_posterior": lambda: design.base_posterior()}
+    for cid in ("C1", "C2", "C3", "C4"):
+        for cls in ("constant", "inflated"):
+            calls[f"refit {cid} {cls}"] = (
+                lambda c=cid, k=cls: design._refit_sd(design._resolve(c), k, 1.0, 1.0, 0))
+    for name, call in calls.items():
+        try:
+            call()
+        except _Received as got:
+            out[name] = got.sites
+        else:
+            raise AssertionError(f"{name}: the sampler boundary was not reached")
+    return out
+
+
+#: (quantity, the published wording's pattern in the Method paragraph, how a received model renders it)
+_RECEIVED = (
+    ("omega_s0 prior", r"Uniform omega_s0 \(([^)]*)\)",
+     lambda s: f"{s['omega_s0_pct']['low']:.2f}, {s['omega_s0_pct']['high']:.2f}"),
+    ("R prior", r"Uniform R \(([^)]*)\)", lambda s: f"{s['R']['low']:.2f}, {s['R']['high']:.2f}"),
+    ("lambda_c prior", r"Uniform lambda_c \(([^)]*)\) s\^-1",
+     lambda s: f"{s['lambda_c']['low']:.2g}, {s['lambda_c']['high']:.2g}"),
+    ("effective sticking observation", r"the effective sticking (\S+ \+- \S+) %",
+     lambda s: f"{s['obs_ose']['value']:g} +- {s['obs_ose']['scale']:g}"),
+    ("yield observation", r"the yield (\S+ \+- \S+), with",
+     lambda s: f"{s['obs_xmu']['value']:g} +- {s['obs_xmu']['scale']:g}"),
+)
+
+
+def model_basis_failures(models: dict, design_md: str, slots: dict) -> list[str]:
+    """Each way a received model departs from the basis DESIGN.md publishes and the generator renders
+    (`basis_slots`): a prior support, an observed value or scale, a likelihood that is not two independent
+    Normals, or an observation of the cycle rate. Each failure names the received and the published value."""
+    par = _paragraphs(design_md)
+    rendered = {
+        "omega_s0 prior": f"{slots['os0_lo']}, {slots['os0_hi']}",
+        "R prior": f"{slots['R_lo']}, {slots['R_hi']}",
+        "lambda_c prior": f"{slots['lc_lo']}, {slots['lc_hi']}",
+        "effective sticking observation": f"{slots['obs']} +- {slots['obs_sd']}",
+        "yield observation": f"{slots['xmu']} +- {slots['xmu_sd']}",
+    }
+    bad = []
+    if "with no cycle-rate measurement" not in par:
+        bad.append("DESIGN.md does not say the base likelihood has no cycle-rate measurement")
+    for name, sites in models.items():
+        observed = {k for k, v in sites.items() if v["observed"]}
+        allowed = {"obs_ose", "obs_xmu"} | ({"obs_design"} if name.startswith("refit") else set())
+        if observed != allowed:
+            bad.append(f"{name}: the sampler received observations {sorted(observed)}, the published basis "
+                       f"has {sorted(allowed)} (no cycle-rate measurement)")
+            continue
+        for site in ("obs_ose", "obs_xmu"):
+            if sites[site]["dist"] != "Normal":
+                bad.append(f"{name}: {site} is a {sites[site]['dist']}, not an independent Normal")
+        for quantity, pattern, render in _RECEIVED:
+            got = render(sites)
+            m = re.search(pattern, par)
+            published = m.group(1) if m else None
+            if got != published:
+                bad.append(
+                    f"{name}: {quantity}: the sampler received ({got}), DESIGN.md publishes ({published})"
+                )
+            if got != rendered[quantity]:
+                bad.append(f"{name}: {quantity}: the sampler received ({got}), the generator renders "
+                           f"({rendered[quantity]})")
+    return bad
+
+
+def _slots():
+    return _load("scripts/generate_design.py", "_gen_design_basis").basis_slots(_cells())
+
+
+def test_the_sampled_models_are_the_published_basis(monkeypatch):
+    """The base posterior and every refit hand the sampler the priors and observations DESIGN.md states."""
+    models = received_models(monkeypatch)
+    assert len(models) == 9 and all(models.values()), sorted(models)
+    assert model_basis_failures(models, _design_md(), _slots()) == []
+
+
+@pytest.mark.parametrize("label, drift, named", [
+    ("the base yield sigma", ("calibrate", {"xmu_sd": 10.0}), "base_posterior: yield observation"),
+    ("the base cycle-rate box", ("calibrate", {"lambda_c_prior": (0.8e8, 2.0e8)}),
+     "base_posterior: lambda_c prior"),
+    ("the refit yield sigma", ("design_obs", {"xmu_sd": 10.0}), "refit C1 constant: yield observation"),
+    ("the refit cycle-rate box", ("design_lc", 2.0e8), "refit C1 constant: lambda_c prior"),
+])
+def test_model_basis_drill_refuses_a_drifted_model(monkeypatch, label, drift, named):
+    """Drill: with DESIGN.md, the design pins and the admitted record unchanged, a model handed to the sampler
+    with a different yield sigma or cycle-rate box -- in the base posterior's call, or in the refits -- is
+    refused, and the failure names the value received and the value published."""
+    slots = _slots()
+    kind, arg = drift
+    if kind == "calibrate":
+        real = calibrate.run_mcmc
+
+        def drifted(*a, **k):
+            return real(*a, **{**k, **arg})
+
+        monkeypatch.setattr(calibrate, "run_mcmc", drifted)
+    elif kind == "design_obs":
+        monkeypatch.setattr(design, "_OBS", {**design._OBS, **arg})
+    else:
+        monkeypatch.setattr(design, "_LAMBDA_C_HI", arg)
+    failures = model_basis_failures(received_models(monkeypatch), _design_md(), slots)
+    hits = [f for f in failures if f.startswith(named)]
+    assert hits, (label, failures)
+    assert "received" in hits[0] and "publishes" in hits[0], hits[0]
