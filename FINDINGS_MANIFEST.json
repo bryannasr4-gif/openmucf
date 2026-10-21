@@ -314,8 +314,64 @@
     },
     {
       "doc": "FINDINGS.md",
+      "id": "joint_q1s",
+      "pattern": "d-recapture at q_1s = 1\\.0 and 3He scavenging at c_He =",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "1.0"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "joint_c_he",
+      "pattern": "3He scavenging at c_He = 1e\\-3\\), the deferred channels",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "1e-3"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "joint_pct_lo",
+      "pattern": "DOWNWARD by\\s+27\\.92% to 28\\.93%, and by",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "27.92"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "joint_pct_hi",
+      "pattern": "DOWNWARD by\\s+27\\.92% to 28\\.93%, and by",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "28.93"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "joint_dn_pct_lo",
+      "pattern": "and by 29\\.54% to 31\\.65% with the density-normalized",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "29.54"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "joint_dn_pct_hi",
+      "pattern": "and by 29\\.54% to 31\\.65% with the density-normalized",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "31.65"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "sum_pct_lo",
+      "pattern": "brackets sum to 26\\.04% to 26\\.67%\\.",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "26.04"
+    },
+    {
+      "doc": "FINDINGS.md",
       "id": "structural_band_pct",
-      "pattern": "DOWNWARD by up to 26\\.67% combined",
+      "pattern": "brackets sum to 26\\.04% to 26\\.67%\\.",
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "26.67"
@@ -351,6 +407,38 @@
       "source": "scripts/generate_findings.py",
       "source_type": "derivation",
       "value": "0.93"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_required_verdict",
+      "pattern": "push reactivation to R >= 0\\.77 at any density when sticking and decay\\s+are the only losses",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.77"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_required_anchor_verdict",
+      "pattern": "and to R >= 0\\.93 at the liquid anchor fill's side-channel loss;",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.93"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "L_step_pct",
+      "pattern": "each 0\\.1% of side-channel\\s+loss per cycle raises that floor by 0\\.12,",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.1"
+    },
+    {
+      "doc": "FINDINGS.md",
+      "id": "R_floor_rise",
+      "pattern": "each 0\\.1% of side-channel\\s+loss per cycle raises that floor by 0\\.12,",
+      "source": "scripts/generate_findings.py",
+      "source_type": "derivation",
+      "value": "0.12"
     },
     {
       "doc": "FINDINGS.md",

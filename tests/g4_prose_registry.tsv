@@ -71,6 +71,7 @@
 2ea189b2f95b51e43ab402dfab9e69cd7a90df39	CHANGELOG.md	REGISTERED: 3 -- the accumulators of the v1 state vector
 2eaea33c129a57c549ef0e37e620e30446ec5e7d	CHANGELOG.md	REGISTERED: 464, 461, 3, four -- the suite count at this entry's date, as the four pages were made to say: a dated count
 2f5b237120b0006db7812fbbbbbc81f247f4a476	CHANGELOG.md	REGISTERED: 7.1, 9, 0.423 -- the Fujiwara 2000 resonance peak, `lambda_dtmu_peak` in openmucf/data/rates.csv and the peak openmucf/formation.py declares
+2f79018e2632fb043180282b556564507fd04a65	CHANGELOG.md	REGISTERED: 0.84, 0.82, one -- the correlation release v1.3.0's sweep printed and the corrected sweep's, as DESIGN.md states them; tests/test_correction_record.py binds each figure to its home; 'the one' is a pronoun
 2f7d7491458c0ddb8f6b4e16126736a2091d8fce	CHANGELOG.md	REGISTERED: eight -- eight: fallback constants declared, as this dated entry recorded it (a released line, held by this row and not re-derived)
 2fc057902fe5c80670d7a5021d2f49ed2b435a46	CHANGELOG.md	REGISTERED: 0.0 -- the `lambda_ttmu` placeholder openmucf/data/rates.csv ships
 2fd58414af919cbd2e4a4958d3fe68fe5c58287f	CHANGELOG.md	REGISTERED: 29, 63, 35, 79, two, 82, 207 -- the record keys (29, 63), (35, 79) and (82, 207), rows of isotope_audit.csv; 'two printed rows', the pair each weighted mean combines (tests/test_g4natural.py::test_the_two_open_records_agree_with_the_weighted_means_their_evidence_names)
@@ -211,6 +212,7 @@
 92769a38974ed591203c07c49242deb6d652115f	CHANGELOG.md	REGISTERED: Twelve, three, 4.70 -- the rows of openmucf/data/muon_cost.csv and its three tiers, and Kelly's `kelly_hart_rose_2021` value
 928ac5e5c44470da944ae6a3eb647ce60977d9df	CHANGELOG.md	REGISTERED: 1 -- '(1−R)', the closed form's factor, openmucf/analytic.py
 92cacda373d8a75dd37604e203695871db8f71f5	CHANGELOG.md	REGISTERED: Three, 1.92, 8 -- the three rows the bullet names, and `lambda_dhe3` = 1.92e8 in openmucf/data/rates.csv
+92fa04ecdb6a287a679293e2c77e1aa937fa70f7	CHANGELOG.md	REGISTERED: 26.67, 27.92, 28.30, 28.93, 6.034, 6.503, 3, three, one, two -- 26.67 is the sum of the one-at-a-time brackets FINDINGS.md prints; 27.92, 28.30, 28.93 (the joint response at OP-B, OP-C, OP-D) and 6.034, 6.503 (3He with the other two channels on) are MATERIALITY.md's section-5 figures; tests/test_correction_record.py binds each figure to its home; 3 is the mass number in 3He, a nuclide label; 'three brackets', 'one channel', 'the other two' count the channels
 939edd8923a2fcafa36d8546023495069371ab21	CHANGELOG.md	REGISTERED: 7 -- '~7 decades', the rate span openmucf/_jaxcfg.py states as the reason float64 is mandatory
 93fa8a9c690ffbd35d7bd69ea45e3147b30d605b	CHANGELOG.md	REGISTERED: 0.62 -- the Sobol total-order index for R, FINDINGS.md's sensitivity table (0.620)
 955c04f7f4180bf9d397f5c2e2c33bddeaa5fb00	CHANGELOG.md	REGISTERED: three, two -- where the loader converts its numeric columns, three outside and two inside the row constructor, as the corrected docstring says
@@ -242,6 +244,7 @@ a2f02a20014865a980ada39b631b7cd70c99bf47	CHANGELOG.md	REGISTERED: 150, 284 -- th
 a3fe0377e98ca44a0160b42203d31afac8589856	CHANGELOG.md	REGISTERED: 6.10, 34.5 -- the worst cell's noise and the smallest relative constant that would cover it, as scripts/generate_design.py's preamble records them
 a402f82bc3eaff179b458396a8379d5d6860b7c2	CHANGELOG.md	REGISTERED: 0.18, 0.104, 0.183 -- the conversion factors in openmucf/data/muon_cost_chain.csv, as MUON_COST.md's edge table prints them
 a44029fc41b404096f3ec5135681af2644e6c80b	CHANGELOG.md	REGISTERED: three, 23, 2 -- 'three ways', the split the sentence enumerates; 23: rows the old rule under-called, as this dated entry recorded it (a released line, held by this row and not re-derived); 2: rows the primary flatly contradicts, as this dated entry recorded it (a released line, held by this row and not re-derived)
+a5649e1af55aa3a32e631b65f8e65a5e496a21c2	CHANGELOG.md	REGISTERED: 0.77, 0.93, 0.12, 0.1 -- the reactivation floors and the rise of the floor per 0.1% of side-channel loss as FRONTIER.md states them; tests/test_correction_record.py binds each figure to its home
 a6f9c417976ed61107a58b6958da9cf2c8b078b9	CHANGELOG.md	REGISTERED: 82, two -- Z=82, the lead shell closure the effective-charge step sits near: a label, not a shipped value; 'the last two' of the findings this entry enumerates, F-1 to F-5 by the dataset document's numbering, as registered on the dated entry below
 a75c120a01e20a27d433f228a0b1396902d839ea	CHANGELOG.md	REGISTERED: three -- the three routes the named test drills
 a79800efd8bd766ee7f3760e6c361f6051ef96ac	CHANGELOG.md	REGISTERED: One, 8 -- one registry; and the result ids `openmucf.validate` exposed at v1.1.0, as those notes recorded them
@@ -293,6 +296,7 @@ c62f067bd535ee99723a7d64476588694f84c09e	CHANGELOG.md	REGISTERED: 5 -- 'η=5', F
 c63148c84ab7d1ec273dd0772cf1046090b74925	CHANGELOG.md	REGISTERED: one, one, two, one -- 'one-step refinement', 'a check of one step': the single refinement step DATASET_D3.md section 5 describes; two: the anchor run and its Uehling-free twin, 'the pairing of the two'
 c6aa87eed81ee44f0e9dfba37d0426ea1fa529ba	CHANGELOG.md	REGISTERED: 24.8, one -- DESIGN.md's audit section states the 24.8 sigma; 'the one arm64 EIG flag', a single event
 c6e051aca7a5908a703e01e05ad69d6b4840ea1d	CHANGELOG.md	REGISTERED: one -- 'a beam-kinetic one', a pronoun
+c792311b03346d125f9de50e60569daec4b6cd79	CHANGELOG.md	REGISTERED: 0.6.0 -- the dataset version of the D3 tables on the default branch, the #VERSION of data/g4/d3/d3_kshell.mudirac130p1.g4dat; tests/test_correction_record.py binds each figure to its home
 c7a491128b9b1587fed37a87f4bb773c49e4e271	CHANGELOG.md	REGISTERED: three -- 'three orders of magnitude', the separation scripts/generate_calibration.py's floor comment states
 c85facd21334f4134835ba5efd55c94525bacb64	CHANGELOG.md	REGISTERED: one -- 'one-shot', an idiom
 c9a631dd3c13c58ab89430b00211add71002c8a2	CHANGELOG.md	REGISTERED: Three -- the three CC-BY data files the sentence names
@@ -666,6 +670,7 @@ ff9e698e73f14f73c93e5f484019640954acc85a	FORMAT_SPEC.md	REGISTERED: three -- the
 22ade738afd253c210120ad56ef60261aed054e7	README.md	REGISTERED: 1.3.0 -- MuDirac's release number (mudirac130.MUDIRAC_VERSION), a name
 2559be6a16e92585a2f8355d7e081279e4550a5e	README.md	REGISTERED: ³ -- the nuclide label ³H
 270ca35ad256de5710d36b4f36afa2a020dd721c	README.md	REGISTERED: 1.3.0, six -- MuDirac's release number, as mudirac130.MUDIRAC_VERSION and the patch name carry it; six: the inputs of the patch's default-output check, held by tests/test_packaging.py::test_the_mudirac_patch_directory_carries_the_release_licence_and_its_six_check_inputs
+28a6d0d0d36f3379fa8446918898de6dd4e9dddb	README.md	REGISTERED: 0.6.0 -- the dataset version of the D3 tables on the default branch, the #VERSION of data/g4/d3/d3_kshell.mudirac130p1.g4dat; tests/test_release_metadata.py binds this clause to that #VERSION
 2d71ec87b4dc7c1ee4c3e123f2b41f9fde467306	README.md	REGISTERED: one -- 'one-off', an adjective
 3130be08714748b5864be19c6126fc77084b4f22	README.md	REGISTERED: 114, 1, 0.557 -- '~114' as on the previous line; '(1-R_col)' is the complement in the pushforward's formula; 0.557% is the effective sticking the V_kouchen_base target's conditions state (openmucf/data/validation_targets.csv)
 468ee2cf3a0429b1232cdb37cf5f51db663b55d0	README.md	REGISTERED: 0.94, 3, 8 -- restates FINDINGS.md's requirements form (R = 0.94 at λ_c = 3e8), regenerated and byte-diffed by make audit; the README's copy is read by no test
@@ -682,7 +687,6 @@ ff9e698e73f14f73c93e5f484019640954acc85a	FORMAT_SPEC.md	REGISTERED: three -- the
 790683e1e9128c01d8c3ad7a91b92bf6a25b3fc8	README.md	REGISTERED: 114 -- the quickstart's printed yield, approximate ('~'); the same closed-form quantity is the V_kouchen_base reproduction target (112.6, ±10%) in openmucf/data/validation_targets.csv that tests/test_validate.py exercises
 81bddc9a1e881b7b578c506254fbde8391b45bc8	README.md	REGISTERED: one -- a pronoun ('would stop being one')
 8fc88f1f2b7e724850647ec04161945f31c7778b	README.md	REGISTERED: 500, 2 -- figures quoted from the cited preprint (arXiv:2605.26432), attributed to it on the line
-93f4b1b1ab7128f38fc29be43a41ef5fd9365aae	README.md	REGISTERED: ³ -- the mass number of ³He, a nuclide label
 9ceb46b67d5a650fe07bc909d7201423ffd9f64c	README.md	REGISTERED: 300, 1.2, 0.5 -- the quickstart's example inputs: T = 300 K and φ = 1.2 are the liquid operating point openmucf/validate.py anchors, c_t = 0.5 the equal-mixture condition the V_kouchen_base target states (openmucf/data/validation_targets.csv)
 aeb9e6f372250953b1ebf62990b25131becd153b	README.md	REGISTERED: 1.45, 300, 0.8, 41, 44, 30, one, 100 -- the RED tier's scope figures: φ > 1.45, 300 K and T < 100 K are the model's declared support (openmucf/formation.py's scope warning fires at phi > ~1.45 or T < 100 K), corr ≈ +0.8 and the −41% to −44% Yamashita–Kino comparison with its ±30% band come from CALIBRATION.md and VALIDATION.md (V_yamashita_ratio), 'one-shot' is an adjective; this line is registered in tests/ledger_claims_registry.tsv (same sha1)
 ba94c913e68cc0b6a69bfd650b9e0ccc7d7ac484	README.md	REGISTERED: 2367, 3946 -- restates SYSTEMS.md ('~2367 -> ~3946'), regenerated and byte-diffed by make audit; the README's copy is read by no test
@@ -697,7 +701,9 @@ e2aad9fe530e42ea6aca90c249b1b1ebd3038095	README.md	REGISTERED: one, 0.77 -- 'one
 e33e5752ca4b536672e29c25dee76c4fedc50b7c	README.md	REGISTERED: 2367 -- the net-electrical breakeven EnergyChain().breakeven_xmu_net() prints, approximate; tests/test_energy.py::test_net_electrical_breakeven_is_much_harder bounds it from below and SYSTEMS.md, regenerated by make audit, restates it
 e3fd28cba23d87ba142c75fac3c3fb4a855bb8d9	README.md	REGISTERED: 6, 5, 1 -- restates the summary line of VALIDATION.md ('6 pass ... 5 fail ... 1 deferred'), which make validate generates and make audit byte-diffs; this comment is read by no test
 e52326badfd61270409743256330b494a0f4e7ef	README.md	REGISTERED: 4.70, 10, ³ -- restates MUON_COST.md's anchor row (Kelly, Hart & Rose: 4.70 GeV/muon) and the order of magnitude between its tiers ('~10³×'); MUON_COST.md is regenerated and byte-diffed by make audit; the README's copy is read by no test
+e8c6140271a87d224d031623162ae2c83169e9c4	README.md	REGISTERED: ³ -- the mass number of ³He, a nuclide label
 f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
+ff26f89f848d3a34d6d2227564f3fd18987804e0	README.md	REGISTERED: 0.5.1 -- the dataset version of the D3 tables release v1.3.0 holds, the topmost '`#VERSION` becomes 0.5.1' of the [1.3.0] section of CHANGELOG.md; tests/test_release_metadata.py binds this clause to that section
 21ffeec98e1eab90e7c9b55fc3e79d25073d0a52	cpp/patches/README.md	REGISTERED: one -- the single call the sentence quotes, SetEnableMuonicData(true)
 5037f1b272e701d700f2d7777c22812316bdf1e7	cpp/patches/README.md	REGISTERED: 4, 3 -- the digits of the seam variables `G4MUONICDATA_D1_PROFILE` and `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells them: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
 7adbc79d41e9978fcb2c79814f8ae1f02434411b	cpp/patches/README.md	REGISTERED: one -- the boolean the patch adds to G4HadronicParameters

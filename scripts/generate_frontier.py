@@ -54,6 +54,9 @@ LAMBDA_C_BAND = (1.00e8, 1.45e8)
 R_COL_REFERENCE = "0.35"
 # The side-channel loss per cycle at the liquid anchor fill, as the FRACTION frontier.r_required takes.
 L_ANCHOR = sidechannels.ANCHOR_L_OTHER_FRACTION
+# The step of side-channel loss per cycle (a FRACTION; 0.1%) over which the requirement states the rise of the
+# floor. The floor is linear in that loss at lambda_c -> inf, so the rise per step is the same at every loss.
+L_STEP = 0.001
 # The figure overlays two loss conditions: its curves are r_required at L = 0, its cloud is model_w's posterior.
 FIGURE_CONDITIONS = ("Curves assume L=0 (sticking and decay only); the cloud is the corrected anchor-basis "
                      "posterior with L_other inferred.")
@@ -100,6 +103,9 @@ def build_headline(cells) -> dict[str, str]:
 
     # --- the marquee density-independent R floor (reproduces FINDINGS sec.3 EXACTLY) ---
     H["R_floor_500"] = f"{r_required(500.0, math.inf):.2f}"  # 0.77
+    # the rise of that floor for each L_STEP of side-channel loss per cycle (the requirement sentence)
+    H["L_step_pct"] = f"{100.0 * L_STEP:.1f}"
+    H["R_floor_rise"] = f"{r_required(500.0, math.inf, l_other=L_STEP) - r_required(500.0, math.inf):.2f}"
     H["R_col"] = R_COL_REFERENCE
     # The SAME floor read in the two-factor decomposition omega_s_eff = omega_s0 (1-R_col)(1-R_X):
     # R_col and R_X are successive factors, so R_col is not comparable to the total-R floor; what it
@@ -194,8 +200,11 @@ SUCCESSIVE factors -- `omega_s_eff = omega_s0 (1-R_col)(1-R_X)` -- so it is not 
 field-assisted factor **R_X >= {H["R_X_required"]}**. At the anchor fill's side-channel loss (the second
 table) these become **R >= {H["R_floor_500_anchor"]}** and **R_X >= {H["R_X_required_anchor"]}**. The Kamimura-prior calibration posterior gives a
 total R = **{H["R_kamimura"]}** +- {H["R_kamimura_sd"]} (`CALIBRATION.md`), also below the floor.
-Expressed as a requirement, an X_mu = 500 mechanism must push TOTAL reactivation to R ~ 0.9+ at any
-density -- a falsifiable, quantitative bet on the reactivation physics.
+Expressed as a requirement, an X_mu = 500 mechanism must push TOTAL reactivation to R >= {H["R_floor_500"]} at any
+density when sticking and decay are the only losses, and to R >= {H["R_floor_500_anchor"]} at the anchor fill's
+side-channel loss (the second table); each {H["L_step_pct"]}% of side-channel loss per cycle raises that floor by
+{H["R_floor_rise"]}, and the loss away from that fill is not established here -- a falsifiable, quantitative bet
+on the reactivation physics.
 
 ## Solver-backed general inverse (optimistix Newton over the q_net graph)
 `openmucf.frontier.solve_inverse` inverts the full differentiable `systems.q_net` graph for ONE free
@@ -229,9 +238,9 @@ the "what would have to be true" picture. {FIGURE_CONDITIONS} (Regenerated every
 def build_manifest_entries(H: dict[str, str]) -> list[ManifestEntry]:
     import re
 
-    def _entry(entry_id, pattern):
+    def _entry(entry_id, pattern, key=None):
         return ManifestEntry(
-            id=entry_id, value=H[entry_id], pattern=pattern,
+            id=entry_id, value=H[key or entry_id], pattern=pattern,
             source_type="derivation", source="scripts/generate_frontier.py", doc="FRONTIER.md",
         )
 
@@ -251,6 +260,28 @@ def build_manifest_entries(H: dict[str, str]) -> list[ManifestEntry]:
         _entry("solver_eta_acc", rf"\| eta_acc \| {re.escape(H['solver_eta_acc'])} \|"),
         _entry("solver_R", rf"\| R \| {re.escape(H['solver_R'])} \|"),
         _entry("solver_lambda_c", rf"\| lambda_c \| {re.escape(H['solver_lambda_c'])} \|"),
+        # the requirement sentence: each floor with the loss it holds at, and the rise of the floor with that loss
+        _entry(
+            "R_floor_500_requirement",
+            rf"TOTAL reactivation to R >= {re.escape(H['R_floor_500'])} at any\s+density when sticking and decay "
+            rf"are the only losses",
+            key="R_floor_500",
+        ),
+        _entry(
+            "R_floor_500_anchor_requirement",
+            rf"and to R >= {re.escape(H['R_floor_500_anchor'])} at the anchor fill's\s+side-channel loss",
+            key="R_floor_500_anchor",
+        ),
+        _entry(
+            "L_step_pct",
+            rf"each {re.escape(H['L_step_pct'])}% of side-channel loss per cycle raises that floor by\s+"
+            rf"{re.escape(H['R_floor_rise'])},",
+        ),
+        _entry(
+            "R_floor_rise",
+            rf"each {re.escape(H['L_step_pct'])}% of side-channel loss per cycle raises that floor by\s+"
+            rf"{re.escape(H['R_floor_rise'])},",
+        ),
     ]
     # anchor the FINDINGS sec.3 frontier cells (X=500 at 2.28e8 -> ~R->1, at 3.00e8 -> 0.94, at inf -> 0.77)
     for X, lc in ((500.0, 2.28e8), (500.0, 3.00e8), (500.0, math.inf), (150.0, 1.45e8)):

@@ -136,9 +136,11 @@ density dependence.
 
 P(Q_sci > 1) = 0.2% ; P(Q_net > 1) = 0.0%.
 
-Structural, one-sided: the box intervals above sit on the v1 reduced network; the deferred channels bias
-X_mu DOWNWARD by up to 26.67% combined at the headline operating points of MATERIALITY.md (ttmu
-side-cycle, d-recapture and 3He scavenging, summed in its section 5).
+Structural, one-sided: the box intervals above sit on the v1 reduced network; switched on together at the
+headline operating points of MATERIALITY.md (its section 5: ttmu side-cycle at the in-target reading,
+d-recapture at q_1s = 1.0 and 3He scavenging at c_He = 1e-3), the deferred channels bias X_mu DOWNWARD by
+27.92% to 28.93%, and by 29.54% to 31.65% with the density-normalized ttmu reading; their one-at-a-time
+brackets sum to 26.04% to 26.67%.
 
 ## 2b. Q_net by muon-cost tier
 
@@ -282,9 +284,11 @@ The 2026 projections (Yin-Kou-Chen arXiv:2605.26432): $N_\mu > 500$, $Q > 2$. Un
 
 **Verdict.** The 2026 breakeven projection is *not falsified in principle* -- and this audit does not
 evaluate the polarization / field-assisted-recovery mechanisms it invokes -- but expressed as
-requirements, any such mechanism must push reactivation to R ~ 0.9+ (density scaling can raise the cycling
-rate, but the required-R floor is independent of lambda_c; whether density raises R itself is an open
-question). That turns a headline into a falsifiable, quantitative bet on **exactly the
+requirements, any such mechanism must push reactivation to R >= 0.77 at any density when sticking and decay
+are the only losses, and to R >= 0.93 at the liquid anchor fill's side-channel loss; each 0.1% of side-channel
+loss per cycle raises that floor by 0.12, and the loss away from that fill is not established here (density
+scaling can raise the cycling rate, but the required-R floor is independent of lambda_c; whether density
+raises R itself is an open question). That turns a headline into a falsifiable, quantitative bet on **exactly the
 quantity Acceleron's diamond-anvil program measures and the Phase-3 sticking surrogate will forecast.**
 (Figure `figures/breakeven.png`.)
 

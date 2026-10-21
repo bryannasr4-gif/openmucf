@@ -117,7 +117,8 @@ make audit         # regenerate every deterministic doc + tolerance-check the MC
   ~2367 → ~3946 fusions/muon (linear in η_acc).
 
 Structural, one-sided: the parametric intervals above sit on the v1 reduced network; the known deferred
-channels bias X_μ DOWNWARD (ttμ side-cycle, d-recapture and ³He scavenging, summed in `MATERIALITY.md` §5).
+channels bias X_μ DOWNWARD (ttμ side-cycle, d-recapture and ³He scavenging; `MATERIALITY.md` §5 runs them
+together and gives their joint response beside the sum of each alone).
 
 Headline findings run on the closed form; the differentiable ODE engine is the
 structural workhorse for trajectories/twin/UQ cross-checks and is gated against an exact linear-algebra
@@ -228,6 +229,9 @@ If you use OpenMuCF, please cite it via [`CITATION.cff`](CITATION.cff) (GitHub r
 repository" button from it). Archived on Zenodo — cite the exact release **v1.3.0** via DOI
 [10.5281/zenodo.22995079](https://doi.org/10.5281/zenodo.22995079), or the version-independent concept DOI
 [10.5281/zenodo.21251511](https://doi.org/10.5281/zenodo.21251511) to always resolve to the latest version.
+Release v1.3.0 holds the D3 tables of the `mudirac130` profile at dataset version 0.5.1. The changes that
+[`CHANGELOG.md`](CHANGELOG.md) lists under Unreleased are in no release yet, among them the `mudirac130p1`
+profile at dataset version 0.6.0; to cite them, cite the release together with the commit you used.
 
 ## License
 - **Code** — the `openmucf/` package, `scripts/`, tests, and all software not named below: **Apache-2.0** (see [`LICENSE`](LICENSE)).

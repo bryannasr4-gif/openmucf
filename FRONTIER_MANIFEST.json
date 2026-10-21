@@ -106,6 +106,38 @@
     },
     {
       "doc": "FRONTIER.md",
+      "id": "R_floor_500_requirement",
+      "pattern": "TOTAL reactivation to R >= 0\\.77 at any\\s+density when sticking and decay are the only losses",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.77"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_floor_500_anchor_requirement",
+      "pattern": "and to R >= 0\\.93 at the anchor fill's\\s+side-channel loss",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.93"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "L_step_pct",
+      "pattern": "each 0\\.1% of side-channel loss per cycle raises that floor by\\s+0\\.12,",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.1"
+    },
+    {
+      "doc": "FRONTIER.md",
+      "id": "R_floor_rise",
+      "pattern": "each 0\\.1% of side-channel loss per cycle raises that floor by\\s+0\\.12,",
+      "source": "scripts/generate_frontier.py",
+      "source_type": "derivation",
+      "value": "0.12"
+    },
+    {
+      "doc": "FRONTIER.md",
       "id": "R_500_2.28e+08",
       "pattern": "\\| 500 \\|.*0\\.9996",
       "source": "scripts/generate_frontier.py",

@@ -36,8 +36,9 @@ is **pursue the κ literature and define a Phase-3 acceptance test** (below).
 
 ## The construction (why the blocked κ papers are not needed to decide this)
 
-The calibration in `openmucf.calibrate` constrains the product ω_s^eff = ω_s⁰·(1−R) and λ_c, but not ω_s⁰
-and R separately — they sit on a strongly correlated (+0.84) ridge. A K-X-ray-per-neutron ratio is
+The calibration chain this study runs on, `openmucf.calibrate.model` (the likelihood before the correction
+`CALIBRATION.md` describes in its amendment of 2026-10-14), constrains the product ω_s^eff = ω_s⁰·(1−R) and λ_c,
+but not ω_s⁰ and R separately — they sit on a strongly correlated (+0.84) ridge. A K-X-ray-per-neutron ratio is
 proportional to κ·ω_s⁰, where κ (K X-rays emitted per initial sticking event) is known only to a band. We
 add one observable to `calibrate.model`:
 

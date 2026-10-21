@@ -447,10 +447,10 @@ def _admit_bytes(raw, path, *, sampled=True):
 
 def admit_calibration_cells(path=CELLS_JSON):
     """The one admission of the calibration cells file: every reader that renders, audits or publishes from it (the
-    render and the audit here, scripts/generate_findings.py and scripts/generate_frontier.py) takes only what this
-    returns. Reads the bytes at ``path`` once, refuses them (CellsRefused, a SystemExit naming each problem) unless
-    `admission_problems` passes the record they hold, and returns that record read-only with the digest of those
-    bytes (`AdmittedCells`)."""
+    render and the audit here, scripts/generate_findings.py, scripts/generate_frontier.py and both modes of
+    scripts/generate_design.py) takes only what this returns. Reads the bytes at ``path`` once, refuses them
+    (CellsRefused, a SystemExit naming each problem) unless `admission_problems` passes the record they hold, and
+    returns that record read-only with the digest of those bytes (`AdmittedCells`)."""
     try:
         raw = Path(path).read_bytes()
     except OSError as e:
