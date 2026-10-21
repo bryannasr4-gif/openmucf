@@ -883,7 +883,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "he_given_pct_min",
-      "pattern": "X_mu units \\(4\\.82% to 4\\.94%\\)",
+      "pattern": "X_mu units \\(4\\.82% to 4\\.94% of X_mu with all three\\s+channels OFF\\)",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "4.82"
@@ -891,7 +891,7 @@
     {
       "doc": "MATERIALITY.md",
       "id": "he_given_pct_max",
-      "pattern": "X_mu units \\(4\\.82% to 4\\.94%\\)",
+      "pattern": "X_mu units \\(4\\.82% to 4\\.94% of X_mu with all three\\s+channels OFF\\)",
       "source": "scripts/generate_materiality.py",
       "source_type": "derivation",
       "value": "4.94"

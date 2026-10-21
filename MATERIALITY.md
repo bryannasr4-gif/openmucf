@@ -110,8 +110,9 @@ other two on (X_mu with all three on minus X_mu with the other two).
 
 Toggled one at a time, the sum is dominated by the ttmu side-branch and by d-recapture at the maximal q_1s, and
 3He alone removes at most 0.14% of X_mu at these helium levels. The channels interact through the pools they
-share: with the other two on, 3He lowers X_mu by 6.034 to 6.503 X_mu units (4.82% to 4.94%) at these points,
-because the d-recapture routing returns freed muons to the dmu pool, where 3He acts. The joint response at the
+share: with the other two on, 3He lowers X_mu by 6.034 to 6.503 X_mu units (4.82% to 4.94% of X_mu with all three
+channels OFF) at these points, because the d-recapture routing returns freed muons to the dmu pool, where 3He
+acts. The joint response at the
 in-target reading runs from 27.92% (OP-B) to 28.93% (OP-D) of X_mu, above the ~10-15% one-sided structural
 headroom named in MODEL_SPEC section 8; the one-at-a-time brackets sum to at most 26.67%. These responses are
 reported beside the parametric CI, never convolved into it.

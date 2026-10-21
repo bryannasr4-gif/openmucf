@@ -16,9 +16,9 @@ Two absorbing channels, per the loss-channel network, each toggled alone:
     with c_He = 0 and recapture off, beside the density-normalized reading of the same table (the
     tabled rate, `openmucf/data/side_channel_inputs.csv`), a registered systematic.
 
-Everything here runs the v1 cycle model with the loss channel as the ONLY toggle, so "channels OFF" is
-the byte-exact v1 engine and the bracket isolates the single channel's structural effect. Fully
-deterministic (no MCMC/sampling), so `make audit` byte-diffs MATERIALITY.md + MATERIALITY_MANIFEST.json.
+Each one-at-a-time bracket runs the v1 cycle model with the named channel as its only toggle; section 5 also
+runs all three channels together. "Channels OFF" is the byte-exact v1 engine, so each bracket isolates the
+single channel's structural effect. Fully deterministic (no MCMC/sampling), so `make audit` byte-diffs MATERIALITY.md + MATERIALITY_MANIFEST.json.
 
 The computation lives in importable helpers (no side effects on import); file I/O + printing are guarded
 behind ``main()`` so the test suite can import and assert on the operating-point/channel definitions
@@ -491,8 +491,9 @@ other two on (X_mu with all three on minus X_mu with the other two).
 
 Toggled one at a time, the sum is dominated by the ttmu side-branch and by d-recapture at the maximal q_1s, and
 3He alone removes at most {H["he_alone_xmu_pct"]}% of X_mu at these helium levels. The channels interact through the pools they
-share: with the other two on, 3He lowers X_mu by {H["he_given_min"]} to {H["he_given_max"]} X_mu units ({H["he_given_pct_min"]}% to {H["he_given_pct_max"]}%) at these points,
-because the d-recapture routing returns freed muons to the dmu pool, where 3He acts. The joint response at the
+share: with the other two on, 3He lowers X_mu by {H["he_given_min"]} to {H["he_given_max"]} X_mu units ({H["he_given_pct_min"]}% to {H["he_given_pct_max"]}% of X_mu with all three
+channels OFF) at these points, because the d-recapture routing returns freed muons to the dmu pool, where 3He
+acts. The joint response at the
 in-target reading runs from {H["joint_pct_min"]}% ({H["joint_pct_min_op"]}) to {H["joint_pct_max"]}% ({H["joint_pct_max_op"]}) of X_mu, above the ~10-15% one-sided structural
 headroom named in MODEL_SPEC section 8; the one-at-a-time brackets sum to at most {H["comb_worst_pct2"]}%. These responses are
 reported beside the parametric CI, never convolved into it.
@@ -567,8 +568,10 @@ def build_manifest_entries(H: dict) -> list:
         _entry("he_alone_xmu_pct", rf"3He alone removes at most {e(H['he_alone_xmu_pct'])}% of X_mu"),
         _entry("he_given_min", rf"3He lowers X_mu by {e(H['he_given_min'])} to {e(H['he_given_max'])} X_mu units \("),
         _entry("he_given_max", rf"3He lowers X_mu by {e(H['he_given_min'])} to {e(H['he_given_max'])} X_mu units \("),
-        _entry("he_given_pct_min", rf"X_mu units \({e(H['he_given_pct_min'])}% to {e(H['he_given_pct_max'])}%\)"),
-        _entry("he_given_pct_max", rf"X_mu units \({e(H['he_given_pct_min'])}% to {e(H['he_given_pct_max'])}%\)"),
+        _entry("he_given_pct_min", rf"X_mu units \({e(H['he_given_pct_min'])}% to {e(H['he_given_pct_max'])}% of "
+                                   r"X_mu with all three\s+channels OFF\)"),
+        _entry("he_given_pct_max", rf"X_mu units \({e(H['he_given_pct_min'])}% to {e(H['he_given_pct_max'])}% of "
+                                   r"X_mu with all three\s+channels OFF\)"),
         _entry("joint_pct_min", rf"runs from {e(H['joint_pct_min'])}% \({e(H['joint_pct_min_op'])}\) to"),
         _entry("joint_pct_min_op", rf"runs from {e(H['joint_pct_min'])}% \({e(H['joint_pct_min_op'])}\) to"),
         _entry("joint_pct_max", rf"\) to {e(H['joint_pct_max'])}% \({e(H['joint_pct_max_op'])}\) of X_mu"),
