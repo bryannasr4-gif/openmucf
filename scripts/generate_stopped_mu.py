@@ -9,7 +9,7 @@ row per row of the pre-registration and judges it in exact arithmetic, and write
 the measured ratios of `cascade_reference.csv` under `cascade_rule.json` and tests the harvested cascades of
 `cascade_harvest.csv` and `cascade_transitions.csv`, writing `cascade_comparison.csv` and `cascade_consumer.csv`; it
 then renders the document from those files, `builds.csv`, `reproduced.csv`,
-`data/g4/d1/geant4_natural_isotopes.csv` and the vendored `G4EmCaptureCascade.cc` of `third_party/geant4/`. No float decides a byte of any of the three files: every number the
+`data/g4/d1/geant4_natural_isotopes.csv` and the vendored `G4EmCaptureCascade.cc` of `third_party/geant4/`. No float decides a byte: every number the
 document takes from those files fills a slot of `render`, whose spans the prose census pins; the generator itself
 defines the display precision of the row table and the citations of the prior work.
 """
