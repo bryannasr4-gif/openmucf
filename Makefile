@@ -153,9 +153,9 @@ stoppedmu:
 # Exact decimal and fraction arithmetic, no sampling; both class files join the git-diff list below, and
 # tests/test_g4mixture.py regenerates them. Then the comparison of the measured mean lives of natural targets
 # with the rate each source's estimator, or its stated surrogate, extracts from the analytic mixture: a solver
-# (damped Newton on fixed quadrature) whose last digits can differ between platforms' libm, so it is NOT
-# byte-diffed; tests/test_g4mixture.py regenerates it and holds every number to a relative 1e-9 and every
-# verdict exactly.
+# (damped Newton on fixed quadrature) whose written values come from 40-digit decimal fits and the fit's own
+# stationarity condition, not from the platform's libm. Solver output is NOT byte-diffed;
+# tests/test_g4mixture.py regenerates it and holds every number to a relative 1e-12 and every verdict exactly.
 g4mixture:
 	python scripts/generate_g4mixture.py classes answers compare
 

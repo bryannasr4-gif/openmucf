@@ -862,7 +862,30 @@ def fit_rate(components: Sequence[Component], spec_: FitSpec, conv=float, start:
     return _fit(rates, weights, spec_, conv, start)
 
 
-def _fit(rates, weights, spec_: FitSpec, conv, start: float = 1.0):  # type: ignore[no-untyped-def]
+def _number(value: Fraction | float, conv):  # type: ignore[no-untyped-def]
+    value = Fraction(value)
+    return conv(value.numerator) / conv(value.denominator)
+
+
+def fit_rate_sensitivity(components: Sequence[Component], record: str, spec_: FitSpec, conv=Decimal):  # type: ignore[no-untyped-def]
+    """(fitted rate, its derivative with respect to the capture rate of ``record``) in the number type
+    ``conv`` makes, at the components with that record's capture rate exact (``_perturbed`` at s = 0).
+
+    Along s, every isotope the record answers has the rate capture (1 + s) + decay; its weight abundance x
+    p_DIO x rate = abundance x decay does not move. The derivative comes from the fit's stationarity condition
+    (``_sensitivity``), not from a difference of two fits."""
+    base = _perturbed(components, record, "", 0.0)
+    rates = [_number(c.rate, conv) for c in base]
+    weights = [_number(c.abundance * c.p_dio * c.rate, conv) for c in base]
+    drates = [_number(c.capture, conv) if c.record == record else conv(0) for c in base]
+    capture = next(c.capture for c in base if c.record == record)
+    lam, dlam_ds = _fit(rates, weights, spec_, conv, drates=drates)
+    return lam, dlam_ds / _number(capture, conv)
+
+
+def _fit(rates, weights, spec_: FitSpec, conv, start: float = 1.0, drates=None):  # type: ignore[no-untyped-def]
+    """The fitted target rate; with ``drates`` (the derivative of each component's rate along one direction
+    of the inputs, the weights held fixed), the pair (rate, derivative of the fitted rate along it)."""
     zero, one = conv(0), conv(1)
     # age the target by each pulse and normalise it to the count share the nuisance components leave
     aged = [
@@ -969,9 +992,62 @@ def _fit(rates, weights, spec_: FitSpec, conv, start: float = 1.0):  # type: ign
         lam, amp, coef = trial
         state = new_state
         if moved <= tol * abs(lam) and damping < conv(1) / 1000:
-            return lam
+            if drates is None:
+                return lam
+            context = {
+                "conv": conv, "zero": zero, "one": one, "rates": rates, "weights": weights,
+                "drates": list(drates), "spec": spec_, "nodes": nodes, "qw": qw,
+                "truth": truth, "fixed": fixed, "free_basis": free_basis, "aged": aged, "count": count,
+                "share": share, "target_amp": target_amp,
+            }
+            return lam, _sensitivity(lam, amp, coef, state[2], context)
         damping = zero if damping <= conv(1) / 1000 else damping / 100
     raise MixtureError("the fit did not converge")
+
+
+def _sensitivity(lam, amp, coef, hess, ctx):  # type: ignore[no-untyped-def]
+    """The derivative of the fitted rate along the direction ``ctx['drates']``, by the implicit function
+    theorem.
+
+    At the optimum the gradient G(theta, g) of the objective vanishes, so d(theta) = -H^-1 dG, where H is the
+    objective's Hessian in the parameters (the exact one ``evaluate`` returns) and dG = sum_k dG/dg_k dg_k is
+    the change of the gradient through the expected spectrum g on the quadrature nodes. The spectrum's own
+    derivative follows the construction in ``_fit``: the pulse-aged weights, the count that normalises them,
+    the target amplitudes and the exponentials, on fixed nodes. No difference of two fits is taken, so no
+    cancellation amplifies the rounding of the fits.
+    """
+    conv, zero, one = ctx["conv"], ctx["zero"], ctx["one"]
+    rates, weights, drates = ctx["rates"], ctx["weights"], ctx["drates"]
+    spec_, nodes, qw, truth, fixed, free_basis = (
+        ctx["spec"], ctx["nodes"], ctx["qw"], ctx["truth"], ctx["fixed"], ctx["free_basis"]
+    )
+    aged, count, share, target_amp = ctx["aged"], ctx["count"], ctx["share"], ctx["target_amp"]
+    daged = [
+        sum((conv(q) * w * (-conv(s) * dr) * _exp(-r * conv(s), conv) for q, s in spec_.pulses), zero)
+        for r, w, dr in zip(rates, weights, drates, strict=True)
+    ]
+    dcount = sum(
+        (da / r - a * dr / (r * r) for a, da, r, dr in zip(aged, daged, rates, drates, strict=True)), zero
+    )
+    damp = [share * (da / count - a * dcount / (count * count)) for a, da in zip(aged, daged, strict=True)]
+    n_par = 2 + len(coef)
+    dgrad = [zero] * n_par
+    for k, t in enumerate(nodes):
+        dg = sum(
+            ((d_a - a * t * dr) * _exp(-r * t, conv) for a, d_a, r, dr in zip(target_amp, damp, rates, drates,
+                                                                                strict=True)),
+            zero,
+        )
+        e = _exp(-lam * t, conv)
+        m = amp * e + fixed[k] + sum((c * col[k] for c, col in zip(coef, free_basis, strict=True)), zero)
+        g = truth[k]
+        d = [-amp * t * e, e] + [col[k] for col in free_basis]
+        # d(grad_p)/d(g_k): the residual's derivative in g times the weight and the model's derivative
+        dr_dg = one / m if spec_.method == "ll" else conv(2) * m / (g * g)
+        for p in range(n_par):
+            dgrad[p] += qw[k] * dr_dg * d[p] * dg
+    step = _solve([[h for h in row] for row in hess], [-x for x in dgrad])
+    return step[0]
 
 
 def _log(x, conv):  # type: ignore[no-untyped-def]
@@ -2473,6 +2549,13 @@ COMPARISON_COLUMNS = (
     "verdict",
     "comparison",
 )
+#: Decimal digits of the fits whose values the comparison writes. Decimal arithmetic with correctly rounded
+#: exp and ln gives the same digits on every platform, so the binary64 numbers rounded from them do too.
+COMPARISON_DIGITS = 40
+#: A binary64 bracket fit within this relative distance of the bracket's lowest or highest one is refitted in
+#: decimals before the extremes are taken. Binary64 fits differ between platforms by up to about 5e-15
+#: relative (Windows against Linux), so every fit that can be an extreme is refitted on every platform.
+SCREEN_MARGIN = 1e-11
 #: Rates in the comparison are in 1e6/s; the oracle's are ns^-1.
 PER_MICROSECOND = d1.MICROSECOND
 
@@ -2532,7 +2615,7 @@ def comparison_rows(root: Path) -> list[dict[str, str]]:
         (r["source"], r["locator"], r["profile"]): r
         for r in lifetime.read_comparison(root / lifetime.COMPARISON_RELPATH)
     }
-    cache: dict[tuple[object, ...], tuple[float, float, float, list[tuple[str, float, Decimal]]]] = {}
+    cache: dict[tuple[object, ...], tuple[float, float, list[tuple[str, float, Decimal]]]] = {}
     rows: list[dict[str, str]] = []
     ids: dict[tuple[object, ...], int] = {}
     for ref in references(root):
@@ -2549,20 +2632,27 @@ def comparison_rows(root: Path) -> list[dict[str, str]]:
                 if key not in cache:
                     tau_bar = float(1 / mean_rate(comps))
                     fits, nominal = bracket(root, ref, tau_bar)
+                    specs = dict(fits)
+                    # The binary64 fits only screen the bracket: their last digits follow the platform's exp
+                    # and log. The extremes, and every fit within SCREEN_MARGIN of one, are refitted in
+                    # COMPARISON_DIGITS-digit decimals, whose exp and ln are correctly rounded everywhere, and
+                    # the binary64 values written are rounded from those.
                     values = {name: fit_rate(comps, spec_) for name, spec_ in fits}
-                    lo, hi = min(values.values()), max(values.values())
-                    spec_nominal = dict(fits)[nominal]
+                    low, high = min(values.values()), max(values.values())
                     contributions: list[tuple[str, float, Decimal]] = []
-                    for record in sorted({c.record for c in comps if c.record}):
-                        unc = next(c.record_unc for c in comps if c.record == record)
-                        h = 1e-6
-                        up = fit_rate(_perturbed(comps, record, route, h), spec_nominal)
-                        down = fit_rate(_perturbed(comps, record, route, -h), spec_nominal)
-                        capture = next(c.capture for c in comps if c.record == record)
-                        derivative = (up - down) / (2 * h * capture)
-                        contributions.append((record, derivative, unc))  # type: ignore[arg-type]
-                    cache[key] = (lo, hi, values[nominal], contributions)
-                lo, hi, _, contributions = cache[key]
+                    with localcontext() as context:
+                        context.prec = COMPARISON_DIGITS
+                        at_low = [n for n, v in values.items() if v <= low * (1 + SCREEN_MARGIN)]
+                        at_high = [n for n, v in values.items() if v >= high * (1 - SCREEN_MARGIN)]
+                        exact = {n: fit_rate(comps, specs[n], conv=Decimal) for n in {*at_low, *at_high}}
+                        lo = float(min(exact[n] for n in at_low))
+                        hi = float(max(exact[n] for n in at_high))
+                        for record in sorted({c.record for c in comps if c.record}):
+                            unc = next(c.record_unc for c in comps if c.record == record)
+                            _, derivative = fit_rate_sensitivity(comps, record, specs[nominal])
+                            contributions.append((record, float(derivative), unc))  # type: ignore[arg-type]
+                    cache[key] = (lo, hi, contributions)
+                lo, hi, contributions = cache[key]
                 fit = (lo + hi) / 2 * PER_MICROSECOND
                 sigma_win = (hi - lo) / 2 * PER_MICROSECOND
                 sigma_tab = math.sqrt(math.fsum((d * float(u)) ** 2 for _, d, u in contributions))

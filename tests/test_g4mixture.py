@@ -14,6 +14,7 @@ import hashlib
 import io
 import math
 import re
+import zlib
 from decimal import Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
@@ -816,18 +817,128 @@ NUMERIC_COLUMNS = {
 
 
 def test_compare_regenerates_within_tolerance() -> None:
-    """The comparison regenerates with every number within a relative 1e-9 (the solver's last digits may
-    differ
-    between platforms) and every other field, the verdicts among them, exactly."""
+    """The comparison regenerates with every number within a relative 1e-12 and every other field, the
+    verdicts among them, exactly.
+
+    Every number is rounded to binary64 from fits in ``COMPARISON_DIGITS``-digit decimals (correctly rounded
+    exp and ln, the same digits on every platform) or computed from such numbers by correctly rounded binary64
+    operations, and the tabulated-uncertainty derivatives come from the fit's stationarity condition, not from
+    a difference of two fits. Nothing in a number depends on the platform's libm, so a platform can differ
+    only through a defect, which the 1e-12 bound catches (the earlier difference of two binary64 fits at a
+    step of 1e-6 moved sigma_tab by up to 5e-9 between platforms)."""
     committed = mixture.read_csv(ROOT / mixture.COMPARISON_RELPATH, mixture.COMPARISON_COLUMNS)
     rows = mixture.comparison_rows(ROOT)
     assert len(rows) == len(committed)
     for new, old in zip(rows, committed, strict=True):
         for column in mixture.COMPARISON_COLUMNS:
             if column in NUMERIC_COLUMNS and old[column]:
-                assert float(new[column]) == pytest.approx(float(old[column]), rel=1e-9, abs=1e-15), column
+                assert float(new[column]) == pytest.approx(float(old[column]), rel=1e-12, abs=0), column
             else:
                 assert new[column] == old[column], (old["locator"], column)
+
+
+#: Reference rows whose keys exercise both fit methods, the double-pulse beam, the low-rate nitrogen row whose
+#: sigma_tab moved most between platforms under the earlier difference quotient, and the row whose two lowest
+#: bracket fits lie 4.4e-16 apart under suzuki1987 (the screen's nearest tie).
+SCREEN_ROWS = (
+    "Table III p.2217 row 44",
+    "Table 1 row 10",
+    "Table IV p.2220 row 23",
+    "Table III p.2217 row 37",
+)
+
+
+def _screen_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    every = mixture.references(ROOT)
+    monkeypatch.setattr(mixture, "references", lambda root: [r for r in every if r.locator in SCREEN_ROWS])
+
+
+def _jittered_fit_rate(jitter_float: float, scale_decimal: str):  # type: ignore[no-untyped-def]
+    """``fit_rate`` with each binary64 fit scaled by 1 + u x jitter, u in [-1, 1] a fixed function of the
+    fit's specification and component rates (platforms' exp and log differ fit by fit, not uniformly), and
+    each decimal fit scaled by ``scale_decimal``."""
+    original = mixture.fit_rate
+
+    def fit_rate(components, spec_, conv=float, start=1.0):  # type: ignore[no-untyped-def]
+        value = original(components, spec_, conv, start)
+        if conv is not float:
+            return value * Decimal(scale_decimal)
+        u = (zlib.crc32(repr((spec_, [c.rate for c in components])).encode()) % 2001 - 1000) / 1000
+        return value * (1 + u * jitter_float)
+
+    return fit_rate
+
+
+def test_compare_does_not_depend_on_the_binary64_fits_last_digits(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Scaling each binary64 fit by its own factor within 1 +- 3e-15 (a few units in the last place, the size
+    of the difference between platforms' exp and log), and again with every factor's deviation reversed,
+    leaves every field of the comparison rows unchanged: the binary64 fits only screen the bracket, and a
+    near tie at an extreme (the nearest, 4.4e-16, is among SCREEN_ROWS) is decided in decimals. Drill: a
+    scaling of the decimal fits by 1 + 3e-15 changes the rows, so the check sees a change of that size."""
+    _screen_rows(monkeypatch)
+    plain = mixture.comparison_rows(ROOT)
+    assert len(plain) == 3 * len(SCREEN_ROWS) * len(mixture.ROUTES)
+    for jitter in (3e-15, -3e-15):
+        monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(jitter, "1"))
+        assert mixture.comparison_rows(ROOT) == plain, jitter
+    monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(0.0, "1.000000000000003"))
+    assert mixture.comparison_rows(ROOT) != plain
+
+
+def _difference_quotient(comps, record, spec_, prec: int, h: str):  # type: ignore[no-untyped-def]
+    capture = next(c.capture for c in comps if c.record == record)
+    with localcontext() as context:
+        context.prec = prec
+        up = mixture.fit_rate(mixture._perturbed(comps, record, "", float(h)), spec_, conv=Decimal)
+        down = mixture.fit_rate(mixture._perturbed(comps, record, "", -float(h)), spec_, conv=Decimal)
+        return (up - down) / (2 * Decimal(float(h)) * Decimal(capture))
+
+
+def test_tabulated_uncertainty_derivative_equals_a_fine_difference_quotient(
+    oracle: mixture.Oracle, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The implicit-function derivative behind sigma_tab equals a central difference quotient of 60-digit
+    decimal fits at a step of 1e-20 to 1e-25 relative (the quotient's own error is of order 1e-40), on the
+    nitrogen row's keys (both routes, one log-likelihood and one least-squares member of its bracket).
+    Drills: the binary64 difference quotient at a step of 1e-6 that the comparison used before is off by more
+    than 1e-10, and a derivative that drops the off-diagonal Hessian (the correlation of the rate with the
+    amplitudes) is rejected."""
+    ref = next(r for r in mixture.references(ROOT) if r.locator == SCREEN_ROWS[0])
+    checked = 0
+    for route in mixture.ROUTES:
+        comps = oracle.components(spec.PARITY_PROFILE, route, ref.z)
+        fits, nominal = mixture.bracket(ROOT, ref, float(1 / mixture.mean_rate(comps)))
+        picks = [dict(fits)[nominal]] + [s for _, s in fits if s.method != dict(fits)[nominal].method][:1]
+        record = sorted({c.record for c in comps if c.record})[0]
+        for spec_ in picks:
+            with localcontext() as context:
+                context.prec = mixture.COMPARISON_DIGITS
+                _, implicit = mixture.fit_rate_sensitivity(comps, record, spec_)
+            quotient = _difference_quotient(comps, record, spec_, 60, "1e-20")
+            assert abs(implicit / quotient - 1) < Decimal("1e-25"), (route, spec_)
+            checked += 1
+            old = (
+                mixture.fit_rate(mixture._perturbed(comps, record, "", 1e-6), spec_)
+                - mixture.fit_rate(mixture._perturbed(comps, record, "", -1e-6), spec_)
+            ) / (2e-6 * next(c.capture for c in comps if c.record == record))
+            assert abs(Decimal(old) / quotient - 1) > Decimal("1e-10"), (route, spec_)
+    assert checked == 4
+    original = mixture._sensitivity
+
+    def diagonal_only(lam, amp, coef, hess, ctx):  # type: ignore[no-untyped-def]
+        zero = ctx["zero"]
+        diagonal = [[h if p == q else zero for q, h in enumerate(row)] for p, row in enumerate(hess)]
+        return original(lam, amp, coef, diagonal, ctx)
+
+    monkeypatch.setattr(mixture, "_sensitivity", diagonal_only)
+    comps = oracle.components(spec.PARITY_PROFILE, mixture.STOPPING, ref.z)
+    fits, nominal = mixture.bracket(ROOT, ref, float(1 / mixture.mean_rate(comps)))
+    record = sorted({c.record for c in comps if c.record})[0]
+    with localcontext() as context:
+        context.prec = mixture.COMPARISON_DIGITS
+        _, mutant = mixture.fit_rate_sensitivity(comps, record, dict(fits)[nominal])
+    quotient = _difference_quotient(comps, record, dict(fits)[nominal], 60, "1e-20")
+    assert abs(mutant / quotient - 1) > Decimal("1e-25")
 
 
 def _sigma(row: dict[str, str]) -> float:
