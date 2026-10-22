@@ -660,21 +660,62 @@ def alpha_side(policy: Mapping[str, Any], counts: int) -> Fraction:
     return Fraction(policy["budget_per_cell"]) / (counts * int(policy["sides"]))
 
 
+#: log10(2) rounded down to 15 decimals, as an exact rational (the integer exponent estimate below).
+_LOG10_2 = Fraction(301029995663981, 10**15)
+#: Every decimal string is assembled from chunks of this many digits: str() of an int of at most 500 digits is
+#: allowed under every setting of the interpreter's int-to-string limit (whose smallest allowed value is 640).
+_CHUNK = 500
+
+
+def _digits(n: int) -> str:
+    """The decimal digits of the integer n >= 0, for any size, without str() of an int above _CHUNK digits."""
+    if n < 0:
+        raise ValueError("non-negative integers only")
+    base = 10**_CHUNK
+    if n < base:
+        return str(n)
+    parts = []
+    while n:
+        n, r = divmod(n, base)
+        parts.append(r)
+    return str(parts[-1]) + "".join(str(c).zfill(_CHUNK) for c in reversed(parts[:-1]))
+
+
+def _int_arg(value: int, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{name} must be an int, not {type(value).__name__}")
+
+
+def _exponent(x: Fraction) -> int:
+    """The integer e with 10^e <= x < 10^(e + 1), for any rational x > 0, in integer arithmetic.
+
+    With b = bit_length(numerator) - bit_length(denominator), 2^(b - 1) < x < 2^(b + 1). _LOG10_2 differs from
+    log10(2) by less than 10^-15, so for |b| < 10^15 (every rational that fits in memory)
+    t = (b - 1) _LOG10_2 differs from (b - 1) log10(2) by less than 1, and e0 = floor(t) - 2 satisfies
+    e0 + 1 <= t - 1 < (b - 1) log10(2), so 10^(e0 + 1) < 2^(b - 1) < x: e0 is below the exponent. The exponent
+    is below (b + 1) log10(2) < e0 + 4, so at most four exact comparisons reach it."""
+    b = x.numerator.bit_length() - x.denominator.bit_length()
+    e = math.floor((b - 1) * _LOG10_2) - 2
+    while Fraction(10) ** (e + 1) <= x:
+        e += 1
+    return e
+
+
 def sig_digits(x: Fraction, digits: int, up: bool) -> str:
-    """``x`` > 0 to ``digits`` significant digits, rounded up or down, in scientific notation."""
+    """``x`` to ``digits`` significant digits, rounded up or down, in scientific notation, exactly.
+
+    Domain: x a positive rational of any size; digits an int >= 1. Anything else is refused."""
+    _int_arg(digits, "digits")
+    if digits < 1:
+        raise ValueError("digits >= 1 required")
     if x <= 0:
         raise ValueError("positive values only")
-    # with a digits in the numerator and b in the denominator, 10^(a-b-1) < x < 10^(a-b+1): the exponent
-    # is a - b or a - b - 1, and a single exact comparison decides which
-    e = len(str(x.numerator)) - len(str(x.denominator))
-    if Fraction(10) ** e > x:
-        e -= 1
-    scale = Fraction(10) ** (e - digits + 1)
-    m = x / scale
+    e = _exponent(x)
+    m = x / Fraction(10) ** (e - digits + 1)  # 10^(digits - 1) <= m < 10^digits
     q = math.ceil(m) if up else math.floor(m)
-    if q == 10**digits:
+    if q == 10**digits:  # rounding up carried into a new digit
         q, e = q // 10, e + 1
-    s = str(q)
+    s = _digits(q)
     return f"{s[0]}.{s[1:]}e{e:+03d}" if digits > 1 else f"{s}e{e:+03d}"
 
 
@@ -694,17 +735,27 @@ def _sqrt_half_even(y: Fraction) -> int:
 
 
 def _decimal(n: int, places: int, negative: bool = False) -> str:
-    """The integer n scaled by 10^-places as a plain decimal string ('-' when ``negative``)."""
-    digits = str(abs(n)).rjust(places + 1, "0")
-    body = f"{digits[:-places]}.{digits[-places:]}" if places else digits
+    """The value n 10^-places as a plain decimal string ('-' when ``negative``), for any int n and any int
+    places: ``places`` > 0 gives that many decimals; ``places`` <= 0 an integer, n followed by -places
+    zeros."""
+    _int_arg(places, "places")
+    if places <= 0:
+        body = _digits(abs(n) * 10 ** (-places))
+    else:
+        digits = _digits(abs(n)).rjust(places + 1, "0")
+        body = f"{digits[:-places]}.{digits[-places:]}"
     return ("-" if negative else "") + body
 
 
 def fixed(x: Fraction, places: int) -> str:
-    """``x`` >= 0 rounded half-even to ``places`` decimals, exactly."""
+    """``x`` rounded half-even to a multiple of 10^-places, exactly.
+
+    Domain: x a rational >= 0 of any size; places any int (a negative ``places`` rounds to tens, hundreds,
+    ...). A negative x or a non-int ``places`` is refused."""
+    _int_arg(places, "places")
     if x < 0:
         raise ValueError("non-negative values only")
-    return _decimal(_half_even(x * 10**places), places)
+    return _decimal(_half_even(x * Fraction(10) ** places), places)
 
 
 CONSUMER_COLUMNS = (
@@ -797,8 +848,10 @@ def verdict(model: Fraction, measured: Fraction, sigma2: Fraction, policy: Mappi
 
 
 def pull(model: Fraction, measured: Fraction, sigma2: Fraction) -> str:
-    """(m - d) / s to 2 decimals, half-even, signed, in exact arithmetic (s = sqrt(sigma2) > 0); it decides
-    nothing."""
+    """(m - d) / s to 2 decimals, half-even, signed, in exact arithmetic (s = sqrt(sigma2)); it decides
+    nothing.
+
+    Domain: model and measured any rationals; sigma2 a rational > 0 (otherwise refused)."""
     if sigma2 <= 0:
         raise ValueError("sigma^2 > 0 required")
     d = model - measured
@@ -807,10 +860,14 @@ def pull(model: Fraction, measured: Fraction, sigma2: Fraction) -> str:
 
 
 def sigma_decimal(sigma2: Fraction, places: int = 9) -> str:
-    """sqrt(sigma2) rounded half-even to ``places`` decimals, in exact arithmetic."""
+    """sqrt(sigma2) rounded half-even to a multiple of 10^-places, in exact arithmetic.
+
+    Domain: sigma2 a rational >= 0 of any size; places any int. A negative sigma2 or a non-int ``places`` is
+    refused."""
+    _int_arg(places, "places")
     if sigma2 < 0:
         raise ValueError("sigma^2 < 0")
-    return _decimal(_sqrt_half_even(sigma2 * 10 ** (2 * places)), places)
+    return _decimal(_sqrt_half_even(sigma2 * Fraction(10) ** (2 * places)), places)
 
 
 def ratio_sigma2(
@@ -966,8 +1023,12 @@ def csv_text(columns: Sequence[str], rows: Iterable[Mapping[str, str]]) -> str:
 
 
 def outward(x: Fraction, places: int, up: bool) -> str:
-    """``x`` >= 0 rounded up or down to ``places`` decimals, exactly."""
+    """``x`` rounded up or down to a multiple of 10^-places, exactly.
+
+    Domain: x a rational >= 0 of any size; places any int (a negative ``places`` rounds to tens, hundreds,
+    ...). A negative x or a non-int ``places`` is refused."""
+    _int_arg(places, "places")
     if x < 0:
         raise ValueError("non-negative values only")
-    scaled = x * 10**places
+    scaled = x * Fraction(10) ** places
     return _decimal(math.ceil(scaled) if up else math.floor(scaled), places)

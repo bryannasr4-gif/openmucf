@@ -1862,3 +1862,165 @@ def test_t8_the_decimal_helpers_admit_zero_and_refuse_a_negative_value():
     assert cc.sigma_decimal(Fraction(0)) == "0.000000000"
     with pytest.raises(ValueError, match="^non-negative values only$"):
         cc.fixed(Fraction(-1, 3), 2)
+
+
+# ============================================================================================
+# The display helpers over their whole stated domain: any size, any integer number of places
+# ============================================================================================
+def value(text: str) -> Fraction:
+    """The exact value of a plain decimal string of any length, read in 500-digit chunks (int() of a longer
+    string is refused by the interpreter's int-string limit)."""
+    sign = -1 if text.startswith("-") else 1
+    whole, _, frac = text.lstrip("+-").partition(".")
+    digits = whole + frac
+    n = 0
+    for i in range(0, len(digits), 500):
+        chunk = digits[i : i + 500]
+        n = n * 10 ** len(chunk) + int(chunk)
+    return sign * Fraction(n, 10 ** len(frac))
+
+
+def directed_ok(text: str, x: Fraction, step: Fraction, up: bool) -> bool:
+    """``text`` is the multiple of ``step`` just at or above (up) or at or below x."""
+    v = value(text)
+    return v % step == 0 and ((v >= x and v - step < x) if up else (v <= x and v + step > x))
+
+
+def nearest_even_ok(text: str, x: Fraction, step: Fraction) -> bool:
+    """``text`` is the multiple of ``step`` nearest x, a tie going to the even multiple."""
+    v = value(text)
+    if v % step or abs(v - x) > step / 2:
+        return False
+    return abs(v - x) < step / 2 or (v / step) % 2 == 0
+
+
+EPS = Fraction(1, 10**60)
+
+
+@pytest.mark.parametrize(
+    "x, places, down, up",
+    [
+        (Fraction(123), -1, "120", "130"),
+        (Fraction(123), -2, "100", "200"),
+        (Fraction(120), -1, "120", "120"),  # a multiple: no rounding either way
+        (Fraction(200), -2, "200", "200"),
+        (Fraction(125), -1, "120", "130"),
+        (120 + EPS, -1, "120", "130"),
+        (130 - EPS, -1, "120", "130"),
+        (Fraction(7), -1, "0", "10"),
+        (Fraction(0), -3, "0", "0"),
+        (Fraction(10**5000 + 1), -5000, "1" + "0" * 5000, "2" + "0" * 5000),  # beyond the int-string limit
+    ],
+)
+def test_t3_outward_rounds_to_tens_and_hundreds_exactly(x, places, down, up):
+    step = Fraction(10) ** -places
+    assert directed_ok(down, x, step, False) and directed_ok(up, x, step, True)  # the expectations are right
+    assert cc.outward(x, places, False) == down
+    assert cc.outward(x, places, True) == up
+
+
+@pytest.mark.parametrize(
+    "x, places, want",
+    [
+        (Fraction(123), -1, "120"),
+        (Fraction(123), -2, "100"),
+        (Fraction(125), -1, "120"),  # 12.5 tens: a tie, to even
+        (Fraction(135), -1, "140"),  # 13.5 tens: a tie, to even
+        (125 + EPS, -1, "130"),  # just above the tie
+        (125 - EPS, -1, "120"),  # just below the tie
+        (Fraction(150), -2, "200"),  # 1.5 hundreds: a tie, to even
+        (Fraction(250), -2, "200"),  # 2.5 hundreds: a tie, to even
+        (250 + EPS, -2, "300"),
+        (150 - EPS, -2, "100"),
+        (Fraction(10**5000) + Fraction(1, 3), 0, "1" + "0" * 5000),  # beyond the int-string limit
+        (Fraction(10**5000, 3), 2, "3" * 5000 + ".33"),
+    ],
+)
+def test_t8_fixed_rounds_half_even_at_any_integer_places(x, places, want):
+    assert nearest_even_ok(want, x, Fraction(10) ** -places)
+    assert cc.fixed(x, places) == want
+
+
+@pytest.mark.parametrize(
+    "root, places, want",
+    [
+        (Fraction(123), -1, "120"),
+        (Fraction(123), -2, "100"),
+        (Fraction(125), -1, "120"),  # sqrt exactly 125: 12.5 tens, to even
+        (Fraction(135), -1, "140"),
+        (Fraction(250), -2, "200"),
+        (Fraction(350), -2, "400"),
+    ],
+)
+def test_t8_sigma_rounds_half_even_to_tens_and_hundreds(root, places, want):
+    assert nearest_even_ok(want, root, Fraction(10) ** -places)
+    assert cc.sigma_decimal(root * root, places) == want
+
+
+def test_t8_sigma_just_off_a_tie_at_negative_places():
+    # sqrt(15625 + d) is just above 125 and sqrt(15625 - d) just below: 130 and 120 at places -1
+    assert cc.sigma_decimal(Fraction(15625) + EPS, -1) == "130"
+    assert cc.sigma_decimal(Fraction(15625) - EPS, -1) == "120"
+
+
+@pytest.mark.parametrize("bad", [True, 1.0, "2", None])
+def test_t8_the_display_helpers_refuse_places_that_are_not_ints(bad):
+    for call in (
+        lambda: cc.fixed(Fraction(1), bad),
+        lambda: cc.outward(Fraction(1), bad, True),
+        lambda: cc.sigma_decimal(Fraction(1), bad),
+    ):
+        with pytest.raises(TypeError, match="^places must be an int"):
+            call()
+    with pytest.raises(TypeError, match="^digits must be an int"):
+        cc.sig_digits(Fraction(1), bad, True)
+    with pytest.raises(ValueError, match="^digits >= 1 required$"):
+        cc.sig_digits(Fraction(1), 0, True)
+
+
+def test_t7_the_exponent_of_a_rational_with_5001_digit_parts():
+    x = Fraction(10**5000 + 1, 3 * 10**5000)  # just above 1/3, beyond the int-string limit
+    assert Fraction(333333, 10**6) <= x < Fraction(333334, 10**6)
+    assert cc.sig_digits(x, 6, False) == "3.33333e-01"
+    assert cc.sig_digits(x, 6, True) == "3.33334e-01"
+    tiny = Fraction(1, 10**35775) * Fraction(42021, 10**4)  # the scale of an extreme certified tail
+    assert cc.sig_digits(tiny, 5, False) == cc.sig_digits(tiny, 5, True) == "4.2021e-35775"
+    big = Fraction(7 * 10**6000 + 1)
+    assert cc.sig_digits(big, 3, False) == "7.00e+6000" and cc.sig_digits(big, 3, True) == "7.01e+6000"
+
+
+def test_t7_a_full_consumer_call_on_an_extreme_count_set_serialises_its_rejects():
+    """N = 100000 stops of Al-27 (Z = 13) all taking the photon 14 -> 1 (a legal chain): the counts conserve
+    the stops, most tails are below 10^-30000, and every one of the 107 rows must come back, each reject
+    carrying an upper bound that is at least its certified bound and at most the budget."""
+    n, z = 100000, 13
+    counts = {k: 0 for k in cc.transition_keys()}
+    counts["g14->1"] = n
+    obs = cc.observed_counts(counts)
+    assert sum(obs[f"g{k}->1"] for k in range(2, cc.LEVELS + 1)) + obs["e2->1"] == n
+    rule = json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8"))["harvest"]
+    probs = cc.retained_counts(cc.transitions(z))
+    a_side = cc.alpha_side(rule, len(probs))
+    rows = cc.consumer_rows({"version": "v", "config": "c", "target": "t"}, obs, z, n, rule)
+    assert [r["count"] for r in rows] == list(probs)
+    rejects = [r for r in rows if r["decision"] == "reject"]
+    assert rejects
+    for r in rows:
+        d = cc.decide(n, probs[r["count"]], obs[r["count"]], a_side)
+        assert (r["side"], r["bound_kind"], r["decision"]) == (d.side, d.bound_kind, d.decision)
+        if d.bound_kind == "upper":
+            shown = Fraction(r["bound_value"])
+            assert d.bound <= shown <= a_side, r["count"]
+        elif d.bound_kind == "lower":
+            assert a_side < Fraction(r["bound_value"]) <= d.bound, r["count"]
+    g21 = next(r for r in rows if r["count"] == "g2->1")
+    assert g21["decision"] == "reject" and Fraction(g21["bound_value"]) < Fraction(1, 10**30000)
+
+
+def test_t8_digit_strings_of_any_size_and_their_refusals():
+    assert cc._digits(0) == "0" and cc._digits(10**500) == "1" + "0" * 500
+    assert cc._digits(10**1200 + 7) == "1" + "0" * 1199 + "7"
+    with pytest.raises(ValueError, match="^non-negative integers only$"):
+        cc._digits(-1)
+    with pytest.raises(TypeError, match="^places must be an int, not bool$"):
+        cc.fixed(Fraction(1), True)
