@@ -9,14 +9,17 @@ from __future__ import annotations
 
 import ast
 import copy
+import csv
 import functools
 import hashlib
 import importlib.util
+import io
 import json
 import math
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from fractions import Fraction
 from pathlib import Path
 from types import SimpleNamespace
@@ -1078,3 +1081,328 @@ def test_t13_the_cascade_command_refuses_a_cell_outside_the_rule_and_a_natural_t
     argv[argv.index("Al-27")] = "natSi"
     assert drv.main(argv) == 2
     assert "not a single-isotope target" in capsys.readouterr().out
+
+
+# ============================================================================================
+# The committed reference, rule and harvest, the exact binomial test of the harvested counts and the
+# comparison
+# ============================================================================================
+REFERENCE_COLUMNS = (
+    "source",
+    "citation",
+    "locator",
+    "target",
+    "Z",
+    "phase",
+    "quantity",
+    "n_upper",
+    "n_from",
+    "value",
+    "sigma",
+    "note",
+)
+
+
+PINS = {
+    "cascade_reference.csv": "09ad1807d7047b84743423d829fc7b62ff22b791f97ae1e48ceb0e9b865822e2",
+    "cascade_rule.json": "cb62a783563b72519bb91d0915265e73514e96c79f2ce1d761bba6864aba0876",
+    "cascade_harvest.csv": "234247d1765c3fd42ac9306c49266d28d847b3cd7f10362f26860ca23c3e77db",
+    "cascade_transitions.csv": "ead93ad916a660fea1ef474bb2c4be9e65319a41818ca282abd0d588a3841abd",
+}
+
+
+@pytest.mark.parametrize("name", sorted(PINS))
+def test_t4_the_committed_file_is_the_pinned_file(name):
+    assert hashlib.sha256((DATA / name).read_bytes()).hexdigest() == PINS[name]
+
+
+def reference() -> list[dict[str, str]]:
+    return gen.read_csv(DATA / "cascade_reference.csv")
+
+
+def test_t4_the_reference_schema_and_its_normalisations():
+    rows = reference()
+    with open(DATA / "cascade_reference.csv", encoding="utf-8", newline="") as f:
+        assert tuple(next(csv.reader(f))) == REFERENCE_COLUMNS
+    assert {r["source"] for r in rows} == {"orth1982", "ensdf_measday2007", "kirch1999"}
+    for r in rows:
+        assert bool(r["n_upper"]) != bool(r["n_from"]), r
+        assert Fraction(r["value"]) > 0 and Fraction(r["sigma"]) > 0
+    kirch: dict[str, Fraction] = {}
+    ensdf: dict[str, Fraction] = {}
+    for r in rows:
+        if r["source"] == "kirch1999":
+            kirch[r["target"]] = kirch.get(r["target"], Fraction(0)) + Fraction(r["value"])
+        if r["source"] == "ensdf_measday2007":
+            ensdf[r["target"]] = ensdf.get(r["target"], Fraction(0)) + Fraction(r["value"])
+    assert len(kirch) == 7 and all(abs(s - 1) <= Fraction(1, 1000) for s in kirch.values()), kirch
+    assert [cc.fixed(s, 2) for s in ensdf.values()] == ["99.98", "99.96"]
+    [si] = {r["target"] for r in rows if r["source"] == "ensdf_measday2007" and r["Z"] == "14"}
+    assert si == "natural silicon"
+
+
+def test_t4_the_rule_was_fixed_in_order_with_its_post_data_part_marked():
+    rule = json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8"))
+    parts = rule["fixed"]
+    assert [p["part"] for p in parts] == ["ratios", "k_normalised", "harvest"]
+    assert [p["post_data"] for p in parts] == [False, True, False]
+    times = [p["fixed_utc"] for p in parts]
+    assert times == sorted(times) and len(set(times)) == len(times)
+    assert parts[1]["relation_to_data"].startswith("fixed after data")
+
+
+def test_t6_the_harvest_is_the_rules_cells_each_one_stop_per_event_and_refused_zero():
+    inp = fresh_inputs()
+    observed = gen.cascade_harvest(inp)
+    rule = inp.cascade.rule["harvest"]
+    assert list(observed) == [(c["version"], c["config"], c["target"]) for c in rule["cells"]]
+    builds = {b["tag"]: b["rebuilt_binary_sha256"] for b in inp.builds}
+    for r in inp.cascade.harvest:
+        assert r["refused"] == "0" and r["stops"] == r["events"] == str(rule["events"])
+        assert r["binary_sha256"] == builds[TAGS[r["version"]]]
+    keys = cc.transition_keys()
+    assert len(keys) == len(set(keys))
+    for counts in observed.values():
+        assert set(counts) == set(cc.retained_counts(cc.transitions(1)))
+        for k in cc.UNIONS:
+            assert counts[f"K>={k}"] == sum(counts[f"g{n}->1"] for n in range(k, cc.LEVELS + 1))
+
+
+def _set(rows, cell_index, field, value):
+    rows[cell_index][field] = value
+
+
+HARVEST_FAULTS: list[tuple[str, Callable, str]] = [
+    ("cells out of order", lambda c: c.harvest.insert(0, c.harvest.pop(1)), "rule's cells"),
+    ("events", lambda c: _set(c.harvest, 0, "events", "99999"), "events"),
+    ("seed base", lambda c: _set(c.harvest, 0, "seed_base", "1"), "seed_base"),
+    ("route", lambda c: _set(c.harvest, 0, "route", "muonic_atom_helper"), "route"),
+    ("Z", lambda c: _set(c.harvest, 0, "Z", "7"), "Z"),
+    ("binary", lambda c: _set(c.harvest, 0, "binary_sha256", "0" * 64), "binary_sha256"),
+    ("a refused stop", lambda c: _set(c.harvest, 0, "refused", "1"), "refused"),
+    ("stops", lambda c: _set(c.harvest, 0, "stops", "99999"), "stops"),
+    ("chains", lambda c: _set(c.harvest, 0, "chains", "99999"), "chains"),
+    ("transition order", lambda c: c.transitions.insert(0, c.transitions.pop(1)), "transitions in its order"),
+    (
+        "a missing cell",
+        lambda c: c.transitions.__delitem__(slice(0, len(cc.transition_keys()))),
+        "rule's cells",
+    ),
+    ("a count above the stops", lambda c: _set(c.transitions, 0, "stops", "100001"), "outside 0..stops"),
+    (
+        "entries into the K shell",
+        lambda c: _set(c.transitions, 0, "stops", str(int(c.transitions[0]["stops"]) + 1)),
+        "entries into the K shell",
+    ),
+    ("photon total", lambda c: _set(c.harvest, 0, "photons", "1"), "totals"),
+]
+
+
+def test_t6_a_cell_at_the_edges_of_its_counts_is_admitted():
+    inp = fresh_inputs()
+    first = inp.cascade.harvest[0]
+    stops = first["stops"]
+    for t in inp.cascade.transitions:
+        if gen.cell_of(t) == gen.cell_of(first):
+            t["stops"] = stops if t["transition"] == "g2->1" else "0"
+    first["augers"], first["photons"] = "0", stops
+    observed = gen.cascade_harvest(inp)[gen.cell_of(first)]
+    assert observed["g2->1"] == int(stops) and observed["g3->1"] == 0
+
+
+@pytest.mark.parametrize(
+    "name, fault, match",
+    [
+        (
+            "cells out of order",
+            lambda c: c.harvest.insert(0, c.harvest.pop(1)),
+            "^cascade_harvest.csv does not hold the rule's cells in the rule's order$",
+        ),
+        (
+            "a missing transitions cell",
+            lambda c: c.transitions.__delitem__(slice(0, len(cc.transition_keys()))),
+            "^cascade_transitions.csv does not hold the rule's cells$",
+        ),
+        (
+            "transition order",
+            lambda c: c.transitions.insert(0, c.transitions.pop(1)),
+            ": the transition rows are not the module's transitions in its order$",
+        ),
+        (
+            "totals",
+            lambda c: _set(c.harvest, 0, "photons", "1"),
+            ": Auger and photon totals are not the sums of the transition counts$",
+        ),
+    ],
+)
+def test_t6_each_refusal_names_its_clause(name, fault, match):
+    inp = fresh_inputs()
+    fault(inp.cascade)
+    with pytest.raises(ValueError, match=match):
+        gen.cascade_harvest(inp)
+
+
+@pytest.mark.parametrize("name, fault, match", HARVEST_FAULTS, ids=[f[0] for f in HARVEST_FAULTS])
+def test_t6_drill_each_admission_clause_refuses_its_fault(name, fault, match):
+    inp = fresh_inputs()
+    fault(inp.cascade)
+    with pytest.raises(ValueError, match=match):
+        gen.cascade_harvest(inp)
+
+
+HARVEST_RULE = json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8"))["harvest"]
+
+
+N_COUNTS = len(cc.transition_keys()) + len(cc.UNIONS)
+
+
+A_SIDE = cc.alpha_side(HARVEST_RULE, N_COUNTS)
+
+
+def test_t7_every_committed_cell_passes_and_the_consumer_file_is_its_regeneration():
+    inp = fresh_inputs()
+    rows = gen.cascade_consumer(inp)
+    assert (
+        cc.csv_text(cc.CONSUMER_COLUMNS, rows).encode("utf-8") == (DATA / "cascade_consumer.csv").read_bytes()
+    )
+    committed = gen.read_csv(DATA / "cascade_consumer.csv")
+    assert tuple(committed[0]) == cc.CONSUMER_COLUMNS
+    assert gen.consumer_problems(committed) == []
+    assert len(committed) == N_COUNTS * len(HARVEST_RULE["cells"])
+    assert {r["decision"] for r in committed} == {"pass"}
+    assert {r["budget"] for r in committed} == {f"{A_SIDE.numerator}/{A_SIDE.denominator}"}
+
+
+CONSUMER_FAULTS = [
+    ("lower on a reject", {"decision": "reject"}),
+    ("lower at the budget", {"bound_value": "{budget}"}),
+    ("upper on a pass", {"bound_kind": "upper"}),
+    ("none off the mode", {"bound_kind": "none", "bound_value": ""}),
+    ("a value on none", {"side": "mode", "bound_kind": "none"}),
+    ("an unknown kind", {"bound_kind": "exact"}),
+]
+
+
+@pytest.mark.parametrize("name, change", CONSUMER_FAULTS, ids=[f[0] for f in CONSUMER_FAULTS])
+def test_t7_drill_each_consumer_row_rule_is_checked(name, change):
+    rows = gen.read_csv(DATA / "cascade_consumer.csv")
+    [row] = [r for r in rows if r["bound_kind"] == "lower"][:1]
+    for k, v in change.items():
+        row[k] = v.format(budget=row["budget"])
+    assert gen.consumer_problems([row])
+
+
+def test_t7_the_upper_rows_of_the_consumer_schema_are_checked_at_their_edges():
+    row = dict(gen.read_csv(DATA / "cascade_consumer.csv")[0])
+    up = dict(row, side="hi", bound_kind="upper", decision="reject", bound_value=row["budget"])
+    assert gen.consumer_problems([up]) == []  # a reject at exactly the budget is a reject
+    for change in ({"decision": "pass"}, {"side": "mode"}, {"bound_value": "1/1000"}):
+        assert gen.consumer_problems([dict(up, **change)]) != []
+    assert "bound_kind 'exact'" in gen.consumer_problems([dict(row, bound_kind="exact")])[0]
+    assert "columns" in gen.consumer_problems([{**{k: row[k] for k in reversed(list(row))}}])[0]
+
+
+def test_t7_alpha_side_is_the_cell_budget_over_the_counts_and_sides():
+    assert len(cc.retained_counts(cc.transitions(13))) == N_COUNTS
+    assert A_SIDE == Fraction(1, 10000) / (N_COUNTS * 2) == Fraction(1, 2140000)
+
+
+def fixture(z: int) -> dict[str, int]:
+    return {k: round(HARVEST_RULE["events"] * p) for k, p in cc.retained_counts(cc.transitions(z)).items()}
+
+
+def rejected(z: int, counts: dict[str, int]) -> list[str]:
+    cell = {"version": "v", "config": "c", "target": "t"}
+    rows = cc.consumer_rows(cell, counts, z, HARVEST_RULE["events"], HARVEST_RULE)
+    return [r["count"] for r in rows if r["decision"] == "reject"]
+
+
+def beyond(z: int, name: str, x: int) -> bool:
+    """The certified tail of count ``name`` at x is at most the budget."""
+    p = cc.retained_counts(cc.transitions(z))[name]
+    n = HARVEST_RULE["events"]
+    side = "hi" if x > math.floor((n + 1) * p) else "lo"
+    return cc.binomial_tail(n, p, x, side)[1] <= A_SIDE
+
+
+TARGET_Z = sorted(
+    {
+        int(t["arguments"][1])
+        for t in POLICY["setup"]["targets"]
+        if t["target"] in {c["target"] for c in HARVEST_RULE["cells"]}
+    }
+)
+
+
+@pytest.mark.parametrize("z", TARGET_Z)
+def test_t7a_the_kb_shift_fixture_is_rejected_after_its_shift_is_proven_beyond_the_budget(z):
+    s = HARVEST_RULE["drills"]["kb_shift"]
+    base = fixture(z)
+    assert rejected(z, base) == []  # every unshifted count proven inside
+    f = dict(base, **{"g2->1": base["g2->1"] - s, "g3->1": base["g3->1"] + s})
+    assert beyond(z, "g3->1", f["g3->1"])
+    assert "g3->1" in rejected(z, f)
+
+
+@pytest.mark.parametrize("z", TARGET_Z)
+def test_t7_the_intra_n5_redistribution_fixture_is_rejected(z):
+    s = HARVEST_RULE["drills"]["intra_shift"]
+    base = fixture(z)
+    f = dict(base, **{"g5->1": base["g5->1"] - s})
+    for k in cc.UNIONS:
+        f[f"K>={k}"] = base[f"K>={k}"] + s
+    assert beyond(z, "g5->1", f["g5->1"])
+    assert "g5->1" in rejected(z, f)
+
+
+@pytest.mark.parametrize("z", TARGET_Z)
+def test_t7_a_single_stop_moved_in_the_fixture_is_accepted(z):
+    base = fixture(z)
+    f = dict(base, **{"g2->1": base["g2->1"] - 1, "g3->1": base["g3->1"] + 1})
+    assert not beyond(z, "g3->1", f["g3->1"]) and not beyond(z, "g2->1", f["g2->1"])
+    assert rejected(z, f) == []
+
+
+def test_t7_drill_the_real_counts_against_photon_weight_nine_reject_every_cell():
+    inp = fresh_inputs()
+    weight = HARVEST_RULE["drills"]["photon_weight_drill"]
+    rows = gen.cascade_consumer(inp, {**RULES, "photon_weight": weight})
+    cells = {gen.cell_of(r) for r in rows if r["decision"] == "reject"}
+    assert cells == {gen.cell_of(r) for r in inp.cascade.harvest}
+    assert len(cells) == len(HARVEST_RULE["cells"])
+
+
+def test_t8_the_committed_comparison_is_its_regeneration_with_sixty_four_rows():
+    inp = fresh_inputs()
+    rows = gen.cascade_comparison(inp)
+    text = cc.csv_text(cc.COMPARISON_COLUMNS, rows).encode("utf-8")
+    assert text == (DATA / "cascade_comparison.csv").read_bytes()
+    pairs = {(r["source"], r["target"], r["observable"], r["k"]) for r in rows}
+    assert len(pairs) == len(rows)
+    sources = {r["source"] for r in reference()}
+    assert {r["source"] for r in rows} == sources
+    assert all(r["sigma_independent"] for r in rows if r["observable"] == "ka_over_ktot")
+    assert all(
+        bool(r["verdict_rho_minus1"]) == (r["source"] != "orth1982" and r["observable"] != "ka_over_ktot")
+        for r in rows
+    )
+
+
+def test_t9_compare_writes_the_cascade_files_byte_for_byte(tmp_path, monkeypatch):
+    out = {}
+
+    def capture(path, fields, rows):
+        stream = io.StringIO(newline="")
+        writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+        out[Path(path).name] = stream.getvalue().encode("utf-8")
+
+    monkeypatch.setattr(gen, "write_csv", capture)
+    monkeypatch.setattr(gen, "DOCUMENT", tmp_path / "BENCHMARK_STOPPED_MU.md")
+    gen.compare()
+    for name in ("comparison.csv", "verdicts.csv", "cascade_comparison.csv", "cascade_consumer.csv"):
+        assert out[name] == (DATA / name).read_bytes(), name
+    assert (tmp_path / "BENCHMARK_STOPPED_MU.md").read_bytes() == (
+        REPO / "BENCHMARK_STOPPED_MU.md"
+    ).read_text(encoding="utf-8").encode("utf-8")

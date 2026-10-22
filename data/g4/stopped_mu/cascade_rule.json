@@ -1,0 +1,168 @@
+{
+ "title": "The stock muonic cascade of Geant4: the comparison with measured K-series intensities and the test of the compiled cascade",
+ "about": "The comparison rule of the muonic X-ray cascade section of BENCHMARK_STOPPED_MU.md and the test of the cascades harvested from the stopped-muon application, read by openmucf/g4/capture_cascade.py through scripts/generate_stopped_mu.py and by the cascade command of cpp/stopped_muon/stopped_muon.py.",
+ "model": {
+  "quantity": "the expected number of each transition per stopped muon of the branching rules of G4EmCaptureCascade::ApplyYourself (third_party/geant4/v11.4.2/G4EmCaptureCascade.cc; the rule statements of v11.5.0.beta are the same once whitespace is removed), with G4UniformRand taken as a continuous uniform draw, computed in exact rational arithmetic",
+  "depends_on": "Z alone: the rules read no mass number, phase or chemistry",
+  "domain": "Z from 1 to 215, over which the 32-bit integer product Z*Z*Z*Z does not overflow",
+  "uncertainty": "none: the compared value is the exact expectation of the code, not a prediction with an error"
+ },
+ "ratios": {
+  "observables": {
+   "kb_over_ka": "photons 3->1 over photons 2->1",
+   "high_over_ka": "the photons n->1 summed over n >= k, over photons 2->1, with k the lowest n of the source's grouped member",
+   "ka_over_ktot": "photons 2->1 over the photons n->1 summed over n = 2..14 (the k_normalised part)"
+  },
+  "sources": {
+   "orth1982": "printed_ratio_percent",
+   "ensdf_measday2007": "absolute_members",
+   "kirch1999": "absolute_members"
+  },
+  "measured": "printed_ratio_percent: the printed intensity relative to 2->1, divided by 100, with its printed error; absolute_members: the ratio of the two printed members",
+  "sigma_two_member": "sigma_r^2 = r^2 ((sigma_a/a)^2 + (sigma_b/b)^2): the two published errors independent",
+  "holds_within": "2",
+  "tension_within": "3",
+  "decision": "HOLDS iff (m - d)^2 <= 4 sigma^2; TENSION iff 4 sigma^2 < (m - d)^2 <= 9 sigma^2; FAILS otherwise; decided on squares in exact arithmetic from the decimal strings; the pull (m - d)/sigma is printed to 2 decimals and decides nothing",
+  "set_of_phase": {
+   "solid": "primary",
+   "liquid": "primary",
+   "gas": "secondary"
+  },
+  "counts": "per (source, observable), the condensed-phase rows (primary) and the gas rows (secondary) reported apart, never pooled across sources",
+  "correlation_scan": "for a ratio of two published members, the verdicts at correlation -1 and +1 between their errors (sigma^2 is linear in the correlation, so they are the extremes); a report that decides no verdict, written after the ratio pulls had been seen"
+ },
+ "k_normalised": {
+  "observable": "ka_over_ktot",
+  "measured": "member 2->1 over the sum of the printed members of the same source",
+  "sigma": "sigma(K alpha) / sum, the sum held fixed (the convention that decides the verdict); beside it, sigma, pull and verdict under independent propagation of every member, which decide nothing"
+ },
+ "harvest": {
+  "cells": [
+   {
+    "version": "11.4.2",
+    "config": "bertini",
+    "target": "C-12"
+   },
+   {
+    "version": "11.4.2",
+    "config": "bertini",
+    "target": "Al-27"
+   },
+   {
+    "version": "11.4.2",
+    "config": "bertini",
+    "target": "Si-28"
+   },
+   {
+    "version": "11.4.2",
+    "config": "bertini",
+    "target": "Ti-48"
+   },
+   {
+    "version": "11.4.2",
+    "config": "bertini",
+    "target": "Cu-63"
+   },
+   {
+    "version": "11.4.2",
+    "config": "bertini",
+    "target": "Pb-208"
+   },
+   {
+    "version": "11.5.0.beta",
+    "config": "bertini",
+    "target": "C-12"
+   },
+   {
+    "version": "11.5.0.beta",
+    "config": "bertini",
+    "target": "Al-27"
+   },
+   {
+    "version": "11.5.0.beta",
+    "config": "bertini",
+    "target": "Si-28"
+   },
+   {
+    "version": "11.5.0.beta",
+    "config": "bertini",
+    "target": "Ti-48"
+   },
+   {
+    "version": "11.5.0.beta",
+    "config": "bertini",
+    "target": "Cu-63"
+   },
+   {
+    "version": "11.5.0.beta",
+    "config": "bertini",
+    "target": "Pb-208"
+   },
+   {
+    "version": "11.4.2",
+    "config": "precompound",
+    "target": "Al-27"
+   },
+   {
+    "version": "11.5.0.beta",
+    "config": "precompound",
+    "target": "Al-27"
+   }
+  ],
+  "events": 100000,
+  "seed_base": 20000000,
+  "seeds": "event i of every cell is seeded with seed_base + i, i < events: outside the seeds of the benchmark's cells (8675309 + i, i < 1410959, the largest events_total of cells.jsonl)",
+  "run": "one run per cell with the pre-registration's harness options, environment and dataset binding; the DATASET lines checked before and after the run as the run command checks them",
+  "every_event": "one stopped muon whose cascade reconstructs under the Auger cap; any other event refuses the cell",
+  "retained_counts": "every transition the rules allow (a photon from level n to each lower level and an Auger electron from n to n - 1, for n = 2..14) and the numbers of stops entering 1s by a photon from n >= 6, >= 7 and >= 8",
+  "budget_per_cell": "1/10000",
+  "sides": 2,
+  "decision": "for each retained count x with model probability p, the tail on x's side of the mode floor((N + 1) p): P(X >= x) above it, P(X <= x) below it; x at the mode passes; reject iff a certified upper bound of that tail is <= budget_per_cell / (retained counts x sides); a cell passes iff no count rejects",
+  "family": "P(false alarm) <= budget_per_cell per cell (Bonferroni over its counts) and <= 14 x budget_per_cell over the cells (union bound); no independence is assumed",
+  "drills": {
+   "kb_shift": 600,
+   "kb_shift_means": "stops moved from photon 2->1 to photon 3->1 in a fixture of rounded expectations",
+   "intra_shift": 450,
+   "intra_shift_means": "stops moved from photon 5->1 to an entry into 1s from n >= 8 in the same fixture",
+   "photon_weight_drill": 9,
+   "photon_weight_drill_means": "the real counts tested against the model with photon weight 9, which must reject every cell"
+  }
+ },
+ "fixed": [
+  {
+   "part": "ratios",
+   "fixed_utc": "2026-10-13T01:07:37Z",
+   "post_data": false,
+   "relation_to_data": "before the verified-data comparison was computed; preliminary Orth pulls had already been seen",
+   "contents": "K beta / K alpha and (n >= k) / K alpha of every source: the model value, the measured ratio and its sigma, the bands at 2 and 3 sigma, the condensed rows primary and the gas rows secondary, and k matched to each source's grouping"
+  },
+  {
+   "part": "k_normalised",
+   "fixed_utc": "2026-10-13T06:23:18Z",
+   "post_data": true,
+   "relation_to_data": "fixed after data: after every pull of the ratios had been seen",
+   "contents": "the comparison of K alpha / the sum of the printed members of ENSDF and Kirch et al. with the stock K alpha / K total, sigma(K alpha) / sum with the sum held fixed, and the independent propagation beside it"
+  },
+  {
+   "part": "harvest",
+   "fixed_utc": "2026-10-22T08:31:04Z",
+   "post_data": false,
+   "relation_to_data": "before the harvest ran",
+   "contents": "the cells, the events and seeds, the retained counts, the budget, the decision and the drill shifts"
+  }
+ ],
+ "seen_before_fixing": [
+  {
+   "part": "ratios",
+   "seen": "pulls of the stock cascade against values of Orth et al.'s Table I read by an unverified automated extraction, among them carbon K beta / K alpha -11.0 and aluminium (n >= 8) / K alpha +28.2"
+  },
+  {
+   "part": "k_normalised",
+   "seen": "every pull of the ratio rows"
+  },
+  {
+   "part": "harvest",
+   "seen": "the model alone: its expected counts and the certified power of the drills; no harvested count"
+  }
+ ]
+}

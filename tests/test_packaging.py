@@ -244,6 +244,8 @@ LICENCE_BY_PATH: dict[str, str | None] = {
     "data/g4/d3/history/validation.mudirac130.csv": None,
     "data/g4/stopped_mu/preregistration.json": None,
     "data/g4/stopped_mu/comparison.csv": None,
+    "data/g4/stopped_mu/cascade_reference.csv": None,
+    "data/g4/stopped_mu/cascade_comparison.csv": None,
     "data/g4/d1/d1_capture.g4dat": "Geant4 Software License",
     "data/g4/d1/d1_capture.prov.json": "Geant4 Software License",
     "data/g4/d1/d1_zeff.g4dat": "Geant4 Software License",
@@ -296,6 +298,8 @@ RESTATED = (
     "data/g4/reference/d2/measurements.csv",
     "data/g4/stopped_mu/comparison.csv",
     "data/g4/stopped_mu/preregistration.json",
+    "data/g4/stopped_mu/cascade_comparison.csv",
+    "data/g4/stopped_mu/cascade_reference.csv",
     "data/g4/reference/d2/printed_rows.csv",
 )
 #: The other files under `data/g4/`: what this project computed, harvested from Geant4 or MuDirac, or wrote.
@@ -340,6 +344,10 @@ PROJECT_AUTHORED = (
     "data/g4/stopped_mu/cells.jsonl",
     "data/g4/stopped_mu/reproduced.csv",
     "data/g4/stopped_mu/verdicts.csv",
+    "data/g4/stopped_mu/cascade_rule.json",
+    "data/g4/stopped_mu/cascade_harvest.csv",
+    "data/g4/stopped_mu/cascade_transitions.csv",
+    "data/g4/stopped_mu/cascade_consumer.csv",
 )
 #: Every file under `data/g4/`, with the licence it carries. A file added there needs its line here.
 G4_DATA: dict[str, str | None] = {

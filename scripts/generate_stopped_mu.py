@@ -5,7 +5,10 @@ generate `BENCHMARK_STOPPED_MU.md`.
 
 reads `data/g4/stopped_mu/preregistration.json` and `cells.jsonl`, admits every cell, builds one comparison
 row per row of the pre-registration and judges it in exact arithmetic, and writes `comparison.csv` and
-`verdicts.csv` beside them; it then renders the document from those files, `builds.csv`, `reproduced.csv` and
+`verdicts.csv` beside them; it compares the stock muonic cascade of `openmucf/g4/capture_cascade.py` with
+the measured ratios of `cascade_reference.csv` under `cascade_rule.json` and tests the harvested cascades of
+`cascade_harvest.csv` and `cascade_transitions.csv`, writing `cascade_comparison.csv` and `cascade_consumer.csv`; it
+then renders the document from `comparison.csv`, `verdicts.csv`, `builds.csv`, `reproduced.csv` and
 `data/g4/d1/geant4_natural_isotopes.csv`. No float decides a byte of any of the three files: every number the
 document takes from those files fills a slot of `render`, whose spans the prose census pins; the generator itself
 defines the display precision of the row table and the citations of the prior work.
@@ -16,6 +19,7 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -57,7 +61,10 @@ def compare(prereg: Path = DATA / "preregistration.json") -> None:
         sm.VERDICT_COLUMNS,
         [{"row_id": v.row_id, "verdict": v.verdict, "kind": v.kind, "pull": v.pull} for v in verdicts],
     )
-    DOCUMENT.write_text(document(prereg).text, encoding="utf-8", newline="\n")
+    inp = load_inputs(prereg)
+    write_csv(DATA / "cascade_comparison.csv", cc.COMPARISON_COLUMNS, cascade_comparison(inp))
+    write_csv(DATA / "cascade_consumer.csv", cc.CONSUMER_COLUMNS, cascade_consumer(inp))
+    DOCUMENT.write_text(render(inp).text, encoding="utf-8", newline="\n")
     tally: dict[str, int] = {}
     for v in verdicts:
         tally[v.verdict] = tally.get(v.verdict, 0) + 1
@@ -207,6 +214,7 @@ class Inputs:
     builds: list[dict[str, str]]
     reproduced: list[dict[str, str]]
     natural: list[dict[str, str]]
+    cascade: Cascade
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -224,6 +232,7 @@ def load_inputs(prereg: Path = DATA / "preregistration.json") -> Inputs:
         read_csv(DATA / "builds.csv"),
         read_csv(DATA / "reproduced.csv"),
         read_csv(NATURAL),
+        load_cascade(policy),
     )
 
 
@@ -345,6 +354,134 @@ def reproduction(inp: Inputs) -> tuple[list[tuple[str, str, str]], list[tuple[di
     if short:
         raise ValueError(f"the reproduced cells do not cover the {', '.join(short)} of the committed cells")
     return list(by_cell), faults
+
+
+# ------------------------------------------------------------------------------------- the muonic X-ray cascade
+CASCADE_MODULE = ROOT / "openmucf" / "g4" / "capture_cascade.py"
+_cspec = importlib.util.spec_from_file_location("g4_capture_cascade_reference", CASCADE_MODULE)
+assert _cspec is not None and _cspec.loader is not None
+cc = importlib.util.module_from_spec(_cspec)
+sys.modules[_cspec.name] = cc
+_cspec.loader.exec_module(cc)
+@dataclass
+class Cascade:
+    rule: dict[str, Any]
+    reference: list[dict[str, str]]
+    harvest: list[dict[str, str]]
+    transitions: list[dict[str, str]]
+
+
+def load_cascade(policy: dict[str, Any]) -> Cascade:
+    return Cascade(
+        json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8")),
+        read_csv(DATA / "cascade_reference.csv"),
+        read_csv(DATA / "cascade_harvest.csv"),
+        read_csv(DATA / "cascade_transitions.csv"),
+    )
+
+
+def cell_of(row: dict[str, str]) -> tuple[str, str, str]:
+    return (row["version"], row["config"], row["target"])
+
+
+def cascade_harvest(inp: Inputs) -> dict[tuple[str, str, str], dict[str, int]]:
+    """Admit the harvested cascades before anything is stated about them, and return each cell's retained
+    counts.
+
+    Raises ``ValueError`` when the harvest is not the rule's: its cells not exactly the rule's cells in the
+    rule's order; a cell's events, seed base, route, Z or A not the rule's and the pre-registration's; a binary
+    that ``builds.csv`` does not record for its revision (the binary of the committed cells or the rebuild); a
+    refused stop, or stops, reconstructed chains
+    and events that differ; transition rows other than the module's transitions in its order; a count above the
+    stops; entries into the K shell that do not sum to the stops; Auger or photon totals other than the sums of
+    the transition counts."""
+    c = inp.cascade
+    h = c.rule["harvest"]
+    setup = inp.policy["setup"]
+    cells = [(x["version"], x["config"], x["target"]) for x in h["cells"]]
+    if [cell_of(r) for r in c.harvest] != cells:
+        raise ValueError("cascade_harvest.csv does not hold the rule's cells in the rule's order")
+    builds = {b["tag"]: {b["reference_binary_sha256"], b["rebuilt_binary_sha256"]} for b in inp.builds}
+    keys = cc.transition_keys()
+    by_cell: dict[tuple[str, str, str], list[dict[str, str]]] = {}
+    for t in c.transitions:
+        by_cell.setdefault(cell_of(t), []).append(t)
+    if set(by_cell) != set(cells):
+        raise ValueError("cascade_transitions.csv does not hold the rule's cells")
+    out = {}
+    for r in c.harvest:
+        cell = cell_of(r)
+        name = "/".join(cell)
+        args = next(t["arguments"] for t in setup["targets"] if t["target"] == r["target"])
+        expected = {
+            "events": str(h["events"]),
+            "seed_base": str(h["seed_base"]),
+            "route": setup["configurations"][r["config"]]["route"],
+            "Z": args[1],
+            "A": args[3],
+            "refused": "0",
+            "stops": r["events"],
+            "chains": r["events"],
+        }
+        for k, v in expected.items():
+            if r[k] != v:
+                raise ValueError(f"{name}: {k} {r[k]} where {v} is required")
+        if r["binary_sha256"] not in builds[setup["tags"][r["version"]]]:
+            raise ValueError(f"{name}: binary_sha256 {r['binary_sha256']} is no binary builds.csv records")
+        rows = by_cell[cell]
+        if [t["transition"] for t in rows] != keys:
+            raise ValueError(f"{name}: the transition rows are not the module's transitions in its order")
+        counts = {t["transition"]: int(t["stops"]) for t in rows}
+        stops = int(r["stops"])
+        if any(not 0 <= v <= stops for v in counts.values()):
+            raise ValueError(f"{name}: a transition count outside 0..stops")
+        entries = sum(counts[f"g{n}->1"] for n in range(2, cc.LEVELS + 1)) + counts["e2->1"]
+        if entries != stops:
+            raise ValueError(f"{name}: {entries} entries into the K shell for {stops} stops")
+        augers = sum(v for k, v in counts.items() if k.startswith("e"))
+        photons = sum(v for k, v in counts.items() if k.startswith("g"))
+        if (str(augers), str(photons)) != (r["augers"], r["photons"]):
+            raise ValueError(f"{name}: Auger and photon totals are not the sums of the transition counts")
+        out[cell] = cc.observed_counts(counts)
+    return out
+
+
+def cascade_consumer(inp: Inputs, rules: dict[str, int] | None = None) -> list[dict[str, str]]:
+    """The rows of `cascade_consumer.csv`: every retained count of every harvested cell decided by the exact
+    binomial test of the rule against the model of ``rules`` (default the stock rules)."""
+    observed = cascade_harvest(inp)
+    rows = []
+    for r in inp.cascade.harvest:
+        rows += cc.consumer_rows(r, observed[cell_of(r)], int(r["Z"]), int(r["stops"]), inp.cascade.rule["harvest"], rules)
+    return rows
+
+
+def consumer_problems(rows: list[dict[str, str]]) -> list[str]:
+    """Every row of the consumer schema that breaks its rules: ``lower`` => pass with a value above the budget,
+    ``upper`` => reject with a value at most the budget, ``none`` <=> side ``mode`` <=> an empty value."""
+    out = []
+    for r in rows:
+        name = f"{'/'.join(cell_of(r))} {r['count']}"
+        if tuple(r) != cc.CONSUMER_COLUMNS:
+            out.append(f"{name}: columns {tuple(r)}")
+            continue
+        budget = Fraction(r["budget"])
+        if r["bound_kind"] == "lower":
+            if not (r["decision"] == "pass" and r["side"] in ("hi", "lo") and Fraction(r["bound_value"]) > budget):
+                out.append(f"{name}: a lower bound must be a pass above the budget")
+        elif r["bound_kind"] == "upper":
+            if not (r["decision"] == "reject" and r["side"] in ("hi", "lo") and Fraction(r["bound_value"]) <= budget):
+                out.append(f"{name}: an upper bound must be a reject at most the budget")
+        elif r["bound_kind"] == "none":
+            if not (r["side"] == "mode" and r["bound_value"] == "" and r["decision"] == "pass"):
+                out.append(f"{name}: no bound only for a count at the mode, which passes")
+        else:
+            out.append(f"{name}: bound_kind {r['bound_kind']!r}")
+    return out
+
+
+def cascade_comparison(inp: Inputs) -> list[dict[str, str]]:
+    return cc.comparison_rows(inp.cascade.reference, inp.cascade.rule)
 
 
 def render(inp: Inputs) -> Rendered:
