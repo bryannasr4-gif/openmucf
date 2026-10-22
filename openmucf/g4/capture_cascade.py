@@ -36,7 +36,7 @@ import io
 import math
 import re
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from fractions import Fraction
 from functools import lru_cache
@@ -660,6 +660,45 @@ def alpha_side(policy: Mapping[str, Any], counts: int) -> Fraction:
     return Fraction(policy["budget_per_cell"]) / (counts * int(policy["sides"]))
 
 
+# ------------------------------------------------------------------------------- the decimal display helpers
+class DisplayDomainError(TypeError, ValueError):
+    """The one refusal of the decimal display helpers: an argument outside the helper's stated domain. It is
+    both a TypeError and a ValueError, so a caller may catch it as either."""
+
+
+#: The bound every display helper states on its number of places (as abs(places)) and of significant digits.
+PRECISION_MAX = 10**5
+
+#: The kinds of argument the display helpers admit: the exact types, the range, and the words of the refusal.
+_KINDS: dict[str, tuple[tuple[type, ...], Callable[[Any], bool], str]] = {
+    "rational": ((int, Fraction), lambda v: True, "an int or a Fraction"),
+    "rational >= 0": ((int, Fraction), lambda v: v >= 0, "an int or a Fraction >= 0"),
+    "rational > 0": ((int, Fraction), lambda v: v > 0, "an int or a Fraction > 0"),
+    "int": ((int,), lambda v: True, "an int"),
+    "int >= 0": ((int,), lambda v: v >= 0, "an int >= 0"),
+    "places": (
+        (int,),
+        lambda v: -PRECISION_MAX <= v <= PRECISION_MAX,
+        f"an int in [-{PRECISION_MAX}, {PRECISION_MAX}]",
+    ),
+    "digits": ((int,), lambda v: 1 <= v <= PRECISION_MAX, f"an int in [1, {PRECISION_MAX}]"),
+    "flag": ((bool,), lambda v: True, "a bool"),
+}
+
+
+def _admit(**args: tuple[object, str]) -> None:
+    """The one entry check of the display helpers, called first, before any arithmetic. Each argument is
+    given as name=(value, kind). Its type must be exactly one of the kind's types, so a bool is not an int
+    and subclasses, floats (NaN and the infinities among them), Decimals and strings are refused, and its
+    value must lie in the kind's range. Anything else raises DisplayDomainError."""
+    for name, (value, kind) in args.items():
+        types, admits, words = _KINDS[kind]
+        if type(value) not in types:
+            raise DisplayDomainError(f"{name} must be {words}, not {type(value).__name__}")
+        if not admits(value):
+            raise DisplayDomainError(f"{name} must be {words}")
+
+
 #: log10(2) rounded down to 15 decimals, as an exact rational (the integer exponent estimate below).
 _LOG10_2 = Fraction(301029995663981, 10**15)
 #: Every decimal string is assembled from chunks of this many digits: str() of an int of at most 500 digits is
@@ -668,9 +707,10 @@ _CHUNK = 500
 
 
 def _digits(n: int) -> str:
-    """The decimal digits of the integer n >= 0, for any size, without str() of an int above _CHUNK digits."""
-    if n < 0:
-        raise ValueError("non-negative integers only")
+    """The decimal digits of n, without str() of an int above _CHUNK digits.
+
+    Domain: n an int >= 0 of any size. Anything else raises DisplayDomainError."""
+    _admit(n=(n, "int >= 0"))
     base = 10**_CHUNK
     if n < base:
         return str(n)
@@ -679,11 +719,6 @@ def _digits(n: int) -> str:
         n, r = divmod(n, base)
         parts.append(r)
     return str(parts[-1]) + "".join(str(c).zfill(_CHUNK) for c in reversed(parts[:-1]))
-
-
-def _int_arg(value: int, name: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TypeError(f"{name} must be an int, not {type(value).__name__}")
 
 
 def _exponent(x: Fraction) -> int:
@@ -702,14 +737,11 @@ def _exponent(x: Fraction) -> int:
 
 
 def sig_digits(x: Fraction, digits: int, up: bool) -> str:
-    """``x`` to ``digits`` significant digits, rounded up or down, in scientific notation, exactly.
+    """``x`` to ``digits`` significant digits, rounded up (``up``) or down, in scientific notation, exactly.
 
-    Domain: x a positive rational of any size; digits an int >= 1. Anything else is refused."""
-    _int_arg(digits, "digits")
-    if digits < 1:
-        raise ValueError("digits >= 1 required")
-    if x <= 0:
-        raise ValueError("positive values only")
+    Domain: x an int or a Fraction > 0 of any size; digits an int in [1, PRECISION_MAX]; up a bool. Anything
+    else raises DisplayDomainError."""
+    _admit(x=(x, "rational > 0"), digits=(digits, "digits"), up=(up, "flag"))
     e = _exponent(x)
     m = x / Fraction(10) ** (e - digits + 1)  # 10^(digits - 1) <= m < 10^digits
     q = math.ceil(m) if up else math.floor(m)
@@ -735,10 +767,10 @@ def _sqrt_half_even(y: Fraction) -> int:
 
 
 def _decimal(n: int, places: int, negative: bool = False) -> str:
-    """The value n 10^-places as a plain decimal string ('-' when ``negative``), for any int n and any int
-    places: ``places`` > 0 gives that many decimals; ``places`` <= 0 an integer, n followed by -places
-    zeros."""
-    _int_arg(places, "places")
+    """Format the magnitude abs(n) * 10^-places as plain decimal text, prefixing '-' when ``negative``.
+    Domain: n and places any ints. Positive places give exactly that many fractional digits; nonpositive
+    places give an integer string."""
+    _admit(n=(n, "int"), places=(places, "int"), negative=(negative, "flag"))
     if places <= 0:
         body = _digits(abs(n) * 10 ** (-places))
     else:
@@ -750,11 +782,9 @@ def _decimal(n: int, places: int, negative: bool = False) -> str:
 def fixed(x: Fraction, places: int) -> str:
     """``x`` rounded half-even to a multiple of 10^-places, exactly.
 
-    Domain: x a rational >= 0 of any size; places any int (a negative ``places`` rounds to tens, hundreds,
-    ...). A negative x or a non-int ``places`` is refused."""
-    _int_arg(places, "places")
-    if x < 0:
-        raise ValueError("non-negative values only")
+    Domain: x an int or a Fraction >= 0 of any size; places an int in [-PRECISION_MAX, PRECISION_MAX] (a
+    negative ``places`` rounds to tens, hundreds, ...). Anything else raises DisplayDomainError."""
+    _admit(x=(x, "rational >= 0"), places=(places, "places"))
     return _decimal(_half_even(x * Fraction(10) ** places), places)
 
 
@@ -782,7 +812,9 @@ def consumer_rows(
     rules: Mapping[str, int] | None = None,
 ) -> list[dict[str, str]]:
     """One row per retained count of a harvested cell, in the order of ``retained_counts``, each decided by
-    ``decide`` against the model of ``rules`` (default the stock rules)."""
+    ``decide`` against the model of ``rules`` (default the stock rules). ``n`` and every observed count must
+    be ints >= 0 (otherwise DisplayDomainError), so the displayed counts are the counts tested."""
+    _admit(n=(n, "int >= 0"), **{f"observed[{k}]": (v, "int >= 0") for k, v in observed.items()})
     probs = retained_counts(transitions(z, rules))
     if set(observed) != set(probs):
         raise ValueError("the observed counts are not the retained counts")
@@ -851,9 +883,9 @@ def pull(model: Fraction, measured: Fraction, sigma2: Fraction) -> str:
     """(m - d) / s to 2 decimals, half-even, signed, in exact arithmetic (s = sqrt(sigma2)); it decides
     nothing.
 
-    Domain: model and measured any rationals; sigma2 a rational > 0 (otherwise refused)."""
-    if sigma2 <= 0:
-        raise ValueError("sigma^2 > 0 required")
+    Domain: model and measured ints or Fractions of any sign and size; sigma2 an int or a Fraction > 0.
+    Anything else raises DisplayDomainError."""
+    _admit(model=(model, "rational"), measured=(measured, "rational"), sigma2=(sigma2, "rational > 0"))
     d = model - measured
     n = _sqrt_half_even(d * d * 10**4 / sigma2)
     return ("-" if d < 0 else "+") + _decimal(n, 2)
@@ -862,11 +894,9 @@ def pull(model: Fraction, measured: Fraction, sigma2: Fraction) -> str:
 def sigma_decimal(sigma2: Fraction, places: int = 9) -> str:
     """sqrt(sigma2) rounded half-even to a multiple of 10^-places, in exact arithmetic.
 
-    Domain: sigma2 a rational >= 0 of any size; places any int. A negative sigma2 or a non-int ``places`` is
-    refused."""
-    _int_arg(places, "places")
-    if sigma2 < 0:
-        raise ValueError("sigma^2 < 0")
+    Domain: sigma2 an int or a Fraction >= 0 of any size; places an int in [-PRECISION_MAX, PRECISION_MAX].
+    Anything else raises DisplayDomainError."""
+    _admit(sigma2=(sigma2, "rational >= 0"), places=(places, "places"))
     return _decimal(_sqrt_half_even(sigma2 * Fraction(10) ** (2 * places)), places)
 
 
@@ -1023,12 +1053,10 @@ def csv_text(columns: Sequence[str], rows: Iterable[Mapping[str, str]]) -> str:
 
 
 def outward(x: Fraction, places: int, up: bool) -> str:
-    """``x`` rounded up or down to a multiple of 10^-places, exactly.
+    """``x`` rounded up (``up``) or down to a multiple of 10^-places, exactly.
 
-    Domain: x a rational >= 0 of any size; places any int (a negative ``places`` rounds to tens, hundreds,
-    ...). A negative x or a non-int ``places`` is refused."""
-    _int_arg(places, "places")
-    if x < 0:
-        raise ValueError("non-negative values only")
+    Domain: x an int or a Fraction >= 0 of any size; places an int in [-PRECISION_MAX, PRECISION_MAX] (a
+    negative ``places`` rounds to tens, hundreds, ...); up a bool. Anything else raises DisplayDomainError."""
+    _admit(x=(x, "rational >= 0"), places=(places, "places"), up=(up, "flag"))
     scaled = x * Fraction(10) ** places
     return _decimal(math.ceil(scaled) if up else math.floor(scaled), places)

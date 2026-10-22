@@ -8,6 +8,7 @@ Every drill calls the function under test directly with the faulty input, so no 
 from __future__ import annotations
 
 import ast
+import contextlib
 import copy
 import csv
 import functools
@@ -16,10 +17,12 @@ import importlib.util
 import io
 import json
 import math
+import random
 import re
 import subprocess
 import sys
 from collections.abc import Callable
+from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
 from types import SimpleNamespace
@@ -683,7 +686,7 @@ def test_t7_bounds_are_displayed_with_directed_significant_digits():
     assert cc.sig_digits(Fraction(9999999, 10**11), 6, False) == "9.99999e-05"
     assert cc.sig_digits(Fraction(10), 1, True) == "1e+01"
     for bad in (Fraction(0), Fraction(-1, 3)):
-        with pytest.raises(ValueError, match="^positive values only$"):
+        with pytest.raises(cc.DisplayDomainError, match="^x must be an int or a Fraction > 0$"):
             cc.sig_digits(bad, 6, True)
 
 
@@ -1708,7 +1711,7 @@ def test_t7_the_exponent_rule_holds_for_the_digit_counts_of_any_fraction():
 def test_t3_outward_rounding_is_exact(x, places, down, up):
     assert cc.outward(x, places, False) == down and Fraction(down) <= x
     assert cc.outward(x, places, True) == up and Fraction(up) >= x
-    with pytest.raises(ValueError, match="^non-negative values only$"):
+    with pytest.raises(cc.DisplayDomainError, match="^x must be an int or a Fraction >= 0$"):
         cc.outward(-x - 1, places, True)
 
 
@@ -1741,7 +1744,7 @@ def test_t8_fixed_rounds_half_even_exactly(x, places, want):
 )
 def test_t8_the_pull_rounds_half_even_exactly(model, measured, sigma2, want):
     assert cc.pull(model, measured, sigma2) == want
-    with pytest.raises(ValueError, match="^sigma\\^2 > 0 required$"):
+    with pytest.raises(cc.DisplayDomainError, match="^sigma2 must be an int or a Fraction > 0$"):
         cc.pull(model, measured, Fraction(0))
 
 
@@ -1758,7 +1761,7 @@ def test_t8_sigma_rounds_half_even_exactly(sigma2, want):
     assert cc.sigma_decimal(sigma2) == want
     shown = Fraction(want)
     assert (shown - Fraction(1, 2 * 10**9)) ** 2 <= sigma2 <= (shown + Fraction(1, 2 * 10**9)) ** 2
-    with pytest.raises(ValueError, match="^sigma\\^2 < 0$"):
+    with pytest.raises(cc.DisplayDomainError, match="^sigma2 must be an int or a Fraction >= 0$"):
         cc.sigma_decimal(Fraction(-1))
 
 
@@ -1860,7 +1863,7 @@ def test_t5_an_empty_record_stream_is_read_as_no_events():
 def test_t8_the_decimal_helpers_admit_zero_and_refuse_a_negative_value():
     assert cc.fixed(Fraction(0), 2) == "0.00"
     assert cc.sigma_decimal(Fraction(0)) == "0.000000000"
-    with pytest.raises(ValueError, match="^non-negative values only$"):
+    with pytest.raises(cc.DisplayDomainError, match="^x must be an int or a Fraction >= 0$"):
         cc.fixed(Fraction(-1, 3), 2)
 
 
@@ -1970,11 +1973,13 @@ def test_t8_the_display_helpers_refuse_places_that_are_not_ints(bad):
         lambda: cc.outward(Fraction(1), bad, True),
         lambda: cc.sigma_decimal(Fraction(1), bad),
     ):
-        with pytest.raises(TypeError, match="^places must be an int"):
+        with pytest.raises(cc.DisplayDomainError, match="^places must be an int"):
             call()
-    with pytest.raises(TypeError, match="^digits must be an int"):
+    with pytest.raises(cc.DisplayDomainError, match="^digits must be an int"):
         cc.sig_digits(Fraction(1), bad, True)
-    with pytest.raises(ValueError, match="^digits >= 1 required$"):
+    with pytest.raises(
+        cc.DisplayDomainError, match=re.escape(f"digits must be an int in [1, {cc.PRECISION_MAX}]")
+    ):
         cc.sig_digits(Fraction(1), 0, True)
 
 
@@ -2020,7 +2025,502 @@ def test_t7_a_full_consumer_call_on_an_extreme_count_set_serialises_its_rejects(
 def test_t8_digit_strings_of_any_size_and_their_refusals():
     assert cc._digits(0) == "0" and cc._digits(10**500) == "1" + "0" * 500
     assert cc._digits(10**1200 + 7) == "1" + "0" * 1199 + "7"
-    with pytest.raises(ValueError, match="^non-negative integers only$"):
+    with pytest.raises(cc.DisplayDomainError, match="^n must be an int >= 0$"):
         cc._digits(-1)
-    with pytest.raises(TypeError, match="^places must be an int, not bool$"):
+    with pytest.raises(cc.DisplayDomainError, match="^places must be an int in .*, not bool$"):
         cc.fixed(Fraction(1), True)
+
+
+# ============================================================================================
+# The one entry contract of the display helpers: the refusal matrix
+# ============================================================================================
+class _IntSub(int):
+    pass
+
+
+class _FractionSub(Fraction):
+    pass
+
+
+#: Every helper with an admitted call and the kind of each argument.
+HELPERS = {
+    "outward": (cc.outward, {"x": Fraction(3, 7), "places": 2, "up": True}),
+    "fixed": (cc.fixed, {"x": Fraction(3, 7), "places": 2}),
+    "sigma_decimal": (cc.sigma_decimal, {"sigma2": Fraction(3, 7), "places": 2}),
+    "pull": (cc.pull, {"model": Fraction(1, 3), "measured": Fraction(1, 7), "sigma2": Fraction(3, 7)}),
+    "sig_digits": (cc.sig_digits, {"x": Fraction(3, 7), "digits": 6, "up": True}),
+    "_decimal": (cc._decimal, {"n": 5, "places": 2, "negative": False}),
+    "_digits": (cc._digits, {"n": 5}),
+}
+KIND = {
+    "x": "rational",
+    "model": "rational",
+    "measured": "rational",
+    "sigma2": "rational",
+    "places": "int",
+    "digits": "int",
+    "n": "int",
+    "up": "flag",
+    "negative": "flag",
+}
+#: Inputs no argument admits: floats (with NaN and the infinities), Decimals, strings, None, complex numbers
+#: and subclasses of the admitted types.
+NEVER = [
+    0.5,
+    0.1,
+    2.0,
+    float("nan"),
+    float("inf"),
+    float("-inf"),
+    Decimal("0.5"),
+    Decimal("NaN"),
+    Decimal("Infinity"),
+    "1",
+    "1/2",
+    None,
+    1j,
+    _IntSub(1),
+    _FractionSub(1, 2),
+]
+#: What each kind refuses on top of NEVER, by type.
+REFUSED = {
+    "rational": [True, False],
+    "int": [True, False, Fraction(1, 2), Fraction(2)],
+    "flag": [1, 0, Fraction(1), "True"],
+}
+
+
+def _refusal_matrix():
+    for helper, (_, good) in HELPERS.items():
+        for arg in good:
+            for bad in NEVER + REFUSED[KIND[arg]]:
+                yield helper, arg, bad
+
+
+@pytest.mark.parametrize("helper, arg, bad", list(_refusal_matrix()))
+def test_t9_every_helper_refuses_every_forbidden_type_in_every_argument(helper, arg, bad):
+    call, good = HELPERS[helper]
+    call(**good)  # the admitted call returns
+    with pytest.raises((TypeError, ValueError)) as info:
+        call(**{**good, arg: bad})
+    assert isinstance(info.value, cc.DisplayDomainError)
+    assert str(info.value).startswith(f"{arg} must be ") and str(info.value).endswith(
+        f", not {type(bad).__name__}"
+    )
+
+
+@pytest.mark.parametrize(
+    "helper, arg, bad",
+    [
+        ("outward", "x", -1),
+        ("outward", "x", -EPS),
+        ("fixed", "x", Fraction(-1, 3)),
+        ("sigma_decimal", "sigma2", -EPS),
+        ("pull", "sigma2", 0),
+        ("pull", "sigma2", Fraction(-1)),
+        ("sig_digits", "x", 0),
+        ("sig_digits", "x", -EPS),
+        ("sig_digits", "digits", 0),
+        ("sig_digits", "digits", -1),
+        ("_digits", "n", -1),
+        *[
+            (h, "places", edge)
+            for h in ("outward", "fixed", "sigma_decimal")
+            for edge in ("max+1", "-(max+1)")
+        ],
+        ("sig_digits", "digits", "max+1"),
+    ],
+)
+def test_t9_every_helper_refuses_a_value_outside_its_range(helper, arg, bad):
+    call, good = HELPERS[helper]
+    if isinstance(bad, str):  # one past the stated precision bound, read when the test runs
+        bad = {"max+1": 1, "-(max+1)": -1}[bad] * (cc.PRECISION_MAX + 1)
+    with pytest.raises((TypeError, ValueError)) as info:
+        call(**{**good, arg: bad})
+    assert isinstance(info.value, cc.DisplayDomainError)
+    assert str(info.value).startswith(f"{arg} must be ")
+    assert ", not " not in str(info.value)  # refused for its value, its type being admitted
+
+
+def test_t9_the_range_edges_are_admitted():
+    assert cc.outward(0, 3, True) == cc.fixed(0, 3) == cc.sigma_decimal(0, 3) == "0.000"
+    assert cc.fixed(Fraction(1, 3), cc.PRECISION_MAX) == "0." + "3" * cc.PRECISION_MAX
+    assert cc.outward(Fraction(1), -cc.PRECISION_MAX, True) == "1" + "0" * cc.PRECISION_MAX
+    assert cc.sigma_decimal(Fraction(1), -cc.PRECISION_MAX) == "0"
+    assert (
+        cc.sig_digits(Fraction(1, 3), cc.PRECISION_MAX, False) == "3." + "3" * (cc.PRECISION_MAX - 1) + "e-01"
+    )
+    assert cc.sig_digits(2, 1, True) == "2e+00" and cc.pull(-1, 2, 9) == "-1.00"  # ints are admitted values
+    assert cc._decimal(-7, -2, True) == "-700" and cc._digits(0) == "0"
+
+
+def test_t9_the_inputs_that_slipped_through_are_refused():
+    """Floats used to pass and round at their decimal look-alike, not at their exact binary value (0.1 is
+    above 1/10, 0.3 below 3/10, 0.15 below 15/100), and a fractional coefficient was written as digits."""
+    for call in (
+        lambda: cc.outward(0.1, 1, True),
+        lambda: cc.outward(0.3, 1, False),
+        lambda: cc.fixed(0.15, 1),
+        lambda: cc.sigma_decimal(0.25, 1),
+        lambda: cc.pull(0.5, 0, 1),
+        lambda: cc.sig_digits(0.1, 3, True),
+        lambda: cc._digits(0.5),
+        lambda: cc._decimal(0.5, 0),
+    ):
+        with pytest.raises((TypeError, ValueError)) as info:
+            call()
+        assert isinstance(info.value, cc.DisplayDomainError)
+    # the exact binary values, supplied as Fractions, round as the oracle says
+    assert (
+        cc.outward(Fraction.from_float(0.1), 1, True)
+        == oracle_directed(Fraction.from_float(0.1), 1, True)
+        == "0.2"
+    )
+    assert (
+        cc.outward(Fraction.from_float(0.3), 1, False)
+        == oracle_directed(Fraction.from_float(0.3), 1, False)
+        == "0.2"
+    )
+    assert (
+        cc.fixed(Fraction.from_float(0.15), 1) == oracle_nearest_even(Fraction.from_float(0.15), 1) == "0.1"
+    )
+
+
+def test_t9_the_consumer_path_refuses_counts_that_are_not_ints():
+    counts = dict.fromkeys(cc.retained_counts(cc.transitions(13)), 1)
+    cell, policy = {"version": "v", "config": "c", "target": "t"}, {"budget_per_cell": "1/10000", "sides": 2}
+    for n, bad in ((100.0, 1), (True, 1), (-1, 1), (100, 1.0), (100, True), (100, Decimal(1)), (100, -1)):
+        with pytest.raises(cc.DisplayDomainError):
+            cc.consumer_rows(cell, {**counts, "K>=6": bad}, 13, n, policy)
+    assert len(cc.consumer_rows(cell, counts, 13, 100, policy)) == len(counts)
+
+
+@pytest.mark.parametrize("places, text", [(-2, "12300"), (-1, "1230"), (0, "123"), (2, "1.23")])
+def test_t9_decimal_writes_the_magnitude_and_takes_its_sign_from_negative(places, text):
+    for n in (-123, 123):
+        shown = cc._decimal(n, places)
+        assert shown == text and value(shown) == abs(n) * Fraction(10) ** -places
+        assert (
+            cc._decimal(n, places, True) == "-" + text
+            and value("-" + text) == -abs(n) * Fraction(10) ** -places
+        )
+
+
+# ============================================================================================
+# An independent exact oracle: integer division and Python's own str(), not the module
+# ============================================================================================
+@contextlib.contextmanager
+def _unlimited_str():
+    """The oracle writes its digits with str(), the int-string limit lifted for that call only."""
+    old = sys.get_int_max_str_digits()
+    sys.set_int_max_str_digits(0)
+    try:
+        yield
+    finally:
+        sys.set_int_max_str_digits(old)
+
+
+def _scaled(x: Fraction, places: int) -> tuple[int, int]:
+    """x 10^places as integers (a, b) with b > 0."""
+    if places >= 0:
+        return x.numerator * 10**places, x.denominator
+    return x.numerator, x.denominator * 10**-places
+
+
+def _show(m: int, places: int) -> str:
+    """The plain decimal text of m 10^-places for an int m >= 0."""
+    with _unlimited_str():
+        if places <= 0:
+            return str(m) + "0" * -places if m else "0"
+        whole, frac = divmod(m, 10**places)
+        return f"{whole}.{frac:0{places}d}"
+
+
+def oracle_directed(x: Fraction, places: int, up: bool) -> str:
+    a, b = _scaled(x, places)
+    return _show(-(-a // b) if up else a // b, places)
+
+
+def oracle_nearest_even(x: Fraction, places: int) -> str:
+    a, b = _scaled(x, places)
+    k, r = divmod(a, b)
+    return _show(k + 1 if 2 * r > b or (2 * r == b and k % 2) else k, places)
+
+
+def _isqrt_nearest_even(a: int, b: int) -> int:
+    """The integer nearest sqrt(a / b), ties to even: f = floor(sqrt(a / b)) = isqrt(a b) // b, and the root
+    passes f + 1/2 exactly when 4 a > (2 f + 1)^2 b."""
+    f = math.isqrt(a * b) // b
+    left, right = 4 * a, (2 * f + 1) ** 2 * b
+    return f + 1 if left > right or (left == right and f % 2) else f
+
+
+def oracle_sigma(sigma2: Fraction, places: int) -> str:
+    return _show(_isqrt_nearest_even(*_scaled(sigma2, 2 * places)), places)
+
+
+def oracle_pull(model: Fraction, measured: Fraction, sigma2: Fraction) -> str:
+    d = Fraction(model) - measured
+    return ("-" if d < 0 else "+") + _show(_isqrt_nearest_even(*_scaled(d * d / sigma2, 4)), 2)
+
+
+def oracle_sig(x: Fraction, digits: int, up: bool) -> str:
+    x = Fraction(x)
+    with _unlimited_str():
+        e = len(str(x.numerator)) - len(str(x.denominator))
+    while Fraction(10) ** e > x:
+        e -= 1
+    while Fraction(10) ** (e + 1) <= x:
+        e += 1
+    a, b = _scaled(x, digits - 1 - e)
+    q = -(-a // b) if up else a // b
+    if q == 10**digits:
+        q, e = q // 10, e + 1
+    with _unlimited_str():
+        s = str(q)
+    return s[0] + ("." + s[1:] if digits > 1 else "") + ("e-" if e < 0 else "e+") + f"{abs(e):02d}"
+
+
+def test_t9_the_oracle_on_values_derived_by_hand():
+    assert (oracle_directed(Fraction(2, 3), 3, False), oracle_directed(Fraction(2, 3), 3, True)) == (
+        "0.666",
+        "0.667",
+    )
+    assert (oracle_directed(Fraction(123), -1, False), oracle_directed(Fraction(123), -1, True)) == (
+        "120",
+        "130",
+    )
+    assert (oracle_directed(Fraction(123), -2, False), oracle_directed(Fraction(123), -2, True)) == (
+        "100",
+        "200",
+    )
+    assert (
+        oracle_directed(Fraction(0), -3, True) == "0" and oracle_directed(Fraction(1, 2), 3, True) == "0.500"
+    )
+    assert (
+        oracle_nearest_even(Fraction(1, 8), 2) == "0.12" and oracle_nearest_even(Fraction(3, 8), 2) == "0.38"
+    )
+    assert oracle_nearest_even(Fraction(125), -1) == "120" and oracle_nearest_even(Fraction(135), -1) == "140"
+    assert oracle_nearest_even(Fraction(5, 2), 0) == "2" and oracle_nearest_even(Fraction(7, 2), 0) == "4"
+    assert oracle_sigma(Fraction(2), 9) == "1.414213562" and oracle_sigma(Fraction(15129), -1) == "120"
+    assert oracle_sigma(Fraction(1, 4 * 10**18), 9) == "0.000000000"  # root 0.5e-9: a tie, to even
+    assert oracle_sigma(Fraction(9, 4 * 10**18), 9) == "0.000000002"  # root 1.5e-9: a tie, to even
+    assert oracle_pull(Fraction(9, 8), Fraction(0), Fraction(1)) == "+1.12"
+    assert oracle_pull(Fraction(0), Fraction(227, 200), Fraction(1)) == "-1.14"
+    assert oracle_pull(Fraction(0), Fraction(1, 1000), Fraction(1)) == "-0.00"
+    assert oracle_pull(Fraction(1), Fraction(0), Fraction(2)) == "+0.71"
+    assert oracle_sig(Fraction(123456789, 10**12), 6, False) == "1.23456e-04"
+    assert oracle_sig(Fraction(123456789, 10**12), 6, True) == "1.23457e-04"
+    assert oracle_sig(Fraction(9999999, 10**11), 6, True) == "1.00000e-04"  # the carry
+    assert (
+        oracle_sig(Fraction(10), 1, True) == "1e+01"
+        and oracle_sig(Fraction(7 * 10**6000 + 1), 3, True) == "7.01e+6000"
+    )
+    assert oracle_sig(Fraction(1, 3), 2, False) == "3.3e-01"
+
+
+# ============================================================================================
+# The differential test: seeded cases of every helper and direction against the oracle
+# ============================================================================================
+SEED = 20261022
+CASES_PER_STREAM = 3000
+PLACES = range(-3, 7)
+DIGITS = range(1, 21)
+FAMILIES = ("multiple", "tie", "tie+eps", "tie-eps", "rational", "integer")
+STREAMS = ("outward down", "outward up", "fixed", "sigma", "pull", "sig down", "sig up")
+
+
+def _integer(rng: random.Random) -> int:
+    """A random integer of 1 to 6000 digits."""
+    d = rng.randint(1, 6000)
+    return rng.randrange(10 ** (d - 1), 10**d)
+
+
+def _rational(rng: random.Random, low: int = 0) -> Fraction:
+    return Fraction(rng.randrange(low, 10 ** rng.randint(1, 40)), rng.randrange(1, 10 ** rng.randint(1, 40)))
+
+
+def _on_grid(rng: random.Random, family: str, step: Fraction, k: int | None = None) -> Fraction:
+    """A value >= 0 of ``family`` against the grid of multiples k step of ``step`` (k random unless given);
+    the near-ties lie EPS step from the tie."""
+    if family == "rational":
+        return _rational(rng)
+    if family == "integer":
+        return Fraction(_integer(rng))
+    if k is None:
+        k = rng.randrange(0, 10 ** rng.randint(1, 30))
+    if family == "multiple":
+        return k * step
+    tie = (k + Fraction(1, 2)) * step
+    return {"tie": tie, "tie+eps": tie + EPS * step, "tie-eps": tie - EPS * step}[family]
+
+
+def differential_cases(stream: str):
+    """CASES_PER_STREAM seeded cases of ``stream``: (family, precision, call, expected). Families and
+    precisions cycle, so every family meets every precision."""
+    rng = random.Random(f"{SEED}/{stream}")
+    for i in range(CASES_PER_STREAM):
+        family = FAMILIES[i % len(FAMILIES)]
+        if stream in ("sig down", "sig up"):
+            digits, up = DIGITS[(i // len(FAMILIES)) % len(DIGITS)], stream == "sig up"
+            # the grid of ``digits`` significant digits at a random decade; every seventh grid case sits at
+            # the top of its decade, where rounding up carries into a new digit
+            k = 10**digits - 1 if i % 7 == 0 else rng.randrange(10 ** (digits - 1), 10**digits)
+            x = _on_grid(rng, family, Fraction(10) ** rng.randint(-80, 80), k)
+            if x == 0:
+                x = Fraction(1)
+            yield family, digits, (cc.sig_digits, (x, digits, up)), oracle_sig(x, digits, up)
+            continue
+        places = PLACES[(i // len(FAMILIES)) % len(PLACES)]
+        step = Fraction(10) ** -places
+        if stream == "pull":  # ties and near-ties of |d| / s on the grid of hundredths
+            s = _rational(rng, 1)
+            ratio = (
+                _on_grid(rng, family, Fraction(1, 100)) if family != "integer" else Fraction(_integer(rng))
+            )
+            measured = _rational(rng) * rng.choice((1, -1))
+            model = measured + rng.choice((1, -1)) * ratio * s
+            sigma2 = s * s if family != "rational" else _rational(rng, 1)
+            if family == "rational":
+                model = _rational(rng) * rng.choice((1, -1))
+            yield family, places, (cc.pull, (model, measured, sigma2)), oracle_pull(model, measured, sigma2)
+            continue
+        x = _on_grid(rng, family, step)
+        if (
+            stream == "sigma"
+        ):  # the root lies on, at or just off the grid; a random rational is rarely a square
+            sigma2 = x if family == "rational" else x * x
+            yield family, places, (cc.sigma_decimal, (sigma2, places)), oracle_sigma(sigma2, places)
+        elif stream == "fixed":
+            yield family, places, (cc.fixed, (x, places)), oracle_nearest_even(x, places)
+        else:
+            up = stream == "outward up"
+            yield family, places, (cc.outward, (x, places, up)), oracle_directed(x, places, up)
+
+
+def test_t9_the_differential_test_covers_twenty_thousand_cases_of_every_family_and_precision():
+    helper = {
+        "outward down": (cc.outward, False),
+        "outward up": (cc.outward, True),
+        "fixed": (cc.fixed, None),
+        "sigma": (cc.sigma_decimal, None),
+        "pull": (cc.pull, None),
+        "sig down": (cc.sig_digits, False),
+        "sig up": (cc.sig_digits, True),
+    }
+    assert set(helper) == set(STREAMS)
+    total = 0
+    for stream in STREAMS:
+        cases = list(differential_cases(stream))
+        # each stream calls its own helper in its own direction
+        assert {
+            (call, args[2] if len(args) == 3 and call is not cc.pull else None)
+            for _, _, (call, args), _ in cases
+        } == {helper[stream]}, stream
+        seen = {(family, precision) for family, precision, _, _ in cases}
+        precisions = DIGITS if stream in ("sig down", "sig up") else PLACES
+        if stream == "pull":
+            assert {f for f, _ in seen} == set(FAMILIES)
+        else:
+            assert seen == {(f, q) for f in FAMILIES for q in precisions}, stream
+        total += len(cases)
+    assert total == len(STREAMS) * CASES_PER_STREAM >= 20000
+
+
+@pytest.mark.parametrize("stream", STREAMS)
+def test_t9_every_display_helper_agrees_with_the_exact_oracle(stream):
+    checked = 0
+    for family, precision, (call, args), want in differential_cases(stream):
+        assert call(*args) == want, (stream, family, precision)
+        checked += 1
+    assert checked == CASES_PER_STREAM
+
+
+# ============================================================================================
+# The full consumer path, decide -> consumer_rows -> csv_text -> parsed CSV, against exact binomial sums
+# ============================================================================================
+def _exact_tail(n: int, p: Fraction, x: int, side: str) -> tuple[int, int]:
+    """P(X >= x) (side hi) or P(X <= x) (side lo) of Binomial(n, p) as an unreduced integer ratio, summed
+    term by term from math.comb."""
+    a, b = p.numerator, p.denominator
+    ks = range(x, n + 1) if side == "hi" else range(0, x + 1)
+    return sum(math.comb(n, k) * a**k * (b - a) ** (n - k) for k in ks), b**n
+
+
+def _grid(shown: str) -> tuple[Fraction, Fraction, Fraction]:
+    """A six-digit scientific string as (value, the grid point below it, the grid point above it)."""
+    mantissa, exponent = shown.split("e")
+    m, e = int(mantissa.replace(".", "")), int(exponent) - 5
+    v = Fraction(m) * Fraction(10) ** e
+    below = v - Fraction(10) ** (e if m > 10**5 else e - 1)
+    return v, below, v + Fraction(10) ** e
+
+
+def _check_consumer_path(n: int, observed: dict[str, int]) -> list[dict[str, str]]:
+    rule = json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8"))["harvest"]
+    probs = cc.retained_counts(cc.transitions(13))
+    budget = Fraction(rule["budget_per_cell"]) / (len(probs) * int(rule["sides"]))
+    rows = cc.consumer_rows({"version": "v", "config": "c", "target": "t"}, observed, 13, n, rule)
+    text = cc.csv_text(cc.CONSUMER_COLUMNS, rows)
+    parsed = list(csv.DictReader(io.StringIO(text)))
+    assert text.splitlines()[0] == ",".join(cc.CONSUMER_COLUMNS) and parsed == rows
+    assert [r["count"] for r in parsed] == list(probs)
+    for r in parsed:
+        p, x = probs[r["count"]], observed[r["count"]]
+        assert (r["observed"], r["budget"]) == (str(x), f"{budget.numerator}/{budget.denominator}")
+        assert r["expected"] == oracle_nearest_even(n * p, 6)
+        mode = (n + 1) * p.numerator // p.denominator
+        if x == mode:
+            assert (r["side"], r["bound_kind"], r["bound_value"], r["decision"]) == (
+                "mode",
+                "none",
+                "",
+                "pass",
+            )
+            continue
+        side = "hi" if x > mode else "lo"
+        num, den = _exact_tail(n, p, x, side)
+        reject = num * budget.denominator <= budget.numerator * den
+        kind = "upper" if reject else "lower"
+        assert (r["side"], r["bound_kind"], r["decision"]) == (side, kind, "reject" if reject else "pass")
+        shown, below, above = _grid(r["bound_value"])
+        if kind == "upper":
+            # rounded up from the certified bound of the whole tail: the grid point at or just above the tail
+            assert below * den <= num <= shown * den, r["count"]
+        else:
+            # rounded down from a certified lower bound of a partial sum (the walk stops once it passes the
+            # budget): at most the tail, and at least the first term, the probability of x, less one grid step
+            term = math.comb(n, x) * p.numerator**x * (p.denominator - p.numerator) ** (n - x)
+            assert shown * den <= num and term <= above * den, r["count"]
+    return parsed
+
+
+def test_t9_the_consumer_path_rejects_every_count_of_an_extreme_set_exactly():
+    n = 2000
+    counts = {k: 0 for k in cc.transition_keys()}
+    counts["g14->1"] = n
+    rows = _check_consumer_path(n, cc.observed_counts(counts))
+    assert {r["decision"] for r in rows} == {"reject"} and len(rows) == len(
+        cc.retained_counts(cc.transitions(13))
+    )
+
+
+def test_t9_the_consumer_path_passes_every_count_at_and_next_to_its_mode_exactly():
+    n = 200
+    probs = cc.retained_counts(cc.transitions(13))
+    modes = {k: (n + 1) * p.numerator // p.denominator for k, p in probs.items()}
+    rows = _check_consumer_path(n, modes)
+    assert {(r["bound_kind"], r["decision"]) for r in rows} == {("none", "pass")}
+    rows = _check_consumer_path(n, {k: m + 1 for k, m in modes.items()})
+    assert {(r["bound_kind"], r["decision"]) for r in rows} == {("lower", "pass")}
+
+
+def test_t9_the_consumer_path_decides_a_mixed_set_exactly():
+    n = 200
+    probs = cc.retained_counts(cc.transitions(13))
+    observed = {k: (n + 1) * p.numerator // p.denominator + i % 2 for i, (k, p) in enumerate(probs.items())}
+    observed[max(probs, key=lambda k: probs[k])] = 0  # far below the mode of the largest probability
+    observed[min(probs, key=lambda k: probs[k])] = n  # far above the mode of the smallest
+    rows = _check_consumer_path(n, observed)
+    kinds = {(r["bound_kind"], r["decision"]) for r in rows}
+    assert kinds == {("none", "pass"), ("lower", "pass"), ("upper", "reject")}
