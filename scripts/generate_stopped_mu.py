@@ -421,8 +421,8 @@ def cascade_harvest(inp: Inputs) -> dict[tuple[str, str, str], dict[str, int]]:
     """Admit the harvested cascades before anything is stated about them, and return each cell's retained
     counts.
 
-    Raises ``ValueError`` when the harvest is not the rule's: its cells not exactly the rule's cells in the
-    rule's order; a cell's events, seed base, route, Z or A not the rule's and the pre-registration's; a binary
+    Raises ``ValueError`` when the rule does not name the same cells, in the same order, on both revisions,
+    or when the harvest is not the rule's: its cells not exactly the rule's cells in the rule's order; a cell's events, seed base, route, Z or A not the rule's and the pre-registration's; a binary
     that ``builds.csv`` does not record for its revision (the binary of the committed cells or the rebuild); a
     refused stop, or stops, reconstructed chains
     and events that differ; transition rows other than the module's transitions in its order; a count above the
@@ -432,6 +432,10 @@ def cascade_harvest(inp: Inputs) -> dict[tuple[str, str, str], dict[str, int]]:
     h = c.rule["harvest"]
     setup = inp.policy["setup"]
     cells = [(x["version"], x["config"], x["target"]) for x in h["cells"]]
+    v1, v2 = setup["versions"]
+    by_version = {v: [(x["config"], x["target"]) for x in h["cells"] if x["version"] == v] for v in (v1, v2)}
+    if by_version[v1] != by_version[v2] or len(h["cells"]) != 2 * len(by_version[v1]):
+        raise ValueError("the harvest does not name the same cells, in the same order, on both revisions")
     if [cell_of(r) for r in c.harvest] != cells:
         raise ValueError("cascade_harvest.csv does not hold the rule's cells in the rule's order")
     builds = {b["tag"]: {b["reference_binary_sha256"], b["rebuilt_binary_sha256"]} for b in inp.builds}

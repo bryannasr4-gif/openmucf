@@ -38,7 +38,6 @@ import re
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, localcontext
 from fractions import Fraction
 from functools import lru_cache
 from typing import Any
@@ -376,6 +375,7 @@ def reconstruct(stream: Iterable[str], levels: Sequence[float], route: str, z: i
     current: list[tuple[int, str, float]] | None = None
     declared = 0
     expect = 0
+    open_event = False  # a record line read since the last E line
 
     def close() -> None:
         if current is not None and len(current) != declared:
@@ -386,6 +386,7 @@ def reconstruct(stream: Iterable[str], levels: Sequence[float], route: str, z: i
         if not f:
             raise ValueError("empty record line")
         kind = f[0]
+        open_event = kind != "E"
         if kind == "C":
             if current is None:
                 raise ValueError("C-line not after an at-rest S-line of the muon")
@@ -415,7 +416,7 @@ def reconstruct(stream: Iterable[str], levels: Sequence[float], route: str, z: i
         elif kind != "T":
             raise ValueError(f"unknown record line {line[:40]!r}")
     close()
-    if steps or (current is not None):
+    if open_event:
         raise ValueError("record lines after the last E line")
     return h
 
@@ -534,6 +535,9 @@ class Interval:
     def __add__(self, o: Interval) -> Interval:
         return Interval(_add(self.lo, o.lo, False), _add(self.hi, o.hi, True))
 
+    def __truediv__(self, o: Interval) -> Interval:  # o.lo > 0
+        return Interval(_div(self.lo, o.hi, False), _div(self.hi, o.lo, True))
+
     def pow(self, k: int) -> Interval:
         res, base = Interval((1, 0), (1, 0)), self
         while k:
@@ -558,8 +562,7 @@ def _fact(k: int) -> Interval:
 
 
 def _pmf(n: int, p: Fraction, x: int) -> Interval:
-    num, den = _fact(n), _fact(x) * _fact(n - x)
-    coef = Interval(_div(num.lo, den.hi, False), _div(num.hi, den.lo, True))
+    coef = _fact(n) / (_fact(x) * _fact(n - x))
     return coef * Interval.of(p).pow(x) * Interval.of(1 - p).pow(n - x)
 
 
@@ -612,7 +615,9 @@ def _walk(
 
 def binomial_tail(n: int, p: Fraction, x: int, side: str) -> tuple[Fraction, Fraction]:
     """Certified bounds [lo, hi] of P(X >= x) (``side`` 'hi') or P(X <= x) ('lo'), X ~ Binomial(n, p), for
-    an x on that side of the mode (or at it)."""
+    an x on that side of the mode (or at it): lo <= tail <= hi. The walk stops at the end of the support or
+    once the remainder bound is below 2^-120 of lo or below 2^-600, so for n < 2^30 the width hi - lo is
+    below 2^-119 lo + 2^-599."""
     _check_binomial(n, p, x, side)
     mode = math.floor((n + 1) * p)
     if (side == "hi" and x < mode) or (side == "lo" and x > mode):
@@ -644,7 +649,10 @@ def decide(n: int, p: Fraction, x: int, alpha_side: Fraction) -> Decision:
         return Decision(side, "lower", lo, "pass")
     if hi <= alpha_side:
         return Decision(side, "upper", hi, "reject")
-    raise ArithmeticError("the certified tail does not separate from the budget")  # pragma: no cover
+    # the enclosure straddles the budget: the tail is within the bounds' width of alpha_side and no
+    # certified decision exists at this precision (for example n = 1, p = alpha_side, x = 1, whose tail is
+    # exactly alpha_side)
+    raise ArithmeticError("the certified tail does not separate from the budget")
 
 
 def alpha_side(policy: Mapping[str, Any], counts: int) -> Fraction:
@@ -656,11 +664,11 @@ def sig_digits(x: Fraction, digits: int, up: bool) -> str:
     """``x`` > 0 to ``digits`` significant digits, rounded up or down, in scientific notation."""
     if x <= 0:
         raise ValueError("positive values only")
-    e = math.floor(math.log10(x.numerator) - math.log10(x.denominator))
-    while Fraction(10) ** e > x:
+    # with a digits in the numerator and b in the denominator, 10^(a-b-1) < x < 10^(a-b+1): the exponent
+    # is a - b or a - b - 1, and a single exact comparison decides which
+    e = len(str(x.numerator)) - len(str(x.denominator))
+    if Fraction(10) ** e > x:
         e -= 1
-    while Fraction(10) ** (e + 1) <= x:
-        e += 1
     scale = Fraction(10) ** (e - digits + 1)
     m = x / scale
     q = math.ceil(m) if up else math.floor(m)
@@ -670,12 +678,33 @@ def sig_digits(x: Fraction, digits: int, up: bool) -> str:
     return f"{s[0]}.{s[1:]}e{e:+03d}" if digits > 1 else f"{s}e{e:+03d}"
 
 
+def _half_even(q: Fraction) -> int:
+    """The integer nearest to q, ties to even."""
+    f = math.floor(q)
+    r = q - f
+    return f + 1 if r > Fraction(1, 2) or (r == Fraction(1, 2) and f % 2) else f
+
+
+def _sqrt_half_even(y: Fraction) -> int:
+    """The integer nearest to sqrt(y), y >= 0, ties to even, in exact integer arithmetic: floor(sqrt(y)) is
+    isqrt(floor(y)), and sqrt(y) lies above f + 1/2 exactly when y > (f + 1/2)^2."""
+    f = math.isqrt(math.floor(y))
+    half = (Fraction(2 * f + 1, 2)) ** 2
+    return f + 1 if y > half or (y == half and f % 2) else f
+
+
+def _decimal(n: int, places: int, negative: bool = False) -> str:
+    """The integer n scaled by 10^-places as a plain decimal string ('-' when ``negative``)."""
+    digits = str(abs(n)).rjust(places + 1, "0")
+    body = f"{digits[:-places]}.{digits[-places:]}" if places else digits
+    return ("-" if negative else "") + body
+
+
 def fixed(x: Fraction, places: int) -> str:
-    """``x`` rounded half-even to ``places`` decimals."""
-    with localcontext() as ctx:
-        ctx.prec = 80
-        d = Decimal(x.numerator) / Decimal(x.denominator)
-        return str(d.quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_EVEN))
+    """``x`` >= 0 rounded half-even to ``places`` decimals, exactly."""
+    if x < 0:
+        raise ValueError("non-negative values only")
+    return _decimal(_half_even(x * 10**places), places)
 
 
 CONSUMER_COLUMNS = (
@@ -768,20 +797,20 @@ def verdict(model: Fraction, measured: Fraction, sigma2: Fraction, policy: Mappi
 
 
 def pull(model: Fraction, measured: Fraction, sigma2: Fraction) -> str:
-    """(m - d) / s to 2 decimals, half-even, signed; it decides nothing."""
-    with localcontext() as ctx:
-        ctx.prec = 60
-        d = Decimal((model - measured).numerator) / Decimal((model - measured).denominator)
-        s = (Decimal(sigma2.numerator) / Decimal(sigma2.denominator)).sqrt()
-        q = (d / s).quantize(Decimal("0.01"), rounding=ROUND_HALF_EVEN)
-        return f"{q:+}"
+    """(m - d) / s to 2 decimals, half-even, signed, in exact arithmetic (s = sqrt(sigma2) > 0); it decides
+    nothing."""
+    if sigma2 <= 0:
+        raise ValueError("sigma^2 > 0 required")
+    d = model - measured
+    n = _sqrt_half_even(d * d * 10**4 / sigma2)
+    return ("-" if d < 0 else "+") + _decimal(n, 2)
 
 
 def sigma_decimal(sigma2: Fraction, places: int = 9) -> str:
-    with localcontext() as ctx:
-        ctx.prec = 60
-        s = (Decimal(sigma2.numerator) / Decimal(sigma2.denominator)).sqrt()
-        return str(s.quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_EVEN))
+    """sqrt(sigma2) rounded half-even to ``places`` decimals, in exact arithmetic."""
+    if sigma2 < 0:
+        raise ValueError("sigma^2 < 0")
+    return _decimal(_sqrt_half_even(sigma2 * 10 ** (2 * places)), places)
 
 
 def ratio_sigma2(
@@ -937,11 +966,8 @@ def csv_text(columns: Sequence[str], rows: Iterable[Mapping[str, str]]) -> str:
 
 
 def outward(x: Fraction, places: int, up: bool) -> str:
-    """``x`` rounded up or down to ``places`` decimals."""
-    with localcontext() as ctx:
-        ctx.prec = 80
-        d = Decimal(x.numerator) / Decimal(x.denominator)
-        q = d.quantize(Decimal(1).scaleb(-places), rounding=ROUND_CEILING if up else ROUND_FLOOR)
-        if (Fraction(q) < x) if up else (Fraction(q) > x):  # pragma: no cover - the 80 digits always suffice
-            raise ArithmeticError("rounding precision")
-        return str(q)
+    """``x`` >= 0 rounded up or down to ``places`` decimals, exactly."""
+    if x < 0:
+        raise ValueError("non-negative values only")
+    scaled = x * 10**places
+    return _decimal(math.ceil(scaled) if up else math.floor(scaled), places)

@@ -1571,3 +1571,294 @@ def test_t12_the_section_states_no_k_alpha_per_stop_and_no_novelty():
             assert para.startswith(("**Expected transitions.**", "**Limits.**")), para[:80]
     assert not [w for w in NOVELTY if w in text.lower()]
     assert "No Kα per stopped muon is compared" in text
+
+
+# ============================================================================================
+# Boundaries of the certified arithmetic and of the decimal display, each against an independent exact value
+# ============================================================================================
+def exact_tail(n: int, p: Fraction, x: int, side: str) -> Fraction:
+    """P(X >= x) or P(X <= x) for X ~ Binomial(n, p), summed exactly from math.comb."""
+    ks = range(x, n + 1) if side == "hi" else range(0, x + 1)
+    return sum((math.comb(n, k) * p**k * (1 - p) ** (n - k) for k in ks), Fraction(0))
+
+
+@pytest.mark.parametrize(
+    "n, p, x, side",
+    [
+        (1, Fraction(1, 2), 1, "lo"),  # the end of the support on the low side; the next ratio is exactly 1
+        (1, Fraction(1, 3), 0, "hi"),  # the end of the support on the high side
+        (1, Fraction(1, 2), 1, "hi"),
+        (2, Fraction(1, 2), 0, "lo"),
+        (3, Fraction(1, 2), 2, "lo"),  # a ratio of exactly 1 one step past the mode
+        (4, Fraction(1, 2), 3, "hi"),
+        (5, Fraction(2, 3), 5, "hi"),
+        (7, Fraction(1, 7), 0, "lo"),
+    ],
+)
+def test_t7_the_tail_encloses_the_exact_tail_at_the_ends_of_the_support(n, p, x, side):
+    exact = exact_tail(n, p, x, side)
+    lo, hi = cc.binomial_tail(n, p, x, side)
+    assert lo <= exact <= hi
+    assert hi - lo <= exact / 2**119 + Fraction(1, 2**599)
+
+
+@pytest.mark.parametrize("n, x", [(30, 25), (2000, 760), (2000, 590)])
+def test_t7_the_tail_keeps_its_documented_width(n, x):
+    p = Fraction(1, 3)
+    side = "hi" if x > (n + 1) * p else "lo"
+    exact = exact_tail(n, p, x, side)
+    lo, hi = cc.binomial_tail(n, p, x, side)
+    assert lo <= exact <= hi
+    assert hi - lo <= lo / 2**119 + Fraction(1, 2**599)
+
+
+def test_t7_a_tail_exactly_at_the_budget_is_rejected_with_the_exact_bound():
+    # X ~ Binomial(1, 1/4): P(X >= 1) = 1/4 exactly (dyadic, carried exactly), and the budget is 1/4
+    assert exact_tail(1, Fraction(1, 4), 1, "hi") == Fraction(1, 4)
+    d = cc.decide(1, Fraction(1, 4), 1, Fraction(1, 4))
+    assert (d.side, d.bound_kind, d.bound, d.decision) == ("hi", "upper", Fraction(1, 4), "reject")
+    # just above the budget the same tail passes with a lower bound above it
+    d = cc.decide(1, Fraction(1, 4), 1, Fraction(1, 4) - Fraction(1, 2**200))
+    assert (d.bound_kind, d.decision) == ("lower", "pass") and d.bound > Fraction(1, 4) - Fraction(1, 2**200)
+
+
+def test_t7_the_remainder_bound_that_meets_the_budget_exactly_rejects():
+    # n = 4, p = 1/2, x = 3: the first term 1/4, the ratio 1/4, the next term 1/16; the geometric remainder
+    # after it is (1/16)(1/4)/(3/4) = 1/48, so the upper bound is 5/16 + 1/48 = 1/3, all carried exactly: at a
+    # budget of 1/3 the remainder bound meets the budget and the count is rejected with it; the exact tail is
+    # 5/16
+    assert exact_tail(4, Fraction(1, 2), 3, "hi") == Fraction(5, 16)
+    d = cc.decide(4, Fraction(1, 2), 3, Fraction(1, 3))
+    assert (d.side, d.bound_kind, d.bound, d.decision) == ("hi", "upper", Fraction(1, 3), "reject")
+
+
+def test_t7_a_tail_that_cannot_be_separated_from_the_budget_is_refused():
+    a = Fraction(1, 2140000)
+    assert exact_tail(1, a, 1, "hi") == a  # the tail is exactly the budget and a is not dyadic
+    lo, hi = cc.binomial_tail(1, a, 1, "hi")
+    assert lo < a < hi
+    with pytest.raises(ArithmeticError, match="^the certified tail does not separate from the budget$"):
+        cc.decide(1, a, 1, a)
+
+
+def test_t7_every_primitive_keeps_its_160_bit_precision():
+    """One rounding of a 160-bit mantissa moves a bound by at most one unit in its last place, 2^-159 of
+    it."""
+    third, five_sevenths = Fraction(1, 3), Fraction(5, 7)
+    a, b = cc._from_fraction(third, True), cc._from_fraction(five_sevenths, True)
+    xa, xb = cc._frac(a), cc._frac(b)
+    for op, exact in ((cc._mul, xa * xb), (cc._add, xa + xb), (cc._div, xa / xb)):
+        lo, hi = cc._frac(op(a, b, False)), cc._frac(op(a, b, True))
+        assert lo <= exact <= hi and hi - lo <= hi / 2**159, op.__name__
+    for x in (third, five_sevenths, Fraction(3**200 + 1, 7**90)):
+        lo, hi = cc._frac(cc._from_fraction(x, False)), cc._frac(cc._from_fraction(x, True))
+        assert lo <= x <= hi and hi - lo <= hi / 2**159
+
+
+def test_t7_the_binomial_coefficient_is_enclosed_where_the_factorials_are_rounded():
+    """From n = 70 on, n! no longer fits 160 bits, so the factorial table carries rounded bounds; the pmf must
+    still enclose the exact value for every x."""
+    for n in (70, 97, 150):
+        for x in range(0, n + 1, 7):
+            p = Fraction(2, 5)
+            exact = math.comb(n, x) * p**x * (1 - p) ** (n - x)
+            lo, hi = cc._pmf(n, p, x).bounds()
+            assert lo <= exact <= hi, (n, x)
+
+
+@pytest.mark.parametrize(
+    "x, down, up",
+    [
+        # just above 10^-6, where the digit counts of the parts put the exponent a step high
+        (Fraction(7939260503993197, 7939260503993196500000), "1.00000e-06", "1.00001e-06"),
+        (Fraction(1, 5), "2.00000e-01", "2.00000e-01"),  # the digit counts give 10^0 > 1/5: one step down
+        (Fraction(1), "1.00000e+00", "1.00000e+00"),  # exactly a power of ten
+        (Fraction(10**30), "1.00000e+30", "1.00000e+30"),
+        (Fraction(1, 10**30), "1.00000e-30", "1.00000e-30"),
+        (Fraction(999999999999999, 10**14), "9.99999e+00", "1.00000e+01"),
+    ],
+)
+def test_t7_the_decimal_exponent_of_a_bound_is_exact(x, down, up):
+    for text, rounded_up in ((down, False), (up, True)):
+        mantissa, exponent = text.split("e")
+        shown = Fraction(mantissa) * Fraction(10) ** int(exponent)
+        assert (shown >= x) if rounded_up else (shown <= x)  # the expected strings are directed bounds of x
+        assert Fraction(1) <= Fraction(mantissa) < 10
+        assert cc.sig_digits(x, 6, rounded_up) == text
+
+
+def test_t7_the_exponent_rule_holds_for_the_digit_counts_of_any_fraction():
+    # 10^(a-1) <= n < 10^a and 10^(b-1) <= d < 10^b give 10^(a-b-1) < n/d < 10^(a-b+1)
+    for n, d in ((1, 9), (9, 1), (10, 99), (99, 10), (123, 1000), (1000, 123), (5, 7), (7, 5)):
+        x = Fraction(n, d)
+        e = cc.sig_digits(x, 1, False).split("e")[1]
+        assert Fraction(10) ** int(e) <= x < Fraction(10) ** (int(e) + 1)
+
+
+@pytest.mark.parametrize(
+    "x, places, down, up",
+    [
+        (1 + Fraction(1, 10**100), 3, "1.000", "1.001"),  # beyond any fixed working precision
+        (Fraction(1, 2), 3, "0.500", "0.500"),  # carried exactly: no rounding either way
+        (Fraction(2, 3), 3, "0.666", "0.667"),
+        (Fraction(0), 2, "0.00", "0.00"),
+        (Fraction(123456789, 1000), 0, "123456", "123457"),
+    ],
+)
+def test_t3_outward_rounding_is_exact(x, places, down, up):
+    assert cc.outward(x, places, False) == down and Fraction(down) <= x
+    assert cc.outward(x, places, True) == up and Fraction(up) >= x
+    with pytest.raises(ValueError, match="^non-negative values only$"):
+        cc.outward(-x - 1, places, True)
+
+
+@pytest.mark.parametrize(
+    "x, places, want",
+    [
+        (Fraction(1, 8), 2, "0.12"),  # 12.5 hundredths: a tie, to even
+        (Fraction(3, 8), 2, "0.38"),  # 37.5: a tie, to even
+        (Fraction(5, 2), 0, "2"),
+        (1 + Fraction(1, 2 * 10**9) + Fraction(1, 10**100), 9, "1.000000001"),  # just past a tie
+        (Fraction(1, 2 * 10**9), 9, "0.000000000"),
+        (Fraction(2, 3), 6, "0.666667"),
+    ],
+)
+def test_t8_fixed_rounds_half_even_exactly(x, places, want):
+    assert cc.fixed(x, places) == want
+    assert abs(Fraction(want) - x) <= Fraction(1, 2 * 10**places)
+
+
+@pytest.mark.parametrize(
+    "model, measured, sigma2, want",
+    [
+        (Fraction(9, 8), Fraction(0), Fraction(1), "+1.12"),  # 112.5 hundredths: a tie, to even
+        (Fraction(0), Fraction(227, 200), Fraction(1), "-1.14"),  # 113.5: a tie, to even
+        (Fraction(1), Fraction(0), Fraction(4, 9), "+1.50"),
+        (Fraction(0), Fraction(1, 1000), Fraction(1), "-0.00"),  # a negative pull that rounds to zero
+        (Fraction(1), Fraction(1), Fraction(1), "+0.00"),
+        (Fraction(1), Fraction(0), Fraction(2), "+0.71"),  # 1/sqrt(2) = 0.7071...
+    ],
+)
+def test_t8_the_pull_rounds_half_even_exactly(model, measured, sigma2, want):
+    assert cc.pull(model, measured, sigma2) == want
+    with pytest.raises(ValueError, match="^sigma\\^2 > 0 required$"):
+        cc.pull(model, measured, Fraction(0))
+
+
+@pytest.mark.parametrize(
+    "sigma2, want",
+    [
+        (Fraction(1, 4 * 10**18), "0.000000000"),  # sqrt = 0.5e-9: a tie, to even
+        (Fraction(9, 4 * 10**18), "0.000000002"),  # 1.5e-9: a tie, to even
+        (Fraction(2), "1.414213562"),
+        (Fraction(1, 9), "0.333333333"),
+    ],
+)
+def test_t8_sigma_rounds_half_even_exactly(sigma2, want):
+    assert cc.sigma_decimal(sigma2) == want
+    shown = Fraction(want)
+    assert (shown - Fraction(1, 2 * 10**9)) ** 2 <= sigma2 <= (shown + Fraction(1, 2 * 10**9)) ** 2
+    with pytest.raises(ValueError, match="^sigma\\^2 < 0$"):
+        cc.sigma_decimal(Fraction(-1))
+
+
+def test_t5_a_step_without_secondaries_after_the_last_e_line_is_refused():
+    lines = event(0, legal())
+    with pytest.raises(ValueError, match="^record lines after the last E line$"):
+        cc.reconstruct([*lines, f"S 1 2 1 muIoni {h(0.0)} {h(0.0)} 0\n"], L, "bound_decay", 13)
+    with pytest.raises(ValueError, match="^record lines after the last E line$"):
+        cc.reconstruct([*lines, f"T 1 1 0 13 - - {h(0.0)} {h(0.0)}\n"], L, "bound_decay", 13)
+
+
+def test_t10_a_harvest_that_names_other_cells_on_the_two_revisions_raises():
+    inp = fresh_inputs()
+    cells = inp.cascade.rule["harvest"]["cells"]
+    v2_cells = [c for c in cells if c["version"] == V2]
+    v2_cells[0]["target"], v2_cells[1]["target"] = v2_cells[1]["target"], v2_cells[0]["target"]
+    with pytest.raises(
+        ValueError, match="^the harvest does not name the same cells, in the same order, on both"
+    ):
+        gen.cascade_harvest(inp)
+
+
+def test_t10_route_pairs_that_differ_are_listed_in_revision_order():
+    inp = fresh_inputs()
+    for r in inp.cascade.harvest:
+        if r["config"] == "precompound":
+            r["sequences_sha256"] = "f" * 64 if r["version"] == V1 else "e" * 64
+    out = section(gen.render(inp).text)
+    assert f"The routes rebuilt different cascades on {V1} Al-27 and {V2} Al-27." in out
+
+
+def test_t10_no_terminating_decimal_equals_the_largest_k_alpha_ratio_of_the_domain():
+    """The chapter compares measured K alpha / sum (decimal strings) with the domain maximum by '>': an
+    equality would need the maximum to be a terminating decimal, which it is not."""
+    top = max(cc.ka_over_ktot(z) for z in range(1, cc.Z_MAX + 1))
+    d = top.denominator
+    while d % 2 == 0:
+        d //= 2
+    while d % 5 == 0:
+        d //= 5
+    assert d > 1
+
+
+def test_t7_interval_division_rounds_its_lower_end_down_and_its_upper_end_up():
+    one, three = cc.Interval.of(Fraction(1)), cc.Interval.of(Fraction(3))
+    lo, hi = (one / three).bounds()
+    assert lo < Fraction(1, 3) < hi and hi - lo <= hi / 2**159
+    lo, hi = (cc.Interval.of(Fraction(6)) / three).bounds()
+    assert lo == hi == 2  # an exact quotient is carried exactly
+    third = cc.Interval.of(Fraction(1, 3))  # an interval of width one unit: the quotient spans both ends
+    lo, hi = (one / third).bounds()
+    tl, th = third.bounds()
+    assert lo <= 1 / th and 1 / tl <= hi
+
+
+def test_t5_a_c_line_after_a_step_without_secondaries_is_refused_as_out_of_place():
+    lines = event(0, legal())
+    stream = [
+        *lines[:-1],
+        f"S 0 4 1 hIoni {h(0.0)} {h(0.0)} 0\n",
+        tsm.c_line(0, 4, 0, 11, "-", 0.1, 0.0),
+        lines[-1],
+    ]
+    with pytest.raises(ValueError, match="^C-line not after an at-rest S-line of the muon$"):
+        cc.reconstruct(stream, L, "bound_decay", 13)
+
+
+def test_t1_the_rule_statements_cannot_share_a_line():
+    """Each statement pattern opens with a fixed literal, and no two of these literals agree on their common
+    length, so no line matches two statements: the order check compares distinct lines."""
+    heads = []
+    for _, pattern in cc.STATEMENTS:
+        head = re.match(r"(?:\\.|[^\\(\[{?*+|])*", pattern).group(0)
+        heads.append(head.replace("\\", ""))
+    assert all(heads)
+    for i, a in enumerate(heads):
+        for b in heads[i + 1 :]:
+            k = min(len(a), len(b))
+            assert a[:k] != b[:k], (a, b)
+
+
+def test_t7_the_walk_stops_once_the_remainder_is_below_its_tolerance():
+    """The documented stop: once the remainder bound is below 2^-120 of lo. Each step multiplies the remainder
+    bound by about the ratio, which stays above 3/10 for 500 steps past x = mode + 60 (n = 2000, p = 1/3), so
+    the remainder the walk stops with, part of the returned width, is above 2^-130 lo: the walk does not
+    run on to a width set by rounding alone (about 2^-150 lo), and it stays below the documented 2^-119 lo."""
+    n, p = 2000, Fraction(1, 3)
+    x = math.floor((n + 1) * p) + 60
+    lo, hi = cc.binomial_tail(n, p, x, "hi")
+    assert Fraction(n - x - 500, x + 501) * p / (1 - p) > Fraction(3, 10)  # the ratio 500 steps on
+    assert lo / 2**130 < hi - lo < lo / 2**119
+
+
+def test_t5_an_empty_record_stream_is_read_as_no_events():
+    hv = cc.reconstruct([], L, "bound_decay", 13)
+    assert (hv.events, hv.stops, hv.chains, dict(hv.refused)) == (0, 0, 0, {})
+
+
+def test_t8_the_decimal_helpers_admit_zero_and_refuse_a_negative_value():
+    assert cc.fixed(Fraction(0), 2) == "0.00"
+    assert cc.sigma_decimal(Fraction(0)) == "0.000000000"
+    with pytest.raises(ValueError, match="^non-negative values only$"):
+        cc.fixed(Fraction(-1, 3), 2)
