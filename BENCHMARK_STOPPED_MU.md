@@ -370,7 +370,7 @@ For the 18 ratios formed from a pair of printed members, a correlation between t
 | Kirch et al. | C4H10 | 6 | gas | Kβ/Kα | 0.069992 | 0.187228 | 0.019635 | -5.97 | FAILS |
 | Kirch et al. | C4H10 | 6 | gas | (n ≥ 6)/Kα | 0.210996 | 0.026125 | 0.010188 | +18.15 | FAILS |
 
-**The rule and when it was fixed** (`data/g4/stopped_mu/cascade_rule.json`). Each part was fixed before the data it governs unless it is marked as fixed after data:
+**The rule and when it was fixed** (`data/g4/stopped_mu/cascade_rule.json`). The table states when each part was fixed and what had already been seen:
 
 | part | fixed (UTC) | relation to the data | contents |
 |---|---|---|---|

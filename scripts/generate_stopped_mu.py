@@ -1008,8 +1008,8 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
     w.blank()
     # ---- f. the rule and when it was fixed
     w.line(
-        "**The rule and when it was fixed** (`data/g4/stopped_mu/cascade_rule.json`). Each part was fixed "
-        "before the data it governs unless it is marked as fixed after data:"
+        "**The rule and when it was fixed** (`data/g4/stopped_mu/cascade_rule.json`). The table states when "
+        "each part was fixed and what had already been seen:"
     )
     w.blank()
     w.line("| part | fixed (UTC) | relation to the data | contents |")
