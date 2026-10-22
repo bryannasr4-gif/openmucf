@@ -6,15 +6,20 @@ records.
                               --config <config> --target <target> [--prereg <file>]
   python3 stopped_muon.py reproduce --cell <version>/<config>/<target> --binary <exe> --install <prefix>
                               --data <dir> --work <dir> --out <csv> [--prereg <file>] [--cells <file>]
+  python3 stopped_muon.py cascade --binary <exe> --install <prefix> --data <dir> --work <dir> --version <v>
+                              --config <config> --target <target> --out <csv> --transitions <csv>
+                              [--prereg <file>] [--rule <file>]
 
 Standard library only; the classifier, the reducer and the pre-registration's rule come from
-``openmucf/g4/stopped_mu.py``, loaded by path, so the package need not be installed. ``--prereg`` defaults to
+``openmucf/g4/stopped_mu.py`` and the cascade's reconstruction from ``openmucf/g4/capture_cascade.py``, both
+loaded by path, so the package need not be installed. ``--prereg`` defaults to
 the committed ``data/g4/stopped_mu/preregistration.json``. Every Geant4 call runs with the environment
 ``environment`` builds: no inherited dataset or cascade variable, the twelve dataset variables bound to
 ``<data>/<directory>`` as the pre-registration binds them for the revision, ``G4CASCADE_USE_PRECOMPOUND=1``
 for ``bertini_pc`` only, and ``LD_LIBRARY_PATH=<install>/lib``. Before a run the directories the harness
 reports must equal that binding, and after it the ``DATASET`` lines of ``config.txt`` must equal it again; a
-difference refuses the chunk.
+difference refuses the chunk. ``--rule`` defaults to the committed ``data/g4/stopped_mu/cascade_rule.json``,
+whose ``harvest`` block names the cells, the events and the seed base of the ``cascade`` command.
 """
 
 from __future__ import annotations
@@ -29,7 +34,7 @@ import os
 import re
 import subprocess
 import sys
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from fractions import Fraction
 from pathlib import Path
 from types import ModuleType
@@ -38,7 +43,9 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 MODULE = ROOT / "openmucf" / "g4" / "stopped_mu.py"
+CASCADE_MODULE = ROOT / "openmucf" / "g4" / "capture_cascade.py"
 PREREG = ROOT / "data" / "g4" / "stopped_mu" / "preregistration.json"
+RULE = ROOT / "data" / "g4" / "stopped_mu" / "cascade_rule.json"
 CELLS = ROOT / "data" / "g4" / "stopped_mu" / "cells.jsonl"
 EXECUTABLE = "g4muonic_transport"
 
@@ -82,10 +89,28 @@ COMPARED = (
     "tag_width",
     "problems",
 )
+HARVEST_COLUMNS = (
+    "version",
+    "config",
+    "route",
+    "target",
+    "Z",
+    "A",
+    "binary_sha256",
+    "seed_base",
+    "events",
+    "stops",
+    "chains",
+    "refused",
+    "augers",
+    "photons",
+    "sequences_sha256",
+)
+TRANSITION_COLUMNS = ("version", "config", "target", "transition", "stops")
 
 
-def load_module(path: Path = MODULE) -> ModuleType:
-    spec = importlib.util.spec_from_file_location("stopped_mu", path)
+def load_module(path: Path = MODULE, name: str = "stopped_mu") -> ModuleType:
+    spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -94,6 +119,7 @@ def load_module(path: Path = MODULE) -> ModuleType:
 
 
 sm = load_module()
+cc = load_module(CASCADE_MODULE, "capture_cascade")
 
 
 class Refusal(Exception):
@@ -240,6 +266,18 @@ def parser() -> argparse.ArgumentParser:
     rep.add_argument("--cell", required=True, help="<version>/<config>/<target>")
     rep.add_argument("--cells", default=str(CELLS))
     rep.add_argument("--out", required=True, help="the file each re-run chunk's line is appended to")
+    cas = sub.add_parser("cascade", help="harvest the stock cascade of one cell of the rule's harvest")
+    for name in ("--binary", "--install", "--data", "--work"):
+        cas.add_argument(name, required=True)
+    cas.add_argument("--prereg", default=str(PREREG))
+    cas.add_argument("--rule", default=str(RULE))
+    cas.add_argument("--version", required=True)
+    cas.add_argument("--config", required=True)
+    cas.add_argument("--target", required=True)
+    cas.add_argument("--out", required=True, help="the cascade_harvest.csv the cell's row is appended to")
+    cas.add_argument(
+        "--transitions", required=True, help="the cascade_transitions.csv its rows are appended to"
+    )
     return ap
 
 
@@ -551,10 +589,167 @@ def reproduce(args: argparse.Namespace) -> int:
     return 0
 
 
+# ------------------------------------------------------------------------------------------------- cascade
+def single_isotope(policy: dict[str, Any], target: str) -> tuple[int, int]:
+    """(Z, A) of a single-isotope target; a natural target is refused (its level energies depend on the
+    isotope Geant4 draws)."""
+    args = target_arguments(policy, target)
+    if args[0::2] != ["--Z", "--A"]:
+        raise Refusal(f"{target} is not a single-isotope target")
+    return int(args[1]), int(args[3])
+
+
+def cascade_argv(
+    binary: str,
+    policy: dict[str, Any],
+    harvest: dict[str, Any],
+    *,
+    config: str,
+    target: str,
+    out: str,
+    print_datasets: bool = False,
+) -> list[str]:
+    """The run command's argv for one run of the harvest's events, seeded from the harvest's seed base."""
+    argv = harness_argv(
+        binary,
+        policy,
+        config=config,
+        target=target,
+        offset=0,
+        events=int(harvest["events"]),
+        out=out,
+        print_datasets=print_datasets,
+    )
+    argv[argv.index("--seed-base") + 1] = str(int(harvest["seed_base"]))
+    return argv
+
+
+def checked(lines: Iterable[str]) -> Iterator[str]:
+    """Every record line, after the record grammar of ``stopped_mu.record_fields`` admits it."""
+    for line in lines:
+        sm.record_fields(line)
+        yield line
+
+
+def admit_harvest(h: Any, events: int, seed_base: int) -> None:
+    """Refuse a harvest unless every event is one stop whose cascade reconstructed, each event seeded as the
+    rule says."""
+    if h.refused:
+        raise Refusal(f"refused stops: {dict(h.refused)}")
+    if not h.events == h.stops == h.chains == events:
+        raise Refusal(f"events {h.events}, stops {h.stops}, chains {h.chains}; {events} expected")
+    bad = [ev for ev, seed in h.seeds if seed != seed_base + ev]
+    if bad:
+        raise Refusal(f"events {bad[:5]} are not seeded with seed_base + event")
+
+
+def append_csv(path: Path, columns: tuple[str, ...], rows: list[dict[str, Any]]) -> None:
+    new_file = not path.exists() or path.stat().st_size == 0
+    with open(path, "a", encoding="utf-8", newline="\n") as h:
+        if new_file:
+            h.write(",".join(columns) + "\n")
+        for r in rows:
+            h.write(",".join(str(r[c]) for c in columns) + "\n")
+
+
+def cascade(args: argparse.Namespace) -> int:
+    policy = sm.load_policy(args.prereg)
+    harvest = json.loads(Path(args.rule).read_text(encoding="utf-8"))["harvest"]
+    cell = {"version": args.version, "config": args.config, "target": args.target}
+    if cell not in harvest["cells"]:
+        raise Refusal(f"{args.version}/{args.config}/{args.target} is not a cell of the rule's harvest")
+    z, a = single_isotope(policy, args.target)
+    rt = route(policy, args.config)
+    events, seed = int(harvest["events"]), int(harvest["seed_base"])
+    wd = Path(args.work) / args.version / args.config / args.target / "cascade"
+    if wd.exists():
+        raise Refusal(f"cascade directory exists: {wd}")
+    wd.mkdir(parents=True)
+    env = environment(
+        policy,
+        dict(os.environ),
+        version=args.version,
+        config=args.config,
+        install=args.install,
+        data=args.data,
+    )
+    expected = binding(policy, args.version, args.data)
+    pre = subprocess.run(
+        cascade_argv(
+            args.binary,
+            policy,
+            harvest,
+            config=args.config,
+            target=args.target,
+            out=str(wd),
+            print_datasets=True,
+        ),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    check_datasets(pre, expected, "before the run")
+    (wd / "datasets_pre.txt").write_text(pre, encoding="utf-8")
+    with open(wd / "stdout.txt", "w", encoding="utf-8") as log:
+        rc = subprocess.run(
+            cascade_argv(args.binary, policy, harvest, config=args.config, target=args.target, out=str(wd)),
+            env=env,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+        ).returncode
+    if rc != 0:
+        raise Refusal(f"harness rc {rc} (see {wd / 'stdout.txt'})")
+    records = sorted(wd.glob("records-*.txt"))
+    if [r.name for r in records] != ["records-0.txt"]:
+        raise Refusal(f"expected one worker record file, found {[r.name for r in records]}")
+    config_text = (wd / "config.txt").read_text(encoding="utf-8")
+    check_datasets(config_text, expected, "after the run")
+    material = [line for line in config_text.splitlines() if line.startswith("MATERIAL ")]
+    if material != [f"MATERIAL 1 1 {z} {a} 0x1p+0"]:
+        raise Refusal(f"config.txt MATERIAL lines {material} are not the single isotope Z = {z}, A = {a}")
+    levels = cc.levels_from_config(config_text)
+    try:
+        with open(records[0], encoding="ascii", newline="\n") as src:
+            h = cc.reconstruct(checked(src), levels, rt, z)
+    except ValueError as e:
+        raise Refusal(f"records not readable as cascades: {e} (kept: {records[0]})") from None
+    admit_harvest(h, events, seed)
+    records[0].unlink()  # kept above when the harvest is refused, for diagnosis
+    outside = sorted(set(h.transitions) - set(cc.transition_keys()))
+    if outside:
+        raise Refusal(f"transitions outside the rules: {outside}")
+    row = {
+        **cell,
+        "route": rt,
+        "Z": z,
+        "A": a,
+        "binary_sha256": sha256(Path(args.binary)),
+        "seed_base": seed,
+        "events": h.events,
+        "stops": h.stops,
+        "chains": h.chains,
+        "refused": sum(h.refused.values()),
+        "augers": h.augers,
+        "photons": h.photons,
+        "sequences_sha256": h.sequences_sha256,
+    }
+    trans = [{**cell, "transition": t, "stops": h.transitions.get(t, 0)} for t in cc.transition_keys()]
+    append_csv(Path(args.out), HARVEST_COLUMNS, [row])
+    append_csv(Path(args.transitions), TRANSITION_COLUMNS, trans)
+    (wd / "harvest.json").write_text(json.dumps(row, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(
+        f"CASCADE {args.version} {args.config} {args.target}: events {h.events} stops {h.stops} "
+        f"chains {h.chains} refused 0 augers {h.augers} photons {h.photons} "
+        f"sequences sha256 {h.sequences_sha256}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
-        return {"build": build, "run": run, "reproduce": reproduce}[args.cmd](args)
+        return {"build": build, "run": run, "reproduce": reproduce, "cascade": cascade}[args.cmd](args)
     except (Refusal, sm.Refused, sm.Malformed) as e:
         print(f"REFUSED: {e}")
         return 2
