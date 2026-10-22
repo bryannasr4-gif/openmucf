@@ -143,9 +143,9 @@ g4lifetime:
 # of each row under the pre-registration's rule, the comparison of the stock muonic cascade with measured K-series
 # intensities, the decision on every count of the harvested cascades and BENCHMARK_STOPPED_MU.md, from
 # data/g4/stopped_mu/cells.jsonl, preregistration.json, builds.csv, reproduced.csv, cascade_reference.csv,
-# cascade_rule.json, cascade_harvest.csv and cascade_transitions.csv and the natural compositions of
-# data/g4/d1/geant4_natural_isotopes.csv (all committed and never regenerated here), decided in exact arithmetic
-# with no float deciding a byte; the five generated files join the git-diff list below, and
+# cascade_rule.json, cascade_harvest.csv and cascade_transitions.csv, the vendored G4EmCaptureCascade.cc and the
+# natural compositions of data/g4/d1/geant4_natural_isotopes.csv (all committed and never regenerated here), decided
+# in exact arithmetic with no float deciding a byte; the five generated files join the git-diff list below, and
 # tests/test_stopped_mu.py and tests/test_capture_cascade.py regenerate them.
 stoppedmu:
 	python scripts/generate_stopped_mu.py compare

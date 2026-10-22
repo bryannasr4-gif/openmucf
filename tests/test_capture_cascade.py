@@ -1406,3 +1406,168 @@ def test_t9_compare_writes_the_cascade_files_byte_for_byte(tmp_path, monkeypatch
     assert (tmp_path / "BENCHMARK_STOPPED_MU.md").read_bytes() == (
         REPO / "BENCHMARK_STOPPED_MU.md"
     ).read_text(encoding="utf-8").encode("utf-8")
+
+
+# ============================================================================================
+# The section of BENCHMARK_STOPPED_MU.md
+# ============================================================================================
+def test_t1_the_chapter_prints_the_lines_where_the_statements_are():
+    b = cc.bind_source(SRC1, SRC2)
+    text = section(rendered().text)
+    assert f"lines {b.lines['n_elec']}–{b.lines['loop']}" in text
+    assert f"(line {b.lines['auger_test']})" in text
+    assert f"(line {b.lines['capture_electron']})" in text
+    assert f"(lines {b.lines['photon_draw']}–{b.lines['photon_clamp']})" in text
+    assert f"(lines {b.lines['n_elec']} and {b.lines['auger_count0']})" in text
+
+
+def test_t3_the_domain_is_where_the_integer_power_fits_and_the_chapter_states_its_maximum():
+    p = RULES["power"]
+    assert cc.Z_MAX**p <= 2 ** (gen.INT_BITS - 1) - 1 < (cc.Z_MAX + 1) ** p
+    ratio = {z: cc.ka_over_ktot(z) for z in range(1, cc.Z_MAX + 1)}
+    zhi = max(ratio, key=ratio.__getitem__)
+    assert ratio[zhi] <= Fraction(72732, 100000)
+    assert f"is at most {cc.outward(100 * ratio[zhi], 3, True)} % (at Z = {zhi})" in rendered().text
+
+
+def test_t4_the_chapter_states_the_ensdf_member_sums_it_reads_from_the_reference():
+    sums: dict[str, Fraction] = {}
+    for r in reference():
+        if r["source"] == "ensdf_measday2007":
+            sums[r["target"]] = sums.get(r["target"], Fraction(0)) + Fraction(r["value"])
+    want = " and ".join(cc.fixed(v, 2) for v in sums.values())
+    assert f"whose members sum to {want} %" in rendered().text
+
+
+def test_t10_a_revision_pair_with_different_cascades_is_listed():
+    text = section(rendered().text)
+    assert "Both revisions rebuilt identical cascades" in text
+    inp = fresh_inputs()
+    inp.cascade.harvest[6]["sequences_sha256"] = "f" * 64
+    out = section(gen.render(inp).text)
+    assert "rebuilt different cascades on the revisions: bertini C-12;" in out
+    assert "the other 6 pairs rebuilt identical cascades" in out
+
+
+def test_t10_a_route_pair_with_different_cascades_is_listed():
+    assert "Both routes rebuilt identical cascades on Al-27" in section(rendered().text)
+    inp = fresh_inputs()
+    inp.cascade.harvest[-1]["sequences_sha256"] = "f" * 64
+    out = section(gen.render(inp).text)
+    assert "The routes rebuilt different cascades on 11.5.0.beta Al-27." in out
+
+
+def test_t10_the_independent_propagation_and_correlation_branches(monkeypatch):
+    base = gen.cascade_comparison(fresh_inputs())
+    assert "the verdict changes for 1 of the 9 Kα/ΣK rows: C4H10 goes from HOLDS" in rendered().text
+    assert "changes no verdict." in rendered().text
+    rows = copy.deepcopy(base)
+    for r in rows:
+        if r["observable"] == "ka_over_ktot":
+            r["verdict_independent"] = r["verdict"]
+    flip = next(r for r in rows if r["verdict_rho_minus1"])
+    flip["verdict_rho_plus1"] = "HOLDS"
+    monkeypatch.setattr(gen, "cascade_comparison", lambda inp: rows)
+    out = section(gen.render(fresh_inputs()).text)
+    assert "the verdict changes for none of the 9 Kα/ΣK rows." in out
+    assert f"changes these verdicts: {flip['target']} Kβ/Kα (FAILS to HOLDS)." in out
+
+
+def test_t10_the_ensdf_k_normalised_ratio_inside_the_codes_range_is_stated_so(monkeypatch):
+    assert "above the largest value the code gives for any Z in its domain" in rendered().text
+    rows = copy.deepcopy(gen.cascade_comparison(fresh_inputs()))
+    for r in rows:
+        if r["source"] == "ensdf_measday2007" and r["observable"] == "ka_over_ktot":
+            r["measured"] = "0.700000000"
+    monkeypatch.setattr(gen, "cascade_comparison", lambda inp: rows)
+    assert "within the code's range." in section(gen.render(fresh_inputs()).text)
+
+
+def test_t10_a_source_that_does_not_bind_raises_before_anything_is_stated():
+    inp = fresh_inputs()
+    inp.cascade.sources[V2] = edited(SRC2, "G4int nAuger", "1", "2")
+    with pytest.raises(gen.cc.SourceMismatch):
+        gen.render(inp)
+
+
+def test_t10_a_rejecting_cell_raises_before_anything_is_stated():
+    inp = fresh_inputs()
+    rows = [t for t in inp.cascade.transitions if gen.cell_of(t) == gen.cell_of(inp.cascade.harvest[0])]
+    by = {t["transition"]: t for t in rows}
+    by["g2->1"]["stops"] = str(int(by["g2->1"]["stops"]) - 2000)
+    by["g3->1"]["stops"] = str(int(by["g3->1"]["stops"]) + 2000)
+    with pytest.raises(
+        ValueError, match=r"^the harvested cascade rejects \d+ counts: the module does not describe it$"
+    ):
+        gen.render(inp)
+
+
+def test_t10_a_neighbouring_rule_that_some_cell_passes_is_counted(monkeypatch):
+    original = gen.cascade_consumer
+
+    def drill(inp, rules=None):
+        rows = original(inp, rules)
+        if rules is not None:
+            for r in rows:
+                if gen.cell_of(r) == gen.cell_of(inp.cascade.harvest[0]):
+                    r["decision"] = "pass"
+        return rows
+
+    monkeypatch.setattr(gen, "cascade_consumer", drill)
+    out = section(gen.render(fresh_inputs()).text)
+    assert "the test rejects 13 of the 14 cells." in out
+
+
+def test_t10_a_domain_the_integer_type_does_not_bound_raises(monkeypatch):
+    monkeypatch.setattr(gen, "INT_BITS", 33)
+    with pytest.raises(
+        ValueError, match="^the module's domain is not where the integer power fits the integer type$"
+    ):
+        gen.render(fresh_inputs())
+
+
+def test_t10_consumer_rows_that_break_their_schema_raise(monkeypatch):
+    monkeypatch.setattr(gen, "consumer_problems", lambda rows: ["a row"])
+    with pytest.raises(ValueError, match="^cascade_consumer rows break their schema"):
+        gen.render(fresh_inputs())
+
+
+@pytest.mark.parametrize("z_extreme", [1, 14, cc.Z_MAX])
+def test_t10_the_domain_statements_read_every_z_of_their_range(monkeypatch, z_extreme):
+    real_ratio, real_kb, real_hi = gen.cc.ka_over_ktot, gen.cc.kb_over_ka, gen.cc.high_over_ka
+    monkeypatch.setattr(
+        gen.cc, "ka_over_ktot", lambda z: Fraction(99, 100) if z == z_extreme else real_ratio(z)
+    )
+    monkeypatch.setattr(gen.cc, "kb_over_ka", lambda z: Fraction(1, 2) if z == z_extreme else real_kb(z))
+    monkeypatch.setattr(
+        gen.cc, "high_over_ka", lambda z, k: Fraction(3, 4) if z == z_extreme else real_hi(z, k)
+    )
+    text = section(gen.render(fresh_inputs()).text)
+    assert f"is at most 99.000 % (at Z = {z_extreme})" in text
+    if z_extreme >= cc.LEVELS:
+        assert "Kβ/Kα lies in [" in text and "50.000 %]" in text and "75.000 %]" in text
+    else:
+        assert "50.000 %]" not in text
+
+
+def test_t11_the_pins_cover_every_slot_line_of_the_section():
+    r = rendered()
+    lines = r.text.splitlines()
+    start = lines.index("## The muonic X-ray cascade") + 1
+    end = lines.index("## Reproducing") + 1
+    slot_lines = {n for n, _, _ in r.slots if start <= n < end}
+    pinned = {int(w.rsplit(" ", 1)[1]) for w, *_ in tsm.document_pins(None)}
+    assert slot_lines and slot_lines <= pinned
+
+
+NOVELTY = ("first", "novel", "new ", "never", "unprecedented", "pioneer", "for the first time")
+
+
+def test_t12_the_section_states_no_k_alpha_per_stop_and_no_novelty():
+    text = section(rendered().text)
+    assert gen.forbidden_hits(rendered().text) == []
+    for para in text.split("\n\n"):
+        if "per stop" in para or "per muon stop" in para:
+            assert para.startswith(("**Expected transitions.**", "**Limits.**")), para[:80]
+    assert not [w for w in NOVELTY if w in text.lower()]
+    assert "No Kα per stopped muon is compared" in text

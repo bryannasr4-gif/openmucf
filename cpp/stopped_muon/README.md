@@ -37,8 +37,8 @@ apply here unchanged; for a natural target the harness creates a muonic atom for
 
 ## Building, running and re-running a cell
 
-`stopped_muon.py` uses the standard library alone and loads `openmucf/g4/stopped_mu.py` by path, so it runs where the
-package is not installed. `run` and `reproduce` take the pre-registration as `--prereg <file>`, by default the
+`stopped_muon.py` uses the standard library alone and loads `openmucf/g4/stopped_mu.py` and
+`openmucf/g4/capture_cascade.py` by path, so it runs where the package is not installed. `run` and `reproduce` take the pre-registration as `--prereg <file>`, by default the
 committed `data/g4/stopped_mu/preregistration.json`, and `reproduce` reads the committed cells from `--cells <file>`,
 by default `data/g4/stopped_mu/cells.jsonl`.
 
@@ -48,6 +48,9 @@ python3 cpp/stopped_muon/stopped_muon.py run --binary <exe> --install <prefix> -
     --version <version> --config <config> --target <target> --prereg <file>
 python3 cpp/stopped_muon/stopped_muon.py reproduce --cell <version>/<config>/<target> --binary <exe> \
     --install <prefix> --data <dir> --work <dir> --out <file> --prereg <file> --cells <file>
+python3 cpp/stopped_muon/stopped_muon.py cascade --binary <exe> --install <prefix> --data <dir> --work <dir> \
+    --version <version> --config <config> --target <target> --out <file> --transitions <file> \
+    --prereg <file> --rule <file>
 ```
 
 `build` configures the application with CMake in Release mode against an unpatched install
@@ -69,6 +72,17 @@ multiplicities, f2, counts and events without an outcome with the committed reco
 comparison is equal and `DIFFERS` with what differs otherwise, exits nonzero on any difference, and appends a line per
 re-run chunk to the file `--out` names.
 
+`cascade` harvests the muonic cascade of a cell that the `harvest` block of `--rule` names, by default the committed
+`data/g4/stopped_mu/cascade_rule.json`: a single run of the rule's events from the rule's seed base, with the
+environment, the harness options and the dataset checks of `run`, for a single-isotope target. The records go to a
+regular file; `openmucf/g4/capture_cascade.py` rebuilds the cascade of every stop from the muon's at-rest step,
+matching the energy of each electron and photon to the level energies of the run's `config.txt` and admitting an
+Auger electron only while the source's Auger counter allows it, and the records are then deleted. Every event must
+be a single stop whose cascade is rebuilt, seeded as the rule says; otherwise the command refuses the cell, keeps the
+records and exits nonzero. It appends the cell's row (events, stops, rebuilt cascades, Auger electrons, photons, the
+binary's sha256 and the sha256 of the rebuilt cascades) to the file `--out` names and the number of stops taking
+each transition to the file `--transitions` names.
+
 ## The committed outputs
 
 `data/g4/stopped_mu/` holds what this application made and the comparison made from it:
@@ -80,7 +94,12 @@ re-run chunk to the file `--out` names.
 - `builds.csv`: the builds that made the cells and a rebuild of the committed sources;
 - `reproduced.csv`: the chunks re-run with the committed application;
 - `comparison.csv` and `verdicts.csv`: the cells set beside the measured yields and the verdict of each row under the
-  pre-registration's rule, which `scripts/generate_stopped_mu.py compare` writes as a step of `make audit`.
+  pre-registration's rule, which `scripts/generate_stopped_mu.py compare` writes as a step of `make audit`;
+- `cascade_reference.csv` and `cascade_rule.json`: the measured K-series intensities and the rule that compares the
+  stock cascade with them and tests the harvested cascades, with when each part was fixed;
+- `cascade_harvest.csv` and `cascade_transitions.csv`: the cascades harvested with `cascade`;
+- `cascade_comparison.csv` and `cascade_consumer.csv`: the comparison with the measured intensities and the
+  decision on every count of the harvested cascades, which the same command writes.
 
 The same command generates `BENCHMARK_STOPPED_MU.md` from these files and the natural compositions of
 `data/g4/d1/geant4_natural_isotopes.csv`: the setup, the rule and when each part of it was fixed, the verdicts with
