@@ -1,9 +1,9 @@
 {
   "builds": [
     {
-      "cache_sha256": "584ebc1710cbd3ea51063580c1184921693d0ab54d8b864f67e51f2b19880c4d",
+      "cache_sha256": "df3ebfe4bb6b441ec4f89ada18a558a5de906513bfea36dc4a74226add4b4c7a",
       "commit": "8cc04f65977807f1848da7b958c421cd5e162f26",
-      "compile_commands_sha256": "e744cb9e88e8f9d0731a505f33daffb7d4ec7b2425549f445a984a489fbe0941",
+      "compile_commands_sha256": "4097f78b84c895dab0b7eb10b3269997ae85eb9b931e916529801abde1870797",
       "compile_count": 3226,
       "configure_argv": [
         "cmake",
@@ -22,7 +22,7 @@
       ],
       "flag_count": 3226,
       "harness_path": "$WORK/v11.4.2/pristine/harness/g4muonic_transport",
-      "harness_sha256": "aacc29ddc7841af3d8adc94eddb4cf4cd3acf6ea347342c267452e0e42b72b43",
+      "harness_sha256": "01c8b3cb23065b6a7fb6f42577378016c55dda1755212b361ff22191130c5cc7",
       "kind": "pristine",
       "ldd": [
         {
@@ -32,57 +32,57 @@
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4physicslists.so",
-          "sha256": "112991554f5782acf90fc22ee0e0007c82c086c3b3867d78cda0da63ffa8c13f",
+          "sha256": "55fa0c37fd5e39e60d326c57e21efa3c61ed2ad02eee0b17f8bc648fb0e9c1f6",
           "soname": "libG4physicslists.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4run.so",
-          "sha256": "7d3b1f4995c36deef77673ccaf9ecff947c4b2c95a1fef2400802301f28e8e27",
+          "sha256": "1496301a3176145eb98f6b571d01ab6fdca01e6fdea3eeba2065cb4a7be96545",
           "soname": "libG4run.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4event.so",
-          "sha256": "0792b392474217ea946270d0543927ffca5ff581c2c22370e4c14bff9d38c650",
+          "sha256": "d8ec0a626b62838999659786171081e8e170abf70055e703e3653b60f2cdbe4d",
           "soname": "libG4event.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4tracking.so",
-          "sha256": "96fb28ce490553ac661d5b11cfecfb76ace925b9909359fa3fd709008d7c3bb2",
+          "sha256": "92ace47b027c104f21787c01726ea15f756a66372ef5abae3351ecaf633052fb",
           "soname": "libG4tracking.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4processes_hadronic.so",
-          "sha256": "926ce0005a062dfff499e600c80269a9e0b8c0bf6a01ee913ad78aeb9404e350",
+          "sha256": "5907d31a9e9ee0d17d9614f65488d97fbe3ee74c178543a2c0f15082f473fd9d",
           "soname": "libG4processes_hadronic.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4processes_core.so",
-          "sha256": "30f3456ffebcc7d6ef1173199c9612aa7f87c04da0f6b8ddb0978184167e26f8",
+          "sha256": "ed746e2bb7f7de60d53a1f9e2817daea944948735675c10790ad5df43b81581e",
           "soname": "libG4processes_core.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4track.so",
-          "sha256": "824cc638eaa34b69fa9514fe1698f63686e26d92e02656afefd776b56e965965",
+          "sha256": "e7916cb2a5fe2f78a40e89eaa906e4d7983a9cdffddd4500cd579460458de83e",
           "soname": "libG4track.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4particles.so",
-          "sha256": "b4cc1a53409ae69929f37a7665ea03500b24dc4eba9be1715d28b83c396bf384",
+          "sha256": "51f5cd090c91a8b3838fab3aa9c08641958b6be431f0c53df66e4f78bdf12ea8",
           "soname": "libG4particles.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4geometry.so",
-          "sha256": "9291ba871c94de767266cbf73653c15b8adec814c9ae18c742c0725f361c4641",
+          "sha256": "ef4a7b6d60d4d2e4d96818b47e4b63873ccbeed4a2a71298875efda0518092e4",
           "soname": "libG4geometry.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4materials.so",
-          "sha256": "8970187638633af2770787811f0cf9907134017a8eb8a645709fbf2f37d3bc9e",
+          "sha256": "9e5982b7bfbdda2388aaf55b79c1adc91406b72c57fd3889086022a2b8f010b0",
           "soname": "libG4materials.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4global.so",
-          "sha256": "3d32fea81da5aab5cb6739b3697d831badda7137e85bca11069944959da37212",
+          "sha256": "6df6b808bdede6bf9341ce5aa2284b97e89d52a396e0e6bfd6a1df4020d31621",
           "soname": "libG4global.so"
         },
         {
@@ -112,12 +112,12 @@
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4parmodels.so",
-          "sha256": "9b8f1eecf55d858a14f16e019cc8e6f47065a082ed1d724c2979cc46d557f656",
+          "sha256": "c52085a0291c7d9ff45bf2f765e464f4a5f23bba5376725b107c0fd16094c413",
           "soname": "libG4parmodels.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4intercoms.so",
-          "sha256": "e0fd7eae2435c9ba13fe13511e02f62c7d0c815360915714d6a72cba5ae9a735",
+          "sha256": "e0e701cb282373717e7fdb0cae8e92896478d92a4f4860f840ef16ffbb871c5d",
           "soname": "libG4intercoms.so"
         },
         {
@@ -127,12 +127,12 @@
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4digits_hits.so",
-          "sha256": "9ca42fd7bd7f4f2356f2bf93dfcabdef71bd0fc40a98c22adff46fbd77ad8c73",
+          "sha256": "2a071077d8f905e4a19cfe66cf8ead8ed451f17a07a126f7fb77f98b736879cd",
           "soname": "libG4digits_hits.so"
         },
         {
           "path": "$WORK/v11.4.2/pristine/install/lib/libG4graphics_reps.so",
-          "sha256": "26678f919eadf88f7a859ce5de4df2669739c60014a304474eed21c4ce7c1530",
+          "sha256": "e600738e6b578c006dc887fc87faf83dab0c6b9190b349cc403e71dfee0df272",
           "soname": "libG4graphics_reps.so"
         },
         {
@@ -150,13 +150,13 @@
       "removed": "",
       "tag": "v11.4.2",
       "version": "11.4.2",
-      "wall_s": 860.8728834929999
+      "wall_s": 1180.4679616180001
     },
     {
-      "cache_sha256": "68bcc9771d26648e3c6e822a18e0eeee046fc346f25267c06eb0b272367c3cf5",
+      "cache_sha256": "0c4b2d474cc7c69d588706a43f3ae45730038d2fa2f6d335d71d5aa8edbea7a6",
       "commit": "8cc04f65977807f1848da7b958c421cd5e162f26",
-      "compile_commands_sha256": "7c43a8420cd770ca52494a6fce844d6287acc938ba706f0b8596c7725fcdec5e",
-      "compile_count": 3229,
+      "compile_commands_sha256": "2df0442e3095c71b7d7b72f9560ce19ee362eee6256c05974ff54fc8d493443c",
+      "compile_count": 3230,
       "configure_argv": [
         "cmake",
         "-S",
@@ -172,9 +172,9 @@
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         "-DCMAKE_INSTALL_PREFIX=$WORK/v11.4.2/patched/install"
       ],
-      "flag_count": 3229,
+      "flag_count": 3230,
       "harness_path": "$WORK/v11.4.2/patched/harness/g4muonic_transport",
-      "harness_sha256": "0a688f0871ad502a19bf2be5724a75bff52a2d771bd7bd20dcf51f506f165bbd",
+      "harness_sha256": "ceb9dce739fceb92cbc5f94c08f3d53082b9c9833ab090408d57cff078f27aee",
       "kind": "patched",
       "ldd": [
         {
@@ -184,57 +184,57 @@
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4physicslists.so",
-          "sha256": "438a58edf89396ee13c64b0914b8fa75c310ce934d561d5df4854ee727073f84",
+          "sha256": "49794edb50c13c9215ca424e2b591f6edf3c9945e50f90b3b89329fbbfc71118",
           "soname": "libG4physicslists.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4run.so",
-          "sha256": "d8fb818ed669de5742a07199a113c9ef1694990ecc63c30b61fc445bdf520b6c",
+          "sha256": "c50726e1f224bb2b9280d4dd7056db184d9eacff78aca2d37eec4324af87f034",
           "soname": "libG4run.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4event.so",
-          "sha256": "7ee43b9f627d867a41e7679cefa5e469cc5f3603a510ec90451ac892bc9ee86b",
+          "sha256": "190ad966f863b1863d2ad14dcbace34b29c5ccaab985aa14cecd4d76a9a0e0f1",
           "soname": "libG4event.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4tracking.so",
-          "sha256": "dfe821849b20e229018df47ce781df552b0bad173ad048fc803f4061a0dea1bf",
+          "sha256": "77928b3da8602590a5be7ac381e862cdc7fa49f06f62846f4b165b1baf76690b",
           "soname": "libG4tracking.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4processes_hadronic.so",
-          "sha256": "5d5446c9784d9d5dd328ef89f2620b4ec6c0065ed3b8291ba5a5354057c7a5de",
+          "sha256": "0c3d803c8e7e134829cad69744600f39322e928f6e24df26c282307e8805d6b9",
           "soname": "libG4processes_hadronic.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4processes_core.so",
-          "sha256": "1172a9458f521a5ebeb2ba5db7902220f087e02ba7cb2b6e200cc54b4a8a8b61",
+          "sha256": "9854dbd3f1b44914be2570555aad75012ac9542611d33c6050ddc2d305bab9fb",
           "soname": "libG4processes_core.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4track.so",
-          "sha256": "ad8881f6d7823515c729edb331f3c2d4c7a690e3f3a7512eb44c762bfd01df15",
+          "sha256": "b7c1016cd12d82f9e165419fb1ea68c7e3904fdc84acd56239ce15dbbc750a97",
           "soname": "libG4track.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4particles.so",
-          "sha256": "7bfb309e1ad298f5d2d134eebf70c47ed6cf640b54582bb26f4a946fe8b7a630",
+          "sha256": "80fbb312ac6826e8f347fa2f78680bd774af6e2e73609d7b42a53f5dadac88c1",
           "soname": "libG4particles.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4geometry.so",
-          "sha256": "3e6cdcaf1cdee65fd0a0d11e078108c24b6a85155908e545691e05840926bd39",
+          "sha256": "d864c4b02e11c08284a84b5ba0b4f59a2db42966609582501b2a160f1f28ad7d",
           "soname": "libG4geometry.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4materials.so",
-          "sha256": "7bea7e14dba9612817ae9c454d50392a4d654e5d76d67f36f96be12b378913da",
+          "sha256": "1bf90b3b95a07c098a224d4cea3909fb277d2f199d71c0218792052d4da4501e",
           "soname": "libG4materials.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4global.so",
-          "sha256": "218b79626fb99ce57de7d3a3b49dbfa0a8b59d196d0b89f894bc697047c10951",
+          "sha256": "1df2d2fb0efd9cbcf93bf99e717ba7283bbaa7df0e248d7ba947abed58158dfd",
           "soname": "libG4global.so"
         },
         {
@@ -264,12 +264,12 @@
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4parmodels.so",
-          "sha256": "ce061f55df0b1ba5aa8cf3e56a98967fd390c79d931e38020b70614955d1807d",
+          "sha256": "a2fb4997240639ea3745d794aa6d02265bfdf290acd574aabb10be7218e94515",
           "soname": "libG4parmodels.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4intercoms.so",
-          "sha256": "2208001d20104cc7701dd2686d06d0a400a53cc6506ff4229d1edf43f6eede7d",
+          "sha256": "27cc64a02a4ab9764dd1acda81b32064ef20e4274413b1275511d747cc6017bc",
           "soname": "libG4intercoms.so"
         },
         {
@@ -279,12 +279,12 @@
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4digits_hits.so",
-          "sha256": "9573ad85153ff301af8e9a2560874cc5db5505cb5b70b94008c9303720d6c07d",
+          "sha256": "d12dd5e95782c4819191280ec06852baa8caa9e6bc96ab9ea9dad0cfc2c7959f",
           "soname": "libG4digits_hits.so"
         },
         {
           "path": "$WORK/v11.4.2/patched/install/lib/libG4graphics_reps.so",
-          "sha256": "50125138f30fbd8c26a750ce1f0baf5dd5f0263f23bc939bb1665f39c6b10195",
+          "sha256": "ef7a3f506ec4b766b1a44bd5f0fde5c99624eee98012a3c24ed902509f8977bb",
           "soname": "libG4graphics_reps.so"
         },
         {
@@ -301,7 +301,7 @@
       "patches": [
         {
           "path": "cpp/patches/g4-v11.4.2-muonicdata.patch",
-          "sha256": "8588fe97eb0d3031fd3ceb0ac309a540996c1024b71fbebac4c69e8d8b8f4f07"
+          "sha256": "db009ead9413d78c2175c1cda30522160dfe6fb967b992b743f0cb15ac67e62e"
         },
         {
           "path": "cpp/patches/g4-v11.4.2-register-dataset.patch",
@@ -311,13 +311,13 @@
       "removed": "",
       "tag": "v11.4.2",
       "version": "11.4.2",
-      "wall_s": 898.0262979349998
+      "wall_s": 1333.865156077
     },
     {
-      "cache_sha256": "63e2360c5f213213d313b108e7aa6cce1d1b1022620c1abad204bef20f6ecba2",
+      "cache_sha256": "1270bbb9dc1b07bb7eb2e8557596549ebbcfe586543b8c0ea42b1bb3d6f931a8",
       "commit": "8cc04f65977807f1848da7b958c421cd5e162f26",
-      "compile_commands_sha256": "62b276a2bc685fcd99e8bcf0e696c5c7678e720383b251d208e02bdca408f865",
-      "compile_count": 3229,
+      "compile_commands_sha256": "1e1faff5499ea62ad48a6357c0f83da0df0b7e014e3b9217b53bca8de2113a39",
+      "compile_count": 3230,
       "configure_argv": [
         "cmake",
         "-S",
@@ -333,9 +333,9 @@
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         "-DCMAKE_INSTALL_PREFIX=$WORK/v11.4.2/mutant/install"
       ],
-      "flag_count": 3229,
+      "flag_count": 3230,
       "harness_path": "$WORK/v11.4.2/mutant/harness/g4muonic_transport",
-      "harness_sha256": "db8b93c1e994a2cdfbad5d5b00b2a5532ca44deea7c845d75ca8fa77749c2060",
+      "harness_sha256": "bf6c3d488309d38e720802d47e7ccbecde2b32a9320ba7b805d2de75d5aef18b",
       "kind": "mutant",
       "ldd": [
         {
@@ -345,57 +345,57 @@
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4physicslists.so",
-          "sha256": "f52575391eb9a1324d025f409f5891ae256f023ad4d8d1c37f0a7cb5f8400591",
+          "sha256": "db42fd2ab017588f3baa8a035397f68cf7a361c69f1ee312d6b4f9cfd4973f12",
           "soname": "libG4physicslists.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4run.so",
-          "sha256": "43083a90f40d3331e4dcfe18d8297780d1bcf7e40bb0320c3849d8b298e3c130",
+          "sha256": "145dbddfd30b477f435c737e2a5a23d21a33483ac2edd56e1f17e9e864e38035",
           "soname": "libG4run.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4event.so",
-          "sha256": "eb712274680cc5428f2e46119d626b1510289951dd9ce405a1f4a05bcabfab1f",
+          "sha256": "e3c756ff2d0c1ef511754ef1491f0548d9fb4d026e3ed60a29f229cf60521b13",
           "soname": "libG4event.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4tracking.so",
-          "sha256": "fd07f60c9501d02635701e8423f4e6740d7161123566beac733b113bcf85401b",
+          "sha256": "d54e264db9eddba373ae6131d169b77adb3ce5c3d0b0c257ef3494b565e44548",
           "soname": "libG4tracking.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4processes_hadronic.so",
-          "sha256": "70f822f1b86037fb9f7205f8d9cda894fc7e1a9891eddef47dad911e9265df1c",
+          "sha256": "47d23e59bc23bbc4261f36de696afd5549eb8b394c9c0cec5cee1caa6140576d",
           "soname": "libG4processes_hadronic.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4processes_core.so",
-          "sha256": "12ad4452281ab55369e1bed392e74ff36288e09f701e1c80fdb41ec2607942db",
+          "sha256": "0151e4b40189be6f3589fc127b89d661d8baa150277aaa8bbafc81318ac71bc7",
           "soname": "libG4processes_core.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4track.so",
-          "sha256": "fe793f536b72cb14f53b78419ffbf93d8307fa516acda4e53df6d10159fb9330",
+          "sha256": "f24b99adcab358d6ce5335bb085e2ecaeb18eb897f0795d2b688fc8cbdcba341",
           "soname": "libG4track.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4particles.so",
-          "sha256": "e710d25ae04cc7a07ccc09d1f6746a9ebd8f830cff0dea769ea0a8bdfab33eea",
+          "sha256": "8f34b3fc2f14d9bad167c8c926756bdb9636f0008aba5ebe5e6ccc218abf8b17",
           "soname": "libG4particles.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4geometry.so",
-          "sha256": "f2e19d2a38bcd83ddfccb2456c7e03f262ad6906ba8d9889b948da6f34300bbc",
+          "sha256": "a553ea5391c551e83bb8391590f73b680fa02816576eb55a1db485e4c26536ad",
           "soname": "libG4geometry.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4materials.so",
-          "sha256": "3e4be9ce7655c2066bb033ca34d8aedb058341fd4d9c51cd487fec48b8e29b69",
+          "sha256": "89bdcdf9a09b04fccf4ada5f527e2f74a71783238dc4155f5e15741644f8d3de",
           "soname": "libG4materials.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4global.so",
-          "sha256": "d32fed33813fae612a1acd76dc321cc1bee315d82a1923f90047e063235894f6",
+          "sha256": "6e1b1a63d227c5cb926005ce3dd42de8ba26951a47ad542b626c84cab791cd4c",
           "soname": "libG4global.so"
         },
         {
@@ -425,12 +425,12 @@
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4parmodels.so",
-          "sha256": "a4028815dfe15b6e59461b769a6da01355300fb54a2db113a1ee9cfd7a2e41c0",
+          "sha256": "3611d18de3764db15aae7429e6c9790721aef6d5d95780cc37477b6061a79286",
           "soname": "libG4parmodels.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4intercoms.so",
-          "sha256": "24d372668ce89ca53702861d5223c5bfa55c27a896c222ebeaf41d371683465a",
+          "sha256": "cb3c24d67e559c1a02b6a4c89ffba0735c91a250d5e98a4cec51a359d3f7e663",
           "soname": "libG4intercoms.so"
         },
         {
@@ -440,12 +440,12 @@
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4digits_hits.so",
-          "sha256": "ec9151732aff277dfa544eee73d624374d7d629744f2b4f9618792d0fe3c1a2a",
+          "sha256": "d232162466588cb4bb3495e13b5ca06c0e26ce329d37a0138e4f2ff227041648",
           "soname": "libG4digits_hits.so"
         },
         {
           "path": "$WORK/v11.4.2/mutant/install/lib/libG4graphics_reps.so",
-          "sha256": "95ac0dbc5b64ad93c1ac31aa44380a4ca55818e62cf326be3b0711155698f1bd",
+          "sha256": "2582a04dffe701bc87f50d4900ddf7913acc5d915ee7f029bca52e59fed6dcea",
           "soname": "libG4graphics_reps.so"
         },
         {
@@ -462,7 +462,7 @@
       "patches": [
         {
           "path": "cpp/patches/g4-v11.4.2-muonicdata.patch",
-          "sha256": "8588fe97eb0d3031fd3ceb0ac309a540996c1024b71fbebac4c69e8d8b8f4f07"
+          "sha256": "db009ead9413d78c2175c1cda30522160dfe6fb967b992b743f0cb15ac67e62e"
         },
         {
           "path": "cpp/patches/g4-v11.4.2-register-dataset.patch",
@@ -472,12 +472,12 @@
       "removed": "if (overlaid) G4MuonicDataOverlay::CheckCascadeLevels(Z, A, fLevelEnergy, 14);",
       "tag": "v11.4.2",
       "version": "11.4.2",
-      "wall_s": 854.2683593769998
+      "wall_s": 737.7744275560003
     },
     {
-      "cache_sha256": "0798b07a7433d864e0f7d83176fb75963a59043d04503e1ef7792e8e014b2a2e",
+      "cache_sha256": "ba83e65881e2eaf72cd732648f6756d26414fad658ef763c7e2ad2556eff026d",
       "commit": "f3d5293d384757b8a228a099898b2b87cfa4023c",
-      "compile_commands_sha256": "4b3c9feb77d6a6213dd962f82bd5b20522f9062792dbea574d3b0d995ed8d0a4",
+      "compile_commands_sha256": "6bc7b9301b6765a406968d7542da17adb7f156653e0cb4cdd64ced1b619d8077",
       "compile_count": 3225,
       "configure_argv": [
         "cmake",
@@ -496,7 +496,7 @@
       ],
       "flag_count": 3225,
       "harness_path": "$WORK/v11.5.0.beta/pristine/harness/g4muonic_transport",
-      "harness_sha256": "f3f73fb30306bdb1b8dec269e2646f330ceb106ba5574b3c88ae4830242bf913",
+      "harness_sha256": "133b49aefd75f74edf4eba24d3ca83783c1532eaed4104c206144480e342df1a",
       "kind": "pristine",
       "ldd": [
         {
@@ -506,57 +506,57 @@
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4physicslists.so",
-          "sha256": "65e9e9b0d41ad74f04bb5a120491d181fa56947171ac69766b2c4eba94ff633b",
+          "sha256": "743030c4a3d53207e9afa262aafc18e682fb9b88d9e642472308bb9ca6a6fbc7",
           "soname": "libG4physicslists.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4run.so",
-          "sha256": "95edcfc34ac3c91b5f0442465bb7bef77cc02a041c586fbdd9731b21877d209f",
+          "sha256": "add3b14d8f46cda9fa5aea4c67a8101f2cb474e0b123eb4260903b42f7dc565c",
           "soname": "libG4run.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4event.so",
-          "sha256": "e8aa5d6cccea632c06cd5eef68bb006381172a1a0270045da1606cd1cd6a3912",
+          "sha256": "0bb7511c11075d5bbbb7d9687ea8e50f43c892a4d2680e93e66a787b7fe46361",
           "soname": "libG4event.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4tracking.so",
-          "sha256": "c5701e527b4533497c8d1d9d2931adb1781f0a44bd9f3cf056a80135d851b46a",
+          "sha256": "da72dc82b6a26c9ac0c75c34b08a21346c23ef3674bb25403dc9971d13b3ec76",
           "soname": "libG4tracking.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4processes_hadronic.so",
-          "sha256": "33d3b0e0ee911aba9f17c2d14e84c7256eb44b715c7c50e2e26663c00b3221eb",
+          "sha256": "9401efc203d7ca8497255c10b31fc9f2b35cabf9c8380fc4babc6350818388b1",
           "soname": "libG4processes_hadronic.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4processes_core.so",
-          "sha256": "c3a684b2ca0b78c340daefa011b37b5ca47694ab22e33fe718fa9304fb85fe5d",
+          "sha256": "7f2ee437ca308810a391b902c61af2ecc9ad212faf1474471b3f260cbfbf2f6a",
           "soname": "libG4processes_core.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4track.so",
-          "sha256": "b0bcdab8d2d83617aa089a47ab0c8f4d8791700789379e54a8903c7edaa844a8",
+          "sha256": "d8f6bf96b36afbfb2130366305196664dd95486416a17371fa227d7612337162",
           "soname": "libG4track.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4particles.so",
-          "sha256": "5072358de74757d6d8cb9adafe9210282e7add5fe038d84579c692c4016f4d71",
+          "sha256": "3718975d1e66b1060b08fee8d434e530bc1084b76788f9074a9e0cfaf1dcadd7",
           "soname": "libG4particles.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4geometry.so",
-          "sha256": "58cac8f1a68154dd9ba5641cda60910ef63aebd1a598db41958666e90ebe2e17",
+          "sha256": "2ce056f093f7cd9966ebccffac6d9fc0b3b51dce25739751b0453240a166fd28",
           "soname": "libG4geometry.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4materials.so",
-          "sha256": "c6d385e785ea82ea513bf0957a3a2ba34389835f96e2a33ab3bf95da6e9ec4cb",
+          "sha256": "6aaa6929dff7c38b5bd6fb37b0d2c30f73d950c771a4bed04d47013d75d15f35",
           "soname": "libG4materials.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4global.so",
-          "sha256": "8d64dd13938851bc544746e3ef123e45d1e8728958a029c7ae7897d530a904a1",
+          "sha256": "3ad6ce6d5cf4441b1bfa5833f25daf5d17c7187715d3587b4c14de161d5aabf8",
           "soname": "libG4global.so"
         },
         {
@@ -586,12 +586,12 @@
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4parmodels.so",
-          "sha256": "5146391bc5d3bc63e4a68a857ac5e9760a9ce94226fa693342b4c0e933fd2e14",
+          "sha256": "e8aaaa0360fcac0ed771f2603448c0d1220c597a669a30218a7cb571ac0f6825",
           "soname": "libG4parmodels.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4intercoms.so",
-          "sha256": "463dd508a471af5f22073c69772f846de1b7a688397420f3c4d44a260dc864bb",
+          "sha256": "1054a7c76749a6729e5d0b0cf9fd249dd8e5f7fe8395dd3342162799e8b0dc11",
           "soname": "libG4intercoms.so"
         },
         {
@@ -601,12 +601,12 @@
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4digits_hits.so",
-          "sha256": "74eb61c6a6e1c1b6eca980b9604a97b8451b3901702af6e919968bb55ae37a13",
+          "sha256": "cbf86d1b9366bb69b4733876851efb87eb5671adb2318472119e2011c380eb58",
           "soname": "libG4digits_hits.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/pristine/install/lib/libG4graphics_reps.so",
-          "sha256": "7b585a24ba007d16c49312ef38837ca52327470285e029faf91ff82ae02f9ff0",
+          "sha256": "040575ba99e97e5e3356631b73a3e0a61cdaa67e170edcced7d1a0d7112cee17",
           "soname": "libG4graphics_reps.so"
         },
         {
@@ -624,13 +624,13 @@
       "removed": "",
       "tag": "v11.5.0.beta",
       "version": "11.5.0",
-      "wall_s": 841.8741021100004
+      "wall_s": 1178.2588146619996
     },
     {
-      "cache_sha256": "8a385b176225ed92d9a621ff3bdd26686e6cf3be52c6e7dbd49a2a830228479a",
+      "cache_sha256": "6add6bef5e8646c89347d0ae3853b799ea6346fffdcb179d4513f71246055608",
       "commit": "f3d5293d384757b8a228a099898b2b87cfa4023c",
-      "compile_commands_sha256": "a94f28a74d95c85a631402e20b4fa40bafbbb7b773bb4ba47ae21dea2a276aeb",
-      "compile_count": 3228,
+      "compile_commands_sha256": "59d0f7696933eba1320875aa7a9321edf7eb05216992f7208c5f4f8c9d2b3f8b",
+      "compile_count": 3229,
       "configure_argv": [
         "cmake",
         "-S",
@@ -646,9 +646,9 @@
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         "-DCMAKE_INSTALL_PREFIX=$WORK/v11.5.0.beta/patched/install"
       ],
-      "flag_count": 3228,
+      "flag_count": 3229,
       "harness_path": "$WORK/v11.5.0.beta/patched/harness/g4muonic_transport",
-      "harness_sha256": "1d0ff4b5da8b6d90fb6b51ce0edaeb972885cf55370dc2e0ff4ed3bb89381d81",
+      "harness_sha256": "8ef04060e521d39cdad4e1044302bc78b12272353bb9bac845694852e66160fe",
       "kind": "patched",
       "ldd": [
         {
@@ -658,57 +658,57 @@
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4physicslists.so",
-          "sha256": "052e10e978b4fd07b2f9b0cc704d3057cceca9363e699be91a907e89ddbd3a7b",
+          "sha256": "156573d98759bbbf90befc57099cad01087cc81201361c17196c175185594ffe",
           "soname": "libG4physicslists.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4run.so",
-          "sha256": "bc7e726e073a8d7a4039f03862640e048b4fd57f51aa61011e0470cc7ffc8893",
+          "sha256": "d2dec11cb01998b66970e2b6046b2ae26dc80ae16d959bde3814c71c9e543380",
           "soname": "libG4run.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4event.so",
-          "sha256": "861ddeb6c29df133aad82d5a359fb9d9449424ed3e648377db0af1a44e4f492a",
+          "sha256": "c479f461f188d40ed5454d8abd47adf109618cd713b0b53dc039f7ba5aab889c",
           "soname": "libG4event.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4tracking.so",
-          "sha256": "486c9e765921de4b548ba64fb864c5752e9e1b8e56eb6b728c2ddc0f390bbcdd",
+          "sha256": "ca1f5bb7d81c7ecdb542ac9c967584ceb1275be5658182bc42e1e883c312ea76",
           "soname": "libG4tracking.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4processes_hadronic.so",
-          "sha256": "092916347cf0812a30581ac4aa3a231d68f854526c8a53a1aee244078fdc8a49",
+          "sha256": "4a6de47fe42d870750f30231b3606aa24ba213cbdffe8569624b9c4fc45a4eeb",
           "soname": "libG4processes_hadronic.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4processes_core.so",
-          "sha256": "04832e7972630aff4b79198ca234eed5c8661e586c2ee0b88018db8fd7946d09",
+          "sha256": "1d9bfd35bbdaf7fadd3c27ad5343ed0b14e75c0f8fdc386e55d56b110a1fa884",
           "soname": "libG4processes_core.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4track.so",
-          "sha256": "0edc5ca7a81526ef2c9cd55776c327f15837d4b9d7862f36b9a6dc142f84f65c",
+          "sha256": "d9baa174271f5922f41ab6d21a31934bdc9dfe6bcb2d4590d2d67deb0aee4631",
           "soname": "libG4track.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4particles.so",
-          "sha256": "cdd6641a665e097ef7f7c26736dcf05186d4fd66a94d6d0438eb5131a3a74ab8",
+          "sha256": "a9377ce983b3ffa4b1b17518b417d2ccbd63a76f510cdb3698fbe113827aee76",
           "soname": "libG4particles.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4geometry.so",
-          "sha256": "5a60c5a60d87db173787a8ed9a06b7480c50be9c17c30acb6362d73ee1256b22",
+          "sha256": "90e928bc436ff2064d3cab0d761bd379d7c49a742d614fe1ddc9d8f60fbc966b",
           "soname": "libG4geometry.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4materials.so",
-          "sha256": "7245baface84f800621a48d87c9e931955af713ce94ce8c8688050eaed1e83b6",
+          "sha256": "442536f646676497fe8227240a637cc353b2b2a8d64b5e2700571c626e8b4bc1",
           "soname": "libG4materials.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4global.so",
-          "sha256": "ba6ed4ba15cdc8e51fc4b8e5a53d74d9c545a537938988908ef61eec074539bf",
+          "sha256": "5a53adcad64d76b2e2c6358985437d6e4edfccdff6e409764b26ea1424deb113",
           "soname": "libG4global.so"
         },
         {
@@ -738,12 +738,12 @@
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4parmodels.so",
-          "sha256": "27ca53356d898297317bda265665b2b8b89cf4b3a048754db6a94244ed98b951",
+          "sha256": "9cacbf8e8e90215405904c2fc32db1d38c1b0a0b4f797666bce19d7e06e4cb79",
           "soname": "libG4parmodels.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4intercoms.so",
-          "sha256": "e9221a2ebbf325c074048623d470e6ecbcedf6cad60bf2e4e9b42e19c0bdcd54",
+          "sha256": "850e992434ecf4acdd5c70dcc2864eaf897b8deb333980f2cba44fd437fbcb74",
           "soname": "libG4intercoms.so"
         },
         {
@@ -753,12 +753,12 @@
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4digits_hits.so",
-          "sha256": "b0eb462f6fbd2efb61f7438f54aa0e14d3271cb16e8e182a1c0c020f87134db6",
+          "sha256": "34b8b0f6298cc5d93d94876c849ad9a11ddde9c15bdf692110e29b3a825c324b",
           "soname": "libG4digits_hits.so"
         },
         {
           "path": "$WORK/v11.5.0.beta/patched/install/lib/libG4graphics_reps.so",
-          "sha256": "c72d234ba7f0c0aaedf559a14be3ee4ecccaf1c58dcabe85f3c29eab466556cb",
+          "sha256": "a1d7d7b079d831ff75f0c0c2fca6b4fd2cc1f02b209336c586c842735b170a63",
           "soname": "libG4graphics_reps.so"
         },
         {
@@ -775,7 +775,7 @@
       "patches": [
         {
           "path": "cpp/patches/g4-v11.5.0.beta-muonicdata.patch",
-          "sha256": "03d7d7e2b8e7b5dfc2c52cb87d3bf0054a9cfb953fbed0a139c65f5f01babe68"
+          "sha256": "acefe3e4b3c43595f4fd2981611941cdebd789ea47397cb50fa0e71ed5b8d6d3"
         },
         {
           "path": "cpp/patches/g4-v11.5.0.beta-register-dataset.patch",
@@ -785,7 +785,7 @@
       "removed": "",
       "tag": "v11.5.0.beta",
       "version": "11.5.0",
-      "wall_s": 906.1661126649988
+      "wall_s": 1334.96489098
     }
   ],
   "dataset": {
@@ -987,7 +987,7 @@
   "preserved": {
     "v11.4.2": {
       "harness_path": "$WORK/v11.4.2/preserved/harness/g4muonic_transport",
-      "harness_sha256": "b0d2b9083dba08e5a51570a2d6ab47029e47b2ac88629eacb7432d95e2e35419",
+      "harness_sha256": "04d416d161fafda42d03320340c59c6bde6da8c621444acd6e0c1f70d5590b70",
       "ldd": [
         {
           "path": "linux-vdso.so.1",
@@ -1113,7 +1113,7 @@
     },
     "v11.5.0.beta": {
       "harness_path": "$WORK/v11.5.0.beta/preserved/harness/g4muonic_transport",
-      "harness_sha256": "f7213285ccdd7e42d72dde29ebf231d2acb9430d7c433317200482ed7b91d89a",
+      "harness_sha256": "15e5491553914f886d30fd85f1b41a24a3454244fba83a8ddcd7dd20a3172d2c",
       "ldd": [
         {
           "path": "linux-vdso.so.1",
@@ -1239,8 +1239,8 @@
     }
   },
   "sources": {
-    "CMakeLists.txt": "d29593bd8d9cbb0ca8ec6ba10c9da7abef332b4e7a4eff7ef5bc15b4abddfefc",
-    "g4muonic_transport.cc": "70729424a387ede325c49c53b24a3e59a0efa2cba045e234ae32dc332b52b40d",
+    "CMakeLists.txt": "7199d53c879cfa9a275e76f99eee8f84783aed86acb84c0a11d6442582002a80",
+    "g4muonic_transport.cc": "44b3865dd540a5bd5cf808ca70c987516ea858ec535468cc42b0ae824613c817",
     "matrix.json": "508a6d87c71b1c57fee137d0968a1dc2ac00d45d675d226282e597a6903a7401",
     "transport.py": "69595e9fc36c77d50c047aece3d4a820f81c0b8c7a2c8aeb0b024e94ee0165c6"
   }

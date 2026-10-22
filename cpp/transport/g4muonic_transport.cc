@@ -50,6 +50,9 @@
 #ifdef G4MUONIC_TRANSPORT_PATCHED
 #include "G4MuonicDataOverlay.hh"
 #endif
+#ifdef G4MUONIC_TRANSPORT_BOUND_RATES
+#include "G4MuonicBoundRateProvider.hh"
+#endif
 
 #include <CLHEP/Random/MixMaxRng.h>
 #include <algorithm>
@@ -75,6 +78,7 @@ struct Options {
   long seed_base = 0;
   long seed_stride = 0;
   bool config_only = false;
+  std::string bound_rates = "off";
 };
 
 Options Parse(int argc, char** argv) {
@@ -96,6 +100,7 @@ Options Parse(int argc, char** argv) {
     else if (key == "--seed-base") o.seed_base = std::stol(value);
     else if (key == "--seed-stride") o.seed_stride = std::stol(value);
     else if (key == "--out") o.out = value;
+    else if (key == "--bound-rates") o.bound_rates = value;
     else throw std::runtime_error("unknown argument " + key);
   }
   if ((o.route != "bound_decay" && o.route != "muonic_atom_helper") ||
@@ -105,6 +110,10 @@ Options Parse(int argc, char** argv) {
   }
 #ifndef G4MUONIC_TRANSPORT_PATCHED
   if (o.opt_in == "on") throw std::runtime_error("opt-in requires a patched build");
+#endif
+  if (o.bound_rates != "on" && o.bound_rates != "off") throw std::runtime_error("invalid --bound-rates");
+#ifndef G4MUONIC_TRANSPORT_BOUND_RATES
+  if (o.bound_rates == "on") throw std::runtime_error("--bound-rates on requires the bound-rate provider");
 #endif
 #ifndef G4MULTITHREADED
   if (o.threads > 1) throw std::runtime_error("this Geant4 installation lacks multithreading");
@@ -297,6 +306,13 @@ void WriteConfig(const Options& o, Detector* detector, const G4ParticleDefinitio
   if (!file) throw std::runtime_error("cannot open config.txt");
   file << "VERSION " << G4VERSION_TAG << '\n';
   file << "ENGINE MixMaxRng\n";
+#ifdef G4MUONIC_TRANSPORT_BOUND_RATES
+  // written only with the switch on, so the records of every run without it are unchanged
+  if (o.bound_rates == "on") {
+    file << "BOUND_RATES " << G4MuonicBoundRateProvider::IsEnabled() << ' ' << G4MuonicBoundRateProvider::IsFrozen()
+         << '\n';
+  }
+#endif
   const auto* muon = G4MuonMinus::MuonMinus();
   auto* processes = muon->GetProcessManager()->GetProcessList();
   file << "PROCESSES";
@@ -362,6 +378,9 @@ int main(int argc, char** argv) {
 #endif
 #ifdef G4MUONIC_TRANSPORT_PATCHED
     if (options.opt_in == "on") G4HadronicParameters::Instance()->SetEnableMuonicData(true);
+#endif
+#ifdef G4MUONIC_TRANSPORT_BOUND_RATES
+    if (options.bound_rates == "on") G4HadronicParameters::Instance()->SetEnableMuonicBoundRates(true);
 #endif
     auto* detector = new Detector(options);
     manager->SetUserInitialization(detector);

@@ -3,9 +3,10 @@
 `g4-v11.4.2-muonicdata.patch` and `g4-v11.5.0.beta-muonicdata.patch` let Geant4 read the
 `G4MuonicData` dataset, each cut against the pristine tree of the revision its name carries: the
 patch adds the repository's reader (`G4MuonicDataTable`), its semantic layer
-(`G4MuonicDataSemantics`) and its glue (`G4MuonicDataOverlay`), byte for byte the files under
-`cpp/include` and `cpp/src`, to the `G4partman` module,
-lists them in that module's `sources.cmake`, adds one boolean to `G4HadronicParameters`, and
+(`G4MuonicDataSemantics`), its glue (`G4MuonicDataOverlay`) and the bound-rate provider
+(`G4MuonicBoundRateProvider`), byte for byte the files under `cpp/include` and `cpp/src`, to the
+`G4partman` module, lists them in that module's `sources.cmake`, adds a boolean to
+`G4HadronicParameters` for each of its opt-ins, and
 inserts a table lookup into the four functions, in two files, that carry the compiled-in
 muon-capture tables: `G4MuonMinusBoundDecay::GetMuonCaptureRate` and `::GetMuonZeff`, and
 `G4MuonicAtomHelper::GetMuonCaptureRate` and `::GetMuonZeff`, and into
@@ -18,9 +19,10 @@ the calls to `GetKShellEnergy` in `G4MuonicAtomHelper::ConstructMuonicAtom` and
 `G4MuonicAtomDecay::DecayIt`, which now pass the mass number, and the first line of the compiled-in
 `GetKShellEnergy(G4double Z)` definition, which renames it to the private
 `GetCompiledKShellEnergy` that both public forms fall to: every other hunk in an existing file
-only inserts.
+only inserts. The bound-rate opt-in described below inserts a block into
+`G4MuonMinusBoundDecay::ApplyYourself` and a block into `G4MuonicAtomHelper::ConstructMuonicAtom`.
 
-The lookup is off by default: the boolean the patch adds to `G4HadronicParameters` starts `false`,
+The lookup is off by default: the dataset boolean the patch adds to `G4HadronicParameters` starts `false`,
 its setter is the only caller of `G4MuonicDataTable::Enable()`, and until an application sets it —
 one line before its physics list is built: `SetEnableMuonicData(true)` on the `G4HadronicParameters`
 singleton — every function it inserts a lookup into runs its unpatched code and one boolean test,
@@ -36,6 +38,29 @@ evaluated capture profile, a profile other than `parity` that gives the seam a t
 capture-rate function computed is not finite, and leaves a finite rate that is not positive, such as
 the fallback formula's rate for tritium, as computed, raising the warning `G4Exception`
 `G4MuonicData006` the first time in a process that it meets such a rate.
+
+The bound-rate opt-in is separate from the dataset opt-in, and off by default. With
+`SetEnableMuonicBoundRates(true)` on the `G4HadronicParameters` singleton, set before the physics list
+is built, the stopping route (`G4MuonMinusBoundDecay::ApplyYourself`, which draws the delay and the
+branch of a stopped negative muon) and the atomic route (`G4MuonicAtomHelper::ConstructMuonicAtom`,
+which stores the muonic atom's lifetime, DIO lifetime and nuclear-capture lifetime) take one capture
+and decay rate pair from `G4MuonicBoundRateProvider`: the capture rate
+`G4MuonicAtomHelper::GetMuonCaptureRate` returns, called as it stands, with whatever the dataset
+opt-in gives it, and the stopping route's own decay rate below `Z = 14`, which
+`G4MuonMinusBoundDecay::GetMuonDecayRate` computes from the nuclear mass and its comment attributes
+to von Baeyer and Leiter, evaluated with the nuclear mass each consumer already uses. The provider
+answers for `2 <= Z <= 13` and `A >= Z`; for hydrogen, for higher `Z` and for a natural-composition
+request it answers unsupported and each consumer keeps the pair it formed itself, and inside that
+domain a nuclear mass, capture rate or decay rate it cannot use raises the fatal `G4Exception`
+`G4MuonicBoundRates001` rather than being clipped. The boolean starts `false`, its setter is the
+only caller of `G4MuonicBoundRateProvider::Enable()`, and `SetEnableMuonicData` does not set it;
+with it off, each consumer runs its unpatched code and a test of the switch. The first time a
+consumer forms a pair it freezes the switch, and a later change raises the fatal `G4Exception`
+`G4MuonicBoundRates002`, because muonic atoms already built keep the lifetimes they were built with.
+The getters `G4MuonMinusBoundDecay::GetMuonDecayRate` and `G4MuonicAtomHelper::GetMuonDecayRate`
+are unchanged and keep reporting each route's own prescription, not the pair a consumer receives with
+the opt-in on. The pair reproduces one prescription on both routes; it is not a statement of physical
+accuracy, and it leaves the timing of the products both routes emit as it was.
 
 Discovery follows the `G4FindDataDir` lookup Geant4 provides: an exported `G4MUONICDATA`, or, once
 the dataset is registered, the entry under `GEANT4_DATA_DIR` or, when that variable is unset or

@@ -59,18 +59,21 @@ FAMILIES: dict[str, tuple[pathlib.Path, pathlib.Path, pathlib.Path]] = {
 #: Every patch of every family, in tag order -- what the README's digit-bearing tokens are held to.
 ALL_PATCHES = [patch for tag in sorted(FAMILIES) for patch in FAMILIES[tag][:2]]
 
-#: The files the behaviour patch is declared to touch, as a literal set: two reader files and two
-#: glue files added to Geant4's particle-management module, that module's source list, the seam
-#: files and the helper's header, and the two files of `G4HadronicParameters` that gain the opt-in.
-#: A count would let a dropped file and an added file cancel out.
+#: The files the behaviour patch is declared to touch, as a literal set: two reader files, two
+#: glue files and the two files of the bound-rate provider added to Geant4's particle-management
+#: module, that module's source list, the seam files and the helper's header, and the two files of
+#: `G4HadronicParameters` that gain the two opt-ins. A count would let a dropped file and an added
+#: file cancel out.
 BEHAVIOUR_PATHS = frozenset(
     {
         "source/particles/management/include/G4MuonicAtomHelper.hh",
+        "source/particles/management/include/G4MuonicBoundRateProvider.hh",
         "source/particles/management/include/G4MuonicDataOverlay.hh",
         "source/particles/management/include/G4MuonicDataSemantics.hh",
         "source/particles/management/include/G4MuonicDataTable.hh",
         "source/particles/management/sources.cmake",
         "source/particles/management/src/G4MuonicAtomHelper.cc",
+        "source/particles/management/src/G4MuonicBoundRateProvider.cc",
         "source/particles/management/src/G4MuonicDataOverlay.cc",
         "source/particles/management/src/G4MuonicDataSemantics.cc",
         "source/particles/management/src/G4MuonicDataTable.cc",
@@ -151,6 +154,12 @@ READER: dict[str, dict[str, pathlib.Path]] = {
         ),
         "source/particles/management/src/G4MuonicDataSemantics.cc": (
             REPO / "cpp/src/G4MuonicDataSemantics.cc"
+        ),
+        "source/particles/management/include/G4MuonicBoundRateProvider.hh": (
+            REPO / "cpp/include/G4MuonicBoundRateProvider.hh"
+        ),
+        "source/particles/management/src/G4MuonicBoundRateProvider.cc": (
+            REPO / "cpp/src/G4MuonicBoundRateProvider.cc"
         ),
     }
     for tag in FAMILIES
@@ -417,6 +426,27 @@ def check_licence_copy(copy: pathlib.Path, vendored: pathlib.Path) -> None:
 
 #: The one added line of `G4HadronicParameters.hh` that declares the opt-in member and its default.
 MEMBER_FALSE = b"G4bool fEnableMuonicData = false;"
+#: The second opt-in: the member, the provider call only its setter makes, and the setter's name.
+BOUND_MEMBER_FALSE = b"G4bool fEnableMuonicBoundRates = false;"
+BOUND_ENABLE = b"G4MuonicBoundRateProvider::Enable()"
+BOUND_SETTER = b"SetEnableMuonicBoundRates("
+#: The two consumers of the bound-rate pair: the stopping route's bound decay and the helper that stores the
+#: muonic atom's lifetimes; the line each inserted block must follow and the line it must precede (as each
+#: revision writes it), and the call each block makes.
+BOUND_DECAY = "source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc"
+BOUND_CONSUMERS: dict[str, tuple[tuple[bytes, ...], tuple[bytes, ...], bytes]] = {
+    BOUND_DECAY: (
+        (b"targetNucleus.AtomicMass(A,Z));", b"G4double lambdad = GetMuonDecayRate(Z, A, fMuMass, "
+                                              b"targetNucleus.AtomicMass(A, Z));"),
+        (b"G4double lambda   = lambdac + lambdad;", b"G4double lambda = lambdac + lambdad;"),
+        b"G4MuonicBoundRateProvider::Rates(Z, A, fMuMass, targetNucleus.AtomicMass(A, Z), rates)",
+    ),
+    HELPER_CC: (
+        (b"G4double lambdad = GetMuonDecayRate(Z);",),
+        (b"G4double lifetime = 1. / (lambdac + lambdad);",),
+        b"G4MuonicBoundRateProvider::Rates(Z, A, muonMass, G4NucleiProperties::GetNuclearMass(A, Z), rates)",
+    ),
+}
 
 
 def added_lines(file: FilePatch) -> list[tuple[Hunk, bytes]]:
@@ -457,6 +487,72 @@ def check_opt_in_shape(tag: str, files: dict[str, FilePatch]) -> None:
     )
 
 
+def check_bound_switch_shape(tag: str, files: dict[str, FilePatch]) -> None:
+    """The second opt-in, over the `+` lines of the pre-existing files: `G4HadronicParameters.hh` gains its
+    member declared `false` exactly once; `G4MuonicBoundRateProvider::Enable()` is called from exactly one
+    added line, in `G4HadronicParameters.cc`, in a hunk that adds a `SetEnableMuonicBoundRates(` line above
+    it; and no added line of the dataset opt-in's setter names the provider, so that opt-in cannot switch the
+    pair on."""
+    (header,) = tuple(p for p in HADRONIC_PARAMETERS if p.endswith(".hh"))
+    (source,) = tuple(p for p in HADRONIC_PARAMETERS if p.endswith(".cc"))
+    members = [content.strip() for _, content in added_lines(files[header])]
+    assert members.count(BOUND_MEMBER_FALSE) == 1, (
+        f"{tag}: {header} adds the bound-rate member `false` {members.count(BOUND_MEMBER_FALSE)} times"
+    )
+    callers = [
+        (path, hunk)
+        for path, file in sorted(files.items())
+        if file.old_path != b"/dev/null"
+        for hunk, content in added_lines(file)
+        if BOUND_ENABLE in content
+    ]
+    assert len(callers) == 1, f"{tag}: {BOUND_ENABLE.decode()} is called from {len(callers)} added line(s)"
+    ((path, hunk),) = callers
+    assert path == source, f"{tag}: the only caller of the provider's Enable() is in {path}, not {source}"
+    added = [content for _, content in added_lines(FilePatch(b"", b"", [hunk]))]
+    index = next(i for i, content in enumerate(added) if BOUND_ENABLE in content)
+    assert any(BOUND_SETTER in content for content in added[:index]), (
+        f"{tag}: no added `SetEnableMuonicBoundRates(` line precedes the provider's Enable() call"
+    )
+    inside = False
+    for _, content in added_lines(files[source]):
+        if b"SetEnableMuonicData(" in content:
+            inside = True
+        elif content.startswith(b"void ") or content.startswith(b"G4"):
+            inside = False
+        assert not (inside and b"BoundRate" in content), (
+            f"{tag}: the dataset opt-in's setter names the bound-rate provider: {content!r}"
+        )
+
+
+def check_bound_consumers(tag: str, files: dict[str, FilePatch]) -> None:
+    """Each consumer of the bound-rate pair, rebuilt from its vendored copy: the patch inserts one block,
+    after the line that forms the consumer's own decay rate and before the line that uses the pair, that
+    consults the provider once, asks it once for the pair with the consumer's own nuclear mass, and assigns
+    both rates; and nothing else of the file names the provider. Every message names the family and the
+    path."""
+    for path, (after, before, call) in BOUND_CONSUMERS.items():
+        patched = apply_file_patch(files[path], SEAMS[tag][path].read_bytes())
+        text = [line.strip() for line, _ in split_lines(patched)]
+        for needle in (b"G4MuonicBoundRateProvider::Consult()", call, b"lambdac = rates.capture;",
+                       b"lambdad = rates.decay;"):
+            hits = [i for i, line in enumerate(text) if needle in line]
+            assert len(hits) == 1, f"{tag}: {path} carries {needle!r} {len(hits)} times"
+        provider_lines = [i for i, line in enumerate(text) if b"G4MuonicBoundRateProvider" in line]
+        lo = [i for i, line in enumerate(text) if any(line.endswith(a) for a in after)]
+        hi = [i for i, line in enumerate(text) if line in before]
+        assert len(lo) == 1 and len(hi) == 1, f"{tag}: {path}: the block's neighbours are not unique"
+        block = [i for i, line in enumerate(text) if lo[0] < i < hi[0]]
+        for needle in (b"G4MuonicBoundRateProvider::Consult()", call, b"lambdac = rates.capture;",
+                       b"lambdad = rates.decay;"):
+            assert any(needle in text[i] for i in block), (
+                f"{tag}: {path}: {needle!r} is not between the block's neighbours"
+            )
+        outside = [i for i in provider_lines if not lo[0] < i < hi[0]]
+        include = [i for i in outside if text[i] == b'#include "G4MuonicBoundRateProvider.hh"']
+        assert outside == include and len(include) == 1, f"{tag}: {path} names the provider elsewhere"
+
+
 def check_pristine_pin(tag: str, path: str, file: FilePatch, pins: dict[str, dict[str, str]]) -> None:
     """The `index` old id of a file this repository does not vendor is a prefix of the pinned
     object name of that file on the pristine tree of `tag`; the message names the path."""
@@ -482,6 +578,24 @@ def test_t72_the_behaviour_patch_touches_exactly_the_declared_files(tag: str):
 CHANGES: dict[str, list[tuple[bytes, bytes]]] = {}
 for _path, _pair in list(CALL_SITES.items()) + list(RENAMES.items()):
     CHANGES.setdefault(_path, []).append(_pair)
+#: The bound-rate block of the helper, line for line: the one other run of `+` lines a hunk that changes a
+#: declared line of that file may carry, because the block and the K-energy call site lie within one hunk's
+#: context of each other. Exact text, never a count.
+CHANGE_HUNK_BLOCKS: dict[str, list[bytes]] = {
+    HELPER_CC: [
+        b"  if (G4MuonicBoundRateProvider::Consult()) {",
+        b"    G4MuonicBoundRates rates;",
+        b"    const G4double muonMass = "
+        b'(G4ParticleTable::GetParticleTable()->FindParticle("mu-"))->GetPDGMass();',
+        b"    if (G4MuonicBoundRateProvider::Rates(Z, A, muonMass, "
+        b"G4NucleiProperties::GetNuclearMass(A, Z), rates)",
+        b"        == G4MuonicBoundRateProvider::Status::kCommon) {",
+        b"      lambdac = rates.capture;",
+        b"      lambdad = rates.decay;",
+        b"    }",
+        b"  }",
+    ],
+}
 
 
 def check_deletions(files: dict[str, FilePatch]) -> None:
@@ -489,7 +603,8 @@ def check_deletions(files: dict[str, FilePatch]) -> None:
     the two `G4HadronicParameters` files -- is only ever added to, except where `CHANGES` declares a
     line for it: it deletes exactly as many lines as it declares changes, each deleted line holds
     its old text exactly once, and the hunk that removes it adds exactly that line with the old text
-    replaced by the new. Every message names the path."""
+    replaced by the new, directly after the deleted line -- and, where `CHANGE_HUNK_BLOCKS` names a block for
+    the file, that block's lines before or after it, exactly. Every message names the path."""
     for path, file in sorted(files.items()):
         if file.old_path == b"/dev/null":
             continue
@@ -510,8 +625,18 @@ def check_deletions(files: dict[str, FilePatch]) -> None:
             old, new = matching[0]
             declared.remove((old, new))
             added = [line for marker, line, _ in hunk.lines if marker == b"+"]
-            assert added == [content.replace(old, new)], (
+            changed = [content.replace(old, new)]
+            block = CHANGE_HUNK_BLOCKS.get(path, [])
+            allowed = [changed] + ([block + changed, changed + block] if block else [])
+            assert added in allowed, (
                 f"{path}: hunk {hunk.header.decode()} adds {added}, not the line with {new!r}"
+            )
+            at = next(
+                i for i, (marker, line, _) in enumerate(hunk.lines) if marker == b"-" and line == content
+            )
+            assert hunk.lines[at + 1][:2] == (b"+", changed[0]), (
+                f"{path}: hunk {hunk.header.decode()}: the changed line does not directly follow the deleted "
+                "one"
             )
 
 
@@ -702,6 +827,30 @@ def test_t72_the_opt_in_starts_false_and_its_setter_is_the_only_caller_of_enable
     check_opt_in_shape(tag, by_new_path(parse_patch(behaviour.read_bytes())))
 
 
+@family
+def test_t72_the_bound_rate_switch_starts_false_and_only_its_setter_enables_the_provider(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    check_bound_switch_shape(tag, by_new_path(parse_patch(behaviour.read_bytes())))
+
+
+@family
+def test_t72_each_consumer_takes_the_provider_pair_in_one_inserted_block(tag: str):
+    behaviour, _, _ = FAMILIES[tag]
+    check_bound_consumers(tag, by_new_path(parse_patch(behaviour.read_bytes())))
+
+
+def test_t72_the_provider_files_are_identical_across_families():
+    """The provider's `.hh` and `.cc`, rebuilt from each family's added-file hunks, are the same bytes: the
+    provider does not depend on the revision."""
+    rebuilt = {}
+    for tag in sorted(FAMILIES):
+        behaviour, _, _ = FAMILIES[tag]
+        files = by_new_path(parse_patch(behaviour.read_bytes()))
+        rebuilt[tag] = {p: apply_file_patch(files[p], b"") for p in READER[tag] if "BoundRateProvider" in p}
+    first, second = sorted(rebuilt)
+    assert len(rebuilt[first]) == 2 and rebuilt[first] == rebuilt[second]
+
+
 def test_t72_the_vendored_readme_names_the_seam_paths_the_behaviour_patch_touches():
     """The vendored README's `upstream path` cells are the seam paths, read from its table by the
     row labels: the BoundDecay cell is the reference module's `UPSTREAM_PATH`, the helper, cascade
@@ -818,6 +967,72 @@ def test_t73_drill_a_dropped_member_default_and_a_second_enable_caller_are_refus
 
 
 @family
+def test_t73_drill_a_true_default_and_an_enable_from_the_dataset_setter_are_refused(tag: str):
+    """The bound-rate switch, corrupted in memory: its member declared `true`, and a provider `Enable()`
+    planted in the dataset opt-in's setter (which then also counts as a second caller)."""
+    behaviour, _, _ = FAMILIES[tag]
+    (header,) = tuple(p for p in HADRONIC_PARAMETERS if p.endswith(".hh"))
+    (source,) = tuple(p for p in HADRONIC_PARAMETERS if p.endswith(".cc"))
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    for hunk in files[header].hunks:
+        for i, (marker, content, nl) in enumerate(hunk.lines):
+            if marker == b"+" and content.strip() == BOUND_MEMBER_FALSE:
+                hunk.lines[i] = (marker, content.replace(b"false", b"true"), nl)
+    with pytest.raises(AssertionError, match="member `false` 0 times"):
+        check_bound_switch_shape(tag, files)
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    for hunk in files[source].hunks:
+        for i, (marker, content, _nl) in enumerate(hunk.lines):
+            if marker == b"+" and b"G4MuonicDataOverlay::Initialize();" in content:
+                hunk.lines.insert(i + 1, (b"+", b"      G4MuonicBoundRateProvider::Enable();", True))
+                hunk.new_count += 1
+                break
+    with pytest.raises(AssertionError, match=re.escape(tag)):
+        check_bound_switch_shape(tag, files)
+
+
+@family
+def test_t73_drill_a_disconnected_or_doubled_consumer_is_refused(tag: str):
+    """Each consumer's block, corrupted in memory: the provider call removed from the stopping route (the
+    wiring gone, the rest of the block kept), and the helper's capture assignment duplicated."""
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    check_bound_consumers(tag, files)
+    for hunk in files[BOUND_DECAY].hunks:
+        for i, (marker, content, nl) in enumerate(hunk.lines):
+            if marker == b"+" and b"G4MuonicBoundRateProvider::Rates(" in content:
+                legacy = content.replace(b"G4MuonicBoundRateProvider::Rates(", b"Legacy(")
+                hunk.lines[i] = (marker, legacy, nl)
+    with pytest.raises(AssertionError, match=re.escape(BOUND_DECAY)):
+        check_bound_consumers(tag, files)
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    for hunk in files[HELPER_CC].hunks:
+        for i, (marker, content, nl) in enumerate(hunk.lines):
+            if marker == b"+" and b"lambdac = rates.capture;" in content:
+                hunk.lines.insert(i + 1, (marker, content, nl))
+                hunk.new_count += 1
+                break
+    with pytest.raises(AssertionError, match="2 times"):
+        check_bound_consumers(tag, files)
+
+
+@family
+def test_t73_drill_an_extra_line_in_the_helpers_change_hunk_is_refused(tag: str):
+    """The helper's K-energy call and its bound-rate block share one hunk: a planted `+` line in that hunk
+    that is neither the changed call nor a line of the block is refused with the path named."""
+    behaviour, _, _ = FAMILIES[tag]
+    files = by_new_path(parse_patch(behaviour.read_bytes()))
+    old, _new = CALL_SITES[HELPER_CC]
+    hunk = next(h for h in files[HELPER_CC].hunks for m, line, _ in h.lines if m == b"-" and old in line)
+    assert any(line == CHANGE_HUNK_BLOCKS[HELPER_CC][0] for m, line, _ in hunk.lines if m == b"+")
+    at = next(i for i, (m, line, _) in enumerate(hunk.lines) if line == CHANGE_HUNK_BLOCKS[HELPER_CC][0])
+    hunk.lines.insert(at, (b"+", b"  lambdad *= 1.0;", True))
+    hunk.new_count += 1
+    with pytest.raises(AssertionError, match=re.escape(f"{HELPER_CC}: hunk")):
+        check_deletions(files)
+
+
+@family
 def test_t73_drill_a_planted_deletion_and_a_changed_call_are_refused_by_path(tag: str):
     """Two in-memory corruptions of the behaviour patch, each refused with the path named: a context
     line of the cascade's hunk turned into a third `-` line (the hunk's count lowered so its
@@ -837,7 +1052,7 @@ def test_t73_drill_a_planted_deletion_and_a_changed_call_are_refused_by_path(tag
     path = next(iter(sorted(CALL_SITES)))
     old, new = CALL_SITES[path]
     call_hunk = next(h for h in files[path].hunks for marker, _, _ in h.lines if marker == b"-")
-    at = next(i for i, (marker, _, _) in enumerate(call_hunk.lines) if marker == b"+")
+    at = next(i for i, (marker, line, _) in enumerate(call_hunk.lines) if marker == b"+" and new in line)
     marker, content, has_newline = call_hunk.lines[at]
     call_hunk.lines[at] = (marker, content.replace(new, new.replace(b", A)", b", Z)")), has_newline)
     with pytest.raises(AssertionError, match=re.escape(f"{path}: hunk")):

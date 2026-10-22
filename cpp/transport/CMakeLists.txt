@@ -32,3 +32,7 @@ target_link_libraries(g4muonic_transport PRIVATE ${Geant4_LIBRARIES})
 if(G4MUONIC_TRANSPORT_PATCHED)
   target_compile_definitions(g4muonic_transport PRIVATE G4MUONIC_TRANSPORT_PATCHED=1)
 endif()
+# The bound-rate switch, where the installation's G4HadronicParameters carries it.
+if(hadronic_text MATCHES "SetEnableMuonicBoundRates")
+  target_compile_definitions(g4muonic_transport PRIVATE G4MUONIC_TRANSPORT_BOUND_RATES=1)
+endif()

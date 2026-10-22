@@ -16,6 +16,104 @@ index e2973354eb..ffa2a0b56a 100644
  };
  
  #endif
+diff --git a/source/particles/management/include/G4MuonicBoundRateProvider.hh b/source/particles/management/include/G4MuonicBoundRateProvider.hh
+new file mode 100644
+index 0000000000..5dd4019000
+--- /dev/null
++++ b/source/particles/management/include/G4MuonicBoundRateProvider.hh
+@@ -0,0 +1,92 @@
++// G4MuonicBoundRateProvider -- one capture and decay rate pair for a negative muon in the 1s state of a
++// muonic atom, given to both stopped-muon routes of Geant4 when an application asks for it.
++//
++// Geant4 forms the two rates of a bound negative muon in two places, with two decay prescriptions:
++//
++//   G4MuonMinusBoundDecay::ApplyYourself    draws the stopping route's delay and branch from
++//                                           GetMuonCaptureRate(Z, A) and
++//                                           GetMuonDecayRate(Z, A, muMass, nuclear mass);
++//   G4MuonicAtomHelper::ConstructMuonicAtom stores the atomic route's lifetime and its DIO and
++//                                           nuclear-capture lifetimes from GetMuonCaptureRate(Z, A)
++//                                           and GetMuonDecayRate(Z), which G4MuonicAtomDecay reads.
++//
++// The two decay rates differ: below Z = 14 the first is free * [1 - (Z alpha)^2 (0.5 + 0.06 m_mu / M)],
++// the comment beside it attributing the form to H. C. von Baeyer and D. Leiter, Phys. Rev. A 19, 1371
++// (1979); the second is free * [1 - 2.5 (Zeff alpha)^2] for every Z but hydrogen, its comment
++// attributing it to N. C. Mukhopadhyay, Phys. Rep. 30, 1 (1977). With the switch
++// G4HadronicParameters::SetEnableMuonicBoundRates(true), both consumers take the pair this class
++// returns instead, over the domain below:
++//
++//   capture  G4MuonicAtomHelper::GetMuonCaptureRate(Z, A), the helper's capture resolver as it stands
++//            (its compiled-in table, its Goulard-Primakoff fallback and, when the G4MuonicData opt-in
++//            is on, the dataset row it reads first), called, not copied;
++//   decay    LowZDecayRate(Z, muMass, nuclearMass): the stopping route's expression below Z = 14, with
++//            its literals and its order of operations.
++//
++// The domain is an implementation domain, not a statement of physical accuracy: 2 <= Z <= 13 and
++// A >= Z. Hydrogen (whose atomic-route decay rate is a separate tabulated value), Z >= 14 (where the
++// stopping route uses a different fit) and a natural-composition request (A = 0) are outside it:
++// Rates returns kUnsupported and each consumer keeps the pair it formed itself. For a key inside the
++// domain, a nuclear or muon mass that is not finite and positive, a capture rate that is negative or
++// not finite, or a decay rate that is not finite and positive is refused with the fatal G4Exception
++// G4MuonicBoundRates001; nothing is clipped. (A finite capture rate >= 0 and a finite decay rate > 0,
++// which never exceeds the free rate, then have a finite, positive sum.)
++//
++// The switch is off by default and the G4MuonicData opt-in (SetEnableMuonicData) does not set it.
++// With it off, Consult returns false and the consumers run their own code unchanged. The first
++// Consult -- the first time either consumer forms a rate pair -- freezes the switch: a later attempt to
++// change it raises the fatal G4Exception G4MuonicBoundRates002, because muonic atoms already
++// constructed keep the lifetimes they were built with. Set it on the master thread before the physics
++// list is built; worker threads only read it.
++//
++// The static legacy getters G4MuonMinusBoundDecay::GetMuonDecayRate and
++// G4MuonicAtomHelper::GetMuonDecayRate are unchanged and are not affected by the switch: they report
++// each route's own prescription, not the pair a consumer receives with the switch on.
++//
++// Rates are in Geant4's internal units (inverse time, ns^-1), masses in MeV.
++#ifndef G4MUONICBOUNDRATEPROVIDER_HH
++#define G4MUONICBOUNDRATEPROVIDER_HH
++
++#include "G4Types.hh"
++
++struct G4MuonicBoundRates {
++  G4double capture = 0.;  // nuclear capture rate, ns^-1
++  G4double decay = 0.;    // decay-in-orbit rate, ns^-1
++};
++
++class G4MuonicBoundRateProvider {
++ public:
++  enum class Status {
++    kCommon,       // the pair is the common pair; the consumer uses it
++    kDisabled,     // the switch is off; the consumer keeps its own pair
++    kUnsupported,  // outside the domain; the consumer keeps its own pair
++    kRefused       // a fatal G4MuonicBoundRates001 was raised; the consumer keeps its own pair
++  };
++
++  // The switch. Enable and Disable are called by G4HadronicParameters::SetEnableMuonicBoundRates
++  // only; once a consumer has consulted the provider, a call that would change the state raises the
++  // fatal G4MuonicBoundRates002 and leaves the state as it was.
++  static void Enable();
++  static void Disable();
++  static G4bool IsEnabled();
++  static G4bool IsFrozen();
++
++  // Called by each consumer before it uses its pair: freezes the switch and returns whether it is on.
++  static G4bool Consult();
++
++  // Whether (Z, A) lies in the implementation domain: 2 <= Z <= 13 and A >= Z.
++  static G4bool InDomain(G4int Z, G4int A);
++
++  // The stopping route's decay rate below Z = 14, in ns^-1:
++  //   free = 0.45517005 / microsecond; f = 1 - (Z alpha)^2 (0.5 + 0.06 muMass / nuclearMass); f * free,
++  // grouped as G4MuonMinusBoundDecay::GetMuonDecayRate groups it. Standard library only.
++  static G4double LowZDecayRate(G4int Z, G4double muonMass, G4double nuclearMass);
++
++  // The pair for (Z, A): kCommon with `rates` set, or another status with `rates` untouched.
++  static Status Rates(G4int Z, G4int A, G4double muonMass, G4double nuclearMass, G4MuonicBoundRates& rates);
++
++  // What the pair is made of, for a consumer or an application that reports it.
++  static const char* Prescription();
++};
++
++#endif
 diff --git a/source/particles/management/include/G4MuonicDataOverlay.hh b/source/particles/management/include/G4MuonicDataOverlay.hh
 new file mode 100644
 index 0000000000..c9eb032600
@@ -284,23 +382,25 @@ index 0000000000..4b7fce2d9f
 +
 +#endif
 diff --git a/source/particles/management/sources.cmake b/source/particles/management/sources.cmake
-index e292ef656b..486e6f1eac 100644
+index e292ef656b..8ca928ddac 100644
 --- a/source/particles/management/sources.cmake
 +++ b/source/particles/management/sources.cmake
-@@ -17,6 +17,9 @@ geant4_add_module(G4partman
+@@ -17,6 +17,10 @@ geant4_add_module(G4partman
      G4KL3DecayChannel.hh
      G4MuonicAtom.hh
      G4MuonicAtomHelper.hh
++    G4MuonicBoundRateProvider.hh
 +    G4MuonicDataOverlay.hh
 +    G4MuonicDataSemantics.hh
 +    G4MuonicDataTable.hh
      G4MuonDecayChannel.hh
      G4MuonDecayChannelWithSpin.hh
      G4MuonRadiativeDecayChannelWithSpin.hh
-@@ -65,6 +68,9 @@ geant4_add_module(G4partman
+@@ -65,6 +69,10 @@ geant4_add_module(G4partman
      G4KL3DecayChannel.cc
      G4MuonicAtom.cc
      G4MuonicAtomHelper.cc
++    G4MuonicBoundRateProvider.cc
 +    G4MuonicDataOverlay.cc
 +    G4MuonicDataSemantics.cc
 +    G4MuonicDataTable.cc
@@ -308,18 +408,33 @@ index e292ef656b..486e6f1eac 100644
      G4MuonDecayChannelWithSpin.cc
      G4MuonRadiativeDecayChannelWithSpin.cc
 diff --git a/source/particles/management/src/G4MuonicAtomHelper.cc b/source/particles/management/src/G4MuonicAtomHelper.cc
-index 9893519553..a30a4e1740 100644
+index 9893519553..141bb816ea 100644
 --- a/source/particles/management/src/G4MuonicAtomHelper.cc
 +++ b/source/particles/management/src/G4MuonicAtomHelper.cc
-@@ -38,6 +38,7 @@
+@@ -38,6 +38,9 @@
  #include "G4PhysicalConstants.hh"
  #include "G4SystemOfUnits.hh"
  #include "Randomize.hh"
 +#include "G4MuonicDataOverlay.hh"
++#include "G4MuonicBoundRateProvider.hh"
++#include "G4NucleiProperties.hh"
  
  G4MuonicAtom* G4MuonicAtomHelper::ConstructMuonicAtom(const G4String& name, G4int encoding,
                                                        G4Ions const* baseion)
-@@ -58,7 +59,7 @@ G4MuonicAtom* G4MuonicAtomHelper::ConstructMuonicAtom(const G4String& name, G4in
+@@ -54,11 +57,20 @@ G4MuonicAtom* G4MuonicAtomHelper::ConstructMuonicAtom(const G4String& name, G4in
+   G4int A = baseion->GetAtomicMass();
+   G4double lambdac = GetMuonCaptureRate(Z, A);
+   G4double lambdad = GetMuonDecayRate(Z);
++  if (G4MuonicBoundRateProvider::Consult()) {
++    G4MuonicBoundRates rates;
++    const G4double muonMass = (G4ParticleTable::GetParticleTable()->FindParticle("mu-"))->GetPDGMass();
++    if (G4MuonicBoundRateProvider::Rates(Z, A, muonMass, G4NucleiProperties::GetNuclearMass(A, Z), rates)
++        == G4MuonicBoundRateProvider::Status::kCommon) {
++      lambdac = rates.capture;
++      lambdad = rates.decay;
++    }
++  }
+   G4double lifetime = 1. / (lambdac + lambdad);
    G4bool shortlived = false;
  
    const G4double mass = (G4ParticleTable::GetParticleTable()->FindParticle("mu-"))->GetPDGMass()
@@ -328,7 +443,7 @@ index 9893519553..a30a4e1740 100644
  
    auto decayTable = new G4DecayTable();
    // clang-format off
-@@ -214,6 +215,9 @@ G4double G4MuonicAtomHelper::GetMuonCaptureRate(G4int Z, G4int A)
+@@ -214,6 +226,9 @@ G4double G4MuonicAtomHelper::GetMuonCaptureRate(G4int Z, G4int A)
    // clang-format on
  
    G4double lambda = -1.;
@@ -338,7 +453,7 @@ index 9893519553..a30a4e1740 100644
  
    std::size_t nCapRates = sizeof(capRates) / sizeof(capRates[0]);
    for (std::size_t j = 0; j < nCapRates; ++j) {
-@@ -246,6 +250,7 @@ G4double G4MuonicAtomHelper::GetMuonCaptureRate(G4int Z, G4int A)
+@@ -246,6 +261,7 @@ G4double G4MuonicAtomHelper::GetMuonCaptureRate(G4int Z, G4int A)
                  - G4double(2 * (A - Z) + std::abs(a2ze - 1.)) * b0c / G4double(A * 4));
    }
  
@@ -346,7 +461,7 @@ index 9893519553..a30a4e1740 100644
    return lambda;
  }
  
-@@ -280,6 +285,9 @@ G4double G4MuonicAtomHelper::GetMuonZeff(G4int Z)
+@@ -280,6 +296,9 @@ G4double G4MuonicAtomHelper::GetMuonZeff(G4int Z)
      Z = maxZ;
    }
  
@@ -356,7 +471,7 @@ index 9893519553..a30a4e1740 100644
    return zeff[Z];
  }
  
-@@ -337,7 +345,7 @@ G4double G4MuonicAtomHelper::GetMuonDecayRate(G4int Z)
+@@ -337,7 +356,7 @@ G4double G4MuonicAtomHelper::GetMuonDecayRate(G4int Z)
  }
  
  // From G4MuMinusCaptureCascade
@@ -365,7 +480,7 @@ index 9893519553..a30a4e1740 100644
  {
    // Calculate the Energy of K Mesoatom Level for this Element using
    // the Energy of Hydrogen Atom taken into account finite size of the
-@@ -363,6 +371,28 @@ G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z)
+@@ -363,6 +382,28 @@ G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z)
    return KEnergy;
  }
  
@@ -394,6 +509,111 @@ index 9893519553..a30a4e1740 100644
  // From G4MuMinusCaptureCascade
  G4double G4MuonicAtomHelper::GetLinApprox(G4int N, const G4double* const X, const G4double* const Y,
                                            G4double Xuser)
+diff --git a/source/particles/management/src/G4MuonicBoundRateProvider.cc b/source/particles/management/src/G4MuonicBoundRateProvider.cc
+new file mode 100644
+index 0000000000..e7c911da70
+--- /dev/null
++++ b/source/particles/management/src/G4MuonicBoundRateProvider.cc
+@@ -0,0 +1,99 @@
++// G4MuonicBoundRateProvider -- see the header for what the pair is, where it is used and its domain.
++#include "G4MuonicBoundRateProvider.hh"
++
++#include "G4Exception.hh"
++#include "G4MuonicAtomHelper.hh"
++#include "G4PhysicalConstants.hh"
++#include "G4SystemOfUnits.hh"
++
++#include <atomic>
++#include <cmath>
++#include <sstream>
++#include <string>
++
++namespace {
++
++// Set on the master thread before any consumer runs; read by every thread afterwards.
++std::atomic<bool> g_enabled{false};
++// Set by the first Consult, on whichever thread forms the first rate pair.
++std::atomic<bool> g_frozen{false};
++
++void Change(bool value) {
++  if (g_frozen.load() && g_enabled.load() != value) {
++    G4Exception("G4MuonicBoundRateProvider::Change", "G4MuonicBoundRates002", FatalException,
++                "G4HadronicParameters::SetEnableMuonicBoundRates was called after a consumer had formed a "
++                "bound-muon rate pair; muonic atoms already constructed keep the lifetimes they were built "
++                "with, so the switch can be set only before the first one");
++    return;
++  }
++  g_enabled.store(value);
++}
++
++bool PositiveFinite(G4double x) { return std::isfinite(x) && x > 0.; }
++
++}  // namespace
++
++void G4MuonicBoundRateProvider::Enable() { Change(true); }
++
++void G4MuonicBoundRateProvider::Disable() { Change(false); }
++
++G4bool G4MuonicBoundRateProvider::IsEnabled() { return g_enabled.load(); }
++
++G4bool G4MuonicBoundRateProvider::IsFrozen() { return g_frozen.load(); }
++
++G4bool G4MuonicBoundRateProvider::Consult() {
++  g_frozen.store(true);
++  return g_enabled.load();
++}
++
++G4bool G4MuonicBoundRateProvider::InDomain(G4int Z, G4int A) { return Z >= 2 && Z <= 13 && A >= Z; }
++
++G4double G4MuonicBoundRateProvider::LowZDecayRate(G4int Z, G4double muonMass, G4double nuclearMass) {
++  const G4double freeMuonDecayRate = 0.45517005 / microsecond;
++  G4double lambda = 1.0;
++  const G4double x = Z * fine_structure_const;
++  lambda -= x * x * (0.5 + 0.06 * muonMass / nuclearMass);
++  lambda *= freeMuonDecayRate;
++  return lambda;
++}
++
++G4MuonicBoundRateProvider::Status G4MuonicBoundRateProvider::Rates(G4int Z, G4int A, G4double muonMass,
++                                                                   G4double nuclearMass,
++                                                                   G4MuonicBoundRates& rates) {
++  if (!Consult()) return Status::kDisabled;
++  if (!InDomain(Z, A)) return Status::kUnsupported;
++  G4double capture = 0.;
++  G4double decay = 0.;
++  const char* why = nullptr;
++  if (!PositiveFinite(nuclearMass)) {
++    why = "the nuclear mass is not finite and positive";
++  } else if (!PositiveFinite(muonMass)) {
++    why = "the muon mass is not finite and positive";
++  } else {
++    capture = G4MuonicAtomHelper::GetMuonCaptureRate(Z, A);
++    decay = LowZDecayRate(Z, muonMass, nuclearMass);
++    if (!std::isfinite(capture) || capture < 0.) {
++      why = "the capture rate is negative or not finite";
++    } else if (!PositiveFinite(decay)) {
++      why = "the decay rate is not finite and positive";
++    }
++    // A finite capture >= 0 and a finite decay > 0 (at most the free rate) give a finite, positive sum.
++  }
++  if (why != nullptr) {
++    std::ostringstream message;
++    message.precision(17);
++    message << "Z=" << Z << " A=" << A << ": " << why << " (nuclear mass " << nuclearMass << " MeV, muon mass "
++            << muonMass << " MeV, capture " << capture << " /ns, decay " << decay << " /ns)";
++    G4Exception("G4MuonicBoundRateProvider::Rates", "G4MuonicBoundRates001", FatalException,
++                message.str().c_str());
++    return Status::kRefused;
++  }
++  rates.capture = capture;
++  rates.decay = decay;
++  return Status::kCommon;
++}
++
++const char* G4MuonicBoundRateProvider::Prescription() {
++  return "capture: G4MuonicAtomHelper::GetMuonCaptureRate(Z, A); decay: the Z < 14 expression of "
++         "G4MuonMinusBoundDecay::GetMuonDecayRate(Z, A, muMass, nuclMass); domain 2 <= Z <= 13, A >= Z";
++}
 diff --git a/source/particles/management/src/G4MuonicDataOverlay.cc b/source/particles/management/src/G4MuonicDataOverlay.cc
 new file mode 100644
 index 0000000000..030ca9679a
@@ -2009,18 +2229,34 @@ index f9d9d5497c..b02e39c955 100644
    G4int nElec  = Z;
    G4int nAuger = 1;
 diff --git a/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc b/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
-index 29bd73719c..93955faf91 100644
+index 29bd73719c..a619c3a702 100644
 --- a/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
 +++ b/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
-@@ -60,6 +60,7 @@
+@@ -60,6 +60,8 @@
  #include "G4NeutrinoMu.hh"
  #include "G4AntiNeutrinoE.hh"
  #include "G4Log.hh"
 +#include "G4MuonicDataOverlay.hh"
++#include "G4MuonicBoundRateProvider.hh"
  
  //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
  
-@@ -295,6 +296,9 @@ G4double G4MuonMinusBoundDecay::GetMuonCaptureRate(G4int Z, G4int A)
+@@ -88,6 +90,14 @@ G4MuonMinusBoundDecay::ApplyYourself(const G4HadProjectile& projectile,
+   G4double lambdac  = GetMuonCaptureRate(Z, A);
+   G4double lambdad  = GetMuonDecayRate(Z, A, fMuMass, 
+                                        targetNucleus.AtomicMass(A,Z));
++  if (G4MuonicBoundRateProvider::Consult()) {
++    G4MuonicBoundRates rates;
++    if (G4MuonicBoundRateProvider::Rates(Z, A, fMuMass, targetNucleus.AtomicMass(A, Z), rates)
++        == G4MuonicBoundRateProvider::Status::kCommon) {
++      lambdac = rates.capture;
++      lambdad = rates.decay;
++    }
++  }
+   G4double lambda   = lambdac + lambdad;
+ 
+   // ===  sample capture  time and change time of projectile
+@@ -295,6 +305,9 @@ G4double G4MuonMinusBoundDecay::GetMuonCaptureRate(G4int Z, G4int A)
    };
  
    G4double lambda = -1.;
@@ -2030,7 +2266,7 @@ index 29bd73719c..93955faf91 100644
  
    size_t nCapRates = sizeof(capRates)/sizeof(capRates[0]);
    for (size_t j = 0; j < nCapRates; ++j) {
-@@ -327,6 +331,7 @@ G4double G4MuonMinusBoundDecay::GetMuonCaptureRate(G4int Z, G4int A)
+@@ -327,6 +340,7 @@ G4double G4MuonMinusBoundDecay::GetMuonCaptureRate(G4int Z, G4int A)
  
    }
  
@@ -2038,7 +2274,7 @@ index 29bd73719c..93955faf91 100644
    return lambda;
  
  }
-@@ -358,6 +363,9 @@ G4double G4MuonMinusBoundDecay::GetMuonZeff(G4int ZZ)
+@@ -358,6 +372,9 @@ G4double G4MuonMinusBoundDecay::GetMuonZeff(G4int ZZ)
         34.84,34.94,35.05,35.16,35.25,35.36,35.46,35.57,35.67,35.78 };
  
    G4int Z = std::max(std::min(ZZ, maxZ), 1);
@@ -2062,10 +2298,10 @@ index 21f2fb116c..02f3fb698d 100644
    thePro.SetBoundEnergy(KEnergy);
  
 diff --git a/source/processes/hadronic/util/include/G4HadronicParameters.hh b/source/processes/hadronic/util/include/G4HadronicParameters.hh
-index 09d22d476d..f30a1e5459 100644
+index 09d22d476d..38514b0b71 100644
 --- a/source/processes/hadronic/util/include/G4HadronicParameters.hh
 +++ b/source/processes/hadronic/util/include/G4HadronicParameters.hh
-@@ -159,6 +159,10 @@ class G4HadronicParameters {
+@@ -159,6 +159,15 @@ class G4HadronicParameters {
      void SetEnableNUDEX( G4bool val );
      // NUDEX gamma de-excitation is enabled/disabled.
  
@@ -2073,18 +2309,24 @@ index 09d22d476d..f30a1e5459 100644
 +    void SetEnableMuonicData( G4bool val );
 +    // Muonic-atom capture dataset (G4MuonicData) lookup is enabled/disabled.
 +
++    inline G4bool EnableMuonicBoundRates() const;
++    void SetEnableMuonicBoundRates( G4bool val );
++    // One capture and decay rate pair for a negative muon bound in a muonic atom, given to both
++    // stopped-muon routes below Z = 14 (G4MuonicBoundRateProvider), is enabled/disabled.
++
      inline const G4String& GetTypeTablePT() const;
      void SetTypeTablePT( const G4String& typeTablePT );
      // Specify the type of PT table - between  "calendf"  and  "njoy"  for
-@@ -253,6 +257,7 @@ class G4HadronicParameters {
+@@ -253,6 +262,8 @@ class G4HadronicParameters {
      G4bool fEnableIntegralElasticXS = true;
      G4bool fEnableDiffDissociationForBGreater10 = false;
      G4bool fEnableNUDEX = false;
 +    G4bool fEnableMuonicData = false;
++    G4bool fEnableMuonicBoundRates = false;
      G4bool fNeutronGeneral = false;
      G4bool fChargeExchange = false;
      G4bool fBinaryDebug = false;
-@@ -364,6 +369,10 @@ inline G4bool G4HadronicParameters::EnableNUDEX() const {
+@@ -364,6 +375,14 @@ inline G4bool G4HadronicParameters::EnableNUDEX() const {
    return fEnableNUDEX;
  }
  
@@ -2092,23 +2334,28 @@ index 09d22d476d..f30a1e5459 100644
 +  return fEnableMuonicData;
 +}
 +
++inline G4bool G4HadronicParameters::EnableMuonicBoundRates() const {
++  return fEnableMuonicBoundRates;
++}
++
  inline const G4String& G4HadronicParameters::GetTypeTablePT() const {
    return fTypeTablePT;
  }
 diff --git a/source/processes/hadronic/util/src/G4HadronicParameters.cc b/source/processes/hadronic/util/src/G4HadronicParameters.cc
-index 9a16ede106..88971f58ea 100644
+index 9a16ede106..c333b06d71 100644
 --- a/source/processes/hadronic/util/src/G4HadronicParameters.cc
 +++ b/source/processes/hadronic/util/src/G4HadronicParameters.cc
-@@ -37,6 +37,8 @@
+@@ -37,6 +37,9 @@
  //----------------------------------------------------------------------------
  
  #include "G4HadronicParameters.hh"
 +#include "G4MuonicDataOverlay.hh"
 +#include "G4MuonicDataTable.hh"
++#include "G4MuonicBoundRateProvider.hh"
  #include <CLHEP/Units/PhysicalConstants.h>
  #include "G4ApplicationState.hh"
  #include "G4StateManager.hh"
-@@ -395,6 +397,18 @@ void G4HadronicParameters::SetEnableNUDEX( G4bool val ) {
+@@ -395,6 +398,27 @@ void G4HadronicParameters::SetEnableNUDEX( G4bool val ) {
  } 
  
  
@@ -2120,6 +2367,15 @@ index 9a16ede106..88971f58ea 100644
 +      G4MuonicDataOverlay::Initialize();
 +    }
 +    else G4MuonicDataTable::Disable();
++  }
++}
++
++
++void G4HadronicParameters::SetEnableMuonicBoundRates( G4bool val ) {
++  if ( ! IsLocked() ) {
++    if ( val ) G4MuonicBoundRateProvider::Enable();
++    else G4MuonicBoundRateProvider::Disable();
++    fEnableMuonicBoundRates = G4MuonicBoundRateProvider::IsEnabled();
 +  }
 +}
 +
