@@ -2328,6 +2328,23 @@ def test_t9_the_oracle_on_values_derived_by_hand():
     assert oracle_sig(Fraction(1, 3), 2, False) == "3.3e-01"
 
 
+@pytest.mark.parametrize("estimate", [Fraction(0), Fraction(1, 10), Fraction(1, 2), Fraction(1)])
+def test_t9_the_exponent_is_exact_whatever_its_estimate(monkeypatch, estimate):
+    """The bit-length estimate only sets where the exact comparisons start: a start far below (log10(2)
+    taken as 0 or 1/10) or far above (1/2 or 1) the exponent gives the same digits as the oracle."""
+    monkeypatch.setattr(cc, "_LOG10_2", estimate)
+    for x in (
+        Fraction(1, 3),
+        Fraction(10**200 + 1, 7),
+        Fraction(7, 10**200),
+        Fraction(10**300),
+        Fraction(99999, 10**5),
+    ):
+        for digits in (1, 6):
+            for up in (False, True):
+                assert cc.sig_digits(x, digits, up) == oracle_sig(x, digits, up), (x, digits, up)
+
+
 # ============================================================================================
 # The differential test: seeded cases of every helper and direction against the oracle
 # ============================================================================================

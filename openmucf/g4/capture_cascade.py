@@ -722,15 +722,18 @@ def _digits(n: int) -> str:
 
 
 def _exponent(x: Fraction) -> int:
-    """The integer e with 10^e <= x < 10^(e + 1), for any rational x > 0, in integer arithmetic.
+    """The integer e with 10^e <= x < 10^(e + 1), for any rational x > 0, exactly, in integer arithmetic.
 
-    With b = bit_length(numerator) - bit_length(denominator), 2^(b - 1) < x < 2^(b + 1). _LOG10_2 differs from
-    log10(2) by less than 10^-15, so for |b| < 10^15 (every rational that fits in memory)
-    t = (b - 1) _LOG10_2 differs from (b - 1) log10(2) by less than 1, and e0 = floor(t) - 2 satisfies
-    e0 + 1 <= t - 1 < (b - 1) log10(2), so 10^(e0 + 1) < 2^(b - 1) < x: e0 is below the exponent. The exponent
-    is below (b + 1) log10(2) < e0 + 4, so at most four exact comparisons reach it."""
+    A start estimated from bit lengths is corrected by exact comparisons in both directions, so the result
+    does not depend on the estimate. With b = bit_length(numerator) - bit_length(denominator),
+    2^(b - 1) < x < 2^(b + 1), and _LOG10_2 lies below log10(2) by less than 2 10^-16. For |b| < 10^15 the
+    start e0 = floor((b - 1) _LOG10_2) - 2 satisfies e0 + 1 < (b - 1) log10(2), so 10^(e0 + 1) < x and the
+    downward loop does not run; and e0 > (b + 1) log10(2) - 4, so at most four upward comparisons reach the
+    exponent."""
     b = x.numerator.bit_length() - x.denominator.bit_length()
     e = math.floor((b - 1) * _LOG10_2) - 2
+    while Fraction(10) ** e > x:
+        e -= 1
     while Fraction(10) ** (e + 1) <= x:
         e += 1
     return e
