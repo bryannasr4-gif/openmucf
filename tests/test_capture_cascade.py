@@ -2154,6 +2154,15 @@ def test_t9_the_range_edges_are_admitted():
     assert cc._decimal(-7, -2, True) == "-700" and cc._digits(0) == "0"
 
 
+def test_t9_a_refusal_is_both_a_type_error_and_a_value_error():
+    """Code that caught the TypeError of a wrong type, or the ValueError of a negative value, still does."""
+    assert issubclass(cc.DisplayDomainError, TypeError) and issubclass(cc.DisplayDomainError, ValueError)
+    for bad in ((0.5, 2), (Fraction(-1), 2), (Fraction(1), True), (Fraction(1), cc.PRECISION_MAX + 1)):
+        for family in (TypeError, ValueError):
+            with pytest.raises(family):
+                cc.fixed(*bad)
+
+
 def test_t9_the_inputs_that_slipped_through_are_refused():
     """Floats used to pass and round at their decimal look-alike, not at their exact binary value (0.1 is
     above 1/10, 0.3 below 3/10, 0.15 below 15/100), and a fractional coefficient was written as digits."""
