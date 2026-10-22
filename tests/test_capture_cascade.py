@@ -284,9 +284,9 @@ def test_t3_z_outside_the_domain_raises(z):
 
 
 def test_t3_a_bool_or_float_z_is_refused():
-    with pytest.raises(TypeError, match="z must be an int, not bool"):
+    with pytest.raises(cc.DisplayDomainError, match="^z must be an int in .*, not bool$"):
         cc.transitions(True)
-    with pytest.raises(TypeError, match="z must be an int, not float"):
+    with pytest.raises(cc.DisplayDomainError, match="^z must be an int in .*, not float$"):
         cc.transitions(13.0)
 
 
@@ -295,13 +295,13 @@ def test_t3_the_observables_check_their_arguments_at_their_edges():
     flows = cc.transitions(13)
     assert cc.k_line(13, 2) == flows[(2, 1, "photon")] and cc.k_line(13, top) == flows[(top, 1, "photon")]
     for bad in (1, top + 1):
-        with pytest.raises(ValueError, match="outside"):
+        with pytest.raises(cc.DisplayDomainError, match=re.escape(f"n must be an int in [2, {top}]")):
             cc.k_line(13, bad)
     ka = flows[(2, 1, "photon")]
     assert cc.high_over_ka(13, 3) == sum(flows[(n, 1, "photon")] for n in range(3, top + 1)) / ka
     assert cc.high_over_ka(13, top) == flows[(top, 1, "photon")] / ka
     for bad in (2, top + 1):
-        with pytest.raises(ValueError, match="outside"):
+        with pytest.raises(cc.DisplayDomainError, match=re.escape(f"k must be an int in [3, {top}]")):
             cc.high_over_ka(13, bad)
     with pytest.raises(ValueError, match="rules must name"):
         cc.transitions(13, {"start_level": 13})
@@ -612,10 +612,10 @@ def test_t7_rounding_is_directed_where_only_the_remainder_shows_the_loss():
 @pytest.mark.parametrize(
     "args, message",
     [
-        ((30, Fraction(0), 3, "hi"), "^0 < p < 1 required$"),
-        ((30, Fraction(1), 3, "hi"), "^0 < p < 1 required$"),
-        ((30, Fraction(1, 3), -1, "lo"), "^0 <= x <= n required$"),
-        ((30, Fraction(1, 3), 31, "hi"), "^0 <= x <= n required$"),
+        ((30, Fraction(0), 3, "hi"), "^" + re.escape("p must be an int or a Fraction in (0, 1)") + "$"),
+        ((30, Fraction(1), 3, "hi"), "^" + re.escape("p must be an int or a Fraction in (0, 1)") + "$"),
+        ((30, Fraction(1, 3), -1, "lo"), "^" + re.escape("x must be an int in [0, 30]") + "$"),
+        ((30, Fraction(1, 3), 31, "hi"), "^" + re.escape("x must be an int in [0, 30]") + "$"),
         (
             (30, Fraction(1, 3), 20, "up"),
             "^" + re.escape("side is 'hi' (P(X >= x)) or 'lo' (P(X <= x))") + "$",
@@ -623,7 +623,7 @@ def test_t7_rounding_is_directed_where_only_the_remainder_shows_the_loss():
     ],
 )
 def test_t7_the_tail_refuses_arguments_outside_its_domain(args, message):
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(cc.DisplayDomainError, match=message):
         cc.binomial_tail(*args)
 
 
@@ -632,7 +632,9 @@ def test_t7_the_tail_admits_the_edges_of_its_domain():
     assert cc.binomial_tail(n, p, n, "hi")[0] > 0
     assert cc.binomial_tail(n, p, 0, "lo")[0] > 0
     assert cc.decide(n, Fraction(1, 31), 0, Fraction(1, 1000)).decision == "pass"
-    with pytest.raises(ValueError, match="^0 < alpha_side < 1 required$"):
+    with pytest.raises(
+        cc.DisplayDomainError, match=re.escape("alpha_side must be an int or a Fraction in (0, 1)")
+    ):
         cc.decide(n, p, 3, Fraction(1))
 
 
@@ -705,14 +707,16 @@ def test_t7_consumer_rows_refuse_counts_other_than_the_retained_counts():
 
 def test_t7_the_budget_must_lie_strictly_between_zero_and_one():
     for a in (Fraction(0), Fraction(1)):
-        with pytest.raises(ValueError, match="^0 < alpha_side < 1 required$"):
+        with pytest.raises(
+            cc.DisplayDomainError, match=re.escape("alpha_side must be an int or a Fraction in (0, 1)")
+        ):
             cc.decide(30, Fraction(1, 3), 3, a)
 
 
 def test_t8_sigma_squared_zero_is_admitted_and_negative_refused():
     assert cc.verdict(Fraction(1), Fraction(1), Fraction(0), RULE) == "HOLDS"
     assert cc.verdict(Fraction(2), Fraction(1), Fraction(0), RULE) == "FAILS"
-    with pytest.raises(ValueError, match="^sigma\\^2 < 0$"):
+    with pytest.raises(cc.DisplayDomainError, match="^sigma2 must be an int or a Fraction >= 0$"):
         cc.verdict(Fraction(1), Fraction(1), Fraction(-1, 10**30), RULE)
 
 
@@ -2550,3 +2554,279 @@ def test_t9_the_consumer_path_decides_a_mixed_set_exactly():
     rows = _check_consumer_path(n, observed)
     kinds = {(r["bound_kind"], r["decision"]) for r in rows}
     assert kinds == {("none", "pass"), ("lower", "pass"), ("upper", "reject")}
+
+
+# ============================================================================================
+# The same entry contract on the decision path: the model, the binomial test, its budget, the comparison
+# ============================================================================================
+ALL_KEYS = cc.transition_keys()
+#: Every public function of the certified path that takes numbers, with an admitted call: (call, arguments,
+#: the name each argument has in the refusal). Rule numbers ("rule") may also be exact literals in a str.
+DECISIONS = {
+    "decide": (cc.decide, {"n": 30, "p": Fraction(1, 3), "x": 3, "alpha_side": Fraction(1, 1000)}, {}),
+    "binomial_tail": (cc.binomial_tail, {"n": 30, "p": Fraction(1, 3), "x": 15, "side": "hi"}, {}),
+    "alpha_side": (
+        lambda counts, budget_per_cell, sides: cc.alpha_side(
+            {"budget_per_cell": budget_per_cell, "sides": sides}, counts
+        ),
+        {"counts": 107, "budget_per_cell": "1/10000", "sides": 2},
+        {},
+    ),
+    "verdict": (
+        lambda model, measured, sigma2, holds_within, tension_within: cc.verdict(
+            model, measured, sigma2, {"holds_within": holds_within, "tension_within": tension_within}
+        ),
+        {
+            "model": Fraction(1, 3),
+            "measured": Fraction(1, 4),
+            "sigma2": Fraction(1, 100),
+            "holds_within": "2",
+            "tension_within": "3",
+        },
+        {},
+    ),
+    "ratio_sigma2": (
+        cc.ratio_sigma2,
+        {"a": Fraction(1, 2), "sa": Fraction(1, 100), "b": Fraction(1, 3), "sb": Fraction(1, 100), "rho": 0},
+        {},
+    ),
+    "knorm_sigma2": (
+        lambda v0, s0, v1, s1: cc.knorm_sigma2([(v0, s0), (v1, s1)]),
+        {"v0": Fraction(2, 3), "s0": Fraction(1, 100), "v1": Fraction(1, 3), "s1": Fraction(1, 50)},
+        {
+            "v0": "members[0].value",
+            "s0": "members[0].sigma",
+            "v1": "members[1].value",
+            "s1": "members[1].sigma",
+        },
+    ),
+    "transitions": (
+        lambda z, power: cc.transitions(z, {**RULES, "power": power}),
+        {"z": 13, "power": 4},
+        {"power": "rules[power]"},
+    ),
+    "k_line": (cc.k_line, {"z": 13, "n": 2}, {}),
+    "high_over_ka": (cc.high_over_ka, {"z": 13, "k": 3}, {}),
+    "transition_keys": (cc.transition_keys, {"top": cc.LEVELS}, {}),
+    "union_key": (cc.union_key, {"k": 6}, {}),
+    "key": (
+        lambda upper, lower, kind: cc.key((upper, lower, kind)),
+        {"upper": 2, "lower": 1, "kind": "photon"},
+        {},
+    ),
+    "retained_counts": (
+        lambda flow: cc.retained_counts({**cc.transitions(13), (2, 1, "photon"): flow}),
+        {"flow": Fraction(1, 2)},
+        {"flow": "flows[g2->1]"},
+    ),
+    "observed_counts": (
+        lambda count: cc.observed_counts({**dict.fromkeys(ALL_KEYS, 0), "g2->1": count}),
+        {"count": 5},
+        {"count": "transition_counts[g2->1]"},
+    ),
+    "chain": (lambda z: cc.chain([], L, z), {"z": 13}, {}),
+}
+DECISION_KIND = {
+    "n": "int",
+    "p": "rational",
+    "x": "int",
+    "alpha_side": "rational",
+    "side": "text",
+    "counts": "int",
+    "budget_per_cell": "rule",
+    "sides": "int",
+    "model": "rational",
+    "measured": "rational",
+    "sigma2": "rational",
+    "holds_within": "rule",
+    "tension_within": "rule",
+    "a": "rational",
+    "sa": "rational",
+    "b": "rational",
+    "sb": "rational",
+    "rho": "rational",
+    "v0": "rational",
+    "s0": "rational",
+    "v1": "rational",
+    "s1": "rational",
+    "z": "int",
+    "power": "int",
+    "k": "int",
+    "top": "int",
+    "upper": "int",
+    "lower": "int",
+    "kind": "text",
+    "flow": "rational",
+    "count": "int",
+}
+DECISION_REFUSED = {
+    "rational": NEVER + [True, False],
+    "int": NEVER + [True, False, Fraction(1, 2), Fraction(2)],
+    "rule": [v for v in NEVER if not isinstance(v, str)] + [True, False],
+    "text": [0.5, 1, None, True, Fraction(1, 2), Decimal(1), b"hi", _IntSub(1)],
+}
+
+
+def _decision_matrix():
+    for fn, (_, good, _) in DECISIONS.items():
+        for arg in good:
+            for bad in DECISION_REFUSED[DECISION_KIND[arg]]:
+                yield fn, arg, bad
+
+
+def _call(fn: str, **override):
+    call, good, _ = DECISIONS[fn]
+    return call(**{**good, **override})
+
+
+@pytest.mark.parametrize("fn", list(DECISIONS))
+def test_t9_every_decision_function_admits_its_exact_call(fn):
+    if fn == "chain":
+        with pytest.raises(ValueError, match="^no cascade$"):  # admitted: refused only for the empty stop
+            _call(fn)
+    else:
+        _call(fn)
+
+
+@pytest.mark.parametrize("fn, arg, bad", list(_decision_matrix()))
+def test_t9_every_decision_function_refuses_every_forbidden_type_in_every_argument(fn, arg, bad):
+    with pytest.raises((TypeError, ValueError)) as info:
+        _call(fn, **{arg: bad})
+    assert isinstance(info.value, cc.DisplayDomainError)
+    name = DECISIONS[fn][2].get(arg, arg)
+    assert str(info.value).startswith(f"{name} must be ") and str(info.value).endswith(
+        f", not {type(bad).__name__}"
+    )
+
+
+@pytest.mark.parametrize(
+    "fn, arg, bad",
+    [
+        ("decide", "p", 0),
+        ("decide", "p", 1),
+        ("decide", "p", Fraction(-1, 3)),
+        ("decide", "n", -1),
+        ("decide", "x", -1),
+        ("decide", "x", 31),
+        ("decide", "alpha_side", 0),
+        ("decide", "alpha_side", 1),
+        ("binomial_tail", "p", Fraction(3, 2)),
+        ("binomial_tail", "x", 31),
+        ("alpha_side", "counts", 0),
+        ("alpha_side", "sides", 0),
+        ("alpha_side", "budget_per_cell", "1"),
+        ("alpha_side", "budget_per_cell", Fraction(0)),
+        ("alpha_side", "budget_per_cell", "-1/2"),
+        ("verdict", "sigma2", Fraction(-1)),
+        ("verdict", "holds_within", "-2"),
+        ("verdict", "tension_within", -3),
+        ("ratio_sigma2", "a", 0),
+        ("ratio_sigma2", "b", 0),
+        ("ratio_sigma2", "sa", Fraction(-1)),
+        ("ratio_sigma2", "sb", -1),
+        ("ratio_sigma2", "rho", Fraction(3, 2)),
+        ("ratio_sigma2", "rho", -2),
+        ("knorm_sigma2", "s0", Fraction(-1, 100)),
+        ("knorm_sigma2", "s1", -1),
+        ("transitions", "z", 0),
+        ("transitions", "z", cc.Z_MAX + 1),
+        ("transitions", "power", -1),
+        ("k_line", "n", 1),
+        ("k_line", "n", cc.LEVELS + 1),
+        ("high_over_ka", "k", 2),
+        ("transition_keys", "top", 1),
+        ("union_key", "k", 1),
+        ("key", "upper", 0),
+        ("key", "lower", -1),
+        ("retained_counts", "flow", Fraction(-1)),
+        ("observed_counts", "count", -1),
+        ("chain", "z", 0),
+    ],
+)
+def test_t9_every_decision_function_refuses_a_value_outside_its_range(fn, arg, bad):
+    with pytest.raises((TypeError, ValueError)) as info:
+        _call(fn, **{arg: bad})
+    assert isinstance(info.value, cc.DisplayDomainError)
+    assert str(info.value).startswith(f"{DECISIONS[fn][2].get(arg, arg)} must be ")
+    assert ", not " not in str(info.value)  # refused for its value, its type being admitted
+
+
+def test_t9_the_decision_path_admits_the_edges_of_its_ranges():
+    """Zero is in the range of the verdict's thresholds and of a member's error; the budget's interval is open
+    and the counts' bounds are closed."""
+    assert (
+        cc.verdict(Fraction(1), Fraction(1), Fraction(0), {"holds_within": "0", "tension_within": 0})
+        == "HOLDS"
+    )
+    assert (
+        cc.verdict(Fraction(2), Fraction(1), Fraction(1), {"holds_within": 0, "tension_within": "0"})
+        == "FAILS"
+    )
+    assert cc.ratio_sigma2(Fraction(1, 2), 0, Fraction(1, 3), 0) == 0
+    assert cc.ratio_sigma2(Fraction(1, 2), Fraction(1, 100), Fraction(1, 3), 0, -1) > 0
+    assert cc.ratio_sigma2(Fraction(1, 2), 0, Fraction(1, 3), Fraction(1, 100), 1) > 0
+    assert cc.knorm_sigma2([(Fraction(1), 0), (Fraction(1), 0)]) == (Fraction(1, 2), 0, 0)
+    assert cc.alpha_side({"budget_per_cell": "9999/10000", "sides": 1}, 1) == Fraction(9999, 10000)
+    assert cc.decide(30, Fraction(1, 3), 0, Fraction(1, 1000)).side == "lo"
+    assert cc.decide(30, Fraction(1, 3), 30, Fraction(1, 1000)).side == "hi"
+    assert cc.transitions(1) and cc.transitions(cc.Z_MAX) and cc.observed_counts(dict.fromkeys(ALL_KEYS, 0))
+
+
+@pytest.mark.parametrize("bad", ["abc", "nan", "inf", "1/0", "", "0x10"])
+def test_t9_a_rule_number_that_is_no_exact_literal_is_refused(bad):
+    for fn, arg in (
+        ("alpha_side", "budget_per_cell"),
+        ("verdict", "holds_within"),
+        ("verdict", "tension_within"),
+    ):
+        with pytest.raises(
+            cc.DisplayDomainError, match=f"^{arg} must be an exact decimal or ratio literal, not "
+        ):
+            _call(fn, **{arg: bad})
+
+
+def test_t9_the_structural_refusals_of_the_decision_path():
+    with pytest.raises(cc.DisplayDomainError, match="^side is"):
+        cc.binomial_tail(30, Fraction(1, 3), 15, "up")
+    with pytest.raises(cc.DisplayDomainError, match="^kind must be one of"):
+        cc.key((2, 1, "gamma"))
+    with pytest.raises(cc.DisplayDomainError, match="^members must not be empty$"):
+        cc.knorm_sigma2([])
+    with pytest.raises(cc.DisplayDomainError, match="^the member values must not sum to 0$"):
+        cc.knorm_sigma2([(Fraction(1), Fraction(0)), (Fraction(-1), Fraction(0))])
+
+
+def test_t9_a_reference_cell_that_is_not_text_is_refused():
+    """comparison_rows reads exact values from the text a CSV reader gives; a number in a cell (a float would
+    be read at its binary value, an int(13.7) would be 13) is refused."""
+    reference = list(
+        csv.DictReader(io.StringIO((DATA / "cascade_reference.csv").read_text(encoding="utf-8")))
+    )
+    rule = json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8"))
+    assert cc.comparison_rows(reference, rule)
+    for column, bad in (("value", 0.0526), ("Z", 13.7), ("sigma", Fraction(1, 100)), ("Z", 13)):
+        rows = [dict(r) for r in reference]
+        rows[0][column] = bad
+        with pytest.raises(
+            cc.DisplayDomainError, match=re.escape(f"reference[0][{column}] must be a str, not ")
+        ):
+            cc.comparison_rows(rows, rule)
+
+
+def test_t9_a_float_probability_is_refused_by_the_decision_path():
+    """The witnesses: each was silently used before the decision path admitted only exact numbers."""
+    for call in (
+        lambda: cc.decide(30, 1 / 3, 3, Fraction(1, 1000)),  # a float p
+        lambda: cc.decide(30, 1 / 3, 10, Fraction(1, 1000)),  # a float p at its float mode: passed untested
+        lambda: cc.decide(30, Fraction(1, 3), 3, 0.001),  # a float budget
+        lambda: cc.decide(30.0, Fraction(1, 3), 3, Fraction(1, 1000)),  # a float N
+        lambda: cc.binomial_tail(30, 0.5, 15, "hi"),
+        lambda: cc.alpha_side({"budget_per_cell": 0.0001, "sides": 2}, 107),
+        lambda: cc.alpha_side({"budget_per_cell": "1/10000", "sides": 2.0}, 107),
+        lambda: cc.verdict(0.3, Fraction(1, 4), Fraction(1, 100), RULE),
+        lambda: cc.ratio_sigma2(0.5, Fraction(1, 100), Fraction(1, 3), Fraction(1, 100)),
+        lambda: cc.observed_counts({**dict.fromkeys(ALL_KEYS, 0), "g2->1": 3.7}),  # int() would make it 3
+    ):
+        with pytest.raises((TypeError, ValueError)) as info:
+            call()
+        assert isinstance(info.value, cc.DisplayDomainError)
