@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import csv
 import dataclasses
+import gzip
 import hashlib
 import importlib.util
 import json
@@ -1408,6 +1409,24 @@ def test_drill_a_planted_or_missing_raw_file_is_named(synthetic_root: Path, tmp_
     assert gone["raw_digest_first"] == "chunk at 0: bound_summary.txt was not read to its end"
     # the run record and the committed digests still name it: it is recorded but not in the raw directory
     assert gone["raw_digest_problems"] == "2"
+
+
+def test_drill_a_tampered_gzipped_record_beside_an_intact_plain_copy_is_named(synthetic_root: Path,
+                                                                             tmp_path: Path) -> None:
+    """The reader consumes bound.txt.gz whenever it exists. A gzipped copy with a blank line appended, put
+    beside the intact plain bound.txt: the digest is of the bytes the reader consumed, so it differs from the
+    run record and from the committed digest; a digest re-taken from the plain copy would agree with both."""
+    def alter(cells: list[Path]) -> None:
+        raw = cells[1] / "raw"
+        (raw / "bound.txt.gz").write_bytes(gzip.compress((raw / "bound.txt").read_bytes() + b"\n", mtime=0))
+
+    meta, problems = _resummarize_group0(synthetic_root, tmp_path, alter)
+    first = json.loads((synthetic_root.parent / "plan.json").read_text())["chunks"][1]["first"]
+    assert meta["raw_digest_problems"] == "2"
+    assert meta["raw_digest_first"] == f"chunk at {first}: bound.txt differs from its run record"
+    name = bound.group_name(bound.load_policy(synthetic_root)["groups"][0])
+    assert problems == [f"{name}: 2 raw-file digests disagree (chunk at {first}: bound.txt differs from "
+                        "its run record)"]
 
 
 def test_drill_no_committed_digests_is_named(synthetic_root: Path, tmp_path: Path) -> None:
