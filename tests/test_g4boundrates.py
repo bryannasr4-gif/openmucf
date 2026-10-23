@@ -1406,7 +1406,8 @@ def test_drill_a_planted_or_missing_raw_file_is_named(synthetic_root: Path, tmp_
     assert planted["raw_digest_first"] == f"chunk at {first}: records.txt is not in its run record"
     gone, _ = _resummarize_group0(synthetic_root, tmp_path / "b", lambda cells: (
         cells[0] / "raw" / "bound_summary.txt").unlink())
-    assert gone["raw_digest_first"] == "chunk at 0: bound_summary.txt was not read to its end"
+    assert gone["raw_digest_first"] == ("chunk at 0: bound_summary.txt, which the analysis consumes, has no "
+                                        "digest: it is not in the raw directory")
     # the run record and the committed digests still name it: it is recorded but not in the raw directory
     assert gone["raw_digest_problems"] == "2"
 
@@ -1422,11 +1423,63 @@ def test_drill_a_tampered_gzipped_record_beside_an_intact_plain_copy_is_named(sy
 
     meta, problems = _resummarize_group0(synthetic_root, tmp_path, alter)
     first = json.loads((synthetic_root.parent / "plan.json").read_text())["chunks"][1]["first"]
-    assert meta["raw_digest_problems"] == "2"
+    # the consumed copy differs from the run record and from the committed digest; the name held twice is
+    # named
+    assert meta["raw_digest_problems"] == "3"
     assert meta["raw_digest_first"] == f"chunk at {first}: bound.txt differs from its run record"
     name = bound.group_name(bound.load_policy(synthetic_root)["groups"][0])
-    assert problems == [f"{name}: 2 raw-file digests disagree (chunk at {first}: bound.txt differs from "
+    assert problems == [f"{name}: 3 raw-file digests disagree (chunk at {first}: bound.txt differs from "
                         "its run record)"]
+
+
+BOTH_FORMS = "is held both plain and gzipped; one copy was hashed and the other was not"
+
+
+def test_drill_a_tampered_plain_copy_beside_an_intact_consumed_gzipped_record_is_named(synthetic_root: Path,
+                                                                                    tmp_path: Path) -> None:
+    """The intact record gzipped as the reader consumes it, and a plain copy with a blank line appended beside
+    it: the consumed bytes agree with the run record and the committed digest, and the plain copy, which is
+    never read or hashed, is named through the name it shares."""
+    def alter(cells: list[Path]) -> None:
+        raw = cells[1] / "raw"
+        body = (raw / "bound.txt").read_bytes()
+        (raw / "bound.txt.gz").write_bytes(gzip.compress(body, mtime=0))
+        (raw / "bound.txt").write_bytes(body + b"\n")
+
+    meta, problems = _resummarize_group0(synthetic_root, tmp_path, alter)
+    first = json.loads((synthetic_root.parent / "plan.json").read_text())["chunks"][1]["first"]
+    assert (meta["raw_digest_problems"], meta["raw_digest_first"]) == (
+        "1", f"chunk at {first}: bound.txt {BOTH_FORMS}")
+    name = bound.group_name(bound.load_policy(synthetic_root)["groups"][0])
+    assert problems == [f"{name}: 1 raw-file digests disagree (chunk at {first}: bound.txt {BOTH_FORMS})"]
+
+
+def test_drill_an_unconsumed_raw_file_held_both_plain_and_gzipped_is_named(tmp_path: Path,
+                                                                          c12: bound.Pair) -> None:
+    """A raw file the analysis does not consume (a config record, as the harness writes one), recorded in the
+    run record and the committed digests, then a changed gzipped copy put beside it: only the plain copy is
+    hashed, it agrees with both, and the name held twice is named."""
+    job, cell, run = _drill_job(tmp_path, c12, "a", 1900000000)
+    (cell / "raw" / "config.txt").write_text("isotope 12\n", encoding="ascii")
+    files = _raw_files(cell)
+    clean = bound.summarize_chunk(cell / "raw", bound.ATOMIC, c12, 0.0, 0, 400)
+    assert bound.raw_digest_problems("run at 0", clean, files, dict(files)) == []
+    (cell / "raw" / "config.txt.gz").write_bytes(gzip.compress(b"isotope 13\n", mtime=0))
+    stats = bound.summarize_chunk(cell / "raw", bound.ATOMIC, c12, 0.0, 0, 400)
+    assert stats["raw_sha256"] == clean["raw_sha256"] and stats["raw_both_forms"] == ["config.txt"]
+    assert bound.raw_digest_problems("run at 0", stats, files, dict(files)) == [
+        f"run at 0: config.txt {BOTH_FORMS}"]
+
+
+def test_a_summary_that_does_not_list_the_names_held_twice_is_named(tmp_path: Path, c12: bound.Pair) -> None:
+    job, cell, run = _drill_job(tmp_path, c12, "a", 1900000000)
+    stats = bound.summarize_chunk(cell / "raw", bound.ATOMIC, c12, 0.0, 0, 400)
+    assert stats["raw_both_forms"] == []
+    assert bound.raw_digest_problems("run at 0", stats, run["files"], dict(run["files"])) == []
+    without = {k: v for k, v in stats.items() if k != "raw_both_forms"}
+    for broken in (without, {**stats, "raw_both_forms": None}):
+        assert bound.raw_digest_problems("run at 0", broken, run["files"], dict(run["files"])) == [
+            "run at 0: the summary does not list the raw names held both plain and gzipped"]
 
 
 def test_drill_no_committed_digests_is_named(synthetic_root: Path, tmp_path: Path) -> None:
@@ -1467,14 +1520,14 @@ def test_drill_a_drill_row_from_a_different_chunk_is_named(tmp_path: Path, c12: 
     registered_a = dict(run_a["files"])
     stats_a = bound.summarize_chunk(dir_a / "raw", bound.ATOMIC, c12, 0.0, 0, 400)
     assert bound.drill_run_problems(job_a, dir_a, run_a) == []
-    assert bound.raw_digest_problems("run at 0", stats_a["raw_sha256"], run_a["files"], registered_a) == []
+    assert bound.raw_digest_problems("run at 0", stats_a, run_a["files"], registered_a) == []
     wrong_run = bound.drill_run_problems(job_a, dir_a, run_b)
     assert "run at 0: --seed-base '1901000000', registered '1900000000'" in wrong_run
     assert any("is not the chunk's own" in x for x in wrong_run)
     shutil.rmtree(dir_a / "raw")
     shutil.copytree(dir_b / "raw", dir_a / "raw")
     stats_swapped = bound.summarize_chunk(dir_a / "raw", bound.ATOMIC, c12, 0.0, 0, 400)
-    digests = bound.raw_digest_problems("run at 0", stats_swapped["raw_sha256"], run_a["files"], registered_a)
+    digests = bound.raw_digest_problems("run at 0", stats_swapped, run_a["files"], registered_a)
     for f in bound.CONSUMED_RAW:
         assert f"run at 0: {f} differs from its run record" in digests, f
         assert f"run at 0: {f} differs from its committed digest" in digests, f

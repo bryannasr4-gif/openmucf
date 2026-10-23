@@ -834,12 +834,20 @@ def summarize_chunk(raw: Path, route: str, ref: Pair, t0_ns: float, first: int, 
     except ValueError:
         totals = {}
     s["process"] = totals
-    # every other raw file, re-hashed: the run record and the committed digests are checked against these
+    # Every raw file under a name the reader did not hash is hashed here, in sorted order; the run record
+    # and the committed digests are checked against these. One digest is kept per name, so when a name is
+    # held both plain and gzipped only one copy is hashed (the copy the reader consumed, else the plain one,
+    # first in sorted order); every such name is listed in raw_both_forms, which raw_digest_problems names.
+    forms: dict[str, int] = {}
     for path in sorted(raw.iterdir()):
+        if not path.is_file():
+            continue
         name = path.name[:-3] if path.name.endswith(".gz") else path.name
-        if path.is_file() and name not in digests:
+        forms[name] = forms.get(name, 0) + 1
+        if name not in digests:
             digests[name] = file_digest(path)
     s["raw_sha256"] = dict(sorted(digests.items()))
+    s["raw_both_forms"] = sorted(name for name, n in forms.items() if n > 1)
     wanted = {"events", "captures"} | {f"sum_{k}" for k in STREAMS}
     try:
         s["process_agrees"] = wanted <= set(totals) and (
@@ -1173,7 +1181,7 @@ def _command_problems(where: str, run: Mapping[str, Any], want: Mapping[str, str
     return problems
 
 
-#: The raw files the analysis consumes; each must have been read to its end and re-hashed.
+#: The raw files the analysis consumes; the reader hashes each as it reads it to its end.
 CONSUMED_RAW = ("bound.txt", "bound_summary.txt", "stops.txt")
 #: The committed SHA-256 of every raw file of every production chunk and drill run, by summary cell and first
 #: event: the identity a re-summary is checked against, beside each run's own record.
@@ -1181,17 +1189,24 @@ RAW_DIGESTS_RELPATH = "data/g4/d1/bound_rates_raw_digests.csv"
 RAW_DIGEST_COLUMNS = ("cell", "first", "file", "sha256")
 
 
-def raw_digest_problems(where: str, recomputed: Mapping[str, str], recorded: Any,
+def raw_digest_problems(where: str, stats: Mapping[str, Any], recorded: Any,
                         registered: Mapping[str, str] | None) -> list[str]:
-    """The raw files of one chunk, re-hashed (``recomputed``: file name -> SHA-256 of the uncompressed bytes
-    read), against the run's own record (``run.json`` ``files``) and against the committed digests
-    (``registered``, from :data:`RAW_DIGESTS_RELPATH`). Every consumed file must have been read; every file
-    must be in the record and in the committed set with the same digest; neither may name a file the raw
-    directory lacks. A raw file swapped after the run differs from its record; a record edited to match the
-    swapped file still differs from the committed digest. Each disagreement is named."""
+    """The raw files of one chunk as :func:`summarize_chunk` hashed them (``stats["raw_sha256"]``: file
+    name -> SHA-256 of the uncompressed bytes; ``stats["raw_both_forms"]``: the names held both plain and
+    gzipped), against the run's own record (``run.json`` ``files``) and against the committed digests
+    (``registered``, from :data:`RAW_DIGESTS_RELPATH`). A consumed file without a digest is named
+    (``summarize_chunk`` hashes every file present, so it is absent from the raw directory); every hashed
+    file must be in the record and in the committed set with the same digest; neither may name a file the
+    raw directory lacks; a name held both plain and gzipped is named, since only one of its copies was
+    hashed; a summary that does not list those names is named. A raw file swapped after the run differs
+    from its record; a record edited to match the swapped file still differs from the committed digest.
+    Each disagreement is named."""
+    recomputed = stats.get("raw_sha256")
+    recomputed = recomputed if isinstance(recomputed, Mapping) else {}
     recorded = recorded if isinstance(recorded, Mapping) else {}
     registered_: Mapping[str, str] = registered if registered is not None else {}
-    problems = [f"{where}: {f} was not read to its end" for f in CONSUMED_RAW if f not in recomputed]
+    problems = [f"{where}: {f}, which the analysis consumes, has no digest: it is not in the raw directory"
+                for f in CONSUMED_RAW if f not in recomputed]
     for f in sorted(set(recomputed) | set(recorded) | set(registered_)):
         got, rec, reg = recomputed.get(f), recorded.get(f), registered_.get(f)
         if got is None:
@@ -1205,6 +1220,12 @@ def raw_digest_problems(where: str, recomputed: Mapping[str, str], recorded: Any
             problems.append(f"{where}: {f} has no committed digest")
         elif got != reg:
             problems.append(f"{where}: {f} differs from its committed digest")
+    both = stats.get("raw_both_forms")
+    if not isinstance(both, list):
+        problems.append(f"{where}: the summary does not list the raw names held both plain and gzipped")
+    else:
+        problems += [f"{where}: {f} is held both plain and gzipped; one copy was hashed and the other was not"
+                     for f in both]
     return problems
 
 
@@ -1282,7 +1303,7 @@ def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path,
                                                                     bool(plan["switch_on"])))
         recomputed = stats.get("raw_sha256", {})
         digest_problems.setdefault(g, []).extend(raw_digest_problems(
-            f"chunk at {int(chunk['first'])}", recomputed, run.get("files"),
+            f"chunk at {int(chunk['first'])}", stats, run.get("files"),
             registered.get((group_name(group), int(chunk["first"])))))
         by_group.setdefault(g, []).append(stats)
         m = meta.setdefault(g, {"binary_sha256": run["build_binary_sha256"], "files": ""})
