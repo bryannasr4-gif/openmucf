@@ -246,6 +246,8 @@ def harvest(raw: Path, root: Path) -> bytes:
     flags: set[str] = set()
     for build, _ in BUILDS:
         folder = raw / build
+        if not folder.is_dir():
+            raise LifetimeError(f"{build}: the raw tree has no directory for this build ({folder})")
         if (folder / "sha256.txt").read_text(encoding="ascii").split()[0] != harness:
             raise LifetimeError(f"{build}: the compiled driver is not {HARNESS_RELPATH}")
         if (folder / "stderr.txt").read_bytes():

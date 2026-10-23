@@ -12,6 +12,10 @@ one build that ``scripts/generate_g4lifetime.py harvest`` converts into ``data/g
 * ``flags.txt``, the compile flags, written from :data:`FLAGS`, the tuple the compile command is built from;
 * ``decay.txt`` and ``stderr.txt``, what the driver printed on each stream.
 
+It writes them in a staging directory beside ``--out`` and renames that directory to ``--out`` only after
+every command and the driver have exited with status 0, removing the staging directory whatever happens.
+A failed command or driver does not publish a raw build directory.
+
 Every command (``geant4-config``, ``g++`` and the driver) runs in a ``bash`` that has sourced the
 installation's ``bin/geant4.sh``, so the compiler sees the installation's flags and the driver loads its
 libraries. The conversion reads each build's flags from its ``flags.txt``, never from a constant. The tool
@@ -24,7 +28,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -82,23 +88,47 @@ def check_paths(install: Path, work: Path, out: Path) -> Path:
     return config
 
 
-def harvest(install: Path, work: Path, out: Path) -> None:
-    """Compile the driver against ``install`` in ``work``, run it and write ``out``."""
-    config = check_paths(install, work, out)
-    work.mkdir(parents=True, exist_ok=True)
-    out.mkdir(parents=True)
-    _write(out / "version.txt", _output(in_installation(install, [str(config), "--version"])))
+def _produce(install: Path, config: Path, work: Path, folder: Path) -> str:
+    """Write the six files of a build into ``folder`` and return the compiler line; a command or a driver
+    that exits with a status other than 0 is refused."""
+    _write(folder / "version.txt", _output(in_installation(install, [str(config), "--version"])))
     gcc = _output(in_installation(install, ["g++", "--version"])).splitlines()[0]
-    _write(out / "gcc.txt", gcc + "\n")
-    _write(out / "sha256.txt", hashlib.sha256(SOURCE.read_bytes()).hexdigest() + "\n")
-    _write(out / "flags.txt", flags_text())
+    _write(folder / "gcc.txt", gcc + "\n")
+    _write(folder / "sha256.txt", hashlib.sha256(SOURCE.read_bytes()).hexdigest() + "\n")
+    _write(folder / "flags.txt", flags_text())
     binary = work / "harvest_decay"
     cflags_libs = _output(in_installation(install, [str(config), "--cflags", "--libs"])).split()
     _output(in_installation(install, compile_argv(SOURCE, binary, cflags_libs)))
-    with (out / "decay.txt").open("wb") as stdout, (out / "stderr.txt").open("wb") as stderr:
+    with (folder / "decay.txt").open("wb") as stdout, (folder / "stderr.txt").open("wb") as stderr:
         rc = subprocess.call(in_installation(install, [str(binary)]), stdout=stdout, stderr=stderr)
     if rc != 0:
-        raise HarvestError(f"the driver exited with {rc}; see {out / 'stderr.txt'}")
+        tail = (folder / "stderr.txt").read_bytes()[-2000:].decode("ascii", "replace")
+        raise HarvestError(f"the driver exited with {rc}: {tail}")
+    return gcc
+
+
+def publish(staging: Path, out: Path) -> None:
+    """Rename the finished ``staging`` directory to ``out``, refusing an ``out`` that exists by then."""
+    if out.exists():
+        raise HarvestError(f"{out} exists: a harvest never writes into an existing directory")
+    os.rename(staging, out)
+
+
+def harvest(install: Path, work: Path, out: Path) -> None:
+    """Compile the driver against ``install`` in ``work``, run it, and publish ``out`` once every command
+    and the driver have succeeded. The files are written in a staging directory beside ``out``, which is
+    removed whatever happens, so a failed command or driver leaves no ``out``."""
+    config = check_paths(install, work, out)
+    work.mkdir(parents=True, exist_ok=True)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    holder = Path(tempfile.mkdtemp(prefix=f".{out.name}.", suffix=".unpublished", dir=out.parent))
+    try:
+        staging = holder / out.name
+        staging.mkdir()
+        gcc = _produce(install, config, work, staging)
+        publish(staging, out)
+    finally:
+        shutil.rmtree(holder, ignore_errors=True)
     print(
         f"HARVEST {out} version={(out / 'version.txt').read_text('ascii').strip()} gcc={gcc!r} "
         f"flags={flags_text().strip()!r}",

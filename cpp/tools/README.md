@@ -116,7 +116,9 @@ Geant4's routes, with the nuclear masses the bound-decay route is passed, and
 `scripts/generate_g4lifetime.py harvest` converts a raw directory per unpatched build into `data/g4/d1/d1_decay_rate.oracle`.
 `decay_harvest.py` writes such a directory: it compiles the driver against an installation with the flags
 it writes to `flags.txt`, from the tuple the compile command is built from, and records beside them the
-Geant4 version, the compiler, the driver's digest and what the driver printed on each stream. The
+Geant4 version, the compiler, the driver's digest and what the driver printed on each stream. It writes
+them in a staging directory beside `--out` and renames that directory to `--out` only once every command
+and the driver have succeeded. A failed command or driver does not publish a raw build directory. The
 conversion reads each build's flags from its `flags.txt`, never from a constant, and refuses a build that
 recorded none, builds that recorded different flags and a record that is not a single line of plain
 compiler options.

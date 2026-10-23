@@ -16,9 +16,12 @@ import decimal
 import hashlib
 import importlib.util
 import math
+import os
 import re
+import sys
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import test_g4overlay as overlay
@@ -441,6 +444,231 @@ def test_drill_the_recipe_refuses_an_existing_output_and_an_installation_without
         assert out == existing or not out.exists(), name
         assert not (tmp_path / "work").exists(), name
     assert list(existing.iterdir()) == []
+
+
+#: The version each build's ``geant4-config`` prints, as the raw tree records it.
+_VERSIONS = {build: revision.removeprefix("v").removesuffix(".beta") for build, revision in lifetime.BUILDS}
+#: What the stand-in installation's ``geant4-config --cflags --libs`` prints.
+_CFLAGS_LIBS = ["-I/g4/include", "-lG4global"]
+#: The six files of a published build.
+_BUILD_FILES = ["decay.txt", "flags.txt", "gcc.txt", "sha256.txt", "stderr.txt", "version.txt"]
+
+
+class _Commands:
+    """Stand-ins for the external commands the recipe runs, put in place of its ``subprocess``: ``run``
+    answers ``geant4-config --version``, ``g++ --version``, ``geant4-config --cflags --libs`` and the compile
+    command as an installation of ``version`` would, and ``call`` is the driver, which prints ``decay`` and
+    ``stderr`` and exits with ``driver_rc``. The command named by ``failing`` (version, compiler, cflags or
+    compile) prints its usual output and exits with 1. ``ran`` lists the commands run, in order, and
+    ``compiles`` the compile commands."""
+
+    def __init__(self, version: str, compiler: str, decay: bytes, *, failing: str | None = None,
+                 driver_rc: int = 0, stderr: bytes = b"", on_driver=None) -> None:
+        self.version, self.compiler, self.decay, self.stderr = version, compiler, decay, stderr
+        self.failing, self.driver_rc, self.on_driver = failing, driver_rc, on_driver
+        self.ran: list[str] = []
+        self.compiles: list[list[str]] = []
+
+    def run(self, argv, **kwargs):
+        assert argv[:2] == ["bash", "-c"] and kwargs.get("check") is False, argv
+        command = argv[4:]
+        if command == ["g++", "--version"]:
+            name, stdout = "compiler", f"{self.compiler}\nCopyright (C) 2025 Free Software Foundation, Inc.\n"
+        elif command[1:] == ["--version"]:
+            name, stdout = "version", f"{self.version}\n"
+        elif command[1:] == ["--cflags", "--libs"]:
+            name, stdout = "cflags", " ".join(_CFLAGS_LIBS) + "\n"
+        else:
+            assert command[0] == "g++", command
+            name, stdout = "compile", ""
+            self.compiles.append(command)
+        self.ran.append(name)
+        failed = name == self.failing
+        return SimpleNamespace(returncode=1 if failed else 0, stdout=stdout,
+                               stderr="error: the command failed\n" if failed else "")
+
+    def call(self, argv, stdout, stderr):
+        self.ran.append("driver")
+        stdout.write(self.decay)
+        stderr.write(self.stderr)
+        if self.on_driver is not None:
+            self.on_driver()
+        return self.driver_rc
+
+
+def _harvest_build(recipe, monkeypatch, tmp_path: Path, build: str, commands: _Commands) -> Path:
+    """Run the recipe for ``build`` with ``commands`` in place of the external commands; the output is
+    ``<tmp_path>/raw/<build>``."""
+    monkeypatch.setattr(recipe, "subprocess", commands)
+    install = _installation(tmp_path / build / "install")
+    out = tmp_path / "raw" / build
+    recipe.harvest(install, tmp_path / build / "work", out)
+    return out
+
+
+def _convert(monkeypatch, tmp_path: Path, raw: Path) -> Path:
+    """Run ``scripts/generate_g4lifetime.py harvest --raw <raw>``, the normal conversion, against a root that
+    holds the committed driver, so the oracle it writes lands under ``tmp_path``; return its path."""
+    path = REPO / "scripts" / "generate_g4lifetime.py"
+    module_spec = importlib.util.spec_from_file_location("generate_g4lifetime", path)
+    assert module_spec and module_spec.loader, path
+    script = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(script)
+    root = tmp_path / "root"
+    (root / lifetime.HARNESS_RELPATH).parent.mkdir(parents=True)
+    (root / lifetime.HARNESS_RELPATH).write_bytes((REPO / lifetime.HARNESS_RELPATH).read_bytes())
+    (root / lifetime.ORACLE_RELPATH).parent.mkdir(parents=True)
+    monkeypatch.setattr(script, "ROOT", root)
+    monkeypatch.setattr(sys, "argv", ["generate_g4lifetime.py", "harvest", "--raw", str(raw)])
+    script.main()
+    return root / lifetime.ORACLE_RELPATH
+
+
+def test_drill_the_recipe_publishes_a_build_whose_commands_and_driver_succeeded_and_it_converts(
+        tmp_path, monkeypatch):
+    """Every command and the driver exit with 0: the recipe publishes each build with the version, the
+    compiler, the driver's digest, the flags of the compile command it ran and what the driver printed on
+    each stream, leaves nothing else beside the builds, and the normal conversion writes an oracle of the
+    committed values that names those flags."""
+    recipe = decay_harvest()
+    committed = oracle()
+    text = _raw_text().encode("ascii")
+    harness = hashlib.sha256((REPO / lifetime.HARNESS_RELPATH).read_bytes()).hexdigest()
+    used: set[str] = set()
+    for build, _ in lifetime.BUILDS:
+        commands = _Commands(_VERSIONS[build], committed.header["compiler"], text)
+        folder = _harvest_build(recipe, monkeypatch, tmp_path, build, commands)
+        assert commands.ran == ["version", "compiler", "cflags", "compile", "driver"]
+        assert commands.compiles == [recipe.compile_argv(
+            recipe.SOURCE, tmp_path / build / "work" / "harvest_decay", _CFLAGS_LIBS)]
+        compile_command = commands.compiles[0]
+        flags = " ".join(compile_command[1:compile_command.index(str(recipe.SOURCE))])
+        used.add(flags)
+        assert sorted(path.name for path in folder.iterdir()) == _BUILD_FILES
+        assert (folder / "version.txt").read_bytes() == f"{_VERSIONS[build]}\n".encode("ascii")
+        assert (folder / "gcc.txt").read_bytes() == f"{committed.header['compiler']}\n".encode("ascii")
+        assert (folder / "sha256.txt").read_bytes() == f"{harness}\n".encode("ascii")
+        assert (folder / "flags.txt").read_bytes() == f"{flags}\n".encode("ascii")
+        assert (folder / "decay.txt").read_bytes() == text
+        assert (folder / "stderr.txt").read_bytes() == b""
+    assert len(used) == 1
+    raw = tmp_path / "raw"
+    assert sorted(path.name for path in raw.iterdir()) == sorted(build for build, _ in lifetime.BUILDS)
+    written = _convert(monkeypatch, tmp_path, raw)
+    assert written.read_bytes() == lifetime.harvest(raw, REPO)
+    rebuilt = lifetime.load_oracle(written)
+    assert (rebuilt.constants, rebuilt.helper, rebuilt.light, rebuilt.heavy) == (
+        committed.constants, committed.helper, committed.light, committed.heavy)
+    assert rebuilt.header["compiler"] == committed.header["compiler"]
+    assert rebuilt.header["driver_flags"] == committed.header["driver_flags"]
+    assert rebuilt.header["driver_flags"].startswith(f"{used.pop()};")
+
+
+def _failed_rates() -> bytes:
+    """A complete sweep the raw parser admits, with the last helper rate changed to 1."""
+    text = _raw_text()
+    rate = f"H {_HELPER_Z} {oracle().helper[_HELPER_Z].hex()}\n"
+    assert text.count(rate) == 1
+    wrong = text.replace(rate, f"H {_HELPER_Z} {float(1).hex()}\n")
+    lifetime.parse_raw(wrong)
+    return wrong.encode("ascii")
+
+
+@pytest.mark.parametrize(
+    "failing",
+    [(index,) for index in range(len(lifetime.BUILDS))] + [tuple(range(len(lifetime.BUILDS)))],
+    ids=[build for build, _ in lifetime.BUILDS] + ["every-build"],
+)
+def test_drill_the_recipe_publishes_no_build_whose_driver_failed_and_the_conversion_writes_no_oracle(
+        tmp_path, monkeypatch, failing):
+    """A driver prints a complete sweep the raw parser admits and nothing on stderr, then exits with 17: the
+    recipe refuses that build and publishes no directory for it, leaving nothing beside the builds that
+    succeeded, and the normal conversion refuses the raw tree, naming the build, before it writes any
+    oracle."""
+    recipe = decay_harvest()
+    compiler = oracle().header["compiler"]
+    good, wrong = _raw_text().encode("ascii"), _failed_rates()
+    for index, (build, _) in enumerate(lifetime.BUILDS):
+        if index in failing:
+            commands = _Commands(_VERSIONS[build], compiler, wrong, driver_rc=17)
+            with pytest.raises(recipe.HarvestError, match="^the driver exited with 17: $"):
+                _harvest_build(recipe, monkeypatch, tmp_path, build, commands)
+            assert commands.ran == ["version", "compiler", "cflags", "compile", "driver"]
+        else:
+            _harvest_build(recipe, monkeypatch, tmp_path, build, _Commands(_VERSIONS[build], compiler, good))
+    raw = tmp_path / "raw"
+    published = sorted(build for index, (build, _) in enumerate(lifetime.BUILDS) if index not in failing)
+    assert sorted(path.name for path in raw.iterdir()) == published
+    refusal = f"{lifetime.BUILDS[failing[0]][0]}: the raw tree has no directory for this build"
+    with pytest.raises(lifetime.LifetimeError, match=f"^{re.escape(refusal)}"):
+        _convert(monkeypatch, tmp_path, raw)
+    assert not (tmp_path / "root" / lifetime.ORACLE_RELPATH).exists()
+
+
+@pytest.mark.parametrize("failing", ["version", "compiler", "cflags", "compile"])
+def test_drill_the_recipe_publishes_nothing_when_a_command_fails_after_printing_its_usual_output(
+        tmp_path, monkeypatch, failing):
+    """``geant4-config --version``, ``g++ --version``, ``geant4-config --cflags --libs`` or the compile
+    command prints its usual output and exits with 1: the recipe refuses before it runs the driver and
+    publishes nothing, and the normal conversion writes no oracle."""
+    recipe = decay_harvest()
+    build = lifetime.BUILDS[0][0]
+    commands = _Commands(_VERSIONS[build], oracle().header["compiler"], _raw_text().encode("ascii"),
+                         failing=failing)
+    with pytest.raises(recipe.HarvestError, match=re.escape("failed (1): error: the command failed")):
+        _harvest_build(recipe, monkeypatch, tmp_path, build, commands)
+    assert commands.ran[-1] == failing and "driver" not in commands.ran
+    raw = tmp_path / "raw"
+    assert list(raw.iterdir()) == []
+    with pytest.raises(lifetime.LifetimeError, match=f"^{re.escape(build)}: the raw tree has no directory"):
+        _convert(monkeypatch, tmp_path, raw)
+    assert not (tmp_path / "root" / lifetime.ORACLE_RELPATH).exists()
+
+
+def test_drill_the_recipe_refuses_a_geant4_config_the_system_reports_not_executable(tmp_path, monkeypatch):
+    """The access check, not the file system's mode bits, decides: with ``os.access(..., X_OK)`` reporting
+    the installation's bin/geant4-config not executable, the recipe refuses before it creates or runs
+    anything; reporting it executable, the same installation is admitted."""
+    recipe = decay_harvest()
+    install = _installation(tmp_path / "install")
+    config = install / "bin" / "geant4-config"
+    asked: list[tuple[Path, int]] = []
+
+    def access(executable: bool):
+        def answer(path, mode):
+            asked.append((Path(path), mode))
+            return executable or mode != os.X_OK
+        return SimpleNamespace(access=answer, X_OK=os.X_OK, rename=os.rename)
+
+    commands = _Commands(_VERSIONS[lifetime.BUILDS[0][0]], oracle().header["compiler"],
+                         _raw_text().encode("ascii"))
+    monkeypatch.setattr(recipe, "subprocess", commands)
+    monkeypatch.setattr(recipe, "os", access(True))
+    assert recipe.check_paths(install, tmp_path / "work", tmp_path / "raw" / "out") == config
+    assert (config, os.X_OK) in asked
+    asked.clear()
+    monkeypatch.setattr(recipe, "os", access(False))
+    with pytest.raises(recipe.HarvestError, match="has no executable bin/geant4-config"):
+        recipe.harvest(install, tmp_path / "work", tmp_path / "raw" / "out")
+    assert (config, os.X_OK) in asked
+    assert commands.ran == []
+    assert not (tmp_path / "work").exists() and not (tmp_path / "raw").exists()
+
+
+def test_drill_the_recipe_refuses_to_publish_over_an_output_that_appeared_during_the_run(
+        tmp_path, monkeypatch):
+    """An empty ``--out`` appears while the driver runs: the recipe refuses to publish over it, leaves it as
+    it was and leaves nothing else beside it."""
+    recipe = decay_harvest()
+    build = lifetime.BUILDS[0][0]
+    out = tmp_path / "raw" / build
+    commands = _Commands(_VERSIONS[build], oracle().header["compiler"], _raw_text().encode("ascii"),
+                         on_driver=out.mkdir)
+    with pytest.raises(recipe.HarvestError, match="exists: a harvest never writes into an existing"):
+        _harvest_build(recipe, monkeypatch, tmp_path, build, commands)
+    assert commands.ran[-1] == "driver"
+    assert sorted(path.name for path in (tmp_path / "raw").iterdir()) == [build]
+    assert list(out.iterdir()) == []
 
 
 @pytest.mark.parametrize(
