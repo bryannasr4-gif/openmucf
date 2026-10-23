@@ -160,6 +160,23 @@ python3 cpp/tools/mixture_harvest.py run --build <build> --route stopping --symb
 python3 cpp/tools/mixture_harvest.py summarize --cells <plan.json> --out data/g4/d1
 ```
 
+The bound-rate option (`cpp/patches/README.md`) is verified with the same harness. Its further options all
+have defaults, and with all of them at their defaults the harness reproduces every identity
+digest of the committed natural-target harvest (`data/g4/d1/bound_rates_harness_defaults.csv`):
+`--isotope <A>` (a target of a single isotope of the element), `--t0 <ns>` (the muon's start time),
+`--event-offset <i0>` (absolute event numbers and seeds, so that a long run splits into processes),
+`--bound-rates on` (`G4HadronicParameters::SetEnableMuonicBoundRates(true)` before the physics list is
+built), `--bound-record on` (a line per event with the rates or lifetimes the consumer used, the sampled
+delay, the branch, the capture model's local times and the transported product times, beside the process's
+own sums in `bound_summary.txt`) and `--rng-states on` (the engine's whole state at the end of every event).
+A build with `--trace on` (`mixture_harvest.py build`) also defines `G4MuonicBoundRateProvider::Rates` and
+the `ApplyYourself` of both routes' capture models in the executable and exports them, so that the libraries'
+calls bind there and each call is recorded, then calls the library's definition and returns its result; it
+refuses to start unless each name resolves to the executable and its next definition to a Geant4 library.
+`harvest_bound_rates.cc` prints, through a patched build, both routes' capture rates, the provider's answer
+and the lifetimes the muonic atom stores, for every key of the provider's domain and its edges, with the dataset
+and bound-rate opt-ins as its command line sets them, and then tries to change the frozen switch.
+
 ## Bound-decay prescriptions
 
 `repro_bound_rates.cc` prints, for each nuclide on its command line or in its default list, what a Geant4

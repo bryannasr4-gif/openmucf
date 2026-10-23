@@ -2057,6 +2057,9 @@ def load_policy(root: Path) -> dict[str, object]:
 HARVEST_RELPATH = "data/g4/d1/natural_mixture_harvest.csv"
 BUILDS_RELPATH = "data/g4/d1/natural_mixture_builds.csv"
 HARNESS_RELPATH = "cpp/tools/harvest_mixture.cc"
+#: The record that the harness, extended since this harvest ran, reproduces the harvest's identity evidence
+#: with every new option at its default; it names the source the harvest's builds compiled.
+HARNESS_DEFAULTS_RELPATH = "data/g4/d1/bound_rates_harness_defaults.csv"
 HARVEST_COLUMNS = ("cell", "stat", "key", "value")
 BUILD_COLUMNS = (
     "build",
@@ -2227,6 +2230,23 @@ def summarize_cell(
     return out
 
 
+def accepted_harness_sources(root: Path) -> set[str]:
+    """The harness sources a build of this harvest may have compiled: the committed one, and the one the
+    harvest's builds compiled, provided the committed harness, with every option it gained since at its
+    default, reproduces every identity digest of the committed summary (``HARNESS_DEFAULTS_RELPATH``)."""
+    current = hashlib.sha256((root / HARNESS_RELPATH).read_bytes()).hexdigest()
+    accepted = {current}
+    path = root / HARNESS_DEFAULTS_RELPATH
+    if path.is_file():
+        rows = read_csv(path, ("cell", "key", "committed", "reproduced"))
+        head = [r for r in rows if r["cell"] == "harness" and r["key"] == "source_sha256"]
+        digests = [r for r in rows if r["cell"] != "harness"]
+        if (len(head) == 1 and head[0]["reproduced"] == current and digests
+                and all(r["committed"] == r["reproduced"] for r in digests)):
+            accepted.add(head[0]["committed"])
+    return accepted
+
+
 def summarize_cells(root: Path, plan: Mapping[str, Any], out_dir: Path) -> None:
     """The committed harvest and build files from the raw cells ``plan`` lists (``cells``: each with its
     ``dir``;
@@ -2281,11 +2301,11 @@ def summarize_cells(root: Path, plan: Mapping[str, Any], out_dir: Path) -> None:
             for key in sorted(entry):
                 if key not in ("route", "revision"):
                     rows.append({"cell": name, "stat": "identity", "key": key, "value": str(entry[key])})
-    source = hashlib.sha256((root / HARNESS_RELPATH).read_bytes()).hexdigest()
+    accepted = accepted_harness_sources(root)
     builds: list[dict[str, str]] = []
     for build_dir in plan["builds"]:
         info = json.loads((Path(build_dir) / "build.json").read_text(encoding="utf-8"))
-        if info["source_sha256"] != source:
+        if info["source_sha256"] not in accepted:
             raise MixtureError(f"{build_dir}: the build compiled another source than {HARNESS_RELPATH}")
         libs = hashlib.sha256(
             json.dumps([(x["soname"], x["sha256"]) for x in info["libraries"]]).encode()
