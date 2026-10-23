@@ -4,6 +4,8 @@ and the stock reproducer (``openmucf/g4/d1_boundrates.py``, ``data/g4/d1/bound_r
 
 from __future__ import annotations
 
+import csv
+import hashlib
 import importlib.util
 import json
 import math
@@ -849,3 +851,297 @@ def test_the_running_sum_is_exactly_rounded() -> None:
     for v in values:
         acc.add(v)
     assert acc.value() == math.fsum(values)
+
+
+# --------------------------------------------------------------------------------------------
+# the committed harvest, drills, identity runs, workers, sweep and results
+# --------------------------------------------------------------------------------------------
+
+#: The drills the campaign ran, by the defect each plants (library drills, the synthetic-pair witness), the
+#: reruns at a size where the transport tests have power, and the matched controls on the drill base
+#: library.
+DRILL_IDS = {"old_helper_atomic", "disconnect_stopping", "units_1000", "omit_recoil", "neighbour_mass",
+             "drop_a", "total_only", "swap_partials", "compensation", "constant_delay",
+             "synthetic_capture_x4", "control", "old_helper_atomic_n10m", "total_only_n60m"}
+#: What each drill result was ruled to show where the drill plan asked more of it than the run could show; the
+#: recorded outcomes stay as they are.
+RULINGS_RELPATH = "data/g4/d1/bound_rates_drill_rulings.csv"
+RULING_COLUMNS = ("kind", "revision", "route", "item", "ruled_intended", "rerun", "reason")
+#: The worker check: the patched build with the switch on and off and the unpatched build, at 1, 4 and again 4
+#: threads, on both routes, for C-12 and Al-27.
+WORKERS_RELPATH = "data/g4/d1/bound_rates_workers.csv"
+
+
+@pytest.fixture(scope="module")
+def harvest() -> dict:
+    return bound.load_harvest(ROOT)
+
+
+@pytest.fixture(scope="module")
+def results() -> dict:
+    return json.loads((ROOT / bound.RESULTS_RELPATH).read_text(encoding="utf-8"))
+
+
+def test_the_harvest_covers_every_group_chunk_and_stratum_of_the_policy(policy: dict, harvest: dict) -> None:
+    builds = bound.read_csv(ROOT / bound.BUILDS_RELPATH, bound.BUILD_COLUMNS)
+    harness = hashlib.sha256((ROOT / "cpp/tools/harvest_mixture.cc").read_bytes()).hexdigest()
+    traced = {b["binary_sha256"] for b in builds if b["trace"] == "True" and b["kind"] == "bound"}
+    assert {b["source_sha256"] for b in builds} == {harness}
+    assert {b["revision"] for b in builds} == set(bound.REVISIONS)
+    assert set(harvest) == {bound.group_name(g) for g in policy["groups"]}
+    for g in policy["groups"]:
+        cell = harvest[bound.group_name(g)]
+        assert cell["meta"]["switch_on"] == "True" and cell["meta"]["binary_sha256"] in traced
+        assert cell["group"]["events"] == g["events"] and cell["group"]["chunks"] == len(bound.chunks(g))
+        assert cell["group"]["chunk_overlap"] == 0
+        for stratum in g["strata"]:
+            s = cell[f"stratum_{stratum['t0_ns']}"]
+            assert s["events"] == stratum["count"], (g["group"], stratum)
+        assert sum(cell[f"stratum_{t}"]["events"] for t in bound.T0_NS) == g["events"]
+
+
+def test_every_group_is_complete_and_every_consumed_rate_is_the_registered_one(policy: dict,
+                                                                             harvest: dict) -> None:
+    for g in policy["groups"]:
+        s = harvest[bound.group_name(g)]["group"]
+        assert bound.gate_complete(s, g["events"])["verdict"] == "pass", bound.group_name(g)
+        assert bound.gate_rate(s, g["route"])["verdict"] == "pass", bound.group_name(g)
+        assert s["rate_exact"] == g["events"], bound.group_name(g)
+
+
+def test_the_four_registered_tests_recomputed_independently(policy: dict, harvest: dict,
+                                                            results: dict) -> None:
+    """Each group's four tests from its committed sums with scipy's distributions called here: the capture
+    count against the policy's interval, and each scaled sum against its gamma quantiles at half the
+    per-test alpha. The verdicts are the committed ones."""
+    from scipy import stats
+
+    alpha = float(policy["statistics"]["primary"]["per_test_alpha"])
+    for g in policy["groups"]:
+        name = bound.group_name(g)
+        s = harvest[name]["group"]
+        pair = bound.frozen_pair(policy, g["isotope"])
+        n, k = s["events"], s["captures"]
+        lo, hi = policy["statistics"]["primary"]["limits"][g["isotope"]]["capture_count"]
+        mine = {"capture_count": lo <= k <= hi}
+        for test, stream, shape in (("sum_all", "all", n), ("sum_capture", "capture", k),
+                                    ("sum_decay", "decay", n - k)):
+            u = pair.total * float.fromhex(s["sums"][stream])
+            mine[test] = bool(stats.gamma.ppf(alpha / 2, shape) <= u <= stats.gamma.isf(alpha / 2, shape))
+        committed = results["TRANSPORT_RESULTS"]["groups"][name]["primary"]
+        assert {t: v["verdict"] == "pass" for t, v in committed.items()} == mine, name
+
+
+def test_the_distribution_family_recomputed_independently(policy: dict, harvest: dict, results: dict) -> None:
+    from scipy import stats
+
+    dist = policy["statistics"]["distribution"]
+    crit = stats.chi2.isf(float(dist["per_test_alpha"]), dist["dof"])
+    for g in policy["groups"]:
+        name = bound.group_name(g)
+        s = harvest[name]["group"]
+        for stream in bound.STREAMS:
+            counts = s["bins"][stream]
+            n = sum(counts)
+            x2 = sum((c - n / bound.TIME_BINS) ** 2 / (n / bound.TIME_BINS) for c in counts)
+            committed = results["TRANSPORT_RESULTS"]["groups"][name]["distribution"][stream]["verdict"]
+            assert (x2 < crit) == (committed == "pass"), (name, stream, x2, crit)
+
+
+def test_the_clock_results_follow_the_frozen_predictions_and_delivery_passes(results: dict) -> None:
+    clocks = results["CLOCK_RESULTS"]
+    assert clocks["delivery_status"] == "PASS"
+    for name, v in clocks["groups"].items():
+        assert v["delivery"]["verdict"] == "pass", name
+        for key, r in v["physical"].items():
+            assert r["n"] > 0, (name, key)
+    assert sorted(clocks["not_as_predicted"]) == sorted(
+        f"{name}:{key}" for name, v in clocks["groups"].items() for key, r in v["physical"].items()
+        if not r["as_predicted"])
+
+
+def test_the_results_regenerate_from_the_committed_files(results: dict) -> None:
+    fresh = _generator().build_results(ROOT)
+
+    def compare(a: object, b: object, where: str) -> None:
+        if isinstance(a, dict) and isinstance(b, dict):
+            assert set(a) == set(b), where
+            for key in a:
+                compare(a[key], b[key], f"{where}.{key}")
+        elif isinstance(a, list) and isinstance(b, list):
+            assert len(a) == len(b), where
+            for i, (x, y) in enumerate(zip(a, b, strict=True)):
+                compare(x, y, f"{where}[{i}]")
+        elif isinstance(a, str) and isinstance(b, str) and re.fullmatch(r"-?[0-9.]+(e[-+]?[0-9]+)?", a):
+            x, y = float(a), float(b)
+            assert x == y or abs(x - y) <= 1e-9 * max(abs(x), abs(y)), (where, a, b)
+        else:
+            assert a == b, (where, a, b)
+
+    compare(json.loads(json.dumps(fresh)), results, "results")
+
+
+def test_the_theory_family_stays_separate_from_the_engineering_families(results: dict) -> None:
+    assert results["THEORY_STATUS"]["status"] == "NOT_ESTABLISHED"
+    assert results["THEORY_STATUS"]["screen"] == "SCREEN_VACUOUS"
+    assert results["THEORY_STATUS"]["qualified_roster"] == []
+
+
+def _rulings(kind: str) -> list[dict[str, str]]:
+    return [r for r in bound.read_csv(ROOT / RULINGS_RELPATH, RULING_COLUMNS) if r["kind"] == kind]
+
+
+def _transport_power(policy: dict, n: int, drill: str) -> float:
+    """The largest power of the four registered tests at size ``n`` (alpha the per-test alpha, two-sided)
+    against the defect ``drill`` plants on the atomic route of C-12, with the policy's frozen alternative
+    decay rate: old_helper_atomic gives the consumer (c, d_old), so the delay and the branch move;
+    total_only keeps the total lifetime and leaves the DIO lifetime stale, so only the branch moves. The
+    conditional tests are evaluated at their expected count."""
+    from scipy import stats
+
+    pair = bound.frozen_pair(policy, "C-12")
+    c, d = pair.capture, pair.decay
+    d_old = float.fromhex(policy["statistics"]["power"]["values"]["C-12"]["alternative_decay"])
+    a = float(policy["statistics"]["primary"]["per_test_alpha"])
+    p0, p1 = c / (c + d), c / (c + d_old)
+    scale = (c + d) / (c + d_old) if drill.startswith("old_helper_atomic") else 1.0
+    lo, hi = stats.binom.ppf(a / 2, n, p0), stats.binom.isf(a / 2, n, p0)
+    powers = [float(stats.binom.cdf(lo - 1, n, p1) + stats.binom.sf(hi, n, p1))]
+    for shape in (n, n * p1, n * (1 - p1)):
+        g_lo, g_hi = stats.gamma.ppf(a / 2, shape), stats.gamma.isf(a / 2, shape)
+        powers.append(float(stats.gamma.cdf(g_lo, shape, scale=scale)
+                            + stats.gamma.sf(g_hi, shape, scale=scale)))
+    return max(powers)
+
+
+def test_every_drill_turns_its_intended_family_red_and_every_control_stays_green(policy: dict) -> None:
+    """Each drill red on its intended families and each control green; where a ruling narrows a drill's
+    intended families (the registered transport tests unpowered against the defect at the run's size),
+    the narrowed set is red, the transport power at that size is below 0.99, and the ruling's rerun is
+    powered (some registered test at 0.99 or more) and red on rate, wiring and transport."""
+    from scipy import stats
+
+    rows = bound.read_csv(ROOT / bound.DRILLS_RELPATH, bound.HARVEST_COLUMNS)
+    grouped: dict[str, list[dict[str, str]]] = {}
+    for r in rows:
+        grouped.setdefault(r["cell"], []).append(r)
+    ruled = {r["item"]: r for r in _rulings("statistical")}
+    ref = bound.Reference(ROOT)
+    seen, outcomes = set(), {}
+    for cell, cell_rows in grouped.items():
+        meta = {r["key"]: r["value"] for r in cell_rows if r["stat"] == "meta"}
+        s = bound.rows_stats([r for r in cell_rows if r["stat"] == "group"])
+        pair = ref.pair(int(meta["z"]), int(meta["a"]))
+        families = bound.drill_families(s, meta, pair, stats)
+        intended = ruled[cell]["ruled_intended"] if cell in ruled else meta["intended"]
+        outcomes[cell] = bound.drill_outcome(meta["kind"], intended, families)
+        expected = "green" if meta["kind"] == "control" or intended == "none" else "red"
+        assert outcomes[cell] == expected, (cell, intended, families)
+        if cell in ruled:
+            assert _transport_power(policy, int(meta["events"]), meta["drill"]) < 0.99, cell
+        seen.add(meta["drill"])
+    assert seen == DRILL_IDS
+    for item, r in ruled.items():
+        assert item in grouped and r["rerun"] in grouped, r
+        rerun_meta = {x["key"]: x["value"] for x in grouped[r["rerun"]] if x["stat"] == "meta"}
+        assert rerun_meta["intended"] == "rate,wiring,transport" and outcomes[r["rerun"]] == "red", r
+        assert _transport_power(policy, int(rerun_meta["events"]), rerun_meta["drill"]) >= 0.99, r
+    for rev in bound.REVISIONS:
+        assert any(c.startswith(f"drill:control:control:{rev}:") for c in grouped), rev
+
+
+def test_every_identity_drill_is_detected() -> None:
+    """Every identity drill observed as expected, except where a ruling finds the check not applicable (the
+    drill never runs on that route); there the ruling's replacement drill, on the same revision and
+    route, is observed as expected."""
+    rows = bound.read_csv(ROOT / bound.IDENTITY_DRILLS_RELPATH,
+                          ("revision", "route", "check", "expect", "observed"))
+    ruled = {(r["revision"], r["route"], r["item"]): r for r in _rulings("identity")}
+    by_key = {(r["revision"], r["route"], r["check"]): r for r in rows}
+    for key, r in by_key.items():
+        if key in ruled:
+            assert ruled[key]["ruled_intended"] == "not applicable"
+            replacement = by_key[(key[0], key[1], ruled[key]["rerun"])]
+            assert replacement["observed"] == "True" and replacement["expect"] == "differ", replacement
+        else:
+            assert r["observed"] == "True", r
+    assert set(ruled) <= set(by_key)
+    assert {(r["revision"], r["route"]) for r in rows} == {
+        (v, r) for v in bound.REVISIONS for r in bound.ROUTES}
+
+
+def test_the_switch_adds_no_thread_dependence() -> None:
+    """With the dataset opt-in off: the patched build with the switch off equals the unpatched build at 1
+    and at 4 threads; every 4-thread configuration repeats; the switch changes the atomic route's records
+    and not the stopping route's; the events that differ between 1 and 4 threads with the switch on are
+    exactly those that differ in the unpatched build, and all are first events of a 4-thread worker."""
+    rows = list(csv.DictReader((ROOT / WORKERS_RELPATH).open(encoding="ascii")))
+    assert {(r["revision"], r["route"], r["target"]) for r in rows} == {
+        (v, route, t) for v in bound.REVISIONS for route in ("bound_decay", "muonic_atom_helper")
+        for t in ("6-12", "13-27")}
+    for r in rows:
+        checks = ("a_off_equals_pristine", "b_four_threads_repeat", "c_switch_effect",
+                  "d_same_thread_dependence", "bound_rates_line")
+        assert all(r[k] == "True" for k in checks) and r["verdict"] == "pass", r
+        assert r["on1_vs_on4_events"] == r["pristine1_vs_pristine4_events"], r
+        assert set(r["on1_vs_on4_events"].split()) <= set(r["worker_first_events"].split()), r
+
+
+IDENTITY_DIGESTS = ("stops", "transport", "engine_hashes", "engine_states", "bound")
+
+
+def test_the_identity_verdicts_recomputed_from_the_digests() -> None:
+    """Pristine against the new build with every option off; hooked against unhooked; traced against
+    untraced with the switch off and on; the previous overlay against the new one under each capture
+    profile; and, outside the provider's domain and on the stopping route everywhere, the switch on
+    against the switch off -- each a byte comparison of the committed digests, on every roster nuclide,
+    route, revision and start time."""
+    rows = bound.read_csv(ROOT / bound.IDENTITY_RELPATH, ("revision", "route", "nuclide", "t0_ns", "config",
+                                                          *IDENTITY_DIGESTS))
+    cells: dict[tuple[str, ...], dict[str, dict[str, str]]] = {}
+    for r in rows:
+        cells.setdefault((r["revision"], r["route"], r["nuclide"], r["t0_ns"]), {})[r["config"]] = r
+    assert len(cells) == (len(bound.REVISIONS) * len(bound.ROUTES) * len(bound.IDENTITY_ROSTER)
+                          * len(bound.T0_NS))
+    for key, c in cells.items():
+        def same(a: str, b: str, fields: tuple[str, ...] = IDENTITY_DIGESTS,
+                 c: dict[str, dict[str, str]] = c) -> bool:
+            return all(c[a][f] and c[a][f] == c[b][f] for f in fields)
+
+        assert same("P", "B0"), key
+        assert same("B0", "B0u", ("transport", "engine_hashes", "engine_states")), key
+        assert same("B0", "T0") and same("B1", "T1"), key
+        for p in ("parity", "mizuno2025", "suzuki1987", "compiled"):
+            assert same(f"O_{p}", f"N_{p}"), (key, p)
+        z, a = _roster_za(key[2])
+        if key[1] == bound.STOPPING or not bound.in_domain(z, a):
+            assert same("B1", "B0"), key
+        else:
+            assert c["B1"]["stops"] != c["B0"]["stops"], key
+    verdicts = bound.read_csv(ROOT / bound.IDENTITY_VERDICTS_RELPATH,
+                              ("revision", "route", "nuclide", "t0_ns", "check", "verdict"))
+    assert verdicts and all(v["verdict"] == "True" for v in verdicts)
+
+
+def _roster_za(label: str) -> tuple[int, int]:
+    sym, a = label.split("-")
+    (z,) = [z for s, z, aa in bound.IDENTITY_ROSTER if s == sym and aa == int(a)]
+    return z, int(a)
+
+
+def test_the_sweep_holds_on_every_key_and_refuses_what_the_reference_predicts(ref: bound.Reference) -> None:
+    rows = bound.read_csv(ROOT / bound.SWEEP_RELPATH, tuple(_sweep_columns()))
+    assert rows and all(r["verdict"] == "pass" for r in rows), [r for r in rows if r["verdict"] != "pass"]
+    predicted = sorted(f"{z}-{a}" for z, a in ref.oracle.light if bound.in_domain(z, a)
+                       and d1.capture_rate(z, a, ref.helper.capture_records, ref.model) < 0)
+    for r in rows:
+        assert r["lifecycle"].startswith("kept"), r
+        if r["switch"] == "on" and r["profile"] in ("none", "compiled"):
+            assert sorted(r["refused_keys"].split()) == predicted, r
+        if r["switch"] == "off":
+            assert int(r["disabled"]) == int(r["keys"]) and not r["refused_keys"], r
+
+
+def _sweep_columns() -> list[str]:
+    with (ROOT / bound.SWEEP_RELPATH).open(encoding="ascii") as f:
+        return f.readline().strip().split(",")

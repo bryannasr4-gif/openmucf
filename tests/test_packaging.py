@@ -304,9 +304,19 @@ RESTATED = (
 )
 #: The other files under `data/g4/`: what this project computed, harvested from Geant4 or MuDirac, or wrote.
 PROJECT_AUTHORED = (
+    "data/g4/d1/bound_rates_builds.csv",
+    "data/g4/d1/bound_rates_drill_rulings.csv",
+    "data/g4/d1/bound_rates_drills.csv",
     "data/g4/d1/bound_rates_harness_defaults.csv",
+    "data/g4/d1/bound_rates_harvest.csv",
+    "data/g4/d1/bound_rates_identity.csv",
+    "data/g4/d1/bound_rates_identity_drills.csv",
+    "data/g4/d1/bound_rates_identity_verdicts.csv",
     "data/g4/d1/bound_rates_policy.json",
+    "data/g4/d1/bound_rates_results.json",
+    "data/g4/d1/bound_rates_sweep.csv",
     "data/g4/d1/bound_rates_theory.json",
+    "data/g4/d1/bound_rates_workers.csv",
     "data/g4/d1/d1_gp_sweep.oracle",
     "data/g4/d1/geant4_add_dataset.snippet",
     "data/g4/d1/isotope_audit.csv",
