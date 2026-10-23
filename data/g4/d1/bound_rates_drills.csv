@@ -23,9 +23,13 @@ drill:control:control:v11.4.2:stopping:C-12,group,branch_outcome_mismatch,0
 drill:control:control:v11.4.2:stopping:C-12,group,stops_bound_mismatch,0
 drill:control:control:v11.4.2:stopping:C-12,group,rate_fail,0
 drill:control:control:v11.4.2:stopping:C-12,group,rate_exact,1000000
+drill:control:control:v11.4.2:stopping:C-12,group,recovered_fail,0
+drill:control:control:v11.4.2:stopping:C-12,group,recovered_exact,0
 drill:control:control:v11.4.2:stopping:C-12,group,wiring_fail,0
 drill:control:control:v11.4.2:stopping:C-12,group,provider_calls_helper,0
 drill:control:control:v11.4.2:stopping:C-12,group,provider_calls_other,0
+drill:control:control:v11.4.2:stopping:C-12,group,helper_calls_valid,0
+drill:control:control:v11.4.2:stopping:C-12,group,helper_calls_invalid,0
 drill:control:control:v11.4.2:stopping:C-12,group,helper_pair_exact,0
 drill:control:control:v11.4.2:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:control:control:v11.4.2:stopping:C-12,group,model_missing,0
@@ -39,6 +43,7 @@ drill:control:control:v11.4.2:stopping:C-12,group,chunks,1
 drill:control:control:v11.4.2:stopping:C-12,group,chunk_overlap,0
 drill:control:control:v11.4.2:stopping:C-12,group,process_agrees,True
 drill:control:control:v11.4.2:stopping:C-12,group,rate_max_rel,0x0.0p+0
+drill:control:control:v11.4.2:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.4.2:stopping:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.4.2:stopping:C-12,group,sum.all,0x1.e41f3d91f7d11p+30
 drill:control:control:v11.4.2:stopping:C-12,group,bin.all.0,50206
@@ -145,9 +150,13 @@ drill:control:control:v11.4.2:stopping:C-12,stratum_0,branch_outcome_mismatch,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,rate_fail,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,rate_exact,1000000
+drill:control:control:v11.4.2:stopping:C-12,stratum_0,recovered_fail,0
+drill:control:control:v11.4.2:stopping:C-12,stratum_0,recovered_exact,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,wiring_fail,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,provider_calls_other,0
+drill:control:control:v11.4.2:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:control:control:v11.4.2:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,model_missing,0
@@ -161,6 +170,7 @@ drill:control:control:v11.4.2:stopping:C-12,stratum_0,chunks,1
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,chunk_overlap,0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,process_agrees,True
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:control:control:v11.4.2:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,sum.all,0x1.e41f3d91f7d11p+30
 drill:control:control:v11.4.2:stopping:C-12,stratum_0,bin.all.0,50206
@@ -279,9 +289,13 @@ drill:control:control:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:control:control:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:control:control:v11.4.2:atomic:C-12,group,rate_fail,0
 drill:control:control:v11.4.2:atomic:C-12,group,rate_exact,1000000
+drill:control:control:v11.4.2:atomic:C-12,group,recovered_fail,0
+drill:control:control:v11.4.2:atomic:C-12,group,recovered_exact,1000000
 drill:control:control:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:control:control:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:control:control:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:control:control:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:control:control:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:control:control:v11.4.2:atomic:C-12,group,helper_pair_exact,1
 drill:control:control:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:control:control:v11.4.2:atomic:C-12,group,model_missing,0
@@ -295,6 +309,7 @@ drill:control:control:v11.4.2:atomic:C-12,group,chunks,1
 drill:control:control:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:control:control:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:control:control:v11.4.2:atomic:C-12,group,rate_max_rel,0x0.0p+0
+drill:control:control:v11.4.2:atomic:C-12,group,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.4.2:atomic:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.4.2:atomic:C-12,group,sum.all,0x1.e4815e196c8ddp+30
 drill:control:control:v11.4.2:atomic:C-12,group,bin.all.0,49889
@@ -401,9 +416,13 @@ drill:control:control:v11.4.2:atomic:C-12,stratum_0,branch_outcome_mismatch,0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,rate_fail,0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,rate_exact,1000000
+drill:control:control:v11.4.2:atomic:C-12,stratum_0,recovered_fail,0
+drill:control:control:v11.4.2:atomic:C-12,stratum_0,recovered_exact,1000000
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:control:control:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:control:control:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -417,6 +436,7 @@ drill:control:control:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:control:control:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.e4815e196c8ddp+30
 drill:control:control:v11.4.2:atomic:C-12,stratum_0,bin.all.0,49889
@@ -535,9 +555,13 @@ drill:control:control:v11.4.2:atomic:C-13,group,branch_outcome_mismatch,0
 drill:control:control:v11.4.2:atomic:C-13,group,stops_bound_mismatch,0
 drill:control:control:v11.4.2:atomic:C-13,group,rate_fail,0
 drill:control:control:v11.4.2:atomic:C-13,group,rate_exact,20000
+drill:control:control:v11.4.2:atomic:C-13,group,recovered_fail,0
+drill:control:control:v11.4.2:atomic:C-13,group,recovered_exact,20000
 drill:control:control:v11.4.2:atomic:C-13,group,wiring_fail,0
 drill:control:control:v11.4.2:atomic:C-13,group,provider_calls_helper,1
 drill:control:control:v11.4.2:atomic:C-13,group,provider_calls_other,0
+drill:control:control:v11.4.2:atomic:C-13,group,helper_calls_valid,1
+drill:control:control:v11.4.2:atomic:C-13,group,helper_calls_invalid,0
 drill:control:control:v11.4.2:atomic:C-13,group,helper_pair_exact,1
 drill:control:control:v11.4.2:atomic:C-13,group,lifetimes_from_call_fail,0
 drill:control:control:v11.4.2:atomic:C-13,group,model_missing,0
@@ -551,6 +575,7 @@ drill:control:control:v11.4.2:atomic:C-13,group,chunks,1
 drill:control:control:v11.4.2:atomic:C-13,group,chunk_overlap,0
 drill:control:control:v11.4.2:atomic:C-13,group,process_agrees,True
 drill:control:control:v11.4.2:atomic:C-13,group,rate_max_rel,0x0.0p+0
+drill:control:control:v11.4.2:atomic:C-13,group,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.4.2:atomic:C-13,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.4.2:atomic:C-13,group,sum.all,0x1.37bbc98c10b33p+25
 drill:control:control:v11.4.2:atomic:C-13,group,bin.all.0,1018
@@ -657,9 +682,13 @@ drill:control:control:v11.4.2:atomic:C-13,stratum_0,branch_outcome_mismatch,0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,stops_bound_mismatch,0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,rate_fail,0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,rate_exact,20000
+drill:control:control:v11.4.2:atomic:C-13,stratum_0,recovered_fail,0
+drill:control:control:v11.4.2:atomic:C-13,stratum_0,recovered_exact,20000
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,wiring_fail,0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,provider_calls_helper,1
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,provider_calls_other,0
+drill:control:control:v11.4.2:atomic:C-13,stratum_0,helper_calls_valid,1
+drill:control:control:v11.4.2:atomic:C-13,stratum_0,helper_calls_invalid,0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,helper_pair_exact,1
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,lifetimes_from_call_fail,0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,model_missing,0
@@ -673,6 +702,7 @@ drill:control:control:v11.4.2:atomic:C-13,stratum_0,chunks,1
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,chunk_overlap,0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,process_agrees,True
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,rate_max_rel,0x0.0p+0
+drill:control:control:v11.4.2:atomic:C-13,stratum_0,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,sum.all,0x1.37bbc98c10b33p+25
 drill:control:control:v11.4.2:atomic:C-13,stratum_0,bin.all.0,1018
@@ -791,9 +821,13 @@ drill:control:control:v11.4.2:atomic:O-18,group,branch_outcome_mismatch,0
 drill:control:control:v11.4.2:atomic:O-18,group,stops_bound_mismatch,0
 drill:control:control:v11.4.2:atomic:O-18,group,rate_fail,0
 drill:control:control:v11.4.2:atomic:O-18,group,rate_exact,20000
+drill:control:control:v11.4.2:atomic:O-18,group,recovered_fail,0
+drill:control:control:v11.4.2:atomic:O-18,group,recovered_exact,0
 drill:control:control:v11.4.2:atomic:O-18,group,wiring_fail,0
 drill:control:control:v11.4.2:atomic:O-18,group,provider_calls_helper,1
 drill:control:control:v11.4.2:atomic:O-18,group,provider_calls_other,0
+drill:control:control:v11.4.2:atomic:O-18,group,helper_calls_valid,1
+drill:control:control:v11.4.2:atomic:O-18,group,helper_calls_invalid,0
 drill:control:control:v11.4.2:atomic:O-18,group,helper_pair_exact,1
 drill:control:control:v11.4.2:atomic:O-18,group,lifetimes_from_call_fail,0
 drill:control:control:v11.4.2:atomic:O-18,group,model_missing,0
@@ -807,6 +841,7 @@ drill:control:control:v11.4.2:atomic:O-18,group,chunks,1
 drill:control:control:v11.4.2:atomic:O-18,group,chunk_overlap,0
 drill:control:control:v11.4.2:atomic:O-18,group,process_agrees,True
 drill:control:control:v11.4.2:atomic:O-18,group,rate_max_rel,0x0.0p+0
+drill:control:control:v11.4.2:atomic:O-18,group,recovered_max_rel,0x1.13177da8aef91p-53
 drill:control:control:v11.4.2:atomic:O-18,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.4.2:atomic:O-18,group,sum.all,0x1.1af16b03fb7b3p+25
 drill:control:control:v11.4.2:atomic:O-18,group,bin.all.0,1030
@@ -913,9 +948,13 @@ drill:control:control:v11.4.2:atomic:O-18,stratum_0,branch_outcome_mismatch,0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,stops_bound_mismatch,0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,rate_fail,0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,rate_exact,20000
+drill:control:control:v11.4.2:atomic:O-18,stratum_0,recovered_fail,0
+drill:control:control:v11.4.2:atomic:O-18,stratum_0,recovered_exact,0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,wiring_fail,0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,provider_calls_helper,1
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,provider_calls_other,0
+drill:control:control:v11.4.2:atomic:O-18,stratum_0,helper_calls_valid,1
+drill:control:control:v11.4.2:atomic:O-18,stratum_0,helper_calls_invalid,0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,helper_pair_exact,1
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,lifetimes_from_call_fail,0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,model_missing,0
@@ -929,6 +968,7 @@ drill:control:control:v11.4.2:atomic:O-18,stratum_0,chunks,1
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,chunk_overlap,0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,process_agrees,True
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,rate_max_rel,0x0.0p+0
+drill:control:control:v11.4.2:atomic:O-18,stratum_0,recovered_max_rel,0x1.13177da8aef91p-53
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,sum.all,0x1.1af16b03fb7b3p+25
 drill:control:control:v11.4.2:atomic:O-18,stratum_0,bin.all.0,1030
@@ -1047,9 +1087,13 @@ drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,rate_fail,1000000
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,recovered_fail,1000000
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,1
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,1000000
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -1063,6 +1107,7 @@ drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,chunks,1
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.bf15f14936e57p-9
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,rate_components,0x1.9c70554e7c4c7p-9 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.e4b9e1eb08100p+30
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,group,bin.all.0,50044
@@ -1169,9 +1214,13 @@ drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,branch_outcome_misma
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,rate_fail,1000000
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,rate_exact,0
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,recovered_fail,1000000
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,recovered_exact,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,1000000
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -1185,6 +1234,7 @@ drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x1.bf15f14936e57p-9
+drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,rate_components,0x1.9c70554e7c4c7p-9 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.e4b9e1eb08100p+30
 drill:old_helper_atomic:drill:v11.4.2:atomic:C-12,stratum_0,bin.all.0,50044
@@ -1303,9 +1353,13 @@ drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,branch_outcome_mismatc
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,stops_bound_mismatch,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,rate_fail,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,rate_exact,20000
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,recovered_fail,0
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,recovered_exact,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,wiring_fail,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,provider_calls_helper,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,provider_calls_other,0
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,helper_calls_valid,0
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,helper_calls_invalid,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,helper_pair_exact,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,model_missing,0
@@ -1319,6 +1373,7 @@ drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,chunks,1
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,chunk_overlap,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,process_agrees,True
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,rate_max_rel,0x0.0p+0
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,sum.all,0x1.34c837652403ap+25
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,group,bin.all.0,1090
@@ -1425,9 +1480,13 @@ drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,branch_outcome_mis
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,rate_fail,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,rate_exact,20000
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,recovered_fail,0
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,recovered_exact,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,wiring_fail,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_other,0
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,model_missing,0
@@ -1441,6 +1500,7 @@ drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,chunks,1
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,chunk_overlap,0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,process_agrees,True
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,sum.all,0x1.34c837652403ap+25
 drill:old_helper_atomic:drill:v11.4.2:stopping:C-12,stratum_0,bin.all.0,1090
@@ -1559,9 +1619,13 @@ drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,branch_outcome_misma
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,stops_bound_mismatch,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,rate_fail,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,rate_exact,0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,recovered_fail,0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,recovered_exact,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,wiring_fail,1000000
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,provider_calls_helper,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,provider_calls_other,0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,helper_calls_valid,0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,helper_calls_invalid,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,helper_pair_exact,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,model_missing,0
@@ -1575,6 +1639,7 @@ drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,chunks,1
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,chunk_overlap,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,process_agrees,True
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,rate_max_rel,0x0.0p+0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,rate_components,
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,sum.all,0x1.e3c00cc111661p+30
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,group,bin.all.0,49846
@@ -1681,9 +1746,13 @@ drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,branch_outcome_m
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,rate_fail,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,rate_exact,0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,recovered_fail,0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,recovered_exact,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,wiring_fail,1000000
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_other,0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,model_missing,0
@@ -1697,6 +1766,7 @@ drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,chunks,1
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,chunk_overlap,0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,process_agrees,True
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,rate_components,
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,sum.all,0x1.e3c00cc111661p+30
 drill:disconnect_stopping:drill:v11.4.2:stopping:C-12,stratum_0,bin.all.0,49846
@@ -1815,9 +1885,13 @@ drill:units_1000:drill:v11.4.2:stopping:C-12,group,branch_outcome_mismatch,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,stops_bound_mismatch,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,rate_fail,20000
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,rate_exact,0
+drill:units_1000:drill:v11.4.2:stopping:C-12,group,recovered_fail,0
+drill:units_1000:drill:v11.4.2:stopping:C-12,group,recovered_exact,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,wiring_fail,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,provider_calls_helper,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,provider_calls_other,0
+drill:units_1000:drill:v11.4.2:stopping:C-12,group,helper_calls_valid,0
+drill:units_1000:drill:v11.4.2:stopping:C-12,group,helper_calls_invalid,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,helper_pair_exact,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,model_missing,0
@@ -1831,6 +1905,7 @@ drill:units_1000:drill:v11.4.2:stopping:C-12,group,chunks,1
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,chunk_overlap,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,process_agrees,True
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,rate_max_rel,0x1.f380000000000p+9
+drill:units_1000:drill:v11.4.2:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,rate_components,0x0.0p+0 0x1.f380000000000p+9 0x1.cce9a45cb002ap+9
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,sum.all,0x1.59632673be51ep+15
 drill:units_1000:drill:v11.4.2:stopping:C-12,group,bin.all.0,20000
@@ -1937,9 +2012,13 @@ drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,branch_outcome_mismatch,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,rate_fail,20000
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,rate_exact,0
+drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,recovered_fail,0
+drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,recovered_exact,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,wiring_fail,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_other,0
+drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,model_missing,0
@@ -1953,6 +2032,7 @@ drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,chunks,1
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,chunk_overlap,0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,process_agrees,True
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,rate_max_rel,0x1.f380000000000p+9
+drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x1.f380000000000p+9 0x1.cce9a45cb002ap+9
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,sum.all,0x1.59632673be51ep+15
 drill:units_1000:drill:v11.4.2:stopping:C-12,stratum_0,bin.all.0,20000
@@ -2071,9 +2151,13 @@ drill:units_1000:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,rate_fail,20000
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:units_1000:drill:v11.4.2:atomic:C-12,group,recovered_fail,20000
+drill:units_1000:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:units_1000:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:units_1000:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -2087,6 +2171,7 @@ drill:units_1000:drill:v11.4.2:atomic:C-12,group,chunks,1
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.ff7ced916872bp-1
+drill:units_1000:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.f380000000001p+9
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,rate_components,0x1.ff71f77472789p-1 0x1.ff7ced916872bp-1 0x0.0p+0
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.55e3740be57a5p+15
 drill:units_1000:drill:v11.4.2:atomic:C-12,group,bin.all.0,20000
@@ -2193,9 +2278,13 @@ drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,branch_outcome_mismatch,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,rate_fail,20000
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,rate_exact,0
+drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,recovered_fail,20000
+drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,recovered_exact,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -2209,6 +2298,7 @@ drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x1.ff7ced916872bp-1
+drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x1.f380000000001p+9
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,rate_components,0x1.ff71f77472789p-1 0x1.ff7ced916872bp-1 0x0.0p+0
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.55e3740be57a5p+15
 drill:units_1000:drill:v11.4.2:atomic:C-12,stratum_0,bin.all.0,20000
@@ -2327,9 +2417,13 @@ drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,branch_outcome_mismatch,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,stops_bound_mismatch,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,rate_fail,20000
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,rate_exact,0
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,recovered_fail,0
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,recovered_exact,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,wiring_fail,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,provider_calls_helper,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,provider_calls_other,0
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,helper_calls_valid,0
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,helper_calls_invalid,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,helper_pair_exact,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,model_missing,0
@@ -2343,6 +2437,7 @@ drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,chunks,1
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,chunk_overlap,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,process_agrees,True
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,rate_max_rel,0x1.24371d1560a17p-20
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,rate_components,0x0.0p+0 0x1.24371d1560a17p-20 0x1.0da41ec4ccb77p-20
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,sum.all,0x1.367daf2a178d5p+25
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,group,bin.all.0,960
@@ -2449,9 +2544,13 @@ drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,branch_outcome_mismatch,
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,rate_fail,20000
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,rate_exact,0
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,recovered_fail,0
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,recovered_exact,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,wiring_fail,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_other,0
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,model_missing,0
@@ -2465,6 +2564,7 @@ drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,chunks,1
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,chunk_overlap,0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,process_agrees,True
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,rate_max_rel,0x1.24371d1560a17p-20
+drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x1.24371d1560a17p-20 0x1.0da41ec4ccb77p-20
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,sum.all,0x1.367daf2a178d5p+25
 drill:omit_recoil:drill:v11.4.2:stopping:C-12,stratum_0,bin.all.0,960
@@ -2583,9 +2683,13 @@ drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,rate_fail,20000
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,recovered_fail,20000
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -2599,6 +2703,7 @@ drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,chunks,1
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.2437083c61bd3p-20
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.24371d1560a17p-20
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,rate_components,0x1.0da40d04bd3aap-20 0x1.2437083c61bd3p-20 0x0.0p+0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.36d237ddac676p+25
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,group,bin.all.0,987
@@ -2705,9 +2810,13 @@ drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,branch_outcome_mismatch,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,rate_fail,20000
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,rate_exact,0
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,recovered_fail,20000
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,recovered_exact,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -2721,6 +2830,7 @@ drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x1.2437083c61bd3p-20
+drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x1.24371d1560a17p-20
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,rate_components,0x1.0da40d04bd3aap-20 0x1.2437083c61bd3p-20 0x0.0p+0
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.36d237ddac676p+25
 drill:omit_recoil:drill:v11.4.2:atomic:C-12,stratum_0,bin.all.0,987
@@ -2839,9 +2949,13 @@ drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,rate_fail,20000
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,recovered_fail,20000
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -2855,6 +2969,7 @@ drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,chunks,1
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.68dab55ce1728p-24
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.68dab75c9223ep-24
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,rate_components,0x1.4cfa46b78c245p-24 0x1.68dab55ce1728p-24 0x0.0p+0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.3593d2689a58bp+25
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,group,bin.all.0,987
@@ -2961,9 +3076,13 @@ drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,branch_outcome_mismatch
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,rate_fail,20000
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,rate_exact,0
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,recovered_fail,20000
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,recovered_exact,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -2977,6 +3096,7 @@ drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x1.68dab55ce1728p-24
+drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x1.68dab75c9223ep-24
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,rate_components,0x1.4cfa46b78c245p-24 0x1.68dab55ce1728p-24 0x0.0p+0
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.3593d2689a58bp+25
 drill:neighbour_mass:drill:v11.4.2:atomic:C-12,stratum_0,bin.all.0,987
@@ -3095,9 +3215,13 @@ drill:drop_a:drill:v11.4.2:atomic:C-13,group,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,stops_bound_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,rate_fail,20000
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,rate_exact,0
+drill:drop_a:drill:v11.4.2:atomic:C-13,group,recovered_fail,20000
+drill:drop_a:drill:v11.4.2:atomic:C-13,group,recovered_exact,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,wiring_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,provider_calls_helper,1
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,provider_calls_other,0
+drill:drop_a:drill:v11.4.2:atomic:C-13,group,helper_calls_valid,1
+drill:drop_a:drill:v11.4.2:atomic:C-13,group,helper_calls_invalid,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,helper_pair_exact,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,model_missing,0
@@ -3111,6 +3235,7 @@ drill:drop_a:drill:v11.4.2:atomic:C-13,group,chunks,1
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,chunk_overlap,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,process_agrees,True
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,rate_max_rel,0x1.68dab759894e4p-24
+drill:drop_a:drill:v11.4.2:atomic:C-13,group,recovered_max_rel,0x1.68dab55fea481p-24
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,rate_components,0x1.4f3e349cdb51bp-24 0x1.68dab759894e4p-24 0x0.0p+0
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,sum.all,0x1.34621f496256ep+25
 drill:drop_a:drill:v11.4.2:atomic:C-13,group,bin.all.0,1001
@@ -3217,9 +3342,13 @@ drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,stops_bound_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,rate_fail,20000
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,rate_exact,0
+drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,recovered_fail,20000
+drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,recovered_exact,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,wiring_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,provider_calls_helper,1
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,provider_calls_other,0
+drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,helper_calls_valid,1
+drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,helper_calls_invalid,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,helper_pair_exact,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,model_missing,0
@@ -3233,6 +3362,7 @@ drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,chunks,1
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,chunk_overlap,0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,process_agrees,True
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,rate_max_rel,0x1.68dab759894e4p-24
+drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,recovered_max_rel,0x1.68dab55fea481p-24
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,rate_components,0x1.4f3e349cdb51bp-24 0x1.68dab759894e4p-24 0x0.0p+0
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,sum.all,0x1.34621f496256ep+25
 drill:drop_a:drill:v11.4.2:atomic:C-13,stratum_0,bin.all.0,1001
@@ -3351,9 +3481,13 @@ drill:drop_a:drill:v11.4.2:atomic:O-18,group,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,stops_bound_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,rate_fail,20000
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,rate_exact,0
+drill:drop_a:drill:v11.4.2:atomic:O-18,group,recovered_fail,20000
+drill:drop_a:drill:v11.4.2:atomic:O-18,group,recovered_exact,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,wiring_fail,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,provider_calls_helper,1
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,provider_calls_other,0
+drill:drop_a:drill:v11.4.2:atomic:O-18,group,helper_calls_valid,1
+drill:drop_a:drill:v11.4.2:atomic:O-18,group,helper_calls_invalid,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,helper_pair_exact,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,model_missing,0
@@ -3367,6 +3501,7 @@ drill:drop_a:drill:v11.4.2:atomic:O-18,group,chunks,1
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,chunk_overlap,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,process_agrees,True
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,rate_max_rel,0x1.5b88f48545175p-23
+drill:drop_a:drill:v11.4.2:atomic:O-18,group,recovered_max_rel,0x1.5b88f0daa13b6p-23
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,rate_components,0x1.23264c45e7f1dp-23 0x1.5b88f48545175p-23 0x0.0p+0
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,sum.all,0x1.188fce1bdf61dp+25
 drill:drop_a:drill:v11.4.2:atomic:O-18,group,bin.all.0,1025
@@ -3473,9 +3608,13 @@ drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,stops_bound_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,rate_fail,20000
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,rate_exact,0
+drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,recovered_fail,20000
+drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,recovered_exact,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,wiring_fail,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,provider_calls_helper,1
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,provider_calls_other,0
+drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,helper_calls_valid,1
+drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,helper_calls_invalid,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,helper_pair_exact,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,model_missing,0
@@ -3489,6 +3628,7 @@ drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,chunks,1
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,chunk_overlap,0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,process_agrees,True
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,rate_max_rel,0x1.5b88f48545175p-23
+drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,recovered_max_rel,0x1.5b88f0daa13b6p-23
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,rate_components,0x1.23264c45e7f1dp-23 0x1.5b88f48545175p-23 0x0.0p+0
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,sum.all,0x1.188fce1bdf61dp+25
 drill:drop_a:drill:v11.4.2:atomic:O-18,stratum_0,bin.all.0,1025
@@ -3607,9 +3747,13 @@ drill:drop_a:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,rate_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,rate_exact,20000
+drill:drop_a:drill:v11.4.2:atomic:C-12,group,recovered_fail,0
+drill:drop_a:drill:v11.4.2:atomic:C-12,group,recovered_exact,20000
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:drop_a:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:drop_a:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,1
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -3623,6 +3767,7 @@ drill:drop_a:drill:v11.4.2:atomic:C-12,group,chunks,1
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x0.0p+0
+drill:drop_a:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x0.0p+0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.37e14567f6101p+25
 drill:drop_a:drill:v11.4.2:atomic:C-12,group,bin.all.0,1006
@@ -3729,9 +3874,13 @@ drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,rate_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,rate_exact,20000
+drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,recovered_fail,0
+drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,recovered_exact,20000
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -3745,6 +3894,7 @@ drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.37e14567f6101p+25
 drill:drop_a:drill:v11.4.2:atomic:C-12,stratum_0,bin.all.0,1006
@@ -3863,9 +4013,13 @@ drill:total_only:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:total_only:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:total_only:drill:v11.4.2:atomic:C-12,group,rate_fail,1000000
 drill:total_only:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:total_only:drill:v11.4.2:atomic:C-12,group,recovered_fail,1000000
+drill:total_only:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:total_only:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:total_only:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:total_only:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:total_only:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:total_only:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:total_only:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,1
 drill:total_only:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,1000000
 drill:total_only:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -3879,6 +4033,7 @@ drill:total_only:drill:v11.4.2:atomic:C-12,group,chunks,1
 drill:total_only:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:total_only:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:total_only:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.bf15f14936e57p-9
+drill:total_only:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:total_only:drill:v11.4.2:atomic:C-12,group,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:total_only:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.e48fbed296852p+30
 drill:total_only:drill:v11.4.2:atomic:C-12,group,bin.all.0,50310
@@ -3985,9 +4140,13 @@ drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,branch_outcome_mismatch,0
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,rate_fail,1000000
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,rate_exact,0
+drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,recovered_fail,1000000
+drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,recovered_exact,0
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,1000000
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -4001,6 +4160,7 @@ drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x1.bf15f14936e57p-9
+drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.e48fbed296852p+30
 drill:total_only:drill:v11.4.2:atomic:C-12,stratum_0,bin.all.0,50310
@@ -4119,9 +4279,13 @@ drill:swap_partials:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,rate_fail,20000
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:swap_partials:drill:v11.4.2:atomic:C-12,group,recovered_fail,20000
+drill:swap_partials:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:swap_partials:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:swap_partials:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,1
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,20000
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -4135,6 +4299,7 @@ drill:swap_partials:drill:v11.4.2:atomic:C-12,group,chunks,1
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.5e3aaac247f13p+3
+drill:swap_partials:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.5e3aaac247f13p+3
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,rate_components,0x0.0p+0 0x1.5e3aaac247f13p+3 0x1.d522bac9d110ap-1
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.3499a0d5cf7d5p+25
 drill:swap_partials:drill:v11.4.2:atomic:C-12,group,bin.all.0,979
@@ -4241,9 +4406,13 @@ drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,branch_outcome_mismatch,
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,rate_fail,20000
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,rate_exact,0
+drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,recovered_fail,20000
+drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,recovered_exact,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,20000
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -4257,6 +4426,7 @@ drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x1.5e3aaac247f13p+3
+drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x1.5e3aaac247f13p+3
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x1.5e3aaac247f13p+3 0x1.d522bac9d110ap-1
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.3499a0d5cf7d5p+25
 drill:swap_partials:drill:v11.4.2:atomic:C-12,stratum_0,bin.all.0,979
@@ -4375,9 +4545,13 @@ drill:compensation:drill:v11.4.2:stopping:C-12,group,branch_outcome_mismatch,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,stops_bound_mismatch,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,rate_fail,1000000
 drill:compensation:drill:v11.4.2:stopping:C-12,group,rate_exact,0
+drill:compensation:drill:v11.4.2:stopping:C-12,group,recovered_fail,0
+drill:compensation:drill:v11.4.2:stopping:C-12,group,recovered_exact,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,wiring_fail,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,provider_calls_helper,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,provider_calls_other,0
+drill:compensation:drill:v11.4.2:stopping:C-12,group,helper_calls_valid,0
+drill:compensation:drill:v11.4.2:stopping:C-12,group,helper_calls_invalid,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,helper_pair_exact,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,model_missing,0
@@ -4391,6 +4565,7 @@ drill:compensation:drill:v11.4.2:stopping:C-12,group,chunks,1
 drill:compensation:drill:v11.4.2:stopping:C-12,group,chunk_overlap,0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,process_agrees,True
 drill:compensation:drill:v11.4.2:stopping:C-12,group,rate_max_rel,0x1.4ca223ce39923p-5
+drill:compensation:drill:v11.4.2:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,rate_components,0x1.4ca223ce39923p-5 0x1.bd90de36ca7fep-9 0x0.0p+0
 drill:compensation:drill:v11.4.2:stopping:C-12,group,sum.all,0x1.e3c3913f8160ap+30
 drill:compensation:drill:v11.4.2:stopping:C-12,group,bin.all.0,50152
@@ -4497,9 +4672,13 @@ drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,branch_outcome_mismatch
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,rate_fail,1000000
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,rate_exact,0
+drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,recovered_fail,0
+drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,recovered_exact,0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,wiring_fail,0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_other,0
+drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,model_missing,0
@@ -4513,6 +4692,7 @@ drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,chunks,1
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,chunk_overlap,0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,process_agrees,True
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,rate_max_rel,0x1.4ca223ce39923p-5
+drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,rate_components,0x1.4ca223ce39923p-5 0x1.bd90de36ca7fep-9 0x0.0p+0
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,sum.all,0x1.e3c3913f8160ap+30
 drill:compensation:drill:v11.4.2:stopping:C-12,stratum_0,bin.all.0,50152
@@ -4631,9 +4811,13 @@ drill:compensation:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:compensation:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:compensation:drill:v11.4.2:atomic:C-12,group,rate_fail,1000000
 drill:compensation:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:compensation:drill:v11.4.2:atomic:C-12,group,recovered_fail,1000000
+drill:compensation:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:compensation:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:compensation:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:compensation:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:compensation:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:compensation:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:compensation:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,0
 drill:compensation:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:compensation:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -4647,6 +4831,7 @@ drill:compensation:drill:v11.4.2:atomic:C-12,group,chunks,1
 drill:compensation:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:compensation:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:compensation:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.3fa76758d9738p-5
+drill:compensation:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.4ca223ce39923p-5
 drill:compensation:drill:v11.4.2:atomic:C-12,group,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x1.3fa76758d9738p-5
 drill:compensation:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.e409ea7b16948p+30
 drill:compensation:drill:v11.4.2:atomic:C-12,group,bin.all.0,49988
@@ -4753,9 +4938,13 @@ drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,branch_outcome_mismatch,0
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,rate_fail,1000000
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,rate_exact,0
+drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,recovered_fail,1000000
+drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,recovered_exact,0
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -4769,6 +4958,7 @@ drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x1.3fa76758d9738p-5
+drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x1.4ca223ce39923p-5
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x1.3fa76758d9738p-5
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.e409ea7b16948p+30
 drill:compensation:drill:v11.4.2:atomic:C-12,stratum_0,bin.all.0,49988
@@ -4887,9 +5077,13 @@ drill:constant_delay:drill:v11.4.2:stopping:C-12,group,branch_outcome_mismatch,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,stops_bound_mismatch,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,rate_fail,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,rate_exact,1000000
+drill:constant_delay:drill:v11.4.2:stopping:C-12,group,recovered_fail,0
+drill:constant_delay:drill:v11.4.2:stopping:C-12,group,recovered_exact,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,wiring_fail,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,provider_calls_helper,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,provider_calls_other,0
+drill:constant_delay:drill:v11.4.2:stopping:C-12,group,helper_calls_valid,0
+drill:constant_delay:drill:v11.4.2:stopping:C-12,group,helper_calls_invalid,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,helper_pair_exact,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,model_missing,0
@@ -4903,6 +5097,7 @@ drill:constant_delay:drill:v11.4.2:stopping:C-12,group,chunks,1
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,chunk_overlap,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,process_agrees,True
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,rate_max_rel,0x0.0p+0
+drill:constant_delay:drill:v11.4.2:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,sum.all,0x1.e3ccfcb60f04dp+30
 drill:constant_delay:drill:v11.4.2:stopping:C-12,group,bin.all.0,0
@@ -5009,9 +5204,13 @@ drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,branch_outcome_mismat
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,rate_fail,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,rate_exact,1000000
+drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,recovered_fail,0
+drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,recovered_exact,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,wiring_fail,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,provider_calls_other,0
+drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,model_missing,0
@@ -5025,6 +5224,7 @@ drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,chunks,1
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,chunk_overlap,0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,process_agrees,True
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,sum.all,0x1.e3ccfcb60f04dp+30
 drill:constant_delay:drill:v11.4.2:stopping:C-12,stratum_0,bin.all.0,0
@@ -5143,9 +5343,13 @@ drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,branch_outcome_
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,stops_bound_mismatch,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,rate_fail,20000
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,rate_exact,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,recovered_fail,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,recovered_exact,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,wiring_fail,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,provider_calls_helper,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,provider_calls_other,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,helper_calls_valid,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,helper_calls_invalid,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,helper_pair_exact,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,model_missing,0
@@ -5159,6 +5363,7 @@ drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,chunks,1
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,chunk_overlap,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,process_agrees,True
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,rate_max_rel,0x1.8000000000000p+1
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,rate_components,0x1.8000000000000p+1 0x0.0p+0 0x1.daa2c4f6c638cp-3
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,sum.all,0x1.fc8481840de1bp+24
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,group,bin.all.0,1182
@@ -5265,9 +5470,13 @@ drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,branch_outc
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,rate_fail,20000
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,rate_exact,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,recovered_fail,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,recovered_exact,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,wiring_fail,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,provider_calls_other,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,model_missing,0
@@ -5281,6 +5490,7 @@ drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,chunks,1
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,chunk_overlap,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,process_agrees,True
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,rate_max_rel,0x1.8000000000000p+1
+drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,rate_components,0x1.8000000000000p+1 0x0.0p+0 0x1.daa2c4f6c638cp-3
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,sum.all,0x1.fc8481840de1bp+24
 drill:synthetic_capture_x4:synthetic:v11.4.2:stopping:C-12,stratum_0,bin.all.0,1182
@@ -5399,9 +5609,13 @@ drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,branch_outcome_mi
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,rate_fail,20000
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,recovered_fail,20000
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,provider_calls_helper,1
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,helper_calls_valid,1
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,helper_pair_exact,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,model_missing,0
@@ -5415,6 +5629,7 @@ drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,chunks,1
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.8000000000000p-1
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.8000000000000p+1
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,rate_components,0x1.81552e044e1e7p-3 0x0.0p+0 0x1.8000000000000p-1
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,sum.all,0x1.f86f39c1454efp+24
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,group,bin.all.0,1258
@@ -5521,9 +5736,13 @@ drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,branch_outcom
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,rate_fail,20000
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,rate_exact,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,recovered_fail,20000
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,recovered_exact,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,wiring_fail,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,provider_calls_other,0
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,model_missing,0
@@ -5537,6 +5756,7 @@ drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,chunks,1
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,chunk_overlap,0
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,process_agrees,True
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,rate_max_rel,0x1.8000000000000p-1
+drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,recovered_max_rel,0x1.8000000000000p+1
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,rate_components,0x1.81552e044e1e7p-3 0x0.0p+0 0x1.8000000000000p-1
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,sum.all,0x1.f86f39c1454efp+24
 drill:synthetic_capture_x4:synthetic:v11.4.2:atomic:C-12,stratum_0,bin.all.0,1258
@@ -5655,9 +5875,13 @@ drill:control:control:v11.5.0.beta:stopping:C-12,group,branch_outcome_mismatch,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,stops_bound_mismatch,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,rate_fail,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,rate_exact,1000000
+drill:control:control:v11.5.0.beta:stopping:C-12,group,recovered_fail,0
+drill:control:control:v11.5.0.beta:stopping:C-12,group,recovered_exact,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,wiring_fail,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,provider_calls_helper,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,provider_calls_other,0
+drill:control:control:v11.5.0.beta:stopping:C-12,group,helper_calls_valid,0
+drill:control:control:v11.5.0.beta:stopping:C-12,group,helper_calls_invalid,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,helper_pair_exact,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,model_missing,0
@@ -5671,6 +5895,7 @@ drill:control:control:v11.5.0.beta:stopping:C-12,group,chunks,1
 drill:control:control:v11.5.0.beta:stopping:C-12,group,chunk_overlap,0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,process_agrees,True
 drill:control:control:v11.5.0.beta:stopping:C-12,group,rate_max_rel,0x0.0p+0
+drill:control:control:v11.5.0.beta:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.5.0.beta:stopping:C-12,group,sum.all,0x1.e3d2333c4d1d3p+30
 drill:control:control:v11.5.0.beta:stopping:C-12,group,bin.all.0,49842
@@ -5777,9 +6002,13 @@ drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,branch_outcome_mismat
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,rate_fail,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,rate_exact,1000000
+drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,recovered_fail,0
+drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,recovered_exact,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,wiring_fail,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_other,0
+drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,model_missing,0
@@ -5793,6 +6022,7 @@ drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,chunks,1
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,chunk_overlap,0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,process_agrees,True
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,sum.all,0x1.e3d2333c4d1d3p+30
 drill:control:control:v11.5.0.beta:stopping:C-12,stratum_0,bin.all.0,49842
@@ -5911,9 +6141,13 @@ drill:control:control:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,rate_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,rate_exact,1000000
+drill:control:control:v11.5.0.beta:atomic:C-12,group,recovered_fail,0
+drill:control:control:v11.5.0.beta:atomic:C-12,group,recovered_exact,1000000
 drill:control:control:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:control:control:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:control:control:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:control:control:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,1
 drill:control:control:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -5927,6 +6161,7 @@ drill:control:control:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:control:control:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:control:control:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x0.0p+0
+drill:control:control:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.e3d6086e6b047p+30
 drill:control:control:v11.5.0.beta:atomic:C-12,group,bin.all.0,50124
@@ -6033,9 +6268,13 @@ drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_mismatch
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,1000000
+drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,0
+drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,1000000
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -6049,6 +6288,7 @@ drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.e3d6086e6b047p+30
 drill:control:control:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,50124
@@ -6167,9 +6407,13 @@ drill:control:control:v11.5.0.beta:atomic:C-13,group,branch_outcome_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,stops_bound_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,rate_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,rate_exact,20000
+drill:control:control:v11.5.0.beta:atomic:C-13,group,recovered_fail,0
+drill:control:control:v11.5.0.beta:atomic:C-13,group,recovered_exact,20000
 drill:control:control:v11.5.0.beta:atomic:C-13,group,wiring_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,provider_calls_helper,1
 drill:control:control:v11.5.0.beta:atomic:C-13,group,provider_calls_other,0
+drill:control:control:v11.5.0.beta:atomic:C-13,group,helper_calls_valid,1
+drill:control:control:v11.5.0.beta:atomic:C-13,group,helper_calls_invalid,0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,helper_pair_exact,1
 drill:control:control:v11.5.0.beta:atomic:C-13,group,lifetimes_from_call_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,model_missing,0
@@ -6183,6 +6427,7 @@ drill:control:control:v11.5.0.beta:atomic:C-13,group,chunks,1
 drill:control:control:v11.5.0.beta:atomic:C-13,group,chunk_overlap,0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,process_agrees,True
 drill:control:control:v11.5.0.beta:atomic:C-13,group,rate_max_rel,0x0.0p+0
+drill:control:control:v11.5.0.beta:atomic:C-13,group,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:C-13,group,sum.all,0x1.394ac2035006ep+25
 drill:control:control:v11.5.0.beta:atomic:C-13,group,bin.all.0,1004
@@ -6289,9 +6534,13 @@ drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,branch_outcome_mismatch
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,stops_bound_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,rate_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,rate_exact,20000
+drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,recovered_fail,0
+drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,recovered_exact,20000
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,wiring_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,provider_calls_helper,1
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,provider_calls_other,0
+drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,helper_calls_valid,1
+drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,helper_calls_invalid,0
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,helper_pair_exact,1
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,lifetimes_from_call_fail,0
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,model_missing,0
@@ -6305,6 +6554,7 @@ drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,chunks,1
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,chunk_overlap,0
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,process_agrees,True
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,rate_max_rel,0x0.0p+0
+drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,recovered_max_rel,0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,sum.all,0x1.394ac2035006ep+25
 drill:control:control:v11.5.0.beta:atomic:C-13,stratum_0,bin.all.0,1004
@@ -6423,9 +6673,13 @@ drill:control:control:v11.5.0.beta:atomic:O-18,group,branch_outcome_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,stops_bound_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,rate_fail,0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,rate_exact,20000
+drill:control:control:v11.5.0.beta:atomic:O-18,group,recovered_fail,0
+drill:control:control:v11.5.0.beta:atomic:O-18,group,recovered_exact,0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,wiring_fail,0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,provider_calls_helper,1
 drill:control:control:v11.5.0.beta:atomic:O-18,group,provider_calls_other,0
+drill:control:control:v11.5.0.beta:atomic:O-18,group,helper_calls_valid,1
+drill:control:control:v11.5.0.beta:atomic:O-18,group,helper_calls_invalid,0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,helper_pair_exact,1
 drill:control:control:v11.5.0.beta:atomic:O-18,group,lifetimes_from_call_fail,0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,model_missing,0
@@ -6439,6 +6693,7 @@ drill:control:control:v11.5.0.beta:atomic:O-18,group,chunks,1
 drill:control:control:v11.5.0.beta:atomic:O-18,group,chunk_overlap,0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,process_agrees,True
 drill:control:control:v11.5.0.beta:atomic:O-18,group,rate_max_rel,0x0.0p+0
+drill:control:control:v11.5.0.beta:atomic:O-18,group,recovered_max_rel,0x1.13177da8aef91p-53
 drill:control:control:v11.5.0.beta:atomic:O-18,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:O-18,group,sum.all,0x1.183a64b4cd530p+25
 drill:control:control:v11.5.0.beta:atomic:O-18,group,bin.all.0,990
@@ -6545,9 +6800,13 @@ drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,branch_outcome_mismatch
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,stops_bound_mismatch,0
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,rate_fail,0
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,rate_exact,20000
+drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,recovered_fail,0
+drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,recovered_exact,0
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,wiring_fail,0
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,provider_calls_helper,1
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,provider_calls_other,0
+drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,helper_calls_valid,1
+drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,helper_calls_invalid,0
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,helper_pair_exact,1
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,lifetimes_from_call_fail,0
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,model_missing,0
@@ -6561,6 +6820,7 @@ drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,chunks,1
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,chunk_overlap,0
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,process_agrees,True
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,rate_max_rel,0x0.0p+0
+drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,recovered_max_rel,0x1.13177da8aef91p-53
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,sum.all,0x1.183a64b4cd530p+25
 drill:control:control:v11.5.0.beta:atomic:O-18,stratum_0,bin.all.0,990
@@ -6679,9 +6939,13 @@ drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mism
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,1000000
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,1000000
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,1
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,1000000
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -6695,6 +6959,7 @@ drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.bf15f14936e57p-9
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x1.9c70554e7c4c7p-9 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.e5712d766298ap+30
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,49980
@@ -6801,9 +7066,13 @@ drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,1000000
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,0
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,1000000
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,1000000
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -6817,6 +7086,7 @@ drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x1.bf15f14936e57p-9
+drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x1.9c70554e7c4c7p-9 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.e5712d766298ap+30
 drill:old_helper_atomic:drill:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,49980
@@ -6935,9 +7205,13 @@ drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,branch_outcome_mi
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,stops_bound_mismatch,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,rate_fail,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,rate_exact,20000
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,recovered_fail,0
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,recovered_exact,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,wiring_fail,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_helper,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_other,0
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_valid,0
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_invalid,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,helper_pair_exact,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,model_missing,0
@@ -6951,6 +7225,7 @@ drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,chunks,1
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,chunk_overlap,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,process_agrees,True
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,rate_max_rel,0x0.0p+0
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,sum.all,0x1.37f1fe12d093bp+25
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,group,bin.all.0,958
@@ -7057,9 +7332,13 @@ drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,branch_outcom
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_fail,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_exact,20000
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_fail,0
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_exact,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,wiring_fail,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_other,0
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,model_missing,0
@@ -7073,6 +7352,7 @@ drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunks,1
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunk_overlap,0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,process_agrees,True
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,sum.all,0x1.37f1fe12d093bp+25
 drill:old_helper_atomic:drill:v11.5.0.beta:stopping:C-12,stratum_0,bin.all.0,958
@@ -7191,9 +7471,13 @@ drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,branch_outcome_
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,stops_bound_mismatch,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,rate_fail,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,rate_exact,0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,recovered_fail,0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,recovered_exact,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,wiring_fail,1000000
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_helper,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_other,0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_valid,0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_invalid,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,helper_pair_exact,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,model_missing,0
@@ -7207,6 +7491,7 @@ drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,chunks,1
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,chunk_overlap,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,process_agrees,True
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,rate_max_rel,0x0.0p+0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,rate_components,
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,sum.all,0x1.e32d7cb9c878fp+30
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,group,bin.all.0,50104
@@ -7313,9 +7598,13 @@ drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,branch_outc
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_fail,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_exact,0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_fail,0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_exact,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,wiring_fail,1000000
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_other,0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,model_missing,0
@@ -7329,6 +7618,7 @@ drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunks,1
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunk_overlap,0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,process_agrees,True
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_components,
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,sum.all,0x1.e32d7cb9c878fp+30
 drill:disconnect_stopping:drill:v11.5.0.beta:stopping:C-12,stratum_0,bin.all.0,50104
@@ -7447,9 +7737,13 @@ drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,branch_outcome_mismatch,
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,stops_bound_mismatch,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,rate_fail,20000
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,rate_exact,0
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,recovered_fail,0
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,recovered_exact,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,wiring_fail,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_helper,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_other,0
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_valid,0
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_invalid,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,helper_pair_exact,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,model_missing,0
@@ -7463,6 +7757,7 @@ drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,chunks,1
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,chunk_overlap,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,process_agrees,True
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,rate_max_rel,0x1.f380000000000p+9
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,rate_components,0x0.0p+0 0x1.f380000000000p+9 0x1.cce9a45cb002ap+9
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,sum.all,0x1.5c0784d6ca0f3p+15
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,group,bin.all.0,20000
@@ -7569,9 +7864,13 @@ drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,branch_outcome_misma
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_fail,20000
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_exact,0
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_fail,0
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_exact,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,wiring_fail,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_other,0
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,model_missing,0
@@ -7585,6 +7884,7 @@ drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunks,1
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunk_overlap,0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,process_agrees,True
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_max_rel,0x1.f380000000000p+9
+drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x1.f380000000000p+9 0x1.cce9a45cb002ap+9
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,sum.all,0x1.5c0784d6ca0f3p+15
 drill:units_1000:drill:v11.5.0.beta:stopping:C-12,stratum_0,bin.all.0,20000
@@ -7703,9 +8003,13 @@ drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismatch,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,20000
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,20000
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -7719,6 +8023,7 @@ drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.ff7ced916872bp-1
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.f380000000001p+9
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x1.ff71f77472789p-1 0x1.ff7ced916872bp-1 0x0.0p+0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.546ee88515317p+15
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,20000
@@ -7825,9 +8130,13 @@ drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_mismatc
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,20000
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,0
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,20000
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -7841,6 +8150,7 @@ drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x1.ff7ced916872bp-1
+drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x1.f380000000001p+9
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x1.ff71f77472789p-1 0x1.ff7ced916872bp-1 0x0.0p+0
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.546ee88515317p+15
 drill:units_1000:drill:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,20000
@@ -7959,9 +8269,13 @@ drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,branch_outcome_mismatch
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,stops_bound_mismatch,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,rate_fail,20000
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,rate_exact,0
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,recovered_fail,0
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,recovered_exact,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,wiring_fail,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_helper,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_other,0
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_valid,0
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_invalid,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,helper_pair_exact,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,model_missing,0
@@ -7975,6 +8289,7 @@ drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,chunks,1
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,chunk_overlap,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,process_agrees,True
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,rate_max_rel,0x1.24371d1560a17p-20
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,rate_components,0x0.0p+0 0x1.24371d1560a17p-20 0x1.0da41ec4ccb77p-20
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,sum.all,0x1.34dffaed91674p+25
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,group,bin.all.0,985
@@ -8081,9 +8396,13 @@ drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,branch_outcome_mism
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_fail,20000
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_exact,0
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_fail,0
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_exact,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,wiring_fail,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_other,0
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,model_missing,0
@@ -8097,6 +8416,7 @@ drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunks,1
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunk_overlap,0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,process_agrees,True
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_max_rel,0x1.24371d1560a17p-20
+drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x1.24371d1560a17p-20 0x1.0da41ec4ccb77p-20
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,sum.all,0x1.34dffaed91674p+25
 drill:omit_recoil:drill:v11.5.0.beta:stopping:C-12,stratum_0,bin.all.0,985
@@ -8215,9 +8535,13 @@ drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismatch,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,20000
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,20000
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -8231,6 +8555,7 @@ drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.2437083c61bd3p-20
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.24371d1560a17p-20
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x1.0da40d04bd3aap-20 0x1.2437083c61bd3p-20 0x0.0p+0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.33c852fc910d8p+25
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,1003
@@ -8337,9 +8662,13 @@ drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_mismat
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,20000
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,0
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,20000
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -8353,6 +8682,7 @@ drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x1.2437083c61bd3p-20
+drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x1.24371d1560a17p-20
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x1.0da40d04bd3aap-20 0x1.2437083c61bd3p-20 0x0.0p+0
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.33c852fc910d8p+25
 drill:omit_recoil:drill:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,1003
@@ -8471,9 +8801,13 @@ drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismatc
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,20000
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,20000
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -8487,6 +8821,7 @@ drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.68dab55ce1728p-24
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.68dab75c9223ep-24
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x1.4cfa46b78c245p-24 0x1.68dab55ce1728p-24 0x0.0p+0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.35cd0d30691a6p+25
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,1038
@@ -8593,9 +8928,13 @@ drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_mis
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,20000
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,0
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,20000
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -8609,6 +8948,7 @@ drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x1.68dab55ce1728p-24
+drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x1.68dab75c9223ep-24
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x1.4cfa46b78c245p-24 0x1.68dab55ce1728p-24 0x0.0p+0
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.35cd0d30691a6p+25
 drill:neighbour_mass:drill:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,1038
@@ -8727,9 +9067,13 @@ drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,stops_bound_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,rate_fail,20000
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,rate_exact,0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,recovered_fail,20000
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,recovered_exact,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,wiring_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,provider_calls_helper,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,provider_calls_other,0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,helper_calls_valid,1
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,helper_calls_invalid,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,helper_pair_exact,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,model_missing,0
@@ -8743,6 +9087,7 @@ drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,chunks,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,chunk_overlap,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,process_agrees,True
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,rate_max_rel,0x1.68dab759894e4p-24
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,recovered_max_rel,0x1.68dab55fea481p-24
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,rate_components,0x1.4f3e349cdb51bp-24 0x1.68dab759894e4p-24 0x0.0p+0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,sum.all,0x1.3ba108298cbebp+25
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,group,bin.all.0,970
@@ -8849,9 +9194,13 @@ drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,stops_bound_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,rate_fail,20000
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,rate_exact,0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,recovered_fail,20000
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,recovered_exact,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,wiring_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,provider_calls_helper,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,provider_calls_other,0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,helper_calls_valid,1
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,helper_calls_invalid,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,helper_pair_exact,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,model_missing,0
@@ -8865,6 +9214,7 @@ drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,chunks,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,chunk_overlap,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,process_agrees,True
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,rate_max_rel,0x1.68dab759894e4p-24
+drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,recovered_max_rel,0x1.68dab55fea481p-24
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,rate_components,0x1.4f3e349cdb51bp-24 0x1.68dab759894e4p-24 0x0.0p+0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,sum.all,0x1.3ba108298cbebp+25
 drill:drop_a:drill:v11.5.0.beta:atomic:C-13,stratum_0,bin.all.0,970
@@ -8983,9 +9333,13 @@ drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,stops_bound_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,rate_fail,20000
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,rate_exact,0
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,recovered_fail,20000
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,recovered_exact,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,wiring_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,provider_calls_helper,1
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,provider_calls_other,0
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,helper_calls_valid,1
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,helper_calls_invalid,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,helper_pair_exact,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,model_missing,0
@@ -8999,6 +9353,7 @@ drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,chunks,1
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,chunk_overlap,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,process_agrees,True
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,rate_max_rel,0x1.5b88f48545175p-23
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,recovered_max_rel,0x1.5b88f0daa13b6p-23
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,rate_components,0x1.23264c45e7f1dp-23 0x1.5b88f48545175p-23 0x0.0p+0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,sum.all,0x1.1667aaab149e9p+25
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,group,bin.all.0,1016
@@ -9105,9 +9460,13 @@ drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,stops_bound_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,rate_fail,20000
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,rate_exact,0
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,recovered_fail,20000
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,recovered_exact,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,wiring_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,provider_calls_helper,1
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,provider_calls_other,0
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,helper_calls_valid,1
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,helper_calls_invalid,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,helper_pair_exact,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,model_missing,0
@@ -9121,6 +9480,7 @@ drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,chunks,1
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,chunk_overlap,0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,process_agrees,True
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,rate_max_rel,0x1.5b88f48545175p-23
+drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,recovered_max_rel,0x1.5b88f0daa13b6p-23
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,rate_components,0x1.23264c45e7f1dp-23 0x1.5b88f48545175p-23 0x0.0p+0
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,sum.all,0x1.1667aaab149e9p+25
 drill:drop_a:drill:v11.5.0.beta:atomic:O-18,stratum_0,bin.all.0,1016
@@ -9239,9 +9599,13 @@ drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,20000
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,20000
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -9255,6 +9619,7 @@ drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x0.0p+0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x0.0p+0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.32cae3a3d88acp+25
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,993
@@ -9361,9 +9726,13 @@ drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,20000
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,20000
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -9377,6 +9746,7 @@ drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.32cae3a3d88acp+25
 drill:drop_a:drill:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,993
@@ -9495,9 +9865,13 @@ drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismatch,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,1000000
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,1000000
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,1
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,1000000
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -9511,6 +9885,7 @@ drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.bf15f14936e57p-9
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.e33e67f338b37p+30
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,49752
@@ -9617,9 +9992,13 @@ drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_mismatc
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,1000000
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,0
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,1000000
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,1000000
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -9633,6 +10012,7 @@ drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x1.bf15f14936e57p-9
+drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.e33e67f338b37p+30
 drill:total_only:drill:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,49752
@@ -9751,9 +10131,13 @@ drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismatch
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,20000
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,20000
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,1
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,20000
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -9767,6 +10151,7 @@ drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.5e3aaac247f13p+3
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.5e3aaac247f13p+3
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x0.0p+0 0x1.5e3aaac247f13p+3 0x1.d522bac9d110ap-1
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.389021dfce16fp+25
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,1032
@@ -9873,9 +10258,13 @@ drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_mism
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,20000
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,0
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,20000
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,1
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,20000
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -9889,6 +10278,7 @@ drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x1.5e3aaac247f13p+3
+drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x1.5e3aaac247f13p+3
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x1.5e3aaac247f13p+3 0x1.d522bac9d110ap-1
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.389021dfce16fp+25
 drill:swap_partials:drill:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,1032
@@ -10007,9 +10397,13 @@ drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,branch_outcome_mismatc
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,stops_bound_mismatch,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,rate_fail,1000000
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,rate_exact,0
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,recovered_fail,0
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,recovered_exact,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,wiring_fail,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_helper,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_other,0
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_valid,0
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_invalid,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,helper_pair_exact,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,model_missing,0
@@ -10023,6 +10417,7 @@ drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,chunks,1
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,chunk_overlap,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,process_agrees,True
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,rate_max_rel,0x1.4ca223ce39923p-5
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,rate_components,0x1.4ca223ce39923p-5 0x1.bd90de36ca7fep-9 0x0.0p+0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,sum.all,0x1.e3d28c3a4f50bp+30
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,group,bin.all.0,49340
@@ -10129,9 +10524,13 @@ drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,branch_outcome_mis
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_fail,1000000
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_exact,0
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_fail,0
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_exact,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,wiring_fail,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_other,0
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,model_missing,0
@@ -10145,6 +10544,7 @@ drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunks,1
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunk_overlap,0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,process_agrees,True
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_max_rel,0x1.4ca223ce39923p-5
+drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_components,0x1.4ca223ce39923p-5 0x1.bd90de36ca7fep-9 0x0.0p+0
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,sum.all,0x1.e3d28c3a4f50bp+30
 drill:compensation:drill:v11.5.0.beta:stopping:C-12,stratum_0,bin.all.0,49340
@@ -10263,9 +10663,13 @@ drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismatch,
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,1000000
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,1000000
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -10279,6 +10683,7 @@ drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.3fa76758d9738p-5
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.4ca223ce39923p-5
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x1.3fa76758d9738p-5
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.e4e4eb11f1d15p+30
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,49892
@@ -10385,9 +10790,13 @@ drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,branch_outcome_misma
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,1000000
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,0
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,1000000
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -10401,6 +10810,7 @@ drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x1.3fa76758d9738p-5
+drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x1.4ca223ce39923p-5
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x1.3fa76758d9738p-5
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.e4e4eb11f1d15p+30
 drill:compensation:drill:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,49892
@@ -10519,9 +10929,13 @@ drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,branch_outcome_misma
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,stops_bound_mismatch,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,rate_fail,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,rate_exact,1000000
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,recovered_fail,0
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,recovered_exact,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,wiring_fail,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_helper,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,provider_calls_other,0
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_valid,0
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,helper_calls_invalid,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,helper_pair_exact,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,model_missing,0
@@ -10535,6 +10949,7 @@ drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,chunks,1
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,chunk_overlap,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,process_agrees,True
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,rate_max_rel,0x0.0p+0
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,sum.all,0x1.e3ccfcb60f04dp+30
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,group,bin.all.0,0
@@ -10641,9 +11056,13 @@ drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,branch_outcome_m
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_fail,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_exact,1000000
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_fail,0
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_exact,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,wiring_fail,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_other,0
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,model_missing,0
@@ -10657,6 +11076,7 @@ drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunks,1
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,chunk_overlap,0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,process_agrees,True
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_max_rel,0x0.0p+0
+drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,sum.all,0x1.e3ccfcb60f04dp+30
 drill:constant_delay:drill:v11.5.0.beta:stopping:C-12,stratum_0,bin.all.0,0
@@ -10775,9 +11195,13 @@ drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,branch_out
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,stops_bound_mismatch,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,rate_fail,20000
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,rate_exact,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,recovered_fail,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,recovered_exact,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,wiring_fail,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,provider_calls_helper,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,provider_calls_other,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,helper_calls_valid,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,helper_calls_invalid,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,helper_pair_exact,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,lifetimes_from_call_fail,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,model_missing,0
@@ -10791,6 +11215,7 @@ drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,chunks,1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,chunk_overlap,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,process_agrees,True
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,rate_max_rel,0x1.8000000000000p+1
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,recovered_max_rel,0x0.0p+0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,rate_components,0x1.8000000000000p+1 0x0.0p+0 0x1.daa2c4f6c638cp-3
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,sum.all,0x1.f62a483bae592p+24
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,group,bin.all.0,1266
@@ -10897,9 +11322,13 @@ drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,branch
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,stops_bound_mismatch,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,rate_fail,20000
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,rate_exact,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,recovered_fail,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,recovered_exact,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,wiring_fail,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_helper,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,provider_calls_other,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_valid,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,helper_calls_invalid,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,helper_pair_exact,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,model_missing,0
@@ -10913,6 +11342,7 @@ drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,chunks
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,chunk_overlap,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,process_agrees,True
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,rate_max_rel,0x1.8000000000000p+1
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,recovered_max_rel,0x0.0p+0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,rate_components,0x1.8000000000000p+1 0x0.0p+0 0x1.daa2c4f6c638cp-3
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,sum.all,0x1.f62a483bae592p+24
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:stopping:C-12,stratum_0,bin.all.0,1266
@@ -11031,9 +11461,13 @@ drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,branch_outco
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,rate_fail,20000
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,recovered_fail,20000
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,1
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -11047,6 +11481,7 @@ drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,chunks,1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.8000000000000p-1
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.8000000000000p+1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,rate_components,0x1.81552e044e1e7p-3 0x0.0p+0 0x1.8000000000000p-1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.f5923a3fa7b2dp+24
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,group,bin.all.0,1179
@@ -11153,9 +11588,13 @@ drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,branch_o
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,stops_bound_mismatch,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,rate_fail,20000
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,rate_exact,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,recovered_fail,20000
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,recovered_exact,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,wiring_fail,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_helper,1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,provider_calls_other,0
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_valid,1
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,helper_calls_invalid,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,helper_pair_exact,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,lifetimes_from_call_fail,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,model_missing,0
@@ -11169,6 +11608,7 @@ drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,chunks,1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,chunk_overlap,0
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,process_agrees,True
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,rate_max_rel,0x1.8000000000000p-1
+drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,recovered_max_rel,0x1.8000000000000p+1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,rate_components,0x1.81552e044e1e7p-3 0x0.0p+0 0x1.8000000000000p-1
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,sum.all,0x1.f5923a3fa7b2dp+24
 drill:synthetic_capture_x4:synthetic:v11.5.0.beta:atomic:C-12,stratum_0,bin.all.0,1179
@@ -11289,9 +11729,13 @@ drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,branch_outcome_mism
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,rate_fail,10000000
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,recovered_fail,10000000
+drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,5
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,5
+drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,5
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,10000000
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -11305,6 +11749,7 @@ drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,chunks,5
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.bf15f14936e57p-9
+drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,rate_components,0x1.9c70554e7c4c7p-9 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.2f6bd7c94acfap+34
 drill:old_helper_atomic_n10m:drill:v11.4.2:atomic:C-12,group,bin.all.0,498725
@@ -11425,9 +11870,13 @@ drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,10000000
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,10000000
+drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,5
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,5
+drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,5
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,10000000
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -11441,6 +11890,7 @@ drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,chunks,5
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.bf15f14936e57p-9
+drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x1.9c70554e7c4c7p-9 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.2f46356e0dd15p+34
 drill:old_helper_atomic_n10m:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,498698
@@ -11561,9 +12011,13 @@ drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,branch_outcome_mismatch,0
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,stops_bound_mismatch,0
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,rate_fail,60000000
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,rate_exact,0
+drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,recovered_fail,60000000
+drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,recovered_exact,0
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,wiring_fail,0
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,provider_calls_helper,30
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,provider_calls_other,0
+drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,helper_calls_valid,30
+drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,helper_calls_invalid,0
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,helper_pair_exact,30
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,lifetimes_from_call_fail,60000000
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,model_missing,0
@@ -11577,6 +12031,7 @@ drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,chunks,30
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,chunk_overlap,0
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,process_agrees,True
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,rate_max_rel,0x1.bf15f14936e57p-9
+drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,sum.all,0x1.c59bf8074f418p+36
 drill:total_only_n60m:drill:v11.4.2:atomic:C-12,group,bin.all.0,2999760
@@ -11697,9 +12152,13 @@ drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,branch_outcome_mismat
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,stops_bound_mismatch,0
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,rate_fail,60000000
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,rate_exact,0
+drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,recovered_fail,60000000
+drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,recovered_exact,0
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,wiring_fail,0
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_helper,30
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,provider_calls_other,0
+drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_valid,30
+drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,helper_calls_invalid,0
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,helper_pair_exact,30
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,lifetimes_from_call_fail,60000000
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,model_missing,0
@@ -11713,6 +12172,7 @@ drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,chunks,30
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,chunk_overlap,0
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,process_agrees,True
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,rate_max_rel,0x1.bf15f14936e57p-9
+drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,recovered_max_rel,0x1.bd90de36ca911p-9
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,rate_components,0x0.0p+0 0x1.bf15f14936e57p-9 0x0.0p+0
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,sum.all,0x1.c59664edd1579p+36
 drill:total_only_n60m:drill:v11.5.0.beta:atomic:C-12,group,bin.all.0,3000251

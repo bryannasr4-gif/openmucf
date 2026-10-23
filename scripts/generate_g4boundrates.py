@@ -143,13 +143,17 @@ def primary_tests(stats: Any, g: dict[str, Any], pair: bound.Pair, limits: dict[
 def build_results(root: Path) -> dict[str, Any]:
     """The four result families from the committed summary, the policy and the theory status, each with its own
     status: the rates (and the wiring and completeness they rest on), the transport sampling, the clocks, and the
-    theory. One family's status never stands in for another's."""
+    theory. One family's status never stands in for another's. The summary is authenticated against the policy's
+    registered roster first (:func:`openmucf.g4.d1_boundrates.roster_problems`): any problem is named in every
+    family and makes its status INCOMPLETE, never PASS. Every registered stratum is graded for completeness and
+    rates on its own, and the clocks of every registered stratum and category are required."""
     import json
 
     stats = _stats()
     policy = bound.load_policy(root)
     harvest = bound.load_harvest(root)
     theory = json.loads((root / bound.THEORY_RELPATH).read_text(encoding="utf-8"))
+    roster = bound.roster_problems(policy, harvest)
     alpha = float(policy["statistics"]["primary"]["per_test_alpha"])
     n_dist = int(policy["statistics"]["distribution"]["count"])
     rate: dict[str, Any] = {}
@@ -157,56 +161,75 @@ def build_results(root: Path) -> dict[str, Any]:
     clock: dict[str, Any] = {}
     for group in policy["groups"]:
         name = bound.group_name(group)
-        if name not in harvest:
-            missing = {"verdict": "fail", "problems": ["the summary has no cell for this group"]}
-            rate[name] = {"complete": missing, "rate": missing}
+        registered = [int(st["t0_ns"]) for st in group["strata"]]
+        if name not in harvest or "group" not in harvest[name] or "meta" not in harvest[name]:
+            missing = {"verdict": "fail", "problems": ["the summary has no complete cell for this group"]}
+            rate[name] = {"complete": missing, "rate": missing, "strata": {}}
             transport[name] = {"primary": {t: {"verdict": "fail", "reason": "missing cell"}
                                            for t in bound.PRIMARY_TESTS},
                                "distribution": {s: {"verdict": "fail", "reason": "missing cell"}
                                                 for s in bound.STREAMS}, "strata": {}}
-            clock[name] = {"delivery": missing, "physical": {}, "physical_verdict": "fail"}
+            clock[name] = bound.gate_clocks({}, group["route"], registered)
             continue
         cell = harvest[name]
         g = cell["group"]
         switch_on = cell["meta"]["switch_on"] == "True"
         pair = bound.frozen_pair(policy, group["isotope"])
+        present = {int(stat.split("_", 1)[1]): v for stat, v in cell.items() if stat.startswith("stratum_")}
+        strata_gates = {}
+        for st in group["strata"]:
+            t0 = int(st["t0_ns"])
+            part = present.get(t0)
+            if part is None:
+                gap = {"verdict": "fail", "problems": [f"stratum {t0} missing"]}
+                strata_gates[t0] = {"complete": gap, "rate": gap}
+            else:
+                strata_gates[t0] = {"complete": bound.gate_complete(part, int(st["count"])),
+                                    "rate": bound.gate_rate(part, group["route"], switch_on)}
         rate[name] = {"complete": bound.gate_complete(g, int(group["events"])),
-                      "rate": bound.gate_rate(g, group["route"], switch_on)}
+                      "rate": bound.gate_rate(g, group["route"], switch_on), "strata": strata_gates}
         transport[name] = {"primary": primary_tests(stats, g, pair,
                                                     policy["statistics"]["primary"]["limits"][group["isotope"]],
                                                     alpha),
                            "distribution": bound.gate_distribution(g, n_dist),
-                           "strata": {t0: {"events": cell[f"stratum_{t0}"]["events"],
-                                           "captures": cell[f"stratum_{t0}"]["captures"]}
-                                      for t0 in bound.T0_NS if f"stratum_{t0}" in cell}}
-        clock[name] = bound.gate_clocks({t0: cell[f"stratum_{t0}"] for t0 in bound.T0_NS
-                                         if f"stratum_{t0}" in cell}, group["route"])
+                           "strata": {t0: {"events": v["events"], "captures": v["captures"]}
+                                      for t0, v in sorted(present.items())}}
+        clock[name] = bound.gate_clocks(present, group["route"], registered)
 
     def status(ok: bool) -> str:
-        return "PASS" if ok else "FAIL"
+        return "INCOMPLETE" if roster else ("PASS" if ok else "FAIL")
 
-    rate_ok = all(v["complete"]["verdict"] == "pass" and v["rate"]["verdict"] == "pass" for v in rate.values())
+    rate_ok = all(v["complete"]["verdict"] == "pass" and v["rate"]["verdict"] == "pass"
+                  and all(x["complete"]["verdict"] == "pass" and x["rate"]["verdict"] == "pass"
+                          for x in v["strata"].values()) and v["strata"]
+                  for v in rate.values()) and bool(rate)
     rejections = [f"{name}:{test}" for name, v in transport.items() for test, r in v["primary"].items()
                   if r["verdict"] != "pass"]
     dist_rejections = [f"{name}:{stream}" for name, v in transport.items()
                        for stream, r in v["distribution"].items() if r["verdict"] != "pass"]
-    delivery_ok = all(v["delivery"]["verdict"] == "pass" for v in clock.values())
+    delivery_ok = all(v["delivery"]["verdict"] == "pass" for v in clock.values()) and bool(clock)
     physical_fail = sorted(f"{name}:{key}" for name, v in clock.items() for key, r in v["physical"].items()
                            if r["verdict"] != "pass")
     unexpected = sorted(f"{name}:{key}" for name, v in clock.items() for key, r in v["physical"].items()
                         if not r["as_predicted"])
+    if roster or not clock or any(v["physical_verdict"] == "incomplete" for v in clock.values()):
+        physical_status = "INCOMPLETE"
+    else:
+        physical_status = "FAIL" if physical_fail else "PASS"
+    admission = bound.theory_admission(theory)
     return {
-        "RATE_RESULTS": {"status": status(rate_ok), "groups": rate},
-        "TRANSPORT_RESULTS": {"status": status(not rejections and not dist_rejections),
+        "RATE_RESULTS": {"status": status(rate_ok), "roster_problems": roster, "groups": rate},
+        "TRANSPORT_RESULTS": {"status": status(bool(transport) and not rejections and not dist_rejections),
+                              "roster_problems": roster,
                               "primary_rejections": rejections, "distribution_rejections": dist_rejections,
                               "groups": transport},
-        "CLOCK_RESULTS": {"delivery_status": status(delivery_ok),
-                          "physical_status": "FAIL" if physical_fail else "PASS",
+        "CLOCK_RESULTS": {"delivery_status": status(delivery_ok), "physical_status": physical_status,
+                          "roster_problems": roster,
                           "physical_failures": physical_fail, "not_as_predicted": unexpected, "groups": clock},
-        "THEORY_STATUS": {"status": theory["status"], "accuracy": theory["accuracy"],
-                          "qualified_roster": theory["qualified_roster"], "screen": theory["screen"]},
+        "THEORY_STATUS": {"status": admission["status"], "problems": admission["problems"],
+                          "accuracy": theory["accuracy"], "qualified_roster": admission["roster"],
+                          "screen": theory["screen"]},
     }
-
 
 # --------------------------------------------------------------------------------------------
 # section 14 of DATASET_D1.md, generated from the committed files
@@ -216,6 +239,8 @@ DOCUMENT = "DATASET_D1.md"
 SECTION_HEADING = "## 14. One bound-decay rate pair for both stopped-muon routes"
 RULINGS_RELPATH = "data/g4/d1/bound_rates_drill_rulings.csv"
 WORKERS_RELPATH = "data/g4/d1/bound_rates_workers.csv"
+#: The results of the first summary of the same raw records, kept as they were committed.
+HISTORY_RESULTS_RELPATH = "data/g4/d1/history/bound_rates_results.analysis1.json"
 #: What each physical-clock category compares, in words.
 CLOCK_WORDS = {
     "atom_creation": "the muonic atom's creation",
@@ -235,6 +260,70 @@ def _csv_rows(root: Path, relpath: str) -> list[dict[str, str]]:
 
 def _thousands(n: int) -> str:
     return f"{n:,}"
+
+
+def drill_tally(root: Path, drills: list[dict[str, str]], ruled: dict[str, dict[str, str]]) -> dict[str, int]:
+    """The outcome of every drill and control run (``d1_boundrates.drill_families`` / ``drill_outcome``, a ruled
+    run graded on its ruled families): ``red`` -- runs with a nonempty intended set, ruled runs excluded, that
+    turned every intended family red; ``unaffected_green`` -- drill runs with the intended set "none" (an
+    unaffected route or isotope) that stayed green; ``controls_green``; ``ruled_red``. Any other outcome stops the
+    rendering: the section states only these."""
+    stats = _stats()
+    ref = bound.Reference(root)
+    grouped: dict[str, list[dict[str, str]]] = {}
+    for r in drills:
+        grouped.setdefault(r["cell"], []).append(r)
+    tally = {"red": 0, "unaffected_green": 0, "controls_green": 0, "ruled_red": 0}
+    for cell, rows in sorted(grouped.items()):
+        meta = {r["key"]: r["value"] for r in rows if r["stat"] == "meta"}
+        st = bound.rows_stats([r for r in rows if r["stat"] == "group"])
+        families = bound.drill_families(st, meta, ref.pair(int(meta["z"]), int(meta["a"])), stats)
+        intended = ruled[cell]["ruled_intended"] if cell in ruled else meta["intended"]
+        outcome = bound.drill_outcome(meta["kind"], intended, families)
+        if meta["kind"] == "control":
+            key = "controls_green" if outcome == "green" else ""
+        elif cell in ruled:
+            key = "ruled_red" if outcome == "red" else ""
+        elif intended == "none":
+            key = "unaffected_green" if outcome == "green" else ""
+        else:
+            key = "red" if outcome == "red" else ""
+        if not key:
+            raise SystemExit(f"{cell}: outcome {outcome} with intended {intended!r}; the section does not state it")
+        tally[key] += 1
+    return tally
+
+
+def registered_outcomes(results: dict[str, Any]) -> dict[str, Any]:
+    """Every registered outcome of a results file, without the problem texts and lists a later analysis adds:
+    each family's status; per group the completeness and rate verdicts with the exact-event count, the event
+    count and the largest relative deviation; each registered test's verdict, statistic and interval; each
+    distribution test's verdict, statistic and count; the rejections; the delivered clock's verdict and each
+    physical-clock cell's verdict, item count, failures and largest residual; the failing and unexpected
+    physical cells; and the theory status."""
+    rate, transport, clock = results["RATE_RESULTS"], results["TRANSPORT_RESULTS"], results["CLOCK_RESULTS"]
+    return {
+        "rate_status": rate["status"],
+        "rate": {name: (g["complete"]["verdict"], g["rate"]["verdict"], g["rate"].get("exact_events"),
+                        g["rate"].get("events"), g["rate"].get("max_relative_deviation"))
+                 for name, g in rate["groups"].items()},
+        "transport_status": transport["status"],
+        "primary_rejections": transport["primary_rejections"],
+        "distribution_rejections": transport["distribution_rejections"],
+        "primary": {name: {t: (v["verdict"], v.get("statistic"), v.get("interval")) for t, v in g["primary"].items()}
+                    for name, g in transport["groups"].items()},
+        "distribution": {name: {k: (v["verdict"], v.get("x2"), v.get("n")) for k, v in g["distribution"].items()}
+                         for name, g in transport["groups"].items()},
+        "delivery_status": clock["delivery_status"],
+        "physical_status": clock["physical_status"],
+        "physical_failures": clock["physical_failures"],
+        "not_as_predicted": clock["not_as_predicted"],
+        "clocks": {name: (g["delivery"]["verdict"],
+                          {k: (v["verdict"], v["n"], v["fail"], v["max_abs_residual_ns"])
+                           for k, v in g["physical"].items()})
+                   for name, g in clock["groups"].items()},
+        "theory_status": results["THEORY_STATUS"]["status"],
+    }
 
 
 def render_section(root: Path) -> str:
@@ -313,12 +402,33 @@ def render_section(root: Path) -> str:
     for r in drills:
         if r["stat"] == "meta":
             meta.setdefault(r["cell"], {})[r["key"]] = r["value"]
-    ruled_cells = {r["item"] for r in rulings if r["kind"] == "statistical"}
-    reruns = sorted({r["rerun"] for r in rulings if r["kind"] == "statistical"})
+    ruled = {r["item"]: r for r in rulings if r["kind"] == "statistical"}
+    ruled_cells = set(ruled)
+    reruns = sorted({r["rerun"] for r in ruled.values()})
+    absent = sorted((ruled_cells | set(reruns)) - set(meta))
+    if absent:
+        raise SystemExit(f"a ruled drill run or its rerun is not in the drill summary: {', '.join(absent)}")
     rerun_sizes = sorted({int(meta[c]["events"]) for c in reruns})
     ruled_sizes = sorted({int(meta[c]["events"]) for c in ruled_cells})
-    n_controls = sum(1 for m in meta.values() if m["kind"] == "control")
-    n_drills = sum(1 for c, m in meta.items() if m["kind"] != "control" and c not in ruled_cells)
+    tally = drill_tally(root, drills, ruled)
+    n_red, n_unaffected, n_controls = tally["red"], tally["unaffected_green"], tally["controls_green"]
+    for family in ("RATE_RESULTS", "TRANSPORT_RESULTS", "CLOCK_RESULTS"):
+        if results[family]["roster_problems"]:
+            raise SystemExit(f"{family}: the summary does not match the registered roster")
+    first = json.loads((root / HISTORY_RESULTS_RELPATH).read_text(encoding="utf-8"))
+    if registered_outcomes(first) != registered_outcomes(results):
+        raise SystemExit("a registered outcome differs from the first summary's: this section does not describe it")
+    harvest = bound.load_harvest(root)
+    if {cell["meta"].get("analysis_version") for cell in harvest.values()} != {str(bound.ANALYSIS_VERSION)}:
+        raise SystemExit("a harvest cell from another analysis version")
+    for group in policy["groups"]:
+        g = harvest[bound.group_name(group)]["group"]
+        events_ = int(group["events"])
+        if group["route"] == bound.STOPPING:
+            if not (int(g["rate_exact"]) == events_ and int(g["wiring_fail"]) == 0):
+                raise SystemExit(f"{bound.group_name(group)}: not every stopping event received the pair exactly")
+        elif not (int(g["rate_exact"]) == events_ and int(g["recovered_fail"]) == 0):
+            raise SystemExit(f"{bound.group_name(group)}: an atomic lifetime or recovered rate disagrees")
     ruled_checks = [r for r in rulings if r["kind"] == "identity"]
     n_identity = len(identity_drills) - len(ruled_checks)
     split_rows = [r for r in workers if r["on1_vs_on4_events"]]
@@ -349,14 +459,21 @@ def render_section(root: Path) -> str:
         "thread count.",
         f"The harvest transported {_thousands(events)} stopped muons on single-isotope targets in "
         f"{len(policy['groups'])} groups (`bound_rates_harvest.csv`), with a build that records every call the "
-        "routes make to the provider: every event of the stopping route made exactly one, and every consumed rate "
-        f"equals the registered pair bit for bit. The {n_primary} registered tests rejected "
+        "routes make to the provider. Every stopping event made exactly one provider call and received the "
+        "registered rate pair bit for bit. Every atomic event stored the three registered reciprocal lifetimes bit "
+        "for bit; the rates G4MuonicAtomDecay recovers from those lifetimes agree with the registered pair within "
+        f"the registered relative tolerance. The {n_primary} registered tests rejected "
         f"{len(tr['primary_rejections'])} and the {n_dist} tests of the delay distribution rejected "
         f"{len(tr['distribution_rejections'])} (`bound_rates_results.json`).",
-        f"Each of {n_drills} drill runs (`bound_rates_drills.csv`) turned its intended checks red and each of "
-        f"{n_controls} controls stayed green; among them a stopping route disconnected from the provider, which "
-        "only the recorded calls reveal, and a constant delay with the correct mean, which only the distribution "
-        f"tests reveal. {len(ruled_cells)} further runs of {', '.join(_thousands(n) for n in ruled_sizes)} events, "
+        "The summary was computed a second time from the same raw records with a stricter reader, which refuses "
+        "any unobserved or nonfinite field and grades every registered stratum and clock category on its own; with "
+        "no new draws, seeds or tolerances, every registered outcome is the one the first summary gave "
+        "(`history/bound_rates_results.analysis1.json`).",
+        f"{n_red} runs with nonempty intended failure sets turned every intended family red; {n_unaffected} runs "
+        f"on unaffected routes or isotopes and all {n_controls} matched controls stayed green. Among the red runs "
+        "(`bound_rates_drills.csv`) are a stopping route disconnected from the provider, which only the recorded "
+        "calls reveal, and a constant delay with the correct mean, which only the distribution tests reveal. "
+        f"{len(ruled_cells)} further runs of {', '.join(_thousands(n) for n in ruled_sizes)} events, "
         "an atomic consumer given the former decay rate and one with a stale decay-in-orbit lifetime, turned the "
         "rate and call checks red but not the transport tests, which have little power against those defects at "
         "that size; their reruns at "
@@ -389,7 +506,7 @@ def render_section(root: Path) -> str:
     for cat in ("atom_creation", "atom_dio", "atom_capture", "stop_dio", "stop_capture"):
         for t0, (n, fail, worst) in sorted(failing.get(cat, {}).items(), key=lambda kv: int(kv[0])):
             lines.append(f"- {CLOCK_WORDS[cat]}, start time {t0} ns: {_thousands(int(fail))} of "
-                         f"{_thousands(int(n))} items, at most {worst:g} ns from the correct time")
+                         f"{_thousands(int(n))} items, maximum recorded residual approximately {worst:g} ns")
     lines += [
         "",
         "The atomic route creates the muonic atom at twice the stop time, so every atomic product of a stop at a "

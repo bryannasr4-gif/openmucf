@@ -2,6 +2,9 @@ cell,stat,key,value
 C-12:v11.4.2:stopping,meta,binary_sha256,963743dfbf9916472901a78cfc6b227aec56c6670e41245d934e38a98566987c
 C-12:v11.4.2:stopping,meta,chunk_files_sha256,63e6a6d147306151345011b36d7e7825bdacbecdb782fd95636b706ab0252d60
 C-12:v11.4.2:stopping,meta,switch_on,True
+C-12:v11.4.2:stopping,meta,analysis_version,2
+C-12:v11.4.2:stopping,meta,provenance_problems,0
+C-12:v11.4.2:stopping,meta,provenance_first,-
 C-12:v11.4.2:stopping,group,events,60000000
 C-12:v11.4.2:stopping,group,duplicates,0
 C-12:v11.4.2:stopping,group,out_of_range,0
@@ -14,9 +17,13 @@ C-12:v11.4.2:stopping,group,branch_outcome_mismatch,0
 C-12:v11.4.2:stopping,group,stops_bound_mismatch,0
 C-12:v11.4.2:stopping,group,rate_fail,0
 C-12:v11.4.2:stopping,group,rate_exact,60000000
+C-12:v11.4.2:stopping,group,recovered_fail,0
+C-12:v11.4.2:stopping,group,recovered_exact,0
 C-12:v11.4.2:stopping,group,wiring_fail,0
 C-12:v11.4.2:stopping,group,provider_calls_helper,0
 C-12:v11.4.2:stopping,group,provider_calls_other,0
+C-12:v11.4.2:stopping,group,helper_calls_valid,0
+C-12:v11.4.2:stopping,group,helper_calls_invalid,0
 C-12:v11.4.2:stopping,group,helper_pair_exact,0
 C-12:v11.4.2:stopping,group,lifetimes_from_call_fail,0
 C-12:v11.4.2:stopping,group,model_missing,0
@@ -30,6 +37,7 @@ C-12:v11.4.2:stopping,group,chunks,30
 C-12:v11.4.2:stopping,group,chunk_overlap,0
 C-12:v11.4.2:stopping,group,process_agrees,True
 C-12:v11.4.2:stopping,group,rate_max_rel,0x0.0p+0
+C-12:v11.4.2:stopping,group,recovered_max_rel,0x0.0p+0
 C-12:v11.4.2:stopping,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.4.2:stopping,group,sum.all,0x1.c594444836888p+36
 C-12:v11.4.2:stopping,group,bin.all.0,2995529
@@ -136,9 +144,13 @@ C-12:v11.4.2:stopping,stratum_0,branch_outcome_mismatch,0
 C-12:v11.4.2:stopping,stratum_0,stops_bound_mismatch,0
 C-12:v11.4.2:stopping,stratum_0,rate_fail,0
 C-12:v11.4.2:stopping,stratum_0,rate_exact,20000000
+C-12:v11.4.2:stopping,stratum_0,recovered_fail,0
+C-12:v11.4.2:stopping,stratum_0,recovered_exact,0
 C-12:v11.4.2:stopping,stratum_0,wiring_fail,0
 C-12:v11.4.2:stopping,stratum_0,provider_calls_helper,0
 C-12:v11.4.2:stopping,stratum_0,provider_calls_other,0
+C-12:v11.4.2:stopping,stratum_0,helper_calls_valid,0
+C-12:v11.4.2:stopping,stratum_0,helper_calls_invalid,0
 C-12:v11.4.2:stopping,stratum_0,helper_pair_exact,0
 C-12:v11.4.2:stopping,stratum_0,lifetimes_from_call_fail,0
 C-12:v11.4.2:stopping,stratum_0,model_missing,0
@@ -152,6 +164,7 @@ C-12:v11.4.2:stopping,stratum_0,chunks,10
 C-12:v11.4.2:stopping,stratum_0,chunk_overlap,0
 C-12:v11.4.2:stopping,stratum_0,process_agrees,True
 C-12:v11.4.2:stopping,stratum_0,rate_max_rel,0x0.0p+0
+C-12:v11.4.2:stopping,stratum_0,recovered_max_rel,0x0.0p+0
 C-12:v11.4.2:stopping,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.4.2:stopping,stratum_0,sum.all,0x1.2e4cb69db98dbp+35
 C-12:v11.4.2:stopping,stratum_0,bin.all.0,996859
@@ -258,9 +271,13 @@ C-12:v11.4.2:stopping,stratum_250,branch_outcome_mismatch,0
 C-12:v11.4.2:stopping,stratum_250,stops_bound_mismatch,0
 C-12:v11.4.2:stopping,stratum_250,rate_fail,0
 C-12:v11.4.2:stopping,stratum_250,rate_exact,20000000
+C-12:v11.4.2:stopping,stratum_250,recovered_fail,0
+C-12:v11.4.2:stopping,stratum_250,recovered_exact,0
 C-12:v11.4.2:stopping,stratum_250,wiring_fail,0
 C-12:v11.4.2:stopping,stratum_250,provider_calls_helper,0
 C-12:v11.4.2:stopping,stratum_250,provider_calls_other,0
+C-12:v11.4.2:stopping,stratum_250,helper_calls_valid,0
+C-12:v11.4.2:stopping,stratum_250,helper_calls_invalid,0
 C-12:v11.4.2:stopping,stratum_250,helper_pair_exact,0
 C-12:v11.4.2:stopping,stratum_250,lifetimes_from_call_fail,0
 C-12:v11.4.2:stopping,stratum_250,model_missing,0
@@ -274,6 +291,7 @@ C-12:v11.4.2:stopping,stratum_250,chunks,10
 C-12:v11.4.2:stopping,stratum_250,chunk_overlap,0
 C-12:v11.4.2:stopping,stratum_250,process_agrees,True
 C-12:v11.4.2:stopping,stratum_250,rate_max_rel,0x0.0p+0
+C-12:v11.4.2:stopping,stratum_250,recovered_max_rel,0x0.0p+0
 C-12:v11.4.2:stopping,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.4.2:stopping,stratum_250,sum.all,0x1.2e794f2141b85p+35
 C-12:v11.4.2:stopping,stratum_250,bin.all.0,998116
@@ -380,9 +398,13 @@ C-12:v11.4.2:stopping,stratum_1000,branch_outcome_mismatch,0
 C-12:v11.4.2:stopping,stratum_1000,stops_bound_mismatch,0
 C-12:v11.4.2:stopping,stratum_1000,rate_fail,0
 C-12:v11.4.2:stopping,stratum_1000,rate_exact,20000000
+C-12:v11.4.2:stopping,stratum_1000,recovered_fail,0
+C-12:v11.4.2:stopping,stratum_1000,recovered_exact,0
 C-12:v11.4.2:stopping,stratum_1000,wiring_fail,0
 C-12:v11.4.2:stopping,stratum_1000,provider_calls_helper,0
 C-12:v11.4.2:stopping,stratum_1000,provider_calls_other,0
+C-12:v11.4.2:stopping,stratum_1000,helper_calls_valid,0
+C-12:v11.4.2:stopping,stratum_1000,helper_calls_invalid,0
 C-12:v11.4.2:stopping,stratum_1000,helper_pair_exact,0
 C-12:v11.4.2:stopping,stratum_1000,lifetimes_from_call_fail,0
 C-12:v11.4.2:stopping,stratum_1000,model_missing,0
@@ -396,6 +418,7 @@ C-12:v11.4.2:stopping,stratum_1000,chunks,10
 C-12:v11.4.2:stopping,stratum_1000,chunk_overlap,0
 C-12:v11.4.2:stopping,stratum_1000,process_agrees,True
 C-12:v11.4.2:stopping,stratum_1000,rate_max_rel,0x0.0p+0
+C-12:v11.4.2:stopping,stratum_1000,recovered_max_rel,0x0.0p+0
 C-12:v11.4.2:stopping,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.4.2:stopping,stratum_1000,sum.all,0x1.2e6282d171cb0p+35
 C-12:v11.4.2:stopping,stratum_1000,bin.all.0,1000554
@@ -493,6 +516,9 @@ C-12:v11.4.2:stopping,stratum_1000,clock.atom_capture.max_abs_physical_ns,0x0.0p
 C-12:v11.4.2:atomic,meta,binary_sha256,963743dfbf9916472901a78cfc6b227aec56c6670e41245d934e38a98566987c
 C-12:v11.4.2:atomic,meta,chunk_files_sha256,6d47a96278ae177de3dec8a790000a6901a93a7a180daa527fa31959925a1f6f
 C-12:v11.4.2:atomic,meta,switch_on,True
+C-12:v11.4.2:atomic,meta,analysis_version,2
+C-12:v11.4.2:atomic,meta,provenance_problems,0
+C-12:v11.4.2:atomic,meta,provenance_first,-
 C-12:v11.4.2:atomic,group,events,60000000
 C-12:v11.4.2:atomic,group,duplicates,0
 C-12:v11.4.2:atomic,group,out_of_range,0
@@ -505,9 +531,13 @@ C-12:v11.4.2:atomic,group,branch_outcome_mismatch,0
 C-12:v11.4.2:atomic,group,stops_bound_mismatch,0
 C-12:v11.4.2:atomic,group,rate_fail,0
 C-12:v11.4.2:atomic,group,rate_exact,60000000
+C-12:v11.4.2:atomic,group,recovered_fail,0
+C-12:v11.4.2:atomic,group,recovered_exact,60000000
 C-12:v11.4.2:atomic,group,wiring_fail,0
 C-12:v11.4.2:atomic,group,provider_calls_helper,30
 C-12:v11.4.2:atomic,group,provider_calls_other,0
+C-12:v11.4.2:atomic,group,helper_calls_valid,30
+C-12:v11.4.2:atomic,group,helper_calls_invalid,0
 C-12:v11.4.2:atomic,group,helper_pair_exact,30
 C-12:v11.4.2:atomic,group,lifetimes_from_call_fail,0
 C-12:v11.4.2:atomic,group,model_missing,0
@@ -521,6 +551,7 @@ C-12:v11.4.2:atomic,group,chunks,30
 C-12:v11.4.2:atomic,group,chunk_overlap,0
 C-12:v11.4.2:atomic,group,process_agrees,True
 C-12:v11.4.2:atomic,group,rate_max_rel,0x0.0p+0
+C-12:v11.4.2:atomic,group,recovered_max_rel,0x0.0p+0
 C-12:v11.4.2:atomic,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.4.2:atomic,group,sum.all,0x1.c5a4b877cd847p+36
 C-12:v11.4.2:atomic,group,bin.all.0,2995055
@@ -627,9 +658,13 @@ C-12:v11.4.2:atomic,stratum_0,branch_outcome_mismatch,0
 C-12:v11.4.2:atomic,stratum_0,stops_bound_mismatch,0
 C-12:v11.4.2:atomic,stratum_0,rate_fail,0
 C-12:v11.4.2:atomic,stratum_0,rate_exact,20000000
+C-12:v11.4.2:atomic,stratum_0,recovered_fail,0
+C-12:v11.4.2:atomic,stratum_0,recovered_exact,20000000
 C-12:v11.4.2:atomic,stratum_0,wiring_fail,0
 C-12:v11.4.2:atomic,stratum_0,provider_calls_helper,10
 C-12:v11.4.2:atomic,stratum_0,provider_calls_other,0
+C-12:v11.4.2:atomic,stratum_0,helper_calls_valid,10
+C-12:v11.4.2:atomic,stratum_0,helper_calls_invalid,0
 C-12:v11.4.2:atomic,stratum_0,helper_pair_exact,10
 C-12:v11.4.2:atomic,stratum_0,lifetimes_from_call_fail,0
 C-12:v11.4.2:atomic,stratum_0,model_missing,0
@@ -643,6 +678,7 @@ C-12:v11.4.2:atomic,stratum_0,chunks,10
 C-12:v11.4.2:atomic,stratum_0,chunk_overlap,0
 C-12:v11.4.2:atomic,stratum_0,process_agrees,True
 C-12:v11.4.2:atomic,stratum_0,rate_max_rel,0x0.0p+0
+C-12:v11.4.2:atomic,stratum_0,recovered_max_rel,0x0.0p+0
 C-12:v11.4.2:atomic,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.4.2:atomic,stratum_0,sum.all,0x1.2e6bf9f5ac628p+35
 C-12:v11.4.2:atomic,stratum_0,bin.all.0,998545
@@ -749,9 +785,13 @@ C-12:v11.4.2:atomic,stratum_250,branch_outcome_mismatch,0
 C-12:v11.4.2:atomic,stratum_250,stops_bound_mismatch,0
 C-12:v11.4.2:atomic,stratum_250,rate_fail,0
 C-12:v11.4.2:atomic,stratum_250,rate_exact,20000000
+C-12:v11.4.2:atomic,stratum_250,recovered_fail,0
+C-12:v11.4.2:atomic,stratum_250,recovered_exact,20000000
 C-12:v11.4.2:atomic,stratum_250,wiring_fail,0
 C-12:v11.4.2:atomic,stratum_250,provider_calls_helper,10
 C-12:v11.4.2:atomic,stratum_250,provider_calls_other,0
+C-12:v11.4.2:atomic,stratum_250,helper_calls_valid,10
+C-12:v11.4.2:atomic,stratum_250,helper_calls_invalid,0
 C-12:v11.4.2:atomic,stratum_250,helper_pair_exact,10
 C-12:v11.4.2:atomic,stratum_250,lifetimes_from_call_fail,0
 C-12:v11.4.2:atomic,stratum_250,model_missing,0
@@ -765,6 +805,7 @@ C-12:v11.4.2:atomic,stratum_250,chunks,10
 C-12:v11.4.2:atomic,stratum_250,chunk_overlap,0
 C-12:v11.4.2:atomic,stratum_250,process_agrees,True
 C-12:v11.4.2:atomic,stratum_250,rate_max_rel,0x0.0p+0
+C-12:v11.4.2:atomic,stratum_250,recovered_max_rel,0x0.0p+0
 C-12:v11.4.2:atomic,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.4.2:atomic,stratum_250,sum.all,0x1.2e808acab775ap+35
 C-12:v11.4.2:atomic,stratum_250,bin.all.0,997759
@@ -871,9 +912,13 @@ C-12:v11.4.2:atomic,stratum_1000,branch_outcome_mismatch,0
 C-12:v11.4.2:atomic,stratum_1000,stops_bound_mismatch,0
 C-12:v11.4.2:atomic,stratum_1000,rate_fail,0
 C-12:v11.4.2:atomic,stratum_1000,rate_exact,20000000
+C-12:v11.4.2:atomic,stratum_1000,recovered_fail,0
+C-12:v11.4.2:atomic,stratum_1000,recovered_exact,20000000
 C-12:v11.4.2:atomic,stratum_1000,wiring_fail,0
 C-12:v11.4.2:atomic,stratum_1000,provider_calls_helper,10
 C-12:v11.4.2:atomic,stratum_1000,provider_calls_other,0
+C-12:v11.4.2:atomic,stratum_1000,helper_calls_valid,10
+C-12:v11.4.2:atomic,stratum_1000,helper_calls_invalid,0
 C-12:v11.4.2:atomic,stratum_1000,helper_pair_exact,10
 C-12:v11.4.2:atomic,stratum_1000,lifetimes_from_call_fail,0
 C-12:v11.4.2:atomic,stratum_1000,model_missing,0
@@ -887,6 +932,7 @@ C-12:v11.4.2:atomic,stratum_1000,chunks,10
 C-12:v11.4.2:atomic,stratum_1000,chunk_overlap,0
 C-12:v11.4.2:atomic,stratum_1000,process_agrees,True
 C-12:v11.4.2:atomic,stratum_1000,rate_max_rel,0x0.0p+0
+C-12:v11.4.2:atomic,stratum_1000,recovered_max_rel,0x0.0p+0
 C-12:v11.4.2:atomic,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.4.2:atomic,stratum_1000,sum.all,0x1.2e5cec2f3730cp+35
 C-12:v11.4.2:atomic,stratum_1000,bin.all.0,998751
@@ -984,6 +1030,9 @@ C-12:v11.4.2:atomic,stratum_1000,clock.atom_capture.max_abs_physical_ns,0x1.f400
 C-12:v11.5.0.beta:stopping,meta,binary_sha256,96686c4e861f2122741b956cd25eb165bef9d53d03956ff89c7fe018039ece34
 C-12:v11.5.0.beta:stopping,meta,chunk_files_sha256,8208a4920cc600ddb7bceb16b2d3cacf9a678b4c8cf2ceb07b82bbf29db5724d
 C-12:v11.5.0.beta:stopping,meta,switch_on,True
+C-12:v11.5.0.beta:stopping,meta,analysis_version,2
+C-12:v11.5.0.beta:stopping,meta,provenance_problems,0
+C-12:v11.5.0.beta:stopping,meta,provenance_first,-
 C-12:v11.5.0.beta:stopping,group,events,60000000
 C-12:v11.5.0.beta:stopping,group,duplicates,0
 C-12:v11.5.0.beta:stopping,group,out_of_range,0
@@ -996,9 +1045,13 @@ C-12:v11.5.0.beta:stopping,group,branch_outcome_mismatch,0
 C-12:v11.5.0.beta:stopping,group,stops_bound_mismatch,0
 C-12:v11.5.0.beta:stopping,group,rate_fail,0
 C-12:v11.5.0.beta:stopping,group,rate_exact,60000000
+C-12:v11.5.0.beta:stopping,group,recovered_fail,0
+C-12:v11.5.0.beta:stopping,group,recovered_exact,0
 C-12:v11.5.0.beta:stopping,group,wiring_fail,0
 C-12:v11.5.0.beta:stopping,group,provider_calls_helper,0
 C-12:v11.5.0.beta:stopping,group,provider_calls_other,0
+C-12:v11.5.0.beta:stopping,group,helper_calls_valid,0
+C-12:v11.5.0.beta:stopping,group,helper_calls_invalid,0
 C-12:v11.5.0.beta:stopping,group,helper_pair_exact,0
 C-12:v11.5.0.beta:stopping,group,lifetimes_from_call_fail,0
 C-12:v11.5.0.beta:stopping,group,model_missing,0
@@ -1012,6 +1065,7 @@ C-12:v11.5.0.beta:stopping,group,chunks,30
 C-12:v11.5.0.beta:stopping,group,chunk_overlap,0
 C-12:v11.5.0.beta:stopping,group,process_agrees,True
 C-12:v11.5.0.beta:stopping,group,rate_max_rel,0x0.0p+0
+C-12:v11.5.0.beta:stopping,group,recovered_max_rel,0x0.0p+0
 C-12:v11.5.0.beta:stopping,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.5.0.beta:stopping,group,sum.all,0x1.c57d4096c46edp+36
 C-12:v11.5.0.beta:stopping,group,bin.all.0,3001065
@@ -1118,9 +1172,13 @@ C-12:v11.5.0.beta:stopping,stratum_0,branch_outcome_mismatch,0
 C-12:v11.5.0.beta:stopping,stratum_0,stops_bound_mismatch,0
 C-12:v11.5.0.beta:stopping,stratum_0,rate_fail,0
 C-12:v11.5.0.beta:stopping,stratum_0,rate_exact,20000000
+C-12:v11.5.0.beta:stopping,stratum_0,recovered_fail,0
+C-12:v11.5.0.beta:stopping,stratum_0,recovered_exact,0
 C-12:v11.5.0.beta:stopping,stratum_0,wiring_fail,0
 C-12:v11.5.0.beta:stopping,stratum_0,provider_calls_helper,0
 C-12:v11.5.0.beta:stopping,stratum_0,provider_calls_other,0
+C-12:v11.5.0.beta:stopping,stratum_0,helper_calls_valid,0
+C-12:v11.5.0.beta:stopping,stratum_0,helper_calls_invalid,0
 C-12:v11.5.0.beta:stopping,stratum_0,helper_pair_exact,0
 C-12:v11.5.0.beta:stopping,stratum_0,lifetimes_from_call_fail,0
 C-12:v11.5.0.beta:stopping,stratum_0,model_missing,0
@@ -1134,6 +1192,7 @@ C-12:v11.5.0.beta:stopping,stratum_0,chunks,10
 C-12:v11.5.0.beta:stopping,stratum_0,chunk_overlap,0
 C-12:v11.5.0.beta:stopping,stratum_0,process_agrees,True
 C-12:v11.5.0.beta:stopping,stratum_0,rate_max_rel,0x0.0p+0
+C-12:v11.5.0.beta:stopping,stratum_0,recovered_max_rel,0x0.0p+0
 C-12:v11.5.0.beta:stopping,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.5.0.beta:stopping,stratum_0,sum.all,0x1.2e55d32ae2c80p+35
 C-12:v11.5.0.beta:stopping,stratum_0,bin.all.0,1001295
@@ -1240,9 +1299,13 @@ C-12:v11.5.0.beta:stopping,stratum_250,branch_outcome_mismatch,0
 C-12:v11.5.0.beta:stopping,stratum_250,stops_bound_mismatch,0
 C-12:v11.5.0.beta:stopping,stratum_250,rate_fail,0
 C-12:v11.5.0.beta:stopping,stratum_250,rate_exact,20000000
+C-12:v11.5.0.beta:stopping,stratum_250,recovered_fail,0
+C-12:v11.5.0.beta:stopping,stratum_250,recovered_exact,0
 C-12:v11.5.0.beta:stopping,stratum_250,wiring_fail,0
 C-12:v11.5.0.beta:stopping,stratum_250,provider_calls_helper,0
 C-12:v11.5.0.beta:stopping,stratum_250,provider_calls_other,0
+C-12:v11.5.0.beta:stopping,stratum_250,helper_calls_valid,0
+C-12:v11.5.0.beta:stopping,stratum_250,helper_calls_invalid,0
 C-12:v11.5.0.beta:stopping,stratum_250,helper_pair_exact,0
 C-12:v11.5.0.beta:stopping,stratum_250,lifetimes_from_call_fail,0
 C-12:v11.5.0.beta:stopping,stratum_250,model_missing,0
@@ -1256,6 +1319,7 @@ C-12:v11.5.0.beta:stopping,stratum_250,chunks,10
 C-12:v11.5.0.beta:stopping,stratum_250,chunk_overlap,0
 C-12:v11.5.0.beta:stopping,stratum_250,process_agrees,True
 C-12:v11.5.0.beta:stopping,stratum_250,rate_max_rel,0x0.0p+0
+C-12:v11.5.0.beta:stopping,stratum_250,recovered_max_rel,0x0.0p+0
 C-12:v11.5.0.beta:stopping,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.5.0.beta:stopping,stratum_250,sum.all,0x1.2e6e0af6bc7fbp+35
 C-12:v11.5.0.beta:stopping,stratum_250,bin.all.0,999642
@@ -1362,9 +1426,13 @@ C-12:v11.5.0.beta:stopping,stratum_1000,branch_outcome_mismatch,0
 C-12:v11.5.0.beta:stopping,stratum_1000,stops_bound_mismatch,0
 C-12:v11.5.0.beta:stopping,stratum_1000,rate_fail,0
 C-12:v11.5.0.beta:stopping,stratum_1000,rate_exact,20000000
+C-12:v11.5.0.beta:stopping,stratum_1000,recovered_fail,0
+C-12:v11.5.0.beta:stopping,stratum_1000,recovered_exact,0
 C-12:v11.5.0.beta:stopping,stratum_1000,wiring_fail,0
 C-12:v11.5.0.beta:stopping,stratum_1000,provider_calls_helper,0
 C-12:v11.5.0.beta:stopping,stratum_1000,provider_calls_other,0
+C-12:v11.5.0.beta:stopping,stratum_1000,helper_calls_valid,0
+C-12:v11.5.0.beta:stopping,stratum_1000,helper_calls_invalid,0
 C-12:v11.5.0.beta:stopping,stratum_1000,helper_pair_exact,0
 C-12:v11.5.0.beta:stopping,stratum_1000,lifetimes_from_call_fail,0
 C-12:v11.5.0.beta:stopping,stratum_1000,model_missing,0
@@ -1378,6 +1446,7 @@ C-12:v11.5.0.beta:stopping,stratum_1000,chunks,10
 C-12:v11.5.0.beta:stopping,stratum_1000,chunk_overlap,0
 C-12:v11.5.0.beta:stopping,stratum_1000,process_agrees,True
 C-12:v11.5.0.beta:stopping,stratum_1000,rate_max_rel,0x0.0p+0
+C-12:v11.5.0.beta:stopping,stratum_1000,recovered_max_rel,0x0.0p+0
 C-12:v11.5.0.beta:stopping,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.5.0.beta:stopping,stratum_1000,sum.all,0x1.2e36a30be995ep+35
 C-12:v11.5.0.beta:stopping,stratum_1000,bin.all.0,1000128
@@ -1475,6 +1544,9 @@ C-12:v11.5.0.beta:stopping,stratum_1000,clock.atom_capture.max_abs_physical_ns,0
 C-12:v11.5.0.beta:atomic,meta,binary_sha256,96686c4e861f2122741b956cd25eb165bef9d53d03956ff89c7fe018039ece34
 C-12:v11.5.0.beta:atomic,meta,chunk_files_sha256,fd0304eeacdca226b8ab9d61a5392ffce7aeb5ba07fb387e431df0fa4ac141f5
 C-12:v11.5.0.beta:atomic,meta,switch_on,True
+C-12:v11.5.0.beta:atomic,meta,analysis_version,2
+C-12:v11.5.0.beta:atomic,meta,provenance_problems,0
+C-12:v11.5.0.beta:atomic,meta,provenance_first,-
 C-12:v11.5.0.beta:atomic,group,events,60000000
 C-12:v11.5.0.beta:atomic,group,duplicates,0
 C-12:v11.5.0.beta:atomic,group,out_of_range,0
@@ -1487,9 +1559,13 @@ C-12:v11.5.0.beta:atomic,group,branch_outcome_mismatch,0
 C-12:v11.5.0.beta:atomic,group,stops_bound_mismatch,0
 C-12:v11.5.0.beta:atomic,group,rate_fail,0
 C-12:v11.5.0.beta:atomic,group,rate_exact,60000000
+C-12:v11.5.0.beta:atomic,group,recovered_fail,0
+C-12:v11.5.0.beta:atomic,group,recovered_exact,60000000
 C-12:v11.5.0.beta:atomic,group,wiring_fail,0
 C-12:v11.5.0.beta:atomic,group,provider_calls_helper,30
 C-12:v11.5.0.beta:atomic,group,provider_calls_other,0
+C-12:v11.5.0.beta:atomic,group,helper_calls_valid,30
+C-12:v11.5.0.beta:atomic,group,helper_calls_invalid,0
 C-12:v11.5.0.beta:atomic,group,helper_pair_exact,30
 C-12:v11.5.0.beta:atomic,group,lifetimes_from_call_fail,0
 C-12:v11.5.0.beta:atomic,group,model_missing,0
@@ -1503,6 +1579,7 @@ C-12:v11.5.0.beta:atomic,group,chunks,30
 C-12:v11.5.0.beta:atomic,group,chunk_overlap,0
 C-12:v11.5.0.beta:atomic,group,process_agrees,True
 C-12:v11.5.0.beta:atomic,group,rate_max_rel,0x0.0p+0
+C-12:v11.5.0.beta:atomic,group,recovered_max_rel,0x0.0p+0
 C-12:v11.5.0.beta:atomic,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.5.0.beta:atomic,group,sum.all,0x1.c58f66fdd9be5p+36
 C-12:v11.5.0.beta:atomic,group,bin.all.0,3001773
@@ -1609,9 +1686,13 @@ C-12:v11.5.0.beta:atomic,stratum_0,branch_outcome_mismatch,0
 C-12:v11.5.0.beta:atomic,stratum_0,stops_bound_mismatch,0
 C-12:v11.5.0.beta:atomic,stratum_0,rate_fail,0
 C-12:v11.5.0.beta:atomic,stratum_0,rate_exact,20000000
+C-12:v11.5.0.beta:atomic,stratum_0,recovered_fail,0
+C-12:v11.5.0.beta:atomic,stratum_0,recovered_exact,20000000
 C-12:v11.5.0.beta:atomic,stratum_0,wiring_fail,0
 C-12:v11.5.0.beta:atomic,stratum_0,provider_calls_helper,10
 C-12:v11.5.0.beta:atomic,stratum_0,provider_calls_other,0
+C-12:v11.5.0.beta:atomic,stratum_0,helper_calls_valid,10
+C-12:v11.5.0.beta:atomic,stratum_0,helper_calls_invalid,0
 C-12:v11.5.0.beta:atomic,stratum_0,helper_pair_exact,10
 C-12:v11.5.0.beta:atomic,stratum_0,lifetimes_from_call_fail,0
 C-12:v11.5.0.beta:atomic,stratum_0,model_missing,0
@@ -1625,6 +1706,7 @@ C-12:v11.5.0.beta:atomic,stratum_0,chunks,10
 C-12:v11.5.0.beta:atomic,stratum_0,chunk_overlap,0
 C-12:v11.5.0.beta:atomic,stratum_0,process_agrees,True
 C-12:v11.5.0.beta:atomic,stratum_0,rate_max_rel,0x0.0p+0
+C-12:v11.5.0.beta:atomic,stratum_0,recovered_max_rel,0x0.0p+0
 C-12:v11.5.0.beta:atomic,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.5.0.beta:atomic,stratum_0,sum.all,0x1.2e66ff4051a84p+35
 C-12:v11.5.0.beta:atomic,stratum_0,bin.all.0,999253
@@ -1731,9 +1813,13 @@ C-12:v11.5.0.beta:atomic,stratum_250,branch_outcome_mismatch,0
 C-12:v11.5.0.beta:atomic,stratum_250,stops_bound_mismatch,0
 C-12:v11.5.0.beta:atomic,stratum_250,rate_fail,0
 C-12:v11.5.0.beta:atomic,stratum_250,rate_exact,20000000
+C-12:v11.5.0.beta:atomic,stratum_250,recovered_fail,0
+C-12:v11.5.0.beta:atomic,stratum_250,recovered_exact,20000000
 C-12:v11.5.0.beta:atomic,stratum_250,wiring_fail,0
 C-12:v11.5.0.beta:atomic,stratum_250,provider_calls_helper,10
 C-12:v11.5.0.beta:atomic,stratum_250,provider_calls_other,0
+C-12:v11.5.0.beta:atomic,stratum_250,helper_calls_valid,10
+C-12:v11.5.0.beta:atomic,stratum_250,helper_calls_invalid,0
 C-12:v11.5.0.beta:atomic,stratum_250,helper_pair_exact,10
 C-12:v11.5.0.beta:atomic,stratum_250,lifetimes_from_call_fail,0
 C-12:v11.5.0.beta:atomic,stratum_250,model_missing,0
@@ -1747,6 +1833,7 @@ C-12:v11.5.0.beta:atomic,stratum_250,chunks,10
 C-12:v11.5.0.beta:atomic,stratum_250,chunk_overlap,0
 C-12:v11.5.0.beta:atomic,stratum_250,process_agrees,True
 C-12:v11.5.0.beta:atomic,stratum_250,rate_max_rel,0x0.0p+0
+C-12:v11.5.0.beta:atomic,stratum_250,recovered_max_rel,0x0.0p+0
 C-12:v11.5.0.beta:atomic,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.5.0.beta:atomic,stratum_250,sum.all,0x1.2e64ef6077f5fp+35
 C-12:v11.5.0.beta:atomic,stratum_250,bin.all.0,1001138
@@ -1853,9 +1940,13 @@ C-12:v11.5.0.beta:atomic,stratum_1000,branch_outcome_mismatch,0
 C-12:v11.5.0.beta:atomic,stratum_1000,stops_bound_mismatch,0
 C-12:v11.5.0.beta:atomic,stratum_1000,rate_fail,0
 C-12:v11.5.0.beta:atomic,stratum_1000,rate_exact,20000000
+C-12:v11.5.0.beta:atomic,stratum_1000,recovered_fail,0
+C-12:v11.5.0.beta:atomic,stratum_1000,recovered_exact,20000000
 C-12:v11.5.0.beta:atomic,stratum_1000,wiring_fail,0
 C-12:v11.5.0.beta:atomic,stratum_1000,provider_calls_helper,10
 C-12:v11.5.0.beta:atomic,stratum_1000,provider_calls_other,0
+C-12:v11.5.0.beta:atomic,stratum_1000,helper_calls_valid,10
+C-12:v11.5.0.beta:atomic,stratum_1000,helper_calls_invalid,0
 C-12:v11.5.0.beta:atomic,stratum_1000,helper_pair_exact,10
 C-12:v11.5.0.beta:atomic,stratum_1000,lifetimes_from_call_fail,0
 C-12:v11.5.0.beta:atomic,stratum_1000,model_missing,0
@@ -1869,6 +1960,7 @@ C-12:v11.5.0.beta:atomic,stratum_1000,chunks,10
 C-12:v11.5.0.beta:atomic,stratum_1000,chunk_overlap,0
 C-12:v11.5.0.beta:atomic,stratum_1000,process_agrees,True
 C-12:v11.5.0.beta:atomic,stratum_1000,rate_max_rel,0x0.0p+0
+C-12:v11.5.0.beta:atomic,stratum_1000,recovered_max_rel,0x0.0p+0
 C-12:v11.5.0.beta:atomic,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 C-12:v11.5.0.beta:atomic,stratum_1000,sum.all,0x1.2e52df5ae9de8p+35
 C-12:v11.5.0.beta:atomic,stratum_1000,bin.all.0,1001382
@@ -1966,6 +2058,9 @@ C-12:v11.5.0.beta:atomic,stratum_1000,clock.atom_capture.max_abs_physical_ns,0x1
 N-14:v11.4.2:stopping,meta,binary_sha256,963743dfbf9916472901a78cfc6b227aec56c6670e41245d934e38a98566987c
 N-14:v11.4.2:stopping,meta,chunk_files_sha256,b74f1311a0765f8467b89abe2ab4ffe1e9e310c0b062ff437e5f992b537acb47
 N-14:v11.4.2:stopping,meta,switch_on,True
+N-14:v11.4.2:stopping,meta,analysis_version,2
+N-14:v11.4.2:stopping,meta,provenance_problems,0
+N-14:v11.4.2:stopping,meta,provenance_first,-
 N-14:v11.4.2:stopping,group,events,24000000
 N-14:v11.4.2:stopping,group,duplicates,0
 N-14:v11.4.2:stopping,group,out_of_range,0
@@ -1978,9 +2073,13 @@ N-14:v11.4.2:stopping,group,branch_outcome_mismatch,0
 N-14:v11.4.2:stopping,group,stops_bound_mismatch,0
 N-14:v11.4.2:stopping,group,rate_fail,0
 N-14:v11.4.2:stopping,group,rate_exact,24000000
+N-14:v11.4.2:stopping,group,recovered_fail,0
+N-14:v11.4.2:stopping,group,recovered_exact,0
 N-14:v11.4.2:stopping,group,wiring_fail,0
 N-14:v11.4.2:stopping,group,provider_calls_helper,0
 N-14:v11.4.2:stopping,group,provider_calls_other,0
+N-14:v11.4.2:stopping,group,helper_calls_valid,0
+N-14:v11.4.2:stopping,group,helper_calls_invalid,0
 N-14:v11.4.2:stopping,group,helper_pair_exact,0
 N-14:v11.4.2:stopping,group,lifetimes_from_call_fail,0
 N-14:v11.4.2:stopping,group,model_missing,0
@@ -1994,6 +2093,7 @@ N-14:v11.4.2:stopping,group,chunks,12
 N-14:v11.4.2:stopping,group,chunk_overlap,0
 N-14:v11.4.2:stopping,group,process_agrees,True
 N-14:v11.4.2:stopping,group,rate_max_rel,0x0.0p+0
+N-14:v11.4.2:stopping,group,recovered_max_rel,0x0.0p+0
 N-14:v11.4.2:stopping,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.4.2:stopping,group,sum.all,0x1.55a8fad442102p+35
 N-14:v11.4.2:stopping,group,bin.all.0,1198793
@@ -2100,9 +2200,13 @@ N-14:v11.4.2:stopping,stratum_0,branch_outcome_mismatch,0
 N-14:v11.4.2:stopping,stratum_0,stops_bound_mismatch,0
 N-14:v11.4.2:stopping,stratum_0,rate_fail,0
 N-14:v11.4.2:stopping,stratum_0,rate_exact,8000000
+N-14:v11.4.2:stopping,stratum_0,recovered_fail,0
+N-14:v11.4.2:stopping,stratum_0,recovered_exact,0
 N-14:v11.4.2:stopping,stratum_0,wiring_fail,0
 N-14:v11.4.2:stopping,stratum_0,provider_calls_helper,0
 N-14:v11.4.2:stopping,stratum_0,provider_calls_other,0
+N-14:v11.4.2:stopping,stratum_0,helper_calls_valid,0
+N-14:v11.4.2:stopping,stratum_0,helper_calls_invalid,0
 N-14:v11.4.2:stopping,stratum_0,helper_pair_exact,0
 N-14:v11.4.2:stopping,stratum_0,lifetimes_from_call_fail,0
 N-14:v11.4.2:stopping,stratum_0,model_missing,0
@@ -2116,6 +2220,7 @@ N-14:v11.4.2:stopping,stratum_0,chunks,4
 N-14:v11.4.2:stopping,stratum_0,chunk_overlap,0
 N-14:v11.4.2:stopping,stratum_0,process_agrees,True
 N-14:v11.4.2:stopping,stratum_0,rate_max_rel,0x0.0p+0
+N-14:v11.4.2:stopping,stratum_0,recovered_max_rel,0x0.0p+0
 N-14:v11.4.2:stopping,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.4.2:stopping,stratum_0,sum.all,0x1.c78687171c078p+33
 N-14:v11.4.2:stopping,stratum_0,bin.all.0,400669
@@ -2222,9 +2327,13 @@ N-14:v11.4.2:stopping,stratum_250,branch_outcome_mismatch,0
 N-14:v11.4.2:stopping,stratum_250,stops_bound_mismatch,0
 N-14:v11.4.2:stopping,stratum_250,rate_fail,0
 N-14:v11.4.2:stopping,stratum_250,rate_exact,8000000
+N-14:v11.4.2:stopping,stratum_250,recovered_fail,0
+N-14:v11.4.2:stopping,stratum_250,recovered_exact,0
 N-14:v11.4.2:stopping,stratum_250,wiring_fail,0
 N-14:v11.4.2:stopping,stratum_250,provider_calls_helper,0
 N-14:v11.4.2:stopping,stratum_250,provider_calls_other,0
+N-14:v11.4.2:stopping,stratum_250,helper_calls_valid,0
+N-14:v11.4.2:stopping,stratum_250,helper_calls_invalid,0
 N-14:v11.4.2:stopping,stratum_250,helper_pair_exact,0
 N-14:v11.4.2:stopping,stratum_250,lifetimes_from_call_fail,0
 N-14:v11.4.2:stopping,stratum_250,model_missing,0
@@ -2238,6 +2347,7 @@ N-14:v11.4.2:stopping,stratum_250,chunks,4
 N-14:v11.4.2:stopping,stratum_250,chunk_overlap,0
 N-14:v11.4.2:stopping,stratum_250,process_agrees,True
 N-14:v11.4.2:stopping,stratum_250,rate_max_rel,0x0.0p+0
+N-14:v11.4.2:stopping,stratum_250,recovered_max_rel,0x0.0p+0
 N-14:v11.4.2:stopping,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.4.2:stopping,stratum_250,sum.all,0x1.c7b57e2960868p+33
 N-14:v11.4.2:stopping,stratum_250,bin.all.0,398881
@@ -2344,9 +2454,13 @@ N-14:v11.4.2:stopping,stratum_1000,branch_outcome_mismatch,0
 N-14:v11.4.2:stopping,stratum_1000,stops_bound_mismatch,0
 N-14:v11.4.2:stopping,stratum_1000,rate_fail,0
 N-14:v11.4.2:stopping,stratum_1000,rate_exact,8000000
+N-14:v11.4.2:stopping,stratum_1000,recovered_fail,0
+N-14:v11.4.2:stopping,stratum_1000,recovered_exact,0
 N-14:v11.4.2:stopping,stratum_1000,wiring_fail,0
 N-14:v11.4.2:stopping,stratum_1000,provider_calls_helper,0
 N-14:v11.4.2:stopping,stratum_1000,provider_calls_other,0
+N-14:v11.4.2:stopping,stratum_1000,helper_calls_valid,0
+N-14:v11.4.2:stopping,stratum_1000,helper_calls_invalid,0
 N-14:v11.4.2:stopping,stratum_1000,helper_pair_exact,0
 N-14:v11.4.2:stopping,stratum_1000,lifetimes_from_call_fail,0
 N-14:v11.4.2:stopping,stratum_1000,model_missing,0
@@ -2360,6 +2474,7 @@ N-14:v11.4.2:stopping,stratum_1000,chunks,4
 N-14:v11.4.2:stopping,stratum_1000,chunk_overlap,0
 N-14:v11.4.2:stopping,stratum_1000,process_agrees,True
 N-14:v11.4.2:stopping,stratum_1000,rate_max_rel,0x0.0p+0
+N-14:v11.4.2:stopping,stratum_1000,recovered_max_rel,0x0.0p+0
 N-14:v11.4.2:stopping,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.4.2:stopping,stratum_1000,sum.all,0x1.c767e6108bb27p+33
 N-14:v11.4.2:stopping,stratum_1000,bin.all.0,399243
@@ -2457,6 +2572,9 @@ N-14:v11.4.2:stopping,stratum_1000,clock.atom_capture.max_abs_physical_ns,0x0.0p
 N-14:v11.4.2:atomic,meta,binary_sha256,963743dfbf9916472901a78cfc6b227aec56c6670e41245d934e38a98566987c
 N-14:v11.4.2:atomic,meta,chunk_files_sha256,db400dcf84d354ad424e169bb9e195c1eb09f2a2db8a51ee74dfc59af9ef36ae
 N-14:v11.4.2:atomic,meta,switch_on,True
+N-14:v11.4.2:atomic,meta,analysis_version,2
+N-14:v11.4.2:atomic,meta,provenance_problems,0
+N-14:v11.4.2:atomic,meta,provenance_first,-
 N-14:v11.4.2:atomic,group,events,24000000
 N-14:v11.4.2:atomic,group,duplicates,0
 N-14:v11.4.2:atomic,group,out_of_range,0
@@ -2469,9 +2587,13 @@ N-14:v11.4.2:atomic,group,branch_outcome_mismatch,0
 N-14:v11.4.2:atomic,group,stops_bound_mismatch,0
 N-14:v11.4.2:atomic,group,rate_fail,0
 N-14:v11.4.2:atomic,group,rate_exact,24000000
+N-14:v11.4.2:atomic,group,recovered_fail,0
+N-14:v11.4.2:atomic,group,recovered_exact,0
 N-14:v11.4.2:atomic,group,wiring_fail,0
 N-14:v11.4.2:atomic,group,provider_calls_helper,12
 N-14:v11.4.2:atomic,group,provider_calls_other,0
+N-14:v11.4.2:atomic,group,helper_calls_valid,12
+N-14:v11.4.2:atomic,group,helper_calls_invalid,0
 N-14:v11.4.2:atomic,group,helper_pair_exact,12
 N-14:v11.4.2:atomic,group,lifetimes_from_call_fail,0
 N-14:v11.4.2:atomic,group,model_missing,0
@@ -2485,6 +2607,7 @@ N-14:v11.4.2:atomic,group,chunks,12
 N-14:v11.4.2:atomic,group,chunk_overlap,0
 N-14:v11.4.2:atomic,group,process_agrees,True
 N-14:v11.4.2:atomic,group,rate_max_rel,0x0.0p+0
+N-14:v11.4.2:atomic,group,recovered_max_rel,0x1.12fb53980166dp-53
 N-14:v11.4.2:atomic,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.4.2:atomic,group,sum.all,0x1.557f303b18392p+35
 N-14:v11.4.2:atomic,group,bin.all.0,1200504
@@ -2591,9 +2714,13 @@ N-14:v11.4.2:atomic,stratum_0,branch_outcome_mismatch,0
 N-14:v11.4.2:atomic,stratum_0,stops_bound_mismatch,0
 N-14:v11.4.2:atomic,stratum_0,rate_fail,0
 N-14:v11.4.2:atomic,stratum_0,rate_exact,8000000
+N-14:v11.4.2:atomic,stratum_0,recovered_fail,0
+N-14:v11.4.2:atomic,stratum_0,recovered_exact,0
 N-14:v11.4.2:atomic,stratum_0,wiring_fail,0
 N-14:v11.4.2:atomic,stratum_0,provider_calls_helper,4
 N-14:v11.4.2:atomic,stratum_0,provider_calls_other,0
+N-14:v11.4.2:atomic,stratum_0,helper_calls_valid,4
+N-14:v11.4.2:atomic,stratum_0,helper_calls_invalid,0
 N-14:v11.4.2:atomic,stratum_0,helper_pair_exact,4
 N-14:v11.4.2:atomic,stratum_0,lifetimes_from_call_fail,0
 N-14:v11.4.2:atomic,stratum_0,model_missing,0
@@ -2607,6 +2734,7 @@ N-14:v11.4.2:atomic,stratum_0,chunks,4
 N-14:v11.4.2:atomic,stratum_0,chunk_overlap,0
 N-14:v11.4.2:atomic,stratum_0,process_agrees,True
 N-14:v11.4.2:atomic,stratum_0,rate_max_rel,0x0.0p+0
+N-14:v11.4.2:atomic,stratum_0,recovered_max_rel,0x1.12fb53980166dp-53
 N-14:v11.4.2:atomic,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.4.2:atomic,stratum_0,sum.all,0x1.c76b7a495a4f7p+33
 N-14:v11.4.2:atomic,stratum_0,bin.all.0,400049
@@ -2713,9 +2841,13 @@ N-14:v11.4.2:atomic,stratum_250,branch_outcome_mismatch,0
 N-14:v11.4.2:atomic,stratum_250,stops_bound_mismatch,0
 N-14:v11.4.2:atomic,stratum_250,rate_fail,0
 N-14:v11.4.2:atomic,stratum_250,rate_exact,8000000
+N-14:v11.4.2:atomic,stratum_250,recovered_fail,0
+N-14:v11.4.2:atomic,stratum_250,recovered_exact,0
 N-14:v11.4.2:atomic,stratum_250,wiring_fail,0
 N-14:v11.4.2:atomic,stratum_250,provider_calls_helper,4
 N-14:v11.4.2:atomic,stratum_250,provider_calls_other,0
+N-14:v11.4.2:atomic,stratum_250,helper_calls_valid,4
+N-14:v11.4.2:atomic,stratum_250,helper_calls_invalid,0
 N-14:v11.4.2:atomic,stratum_250,helper_pair_exact,4
 N-14:v11.4.2:atomic,stratum_250,lifetimes_from_call_fail,0
 N-14:v11.4.2:atomic,stratum_250,model_missing,0
@@ -2729,6 +2861,7 @@ N-14:v11.4.2:atomic,stratum_250,chunks,4
 N-14:v11.4.2:atomic,stratum_250,chunk_overlap,0
 N-14:v11.4.2:atomic,stratum_250,process_agrees,True
 N-14:v11.4.2:atomic,stratum_250,rate_max_rel,0x0.0p+0
+N-14:v11.4.2:atomic,stratum_250,recovered_max_rel,0x1.12fb53980166dp-53
 N-14:v11.4.2:atomic,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.4.2:atomic,stratum_250,sum.all,0x1.c739070056306p+33
 N-14:v11.4.2:atomic,stratum_250,bin.all.0,399817
@@ -2835,9 +2968,13 @@ N-14:v11.4.2:atomic,stratum_1000,branch_outcome_mismatch,0
 N-14:v11.4.2:atomic,stratum_1000,stops_bound_mismatch,0
 N-14:v11.4.2:atomic,stratum_1000,rate_fail,0
 N-14:v11.4.2:atomic,stratum_1000,rate_exact,8000000
+N-14:v11.4.2:atomic,stratum_1000,recovered_fail,0
+N-14:v11.4.2:atomic,stratum_1000,recovered_exact,0
 N-14:v11.4.2:atomic,stratum_1000,wiring_fail,0
 N-14:v11.4.2:atomic,stratum_1000,provider_calls_helper,4
 N-14:v11.4.2:atomic,stratum_1000,provider_calls_other,0
+N-14:v11.4.2:atomic,stratum_1000,helper_calls_valid,4
+N-14:v11.4.2:atomic,stratum_1000,helper_calls_invalid,0
 N-14:v11.4.2:atomic,stratum_1000,helper_pair_exact,4
 N-14:v11.4.2:atomic,stratum_1000,lifetimes_from_call_fail,0
 N-14:v11.4.2:atomic,stratum_1000,model_missing,0
@@ -2851,6 +2988,7 @@ N-14:v11.4.2:atomic,stratum_1000,chunks,4
 N-14:v11.4.2:atomic,stratum_1000,chunk_overlap,0
 N-14:v11.4.2:atomic,stratum_1000,process_agrees,True
 N-14:v11.4.2:atomic,stratum_1000,rate_max_rel,0x0.0p+0
+N-14:v11.4.2:atomic,stratum_1000,recovered_max_rel,0x1.12fb53980166dp-53
 N-14:v11.4.2:atomic,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.4.2:atomic,stratum_1000,sum.all,0x1.c7583fa2b064bp+33
 N-14:v11.4.2:atomic,stratum_1000,bin.all.0,400638
@@ -2948,6 +3086,9 @@ N-14:v11.4.2:atomic,stratum_1000,clock.atom_capture.max_abs_physical_ns,0x1.f400
 N-14:v11.5.0.beta:stopping,meta,binary_sha256,96686c4e861f2122741b956cd25eb165bef9d53d03956ff89c7fe018039ece34
 N-14:v11.5.0.beta:stopping,meta,chunk_files_sha256,e86efe6dffa19550bf6e216207a21e294dfb22f90bed145a67a456ac3f6fe378
 N-14:v11.5.0.beta:stopping,meta,switch_on,True
+N-14:v11.5.0.beta:stopping,meta,analysis_version,2
+N-14:v11.5.0.beta:stopping,meta,provenance_problems,0
+N-14:v11.5.0.beta:stopping,meta,provenance_first,-
 N-14:v11.5.0.beta:stopping,group,events,24000000
 N-14:v11.5.0.beta:stopping,group,duplicates,0
 N-14:v11.5.0.beta:stopping,group,out_of_range,0
@@ -2960,9 +3101,13 @@ N-14:v11.5.0.beta:stopping,group,branch_outcome_mismatch,0
 N-14:v11.5.0.beta:stopping,group,stops_bound_mismatch,0
 N-14:v11.5.0.beta:stopping,group,rate_fail,0
 N-14:v11.5.0.beta:stopping,group,rate_exact,24000000
+N-14:v11.5.0.beta:stopping,group,recovered_fail,0
+N-14:v11.5.0.beta:stopping,group,recovered_exact,0
 N-14:v11.5.0.beta:stopping,group,wiring_fail,0
 N-14:v11.5.0.beta:stopping,group,provider_calls_helper,0
 N-14:v11.5.0.beta:stopping,group,provider_calls_other,0
+N-14:v11.5.0.beta:stopping,group,helper_calls_valid,0
+N-14:v11.5.0.beta:stopping,group,helper_calls_invalid,0
 N-14:v11.5.0.beta:stopping,group,helper_pair_exact,0
 N-14:v11.5.0.beta:stopping,group,lifetimes_from_call_fail,0
 N-14:v11.5.0.beta:stopping,group,model_missing,0
@@ -2976,6 +3121,7 @@ N-14:v11.5.0.beta:stopping,group,chunks,12
 N-14:v11.5.0.beta:stopping,group,chunk_overlap,0
 N-14:v11.5.0.beta:stopping,group,process_agrees,True
 N-14:v11.5.0.beta:stopping,group,rate_max_rel,0x0.0p+0
+N-14:v11.5.0.beta:stopping,group,recovered_max_rel,0x0.0p+0
 N-14:v11.5.0.beta:stopping,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.5.0.beta:stopping,group,sum.all,0x1.55994d7802a63p+35
 N-14:v11.5.0.beta:stopping,group,bin.all.0,1198660
@@ -3082,9 +3228,13 @@ N-14:v11.5.0.beta:stopping,stratum_0,branch_outcome_mismatch,0
 N-14:v11.5.0.beta:stopping,stratum_0,stops_bound_mismatch,0
 N-14:v11.5.0.beta:stopping,stratum_0,rate_fail,0
 N-14:v11.5.0.beta:stopping,stratum_0,rate_exact,8000000
+N-14:v11.5.0.beta:stopping,stratum_0,recovered_fail,0
+N-14:v11.5.0.beta:stopping,stratum_0,recovered_exact,0
 N-14:v11.5.0.beta:stopping,stratum_0,wiring_fail,0
 N-14:v11.5.0.beta:stopping,stratum_0,provider_calls_helper,0
 N-14:v11.5.0.beta:stopping,stratum_0,provider_calls_other,0
+N-14:v11.5.0.beta:stopping,stratum_0,helper_calls_valid,0
+N-14:v11.5.0.beta:stopping,stratum_0,helper_calls_invalid,0
 N-14:v11.5.0.beta:stopping,stratum_0,helper_pair_exact,0
 N-14:v11.5.0.beta:stopping,stratum_0,lifetimes_from_call_fail,0
 N-14:v11.5.0.beta:stopping,stratum_0,model_missing,0
@@ -3098,6 +3248,7 @@ N-14:v11.5.0.beta:stopping,stratum_0,chunks,4
 N-14:v11.5.0.beta:stopping,stratum_0,chunk_overlap,0
 N-14:v11.5.0.beta:stopping,stratum_0,process_agrees,True
 N-14:v11.5.0.beta:stopping,stratum_0,rate_max_rel,0x0.0p+0
+N-14:v11.5.0.beta:stopping,stratum_0,recovered_max_rel,0x0.0p+0
 N-14:v11.5.0.beta:stopping,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.5.0.beta:stopping,stratum_0,sum.all,0x1.c77151b7a15b4p+33
 N-14:v11.5.0.beta:stopping,stratum_0,bin.all.0,400205
@@ -3204,9 +3355,13 @@ N-14:v11.5.0.beta:stopping,stratum_250,branch_outcome_mismatch,0
 N-14:v11.5.0.beta:stopping,stratum_250,stops_bound_mismatch,0
 N-14:v11.5.0.beta:stopping,stratum_250,rate_fail,0
 N-14:v11.5.0.beta:stopping,stratum_250,rate_exact,8000000
+N-14:v11.5.0.beta:stopping,stratum_250,recovered_fail,0
+N-14:v11.5.0.beta:stopping,stratum_250,recovered_exact,0
 N-14:v11.5.0.beta:stopping,stratum_250,wiring_fail,0
 N-14:v11.5.0.beta:stopping,stratum_250,provider_calls_helper,0
 N-14:v11.5.0.beta:stopping,stratum_250,provider_calls_other,0
+N-14:v11.5.0.beta:stopping,stratum_250,helper_calls_valid,0
+N-14:v11.5.0.beta:stopping,stratum_250,helper_calls_invalid,0
 N-14:v11.5.0.beta:stopping,stratum_250,helper_pair_exact,0
 N-14:v11.5.0.beta:stopping,stratum_250,lifetimes_from_call_fail,0
 N-14:v11.5.0.beta:stopping,stratum_250,model_missing,0
@@ -3220,6 +3375,7 @@ N-14:v11.5.0.beta:stopping,stratum_250,chunks,4
 N-14:v11.5.0.beta:stopping,stratum_250,chunk_overlap,0
 N-14:v11.5.0.beta:stopping,stratum_250,process_agrees,True
 N-14:v11.5.0.beta:stopping,stratum_250,rate_max_rel,0x0.0p+0
+N-14:v11.5.0.beta:stopping,stratum_250,recovered_max_rel,0x0.0p+0
 N-14:v11.5.0.beta:stopping,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.5.0.beta:stopping,stratum_250,sum.all,0x1.c78df2b4bc87dp+33
 N-14:v11.5.0.beta:stopping,stratum_250,bin.all.0,399647
@@ -3326,9 +3482,13 @@ N-14:v11.5.0.beta:stopping,stratum_1000,branch_outcome_mismatch,0
 N-14:v11.5.0.beta:stopping,stratum_1000,stops_bound_mismatch,0
 N-14:v11.5.0.beta:stopping,stratum_1000,rate_fail,0
 N-14:v11.5.0.beta:stopping,stratum_1000,rate_exact,8000000
+N-14:v11.5.0.beta:stopping,stratum_1000,recovered_fail,0
+N-14:v11.5.0.beta:stopping,stratum_1000,recovered_exact,0
 N-14:v11.5.0.beta:stopping,stratum_1000,wiring_fail,0
 N-14:v11.5.0.beta:stopping,stratum_1000,provider_calls_helper,0
 N-14:v11.5.0.beta:stopping,stratum_1000,provider_calls_other,0
+N-14:v11.5.0.beta:stopping,stratum_1000,helper_calls_valid,0
+N-14:v11.5.0.beta:stopping,stratum_1000,helper_calls_invalid,0
 N-14:v11.5.0.beta:stopping,stratum_1000,helper_pair_exact,0
 N-14:v11.5.0.beta:stopping,stratum_1000,lifetimes_from_call_fail,0
 N-14:v11.5.0.beta:stopping,stratum_1000,model_missing,0
@@ -3342,6 +3502,7 @@ N-14:v11.5.0.beta:stopping,stratum_1000,chunks,4
 N-14:v11.5.0.beta:stopping,stratum_1000,chunk_overlap,0
 N-14:v11.5.0.beta:stopping,stratum_1000,process_agrees,True
 N-14:v11.5.0.beta:stopping,stratum_1000,rate_max_rel,0x0.0p+0
+N-14:v11.5.0.beta:stopping,stratum_1000,recovered_max_rel,0x0.0p+0
 N-14:v11.5.0.beta:stopping,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.5.0.beta:stopping,stratum_1000,sum.all,0x1.c765f173acb5cp+33
 N-14:v11.5.0.beta:stopping,stratum_1000,bin.all.0,398808
@@ -3439,6 +3600,9 @@ N-14:v11.5.0.beta:stopping,stratum_1000,clock.atom_capture.max_abs_physical_ns,0
 N-14:v11.5.0.beta:atomic,meta,binary_sha256,96686c4e861f2122741b956cd25eb165bef9d53d03956ff89c7fe018039ece34
 N-14:v11.5.0.beta:atomic,meta,chunk_files_sha256,c9a792a28f00f72ef0b9a5c38686b4a7c78b4b58097f4b43dcb107f68f9bcad9
 N-14:v11.5.0.beta:atomic,meta,switch_on,True
+N-14:v11.5.0.beta:atomic,meta,analysis_version,2
+N-14:v11.5.0.beta:atomic,meta,provenance_problems,0
+N-14:v11.5.0.beta:atomic,meta,provenance_first,-
 N-14:v11.5.0.beta:atomic,group,events,24000000
 N-14:v11.5.0.beta:atomic,group,duplicates,0
 N-14:v11.5.0.beta:atomic,group,out_of_range,0
@@ -3451,9 +3615,13 @@ N-14:v11.5.0.beta:atomic,group,branch_outcome_mismatch,0
 N-14:v11.5.0.beta:atomic,group,stops_bound_mismatch,0
 N-14:v11.5.0.beta:atomic,group,rate_fail,0
 N-14:v11.5.0.beta:atomic,group,rate_exact,24000000
+N-14:v11.5.0.beta:atomic,group,recovered_fail,0
+N-14:v11.5.0.beta:atomic,group,recovered_exact,0
 N-14:v11.5.0.beta:atomic,group,wiring_fail,0
 N-14:v11.5.0.beta:atomic,group,provider_calls_helper,12
 N-14:v11.5.0.beta:atomic,group,provider_calls_other,0
+N-14:v11.5.0.beta:atomic,group,helper_calls_valid,12
+N-14:v11.5.0.beta:atomic,group,helper_calls_invalid,0
 N-14:v11.5.0.beta:atomic,group,helper_pair_exact,12
 N-14:v11.5.0.beta:atomic,group,lifetimes_from_call_fail,0
 N-14:v11.5.0.beta:atomic,group,model_missing,0
@@ -3467,6 +3635,7 @@ N-14:v11.5.0.beta:atomic,group,chunks,12
 N-14:v11.5.0.beta:atomic,group,chunk_overlap,0
 N-14:v11.5.0.beta:atomic,group,process_agrees,True
 N-14:v11.5.0.beta:atomic,group,rate_max_rel,0x0.0p+0
+N-14:v11.5.0.beta:atomic,group,recovered_max_rel,0x1.12fb53980166dp-53
 N-14:v11.5.0.beta:atomic,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.5.0.beta:atomic,group,sum.all,0x1.55bfd8e7bfcadp+35
 N-14:v11.5.0.beta:atomic,group,bin.all.0,1200091
@@ -3573,9 +3742,13 @@ N-14:v11.5.0.beta:atomic,stratum_0,branch_outcome_mismatch,0
 N-14:v11.5.0.beta:atomic,stratum_0,stops_bound_mismatch,0
 N-14:v11.5.0.beta:atomic,stratum_0,rate_fail,0
 N-14:v11.5.0.beta:atomic,stratum_0,rate_exact,8000000
+N-14:v11.5.0.beta:atomic,stratum_0,recovered_fail,0
+N-14:v11.5.0.beta:atomic,stratum_0,recovered_exact,0
 N-14:v11.5.0.beta:atomic,stratum_0,wiring_fail,0
 N-14:v11.5.0.beta:atomic,stratum_0,provider_calls_helper,4
 N-14:v11.5.0.beta:atomic,stratum_0,provider_calls_other,0
+N-14:v11.5.0.beta:atomic,stratum_0,helper_calls_valid,4
+N-14:v11.5.0.beta:atomic,stratum_0,helper_calls_invalid,0
 N-14:v11.5.0.beta:atomic,stratum_0,helper_pair_exact,4
 N-14:v11.5.0.beta:atomic,stratum_0,lifetimes_from_call_fail,0
 N-14:v11.5.0.beta:atomic,stratum_0,model_missing,0
@@ -3589,6 +3762,7 @@ N-14:v11.5.0.beta:atomic,stratum_0,chunks,4
 N-14:v11.5.0.beta:atomic,stratum_0,chunk_overlap,0
 N-14:v11.5.0.beta:atomic,stratum_0,process_agrees,True
 N-14:v11.5.0.beta:atomic,stratum_0,rate_max_rel,0x0.0p+0
+N-14:v11.5.0.beta:atomic,stratum_0,recovered_max_rel,0x1.12fb53980166dp-53
 N-14:v11.5.0.beta:atomic,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.5.0.beta:atomic,stratum_0,sum.all,0x1.c76b04d690452p+33
 N-14:v11.5.0.beta:atomic,stratum_0,bin.all.0,400133
@@ -3695,9 +3869,13 @@ N-14:v11.5.0.beta:atomic,stratum_250,branch_outcome_mismatch,0
 N-14:v11.5.0.beta:atomic,stratum_250,stops_bound_mismatch,0
 N-14:v11.5.0.beta:atomic,stratum_250,rate_fail,0
 N-14:v11.5.0.beta:atomic,stratum_250,rate_exact,8000000
+N-14:v11.5.0.beta:atomic,stratum_250,recovered_fail,0
+N-14:v11.5.0.beta:atomic,stratum_250,recovered_exact,0
 N-14:v11.5.0.beta:atomic,stratum_250,wiring_fail,0
 N-14:v11.5.0.beta:atomic,stratum_250,provider_calls_helper,4
 N-14:v11.5.0.beta:atomic,stratum_250,provider_calls_other,0
+N-14:v11.5.0.beta:atomic,stratum_250,helper_calls_valid,4
+N-14:v11.5.0.beta:atomic,stratum_250,helper_calls_invalid,0
 N-14:v11.5.0.beta:atomic,stratum_250,helper_pair_exact,4
 N-14:v11.5.0.beta:atomic,stratum_250,lifetimes_from_call_fail,0
 N-14:v11.5.0.beta:atomic,stratum_250,model_missing,0
@@ -3711,6 +3889,7 @@ N-14:v11.5.0.beta:atomic,stratum_250,chunks,4
 N-14:v11.5.0.beta:atomic,stratum_250,chunk_overlap,0
 N-14:v11.5.0.beta:atomic,stratum_250,process_agrees,True
 N-14:v11.5.0.beta:atomic,stratum_250,rate_max_rel,0x0.0p+0
+N-14:v11.5.0.beta:atomic,stratum_250,recovered_max_rel,0x1.12fb53980166dp-53
 N-14:v11.5.0.beta:atomic,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.5.0.beta:atomic,stratum_250,sum.all,0x1.c7df99be6eb40p+33
 N-14:v11.5.0.beta:atomic,stratum_250,bin.all.0,399066
@@ -3817,9 +3996,13 @@ N-14:v11.5.0.beta:atomic,stratum_1000,branch_outcome_mismatch,0
 N-14:v11.5.0.beta:atomic,stratum_1000,stops_bound_mismatch,0
 N-14:v11.5.0.beta:atomic,stratum_1000,rate_fail,0
 N-14:v11.5.0.beta:atomic,stratum_1000,rate_exact,8000000
+N-14:v11.5.0.beta:atomic,stratum_1000,recovered_fail,0
+N-14:v11.5.0.beta:atomic,stratum_1000,recovered_exact,0
 N-14:v11.5.0.beta:atomic,stratum_1000,wiring_fail,0
 N-14:v11.5.0.beta:atomic,stratum_1000,provider_calls_helper,4
 N-14:v11.5.0.beta:atomic,stratum_1000,provider_calls_other,0
+N-14:v11.5.0.beta:atomic,stratum_1000,helper_calls_valid,4
+N-14:v11.5.0.beta:atomic,stratum_1000,helper_calls_invalid,0
 N-14:v11.5.0.beta:atomic,stratum_1000,helper_pair_exact,4
 N-14:v11.5.0.beta:atomic,stratum_1000,lifetimes_from_call_fail,0
 N-14:v11.5.0.beta:atomic,stratum_1000,model_missing,0
@@ -3833,6 +4016,7 @@ N-14:v11.5.0.beta:atomic,stratum_1000,chunks,4
 N-14:v11.5.0.beta:atomic,stratum_1000,chunk_overlap,0
 N-14:v11.5.0.beta:atomic,stratum_1000,process_agrees,True
 N-14:v11.5.0.beta:atomic,stratum_1000,rate_max_rel,0x0.0p+0
+N-14:v11.5.0.beta:atomic,stratum_1000,recovered_max_rel,0x1.12fb53980166dp-53
 N-14:v11.5.0.beta:atomic,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 N-14:v11.5.0.beta:atomic,stratum_1000,sum.all,0x1.c7b4c50a00322p+33
 N-14:v11.5.0.beta:atomic,stratum_1000,bin.all.0,400892
@@ -3930,6 +4114,9 @@ N-14:v11.5.0.beta:atomic,stratum_1000,clock.atom_capture.max_abs_physical_ns,0x1
 O-16:v11.4.2:stopping,meta,binary_sha256,963743dfbf9916472901a78cfc6b227aec56c6670e41245d934e38a98566987c
 O-16:v11.4.2:stopping,meta,chunk_files_sha256,019f47186940e2a57244518a9064263a59cd2f8cb7c89fa14332c1a7d1e534ce
 O-16:v11.4.2:stopping,meta,switch_on,True
+O-16:v11.4.2:stopping,meta,analysis_version,2
+O-16:v11.4.2:stopping,meta,provenance_problems,0
+O-16:v11.4.2:stopping,meta,provenance_first,-
 O-16:v11.4.2:stopping,group,events,12000000
 O-16:v11.4.2:stopping,group,duplicates,0
 O-16:v11.4.2:stopping,group,out_of_range,0
@@ -3942,9 +4129,13 @@ O-16:v11.4.2:stopping,group,branch_outcome_mismatch,0
 O-16:v11.4.2:stopping,group,stops_bound_mismatch,0
 O-16:v11.4.2:stopping,group,rate_fail,0
 O-16:v11.4.2:stopping,group,rate_exact,12000000
+O-16:v11.4.2:stopping,group,recovered_fail,0
+O-16:v11.4.2:stopping,group,recovered_exact,0
 O-16:v11.4.2:stopping,group,wiring_fail,0
 O-16:v11.4.2:stopping,group,provider_calls_helper,0
 O-16:v11.4.2:stopping,group,provider_calls_other,0
+O-16:v11.4.2:stopping,group,helper_calls_valid,0
+O-16:v11.4.2:stopping,group,helper_calls_invalid,0
 O-16:v11.4.2:stopping,group,helper_pair_exact,0
 O-16:v11.4.2:stopping,group,lifetimes_from_call_fail,0
 O-16:v11.4.2:stopping,group,model_missing,0
@@ -3958,6 +4149,7 @@ O-16:v11.4.2:stopping,group,chunks,6
 O-16:v11.4.2:stopping,group,chunk_overlap,0
 O-16:v11.4.2:stopping,group,process_agrees,True
 O-16:v11.4.2:stopping,group,rate_max_rel,0x0.0p+0
+O-16:v11.4.2:stopping,group,recovered_max_rel,0x0.0p+0
 O-16:v11.4.2:stopping,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.4.2:stopping,group,sum.all,0x1.41258922106e7p+34
 O-16:v11.4.2:stopping,group,bin.all.0,599193
@@ -4064,9 +4256,13 @@ O-16:v11.4.2:stopping,stratum_0,branch_outcome_mismatch,0
 O-16:v11.4.2:stopping,stratum_0,stops_bound_mismatch,0
 O-16:v11.4.2:stopping,stratum_0,rate_fail,0
 O-16:v11.4.2:stopping,stratum_0,rate_exact,4000000
+O-16:v11.4.2:stopping,stratum_0,recovered_fail,0
+O-16:v11.4.2:stopping,stratum_0,recovered_exact,0
 O-16:v11.4.2:stopping,stratum_0,wiring_fail,0
 O-16:v11.4.2:stopping,stratum_0,provider_calls_helper,0
 O-16:v11.4.2:stopping,stratum_0,provider_calls_other,0
+O-16:v11.4.2:stopping,stratum_0,helper_calls_valid,0
+O-16:v11.4.2:stopping,stratum_0,helper_calls_invalid,0
 O-16:v11.4.2:stopping,stratum_0,helper_pair_exact,0
 O-16:v11.4.2:stopping,stratum_0,lifetimes_from_call_fail,0
 O-16:v11.4.2:stopping,stratum_0,model_missing,0
@@ -4080,6 +4276,7 @@ O-16:v11.4.2:stopping,stratum_0,chunks,2
 O-16:v11.4.2:stopping,stratum_0,chunk_overlap,0
 O-16:v11.4.2:stopping,stratum_0,process_agrees,True
 O-16:v11.4.2:stopping,stratum_0,rate_max_rel,0x0.0p+0
+O-16:v11.4.2:stopping,stratum_0,recovered_max_rel,0x0.0p+0
 O-16:v11.4.2:stopping,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.4.2:stopping,stratum_0,sum.all,0x1.ac324554b286cp+32
 O-16:v11.4.2:stopping,stratum_0,bin.all.0,199380
@@ -4186,9 +4383,13 @@ O-16:v11.4.2:stopping,stratum_250,branch_outcome_mismatch,0
 O-16:v11.4.2:stopping,stratum_250,stops_bound_mismatch,0
 O-16:v11.4.2:stopping,stratum_250,rate_fail,0
 O-16:v11.4.2:stopping,stratum_250,rate_exact,4000000
+O-16:v11.4.2:stopping,stratum_250,recovered_fail,0
+O-16:v11.4.2:stopping,stratum_250,recovered_exact,0
 O-16:v11.4.2:stopping,stratum_250,wiring_fail,0
 O-16:v11.4.2:stopping,stratum_250,provider_calls_helper,0
 O-16:v11.4.2:stopping,stratum_250,provider_calls_other,0
+O-16:v11.4.2:stopping,stratum_250,helper_calls_valid,0
+O-16:v11.4.2:stopping,stratum_250,helper_calls_invalid,0
 O-16:v11.4.2:stopping,stratum_250,helper_pair_exact,0
 O-16:v11.4.2:stopping,stratum_250,lifetimes_from_call_fail,0
 O-16:v11.4.2:stopping,stratum_250,model_missing,0
@@ -4202,6 +4403,7 @@ O-16:v11.4.2:stopping,stratum_250,chunks,2
 O-16:v11.4.2:stopping,stratum_250,chunk_overlap,0
 O-16:v11.4.2:stopping,stratum_250,process_agrees,True
 O-16:v11.4.2:stopping,stratum_250,rate_max_rel,0x0.0p+0
+O-16:v11.4.2:stopping,stratum_250,recovered_max_rel,0x0.0p+0
 O-16:v11.4.2:stopping,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.4.2:stopping,stratum_250,sum.all,0x1.ac28b245718b0p+32
 O-16:v11.4.2:stopping,stratum_250,bin.all.0,199468
@@ -4308,9 +4510,13 @@ O-16:v11.4.2:stopping,stratum_1000,branch_outcome_mismatch,0
 O-16:v11.4.2:stopping,stratum_1000,stops_bound_mismatch,0
 O-16:v11.4.2:stopping,stratum_1000,rate_fail,0
 O-16:v11.4.2:stopping,stratum_1000,rate_exact,4000000
+O-16:v11.4.2:stopping,stratum_1000,recovered_fail,0
+O-16:v11.4.2:stopping,stratum_1000,recovered_exact,0
 O-16:v11.4.2:stopping,stratum_1000,wiring_fail,0
 O-16:v11.4.2:stopping,stratum_1000,provider_calls_helper,0
 O-16:v11.4.2:stopping,stratum_1000,provider_calls_other,0
+O-16:v11.4.2:stopping,stratum_1000,helper_calls_valid,0
+O-16:v11.4.2:stopping,stratum_1000,helper_calls_invalid,0
 O-16:v11.4.2:stopping,stratum_1000,helper_pair_exact,0
 O-16:v11.4.2:stopping,stratum_1000,lifetimes_from_call_fail,0
 O-16:v11.4.2:stopping,stratum_1000,model_missing,0
@@ -4324,6 +4530,7 @@ O-16:v11.4.2:stopping,stratum_1000,chunks,2
 O-16:v11.4.2:stopping,stratum_1000,chunk_overlap,0
 O-16:v11.4.2:stopping,stratum_1000,process_agrees,True
 O-16:v11.4.2:stopping,stratum_1000,rate_max_rel,0x0.0p+0
+O-16:v11.4.2:stopping,stratum_1000,recovered_max_rel,0x0.0p+0
 O-16:v11.4.2:stopping,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.4.2:stopping,stratum_1000,sum.all,0x1.ac3b2cee1da80p+32
 O-16:v11.4.2:stopping,stratum_1000,bin.all.0,200345
@@ -4421,6 +4628,9 @@ O-16:v11.4.2:stopping,stratum_1000,clock.atom_capture.max_abs_physical_ns,0x0.0p
 O-16:v11.4.2:atomic,meta,binary_sha256,963743dfbf9916472901a78cfc6b227aec56c6670e41245d934e38a98566987c
 O-16:v11.4.2:atomic,meta,chunk_files_sha256,4caf736ee1efed64bb6df09b1fc940bd437c8d320f489d90b16208bcdcb729a6
 O-16:v11.4.2:atomic,meta,switch_on,True
+O-16:v11.4.2:atomic,meta,analysis_version,2
+O-16:v11.4.2:atomic,meta,provenance_problems,0
+O-16:v11.4.2:atomic,meta,provenance_first,-
 O-16:v11.4.2:atomic,group,events,12000000
 O-16:v11.4.2:atomic,group,duplicates,0
 O-16:v11.4.2:atomic,group,out_of_range,0
@@ -4433,9 +4643,13 @@ O-16:v11.4.2:atomic,group,branch_outcome_mismatch,0
 O-16:v11.4.2:atomic,group,stops_bound_mismatch,0
 O-16:v11.4.2:atomic,group,rate_fail,0
 O-16:v11.4.2:atomic,group,rate_exact,12000000
+O-16:v11.4.2:atomic,group,recovered_fail,0
+O-16:v11.4.2:atomic,group,recovered_exact,0
 O-16:v11.4.2:atomic,group,wiring_fail,0
 O-16:v11.4.2:atomic,group,provider_calls_helper,6
 O-16:v11.4.2:atomic,group,provider_calls_other,0
+O-16:v11.4.2:atomic,group,helper_calls_valid,6
+O-16:v11.4.2:atomic,group,helper_calls_invalid,0
 O-16:v11.4.2:atomic,group,helper_pair_exact,6
 O-16:v11.4.2:atomic,group,lifetimes_from_call_fail,0
 O-16:v11.4.2:atomic,group,model_missing,0
@@ -4449,6 +4663,7 @@ O-16:v11.4.2:atomic,group,chunks,6
 O-16:v11.4.2:atomic,group,chunk_overlap,0
 O-16:v11.4.2:atomic,group,process_agrees,True
 O-16:v11.4.2:atomic,group,rate_max_rel,0x0.0p+0
+O-16:v11.4.2:atomic,group,recovered_max_rel,0x1.1317809396fe3p-53
 O-16:v11.4.2:atomic,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.4.2:atomic,group,sum.all,0x1.41424609113cep+34
 O-16:v11.4.2:atomic,group,bin.all.0,600524
@@ -4555,9 +4770,13 @@ O-16:v11.4.2:atomic,stratum_0,branch_outcome_mismatch,0
 O-16:v11.4.2:atomic,stratum_0,stops_bound_mismatch,0
 O-16:v11.4.2:atomic,stratum_0,rate_fail,0
 O-16:v11.4.2:atomic,stratum_0,rate_exact,4000000
+O-16:v11.4.2:atomic,stratum_0,recovered_fail,0
+O-16:v11.4.2:atomic,stratum_0,recovered_exact,0
 O-16:v11.4.2:atomic,stratum_0,wiring_fail,0
 O-16:v11.4.2:atomic,stratum_0,provider_calls_helper,2
 O-16:v11.4.2:atomic,stratum_0,provider_calls_other,0
+O-16:v11.4.2:atomic,stratum_0,helper_calls_valid,2
+O-16:v11.4.2:atomic,stratum_0,helper_calls_invalid,0
 O-16:v11.4.2:atomic,stratum_0,helper_pair_exact,2
 O-16:v11.4.2:atomic,stratum_0,lifetimes_from_call_fail,0
 O-16:v11.4.2:atomic,stratum_0,model_missing,0
@@ -4571,6 +4790,7 @@ O-16:v11.4.2:atomic,stratum_0,chunks,2
 O-16:v11.4.2:atomic,stratum_0,chunk_overlap,0
 O-16:v11.4.2:atomic,stratum_0,process_agrees,True
 O-16:v11.4.2:atomic,stratum_0,rate_max_rel,0x0.0p+0
+O-16:v11.4.2:atomic,stratum_0,recovered_max_rel,0x1.1317809396fe3p-53
 O-16:v11.4.2:atomic,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.4.2:atomic,stratum_0,sum.all,0x1.ac233c6570c78p+32
 O-16:v11.4.2:atomic,stratum_0,bin.all.0,200006
@@ -4677,9 +4897,13 @@ O-16:v11.4.2:atomic,stratum_250,branch_outcome_mismatch,0
 O-16:v11.4.2:atomic,stratum_250,stops_bound_mismatch,0
 O-16:v11.4.2:atomic,stratum_250,rate_fail,0
 O-16:v11.4.2:atomic,stratum_250,rate_exact,4000000
+O-16:v11.4.2:atomic,stratum_250,recovered_fail,0
+O-16:v11.4.2:atomic,stratum_250,recovered_exact,0
 O-16:v11.4.2:atomic,stratum_250,wiring_fail,0
 O-16:v11.4.2:atomic,stratum_250,provider_calls_helper,2
 O-16:v11.4.2:atomic,stratum_250,provider_calls_other,0
+O-16:v11.4.2:atomic,stratum_250,helper_calls_valid,2
+O-16:v11.4.2:atomic,stratum_250,helper_calls_invalid,0
 O-16:v11.4.2:atomic,stratum_250,helper_pair_exact,2
 O-16:v11.4.2:atomic,stratum_250,lifetimes_from_call_fail,0
 O-16:v11.4.2:atomic,stratum_250,model_missing,0
@@ -4693,6 +4917,7 @@ O-16:v11.4.2:atomic,stratum_250,chunks,2
 O-16:v11.4.2:atomic,stratum_250,chunk_overlap,0
 O-16:v11.4.2:atomic,stratum_250,process_agrees,True
 O-16:v11.4.2:atomic,stratum_250,rate_max_rel,0x0.0p+0
+O-16:v11.4.2:atomic,stratum_250,recovered_max_rel,0x1.1317809396fe3p-53
 O-16:v11.4.2:atomic,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.4.2:atomic,stratum_250,sum.all,0x1.ac749501704d0p+32
 O-16:v11.4.2:atomic,stratum_250,bin.all.0,200076
@@ -4799,9 +5024,13 @@ O-16:v11.4.2:atomic,stratum_1000,branch_outcome_mismatch,0
 O-16:v11.4.2:atomic,stratum_1000,stops_bound_mismatch,0
 O-16:v11.4.2:atomic,stratum_1000,rate_fail,0
 O-16:v11.4.2:atomic,stratum_1000,rate_exact,4000000
+O-16:v11.4.2:atomic,stratum_1000,recovered_fail,0
+O-16:v11.4.2:atomic,stratum_1000,recovered_exact,0
 O-16:v11.4.2:atomic,stratum_1000,wiring_fail,0
 O-16:v11.4.2:atomic,stratum_1000,provider_calls_helper,2
 O-16:v11.4.2:atomic,stratum_1000,provider_calls_other,0
+O-16:v11.4.2:atomic,stratum_1000,helper_calls_valid,2
+O-16:v11.4.2:atomic,stratum_1000,helper_calls_invalid,0
 O-16:v11.4.2:atomic,stratum_1000,helper_pair_exact,2
 O-16:v11.4.2:atomic,stratum_1000,lifetimes_from_call_fail,0
 O-16:v11.4.2:atomic,stratum_1000,model_missing,0
@@ -4815,6 +5044,7 @@ O-16:v11.4.2:atomic,stratum_1000,chunks,2
 O-16:v11.4.2:atomic,stratum_1000,chunk_overlap,0
 O-16:v11.4.2:atomic,stratum_1000,process_agrees,True
 O-16:v11.4.2:atomic,stratum_1000,rate_max_rel,0x0.0p+0
+O-16:v11.4.2:atomic,stratum_1000,recovered_max_rel,0x1.1317809396fe3p-53
 O-16:v11.4.2:atomic,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.4.2:atomic,stratum_1000,sum.all,0x1.ac7146bd63deep+32
 O-16:v11.4.2:atomic,stratum_1000,bin.all.0,200442
@@ -4912,6 +5142,9 @@ O-16:v11.4.2:atomic,stratum_1000,clock.atom_capture.max_abs_physical_ns,0x1.f400
 O-16:v11.5.0.beta:stopping,meta,binary_sha256,96686c4e861f2122741b956cd25eb165bef9d53d03956ff89c7fe018039ece34
 O-16:v11.5.0.beta:stopping,meta,chunk_files_sha256,4dd8c74ceeff3ccb005344abbbb6acafb8c3caab7f834996d3d973b2babc8c9d
 O-16:v11.5.0.beta:stopping,meta,switch_on,True
+O-16:v11.5.0.beta:stopping,meta,analysis_version,2
+O-16:v11.5.0.beta:stopping,meta,provenance_problems,0
+O-16:v11.5.0.beta:stopping,meta,provenance_first,-
 O-16:v11.5.0.beta:stopping,group,events,12000000
 O-16:v11.5.0.beta:stopping,group,duplicates,0
 O-16:v11.5.0.beta:stopping,group,out_of_range,0
@@ -4924,9 +5157,13 @@ O-16:v11.5.0.beta:stopping,group,branch_outcome_mismatch,0
 O-16:v11.5.0.beta:stopping,group,stops_bound_mismatch,0
 O-16:v11.5.0.beta:stopping,group,rate_fail,0
 O-16:v11.5.0.beta:stopping,group,rate_exact,12000000
+O-16:v11.5.0.beta:stopping,group,recovered_fail,0
+O-16:v11.5.0.beta:stopping,group,recovered_exact,0
 O-16:v11.5.0.beta:stopping,group,wiring_fail,0
 O-16:v11.5.0.beta:stopping,group,provider_calls_helper,0
 O-16:v11.5.0.beta:stopping,group,provider_calls_other,0
+O-16:v11.5.0.beta:stopping,group,helper_calls_valid,0
+O-16:v11.5.0.beta:stopping,group,helper_calls_invalid,0
 O-16:v11.5.0.beta:stopping,group,helper_pair_exact,0
 O-16:v11.5.0.beta:stopping,group,lifetimes_from_call_fail,0
 O-16:v11.5.0.beta:stopping,group,model_missing,0
@@ -4940,6 +5177,7 @@ O-16:v11.5.0.beta:stopping,group,chunks,6
 O-16:v11.5.0.beta:stopping,group,chunk_overlap,0
 O-16:v11.5.0.beta:stopping,group,process_agrees,True
 O-16:v11.5.0.beta:stopping,group,rate_max_rel,0x0.0p+0
+O-16:v11.5.0.beta:stopping,group,recovered_max_rel,0x0.0p+0
 O-16:v11.5.0.beta:stopping,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.5.0.beta:stopping,group,sum.all,0x1.4134aa9bca473p+34
 O-16:v11.5.0.beta:stopping,group,bin.all.0,600458
@@ -5046,9 +5284,13 @@ O-16:v11.5.0.beta:stopping,stratum_0,branch_outcome_mismatch,0
 O-16:v11.5.0.beta:stopping,stratum_0,stops_bound_mismatch,0
 O-16:v11.5.0.beta:stopping,stratum_0,rate_fail,0
 O-16:v11.5.0.beta:stopping,stratum_0,rate_exact,4000000
+O-16:v11.5.0.beta:stopping,stratum_0,recovered_fail,0
+O-16:v11.5.0.beta:stopping,stratum_0,recovered_exact,0
 O-16:v11.5.0.beta:stopping,stratum_0,wiring_fail,0
 O-16:v11.5.0.beta:stopping,stratum_0,provider_calls_helper,0
 O-16:v11.5.0.beta:stopping,stratum_0,provider_calls_other,0
+O-16:v11.5.0.beta:stopping,stratum_0,helper_calls_valid,0
+O-16:v11.5.0.beta:stopping,stratum_0,helper_calls_invalid,0
 O-16:v11.5.0.beta:stopping,stratum_0,helper_pair_exact,0
 O-16:v11.5.0.beta:stopping,stratum_0,lifetimes_from_call_fail,0
 O-16:v11.5.0.beta:stopping,stratum_0,model_missing,0
@@ -5062,6 +5304,7 @@ O-16:v11.5.0.beta:stopping,stratum_0,chunks,2
 O-16:v11.5.0.beta:stopping,stratum_0,chunk_overlap,0
 O-16:v11.5.0.beta:stopping,stratum_0,process_agrees,True
 O-16:v11.5.0.beta:stopping,stratum_0,rate_max_rel,0x0.0p+0
+O-16:v11.5.0.beta:stopping,stratum_0,recovered_max_rel,0x0.0p+0
 O-16:v11.5.0.beta:stopping,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.5.0.beta:stopping,stratum_0,sum.all,0x1.ac4652c6e9440p+32
 O-16:v11.5.0.beta:stopping,stratum_0,bin.all.0,200703
@@ -5168,9 +5411,13 @@ O-16:v11.5.0.beta:stopping,stratum_250,branch_outcome_mismatch,0
 O-16:v11.5.0.beta:stopping,stratum_250,stops_bound_mismatch,0
 O-16:v11.5.0.beta:stopping,stratum_250,rate_fail,0
 O-16:v11.5.0.beta:stopping,stratum_250,rate_exact,4000000
+O-16:v11.5.0.beta:stopping,stratum_250,recovered_fail,0
+O-16:v11.5.0.beta:stopping,stratum_250,recovered_exact,0
 O-16:v11.5.0.beta:stopping,stratum_250,wiring_fail,0
 O-16:v11.5.0.beta:stopping,stratum_250,provider_calls_helper,0
 O-16:v11.5.0.beta:stopping,stratum_250,provider_calls_other,0
+O-16:v11.5.0.beta:stopping,stratum_250,helper_calls_valid,0
+O-16:v11.5.0.beta:stopping,stratum_250,helper_calls_invalid,0
 O-16:v11.5.0.beta:stopping,stratum_250,helper_pair_exact,0
 O-16:v11.5.0.beta:stopping,stratum_250,lifetimes_from_call_fail,0
 O-16:v11.5.0.beta:stopping,stratum_250,model_missing,0
@@ -5184,6 +5431,7 @@ O-16:v11.5.0.beta:stopping,stratum_250,chunks,2
 O-16:v11.5.0.beta:stopping,stratum_250,chunk_overlap,0
 O-16:v11.5.0.beta:stopping,stratum_250,process_agrees,True
 O-16:v11.5.0.beta:stopping,stratum_250,rate_max_rel,0x0.0p+0
+O-16:v11.5.0.beta:stopping,stratum_250,recovered_max_rel,0x0.0p+0
 O-16:v11.5.0.beta:stopping,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.5.0.beta:stopping,stratum_250,sum.all,0x1.ac86775b77b6cp+32
 O-16:v11.5.0.beta:stopping,stratum_250,bin.all.0,199910
@@ -5290,9 +5538,13 @@ O-16:v11.5.0.beta:stopping,stratum_1000,branch_outcome_mismatch,0
 O-16:v11.5.0.beta:stopping,stratum_1000,stops_bound_mismatch,0
 O-16:v11.5.0.beta:stopping,stratum_1000,rate_fail,0
 O-16:v11.5.0.beta:stopping,stratum_1000,rate_exact,4000000
+O-16:v11.5.0.beta:stopping,stratum_1000,recovered_fail,0
+O-16:v11.5.0.beta:stopping,stratum_1000,recovered_exact,0
 O-16:v11.5.0.beta:stopping,stratum_1000,wiring_fail,0
 O-16:v11.5.0.beta:stopping,stratum_1000,provider_calls_helper,0
 O-16:v11.5.0.beta:stopping,stratum_1000,provider_calls_other,0
+O-16:v11.5.0.beta:stopping,stratum_1000,helper_calls_valid,0
+O-16:v11.5.0.beta:stopping,stratum_1000,helper_calls_invalid,0
 O-16:v11.5.0.beta:stopping,stratum_1000,helper_pair_exact,0
 O-16:v11.5.0.beta:stopping,stratum_1000,lifetimes_from_call_fail,0
 O-16:v11.5.0.beta:stopping,stratum_1000,model_missing,0
@@ -5306,6 +5558,7 @@ O-16:v11.5.0.beta:stopping,stratum_1000,chunks,2
 O-16:v11.5.0.beta:stopping,stratum_1000,chunk_overlap,0
 O-16:v11.5.0.beta:stopping,stratum_1000,process_agrees,True
 O-16:v11.5.0.beta:stopping,stratum_1000,rate_max_rel,0x0.0p+0
+O-16:v11.5.0.beta:stopping,stratum_1000,recovered_max_rel,0x0.0p+0
 O-16:v11.5.0.beta:stopping,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.5.0.beta:stopping,stratum_1000,sum.all,0x1.ac05e04cc8221p+32
 O-16:v11.5.0.beta:stopping,stratum_1000,bin.all.0,199845
@@ -5403,6 +5656,9 @@ O-16:v11.5.0.beta:stopping,stratum_1000,clock.atom_capture.max_abs_physical_ns,0
 O-16:v11.5.0.beta:atomic,meta,binary_sha256,96686c4e861f2122741b956cd25eb165bef9d53d03956ff89c7fe018039ece34
 O-16:v11.5.0.beta:atomic,meta,chunk_files_sha256,fc2ccbabb530cbdcf4c1ab74eb0e931de98ec044882387b0d06374705d88e85b
 O-16:v11.5.0.beta:atomic,meta,switch_on,True
+O-16:v11.5.0.beta:atomic,meta,analysis_version,2
+O-16:v11.5.0.beta:atomic,meta,provenance_problems,0
+O-16:v11.5.0.beta:atomic,meta,provenance_first,-
 O-16:v11.5.0.beta:atomic,group,events,12000000
 O-16:v11.5.0.beta:atomic,group,duplicates,0
 O-16:v11.5.0.beta:atomic,group,out_of_range,0
@@ -5415,9 +5671,13 @@ O-16:v11.5.0.beta:atomic,group,branch_outcome_mismatch,0
 O-16:v11.5.0.beta:atomic,group,stops_bound_mismatch,0
 O-16:v11.5.0.beta:atomic,group,rate_fail,0
 O-16:v11.5.0.beta:atomic,group,rate_exact,12000000
+O-16:v11.5.0.beta:atomic,group,recovered_fail,0
+O-16:v11.5.0.beta:atomic,group,recovered_exact,0
 O-16:v11.5.0.beta:atomic,group,wiring_fail,0
 O-16:v11.5.0.beta:atomic,group,provider_calls_helper,6
 O-16:v11.5.0.beta:atomic,group,provider_calls_other,0
+O-16:v11.5.0.beta:atomic,group,helper_calls_valid,6
+O-16:v11.5.0.beta:atomic,group,helper_calls_invalid,0
 O-16:v11.5.0.beta:atomic,group,helper_pair_exact,6
 O-16:v11.5.0.beta:atomic,group,lifetimes_from_call_fail,0
 O-16:v11.5.0.beta:atomic,group,model_missing,0
@@ -5431,6 +5691,7 @@ O-16:v11.5.0.beta:atomic,group,chunks,6
 O-16:v11.5.0.beta:atomic,group,chunk_overlap,0
 O-16:v11.5.0.beta:atomic,group,process_agrees,True
 O-16:v11.5.0.beta:atomic,group,rate_max_rel,0x0.0p+0
+O-16:v11.5.0.beta:atomic,group,recovered_max_rel,0x1.1317809396fe3p-53
 O-16:v11.5.0.beta:atomic,group,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.5.0.beta:atomic,group,sum.all,0x1.411a91cc37a92p+34
 O-16:v11.5.0.beta:atomic,group,bin.all.0,599412
@@ -5537,9 +5798,13 @@ O-16:v11.5.0.beta:atomic,stratum_0,branch_outcome_mismatch,0
 O-16:v11.5.0.beta:atomic,stratum_0,stops_bound_mismatch,0
 O-16:v11.5.0.beta:atomic,stratum_0,rate_fail,0
 O-16:v11.5.0.beta:atomic,stratum_0,rate_exact,4000000
+O-16:v11.5.0.beta:atomic,stratum_0,recovered_fail,0
+O-16:v11.5.0.beta:atomic,stratum_0,recovered_exact,0
 O-16:v11.5.0.beta:atomic,stratum_0,wiring_fail,0
 O-16:v11.5.0.beta:atomic,stratum_0,provider_calls_helper,2
 O-16:v11.5.0.beta:atomic,stratum_0,provider_calls_other,0
+O-16:v11.5.0.beta:atomic,stratum_0,helper_calls_valid,2
+O-16:v11.5.0.beta:atomic,stratum_0,helper_calls_invalid,0
 O-16:v11.5.0.beta:atomic,stratum_0,helper_pair_exact,2
 O-16:v11.5.0.beta:atomic,stratum_0,lifetimes_from_call_fail,0
 O-16:v11.5.0.beta:atomic,stratum_0,model_missing,0
@@ -5553,6 +5818,7 @@ O-16:v11.5.0.beta:atomic,stratum_0,chunks,2
 O-16:v11.5.0.beta:atomic,stratum_0,chunk_overlap,0
 O-16:v11.5.0.beta:atomic,stratum_0,process_agrees,True
 O-16:v11.5.0.beta:atomic,stratum_0,rate_max_rel,0x0.0p+0
+O-16:v11.5.0.beta:atomic,stratum_0,recovered_max_rel,0x1.1317809396fe3p-53
 O-16:v11.5.0.beta:atomic,stratum_0,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.5.0.beta:atomic,stratum_0,sum.all,0x1.ac6c1f2204eb4p+32
 O-16:v11.5.0.beta:atomic,stratum_0,bin.all.0,199846
@@ -5659,9 +5925,13 @@ O-16:v11.5.0.beta:atomic,stratum_250,branch_outcome_mismatch,0
 O-16:v11.5.0.beta:atomic,stratum_250,stops_bound_mismatch,0
 O-16:v11.5.0.beta:atomic,stratum_250,rate_fail,0
 O-16:v11.5.0.beta:atomic,stratum_250,rate_exact,4000000
+O-16:v11.5.0.beta:atomic,stratum_250,recovered_fail,0
+O-16:v11.5.0.beta:atomic,stratum_250,recovered_exact,0
 O-16:v11.5.0.beta:atomic,stratum_250,wiring_fail,0
 O-16:v11.5.0.beta:atomic,stratum_250,provider_calls_helper,2
 O-16:v11.5.0.beta:atomic,stratum_250,provider_calls_other,0
+O-16:v11.5.0.beta:atomic,stratum_250,helper_calls_valid,2
+O-16:v11.5.0.beta:atomic,stratum_250,helper_calls_invalid,0
 O-16:v11.5.0.beta:atomic,stratum_250,helper_pair_exact,2
 O-16:v11.5.0.beta:atomic,stratum_250,lifetimes_from_call_fail,0
 O-16:v11.5.0.beta:atomic,stratum_250,model_missing,0
@@ -5675,6 +5945,7 @@ O-16:v11.5.0.beta:atomic,stratum_250,chunks,2
 O-16:v11.5.0.beta:atomic,stratum_250,chunk_overlap,0
 O-16:v11.5.0.beta:atomic,stratum_250,process_agrees,True
 O-16:v11.5.0.beta:atomic,stratum_250,rate_max_rel,0x0.0p+0
+O-16:v11.5.0.beta:atomic,stratum_250,recovered_max_rel,0x1.1317809396fe3p-53
 O-16:v11.5.0.beta:atomic,stratum_250,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.5.0.beta:atomic,stratum_250,sum.all,0x1.abb896025d998p+32
 O-16:v11.5.0.beta:atomic,stratum_250,bin.all.0,200496
@@ -5781,9 +6052,13 @@ O-16:v11.5.0.beta:atomic,stratum_1000,branch_outcome_mismatch,0
 O-16:v11.5.0.beta:atomic,stratum_1000,stops_bound_mismatch,0
 O-16:v11.5.0.beta:atomic,stratum_1000,rate_fail,0
 O-16:v11.5.0.beta:atomic,stratum_1000,rate_exact,4000000
+O-16:v11.5.0.beta:atomic,stratum_1000,recovered_fail,0
+O-16:v11.5.0.beta:atomic,stratum_1000,recovered_exact,0
 O-16:v11.5.0.beta:atomic,stratum_1000,wiring_fail,0
 O-16:v11.5.0.beta:atomic,stratum_1000,provider_calls_helper,2
 O-16:v11.5.0.beta:atomic,stratum_1000,provider_calls_other,0
+O-16:v11.5.0.beta:atomic,stratum_1000,helper_calls_valid,2
+O-16:v11.5.0.beta:atomic,stratum_1000,helper_calls_invalid,0
 O-16:v11.5.0.beta:atomic,stratum_1000,helper_pair_exact,2
 O-16:v11.5.0.beta:atomic,stratum_1000,lifetimes_from_call_fail,0
 O-16:v11.5.0.beta:atomic,stratum_1000,model_missing,0
@@ -5797,6 +6072,7 @@ O-16:v11.5.0.beta:atomic,stratum_1000,chunks,2
 O-16:v11.5.0.beta:atomic,stratum_1000,chunk_overlap,0
 O-16:v11.5.0.beta:atomic,stratum_1000,process_agrees,True
 O-16:v11.5.0.beta:atomic,stratum_1000,rate_max_rel,0x0.0p+0
+O-16:v11.5.0.beta:atomic,stratum_1000,recovered_max_rel,0x1.1317809396fe3p-53
 O-16:v11.5.0.beta:atomic,stratum_1000,rate_components,0x0.0p+0 0x0.0p+0 0x0.0p+0
 O-16:v11.5.0.beta:atomic,stratum_1000,sum.all,0x1.ac45920c7c1fap+32
 O-16:v11.5.0.beta:atomic,stratum_1000,bin.all.0,199070

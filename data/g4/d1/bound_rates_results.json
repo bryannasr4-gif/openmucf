@@ -888,7 +888,8 @@
    "O-16:v11.5.0.beta:stopping:stop_capture@1000",
    "O-16:v11.5.0.beta:stopping:stop_capture@250"
   ],
-  "physical_status": "FAIL"
+  "physical_status": "FAIL",
+  "roster_problems": []
  },
  "RATE_RESULTS": {
   "groups": {
@@ -902,7 +903,56 @@
      "exact_events": 60000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 60000000,
+     "recovered_max_relative_deviation": "0x0.0p+0",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "C-12:v11.4.2:stopping": {
@@ -915,7 +965,56 @@
      "exact_events": 60000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "C-12:v11.5.0.beta:atomic": {
@@ -928,7 +1027,56 @@
      "exact_events": 60000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 60000000,
+     "recovered_max_relative_deviation": "0x0.0p+0",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "C-12:v11.5.0.beta:stopping": {
@@ -941,7 +1089,56 @@
      "exact_events": 60000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "N-14:v11.4.2:atomic": {
@@ -954,7 +1151,56 @@
      "exact_events": 24000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "N-14:v11.4.2:stopping": {
@@ -967,7 +1213,56 @@
      "exact_events": 24000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "N-14:v11.5.0.beta:atomic": {
@@ -980,7 +1275,56 @@
      "exact_events": 24000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "N-14:v11.5.0.beta:stopping": {
@@ -993,7 +1337,56 @@
      "exact_events": 24000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "O-16:v11.4.2:atomic": {
@@ -1006,7 +1399,56 @@
      "exact_events": 12000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "O-16:v11.4.2:stopping": {
@@ -1019,7 +1461,56 @@
      "exact_events": 12000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "O-16:v11.5.0.beta:atomic": {
@@ -1032,7 +1523,56 @@
      "exact_events": 12000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     }
     }
    },
    "O-16:v11.5.0.beta:stopping": {
@@ -1045,14 +1585,87 @@
      "exact_events": 12000000,
      "max_relative_deviation": "0x0.0p+0",
      "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
      "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
     }
    }
   },
+  "roster_problems": [],
   "status": "PASS"
  },
  "THEORY_STATUS": {
   "accuracy": "not established: no term of the physical uncertainty budget is bounded, and no independent reference is registered",
+  "problems": [
+   "equation: no source",
+   "equation: status 'UNKNOWN', not VERIFIED",
+   "equation: no statement",
+   "binding_expansion: no source",
+   "binding_expansion: status 'UNBOUNDED', not BOUNDED",
+   "binding_expansion: bound None is not a number",
+   "recoil: no source",
+   "recoil: status 'UNBOUNDED', not BOUNDED",
+   "recoil: bound None is not a number",
+   "nuclear_mass: no source",
+   "nuclear_mass: status 'UNBOUNDED', not BOUNDED",
+   "nuclear_mass: bound None is not a number",
+   "finite_size: no source",
+   "finite_size: status 'UNBOUNDED', not BOUNDED",
+   "finite_size: bound None is not a number",
+   "radiative: no source",
+   "radiative: status 'UNBOUNDED', not BOUNDED",
+   "radiative: bound None is not a number",
+   "numerical: no source",
+   "numerical: status 'IMPLEMENTATION_ONLY', not BOUNDED",
+   "numerical: bound None is not a number"
+  ],
   "qualified_roster": [],
   "screen": "SCREEN_VACUOUS",
   "status": "NOT_ESTABLISHED"
@@ -1986,6 +2599,7 @@
    }
   },
   "primary_rejections": [],
+  "roster_problems": [],
   "status": "PASS"
  }
 }

@@ -26,12 +26,12 @@
  ],
  "status": "NOT_ESTABLISHED",
  "terms": {
-  "binding_expansion": {"source": null, "value": null},
-  "equation": {"source": null, "value": null},
-  "finite_size": {"source": null, "value": null},
-  "numerical": {"source": null, "value": null},
-  "nuclear_mass": {"source": null, "value": null},
-  "radiative": {"source": null, "value": null},
-  "recoil": {"source": null, "value": null}
+  "binding_expansion": {"bound": null, "source": null, "status": "UNBOUNDED"},
+  "equation": {"source": null, "statement": null, "status": "UNKNOWN"},
+  "finite_size": {"bound": null, "source": null, "status": "UNBOUNDED"},
+  "numerical": {"bound": null, "source": null, "status": "IMPLEMENTATION_ONLY"},
+  "nuclear_mass": {"bound": null, "source": null, "status": "UNBOUNDED"},
+  "radiative": {"bound": null, "source": null, "status": "UNBOUNDED"},
+  "recoil": {"bound": null, "source": null, "status": "UNBOUNDED"}
  }
 }

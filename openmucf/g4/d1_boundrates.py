@@ -17,14 +17,15 @@ what the verification of that pair needs without Geant4:
   route), their events, seeds and start-time strata, the frozen reference pairs, the statistical limits and
   the tolerances. ``scripts/generate_g4boundrates.py`` generates it; it was committed before the production
   harvest ran.
-* :func:`summarize_chunk` and :func:`merge` -- the sufficient statistics of a harvest chunk and of a group,
-  from the files ``cpp/tools/harvest_mixture.cc`` writes with ``--bound-record on``. Standard library only, so
-  they run on a Geant4 host.
+* :func:`parse_record`, :func:`summarize_chunk` and :func:`merge` -- every record line parsed once into a
+  typed record (a nonfinite, unobserved or malformed field refuses the line before any statistic sees it),
+  and the sufficient statistics of a harvest chunk and of a group, from the files
+  ``cpp/tools/harvest_mixture.cc`` writes with ``--bound-record on``. Standard library only, so they run on
+  a Geant4 host. :data:`ANALYSIS_VERSION` names this implementation in every summary it writes.
 * the gates, from the committed summary: rates, completeness, the waiting-time distribution family and the two
   clock questions (the time the observed implementation delivers, and the physically correct time).
 
-Rates are in ns^-1, Geant4's unit; times in ns.
-"""
+Rates are in ns^-1, Geant4's unit; times in ns."""
 
 from __future__ import annotations
 
@@ -54,6 +55,12 @@ BUILDS_RELPATH = "data/g4/d1/bound_rates_builds.csv"
 RESULTS_RELPATH = "data/g4/d1/bound_rates_results.json"
 #: The status of the theory budget the physical-accuracy question needs.
 THEORY_RELPATH = "data/g4/d1/bound_rates_theory.json"
+#: The analysis implementation: 1 summarized the production harvest first; 2 parses every record into a typed,
+#: validated record before any statistic, validates the helper's provider call by nucleus, status and pair,
+#: compares the rates the atomic consumer recovers from the stored lifetimes, and authenticates every summary
+#: against the policy's registered roster. The same raw records summarized by both give the same registered
+#: outcomes (the production re-summary is committed beside the first summary).
+ANALYSIS_VERSION = 2
 
 STOPPING, ATOMIC = mixture.STOPPING, mixture.ATOMIC
 ROUTES = (STOPPING, ATOMIC)
@@ -204,15 +211,16 @@ def group_name(group: Mapping[str, Any]) -> str:
     return f"{group['isotope']}:{group['revision']}:{group['route']}"
 
 
-def chunks(group: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The production chunks of a group: ``CHUNK_EVENTS`` contiguous events each, inside one stratum."""
+def chunks(group: Mapping[str, Any], chunk_events: int = CHUNK_EVENTS) -> list[dict[str, Any]]:
+    """The production chunks of a group: ``chunk_events`` (the policy's, :data:`CHUNK_EVENTS`) contiguous
+    events each, inside one stratum."""
     out = []
     for stratum in group["strata"]:
-        if stratum["count"] % CHUNK_EVENTS:
+        if stratum["count"] % chunk_events:
             raise BoundRateError(f"{group_name(group)}: a stratum is not a whole number of chunks")
-        for k in range(stratum["count"] // CHUNK_EVENTS):
-            out.append({"t0_ns": stratum["t0_ns"], "first": stratum["first"] + k * CHUNK_EVENTS,
-                        "count": CHUNK_EVENTS})
+        for k in range(stratum["count"] // chunk_events):
+            out.append({"t0_ns": stratum["t0_ns"], "first": stratum["first"] + k * chunk_events,
+                        "count": chunk_events})
     return out
 
 
@@ -309,9 +317,86 @@ def _open_text(path: Path) -> Iterator[str]:
 
 
 def _hex(token: str) -> float:
+    """A required binary64 field (``%a``): refused when unobserved (``x`` or ``-``) or not finite."""
     if token in ("x", "-"):
         raise BoundRateError(f"unobserved field {token!r} where a value is required")
-    return float.fromhex(token)
+    value = float.fromhex(token)
+    if not math.isfinite(value):
+        raise BoundRateError(f"nonfinite field {token!r}")
+    return value
+
+
+def _positive(token: str) -> float:
+    """A required finite, positive binary64 field (a lifetime)."""
+    value = _hex(token)
+    if not value > 0.0:
+        raise BoundRateError(f"field {token!r} is not positive")
+    return value
+
+
+def _nc_lifetime(token: str, ref: Pair) -> float:
+    """The stored nuclear-capture lifetime: finite and positive, or, only when the registered capture rate is
+    exactly zero, the documented representation of 1/0, +inf. Any other nonfinite value is refused."""
+    if token in ("x", "-"):
+        raise BoundRateError(f"unobserved field {token!r} where a value is required")
+    value = float.fromhex(token)
+    if math.isfinite(value) and value > 0.0:
+        return value
+    if value == math.inf and ref.capture == 0.0:
+        return value
+    raise BoundRateError(f"nuclear-capture lifetime {token!r} with a registered capture rate {ref.capture!r}")
+
+
+def _count(token: str) -> int:
+    """A required count: a non-negative decimal integer."""
+    if not token.isdigit():
+        raise BoundRateError(f"count field {token!r} is not a non-negative integer")
+    return int(token)
+
+
+#: The provider's statuses as the harness writes them: -1 no call yet, 0 kCommon, 1 kDisabled, 2 kUnsupported,
+#: 3 kRefused.
+PROVIDER_STATUSES = (-1, 0, 1, 2, 3)
+
+
+def _status(token: str) -> int:
+    if token not in {str(v) for v in PROVIDER_STATUSES}:
+        raise BoundRateError(f"provider status {token!r}")
+    return int(token)
+
+
+def _pair(status: int, capture: str, decay: str) -> tuple[float, float] | None:
+    """The pair a provider call returned: a finite capture rate >= 0 and a finite decay rate > 0 when the
+    status is common, both fields ``x`` otherwise."""
+    if status == 0:
+        c, d = _hex(capture), _positive(decay)
+        if c < 0.0:
+            raise BoundRateError(f"negative capture rate {capture!r} in a common pair")
+        return c, d
+    if (capture, decay) != ("x", "x"):
+        raise BoundRateError(f"a pair ({capture!r}, {decay!r}) with status {status}")
+    return None
+
+
+def _rel(got: float, want: float) -> float:
+    """The relative deviation of ``got`` from ``want``, typed for the two references that are not finite and
+    positive: an exact zero (a zero capture rate) and +inf (its reciprocal lifetime) match only exactly (0
+    when equal, +inf otherwise)."""
+    if want == 0.0 or math.isinf(want):
+        return 0.0 if got == want else math.inf
+    return abs(got - want) / abs(want)
+
+
+def pair_lifetimes(capture: float, decay: float) -> tuple[float, float, float]:
+    """``(1 / (c + d), 1 / d, 1 / c)`` in binary64, as the helper stores them; a zero capture rate gives the
+    documented +inf nuclear-capture lifetime."""
+    return 1.0 / (capture + decay), 1.0 / decay, (1.0 / capture if capture > 0.0 else math.inf)
+
+
+def recovered_rates(lifetimes: Sequence[float]) -> tuple[float, float]:
+    """``(decay, capture)`` as G4MuonicAtomDecay recovers them from the stored DIO and nuclear-capture
+    lifetimes (``1 / lifetime``; an infinite lifetime gives an exact zero)."""
+    return 1.0 / lifetimes[1], (0.0 if math.isinf(lifetimes[2]) else 1.0 / lifetimes[2])
 
 
 def clock_tolerance(*times: float) -> float:
@@ -331,6 +416,8 @@ class ClockTally:
     max_abs_physical: float = 0.0
 
     def add(self, observed: float, delivery: float, physical: float, *inputs: float) -> None:
+        if not all(math.isfinite(v) for v in (observed, delivery, physical, *inputs)):
+            raise BoundRateError("a clock comparison with a nonfinite time")
         self.n += 1
         tol = clock_tolerance(observed, delivery, physical, *inputs)
         rd = abs(observed - delivery)
@@ -360,6 +447,11 @@ class ClockTally:
         return cls(int(d["n"]), int(d["fail_delivery"]), int(d["fail_physical"]),
                    float.fromhex(d["max_ratio_delivery"]), float.fromhex(d["max_ratio_physical"]),
                    float.fromhex(d["max_abs_physical_ns"]))
+
+
+#: The fields of one clock category's record (:meth:`ClockTally.as_dict`); a category with any other field set
+#: is missing.
+CLOCK_FIELDS = frozenset(ClockTally().as_dict())
 
 
 class ExactSum:
@@ -436,12 +528,120 @@ def pair_digest(values: Sequence[float]) -> str:
     return h.hexdigest()
 
 
+@dataclass(frozen=True)
+class ProviderCall:
+    """A ``C`` line: a call the provider received from the muonic-atom helper or from another caller."""
+
+    event: int
+    caller: str
+    z: int
+    a: int
+    status: int
+    pair: tuple[float, float] | None
+
+
+@dataclass(frozen=True)
+class EventRecord:
+    """An ``S`` (stopping) or ``A`` (atomic) line, every field parsed and validated."""
+
+    kind: str
+    event: int
+    z: int
+    a: int
+    elapsed: float
+    outcome: str
+    branch: str
+    rate_call: tuple[int, int, int] | None
+    pair: tuple[float, float] | None
+    t_create: float
+    lifetimes: tuple[float, float, float] | None
+    counter: float
+    t_atom: float
+    model_calls: int | None
+    taus: tuple[float, ...]
+    products: tuple[float, ...]
+    electron: float | None
+
+
+def parse_record(f: Sequence[str], route: str, ref: Pair) -> ProviderCall | EventRecord:
+    """One line of ``bound.txt`` as a typed record, or :class:`BoundRateError` (or
+    ``ValueError``/``IndexError`` from a token that does not parse): an unobserved required field, a
+    nonfinite value (bar the documented zero-capture lifetime), a negative elapsed time, a count that is not
+    a non-negative integer, a section out of place or a token left over. Nothing is coerced."""
+    tag = f[0]
+    if tag == "C":
+        if len(f) != 8:
+            raise BoundRateError(f"a provider-call line of {len(f)} fields")
+        status = _status(f[5])
+        return ProviderCall(_count(f[1]), f[2], _count(f[3]), _count(f[4]), status, _pair(status, f[6], f[7]))
+    if tag != ("S" if route == STOPPING else "A"):
+        raise BoundRateError(f"a {tag!r} record on the {route} route")
+    event, z, a = _count(f[1]), _count(f[2]), _count(f[3])
+    rate_call: tuple[int, int, int] | None = None
+    pair: tuple[float, float] | None = None
+    lifetimes: tuple[float, float, float] | None = None
+    t_create = counter = t_atom = 0.0
+    branch = ""
+    if tag == "S":
+        t_before, t_after = _hex(f[4]), _hex(f[5])
+        elapsed = t_after - t_before
+        outcome = f[6]
+        if f[7] != "P":
+            raise BoundRateError("no P section")
+        if f[8] == "x":
+            m = 9
+        else:
+            rate_call = (_count(f[8]), _count(f[9]), _status(f[10]))
+            pair = _pair(rate_call[2], f[11], f[12])
+            m = 13
+    else:
+        t_create = _hex(f[4])
+        lifetimes = (_positive(f[5]), _positive(f[6]), _nc_lifetime(f[7], ref))
+        counter, elapsed, t_atom = _hex(f[8]), _hex(f[9]), _hex(f[10])
+        branch, outcome = f[11], f[12]
+        if branch not in ("D", "N"):
+            raise BoundRateError(f"branch {branch!r}")
+        if counter < 0.0:
+            raise BoundRateError("a negative interaction-length counter")
+        m = 13
+    if outcome not in ("D", "N"):
+        raise BoundRateError(f"outcome {outcome!r}")
+    if not (math.isfinite(elapsed) and elapsed >= 0.0):
+        raise BoundRateError(f"elapsed time {elapsed!r}")
+    if f[m] != "M":
+        raise BoundRateError("no M section")
+    model_calls: int | None
+    if f[m + 1] == "x":
+        model_calls, taus, n = None, tuple[float, ...](), m + 2
+    else:
+        model_calls, k = _count(f[m + 1]), _count(f[m + 2])
+        taus = tuple(_hex(t) for t in f[m + 3:m + 3 + k])
+        if len(taus) != k:
+            raise BoundRateError("fewer model-local times than the count")
+        n = m + 3 + k
+    if f[n] != "N":
+        raise BoundRateError("no N section")
+    n_products = _count(f[n + 1])
+    products = tuple(_hex(t) for t in f[n + 2:n + 2 + n_products])
+    if len(products) != n_products:
+        raise BoundRateError("fewer product times than the count")
+    e = n + 2 + n_products
+    if f[e] != "E" or len(f) != e + 2:
+        raise BoundRateError("the E section is not the last field")
+    electron = None if f[e + 1] == "-" else _hex(f[e + 1])
+    return EventRecord(tag, event, z, a, elapsed, outcome, branch, rate_call, pair, t_create, lifetimes,
+                       counter, t_atom, model_calls, taus, products, electron)
+
+
 def summarize_chunk(raw: Path, route: str, ref: Pair, t0_ns: float, first: int, count: int,
                     switch_on: bool = True) -> dict[str, Any]:
     """The sufficient statistics of one chunk: ``raw`` holds ``stops.txt``, ``bound.txt`` and
     ``bound_summary.txt`` (each possibly gzipped). ``ref`` is the frozen pair, ``t0_ns`` the stratum's start
-    time, ``first`` and ``count`` the chunk's absolute events. Every malformed, missing, duplicate or
-    unexpected record is counted, never coerced."""
+    time, ``first`` and ``count`` the chunk's absolute events. Every line is parsed by :func:`parse_record`
+    before it is counted; every malformed, missing, duplicate or unexpected record is counted, never
+    coerced. On the atomic route a helper call counts only if it names the chunk's nucleus, returns the
+    common status and a finite supported pair, and is the process's first such call; every atomic event is
+    checked against it, and without it every atomic event fails that check."""
     lam = ref.total
     want = ((ref.capture, ref.decay) if route == STOPPING else ref.lifetimes)
     s: dict[str, Any] = {"route": route, "t0_ns": t0_ns, "first": first, "count": count,
@@ -449,7 +649,9 @@ def summarize_chunk(raw: Path, route: str, ref: Pair, t0_ns: float, first: int, 
                          "captures": 0, "decays": 0, "outcome_none": 0, "outcome_both": 0,
                          "branch_outcome_mismatch": 0, "stops_bound_mismatch": 0,
                          "rate_fail": 0, "rate_exact": 0, "rate_max_rel": 0.0, "rate_components": [],
+                         "recovered_fail": 0, "recovered_exact": 0, "recovered_max_rel": 0.0,
                          "wiring_fail": 0, "provider_calls_helper": 0, "provider_calls_other": 0,
+                         "helper_calls_valid": 0, "helper_calls_invalid": 0,
                          "helper_pair_exact": 0, "lifetimes_from_call_fail": 0,
                          "model_missing": 0, "model_product_mismatch": 0, "bin_ties": 0,
                          "wiring_unobserved": 0, "model_unobserved": 0}
@@ -465,142 +667,134 @@ def summarize_chunk(raw: Path, route: str, ref: Pair, t0_ns: float, first: int, 
         if not f:
             continue
         try:
-            if f[0] == "C":
-                if f[2] == "helper":
-                    s["provider_calls_helper"] += 1
-                    if f[5] == "0":
-                        helper_pair = (_hex(f[6]), _hex(f[7]))
-                        s["helper_pair_exact"] += helper_pair == (ref.capture, ref.decay)
-                else:
-                    s["provider_calls_other"] += 1
-                continue
-            if (route == STOPPING) != (f[0] == "S"):
-                s["malformed"] += 1
-                continue
-            event = int(f[1])
-            inside = first <= event < first + count
-            if (seen[event - first] if inside else event in seen_outside):
-                s["duplicates"] += 1
-                continue
-            if inside:
-                seen[event - first] = 1
-            else:
-                seen_outside.add(event)
-                s["out_of_range"] += 1
-            s["events"] += 1
-            z, a = int(f[2]), int(f[3])
-            m = f.index("M")
-            n = f.index("N", m)
-            e = f.index("E", n)
-            model_seen = f[m + 1] != "x"
-            model_calls = int(f[m + 1]) if model_seen else 0
-            k = int(f[m + 2]) if model_seen else 0
-            taus = [_hex(t) for t in f[m + 3:m + 3 + k]]
-            s["model_unobserved"] += not model_seen
-            np_ = int(f[n + 1])
-            products = [_hex(t) for t in f[n + 2:n + 2 + np_]]
-            electron = None if f[e + 1] == "-" else _hex(f[e + 1])
-            stop_line = stops.find(event)
-            if (z, a) != (ref.z, ref.a) or stop_line is None:
-                s["stops_bound_mismatch"] += 1
-                continue
-            if route == STOPPING:
-                t_before, t_after = _hex(f[4]), _hex(f[5])
-                outcome = f[6]
-                elapsed = t_after - t_before
-                captured = stop_line[9] == "1"
-                if [stop_line[3], stop_line[4], stop_line[7], stop_line[8]] != [f[2], f[3], f[4], f[5]]:
-                    s["stops_bound_mismatch"] += 1
-                p = f.index("P")
-                if f[p + 1] == "x":
-                    s["wiring_unobserved"] += 1
-                    calls = other = status = -1
-                else:
-                    calls, other, status = int(f[p + 1]), int(f[p + 2]), int(f[p + 3])
-                if calls < 0:
-                    pass
-                elif switch_on:
-                    ok = calls == 1 and other == 0 and status == 0
-                    s["wiring_fail"] += not ok
-                    if ok:
-                        got = (_hex(f[p + 4]), _hex(f[p + 5]))
-                        s["rate_exact"] += got == want
-                        rels = [abs(g - w) / abs(w) for g, w in zip(got + (got[0] + got[1],),
-                                                                     want + (ref.total,), strict=True)]
-                        _component_max(s, rels)
-                        rel = max(rels[:2])
-                        s["rate_max_rel"] = max(s["rate_max_rel"], rel)
-                        s["rate_fail"] += not rel <= RATE_RTOL
-                else:
-                    s["wiring_fail"] += calls != 0 or other != 0
-            else:
-                t_create = _hex(f[4])
-                got3 = (_hex(f[5]), _hex(f[6]), _hex(f[7]))
-                counter, elapsed, t_atom = _hex(f[8]), _hex(f[9]), _hex(f[10])
-                branch, outcome = f[11], f[12]
-                captured = branch == "N"
-                if stop_line[5:12] != f[5:12]:
-                    s["stops_bound_mismatch"] += 1
-                if elapsed != counter * got3[0]:
-                    s["stops_bound_mismatch"] += 1
-                s["rate_exact"] += got3 == want
-                rels = [abs(g - w) / abs(w) for g, w in zip(got3, want, strict=True)]
-                _component_max(s, rels)
-                rel = max(rels)
-                s["rate_max_rel"] = max(s["rate_max_rel"], rel)
-                s["rate_fail"] += not rel <= RATE_RTOL
-                if switch_on and helper_pair is not None:
-                    c_, d_ = helper_pair
-                    s["lifetimes_from_call_fail"] += got3 != (1.0 / (c_ + d_), 1.0 / d_, 1.0 / c_)
-            has_dio = electron is not None
-            has_capture = np_ > 0
-            if has_dio and has_capture:
-                s["outcome_both"] += 1
-            elif not has_dio and not has_capture:
-                s["outcome_none"] += 1
-            if captured != has_capture or captured == has_dio or outcome != ("N" if captured else "D"):
-                s["branch_outcome_mismatch"] += 1
-            if captured:
-                s["captures"] += 1
-                if model_seen and model_calls < 1:
-                    s["model_missing"] += 1
-                if model_seen and k != np_:
-                    s["model_product_mismatch"] += 1
-            else:
-                s["decays"] += 1
-            stream = "capture" if captured else "decay"
-            sums["all"].add(elapsed)
-            sums[stream].add(elapsed)
-            j = _bin(lam * elapsed)
-            if j is None:
-                s["bin_ties"] += 1
-            else:
-                bins["all"][j] += 1
-                bins[stream][j] += 1
-            # clocks
-            if route == STOPPING:
-                if has_dio and electron is not None:
-                    clocks["stop_dio"].add(electron, t0_ns + elapsed, t0_ns + elapsed, elapsed)
-                if has_capture and model_seen and k == np_:
-                    for tau, t in zip(taus, products, strict=True):
-                        clocks["stop_capture"].add(t, t0_ns + max(elapsed + tau, 0.0),
-                                                   t0_ns + elapsed + max(tau, 0.0), elapsed, tau)
-            else:
-                clocks["atom_creation"].add(t_create, 2.0 * t0_ns, t0_ns)
-                if has_dio and electron is not None:
-                    clocks["atom_dio"].add(electron, t_atom + elapsed, t0_ns + elapsed, elapsed, t_atom)
-                if has_capture and model_seen and k == np_:
-                    for tau, t in zip(taus, products, strict=True):
-                        clocks["atom_capture"].add(t, t_atom + max(elapsed + tau, 0.0),
-                                                   t0_ns + elapsed + max(tau, 0.0), elapsed, tau, t_atom)
+            rec = parse_record(f, route, ref)
         except (ValueError, IndexError, BoundRateError):
             s["malformed"] += 1
+            continue
+        if isinstance(rec, ProviderCall):
+            if rec.caller != "helper":
+                s["provider_calls_other"] += 1
+                continue
+            s["provider_calls_helper"] += 1
+            valid = (route == ATOMIC and (rec.z, rec.a) == (ref.z, ref.a) and rec.status == 0
+                     and rec.pair is not None and helper_pair is None)
+            if valid and rec.pair is not None:
+                helper_pair = rec.pair
+                s["helper_calls_valid"] += 1
+                s["helper_pair_exact"] += rec.pair == (ref.capture, ref.decay)
+            else:
+                s["helper_calls_invalid"] += 1
+            continue
+        event = rec.event
+        inside = first <= event < first + count
+        if (seen[event - first] if inside else event in seen_outside):
+            s["duplicates"] += 1
+            continue
+        if inside:
+            seen[event - first] = 1
+        else:
+            seen_outside.add(event)
+            s["out_of_range"] += 1
+        s["events"] += 1
+        model_seen = rec.model_calls is not None
+        k, np_ = len(rec.taus), len(rec.products)
+        s["model_unobserved"] += not model_seen
+        stop_line = stops.find(event)
+        if (rec.z, rec.a) != (ref.z, ref.a) or stop_line is None:
+            s["stops_bound_mismatch"] += 1
+            continue
+        elapsed = rec.elapsed
+        if route == STOPPING:
+            captured = stop_line[9] == "1"
+            if [stop_line[3], stop_line[4], stop_line[7], stop_line[8]] != list(f[2:6]):
+                s["stops_bound_mismatch"] += 1
+            if rec.rate_call is None:
+                s["wiring_unobserved"] += 1
+            elif switch_on:
+                calls, other, status = rec.rate_call
+                ok = calls == 1 and other == 0 and status == 0 and rec.pair is not None
+                s["wiring_fail"] += not ok
+                if ok and rec.pair is not None:
+                    got = rec.pair
+                    s["rate_exact"] += got == want
+                    rels = [_rel(g, w) for g, w in zip(got + (got[0] + got[1],), want + (ref.total,),
+                                                       strict=True)]
+                    _component_max(s, rels)
+                    rel = max(rels[:2])
+                    s["rate_max_rel"] = max(s["rate_max_rel"], rel)
+                    s["rate_fail"] += not rel <= RATE_RTOL
+            else:
+                s["wiring_fail"] += rec.rate_call[0] != 0 or rec.rate_call[1] != 0
+        else:
+            assert rec.lifetimes is not None
+            captured = rec.branch == "N"
+            if stop_line[5:12] != list(f[5:12]):
+                s["stops_bound_mismatch"] += 1
+            if elapsed != rec.counter * rec.lifetimes[0]:
+                s["stops_bound_mismatch"] += 1
+            s["rate_exact"] += rec.lifetimes == want
+            rels = [_rel(g, w) for g, w in zip(rec.lifetimes, want, strict=True)]
+            _component_max(s, rels)
+            rel = max(rels)
+            s["rate_max_rel"] = max(s["rate_max_rel"], rel)
+            s["rate_fail"] += not rel <= RATE_RTOL
+            back = recovered_rates(rec.lifetimes)
+            s["recovered_exact"] += back == (ref.decay, ref.capture)
+            back_rel = max(_rel(back[0], ref.decay), _rel(back[1], ref.capture))
+            s["recovered_max_rel"] = max(s["recovered_max_rel"], back_rel)
+            s["recovered_fail"] += not back_rel <= RATE_RTOL
+            if switch_on:
+                s["lifetimes_from_call_fail"] += (helper_pair is None
+                                                  or rec.lifetimes != pair_lifetimes(*helper_pair))
+        has_dio = rec.electron is not None
+        has_capture = np_ > 0
+        if has_dio and has_capture:
+            s["outcome_both"] += 1
+        elif not has_dio and not has_capture:
+            s["outcome_none"] += 1
+        if captured != has_capture or captured == has_dio or rec.outcome != ("N" if captured else "D"):
+            s["branch_outcome_mismatch"] += 1
+        if captured:
+            s["captures"] += 1
+            if model_seen and (rec.model_calls or 0) < 1:
+                s["model_missing"] += 1
+            if model_seen and k != np_:
+                s["model_product_mismatch"] += 1
+        else:
+            s["decays"] += 1
+        stream = "capture" if captured else "decay"
+        sums["all"].add(elapsed)
+        sums[stream].add(elapsed)
+        j = _bin(lam * elapsed)
+        if j is None:
+            s["bin_ties"] += 1
+        else:
+            bins["all"][j] += 1
+            bins[stream][j] += 1
+        # clocks
+        if route == STOPPING:
+            if rec.electron is not None:
+                clocks["stop_dio"].add(rec.electron, t0_ns + elapsed, t0_ns + elapsed, elapsed)
+            if has_capture and model_seen and k == np_:
+                for tau, t in zip(rec.taus, rec.products, strict=True):
+                    clocks["stop_capture"].add(t, t0_ns + max(elapsed + tau, 0.0),
+                                               t0_ns + elapsed + max(tau, 0.0), elapsed, tau)
+        else:
+            clocks["atom_creation"].add(rec.t_create, 2.0 * t0_ns, t0_ns)
+            if rec.electron is not None:
+                clocks["atom_dio"].add(rec.electron, rec.t_atom + elapsed, t0_ns + elapsed, elapsed,
+                                       rec.t_atom)
+            if has_capture and model_seen and k == np_:
+                for tau, t in zip(rec.taus, rec.products, strict=True):
+                    clocks["atom_capture"].add(t, rec.t_atom + max(elapsed + tau, 0.0),
+                                               t0_ns + elapsed + max(tau, 0.0), elapsed, tau, rec.t_atom)
     s["missing"] = count - sum(seen)
     s["stops_lines"] = stops.drain()
     s["sums"] = {k: v.value().hex() for k, v in sums.items()}
     s["bins"] = bins
     s["clocks"] = {c: t.as_dict() for c, t in clocks.items()}
     s["rate_max_rel"] = float(s["rate_max_rel"]).hex()
+    s["recovered_max_rel"] = float(s["recovered_max_rel"]).hex()
     s["rate_components"] = [float(x).hex() for x in s["rate_components"]]
     totals: dict[str, str] = {}
     try:
@@ -611,10 +805,12 @@ def summarize_chunk(raw: Path, route: str, ref: Pair, t0_ns: float, first: int, 
         totals = {}
     s["process"] = totals
     wanted = {"events", "captures"} | {f"sum_{k}" for k in STREAMS}
-    s["process_agrees"] = wanted <= set(totals) and (
-        int(totals["events"]) == s["events"] and int(totals["captures"]) == s["captures"]
-        and all(_close(float.fromhex(totals[f"sum_{k}"]), float.fromhex(s["sums"][k])) for k in STREAMS)
-    )
+    try:
+        s["process_agrees"] = wanted <= set(totals) and (
+            int(totals["events"]) == s["events"] and int(totals["captures"]) == s["captures"]
+            and all(_close(_hex(totals[f"sum_{k}"]), float.fromhex(s["sums"][k])) for k in STREAMS))
+    except (ValueError, BoundRateError):
+        s["process_agrees"] = False
     return s
 
 
@@ -640,7 +836,8 @@ def _close(a: float, b: float) -> bool:
 
 _COUNTERS = ("events", "duplicates", "out_of_range", "malformed", "captures", "decays", "outcome_none",
              "outcome_both", "branch_outcome_mismatch", "stops_bound_mismatch", "rate_fail", "rate_exact",
-             "wiring_fail", "provider_calls_helper", "provider_calls_other", "helper_pair_exact",
+             "recovered_fail", "recovered_exact", "wiring_fail", "provider_calls_helper",
+             "provider_calls_other", "helper_calls_valid", "helper_calls_invalid", "helper_pair_exact",
              "lifetimes_from_call_fail", "model_missing", "model_product_mismatch", "bin_ties", "missing",
              "stops_lines", "wiring_unobserved", "model_unobserved")
 
@@ -657,6 +854,7 @@ def merge(chunk_stats: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     out["chunk_overlap"] = sum(max(0, prev[1] - cur[0]) for prev, cur in zip(spans, spans[1:], strict=False))
     out["process_agrees"] = all(bool(c["process_agrees"]) for c in chunk_stats)
     out["rate_max_rel"] = max(float.fromhex(c["rate_max_rel"]) for c in chunk_stats).hex()
+    out["recovered_max_rel"] = max(float.fromhex(c["recovered_max_rel"]) for c in chunk_stats).hex()
     comps = [c["rate_components"] for c in chunk_stats if c["rate_components"]]
     out["rate_components"] = ([max(float.fromhex(v[i]) for v in comps).hex() for i in range(len(comps[0]))]
                               if comps else [])
@@ -699,28 +897,45 @@ def gate_complete(stats: Mapping[str, Any], events: int) -> dict[str, Any]:
 
 
 def gate_rate(stats: Mapping[str, Any], route: str, switch_on: bool = True) -> dict[str, Any]:
-    """Every event's consumed rates (stopping: the pair returned to ``ApplyYourself``; atomic: the three
-    stored lifetimes) within relative 1e-9 of the reference, and the wiring: on the stopping route one
-    common-status call per event from bound decay and none from elsewhere; on the atomic route one helper call
-    per process whose pair gives the stored lifetimes bit for bit."""
+    """Every event's consumed rates within relative 1e-9 of the reference -- on the stopping route the pair
+    returned to ``ApplyYourself``; on the atomic route the three stored lifetimes, and the decay and capture
+    rates ``G4MuonicAtomDecay`` recovers from them -- and the wiring: on the stopping route one
+    common-status call per event from bound decay and none from elsewhere; on the atomic route, with the
+    switch on, exactly one valid helper call per process (the chunk's nucleus, the common status, a finite
+    supported pair), no invalid one, and every stored lifetime equal to that call's pair; with the switch
+    off, no helper call."""
     problems = []
     n = int(stats["events"])
+    if n == 0:
+        problems.append("no event whose rates could be checked")
     if int(stats["rate_fail"]):
         problems.append(f"{stats['rate_fail']} events outside the rate tolerance")
+    if route == ATOMIC and int(stats["recovered_fail"]):
+        problems.append(f"{stats['recovered_fail']} events whose recovered rates are outside the rate "
+                        "tolerance")
     if int(stats["wiring_fail"]):
         problems.append(f"{stats['wiring_fail']} events with a wiring fault")
     if int(stats["provider_calls_other"]):
         problems.append(f"{stats['provider_calls_other']} provider calls from an unexpected caller")
-    if switch_on and route == ATOMIC:
-        if int(stats["provider_calls_helper"]) != int(stats["chunks"]):
-            problems.append(f"{stats['provider_calls_helper']} helper calls in {stats['chunks']} processes")
-        if int(stats["lifetimes_from_call_fail"]):
-            problems.append("stored lifetimes differ from the helper call's pair")
-    if switch_on and route == STOPPING and int(stats["provider_calls_helper"]):
+    if route == ATOMIC:
+        if switch_on:
+            if int(stats["helper_calls_valid"]) != int(stats["chunks"]):
+                problems.append(f"{stats['helper_calls_valid']} valid helper calls in {stats['chunks']} "
+                                "processes")
+            if int(stats["helper_calls_invalid"]):
+                problems.append(f"{stats['helper_calls_invalid']} helper calls with another nucleus, a "
+                                "status other than common, no usable pair, or a second call")
+            if int(stats["lifetimes_from_call_fail"]):
+                problems.append("stored lifetimes differ from the helper call's pair, or no valid call")
+        elif int(stats["provider_calls_helper"]):
+            problems.append("helper calls with the switch off")
+    elif int(stats["provider_calls_helper"]):
         problems.append("helper calls on the stopping route")
     return {"verdict": "pass" if not problems else "fail", "problems": problems,
             "exact_events": int(stats["rate_exact"]), "events": n,
-            "max_relative_deviation": stats["rate_max_rel"]}
+            "max_relative_deviation": stats["rate_max_rel"],
+            "recovered_exact_events": int(stats["recovered_exact"]),
+            "recovered_max_relative_deviation": stats["recovered_max_rel"]}
 
 
 def gate_distribution(stats: Mapping[str, Any], n_tests: int) -> dict[str, dict[str, str]]:
@@ -742,33 +957,49 @@ def gate_distribution(stats: Mapping[str, Any], n_tests: int) -> dict[str, dict[
     return out
 
 
-def gate_clocks(strata: Mapping[int, Mapping[str, Any]], route: str) -> dict[str, Any]:
-    """Delivery (every category, every stratum: zero failures) and physical correctness (each category and
-    stratum's verdict beside the one predicted before the harvest)."""
+def gate_clocks(strata: Mapping[int, Mapping[str, Any]], route: str,
+                registered: Sequence[int]) -> dict[str, Any]:
+    """Delivery (every category of every registered stratum: at least one item and zero failures) and physical
+    correctness (each category and stratum's verdict beside the one predicted before the harvest). A
+    registered stratum or category that is absent, or one with no item, is named, fails delivery and makes
+    the physical verdict ``incomplete``; a stratum outside ``registered`` is named and fails delivery."""
     cats = (("stop_dio", "stop_capture") if route == STOPPING
             else ("atom_creation", "atom_dio", "atom_capture"))
     delivery_problems = []
     physical: dict[str, dict[str, Any]] = {}
-    for t0, stats in sorted(strata.items()):
+    by_t0 = {int(t0): v for t0, v in strata.items()}
+    if not registered:
+        delivery_problems.append("no registered stratum")
+    for t0 in sorted(set(by_t0) - {int(t) for t in registered}):
+        delivery_problems.append(f"t0={t0}: not a registered stratum")
+    for t0 in sorted(int(t) for t in registered):
+        stats = by_t0.get(t0)
         for cat in cats:
-            tally = ClockTally.from_dict(stats["clocks"][cat])
+            key = f"{cat}@{t0}"
+            predicted = PREDICTED_PHYSICAL[cat][t0]
+            row = stats["clocks"].get(cat) if stats is not None else None
+            if row is None or set(row) != CLOCK_FIELDS:
+                delivery_problems.append(f"t0={t0} {cat}: missing")
+                physical[key] = {"verdict": "missing", "predicted": predicted, "as_predicted": False, "n": 0,
+                                 "fail": 0, "max_abs_residual_ns": (0.0).hex()}
+                continue
+            tally = ClockTally.from_dict(row)
             if tally.n == 0:
                 delivery_problems.append(f"t0={t0} {cat}: no item")
             if tally.fail_delivery:
                 delivery_problems.append(f"t0={t0} {cat}: {tally.fail_delivery} of {tally.n}")
-            observed = "fail" if tally.fail_physical else "pass"
-            if tally.n == 0:
-                observed = "no_item"
-            predicted = PREDICTED_PHYSICAL[cat][int(t0)]
-            physical[f"{cat}@{t0}"] = {"verdict": observed, "predicted": predicted,
-                                       "as_predicted": observed == predicted, "n": tally.n,
-                                       "fail": tally.fail_physical,
-                                       "max_abs_residual_ns": float.fromhex(
-                                           stats["clocks"][cat]["max_abs_physical_ns"]).hex()}
+            observed = "no_item" if tally.n == 0 else ("fail" if tally.fail_physical else "pass")
+            physical[key] = {"verdict": observed, "predicted": predicted,
+                             "as_predicted": observed == predicted, "n": tally.n,
+                             "fail": tally.fail_physical,
+                             "max_abs_residual_ns": float.fromhex(row["max_abs_physical_ns"]).hex()}
     delivery = {"verdict": "pass" if not delivery_problems else "fail", "problems": delivery_problems}
-    any_fail = any(v["verdict"] != "pass" for v in physical.values())
-    return {"delivery": delivery, "physical": physical,
-            "physical_verdict": "fail" if any_fail else "pass"}
+    verdicts = {v["verdict"] for v in physical.values()}
+    if not physical or verdicts & {"missing", "no_item"}:
+        physical_verdict = "incomplete"
+    else:
+        physical_verdict = "fail" if verdicts != {"pass"} else "pass"
+    return {"delivery": delivery, "physical": physical, "physical_verdict": physical_verdict}
 
 
 # --------------------------------------------------------------------------------------------
@@ -788,6 +1019,8 @@ def stats_rows(cell: str, stat: str, stats: Mapping[str, Any]) -> list[dict[str,
     rows.append({"cell": cell, "stat": stat, "key": "process_agrees",
                  "value": str(bool(stats["process_agrees"]))})
     rows.append({"cell": cell, "stat": stat, "key": "rate_max_rel", "value": str(stats["rate_max_rel"])})
+    rows.append({"cell": cell, "stat": stat, "key": "recovered_max_rel",
+                 "value": str(stats["recovered_max_rel"])})
     rows.append({"cell": cell, "stat": stat, "key": "rate_components",
                  "value": " ".join(stats["rate_components"])})
     for k in STREAMS:
@@ -806,6 +1039,7 @@ def rows_stats(rows: Sequence[Mapping[str, str]]) -> dict[str, Any]:
     out: dict[str, Any] = {key: int(values[key]) for key in _COUNTERS + ("chunks", "chunk_overlap")}
     out["process_agrees"] = values["process_agrees"] == "True"
     out["rate_max_rel"] = values["rate_max_rel"]
+    out["recovered_max_rel"] = values["recovered_max_rel"]
     out["rate_components"] = values["rate_components"].split()
     out["sums"] = {k: values[f"sum.{k}"] for k in STREAMS}
     out["bins"] = {k: [int(values[f"bin.{k}.{j}"]) for j in range(TIME_BINS)] for k in STREAMS}
@@ -830,7 +1064,12 @@ def read_csv(path: Path, columns: Sequence[str]) -> list[dict[str, str]]:
 def load_harvest(root: Path) -> dict[str, dict[str, dict[str, Any]]]:
     """``{cell: {stat: statistics}}`` from the committed summary; the ``meta`` stat stays a flat dict."""
     grouped: dict[tuple[str, str], list[dict[str, str]]] = {}
+    seen: set[tuple[str, str, str]] = set()
     for row in read_csv(root / HARVEST_RELPATH, HARVEST_COLUMNS):
+        key = (row["cell"], row["stat"], row["key"])
+        if key in seen:
+            raise BoundRateError(f"{HARVEST_RELPATH}: {key} appears twice")
+        seen.add(key)
         grouped.setdefault((row["cell"], row["stat"]), []).append(row)
     out: dict[str, dict[str, dict[str, Any]]] = {}
     for (cell, stat), rows in grouped.items():
@@ -839,20 +1078,72 @@ def load_harvest(root: Path) -> dict[str, dict[str, dict[str, Any]]]:
     return out
 
 
-def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path) -> None:
+def run_provenance_problems(policy: Mapping[str, Any], group: Mapping[str, Any], chunk: Mapping[str, Any],
+                            run: Mapping[str, Any], switch_on: bool = True) -> list[str]:
+    """The run record of one chunk (``run.json`` of ``cpp/tools/mixture_harvest.py run``) against the chunk
+    the policy registers at the chunk's first event: the plan's count and start time must be that chunk's, and
+    the recorded command line must name the group's route, element, Z, A and seed base, the chunk's event
+    count, event offset and start time (the last two absent at their defaults of 0), the bound-rate switch and
+    record, hooks on, dataset opt-in and identity mode off, the chunk's own output directory and no other
+    option, and a binary of the group's revision's traced bound-rate build that exited 0. Each disagreement is
+    named."""
+    first = int(chunk["first"])
+    where = f"chunk at {first}"
+    registered = {int(c["first"]): c for c in chunks(group, int(policy.get("chunk_events", CHUNK_EVENTS)))}
+    reg = registered.get(first)
+    if (reg is None or int(chunk["count"]) != int(reg["count"])
+            or int(float(chunk["t0_ns"])) != int(reg["t0_ns"])):
+        return [f"{where}: not a chunk the policy registers"]
+    argv = run.get("argv")
+    if (not isinstance(argv, list) or len(argv) < 3 or len(argv) % 2 == 0
+            or not all(isinstance(a, str) for a in argv)):
+        return [f"{where}: no readable command line"]
+    pairs = list(zip(argv[1::2], argv[2::2], strict=True))
+    flags = dict(pairs)
+    problems = []
+    if len(flags) != len(pairs):
+        problems.append(f"{where}: an option given twice")
+    t0 = int(reg["t0_ns"])
+    want: dict[str, str | None] = {
+        "--route": str(group["route"]), "--symbol": str(group["isotope"]).split("-")[0],
+        "--Z": str(group["z"]), "--isotope": str(group["a"]), "--events": str(reg["count"]),
+        "--seed-base": str(group["seed_base"]),
+        "--opt-in": "off", "--hooks": "on", "--identity": "off",
+        "--bound-rates": "on" if switch_on else "off", "--bound-record": "on",
+        "--t0": str(t0) if t0 else None, "--event-offset": str(first) if first else None}
+    for flag, value in want.items():
+        if flags.get(flag) != value:
+            problems.append(f"{where}: {flag} {flags.get(flag)!r}, registered {value!r}")
+    if "--out" not in flags or Path(flags["--out"]) != Path(chunk["cell"]) / "raw":
+        problems.append(f"{where}: output {flags.get('--out')!r} is not the chunk's own")
+    extra = sorted(set(flags) - set(want) - {"--out"})
+    if extra:
+        problems.append(f"{where}: options the policy does not register: {' '.join(extra)}")
+    if Path(argv[0]).parent.name != f"{group['revision']}-bound-trace":
+        problems.append(f"{where}: binary {argv[0]!r} is not the {group['revision']} traced bound-rate build")
+    if run.get("rc") != 0:
+        problems.append(f"{where}: exit code {run.get('rc')!r}")
+    return problems
+
+
+def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path,
+                   stats_name: str = "bound_stats.json") -> None:
     """Summarize every chunk a plan names and write the summary and builds files into ``out_dir``. A plan is
     ``{"switch_on": bool, "chunks": [{"group": g, "first": i, "count": n, "t0_ns": t, "cell": dir}], "builds":
     {revision: build dir}}``; a chunk's ``cell`` holds the ``run.json`` and ``raw/`` of
     ``cpp/tools/mixture_harvest.py run``. Each chunk's statistics are also written as JSON beside it, and with
-    ``"reuse": true`` a chunk whose JSON exists is read back rather than summarized again."""
+    ``"reuse": true`` a chunk whose JSON exists is read back rather than summarized again. Every chunk's run
+    record is checked against the policy (:func:`run_provenance_problems`); the group's meta rows carry the
+    count of disagreeing chunks and the first disagreement."""
     policy = load_policy(root)
     by_group: dict[int, list[dict[str, Any]]] = {}
     meta: dict[int, dict[str, str]] = {}
+    provenance: dict[int, list[str]] = {}
     for chunk in plan["chunks"]:
         g = int(chunk["group"])
         group = policy["groups"][g]
         cell = Path(chunk["cell"])
-        saved = cell / "bound_stats.json"
+        saved = cell / stats_name
         if plan.get("reuse") and saved.is_file():
             stats = json.loads(saved.read_text(encoding="ascii"))
         else:
@@ -861,6 +1152,8 @@ def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path) -> None:
                                     bool(plan["switch_on"]))
             saved.write_text(json.dumps(stats, sort_keys=True) + "\n", encoding="ascii")
         run = json.loads((cell / "run.json").read_text(encoding="utf-8"))
+        provenance.setdefault(g, []).extend(run_provenance_problems(policy, group, chunk, run,
+                                                                    bool(plan["switch_on"])))
         by_group.setdefault(g, []).append(stats)
         m = meta.setdefault(g, {"binary_sha256": run["build_binary_sha256"], "files": ""})
         if m["binary_sha256"] != run["build_binary_sha256"]:
@@ -875,6 +1168,11 @@ def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path) -> None:
         rows.append({"cell": name, "stat": "meta", "key": "chunk_files_sha256",
                      "value": hashlib.sha256(meta[g]["files"].encode("ascii")).hexdigest()})
         rows.append({"cell": name, "stat": "meta", "key": "switch_on", "value": str(bool(plan["switch_on"]))})
+        rows.append({"cell": name, "stat": "meta", "key": "analysis_version", "value": str(ANALYSIS_VERSION)})
+        rows.append({"cell": name, "stat": "meta", "key": "provenance_problems",
+                     "value": str(len(provenance[g]))})
+        rows.append({"cell": name, "stat": "meta", "key": "provenance_first",
+                     "value": provenance[g][0] if provenance[g] else "-"})
         rows += stats_rows(name, "group", merge(chunk_stats))
         for t0 in T0_NS:
             part = [s for s in chunk_stats if int(float(s["t0_ns"])) == t0]
@@ -898,44 +1196,120 @@ def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path) -> None:
         (out_dir / Path(BUILDS_RELPATH).name).write_bytes(render_csv(build_rows, BUILD_COLUMNS))
 
 
+def roster_problems(policy: Mapping[str, Any], harvest: Mapping[str, Mapping[str, Any]]) -> list[str]:
+    """The summary against the policy's registered roster, each problem named: no registered group; a group
+    registered twice; a summary cell that is not a registered group; a registered group without its cell; a
+    group whose chunk run records were not checked or disagree with the policy
+    (:func:`run_provenance_problems`); a cell without its meta or group statistics or without a registered
+    stratum, or with a stratum that is not registered; and a group or stratum whose event count or chunk count
+    is not the registered one."""
+    problems: list[str] = []
+    groups_ = list(policy.get("groups", []))
+    if not groups_:
+        problems.append("the policy registers no group")
+    names = [group_name(g) for g in groups_]
+    for name in sorted({x for x in names if names.count(x) > 1}):
+        problems.append(f"{name}: registered more than once")
+    for name in sorted(set(harvest) - set(names)):
+        problems.append(f"{name}: not a registered group")
+    for g in groups_:
+        name = group_name(g)
+        cell = harvest.get(name)
+        if cell is None:
+            problems.append(f"{name}: missing")
+            continue
+        meta = cell.get("meta", {})
+        if meta.get("provenance_problems") is None:
+            problems.append(f"{name}: no provenance check of its run records")
+        elif meta["provenance_problems"] != "0":
+            problems.append(f"{name}: {meta['provenance_problems']} run records disagree with the policy "
+                            f"({meta.get('provenance_first')})")
+        wanted = {"meta", "group"} | {f"stratum_{st['t0_ns']}" for st in g["strata"]}
+        problems += [f"{name}: {stat} missing" for stat in sorted(wanted - set(cell))]
+        problems += [f"{name}: {stat} is not registered" for stat in sorted(set(cell) - wanted)]
+        if "group" in cell:
+            if int(cell["group"]["events"]) != int(g["events"]):
+                problems.append(f"{name}: {cell['group']['events']} events, {g['events']} registered")
+            try:
+                registered = len(chunks(g, int(policy.get("chunk_events", CHUNK_EVENTS))))
+            except BoundRateError as exc:
+                problems.append(str(exc))
+            else:
+                if int(cell["group"]["chunks"]) != registered:
+                    problems.append(f"{name}: {cell['group']['chunks']} chunks, {registered} registered")
+        for st in g["strata"]:
+            part = cell.get(f"stratum_{st['t0_ns']}")
+            if part is not None and int(part["events"]) != int(st["count"]):
+                problems.append(f"{name}: stratum {st['t0_ns']} has {part['events']} events, {st['count']} "
+                                "registered")
+    return problems
+
+
 # --------------------------------------------------------------------------------------------
 # the theory admission gate
 # --------------------------------------------------------------------------------------------
 
-#: The terms a physical uncertainty budget of the prescription must bound before any nuclide is admitted.
-REQUIRED_TERMS = ("equation", "binding_expansion", "recoil", "nuclear_mass", "finite_size", "radiative",
-                  "numerical")
+#: The terms a physical uncertainty budget of the prescription must carry before any nuclide is admitted:
+#: the equation (a verified statement of the primary equation, its assumptions and domain) and the error
+#: terms (each a bound on the term's contribution).
+EQUATION_TERM = "equation"
+ERROR_TERMS = ("binding_expansion", "recoil", "nuclear_mass", "finite_size", "radiative", "numerical")
+REQUIRED_TERMS = (EQUATION_TERM, *ERROR_TERMS)
+
+
+def _term_problems(name: str, term: object) -> list[str]:
+    """A term of the budget against its schema. The equation term: ``status`` "VERIFIED", a non-empty
+    ``statement`` and ``source``. An error term: ``status`` "BOUNDED", a ``bound`` that is a JSON number
+    (not a string, not a boolean), finite and non-negative, and a non-empty ``source``. Any other status --
+    UNKNOWN, UNBOUNDED, IMPLEMENTATION_ONLY or none -- admits nothing, whatever bound is written beside it."""
+    if not isinstance(term, Mapping):
+        return [f"{name}: missing"]
+    problems = []
+    source = term.get("source")
+    if not isinstance(source, str) or not source.strip():
+        problems.append(f"{name}: no source")
+    status = term.get("status")
+    if name == EQUATION_TERM:
+        if status != "VERIFIED":
+            problems.append(f"{name}: status {status!r}, not VERIFIED")
+        statement = term.get("statement")
+        if not isinstance(statement, str) or not statement.strip():
+            problems.append(f"{name}: no statement")
+        return problems
+    if status != "BOUNDED":
+        problems.append(f"{name}: status {status!r}, not BOUNDED")
+    bound = term.get("bound")
+    if isinstance(bound, bool) or not isinstance(bound, (int, float)):
+        problems.append(f"{name}: bound {bound!r} is not a number")
+    elif not (math.isfinite(bound) and bound >= 0):
+        problems.append(f"{name}: bound {bound!r} is not finite and non-negative")
+    return problems
 
 
 def theory_admission(manifest: Mapping[str, Any]) -> dict[str, Any]:
     """Whether a theory-budget manifest admits any nuclide to a physical-accuracy comparison.
 
-    Every term of :data:`REQUIRED_TERMS` must be present with a value and a source (a term with no value is
-    unbounded; a value with no source, a zero included, is refused, because an unknown term cannot be zero);
-    every admitted nuclide must lie in the provider's domain; every reference must be independent of the
-    evaluated formula and not exposed before the manifest was frozen. A manifest that fails any of these
-    admits nothing (``NOT_ESTABLISHED``); one that passes them with an empty roster is ``SCREEN_VACUOUS``;
-    otherwise ``ADMITTED``."""
+    Every term of :data:`REQUIRED_TERMS` must satisfy its schema (:func:`_term_problems`); every admitted
+    nuclide must lie in the provider's domain; every reference must state that it is independent of the
+    evaluated formula and was not exposed before the manifest was frozen; an admitted nuclide needs a
+    reference. A manifest that fails any of these admits nothing (``NOT_ESTABLISHED``); one that passes them
+    with an empty roster is ``SCREEN_VACUOUS``; otherwise ``ADMITTED``."""
     problems: list[str] = []
     terms = manifest.get("terms", {})
+    if not isinstance(terms, Mapping):
+        terms = {}
     for name in REQUIRED_TERMS:
-        term = terms.get(name)
-        if term is None:
-            problems.append(f"{name}: missing")
-        elif term.get("value") in (None, "", "unbounded"):
-            problems.append(f"{name}: unbounded")
-        elif not term.get("source"):
-            problems.append(f"{name}: a value with no source")
+        problems += _term_problems(name, terms.get(name))
     roster = list(manifest.get("qualified_roster", []))
     for label in roster:
         z, a = (int(x) for x in str(label).split("-"))
         if not in_domain(z, a):
             problems.append(f"{label}: outside the provider's domain")
     for ref in manifest.get("references", []):
-        if not ref.get("independent", False):
-            problems.append(f"reference {ref.get('id')}: shares the evaluated formula or its inputs")
-        if ref.get("exposed", True):
-            problems.append(f"reference {ref.get('id')}: exposed before the manifest was frozen")
+        if ref.get("independent") is not True:
+            problems.append(f"reference {ref.get('id')}: not stated independent of the evaluated formula")
+        if ref.get("exposed") is not False:
+            problems.append(f"reference {ref.get('id')}: not stated unexposed before the manifest was frozen")
     if roster and not manifest.get("references"):
         problems.append("an admitted nuclide with no reference")
     if problems:
@@ -971,12 +1345,17 @@ def drill_families(stats: Mapping[str, Any], meta: Mapping[str, str], pair: Pair
     n = int(meta["events"])
     switch_on = meta["switch_on"] == "True"
     out = {"complete": gate_complete(stats, n)["verdict"]}
-    out["rate"] = "fail" if int(stats["rate_fail"]) else "pass"
+    rate_bad = int(stats["rate_fail"]) or (route == ATOMIC and int(stats["recovered_fail"]))
+    out["rate"] = "fail" if rate_bad or int(stats["events"]) == 0 else "pass"
+    # the wiring as :func:`gate_rate` grades it: on the atomic route with the switch on, one valid helper call
+    # per process and no invalid one, and every stored lifetime from that call
     wiring = bool(int(stats["wiring_fail"]) or int(stats["provider_calls_other"])
                   or int(stats["wiring_unobserved"]))
     if switch_on and route == ATOMIC:
-        wiring = wiring or int(stats["provider_calls_helper"]) != int(stats["chunks"]) or bool(
-            int(stats["lifetimes_from_call_fail"]))
+        wiring = wiring or int(stats["helper_calls_valid"]) != int(stats["chunks"]) or bool(
+            int(stats["helper_calls_invalid"]) or int(stats["lifetimes_from_call_fail"]))
+    else:
+        wiring = wiring or bool(int(stats["provider_calls_helper"]))
     out["wiring"] = "fail" if wiring else "pass"
     alpha = float(per_test_alpha(n_primary))
     k = int(stats["captures"])
@@ -994,7 +1373,7 @@ def drill_families(stats: Mapping[str, Any], meta: Mapping[str, str], pair: Pair
     dist = gate_distribution(stats, n_distribution)
     out["distribution"] = "pass" if all(v["verdict"] == "pass" for v in dist.values()) else "fail"
     out["transport"] = "pass" if all(verdicts) and out["distribution"] == "pass" else "fail"
-    clocks = gate_clocks({0: stats}, route)
+    clocks = gate_clocks({0: stats}, route, (0,))
     out["delivery"] = clocks["delivery"]["verdict"]
     return out
 

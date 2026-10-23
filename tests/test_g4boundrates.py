@@ -5,11 +5,13 @@ and the stock reproducer (``openmucf/g4/d1_boundrates.py``, ``data/g4/d1/bound_r
 from __future__ import annotations
 
 import csv
+import dataclasses
 import hashlib
 import importlib.util
 import json
 import math
 import re
+import shutil
 from fractions import Fraction
 from pathlib import Path
 
@@ -246,7 +248,7 @@ def write_stream(directory: Path, route: str, pair: bound.Pair, n: int, t0: floa
     rng = random.Random(seed)
     c, d = consumed if consumed is not None else (pair.capture, pair.decay)
     lam = c + d
-    tau, tau_dio, tau_nc = 1.0 / lam, 1.0 / d, 1.0 / c
+    tau, tau_dio, tau_nc = 1.0 / lam, 1.0 / d, (1.0 / c if c > 0.0 else math.inf)
     raw = directory / "raw"
     raw.mkdir(parents=True)
     stops, lines = [], []
@@ -325,7 +327,7 @@ def test_a_correct_stream_passes_every_gate_and_only_the_predicted_clocks_fail(
     assert int(s["rate_exact"]) == 4000
     dist = bound.gate_distribution(s, 36)
     assert {v["verdict"] for v in dist.values()} == {"pass"}, dist
-    clocks = bound.gate_clocks({250: s}, route)
+    clocks = bound.gate_clocks({250: s}, route, (250,))
     assert clocks["delivery"]["verdict"] == "pass", clocks["delivery"]
     for key, v in clocks["physical"].items():
         assert v["as_predicted"], (key, v)
@@ -337,10 +339,10 @@ def test_the_physical_clock_passes_a_correct_atomic_clock_and_fails_a_shifted_on
     products at t0 + T + max(tau, 0)) passes the physical gate; the same stream with every atomic product
     moved by 5 ns fails it. The reference origin is t0, never a product's own time."""
     good = _summary(tmp_path / "good", bound.ATOMIC, c12, physical_atom_clock=True)
-    phys = bound.gate_clocks({250: good}, bound.ATOMIC)["physical"]
+    phys = bound.gate_clocks({250: good}, bound.ATOMIC, (250,))["physical"]
     assert all(v["verdict"] == "pass" for v in phys.values()), phys
     bad = _summary(tmp_path / "bad", bound.ATOMIC, c12, physical_atom_clock=True, shift=5.0)
-    phys = bound.gate_clocks({250: bad}, bound.ATOMIC)["physical"]
+    phys = bound.gate_clocks({250: bad}, bound.ATOMIC, (250,))["physical"]
     assert all(v["verdict"] == "fail" for v in phys.values()), phys
 
 
@@ -380,7 +382,7 @@ def _move_products(change):  # type: ignore[no-untyped-def]
 def test_drill_each_clock_defect_turns_the_delivery_gate_red(tmp_path: Path, c12: bound.Pair, label: str,
                                                              mutate) -> None:  # type: ignore[no-untyped-def]
     s = _summary(tmp_path, bound.STOPPING, c12, mutate=mutate)
-    assert bound.gate_clocks({250: s}, bound.STOPPING)["delivery"]["verdict"] == "fail", label
+    assert bound.gate_clocks({250: s}, bound.STOPPING, (250,))["delivery"]["verdict"] == "fail", label
 
 
 def test_drill_the_constant_delay_stream_passes_the_mean_test_and_fails_the_distribution(
@@ -470,12 +472,247 @@ def test_drill_a_stopping_stream_without_the_provider_call_fails_the_wiring_alon
                                                                                   c12: bound.Pair) -> None:
     """The stopping consumer that never asks the provider, with the switch on: completeness and the
     distribution pass (its own pair is the stopping prescription), and the wiring gate fails."""
-    s = _summary(tmp_path, bound.STOPPING, c12, mutate=lambda ls: [line.replace(" P 1 0 0 ", " P 0 0 -1 ")
-                                                                   for line in ls])
+    s = _summary(tmp_path, bound.STOPPING, c12, mutate=_rewrite_rate_call(["0", "0", "-1", "x", "x"]))
     verdict = bound.gate_rate(s, bound.STOPPING)
     assert verdict["verdict"] == "fail" and any("wiring" in p for p in verdict["problems"]), verdict
     assert bound.gate_complete(s, 4000)["verdict"] == "pass"
     assert {v["verdict"] for v in bound.gate_distribution(s, 36).values()} == {"pass"}
+
+
+def _rewrite_rate_call(tokens: list[str]):  # type: ignore[no-untyped-def]
+    """A ``mutate`` that replaces the first ``len(tokens)`` fields after ``P`` on every stopping line."""
+    def mutate(lines: list[str]) -> list[str]:
+        out = []
+        for line in lines:
+            t = line.split()
+            if t[0] == "S":
+                p = t.index("P")
+                t[p + 1:p + 1 + len(tokens)] = tokens
+            out.append(" ".join(t))
+        return out
+    return mutate
+
+
+def test_drill_a_pair_written_beside_a_status_other_than_common_is_malformed(tmp_path: Path,
+                                                                            c12: bound.Pair) -> None:
+    """The harness writes the pair only with the common status (``x x`` otherwise): a record that carries a
+    pair beside the no-call status is refused at the read, so no event is counted and neither gate passes."""
+    s = _summary(tmp_path, bound.STOPPING, c12, n=400, mutate=_rewrite_rate_call(["0", "0", "-1"]))
+    assert s["malformed"] == 400 and s["events"] == 0
+    assert "malformed" in bound.gate_complete(s, 400)["problems"]
+    assert "no event whose rates could be checked" in bound.gate_rate(s, bound.STOPPING)["problems"]
+
+
+# --------------------------------------------------------------------------------------------
+# the typed reader: a nonfinite or unobserved value is refused before any statistic sees it
+# --------------------------------------------------------------------------------------------
+
+NONFINITE = ("nan", "inf", "-inf")
+
+
+def _helper(edit):  # type: ignore[no-untyped-def]
+    """A ``mutate`` that rewrites the helper's provider-call line with ``edit`` (tokens -> line)."""
+    return lambda lines: [edit(x.split()) if x.startswith("C ") else x for x in lines]
+
+
+def _every(t: list[str]) -> bool:
+    return True
+
+
+def _model_time(t: list[str]) -> int:
+    return t.index("M") + 3
+
+
+def _product_time(t: list[str]) -> int:
+    return t.index("N", t.index("M")) + 2
+
+
+def _electron_time(t: list[str]) -> int:
+    return len(t) - 1
+
+
+#: (label, route, which line, the field) for every binary64 field of the two record kinds
+NONFINITE_FIELDS = [
+    ("stopping time before the call", bound.STOPPING, _every, lambda t: 4),
+    ("stopping time after the call", bound.STOPPING, _every, lambda t: 5),
+    ("stopping consumed capture rate", bound.STOPPING, _every, lambda t: 11),
+    ("stopping consumed decay rate", bound.STOPPING, _every, lambda t: 12),
+    ("stopping capture-model time", bound.STOPPING, lambda t: _captured(t), _model_time),
+    ("stopping capture product time", bound.STOPPING, lambda t: _captured(t), _product_time),
+    ("stopping decay-electron time", bound.STOPPING, lambda t: _decayed(t), _electron_time),
+    ("atom-creation time", bound.ATOMIC, _every, lambda t: 4),
+    ("atomic lifetime", bound.ATOMIC, _every, lambda t: 5),
+    ("atomic DIO lifetime", bound.ATOMIC, _every, lambda t: 6),
+    ("atomic nuclear-capture lifetime", bound.ATOMIC, _every, lambda t: 7),
+    ("atomic interaction-length counter", bound.ATOMIC, _every, lambda t: 8),
+    ("atomic delay", bound.ATOMIC, _every, lambda t: 9),
+    ("atomic atom time", bound.ATOMIC, _every, lambda t: 10),
+    ("atomic capture-model time", bound.ATOMIC, lambda t: _captured(t), _model_time),
+    ("atomic capture product time", bound.ATOMIC, lambda t: _captured(t), _product_time),
+    ("atomic decay-electron time", bound.ATOMIC, lambda t: _decayed(t), _electron_time),
+]
+
+
+@pytest.mark.parametrize("value", NONFINITE)
+@pytest.mark.parametrize("label, route, which, index_of", NONFINITE_FIELDS,
+                         ids=[c[0] for c in NONFINITE_FIELDS])
+def test_drill_a_nonfinite_field_is_refused_at_the_read(  # type: ignore[no-untyped-def]
+        tmp_path: Path, c12: bound.Pair, label: str, route: str, which, index_of, value: str) -> None:
+    """One field of one record set to NaN, +inf or -inf: the record is malformed, its event is missing and
+    completeness fails; the same stream restored passes completeness and the rates."""
+    n = 400
+    clean = _summary(tmp_path / "clean", route, c12, n=n)
+    assert bound.gate_complete(clean, n)["verdict"] == "pass"
+    assert bound.gate_rate(clean, route)["verdict"] == "pass"
+    tag = "S" if route == bound.STOPPING else "A"
+    s = _summary(tmp_path / "defect", route, c12, n=n, mutate=_first_line(tag, which, _set(index_of, value)))
+    assert (s["malformed"], s["events"], s["missing"]) == (1, n - 1, 1), label
+    problems = bound.gate_complete(s, n)["problems"]
+    assert "malformed" in problems and "missing" in problems, (label, problems)
+
+
+#: (label, route, which line, the field, the value) -- finite values a lifetime or a rate may not take
+NONPOSITIVE_FIELDS = [
+    ("a zero atomic lifetime", bound.ATOMIC, _every, lambda t: 5, "0x0p+0"),
+    ("a negative atomic DIO lifetime", bound.ATOMIC, _every, lambda t: 6, "-0x1p+0"),
+    ("a zero nuclear-capture lifetime", bound.ATOMIC, _every, lambda t: 7, "0x0p+0"),
+    ("a zero consumed decay rate", bound.STOPPING, _every, lambda t: 12, "0x0p+0"),
+    ("a negative consumed capture rate", bound.STOPPING, _every, lambda t: 11, "-0x1p-5"),
+]
+
+
+@pytest.mark.parametrize("label, route, which, index_of, value", NONPOSITIVE_FIELDS,
+                         ids=[c[0] for c in NONPOSITIVE_FIELDS])
+def test_drill_a_nonpositive_lifetime_or_rate_is_refused_at_the_read(  # type: ignore[no-untyped-def]
+        tmp_path: Path, c12: bound.Pair, label: str, route: str, which, index_of, value: str) -> None:
+    tag = "S" if route == bound.STOPPING else "A"
+    s = _summary(tmp_path, route, c12, n=400, mutate=_first_line(tag, which, _set(index_of, value)))
+    assert (s["malformed"], s["events"]) == (1, 399), label
+
+
+@pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
+def test_a_clock_tally_refuses_a_nonfinite_time(value: float) -> None:
+    for args in ((value, 1.0, 1.0), (1.0, value, 1.0), (1.0, 1.0, value), (1.0, 1.0, 1.0, value)):
+        tally = bound.ClockTally()
+        with pytest.raises(bound.BoundRateError):
+            tally.add(*args)
+        assert tally == bound.ClockTally(), args
+
+
+def test_the_zero_capture_lifetime_is_typed_and_accepted_only_for_a_zero_capture_rate(tmp_path: Path,
+                                                                                    c12: bound.Pair) -> None:
+    """A registered capture rate of exactly zero: the helper stores 1/0 = +inf as the nuclear-capture lifetime
+    and G4MuonicAtomDecay recovers an exact zero. That +inf is read only against a zero registered capture
+    rate; against a positive one, and NaN or -inf ever, it is refused."""
+    zero = dataclasses.replace(c12, capture=0.0)
+    assert bound.pair_lifetimes(0.0, zero.decay) == zero.lifetimes == (1.0 / zero.decay, 1.0 / zero.decay,
+                                                                         math.inf)
+    assert bound.recovered_rates(zero.lifetimes) == (zero.decay, 0.0)
+    tau = 1.0 / zero.decay
+    line = (f"A 0 6 12 {(500.0).hex()} {tau.hex()} {tau.hex()} inf {(1.0).hex()} {tau.hex()} {(500.0).hex()} "
+            f"D D M 0 0 N 0 E {(500.0 + tau).hex()}").split()
+    record = bound.parse_record(line, bound.ATOMIC, zero)
+    assert isinstance(record, bound.EventRecord) and record.lifetimes == zero.lifetimes
+    with pytest.raises(bound.BoundRateError):
+        bound.parse_record(line, bound.ATOMIC, c12)
+    for bad in ("nan", "-inf", "0x0p+0", "x"):
+        with pytest.raises(bound.BoundRateError):
+            bound.parse_record(line[:7] + [bad] + line[8:], bound.ATOMIC, zero)
+    assert (bound._rel(0.0, 0.0), bound._rel(2.0 ** -1000, 0.0)) == (0.0, math.inf)
+    assert (bound._rel(math.inf, math.inf), bound._rel(1.0, math.inf)) == (0.0, math.inf)
+    # end to end: a stream drawn from the zero-capture pair passes completeness and the rates, bit for bit
+    s = _summary(tmp_path, bound.ATOMIC, zero, n=400)
+    assert bound.gate_complete(s, 400)["verdict"] == "pass", bound.gate_complete(s, 400)
+    assert bound.gate_rate(s, bound.ATOMIC)["verdict"] == "pass"
+    assert (s["rate_exact"], s["recovered_exact"], s["captures"]) == (400, 400, 0)
+
+
+#: (label, mutate, the problems the rate gate must name)
+HELPER_DEFECTS = [
+    ("a refused call for another nucleus", _helper(lambda t: "C 0 helper 8 18 3 x x"),
+     ["0 valid helper calls in 1 processes", "1 helper calls with another nucleus"]),
+    ("a common call for another nucleus", _helper(lambda t: " ".join(t[:3] + ["8", "16"] + t[5:])),
+     ["0 valid helper calls in 1 processes", "1 helper calls with another nucleus"]),
+    ("a disabled call", _helper(lambda t: " ".join(t[:5] + ["1", "x", "x"])),
+     ["0 valid helper calls in 1 processes", "1 helper calls with another nucleus"]),
+    ("an unsupported call", _helper(lambda t: " ".join(t[:5] + ["2", "x", "x"])),
+     ["0 valid helper calls in 1 processes", "1 helper calls with another nucleus"]),
+    ("a refused call", _helper(lambda t: " ".join(t[:5] + ["3", "x", "x"])),
+     ["0 valid helper calls in 1 processes", "1 helper calls with another nucleus"]),
+    ("a common call with a NaN capture rate", _helper(lambda t: " ".join(t[:6] + ["nan", t[7]])),
+     ["0 valid helper calls in 1 processes"]),
+    ("a common call with an infinite decay rate", _helper(lambda t: " ".join(t[:7] + ["inf"])),
+     ["0 valid helper calls in 1 processes"]),
+    ("a common call with no pair", _helper(lambda t: " ".join(t[:6] + ["x", "x"])),
+     ["0 valid helper calls in 1 processes"]),
+    ("a second call", lambda ls: ls[:1] + ls,
+     ["1 helper calls with another nucleus"]),
+]
+
+
+@pytest.mark.parametrize("label, mutate, problems", HELPER_DEFECTS, ids=[c[0] for c in HELPER_DEFECTS])
+def test_drill_each_helper_call_defect_fails_the_wiring(  # type: ignore[no-untyped-def]
+        tmp_path: Path, c12: bound.Pair, label: str, mutate, problems: list[str]) -> None:
+    """A helper call counts only when it names the chunk's nucleus, returns the common status and a finite
+    supported pair, and is the first; every atomic event is then checked against it, and without one every
+    atomic event fails that check. The rate gate and the drill wiring family agree."""
+    from scipy import stats
+
+    n = 400
+    s = _summary(tmp_path, bound.ATOMIC, c12, n=n, mutate=mutate)
+    verdict = bound.gate_rate(s, bound.ATOMIC)
+    assert verdict["verdict"] == "fail", (label, verdict)
+    for problem in problems:
+        assert any(p.startswith(problem) for p in verdict["problems"]), (label, problem, verdict)
+    if s["helper_calls_valid"] == 0:
+        assert s["lifetimes_from_call_fail"] == n, label
+        assert "stored lifetimes differ from the helper call's pair, or no valid call" in verdict["problems"]
+    meta = {"route": bound.ATOMIC, "events": str(n), "switch_on": "True"}
+    assert bound.drill_families(s, meta, c12, stats)["wiring"] == "fail", label
+
+
+@pytest.mark.parametrize("label", ["N-14", "O-16"])
+def test_the_recovered_atomic_rates_meet_the_tolerance_where_they_are_not_bit_identical(
+        tmp_path: Path, policy: dict, label: str) -> None:
+    """For N-14 and O-16 the stored reciprocal lifetimes are the registered ones bit for bit, and the decay
+    rate G4MuonicAtomDecay recovers from them (1 / DIO lifetime) is one rounding away from the registered
+    one: not bit-identical, inside the registered relative tolerance."""
+    pair = bound.frozen_pair(policy, label)
+    back = bound.recovered_rates(pair.lifetimes)
+    assert back != (pair.decay, pair.capture)
+    worst = max(bound._rel(back[0], pair.decay), bound._rel(back[1], pair.capture))
+    assert 0.0 < worst <= bound.RATE_RTOL
+    s = _summary(tmp_path, bound.ATOMIC, pair, n=400)
+    assert (s["rate_exact"], s["recovered_exact"], s["recovered_fail"]) == (400, 0, 0)
+    assert float.fromhex(s["recovered_max_rel"]) == worst
+    assert bound.gate_rate(s, bound.ATOMIC)["verdict"] == "pass"
+
+
+def test_drill_an_atomic_pair_off_fails_the_stored_and_the_recovered_rates(tmp_path: Path,
+                                                                         c12: bound.Pair) -> None:
+    """An atomic consumer given a capture rate 1e-8 off: the stored lifetimes and the recovered rates both
+    fail, each named; a recovered-rate failure alone fails the drill rate family, and a helper call on the
+    stopping route fails its wiring family."""
+    from scipy import stats
+
+    s = _rate_summary(tmp_path / "a", bound.ATOMIC, c12, {"consumed_scale": 1 + 1e-8})
+    assert (s["rate_fail"], s["recovered_fail"]) == (4000, 4000)
+    problems = bound.gate_rate(s, bound.ATOMIC)["problems"]
+    assert "4000 events outside the rate tolerance" in problems
+    assert "4000 events whose recovered rates are outside the rate tolerance" in problems
+    good = _summary(tmp_path / "b", bound.ATOMIC, c12, n=400)
+    meta = {"route": bound.ATOMIC, "events": "400", "switch_on": "True"}
+    assert bound.drill_families(good, meta, c12, stats)["rate"] == "pass"
+    assert bound.drill_families({**good, "recovered_fail": 1}, meta, c12, stats)["rate"] == "fail"
+    stop = _summary(tmp_path / "c", bound.STOPPING, c12, n=400, mutate=_append(_helper_line))
+    stop_meta = {"route": bound.STOPPING, "events": "400", "switch_on": "True"}
+    assert bound.drill_families(stop, stop_meta, c12, stats)["wiring"] == "fail"
+
+
+def test_the_recovered_c12_rates_are_bit_identical(tmp_path: Path, c12: bound.Pair) -> None:
+    assert bound.recovered_rates(c12.lifetimes) == (c12.decay, c12.capture)
+    s = _summary(tmp_path, bound.ATOMIC, c12, n=400)
+    assert (s["recovered_exact"], float.fromhex(s["recovered_max_rel"])) == (400, 0.0)
 
 
 # --------------------------------------------------------------------------------------------
@@ -531,6 +768,41 @@ def _append(make):  # type: ignore[no-untyped-def]
 def _helper_line(lines: list[str]) -> str:
     t = lines[0].split()
     return f"C {t[1]} helper 6 12 0 0x1p-5 0x1p-1"
+
+
+def _leftover(t: list[str]) -> list[str]:
+    return t + ["0x1p+0"]
+
+
+def _no_e_section(t: list[str]) -> list[str]:
+    return t[:-2]
+
+
+#: (label, route, mutate) -- records outside the grammar the harness writes, each refused as malformed
+GRAMMAR_DEFECTS = [
+    ("an outcome that is neither decay nor capture", bound.STOPPING,
+     _first_line("S", _every, _set(lambda t: 6, "X"))),
+    ("an atomic branch that is neither", bound.ATOMIC, _first_line("A", _every, _set(lambda t: 11, "X"))),
+    ("a negative interaction-length counter", bound.ATOMIC,
+     _first_line("A", _every, _set(lambda t: 8, "-0x1p+0"))),
+    ("a stopping time after that precedes the time before", bound.STOPPING,
+     _first_line("S", _every, _set(lambda t: 5, "-0x1p+0"))),
+    ("a token left over after the E section", bound.STOPPING, _first_line("S", _every, _leftover)),
+    ("no E section", bound.STOPPING, _first_line("S", _every, _no_e_section)),
+    ("a provider status the harness never writes", bound.STOPPING,
+     _first_line("S", _every, _set(lambda t: 10, "7"))),
+    ("a product count that is not an integer", bound.STOPPING,
+     _first_line("S", _every, _set(lambda t: t.index("N", t.index("M")) + 1, "1.5"))),
+    ("a provider-call line with a token left over", bound.ATOMIC, _helper(lambda t: " ".join(t + ["0"]))),
+]
+
+
+@pytest.mark.parametrize("label, route, mutate", GRAMMAR_DEFECTS, ids=[c[0] for c in GRAMMAR_DEFECTS])
+def test_drill_a_record_outside_the_grammar_is_malformed(  # type: ignore[no-untyped-def]
+        tmp_path: Path, c12: bound.Pair, label: str, route: str, mutate) -> None:
+    s = _summary(tmp_path, route, c12, n=400, mutate=mutate)
+    assert s["malformed"] == 1, (label, s["malformed"])
+    assert "malformed" in bound.gate_complete(s, 400)["problems"], label
 
 
 #: (label, route, mutate, the problem the completeness gate must name)
@@ -596,7 +868,7 @@ RATE_DEFECTS = [
     ("a helper call on the stopping route", bound.STOPPING, {"mutate": _append(_helper_line)},
      "helper calls on the stopping route"),
     ("the atomic route without its helper call", bound.ATOMIC,
-     {"mutate": lambda ls: [x for x in ls if not x.startswith("C ")]}, "0 helper calls in 1 processes"),
+     {"mutate": lambda ls: [x for x in ls if not x.startswith("C ")]}, "0 valid helper calls in 1 processes"),
     ("atoms whose lifetimes are not the helper call's pair", bound.ATOMIC,
      {"mutate": lambda ls: [_bump_helper_capture(x) if x.startswith("C ") else x for x in ls]},
      "stored lifetimes differ from the helper call's pair"),
@@ -643,7 +915,7 @@ def test_drill_an_empty_stream_or_a_bin_tie_never_passes_the_distribution(tmp_pa
 def test_drill_a_clock_category_with_no_item_fails_delivery(tmp_path: Path, c12: bound.Pair) -> None:
     s = _summary(tmp_path, bound.STOPPING, c12)
     none = {**s, "clocks": {**s["clocks"], "stop_capture": bound.ClockTally().as_dict()}}
-    clocks = bound.gate_clocks({250: none}, bound.STOPPING)
+    clocks = bound.gate_clocks({250: none}, bound.STOPPING, (250,))
     assert "t0=250 stop_capture: no item" in clocks["delivery"]["problems"]
     assert clocks["physical"]["stop_capture@250"]["verdict"] == "no_item"
 
@@ -665,11 +937,24 @@ def _generator():  # type: ignore[no-untyped-def]
     return module
 
 
+def _run_record(group: dict, first: int, count: int, t0: int, cell: Path) -> dict:
+    """The run record ``cpp/tools/mixture_harvest.py run`` writes for a production chunk of ``group``."""
+    argv = [f"/apps/builds/{group['revision']}-bound-trace/harvest_mixture", "--route", group["route"],
+            "--symbol", group["isotope"].split("-")[0], "--Z", str(group["z"]), "--events", str(count),
+            "--seed-base", str(group["seed_base"]), "--opt-in", "off", "--hooks", "on", "--identity", "off",
+            "--out", str(cell / "raw"), "--isotope", str(group["a"])]
+    argv += ["--t0", str(t0)] if t0 else []
+    argv += ["--event-offset", str(first)] if first else []
+    argv += ["--bound-rates", "on", "--bound-record", "on"]
+    return {"argv": argv, "build_binary_sha256": "synthetic", "files": {}, "rc": 0}
+
+
 def _synthetic_harvest(tmp_path: Path, policy: dict, *, skip_group: int | None = None,
-                       registered_counts: bool = False) -> Path:
+                       registered_counts: bool = False, edit_run=None) -> Path:  # type: ignore[no-untyped-def]
     """A repository root holding the theory status, a policy whose groups have ``SYNTHETIC_STRATUM`` events
     per stratum (unless ``registered_counts``) and the harvest summary of correct synthetic chunks of every
-    group but ``skip_group``."""
+    group but ``skip_group``, each with the run record the harness writes (``edit_run`` changes the first
+    chunk's)."""
     from scipy import stats
 
     root = tmp_path / "root"
@@ -679,6 +964,7 @@ def _synthetic_harvest(tmp_path: Path, policy: dict, *, skip_group: int | None =
     n = 3 * SYNTHETIC_STRATUM
     if not registered_counts:
         alpha = float(small["statistics"]["primary"]["per_test_alpha"])
+        small["chunk_events"] = SYNTHETIC_STRATUM
         for g in small["groups"]:
             g["events"] = n
             for st in g["strata"]:
@@ -699,8 +985,10 @@ def _synthetic_harvest(tmp_path: Path, policy: dict, *, skip_group: int | None =
             cell = tmp_path / "cells" / f"g{g['group']:02d}_{k}"
             write_stream(cell, g["route"], pair, SYNTHETIC_STRATUM, float(st["t0_ns"]),
                          seed=100 * g["group"] + k, first=st["first"])
-            (cell / "run.json").write_text(json.dumps({"build_binary_sha256": "synthetic", "files": {}}),
-                                           encoding="utf-8")
+            run = _run_record(g, st["first"], SYNTHETIC_STRATUM, st["t0_ns"], cell)
+            if edit_run is not None and not chunks:
+                run = edit_run(run)
+            (cell / "run.json").write_text(json.dumps(run), encoding="utf-8")
             chunks.append({"group": g["group"], "first": st["first"], "count": SYNTHETIC_STRATUM,
                            "t0_ns": st["t0_ns"], "cell": str(cell)})
     bound.summarize_plan(root, {"switch_on": True, "chunks": chunks}, root / "data/g4/d1")
@@ -732,21 +1020,289 @@ def test_drill_a_missing_group_or_the_registered_count_unmet_fails_rates_and_tra
     gen = _generator()
     missing = gen.build_results(_synthetic_harvest(tmp_path / "a", policy, skip_group=5))
     name = bound.group_name(policy["groups"][5])
-    assert missing["RATE_RESULTS"]["status"] == "FAIL"
+    for family in ("RATE_RESULTS", "TRANSPORT_RESULTS"):
+        assert missing[family]["status"] == "INCOMPLETE", family
+        assert missing[family]["roster_problems"] == [f"{name}: missing"], family
+    assert missing["CLOCK_RESULTS"]["delivery_status"] == "INCOMPLETE"
+    assert missing["CLOCK_RESULTS"]["physical_status"] == "INCOMPLETE"
     assert missing["RATE_RESULTS"]["groups"][name]["complete"]["problems"] == [
-        "the summary has no cell for this group"]
-    assert missing["TRANSPORT_RESULTS"]["status"] == "FAIL"
+        "the summary has no complete cell for this group"]
+    assert (missing["RATE_RESULTS"]["groups"][name]["complete"]["verdict"],
+            missing["RATE_RESULTS"]["groups"][name]["rate"]["verdict"]) == ("fail", "fail")
     rejected = missing["TRANSPORT_RESULTS"]["primary_rejections"]
     assert {r.split(":", 3)[3] for r in rejected} == set(bound.PRIMARY_TESTS)
     assert {r.rsplit(":", 1)[0] for r in rejected} == {name}
-    assert missing["CLOCK_RESULTS"]["delivery_status"] == "FAIL"
+    physical = missing["CLOCK_RESULTS"]["groups"][name]["physical"]
+    assert all(v["verdict"] == "missing" for v in physical.values())
     # the same correct chunks graded against the registered counts: never complete, never inside the limits
     short = gen.build_results(_synthetic_harvest(tmp_path / "b", policy, registered_counts=True))
-    assert short["RATE_RESULTS"]["status"] == "FAIL"
+    assert short["RATE_RESULTS"]["status"] == "INCOMPLETE"
     for group in policy["groups"]:
-        problems = short["RATE_RESULTS"]["groups"][bound.group_name(group)]["complete"]["problems"]
+        name_ = bound.group_name(group)
+        problems = short["RATE_RESULTS"]["groups"][name_]["complete"]["problems"]
         assert f"events {3 * SYNTHETIC_STRATUM} != {group['events']}" in problems
-    assert short["TRANSPORT_RESULTS"]["status"] == "FAIL"
+        assert f"{name_}: {3 * SYNTHETIC_STRATUM} events, {group['events']} registered" in \
+            short["RATE_RESULTS"]["roster_problems"]
+    assert short["TRANSPORT_RESULTS"]["status"] == "INCOMPLETE"
+
+
+@pytest.fixture(scope="module")
+def synthetic_root(tmp_path_factory: pytest.TempPathFactory, policy: dict) -> Path:
+    return _synthetic_harvest(tmp_path_factory.mktemp("synthetic"), policy)
+
+
+def _edited_results(root: Path, tmp_path: Path, edit) -> dict:  # type: ignore[no-untyped-def]
+    """The results of a copy of ``root`` whose harvest rows ``edit`` (rows -> rows) has changed."""
+    copy = tmp_path / "root"
+    shutil.copytree(root, copy)
+    path = copy / bound.HARVEST_RELPATH
+    rows = edit(bound.read_csv(path, bound.HARVEST_COLUMNS))
+    path.write_bytes(bound.render_csv(rows, bound.HARVEST_COLUMNS))
+    return _generator().build_results(copy)
+
+
+def _drop(cell: str, stat_prefix: str, key_prefix: str = ""):  # type: ignore[no-untyped-def]
+    return lambda rows: [r for r in rows if not (r["cell"] == cell and r["stat"].startswith(stat_prefix)
+                                                  and r["key"].startswith(key_prefix))]
+
+
+def _set_row(cell: str, stat: str, key: str, value: str):  # type: ignore[no-untyped-def]
+    def edit(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+        hits = [r for r in rows if (r["cell"], r["stat"], r["key"]) == (cell, stat, key)]
+        assert len(hits) == 1, (cell, stat, key)
+        hits[0]["value"] = value
+        return rows
+    return edit
+
+
+def test_drill_a_missing_stratum_is_named_and_incomplete(synthetic_root: Path, tmp_path: Path,
+                                                         policy: dict) -> None:
+    name = bound.group_name(policy["groups"][0])
+    out = _edited_results(synthetic_root, tmp_path, _drop(name, "stratum_250"))
+    for family in ("RATE_RESULTS", "TRANSPORT_RESULTS", "CLOCK_RESULTS"):
+        assert out[family]["roster_problems"] == [f"{name}: stratum_250 missing"], family
+    assert out["RATE_RESULTS"]["status"] == out["TRANSPORT_RESULTS"]["status"] == "INCOMPLETE"
+    assert out["CLOCK_RESULTS"]["delivery_status"] == out["CLOCK_RESULTS"]["physical_status"] == "INCOMPLETE"
+    stratum = out["RATE_RESULTS"]["groups"][name]["strata"][250]
+    assert stratum["complete"]["problems"] == ["stratum 250 missing"]
+    assert (stratum["complete"]["verdict"], stratum["rate"]["verdict"]) == ("fail", "fail")
+    physical = out["CLOCK_RESULTS"]["groups"][name]["physical"]
+    missing = {k for k, v in physical.items() if v["verdict"] == "missing"}
+    assert missing == {"stop_dio@250", "stop_capture@250"}
+
+
+def test_drill_every_stratum_missing_is_named_and_incomplete(synthetic_root: Path, tmp_path: Path,
+                                                            policy: dict) -> None:
+    name = bound.group_name(policy["groups"][1])
+    out = _edited_results(synthetic_root, tmp_path, _drop(name, "stratum_"))
+    assert set(out["RATE_RESULTS"]["roster_problems"]) == {f"{name}: stratum_{t0} missing"
+                                                            for t0 in bound.T0_NS}
+    assert out["RATE_RESULTS"]["status"] == "INCOMPLETE"
+    assert out["CLOCK_RESULTS"]["physical_status"] == "INCOMPLETE"
+    assert all(v["verdict"] == "missing" for v in out["CLOCK_RESULTS"]["groups"][name]["physical"].values())
+
+
+def test_drill_a_bad_stratum_under_an_unchanged_group_fails_its_family(synthetic_root: Path, tmp_path: Path,
+                                                                      policy: dict) -> None:
+    """A stratum whose rates fail while the group's merged statistics are untouched: the rate family fails on
+    the stratum; a stratum whose event count is not the registered one is named and incomplete."""
+    name = bound.group_name(policy["groups"][2])
+    out = _edited_results(synthetic_root, tmp_path / "a", _set_row(name, "stratum_1000", "rate_fail", "1"))
+    assert out["RATE_RESULTS"]["roster_problems"] == []
+    assert out["RATE_RESULTS"]["status"] == "FAIL"
+    assert out["RATE_RESULTS"]["groups"][name]["rate"]["verdict"] == "pass"
+    assert out["RATE_RESULTS"]["groups"][name]["strata"][1000]["rate"]["verdict"] == "fail"
+    short = _edited_results(synthetic_root, tmp_path / "b",
+                            _set_row(name, "stratum_0", "events", str(SYNTHETIC_STRATUM - 1)))
+    assert short["RATE_RESULTS"]["roster_problems"] == [
+        f"{name}: stratum 0 has {SYNTHETIC_STRATUM - 1} events, {SYNTHETIC_STRATUM} registered"]
+    assert short["RATE_RESULTS"]["status"] == "INCOMPLETE"
+    extra = _edited_results(synthetic_root, tmp_path / "c", _set_row(name, "group", "chunks", "4"))
+    assert extra["RATE_RESULTS"]["roster_problems"] == [f"{name}: 4 chunks, 3 registered"]
+    # a defect in the group's merged statistics alone, its strata untouched: the rate family fails on it
+    group_only = _edited_results(synthetic_root, tmp_path / "d", _set_row(name, "group", "malformed", "1"))
+    assert group_only["RATE_RESULTS"]["roster_problems"] == []
+    assert group_only["RATE_RESULTS"]["groups"][name]["complete"]["verdict"] == "fail"
+    strata = group_only["RATE_RESULTS"]["groups"][name]["strata"]
+    assert all(x["complete"]["verdict"] == "pass" for x in strata.values())
+    assert group_only["RATE_RESULTS"]["status"] == "FAIL"
+
+
+def test_drill_a_stratum_outside_the_registered_ones_is_named(synthetic_root: Path, tmp_path: Path,
+                                                              policy: dict) -> None:
+    name = bound.group_name(policy["groups"][0])
+
+    def move(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+        for r in rows:
+            if r["cell"] == name and r["stat"] == "stratum_250":
+                r["stat"] = "stratum_500"
+        return rows
+
+    out = _edited_results(synthetic_root, tmp_path, move)
+    assert out["RATE_RESULTS"]["roster_problems"] == [f"{name}: stratum_250 missing",
+                                                      f"{name}: stratum_500 is not registered"]
+    assert out["RATE_RESULTS"]["status"] == "INCOMPLETE"
+    assert "t0=500: not a registered stratum" in out["CLOCK_RESULTS"]["groups"][name]["delivery"]["problems"]
+
+
+def test_drill_a_cell_outside_the_roster_or_a_missing_clock_category_is_named(synthetic_root: Path,
+                                                                             tmp_path: Path,
+                                                                             policy: dict) -> None:
+    name = bound.group_name(policy["groups"][0])
+
+    def extra(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+        return rows + [{**r, "cell": "X-99:v0:stopping"} for r in rows if r["cell"] == name]
+
+    out = _edited_results(synthetic_root, tmp_path / "a", extra)
+    assert out["RATE_RESULTS"]["roster_problems"] == ["X-99:v0:stopping: not a registered group"]
+    assert out["RATE_RESULTS"]["status"] == "INCOMPLETE"
+    gone = _edited_results(synthetic_root, tmp_path / "b", _drop(name, "stratum_0", "clock.stop_dio."))
+    clocks = gone["CLOCK_RESULTS"]
+    assert "t0=0 stop_dio: missing" in clocks["groups"][name]["delivery"]["problems"]
+    assert clocks["delivery_status"] == "FAIL" and clocks["physical_status"] == "INCOMPLETE"
+    half = _edited_results(synthetic_root, tmp_path / "c", _drop(name, "stratum_0", "clock.stop_dio.n"))
+    assert "t0=0 stop_dio: missing" in half["CLOCK_RESULTS"]["groups"][name]["delivery"]["problems"]
+
+
+def test_drill_an_empty_roster_or_a_duplicated_row_never_passes(synthetic_root: Path, policy: dict) -> None:
+    harvest = bound.load_harvest(synthetic_root)
+    problems = bound.roster_problems({**policy, "groups": []}, harvest)
+    assert problems[0] == "the policy registers no group"
+    assert set(problems[1:]) == {f"{name}: not a registered group" for name in harvest}
+    assert bound.roster_problems(policy, {}) == [f"{bound.group_name(g)}: missing" for g in policy["groups"]]
+    twice = bound.roster_problems({**policy, "groups": policy["groups"] + policy["groups"][:1]}, harvest)
+    assert f"{bound.group_name(policy['groups'][0])}: registered more than once" in twice
+    for route in bound.ROUTES:
+        none = bound.gate_clocks({}, route, ())
+        assert none["delivery"]["problems"] == ["no registered stratum"]
+        assert none["physical_verdict"] == "incomplete"
+        stray = bound.gate_clocks({250: harvest[bound.group_name(policy["groups"][0])]["stratum_250"]},
+                                  route, (0,))
+        assert "t0=250: not a registered stratum" in stray["delivery"]["problems"]
+
+
+def test_drill_a_duplicated_summary_row_is_refused(synthetic_root: Path, tmp_path: Path) -> None:
+    with pytest.raises(bound.BoundRateError, match="appears twice"):
+        _edited_results(synthetic_root, tmp_path, lambda rows: rows + rows[-1:])
+
+
+def test_drill_a_distribution_only_failure_fails_transport_with_no_primary_rejection(
+        synthetic_root: Path, tmp_path: Path, policy: dict) -> None:
+    """Every delay of one group moved into the first bin, its sums and branch counts untouched: the four
+    registered tests pass, the distribution family fails, and the transport family fails on it alone."""
+    name = bound.group_name(policy["groups"][3])
+
+    def pile(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+        cells = [r for r in rows
+                 if (r["cell"], r["stat"]) == (name, "group") and r["key"].startswith("bin.all.")]
+        total = sum(int(r["value"]) for r in cells)
+        for r in cells:
+            r["value"] = str(total if r["key"] == "bin.all.0" else 0)
+        return rows
+
+    out = _edited_results(synthetic_root, tmp_path, pile)
+    transport = out["TRANSPORT_RESULTS"]
+    assert transport["status"] == "FAIL"
+    assert transport["primary_rejections"] == []
+    assert transport["distribution_rejections"] == [f"{name}:all"]
+    assert out["RATE_RESULTS"]["status"] == "PASS"
+
+
+def test_drill_an_unexpected_clock_outcome_is_listed_exactly(synthetic_root: Path, tmp_path: Path,
+                                                             policy: dict) -> None:
+    """A category predicted to fail its physical check observed to pass: the outcome is listed, alone, as not
+    as predicted, and the delivered clock still passes."""
+    group = next(g for g in policy["groups"] if g["route"] == bound.STOPPING)
+    name = bound.group_name(group)
+    assert bound.PREDICTED_PHYSICAL["stop_capture"][250] == "fail"
+    out = _edited_results(synthetic_root, tmp_path,
+                          _set_row(name, "stratum_250", "clock.stop_capture.fail_physical", "0"))
+    clocks = out["CLOCK_RESULTS"]
+    assert clocks["not_as_predicted"] == [f"{name}:stop_capture@250"]
+    assert f"{name}:stop_capture@250" not in clocks["physical_failures"]
+    assert clocks["delivery_status"] == "PASS"
+
+
+def _argv_set(flag: str, value: str):  # type: ignore[no-untyped-def]
+    def edit(run: dict) -> dict:
+        argv = list(run["argv"])
+        argv[argv.index(flag) + 1] = value
+        return {**run, "argv": argv}
+    return edit
+
+
+def _argv_drop(flag: str):  # type: ignore[no-untyped-def]
+    def edit(run: dict) -> dict:
+        argv = list(run["argv"])
+        i = argv.index(flag)
+        return {**run, "argv": argv[:i] + argv[i + 2:]}
+    return edit
+
+
+#: (label, how the run record of a registered chunk is changed, the problem named)
+PROVENANCE_DEFECTS = [
+    ("another seed base", _argv_set("--seed-base", "1"), "--seed-base '1'"),
+    ("another start time", _argv_set("--t0", "1000"), "--t0 '1000'"),
+    ("no event offset", _argv_drop("--event-offset"), "--event-offset None"),
+    ("another element", _argv_set("--symbol", "O"), "--symbol 'O'"),
+    ("another Z", _argv_set("--Z", "8"), "--Z '8'"),
+    ("another mass number", _argv_set("--isotope", "13"), "--isotope '13'"),
+    ("another event count", _argv_set("--events", "2999"), "--events '2999'"),
+    ("the switch off", _argv_set("--bound-rates", "off"), "--bound-rates 'off'"),
+    ("the dataset opt-in on", _argv_set("--opt-in", "on"), "--opt-in 'on'"),
+    ("another route", _argv_set("--route", "stopping"), "--route 'stopping'"),
+    ("an option the policy does not register", lambda r: {**r, "argv": r["argv"] + ["--drill-a", "13"]},
+     "options the policy does not register: --drill-a"),
+    ("an option given twice", lambda r: {**r, "argv": r["argv"] + ["--hooks", "on"]},
+     "an option given twice"),
+    ("another chunk's output", _argv_set("--out", "/elsewhere/raw"), "is not the chunk's own"),
+    ("another revision's binary",
+     lambda r: {**r, "argv": ["/apps/builds/v0-bound-trace/harvest_mixture"] + r["argv"][1:]},
+     "is not the v11.5.0.beta traced bound-rate build"),
+    ("a failed run", lambda r: {**r, "rc": 1}, "exit code 1"),
+    ("no command line", lambda r: {k: v for k, v in r.items() if k != "argv"}, "no readable command line"),
+]
+
+
+@pytest.mark.parametrize("label, change, problem", PROVENANCE_DEFECTS, ids=[c[0] for c in PROVENANCE_DEFECTS])
+def test_drill_a_run_record_that_disagrees_with_the_policy_is_named(  # type: ignore[no-untyped-def]
+        tmp_path: Path, policy: dict, label: str, change, problem: str) -> None:
+    """A registered chunk (group 3, the second stratum's second chunk) whose run record departs from the
+    policy in one respect: the disagreement is named; the record as the harness writes it has none."""
+    group = policy["groups"][3]
+    reg = bound.chunks(group)[len(bound.chunks(group)) // 3 + 1]
+    chunk = {"group": 3, "first": reg["first"], "count": reg["count"], "t0_ns": reg["t0_ns"],
+             "cell": str(tmp_path / "c")}
+    good = _run_record(group, reg["first"], reg["count"], reg["t0_ns"], tmp_path / "c")
+    assert reg["t0_ns"] and reg["first"]
+    assert bound.run_provenance_problems(policy, group, chunk, good) == []
+    problems = bound.run_provenance_problems(policy, group, chunk, change(good))
+    assert any(problem in p for p in problems), (label, problems)
+
+
+def test_drill_a_plan_chunk_the_policy_does_not_register_is_named(tmp_path: Path, policy: dict) -> None:
+    group = policy["groups"][0]
+    reg = bound.chunks(group)[1]
+    good = _run_record(group, reg["first"], reg["count"], reg["t0_ns"], tmp_path / "c")
+    for chunk in ({**reg, "first": reg["first"] + 1}, {**reg, "count": reg["count"] - 1},
+                  {**reg, "t0_ns": 1000}):
+        problems = bound.run_provenance_problems(policy, group, {**chunk, "cell": str(tmp_path / "c")}, good)
+        assert problems == [f"chunk at {chunk['first']}: not a chunk the policy registers"], (chunk, problems)
+
+
+def test_drill_a_disagreeing_run_record_makes_the_harvest_incomplete(tmp_path: Path, policy: dict) -> None:
+    root = _synthetic_harvest(tmp_path, policy, edit_run=_argv_set("--seed-base", "1"))
+    out = _generator().build_results(root)
+    name = bound.group_name(policy["groups"][0])
+    seed = policy["groups"][0]["seed_base"]
+    assert out["RATE_RESULTS"]["roster_problems"] == [
+        f"{name}: 1 run records disagree with the policy (chunk at 0: --seed-base '1', registered '{seed}')"]
+    for family in ("RATE_RESULTS", "TRANSPORT_RESULTS"):
+        assert out[family]["status"] == "INCOMPLETE", family
+    harvest = bound.load_harvest(root)
+    harvest[name]["meta"].pop("provenance_problems")
+    assert f"{name}: no provenance check of its run records" in bound.roster_problems(
+        bound.load_policy(root), harvest)
 
 
 def test_drill_an_empty_branch_fails_its_conditional_test(policy: dict) -> None:
@@ -798,9 +1354,16 @@ def _scale_sum(g: dict, stream: str, factor: float) -> dict:
 
 
 def _complete_manifest() -> dict:
-    terms = {name: {"value": "1e-6", "source": "a stated derivation"} for name in bound.REQUIRED_TERMS}
+    bounded = {"status": "BOUNDED", "bound": 1e-6, "source": "a stated derivation"}
+    terms: dict[str, dict[str, object]] = {name: dict(bounded) for name in bound.ERROR_TERMS}
+    terms[bound.EQUATION_TERM] = {"status": "VERIFIED", "statement": "the primary equation, read",
+                                  "source": "the primary paper"}
     return {"terms": terms, "qualified_roster": ["6-12"],
             "references": [{"id": "independent width", "independent": True, "exposed": False}]}
+
+
+def _term(name: str, **fields: object):  # type: ignore[no-untyped-def]
+    return lambda m: {**m, "terms": {**m["terms"], name: {**m["terms"][name], **fields}}}
 
 
 def test_the_committed_theory_status_is_what_the_gate_gives() -> None:
@@ -808,7 +1371,8 @@ def test_the_committed_theory_status_is_what_the_gate_gives() -> None:
     verdict = bound.theory_admission(manifest)
     assert verdict["status"] == manifest["status"] == "NOT_ESTABLISHED"
     assert manifest["screen"] == "SCREEN_VACUOUS" and manifest["qualified_roster"] == []
-    assert len(verdict["problems"]) == len(bound.REQUIRED_TERMS)
+    for name in bound.REQUIRED_TERMS:
+        assert any(p.startswith(f"{name}: ") for p in verdict["problems"]), name
 
 
 def _without(m: dict, term: str) -> dict:
@@ -820,7 +1384,21 @@ def _without(m: dict, term: str) -> dict:
     ("complete, empty roster", lambda m: {**m, "qualified_roster": []}, "SCREEN_VACUOUS"),
     ("a required term removed", lambda m: _without(m, "radiative"), "NOT_ESTABLISHED"),
     ("an unknown term replaced by zero",
-     lambda m: {**m, "terms": {**m["terms"], "recoil": {"value": "0", "source": None}}}, "NOT_ESTABLISHED"),
+     lambda m: {**m, "terms": {**m["terms"], "recoil": {"status": "UNKNOWN", "bound": 0, "source": None}}},
+     "NOT_ESTABLISHED"),
+    ("an unbounded term written as a zero bound", _term("recoil", status="UNBOUNDED", bound=0),
+     "NOT_ESTABLISHED"),
+    ("a NaN bound", _term("finite_size", bound=float("nan")), "NOT_ESTABLISHED"),
+    ("a +inf bound", _term("finite_size", bound=float("inf")), "NOT_ESTABLISHED"),
+    ("a -inf bound", _term("finite_size", bound=float("-inf")), "NOT_ESTABLISHED"),
+    ("a bound written as text", _term("finite_size", bound="not a bound"), "NOT_ESTABLISHED"),
+    ("a bound written as a numeric string", _term("finite_size", bound="1e-6"), "NOT_ESTABLISHED"),
+    ("a boolean bound", _term("finite_size", bound=True), "NOT_ESTABLISHED"),
+    ("a negative bound", _term("finite_size", bound=-1e-6), "NOT_ESTABLISHED"),
+    ("an error term with no status", _term("radiative", status=None), "NOT_ESTABLISHED"),
+    ("an error term with an empty source", _term("radiative", source=" "), "NOT_ESTABLISHED"),
+    ("an unverified equation", _term("equation", status="UNKNOWN"), "NOT_ESTABLISHED"),
+    ("an equation with no statement", _term("equation", statement=None), "NOT_ESTABLISHED"),
     ("an unsupported nuclide admitted", lambda m: {**m, "qualified_roster": ["14-28"]}, "NOT_ESTABLISHED"),
     ("a dependent reference",
      lambda m: {**m, "references": [{"id": "same formula", "independent": False, "exposed": False}]},
@@ -828,9 +1406,7 @@ def _without(m: dict, term: str) -> dict:
     ("an exposed reference as a holdout",
      lambda m: {**m, "references": [{"id": "residuals", "independent": True, "exposed": True}]},
      "NOT_ESTABLISHED"),
-    ("a sourced term with no value",
-     lambda m: {**m, "terms": {**m["terms"], "recoil": {"value": None, "source": "a stated derivation"}}},
-     "NOT_ESTABLISHED"),
+    ("a sourced term with no bound", _term("recoil", bound=None), "NOT_ESTABLISHED"),
     ("a reference that does not state its independence",
      lambda m: {**m, "references": [{"id": "unstated", "exposed": False}]}, "NOT_ESTABLISHED"),
     ("a reference that does not state its exposure",
@@ -900,13 +1476,56 @@ def test_the_harvest_covers_every_group_chunk_and_stratum_of_the_policy(policy: 
         assert sum(cell[f"stratum_{t}"]["events"] for t in bound.T0_NS) == g["events"]
 
 
-def test_every_group_is_complete_and_every_consumed_rate_is_the_registered_one(policy: dict,
-                                                                             harvest: dict) -> None:
+def test_every_group_is_complete_and_its_rates_are_the_registered_ones(policy: dict, harvest: dict) -> None:
+    """Every group complete, read by the current analysis. Every stopping event received the registered pair
+    bit for bit from one common-status call; every atomic event stored the registered reciprocal lifetimes bit
+    for bit, from the one valid helper call of its process, and the rates G4MuonicAtomDecay recovers from them
+    are inside the rate tolerance -- bit for bit exactly where binary64 gives the registered pair back."""
     for g in policy["groups"]:
-        s = harvest[bound.group_name(g)]["group"]
-        assert bound.gate_complete(s, g["events"])["verdict"] == "pass", bound.group_name(g)
-        assert bound.gate_rate(s, g["route"])["verdict"] == "pass", bound.group_name(g)
-        assert s["rate_exact"] == g["events"], bound.group_name(g)
+        name = bound.group_name(g)
+        cell = harvest[name]
+        s = cell["group"]
+        assert cell["meta"]["analysis_version"] == str(bound.ANALYSIS_VERSION), name
+        assert bound.gate_complete(s, g["events"])["verdict"] == "pass", name
+        assert bound.gate_rate(s, g["route"])["verdict"] == "pass", name
+        assert s["rate_exact"] == g["events"] and s["malformed"] == 0, name
+        if g["route"] == bound.STOPPING:
+            assert s["wiring_fail"] == 0 and s["provider_calls_helper"] == 0, name
+        else:
+            pair = bound.frozen_pair(policy, g["isotope"])
+            exact = bound.recovered_rates(pair.lifetimes) == (pair.decay, pair.capture)
+            assert s["recovered_fail"] == 0, name
+            assert s["recovered_exact"] == (g["events"] if exact else 0), name
+            assert (s["helper_calls_valid"], s["helper_calls_invalid"]) == (s["chunks"], 0), name
+            assert s["lifetimes_from_call_fail"] == 0, name
+
+
+def test_the_reanalysis_keeps_every_registered_outcome_of_the_first_summary(results: dict) -> None:
+    """The summary recomputed from the same raw records by the current reader: every registered outcome of
+    the first summary's results, kept as committed, is unchanged -- statuses, verdicts, statistics,
+    intervals, rejections, clock counts and residuals -- and the new results name no roster problem."""
+    history = ROOT / "data/g4/d1/history/bound_rates_results.analysis1.json"
+    # the first results as they were committed, byte for byte
+    assert hashlib.sha256(history.read_bytes()).hexdigest() == (
+        "ff3b4df548c9f0e73b6be4118875f5f5e4418bf43cad26c74f074e3600ca0944")
+    first = json.loads(history.read_text(encoding="utf-8"))
+
+    def strip(x: object) -> object:
+        if isinstance(x, dict):
+            return {k: strip(v) for k, v in x.items()
+                    if k not in ("problems", "roster_problems", "strata", "recovered_exact_events",
+                                 "recovered_max_relative_deviation", "qualified_roster")}
+        if isinstance(x, list):
+            return [strip(v) for v in x]
+        return x
+
+    for family in ("RATE_RESULTS", "TRANSPORT_RESULTS", "CLOCK_RESULTS"):
+        assert results[family]["roster_problems"] == [], family
+        assert strip(results[family]) == strip(first[family]), family
+    assert results["THEORY_STATUS"]["status"] == first["THEORY_STATUS"]["status"]
+    # the strata the first results kept under transport are the counts the new ones keep
+    for name, g in first["TRANSPORT_RESULTS"]["groups"].items():
+        assert g["strata"] == results["TRANSPORT_RESULTS"]["groups"][name]["strata"], name
 
 
 def test_the_four_registered_tests_recomputed_independently(policy: dict, harvest: dict,
@@ -1050,6 +1669,32 @@ def test_every_drill_turns_its_intended_family_red_and_every_control_stays_green
         assert any(c.startswith(f"drill:control:control:{rev}:") for c in grouped), rev
 
 
+def test_the_drill_sentence_counts_are_recounted_independently() -> None:
+    """The three counts of section 14's drill sentence, recounted from the committed drill summary and
+    rulings by kind and intended set alone (each run's red or green outcome is the drill test's): the runs
+    with a nonempty intended set outside the rulings, the drill runs whose intended set is empty (an
+    unaffected route or isotope) and the controls -- with the ruled runs, every run once."""
+    metas: dict[str, dict[str, str]] = {}
+    for r in bound.read_csv(ROOT / bound.DRILLS_RELPATH, bound.HARVEST_COLUMNS):
+        if r["stat"] == "meta":
+            metas.setdefault(r["cell"], {})[r["key"]] = r["value"]
+    ruled = {r["item"] for r in _rulings("statistical")}
+    drills = {c: m for c, m in metas.items() if m["kind"] != "control" and c not in ruled}
+    red = sum(1 for m in drills.values() if m["intended"] != "none")
+    unaffected = [m for m in drills.values() if m["intended"] == "none"]
+    controls = sum(1 for m in metas.values() if m["kind"] == "control")
+    assert red + len(unaffected) + controls + len(ruled) == len(metas) and ruled <= set(metas)
+    # an empty intended set only where the drill's defect does not reach: another route or another isotope
+    for m in unaffected:
+        assert (m["drill"], m["route"], m["nuclide"]) in {("drop_a", "atomic", "C-12"),
+                                                         ("old_helper_atomic", "stopping", "C-12")}, m
+    text = " ".join((ROOT / "DATASET_D1.md").read_text(encoding="utf-8").split())
+    sentence = (r"(\d+) runs with nonempty intended failure sets turned every intended family red; "
+                r"(\d+) runs on unaffected routes or isotopes and all (\d+) matched controls stayed green")
+    found = re.findall(sentence, text)
+    assert found == [(str(red), str(len(unaffected)), str(controls))], found
+
+
 def test_every_identity_drill_is_detected() -> None:
     """Every identity drill observed as expected, except where a ruling finds the check not applicable (the
     drill never runs on that route); there the ruling's replacement drill, on the same revision and
@@ -1149,6 +1794,120 @@ def test_document_section_14_is_the_generated_text() -> None:
     text = (ROOT / gen.DOCUMENT).read_text(encoding="utf-8").replace("\r\n", "\n")
     assert text.count("\n" + gen.SECTION_HEADING + "\n") == 1
     assert text.split("\n## 14. ", 1)[1] == gen.render_section(ROOT)[len("## 14. "):]
+
+
+def _render_root(tmp_path: Path) -> Path:
+    """A copy of the files section 14 is rendered from: the committed bound-rate files and their history, the
+    decay-rate oracle and the helper source the reference reads."""
+    root = tmp_path / "root"
+    for rel in [str(x.relative_to(ROOT)) for x in (ROOT / "data/g4/d1").glob("bound_rates_*")] + [
+            "data/g4/d1/history/bound_rates_results.analysis1.json", "data/g4/d1/d1_decay_rate.oracle",
+            "third_party/geant4/v11.4.2/G4MuonicAtomHelper.cc"]:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / rel, root / rel)
+    return root
+
+
+def _edit_csv(path: Path, cell: str, stat: str, key: str, value: str) -> None:
+    rows = bound.read_csv(path, bound.HARVEST_COLUMNS)
+    hits = [r for r in rows if (r["cell"], r["stat"], r["key"]) == (cell, stat, key)]
+    assert len(hits) == 1, (cell, stat, key)
+    hits[0]["value"] = value
+    path.write_bytes(bound.render_csv(rows, bound.HARVEST_COLUMNS))
+
+
+def _edit_json(path: Path, edit) -> None:  # type: ignore[no-untyped-def]
+    data = json.loads(path.read_text(encoding="utf-8"))
+    edit(data)
+    path.write_text(json.dumps(data, indent=1, sort_keys=True) + "\n", encoding="ascii", newline="\n")
+
+
+def _first_cell(policy: dict, route: str) -> str:
+    return bound.group_name(next(g for g in policy["groups"] if g["route"] == route))
+
+
+def _first_control(rows_path: Path) -> str:
+    return next(r["cell"] for r in bound.read_csv(rows_path, bound.HARVEST_COLUMNS)
+                if r["stat"] == "meta" and r["key"] == "kind" and r["value"] == "control")
+
+
+HISTORY_RELPATH = "data/g4/d1/history/bound_rates_results.analysis1.json"
+
+
+def _stopping_pair_short(root: Path, policy: dict) -> None:
+    group = next(g for g in policy["groups"] if g["route"] == bound.STOPPING)
+    _edit_csv(root / bound.HARVEST_RELPATH, bound.group_name(group), "group", "rate_exact",
+              str(group["events"] - 1))
+
+
+def _atomic_recovered_fail(root: Path, policy: dict) -> None:
+    _edit_csv(root / bound.HARVEST_RELPATH, _first_cell(policy, bound.ATOMIC), "group", "recovered_fail", "1")
+
+
+def _old_analysis_version(root: Path, policy: dict) -> None:
+    _edit_csv(root / bound.HARVEST_RELPATH, _first_cell(policy, bound.ATOMIC), "meta", "analysis_version",
+              "1")
+
+
+def _roster_problem(root: Path, policy: dict) -> None:
+    _edit_json(root / bound.RESULTS_RELPATH,
+               lambda d: d["RATE_RESULTS"].__setitem__("roster_problems", ["x: missing"]))
+
+
+def _first_outcome_differs(root: Path, policy: dict) -> None:
+    _edit_json(root / HISTORY_RELPATH,
+               lambda d: d["TRANSPORT_RESULTS"].__setitem__("primary_rejections", ["x:y"]))
+
+
+def _control_red(root: Path, policy: dict) -> None:
+    path = root / bound.DRILLS_RELPATH
+    _edit_csv(path, _first_control(path), "group", "rate_fail", "1")
+
+
+def _ruled_run_absent(root: Path, policy: dict) -> None:
+    path = root / bound.DRILLS_RELPATH
+    item = bound.read_csv(root / RULINGS_RELPATH, RULING_COLUMNS)[0]["item"]
+    rows = [r for r in bound.read_csv(path, bound.HARVEST_COLUMNS) if r["cell"] != item]
+    path.write_bytes(bound.render_csv(rows, bound.HARVEST_COLUMNS))
+
+
+def _clock_not_as_predicted(root: Path, policy: dict) -> None:
+    for path in (root / bound.RESULTS_RELPATH, root / HISTORY_RELPATH):
+        _edit_json(path, lambda d: d["CLOCK_RESULTS"].__setitem__("not_as_predicted", ["x:y@0"]))
+
+
+#: (label, how the copied files are changed, the refusal section 14's renderer must give)
+RENDER_DEFECTS = [
+    ("a stopping event without the exact pair", _stopping_pair_short,
+     "not every stopping event received the pair exactly"),
+    ("an atomic event whose recovered rates fail", _atomic_recovered_fail,
+     "an atomic lifetime or recovered rate disagrees"),
+    ("a harvest cell from another analysis version", _old_analysis_version,
+     "a harvest cell from another analysis version"),
+    ("a results file naming a roster problem", _roster_problem,
+     "the summary does not match the registered roster"),
+    ("a first-summary outcome that differs", _first_outcome_differs,
+     "a registered outcome differs from the first summary's"),
+    ("a control that turned red", _control_red, "the section does not state it"),
+    ("a ruled run missing from the drill summary", _ruled_run_absent,
+     "a ruled drill run or its rerun is not in the drill summary"),
+    ("a clock outcome not as predicted, in both summaries", _clock_not_as_predicted,
+     "a clock result not as predicted"),
+]
+
+
+def test_section_14_renders_the_same_from_a_copy_of_its_files(tmp_path: Path) -> None:
+    gen = _generator()
+    assert gen.render_section(_render_root(tmp_path)) == gen.render_section(ROOT)
+
+
+@pytest.mark.parametrize("label, change, refusal", RENDER_DEFECTS, ids=[c[0] for c in RENDER_DEFECTS])
+def test_drill_section_14_refuses_what_it_does_not_state(  # type: ignore[no-untyped-def]
+        tmp_path: Path, policy: dict, label: str, change, refusal: str) -> None:
+    root = _render_root(tmp_path)
+    change(root, policy)
+    with pytest.raises(SystemExit, match=re.escape(refusal)):
+        _generator().render_section(root)
 
 
 def document_pins(numeric: re.Pattern[str]) -> list[tuple[str, str, str, tuple[int, ...], object]]:
