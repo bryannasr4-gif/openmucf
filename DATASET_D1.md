@@ -812,7 +812,7 @@ A stop in a target of natural composition draws an isotope with the element's re
 | class | answer | records, `parity` | rows, evaluated profiles |
 |---|---|---|---|
 | `evaluated_isotope` | a row of the selected evaluated profile keyed by the nuclide | 0 | 24 |
-| `parity_isotope` | a compiled-in record of a separated isotope, of an element with a single natural isotope or of an isotope another primary tabulates, whose value equals a printed cell | 35 | 0 |
+| `parity_isotope` | a compiled-in record of an element with a single natural isotope, whatever the lineage of its value, or of a separated isotope or an isotope another primary tabulates whose value equals a printed cell exactly or comes from another primary | 35 | 0 |
 | `parity_isotope_lineage_open` | a compiled-in record of a separated isotope whose value equals a printed cell only at that cell's printed precision, or equals no printed cell | 10 | 0 |
 | `parity_mixed_reconstructed` | a compiled-in record whose value is a stated inverse-variance combination of printed rows measured on targets of different composition, recomputed and reproduced | 3 | 0 |
 | `parity_natural` | a compiled-in record of the element printed with no mass number | 40 | 0 |
