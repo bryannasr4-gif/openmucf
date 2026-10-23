@@ -1084,6 +1084,7 @@ def test_t34_import_fence():
         "d1_lifetime.py",
         "stopped_mu.py",
         "d1_mixture.py",
+        "capture_cascade.py",
         "sources/__init__.py",
         "sources/d1_nuclear_capture.py",
         "sources/mizuno2025.py",

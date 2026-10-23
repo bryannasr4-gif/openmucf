@@ -5,8 +5,11 @@ generate `BENCHMARK_STOPPED_MU.md`.
 
 reads `data/g4/stopped_mu/preregistration.json` and `cells.jsonl`, admits every cell, builds one comparison
 row per row of the pre-registration and judges it in exact arithmetic, and writes `comparison.csv` and
-`verdicts.csv` beside them; it then renders the document from those files, `builds.csv`, `reproduced.csv` and
-`data/g4/d1/geant4_natural_isotopes.csv`. No float decides a byte of any of the three files: every number the
+`verdicts.csv` beside them; it compares the stock muonic cascade of `openmucf/g4/capture_cascade.py` with
+the measured ratios of `cascade_reference.csv` under `cascade_rule.json` and tests the harvested cascades of
+`cascade_harvest.csv` and `cascade_transitions.csv`, writing `cascade_comparison.csv` and `cascade_consumer.csv`; it
+then renders the document from those files, `builds.csv`, `reproduced.csv`,
+`data/g4/d1/geant4_natural_isotopes.csv` and the vendored `G4EmCaptureCascade.cc` of `third_party/geant4/`. No float decides a byte: every number the
 document takes from those files fills a slot of `render`, whose spans the prose census pins; the generator itself
 defines the display precision of the row table and the citations of the prior work.
 """
@@ -16,8 +19,11 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
+import io
+import json
 import re
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, localcontext
 from fractions import Fraction
@@ -57,7 +63,31 @@ def compare(prereg: Path = DATA / "preregistration.json") -> None:
         sm.VERDICT_COLUMNS,
         [{"row_id": v.row_id, "verdict": v.verdict, "kind": v.kind, "pull": v.pull} for v in verdicts],
     )
-    DOCUMENT.write_text(document(prereg).text, encoding="utf-8", newline="\n")
+    inp = load_inputs(prereg)
+    tables = canonical_tables(inp)
+    write_csv(DATA / "cascade_comparison.csv", cc.COMPARISON_COLUMNS, tables.comparison)
+    write_csv(DATA / "cascade_consumer.csv", cc.CONSUMER_COLUMNS, tables.consumer)
+    # the audit of the written files, before the document: each file's bytes must be the canonical serialization
+    # of the canonical table of the inputs, and, read raw (its header and every record, before any mapping), its
+    # exact columns must give every decision and verdict and equal the canonical table as a whole
+    problems = written_table_problems(
+        "cascade_consumer",
+        read_bytes(DATA / "cascade_consumer.csv"),
+        cc.CONSUMER_COLUMNS,
+        tables.consumer,
+        lambda rows: consumer_problems(rows, inp, tables.consumer),
+    )
+    problems += written_table_problems(
+        "cascade_comparison",
+        read_bytes(DATA / "cascade_comparison.csv"),
+        cc.COMPARISON_COLUMNS,
+        tables.comparison,
+        lambda rows: comparison_problems(rows, inp, tables.comparison),
+    )
+    if problems:
+        raise ValueError(f"the written cascade tables do not certify their decisions: {problems[:3]}")
+    # the document is rendered from the canonical tables, which the written files have just been proved to be
+    DOCUMENT.write_text(render(inp, tables).text, encoding="utf-8", newline="\n")
     tally: dict[str, int] = {}
     for v in verdicts:
         tally[v.verdict] = tally.get(v.verdict, 0) + 1
@@ -207,11 +237,59 @@ class Inputs:
     builds: list[dict[str, str]]
     reproduced: list[dict[str, str]]
     natural: list[dict[str, str]]
+    cascade: Cascade
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8", newline="") as stream:
         return list(csv.DictReader(stream))
+
+
+def read_bytes(path: Path) -> bytes:
+    """The bytes of a written file, as the audit of compare reads them."""
+    return path.read_bytes()
+
+
+def raw_rows(name: str, data: bytes, columns: tuple[str, ...]) -> tuple[list[dict[str, str]], list[str]]:
+    """The rows of a written table read raw, before any mapping can merge or drop a cell: the bytes decoded as
+    UTF-8 (strictly), the records split by csv.reader, the header equal to ``columns`` exactly (each name once, in
+    order, no other) and every record exactly len(columns) fields. Returns (rows, problems); the rows are mapped
+    to their columns only when there is no problem."""
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return [], [f"{name}: the file is not UTF-8"]
+    records = list(csv.reader(io.StringIO(text, newline="")))
+    if not records:
+        return [], [f"{name}: the file is empty"]
+    header, body = records[0], records[1:]
+    problems = []
+    if header != list(columns):
+        problems.append(f"{name}: the header is not the schema, each column once and in order")
+    widths = [i for i, record in enumerate(body, 2) if len(record) != len(columns)]
+    if widths:
+        problems.append(f"{name}: records {widths[:3]} do not have exactly {len(columns)} fields")
+    if problems:
+        return [], problems
+    return [dict(zip(columns, record, strict=True)) for record in body], []
+
+
+def written_table_problems(
+    name: str,
+    data: bytes,
+    columns: tuple[str, ...],
+    canonical: list[dict[str, str]],
+    row_problems: Callable[[list[dict[str, str]]], list[str]],
+) -> list[str]:
+    """Every problem of a written table, from its bytes: they must be the canonical serialization of the canonical
+    table (cc.csv_text, UTF-8: the display columns included, since they follow from the exact values; no BOM,
+    CRLF, reordered, duplicated or extra column, or changed final newline); and, independently, the table read raw
+    (raw_rows) must pass ``row_problems``, the exact recompute and the whole-table equality of its exact columns."""
+    out = []
+    if data != cc.csv_text(columns, canonical).encode("utf-8"):
+        out.append(f"{name}: the bytes are not the canonical serialization of the table the inputs give")
+    rows, problems = raw_rows(name, data, columns)
+    return out + (problems if problems else row_problems(rows))
 
 
 def load_inputs(prereg: Path = DATA / "preregistration.json") -> Inputs:
@@ -224,6 +302,7 @@ def load_inputs(prereg: Path = DATA / "preregistration.json") -> Inputs:
         read_csv(DATA / "builds.csv"),
         read_csv(DATA / "reproduced.csv"),
         read_csv(NATURAL),
+        load_cascade(policy),
     )
 
 
@@ -347,7 +426,806 @@ def reproduction(inp: Inputs) -> tuple[list[tuple[str, str, str]], list[tuple[di
     return list(by_cell), faults
 
 
-def render(inp: Inputs) -> Rendered:
+# ------------------------------------------------------------------------------------- the muonic X-ray cascade
+CASCADE_MODULE = ROOT / "openmucf" / "g4" / "capture_cascade.py"
+_cspec = importlib.util.spec_from_file_location("g4_capture_cascade_reference", CASCADE_MODULE)
+assert _cspec is not None and _cspec.loader is not None
+cc = importlib.util.module_from_spec(_cspec)
+sys.modules[_cspec.name] = cc
+_cspec.loader.exec_module(cc)
+VENDORED = ROOT / "third_party" / "geant4"
+#: The width of the integer type ``G4int`` names (``using G4int = int`` in ``G4Types.hh``) on the platforms the
+#: harvest ran on; ``cascade_domain`` checks that the module's domain is exactly where Z^4 fits it.
+INT_BITS = 32
+#: Display precision of the cascade's row table (decimals) and of the domain extremes (decimals of a percent).
+CASCADE_DECIMALS = 6
+DOMAIN_DECIMALS = 3
+SOURCE_NAMES = {
+    "orth1982": "Orth et al.",
+    "ensdf_measday2007": "ENSDF (Measday et al.)",
+    "kirch1999": "Kirch et al.",
+}
+CATALDO = (
+    "Cataldo et al. compared a Geant4-based simulation in which a single de-excitation from a MuDirac database "
+    "replaces the cascade with a silicon spectrum measured at ISIS, found the intensities of the simulated spectra "
+    "not well reproduced, and wrote that implementing their database in Geant4 would require an alternative class "
+    "to `G4EmCaptureCascade` (Condens. Matter 8, 101 (2023), <https://doi.org/10.3390/condmat8040101>)."
+)
+SUPERSCRIPT = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+
+@dataclass
+class Cascade:
+    rule: dict[str, Any]
+    reference: list[dict[str, str]]
+    harvest: list[dict[str, str]]
+    transitions: list[dict[str, str]]
+    sources: dict[str, str]
+
+
+def load_cascade(policy: dict[str, Any]) -> Cascade:
+    tags = policy["setup"]["tags"]
+    return Cascade(
+        json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8")),
+        read_csv(DATA / "cascade_reference.csv"),
+        read_csv(DATA / "cascade_harvest.csv"),
+        read_csv(DATA / "cascade_transitions.csv"),
+        {
+            v: (VENDORED / tags[v] / "G4EmCaptureCascade.cc").read_text(encoding="utf-8")
+            for v in policy["setup"]["versions"]
+        },
+    )
+
+
+def cascade_binding(inp: Inputs) -> Any:
+    """The rule statements bound to the vendored source of the first revision, the second's equal to them."""
+    v1, v2 = inp.policy["setup"]["versions"]
+    return cc.bind_source(inp.cascade.sources[v1], inp.cascade.sources[v2])
+
+
+def cell_of(row: dict[str, str]) -> tuple[str, str, str]:
+    return (row["version"], row["config"], row["target"])
+
+
+def cascade_harvest(inp: Inputs) -> dict[tuple[str, str, str], dict[str, int]]:
+    """Admit the harvested cascades before anything is stated about them, and return each cell's retained
+    counts.
+
+    Raises ``ValueError`` when the rule does not name the same cells, in the same order, on both revisions,
+    or when the harvest is not the rule's: its cells not exactly the rule's cells in the rule's order; a cell's events, seed base, route, Z or A not the rule's and the pre-registration's; a binary
+    that ``builds.csv`` does not record for its revision (the binary of the committed cells or the rebuild); a
+    refused stop, or stops, reconstructed chains
+    and events that differ; transition rows other than the module's transitions in its order; a count above the
+    stops; entries into the K shell that do not sum to the stops; Auger or photon totals other than the sums of
+    the transition counts."""
+    c = inp.cascade
+    h = c.rule["harvest"]
+    setup = inp.policy["setup"]
+    cells = [(x["version"], x["config"], x["target"]) for x in h["cells"]]
+    v1, v2 = setup["versions"]
+    by_version = {v: [(x["config"], x["target"]) for x in h["cells"] if x["version"] == v] for v in (v1, v2)}
+    if by_version[v1] != by_version[v2] or len(h["cells"]) != 2 * len(by_version[v1]):
+        raise ValueError("the harvest does not name the same cells, in the same order, on both revisions")
+    if [cell_of(r) for r in c.harvest] != cells:
+        raise ValueError("cascade_harvest.csv does not hold the rule's cells in the rule's order")
+    builds = {b["tag"]: {b["reference_binary_sha256"], b["rebuilt_binary_sha256"]} for b in inp.builds}
+    keys = cc.transition_keys()
+    by_cell: dict[tuple[str, str, str], list[dict[str, str]]] = {}
+    for t in c.transitions:
+        by_cell.setdefault(cell_of(t), []).append(t)
+    if set(by_cell) != set(cells):
+        raise ValueError("cascade_transitions.csv does not hold the rule's cells")
+    out = {}
+    for r in c.harvest:
+        cell = cell_of(r)
+        name = "/".join(cell)
+        args = next(t["arguments"] for t in setup["targets"] if t["target"] == r["target"])
+        expected = {
+            "events": str(h["events"]),
+            "seed_base": str(h["seed_base"]),
+            "route": setup["configurations"][r["config"]]["route"],
+            "Z": args[1],
+            "A": args[3],
+            "refused": "0",
+            "stops": r["events"],
+            "chains": r["events"],
+        }
+        for k, v in expected.items():
+            if r[k] != v:
+                raise ValueError(f"{name}: {k} {r[k]} where {v} is required")
+        if r["binary_sha256"] not in builds[setup["tags"][r["version"]]]:
+            raise ValueError(f"{name}: binary_sha256 {r['binary_sha256']} is no binary builds.csv records")
+        rows = by_cell[cell]
+        if [t["transition"] for t in rows] != keys:
+            raise ValueError(f"{name}: the transition rows are not the module's transitions in its order")
+        counts = {t["transition"]: int(t["stops"]) for t in rows}
+        stops = int(r["stops"])
+        if any(not 0 <= v <= stops for v in counts.values()):
+            raise ValueError(f"{name}: a transition count outside 0..stops")
+        entries = sum(counts[f"g{n}->1"] for n in range(2, cc.LEVELS + 1)) + counts["e2->1"]
+        if entries != stops:
+            raise ValueError(f"{name}: {entries} entries into the K shell for {stops} stops")
+        augers = sum(v for k, v in counts.items() if k.startswith("e"))
+        photons = sum(v for k, v in counts.items() if k.startswith("g"))
+        if (str(augers), str(photons)) != (r["augers"], r["photons"]):
+            raise ValueError(f"{name}: Auger and photon totals are not the sums of the transition counts")
+        out[cell] = cc.observed_counts(counts)
+    return out
+
+
+def cascade_consumer(inp: Inputs, rules: dict[str, int] | None = None) -> list[dict[str, str]]:
+    """The rows of `cascade_consumer.csv`: every retained count of every harvested cell decided by the exact
+    binomial test of the rule against the model of ``rules`` (default the stock rules)."""
+    observed = cascade_harvest(inp)
+    rows = []
+    for r in inp.cascade.harvest:
+        rows += cc.consumer_rows(
+            r, observed[cell_of(r)], int(r["Z"]), int(r["stops"]), inp.cascade.rule["harvest"], rules
+        )
+    return rows
+
+
+def read_back(columns: tuple[str, ...], rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """The rows as a reader of the CSV sees them: written by the module's csv_text and read back, so every check
+    reads what the file holds."""
+    return list(csv.DictReader(io.StringIO(cc.csv_text(columns, rows))))
+
+
+#: The identity of a row of each cascade table: a table holds each identity once, in the canonical order.
+CONSUMER_KEY = ("version", "config", "target", "count")
+COMPARISON_KEY = ("source", "target", "observable", "k")
+
+
+@dataclass(frozen=True)
+class Tables:
+    """The two cascade tables, as a reader of their CSV files sees them."""
+
+    consumer: list[dict[str, str]]
+    comparison: list[dict[str, str]]
+
+
+def canonical_tables(inp: Inputs) -> Tables:
+    """The canonical tables of the authoritative inputs (the rule, the harvest, the reference and the model),
+    computed by the module and read back as a reader of the CSV files sees them."""
+    return Tables(
+        read_back(cc.CONSUMER_COLUMNS, cascade_consumer(inp)),
+        read_back(cc.COMPARISON_COLUMNS, cascade_comparison(inp)),
+    )
+
+
+def table_problems(
+    name: str,
+    rows: list[dict[str, str]],
+    canonical: list[dict[str, str]],
+    columns: tuple[str, ...],
+    display: tuple[str, ...],
+    key: tuple[str, ...],
+) -> list[str]:
+    """Every way a table differs from the canonical one in its exact projection: every column but the
+    documented display-only ones. The table must not be empty, must hold each canonical row identity exactly once
+    and no other, in the canonical order, and every cell outside ``display`` must equal the canonical cell (the
+    exact columns are in their canonical text, so equal text is equal value)."""
+    if not canonical:
+        return [f"{name}: the inputs give no rows"]
+    if not rows:
+        return [f"{name}: the table has no rows (an empty or header-only file)"]
+    out = []
+    ident = [tuple(r.get(k) for k in key) for r in rows]
+    expected = [tuple(r[k] for k in key) for r in canonical]
+    seen: dict[tuple[str | None, ...], int] = {}
+    for k in ident:
+        seen[k] = seen.get(k, 0) + 1
+    out += [f"{name} {k}: the row appears {c} times" for k, c in seen.items() if c > 1]
+    out += [f"{name} {k}: a row the inputs give is missing" for k in expected if k not in seen]
+    out += [f"{name} {k}: a row the inputs do not give" for k in seen if k not in set(expected)]
+    if not out and ident != expected:
+        out.append(f"{name}: the rows are not in the canonical order")
+    by_key = dict(zip(expected, canonical, strict=True))
+    for k, r in zip(ident, rows, strict=True):
+        want = by_key.get(k)
+        if want is None:
+            continue
+        if tuple(r) != columns:
+            out.append(f"{name} {k}: the columns are not the schema")
+            continue
+        out += [
+            f"{name} {k}: {c} is not what the inputs give"
+            for c in columns
+            if c not in display and r[c] != want[c]
+        ]
+    return out
+
+
+def consumer_problems(
+    rows: list[dict[str, str]], inp: Inputs, canonical: list[dict[str, str]] | None = None
+) -> list[str]:
+    """Every problem of a consumer table read from text, as a whole: the module recomputes every decision from
+    the exact columns of each row (cc.consumer_problems, with the rule's per-side budget), and the table's exact
+    projection must be the canonical table of the inputs (table_problems: every row once, in order, every
+    exact field and decision). The display columns are never read. ``canonical`` defaults to the table the
+    inputs give."""
+    if canonical is None:
+        canonical = read_back(cc.CONSUMER_COLUMNS, cascade_consumer(inp))
+    hv = inp.cascade.rule["harvest"]
+    out = cc.consumer_problems(rows, cc.alpha_side(hv, len(cc.retained_counts(cc.transitions(1)))))
+    return out + table_problems(
+        "cascade_consumer", rows, canonical, cc.CONSUMER_COLUMNS, cc.CONSUMER_DISPLAY, CONSUMER_KEY
+    )
+
+
+def cascade_comparison(inp: Inputs) -> list[dict[str, str]]:
+    return cc.comparison_rows(inp.cascade.reference, inp.cascade.rule)
+
+
+def comparison_problems(
+    rows: list[dict[str, str]], inp: Inputs, canonical: list[dict[str, str]] | None = None
+) -> list[str]:
+    """Every problem of a comparison table read from text, as a whole: the module recomputes every verdict from
+    the exact columns of each row (cc.comparison_problems), and the table's exact projection must be the
+    canonical table of the inputs (table_problems: every row once, in order, its metadata, model, measured, the
+    four variances and the verdicts, with the sensitivity rows). The display columns are never read.
+    ``canonical`` defaults to the table the inputs give."""
+    if canonical is None:
+        canonical = read_back(cc.COMPARISON_COLUMNS, cascade_comparison(inp))
+    out = cc.comparison_problems(rows, inp.cascade.rule["ratios"])
+    return out + table_problems(
+        "cascade_comparison", rows, canonical, cc.COMPARISON_COLUMNS, cc.COMPARISON_DISPLAY, COMPARISON_KEY
+    )
+
+
+def observable_label(obs: str, k: str) -> list[str | Slot]:
+    if obs == "kb_over_ka":
+        return ["Kβ/Kα"]
+    if obs == "ka_over_ktot":
+        return ["Kα/ΣK"]
+    return ["(n ≥ ", S(k), ")/Kα"]
+
+
+def percent(x: Fraction, places: int, up: bool) -> str:
+    return cc.outward(100 * x, places, up)
+
+
+def q(value: str, places: int = CASCADE_DECIMALS) -> str:
+    return str(Decimal(value).quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_EVEN))
+
+
+def render_cascade(w: Writer, inp: Inputs, tables: Tables) -> None:
+    c = inp.cascade
+    v1, v2 = inp.policy["setup"]["versions"]
+    tags = inp.policy["setup"]["tags"]
+    b = cascade_binding(inp)
+    rules, ln = b.rules, b.lines
+    top = rules["start_level"] + 1
+    zmax = cc.Z_MAX
+    if not zmax ** rules["power"] <= 2 ** (INT_BITS - 1) - 1 < (zmax + 1) ** rules["power"]:
+        raise ValueError("the module's domain is not where the integer power fits the integer type")
+    z_pow = "Z" + str(rules["power"]).translate(SUPERSCRIPT)
+    w.line("## The muonic X-ray cascade")
+    w.blank()
+    # ---- a. what the code does
+    w.line(
+        "**What the code does.** In unpatched Geant4, `G4EmCaptureCascade::ApplyYourself` "
+        "(`third_party/geant4/",
+        S(tags[v1]),
+        "/G4EmCaptureCascade.cc`, lines ",
+        S(ln["n_elec"]),
+        "–",
+        S(ln["loop"]),
+        ") places a stopped negative muon on the level of principal quantum number n = ",
+        S(top),
+        ", emits that level's binding energy as an electron (line ",
+        S(ln["capture_electron"]),
+        ") and then takes the muon down level by level until it reaches the K shell (line ",
+        S(ln["loop"]),
+        "). With Z the atomic number and U a uniform random number from the unit interval, an Auger electron "
+        "takes the muon to the next level down when (",
+        S(z_pow),
+        " + ",
+        S(rules["auger_weight"]),
+        ") U < ",
+        S(rules["auger_weight"]),
+        " (line ",
+        S(ln["auger_test"]),
+        "), which is allowed only while fewer than Z electrons, the capture electron included, have been emitted "
+        "(lines ",
+        S(ln["n_elec"]),
+        " and ",
+        S(ln["auger_count0"]),
+        "); otherwise a photon takes it to the next level down with ",
+        S(rules["photon_weight"]),
+        " times the probability of each lower level, every lower level being equally likely (lines ",
+        S(ln["photon_draw"]),
+        "–",
+        S(ln["photon_clamp"]),
+        "). The rule statements of `third_party/geant4/",
+        S(tags[v2]),
+        "/G4EmCaptureCascade.cc` are the same once whitespace is removed. The source comments name Mukhopadhyay "
+        "(Phys. Rep. 30, 1 (1977)) for the probabilities and Wu and Wilets (Ann. Rev. Nucl. Sci. 19, 527 (1969)) "
+        "for the photon cascade; this document does not compare those papers with the code. Which transition "
+        "the cascade takes depends on Z alone: the mass number enters only the energies of the levels.",
+    )
+    w.blank()
+    # ---- b. expected transitions
+    keys = cc.transition_keys()
+    n_photon = sum(1 for k in keys if k.startswith("g"))
+    n_auger = len(keys) - n_photon
+    w.line(
+        "**Expected transitions.** Taking U as a continuous uniform draw, `openmucf/g4/capture_cascade.py` "
+        "propagates the exact probability of every state (level, electrons emitted) from n = ",
+        S(top),
+        " to the K shell in rational arithmetic and returns the expected number per stopped muon of each of the ",
+        S(len(keys)),
+        " transitions the rules allow: a photon from each level to each lower level (",
+        S(n_photon),
+        ") and an Auger electron from each level to the next (",
+        S(n_auger),
+        "). These are the expectations of the coded rules, not of the random-number generator's discrete "
+        "output. They are computed for every Z from ",
+        S(1),
+        " to ",
+        S(zmax),
+        ": the source forms ",
+        S(z_pow),
+        " as a product of `G4int`, a ",
+        S(INT_BITS),
+        "-bit `int`, which holds it up to Z = ",
+        S(zmax),
+        " and overflows from Z = ",
+        S(zmax + 1),
+        ".",
+    )
+    w.blank()
+    # ---- c. the compiled cascade
+    hv = c.rule["harvest"]
+    rows = tables.consumer
+    problems = consumer_problems(rows, inp, canonical=rows)
+    if problems:
+        raise ValueError(f"cascade_consumer rows break their schema: {problems[:3]}")
+    rejected = [r for r in rows if r["decision"] != "pass"]
+    if rejected:
+        raise ValueError(
+            f"the harvested cascade rejects {len(rejected)} counts: the module does not describe it"
+        )
+    per_cell = {cell_of(r): r for r in c.harvest}
+    n_counts = len(cc.retained_counts(cc.transitions(1)))
+    budget = Fraction(hv["budget_per_cell"])
+    a_side = cc.alpha_side(hv, n_counts)
+    bertini = [x["target"] for x in hv["cells"] if x["config"] == "bertini" and x["version"] == v1]
+    others = [x for x in hv["cells"] if x["config"] != "bertini" and x["version"] == v1]
+    w.line(
+        "**The compiled cascade.** The `cascade` command of `cpp/stopped_muon/stopped_muon.py` ran ",
+        S(hv["events"]),
+        " events in each of ",
+        S(len(hv["cells"])),
+        " cells with the registered builds of both revisions: the single isotopes ",
+        *joined(bertini),
+        " in the `bertini` configuration (the default route) and ",
+        *joined([x["target"] for x in others]),
+        " also in `",
+        S(others[0]["config"]),
+        "` (the muonic-atom route), each event i seeded with ",
+        S(hv["seed_base"]),
+        " + i. For every stop the module rebuilt the cascade from the records energy for energy: the electron "
+        "carrying the binding energy of the capture level, then each electron the energy difference of the "
+        "level it leaves and the next level down, admitted only while the Auger count is below Z, and each photon "
+        "the energy difference of the level it leaves and a single lower level, ending in the K shell. "
+        "Every event was a single stop whose cascade was rebuilt; the table gives the counts "
+        "(`data/g4/stopped_mu/cascade_harvest.csv`):",
+    )
+    w.blank()
+    w.line(
+        "| revision | configuration | target | Z | stops | cascades rebuilt | refused | Auger electrons | photons |"
+    )
+    w.line("|---|---|---|---|---|---|---|---|---|")
+    for r in c.harvest:
+        w.line(
+            "| ",
+            S(r["version"]),
+            " | ",
+            S(r["config"]),
+            " | ",
+            S(r["target"]),
+            " | ",
+            S(r["Z"]),
+            " | ",
+            S(r["stops"]),
+            " | ",
+            S(r["chains"]),
+            " | ",
+            S(r["refused"]),
+            " | ",
+            S(r["augers"]),
+            " | ",
+            S(r["photons"]),
+            " |",
+        )
+    w.blank()
+    w.line(
+        "Each cell's ",
+        S(n_counts),
+        " retained counts, the number of stops taking each of the ",
+        S(len(keys)),
+        " transitions and the numbers entering the K shell by a photon from n ≥ ",
+        *joined([S(k) for k in cc.UNIONS], "and"),
+        ", are each binomial under the module's expectation, since a stop leaves each level at most once. "
+        "Each count is tested exactly: the tail of its binomial distribution beyond the count, on the side "
+        "away from the mode, is bounded in outward-rounded interval arithmetic, and the count is rejected when "
+        "the upper bound is at most ",
+        S(f"{a_side.numerator}/{a_side.denominator}"),
+        ", the budget of ",
+        S(hv["budget_per_cell"]),
+        " per cell split over the ",
+        S(n_counts),
+        " counts and both sides. The probability of a false rejection is then at most ",
+        S(hv["budget_per_cell"]),
+        " per cell and ",
+        S(f"{len(hv['cells']) * budget}"),
+        " over the ",
+        S(len(hv["cells"])),
+        " cells, whatever the dependence between counts and cells; no asymptotic distribution enters. All ",
+        S(len(rows)),
+        " counts lie inside their acceptance regions (`data/g4/stopped_mu/cascade_consumer.csv`): in each "
+        "of these counts the compiled cascades agree with the expected transitions, and the agreement claimed "
+        "is exactly that set of counts.",
+    )
+    w.blank()
+    weight = int(hv["drills"]["photon_weight_drill"])
+    drill = cascade_consumer(inp, {**rules, "photon_weight": weight})
+    per = [sum(1 for r in drill if cell_of(r) == cell_of(h) and r["decision"] == "reject") for h in c.harvest]
+    if all(per):
+        w.line(
+            "The test can tell a neighbouring rule apart: against the expectation of the same rules with photon "
+            "weight ",
+            S(weight),
+            " instead of ",
+            S(rules["photon_weight"]),
+            ", it rejects every cell (",
+            S(min(per)),
+            " to ",
+            S(max(per)),
+            " of the ",
+            S(n_counts),
+            " counts of a cell).",
+        )
+    else:
+        w.line(
+            "Against the expectation of the same rules with photon weight ",
+            S(weight),
+            " instead of ",
+            S(rules["photon_weight"]),
+            ", the test rejects ",
+            S(sum(1 for x in per if x)),
+            " of the ",
+            S(len(per)),
+            " cells.",
+        )
+    w.blank()
+    rev_pairs = [
+        (per_cell[(v1, x["config"], x["target"])], per_cell[(v2, x["config"], x["target"])])
+        for x in hv["cells"]
+        if x["version"] == v1
+    ]
+    rev_differ = [p for p in rev_pairs if p[0]["sequences_sha256"] != p[1]["sequences_sha256"]]
+    route_pairs = []
+    for v in (v1, v2):
+        for x in others:
+            route_pairs.append(
+                (per_cell[(v, "bertini", x["target"])], per_cell[(v, x["config"], x["target"])])
+            )
+    route_differ = [p for p in route_pairs if p[0]["sequences_sha256"] != p[1]["sequences_sha256"]]
+    distinct = len({r["sequences_sha256"] for r in c.harvest})
+    if not rev_differ:
+        w.line(
+            "Both revisions rebuilt identical cascades, stop for stop, in each of the ",
+            S(len(rev_pairs)),
+            " pairs of cells that share a configuration and target (equal sha256 of the reconstructed "
+            "transitions), so each pair is a single sample, not a replication.",
+        )
+    else:
+        w.line(
+            "These pairs of cells that share a configuration and target rebuilt different cascades on the "
+            "revisions: ",
+            *joined([S(f"{p[0]['config']} {p[0]['target']}") for p in rev_differ]),
+            "; the other ",
+            S(len(rev_pairs) - len(rev_differ)),
+            " pairs rebuilt identical cascades and are a single sample each.",
+        )
+    if not route_differ:
+        w.line(
+            "Both routes rebuilt identical cascades on ",
+            *joined(sorted({p[0]["target"] for p in route_pairs})),
+            " on each revision. The ",
+            S(len(c.harvest)),
+            " cells therefore hold ",
+            S(distinct),
+            " distinct samples of cascades.",
+        )
+    else:
+        w.line(
+            "The routes rebuilt different cascades on ",
+            *joined([S(f"{p[0]['version']} {p[0]['target']}") for p in route_differ]),
+            ". The ",
+            S(len(c.harvest)),
+            " cells hold ",
+            S(distinct),
+            " distinct samples of cascades.",
+        )
+    w.blank()
+    # ---- d. over the domain, then the prior work after this first sentence that states a stock value
+    zs = range(1, zmax + 1)
+    ratio = {z: cc.ka_over_ktot(z) for z in zs}
+    zhi = max(zs, key=lambda z: ratio[z])
+    zlo = min(zs, key=lambda z: ratio[z])
+    free = range(
+        cc.LEVELS, zmax + 1
+    )  # Z - 1 >= the levels below the capture level: the Auger cap cannot bind
+    kb = [cc.kb_over_ka(z) for z in free]
+    hi8 = [cc.high_over_ka(z, 8) for z in free]
+    w.line(
+        "**Over the domain.** Over Z from ",
+        S(1),
+        " to ",
+        S(zmax),
+        ", Kα/ΣK, the photons from n = ",
+        S(2),
+        " into the K shell over all photons into it, is at most ",
+        S(percent(ratio[zhi], DOMAIN_DECIMALS, True)),
+        " % (at Z = ",
+        S(zhi),
+        ") and at least ",
+        S(percent(ratio[zlo], DOMAIN_DECIMALS, False)),
+        " % (at Z = ",
+        S(zlo),
+        "), rounded outward.",
+    )
+    w.blank()
+    w.line("**Prior work.** ", CATALDO)
+    w.blank()
+    w.line(
+        "For Z ≥ ",
+        S(cc.LEVELS),
+        ", where Z exceeds the ",
+        S(cc.LEVELS - 1),
+        " levels below the capture level and the Auger cap cannot bind, Kβ/Kα lies in [",
+        S(percent(min(kb), DOMAIN_DECIMALS, False)),
+        " %, ",
+        S(percent(max(kb), DOMAIN_DECIMALS, True)),
+        " %] and (n ≥ ",
+        S(8),
+        ")/Kα in [",
+        S(percent(min(hi8), DOMAIN_DECIMALS, False)),
+        " %, ",
+        S(percent(max(hi8), DOMAIN_DECIMALS, True)),
+        " %], rounded outward. Each value is computed from the enumeration, not from a formula.",
+    )
+    w.blank()
+    # ---- e. against measurement
+    comp = tables.comparison
+    problems = comparison_problems(comp, inp, canonical=comp)
+    if problems:
+        raise ValueError(f"cascade_comparison rows break their schema: {problems[:3]}")
+    w.line(
+        "**Against measurement.** The ratios of the cascade are compared with the muonic K-series intensities "
+        "of Orth et al. (Phys. Rev. A 25, 876 (1982), Table I: ratios to Kα, condensed targets), the ENSDF "
+        "evaluations (Basunia and Hurst, Nucl. Data Sheets 134, 1 (2016); Basunia, Nucl. Data Sheets 114, 1189 "
+        "(2013)) of the measurement of Measday et al. (Phys. Rev. C 76, 035504 (2007); solid aluminium and natural "
+        "silicon) and Kirch et al. (Phys. Rev. A 59, 3375 (1999), Tables I–III: low-pressure gases), transcribed "
+        "twice in `data/g4/stopped_mu/cascade_reference.csv`. A ratio of a pair of printed members carries a "
+        "relative error equal to the root sum of squares of the members' relative errors, the errors "
+        "independent; Kα/ΣK is Kα over the sum of the printed "
+        "members, with σ = σ(Kα)/ΣK and the sum held fixed (the convention that decides), and (n ≥ k)/Kα sums "
+        "the model over the same k as the measured grouped member. A row HOLDS when |m − d| ≤ ",
+        S(c.rule["ratios"]["holds_within"]),
+        " σ, is in TENSION when it lies beyond that and within ",
+        S(c.rule["ratios"]["tension_within"]),
+        " σ, and FAILS beyond; the decision is made on squares in exact arithmetic and the pull (m − d)/σ "
+        "decides nothing. The model carries no uncertainty: it is the exact expectation of the code. The "
+        "condensed-phase rows are the primary set and the gas rows a secondary set, counted apart:",
+    )
+    w.blank()
+    w.line("| source | set | observable | rows | HOLDS | TENSION | FAILS |")
+    w.line("|---|---|---|---|---|---|---|")
+    groups: list[tuple[str, str, str]] = []
+    for r in comp:
+        g = (r["source"], r["set"], r["observable"])
+        if g not in groups:
+            groups.append(g)
+    for src, st, obs in groups:
+        sel = [r for r in comp if (r["source"], r["set"], r["observable"]) == (src, st, obs)]
+        ks = sorted({r["k"] for r in sel})
+        label: list[str | Slot] = (
+            ["(n ≥ k)/Kα, k = ", *joined([S(k) for k in ks], "or")]
+            if obs == "high_over_ka" and len(ks) > 1
+            else observable_label(obs, ks[0])
+        )
+        w.line(
+            "| ",
+            SOURCE_NAMES[src],
+            " | ",
+            S(st),
+            " | ",
+            *label,
+            " | ",
+            S(len(sel)),
+            *[x for v in cc.VERDICTS for x in (" | ", S(sum(1 for r in sel if r["verdict"] == v)))],
+            " |",
+        )
+    w.blank()
+    ensdf = [r for r in comp if r["source"] == "ensdf_measday2007" and r["observable"] == "ka_over_ktot"]
+    above = all(cc.read_fraction(r, "measured") > ratio[zhi] for r in ensdf)
+    w.line(
+        "The measured Kα/ΣK of ",
+        *joined([S(r["target"]) for r in ensdf]),
+        " (ENSDF) is ",
+        *joined([S(cc.fixed(100 * cc.read_fraction(r, "measured"), 2)) for r in ensdf]),
+        " %, ",
+        "above the largest value the code gives for any Z in its domain."
+        if above
+        else "within the code's range.",
+    )
+    w.blank()
+    knorm = [r for r in comp if r["observable"] == "ka_over_ktot"]
+    flip = [r for r in knorm if r["verdict_independent"] != r["verdict"]]
+    w.line(
+        "Under independent propagation of every member instead of the convention, the verdict changes for ",
+        S(len(flip)) if flip else "none",
+        " of the ",
+        S(len(knorm)),
+        " Kα/ΣK rows" + (":" if flip else "."),
+        *(
+            [
+                " ",
+                *[
+                    x
+                    for i, r in enumerate(flip)
+                    for x in (
+                        "; " if i else "",
+                        S(r["target"]),
+                        " goes from ",
+                        S(r["verdict"]),
+                        " (pull ",
+                        S(r["pull"]),
+                        ") to ",
+                        S(r["verdict_independent"]),
+                        " (pull ",
+                        S(r["pull_independent"]),
+                        ")",
+                    )
+                ],
+                ".",
+            ]
+            if flip
+            else []
+        ),
+    )
+    scanned = [r for r in comp if r["verdict_rho_minus1"]]
+    moved = [r for r in scanned if len({r["verdict"], r["verdict_rho_minus1"], r["verdict_rho_plus1"]}) > 1]
+    w.line(
+        "For the ",
+        S(len(scanned)),
+        " ratios formed from a pair of printed members, a correlation between the members' errors anywhere from −",
+        S(1),
+        " to +",
+        S(1),
+        " ",
+        "changes no verdict." if not moved else "changes these verdicts: ",
+        *(
+            [
+                x
+                for i, r in enumerate(moved)
+                for x in (
+                    ", " if i else "",
+                    S(r["target"]),
+                    " ",
+                    *observable_label(r["observable"], r["k"]),
+                    " (",
+                    S(r["verdict_rho_minus1"]),
+                    " to ",
+                    S(r["verdict_rho_plus1"]),
+                    ")",
+                )
+            ]
+            + ["."]
+            if moved
+            else []
+        ),
+    )
+    w.blank()
+    w.line(
+        "**The rows.** The model, measured ratio and σ are shown to ",
+        S(CASCADE_DECIMALS),
+        " decimals; `data/g4/stopped_mu/cascade_comparison.csv` gives the model to ",
+        S(9),
+        " decimals with every sensitivity column, and every quantity a verdict is decided from as an exact "
+        "numerator and denominator, from which the verdicts are recomputed. The silicon rows of ENSDF are a measurement on natural "
+        "silicon filed under the ",
+        S(28),
+        "Si evaluation; the harvested ",
+        S(next(x["target"] for x in c.rule["harvest"]["cells"] if x["target"].startswith("Si-"))),
+        " cell above is a check of the code, not of that measurement.",
+    )
+    w.blank()
+    w.line("| source | target | Z | phase | observable | model | measured | σ | pull | verdict |")
+    w.line("|---|---|---|---|---|---|---|---|---|---|")
+    for r in comp:
+        w.line(
+            "| ",
+            SOURCE_NAMES[r["source"]],
+            " | ",
+            S(r["target"]),
+            " | ",
+            S(r["Z"]),
+            " | ",
+            S(r["phase"]),
+            " | ",
+            *observable_label(r["observable"], r["k"]),
+            " | ",
+            S(q(r["model"])),
+            " | ",
+            S(q(r["measured"])),
+            " | ",
+            S(q(r["sigma"])),
+            " | ",
+            S(r["pull"]),
+            " | ",
+            S(r["verdict"]),
+            " |",
+        )
+    w.blank()
+    # ---- f. the rule and when it was fixed
+    w.line(
+        "**The rule and when it was fixed** (`data/g4/stopped_mu/cascade_rule.json`). The table states when "
+        "each part was fixed and what had already been seen:"
+    )
+    w.blank()
+    w.line("| part | fixed (UTC) | relation to the data | contents |")
+    w.line("|---|---|---|---|")
+    for part in c.rule["fixed"]:
+        bold = "**" if part["post_data"] else ""
+        w.line(
+            "| ",
+            S(part["part"]),
+            " | ",
+            S(part["fixed_utc"]),
+            " | ",
+            bold,
+            S(part["relation_to_data"]),
+            bold,
+            " | ",
+            S(part["contents"]),
+            " |",
+        )
+    w.blank()
+    for seen in c.rule["seen_before_fixing"]:
+        w.line("- ", S(seen["part"]), ": seen before it was fixed, ", S(seen["seen"]), ".")
+    w.line("- the correlation scan: ", S(c.rule["ratios"]["correlation_scan"]), ".")
+    w.blank()
+    # ---- h. limits
+    sums = {}
+    for r in c.reference:
+        if r["source"] == "ensdf_measday2007":
+            sums[r["target"]] = sums.get(r["target"], Fraction(0)) + cc.read_exact(r["value"], "value")
+    w.line(
+        "**Limits.** No Kα per stopped muon is compared, because the quoted intensities assume that the K "
+        "series accounts for every stop and so do not establish photons per stop independently: Measday et al. "
+        "give their intensities per muon stop, normalised so that the series sums to all the stops (Phys. Rev. C "
+        "76, 035504 (2007), Tables II and XII), and state in their text that this assumes the series accounts "
+        "for every stop; the ENSDF evaluations repeat them "
+        "as intensities per capture, whose members sum to ",
+        *joined([S(cc.fixed(sums[t], 2)) for t in sums]),
+        " %; and Kirch et al. take the K series to account for every muon to extract absolute yields. "
+        "The model has no phase or chemistry input, so the liquid and gas rows also test effects it does not "
+        "represent. The ENSDF rows read the evaluations, not the paper's own tables. U is taken as a continuous "
+        "uniform draw. The comparison tests the branching rules together and does not establish which of them "
+        "a disagreement comes from. The energies of these transitions are not compared here "
+        "(`DATASET_D3.md`). Unpatched builds only.",
+    )
+    w.blank()
+
+
+def render(inp: Inputs, tables: Tables | None = None) -> Rendered:
+    """The document. Its cascade section is rendered from ``tables``: compare passes the tables it has proved
+    equal to the written files; otherwise the canonical tables of the inputs."""
     pol = inp.policy
     setup, rule = pol["setup"], pol["rule"]
     v1, v2 = setup["versions"]
@@ -367,10 +1245,12 @@ def render(inp: Inputs) -> Rendered:
         " and ",
         S(v2),
         " create when the nucleus of a single-element target captures a stopped negative muon with yields "
-        "measured for the same elements. It is generated by `scripts/generate_stopped_mu.py` from the files of "
-        "`data/g4/stopped_mu/` and the natural compositions of `data/g4/d1/geant4_natural_isotopes.csv`; the "
-        "generator defines display precision and source citations. Its section on capture products holds the "
-        "comparison; the application that made the outputs is in `cpp/stopped_muon/`.",
+        "measured for the same elements, and the muonic X-ray cascade that comes before the capture with measured "
+        "K-series intensities. It is generated by `scripts/generate_stopped_mu.py` from the files of "
+        "`data/g4/stopped_mu/`, the natural compositions of `data/g4/d1/geant4_natural_isotopes.csv` and the "
+        "vendored `G4EmCaptureCascade.cc` of `third_party/geant4/`; the generator defines display precision and "
+        "source citations. Its section on capture products and its section on the muonic X-ray cascade hold the "
+        "comparisons; the application that made the outputs is in `cpp/stopped_muon/`.",
     )
     w.blank()
 
@@ -991,6 +1871,8 @@ def render(inp: Inputs) -> Rendered:
     )
     w.blank()
 
+    render_cascade(w, inp, canonical_tables(inp) if tables is None else tables)
+
     # ---- reproducing
     w.line("## Reproducing")
     w.blank()
@@ -1005,7 +1887,20 @@ def render(inp: Inputs) -> Rendered:
         "python3 cpp/stopped_muon/stopped_muon.py reproduce --cell <version>/<config>/<target> --binary <exe> "
         "--install <prefix> --data <dir> --work <dir> --out <file>"
     )
+    w.line(
+        "python3 cpp/stopped_muon/stopped_muon.py cascade --binary <exe> --install <prefix> --data <dir> "
+        "--work <dir> --version <version> --config <config> --target <target> --out <file> --transitions <file>"
+    )
     w.line("```")
+    w.blank()
+    w.line(
+        "The `cascade` command runs a cell of the harvest of `data/g4/stopped_mu/cascade_rule.json` with the "
+        "environment and dataset checks of a cell's run, rebuilds every cascade from the records, deletes them "
+        "and appends the cell's row to the file `--out` names and its transition counts to the file "
+        "`--transitions` names; "
+        "`data/g4/stopped_mu/cascade_harvest.csv` records each cell's binary sha256, seed base and the sha256 of "
+        "its rebuilt cascades, and each cell's binary is a binary of its revision in the table below."
+    )
     w.blank()
     tags = setup["tags"]
     builds = {b["tag"]: b for b in inp.builds}
@@ -1105,8 +2000,25 @@ def render(inp: Inputs) -> Rendered:
         "`scripts/generate_stopped_mu.py compare` writes with this document as a step of `make audit`."
     )
     w.line(
+        "- `data/g4/stopped_mu/cascade_reference.csv`: the measured K-series intensities, a row per printed "
+        "value, transcribed twice; `cascade_rule.json`: the comparison rule and the harvest's test, with when "
+        "each part was fixed."
+    )
+    w.line(
+        "- `data/g4/stopped_mu/cascade_harvest.csv` and `cascade_transitions.csv`: the harvested cascades, a "
+        "row per cell and a row per cell and transition, written by the `cascade` command."
+    )
+    w.line(
+        "- `data/g4/stopped_mu/cascade_comparison.csv` and `cascade_consumer.csv`: the comparison with "
+        "measurement and the decision on every retained count, which `scripts/generate_stopped_mu.py compare` "
+        "writes with this document. Each certified quantity (a probability, a budget, a bound, a model value, a "
+        "measured ratio, a variance) is an exact rational in a `_num` and a `_den` column, and every decision "
+        "is recomputed from those columns alone; the decimal columns are for display."
+    )
+    w.line(
         "- `cpp/stopped_muon/`: the application and its driver; `openmucf/g4/stopped_mu.py`: the classifier, the "
-        "reducer and the rule."
+        "reducer and the rule; `openmucf/g4/capture_cascade.py`: the exact cascade, its binding to the source, "
+        "the reconstruction and the tests of the cascade."
     )
     w.blank()
     w.line("## Licensing")

@@ -55,6 +55,9 @@ data/g4/d2/* -text
 # The stopped-muon benchmark's files: a test pins the pre-registration's sha256 and every reduced cell
 # records the sha256 of its chunks' compact text, so a checkout must not rewrite their bytes.
 data/g4/stopped_mu/* -text
+# The generated benchmark document: its generator writes LF, so a CRLF checkout would show a regenerated copy
+# as modified; it is checked out with LF on every platform.
+BENCHMARK_STOPPED_MU.md text eol=lf
 cpp/tools/harvest_d2.cc -text
 cpp/tools/harvest_natural.cc -text
 cpp/tools/harvest_decay.cc -text

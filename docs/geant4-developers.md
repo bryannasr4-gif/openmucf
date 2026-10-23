@@ -38,7 +38,7 @@ Exporting `G4MUONICDATA_D3_PROFILE=mudirac130p1` too gives the cascade the K and
 
 ## Stopped-muon benchmark
 
-[`BENCHMARK_STOPPED_MU.md`](../BENCHMARK_STOPPED_MU.md) compares what unpatched Geant4 v11.4.2 and v11.5.0.beta return at the capture of a stopped negative muon with measured yields, under a rule fixed before the runs and a later addition it discloses; it is generated from the outputs of the application in [`cpp/stopped_muon/`](../cpp/stopped_muon/README.md).
+[`BENCHMARK_STOPPED_MU.md`](../BENCHMARK_STOPPED_MU.md) compares what unpatched Geant4 v11.4.2 and v11.5.0.beta return at the capture of a stopped negative muon with measured yields, under a rule fixed before the runs and a later addition it discloses; it is generated from the outputs of the application in [`cpp/stopped_muon/`](../cpp/stopped_muon/README.md). The document also compares the branching of the stock muonic cascade, `G4EmCaptureCascade`, with the cascades the compiled binaries emit and with measured K-series intensity ratios.
 
 ## Taking it upstream
 
