@@ -1314,16 +1314,18 @@ CONSUMER_FAULTS = [
 
 @pytest.mark.parametrize("name, change", CONSUMER_FAULTS, ids=[f[0] for f in CONSUMER_FAULTS])
 def test_t7_drill_each_consumer_row_rule_is_checked(name, change):
-    rows = gen.read_csv(DATA / "cascade_consumer.csv")
-    [row] = [r for r in rows if r["bound_kind"] == "lower" and r["count"] == "g2->1"][:1]
-    assert gen.consumer_problems([row], fresh_inputs()) == []
-    assert gen.consumer_problems([{**row, **change(row)}], fresh_inputs())
+    rows = [dict(r) for r in gen.read_csv(DATA / "cascade_consumer.csv")]
+    inp, canonical = fresh_inputs(), canonical_tables().consumer
+    assert gen.consumer_problems(rows, inp, canonical) == []
+    i = next(i for i, r in enumerate(rows) if r["bound_kind"] == "lower" and r["count"] == "g2->1")
+    rows[i] = {**rows[i], **change(rows[i])}
+    assert gen.consumer_problems(rows, inp, canonical)
 
 
 def test_t7_the_display_columns_of_the_consumer_table_are_never_read():
     rows = gen.read_csv(DATA / "cascade_consumer.csv")
-    edited = [{**r, "expected_display": "-1", "bound_display": "garbage"} for r in rows[:5]]
-    assert gen.consumer_problems(edited, fresh_inputs()) == []
+    edited = [{**r, "expected_display": "-1", "bound_display": "garbage"} for r in rows]
+    assert gen.consumer_problems(edited, fresh_inputs(), canonical_tables().consumer) == []
 
 
 def test_t7_the_upper_rows_of_the_consumer_schema_are_checked_at_their_edges():
@@ -1504,7 +1506,9 @@ def test_t10_the_independent_propagation_and_correlation_branches(monkeypatch):
     flip = next(r for r in rows if r["verdict_rho_minus1"])
     flip["verdict_rho_plus1"] = "HOLDS"
     monkeypatch.setattr(gen, "cascade_comparison", lambda inp: rows)
-    monkeypatch.setattr(gen, "comparison_problems", lambda rows, inp: [])  # the wording branch, not the check
+    monkeypatch.setattr(
+        gen, "comparison_problems", lambda rows, inp, canonical=None: []
+    )  # the wording branch, not the check
     out = section(gen.render(fresh_inputs()).text)
     assert "the verdict changes for none of the 9 Kα/ΣK rows." in out
     assert f"changes these verdicts: {flip['target']} Kβ/Kα (FAILS to HOLDS)." in out
@@ -1517,7 +1521,9 @@ def test_t10_the_ensdf_k_normalised_ratio_inside_the_codes_range_is_stated_so(mo
         if r["source"] == "ensdf_measday2007" and r["observable"] == "ka_over_ktot":
             r.update(measured_num="7", measured_den="10")
     monkeypatch.setattr(gen, "cascade_comparison", lambda inp: rows)
-    monkeypatch.setattr(gen, "comparison_problems", lambda rows, inp: [])  # the wording branch, not the check
+    monkeypatch.setattr(
+        gen, "comparison_problems", lambda rows, inp, canonical=None: []
+    )  # the wording branch, not the check
     assert "within the code's range." in section(gen.render(fresh_inputs()).text)
 
 
@@ -1565,7 +1571,7 @@ def test_t10_a_domain_the_integer_type_does_not_bound_raises(monkeypatch):
 
 
 def test_t10_consumer_rows_that_break_their_schema_raise(monkeypatch):
-    monkeypatch.setattr(gen, "consumer_problems", lambda rows, inp: ["a row"])
+    monkeypatch.setattr(gen, "consumer_problems", lambda rows, inp, canonical=None: ["a row"])
     with pytest.raises(ValueError, match="^cascade_consumer rows break their schema"):
         gen.render(fresh_inputs())
 
@@ -3038,11 +3044,12 @@ COMPARISON_FAULTS = [
 
 @pytest.mark.parametrize("name, change", COMPARISON_FAULTS, ids=[f[0] for f in COMPARISON_FAULTS])
 def test_t11_adverse_edits_of_the_comparison_columns_fail_the_check(name, change):
-    rows = gen.read_csv(DATA / "cascade_comparison.csv")
-    inp = fresh_inputs()
-    assert gen.comparison_problems(rows, inp) == []
-    row = next(r for r in rows if r["observable"] == "ka_over_ktot")
-    assert gen.comparison_problems([{**row, **change(row)}], inp)
+    rows = [dict(r) for r in gen.read_csv(DATA / "cascade_comparison.csv")]
+    inp, canonical = fresh_inputs(), canonical_tables().comparison
+    assert gen.comparison_problems(rows, inp, canonical) == []
+    i = next(i for i, r in enumerate(rows) if r["observable"] == "ka_over_ktot")
+    rows[i] = {**rows[i], **change(rows[i])}
+    assert gen.comparison_problems(rows, inp, canonical)
 
 
 def test_t11_the_committed_comparison_is_recomputed_from_its_exact_columns():
@@ -3283,8 +3290,16 @@ CERTIFIED_ENTRIES = (
 )
 
 
-def _module_functions():
-    source = MODULE_PATH.read_text(encoding="utf-8")
+#: The reviewed sites that occur more than once in their function (each occurrence is its own AST site).
+REVIEWED_REPEATS = {
+    ("comparison_rows", "b[0] / a[0]"): 2,
+    ("comparison_rows", "v / 100"): 2,
+    ("comparison_rows", "s / 100"): 2,
+}
+
+
+def _module_functions(source: str | None = None):
+    source = MODULE_PATH.read_text(encoding="utf-8") if source is None else source
     tree = ast.parse(source)
     funcs = {}
     for node in tree.body:
@@ -3297,8 +3312,11 @@ def _module_functions():
     return source, tree, funcs
 
 
-def test_t11_every_true_division_of_the_certified_closure_is_reviewed():
-    source, _, funcs = _module_functions()
+def division_inventory(source: str | None = None) -> Counter:
+    """Every true-division AST site and every float( call in the functions of the certified closure, counted
+    per occurrence: (function, source text) -> how many AST nodes carry it. The closure follows the calls from
+    CERTIFIED_ENTRIES, so a helper newly reached from it is inventoried too."""
+    source, _, funcs = _module_functions(source)
     closure, todo = set(), list(CERTIFIED_ENTRIES)
     while todo:
         f = todo.pop()
@@ -3310,14 +3328,57 @@ def test_t11_every_true_division_of_the_certified_closure_is_reviewed():
                 todo.append(node.id)
             if isinstance(node, ast.Name) and node.id == "Interval":
                 todo += [k for k in funcs if k.startswith("Interval.")]
-    found = set()
+    found: Counter = Counter()
     for f in closure:
         for node in ast.walk(funcs[f]):
             if isinstance(node, ast.BinOp | ast.AugAssign) and isinstance(node.op, ast.Div):
-                found.add((f, ast.get_source_segment(source, node)))
+                found[(f, ast.get_source_segment(source, node))] += 1
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "float":
-                found.add((f, "float("))
-    assert found == set(REVIEWED_DIVISIONS)
+                found[(f, "float(")] += 1
+    return found
+
+
+REVIEWED_INVENTORY = Counter({site: REVIEWED_REPEATS.get(site, 1) for site in REVIEWED_DIVISIONS})
+
+
+def test_t11_every_true_division_of_the_certified_closure_is_reviewed():
+    """Every division site of the closure is a reviewed one, counted with its multiplicity."""
+    inventory = division_inventory()
+    assert inventory == REVIEWED_INVENTORY
+    assert (sum(inventory.values()), len(inventory)) == (
+        sum(REVIEWED_INVENTORY.values()),
+        len(REVIEWED_DIVISIONS),
+    )
+
+
+PULL_DIVISION = "    n = _sqrt_half_even(d * d * 10**4 / sigma2)\n"
+#: Edits of the module source that add an arithmetic site the pin must notice: a second copy of a reviewed
+#: expression in the same function (an int fast path of pull, the shape CHECK_round5 used), a new expression,
+#: and a division or a float( in a helper newly reached from the closure.
+PIN_INSERTIONS = {
+    "a duplicate of a reviewed expression in pull": (
+        PULL_DIVISION,
+        "    if model.denominator == measured.denominator == sigma2.denominator == 1:\n"
+        "        d, sigma2 = d.numerator, sigma2.numerator\n"
+        "        n = _sqrt_half_even(d * d * 10**4 / sigma2)\n"
+        '        return ("-" if d < 0 else "+") + _decimal(n, 2)\n' + PULL_DIVISION,
+    ),
+    "a new expression in pull": (PULL_DIVISION, "    scratch = 1 / 2\n" + PULL_DIVISION),
+    "a division in a newly reached helper": (PULL_DIVISION, "    d = _halve(d) * 2\n" + PULL_DIVISION),
+    "a float( in a newly reached helper": (PULL_DIVISION, "    d = d + 0 * _floated(d)\n" + PULL_DIVISION),
+}
+PIN_HELPERS = "\n\ndef _halve(x):\n    return x / 2\n\n\ndef _floated(x):\n    return float(x)\n"
+
+
+@pytest.mark.parametrize("name", list(PIN_INSERTIONS))
+def test_t11_the_division_pin_notices_every_added_site(name):
+    source = MODULE_PATH.read_text(encoding="utf-8")
+    old, new = PIN_INSERTIONS[name]
+    assert source.count(old) == 1 and division_inventory(source + PIN_HELPERS) == REVIEWED_INVENTORY
+    edited = source.replace(old, new) + PIN_HELPERS
+    compile(edited, "capture_cascade.py", "exec")
+    assert division_inventory(edited) != REVIEWED_INVENTORY
+    assert division_inventory(source) == REVIEWED_INVENTORY  # the restored source is green
 
 
 #: The expressions an f-string of the module may format, each a str or a small module constant: every int
@@ -3407,3 +3468,226 @@ def test_t11_compare_audits_the_written_tables_from_their_exact_columns(tmp_path
 def test_t11_a_literal_exponent_up_to_the_stated_bound_is_read_exactly():
     assert cc.read_exact("1e-" + str(cc.PRECISION_MAX)) == Fraction(1, 10**cc.PRECISION_MAX)
     assert cc.read_exact("-25.5e+2") == -2550 and cc.read_exact("7/14") == Fraction(1, 2)
+
+
+# ============================================================================================
+# The written tables are authenticated as a whole against the canonical tables of the inputs
+# ============================================================================================
+@functools.lru_cache(maxsize=1)
+def _canonical_tables():
+    return gen.canonical_tables(fresh_inputs())
+
+
+def canonical_tables():
+    """The canonical tables of the committed inputs (a fresh copy each call)."""
+    t = _canonical_tables()
+    return gen.Tables([dict(r) for r in t.consumer], [dict(r) for r in t.comparison])
+
+
+def test_t11_the_committed_tables_are_the_canonical_tables_of_the_inputs():
+    canonical = canonical_tables()
+    consumer = gen.read_csv(DATA / "cascade_consumer.csv")
+    comparison = gen.read_csv(DATA / "cascade_comparison.csv")
+    assert consumer == canonical.consumer and comparison == canonical.comparison
+    assert gen.consumer_problems(consumer, fresh_inputs()) == []  # canonical computed from the inputs
+    assert gen.comparison_problems(comparison, fresh_inputs()) == []
+    assert len(consumer) == len(cc.retained_counts(cc.transitions(1))) * len(HARVEST_RULE["cells"])
+
+
+def _plus_1e60(field: str):
+    """Change ``field`` by 10^-60 (canonical exact text) in the first row that carries it."""
+
+    def edit(rows):
+        i = next(i for i, r in enumerate(rows) if r[field + "_num"])
+        rows[i].update(cc.exact_fields(field, cc.read_fraction(rows[i], field) + Fraction(1, 10**60)))
+        return rows
+
+    return edit
+
+
+def _edit_cells(i: int | str, **cells):
+    def edit(rows):
+        j = next(k for k, r in enumerate(rows) if r.get("k")) if i == "with k" else i
+        rows[j].update(cells)
+        return rows
+
+    return edit
+
+
+def _erase_sensitivity(rows):
+    for r in rows:
+        for sigma, column in (
+            ("sigma2_independent", "verdict_independent"),
+            ("sigma2_rho_minus1", "verdict_rho_minus1"),
+            ("sigma2_rho_plus1", "verdict_rho_plus1"),
+        ):
+            r[sigma + "_num"] = r[sigma + "_den"] = r[column] = ""
+    return rows
+
+
+def _orth_be_holds(rows):
+    """CHECK_round5's corruption: Orth Be's measured made its model and the verdict HOLDS (consistent)."""
+    r = rows[0]
+    assert (r["source"], r["target"]) == ("orth1982", "Be")
+    r.update(measured_num=r["model_num"], measured_den=r["model_den"], verdict="HOLDS")
+    return rows
+
+
+def _consistent_mode(rows):
+    """Row 0 rewritten as a count at its mode: self-consistent (the module's row check passes) but not the
+    harvested count."""
+    r = rows[0]
+    r.update(
+        observed=r["mode"],
+        side="mode",
+        bound_kind="none",
+        bound_num="",
+        bound_den="",
+        decision="pass",
+        bound_display="",
+    )
+    assert cc.consumer_problems([r]) == []
+    return rows
+
+
+#: Every adverse edit of a written table CHECK_round5 lists (and a few more): each must stop compare before
+#: the document is written.
+WRITTEN_FAULTS = {
+    "cascade_consumer.csv": {
+        "header only": lambda rows: [],
+        "the first row removed": lambda rows: rows[1:],
+        "the first row duplicated": lambda rows: [rows[0], *rows],
+        "the last row replaced by the first": lambda rows: [*rows[:-1], rows[0]],
+        "two rows swapped": lambda rows: [rows[1], rows[0], *rows[2:]],
+        "a target relabelled": _edit_cells(0, target="Al-27"),
+        "a revision relabelled": _edit_cells(0, version="11.5.0.beta"),
+        "a count relabelled": _edit_cells(0, count="g3->1"),
+        "n changed": _edit_cells(0, n="100001"),
+        "a self-consistent count at the mode": _consistent_mode,
+    },
+    "cascade_comparison.csv": {
+        "header only": lambda rows: [],
+        "the first row removed": lambda rows: rows[1:],
+        "the first row duplicated": lambda rows: [rows[0], *rows],
+        "the last row replaced by the first": lambda rows: [*rows[:-1], rows[0]],
+        "two rows swapped": lambda rows: [rows[1], rows[0], *rows[2:]],
+        "the sensitivity pairs erased": _erase_sensitivity,
+        "measured + 10^-60": _plus_1e60("measured"),
+        "sigma2 + 10^-60": _plus_1e60("sigma2"),
+        "sigma2_independent + 10^-60": _plus_1e60("sigma2_independent"),
+        "sigma2_rho_minus1 + 10^-60": _plus_1e60("sigma2_rho_minus1"),
+        "sigma2_rho_plus1 + 10^-60": _plus_1e60("sigma2_rho_plus1"),
+        "Orth Be measured = model, HOLDS": _orth_be_holds,
+        "Z relabelled": _edit_cells(0, Z="5"),
+        "phase relabelled": _edit_cells(0, phase="gas"),
+        "set relabelled": _edit_cells(0, set="secondary"),
+        "source relabelled": _edit_cells(0, source="kirch1999"),
+        "target relabelled": _edit_cells(0, target="Li"),
+        "observable relabelled": _edit_cells(0, observable="high_over_ka"),
+        "k relabelled": _edit_cells("with k", k="3"),
+    },
+}
+WRITTEN_CASES = [(t, name) for t, faults in WRITTEN_FAULTS.items() for name in faults]
+
+
+@pytest.mark.parametrize("table, name", WRITTEN_CASES, ids=[f"{t[8:-4]}: {n}" for t, n in WRITTEN_CASES])
+def test_t11_compare_refuses_every_adverse_written_table_before_the_document(
+    tmp_path, monkeypatch, table, name
+):
+    out = {}
+    real_read = gen.read_csv
+
+    def capture(path, fields, rows):
+        rows = [dict(r) for r in rows]
+        if Path(path).name == table:
+            rows = WRITTEN_FAULTS[table][name](rows)
+        out[Path(path).name] = cc.csv_text(fields, rows)
+
+    def read(path):
+        if Path(path).name in out:
+            return list(csv.DictReader(io.StringIO(out[Path(path).name])))
+        return real_read(path)
+
+    monkeypatch.setattr(gen, "write_csv", capture)
+    monkeypatch.setattr(gen, "read_csv", read)
+    monkeypatch.setattr(gen, "DOCUMENT", tmp_path / "BENCHMARK_STOPPED_MU.md")
+    with pytest.raises(ValueError, match="^the written cascade tables do not certify their decisions"):
+        gen.compare()
+    assert not (tmp_path / "BENCHMARK_STOPPED_MU.md").exists()  # refused before the document is written
+
+
+def test_t11_the_measured_and_variance_edits_keep_their_verdicts():
+    """The 10^-60 edits are invisible to the row recompute: only the whole-table equality refuses them."""
+    rows = canonical_tables().comparison
+    for field in ("measured", "sigma2", "sigma2_independent", "sigma2_rho_minus1", "sigma2_rho_plus1"):
+        edited = _plus_1e60(field)([dict(r) for r in rows])
+        assert cc.comparison_problems(edited, HARVEST_POLICY_RATIOS) == []
+        assert gen.comparison_problems(edited, fresh_inputs(), rows)
+
+
+HARVEST_POLICY_RATIOS = json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8"))["ratios"]
+
+
+def test_t11_compare_renders_the_document_from_the_tables_it_proved_equal_to_the_written_files(
+    tmp_path, monkeypatch
+):
+    out, seen = {}, {}
+    real_read, real_render = gen.read_csv, gen.render
+
+    def capture(path, fields, rows):
+        out[Path(path).name] = cc.csv_text(fields, rows)
+
+    def spy(inp, tables=None):
+        seen["tables"] = tables
+        return real_render(inp, tables)
+
+    monkeypatch.setattr(gen, "write_csv", capture)
+    monkeypatch.setattr(
+        gen,
+        "read_csv",
+        lambda path: (
+            list(csv.DictReader(io.StringIO(out[Path(path).name])))
+            if Path(path).name in out
+            else real_read(path)
+        ),
+    )
+    monkeypatch.setattr(gen, "render", spy)
+    monkeypatch.setattr(gen, "DOCUMENT", tmp_path / "BENCHMARK_STOPPED_MU.md")
+    gen.compare()
+    written = {
+        n: list(csv.DictReader(io.StringIO(out[n])))
+        for n in ("cascade_consumer.csv", "cascade_comparison.csv")
+    }
+    assert seen["tables"].consumer == written["cascade_consumer.csv"]
+    assert seen["tables"].comparison == written["cascade_comparison.csv"]
+    assert (tmp_path / "BENCHMARK_STOPPED_MU.md").read_bytes() == (
+        REPO / "BENCHMARK_STOPPED_MU.md"
+    ).read_bytes()
+
+
+def test_t11_table_problems_name_each_way_a_table_differs():
+    canonical = canonical_tables().comparison
+    problems = lambda rows: gen.table_problems(  # noqa: E731
+        "t", rows, canonical, cc.COMPARISON_COLUMNS, cc.COMPARISON_DISPLAY, gen.COMPARISON_KEY
+    )
+    assert problems([dict(r) for r in canonical]) == []
+    assert "no rows" in problems([])[0]
+    assert "appears 2 times" in problems([canonical[0], *canonical])[0]
+    assert "is missing" in problems(canonical[1:])[0]
+    assert "canonical order" in problems([canonical[1], canonical[0], *canonical[2:]])[0]
+    assert "inputs do not give" in " ".join(problems([{**canonical[0], "target": "Li"}, *canonical[1:]]))
+    assert "verdict is not what the inputs give" in " ".join(
+        problems([{**canonical[0], "verdict": "HOLDS"}, *canonical[1:]])
+    )
+    assert problems([{**canonical[0], "model": "x", "pull": "x"}, *canonical[1:]]) == []  # display only
+    assert "the inputs give no rows" in gen.table_problems("t", canonical, [], (), (), ())[0]
+
+
+def test_t11_read_exact_states_its_exponent_width():
+    assert (
+        "The exponent's digit count, including leading zeros, must not exceed that of PRECISION_MAX."
+        in " ".join(cc.read_exact.__doc__.split())
+    )
+    assert cc.read_exact("1e-5000") == Fraction(1, 10**5000)
+    with pytest.raises(cc.DisplayDomainError):
+        cc.read_exact("1e-0005000")  # the width rule, as stated

@@ -63,14 +63,18 @@ def compare(prereg: Path = DATA / "preregistration.json") -> None:
         [{"row_id": v.row_id, "verdict": v.verdict, "kind": v.kind, "pull": v.pull} for v in verdicts],
     )
     inp = load_inputs(prereg)
-    write_csv(DATA / "cascade_comparison.csv", cc.COMPARISON_COLUMNS, cascade_comparison(inp))
-    write_csv(DATA / "cascade_consumer.csv", cc.CONSUMER_COLUMNS, cascade_consumer(inp))
-    # the audit of the written files: every decision and verdict recomputed from their exact columns alone
-    problems = consumer_problems(read_csv(DATA / "cascade_consumer.csv"), inp)
-    problems += comparison_problems(read_csv(DATA / "cascade_comparison.csv"), inp)
+    tables = canonical_tables(inp)
+    write_csv(DATA / "cascade_comparison.csv", cc.COMPARISON_COLUMNS, tables.comparison)
+    write_csv(DATA / "cascade_consumer.csv", cc.CONSUMER_COLUMNS, tables.consumer)
+    # the audit of the written files, before the document: each table read back must be the canonical table of
+    # the inputs as a whole (its rows, their order, every exact field and verdict), and every decision and verdict
+    # must follow from its exact columns
+    problems = consumer_problems(read_csv(DATA / "cascade_consumer.csv"), inp, tables.consumer)
+    problems += comparison_problems(read_csv(DATA / "cascade_comparison.csv"), inp, tables.comparison)
     if problems:
         raise ValueError(f"the written cascade tables do not certify their decisions: {problems[:3]}")
-    DOCUMENT.write_text(render(inp).text, encoding="utf-8", newline="\n")
+    # the document is rendered from the tables just proved equal to the written ones
+    DOCUMENT.write_text(render(inp, tables).text, encoding="utf-8", newline="\n")
     tally: dict[str, int] = {}
     for v in verdicts:
         tally[v.verdict] = tally.get(v.verdict, 0) + 1
@@ -505,55 +509,102 @@ def read_back(columns: tuple[str, ...], rows: list[dict[str, str]]) -> list[dict
     return list(csv.DictReader(io.StringIO(cc.csv_text(columns, rows))))
 
 
-def consumer_problems(rows: list[dict[str, str]], inp: Inputs) -> list[str]:
-    """Every problem of consumer rows read from text, from their exact columns alone (the display columns are
-    never read): the module recomputes every decision from n, observed, p, budget and bound (cc.consumer_problems,
-    with the rule's per-side budget), and each row's n, observed and p must be its cell's stops, its harvested
-    count and the model's probability of that count for the cell's Z."""
+#: The identity of a row of each cascade table: a table holds each identity once, in the canonical order.
+CONSUMER_KEY = ("version", "config", "target", "count")
+COMPARISON_KEY = ("source", "target", "observable", "k")
+
+
+@dataclass(frozen=True)
+class Tables:
+    """The two cascade tables, as a reader of their CSV files sees them."""
+
+    consumer: list[dict[str, str]]
+    comparison: list[dict[str, str]]
+
+
+def canonical_tables(inp: Inputs) -> Tables:
+    """The canonical tables of the authoritative inputs (the rule, the harvest, the reference and the model),
+    computed by the module and read back as a reader of the CSV files sees them."""
+    return Tables(
+        read_back(cc.CONSUMER_COLUMNS, cascade_consumer(inp)),
+        read_back(cc.COMPARISON_COLUMNS, cascade_comparison(inp)),
+    )
+
+
+def table_problems(
+    name: str,
+    rows: list[dict[str, str]],
+    canonical: list[dict[str, str]],
+    columns: tuple[str, ...],
+    display: tuple[str, ...],
+    key: tuple[str, ...],
+) -> list[str]:
+    """Every way a table differs from the canonical one in its exact projection: every column but the
+    documented display-only ones. The table must not be empty, must hold each canonical row identity exactly once
+    and no other, in the canonical order, and every cell outside ``display`` must equal the canonical cell (the
+    exact columns are in their canonical text, so equal text is equal value)."""
+    if not canonical:
+        return [f"{name}: the inputs give no rows"]
+    if not rows:
+        return [f"{name}: the table has no rows (an empty or header-only file)"]
+    out = []
+    ident = [tuple(r.get(k) for k in key) for r in rows]
+    expected = [tuple(r[k] for k in key) for r in canonical]
+    seen: dict[tuple[str | None, ...], int] = {}
+    for k in ident:
+        seen[k] = seen.get(k, 0) + 1
+    out += [f"{name} {k}: the row appears {c} times" for k, c in seen.items() if c > 1]
+    out += [f"{name} {k}: a row the inputs give is missing" for k in expected if k not in seen]
+    out += [f"{name} {k}: a row the inputs do not give" for k in seen if k not in set(expected)]
+    if not out and ident != expected:
+        out.append(f"{name}: the rows are not in the canonical order")
+    by_key = dict(zip(expected, canonical, strict=True))
+    for k, r in zip(ident, rows, strict=True):
+        want = by_key.get(k)
+        if want is None:
+            continue
+        if tuple(r) != columns:
+            out.append(f"{name} {k}: the columns are not the schema")
+            continue
+        out += [f"{name} {k}: {c} is not what the inputs give" for c in columns if c not in display and r[c] != want[c]]
+    return out
+
+
+def consumer_problems(
+    rows: list[dict[str, str]], inp: Inputs, canonical: list[dict[str, str]] | None = None
+) -> list[str]:
+    """Every problem of a consumer table read from text, as a whole: the module recomputes every decision from
+    the exact columns of each row (cc.consumer_problems, with the rule's per-side budget), and the table's exact
+    projection must be the canonical table of the inputs (table_problems: every row once, in order, every
+    exact field and decision). The display columns are never read. ``canonical`` defaults to the table the
+    inputs give."""
+    if canonical is None:
+        canonical = read_back(cc.CONSUMER_COLUMNS, cascade_consumer(inp))
     hv = inp.cascade.rule["harvest"]
     out = cc.consumer_problems(rows, cc.alpha_side(hv, len(cc.retained_counts(cc.transitions(1)))))
-    observed = cascade_harvest(inp)
-    cells = {cell_of(r): r for r in inp.cascade.harvest}
-    model: dict[tuple[str, str, str], dict[str, Fraction]] = {}
-    for r in rows:
-        name = f"{'/'.join(cell_of(r))} {r.get('count')}"
-        cell = cells.get(cell_of(r))
-        if cell is None or r.get("count") not in observed[cell_of(r)]:
-            out.append(f"{name}: not a retained count of a harvested cell")
-            continue
-        probs = model.setdefault(cell_of(r), cc.retained_counts(cc.transitions(cc.read_int(cell["Z"], "Z"))))
-        try:
-            n, x, p = cc.read_int(r["n"], "n"), cc.read_int(r["observed"], "observed"), cc.read_fraction(r, "p")
-        except cc.DisplayDomainError:
-            continue  # reported by cc.consumer_problems
-        if (n, x, p) != (cc.read_int(cell["stops"], "stops"), observed[cell_of(r)][r["count"]], probs[r["count"]]):
-            out.append(f"{name}: n, observed or p is not the cell's stops, harvested count or model probability")
-    return out
+    return out + table_problems(
+        "cascade_consumer", rows, canonical, cc.CONSUMER_COLUMNS, cc.CONSUMER_DISPLAY, CONSUMER_KEY
+    )
 
 
 def cascade_comparison(inp: Inputs) -> list[dict[str, str]]:
     return cc.comparison_rows(inp.cascade.reference, inp.cascade.rule)
 
 
-def comparison_problems(rows: list[dict[str, str]], inp: Inputs) -> list[str]:
-    """Every problem of comparison rows read from text, from their exact columns alone: the module recomputes
-    every verdict from model, measured and the sigma^2 columns (cc.comparison_problems), and each row's model
-    must be the module's exact value of its observable for its Z."""
+def comparison_problems(
+    rows: list[dict[str, str]], inp: Inputs, canonical: list[dict[str, str]] | None = None
+) -> list[str]:
+    """Every problem of a comparison table read from text, as a whole: the module recomputes every verdict from
+    the exact columns of each row (cc.comparison_problems), and the table's exact projection must be the
+    canonical table of the inputs (table_problems: every row once, in order, its metadata, model, measured, the
+    four variances and the verdicts, with the sensitivity rows). The display columns are never read.
+    ``canonical`` defaults to the table the inputs give."""
+    if canonical is None:
+        canonical = read_back(cc.COMPARISON_COLUMNS, cascade_comparison(inp))
     out = cc.comparison_problems(rows, inp.cascade.rule["ratios"])
-    for i, r in enumerate(rows):
-        try:
-            z, model = cc.read_int(r["Z"], "Z"), cc.read_fraction(r, "model")
-        except (cc.DisplayDomainError, KeyError):
-            continue  # reported by cc.comparison_problems
-        if r["observable"] == "kb_over_ka":
-            want = cc.kb_over_ka(z)
-        elif r["observable"] == "high_over_ka":
-            want = cc.high_over_ka(z, cc.read_int(r["k"], "k"))
-        else:
-            want = cc.ka_over_ktot(z)
-        if model != want:
-            out.append(f"row {i}: the model is not the module's exact {r['observable']}")
-    return out
+    return out + table_problems(
+        "cascade_comparison", rows, canonical, cc.COMPARISON_COLUMNS, cc.COMPARISON_DISPLAY, COMPARISON_KEY
+    )
 
 
 def observable_label(obs: str, k: str) -> list[str | Slot]:
@@ -572,7 +623,7 @@ def q(value: str, places: int = CASCADE_DECIMALS) -> str:
     return str(Decimal(value).quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_EVEN))
 
 
-def render_cascade(w: Writer, inp: Inputs) -> None:
+def render_cascade(w: Writer, inp: Inputs, tables: Tables) -> None:
     c = inp.cascade
     v1, v2 = inp.policy["setup"]["versions"]
     tags = inp.policy["setup"]["tags"]
@@ -660,8 +711,8 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
     w.blank()
     # ---- c. the compiled cascade
     hv = c.rule["harvest"]
-    rows = read_back(cc.CONSUMER_COLUMNS, cascade_consumer(inp))
-    problems = consumer_problems(rows, inp)
+    rows = tables.consumer
+    problems = consumer_problems(rows, inp, canonical=rows)
     if problems:
         raise ValueError(f"cascade_consumer rows break their schema: {problems[:3]}")
     rejected = [r for r in rows if r["decision"] != "pass"]
@@ -875,8 +926,8 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
     )
     w.blank()
     # ---- e. against measurement
-    comp = read_back(cc.COMPARISON_COLUMNS, cascade_comparison(inp))
-    problems = comparison_problems(comp, inp)
+    comp = tables.comparison
+    problems = comparison_problems(comp, inp, canonical=comp)
     if problems:
         raise ValueError(f"cascade_comparison rows break their schema: {problems[:3]}")
     w.line(
@@ -1096,7 +1147,9 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
     w.blank()
 
 
-def render(inp: Inputs) -> Rendered:
+def render(inp: Inputs, tables: Tables | None = None) -> Rendered:
+    """The document. Its cascade section is rendered from ``tables``: compare passes the tables it has proved
+    equal to the written files; otherwise the canonical tables of the inputs."""
     pol = inp.policy
     setup, rule = pol["setup"], pol["rule"]
     v1, v2 = setup["versions"]
@@ -1742,7 +1795,7 @@ def render(inp: Inputs) -> Rendered:
     )
     w.blank()
 
-    render_cascade(w, inp)
+    render_cascade(w, inp, canonical_tables(inp) if tables is None else tables)
 
     # ---- reproducing
     w.line("## Reproducing")

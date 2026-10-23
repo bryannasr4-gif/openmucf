@@ -827,7 +827,8 @@ def read_int(text: str, name: str = "value") -> int:
 def read_exact(text: str, name: str = "value") -> Fraction:
     """The exact value of a decimal literal (optional '-', digits, optional '.' and digits, optional exponent
     e or E with |exponent| <= PRECISION_MAX) or of a ratio 'a/b' with b > 0, read in _CHUNK-digit pieces.
-    Anything else raises DisplayDomainError."""
+    The exponent's digit count, including leading zeros, must not exceed that of PRECISION_MAX. Anything else
+    raises DisplayDomainError."""
     (text,) = _admit(**{name: (text, "text")})
     bad = DisplayDomainError(name + " must be an exact decimal or ratio literal, not " + repr(text[:40]))
     ratio = _RATIO_TEXT.fullmatch(text)
@@ -959,6 +960,8 @@ CONSUMER_COLUMNS = (
     "expected_display",
     "bound_display",
 )
+#: The display-only columns of cascade_consumer.csv: no check reads them.
+CONSUMER_DISPLAY = ("expected_display", "bound_display")
 
 
 def consumer_rows(
@@ -1084,6 +1087,7 @@ COMPARISON_COLUMNS = (
 )
 #: The certified quantities of a comparison row, each in a _num and a _den column; the verdict columns are
 #: decided from them. model, measured, sigma, pull, sigma_independent and pull_independent are display only.
+COMPARISON_DISPLAY = ("model", "measured", "sigma", "pull", "sigma_independent", "pull_independent")
 COMPARISON_EXACT = (
     "model",
     "measured",
