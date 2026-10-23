@@ -68,7 +68,6 @@
 2b351664f71d4f5793ad1ca0ef8fd7f3251b2205	CHANGELOG.md	REGISTERED: two -- 'The two', the layers
 2ccf2666c4f67f39d81feec7bfb47665c77fad54	CHANGELOG.md	REGISTERED: 636, 80 -- the ledger-claims registry's REGISTERED and UNREVIEWED rows at this release: dated counts
 2dc4e924b06f410bca40c50ab33b81e9f6083352	CHANGELOG.md	REGISTERED: 98, 2 -- the forecast card's registered cells at this entry's date, a dated count; the Monte-Carlo band is `MC_RTOL` in tests/test_forecast.py
-2e3b87d463b22068411fb8100732b364c88273fa	CHANGELOG.md	REGISTERED: one, one -- 'one bound-decay rate pair', the title of the section the entry points to, and 'the unpatched one', a pronoun for the build
 2ea189b2f95b51e43ab402dfab9e69cd7a90df39	CHANGELOG.md	REGISTERED: 3 -- the accumulators of the v1 state vector
 2eaea33c129a57c549ef0e37e620e30446ec5e7d	CHANGELOG.md	REGISTERED: 464, 461, 3, four -- the suite count at this entry's date, as the four pages were made to say: a dated count
 2f5b237120b0006db7812fbbbbbc81f247f4a476	CHANGELOG.md	REGISTERED: 7.1, 9, 0.423 -- the Fujiwara 2000 resonance peak, `lambda_dtmu_peak` in openmucf/data/rates.csv and the peak openmucf/formation.py declares
@@ -128,6 +127,7 @@
 521f1316de0d06426c07f802045acdabef4d8ca4	CHANGELOG.md	REGISTERED: one -- 'one comparable reference basis'
 5360292c1962b75744e369dee723454affe96695	CHANGELOG.md	REGISTERED: 731, 596 -- the prototype's figure and the wrapped sentences at that tree: dated counts
 5412cb1b620b42564ec6fb8f9df33ec7471c8675	CHANGELOG.md	REGISTERED: 4 -- the digit of the seam variable `G4MUONICDATA_D1_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name, an identifier
+54e2bd38ffcf65221416dd9f25e801c1eb66b3f1	CHANGELOG.md	REGISTERED: one, one -- 'one bound-decay rate pair', the title of the section the entry points to, and 'the unpatched one', a pronoun for the build
 54f5be277a1d022f194fa476133b16c443b9c24d	CHANGELOG.md	REGISTERED: 10.4, 18.3, four -- the Kovach et al. (2017) efficiencies openmucf/data/muon_cost_chain.csv carries as 0.104 and 0.183, and the four subsystem draws the note read in that paper
 552405559eef6d18dcb1784ee8dc3752222d2516	CHANGELOG.md	REGISTERED: 30, 800, 300 -- the ±30% lambda_c(800 K)/lambda_c(300 K) clause, VALIDATION.md's V_yamashita_ratio row
 56434901b5bef7064b2a51d725a2e56eb542e2e0	CHANGELOG.md	REGISTERED: 2024 -- '2024 global supply', the year of the supply figure scripts/parisi_ac225.py cites
