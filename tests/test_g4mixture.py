@@ -1103,7 +1103,7 @@ def document_pins(numeric: re.Pattern[str]) -> list[tuple[str, str, str, tuple[i
 def test_document_section_13_is_the_generated_text() -> None:
     text = (ROOT / DOCUMENT).read_text(encoding="utf-8").replace("\r\n", "\n")
     assert text.count("\n" + mixture.SECTION_HEADING + "\n") == 1
-    assert "## 13. " + text.split("\n## 13. ", 1)[1] == _section()
+    assert "## 13. " + text.split("\n## 13. ", 1)[1].split("\n## 14. ", 1)[0] == _section()
 
 
 def test_document_pointer_sentences_one_each() -> None:

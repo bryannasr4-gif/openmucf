@@ -1142,6 +1142,35 @@ def test_the_sweep_holds_on_every_key_and_refuses_what_the_reference_predicts(re
             assert int(r["disabled"]) == int(r["keys"]) and not r["refused_keys"], r
 
 
+def test_document_section_14_is_the_generated_text() -> None:
+    """Section 14 of DATASET_D1.md, the document's last, is the text the generator renders from the committed
+    files, so every number in it is the generator's."""
+    gen = _generator()
+    text = (ROOT / gen.DOCUMENT).read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert text.count("\n" + gen.SECTION_HEADING + "\n") == 1
+    assert text.split("\n## 14. ", 1)[1] == gen.render_section(ROOT)[len("## 14. "):]
+
+
+def document_pins(numeric: re.Pattern[str]) -> list[tuple[str, str, str, tuple[int, ...], object]]:
+    """``(what, path, pattern, groups, expected)`` for every line of section 14 that carries a number: each
+    line whitespace-collapsed with every number a group (the section is required to be the generated text)."""
+    from test_g4mixture import _line_pattern
+
+    gen = _generator()
+    pins: list[tuple[str, str, str, tuple[int, ...], object]] = []
+    for index, line in enumerate(gen.render_section(ROOT).splitlines(), start=1):
+        pattern, groups = _line_pattern(line, numeric)
+        if groups:
+            pins.append((f"section 14 line {index}", gen.DOCUMENT, pattern, groups, None))
+    return pins
+
+
+def test_document_section_14_pins_match_once() -> None:
+    collapsed = " ".join((ROOT / "DATASET_D1.md").read_text(encoding="utf-8").split())
+    for what, _, pattern, _, _ in document_pins(re.compile(r"[0-9][0-9,.]*[0-9]|[0-9]|[⁰¹²³⁴⁵⁶⁷⁸⁹]+")):
+        assert len(list(re.finditer(pattern, collapsed))) == 1, what
+
+
 def _sweep_columns() -> list[str]:
     with (ROOT / bound.SWEEP_RELPATH).open(encoding="ascii") as f:
         return f.readline().strip().split(",")

@@ -39,6 +39,7 @@ import re
 import subprocess
 import sys
 
+import test_g4boundrates as boundrates_doc
 import test_g4d2 as d2
 import test_g4d3 as d3
 import test_g4lifetime as lifetime
@@ -242,6 +243,9 @@ def pin_table() -> list[Pin]:
         table.append(Pin(what, path, pattern, groups, expected))
     # The natural-target section's pins, as its own test module builds them with this file's tokenizer.
     for what, path, pattern, groups, expected in mixture_doc.document_pins(NUMERIC):
+        table.append(Pin(what, path, pattern, groups, expected))
+    # The bound-rate section's pins, the same way.
+    for what, path, pattern, groups, expected in boundrates_doc.document_pins(NUMERIC):
         table.append(Pin(what, path, pattern, groups, expected))
     return table
 

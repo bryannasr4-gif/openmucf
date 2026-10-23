@@ -68,6 +68,7 @@
 2b351664f71d4f5793ad1ca0ef8fd7f3251b2205	CHANGELOG.md	REGISTERED: two -- 'The two', the layers
 2ccf2666c4f67f39d81feec7bfb47665c77fad54	CHANGELOG.md	REGISTERED: 636, 80 -- the ledger-claims registry's REGISTERED and UNREVIEWED rows at this release: dated counts
 2dc4e924b06f410bca40c50ab33b81e9f6083352	CHANGELOG.md	REGISTERED: 98, 2 -- the forecast card's registered cells at this entry's date, a dated count; the Monte-Carlo band is `MC_RTOL` in tests/test_forecast.py
+2e3b87d463b22068411fb8100732b364c88273fa	CHANGELOG.md	REGISTERED: one, one -- 'one bound-decay rate pair', the title of the section the entry points to, and 'the unpatched one', a pronoun for the build
 2ea189b2f95b51e43ab402dfab9e69cd7a90df39	CHANGELOG.md	REGISTERED: 3 -- the accumulators of the v1 state vector
 2eaea33c129a57c549ef0e37e620e30446ec5e7d	CHANGELOG.md	REGISTERED: 464, 461, 3, four -- the suite count at this entry's date, as the four pages were made to say: a dated count
 2f5b237120b0006db7812fbbbbbc81f247f4a476	CHANGELOG.md	REGISTERED: 7.1, 9, 0.423 -- the Fujiwara 2000 resonance peak, `lambda_dtmu_peak` in openmucf/data/rates.csv and the peak openmucf/formation.py declares
@@ -245,6 +246,7 @@ a2f02a20014865a980ada39b631b7cd70c99bf47	CHANGELOG.md	REGISTERED: 150, 284 -- th
 a3fe0377e98ca44a0160b42203d31afac8589856	CHANGELOG.md	REGISTERED: 6.10, 34.5 -- the worst cell's noise and the smallest relative constant that would cover it, as scripts/generate_design.py's preamble records them
 a402f82bc3eaff179b458396a8379d5d6860b7c2	CHANGELOG.md	REGISTERED: 0.18, 0.104, 0.183 -- the conversion factors in openmucf/data/muon_cost_chain.csv, as MUON_COST.md's edge table prints them
 a44029fc41b404096f3ec5135681af2644e6c80b	CHANGELOG.md	REGISTERED: three, 23, 2 -- 'three ways', the split the sentence enumerates; 23: rows the old rule under-called, as this dated entry recorded it (a released line, held by this row and not re-derived); 2: rows the primary flatly contradicts, as this dated entry recorded it (a released line, held by this row and not re-derived)
+a530a88266d3b49f3dcaea33a8f1050e79589a52	CHANGELOG.md	REGISTERED: one -- 'one capture and decay rate pair': the single pair both routes take with the option, not a count
 a5649e1af55aa3a32e631b65f8e65a5e496a21c2	CHANGELOG.md	REGISTERED: 0.77, 0.93, 0.12, 0.1 -- the reactivation floors and the rise of the floor per 0.1% of side-channel loss as FRONTIER.md states them; tests/test_correction_record.py binds each figure to its home
 a6f9c417976ed61107a58b6958da9cf2c8b078b9	CHANGELOG.md	REGISTERED: 82, two -- Z=82, the lead shell closure the effective-charge step sits near: a label, not a shipped value; 'the last two' of the findings this entry enumerates, F-1 to F-5 by the dataset document's numbering, as registered on the dated entry below
 a75c120a01e20a27d433f228a0b1396902d839ea	CHANGELOG.md	REGISTERED: three -- the three routes the named test drills

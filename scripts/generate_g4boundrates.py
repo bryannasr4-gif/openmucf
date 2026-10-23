@@ -208,9 +208,211 @@ def build_results(root: Path) -> dict[str, Any]:
     }
 
 
+# --------------------------------------------------------------------------------------------
+# section 14 of DATASET_D1.md, generated from the committed files
+# --------------------------------------------------------------------------------------------
+
+DOCUMENT = "DATASET_D1.md"
+SECTION_HEADING = "## 14. One bound-decay rate pair for both stopped-muon routes"
+RULINGS_RELPATH = "data/g4/d1/bound_rates_drill_rulings.csv"
+WORKERS_RELPATH = "data/g4/d1/bound_rates_workers.csv"
+#: What each physical-clock category compares, in words.
+CLOCK_WORDS = {
+    "atom_creation": "the muonic atom's creation",
+    "atom_dio": "the atomic route's decay electron",
+    "atom_capture": "the atomic route's capture products",
+    "stop_dio": "the stopping route's decay electron",
+    "stop_capture": "the stopping route's capture products",
+}
+
+
+def _csv_rows(root: Path, relpath: str) -> list[dict[str, str]]:
+    import csv
+
+    with (root / relpath).open(newline="", encoding="ascii") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _thousands(n: int) -> str:
+    return f"{n:,}"
+
+
+def render_section(root: Path) -> str:
+    """Section 14 of DATASET_D1.md: every number read from the committed files."""
+    import json
+
+    from openmucf.g4 import d1_lifetime as lifetime
+    from openmucf.g4.sources import d1_nuclear_capture as d1
+
+    policy = bound.load_policy(root)
+    results = json.loads((root / bound.RESULTS_RELPATH).read_text(encoding="utf-8"))
+    theory = json.loads((root / bound.THEORY_RELPATH).read_text(encoding="utf-8"))
+    sweep = _csv_rows(root, bound.SWEEP_RELPATH)
+    identity = _csv_rows(root, bound.IDENTITY_RELPATH)
+    identity_drills = _csv_rows(root, bound.IDENTITY_DRILLS_RELPATH)
+    drills = bound.read_csv(root / bound.DRILLS_RELPATH, bound.HARVEST_COLUMNS)
+    rulings = _csv_rows(root, RULINGS_RELPATH)
+    workers = _csv_rows(root, WORKERS_RELPATH)
+    ref = bound.Reference(root)
+    grid = sorted(k for k in ref.oracle.light if bound.in_domain(*k))
+    if grid != sorted((z, a) for z in range(2, 14) for a in range(z, 3 * z + 1)):
+        raise SystemExit("the oracle's keys inside the domain are not the grid this section describes")
+    refused = sorted({key for r in sweep if r["switch"] == "on" and r["profile"] == "none"
+                      for key in r["refused_keys"].split()}, key=lambda k: tuple(int(x) for x in k.split("-")))
+    helper = d1.load_helper(root / d1.HELPER_RELPATH)
+    zmin, zmax = lifetime.helper_clamp(helper)
+    us = float(d1.MICROSECOND)
+    lines = [
+        SECTION_HEADING,
+        "",
+        "Geant4 gives a negative muon in the ground state of a muonic atom a different decay rate on each of its "
+        "two stopped-muon routes (section 12).",
+        "With `G4HadronicParameters::SetEnableMuonicBoundRates(true)`, set before the physics list is built, a "
+        "build carrying the patches gives both routes one rate pair from `G4MuonicBoundRateProvider` "
+        "(`cpp/patches/README.md`): the capture rate `G4MuonicAtomHelper::GetMuonCaptureRate` returns, called as "
+        "it stands, and the decay rate `G4MuonMinusBoundDecay::GetMuonDecayRate` computes below Z = 14, "
+        "evaluated with the nuclear mass each route already uses.",
+        "The comment beside that expression in Geant4 attributes it to von Baeyer and Leiter (Phys. Rev. A "
+        "**19**, 1371 (1979)); that paper was not read for this record, and the pair is a prescription "
+        "reproduced on both routes, not a statement of physical accuracy.",
+        "The provider answers for 2 ≤ Z ≤ 13 and A ≥ Z. Hydrogen, whose atomic-route rate is a tabulated value, "
+        "Z ≥ 14, where the stopping route uses a fit, and a natural-composition request keep each route's own "
+        "pair.",
+        f"Inside that domain a negative capture rate is refused with a fatal `G4Exception` rather than clipped: "
+        f"of the {len(grid)} keys with 2 ≤ Z ≤ 13 and Z ≤ A ≤ 3Z that the decay-rate oracle and the sweep below "
+        f"cover (not all of them bound nuclei), the compiled fallback gives one to {len(refused)}, all "
+        f"neutron-rich ({', '.join(refused)}).",
+        "The option is off by default, the dataset opt-in does not set it, and the getters `GetMuonDecayRate` of "
+        "both classes are unchanged.",
+        "",
+        "### 14.1 What the option changes",
+        "",
+        "On the stopping route it changes nothing: the pair is that route's own, bit for bit "
+        "(`bound_rates_identity.csv`). On the atomic route the muonic atom's lifetimes come from the pair instead "
+        "of the helper's former decay rate:",
+        "",
+        "| nuclide | capture (µs⁻¹) | decay, with the option (µs⁻¹) | decay, atomic route without it (µs⁻¹) | "
+        "lifetime with the option (ns) | atomic lifetime without it (ns) | capture probability with the option | "
+        "atomic, without it |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for label, z, _, _ in bound.ISOTOPES:
+        p = bound.frozen_pair(policy, label)
+        former = lifetime.helper_decay_rate(z, helper.zeff, zmin, zmax)
+        lines.append(
+            f"| {label} | {p.capture * us:.5f} | {p.decay * us:.9f} | {former * us:.9f} | {1 / p.total:.3f} | "
+            f"{1 / (p.capture + former):.3f} | {float(p.p_capture):.6f} | "
+            f"{p.capture / (p.capture + former):.6f} |")
+    n_cells = len({(r["revision"], r["route"], r["nuclide"], r["t0_ns"]) for r in identity})
+    keys = sorted({int(r["keys"]) for r in sweep})
+    events = sum(int(g["events"]) for g in policy["groups"])
+    tr = results["TRANSPORT_RESULTS"]
+    n_primary = int(policy["statistics"]["primary"]["count"])
+    n_dist = int(policy["statistics"]["distribution"]["count"])
+    meta: dict[str, dict[str, str]] = {}
+    for r in drills:
+        if r["stat"] == "meta":
+            meta.setdefault(r["cell"], {})[r["key"]] = r["value"]
+    ruled_cells = {r["item"] for r in rulings if r["kind"] == "statistical"}
+    reruns = sorted({r["rerun"] for r in rulings if r["kind"] == "statistical"})
+    rerun_sizes = sorted({int(meta[c]["events"]) for c in reruns})
+    ruled_sizes = sorted({int(meta[c]["events"]) for c in ruled_cells})
+    n_controls = sum(1 for m in meta.values() if m["kind"] == "control")
+    n_drills = sum(1 for c, m in meta.items() if m["kind"] != "control" and c not in ruled_cells)
+    ruled_checks = [r for r in rulings if r["kind"] == "identity"]
+    n_identity = len(identity_drills) - len(ruled_checks)
+    split_rows = [r for r in workers if r["on1_vs_on4_events"]]
+    split_events = sorted({int(e) for r in split_rows for e in r["on1_vs_on4_events"].split()})
+    split_where = sorted({(r["route"], r["target"]) for r in split_rows})
+    labels = {f"{z}-{a}": label for label, z, a, _ in bound.ISOTOPES} | {"13-27": "Al-27"}
+    if [route for route, _ in split_where] != ["muonic_atom_helper"] * len(split_where):
+        raise SystemExit("a thread split outside the atomic route: this section does not describe it")
+    events_words = (", ".join(str(e) for e in split_events[:-1]) + " and " + str(split_events[-1])
+                    if len(split_events) > 1 else ", ".join(str(e) for e in split_events))
+    lines += [
+        "",
+        "### 14.2 What was verified",
+        "",
+        f"`bound_rates_policy.json` fixed the harvest before it ran. With the option off, {n_cells} "
+        "configurations (the roster of `bound_rates_identity.csv`, both routes, both revisions, start times of "
+        "0, 250 and 1000 ns) wrote the same stops, transported records and random-engine states in the patched "
+        "build as in the unpatched one, traced or not, and the dataset opt-in under each capture profile wrote "
+        "the same as the previous patches.",
+        f"Through the patched libraries, {len(sweep)} sweeps of {', '.join(str(k) for k in keys)} keys each "
+        "(`bound_rates_sweep.csv`) found the two routes' capture rates equal bit for bit, the provider's pair "
+        "equal to the helper's capture rate and the stopping expression bit for bit, and the muonic atom storing "
+        "1/(c + d), 1/d and 1/c of that pair.",
+        "At 1 and 4 worker threads (`bound_rates_workers.csv`) the option adds no dependence on the thread count: "
+        f"with it on, the records that differ between 1 and 4 threads (events {events_words} of the atomic route "
+        f"on {' and '.join(labels[t] for _, t in split_where)}, the first events of 4-thread workers) are "
+        "exactly those that differ in the unpatched build, where Geant4's atomic route itself depends on the "
+        "thread count.",
+        f"The harvest transported {_thousands(events)} stopped muons on single-isotope targets in "
+        f"{len(policy['groups'])} groups (`bound_rates_harvest.csv`), with a build that records every call the "
+        "routes make to the provider: every event of the stopping route made exactly one, and every consumed rate "
+        f"equals the registered pair bit for bit. The {n_primary} registered tests rejected "
+        f"{len(tr['primary_rejections'])} and the {n_dist} tests of the delay distribution rejected "
+        f"{len(tr['distribution_rejections'])} (`bound_rates_results.json`).",
+        f"Each of {n_drills} drill runs (`bound_rates_drills.csv`) turned its intended checks red and each of "
+        f"{n_controls} controls stayed green; among them a stopping route disconnected from the provider, which "
+        "only the recorded calls reveal, and a constant delay with the correct mean, which only the distribution "
+        f"tests reveal. {len(ruled_cells)} further runs of {', '.join(_thousands(n) for n in ruled_sizes)} events, "
+        "an atomic consumer given the former decay rate and one with a stale decay-in-orbit lifetime, turned the "
+        "rate and call checks red but not the transport tests, which have little power against those defects at "
+        "that size; their reruns at "
+        f"{' and '.join(_thousands(n) for n in rerun_sizes)} events turned the transport tests red as well "
+        "(`bound_rates_drill_rulings.csv`).",
+        f"{n_identity} identity checks (`bound_rates_identity_drills.csv`), drills and their controls, came out "
+        "as expected. An extra random number drawn in the stopping consumer leaves the atomic route unchanged "
+        f"({len(ruled_checks)} checks, not applicable: that route never runs it), and one drawn in the atomic "
+        "consumer's inserted block is detected on both revisions.",
+        "",
+        "### 14.3 What it does not establish",
+        "",
+        "The option leaves both routes' product times as they were. Against the correct composition of the stop "
+        "time, the sampled delay and any model delay, the harvest's clock check fails exactly where it was "
+        "predicted to fail before the harvest ran:",
+        "",
+    ]
+    if results["CLOCK_RESULTS"]["not_as_predicted"]:
+        raise SystemExit("a clock result not as predicted: this section does not describe it")
+    clock_groups = results["CLOCK_RESULTS"]["groups"]
+    failing: dict[str, dict[str, list[int | float]]] = {}
+    for g in clock_groups.values():
+        for key, r in g["physical"].items():
+            if r["verdict"] == "fail":
+                cat, t0 = key.split("@")
+                acc = failing.setdefault(cat, {}).setdefault(t0, [0, 0, 0.0])
+                acc[0] += int(r["n"])
+                acc[1] += int(r["fail"])
+                acc[2] = max(float(acc[2]), float.fromhex(r["max_abs_residual_ns"]))
+    for cat in ("atom_creation", "atom_dio", "atom_capture", "stop_dio", "stop_capture"):
+        for t0, (n, fail, worst) in sorted(failing.get(cat, {}).items(), key=lambda kv: int(kv[0])):
+            lines.append(f"- {CLOCK_WORDS[cat]}, start time {t0} ns: {_thousands(int(fail))} of "
+                         f"{_thousands(int(n))} items, at most {worst:g} ns from the correct time")
+    lines += [
+        "",
+        "The atomic route creates the muonic atom at twice the stop time, so every atomic product of a stop at a "
+        "nonzero start time is late by that time; the stopping route lets a capture product keep the negative "
+        "local time the cascade model gives it, so it comes before the capture.",
+        f"Physical accuracy: {theory['status']}; {theory['accuracy']}. The admitted roster is empty, so the "
+        f"accuracy screen is {theory['screen']} (`bound_rates_theory.json`).",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def write_section(root: Path) -> None:
+    """Write section 14 into DATASET_D1.md: replace the section if it is there (it is the last), else append it."""
+    path = root / DOCUMENT
+    text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    marker = "\n" + SECTION_HEADING.split(". ", 1)[0] + ". "
+    head = text.split(marker, 1)[0].rstrip("\n") + "\n\n"
+    path.write_bytes((head + render_section(root)).encode("utf-8"))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("steps", nargs="+", choices=("policy", "results"))
+    parser.add_argument("steps", nargs="+", choices=("policy", "results", "section"))
     args = parser.parse_args()
     if "policy" in args.steps:
         policy = build_policy(ROOT)
@@ -229,6 +431,9 @@ def main() -> None:
         for family in ("RATE_RESULTS", "TRANSPORT_RESULTS", "CLOCK_RESULTS", "THEORY_STATUS"):
             r = results[family]
             print(family, {k: v for k, v in r.items() if k != "groups"})
+    if "section" in args.steps:
+        write_section(ROOT)
+        print(f"section written into {DOCUMENT}")
 
 
 if __name__ == "__main__":

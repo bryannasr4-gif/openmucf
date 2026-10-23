@@ -968,3 +968,48 @@ No capture rate or profile of the dataset changes with this section.
 ### 13.4 What the results show
 
 The call-site harvest verifies isotope selection, rates, branch probabilities and transported delays against the implemented mixture model for the tested conditions, with muons starting at t = 0. It is an engineering verification. The lifetime comparison is retrospective and uses surrogate estimators for every reference. Under the frozen surrogate policy, every profile and route has at least one OUTSIDE comparison; the registered all-family outcome remains SCIENCE_FAIL. These outcomes are conditional on the specified estimator assumptions. The bracket half-range is an uncalibrated sensitivity allowance, so the normalized discrepancies are policy scores rather than statistical significances. No row enters the registered accuracy screen, whose outcome is SCREEN_VACUOUS. The results do not establish rejection under every admissible experimental estimator. Post-hoc sensitivity probes of the surrogate choices exist; they are not part of the registered verdict, and a separately preregistered analysis will follow. Source dependence is flagged where answering records may reuse reference measurements; all references used here are exposed and cannot validate a correction selected using this comparison.
+
+## 14. One bound-decay rate pair for both stopped-muon routes
+
+Geant4 gives a negative muon in the ground state of a muonic atom a different decay rate on each of its two stopped-muon routes (section 12).
+With `G4HadronicParameters::SetEnableMuonicBoundRates(true)`, set before the physics list is built, a build carrying the patches gives both routes one rate pair from `G4MuonicBoundRateProvider` (`cpp/patches/README.md`): the capture rate `G4MuonicAtomHelper::GetMuonCaptureRate` returns, called as it stands, and the decay rate `G4MuonMinusBoundDecay::GetMuonDecayRate` computes below Z = 14, evaluated with the nuclear mass each route already uses.
+The comment beside that expression in Geant4 attributes it to von Baeyer and Leiter (Phys. Rev. A **19**, 1371 (1979)); that paper was not read for this record, and the pair is a prescription reproduced on both routes, not a statement of physical accuracy.
+The provider answers for 2 ≤ Z ≤ 13 and A ≥ Z. Hydrogen, whose atomic-route rate is a tabulated value, Z ≥ 14, where the stopping route uses a fit, and a natural-composition request keep each route's own pair.
+Inside that domain a negative capture rate is refused with a fatal `G4Exception` rather than clipped: of the 192 keys with 2 ≤ Z ≤ 13 and Z ≤ A ≤ 3Z that the decay-rate oracle and the sweep below cover (not all of them bound nuclei), the compiled fallback gives one to 23, all neutron-rich (2-6, 3-8, 3-9, 4-11, 4-12, 5-14, 5-15, 6-17, 6-18, 7-20, 7-21, 8-23, 8-24, 9-26, 9-27, 10-29, 10-30, 11-32, 11-33, 12-35, 12-36, 13-38, 13-39).
+The option is off by default, the dataset opt-in does not set it, and the getters `GetMuonDecayRate` of both classes are unchanged.
+
+### 14.1 What the option changes
+
+On the stopping route it changes nothing: the pair is that route's own, bit for bit (`bound_rates_identity.csv`). On the atomic route the muonic atom's lifetimes come from the pair instead of the helper's former decay rate:
+
+| nuclide | capture (µs⁻¹) | decay, with the option (µs⁻¹) | decay, atomic route without it (µs⁻¹) | lifetime with the option (ns) | atomic lifetime without it (ns) | capture probability with the option | atomic, without it |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| C-12 | 0.03807 | 0.454733263 | 0.453187444 | 2029.207 | 2035.593 | 0.077252 | 0.077495 |
+| N-14 | 0.06885 | 0.454575631 | 0.452522481 | 1910.491 | 1918.015 | 0.131537 | 0.132055 |
+| O-16 | 0.10242 | 0.454393760 | 0.451770605 | 1795.933 | 1804.433 | 0.183939 | 0.184810 |
+
+### 14.2 What was verified
+
+`bound_rates_policy.json` fixed the harvest before it ran. With the option off, 120 configurations (the roster of `bound_rates_identity.csv`, both routes, both revisions, start times of 0, 250 and 1000 ns) wrote the same stops, transported records and random-engine states in the patched build as in the unpatched one, traced or not, and the dataset opt-in under each capture profile wrote the same as the previous patches.
+Through the patched libraries, 12 sweeps of 225 keys each (`bound_rates_sweep.csv`) found the two routes' capture rates equal bit for bit, the provider's pair equal to the helper's capture rate and the stopping expression bit for bit, and the muonic atom storing 1/(c + d), 1/d and 1/c of that pair.
+At 1 and 4 worker threads (`bound_rates_workers.csv`) the option adds no dependence on the thread count: with it on, the records that differ between 1 and 4 threads (events 31, 62 and 93 of the atomic route on C-12, the first events of 4-thread workers) are exactly those that differ in the unpatched build, where Geant4's atomic route itself depends on the thread count.
+The harvest transported 384,000,000 stopped muons on single-isotope targets in 12 groups (`bound_rates_harvest.csv`), with a build that records every call the routes make to the provider: every event of the stopping route made exactly one, and every consumed rate equals the registered pair bit for bit. The 48 registered tests rejected 0 and the 36 tests of the delay distribution rejected 0 (`bound_rates_results.json`).
+Each of 36 drill runs (`bound_rates_drills.csv`) turned its intended checks red and each of 8 controls stayed green; among them a stopping route disconnected from the provider, which only the recorded calls reveal, and a constant delay with the correct mean, which only the distribution tests reveal. 4 further runs of 1,000,000 events, an atomic consumer given the former decay rate and one with a stale decay-in-orbit lifetime, turned the rate and call checks red but not the transport tests, which have little power against those defects at that size; their reruns at 10,000,000 and 60,000,000 events turned the transport tests red as well (`bound_rates_drill_rulings.csv`).
+38 identity checks (`bound_rates_identity_drills.csv`), drills and their controls, came out as expected. An extra random number drawn in the stopping consumer leaves the atomic route unchanged (2 checks, not applicable: that route never runs it), and one drawn in the atomic consumer's inserted block is detected on both revisions.
+
+### 14.3 What it does not establish
+
+The option leaves both routes' product times as they were. Against the correct composition of the stop time, the sampled delay and any model delay, the harvest's clock check fails exactly where it was predicted to fail before the harvest ran:
+
+- the muonic atom's creation, start time 250 ns: 64,000,000 of 64,000,000 items, at most 250 ns from the correct time
+- the muonic atom's creation, start time 1000 ns: 64,000,000 of 64,000,000 items, at most 1000 ns from the correct time
+- the atomic route's decay electron, start time 250 ns: 57,336,908 of 57,336,908 items, at most 250 ns from the correct time
+- the atomic route's decay electron, start time 1000 ns: 57,333,753 of 57,333,753 items, at most 1000 ns from the correct time
+- the atomic route's capture products, start time 250 ns: 26,606,571 of 26,606,571 items, at most 250 ns from the correct time
+- the atomic route's capture products, start time 1000 ns: 26,618,615 of 26,618,615 items, at most 1000 ns from the correct time
+- the stopping route's capture products, start time 0 ns: 39,381,873 of 39,381,873 items, at most 1 ns from the correct time
+- the stopping route's capture products, start time 250 ns: 39,415,941 of 39,415,941 items, at most 1 ns from the correct time
+- the stopping route's capture products, start time 1000 ns: 39,409,373 of 39,409,373 items, at most 1 ns from the correct time
+
+The atomic route creates the muonic atom at twice the stop time, so every atomic product of a stop at a nonzero start time is late by that time; the stopping route lets a capture product keep the negative local time the cascade model gives it, so it comes before the capture.
+Physical accuracy: NOT_ESTABLISHED; not established: no term of the physical uncertainty budget is bounded, and no independent reference is registered. The admitted roster is empty, so the accuracy screen is SCREEN_VACUOUS (`bound_rates_theory.json`).
