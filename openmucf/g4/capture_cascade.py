@@ -99,54 +99,63 @@ _KINDS: dict[str, tuple[tuple[type, ...], Callable[[Any], bool], str]] = {
 }
 
 
-def _kind(kind: Kind) -> tuple[tuple[type, ...], Callable[[Any], bool], str]:
+def _kind(kind: Kind) -> tuple[tuple[type, ...], Callable[[Any], bool]]:
     if isinstance(kind, tuple):
         _, lo, hi = kind
-        return (int,), lambda v: lo <= v <= hi, f"an int in [{lo}, {hi}]"
-    return _KINDS[kind]
+        return (int,), lambda v: lo <= v <= hi
+    types, admits, _ = _KINDS[kind]
+    return types, admits
 
 
-def _admit(**args: tuple[object, Kind]) -> None:
-    """The one entry check of the certified path, called first, before any arithmetic. Each argument is
-    given as name=(value, kind), in order. Its type must be exactly one of the kind's types, so a bool is not
-    an int and subclasses, floats (NaN and the infinities among them), Decimals and strings are refused (a
-    str only where the kind is text), and its value must lie in the kind's range. Anything else raises
-    DisplayDomainError."""
+def _words(kind: Kind) -> str:
+    """The words of a refusal, built only when one is raised (an int range writes its ends with int_text)."""
+    if isinstance(kind, tuple):
+        return "an int in [" + int_text(kind[1]) + ", " + int_text(kind[2]) + "]"
+    return _KINDS[kind][2]
+
+
+def _admit(**args: tuple[Any, Kind]) -> tuple[Any, ...]:
+    """The one entry check of the certified path, called first, before any arithmetic, which returns the
+    admitted values normalised: every value of a kind that admits a Fraction comes back as a Fraction (an
+    int becomes the equal Fraction), so no admitted int ever meets true division; ints, bools and strs of the
+    other kinds come back unchanged. Each argument is given as name=(value, kind), in order. Its type must be
+    exactly one of the kind's types, so a bool is not an int and subclasses, floats (NaN and the infinities
+    among them), Decimals and strings are refused (a str only where the kind is text), and its value must lie
+    in the kind's range. Anything else raises DisplayDomainError."""
+    out: list[Any] = []
     for name, (value, kind) in args.items():
-        types, admits, words = _kind(kind)
+        types, admits = _kind(kind)
         if type(value) not in types:
-            raise DisplayDomainError(f"{name} must be {words}, not {type(value).__name__}")
+            raise DisplayDomainError(name + " must be " + _words(kind) + ", not " + type(value).__name__)
         if not admits(value):
-            raise DisplayDomainError(f"{name} must be {words}")
+            raise DisplayDomainError(name + " must be " + _words(kind))
+        out.append(Fraction(value) if Fraction in types else value)
+    return tuple(out)
 
 
 def _rule_number(policy: Mapping[str, Any], name: str, kind: Kind) -> Fraction:
     """A number of a rule file: an int or a Fraction, or a str holding an exact decimal or ratio literal (the
-    form JSON carries), read exactly and checked by _admit. A float, or a str that is no such literal, raises
-    DisplayDomainError."""
+    form JSON carries, read by read_exact), checked by _admit and returned as a Fraction. A float, or a str
+    that is no such literal, raises DisplayDomainError."""
     value = policy[name]
     if type(value) is str:
-        try:
-            value = Fraction(value)
-        except (ValueError, ZeroDivisionError):
-            raise DisplayDomainError(
-                f"{name} must be an exact decimal or ratio literal, not {value!r}"
-            ) from None
-    _admit(**{name: (value, kind)})
-    return Fraction(value)
+        value = read_exact(value, name)
+    (number,) = _admit(**{name: (value, kind)})
+    return number
 
 
 # ------------------------------------------------------------------------------------------------ the model
-def _check_z(z: int) -> None:
-    _admit(z=(z, "z"))
+def _check_z(z: int) -> int:
+    (z,) = _admit(z=(z, "z"))
+    return z
 
 
 def _rules_key(rules: Mapping[str, int] | None) -> tuple[tuple[str, int], ...]:
     r = dict(RULES if rules is None else rules)
     if set(r) != set(RULES):
         raise ValueError(f"rules must name exactly {sorted(RULES)}")
-    _admit(**{f"rules[{k}]": (v, "int >= 0") for k, v in sorted(r.items())})
-    return tuple(sorted(r.items()))
+    values = _admit(**{"rules[" + k + "]": (v, "int >= 0") for k, v in sorted(r.items())})
+    return tuple(zip(sorted(r), values, strict=True))
 
 
 @lru_cache(maxsize=512)
@@ -178,7 +187,7 @@ def _transitions(z: int, key: tuple[tuple[str, int], ...]) -> tuple[tuple[Transi
 def transitions(z: int, rules: Mapping[str, int] | None = None) -> dict[Transition, Fraction]:
     """The expected number of each transition per stopped muon, keyed (upper n, lower n, kind); every
     transition the rules allow is present (a transition the Auger cap forbids at this z has value 0)."""
-    _check_z(z)
+    z = _check_z(z)
     flow = dict(_transitions(z, _rules_key(rules)))
     top = dict(_rules_key(rules))["start_level"] + 1
     for u in range(2, top + 1):
@@ -190,7 +199,7 @@ def transitions(z: int, rules: Mapping[str, int] | None = None) -> dict[Transiti
 
 def k_line(z: int, n: int, rules: Mapping[str, int] | None = None) -> Fraction:
     """Photons n -> 1 per stopped muon (n = 2..14)."""
-    _admit(n=(n, ("int", 2, LEVELS)))
+    (n,) = _admit(n=(n, ("int", 2, LEVELS)))
     return transitions(z, rules)[(n, 1, "photon")]
 
 
@@ -208,7 +217,7 @@ def kb_over_ka(z: int, rules: Mapping[str, int] | None = None) -> Fraction:
 
 def high_over_ka(z: int, k: int, rules: Mapping[str, int] | None = None) -> Fraction:
     """(sum over n >= k of the photons n -> 1) / K alpha."""
-    _admit(k=(k, ("int", 3, LEVELS)))
+    (k,) = _admit(k=(k, ("int", 3, LEVELS)))
     return sum((k_line(z, n, rules) for n in range(k, LEVELS + 1)), Fraction(0)) / k_line(z, 2, rules)
 
 
@@ -218,20 +227,20 @@ def ka_over_ktot(z: int, rules: Mapping[str, int] | None = None) -> Fraction:
 
 def key(t: Transition) -> str:
     """The name of a transition in the harvest files: ``g<upper>-><lower>`` (photon) or ``e...`` (Auger)."""
-    _admit(upper=(t[0], "int >= 1"), lower=(t[1], "int >= 1"), kind=(t[2], "text"))
-    if t[2] not in KINDS:
-        raise DisplayDomainError(f"kind must be one of {KINDS}")
-    return f"{'g' if t[2] == 'photon' else 'e'}{t[0]}->{t[1]}"
+    upper, lower, kind = _admit(upper=(t[0], "int >= 1"), lower=(t[1], "int >= 1"), kind=(t[2], "text"))
+    if kind not in KINDS:
+        raise DisplayDomainError("kind must be one of " + ", ".join(KINDS))
+    return ("g" if kind == "photon" else "e") + int_text(upper) + "->" + int_text(lower)
 
 
 def union_key(k: int) -> str:
-    _admit(k=(k, ("int", 2, LEVELS)))
-    return f"K>={k}"
+    (k,) = _admit(k=(k, ("int", 2, LEVELS)))
+    return "K>=" + int_text(k)
 
 
 def transition_keys(top: int = LEVELS) -> list[str]:
     """The 104 transitions the rules allow, photons by (upper, lower) then Augers by upper."""
-    _admit(top=(top, ("int", 2, LEVELS)))
+    (top,) = _admit(top=(top, ("int", 2, LEVELS)))
     out = [key((u, low, "photon")) for u in range(2, top + 1) for low in range(1, u)]
     return out + [key((u, u - 1, "auger")) for u in range(2, top + 1)]
 
@@ -240,20 +249,22 @@ def retained_counts(flows: Mapping[Transition, Fraction]) -> dict[str, Fraction]
     """The model probability of every retained count: each of the transitions (a stop takes each at most once,
     so the count of stops taking it is binomial) and the stops entering 1s by a photon from n >= k, k in
     ``UNIONS``. Every flow must be an int or a Fraction >= 0."""
-    _admit(**{f"flows[{key(t)}]": (v, "rational >= 0") for t, v in flows.items()})
-    out = {key(t): flows[t] for t in sorted(flows, key=lambda t: (KINDS.index(t[2]), t[0], t[1]))}
+    values = _admit(**{"flows[" + key(t) + "]": (v, "rational >= 0") for t, v in flows.items()})
+    exact = dict(zip(flows, values, strict=True))
+    out = {key(t): exact[t] for t in sorted(exact, key=lambda t: (KINDS.index(t[2]), t[0], t[1]))}
     for k in UNIONS:
-        out[union_key(k)] = sum((flows[(n, 1, "photon")] for n in range(k, LEVELS + 1)), Fraction(0))
+        out[union_key(k)] = sum((exact[(n, 1, "photon")] for n in range(k, LEVELS + 1)), Fraction(0))
     return out
 
 
 def observed_counts(transition_counts: Mapping[str, int]) -> dict[str, int]:
     """The retained counts of a harvested cell from its per-transition counts (the unions are sums); every
     count must be an int >= 0."""
-    _admit(**{f"transition_counts[{k}]": (transition_counts[k], "int >= 0") for k in transition_keys()})
-    out = {k: transition_counts[k] for k in transition_keys()}
+    keys = transition_keys()
+    values = _admit(**{"transition_counts[" + k + "]": (transition_counts[k], "int >= 0") for k in keys})
+    out = dict(zip(keys, values, strict=True))
     for k in UNIONS:
-        out[union_key(k)] = sum(out[f"g{n}->1"] for n in range(k, LEVELS + 1))
+        out[union_key(k)] = sum(out[key((n, 1, "photon"))] for n in range(k, LEVELS + 1))
     return out
 
 
@@ -306,7 +317,7 @@ def read_rules(text: str) -> Binding:
     for name, pattern in STATEMENTS:
         hits = [i for i, s in enumerate(bare) if re.fullmatch(pattern, s)]
         if len(hits) != 1:
-            raise SourceMismatch(f"statement {name} matches {len(hits)} lines, not one")
+            raise SourceMismatch(f"statement {name} matches {int_text(len(hits))} lines, not one")
         if hits[0] < start:
             raise SourceMismatch(f"statement {name} is out of order")
         start = hits[0]
@@ -354,7 +365,9 @@ def bind_source(reference: str, *others: str) -> Binding:
         obare = [_bare(s) for s in other.splitlines()]
         for name in ref.lines:
             if ref_bare[ref.lines[name] - 1].rstrip("{") != obare[b.lines[name] - 1].rstrip("{"):
-                raise SourceMismatch(f"copy {i + 1}: statement {name} differs once whitespace is removed")
+                raise SourceMismatch(
+                    f"copy {int_text(i + 1)}: statement {name} differs once whitespace is removed"
+                )
     return ref  # equal statements state equal rules: the constants are read from them
 
 
@@ -371,7 +384,7 @@ def levels_from_config(text: str) -> list[float]:
     """The 14 level energies (MeV) of the ``L`` line the application writes to ``config.txt``."""
     rows = [line.split()[1:] for line in text.splitlines() if line.startswith("L ")]
     if len(rows) != 1 or len(rows[0]) != LEVELS:
-        raise ValueError(f"config.txt must hold one L line of {LEVELS} values")
+        raise ValueError(f"config.txt must hold one L line of {int_text(LEVELS)} values")
     return [float.fromhex(x) for x in rows[0]]
 
 
@@ -430,7 +443,7 @@ def chain(secondaries: Sequence[tuple[int, float]], levels: Sequence[float], z: 
             out.append(key((n + 1, hits[0] + 1, "photon")))
             n = hits[0]
         else:
-            raise ValueError(f"cascade secondary of PDG {pdg}")
+            raise ValueError(f"cascade secondary of PDG {int_text(pdg)}")
     if n != 0:
         raise ValueError("chain does not reach the K shell")
     return out
@@ -447,7 +460,7 @@ def reconstruct(stream: Iterable[str], levels: Sequence[float], route: str, z: i
         raise ValueError(f"route must be one of {sorted(CAPTURE_PROCESS)}")
     _check_z(z)
     if len(levels) != LEVELS:
-        raise ValueError(f"{LEVELS} levels expected")
+        raise ValueError(f"{int_text(LEVELS)} levels expected")
     h = Harvest()
     process = CAPTURE_PROCESS[route]
     steps: list[list[tuple[int, str, float]]] = []
@@ -458,7 +471,10 @@ def reconstruct(stream: Iterable[str], levels: Sequence[float], route: str, z: i
 
     def close() -> None:
         if current is not None and len(current) != declared:
-            raise ValueError(f"S-line declares {declared} secondaries, {len(current)} C-lines follow it")
+            raise ValueError(
+                f"S-line declares {int_text(declared)} secondaries, "
+                f"{int_text(len(current))} C-lines follow it"
+            )
 
     for line in stream:
         f = line.split()
@@ -470,7 +486,7 @@ def reconstruct(stream: Iterable[str], levels: Sequence[float], route: str, z: i
             if current is None:
                 raise ValueError("C-line not after an at-rest S-line of the muon")
             if int(f[3]) != len(current):
-                raise ValueError(f"C-line numbered {f[3]} where {len(current)} is next")
+                raise ValueError(f"C-line numbered {f[3]} where {int_text(len(current))} is next")
             current.append((int(f[4]), f[5], float.fromhex(f[6])))
             continue
         close()
@@ -486,7 +502,7 @@ def reconstruct(stream: Iterable[str], levels: Sequence[float], route: str, z: i
         elif kind == "E":
             ev = int(f[1])
             if ev != expect:
-                raise ValueError(f"event {ev} where {expect} expected")
+                raise ValueError(f"event {int_text(ev)} where {int_text(expect)} expected")
             expect += 1
             h.events += 1
             h.seeds.append((ev, int(f[2])))
@@ -509,7 +525,7 @@ def _stop(
     z: int,
 ) -> None:
     if len(steps) != 1:
-        h.refused[f"at-rest steps of the muon: {len(steps)}"] += 1
+        h.refused[f"at-rest steps of the muon: {int_text(len(steps))}"] += 1
         return
     h.stops += 1
     secs = steps[0]
@@ -536,7 +552,7 @@ def _stop(
             h.photons += 1
     if len(set(seq)) != len(seq):
         raise AssertionError("a stop took one transition twice")
-    h._hash.update(f"{ev} {' '.join(seq)}\n".encode("ascii"))
+    h._hash.update(f"{int_text(ev)} {' '.join(seq)}\n".encode("ascii"))
 
 
 # ------------------------------------------------------------------------------- certified binomial tails
@@ -645,13 +661,14 @@ def _pmf(n: int, p: Fraction, x: int) -> Interval:
     return coef * Interval.of(p).pow(x) * Interval.of(1 - p).pow(n - x)
 
 
-def _check_binomial(n: int, p: Fraction, x: int, side: str) -> None:
+def _check_binomial(n: int, p: Fraction, x: int, side: str) -> tuple[int, Fraction, int, str]:
     """Domain of the binomial test: n an int >= 0, p an int or a Fraction in (0, 1), x an int in [0, n], side
-    'hi' or 'lo'. Anything else raises DisplayDomainError."""
-    _admit(n=(n, "int >= 0"), p=(p, "probability"))
-    _admit(x=(x, ("int", 0, n)), side=(side, "text"))
+    'hi' or 'lo'; returns them normalised (p a Fraction). Anything else raises DisplayDomainError."""
+    n, p = _admit(n=(n, "int >= 0"), p=(p, "probability"))
+    x, side = _admit(x=(x, ("int", 0, n)), side=(side, "text"))
     if side not in ("hi", "lo"):
         raise DisplayDomainError("side is 'hi' (P(X >= x)) or 'lo' (P(X <= x))")
+    return n, p, x, side
 
 
 def _walk(
@@ -697,7 +714,7 @@ def binomial_tail(n: int, p: Fraction, x: int, side: str) -> tuple[Fraction, Fra
     an x on that side of the mode (or at it): lo <= tail <= hi. The walk stops at the end of the support or
     once the remainder bound is below 2^-120 of lo or below 2^-600, so for n < 2^30 the width hi - lo is
     below 2^-119 lo + 2^-599."""
-    _check_binomial(n, p, x, side)
+    n, p, x, side = _check_binomial(n, p, x, side)
     mode = math.floor((n + 1) * p)
     if (side == "hi" and x < mode) or (side == "lo" and x > mode):
         raise ValueError("x must lie on the tested side of the mode")
@@ -719,8 +736,8 @@ def decide(n: int, p: Fraction, x: int, alpha_side: Fraction) -> Decision:
 
     Domain: as ``binomial_tail``, and alpha_side an int or a Fraction in (0, 1). Anything else raises
     DisplayDomainError."""
-    _check_binomial(n, p, x, "hi")
-    _admit(alpha_side=(alpha_side, "probability"))
+    n, p, x, _ = _check_binomial(n, p, x, "hi")
+    (alpha_side,) = _admit(alpha_side=(alpha_side, "probability"))
     mode = math.floor((n + 1) * p)
     if x == mode:
         return Decision("mode", "none", None, "pass")
@@ -741,8 +758,8 @@ def alpha_side(policy: Mapping[str, Any], counts: int) -> Fraction:
 
     Domain: counts an int >= 1; the policy's budget_per_cell a number in (0, 1) (an int, a Fraction or an
     exact literal) and its sides an int >= 1. Anything else raises DisplayDomainError."""
-    _admit(counts=(counts, "int >= 1"), sides=(policy["sides"], "int >= 1"))
-    return _rule_number(policy, "budget_per_cell", "probability") / (counts * policy["sides"])
+    counts, sides = _admit(counts=(counts, "int >= 1"), sides=(policy["sides"], "int >= 1"))
+    return _rule_number(policy, "budget_per_cell", "probability") / (counts * sides)
 
 
 #: log10(2) rounded down to 15 decimals, as an exact rational (the integer exponent estimate below).
@@ -756,7 +773,7 @@ def _digits(n: int) -> str:
     """The decimal digits of n, without str() of an int above _CHUNK digits.
 
     Domain: n an int >= 0 of any size. Anything else raises DisplayDomainError."""
-    _admit(n=(n, "int >= 0"))
+    (n,) = _admit(n=(n, "int >= 0"))
     base = 10**_CHUNK
     if n < base:
         return str(n)
@@ -765,6 +782,84 @@ def _digits(n: int) -> str:
         n, r = divmod(n, base)
         parts.append(r)
     return str(parts[-1]) + "".join(str(c).zfill(_CHUNK) for c in reversed(parts[:-1]))
+
+
+# ------------------------------------------------------------------------------------------ exact interchange
+def int_text(n: int) -> str:
+    """The one writer of integers as text: the decimal digits of n ('-' first when n < 0), assembled by
+    _digits in _CHUNK-digit pieces, so no int of any size meets the interpreter's int-string limit. Every
+    integer this module writes passes through it. Domain: n an int."""
+    (n,) = _admit(n=(n, "int"))
+    return "-" + _digits(-n) if n < 0 else _digits(n)
+
+
+def exact_fields(name: str, x: Fraction) -> dict[str, str]:
+    """The exact interchange of a rational: {name_num: numerator, name_den: denominator}, in lowest terms with
+    den > 0 (as Fraction keeps them), each written by int_text. Domain: x an int or a Fraction."""
+    (x,) = _admit(**{name: (x, "rational")})
+    return {name + "_num": int_text(x.numerator), name + "_den": int_text(x.denominator)}
+
+
+_INT_TEXT = re.compile(r"-?(?:0|[1-9][0-9]*)")
+_EXACT_TEXT = re.compile(r"(-?)([0-9]+)(?:\.([0-9]+))?(?:[eE]([+-]?[0-9]+))?")
+_RATIO_TEXT = re.compile(r"(-?)([0-9]+)/([0-9]+)")
+
+
+def _read_digits(digits: str) -> int:
+    """The int of a string of ASCII digits, read in _CHUNK-digit pieces (never int() of a longer string)."""
+    n = 0
+    for i in range(0, len(digits), _CHUNK):
+        chunk = digits[i : i + _CHUNK]
+        n = n * 10 ** len(chunk) + int(chunk)
+    return n
+
+
+def read_int(text: str, name: str = "value") -> int:
+    """The int that int_text wrote: an optional '-' and ASCII digits without a leading zero ('-0' refused),
+    read in _CHUNK-digit pieces, so the interpreter's int-string limit never applies. Anything else raises
+    DisplayDomainError."""
+    (text,) = _admit(**{name: (text, "text")})
+    if not _INT_TEXT.fullmatch(text) or text == "-0":
+        raise DisplayDomainError(name + " must be a decimal integer, not " + repr(text[:40]))
+    return -_read_digits(text[1:]) if text.startswith("-") else _read_digits(text)
+
+
+def read_exact(text: str, name: str = "value") -> Fraction:
+    """The exact value of a decimal literal (optional '-', digits, optional '.' and digits, optional exponent
+    e or E with |exponent| <= PRECISION_MAX) or of a ratio 'a/b' with b > 0, read in _CHUNK-digit pieces.
+    Anything else raises DisplayDomainError."""
+    (text,) = _admit(**{name: (text, "text")})
+    bad = DisplayDomainError(name + " must be an exact decimal or ratio literal, not " + repr(text[:40]))
+    ratio = _RATIO_TEXT.fullmatch(text)
+    if ratio:
+        den = _read_digits(ratio.group(3))
+        if den == 0:
+            raise bad
+        return Fraction(-1 if ratio.group(1) else 1) * Fraction(_read_digits(ratio.group(2)), den)
+    m = _EXACT_TEXT.fullmatch(text)
+    if not m:
+        raise bad
+    frac = m.group(3) or ""
+    exponent = 0
+    if m.group(4):
+        sign, body = (-1, m.group(4)[1:]) if m.group(4)[0] == "-" else (1, m.group(4).lstrip("+"))
+        if len(body) > len(str(PRECISION_MAX)) or _read_digits(body) > PRECISION_MAX:
+            raise bad
+        exponent = sign * _read_digits(body)
+    value = Fraction(_read_digits(m.group(2) + frac)) * Fraction(10) ** (exponent - len(frac))
+    return -value if m.group(1) else value
+
+
+def read_fraction(row: Mapping[str, str], name: str) -> Fraction:
+    """The rational of the exact columns name_num and name_den of a row: ints as int_text writes them, the
+    denominator > 0 and the pair in lowest terms. Anything else raises DisplayDomainError."""
+    num = read_int(row[name + "_num"], name + "_num")
+    den = read_int(row[name + "_den"], name + "_den")
+    if den <= 0:
+        raise DisplayDomainError(name + "_den must be > 0")
+    if math.gcd(num, den) != 1:
+        raise DisplayDomainError(name + " must be in lowest terms")
+    return Fraction(num, den)
 
 
 def _exponent(x: Fraction) -> int:
@@ -790,14 +885,15 @@ def sig_digits(x: Fraction, digits: int, up: bool) -> str:
 
     Domain: x an int or a Fraction > 0 of any size; digits an int in [1, PRECISION_MAX]; up a bool. Anything
     else raises DisplayDomainError."""
-    _admit(x=(x, "rational > 0"), digits=(digits, "digits"), up=(up, "flag"))
+    x, digits, up = _admit(x=(x, "rational > 0"), digits=(digits, "digits"), up=(up, "flag"))
     e = _exponent(x)
     m = x / Fraction(10) ** (e - digits + 1)  # 10^(digits - 1) <= m < 10^digits
     q = math.ceil(m) if up else math.floor(m)
     if q == 10**digits:  # rounding up carried into a new digit
         q, e = q // 10, e + 1
     s = _digits(q)
-    return f"{s[0]}.{s[1:]}e{e:+03d}" if digits > 1 else f"{s}e{e:+03d}"
+    exponent = ("-" if e < 0 else "+") + int_text(abs(e)).rjust(2, "0")
+    return (s[0] + "." + s[1:] if digits > 1 else s) + "e" + exponent
 
 
 def _half_even(q: Fraction) -> int:
@@ -819,12 +915,12 @@ def _decimal(n: int, places: int, negative: bool = False) -> str:
     """Format the magnitude abs(n) * 10^-places as plain decimal text, prefixing '-' when ``negative``.
     Domain: n and places any ints. Positive places give exactly that many fractional digits; nonpositive
     places give an integer string."""
-    _admit(n=(n, "int"), places=(places, "int"), negative=(negative, "flag"))
+    n, places, negative = _admit(n=(n, "int"), places=(places, "int"), negative=(negative, "flag"))
     if places <= 0:
         body = _digits(abs(n) * 10 ** (-places))
     else:
         digits = _digits(abs(n)).rjust(places + 1, "0")
-        body = f"{digits[:-places]}.{digits[-places:]}"
+        body = digits[:-places] + "." + digits[-places:]
     return ("-" if negative else "") + body
 
 
@@ -833,22 +929,35 @@ def fixed(x: Fraction, places: int) -> str:
 
     Domain: x an int or a Fraction >= 0 of any size; places an int in [-PRECISION_MAX, PRECISION_MAX] (a
     negative ``places`` rounds to tens, hundreds, ...). Anything else raises DisplayDomainError."""
-    _admit(x=(x, "rational >= 0"), places=(places, "places"))
+    x, places = _admit(x=(x, "rational >= 0"), places=(places, "places"))
     return _decimal(_half_even(x * Fraction(10) ** places), places)
 
 
+#: The columns of cascade_consumer.csv. The certified quantities are exact: n (the stops) and observed (the
+#: count) as ints; p, the model probability of the count, budget, the per-side budget, and bound, the
+#: certified tail bound that decides (empty at the mode), each as an exact rational in a _num and a _den
+#: column; mode, the count floor((n + 1) p) at which no tail is taken; side, bound_kind and decision.
+#: expected_display (n p to 6 decimals, half-even) and bound_display (the bound to 6 significant digits,
+#: rounded outward) are display only: no check reads them.
 CONSUMER_COLUMNS = (
     "version",
     "config",
     "target",
     "count",
+    "n",
     "observed",
-    "expected",
+    "p_num",
+    "p_den",
+    "mode",
     "side",
-    "budget",
+    "budget_num",
+    "budget_den",
     "bound_kind",
-    "bound_value",
+    "bound_num",
+    "bound_den",
     "decision",
+    "expected_display",
+    "bound_display",
 )
 
 
@@ -863,31 +972,80 @@ def consumer_rows(
     """One row per retained count of a harvested cell, in the order of ``retained_counts``, each decided by
     ``decide`` against the model of ``rules`` (default the stock rules). ``n`` and every observed count must
     be ints >= 0 (otherwise DisplayDomainError), so the displayed counts are the counts tested."""
-    _admit(n=(n, "int >= 0"), **{f"observed[{k}]": (v, "int >= 0") for k, v in observed.items()})
+    (n,) = _admit(n=(n, "int >= 0"))
+    counts = dict(
+        zip(
+            observed,
+            _admit(**{"observed[" + k + "]": (v, "int >= 0") for k, v in observed.items()}),
+            strict=True,
+        )
+    )
     probs = retained_counts(transitions(z, rules))
-    if set(observed) != set(probs):
+    if set(counts) != set(probs):
         raise ValueError("the observed counts are not the retained counts")
     a = alpha_side(policy, len(probs))
     rows = []
     for name, p in probs.items():
-        d = decide(n, p, observed[name], a)
-        value = "" if d.bound is None else sig_digits(d.bound, 6, up=d.bound_kind == "upper")
+        d = decide(n, p, counts[name], a)
+        if d.bound is None:
+            bound, shown = {"bound_num": "", "bound_den": ""}, ""
+        else:
+            bound, shown = exact_fields("bound", d.bound), sig_digits(d.bound, 6, up=d.bound_kind == "upper")
         rows.append(
             {
                 "version": cell["version"],
                 "config": cell["config"],
                 "target": cell["target"],
                 "count": name,
-                "observed": str(observed[name]),
-                "expected": fixed(n * p, 6),
+                "n": int_text(n),
+                "observed": int_text(counts[name]),
+                **exact_fields("p", p),
+                "mode": int_text(math.floor((n + 1) * p)),
                 "side": d.side,
-                "budget": f"{a.numerator}/{a.denominator}",
+                **exact_fields("budget", a),
                 "bound_kind": d.bound_kind,
-                "bound_value": value,
+                **bound,
                 "decision": d.decision,
+                "expected_display": fixed(n * p, 6),
+                "bound_display": shown,
             }
         )
     return rows
+
+
+def consumer_problems(rows: Iterable[Mapping[str, str]], budget: Fraction | None = None) -> list[str]:
+    """Every row of a consumer table whose exact columns do not certify its decision. Only the exact columns
+    are read (the display columns never): n, observed, mode, p, budget and bound must be exact (read_int,
+    read_fraction), mode must be floor((n + 1) p), and ``decide`` run again on (n, p, observed, budget) must
+    give the stored side, bound_kind, bound and decision exactly. With ``budget`` given, every row must carry
+    that per-side budget."""
+    out = []
+    for i, r in enumerate(rows):
+        name = "row " + int_text(i) + " " + str(r.get("count", "?"))
+        if tuple(r) != CONSUMER_COLUMNS:
+            out.append(name + ": columns are not CONSUMER_COLUMNS")
+            continue
+        try:
+            n, x, mode = (
+                read_int(r["n"], "n"),
+                read_int(r["observed"], "observed"),
+                read_int(r["mode"], "mode"),
+            )
+            p, a = read_fraction(r, "p"), read_fraction(r, "budget")
+            stored = None if r["bound_kind"] == "none" else read_fraction(r, "bound")
+            d = decide(n, p, x, a)
+        except (DisplayDomainError, ArithmeticError) as e:
+            out.append(name + ": " + str(e))
+            continue
+        if budget is not None and a != budget:
+            out.append(name + ": the budget is not the rule's per-side budget")
+        if mode != math.floor((n + 1) * p):
+            out.append(name + ": mode is not floor((n + 1) p)")
+        if r["bound_kind"] == "none" and (r["bound_num"], r["bound_den"]) != ("", ""):
+            out.append(name + ": a count at the mode carries no bound")
+        if (r["side"], r["bound_kind"], stored, r["decision"]) != (d.side, d.bound_kind, d.bound, d.decision):
+            out.append(name + ": the exact columns do not give the stored decision")
+    return out
 
 
 # ------------------------------------------------------------------------------------- the comparison rule
@@ -911,6 +1069,28 @@ COMPARISON_COLUMNS = (
     "verdict_independent",
     "verdict_rho_minus1",
     "verdict_rho_plus1",
+    "model_num",
+    "model_den",
+    "measured_num",
+    "measured_den",
+    "sigma2_num",
+    "sigma2_den",
+    "sigma2_independent_num",
+    "sigma2_independent_den",
+    "sigma2_rho_minus1_num",
+    "sigma2_rho_minus1_den",
+    "sigma2_rho_plus1_num",
+    "sigma2_rho_plus1_den",
+)
+#: The certified quantities of a comparison row, each in a _num and a _den column; the verdict columns are
+#: decided from them. model, measured, sigma, pull, sigma_independent and pull_independent are display only.
+COMPARISON_EXACT = (
+    "model",
+    "measured",
+    "sigma2",
+    "sigma2_independent",
+    "sigma2_rho_minus1",
+    "sigma2_rho_plus1",
 )
 
 
@@ -920,7 +1100,9 @@ def verdict(model: Fraction, measured: Fraction, sigma2: Fraction, policy: Mappi
 
     Domain: model and measured ints or Fractions; sigma2 an int or a Fraction >= 0; h and t numbers >= 0 (an
     int, a Fraction or an exact literal). Anything else raises DisplayDomainError."""
-    _admit(model=(model, "rational"), measured=(measured, "rational"), sigma2=(sigma2, "rational >= 0"))
+    model, measured, sigma2 = _admit(
+        model=(model, "rational"), measured=(measured, "rational"), sigma2=(sigma2, "rational >= 0")
+    )
     d2 = (model - measured) ** 2
     h = _rule_number(policy, "holds_within", "rational >= 0")
     t = _rule_number(policy, "tension_within", "rational >= 0")
@@ -937,7 +1119,9 @@ def pull(model: Fraction, measured: Fraction, sigma2: Fraction) -> str:
 
     Domain: model and measured ints or Fractions of any sign and size; sigma2 an int or a Fraction > 0.
     Anything else raises DisplayDomainError."""
-    _admit(model=(model, "rational"), measured=(measured, "rational"), sigma2=(sigma2, "rational > 0"))
+    model, measured, sigma2 = _admit(
+        model=(model, "rational"), measured=(measured, "rational"), sigma2=(sigma2, "rational > 0")
+    )
     d = model - measured
     n = _sqrt_half_even(d * d * 10**4 / sigma2)
     return ("-" if d < 0 else "+") + _decimal(n, 2)
@@ -948,7 +1132,7 @@ def sigma_decimal(sigma2: Fraction, places: int = 9) -> str:
 
     Domain: sigma2 an int or a Fraction >= 0 of any size; places an int in [-PRECISION_MAX, PRECISION_MAX].
     Anything else raises DisplayDomainError."""
-    _admit(sigma2=(sigma2, "rational >= 0"), places=(places, "places"))
+    sigma2, places = _admit(sigma2=(sigma2, "rational >= 0"), places=(places, "places"))
     return _decimal(_sqrt_half_even(sigma2 * Fraction(10) ** (2 * places)), places)
 
 
@@ -959,7 +1143,7 @@ def ratio_sigma2(
 
     Domain: a and b ints or Fractions other than 0, sa and sb >= 0, rho in [-1, 1]. Anything else raises
     DisplayDomainError."""
-    _admit(
+    a, sa, b, sb, rho = _admit(
         a=(a, "rational != 0"),
         sa=(sa, "rational >= 0"),
         b=(b, "rational != 0"),
@@ -979,20 +1163,30 @@ def knorm_sigma2(members: Sequence[tuple[Fraction, Fraction]]) -> tuple[Fraction
     values not summing to 0. Anything else raises DisplayDomainError."""
     if not members:
         raise DisplayDomainError("members must not be empty")
+    exact = []
     for i, (v, e) in enumerate(members):
-        _admit(**{f"members[{i}].value": (v, "rational"), f"members[{i}].sigma": (e, "rational >= 0")})
-    if sum((v for v, _ in members), Fraction(0)) == 0:
+        where = "members[" + int_text(i) + "]"
+        exact.append(_admit(**{where + ".value": (v, "rational"), where + ".sigma": (e, "rational >= 0")}))
+    if sum((v for v, _ in exact), Fraction(0)) == 0:
         raise DisplayDomainError("the member values must not sum to 0")
-    (a, sa), s = members[0], sum((v for v, _ in members), Fraction(0))
-    others = sum((e * e for _, e in members[1:]), Fraction(0))
+    (a, sa), s = exact[0], sum((v for v, _ in exact), Fraction(0))
+    others = sum((e * e for _, e in exact[1:]), Fraction(0))
     return a / s, sa * sa / (s * s), ((s - a) ** 2 * sa * sa + a * a * others) / s**4
 
 
 def _members(
     rows: list[dict[str, str]],
 ) -> tuple[dict[int, tuple[Fraction, Fraction]], tuple[int, Fraction, Fraction] | None]:
-    single = {int(r["n_upper"]): (Fraction(r["value"]), Fraction(r["sigma"])) for r in rows if r["n_upper"]}
-    grouped = [(int(r["n_from"]), Fraction(r["value"]), Fraction(r["sigma"])) for r in rows if r["n_from"]]
+    single = {
+        read_int(r["n_upper"], "n_upper"): (read_exact(r["value"], "value"), read_exact(r["sigma"], "sigma"))
+        for r in rows
+        if r["n_upper"]
+    }
+    grouped = [
+        (read_int(r["n_from"], "n_from"), read_exact(r["value"], "value"), read_exact(r["sigma"], "sigma"))
+        for r in rows
+        if r["n_from"]
+    ]
     if len(grouped) > 1:
         raise ValueError("more than one grouped member")
     return single, (grouped[0] if grouped else None)
@@ -1005,7 +1199,7 @@ def comparison_rows(reference: list[dict[str, str]], policy: Mapping[str, Any]) 
     K alpha / the sum of the printed members for a source of absolute members. Every cell of ``reference``
     must be a str (as a CSV reader gives it), read exactly; anything else raises DisplayDomainError."""
     for i, r in enumerate(reference):
-        _admit(**{f"reference[{i}][{c}]": (v, "text") for c, v in r.items()})
+        _admit(**{"reference[" + int_text(i) + "][" + c + "]": (v, "text") for c, v in r.items()})
     order: list[tuple[str, str]] = []
     by: dict[tuple[str, str], list[dict[str, str]]] = {}
     for r in reference:
@@ -1018,15 +1212,15 @@ def comparison_rows(reference: list[dict[str, str]], policy: Mapping[str, Any]) 
     out: list[dict[str, str]] = []
     for source, target in order:
         rows = by[(source, target)]
-        z = int(rows[0]["Z"])
-        if any(int(r["Z"]) != z or r["phase"] != rows[0]["phase"] for r in rows):
-            raise ValueError(f"{source} {target}: rows disagree on Z or phase")
+        z = read_int(rows[0]["Z"], "Z")
+        if any(read_int(r["Z"], "Z") != z or r["phase"] != rows[0]["phase"] for r in rows):
+            raise ValueError(source + " " + target + ": rows disagree on Z or phase")
         single, grouped = _members(rows)
         kind = ratios["sources"][source]
         base = {
             "source": source,
             "target": target,
-            "Z": str(z),
+            "Z": int_text(z),
             "phase": rows[0]["phase"],
             "set": ratios["set_of_phase"][rows[0]["phase"]],
         }
@@ -1049,6 +1243,9 @@ def comparison_rows(reference: list[dict[str, str]], policy: Mapping[str, Any]) 
                 sigma=sigma_decimal(s2),
                 pull=pull(model, measured, s2),
                 verdict=verdict(model, measured, s2, ratios),
+                **exact_fields("model", model),
+                **exact_fields("measured", measured),
+                **exact_fields("sigma2", s2),
             )
             row.update({c: "" for c in COMPARISON_COLUMNS if c not in row})
             row.update(extra)
@@ -1058,13 +1255,13 @@ def comparison_rows(reference: list[dict[str, str]], policy: Mapping[str, Any]) 
             a: tuple[Fraction, Fraction], b: tuple[Fraction, Fraction], model: Fraction
         ) -> dict[str, str]:
             m = b[0] / a[0]
+            minus = ratio_sigma2(a[0], a[1], b[0], b[1], Fraction(-1))
+            plus = ratio_sigma2(a[0], a[1], b[0], b[1], Fraction(1))
             return {
-                "verdict_rho_minus1": verdict(
-                    model, m, ratio_sigma2(a[0], a[1], b[0], b[1], Fraction(-1)), ratios
-                ),
-                "verdict_rho_plus1": verdict(
-                    model, m, ratio_sigma2(a[0], a[1], b[0], b[1], Fraction(1)), ratios
-                ),
+                "verdict_rho_minus1": verdict(model, m, minus, ratios),
+                "verdict_rho_plus1": verdict(model, m, plus, ratios),
+                **exact_fields("sigma2_rho_minus1", minus),
+                **exact_fields("sigma2_rho_plus1", plus),
             }
 
         if kind == "printed_ratio_percent":  # Orth: n->1 relative to 2->1, in percent
@@ -1073,7 +1270,7 @@ def comparison_rows(reference: list[dict[str, str]], policy: Mapping[str, Any]) 
                 emit("kb_over_ka", "", kb_over_ka(z), v / 100, (s / 100) ** 2, {})
             if grouped is not None:
                 kk, v, s = grouped
-                emit("high_over_ka", str(kk), high_over_ka(z, kk), v / 100, (s / 100) ** 2, {})
+                emit("high_over_ka", int_text(kk), high_over_ka(z, kk), v / 100, (s / 100) ** 2, {})
         elif kind == "absolute_members":  # ENSDF, Kirch: members of the K series
             a = single[2]
             members = [single[n] for n in sorted(single)] + ([(grouped[1], grouped[2])] if grouped else [])
@@ -1089,6 +1286,7 @@ def comparison_rows(reference: list[dict[str, str]], policy: Mapping[str, Any]) 
                     "sigma_independent": sigma_decimal(sig2_ind),
                     "pull_independent": pull(model, rr, sig2_ind),
                     "verdict_independent": verdict(model, rr, sig2_ind, ratios),
+                    **exact_fields("sigma2_independent", sig2_ind),
                 },
             )
             if 3 in single:
@@ -1107,14 +1305,43 @@ def comparison_rows(reference: list[dict[str, str]], policy: Mapping[str, Any]) 
                 model = high_over_ka(z, kk)
                 emit(
                     "high_over_ka",
-                    str(kk),
+                    int_text(kk),
                     model,
                     v / a[0],
                     ratio_sigma2(a[0], a[1], v, s),
                     scan(a, (v, s), model),
                 )
         else:
-            raise ValueError(f"unknown source kind {kind!r}")
+            raise ValueError("unknown source kind " + repr(kind))
+    return out
+
+
+def comparison_problems(rows: Iterable[Mapping[str, str]], policy: Mapping[str, Any]) -> list[str]:
+    """Every row of a comparison table whose exact columns do not give its verdicts. Only the exact columns
+    are read (the display columns never): model, measured and sigma2 decide ``verdict``; sigma2_independent,
+    sigma2_rho_minus1 and sigma2_rho_plus1, where present, decide verdict_independent, verdict_rho_minus1 and
+    verdict_rho_plus1, which must be empty where they are absent; ``policy`` is the rule's ``ratios`` part."""
+    out = []
+    pairs = (
+        ("sigma2", "verdict"),
+        ("sigma2_independent", "verdict_independent"),
+        ("sigma2_rho_minus1", "verdict_rho_minus1"),
+        ("sigma2_rho_plus1", "verdict_rho_plus1"),
+    )
+    for i, r in enumerate(rows):
+        name = "row " + int_text(i)
+        if tuple(r) != COMPARISON_COLUMNS:
+            out.append(name + ": columns are not COMPARISON_COLUMNS")
+            continue
+        try:
+            model, measured = read_fraction(r, "model"), read_fraction(r, "measured")
+            for sigma, column in pairs:
+                if (r[sigma + "_num"], r[sigma + "_den"], r[column]) == ("", "", "") and sigma != "sigma2":
+                    continue
+                if verdict(model, measured, read_fraction(r, sigma), policy) != r[column]:
+                    out.append(name + ": " + column + " is not the verdict of the exact columns")
+        except DisplayDomainError as e:
+            out.append(name + ": " + str(e))
     return out
 
 
@@ -1131,6 +1358,6 @@ def outward(x: Fraction, places: int, up: bool) -> str:
 
     Domain: x an int or a Fraction >= 0 of any size; places an int in [-PRECISION_MAX, PRECISION_MAX] (a
     negative ``places`` rounds to tens, hundreds, ...); up a bool. Anything else raises DisplayDomainError."""
-    _admit(x=(x, "rational >= 0"), places=(places, "places"), up=(up, "flag"))
+    x, places, up = _admit(x=(x, "rational >= 0"), places=(places, "places"), up=(up, "flag"))
     scaled = x * Fraction(10) ** places
     return _decimal(math.ceil(scaled) if up else math.floor(scaled), places)

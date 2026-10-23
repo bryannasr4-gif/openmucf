@@ -21,6 +21,7 @@ import random
 import re
 import subprocess
 import sys
+from collections import Counter
 from collections.abc import Callable
 from decimal import Decimal
 from fractions import Fraction
@@ -1274,39 +1275,67 @@ def test_t7_every_committed_cell_passes_and_the_consumer_file_is_its_regeneratio
     )
     committed = gen.read_csv(DATA / "cascade_consumer.csv")
     assert tuple(committed[0]) == cc.CONSUMER_COLUMNS
-    assert gen.consumer_problems(committed) == []
+    assert gen.consumer_problems(committed, inp) == []
     assert len(committed) == N_COUNTS * len(HARVEST_RULE["cells"])
     assert {r["decision"] for r in committed} == {"pass"}
-    assert {r["budget"] for r in committed} == {f"{A_SIDE.numerator}/{A_SIDE.denominator}"}
+    assert {parse_exact(r, "budget") for r in committed} == {A_SIDE}
 
 
+def _bump(text: str) -> str:
+    return int_text_of(parse_int_text(text) + 1)
+
+
+#: Adverse edits of one row of the committed consumer table: each must make the exact check fail.
 CONSUMER_FAULTS = [
-    ("lower on a reject", {"decision": "reject"}),
-    ("lower at the budget", {"bound_value": "{budget}"}),
-    ("upper on a pass", {"bound_kind": "upper"}),
-    ("none off the mode", {"bound_kind": "none", "bound_value": ""}),
-    ("a value on none", {"side": "mode", "bound_kind": "none"}),
-    ("an unknown kind", {"bound_kind": "exact"}),
+    ("a flipped decision", lambda r: {"decision": "reject"}),
+    ("a corrupted bound numerator", lambda r: {"bound_num": _bump(r["bound_num"])}),
+    ("a corrupted bound denominator", lambda r: {"bound_den": _bump(r["bound_den"])}),
+    ("a corrupted p numerator", lambda r: {"p_num": _bump(r["p_num"])}),
+    ("a corrupted p denominator", lambda r: {"p_den": _bump(r["p_den"])}),
+    ("a corrupted budget", lambda r: {"budget_den": _bump(r["budget_den"])}),
+    ("a zero denominator", lambda r: {"bound_den": "0"}),
+    ("a negative denominator", lambda r: {"p_den": "-" + r["p_den"]}),
+    (
+        "an unreduced fraction",
+        lambda r: {"bound_num": r["bound_num"] + "0", "bound_den": r["bound_den"] + "0"},
+    ),
+    ("a leading zero", lambda r: {"observed": "0" + r["observed"]}),
+    ("a decimal in an int column", lambda r: {"n": r["n"] + ".0"}),
+    ("a corrupted observed count", lambda r: {"observed": _bump(r["observed"])}),
+    ("a corrupted n", lambda r: {"n": _bump(r["n"])}),
+    ("a corrupted mode", lambda r: {"mode": _bump(r["mode"])}),
+    ("another count's p", lambda r: {"count": "g3->1"}),
+    ("upper on a pass", lambda r: {"bound_kind": "upper"}),
+    ("none off the mode", lambda r: {"bound_kind": "none", "bound_num": "", "bound_den": ""}),
+    ("an unknown kind", lambda r: {"bound_kind": "exact"}),
+    ("a missing bound", lambda r: {"bound_num": ""}),
 ]
 
 
 @pytest.mark.parametrize("name, change", CONSUMER_FAULTS, ids=[f[0] for f in CONSUMER_FAULTS])
 def test_t7_drill_each_consumer_row_rule_is_checked(name, change):
     rows = gen.read_csv(DATA / "cascade_consumer.csv")
-    [row] = [r for r in rows if r["bound_kind"] == "lower"][:1]
-    for k, v in change.items():
-        row[k] = v.format(budget=row["budget"])
-    assert gen.consumer_problems([row])
+    [row] = [r for r in rows if r["bound_kind"] == "lower" and r["count"] == "g2->1"][:1]
+    assert gen.consumer_problems([row], fresh_inputs()) == []
+    assert gen.consumer_problems([{**row, **change(row)}], fresh_inputs())
+
+
+def test_t7_the_display_columns_of_the_consumer_table_are_never_read():
+    rows = gen.read_csv(DATA / "cascade_consumer.csv")
+    edited = [{**r, "expected_display": "-1", "bound_display": "garbage"} for r in rows[:5]]
+    assert gen.consumer_problems(edited, fresh_inputs()) == []
 
 
 def test_t7_the_upper_rows_of_the_consumer_schema_are_checked_at_their_edges():
-    row = dict(gen.read_csv(DATA / "cascade_consumer.csv")[0])
-    up = dict(row, side="hi", bound_kind="upper", decision="reject", bound_value=row["budget"])
-    assert gen.consumer_problems([up]) == []  # a reject at exactly the budget is a reject
-    for change in ({"decision": "pass"}, {"side": "mode"}, {"bound_value": "1/1000"}):
-        assert gen.consumer_problems([dict(up, **change)]) != []
-    assert "bound_kind 'exact'" in gen.consumer_problems([dict(row, bound_kind="exact")])[0]
-    assert "columns" in gen.consumer_problems([{**{k: row[k] for k in reversed(list(row))}}])[0]
+    rows = cc.consumer_rows(CELL, conserved(20000), 13, 20000, HARVEST_RULE)
+    [up] = [r for r in rows if r["count"] == "g2->1"]
+    assert (up["bound_kind"], up["decision"]) == ("upper", "reject") and cc.consumer_problems(
+        [up], A_SIDE
+    ) == []
+    for change in ({"decision": "pass"}, {"side": "mode"}, {"bound_kind": "lower"}, {"bound_num": "1"}):
+        assert cc.consumer_problems([dict(up, **change)]) != []
+    assert "columns" in cc.consumer_problems([{**{k: up[k] for k in reversed(list(up))}}])[0]
+    assert cc.consumer_problems([up], A_SIDE / 2)  # a budget that is not the rule's
 
 
 def test_t7_alpha_side_is_the_cell_budget_over_the_counts_and_sides():
@@ -1475,6 +1504,7 @@ def test_t10_the_independent_propagation_and_correlation_branches(monkeypatch):
     flip = next(r for r in rows if r["verdict_rho_minus1"])
     flip["verdict_rho_plus1"] = "HOLDS"
     monkeypatch.setattr(gen, "cascade_comparison", lambda inp: rows)
+    monkeypatch.setattr(gen, "comparison_problems", lambda rows, inp: [])  # the wording branch, not the check
     out = section(gen.render(fresh_inputs()).text)
     assert "the verdict changes for none of the 9 Kα/ΣK rows." in out
     assert f"changes these verdicts: {flip['target']} Kβ/Kα (FAILS to HOLDS)." in out
@@ -1485,8 +1515,9 @@ def test_t10_the_ensdf_k_normalised_ratio_inside_the_codes_range_is_stated_so(mo
     rows = copy.deepcopy(gen.cascade_comparison(fresh_inputs()))
     for r in rows:
         if r["source"] == "ensdf_measday2007" and r["observable"] == "ka_over_ktot":
-            r["measured"] = "0.700000000"
+            r.update(measured_num="7", measured_den="10")
     monkeypatch.setattr(gen, "cascade_comparison", lambda inp: rows)
+    monkeypatch.setattr(gen, "comparison_problems", lambda rows, inp: [])  # the wording branch, not the check
     assert "within the code's range." in section(gen.render(fresh_inputs()).text)
 
 
@@ -1534,7 +1565,7 @@ def test_t10_a_domain_the_integer_type_does_not_bound_raises(monkeypatch):
 
 
 def test_t10_consumer_rows_that_break_their_schema_raise(monkeypatch):
-    monkeypatch.setattr(gen, "consumer_problems", lambda rows: ["a row"])
+    monkeypatch.setattr(gen, "consumer_problems", lambda rows, inp: ["a row"])
     with pytest.raises(ValueError, match="^cascade_consumer rows break their schema"):
         gen.render(fresh_inputs())
 
@@ -2017,13 +2048,9 @@ def test_t7_a_full_consumer_call_on_an_extreme_count_set_serialises_its_rejects(
     for r in rows:
         d = cc.decide(n, probs[r["count"]], obs[r["count"]], a_side)
         assert (r["side"], r["bound_kind"], r["decision"]) == (d.side, d.bound_kind, d.decision)
-        if d.bound_kind == "upper":
-            shown = Fraction(r["bound_value"])
-            assert d.bound <= shown <= a_side, r["count"]
-        elif d.bound_kind == "lower":
-            assert a_side < Fraction(r["bound_value"]) <= d.bound, r["count"]
+        assert parse_exact(r, "bound") == d.bound and parse_exact(r, "budget") == a_side, r["count"]
     g21 = next(r for r in rows if r["count"] == "g2->1")
-    assert g21["decision"] == "reject" and Fraction(g21["bound_value"]) < Fraction(1, 10**30000)
+    assert g21["decision"] == "reject" and parse_exact(g21, "bound") < Fraction(1, 10**30000)
 
 
 def test_t8_digit_strings_of_any_size_and_their_refusals():
@@ -2459,11 +2486,18 @@ def test_t9_the_differential_test_covers_twenty_thousand_cases_of_every_family_a
 
 @pytest.mark.parametrize("stream", STREAMS)
 def test_t9_every_display_helper_agrees_with_the_exact_oracle(stream):
-    checked = 0
+    checked = as_int = 0
     for family, precision, (call, args), want in differential_cases(stream):
         assert call(*args) == want, (stream, family, precision)
         checked += 1
-    assert checked == CASES_PER_STREAM
+        # the same case with every integral-valued Fraction argument given as an int
+        ints = tuple(int(a) if type(a) is Fraction and a.denominator == 1 else a for a in args)
+        if ints != args or any(type(x) is not type(y) for x, y in zip(ints, args, strict=True)):
+            assert call(*ints) == want, (stream, family, precision, "as ints")
+            as_int += 1
+    assert checked == CASES_PER_STREAM and as_int > 0, (
+        as_int
+    )  # pull: also test_t11_every_integral_argument_...
 
 
 # ============================================================================================
@@ -2495,15 +2529,28 @@ def _check_consumer_path(n: int, observed: dict[str, int]) -> list[dict[str, str
     parsed = list(csv.DictReader(io.StringIO(text)))
     assert text.splitlines()[0] == ",".join(cc.CONSUMER_COLUMNS) and parsed == rows
     assert [r["count"] for r in parsed] == list(probs)
+    assert cc.consumer_problems(parsed, budget) == []
     for r in parsed:
         p, x = probs[r["count"]], observed[r["count"]]
-        assert (r["observed"], r["budget"]) == (str(x), f"{budget.numerator}/{budget.denominator}")
-        assert r["expected"] == oracle_nearest_even(n * p, 6)
+        # the certified columns, read by the test's own parser
+        assert (parse_int_text(r["n"]), parse_int_text(r["observed"])) == (n, x)
+        assert (parse_exact(r, "p"), parse_exact(r, "budget")) == (p, budget)
+        assert r["expected_display"] == oracle_nearest_even(n * p, 6)
         mode = (n + 1) * p.numerator // p.denominator
+        assert parse_int_text(r["mode"]) == mode
         if x == mode:
-            assert (r["side"], r["bound_kind"], r["bound_value"], r["decision"]) == (
+            assert (
+                r["side"],
+                r["bound_kind"],
+                r["bound_num"],
+                r["bound_den"],
+                r["bound_display"],
+                r["decision"],
+            ) == (
                 "mode",
                 "none",
+                "",
+                "",
                 "",
                 "pass",
             )
@@ -2513,15 +2560,20 @@ def _check_consumer_path(n: int, observed: dict[str, int]) -> list[dict[str, str
         reject = num * budget.denominator <= budget.numerator * den
         kind = "upper" if reject else "lower"
         assert (r["side"], r["bound_kind"], r["decision"]) == (side, kind, "reject" if reject else "pass")
-        shown, below, above = _grid(r["bound_value"])
+        bound = parse_exact(r, "bound")
+        assert r["bound_display"] == oracle_sig(
+            bound, 6, kind == "upper"
+        )  # the display is the exact bound shown
         if kind == "upper":
-            # rounded up from the certified bound of the whole tail: the grid point at or just above the tail
-            assert below * den <= num <= shown * den, r["count"]
+            # the certified bound of the whole tail: at least the tail and within 2^-119 of it
+            assert num <= bound * den <= num * (1 + Fraction(1, 2**119)) + den * Fraction(1, 2**599), r[
+                "count"
+            ]
         else:
-            # rounded down from a certified lower bound of a partial sum (the walk stops once it passes the
-            # budget): at most the tail, and at least the first term, the probability of x, less one grid step
+            # a certified lower bound of a partial sum (the walk stops once it passes the budget): at most the
+            # tail and at least the first term, the probability of x, up to its rounding
             term = math.comb(n, x) * p.numerator**x * (p.denominator - p.numerator) ** (n - x)
-            assert shown * den <= num and term <= above * den, r["count"]
+            assert bound * den <= num and term * (1 - Fraction(1, 2**100)) <= bound * den, r["count"]
     return parsed
 
 
@@ -2772,7 +2824,9 @@ def test_t9_the_decision_path_admits_the_edges_of_its_ranges():
     assert cc.transitions(1) and cc.transitions(cc.Z_MAX) and cc.observed_counts(dict.fromkeys(ALL_KEYS, 0))
 
 
-@pytest.mark.parametrize("bad", ["abc", "nan", "inf", "1/0", "", "0x10"])
+@pytest.mark.parametrize(
+    "bad", ["abc", "nan", "inf", "1/0", "", "0x10", "1e-100001", "1e100001", "1e+0100001"]
+)
 def test_t9_a_rule_number_that_is_no_exact_literal_is_refused(bad):
     for fn, arg in (
         ("alpha_side", "budget_per_cell"),
@@ -2814,7 +2868,7 @@ def test_t9_a_reference_cell_that_is_not_text_is_refused():
 
 
 def test_t9_a_float_probability_is_refused_by_the_decision_path():
-    """The witnesses: each was silently used before the decision path admitted only exact numbers."""
+    """The numeric boundary refuses each float witness with DisplayDomainError."""
     for call in (
         lambda: cc.decide(30, 1 / 3, 3, Fraction(1, 1000)),  # a float p
         lambda: cc.decide(30, 1 / 3, 10, Fraction(1, 1000)),  # a float p at its float mode: passed untested
@@ -2830,3 +2884,526 @@ def test_t9_a_float_probability_is_refused_by_the_decision_path():
         with pytest.raises((TypeError, ValueError)) as info:
             call()
         assert isinstance(info.value, cc.DisplayDomainError)
+
+
+# ============================================================================================
+# Exact interchange: an independent chunk-reading parser, the int-string limits, tiny budgets
+# ============================================================================================
+def parse_int_text(text: str) -> int:
+    """The test's own reader of an int column, independent of the module: an optional '-' and ASCII digits
+    without a leading zero, read 400 digits at a time (never int() of a longer string)."""
+    assert re.fullmatch(r"-?(0|[1-9][0-9]*)", text) and text != "-0", text[:40]
+    sign, body = (-1, text[1:]) if text.startswith("-") else (1, text)
+    n = 0
+    for i in range(0, len(body), 400):
+        piece = body[i : i + 400]
+        n = n * 10 ** len(piece) + int(piece)
+    return sign * n
+
+
+def int_text_of(n: int) -> str:
+    """The test's own writer of an int, independent of the module, 400 digits at a time."""
+    if n < 0:
+        return "-" + int_text_of(-n)
+    pieces = []
+    while True:
+        n, r = divmod(n, 10**400)
+        pieces.append(r)
+        if not n:
+            break
+    return str(pieces[-1]) + "".join(str(c).zfill(400) for c in reversed(pieces[:-1]))
+
+
+def parse_exact(row: dict[str, str], name: str) -> Fraction:
+    """The exact rational of a row's name_num / name_den columns, read by parse_int_text; den > 0, lowest
+    terms."""
+    num, den = parse_int_text(row[name + "_num"]), parse_int_text(row[name + "_den"])
+    assert den > 0 and math.gcd(num, den) == 1, name
+    return Fraction(num, den)
+
+
+@contextlib.contextmanager
+def int_string_limit(limit: int):
+    old = sys.get_int_max_str_digits()
+    sys.set_int_max_str_digits(limit)
+    try:
+        yield
+    finally:
+        sys.set_int_max_str_digits(old)
+
+
+CELL = {"version": "v", "config": "c", "target": "t"}
+
+
+def conserved(n: int) -> dict[str, int]:
+    """A conserved sample: every one of n stops takes the photon 14 -> 1 (a legal chain)."""
+    return cc.observed_counts({**dict.fromkeys(cc.transition_keys(), 0), "g14->1": n})
+
+
+def round_trip(columns, rows):
+    return list(csv.DictReader(io.StringIO(cc.csv_text(columns, rows))))
+
+
+ROUND_TRIP_VALUES = [
+    Fraction(0),
+    Fraction(-7, 3),
+    Fraction(1, 10**5000),
+    Fraction(10**6000 + 1, 3),
+    -Fraction(2**20000 + 1, 3**9000),
+    Fraction(123456789, 10**4300),
+]
+
+
+@pytest.mark.parametrize("limit", [640, 4300])
+def test_t11_every_exact_field_round_trips_under_the_int_string_limit(limit):
+    with int_string_limit(limit):
+        rows = [cc.exact_fields("x", v) for v in ROUND_TRIP_VALUES]
+        parsed = round_trip(("x_num", "x_den"), rows)
+        assert [parse_exact(r, "x") for r in parsed] == ROUND_TRIP_VALUES
+        assert [cc.read_fraction(r, "x") for r in parsed] == ROUND_TRIP_VALUES
+        for n in (0, -1, 10**4299, -(10**5000) - 7, 2**30000):
+            assert cc.read_int(cc.int_text(n)) == n == parse_int_text(cc.int_text(n))
+            assert cc.int_text(n) == int_text_of(n)
+
+
+@pytest.mark.parametrize("limit", [640, 4300])
+@pytest.mark.parametrize("budget", ["1e-5000", Fraction(1, 10**5000)], ids=["literal", "Fraction"])
+def test_t11_a_tiny_budget_reaches_the_csv_and_round_trips(limit, budget):
+    """n = 100, z = 13 and one count per retained channel, under a budget of 10^-5000 per cell: the per-side
+    budget is exactly 1/(214 10^5000), every row is written and read back exactly."""
+    policy = {"budget_per_cell": budget, "sides": 2}
+    observed = dict.fromkeys(cc.retained_counts(cc.transitions(13)), 1)
+    with int_string_limit(limit):
+        rows = cc.consumer_rows(CELL, observed, 13, 100, policy)
+        parsed = round_trip(cc.CONSUMER_COLUMNS, rows)
+        assert parsed == rows and len(parsed) == N_COUNTS
+        assert {parse_exact(r, "budget") for r in parsed} == {Fraction(1, 214 * 10**5000)}
+        assert cc.consumer_problems(parsed, Fraction(1, 214 * 10**5000)) == []
+
+
+@pytest.mark.parametrize("limit", [640, 4300])
+@pytest.mark.parametrize("budget", ["1e-5000", Fraction(1, 10**5000)], ids=["literal", "Fraction"])
+@pytest.mark.parametrize("n, decision", [(100, "pass"), (20000, "reject")])
+def test_t11_the_conserved_samples_decide_and_round_trip_under_a_tiny_budget(limit, budget, n, decision):
+    """Sol's conserved samples: every stop takes g14->1; at N = 100 the g2->1 count is a certified pass, at
+    N = 20000 a certified reject, and both reach the CSV."""
+    with int_string_limit(limit):
+        rows = cc.consumer_rows(CELL, conserved(n), 13, n, {"budget_per_cell": budget, "sides": 2})
+        parsed = round_trip(cc.CONSUMER_COLUMNS, rows)
+        [g21] = [r for r in parsed if r["count"] == "g2->1"]
+        assert g21["decision"] == decision and g21["bound_kind"] == ("lower" if n == 100 else "upper")
+        assert parse_exact(g21, "budget") == Fraction(1, 214 * 10**5000)
+        assert cc.consumer_problems(parsed, Fraction(1, 214 * 10**5000)) == []
+
+
+@pytest.mark.parametrize(
+    "name, change",
+    [
+        ("a flipped decision", lambda r: {"decision": "pass" if r["decision"] == "reject" else "reject"}),
+        ("a corrupted numerator", lambda r: {"bound_num": _bump(r["bound_num"])}),
+        ("a corrupted denominator", lambda r: {"bound_den": _bump(r["bound_den"])}),
+        ("a zero denominator", lambda r: {"budget_den": "0"}),
+        ("a negative denominator", lambda r: {"budget_num": "-1", "budget_den": "-" + r["budget_den"]}),
+        (
+            "an unreduced fraction",
+            lambda r: {"budget_num": "2", "budget_den": int_text_of(2 * parse_int_text(r["budget_den"]))},
+        ),
+    ],
+)
+@pytest.mark.parametrize("n", [100, 20000])
+def test_t11_adverse_edits_of_the_exact_columns_fail_the_check(name, change, n):
+    with int_string_limit(640):
+        rows = round_trip(
+            cc.CONSUMER_COLUMNS,
+            cc.consumer_rows(CELL, conserved(n), 13, n, {"budget_per_cell": "1e-5000", "sides": 2}),
+        )
+        [g21] = [r for r in rows if r["count"] == "g2->1"]
+        assert cc.consumer_problems([g21]) == []
+        assert cc.consumer_problems([{**g21, **change(g21)}])
+
+
+COMPARISON_FAULTS = [
+    ("a flipped verdict", lambda r: {"verdict": "HOLDS" if r["verdict"] != "HOLDS" else "FAILS"}),
+    # a model 10^-60 off the module's value, reduced and with the same verdict: only the model check sees it
+    ("a corrupted model", lambda r: cc.exact_fields("model", parse_exact(r, "model") + Fraction(1, 10**60))),
+    ("a corrupted measured denominator", lambda r: {"measured_den": _bump(r["measured_den"])}),
+    ("a zero sigma2 denominator", lambda r: {"sigma2_den": "0"}),
+    (
+        "an unreduced sigma2",
+        lambda r: {"sigma2_num": r["sigma2_num"] + "0", "sigma2_den": r["sigma2_den"] + "0"},
+    ),
+    ("a verdict without its variance", lambda r: {"verdict_rho_minus1": "HOLDS"}),
+]
+
+
+@pytest.mark.parametrize("name, change", COMPARISON_FAULTS, ids=[f[0] for f in COMPARISON_FAULTS])
+def test_t11_adverse_edits_of_the_comparison_columns_fail_the_check(name, change):
+    rows = gen.read_csv(DATA / "cascade_comparison.csv")
+    inp = fresh_inputs()
+    assert gen.comparison_problems(rows, inp) == []
+    row = next(r for r in rows if r["observable"] == "ka_over_ktot")
+    assert gen.comparison_problems([{**row, **change(row)}], inp)
+
+
+def test_t11_the_committed_comparison_is_recomputed_from_its_exact_columns():
+    rows = gen.read_csv(DATA / "cascade_comparison.csv")
+    rule = json.loads((DATA / "cascade_rule.json").read_text(encoding="utf-8"))
+    assert tuple(rows[0]) == cc.COMPARISON_COLUMNS and len(rows) == len(
+        gen.cascade_comparison(fresh_inputs())
+    )
+    for r in rows:  # the test's own reading of the exact columns and the rule's squares
+        d2 = (parse_exact(r, "model") - parse_exact(r, "measured")) ** 2
+        s2 = parse_exact(r, "sigma2")
+        h, t = Fraction(rule["ratios"]["holds_within"]), Fraction(rule["ratios"]["tension_within"])
+        assert r["verdict"] == ("HOLDS" if d2 <= h * h * s2 else "TENSION" if d2 <= t * t * s2 else "FAILS")
+        assert r["model"] == oracle_nearest_even(
+            parse_exact(r, "model"), 9
+        )  # the display shows the exact value
+    displayed = [{**r, "model": "x", "measured": "x", "sigma": "x", "pull": "x"} for r in rows]
+    assert gen.comparison_problems(displayed, fresh_inputs()) == []  # the display columns are never read
+
+
+# ============================================================================================
+# Representation invariance: every integral-valued argument as an int and as a Fraction
+# ============================================================================================
+def oracle_ratio_sigma2(a, sa, b, sb, rho=0):
+    """sigma^2 of b / a, expanded: b^2 sa^2 / a^4 + sb^2 / a^2 - 2 rho b sa sb / a^3."""
+    a, sa, b, sb, rho = (Fraction(v) for v in (a, sa, b, sb, rho))
+    return b * b * sa * sa / a**4 + sb * sb / (a * a) - 2 * rho * b * sa * sb / a**3
+
+
+def oracle_verdict(model, measured, sigma2, h=2, t=3):
+    d2, s2 = (Fraction(model) - Fraction(measured)) ** 2, Fraction(sigma2)
+    return "HOLDS" if d2 <= h * h * s2 else "TENSION" if d2 <= t * t * s2 else "FAILS"
+
+
+def oracle_knorm(members):
+    """(R, conventional sigma^2, independent sigma^2) of R = members[0] / sum, by partial derivatives."""
+    values = [Fraction(v) for v, _ in members]
+    errors = [Fraction(e) for _, e in members]
+    s, a = sum(values), values[0]
+    grads = [(s - a) / (s * s)] + [-a / (s * s)] * (len(values) - 1)
+    return a / s, errors[0] ** 2 / (s * s), sum(g * g * e * e for g, e in zip(grads, errors, strict=True))
+
+
+def _representations(args: tuple, integral: list[int]):
+    """Every int / Fraction choice for the integral-valued positions: 2^len(integral) argument tuples."""
+    for mask in range(1 << len(integral)):
+        out = list(args)
+        for bit, i in enumerate(integral):
+            out[i] = int(args[i]) if mask >> bit & 1 else Fraction(args[i])
+        yield tuple(out)
+
+
+def _integral(rng: random.Random, sign: bool = True) -> int:
+    v = rng.choice([rng.randint(1, 9), rng.randint(10**5, 10**9), rng.randrange(10**200, 10**201)])
+    return -v if sign and rng.random() < 0.3 else v
+
+
+def representation_cases(rng: random.Random):
+    """Seeded base cases with integral-valued arguments (small, 10^5..10^9 and 201-digit ints, of either sign
+    where the domain allows), and a non-integral one beside them: (function name, call, args, integral
+    positions, oracle)."""
+    for _ in range(100):
+        m, d, s2 = _integral(rng), _integral(rng), abs(_integral(rng, False))
+        yield "pull", cc.pull, (m, d, s2), [0, 1, 2], oracle_pull
+        yield "pull", cc.pull, (m, Fraction(1, 3), s2), [0, 2], oracle_pull
+        yield (
+            "verdict",
+            lambda *a: cc.verdict(*a, {"holds_within": 2, "tension_within": 3}),
+            (m, d, s2),
+            [0, 1, 2],
+            oracle_verdict,
+        )
+        a, sa, b, sb = _integral(rng), abs(_integral(rng, False)), _integral(rng), abs(_integral(rng, False))
+        yield "ratio_sigma2 (default rho)", cc.ratio_sigma2, (a, sa, b, sb), [0, 1, 2, 3], oracle_ratio_sigma2
+        rho = rng.choice([-1, 0, 1])
+        yield (
+            "ratio_sigma2 (explicit rho)",
+            cc.ratio_sigma2,
+            (a, sa, b, sb, rho),
+            [0, 1, 2, 3, 4],
+            oracle_ratio_sigma2,
+        )
+        yield (
+            "ratio_sigma2 (rational rho)",
+            cc.ratio_sigma2,
+            (a, sa, b, sb, Fraction(1, 3)),
+            [0, 1, 2, 3],
+            oracle_ratio_sigma2,
+        )
+        v0, e0, v1, e1 = (
+            abs(_integral(rng, False)),
+            abs(_integral(rng, False)),
+            abs(_integral(rng, False)),
+            rng.randint(0, 9),
+        )
+        yield (
+            "knorm_sigma2",
+            lambda *x: cc.knorm_sigma2([(x[0], x[1]), (x[2], x[3])]),
+            (v0, e0, v1, e1),
+            [0, 1, 2, 3],
+            (lambda *x: oracle_knorm([(x[0], x[1]), (x[2], x[3])])),
+        )
+        x, places = abs(_integral(rng, False)), rng.randint(-3, 6)
+        yield "fixed", cc.fixed, (x, places), [0], oracle_nearest_even
+        yield (
+            "outward up",
+            lambda x, pl: cc.outward(x, pl, True),
+            (x, places),
+            [0],
+            lambda x, pl: oracle_directed(Fraction(x), pl, True),
+        )
+        yield "sigma_decimal", cc.sigma_decimal, (x, places), [0], lambda x, pl: oracle_sigma(Fraction(x), pl)
+        yield (
+            "sig_digits",
+            lambda x, dg: cc.sig_digits(x, dg, False),
+            (x, rng.randint(1, 20)),
+            [0],
+            lambda x, dg: oracle_sig(Fraction(x), dg, False),
+        )
+
+
+def test_t11_every_integral_argument_gives_the_same_exact_result_as_an_int_or_a_fraction():
+    rng = random.Random(f"{SEED}/representations")
+    calls = Counter()
+    for name, call, args, integral, oracle in representation_cases(rng):
+        want = oracle(*[Fraction(v) if i in integral else v for i, v in enumerate(args)])
+        for variant in _representations(args, integral):
+            got = call(*variant)
+            assert got == want and type(got) is type(want), (name, variant)
+            if isinstance(got, tuple):
+                assert all(type(g) is Fraction for g in got)
+            calls[name] += 1
+    assert set(calls) == {
+        "pull",
+        "verdict",
+        "ratio_sigma2 (default rho)",
+        "ratio_sigma2 (explicit rho)",
+        "ratio_sigma2 (rational rho)",
+        "knorm_sigma2",
+        "fixed",
+        "outward up",
+        "sigma_decimal",
+        "sig_digits",
+    }
+    assert sum(calls.values()) >= 8000, calls
+
+
+def test_t11_the_round_four_witnesses_are_exact():
+    assert cc.pull(200000003, 0, 40000) == "+1000000.02" and cc.pull(0, 200000003, 40000) == "-1000000.02"
+    assert cc.pull(Fraction(200000003), Fraction(0), Fraction(40000)) == "+1000000.02"
+    assert cc.pull(10**200, 0, 1) == "+" + "1" + "0" * 200 + ".00"
+    assert cc.ratio_sigma2(3, 1, 2, 1) == Fraction(13, 81) and type(cc.ratio_sigma2(3, 1, 2, 1)) is Fraction
+    assert cc.ratio_sigma2(10**200, 1, 1, 1) == Fraction(1, 10**400) + Fraction(1, 10**800)
+    assert (
+        cc.verdict(1, 0, cc.ratio_sigma2(3, 1, 2, 1), {"holds_within": "2", "tension_within": "3"})
+        == "TENSION"  # 52/81 < 1 <= 117/81
+    )
+
+
+def test_t11_the_validator_returns_exact_fractions_for_every_rational_kind():
+    for kind in ("rational", "rational >= 0", "rational > 0", "rational != 0", "correlation"):
+        (v,) = cc._admit(x=(1, kind))
+        assert type(v) is Fraction and v == 1
+    assert cc._admit(x=(Fraction(1, 3), "probability")) == (Fraction(1, 3),)
+    assert [type(v) for v in cc._admit(a=(3, "int >= 0"), b=(True, "flag"), c=("s", "text"))] == [
+        int,
+        bool,
+        str,
+    ]
+
+
+# ============================================================================================
+# The audit of the certified closure, pinned: every true division is reviewed, and every int reaches text
+# through the one writer
+# ============================================================================================
+#: Every true division in the functions of the certified closure, (function, source), with why it is exact.
+REVIEWED_DIVISIONS = {
+    ("kb_over_ka", "k_line(z, 3, rules) / k_line(z, 2, rules)"): "Fractions from transitions",
+    (
+        "high_over_ka",
+        "sum((k_line(z, n, rules) for n in range(k, LEVELS + 1)), Fraction(0)) / k_line(z, 2, rules)",
+    ): "Fractions",
+    ("ka_over_ktot", "k_line(z, 2, rules) / k_total(z, rules)"): "Fractions",
+    ("_pmf", "_fact(n) / (_fact(x) * _fact(n - x))"): "Interval division, outward-rounded dyadic",
+    ("_walk", "p / (1 - p)"): "p a Fraction from _check_binomial",
+    ("_walk", "(1 - p) / p"): "p a Fraction from _check_binomial",
+    ("_walk", "_frac(term.hi) * r_hi / (1 - r_hi)"): "Fractions from _frac",
+    (
+        "alpha_side",
+        '_rule_number(policy, "budget_per_cell", "probability") / (counts * sides)',
+    ): "Fraction / int",
+    ("sig_digits", "x / Fraction(10) ** (e - digits + 1)"): "x a Fraction from _admit",
+    ("pull", "d * d * 10**4 / sigma2"): "d and sigma2 Fractions from _admit",
+    ("ratio_sigma2", "b / a"): "Fractions from _admit",
+    ("ratio_sigma2", "sa / a"): "Fractions from _admit",
+    ("ratio_sigma2", "sb / b"): "Fractions from _admit",
+    ("knorm_sigma2", "a / s"): "Fractions from _admit",
+    ("knorm_sigma2", "sa * sa / (s * s)"): "Fractions from _admit",
+    ("knorm_sigma2", "((s - a) ** 2 * sa * sa + a * a * others) / s**4"): "Fractions from _admit",
+    ("comparison_rows", "b[0] / a[0]"): "Fractions from read_exact",
+    ("comparison_rows", "v / 100"): "a Fraction from read_exact",
+    ("comparison_rows", "s / 100"): "a Fraction from read_exact",
+    ("comparison_rows", "v / a[0]"): "Fractions from read_exact",
+}
+CERTIFIED_ENTRIES = (
+    "decide",
+    "binomial_tail",
+    "alpha_side",
+    "verdict",
+    "ratio_sigma2",
+    "knorm_sigma2",
+    "pull",
+    "consumer_rows",
+    "consumer_problems",
+    "comparison_rows",
+    "comparison_problems",
+    "transitions",
+    "k_line",
+    "auger_into_1s",
+    "k_total",
+    "kb_over_ka",
+    "high_over_ka",
+    "ka_over_ktot",
+    "retained_counts",
+    "observed_counts",
+    "key",
+    "union_key",
+    "transition_keys",
+    "exact_fields",
+    "int_text",
+    "read_int",
+    "read_exact",
+    "read_fraction",
+    "fixed",
+    "outward",
+    "sigma_decimal",
+    "sig_digits",
+)
+
+
+def _module_functions():
+    source = MODULE_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    funcs = {}
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            funcs[node.name] = node
+        if isinstance(node, ast.ClassDef):
+            for sub in node.body:
+                if isinstance(sub, ast.FunctionDef):
+                    funcs[node.name + "." + sub.name] = sub
+    return source, tree, funcs
+
+
+def test_t11_every_true_division_of_the_certified_closure_is_reviewed():
+    source, _, funcs = _module_functions()
+    closure, todo = set(), list(CERTIFIED_ENTRIES)
+    while todo:
+        f = todo.pop()
+        if f in closure or f not in funcs:
+            continue
+        closure.add(f)
+        for node in ast.walk(funcs[f]):
+            if isinstance(node, ast.Name) and node.id in funcs:
+                todo.append(node.id)
+            if isinstance(node, ast.Name) and node.id == "Interval":
+                todo += [k for k in funcs if k.startswith("Interval.")]
+    found = set()
+    for f in closure:
+        for node in ast.walk(funcs[f]):
+            if isinstance(node, ast.BinOp | ast.AugAssign) and isinstance(node.op, ast.Div):
+                found.add((f, ast.get_source_segment(source, node)))
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "float":
+                found.add((f, "float("))
+    assert found == set(REVIEWED_DIVISIONS)
+
+
+#: The expressions an f-string of the module may format, each a str or a small module constant: every int
+#: reaches text through int_text (an f-string formats the str it returns).
+FSTRING_VALUES = {
+    "Z_MAX": "constant 215",
+    "PRECISION_MAX": "constant 10^5",
+    "name": "str",
+    "ident": "str",
+    "s": "str",
+    "w1": "str",
+    "w2": "str",
+    "b1": "str",
+    "b2": "str",
+    "b3": "str",
+    "f[3]": "str",
+    "line[:40]": "str",
+    "sorted(RULES)": "list of str",
+    "sorted(CAPTURE_PROCESS)": "list of str",
+    "' '.join(seq)": "str",
+    "ref.rules": "dict of the source's rule constants, each read by int() of a short literal",
+    "RULES": "dict constant",
+}
+#: The str() / repr() calls of the module: none of them writes an int of unbounded size.
+STR_CALLS = {
+    "str(n)": "_digits: n < 10^500",
+    "str(parts[-1])": "_digits: a chunk < 10^500",
+    "str(c)": "_digits: a chunk < 10^500",
+    "str(PRECISION_MAX)": "constant",
+    "str(e)": "an exception",
+    "str(self._hash.hexdigest())": "a hex digest",
+    'str(r.get("count", "?"))': "a str cell",
+    "repr(text[:40])": "a str",
+    "repr(kind)": "a str from the rule file",
+}
+
+
+def test_t11_every_int_the_module_writes_goes_through_the_one_writer():
+    source, tree, _ = _module_functions()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FormattedValue):
+            text = ast.get_source_segment(source, node.value)
+            is_writer = isinstance(node.value, ast.Call) and getattr(node.value.func, "id", "") == "int_text"
+            assert is_writer or text in FSTRING_VALUES, text
+            assert node.format_spec is None, text  # no numeric format specification anywhere
+        if isinstance(node, ast.Call) and getattr(node.func, "id", "") in ("str", "repr", "format", "hex"):
+            assert ast.get_source_segment(source, node) in STR_CALLS, ast.get_source_segment(source, node)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mod):
+            assert not (isinstance(node.left, ast.Constant) and isinstance(node.left.value, str))
+
+
+@pytest.mark.parametrize("table", ["cascade_consumer.csv", "cascade_comparison.csv"])
+def test_t11_compare_audits_the_written_tables_from_their_exact_columns(tmp_path, monkeypatch, table):
+    """compare writes the two cascade tables, reads them back and recomputes every decision and verdict from
+    their exact columns before it writes the document: a stored decision the columns do not give stops it."""
+    out = {}
+    real_read = gen.read_csv
+
+    def capture(path, fields, rows):
+        rows = [dict(r) for r in rows]
+        if Path(path).name == table:
+            rows[0]["decision" if table == "cascade_consumer.csv" else "verdict"] = (
+                "reject"
+                if table == "cascade_consumer.csv"
+                else "HOLDS"
+                if rows[0]["verdict"] != "HOLDS"
+                else "FAILS"
+            )
+        out[Path(path).name] = cc.csv_text(fields, rows)
+
+    monkeypatch.setattr(gen, "write_csv", capture)
+    monkeypatch.setattr(
+        gen,
+        "read_csv",
+        lambda path: (
+            list(csv.DictReader(io.StringIO(out[Path(path).name])))
+            if Path(path).name in out
+            else real_read(path)
+        ),
+    )
+    monkeypatch.setattr(gen, "DOCUMENT", tmp_path / "BENCHMARK_STOPPED_MU.md")
+    with pytest.raises(ValueError, match="^the written cascade tables do not certify their decisions"):
+        gen.compare()
+    assert not (tmp_path / "BENCHMARK_STOPPED_MU.md").exists()
+
+
+def test_t11_a_literal_exponent_up_to_the_stated_bound_is_read_exactly():
+    assert cc.read_exact("1e-" + str(cc.PRECISION_MAX)) == Fraction(1, 10**cc.PRECISION_MAX)
+    assert cc.read_exact("-25.5e+2") == -2550 and cc.read_exact("7/14") == Fraction(1, 2)

@@ -301,7 +301,7 @@ The measured Kα/ΣK of Al and natural silicon (ENSDF) is 79.82 and 80.33 %, abo
 Under independent propagation of every member instead of the convention, the verdict changes for 1 of the 9 Kα/ΣK rows: C4H10 goes from HOLDS (pull +1.92) to TENSION (pull +2.54).
 For the 18 ratios formed from a pair of printed members, a correlation between the members' errors anywhere from −1 to +1 changes no verdict.
 
-**The rows.** The model, measured ratio and σ are shown to 6 decimals; `data/g4/stopped_mu/cascade_comparison.csv` gives the model to 9 decimals with every sensitivity column. The silicon rows of ENSDF are a measurement on natural silicon filed under the 28Si evaluation; the harvested Si-28 cell above is a check of the code, not of that measurement.
+**The rows.** The model, measured ratio and σ are shown to 6 decimals; `data/g4/stopped_mu/cascade_comparison.csv` gives the model to 9 decimals with every sensitivity column, and every quantity a verdict is decided from as an exact numerator and denominator, from which the verdicts are recomputed. The silicon rows of ENSDF are a measurement on natural silicon filed under the 28Si evaluation; the harvested Si-28 cell above is a check of the code, not of that measurement.
 
 | source | target | Z | phase | observable | model | measured | σ | pull | verdict |
 |---|---|---|---|---|---|---|---|---|---|
@@ -416,7 +416,7 @@ On both revisions the rebuild of the committed sources is byte-identical to the 
 - `data/g4/stopped_mu/comparison.csv` and `verdicts.csv`: the rows and their verdicts, which `scripts/generate_stopped_mu.py compare` writes with this document as a step of `make audit`.
 - `data/g4/stopped_mu/cascade_reference.csv`: the measured K-series intensities, a row per printed value, transcribed twice; `cascade_rule.json`: the comparison rule and the harvest's test, with when each part was fixed.
 - `data/g4/stopped_mu/cascade_harvest.csv` and `cascade_transitions.csv`: the harvested cascades, a row per cell and a row per cell and transition, written by the `cascade` command.
-- `data/g4/stopped_mu/cascade_comparison.csv` and `cascade_consumer.csv`: the comparison with measurement and the decision on every retained count, which `scripts/generate_stopped_mu.py compare` writes with this document.
+- `data/g4/stopped_mu/cascade_comparison.csv` and `cascade_consumer.csv`: the comparison with measurement and the decision on every retained count, which `scripts/generate_stopped_mu.py compare` writes with this document. Each certified quantity (a probability, a budget, a bound, a model value, a measured ratio, a variance) is an exact rational in a `_num` and a `_den` column, and every decision is recomputed from those columns alone; the decimal columns are for display.
 - `cpp/stopped_muon/`: the application and its driver; `openmucf/g4/stopped_mu.py`: the classifier, the reducer and the rule; `openmucf/g4/capture_cascade.py`: the exact cascade, its binding to the source, the reconstruction and the tests of the cascade.
 
 ## Licensing

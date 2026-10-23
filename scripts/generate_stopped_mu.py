@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
+import io
 import json
 import re
 import sys
@@ -64,6 +65,11 @@ def compare(prereg: Path = DATA / "preregistration.json") -> None:
     inp = load_inputs(prereg)
     write_csv(DATA / "cascade_comparison.csv", cc.COMPARISON_COLUMNS, cascade_comparison(inp))
     write_csv(DATA / "cascade_consumer.csv", cc.CONSUMER_COLUMNS, cascade_consumer(inp))
+    # the audit of the written files: every decision and verdict recomputed from their exact columns alone
+    problems = consumer_problems(read_csv(DATA / "cascade_consumer.csv"), inp)
+    problems += comparison_problems(read_csv(DATA / "cascade_comparison.csv"), inp)
+    if problems:
+        raise ValueError(f"the written cascade tables do not certify their decisions: {problems[:3]}")
     DOCUMENT.write_text(render(inp).text, encoding="utf-8", newline="\n")
     tally: dict[str, int] = {}
     for v in verdicts:
@@ -493,32 +499,61 @@ def cascade_consumer(inp: Inputs, rules: dict[str, int] | None = None) -> list[d
     return rows
 
 
-def consumer_problems(rows: list[dict[str, str]]) -> list[str]:
-    """Every row of the consumer schema that breaks its rules: ``lower`` => pass with a value above the budget,
-    ``upper`` => reject with a value at most the budget, ``none`` <=> side ``mode`` <=> an empty value."""
-    out = []
+def read_back(columns: tuple[str, ...], rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """The rows as a reader of the CSV sees them: written by the module's csv_text and read back, so every check
+    reads what the file holds."""
+    return list(csv.DictReader(io.StringIO(cc.csv_text(columns, rows))))
+
+
+def consumer_problems(rows: list[dict[str, str]], inp: Inputs) -> list[str]:
+    """Every problem of consumer rows read from text, from their exact columns alone (the display columns are
+    never read): the module recomputes every decision from n, observed, p, budget and bound (cc.consumer_problems,
+    with the rule's per-side budget), and each row's n, observed and p must be its cell's stops, its harvested
+    count and the model's probability of that count for the cell's Z."""
+    hv = inp.cascade.rule["harvest"]
+    out = cc.consumer_problems(rows, cc.alpha_side(hv, len(cc.retained_counts(cc.transitions(1)))))
+    observed = cascade_harvest(inp)
+    cells = {cell_of(r): r for r in inp.cascade.harvest}
+    model: dict[tuple[str, str, str], dict[str, Fraction]] = {}
     for r in rows:
-        name = f"{'/'.join(cell_of(r))} {r['count']}"
-        if tuple(r) != cc.CONSUMER_COLUMNS:
-            out.append(f"{name}: columns {tuple(r)}")
+        name = f"{'/'.join(cell_of(r))} {r.get('count')}"
+        cell = cells.get(cell_of(r))
+        if cell is None or r.get("count") not in observed[cell_of(r)]:
+            out.append(f"{name}: not a retained count of a harvested cell")
             continue
-        budget = Fraction(r["budget"])
-        if r["bound_kind"] == "lower":
-            if not (r["decision"] == "pass" and r["side"] in ("hi", "lo") and Fraction(r["bound_value"]) > budget):
-                out.append(f"{name}: a lower bound must be a pass above the budget")
-        elif r["bound_kind"] == "upper":
-            if not (r["decision"] == "reject" and r["side"] in ("hi", "lo") and Fraction(r["bound_value"]) <= budget):
-                out.append(f"{name}: an upper bound must be a reject at most the budget")
-        elif r["bound_kind"] == "none":
-            if not (r["side"] == "mode" and r["bound_value"] == "" and r["decision"] == "pass"):
-                out.append(f"{name}: no bound only for a count at the mode, which passes")
-        else:
-            out.append(f"{name}: bound_kind {r['bound_kind']!r}")
+        probs = model.setdefault(cell_of(r), cc.retained_counts(cc.transitions(cc.read_int(cell["Z"], "Z"))))
+        try:
+            n, x, p = cc.read_int(r["n"], "n"), cc.read_int(r["observed"], "observed"), cc.read_fraction(r, "p")
+        except cc.DisplayDomainError:
+            continue  # reported by cc.consumer_problems
+        if (n, x, p) != (cc.read_int(cell["stops"], "stops"), observed[cell_of(r)][r["count"]], probs[r["count"]]):
+            out.append(f"{name}: n, observed or p is not the cell's stops, harvested count or model probability")
     return out
 
 
 def cascade_comparison(inp: Inputs) -> list[dict[str, str]]:
     return cc.comparison_rows(inp.cascade.reference, inp.cascade.rule)
+
+
+def comparison_problems(rows: list[dict[str, str]], inp: Inputs) -> list[str]:
+    """Every problem of comparison rows read from text, from their exact columns alone: the module recomputes
+    every verdict from model, measured and the sigma^2 columns (cc.comparison_problems), and each row's model
+    must be the module's exact value of its observable for its Z."""
+    out = cc.comparison_problems(rows, inp.cascade.rule["ratios"])
+    for i, r in enumerate(rows):
+        try:
+            z, model = cc.read_int(r["Z"], "Z"), cc.read_fraction(r, "model")
+        except (cc.DisplayDomainError, KeyError):
+            continue  # reported by cc.comparison_problems
+        if r["observable"] == "kb_over_ka":
+            want = cc.kb_over_ka(z)
+        elif r["observable"] == "high_over_ka":
+            want = cc.high_over_ka(z, cc.read_int(r["k"], "k"))
+        else:
+            want = cc.ka_over_ktot(z)
+        if model != want:
+            out.append(f"row {i}: the model is not the module's exact {r['observable']}")
+    return out
 
 
 def observable_label(obs: str, k: str) -> list[str | Slot]:
@@ -625,8 +660,8 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
     w.blank()
     # ---- c. the compiled cascade
     hv = c.rule["harvest"]
-    rows = cascade_consumer(inp)
-    problems = consumer_problems(rows)
+    rows = read_back(cc.CONSUMER_COLUMNS, cascade_consumer(inp))
+    problems = consumer_problems(rows, inp)
     if problems:
         raise ValueError(f"cascade_consumer rows break their schema: {problems[:3]}")
     rejected = [r for r in rows if r["decision"] != "pass"]
@@ -840,7 +875,10 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
     )
     w.blank()
     # ---- e. against measurement
-    comp = cascade_comparison(inp)
+    comp = read_back(cc.COMPARISON_COLUMNS, cascade_comparison(inp))
+    problems = comparison_problems(comp, inp)
+    if problems:
+        raise ValueError(f"cascade_comparison rows break their schema: {problems[:3]}")
     w.line(
         "**Against measurement.** The ratios of the cascade are compared with the muonic K-series intensities "
         "of Orth et al. (Phys. Rev. A 25, 876 (1982), Table I: ratios to Kα, condensed targets), the ENSDF "
@@ -889,12 +927,12 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
         )
     w.blank()
     ensdf = [r for r in comp if r["source"] == "ensdf_measday2007" and r["observable"] == "ka_over_ktot"]
-    above = all(Fraction(r["measured"]) > ratio[zhi] for r in ensdf)
+    above = all(cc.read_fraction(r, "measured") > ratio[zhi] for r in ensdf)
     w.line(
         "The measured Kα/ΣK of ",
         *joined([S(r["target"]) for r in ensdf]),
         " (ENSDF) is ",
-        *joined([S(cc.fixed(100 * Fraction(r["measured"]), 2)) for r in ensdf]),
+        *joined([S(cc.fixed(100 * cc.read_fraction(r, "measured"), 2)) for r in ensdf]),
         " %, ",
         "above the largest value the code gives for any Z in its domain." if above else "within the code's range.",
     )
@@ -971,7 +1009,8 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
         S(CASCADE_DECIMALS),
         " decimals; `data/g4/stopped_mu/cascade_comparison.csv` gives the model to ",
         S(9),
-        " decimals with every sensitivity column. The silicon rows of ENSDF are a measurement on natural "
+        " decimals with every sensitivity column, and every quantity a verdict is decided from as an exact "
+        "numerator and denominator, from which the verdicts are recomputed. The silicon rows of ENSDF are a measurement on natural "
         "silicon filed under the ",
         S(28),
         "Si evaluation; the harvested ",
@@ -1038,7 +1077,7 @@ def render_cascade(w: Writer, inp: Inputs) -> None:
     sums = {}
     for r in c.reference:
         if r["source"] == "ensdf_measday2007":
-            sums[r["target"]] = sums.get(r["target"], Fraction(0)) + Fraction(r["value"])
+            sums[r["target"]] = sums.get(r["target"], Fraction(0)) + cc.read_exact(r["value"], "value")
     w.line(
         "**Limits.** No Kα per stopped muon is compared, because the quoted intensities assume that the K "
         "series accounts for every stop and so do not establish photons per stop independently: Measday et al. "
@@ -1843,7 +1882,9 @@ def render(inp: Inputs) -> Rendered:
     w.line(
         "- `data/g4/stopped_mu/cascade_comparison.csv` and `cascade_consumer.csv`: the comparison with "
         "measurement and the decision on every retained count, which `scripts/generate_stopped_mu.py compare` "
-        "writes with this document."
+        "writes with this document. Each certified quantity (a probability, a budget, a bound, a model value, a "
+        "measured ratio, a variance) is an exact rational in a `_num` and a `_den` column, and every decision "
+        "is recomputed from those columns alone; the decimal columns are for display."
     )
     w.line(
         "- `cpp/stopped_muon/`: the application and its driver; `openmucf/g4/stopped_mu.py`: the classifier, the "

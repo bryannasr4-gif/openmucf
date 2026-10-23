@@ -99,7 +99,9 @@ each transition to the file `--transitions` names.
   stock cascade with them and tests the harvested cascades, with when each part was fixed;
 - `cascade_harvest.csv` and `cascade_transitions.csv`: the cascades harvested with `cascade`;
 - `cascade_comparison.csv` and `cascade_consumer.csv`: the comparison with the measured intensities and the
-  decision on every count of the harvested cascades, which the same command writes.
+  decision on every count of the harvested cascades, which the same command writes. Each certified quantity is
+  an exact rational in a `_num` and a `_den` column, and the decisions are recomputed from those columns; the
+  decimal columns are for display.
 
 The same command generates `BENCHMARK_STOPPED_MU.md` from these files and the natural compositions of
 `data/g4/d1/geant4_natural_isotopes.csv`: the setup, the rule and when each part of it was fixed, the verdicts with
