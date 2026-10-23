@@ -108,3 +108,35 @@ The digest in the oracle is **pre-registered**: on the build above the value is 
 disagreement means the build, the driver, or the environment is not what this file describes. That
 is a stop-and-diagnose, never a re-pin. Do not adjust the reference implementation to make a
 mismatch go away — the reference implementation is the thing being tested.
+
+## Natural-target mixtures
+
+`harvest_mixture.cc` transports negative muons that start at rest at the centre of a box of a
+single-element NIST material, `G4_<symbol>`, in a single-threaded process, on the stopping route (QBBC as
+built) or the atomic route (`G4MuonMinusAtomicCapture` and `G4MuonicAtomDecay`, registered as
+`G4MuonicAtomDecayPhysics` registers it). With `--hooks on`, classes derived from the stock
+`G4ElementSelector`, `G4MuonMinusBoundDecay` and `G4MuonicAtomDecay` record, at each call site, the nucleus
+the selector drew, the rates or lifetimes the call site uses, the delay it sampled and the branch it took,
+then call the stock method once and return its result; with `--hooks off` the stock classes run alone. A
+line per event gives those fields and, from the transported secondaries alone, the outcome of the stop and
+the time of its decay electron, as exact hexadecimal floats. `G4MuonMinusAtomicCapture` declares
+`SetElementSelector` inline and neither revision defines it, so the file supplies the definition
+`G4HadronStoppingProcess` gives its own. With `--identity on` it also writes the transport records of
+`cpp/transport/g4muonic_transport.cc` and, per event, a hash of the random engine's state taken at every
+track start, every step end and the event end, and counts, inside each hook, whether the engine state at
+hook entry equals the state at base entry and the state at base return the state at hook exit.
+
+`mixture_harvest.py` builds the source against an installation with the flags it records in the build's
+own `build.json` (with the compiler, the Geant4 version and the digest of every library the binary
+loads), runs a cell and records its argument vector, wall time and the digest of what it wrote, and
+summarizes raw cells into `data/g4/d1/natural_mixture_harvest.csv` and
+`data/g4/d1/natural_mixture_builds.csv` through `openmucf/g4/d1_mixture.py`. A summary reads each build's
+flags from that build's record, never from a constant. `DATASET_D1.md` section 13 describes what the
+harvest checks.
+
+```sh
+python3 cpp/tools/mixture_harvest.py build --install <dir> --kind patched --out <build>
+python3 cpp/tools/mixture_harvest.py run --build <build> --route stopping --symbol Fe --z <Z> \
+    --events <n> --seed-base <seed> --data <GEANT4_DATA_DIR> --profile parity --out <cell>
+python3 cpp/tools/mixture_harvest.py summarize --cells <plan.json> --out data/g4/d1
+```

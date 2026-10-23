@@ -61,6 +61,7 @@ BENCHMARK_STOPPED_MU.md text eol=lf
 cpp/tools/harvest_d2.cc -text
 cpp/tools/harvest_natural.cc -text
 cpp/tools/harvest_decay.cc -text
+cpp/tools/harvest_mixture.cc -text
 # The recipe-run fixture of tests/test_g4d3_recipe.py: the collector reads its files as MuDirac printed them
 # (LF) and refuses a malformed line, so a checkout must not rewrite their line endings.
 tests/fixtures/d3_recipe/** -text
