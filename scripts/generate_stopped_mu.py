@@ -23,6 +23,7 @@ import io
 import json
 import re
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, localcontext
 from fractions import Fraction
@@ -66,14 +67,26 @@ def compare(prereg: Path = DATA / "preregistration.json") -> None:
     tables = canonical_tables(inp)
     write_csv(DATA / "cascade_comparison.csv", cc.COMPARISON_COLUMNS, tables.comparison)
     write_csv(DATA / "cascade_consumer.csv", cc.CONSUMER_COLUMNS, tables.consumer)
-    # the audit of the written files, before the document: each table read back must be the canonical table of
-    # the inputs as a whole (its rows, their order, every exact field and verdict), and every decision and verdict
-    # must follow from its exact columns
-    problems = consumer_problems(read_csv(DATA / "cascade_consumer.csv"), inp, tables.consumer)
-    problems += comparison_problems(read_csv(DATA / "cascade_comparison.csv"), inp, tables.comparison)
+    # the audit of the written files, before the document: each file's bytes must be the canonical serialization
+    # of the canonical table of the inputs, and, read raw (its header and every record, before any mapping), its
+    # exact columns must give every decision and verdict and equal the canonical table as a whole
+    problems = written_table_problems(
+        "cascade_consumer",
+        read_bytes(DATA / "cascade_consumer.csv"),
+        cc.CONSUMER_COLUMNS,
+        tables.consumer,
+        lambda rows: consumer_problems(rows, inp, tables.consumer),
+    )
+    problems += written_table_problems(
+        "cascade_comparison",
+        read_bytes(DATA / "cascade_comparison.csv"),
+        cc.COMPARISON_COLUMNS,
+        tables.comparison,
+        lambda rows: comparison_problems(rows, inp, tables.comparison),
+    )
     if problems:
         raise ValueError(f"the written cascade tables do not certify their decisions: {problems[:3]}")
-    # the document is rendered from the tables just proved equal to the written ones
+    # the document is rendered from the canonical tables, which the written files have just been proved to be
     DOCUMENT.write_text(render(inp, tables).text, encoding="utf-8", newline="\n")
     tally: dict[str, int] = {}
     for v in verdicts:
@@ -230,6 +243,53 @@ class Inputs:
 def read_csv(path: Path) -> list[dict[str, str]]:
     with path.open(encoding="utf-8", newline="") as stream:
         return list(csv.DictReader(stream))
+
+
+def read_bytes(path: Path) -> bytes:
+    """The bytes of a written file, as the audit of compare reads them."""
+    return path.read_bytes()
+
+
+def raw_rows(name: str, data: bytes, columns: tuple[str, ...]) -> tuple[list[dict[str, str]], list[str]]:
+    """The rows of a written table read raw, before any mapping can merge or drop a cell: the bytes decoded as
+    UTF-8 (strictly), the records split by csv.reader, the header equal to ``columns`` exactly (each name once, in
+    order, no other) and every record exactly len(columns) fields. Returns (rows, problems); the rows are mapped
+    to their columns only when there is no problem."""
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return [], [f"{name}: the file is not UTF-8"]
+    records = list(csv.reader(io.StringIO(text, newline="")))
+    if not records:
+        return [], [f"{name}: the file is empty"]
+    header, body = records[0], records[1:]
+    problems = []
+    if header != list(columns):
+        problems.append(f"{name}: the header is not the schema, each column once and in order")
+    widths = [i for i, record in enumerate(body, 2) if len(record) != len(columns)]
+    if widths:
+        problems.append(f"{name}: records {widths[:3]} do not have exactly {len(columns)} fields")
+    if problems:
+        return [], problems
+    return [dict(zip(columns, record, strict=True)) for record in body], []
+
+
+def written_table_problems(
+    name: str,
+    data: bytes,
+    columns: tuple[str, ...],
+    canonical: list[dict[str, str]],
+    row_problems: Callable[[list[dict[str, str]]], list[str]],
+) -> list[str]:
+    """Every problem of a written table, from its bytes: they must be the canonical serialization of the canonical
+    table (cc.csv_text, UTF-8: the display columns included, since they follow from the exact values; no BOM,
+    CRLF, reordered, duplicated or extra column, or changed final newline); and, independently, the table read raw
+    (raw_rows) must pass ``row_problems``, the exact recompute and the whole-table equality of its exact columns."""
+    out = []
+    if data != cc.csv_text(columns, canonical).encode("utf-8"):
+        out.append(f"{name}: the bytes are not the canonical serialization of the table the inputs give")
+    rows, problems = raw_rows(name, data, columns)
+    return out + (problems if problems else row_problems(rows))
 
 
 def load_inputs(prereg: Path = DATA / "preregistration.json") -> Inputs:
@@ -499,7 +559,9 @@ def cascade_consumer(inp: Inputs, rules: dict[str, int] | None = None) -> list[d
     observed = cascade_harvest(inp)
     rows = []
     for r in inp.cascade.harvest:
-        rows += cc.consumer_rows(r, observed[cell_of(r)], int(r["Z"]), int(r["stops"]), inp.cascade.rule["harvest"], rules)
+        rows += cc.consumer_rows(
+            r, observed[cell_of(r)], int(r["Z"]), int(r["stops"]), inp.cascade.rule["harvest"], rules
+        )
     return rows
 
 
@@ -566,7 +628,11 @@ def table_problems(
         if tuple(r) != columns:
             out.append(f"{name} {k}: the columns are not the schema")
             continue
-        out += [f"{name} {k}: {c} is not what the inputs give" for c in columns if c not in display and r[c] != want[c]]
+        out += [
+            f"{name} {k}: {c} is not what the inputs give"
+            for c in columns
+            if c not in display and r[c] != want[c]
+        ]
     return out
 
 
@@ -717,7 +783,9 @@ def render_cascade(w: Writer, inp: Inputs, tables: Tables) -> None:
         raise ValueError(f"cascade_consumer rows break their schema: {problems[:3]}")
     rejected = [r for r in rows if r["decision"] != "pass"]
     if rejected:
-        raise ValueError(f"the harvested cascade rejects {len(rejected)} counts: the module does not describe it")
+        raise ValueError(
+            f"the harvested cascade rejects {len(rejected)} counts: the module does not describe it"
+        )
     per_cell = {cell_of(r): r for r in c.harvest}
     n_counts = len(cc.retained_counts(cc.transitions(1)))
     budget = Fraction(hv["budget_per_cell"])
@@ -745,7 +813,9 @@ def render_cascade(w: Writer, inp: Inputs, tables: Tables) -> None:
         "(`data/g4/stopped_mu/cascade_harvest.csv`):",
     )
     w.blank()
-    w.line("| revision | configuration | target | Z | stops | cascades rebuilt | refused | Auger electrons | photons |")
+    w.line(
+        "| revision | configuration | target | Z | stops | cascades rebuilt | refused | Auger electrons | photons |"
+    )
     w.line("|---|---|---|---|---|---|---|---|---|")
     for r in c.harvest:
         w.line(
@@ -839,7 +909,9 @@ def render_cascade(w: Writer, inp: Inputs, tables: Tables) -> None:
     route_pairs = []
     for v in (v1, v2):
         for x in others:
-            route_pairs.append((per_cell[(v, "bertini", x["target"])], per_cell[(v, x["config"], x["target"])]))
+            route_pairs.append(
+                (per_cell[(v, "bertini", x["target"])], per_cell[(v, x["config"], x["target"])])
+            )
     route_differ = [p for p in route_pairs if p[0]["sequences_sha256"] != p[1]["sequences_sha256"]]
     distinct = len({r["sequences_sha256"] for r in c.harvest})
     if not rev_differ:
@@ -884,7 +956,9 @@ def render_cascade(w: Writer, inp: Inputs, tables: Tables) -> None:
     ratio = {z: cc.ka_over_ktot(z) for z in zs}
     zhi = max(zs, key=lambda z: ratio[z])
     zlo = min(zs, key=lambda z: ratio[z])
-    free = range(cc.LEVELS, zmax + 1)  # Z - 1 >= the levels below the capture level: the Auger cap cannot bind
+    free = range(
+        cc.LEVELS, zmax + 1
+    )  # Z - 1 >= the levels below the capture level: the Auger cap cannot bind
     kb = [cc.kb_over_ka(z) for z in free]
     hi8 = [cc.high_over_ka(z, 8) for z in free]
     w.line(
@@ -985,7 +1059,9 @@ def render_cascade(w: Writer, inp: Inputs, tables: Tables) -> None:
         " (ENSDF) is ",
         *joined([S(cc.fixed(100 * cc.read_fraction(r, "measured"), 2)) for r in ensdf]),
         " %, ",
-        "above the largest value the code gives for any Z in its domain." if above else "within the code's range.",
+        "above the largest value the code gives for any Z in its domain."
+        if above
+        else "within the code's range.",
     )
     w.blank()
     knorm = [r for r in comp if r["observable"] == "ka_over_ktot"]

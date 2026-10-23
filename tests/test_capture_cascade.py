@@ -2991,7 +2991,7 @@ def test_t11_a_tiny_budget_reaches_the_csv_and_round_trips(limit, budget):
 @pytest.mark.parametrize("budget", ["1e-5000", Fraction(1, 10**5000)], ids=["literal", "Fraction"])
 @pytest.mark.parametrize("n, decision", [(100, "pass"), (20000, "reject")])
 def test_t11_the_conserved_samples_decide_and_round_trip_under_a_tiny_budget(limit, budget, n, decision):
-    """Sol's conserved samples: every stop takes g14->1; at N = 100 the g2->1 count is a certified pass, at
+    """The conserved samples: every stop takes g14->1; at N = 100 the g2->1 count is a certified pass, at
     N = 20000 a certified reject, and both reach the CSV."""
     with int_string_limit(limit):
         rows = cc.consumer_rows(CELL, conserved(n), 13, n, {"budget_per_cell": budget, "sides": 2})
@@ -3197,7 +3197,7 @@ def test_t11_every_integral_argument_gives_the_same_exact_result_as_an_int_or_a_
     assert sum(calls.values()) >= 8000, calls
 
 
-def test_t11_the_round_four_witnesses_are_exact():
+def test_t11_the_integer_operand_witnesses_are_exact():
     assert cc.pull(200000003, 0, 40000) == "+1000000.02" and cc.pull(0, 200000003, 40000) == "-1000000.02"
     assert cc.pull(Fraction(200000003), Fraction(0), Fraction(40000)) == "+1000000.02"
     assert cc.pull(10**200, 0, 1) == "+" + "1" + "0" * 200 + ".00"
@@ -3353,7 +3353,7 @@ def test_t11_every_true_division_of_the_certified_closure_is_reviewed():
 
 PULL_DIVISION = "    n = _sqrt_half_even(d * d * 10**4 / sigma2)\n"
 #: Edits of the module source that add an arithmetic site the pin must notice: a second copy of a reviewed
-#: expression in the same function (an int fast path of pull, the shape CHECK_round5 used), a new expression,
+#: expression in the same function (an int fast path of pull), a new expression,
 #: and a division or a float( in a helper newly reached from the closure.
 PIN_INSERTIONS = {
     "a duplicate of a reviewed expression in pull": (
@@ -3460,6 +3460,12 @@ def test_t11_compare_audits_the_written_tables_from_their_exact_columns(tmp_path
         ),
     )
     monkeypatch.setattr(gen, "DOCUMENT", tmp_path / "BENCHMARK_STOPPED_MU.md")
+    real_bytes = gen.read_bytes
+    monkeypatch.setattr(
+        gen,
+        "read_bytes",
+        lambda path: out[Path(path).name].encode("utf-8") if Path(path).name in out else real_bytes(path),
+    )
     with pytest.raises(ValueError, match="^the written cascade tables do not certify their decisions"):
         gen.compare()
     assert not (tmp_path / "BENCHMARK_STOPPED_MU.md").exists()
@@ -3526,7 +3532,7 @@ def _erase_sensitivity(rows):
 
 
 def _orth_be_holds(rows):
-    """CHECK_round5's corruption: Orth Be's measured made its model and the verdict HOLDS (consistent)."""
+    """Orth Be's measured value set to the model with verdict HOLDS (self-consistent)."""
     r = rows[0]
     assert (r["source"], r["target"]) == ("orth1982", "Be")
     r.update(measured_num=r["model_num"], measured_den=r["model_den"], verdict="HOLDS")
@@ -3550,8 +3556,7 @@ def _consistent_mode(rows):
     return rows
 
 
-#: Every adverse edit of a written table CHECK_round5 lists (and a few more): each must stop compare before
-#: the document is written.
+#: Adverse edits of a written table: each must stop compare before the document is written.
 WRITTEN_FAULTS = {
     "cascade_consumer.csv": {
         "header only": lambda rows: [],
@@ -3611,6 +3616,12 @@ def test_t11_compare_refuses_every_adverse_written_table_before_the_document(
     monkeypatch.setattr(gen, "write_csv", capture)
     monkeypatch.setattr(gen, "read_csv", read)
     monkeypatch.setattr(gen, "DOCUMENT", tmp_path / "BENCHMARK_STOPPED_MU.md")
+    real_bytes = gen.read_bytes
+    monkeypatch.setattr(
+        gen,
+        "read_bytes",
+        lambda path: out[Path(path).name].encode("utf-8") if Path(path).name in out else real_bytes(path),
+    )
     with pytest.raises(ValueError, match="^the written cascade tables do not certify their decisions"):
         gen.compare()
     assert not (tmp_path / "BENCHMARK_STOPPED_MU.md").exists()  # refused before the document is written
@@ -3653,6 +3664,12 @@ def test_t11_compare_renders_the_document_from_the_tables_it_proved_equal_to_the
     )
     monkeypatch.setattr(gen, "render", spy)
     monkeypatch.setattr(gen, "DOCUMENT", tmp_path / "BENCHMARK_STOPPED_MU.md")
+    real_bytes = gen.read_bytes
+    monkeypatch.setattr(
+        gen,
+        "read_bytes",
+        lambda path: out[Path(path).name].encode("utf-8") if Path(path).name in out else real_bytes(path),
+    )
     gen.compare()
     written = {
         n: list(csv.DictReader(io.StringIO(out[n])))
@@ -3691,3 +3708,174 @@ def test_t11_read_exact_states_its_exponent_width():
     assert cc.read_exact("1e-5000") == Fraction(1, 10**5000)
     with pytest.raises(cc.DisplayDomainError):
         cc.read_exact("1e-0005000")  # the width rule, as stated
+
+
+# ============================================================================================
+# The written files are authenticated by their bytes, and read raw before any mapping
+# ============================================================================================
+def _cells(data: bytes) -> list[list[str]]:
+    return list(csv.reader(io.StringIO(data.decode("utf-8"), newline="")))
+
+
+def _encode(cells: list[list[str]], newline: str = "\n") -> bytes:
+    out = io.StringIO(newline="")
+    csv.writer(out, lineterminator=newline).writerows(cells)
+    return out.getvalue().encode("utf-8")
+
+
+def _duplicate(fields_values):
+    """Each named column written twice, the false value first in the first data row, the canonical value last
+    (a mapping by name keeps the last; a reader by first index takes the first)."""
+
+    def edit(data: bytes, table: str) -> bytes:
+        cells = _cells(data)
+        for field, false in fields_values(cells, table):
+            i = cells[0].index(field)
+            cells[0].insert(i, field)
+            for j, row in enumerate(cells[1:], 1):
+                row.insert(i, false if j == 1 else row[i])
+        return _encode(cells)
+
+    return edit
+
+
+def _duplicate_last(field_of):
+    def edit(data: bytes, table: str) -> bytes:
+        cells = _cells(data)
+        field = field_of(table, cells)
+        i = cells[0].index(field)
+        cells[0].append(field)
+        for row in cells[1:]:
+            row.append(row[i])
+        return _encode(cells)
+
+    return edit
+
+
+def _columns(table):
+    return cc.CONSUMER_COLUMNS if table == "cascade_consumer.csv" else cc.COMPARISON_COLUMNS
+
+
+def _conflicting(cells, table):
+    """The conflicting values: consumer observed 0 / reject; comparison measured = model / HOLDS."""
+    if table == "cascade_consumer.csv":
+        return [("observed", "0"), ("decision", "reject")]
+    row = cells[1]
+    return [
+        ("measured_num", row[cells[0].index("model_num")]),
+        ("measured_den", row[cells[0].index("model_den")]),
+        ("verdict", "HOLDS"),
+    ]
+
+
+def _edit_cells(edit):
+    def apply(data: bytes, table: str) -> bytes:
+        cells = _cells(data)
+        edit(cells, table)
+        return _encode(cells)
+
+    return apply
+
+
+def _display_edit(cells, table):
+    for field in cc.CONSUMER_DISPLAY if table == "cascade_consumer.csv" else cc.COMPARISON_DISPLAY:
+        cells[1][cells[0].index(field)] = "999"
+
+
+def _swap_first_columns(cells, table):
+    for row in cells:
+        row[0], row[1] = row[1], row[0]
+
+
+def _extra_column(cells, table):
+    cells[0].append("unapproved")
+    for row in cells[1:]:
+        row.append("999")
+
+
+#: Faults of a written file's bytes: each must stop compare before the document is written.
+RAW_FAULTS = {
+    "duplicate columns with conflicting first values": _duplicate(_conflicting),
+    "the first column duplicated": _duplicate(lambda cells, table: [(cells[0][0], cells[1][0])]),
+    "a duplicated display-only column": _duplicate(
+        lambda cells, table: [
+            ((cc.CONSUMER_DISPLAY if table == "cascade_consumer.csv" else cc.COMPARISON_DISPLAY)[0], "x")
+        ]
+    ),
+    "the decision or verdict duplicated at the end": _duplicate_last(
+        lambda table, cells: "decision" if table == "cascade_consumer.csv" else "verdict"
+    ),
+    "the last column duplicated at the end": _duplicate_last(lambda table, cells: cells[0][-1]),
+    "an extra column": _edit_cells(_extra_column),
+    "an extra cell in one row": _edit_cells(lambda cells, table: cells[1].append("999")),
+    "a short row": _edit_cells(lambda cells, table: cells.__setitem__(1, cells[1][:-2])),
+    "two columns reordered": _edit_cells(_swap_first_columns),
+    "a display-only edit": _edit_cells(_display_edit),
+    "an empty file": lambda data, table: b"",
+    "CRLF line endings": lambda data, table: _encode(_cells(data), "\r\n"),
+    "a UTF-8 byte-order mark": lambda data, table: b"\xef\xbb\xbf" + data,
+    "UTF-16": lambda data, table: data.decode("utf-8").encode("utf-16"),
+    "the final newline removed": lambda data, table: data[:-1],
+    "a final newline added": lambda data, table: data + b"\n",
+    "blank lines": lambda data, table: data.replace(b"\n", b"\n\n", 2),
+}
+RAW_CASES = [(t, name) for t in ("cascade_consumer.csv", "cascade_comparison.csv") for name in RAW_FAULTS]
+
+
+@pytest.mark.parametrize("table, name", RAW_CASES, ids=[f"{t[8:-4]}: {n}" for t, n in RAW_CASES])
+def test_t11_compare_refuses_every_raw_file_fault_before_the_document(tmp_path, monkeypatch, table, name):
+    written = {}
+
+    def capture(path, fields, rows):
+        data = cc.csv_text(fields, rows).encode("utf-8")
+        if Path(path).name == table:
+            data = RAW_FAULTS[name](data, table)
+        written[Path(path).name] = data
+
+    real_bytes = gen.read_bytes
+    monkeypatch.setattr(gen, "write_csv", capture)
+    monkeypatch.setattr(
+        gen,
+        "read_bytes",
+        lambda path: written[Path(path).name] if Path(path).name in written else real_bytes(path),
+    )
+    monkeypatch.setattr(gen, "DOCUMENT", tmp_path / "BENCHMARK_STOPPED_MU.md")
+    with pytest.raises(ValueError, match="^the written cascade tables do not certify their decisions"):
+        gen.compare()
+    assert not (tmp_path / "BENCHMARK_STOPPED_MU.md").exists()
+
+
+def test_t11_the_duplicate_header_tables_survive_a_mapping_by_name_but_not_the_raw_read():
+    """Why the bytes and the raw header are read: a mapping by name keeps the last of two columns of one
+    name, so the duplicated table maps to the canonical rows, while the raw read and the bytes refuse it."""
+    for table in ("cascade_consumer.csv", "cascade_comparison.csv"):
+        data = (DATA / table).read_bytes()
+        bad = RAW_FAULTS["duplicate columns with conflicting first values"](data, table)
+        assert list(csv.DictReader(io.StringIO(bad.decode("utf-8")))) == gen.read_csv(DATA / table)
+        rows, problems = gen.raw_rows(table, bad, _columns(table))
+        assert rows == [] and "the header is not the schema" in problems[0]
+
+
+@pytest.mark.parametrize("name", list(RAW_FAULTS))
+def test_t11_the_raw_read_and_the_bytes_are_two_checks(name):
+    """Every raw fault changes the bytes; the faults of the header, the widths or the encoding are refused by
+    the raw read alone too, while a display edit or a CRLF table reads raw as the canonical rows."""
+    for table in ("cascade_consumer.csv", "cascade_comparison.csv"):
+        data = (DATA / table).read_bytes()
+        bad = RAW_FAULTS[name](data, table)
+        assert bad != data
+        canonical = getattr(canonical_tables(), table[8:-4])
+        problems = gen.written_table_problems(table, bad, _columns(table), canonical, lambda rows: [])
+        assert problems and problems[0].endswith(
+            "the bytes are not the canonical serialization of the table the inputs give"
+        )
+        rows, raw = gen.raw_rows(table, bad, _columns(table))
+        if name in ("a display-only edit", "CRLF line endings"):
+            assert raw == [] and len(rows) == len(canonical)
+        elif name != "the final newline removed":
+            assert raw and rows == [], name
+    for table in ("cascade_consumer.csv", "cascade_comparison.csv"):
+        data = (DATA / table).read_bytes()
+        canonical = getattr(canonical_tables(), table[8:-4])
+        assert gen.written_table_problems(table, data, _columns(table), canonical, lambda rows: []) == []
+        assert gen.raw_rows(table, data, _columns(table)) == (canonical, [])
