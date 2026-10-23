@@ -38,8 +38,8 @@ from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
-from pathlib import Path
-from typing import Any
+from pathlib import Path, PurePosixPath
+from typing import Any, BinaryIO, cast
 
 from openmucf.g4 import d1_lifetime as lifetime
 from openmucf.g4 import d1_mixture as mixture
@@ -60,7 +60,7 @@ THEORY_RELPATH = "data/g4/d1/bound_rates_theory.json"
 #: compares the rates the atomic consumer recovers from the stored lifetimes, and authenticates every summary
 #: against the policy's registered roster. The same raw records summarized by both give the same registered
 #: outcomes (the production re-summary is committed beside the first summary).
-ANALYSIS_VERSION = 2
+ANALYSIS_VERSION = 3
 
 STOPPING, ATOMIC = mixture.STOPPING, mixture.ATOMIC
 ROUTES = (STOPPING, ATOMIC)
@@ -304,16 +304,41 @@ def frozen_pair(policy: Mapping[str, Any], label: str) -> Pair:
 # --------------------------------------------------------------------------------------------
 
 
-def _open_text(path: Path) -> Iterator[str]:
+def _open_text(path: Path, digests: dict[str, str] | None = None) -> Iterator[str]:
+    """The lines of a raw file, ``path`` or its gzipped copy, decoded as ASCII. With ``digests``, the SHA-256
+    of every uncompressed byte read is recorded under the file's name once the file has been read to its end
+    (the digest ``cpp/tools/mixture_harvest.py run`` records before it compresses), so the digest is of the
+    bytes the analysis consumed, recomputed, never read from a record."""
     gz = path.with_name(path.name + ".gz")
     if gz.is_file():
-        with gzip.open(gz, "rt", encoding="ascii") as handle:
-            yield from handle
+        source = gz
     elif path.is_file():
-        with path.open(encoding="ascii") as handle:
-            yield from handle
+        source = path
     else:
         raise BoundRateError(f"missing {path}")
+    h = hashlib.sha256()
+    with _open_raw(source) as handle:
+        for raw in handle:
+            h.update(raw)
+            yield raw.decode("ascii")
+    if digests is not None:
+        digests[path.name] = h.hexdigest()
+
+
+def _open_raw(path: Path) -> BinaryIO:
+    """``path`` opened for its uncompressed bytes: decompressed when its name ends in ``.gz``."""
+    if path.name.endswith(".gz"):
+        return cast(BinaryIO, gzip.open(path, "rb"))
+    return path.open("rb")
+
+
+def file_digest(path: Path) -> str:
+    """The SHA-256 of a raw file's uncompressed bytes (``path``, decompressed when it ends in ``.gz``)."""
+    h = hashlib.sha256()
+    with _open_raw(path) as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
 
 
 def _hex(token: str) -> float:
@@ -482,8 +507,8 @@ class _StopsCursor:
     """The stops file read in step with the bound record: both list events in increasing order, so the line of
     an event is found by advancing; a stops line no bound line asks for is passed over and still counted."""
 
-    def __init__(self, path: Path) -> None:
-        self._lines = _open_text(path)
+    def __init__(self, path: Path, digests: dict[str, str] | None = None) -> None:
+        self._lines = _open_text(path, digests)
         self._pending: list[str] | None = None
         self.count = 0
 
@@ -660,9 +685,10 @@ def summarize_chunk(raw: Path, route: str, ref: Pair, t0_ns: float, first: int, 
     clocks = {c: ClockTally() for c in CLOCK_CATEGORIES}
     seen = bytearray(count)  # the chunk's own events, one byte each
     seen_outside: set[int] = set()
-    stops = _StopsCursor(raw / "stops.txt")
+    digests: dict[str, str] = {}
+    stops = _StopsCursor(raw / "stops.txt", digests)
     helper_pair: tuple[float, float] | None = None
-    for line in _open_text(raw / "bound.txt"):
+    for line in _open_text(raw / "bound.txt", digests):
         f = line.split()
         if not f:
             continue
@@ -798,12 +824,22 @@ def summarize_chunk(raw: Path, route: str, ref: Pair, t0_ns: float, first: int, 
     s["rate_components"] = [float(x).hex() for x in s["rate_components"]]
     totals: dict[str, str] = {}
     try:
-        for line in _open_text(raw / "bound_summary.txt"):
+        summary_lines = list(_open_text(raw / "bound_summary.txt", digests))
+    except BoundRateError:
+        summary_lines = []
+    try:
+        for line in summary_lines:
             key, value = line.split()
             totals[key] = value
-    except (BoundRateError, ValueError):
+    except ValueError:
         totals = {}
     s["process"] = totals
+    # every other raw file, re-hashed: the run record and the committed digests are checked against these
+    for path in sorted(raw.iterdir()):
+        name = path.name[:-3] if path.name.endswith(".gz") else path.name
+        if path.is_file() and name not in digests:
+            digests[name] = file_digest(path)
+    s["raw_sha256"] = dict(sorted(digests.items()))
     wanted = {"events", "captures"} | {f"sum_{k}" for k in STREAMS}
     try:
         s["process_agrees"] = wanted <= set(totals) and (
@@ -1094,6 +1130,24 @@ def run_provenance_problems(policy: Mapping[str, Any], group: Mapping[str, Any],
     if (reg is None or int(chunk["count"]) != int(reg["count"])
             or int(float(chunk["t0_ns"])) != int(reg["t0_ns"])):
         return [f"{where}: not a chunk the policy registers"]
+    t0 = int(reg["t0_ns"])
+    want: dict[str, str | None] = {
+        "--route": str(group["route"]), "--symbol": str(group["isotope"]).split("-")[0],
+        "--Z": str(group["z"]), "--isotope": str(group["a"]), "--events": str(reg["count"]),
+        "--seed-base": str(group["seed_base"]),
+        "--opt-in": "off", "--hooks": "on", "--identity": "off",
+        "--bound-rates": "on" if switch_on else "off", "--bound-record": "on",
+        "--t0": str(t0) if t0 else None, "--event-offset": str(first) if first else None}
+    revision = group["revision"]
+    return _command_problems(where, run, want, Path(chunk["cell"]) / "raw", f"{revision}-bound-trace",
+                             f"the {revision} traced bound-rate build")
+
+
+def _command_problems(where: str, run: Mapping[str, Any], want: Mapping[str, str | None], out: Path,
+                      build: str, build_words: str) -> list[str]:
+    """A run record's command line against the options registered for it (``want``; ``None``: absent), its
+    own output directory ``out`` and a binary in a build directory whose path ends in ``build``; and its exit
+    code. Each disagreement is named."""
     argv = run.get("argv")
     if (not isinstance(argv, list) or len(argv) < 3 or len(argv) % 2 == 0
             or not all(isinstance(a, str) for a in argv)):
@@ -1103,31 +1157,101 @@ def run_provenance_problems(policy: Mapping[str, Any], group: Mapping[str, Any],
     problems = []
     if len(flags) != len(pairs):
         problems.append(f"{where}: an option given twice")
-    t0 = int(reg["t0_ns"])
-    want: dict[str, str | None] = {
-        "--route": str(group["route"]), "--symbol": str(group["isotope"]).split("-")[0],
-        "--Z": str(group["z"]), "--isotope": str(group["a"]), "--events": str(reg["count"]),
-        "--seed-base": str(group["seed_base"]),
-        "--opt-in": "off", "--hooks": "on", "--identity": "off",
-        "--bound-rates": "on" if switch_on else "off", "--bound-record": "on",
-        "--t0": str(t0) if t0 else None, "--event-offset": str(first) if first else None}
     for flag, value in want.items():
         if flags.get(flag) != value:
             problems.append(f"{where}: {flag} {flags.get(flag)!r}, registered {value!r}")
-    if "--out" not in flags or Path(flags["--out"]) != Path(chunk["cell"]) / "raw":
+    if "--out" not in flags or Path(flags["--out"]) != out:
         problems.append(f"{where}: output {flags.get('--out')!r} is not the chunk's own")
     extra = sorted(set(flags) - set(want) - {"--out"})
     if extra:
         problems.append(f"{where}: options the policy does not register: {' '.join(extra)}")
-    if Path(argv[0]).parent.name != f"{group['revision']}-bound-trace":
-        problems.append(f"{where}: binary {argv[0]!r} is not the {group['revision']} traced bound-rate build")
+    binary = PurePosixPath(argv[0].replace("\\", "/")).parent.as_posix()
+    if not (binary == build or binary.endswith("/" + build)):
+        problems.append(f"{where}: binary {argv[0]!r} is not {build_words}")
     if run.get("rc") != 0:
         problems.append(f"{where}: exit code {run.get('rc')!r}")
     return problems
 
 
+#: The raw files the analysis consumes; each must have been read to its end and re-hashed.
+CONSUMED_RAW = ("bound.txt", "bound_summary.txt", "stops.txt")
+#: The committed SHA-256 of every raw file of every production chunk and drill run, by summary cell and first
+#: event: the identity a re-summary is checked against, beside each run's own record.
+RAW_DIGESTS_RELPATH = "data/g4/d1/bound_rates_raw_digests.csv"
+RAW_DIGEST_COLUMNS = ("cell", "first", "file", "sha256")
+
+
+def raw_digest_problems(where: str, recomputed: Mapping[str, str], recorded: Any,
+                        registered: Mapping[str, str] | None) -> list[str]:
+    """The raw files of one chunk, re-hashed (``recomputed``: file name -> SHA-256 of the uncompressed bytes
+    read), against the run's own record (``run.json`` ``files``) and against the committed digests
+    (``registered``, from :data:`RAW_DIGESTS_RELPATH`). Every consumed file must have been read; every file
+    must be in the record and in the committed set with the same digest; neither may name a file the raw
+    directory lacks. A raw file swapped after the run differs from its record; a record edited to match the
+    swapped file still differs from the committed digest. Each disagreement is named."""
+    recorded = recorded if isinstance(recorded, Mapping) else {}
+    registered_: Mapping[str, str] = registered if registered is not None else {}
+    problems = [f"{where}: {f} was not read to its end" for f in CONSUMED_RAW if f not in recomputed]
+    for f in sorted(set(recomputed) | set(recorded) | set(registered_)):
+        got, rec, reg = recomputed.get(f), recorded.get(f), registered_.get(f)
+        if got is None:
+            problems.append(f"{where}: {f} is recorded but not in the raw directory")
+            continue
+        if rec is None:
+            problems.append(f"{where}: {f} is not in its run record")
+        elif got != rec:
+            problems.append(f"{where}: {f} differs from its run record")
+        if reg is None:
+            problems.append(f"{where}: {f} has no committed digest")
+        elif got != reg:
+            problems.append(f"{where}: {f} differs from its committed digest")
+    return problems
+
+
+def load_raw_digests(root: Path) -> dict[tuple[str, int], dict[str, str]]:
+    """``{(cell, first): {file: sha256}}`` from :data:`RAW_DIGESTS_RELPATH`; empty when it is absent. A row
+    given twice is refused."""
+    path = root / RAW_DIGESTS_RELPATH
+    out: dict[tuple[str, int], dict[str, str]] = {}
+    if not path.is_file():
+        return out
+    for row in read_csv(path, RAW_DIGEST_COLUMNS):
+        files = out.setdefault((row["cell"], int(row["first"])), {})
+        if row["file"] in files:
+            raise BoundRateError(f"{RAW_DIGESTS_RELPATH}: {row['cell']} {row['first']} {row['file']} twice")
+        files[row["file"]] = row["sha256"]
+    return out
+
+
+def raw_digest_rows(digests: Mapping[tuple[str, int], Mapping[str, str]]) -> list[dict[str, str]]:
+    return [{"cell": cell, "first": str(first), "file": f, "sha256": sha}
+            for (cell, first), files in sorted(digests.items()) for f, sha in sorted(files.items())]
+
+
+def drill_run_problems(job: Mapping[str, Any], chunk_dir: Path, run: Mapping[str, Any]) -> list[str]:
+    """One drill or rerun chunk's run record against its registered job: route, element, Z, A, event count,
+    seed base and event offset (absent at 0), the switch and record on, hooks on, dataset opt-in and identity
+    mode off, the job's extra options and no other, its own output directory, a binary of the job's build, and
+    exit code 0. A job directory holding another chunk's run differs in its seed base, offset or output."""
+    first = int(job.get("event_offset", 0))
+    where = f"run at {first}"
+    want: dict[str, str | None] = {
+        "--route": str(job["route"]), "--symbol": str(job["symbol"]), "--Z": str(job["z"]),
+        "--isotope": str(job["a"]), "--events": str(job["events"]), "--seed-base": str(job["seed_base"]),
+        "--opt-in": "off", "--hooks": "on", "--identity": "off",
+        "--bound-rates": "on" if job.get("switch_on", True) else "off", "--bound-record": "on",
+        "--event-offset": str(first) if first else None}
+    extra = list(job.get("extra", []))
+    if len(extra) % 2:
+        return [f"{where}: the job's extra options are not option-value pairs"]
+    want.update(dict(zip(extra[0::2], extra[1::2], strict=True)))
+    return _command_problems(where, run, want, chunk_dir / "raw", str(job["build"]),
+                             f"the build {job['build']}")
+
+
 def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path,
-                   stats_name: str = "bound_stats.json") -> None:
+                   stats_name: str = "bound_stats.json",
+                   registered_digests: Mapping[tuple[str, int], Mapping[str, str]] | None = None) -> None:
     """Summarize every chunk a plan names and write the summary and builds files into ``out_dir``. A plan is
     ``{"switch_on": bool, "chunks": [{"group": g, "first": i, "count": n, "t0_ns": t, "cell": dir}], "builds":
     {revision: build dir}}``; a chunk's ``cell`` holds the ``run.json`` and ``raw/`` of
@@ -1139,6 +1263,8 @@ def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path,
     by_group: dict[int, list[dict[str, Any]]] = {}
     meta: dict[int, dict[str, str]] = {}
     provenance: dict[int, list[str]] = {}
+    digest_problems: dict[int, list[str]] = {}
+    registered = load_raw_digests(root) if registered_digests is None else registered_digests
     for chunk in plan["chunks"]:
         g = int(chunk["group"])
         group = policy["groups"][g]
@@ -1154,11 +1280,15 @@ def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path,
         run = json.loads((cell / "run.json").read_text(encoding="utf-8"))
         provenance.setdefault(g, []).extend(run_provenance_problems(policy, group, chunk, run,
                                                                     bool(plan["switch_on"])))
+        recomputed = stats.get("raw_sha256", {})
+        digest_problems.setdefault(g, []).extend(raw_digest_problems(
+            f"chunk at {int(chunk['first'])}", recomputed, run.get("files"),
+            registered.get((group_name(group), int(chunk["first"])))))
         by_group.setdefault(g, []).append(stats)
         m = meta.setdefault(g, {"binary_sha256": run["build_binary_sha256"], "files": ""})
         if m["binary_sha256"] != run["build_binary_sha256"]:
             raise BoundRateError(f"group {g}: chunks from different binaries")
-        m["files"] += "".join(f"{name}={digest};" for name, digest in sorted(run["files"].items()))
+        m["files"] += "".join(f"{name}={digest};" for name, digest in sorted(recomputed.items()))
     rows: list[dict[str, str]] = []
     for g in sorted(by_group):
         group = policy["groups"][g]
@@ -1173,6 +1303,10 @@ def summarize_plan(root: Path, plan: Mapping[str, Any], out_dir: Path,
                      "value": str(len(provenance[g]))})
         rows.append({"cell": name, "stat": "meta", "key": "provenance_first",
                      "value": provenance[g][0] if provenance[g] else "-"})
+        rows.append({"cell": name, "stat": "meta", "key": "raw_digest_problems",
+                     "value": str(len(digest_problems[g]))})
+        rows.append({"cell": name, "stat": "meta", "key": "raw_digest_first",
+                     "value": digest_problems[g][0] if digest_problems[g] else "-"})
         rows += stats_rows(name, "group", merge(chunk_stats))
         for t0 in T0_NS:
             part = [s for s in chunk_stats if int(float(s["t0_ns"])) == t0]
@@ -1219,6 +1353,11 @@ def roster_problems(policy: Mapping[str, Any], harvest: Mapping[str, Mapping[str
             problems.append(f"{name}: missing")
             continue
         meta = cell.get("meta", {})
+        if meta.get("raw_digest_problems") is None:
+            problems.append(f"{name}: no re-hash of its raw files")
+        elif meta["raw_digest_problems"] != "0":
+            problems.append(f"{name}: {meta['raw_digest_problems']} raw-file digests disagree "
+                            f"({meta.get('raw_digest_first')})")
         if meta.get("provenance_problems") is None:
             problems.append(f"{name}: no provenance check of its run records")
         elif meta["provenance_problems"] != "0":

@@ -408,6 +408,10 @@ def render_section(root: Path) -> str:
     absent = sorted((ruled_cells | set(reruns)) - set(meta))
     if absent:
         raise SystemExit(f"a ruled drill run or its rerun is not in the drill summary: {', '.join(absent)}")
+    unchecked = sorted(c for c, m in meta.items()
+                       if m.get("provenance_problems") != "0" or m.get("raw_digest_problems") != "0")
+    if unchecked:
+        raise SystemExit(f"a drill run whose run record or raw files were not checked clean: {unchecked[0]}")
     rerun_sizes = sorted({int(meta[c]["events"]) for c in reruns})
     ruled_sizes = sorted({int(meta[c]["events"]) for c in ruled_cells})
     tally = drill_tally(root, drills, ruled)
@@ -465,10 +469,11 @@ def render_section(root: Path) -> str:
         f"the registered relative tolerance. The {n_primary} registered tests rejected "
         f"{len(tr['primary_rejections'])} and the {n_dist} tests of the delay distribution rejected "
         f"{len(tr['distribution_rejections'])} (`bound_rates_results.json`).",
-        "The summary was computed a second time from the same raw records with a stricter reader, which refuses "
-        "any unobserved or nonfinite field and grades every registered stratum and clock category on its own; with "
-        "no new draws, seeds or tolerances, every registered outcome is the one the first summary gave "
-        "(`history/bound_rates_results.analysis1.json`).",
+        "The summary was recomputed from the same raw records with a stricter reader, which refuses any unobserved "
+        "or nonfinite field, grades every registered stratum and clock category on its own, and re-hashes every "
+        "raw file it reads, checking it against its run's record and the committed digests "
+        "(`bound_rates_raw_digests.csv`); with no new draws, seeds or tolerances, every registered outcome is the "
+        "one the first summary gave (`history/bound_rates_results.analysis1.json`).",
         f"{n_red} runs with nonempty intended failure sets turned every intended family red; {n_unaffected} runs "
         f"on unaffected routes or isotopes and all {n_controls} matched controls stayed green. Among the red runs "
         "(`bound_rates_drills.csv`) are a stopping route disconnected from the provider, which only the recorded "

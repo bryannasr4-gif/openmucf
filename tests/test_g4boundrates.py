@@ -960,6 +960,7 @@ def _synthetic_harvest(tmp_path: Path, policy: dict, *, skip_group: int | None =
     root = tmp_path / "root"
     (root / "data/g4/d1").mkdir(parents=True)
     (root / bound.THEORY_RELPATH).write_bytes((ROOT / bound.THEORY_RELPATH).read_bytes())
+    digests: dict[tuple[str, int], dict[str, str]] = {}
     small = json.loads(json.dumps(policy))
     n = 3 * SYNTHETIC_STRATUM
     if not registered_counts:
@@ -986,13 +987,25 @@ def _synthetic_harvest(tmp_path: Path, policy: dict, *, skip_group: int | None =
             write_stream(cell, g["route"], pair, SYNTHETIC_STRATUM, float(st["t0_ns"]),
                          seed=100 * g["group"] + k, first=st["first"])
             run = _run_record(g, st["first"], SYNTHETIC_STRATUM, st["t0_ns"], cell)
+            run["files"] = _raw_files(cell)
+            digests[(bound.group_name(g), int(st["first"]))] = dict(run["files"])
             if edit_run is not None and not chunks:
                 run = edit_run(run)
             (cell / "run.json").write_text(json.dumps(run), encoding="utf-8")
             chunks.append({"group": g["group"], "first": st["first"], "count": SYNTHETIC_STRATUM,
                            "t0_ns": st["t0_ns"], "cell": str(cell)})
-    bound.summarize_plan(root, {"switch_on": True, "chunks": chunks}, root / "data/g4/d1")
+    (root / bound.RAW_DIGESTS_RELPATH).write_bytes(
+        bound.render_csv(bound.raw_digest_rows(digests), bound.RAW_DIGEST_COLUMNS))
+    plan = {"switch_on": True, "chunks": chunks}
+    (tmp_path / "plan.json").write_text(json.dumps(plan), encoding="utf-8")
+    bound.summarize_plan(root, plan, root / "data/g4/d1")
     return root
+
+
+def _raw_files(cell: Path) -> dict[str, str]:
+    """The digests the harness records for a chunk: the SHA-256 of each raw file's uncompressed bytes."""
+    return {(x.name[:-3] if x.name.endswith(".gz") else x.name): bound.file_digest(x)
+            for x in sorted((cell / "raw").iterdir())}
 
 
 def test_a_correct_synthetic_harvest_gives_four_separate_statuses_and_only_the_predicted_clock_failures(
@@ -1303,6 +1316,151 @@ def test_drill_a_disagreeing_run_record_makes_the_harvest_incomplete(tmp_path: P
     harvest[name]["meta"].pop("provenance_problems")
     assert f"{name}: no provenance check of its run records" in bound.roster_problems(
         bound.load_policy(root), harvest)
+
+
+def _resummarize_group0(synthetic_root: Path, tmp_path: Path, alter) -> tuple[dict, list[str]]:  # type: ignore[no-untyped-def]
+    """Group 0 of the synthetic harvest re-summarized from copies of its three chunks after ``alter(cells)``
+    (the copied chunk directories) has changed them; the committed digests are the synthetic harvest's.
+    Returns the group's meta rows and its named roster problems."""
+    plan = json.loads((synthetic_root.parent / "plan.json").read_text(encoding="utf-8"))
+    root = tmp_path / "root"
+    shutil.copytree(synthetic_root, root)
+    chunks = []
+    for c in (c for c in plan["chunks"] if c["group"] == 0):
+        cell = tmp_path / "cells" / Path(c["cell"]).name
+        shutil.copytree(c["cell"], cell)
+        run = json.loads((cell / "run.json").read_text(encoding="utf-8"))
+        argv = list(run["argv"])
+        argv[argv.index("--out") + 1] = str(cell / "raw")
+        (cell / "run.json").write_text(json.dumps({**run, "argv": argv}), encoding="utf-8")
+        chunks.append({**c, "cell": str(cell)})
+    alter([Path(c["cell"]) for c in chunks])
+    out = tmp_path / "out"
+    bound.summarize_plan(root, {"switch_on": True, "chunks": chunks}, out)
+    (root / bound.HARVEST_RELPATH).write_bytes((out / Path(bound.HARVEST_RELPATH).name).read_bytes())
+    harvest = bound.load_harvest(root)
+    name = bound.group_name(bound.load_policy(root)["groups"][0])
+    problems = [x for x in bound.roster_problems(bound.load_policy(root), harvest)
+                if x.startswith(name + ":")]
+    return harvest[name]["meta"], problems
+
+
+def _append_blank_line(cell: Path) -> None:
+    """A raw bound record changed in a way the statistics cannot see: a blank line appended."""
+    path = cell / "raw" / "bound.txt"
+    path.write_bytes(path.read_bytes() + b"\n")
+
+
+def _record(cell: Path, edit) -> None:  # type: ignore[no-untyped-def]
+    run = json.loads((cell / "run.json").read_text(encoding="utf-8"))
+    (cell / "run.json").write_text(json.dumps(edit(run)), encoding="utf-8")
+
+
+def test_the_untouched_chunks_rehash_clean(synthetic_root: Path, tmp_path: Path) -> None:
+    meta, problems = _resummarize_group0(synthetic_root, tmp_path, lambda cells: None)
+    assert (meta["raw_digest_problems"], meta["provenance_problems"], problems) == ("0", "0", [])
+
+
+def test_drill_a_raw_file_swapped_under_an_untouched_run_record_is_named(synthetic_root: Path,
+                                                                         tmp_path: Path) -> None:
+    """A blank line appended to one chunk's bound record after the run: the statistics are those of the
+    original, the re-hashed file differs from the run's record and from the committed digest."""
+    meta, problems = _resummarize_group0(synthetic_root, tmp_path, lambda cells: _append_blank_line(cells[1]))
+    first = json.loads((synthetic_root.parent / "plan.json").read_text())["chunks"][1]["first"]
+    assert meta["raw_digest_problems"] == "2"
+    assert meta["raw_digest_first"] == f"chunk at {first}: bound.txt differs from its run record"
+    name = bound.group_name(bound.load_policy(synthetic_root)["groups"][0])
+    assert problems == [f"{name}: 2 raw-file digests disagree (chunk at {first}: bound.txt differs from "
+                        "its run record)"]
+
+
+def test_drill_a_run_record_edited_to_match_a_swapped_file_still_fails(synthetic_root: Path,
+                                                                       tmp_path: Path) -> None:
+    """The swapped file of the drill above with its run record's digest edited to the swapped bytes: the
+    record agrees, and the committed digest -- the identity registered for the chunk -- does not."""
+    def alter(cells: list[Path]) -> None:
+        _append_blank_line(cells[1])
+        digest = bound.file_digest(cells[1] / "raw" / "bound.txt")
+        _record(cells[1], lambda run: {**run, "files": {**run["files"], "bound.txt": digest}})
+
+    meta, problems = _resummarize_group0(synthetic_root, tmp_path, alter)
+    assert meta["raw_digest_problems"] == "1"
+    assert meta["raw_digest_first"].endswith(": bound.txt differs from its committed digest")
+    assert len(problems) == 1 and "1 raw-file digests disagree" in problems[0]
+
+
+def test_drill_a_run_record_whose_digest_was_edited_alone_is_named(synthetic_root: Path,
+                                                                   tmp_path: Path) -> None:
+    meta, _ = _resummarize_group0(synthetic_root, tmp_path, lambda cells: _record(
+        cells[0], lambda run: {**run, "files": {**run["files"], "stops.txt": "0" * 64}}))
+    assert (meta["raw_digest_problems"], meta["raw_digest_first"]) == (
+        "1", "chunk at 0: stops.txt differs from its run record")
+
+
+def test_drill_a_planted_or_missing_raw_file_is_named(synthetic_root: Path, tmp_path: Path) -> None:
+    planted, _ = _resummarize_group0(synthetic_root, tmp_path / "a", lambda cells: (
+        cells[2] / "raw" / "records.txt").write_text("x\n", encoding="ascii"))
+    first = json.loads((synthetic_root.parent / "plan.json").read_text())["chunks"][2]["first"]
+    assert planted["raw_digest_problems"] == "2"
+    assert planted["raw_digest_first"] == f"chunk at {first}: records.txt is not in its run record"
+    gone, _ = _resummarize_group0(synthetic_root, tmp_path / "b", lambda cells: (
+        cells[0] / "raw" / "bound_summary.txt").unlink())
+    assert gone["raw_digest_first"] == "chunk at 0: bound_summary.txt was not read to its end"
+    # the run record and the committed digests still name it: it is recorded but not in the raw directory
+    assert gone["raw_digest_problems"] == "2"
+
+
+def test_drill_no_committed_digests_is_named(synthetic_root: Path, tmp_path: Path) -> None:
+    def alter(cells: list[Path]) -> None:
+        (tmp_path / "root" / bound.RAW_DIGESTS_RELPATH).unlink()
+
+    meta, problems = _resummarize_group0(synthetic_root, tmp_path, alter)
+    assert meta["raw_digest_first"] == "chunk at 0: bound.txt has no committed digest"
+    assert problems and "raw-file digests disagree" in problems[0]
+    harvest = bound.load_harvest(synthetic_root)
+    name = bound.group_name(bound.load_policy(synthetic_root)["groups"][0])
+    harvest[name]["meta"].pop("raw_digest_problems")
+    assert f"{name}: no re-hash of its raw files" in bound.roster_problems(bound.load_policy(synthetic_root),
+                                                                           harvest)
+
+
+def _drill_job(tmp_path: Path, c12: bound.Pair, name: str, seed: int) -> tuple[dict, Path, dict]:
+    """A synthetic drill run of a registered job: its directory, the job and the run record the harness
+    writes for it."""
+    chunk = tmp_path / name
+    write_stream(chunk, bound.ATOMIC, c12, 400, 0.0, seed=seed)
+    job = {"build": "drilltree/v11.4.2/builds/total_only-trace", "route": bound.ATOMIC, "symbol": "C", "z": 6,
+           "a": 12, "events": 400, "seed_base": seed, "event_offset": 0, "extra": []}
+    argv = [f"/apps/{job['build']}/harvest_mixture", "--route", "atomic", "--symbol", "C", "--Z", "6",
+            "--events", "400", "--seed-base", str(seed), "--opt-in", "off", "--hooks", "on",
+            "--identity", "off",
+            "--out", str(chunk / "raw"), "--isotope", "12", "--bound-rates", "on", "--bound-record", "on"]
+    run = {"argv": argv, "rc": 0, "build_binary_sha256": "synthetic", "files": _raw_files(chunk)}
+    return job, chunk, run
+
+
+def test_drill_a_drill_row_from_a_different_chunk_is_named(tmp_path: Path, c12: bound.Pair) -> None:
+    """Two registered drill runs A and B. A's job read against its own run is clean. A's directory holding B's
+    run record names B's seed base and output; A's directory holding B's raw files under A's untouched record
+    differs from A's record and from A's committed digests."""
+    job_a, dir_a, run_a = _drill_job(tmp_path, c12, "a", 1900000000)
+    _, dir_b, run_b = _drill_job(tmp_path, c12, "b", 1901000000)
+    registered_a = dict(run_a["files"])
+    stats_a = bound.summarize_chunk(dir_a / "raw", bound.ATOMIC, c12, 0.0, 0, 400)
+    assert bound.drill_run_problems(job_a, dir_a, run_a) == []
+    assert bound.raw_digest_problems("run at 0", stats_a["raw_sha256"], run_a["files"], registered_a) == []
+    wrong_run = bound.drill_run_problems(job_a, dir_a, run_b)
+    assert "run at 0: --seed-base '1901000000', registered '1900000000'" in wrong_run
+    assert any("is not the chunk's own" in x for x in wrong_run)
+    shutil.rmtree(dir_a / "raw")
+    shutil.copytree(dir_b / "raw", dir_a / "raw")
+    stats_swapped = bound.summarize_chunk(dir_a / "raw", bound.ATOMIC, c12, 0.0, 0, 400)
+    digests = bound.raw_digest_problems("run at 0", stats_swapped["raw_sha256"], run_a["files"], registered_a)
+    for f in bound.CONSUMED_RAW:
+        assert f"run at 0: {f} differs from its run record" in digests, f
+        assert f"run at 0: {f} differs from its committed digest" in digests, f
+    extra = bound.drill_run_problems({**job_a, "extra": ["--synthetic-capture-scale", "4"]}, dir_a, run_a)
+    assert extra == ["run at 0: --synthetic-capture-scale None, registered '4'"]
 
 
 def test_drill_an_empty_branch_fails_its_conditional_test(policy: dict) -> None:
@@ -1669,6 +1827,58 @@ def test_every_drill_turns_its_intended_family_red_and_every_control_stays_green
         assert any(c.startswith(f"drill:control:control:{rev}:") for c in grouped), rev
 
 
+#: The chunk_files_sha256 of every group as the first summary recorded it, from the run records.
+CHUNK_FILES_HISTORY = "data/g4/d1/history/bound_rates_chunk_files.analysis1.csv"
+
+
+def test_the_committed_digests_reproduce_the_first_summary_s_record_of_every_chunk(policy: dict,
+                                                                                  harvest: dict) -> None:
+    """Every production chunk and drill run has committed digests of its raw files, re-hashed by the analysis.
+    For each group, the digest over its chunks' files recomputed from the committed digests equals the
+    chunk_files_sha256 the first summary computed from the run records when the harvest ended
+    (``history/bound_rates_chunk_files.analysis1.csv``), and the summary's own; every group's re-hash and
+    run-record checks found nothing."""
+    digests = bound.load_raw_digests(ROOT)
+    first = {r["cell"]: r["chunk_files_sha256"]
+             for r in bound.read_csv(ROOT / CHUNK_FILES_HISTORY, ("cell", "chunk_files_sha256"))}
+    assert set(first) == {bound.group_name(g) for g in policy["groups"]}
+    for g in policy["groups"]:
+        name = bound.group_name(g)
+        text = "".join(f"{f}={sha};" for c in bound.chunks(g)
+                       for f, sha in sorted(digests[(name, c["first"])].items()))
+        recomputed = hashlib.sha256(text.encode("ascii")).hexdigest()
+        assert recomputed == first[name] == harvest[name]["meta"]["chunk_files_sha256"], name
+        assert set(digests[(name, bound.chunks(g)[0]["first"])]) >= set(bound.CONSUMED_RAW), name
+        meta = harvest[name]["meta"]
+        assert (meta["raw_digest_problems"], meta["provenance_problems"]) == ("0", "0"), name
+    production = {(bound.group_name(g), c["first"]) for g in policy["groups"] for c in bound.chunks(g)}
+    drills = {k for k in digests if k not in production}
+    metas: dict[str, dict[str, str]] = {}
+    for r in bound.read_csv(ROOT / bound.DRILLS_RELPATH, bound.HARVEST_COLUMNS):
+        if r["stat"] == "meta":
+            metas.setdefault(r["cell"], {})[r["key"]] = r["value"]
+    assert {c for c, _ in drills} == set(metas)
+    for cell, m in metas.items():
+        assert (m["provenance_problems"], m["raw_digest_problems"]) == ("0", "0"), cell
+        assert len([k for k in drills if k[0] == cell]) == int(m["chunks"]), cell
+
+
+def test_every_drill_run_has_its_own_registered_seed_range(policy: dict) -> None:
+    """The seed range [seed base, seed base + events) of every drill cell, production group and rerun is
+    disjoint from every other; a single-chunk drill's seed base lies on the policy's drill grid."""
+    metas: dict[str, dict[str, str]] = {}
+    for r in bound.read_csv(ROOT / bound.DRILLS_RELPATH, bound.HARVEST_COLUMNS):
+        if r["stat"] == "meta":
+            metas.setdefault(r["cell"], {})[r["key"]] = r["value"]
+    groups = [(int(g["seed_base"]), int(g["events"]), bound.group_name(g)) for g in policy["groups"]]
+    ranges = sorted([(int(m["seed_base"]), int(m["events"]), c) for c, m in metas.items()] + groups)
+    assert all(a[0] + a[1] <= b[0] for a, b in zip(ranges, ranges[1:], strict=False)), ranges
+    grid = policy["drills"]
+    for c, m in metas.items():
+        if m["chunks"] == "1":
+            assert (int(m["seed_base"]) - grid["seed_first"]) % (grid["seed_stride"] * 100) == 0, c
+
+
 def test_the_drill_sentence_counts_are_recounted_independently() -> None:
     """The three counts of section 14's drill sentence, recounted from the committed drill summary and
     rulings by kind and intended set alone (each run's red or green outcome is the drill test's): the runs
@@ -1871,6 +2081,11 @@ def _ruled_run_absent(root: Path, policy: dict) -> None:
     path.write_bytes(bound.render_csv(rows, bound.HARVEST_COLUMNS))
 
 
+def _drill_run_unchecked(root: Path, policy: dict) -> None:
+    path = root / bound.DRILLS_RELPATH
+    _edit_csv(path, _first_control(path), "meta", "raw_digest_problems", "1")
+
+
 def _clock_not_as_predicted(root: Path, policy: dict) -> None:
     for path in (root / bound.RESULTS_RELPATH, root / HISTORY_RELPATH):
         _edit_json(path, lambda d: d["CLOCK_RESULTS"].__setitem__("not_as_predicted", ["x:y@0"]))
@@ -1889,6 +2104,8 @@ RENDER_DEFECTS = [
     ("a first-summary outcome that differs", _first_outcome_differs,
      "a registered outcome differs from the first summary's"),
     ("a control that turned red", _control_red, "the section does not state it"),
+    ("a drill run whose raw files were not checked clean", _drill_run_unchecked,
+     "a drill run whose run record or raw files were not checked clean"),
     ("a ruled run missing from the drill summary", _ruled_run_absent,
      "a ruled drill run or its rerun is not in the drill summary"),
     ("a clock outcome not as predicted, in both summaries", _clock_not_as_predicted,
