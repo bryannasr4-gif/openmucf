@@ -853,11 +853,11 @@ def _screen_rows(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(mixture, "references", lambda root: [r for r in every if r.locator in SCREEN_ROWS])
 
 
-def _jittered_fit_rate(jitter_float: float, scale_decimal: str):  # type: ignore[no-untyped-def]
-    """``fit_rate`` with each binary64 fit scaled by 1 + u x jitter, u in [-1, 1] a fixed function of the
-    fit's specification and component rates (platforms' exp and log differ fit by fit, not uniformly), and
-    each decimal fit scaled by ``scale_decimal``."""
-    original = mixture.fit_rate
+def _jittered_fit_rate(original, jitter_float: float, scale_decimal: str):  # type: ignore[no-untyped-def]
+    """``original`` (the unwrapped ``fit_rate``) with each binary64 fit scaled by 1 + u x jitter, u in [-1, 1]
+    a fixed function of the fit's specification and component rates (platforms' exp and log differ fit by fit,
+    not uniformly), and each decimal fit scaled by ``scale_decimal``. Every perturbation wraps the original,
+    so two of them never compose."""
 
     def fit_rate(components, spec_, conv=float, start=1.0):  # type: ignore[no-untyped-def]
         value = original(components, spec_, conv, start)
@@ -878,10 +878,11 @@ def test_compare_does_not_depend_on_the_binary64_fits_last_digits(monkeypatch: p
     _screen_rows(monkeypatch)
     plain = mixture.comparison_rows(ROOT)
     assert len(plain) == 3 * len(SCREEN_ROWS) * len(mixture.ROUTES)
+    original = mixture.fit_rate
     for jitter in (3e-15, -3e-15):
-        monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(jitter, "1"))
+        monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(original, jitter, "1"))
         assert mixture.comparison_rows(ROOT) == plain, jitter
-    monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(0.0, "1.000000000000003"))
+    monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(original, 0.0, "1.000000000000003"))
     assert mixture.comparison_rows(ROOT) != plain
 
 
