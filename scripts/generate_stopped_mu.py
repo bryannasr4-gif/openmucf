@@ -9,7 +9,9 @@ row per row of the pre-registration and judges it in exact arithmetic, and write
 the measured ratios of `cascade_reference.csv` under `cascade_rule.json` and tests the harvested cascades of
 `cascade_harvest.csv` and `cascade_transitions.csv`, writing `cascade_comparison.csv` and `cascade_consumer.csv`; it
 then renders the document from those files, `builds.csv`, `reproduced.csv`,
-`data/g4/d1/geant4_natural_isotopes.csv` and the vendored `G4EmCaptureCascade.cc` of `third_party/geant4/`. No float decides a byte: every number the
+`data/g4/d1/geant4_natural_isotopes.csv` and the vendored `G4EmCaptureCascade.cc` of `third_party/geant4/`, and its
+section on the other stages of a stopped muon from the committed files of the datasets that `STAGE_FILES` names, each
+read and refused by `stage_inputs` before any file is written. No float decides a byte: every number the
 document takes from those files fills a slot of `render`, whose spans the prose census pins; the generator itself
 defines the display precision of the row table and the citations of the prior work.
 """
@@ -29,6 +31,12 @@ from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_EVEN, Decimal, localc
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
+
+from openmucf.g4 import d1_lifetime as lifetime
+from openmucf.g4 import d1_mixture as mixture
+from openmucf.g4 import d2
+from openmucf.g4 import d3_contract as d3c
+from openmucf.g4 import spec as g4spec
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "g4" / "stopped_mu"
@@ -56,6 +64,8 @@ def comparison(prereg: Path = DATA / "preregistration.json", cells: Path = DATA 
 
 
 def compare(prereg: Path = DATA / "preregistration.json") -> None:
+    # the files of the datasets are read and refused before any file is written
+    stages = stage_inputs(ROOT)
     _, _, rows, verdicts = comparison(prereg)
     write_csv(DATA / "comparison.csv", sm.COMPARISON_COLUMNS, rows)
     write_csv(
@@ -63,7 +73,7 @@ def compare(prereg: Path = DATA / "preregistration.json") -> None:
         sm.VERDICT_COLUMNS,
         [{"row_id": v.row_id, "verdict": v.verdict, "kind": v.kind, "pull": v.pull} for v in verdicts],
     )
-    inp = load_inputs(prereg)
+    inp = load_inputs(prereg, stages)
     tables = canonical_tables(inp)
     write_csv(DATA / "cascade_comparison.csv", cc.COMPARISON_COLUMNS, tables.comparison)
     write_csv(DATA / "cascade_consumer.csv", cc.CONSUMER_COLUMNS, tables.consumer)
@@ -149,6 +159,7 @@ FORBIDDEN = (
     "absent",
     "every physics list",
     "all physics lists",
+    "both routes fail",
 )
 
 
@@ -238,6 +249,7 @@ class Inputs:
     reproduced: list[dict[str, str]]
     natural: list[dict[str, str]]
     cascade: Cascade
+    stages: Stages
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -292,7 +304,7 @@ def written_table_problems(
     return out + (problems if problems else row_problems(rows))
 
 
-def load_inputs(prereg: Path = DATA / "preregistration.json") -> Inputs:
+def load_inputs(prereg: Path = DATA / "preregistration.json", stages: Stages | None = None) -> Inputs:
     policy, cells, rows, verdicts = comparison(prereg)
     return Inputs(
         policy,
@@ -303,6 +315,7 @@ def load_inputs(prereg: Path = DATA / "preregistration.json") -> Inputs:
         read_csv(DATA / "reproduced.csv"),
         read_csv(NATURAL),
         load_cascade(policy),
+        stage_inputs(ROOT) if stages is None else stages,
     )
 
 
@@ -1223,6 +1236,609 @@ def render_cascade(w: Writer, inp: Inputs, tables: Tables) -> None:
     w.blank()
 
 
+# ------------------------------------------------------------------------ the other stages of a stopped muon
+#: The committed files of the datasets that the section on the other stages of a stopped muon restates, relative
+#: to the repository root. The section reads these and no other file: it states no result of the transported
+#: natural-target comparison, and the integrity of each file is the job of its own dataset's checks.
+STAGE_FILES = {
+    "mean_life_comparison": "data/g4/d1/mean_life_comparison.csv",
+    "record_classes": "data/g4/d1/record_classes.csv",
+    "selector_summary": "data/g4/d2/selector_summary.csv",
+    "shell_projection": "data/g4/d3/shell_projection.csv",
+    "incompatible_groups": "data/g4/d3/incompatible_groups.csv",
+    "numerical_check_status": "data/g4/d3/numerical_check_status.json",
+}
+#: The columns the section's wording was written for. A table whose owning module names other columns is refused
+#: until someone re-reads the wording against the new table.
+STAGE_COLUMNS = {
+    "mean_life_comparison": (
+        "source",
+        "locator",
+        "label",
+        "z",
+        "basis",
+        "measured_state",
+        "key_a",
+        "profile",
+        "lookup",
+        "population",
+        "mean_life_ns",
+        "mean_life_unc_ns",
+        "measured_rate",
+        "measured_rate_unc",
+        "printed_capture_rate",
+        "capture_rate",
+        "capture_rate_unc",
+        "decay_rate_bound",
+        "decay_rate_helper",
+        "rate_bound",
+        "rate_helper",
+        "within_bound",
+        "within_helper",
+    ),
+    "record_classes": (
+        "profile",
+        "z",
+        "a",
+        "isotope_resolved",
+        "needs_verification",
+        "target_kind",
+        "target_evidence",
+        "value_lineage",
+        "lineage_evidence",
+        "answer_class",
+    ),
+    "selector_summary": (
+        "scope",
+        "rows",
+        "to_oxygen",
+        "hydrogenous",
+        "selector_above",
+        "ratio_min",
+        "ratio_median",
+        "ratio_max",
+        "z_ratio_closer",
+        "z_ratio_above",
+        "selector_above_z_ratio",
+    ),
+    "shell_projection": (
+        "source",
+        "Z",
+        "A",
+        "transition",
+        "quantity",
+        "consumer_quantity",
+        "initial_n",
+        "final_n",
+        "measured_keV",
+        "unc_keV",
+        "tol_keV",
+        "solver_keV",
+        "consumer_keV",
+        "stock_keV",
+        "solver_residual_keV",
+        "consumer_residual_keV",
+        "stock_residual_keV",
+        "solver_within",
+        "consumer_within",
+        "stock_within",
+        "consumer_closer_than_stock",
+        "representation_error_keV",
+        "solver_numeric_target_keV",
+        "solver_numeric_shifts_keV",
+        "solver_numeric_qualification",
+        "consumer_numeric_target_keV",
+        "consumer_numeric_shifts_keV",
+        "consumer_numeric_qualification",
+        "locator",
+        "copy_read",
+    ),
+    "incompatible_groups": (
+        "source",
+        "Z",
+        "A",
+        "initial_n",
+        "final_n",
+        "lines",
+        "quantities",
+        "lower_keV",
+        "upper_keV",
+        "gap_keV",
+        "empty",
+        "basis",
+    ),
+}
+#: The column tuple of each table's owning module, read when the table is read.
+STAGE_OWNERS: dict[str, Callable[[], tuple[str, ...]]] = {
+    "mean_life_comparison": lambda: lifetime.COLUMNS,
+    "record_classes": lambda: mixture.CLASS_COLUMNS,
+    "selector_summary": lambda: d2.SUMMARY_COLUMNS,
+    "shell_projection": lambda: d3c.PROJECTION_COLUMNS,
+    "incompatible_groups": lambda: d3c.GROUPS_COLUMNS,
+}
+#: The columns that identify a row of each table; no two rows may share them.
+STAGE_KEYS = {
+    "mean_life_comparison": ("profile", "source", "locator"),
+    "record_classes": ("profile", "z", "a"),
+    "selector_summary": ("scope",),
+    "shell_projection": ("source", "Z", "A", "transition", "quantity", "locator"),
+    "incompatible_groups": ("source", "Z", "A", "initial_n", "final_n"),
+}
+#: The integer, ratio and flag cells the section reads.
+STAGE_INTEGERS = {
+    "record_classes": ("z", "a"),
+    "selector_summary": (
+        "rows",
+        "to_oxygen",
+        "hydrogenous",
+        "selector_above",
+        "z_ratio_closer",
+        "z_ratio_above",
+        "selector_above_z_ratio",
+    ),
+    "shell_projection": ("Z", "A"),
+    "incompatible_groups": ("Z", "A", "initial_n", "final_n"),
+}
+STAGE_RATIOS = {"selector_summary": ("ratio_min", "ratio_median", "ratio_max")}
+STAGE_FLAGS = {
+    "record_classes": ("isotope_resolved", "needs_verification"),
+    "shell_projection": ("solver_within", "consumer_within", "stock_within", "consumer_closer_than_stock"),
+    "incompatible_groups": ("empty",),
+}
+#: The counts of the method-gated row of the selector summary, each a number of the rows it describes.
+SELECTOR_COUNTS = ("to_oxygen", "hydrogenous", "selector_above")
+#: The sources of the measured lines, as `DATASET_D3.md` cites them.
+D3_SOURCES = {"Fricke1995": "Fricke et al. (1995)", "Saito2025": "Saito et al. (2025)"}
+FLAG_VALUES = ("true", "false")
+INTEGER = re.compile(r"0|[1-9][0-9]*")
+RATIO = re.compile(r"[0-9]+[.][0-9]+")
+
+
+class StageError(ValueError):
+    """A committed file of a dataset that the section on the other stages of a stopped muon does not admit."""
+
+
+@dataclass(frozen=True)
+class Stages:
+    """Exactly the values the section on the other stages of a stopped muon states, read from STAGE_FILES."""
+
+    #: the method-gated row of the selector summary
+    selector_rows: int
+    selector_to_oxygen: int
+    selector_hydrogenous: int
+    selector_above: int
+    ratio_min: str
+    ratio_median: str
+    ratio_max: str
+    #: the D3 profile, the sources of the measured lines, and the counts of the projection and the groups
+    d3_profile: str
+    d3_sources: tuple[str, ...]
+    gated: int
+    stock_within: int
+    consumer_within: int
+    solver_within: int
+    consumer_closer: int
+    groups: int
+    groups_empty: int
+    #: the record of the numerical check
+    status: str
+    failed_rows: int
+    check_rows: int
+    check_cases: int
+    #: the records of the compiled-in capture table (the `parity` profile)
+    records: int
+    settled: int
+    unsettled: int
+    resolved: int
+    unresolved: int
+    classes: tuple[tuple[str, int], ...]
+    mixed: tuple[tuple[int, int], ...]
+    #: lifetime.summary of the mean-life comparison
+    summary: tuple[tuple[str, int, int, int], ...]
+
+
+def stage_table(root: Path, name: str) -> list[dict[str, str]]:
+    """The rows of the table ``name`` of STAGE_FILES, read raw: its owning module's columns must be the ones the
+    section was written for; the bytes strict UTF-8 with no CR; the header exactly those columns and every record
+    exactly that wide (raw_rows); at least a row; no two rows with the same key; and every integer, ratio and flag
+    cell the section reads in its vocabulary."""
+    relpath, columns = STAGE_FILES[name], STAGE_COLUMNS[name]
+    if tuple(STAGE_OWNERS[name]()) != columns:
+        raise StageError(f"{relpath}: its module's columns are not the columns this section was written for")
+    data = (root / relpath).read_bytes()
+    if b"\r" in data:
+        raise StageError(f"{relpath}: the file contains a CR byte")
+    rows, problems = raw_rows(relpath, data, columns)
+    if problems:
+        raise StageError("; ".join(problems))
+    if not rows:
+        raise StageError(f"{relpath}: the file has a header and no rows")
+    seen: set[tuple[str, ...]] = set()
+    for row in rows:
+        key = tuple(row[column] for column in STAGE_KEYS[name])
+        if key in seen:
+            raise StageError(f"{relpath}: the key {dict(zip(STAGE_KEYS[name], key, strict=True))} repeats")
+        seen.add(key)
+        for column in STAGE_INTEGERS.get(name, ()):
+            if not INTEGER.fullmatch(row[column]):
+                raise StageError(f"{relpath}: {column} {row[column]!r} is not a non-negative integer")
+        for column in STAGE_RATIOS.get(name, ()):
+            if not RATIO.fullmatch(row[column]):
+                raise StageError(f"{relpath}: {column} {row[column]!r} is not a non-negative decimal ratio")
+        for column in STAGE_FLAGS.get(name, ()):
+            if row[column] not in FLAG_VALUES:
+                raise StageError(f"{relpath}: {column} {row[column]!r} is not true or false")
+    return rows
+
+
+def _json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in out:
+            raise StageError(f"{STAGE_FILES['numerical_check_status']}: the key {key!r} repeats")
+        out[key] = value
+    return out
+
+
+def _json_constant(name: str) -> Any:
+    raise StageError(f"{STAGE_FILES['numerical_check_status']}: {name} is not a number")
+
+
+def stage_status(root: Path) -> tuple[str, int, int, int]:
+    """(status, failed rows, rows, cases) of the numerical check's status record: no repeated key and no NaN or
+    Infinity; the status in d3c.NUMERICAL_CHECK_STATUSES and with a sentence of STATUS_TEXT; every count an int
+    (not a bool); a row and a case at least, no more cases than rows, no more failed rows than rows, as many
+    failed rows as recorded failures, and a failure at least for a status that reports failed rows."""
+    relpath = STAGE_FILES["numerical_check_status"]
+    try:
+        record = json.loads(
+            (root / relpath).read_bytes().decode("utf-8"),
+            object_pairs_hook=_json_object,
+            parse_constant=_json_constant,
+        )
+        status = record["status"]
+        fresh = record["fresh_solve"]
+        failed, failures = fresh["failed_rows"], fresh["failures"]
+        rows, cases = fresh["population"]["rows"], fresh["population"]["cases"]
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise StageError(f"{relpath}: not a JSON record ({error})") from None
+    except (KeyError, TypeError) as error:
+        raise StageError(f"{relpath}: a field the section reads is missing ({error!r})") from None
+    if status not in d3c.NUMERICAL_CHECK_STATUSES:
+        raise StageError(f"{relpath}: the status {status!r} is not a status of the D3 contract")
+    if set(STATUS_TEXT) != set(d3c.NUMERICAL_CHECK_STATUSES):
+        raise StageError(
+            f"{relpath}: the statuses of the D3 contract and the sentences of STATUS_TEXT differ"
+        )
+    counts = {"failed_rows": failed, "population.rows": rows, "population.cases": cases}
+    for field, value in counts.items():
+        if type(value) is not int:
+            raise StageError(f"{relpath}: {field} {value!r} is not an integer")
+    if not isinstance(failures, list):
+        raise StageError(f"{relpath}: failures is not a list")
+    if rows < 1 or not 1 <= cases <= rows:
+        raise StageError(
+            f"{relpath}: the population of {rows} rows and {cases} cases is empty or inconsistent"
+        )
+    if not 0 <= failed <= rows or failed != len(failures):
+        raise StageError(
+            f"{relpath}: failed_rows {failed} is not the {len(failures)} failures within {rows} rows"
+        )
+    if status in FAILING_STATUSES and not failed:
+        raise StageError(f"{relpath}: the status {status} records no failed row")
+    return status, failed, rows, cases
+
+
+def stage_inputs(root: Path) -> Stages:
+    """The values of the section on the other stages of a stopped muon, from the files of STAGE_FILES under
+    ``root`` and no other file; StageError on any input the section does not admit."""
+    # the capturing atom
+    relpath = STAGE_FILES["selector_summary"]
+    gated_rows = [row for row in stage_table(root, "selector_summary") if row["scope"] == "method_gated"]
+    if not gated_rows:
+        raise StageError(f"{relpath}: no row method_gated")
+    [selector] = gated_rows
+    selector_rows = int(selector["rows"])
+    if selector_rows < 1:
+        raise StageError(f"{relpath}: the row method_gated describes no row")
+    for column in SELECTOR_COUNTS:
+        if int(selector[column]) > selector_rows:
+            raise StageError(f"{relpath}: {column} exceeds the rows of method_gated")
+    # the X-ray energies
+    relpath = STAGE_FILES["shell_projection"]
+    projection = stage_table(root, "shell_projection")
+    for row in projection:
+        if row["source"] not in D3_SOURCES:
+            raise StageError(f"{relpath}: the source {row['source']!r} has no citation")
+    groups = stage_table(root, "incompatible_groups")
+    status, failed, check_rows, check_cases = stage_status(root)
+    # the capture record
+    relpath = STAGE_FILES["record_classes"]
+    classes = stage_table(root, "record_classes")
+    vocabulary = (*mixture.CLASSES, mixture.EVALUATED_NATURAL)
+    for row in classes:
+        if row["answer_class"] not in vocabulary:
+            raise StageError(f"{relpath}: the class {row['answer_class']!r} is not a class of the D1 module")
+    parity = [row for row in classes if row["profile"] == g4spec.PARITY_PROFILE]
+    if not parity:
+        raise StageError(f"{relpath}: no record of the profile {g4spec.PARITY_PROFILE}")
+    for row in parity:
+        if row["answer_class"] not in mixture.CLASS_TEXT:
+            raise StageError(f"{relpath}: the class {row['answer_class']!r} has no definition to print")
+    settled = [row for row in parity if row["needs_verification"] == "false"]
+    tally = {name: sum(row["answer_class"] == name for row in parity) for name in mixture.CLASS_TEXT}
+    # the disappearance rate
+    relpath = STAGE_FILES["mean_life_comparison"]
+    lives = stage_table(root, "mean_life_comparison")
+    for row in lives:
+        if row["population"] not in lifetime.POPULATIONS:
+            raise StageError(f"{relpath}: the population {row['population']!r} is not one of the D1 module's")
+        for suffix, _ in lifetime.ROUTES:
+            cell = row[f"within_{suffix}"]
+            if cell not in FLAG_VALUES and (cell or row["population"] == lifetime.COMPARED):
+                raise StageError(f"{relpath}: within_{suffix} {cell!r} on a {row['population']} row")
+    summary = tuple(lifetime.summary(lives))
+    for profile, compared, *_ in summary:
+        if not compared:
+            raise StageError(f"{relpath}: the profile {profile!r} has no compared row")
+    return Stages(
+        selector_rows=selector_rows,
+        selector_to_oxygen=int(selector["to_oxygen"]),
+        selector_hydrogenous=int(selector["hydrogenous"]),
+        selector_above=int(selector["selector_above"]),
+        ratio_min=selector["ratio_min"],
+        ratio_median=selector["ratio_median"],
+        ratio_max=selector["ratio_max"],
+        d3_profile=d3c.md.PROFILE,
+        d3_sources=tuple(D3_SOURCES[name] for name in dict.fromkeys(row["source"] for row in projection)),
+        gated=len(projection),
+        stock_within=sum(row["stock_within"] == "true" for row in projection),
+        consumer_within=sum(row["consumer_within"] == "true" for row in projection),
+        solver_within=sum(row["solver_within"] == "true" for row in projection),
+        consumer_closer=sum(row["consumer_closer_than_stock"] == "true" for row in projection),
+        groups=len(groups),
+        groups_empty=sum(row["empty"] == "true" for row in groups),
+        status=status,
+        failed_rows=failed,
+        check_rows=check_rows,
+        check_cases=check_cases,
+        records=len(parity),
+        settled=len(settled),
+        unsettled=len(parity) - len(settled),
+        resolved=sum(row["isotope_resolved"] == "true" for row in settled),
+        unresolved=sum(row["isotope_resolved"] == "false" for row in settled),
+        classes=tuple((name, count) for name, count in tally.items() if count),
+        mixed=tuple((int(row["z"]), int(row["a"])) for row in parity if row["answer_class"] == mixture.MIXED),
+        summary=summary,
+    )
+
+
+def _status_reproduction_failed(s: Stages) -> list[str | Slot]:
+    return [
+        "The check that sets the values of the production runs beside those an independent radial Dirac solver "
+        "computed for the same equations has the status `",
+        S(s.status),
+        "` (`data/g4/d3/numerical_check_status.json`): a fresh solve of all ",
+        S(s.check_rows),
+        " rows, over ",
+        S(s.check_cases),
+        " nuclides, changed the independent solver's estimate of its own error by more than the registered "
+        "reproduction tolerance on ",
+        S(s.failed_rows),
+        " rows, so its error estimates and the check's verdicts are historical until a corrected computation "
+        "replaces them; no table value comes from the independent solver.",
+    ]
+
+
+#: The sentence of each status of the numerical check, keyed as d3c.NUMERICAL_CHECK_STATUSES; a status with no
+#: sentence is refused.
+STATUS_TEXT: dict[str, Callable[[Stages], list[str | Slot]]] = {
+    "REPRODUCTION_FAILED": _status_reproduction_failed,
+}
+#: The statuses whose sentence reports failed rows: each needs a failure at least.
+FAILING_STATUSES = ("REPRODUCTION_FAILED",)
+
+
+def route_clauses(summary: tuple[tuple[str, int, int, int], ...]) -> list[list[str | Slot]]:
+    """For each set of routes that leave a compared row outside the band, the profiles under which exactly those
+    routes do, grouped in the comparison's order, as a clause: each route, a single route, or no route."""
+    names = [name for _, name in lifetime.ROUTES]
+    patterns: dict[tuple[str, ...], list[str]] = {}
+    for profile, compared, *within in summary:
+        outside = tuple(name for name, count in zip(names, within, strict=True) if count < compared)
+        patterns.setdefault(outside, []).append(profile)
+    clauses: list[list[str | Slot]] = []
+    for outside, profiles in patterns.items():
+        under: list[str | Slot] = ["under ", *joined([S(f"`{p}`") for p in profiles])]
+        if len(outside) == len(names):
+            clauses.append([*under, " each route leaves a compared row outside the band"])
+        elif outside:
+            verb = " leaves a compared row" if len(outside) == 1 else " leave compared rows"
+            clauses.append(
+                [*under, " only ", *joined([f"`{n}`" for n in outside]), verb, " outside the band"]
+            )
+        else:
+            clauses.append([*under, " no route leaves a compared row outside the band"])
+    return clauses
+
+
+def render_stages(w: Writer, s: Stages) -> None:
+    """The section on the other stages of a stopped muon: the capturing atom, the X-ray energies, the capture
+    record and the disappearance rate, each restated from its dataset's committed files with a pointer to the
+    dataset's document, in the order a stopped muon meets them."""
+    w.line("## Other stages of a stopped muon, from the dataset documents")
+    w.blank()
+    w.line(
+        "A stopped negative muon is captured by an atom, cascades down to the atom's ground state emitting muonic "
+        "X-rays, and disappears from it by nuclear capture or by decay. The sections above compare the capture "
+        "products and the cascade's intensities with measurement; this section restates what the dataset "
+        "documents state about the other stages, from the committed files their own checks read, and judges "
+        "nothing of its own."
+    )
+    w.blank()
+    w.line("### The capturing atom")
+    w.blank()
+    w.line(
+        "In a material of several elements, `G4ElementSelector::SelectZandA` picks the element whose nucleus "
+        "takes the muon, and it contains no step that moves the muon between elements (`DATASET_D2.md`). "
+        "`DATASET_D2.md` compares the per-atom capture ratio the selector's weights give with measured per-atom "
+        "ratios under a method-aware rule, adopted after the selector's ratio had already been compared with the "
+        "rows it gates (`data/g4/d2/selector_summary.csv`). Of the ",
+        S(s.selector_rows),
+        " rows the rule gates, ",
+        S(s.selector_to_oxygen),
+        " gives" if s.selector_to_oxygen == 1 else " give",
+        " the ratio of an element to oxygen; the selector's ratio lies above the measured ratio on ",
+        S(s.selector_above),
+        " of them, and over all of them it lies at between ",
+        S(s.ratio_min),
+        " and ",
+        S(s.ratio_max),
+        " times the measured ratio, and at ",
+        S(s.ratio_median),
+        " times it at the median.",
+    )
+    if s.selector_hydrogenous:
+        w.blank()
+        w.line(
+            "Of those rows, ",
+            S(s.selector_hydrogenous),
+            " is" if s.selector_hydrogenous == 1 else " are",
+            " of a material that holds hydrogen, in which a muon captured by hydrogen can pass to a heavier "
+            "nucleus nearby; for such a row the difference may come from such transfer rather than from the "
+            "weights, and this comparison does not tell them apart.",
+        )
+    w.blank()
+    w.line("### The X-ray energies")
+    w.blank()
+    w.line(
+        "The cascade emits the line between a pair of shells at a single energy, the difference of their shell "
+        "energies, even where a source prints more than a single line for the pair (`DATASET_D3.md`). "
+        "`DATASET_D3.md` holds that energy "
+        "against the band of each measured line on the ",
+        S(s.gated),
+        " gated rows of the lines ",
+        *joined([S(source) for source in s.d3_sources]),
+        " measured (`data/g4/d3/shell_projection.csv`). The energy the unpatched cascade emits lies within the "
+        "band on ",
+        S(s.stock_within),
+        " of them, and the shell difference a patched cascade emits from the energy tables of the `",
+        S(s.d3_profile),
+        "` profile on ",
+        S(s.consumer_within),
+        "; the patched shell difference is closer to the measured energy than the unpatched cascade's on ",
+        S(s.consumer_closer),
+        ". The line MuDirac prints for the orbit-resolved transition, which no cascade emits, lies within the "
+        "band on ",
+        S(s.solver_within),
+        ".",
+    )
+    w.blank()
+    if s.groups_empty:
+        w.line(
+            "Where a source measured more than a single distinct line between the same shells of a nuclide, the "
+            "lines' bands have an empty intersection in ",
+            S(s.groups_empty),
+            " of the ",
+            S(s.groups),
+            " such groups (`data/g4/d3/incompatible_groups.csv`), and in each of those no single shell energy can "
+            "lie within the band of every line it stands for.",
+        )
+    else:
+        w.line(
+            "Where a source measured more than a single distinct line between the same shells of a nuclide, the "
+            "lines' bands intersect in each of the ",
+            S(s.groups),
+            " such groups (`data/g4/d3/incompatible_groups.csv`).",
+        )
+    w.blank()
+    w.line(*STATUS_TEXT[s.status](s))
+    w.blank()
+    w.line("### The capture record")
+    w.blank()
+    w.line(
+        "The nucleus the selector draws gets its capture rate from `GetMuonCaptureRate(Z, A)`. The compiled-in "
+        "table answers only a nucleus whose Z and A both match a record, and the Goulard–Primakoff formula "
+        "answers every other, so a target of natural composition reaches an element's record only on the stops "
+        "that draw the record's own mass number (`DATASET_D1.md`)."
+    )
+    w.blank()
+    w.line(
+        "`DATASET_D1.md` checks each of the ",
+        S(s.records),
+        " records of the compiled-in table, the records of its `",
+        S(g4spec.PARITY_PROFILE),
+        "` profile, against the primary its value is attributed to (`data/g4/d1/record_classes.csv`): "
+        "`needs_verification` is `false`, settled against the primary, on ",
+        S(s.settled),
+        " of them and `true`, still open, on ",
+        S(s.unsettled),
+        "; of the settled records, `isotope_resolved` is `true` on ",
+        S(s.resolved),
+        " and `false`, as an established finding, on ",
+        S(s.unresolved),
+        ". Each record falls in a class of what answers a stop:",
+    )
+    w.blank()
+    w.line("| class | definition | records |")
+    w.line("|---|---|---|")
+    for name, count in s.classes:
+        w.line("| `", S(name), "` | ", S(mixture.CLASS_TEXT[name]), " | ", S(count), " |")
+    if s.mixed:
+        w.blank()
+        w.line(
+            "The value of each `",
+            S(mixture.MIXED),
+            "` record, keyed (Z, A) = ",
+            *joined([S(f"({z}, {a})") for z, a in s.mixed]),
+            ", is such a combination: a reconstructed combination, not a demonstrated history.",
+        )
+    w.blank()
+    w.line("### The disappearance rate")
+    w.blank()
+    w.line(
+        "A bound muon disappears from the ground state of the muonic atom by nuclear capture or by decay, and "
+        "Geant4 computes the sum of those rates on the routes of `G4MuonMinusBoundDecay` and "
+        "`G4MuonicAtomHelper`, each with its own decay rate: `G4MuonMinusBoundDecay` draws the time of a stop in "
+        "`G4MuonMinusCapture`, the process the reference physics lists QBBC and FTFP_BERT give the negative muon "
+        "at rest, and `G4MuonicAtomHelper` gives a muonic atom the lifetime `G4MuonicAtomDecay` reads "
+        "(`DATASET_D1.md`). `DATASET_D1.md` "
+        "compares each route's rate, under each profile of the capture table, with the mean lives the sources "
+        "printed for their own measurements, and counts a rate within the band it defines "
+        "(`data/g4/d1/mean_life_comparison.csv`):",
+    )
+    w.blank()
+    header = lifetime.SUMMARY_HEADER.splitlines()
+    for line in header:
+        w.line(line)
+    for profile, compared, first_route, second_route in s.summary:
+        w.line("| `", S(profile), "` | ", S(compared), " | ", S(first_route), " | ", S(second_route), " |")
+    w.blank()
+    clauses = route_clauses(s.summary)
+    parts: list[str | Slot] = []
+    for i, clause in enumerate(clauses):
+        if i:
+            parts.append("; ")
+        parts.extend(clause)
+    first_part = parts[0]
+    assert isinstance(first_part, str) and first_part == "under "
+    w.line("Under ", *parts[1:], ".")
+    w.blank()
+    w.line(
+        "The comparison is of the rates the code returns for a single nucleus, not of a transported simulation of "
+        "a target; `DATASET_D1.md` compares the transported mixture of each natural target with its measured mean "
+        "life."
+    )
+    w.blank()
+
+
+def stages_text(s: Stages) -> Rendered:
+    """The section on the other stages of a stopped muon alone, as render writes it."""
+    w = Writer()
+    render_stages(w, s)
+    return w.rendered()
+
+
 def render(inp: Inputs, tables: Tables | None = None) -> Rendered:
     """The document. Its cascade section is rendered from ``tables``: compare passes the tables it has proved
     equal to the written files; otherwise the canonical tables of the inputs."""
@@ -1250,7 +1866,11 @@ def render(inp: Inputs, tables: Tables | None = None) -> Rendered:
         "`data/g4/stopped_mu/`, the natural compositions of `data/g4/d1/geant4_natural_isotopes.csv` and the "
         "vendored `G4EmCaptureCascade.cc` of `third_party/geant4/`; the generator defines display precision and "
         "source citations. Its section on capture products and its section on the muonic X-ray cascade hold the "
-        "comparisons; the application that made the outputs is in `cpp/stopped_muon/`.",
+        "comparisons; the application that made the outputs is in `cpp/stopped_muon/`. A further section, on "
+        "the other stages of a stopped muon, restates from the committed files of the datasets what "
+        "`DATASET_D1.md`, `DATASET_D2.md` and `DATASET_D3.md` state about the atom that captures the muon, the "
+        "energies of its X-rays, the capture-table record that answers a stop and the rate at which the bound "
+        "muon disappears.",
     )
     w.blank()
 
@@ -1872,6 +2492,7 @@ def render(inp: Inputs, tables: Tables | None = None) -> Rendered:
     w.blank()
 
     render_cascade(w, inp, canonical_tables(inp) if tables is None else tables)
+    render_stages(w, inp.stages)
 
     # ---- reproducing
     w.line("## Reproducing")
@@ -2019,6 +2640,12 @@ def render(inp: Inputs, tables: Tables | None = None) -> Rendered:
         "- `cpp/stopped_muon/`: the application and its driver; `openmucf/g4/stopped_mu.py`: the classifier, the "
         "reducer and the rule; `openmucf/g4/capture_cascade.py`: the exact cascade, its binding to the source, "
         "the reconstruction and the tests of the cascade."
+    )
+    w.line(
+        "- `data/g4/d1/mean_life_comparison.csv` and `record_classes.csv`, `data/g4/d2/selector_summary.csv`, and "
+        "`data/g4/d3/shell_projection.csv`, `incompatible_groups.csv` and `numerical_check_status.json`: the files "
+        "of the datasets the section on the other stages of a stopped muon restates, which `make audit` "
+        "regenerates or checks with their own documents."
     )
     w.blank()
     w.line("## Licensing")
