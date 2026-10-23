@@ -50,8 +50,9 @@ BUILDS = (
     ("unpatched-v11.4.2", "v11.4.2"),
     ("unpatched-v11.5.0.beta", "v11.5.0.beta"),
 )
-#: The flags the driver is compiled with; the rates are computed inside the Geant4 libraries.
-COMPILE_FLAGS = "-std=c++17 -O2 -ffp-contract=off"
+#: A recorded compile flag: a plain compiler option, carrying neither whitespace, ``#`` nor ``;``, so the
+#: flags cannot break the oracle's line-oriented header or its ``;`` delimiter.
+FLAG_TOKEN = re.compile(r"[A-Za-z0-9_+=.,/-]+")
 
 #: The literals of ``G4MuonMinusBoundDecay::GetMuonDecayRate(Z, A, muMass, nuclMass)``.
 FREE_DECAY_RATE = 0.45517005
@@ -213,14 +214,36 @@ def parse_raw(text: str) -> Raw:
     return constants, helper, bound
 
 
+def recorded_flags(folder: Path, build: str) -> str:
+    """The compile flags the harvest of ``build`` wrote beside its output (``flags.txt``), stripped: one line
+    of :data:`FLAG_TOKEN` options separated by single spaces. A missing, empty or whitespace-only record, a
+    byte outside ASCII, a CR and anything else are refused, naming the build."""
+    path = folder / "flags.txt"
+    raw = path.read_bytes() if path.is_file() else b""
+    try:
+        text = raw.decode("ascii")
+    except UnicodeDecodeError:
+        raise LifetimeError(f"{build}: the recorded compile flags (flags.txt) are not ASCII") from None
+    flags = text.strip()
+    if not flags:
+        raise LifetimeError(f"{build}: the harvest recorded no compile flags (flags.txt)")
+    if b"\r" in raw or not all(FLAG_TOKEN.fullmatch(token) for token in flags.split(" ")):
+        raise LifetimeError(
+            f"{build}: the recorded compile flags (flags.txt) are not one line of plain compiler options: "
+            f"{flags!r}")
+    return flags
+
+
 def harvest(raw: Path, root: Path) -> bytes:
     """The committed oracle, from one raw directory per build of :data:`BUILDS`. Every build must have
-    compiled the committed driver with one compiler, written nothing to stderr and printed the same bytes,
-    and from the threshold on each Z's rate must be the same at every A."""
+    compiled the committed driver with one compiler and the same flags, which it recorded beside its output
+    (:func:`recorded_flags`), written nothing to stderr and printed the same bytes, and from the threshold on
+    each Z's rate must be the same at every A. The oracle names the flags the builds recorded."""
     harness = hashlib.sha256((root / HARNESS_RELPATH).read_bytes()).hexdigest()
     outputs: list[bytes] = []
     versions: list[str] = []
     compilers: set[str] = set()
+    flags: set[str] = set()
     for build, _ in BUILDS:
         folder = raw / build
         if (folder / "sha256.txt").read_text(encoding="ascii").split()[0] != harness:
@@ -230,10 +253,13 @@ def harvest(raw: Path, root: Path) -> bytes:
         outputs.append((folder / "decay.txt").read_bytes())
         versions.append((folder / "version.txt").read_text(encoding="ascii").strip())
         compilers.add((folder / "gcc.txt").read_text(encoding="ascii").strip())
+        flags.add(recorded_flags(folder, build))
     if any(output != outputs[0] for output in outputs):
         raise LifetimeError("the builds printed different rates")
     if len(compilers) != 1:
         raise LifetimeError(f"the builds used different compilers: {sorted(compilers)}")
+    if len(flags) != 1:
+        raise LifetimeError(f"the builds recorded different flags: {sorted(flags)}")
     constants, helper, bound = parse_raw(outputs[0].decode("ascii"))
     for z in range(BOUND_THRESHOLD_Z, HIGH_Z_MAX + 1):
         if len({bound[(z, a)][1] for a in range(z, HIGH_A_MAX + 1)}) != 1:
@@ -252,7 +278,7 @@ def harvest(raw: Path, root: Path) -> bytes:
         f"# builds            {built}, the version each geant4-config printed;",
         "#                   both printed the same bytes",
         f"# compiler          {compilers.pop()}",
-        f"# driver_flags      {COMPILE_FLAGS}; the rates are computed inside the Geant4 libraries",
+        f"# driver_flags      {flags.pop()}; the rates are computed inside the Geant4 libraries",
         f"# raw_sha256        {hashlib.sha256(outputs[0]).hexdigest()}",
         f"# heavy_sweep       Z {BOUND_THRESHOLD_Z}..{HIGH_Z_MAX} x A Z..{HIGH_A_MAX} = {len(heavy)} points,",
         "#                   Z ascending outermost; each Z's rate is the same at every A, and its B line",
