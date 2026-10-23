@@ -1,0 +1,1717 @@
+{
+ "band": {
+  "k": 3,
+  "rule": "WITHIN iff |lambda_fit - lambda_meas| <= 3 sqrt(sigma_meas^2 + sigma_tab^2 + sigma_win^2), decided on squares in exact decimals"
+ },
+ "bins": {
+  "dio": 20,
+  "time": 20,
+  "window": 20
+ },
+ "branch_min_expected": 5,
+ "compute": {
+  "core_hours": 10.49,
+  "ms_per_stop": 1.379,
+  "stop_threshold_core_hours": 150
+ },
+ "contract": "data/g4/d1 natural-target mixtures: harvest gates, statistics, drills and the comparison of measured mean lives; every value fixed before any harvest output or comparison exists",
+ "drill_cells": [
+  {
+   "events": 1000000,
+   "profile": "parity",
+   "route": "atomic",
+   "z": 17
+  },
+  {
+   "events": 1000000,
+   "profile": "parity",
+   "route": "stopping",
+   "z": 17
+  },
+  {
+   "events": 1000000,
+   "profile": "parity",
+   "route": "atomic",
+   "z": 29
+  },
+  {
+   "events": 1000000,
+   "profile": "parity",
+   "route": "stopping",
+   "z": 29
+  }
+ ],
+ "drills": {
+  "branch_swap_fraction": "1/20",
+  "plan": [
+   {
+    "drill": "rate_substitution",
+    "gate": "G-rate",
+    "plants": "the natural iron record's capture rate given to iron-54",
+    "side": "oracle",
+    "z": 26
+   },
+   {
+    "drill": "fallback_dropped",
+    "gate": "G-set",
+    "plants": "the formula-answered components dropped and the rest renormalized",
+    "side": "oracle",
+    "z": 50
+   },
+   {
+    "drill": "formula_stops_removed",
+    "gate": "G-sel",
+    "plants": "the formula-answered stops removed",
+    "side": "harvest copy",
+    "z": 50
+   },
+   {
+    "drill": "branch_swap",
+    "gate": "G-branch",
+    "plants": "a twentieth of the most abundant isotope's captures turned into decays",
+    "side": "harvest copy",
+    "z": 29
+   },
+   {
+    "drill": "exp_lambda_bar",
+    "gate": "G-time",
+    "plants": "every delay drawn again from Exp(lambda_bar), the statistic still scaling by the drawn isotope's rate",
+    "side": "harvest copy",
+    "z": 29
+   },
+   {
+    "drill": "single_exponential",
+    "gate": "G-DIO",
+    "plants": "the mixture replaced by Exp(lambda_bar) with the same decay fraction",
+    "side": "oracle",
+    "z": 17
+   },
+   {
+    "drill": "omitted_fallback",
+    "gate": "G-DIO",
+    "plants": "the oracle without its formula-answered components",
+    "side": "oracle",
+    "z": 12
+   },
+   {
+    "drill": "single_exponential_window",
+    "gate": "G-win",
+    "plants": "the mixture replaced by Exp(lambda_bar) with the same decay fraction, in the window",
+    "side": "oracle",
+    "z": 17
+   },
+   {
+    "drill": "atomic_expectation",
+    "gate": "G-branch",
+    "plants": "the atomic branch expectation replaced by lambda_d / (lambda_c + lambda_d): information only, the largest binary64 difference is reported",
+    "side": "oracle",
+    "z": 29
+   }
+  ],
+  "seed": 20261017
+ },
+ "estimators": {
+  "labels": [
+   {
+    "estimator": "SURROGATE",
+    "label": "C",
+    "locator": "Table III p.2217 row 37",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 6
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "N",
+    "locator": "Table III p.2217 row 44",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 7
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "O",
+    "locator": "Table III p.2217 row 49",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 8
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Mg",
+    "locator": "Table IV p.2218 row 12",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 12
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Si",
+    "locator": "Table IV p.2218 row 20",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 14
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "S",
+    "locator": "Table IV p.2218 row 27",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 16
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Cl",
+    "locator": "Table IV p.2218 row 29",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 17
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "K",
+    "locator": "Table IV p.2218 row 36",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 19
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Ca",
+    "locator": "Table IV p.2218 row 41",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 20
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Ti",
+    "locator": "Table IV p.2218 row 46",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 22
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "V",
+    "locator": "Table IV p.2218 row 50",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 23
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Cr",
+    "locator": "Table IV p.2218 row 53",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 24
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Fe",
+    "locator": "Table IV p.2219 row 7",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 26
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Ni",
+    "locator": "Table IV p.2219 row 14",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 28
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Cu",
+    "locator": "Table IV p.2219 row 23",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 29
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Zn",
+    "locator": "Table IV p.2219 row 28",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 30
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Ge",
+    "locator": "Table IV p.2219 row 31",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 32
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Se",
+    "locator": "Table IV p.2219 row 36",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 34
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Br",
+    "locator": "Table IV p.2219 row 39",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 35
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Sr",
+    "locator": "Table IV p.2219 row 42",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 38
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Zr",
+    "locator": "Table IV p.2219 row 46",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 40
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Mo",
+    "locator": "Table IV p.2219 row 51",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 42
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Ag",
+    "locator": "Table IV p.2219 row 58",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 47
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Cd",
+    "locator": "Table IV p.2220 row 3",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 48
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "In",
+    "locator": "Table IV p.2220 row 5",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 49
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Sn",
+    "locator": "Table IV p.2220 row 8",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 50
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Sb",
+    "locator": "Table IV p.2220 row 10",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 51
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Te",
+    "locator": "Table IV p.2220 row 12",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 52
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Ba",
+    "locator": "Table IV p.2220 row 17",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 56
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Ce",
+    "locator": "Table IV p.2220 row 20",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 58
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Nd",
+    "locator": "Table IV p.2220 row 23",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 60
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Gd",
+    "locator": "Table IV p.2220 row 26",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 64
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Dy",
+    "locator": "Table IV p.2220 row 28",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 66
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Er",
+    "locator": "Table IV p.2220 row 30",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 68
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "W",
+    "locator": "Table IV p.2220 row 36",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 74
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Hg",
+    "locator": "Table IV p.2220 row 40",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 80
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Tl",
+    "locator": "Table IV p.2220 row 43",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 81
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "Pb",
+    "locator": "Table IV p.2220 row 48",
+    "missing": [
+     "fit_method",
+     "weighting",
+     "fit_range",
+     "nontarget_amplitudes",
+     "carbon_fraction"
+    ],
+    "source": "suzuki1987",
+    "z": 82
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "natSi",
+    "locator": "Table 1 row 4",
+    "missing": [
+     "fit_range",
+     "nontarget_amplitudes",
+     "beam_structure",
+     "cno_fraction",
+     "ag_fraction",
+     "bg_fraction"
+    ],
+    "source": "mizuno2025",
+    "z": 14
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "natSi",
+    "locator": "Table 1 row 5",
+    "missing": [
+     "fit_range",
+     "nontarget_amplitudes",
+     "beam_structure",
+     "cno_fraction",
+     "ag_fraction",
+     "bg_fraction"
+    ],
+    "source": "mizuno2025",
+    "z": 14
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "natMg",
+    "locator": "Table 1 row 6",
+    "missing": [
+     "fit_range",
+     "nontarget_amplitudes",
+     "beam_structure",
+     "cno_fraction",
+     "ag_fraction",
+     "bg_fraction"
+    ],
+    "source": "mizuno2025",
+    "z": 12
+   },
+   {
+    "estimator": "SURROGATE",
+    "label": "natAg",
+    "locator": "Table 1 row 10",
+    "missing": [
+     "fit_range",
+     "nontarget_amplitudes",
+     "beam_structure",
+     "cno_fraction",
+     "ag_fraction",
+     "bg_fraction"
+    ],
+    "source": "mizuno2025",
+    "z": 47
+   }
+  ],
+  "lambda_fit": "the midpoint of the bracket's range of fitted rates",
+  "rule": "ESTABLISHED only when the component set, method, weighting, fit range, non-target amplitudes and beam structure are all printed; otherwise SURROGATE",
+  "sigma_tab": "linear propagation of each answering record's tabulated uncertainty, fully correlated over the isotopes one record answers and independent across records, at the nominal fit",
+  "sigma_win": "half the bracket's range (0 for an ESTABLISHED estimator)",
+  "surrogate": {
+   "mizuno2025": {
+    "ag_share": [
+     0.0,
+     0.05,
+     0.2
+    ],
+    "beam": "one prompt pulse, or two equal prompt pulses 600 ns apart (policy value: the separation is not printed)",
+    "bg_share": [
+     0.0,
+     0.05,
+     0.2
+    ],
+    "cno_share": "printed approximate share x {0.5, 1, 2}",
+    "constant": [
+     false
+    ],
+    "method": [
+     "ll"
+    ],
+    "natAg": "the CNO and background lifetimes fixed at the printed values of the free fit",
+    "origin_ns": 40.0,
+    "t1_over_tau_bar": [
+     0,
+     2
+    ],
+    "t2_over_tau_bar": [
+     6,
+     12
+    ]
+   },
+   "suzuki1987": {
+    "beam": "one stop per clock start (printed)",
+    "carbon": [
+     "free",
+     "fixed"
+    ],
+    "carbon_share": [
+     0.01,
+     0.02
+    ],
+    "carbon_target": "a carbon row carries no carbon component: its background is muonic carbon",
+    "constant": [
+     false,
+     true
+    ],
+    "method": [
+     "ll",
+     "ls"
+    ],
+    "partner_lifetime_rows": {
+     "C": "Table III p.2217 row 37",
+     "F": "Table III p.2217 row 54",
+     "O": "Table III p.2217 row 49"
+    },
+    "partner_share": [
+     0.0,
+     0.05,
+     0.2
+    ],
+    "partners": {
+     "17": "C",
+     "20": "F",
+     "24": "O",
+     "32": "O",
+     "56": "O",
+     "60": "O",
+     "80": "O",
+     "82": "F"
+    },
+    "t1_over_tau_bar": [
+     0,
+     2
+    ],
+    "t2_over_tau_bar": [
+     6,
+     12
+    ]
+   }
+  }
+ },
+ "events_default": 100000,
+ "identity": {
+  "drill_a": 74,
+  "drill_element": 32,
+  "elements": [
+   3,
+   32,
+   47,
+   82
+  ],
+  "events": 2500
+ },
+ "power": {
+  "cells": [
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.38878e-06,
+    "single_exponential_power": 1.02881e-06,
+    "z": 3
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.39386e-06,
+    "single_exponential_power": 1.02881e-06,
+    "z": 3
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.000175409,
+    "single_exponential_power": 1.02902e-06,
+    "z": 5
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.000177006,
+    "single_exponential_power": 1.02903e-06,
+    "z": 5
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 8.09667e-08,
+    "single_exponential_power": 1.02881e-06,
+    "z": 6
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 8.19769e-08,
+    "single_exponential_power": 1.02881e-06,
+    "z": 6
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.24345e-05,
+    "single_exponential_power": 1.02882e-06,
+    "z": 7
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.26301e-05,
+    "single_exponential_power": 1.02882e-06,
+    "z": 7
+   },
+   {
+    "min_detectable_omitted_share": 0.000561861,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.12551e-06,
+    "single_exponential_power": 1.02881e-06,
+    "z": 8
+   },
+   {
+    "min_detectable_omitted_share": 0.000561861,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.14622e-06,
+    "single_exponential_power": 1.02881e-06,
+    "z": 8
+   },
+   {
+    "min_detectable_omitted_share": 0.000561861,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 4.18006,
+    "single_exponential_power": 4.02719e-05,
+    "z": 12
+   },
+   {
+    "min_detectable_omitted_share": 0.000561861,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 4.26134,
+    "single_exponential_power": 4.25195e-05,
+    "z": 12
+   },
+   {
+    "min_detectable_omitted_share": null,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0,
+    "single_exponential_power": 1.02881e-06,
+    "z": 13
+   },
+   {
+    "min_detectable_omitted_share": null,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.0,
+    "single_exponential_power": 1.02881e-06,
+    "z": 13
+   },
+   {
+    "min_detectable_omitted_share": 0.000561861,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.44246,
+    "single_exponential_power": 4.68982e-06,
+    "z": 14
+   },
+   {
+    "min_detectable_omitted_share": 0.000561861,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.4586,
+    "single_exponential_power": 4.7607e-06,
+    "z": 14
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.27527,
+    "single_exponential_power": 4.00595e-06,
+    "z": 16
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.28372,
+    "single_exponential_power": 4.03838e-06,
+    "z": 16
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 18.8591,
+    "single_exponential_power": 0.0149647,
+    "z": 17
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 18.9071,
+    "single_exponential_power": 0.0151418,
+    "z": 17
+   },
+   {
+    "min_detectable_omitted_share": 0.000561861,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.437998,
+    "single_exponential_power": 1.70119e-06,
+    "z": 19
+   },
+   {
+    "min_detectable_omitted_share": 0.000561861,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.438652,
+    "single_exponential_power": 1.70242e-06,
+    "z": 19
+   },
+   {
+    "min_detectable_omitted_share": 0.000643297,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.95051,
+    "single_exponential_power": 7.40077e-06,
+    "z": 20
+   },
+   {
+    "min_detectable_omitted_share": 0.000643297,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.95086,
+    "single_exponential_power": 7.40301e-06,
+    "z": 20
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 3.59357,
+    "single_exponential_power": 2.68474e-05,
+    "z": 22
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 3.5828,
+    "single_exponential_power": 2.66419e-05,
+    "z": 22
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.000195759,
+    "single_exponential_power": 1.02905e-06,
+    "z": 23
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.000194363,
+    "single_exponential_power": 1.02905e-06,
+    "z": 23
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0269862,
+    "single_exponential_power": 1.06259e-06,
+    "z": 24
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.0267139,
+    "single_exponential_power": 1.06224e-06,
+    "z": 24
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0663788,
+    "single_exponential_power": 1.11353e-06,
+    "z": 26
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.0655676,
+    "single_exponential_power": 1.11247e-06,
+    "z": 26
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.19205,
+    "single_exponential_power": 3.69813e-06,
+    "z": 28
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.17265,
+    "single_exponential_power": 3.62932e-06,
+    "z": 28
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 9.09939,
+    "single_exponential_power": 0.000586948,
+    "z": 29
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 8.94895,
+    "single_exponential_power": 0.00054864,
+    "z": 29
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 4.70146,
+    "single_exponential_power": 5.66359e-05,
+    "z": 30
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 4.62013,
+    "single_exponential_power": 5.37629e-05,
+    "z": 30
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 7.16939,
+    "single_exponential_power": 0.000232664,
+    "z": 32
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 7.04133,
+    "single_exponential_power": 0.000217728,
+    "z": 32
+   },
+   {
+    "min_detectable_omitted_share": 0.000643297,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 2.57372,
+    "single_exponential_power": 1.2434e-05,
+    "z": 34
+   },
+   {
+    "min_detectable_omitted_share": 0.000643297,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 2.52677,
+    "single_exponential_power": 1.19742e-05,
+    "z": 34
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.00377401,
+    "single_exponential_power": 1.03348e-06,
+    "z": 35
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.00368871,
+    "single_exponential_power": 1.03337e-06,
+    "z": 35
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0276463,
+    "single_exponential_power": 1.06343e-06,
+    "z": 38
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.0269947,
+    "single_exponential_power": 1.0626e-06,
+    "z": 38
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.58036,
+    "single_exponential_power": 5.32534e-06,
+    "z": 40
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.54182,
+    "single_exponential_power": 5.14083e-06,
+    "z": 40
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 3.62398,
+    "single_exponential_power": 2.74346e-05,
+    "z": 42
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 3.52895,
+    "single_exponential_power": 2.56347e-05,
+    "z": 42
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 4.03105e-07,
+    "single_exponential_power": 1.02881e-06,
+    "z": 47
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 3.92263e-07,
+    "single_exponential_power": 1.02881e-06,
+    "z": 47
+   },
+   {
+    "min_detectable_omitted_share": 0.00068397,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.828306,
+    "single_exponential_power": 2.57454e-06,
+    "z": 48
+   },
+   {
+    "min_detectable_omitted_share": 0.00068397,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.806525,
+    "single_exponential_power": 2.51756e-06,
+    "z": 48
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.000197125,
+    "single_exponential_power": 1.02905e-06,
+    "z": 49
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.000191982,
+    "single_exponential_power": 1.02904e-06,
+    "z": 49
+   },
+   {
+    "min_detectable_omitted_share": 0.000719247,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 1.85279,
+    "single_exponential_power": 6.796e-06,
+    "z": 50
+   },
+   {
+    "min_detectable_omitted_share": 0.000719247,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 1.8074,
+    "single_exponential_power": 6.52956e-06,
+    "z": 50
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.00933654,
+    "single_exponential_power": 1.04039e-06,
+    "z": 51
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.00911816,
+    "single_exponential_power": 1.04012e-06,
+    "z": 51
+   },
+   {
+    "min_detectable_omitted_share": 0.00068397,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 2.12148,
+    "single_exponential_power": 8.56855e-06,
+    "z": 52
+   },
+   {
+    "min_detectable_omitted_share": 0.00068397,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 2.07423,
+    "single_exponential_power": 8.23121e-06,
+    "z": 52
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0677704,
+    "single_exponential_power": 1.11537e-06,
+    "z": 56
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.0663468,
+    "single_exponential_power": 1.11349e-06,
+    "z": 56
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.000984017,
+    "single_exponential_power": 1.03002e-06,
+    "z": 58
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.000964891,
+    "single_exponential_power": 1.03e-06,
+    "z": 58
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.960007,
+    "single_exponential_power": 2.94257e-06,
+    "z": 60
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.943401,
+    "single_exponential_power": 2.89387e-06,
+    "z": 60
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.3567,
+    "single_exponential_power": 1.55464e-06,
+    "z": 64
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.352108,
+    "single_exponential_power": 1.54669e-06,
+    "z": 64
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0576062,
+    "single_exponential_power": 1.10202e-06,
+    "z": 66
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.0570046,
+    "single_exponential_power": 1.10123e-06,
+    "z": 66
+   },
+   {
+    "min_detectable_omitted_share": 0.000643297,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.108304,
+    "single_exponential_power": 1.16994e-06,
+    "z": 68
+   },
+   {
+    "min_detectable_omitted_share": 0.000643297,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.107438,
+    "single_exponential_power": 1.16876e-06,
+    "z": 68
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.180347,
+    "single_exponential_power": 1.27236e-06,
+    "z": 74
+   },
+   {
+    "min_detectable_omitted_share": 0.000619916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.18013,
+    "single_exponential_power": 1.27204e-06,
+    "z": 74
+   },
+   {
+    "min_detectable_omitted_share": null,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0,
+    "single_exponential_power": 1.02881e-06,
+    "z": 79
+   },
+   {
+    "min_detectable_omitted_share": null,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.0,
+    "single_exponential_power": 1.02881e-06,
+    "z": 79
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.269815,
+    "single_exponential_power": 1.40973e-06,
+    "z": 80
+   },
+   {
+    "min_detectable_omitted_share": 0.000664468,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.270595,
+    "single_exponential_power": 1.41098e-06,
+    "z": 80
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0371195,
+    "single_exponential_power": 1.07551e-06,
+    "z": 81
+   },
+   {
+    "min_detectable_omitted_share": 0.000519916,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.037169,
+    "single_exponential_power": 1.07557e-06,
+    "z": 81
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "stopping",
+    "single_exponential_noncentrality": 0.0339959,
+    "single_exponential_power": 1.07151e-06,
+    "z": 82
+   },
+   {
+    "min_detectable_omitted_share": 0.000593399,
+    "n": 100000,
+    "route": "atomic",
+    "single_exponential_noncentrality": 0.0341228,
+    "single_exponential_power": 1.07167e-06,
+    "z": 82
+   }
+  ],
+  "drills": [
+   {
+    "dof": 20,
+    "drill": "G-DIO:omitted_fallback",
+    "events": 100000,
+    "noncentrality_at_1e5": 207.966,
+    "power": 1.0,
+    "route": "atomic",
+    "z": 12
+   },
+   {
+    "dof": 20,
+    "drill": "G-DIO:omitted_fallback",
+    "events": 100000,
+    "noncentrality_at_1e5": 207.007,
+    "power": 1.0,
+    "route": "stopping",
+    "z": 12
+   },
+   {
+    "dof": 20,
+    "drill": "G-DIO:single_exponential",
+    "events": 1000000,
+    "noncentrality_at_1e5": 18.9071,
+    "power": 1.0,
+    "route": "atomic",
+    "z": 17
+   },
+   {
+    "dof": 20,
+    "drill": "G-DIO:single_exponential",
+    "events": 1000000,
+    "noncentrality_at_1e5": 18.8591,
+    "power": 1.0,
+    "route": "stopping",
+    "z": 17
+   },
+   {
+    "dof": 9,
+    "drill": "G-sel:formula_stops_removed",
+    "events": 100000,
+    "noncentrality_at_1e5": 91410.0,
+    "power": 1.0,
+    "route": "atomic",
+    "z": 50
+   },
+   {
+    "dof": 9,
+    "drill": "G-sel:formula_stops_removed",
+    "events": 100000,
+    "noncentrality_at_1e5": 91410.0,
+    "power": 1.0,
+    "route": "stopping",
+    "z": 50
+   },
+   {
+    "dof": 19,
+    "drill": "G-time:exp_lambda_bar",
+    "events": 1000000,
+    "noncentrality_at_1e5": 13.2825,
+    "power": 0.999996,
+    "route": "atomic",
+    "z": 29
+   },
+   {
+    "dof": 19,
+    "drill": "G-time:exp_lambda_bar",
+    "events": 1000000,
+    "noncentrality_at_1e5": 13.1619,
+    "power": 0.999995,
+    "route": "stopping",
+    "z": 29
+   },
+   {
+    "dof": 19,
+    "drill": "G-win:single_exponential",
+    "events": 1000000,
+    "noncentrality_at_1e5": 12.1617,
+    "power": 0.99997,
+    "route": "atomic",
+    "z": 17
+   },
+   {
+    "dof": 19,
+    "drill": "G-win:single_exponential",
+    "events": 1000000,
+    "noncentrality_at_1e5": 12.1233,
+    "power": 0.999968,
+    "route": "stopping",
+    "z": 17
+   }
+  ],
+  "target": 0.99
+ },
+ "pristine_controls": {
+  "elements": [
+   3,
+   32,
+   47,
+   82
+  ],
+  "events": 10000
+ },
+ "qualification": "printed nat, formula share 0, estimator ESTABLISHED, and no answering record in parity_isotope_lineage_open, parity_mixed_reconstructed, parity_unsettled",
+ "revisions": [
+  "v11.4.2",
+  "v11.5.0.beta"
+ ],
+ "roster": {
+  "mizuno2025": [
+   12,
+   14
+  ],
+  "parity": [
+   3,
+   5,
+   6,
+   7,
+   8,
+   12,
+   13,
+   14,
+   16,
+   17,
+   19,
+   20,
+   22,
+   23,
+   24,
+   26,
+   28,
+   29,
+   30,
+   32,
+   34,
+   35,
+   38,
+   40,
+   42,
+   47,
+   48,
+   49,
+   50,
+   51,
+   52,
+   56,
+   58,
+   60,
+   64,
+   66,
+   68,
+   74,
+   79,
+   80,
+   81,
+   82
+  ],
+  "suzuki1987": [
+   3,
+   5,
+   6,
+   8,
+   82
+  ]
+ },
+ "routes": [
+  "stopping",
+  "atomic"
+ ],
+ "science": "per profile and route: family all SCIENCE_FAIL if any distinct row is OUTSIDE, else UNQUALIFIED; family qualified SCIENCE_PASS or SCIENCE_FAIL, or SCREEN_VACUOUS when it admits no row",
+ "seeds": {
+  "identity_base": 2000000000,
+  "pilot_base": 3000000000,
+  "production_base": 1000000000,
+  "route_stride": 5000000,
+  "z_stride": 10000000
+ },
+ "statistics": {
+  "critical": {
+   "1": [
+    "23.87345510492452195166595968",
+    "23.87345510492452195167135952"
+   ],
+   "10": [
+    "46.79519075863929307191962396",
+    "46.79519075863929307192597671"
+   ],
+   "19": [
+    "63.6006273492983737780639182",
+    "63.60062734929837377807122385"
+   ],
+   "2": [
+    "27.57422216688515225572452334",
+    "27.57422216688515225573002905"
+   ],
+   "20": [
+    "65.34342257438523062701399335",
+    "65.3434225743852306270214049"
+   ],
+   "3": [
+    "30.60625212271684449184608121",
+    "30.60625212271684449185169280"
+   ],
+   "4": [
+    "33.31663606486182450284581240",
+    "33.31663606486182450285152987"
+   ],
+   "5": [
+    "35.82650674898828021637275394",
+    "35.82650674898828021637857730"
+   ],
+   "6": [
+    "38.19528311144731551656354049",
+    "38.19528311144731551656946972"
+   ],
+   "7": [
+    "40.45748604876050861176994284",
+    "40.45748604876050861177597795"
+   ],
+   "8": [
+    "42.63534403724943856706348963",
+    "42.63534403724943856706963062"
+   ],
+   "9": [
+    "44.74420027058339377758301297",
+    "44.74420027058339377758925984"
+   ]
+  },
+  "family_alpha": "0.001",
+  "per_test_alpha": "0.000001028806584362139917695473251",
+  "rule": "pass if the X^2 enclosure lies below the critical enclosure, fail if above, refuse if they overlap",
+  "tests": 972
+ },
+ "window_over_tau_bar": [
+  2.0,
+  12.0
+ ]
+}
