@@ -2789,9 +2789,9 @@ SECTION_HEADING = "## 13. Natural targets: what answers them, the call-site harv
 CLASS_TEXT = {
     EVALUATED_ISOTOPE: "a row of the selected evaluated profile keyed by the nuclide",
     PARITY_ISOTOPE: (
-        "a compiled-in record of a separated isotope, of an element with a single natural isotope or of an "
-        "isotope "
-        "another primary tabulates, whose value equals a printed cell"
+        "a compiled-in record of an element with a single natural isotope, whatever the lineage of its "
+        "value, or of a separated isotope or an isotope another primary tabulates whose value equals a "
+        "printed cell exactly or comes from another primary"
     ),
     LINEAGE_OPEN: (
         "a compiled-in record of a separated isotope whose value equals a printed cell only at that cell's "

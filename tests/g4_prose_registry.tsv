@@ -93,6 +93,7 @@
 3a52f077d7ffc11f9a36d2c0ba20a32fc095f732	CHANGELOG.md	REGISTERED: 8, 10, 12 -- the common calibration in per cent and the yield uncertainty the source prints, as openmucf/calibrate.py's OBS_W carries them, and the yield uncertainty its legacy OBS carries
 3bb76bb345ef18d447d5355057101150c8dab0be	CHANGELOG.md	REGISTERED: 6, 5, 1, three -- VALIDATION.md's summary line: 6 pass, 5 fail, 1 deferred; the three Yamashita rows
 3bc8afdfe1805de0134de640da5267badd8ad3ca	CHANGELOG.md	REGISTERED: two -- the two compiler configurations of a source the sentence names
+3cc62d530ef50b51f5624484c2b2e687060ec8c4	CHANGELOG.md	REGISTERED: 13.1 -- a section number of DATASET_D1.md, the section whose parity_isotope definition the entry describes
 3dc5c41f7069804263e4b952e5229d378278ac40	CHANGELOG.md	REGISTERED: one -- 'at one condition', where the preprint's values hold
 3e945260060937ff5227a412de7eaa8c84a709d5	CHANGELOG.md	REGISTERED: one -- 'one thing', a pronoun
 3f2bd43656bd43151aa8ef10df1176152dc5e889	CHANGELOG.md	REGISTERED: 1029.5 -- MUON_COST.md's tier ratio
@@ -718,6 +719,7 @@ ffc9ecfeb990967e9d6d644890750f0754208e1a	cpp/patches/README.md	REGISTERED: four,
 f1d04da00f8c3dd4297a7fb675e3cdde5460f8b0	cpp/tools/README.md	REGISTERED: one -- a pronoun ('the committed one')
 fd250c90cc595d332c9a6d8d094c4f25c7e16609	cpp/tools/README.md	REGISTERED: two, one -- 'two conforming Geant4 builds of one source': the two compiler configurations the F-3 measurement compares
 c683717b77cb162b9b198e16ca82acbfa58d21b3	docs/geant4-developers.md	REGISTERED: 4, 3 -- the digits of the seam variable `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
+ffd1a6eed45f828bd1e6836c32324234f56575b9	docs/geant4-developers.md	REGISTERED: 2 -- 2pF, a name
 296a39d306a076df7dc3a5e59057d4db560c0316	paper/muonic-data/paper.md	REGISTERED: 6 -- part of the name ENDF-6, the format the ENDF-6 Formats Manual specifies; a name, not a quantity
 af07cde6aa19f388476de4a17366a0b9dda6b70a	third_party/geant4/README.md	REGISTERED: 0 -- the NUL byte git's blob header ends with, spelled as the escape in the example
 c1c07f3c544b0b7083668ddf28de06790c656456	third_party/geant4/README.md	REGISTERED: three -- the lines of the fenced hashlib example that follows

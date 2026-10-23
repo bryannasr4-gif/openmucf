@@ -20,6 +20,8 @@ G4HadronicParameters::Instance()->SetEnableMuonicData(true);  // #include "G4Had
 
 Exporting `G4MUONICDATA_D3_PROFILE=mudirac130p1` too gives the cascade the K and shell energies of the patched MuDirac up to the chain's last ([`DATASET_D3.md`](../DATASET_D3.md) section 8).
 
+No bound on the model's own uncertainty is stated for those energies: the tables leave out nuclear polarization, the self energy, vacuum polarization beyond the Uehling potential, recoil beyond the reduced mass, electron screening, hyperfine structure and nuclear charge distributions other than 2pF ([`DATASET_D3.md`](../DATASET_D3.md)).
+
 ## What has been checked
 
 - **Parity.** The `parity` tables reproduce the capture data compiled into Geant4 v11.4.2 and v11.5.0.beta bit-for-bit on the builds [`DATASET_D1.md`](../DATASET_D1.md) section 4 names; a committed digest lets CI check this without Geant4.
@@ -39,6 +41,7 @@ Exporting `G4MUONICDATA_D3_PROFILE=mudirac130p1` too gives the cascade the K and
 ## Stopped-muon benchmark
 
 [`BENCHMARK_STOPPED_MU.md`](../BENCHMARK_STOPPED_MU.md) compares what unpatched Geant4 v11.4.2 and v11.5.0.beta return at the capture of a stopped negative muon with measured yields, under a rule fixed before the runs and a later addition it discloses; it is generated from the outputs of the application in [`cpp/stopped_muon/`](../cpp/stopped_muon/README.md). The document also compares the branching of the stock muonic cascade, `G4EmCaptureCascade`, with the cascades the compiled binaries emit and with measured K-series intensity ratios.
+Its section on the other stages of a stopped muon restates, with a pointer to each, what [`DATASET_D1.md`](../DATASET_D1.md), [`DATASET_D2.md`](../DATASET_D2.md) and [`DATASET_D3.md`](../DATASET_D3.md) state about the atom that captures the muon, the energies of its X-rays, the capture-table record that answers a stop and the rate at which the bound muon disappears.
 
 ## Taking it upstream
 

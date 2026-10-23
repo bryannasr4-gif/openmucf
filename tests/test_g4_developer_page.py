@@ -75,6 +75,12 @@ COPIED = (
         "none is fitted away",
         "DATASET_D3.md",
     ),
+    (
+        "the tables leave out nuclear polarization, the self energy, vacuum polarization beyond the "
+        "Uehling potential, recoil beyond the reduced mass, electron screening, hyperfine structure and "
+        "nuclear charge distributions other than 2pF",
+        "DATASET_D3.md",
+    ),
 )
 
 
