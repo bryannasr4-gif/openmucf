@@ -37,6 +37,7 @@ from openmucf.g4 import d1_mixture as mixture
 from openmucf.g4 import d2
 from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import spec as g4spec
+from openmucf.g4.sources import mudirac130
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "g4" / "stopped_mu"
@@ -1589,7 +1590,7 @@ def stage_inputs(root: Path) -> Stages:
         ratio_min=selector["ratio_min"],
         ratio_median=selector["ratio_median"],
         ratio_max=selector["ratio_max"],
-        d3_profile=d3c.md.PROFILE,
+        d3_profile=mudirac130.PROFILE,
         d3_sources=tuple(D3_SOURCES[name] for name in dict.fromkeys(row["source"] for row in projection)),
         gated=len(projection),
         stock_within=sum(row["stock_within"] == "true" for row in projection),
