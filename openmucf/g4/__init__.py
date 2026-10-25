@@ -24,7 +24,8 @@ import importlib as _importlib
 from types import ModuleType
 
 _SUBMODULES = ("spec", "provenance", "emit", "d3_contract", "d3_numerical", "d3_centroids", "d3_attribution",
-               "d2", "d1_natural", "d1_lifetime", "stopped_mu", "d1_mixture", "capture_cascade")
+               "d2", "d1_natural", "d1_lifetime", "stopped_mu", "d1_mixture", "capture_cascade",
+               "d1_boundrates")
 
 
 def __getattr__(name: str) -> ModuleType:
@@ -40,5 +41,6 @@ def __dir__() -> list[str]:
     return sorted(set(globals()) | set(_SUBMODULES))
 
 
-__all__ = ["capture_cascade", "d1_lifetime", "d1_mixture", "d1_natural", "d2", "d3_attribution",
-           "d3_centroids", "d3_contract", "d3_numerical", "emit", "provenance", "spec", "stopped_mu"]
+__all__ = ["capture_cascade", "d1_boundrates", "d1_lifetime", "d1_mixture", "d1_natural", "d2",
+           "d3_attribution", "d3_centroids", "d3_contract", "d3_numerical", "emit", "provenance",
+           "spec", "stopped_mu"]
