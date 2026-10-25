@@ -1,0 +1,35 @@
+diff --git a/source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc b/source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc
+--- a/source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc
++++ b/source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc
+@@ -147,7 +147,8 @@
+ 
+   G4DynamicParticle* dp = new G4DynamicParticle(muonicAtom, G4RandomDirection(), 0.);
+   G4HadSecondary hadSec(dp);
+-  hadSec.SetTime(time0);
++  // Secondary times are local; the common loop adds the stop time.
++  hadSec.SetTime(0.);
+   result->AddSecondary(hadSec);
+ 
+   // Fill results
+diff --git a/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc b/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc
+--- a/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc
++++ b/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc
+@@ -50,6 +50,7 @@
+ #include "G4HadronStoppingProcess.hh"
+ 
+ #include "G4Element.hh"
++#include <algorithm>
+ #include "G4EmCaptureCascade.hh"
+ #include "G4HadFinalState.hh"
+ #include "G4HadProjectile.hh"
+@@ -249,7 +250,9 @@
+     for (std::size_t i = 0; i < nnuc; ++i)
+     {
+       G4HadSecondary* sec = resultNuc->GetSecondary(i);
+-      sec->SetTime(capTime + sec->GetTime());
++      // An unset negative model time is not a physical delay.
++      // Preserve positive model delays, then add the sampled waiting time.
++      sec->SetTime(capTime + std::max(0., sec->GetTime()));
+     }
+ 
+     nSecondaries += nnuc;
