@@ -1,0 +1,5 @@
+# These observer bodies and trace patches are identified by exact tested bytes.
+*.cc -text
+*.patch -text
+CMakeLists.txt -text
+LICENSE -text

@@ -1,0 +1,80 @@
+diff --git a/source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc b/source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc
+--- a/source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc
++++ b/source/processes/hadronic/stopping/src/G4MuonMinusAtomicCapture.cc
+@@ -148,7 +148,8 @@
+ 
+   G4DynamicParticle* dp = new G4DynamicParticle(muonicAtom,G4RandomDirection(),0.);
+   G4HadSecondary hadSec(dp);
+-  hadSec.SetTime(time0);
++  // Secondary times are local; the common loop adds the stop time.
++  hadSec.SetTime(0.);
+   result->AddSecondary(hadSec);
+ 
+   // Fill results
+diff --git a/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc b/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc
+--- a/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc
++++ b/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc
+@@ -57,6 +57,7 @@
+ #include "G4HadSecondary.hh"
+ #include "G4Material.hh"
+ #include "G4Element.hh"
++#include <algorithm>
+ 
+ //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
+ 
+@@ -246,7 +247,9 @@
+     // add delay time of capture
+     for(std::size_t i=0; i<nnuc; ++i) { 
+       G4HadSecondary* sec = resultNuc->GetSecondary(i);
+-      sec->SetTime(capTime + sec->GetTime());
++      // An unset negative model time is not a physical delay.
++      // Preserve positive model delays, then add the sampled waiting time.
++      sec->SetTime(capTime + std::max(0., sec->GetTime()));
+     }
+ 
+     nSecondaries += nnuc;
+diff --git a/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc b/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
+--- a/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
++++ b/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
+@@ -61,6 +61,7 @@
+ #include "G4RandomDirection.hh"
+ #include "G4PhysicalConstants.hh"
+ #include "G4SystemOfUnits.hh"
++#include <algorithm>
+ 
+ //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
+ 
+@@ -422,11 +423,11 @@
+     for(G4int i=0; i<nsec; ++i) {
+       G4HadSecondary* sec = result->GetSecondary(i);
+       G4double ctime = sec->GetTime();
+-      sec->SetTime(maDTime + ctime); // we add time0 in the next stage
++      sec->SetTime(maDTime + std::max(0., ctime)); // we add time0 in the next stage
+ #ifdef G4VERBOSE
+       if (GetVerboseLevel()>1) {
+         G4cout << "G4MuonicAtomDecay::DecayIt time set to: "
+-               << (maDTime + ctime)/ns << "[ns]" << G4endl;
++               << sec->GetTime()/ns << "[ns]" << G4endl;
+       }
+ #endif
+     }
+diff --git a/source/processes/hadronic/stopping/src/G4MuMinusCapturePrecompound.cc b/source/processes/hadronic/stopping/src/G4MuMinusCapturePrecompound.cc
+--- a/source/processes/hadronic/stopping/src/G4MuMinusCapturePrecompound.cc
++++ b/source/processes/hadronic/stopping/src/G4MuMinusCapturePrecompound.cc
+@@ -42,6 +42,7 @@
+ //-----------------------------------------------------------------------------
+ 
+ #include "G4MuMinusCapturePrecompound.hh"
++#include <algorithm>
+ #include "Randomize.hh" 
+ #include "G4RandomDirection.hh"
+ #include "G4PhysicalConstants.hh"
+@@ -240,7 +241,7 @@
+       G4ReactionProduct* rp = (*rpv)[i];
+ 
+       // reaction time
+-      fTime = time0 + rp->GetTOF();
++      fTime = time0 + std::max(rp->GetFormationTime(), 0.0);
+       G4ThreeVector direction = rp->GetMomentum().unit();
+       AddNewParticle(rp->GetDefinition(), direction, rp->GetKineticEnergy());
+       delete rp;

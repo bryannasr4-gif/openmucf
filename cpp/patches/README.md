@@ -62,6 +62,10 @@ are unchanged and keep reporting each route's own prescription, not the pair a c
 the opt-in on. The pair reproduces one prescription on both routes; it is not a statement of physical
 accuracy, and it leaves the timing of the products both routes emit as it was.
 
+A [separate clock correction](../clock/README.md) is available for explicitly patched
+builds. It changes the applied build's default product times independently of these
+dataset and bound-rate options; installing or enabling those options does not apply it.
+
 Discovery follows the `G4FindDataDir` lookup Geant4 provides: an exported `G4MUONICDATA`, or, once
 the dataset is registered, the entry under `GEANT4_DATA_DIR` or, when that variable is unset or
 names no directory, under the default system paths `G4FindDataDir` searches next. Setting the

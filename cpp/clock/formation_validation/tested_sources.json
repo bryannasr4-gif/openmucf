@@ -1,0 +1,21 @@
+{
+  "files": {
+    "formation_observer.cc": "68ac001c2cd4c687d0a45e454ef8b8f02bbaae34ea1ca99069369e8c4c1111ab",
+    "audit_transport.cc": "ef34123a0459599a3368776d8484d70dd81b567ec459f30477c0a2ac674ae699",
+    "LICENSE": "e2e3b456d6f939a98438eb22c6b7ac6ad4306321010493ac6e014980dfca567f",
+    "CMakeLists.txt": "b8bb784a28427908c618d9fb198a5c83dbdb1ab15290b9136f87ab5a7cd6e27d"
+  },
+  "comparator_cmake_normalization": "Only the observer source basename changes to formation_observer.cc; executable source bodies are unchanged.",
+  "revisions": {
+    "v11.4.2": {
+      "old": "3f3bd3a222c45070ba0d5d71f10af6c660a13d99b315e22aaf69d257c9157094",
+      "new": "e05c54c3be6cba49a3d00e9820e39041a4c53b9653f079a9abbbd9efd4621bc3",
+      "zero": "125a51270619a22c0080c49ea03a1a8a907b6b62ee3918b418583db94bab303f"
+    },
+    "v11.5.0.beta": {
+      "old": "f7ebaa2c135289d85af5a5312987e27031083b7480672feb9f1688aed7b9f161",
+      "new": "a3b02b551de8adf8b09d319bcf4b550b6c812e60712c892fba769560e37f5544",
+      "zero": "1fe27d33212105f434ae2aa08c8128dc33eba297c5bf02cc15fb3a8287c863d4"
+    }
+  }
+}
