@@ -36,6 +36,9 @@ data/g4/d3/reference/** -text
 # The copy of release v1.3.0's D3 comparison file, pinned by that file's git blob id: a checkout that rewrote its line
 # endings would break the pin (data/g4/d3/* does not cross into history/).
 data/g4/d3/history/* -text
+# The first bound-rate summary's results, kept as committed and pinned by sha256 (data/g4/d1/* does not cross
+# into history/), so a checkout must not rewrite their line endings.
+data/g4/d1/history/* -text
 # The Geant4 patches: their added-file hunks are the reader's LF bytes and a test compares them
 # byte-for-byte against cpp/include and cpp/src, so a checkout must not rewrite their line endings.
 cpp/patches/*.patch -text

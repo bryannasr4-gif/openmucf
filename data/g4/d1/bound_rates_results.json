@@ -1,0 +1,2597 @@
+{
+ "CLOCK_RESULTS": {
+  "delivery_status": "PASS",
+  "groups": {
+   "C-12:v11.4.2:atomic": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "atom_capture@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6271794,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_capture@1000": {
+      "as_predicted": true,
+      "fail": 6260824,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 6260824,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_capture@250": {
+      "as_predicted": true,
+      "fail": 6256202,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 6256202,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 20000000,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_creation@1000": {
+      "as_predicted": true,
+      "fail": 20000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+9",
+      "n": 20000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@250": {
+      "as_predicted": true,
+      "fail": 20000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+7",
+      "n": 20000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 18452777,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_dio@1000": {
+      "as_predicted": true,
+      "fail": 18455667,
+      "max_abs_residual_ns": "0x1.f400000000020p+9",
+      "n": 18455667,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@250": {
+      "as_predicted": true,
+      "fail": 18456394,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 18456394,
+      "predicted": "fail",
+      "verdict": "fail"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "C-12:v11.4.2:stopping": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "stop_capture@0": {
+      "as_predicted": true,
+      "fail": 9675773,
+      "max_abs_residual_ns": "0x1.0000000000000p+0",
+      "n": 9675773,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@1000": {
+      "as_predicted": true,
+      "fail": 9685472,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 9685472,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@250": {
+      "as_predicted": true,
+      "fail": 9700102,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 9700102,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 18458140,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@1000": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 18456556,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@250": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 18454329,
+      "predicted": "pass",
+      "verdict": "pass"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "C-12:v11.5.0.beta:atomic": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "atom_capture@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6263361,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_capture@1000": {
+      "as_predicted": true,
+      "fail": 6274193,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 6274193,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_capture@250": {
+      "as_predicted": true,
+      "fail": 6265868,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 6265868,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 20000000,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_creation@1000": {
+      "as_predicted": true,
+      "fail": 20000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+9",
+      "n": 20000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@250": {
+      "as_predicted": true,
+      "fail": 20000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+7",
+      "n": 20000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 18455088,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_dio@1000": {
+      "as_predicted": true,
+      "fail": 18452092,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 18452092,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@250": {
+      "as_predicted": true,
+      "fail": 18454871,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 18454871,
+      "predicted": "fail",
+      "verdict": "fail"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "C-12:v11.5.0.beta:stopping": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "stop_capture@0": {
+      "as_predicted": true,
+      "fail": 9692067,
+      "max_abs_residual_ns": "0x1.0000000000000p+0",
+      "n": 9692067,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@1000": {
+      "as_predicted": true,
+      "fail": 9694785,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 9694785,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@250": {
+      "as_predicted": true,
+      "fail": 9689502,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 9689502,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 18455628,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@1000": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 18454821,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@250": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 18455880,
+      "predicted": "pass",
+      "verdict": "pass"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "N-14:v11.4.2:atomic": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "atom_capture@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 4127593,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_capture@1000": {
+      "as_predicted": true,
+      "fail": 4118088,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 4118088,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_capture@250": {
+      "as_predicted": true,
+      "fail": 4119825,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 4119825,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 8000000,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_creation@1000": {
+      "as_predicted": true,
+      "fail": 8000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+9",
+      "n": 8000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@250": {
+      "as_predicted": true,
+      "fail": 8000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+7",
+      "n": 8000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6946159,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_dio@1000": {
+      "as_predicted": true,
+      "fail": 6948627,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 6948627,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@250": {
+      "as_predicted": true,
+      "fail": 6948098,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 6948098,
+      "predicted": "fail",
+      "verdict": "fail"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "N-14:v11.4.2:stopping": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "stop_capture@0": {
+      "as_predicted": true,
+      "fail": 5522508,
+      "max_abs_residual_ns": "0x1.0000000000000p+0",
+      "n": 5522508,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@1000": {
+      "as_predicted": true,
+      "fail": 5532447,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 5532447,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@250": {
+      "as_predicted": true,
+      "fail": 5523700,
+      "max_abs_residual_ns": "0x1.0000000002000p+0",
+      "n": 5523700,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6949384,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@1000": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6947372,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@250": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6949251,
+      "predicted": "pass",
+      "verdict": "pass"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "N-14:v11.5.0.beta:atomic": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "atom_capture@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 4124842,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_capture@1000": {
+      "as_predicted": true,
+      "fail": 4117575,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 4117575,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_capture@250": {
+      "as_predicted": true,
+      "fail": 4120321,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 4120321,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 8000000,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_creation@1000": {
+      "as_predicted": true,
+      "fail": 8000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+9",
+      "n": 8000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@250": {
+      "as_predicted": true,
+      "fail": 8000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+7",
+      "n": 8000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6946866,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_dio@1000": {
+      "as_predicted": true,
+      "fail": 6948953,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 6948953,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@250": {
+      "as_predicted": true,
+      "fail": 6948204,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 6948204,
+      "predicted": "fail",
+      "verdict": "fail"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "N-14:v11.5.0.beta:stopping": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "stop_capture@0": {
+      "as_predicted": true,
+      "fail": 5518228,
+      "max_abs_residual_ns": "0x1.0000000000000p+0",
+      "n": 5518228,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@1000": {
+      "as_predicted": true,
+      "fail": 5527791,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 5527791,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@250": {
+      "as_predicted": true,
+      "fail": 5534029,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 5534029,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6950447,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@1000": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6948358,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@250": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 6947619,
+      "predicted": "pass",
+      "verdict": "pass"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "O-16:v11.4.2:atomic": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "atom_capture@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 2926525,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_capture@1000": {
+      "as_predicted": true,
+      "fail": 2923733,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 2923733,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_capture@250": {
+      "as_predicted": true,
+      "fail": 2921044,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 2921044,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 4000000,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_creation@1000": {
+      "as_predicted": true,
+      "fail": 4000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+9",
+      "n": 4000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@250": {
+      "as_predicted": true,
+      "fail": 4000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+7",
+      "n": 4000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 3263530,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_dio@1000": {
+      "as_predicted": true,
+      "fail": 3264173,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 3264173,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@250": {
+      "as_predicted": true,
+      "fail": 3264905,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 3264905,
+      "predicted": "fail",
+      "verdict": "fail"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "O-16:v11.4.2:stopping": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "stop_capture@0": {
+      "as_predicted": true,
+      "fail": 4483515,
+      "max_abs_residual_ns": "0x1.0000000000000p+0",
+      "n": 4483515,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@1000": {
+      "as_predicted": true,
+      "fail": 4488510,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 4488510,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@250": {
+      "as_predicted": true,
+      "fail": 4480364,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 4480364,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 3264682,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@1000": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 3264030,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@250": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 3265157,
+      "predicted": "pass",
+      "verdict": "pass"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "O-16:v11.5.0.beta:atomic": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "atom_capture@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 2922598,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_capture@1000": {
+      "as_predicted": true,
+      "fail": 2924202,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 2924202,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_capture@250": {
+      "as_predicted": true,
+      "fail": 2923311,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 2923311,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 4000000,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_creation@1000": {
+      "as_predicted": true,
+      "fail": 4000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+9",
+      "n": 4000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_creation@250": {
+      "as_predicted": true,
+      "fail": 4000000,
+      "max_abs_residual_ns": "0x1.f400000000000p+7",
+      "n": 4000000,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 3264630,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "atom_dio@1000": {
+      "as_predicted": true,
+      "fail": 3264241,
+      "max_abs_residual_ns": "0x1.f400000000010p+9",
+      "n": 3264241,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "atom_dio@250": {
+      "as_predicted": true,
+      "fail": 3264436,
+      "max_abs_residual_ns": "0x1.f400000000040p+7",
+      "n": 3264436,
+      "predicted": "fail",
+      "verdict": "fail"
+     }
+    },
+    "physical_verdict": "fail"
+   },
+   "O-16:v11.5.0.beta:stopping": {
+    "delivery": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "physical": {
+     "stop_capture@0": {
+      "as_predicted": true,
+      "fail": 4489782,
+      "max_abs_residual_ns": "0x1.0000000000000p+0",
+      "n": 4489782,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@1000": {
+      "as_predicted": true,
+      "fail": 4480368,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 4480368,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_capture@250": {
+      "as_predicted": true,
+      "fail": 4488244,
+      "max_abs_residual_ns": "0x1.0000000001000p+0",
+      "n": 4488244,
+      "predicted": "fail",
+      "verdict": "fail"
+     },
+     "stop_dio@0": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 3264291,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@1000": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 3265202,
+      "predicted": "pass",
+      "verdict": "pass"
+     },
+     "stop_dio@250": {
+      "as_predicted": true,
+      "fail": 0,
+      "max_abs_residual_ns": "0x0.0p+0",
+      "n": 3264132,
+      "predicted": "pass",
+      "verdict": "pass"
+     }
+    },
+    "physical_verdict": "fail"
+   }
+  },
+  "not_as_predicted": [],
+  "physical_failures": [
+   "C-12:v11.4.2:atomic:atom_capture@1000",
+   "C-12:v11.4.2:atomic:atom_capture@250",
+   "C-12:v11.4.2:atomic:atom_creation@1000",
+   "C-12:v11.4.2:atomic:atom_creation@250",
+   "C-12:v11.4.2:atomic:atom_dio@1000",
+   "C-12:v11.4.2:atomic:atom_dio@250",
+   "C-12:v11.4.2:stopping:stop_capture@0",
+   "C-12:v11.4.2:stopping:stop_capture@1000",
+   "C-12:v11.4.2:stopping:stop_capture@250",
+   "C-12:v11.5.0.beta:atomic:atom_capture@1000",
+   "C-12:v11.5.0.beta:atomic:atom_capture@250",
+   "C-12:v11.5.0.beta:atomic:atom_creation@1000",
+   "C-12:v11.5.0.beta:atomic:atom_creation@250",
+   "C-12:v11.5.0.beta:atomic:atom_dio@1000",
+   "C-12:v11.5.0.beta:atomic:atom_dio@250",
+   "C-12:v11.5.0.beta:stopping:stop_capture@0",
+   "C-12:v11.5.0.beta:stopping:stop_capture@1000",
+   "C-12:v11.5.0.beta:stopping:stop_capture@250",
+   "N-14:v11.4.2:atomic:atom_capture@1000",
+   "N-14:v11.4.2:atomic:atom_capture@250",
+   "N-14:v11.4.2:atomic:atom_creation@1000",
+   "N-14:v11.4.2:atomic:atom_creation@250",
+   "N-14:v11.4.2:atomic:atom_dio@1000",
+   "N-14:v11.4.2:atomic:atom_dio@250",
+   "N-14:v11.4.2:stopping:stop_capture@0",
+   "N-14:v11.4.2:stopping:stop_capture@1000",
+   "N-14:v11.4.2:stopping:stop_capture@250",
+   "N-14:v11.5.0.beta:atomic:atom_capture@1000",
+   "N-14:v11.5.0.beta:atomic:atom_capture@250",
+   "N-14:v11.5.0.beta:atomic:atom_creation@1000",
+   "N-14:v11.5.0.beta:atomic:atom_creation@250",
+   "N-14:v11.5.0.beta:atomic:atom_dio@1000",
+   "N-14:v11.5.0.beta:atomic:atom_dio@250",
+   "N-14:v11.5.0.beta:stopping:stop_capture@0",
+   "N-14:v11.5.0.beta:stopping:stop_capture@1000",
+   "N-14:v11.5.0.beta:stopping:stop_capture@250",
+   "O-16:v11.4.2:atomic:atom_capture@1000",
+   "O-16:v11.4.2:atomic:atom_capture@250",
+   "O-16:v11.4.2:atomic:atom_creation@1000",
+   "O-16:v11.4.2:atomic:atom_creation@250",
+   "O-16:v11.4.2:atomic:atom_dio@1000",
+   "O-16:v11.4.2:atomic:atom_dio@250",
+   "O-16:v11.4.2:stopping:stop_capture@0",
+   "O-16:v11.4.2:stopping:stop_capture@1000",
+   "O-16:v11.4.2:stopping:stop_capture@250",
+   "O-16:v11.5.0.beta:atomic:atom_capture@1000",
+   "O-16:v11.5.0.beta:atomic:atom_capture@250",
+   "O-16:v11.5.0.beta:atomic:atom_creation@1000",
+   "O-16:v11.5.0.beta:atomic:atom_creation@250",
+   "O-16:v11.5.0.beta:atomic:atom_dio@1000",
+   "O-16:v11.5.0.beta:atomic:atom_dio@250",
+   "O-16:v11.5.0.beta:stopping:stop_capture@0",
+   "O-16:v11.5.0.beta:stopping:stop_capture@1000",
+   "O-16:v11.5.0.beta:stopping:stop_capture@250"
+  ],
+  "physical_status": "FAIL",
+  "roster_problems": []
+ },
+ "RATE_RESULTS": {
+  "groups": {
+   "C-12:v11.4.2:atomic": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 60000000,
+     "exact_events": 60000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 60000000,
+     "recovered_max_relative_deviation": "0x0.0p+0",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "C-12:v11.4.2:stopping": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 60000000,
+     "exact_events": 60000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "C-12:v11.5.0.beta:atomic": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 60000000,
+     "exact_events": 60000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 60000000,
+     "recovered_max_relative_deviation": "0x0.0p+0",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 20000000,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "C-12:v11.5.0.beta:stopping": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 60000000,
+     "exact_events": 60000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 20000000,
+       "exact_events": 20000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "N-14:v11.4.2:atomic": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 24000000,
+     "exact_events": 24000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "N-14:v11.4.2:stopping": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 24000000,
+     "exact_events": 24000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "N-14:v11.5.0.beta:atomic": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 24000000,
+     "exact_events": 24000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.12fb53980166dp-53",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "N-14:v11.5.0.beta:stopping": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 24000000,
+     "exact_events": 24000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 8000000,
+       "exact_events": 8000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "O-16:v11.4.2:atomic": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 12000000,
+     "exact_events": 12000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "O-16:v11.4.2:stopping": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 12000000,
+     "exact_events": 12000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "O-16:v11.5.0.beta:atomic": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 12000000,
+     "exact_events": 12000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x1.1317809396fe3p-53",
+       "verdict": "pass"
+      }
+     }
+    }
+   },
+   "O-16:v11.5.0.beta:stopping": {
+    "complete": {
+     "problems": [],
+     "verdict": "pass"
+    },
+    "rate": {
+     "events": 12000000,
+     "exact_events": 12000000,
+     "max_relative_deviation": "0x0.0p+0",
+     "problems": [],
+     "recovered_exact_events": 0,
+     "recovered_max_relative_deviation": "0x0.0p+0",
+     "verdict": "pass"
+    },
+    "strata": {
+     "0": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "250": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     },
+     "1000": {
+      "complete": {
+       "problems": [],
+       "verdict": "pass"
+      },
+      "rate": {
+       "events": 4000000,
+       "exact_events": 4000000,
+       "max_relative_deviation": "0x0.0p+0",
+       "problems": [],
+       "recovered_exact_events": 0,
+       "recovered_max_relative_deviation": "0x0.0p+0",
+       "verdict": "pass"
+      }
+     }
+    }
+   }
+  },
+  "roster_problems": [],
+  "status": "PASS"
+ },
+ "THEORY_STATUS": {
+  "accuracy": "not established: the checked stopping equation has no bounded physical remainder in this record; binding-expansion, omitted recoil, finite-size, screening and bound/free radiative contributions have no admitted bound. The independent point-Coulomb reference omits physical corrections and its abstract was exposed before the budget was fixed. FINAL denotes the interpretation only, not physical-accuracy admission",
+  "problems": [
+   "binding_expansion: no source",
+   "binding_expansion: status 'UNBOUNDED', not BOUNDED",
+   "binding_expansion: bound None is not a number",
+   "recoil: no source",
+   "recoil: status 'UNBOUNDED', not BOUNDED",
+   "recoil: bound None is not a number",
+   "finite_size: no source",
+   "finite_size: status 'UNBOUNDED', not BOUNDED",
+   "finite_size: bound None is not a number",
+   "radiative: no source",
+   "radiative: status 'UNBOUNDED', not BOUNDED",
+   "radiative: bound None is not a number",
+   "reference czarnecki_davydov_kaygorodov_2026: not stated unexposed before the manifest was frozen"
+  ],
+  "qualified_roster": [],
+  "screen": "SCREEN_VACUOUS",
+  "status": "NOT_ESTABLISHED"
+ },
+ "TRANSPORT_RESULTS": {
+  "distribution_rejections": [],
+  "groups": {
+   "C-12:v11.4.2:atomic": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "60000000",
+      "verdict": "pass",
+      "x2": "22.323975"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "4635162",
+      "verdict": "pass",
+      "x2": "26.905544"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "55364838",
+      "verdict": "pass",
+      "x2": "26.164140"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "4626316",
+       "4643919"
+      ],
+      "p_two_sided": "0.982165181607096",
+      "statistic": "4635162",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "59967040.67220242",
+       "60032970.735500865"
+      ],
+      "p_two_sided": "0.17051554518982404",
+      "shape": "60000000",
+      "statistic": "60010616.520807944",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "4626005.28044311",
+       "4644330.127259646"
+      ],
+      "p_two_sided": "0.9890537929582706",
+      "shape": "4635162",
+      "statistic": "4635191.203952373",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "55333177.581258215",
+       "55396509.82644507"
+      ],
+      "p_two_sided": "0.15478366276937405",
+      "shape": "55364838",
+      "statistic": "55375425.31685558",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 1547223,
+      "events": 20000000
+     },
+     "250": {
+      "captures": 1543606,
+      "events": 20000000
+     },
+     "1000": {
+      "captures": 1544333,
+      "events": 20000000
+     }
+    }
+   },
+   "C-12:v11.4.2:stopping": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "60000000",
+      "verdict": "pass",
+      "x2": "17.891466"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "4630975",
+      "verdict": "pass",
+      "x2": "29.346389"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "55369025",
+      "verdict": "pass",
+      "x2": "15.182123"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "4626316",
+       "4643919"
+      ],
+      "p_two_sided": "0.04528503172950004",
+      "statistic": "4630975",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "59967040.67220242",
+       "60032970.735500865"
+      ],
+      "p_two_sided": "0.7848740758289364",
+      "shape": "60000000",
+      "statistic": "60002114.13020274",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "4621822.419643537",
+       "4640138.988059217"
+      ],
+      "p_two_sided": "0.03993051700110806",
+      "shape": "4630975",
+      "statistic": "4635397.224881389",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "55337363.383895844",
+       "55400698.02380744"
+      ],
+      "p_two_sided": "0.7564513948109293",
+      "shape": "55369025",
+      "statistic": "55366716.90532135",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 1541860,
+      "events": 20000000
+     },
+     "250": {
+      "captures": 1545671,
+      "events": 20000000
+     },
+     "1000": {
+      "captures": 1543444,
+      "events": 20000000
+     }
+    }
+   },
+   "C-12:v11.5.0.beta:atomic": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "60000000",
+      "verdict": "pass",
+      "x2": "16.210879"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "4637949",
+      "verdict": "pass",
+      "x2": "23.935653"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "55362051",
+      "verdict": "pass",
+      "x2": "16.924628"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "4626316",
+       "4643919"
+      ],
+      "p_two_sided": "0.17073702316033318",
+      "statistic": "4637949",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "59967040.67220242",
+       "60032970.735500865"
+      ],
+      "p_two_sided": "0.9588996869781294",
+      "shape": "60000000",
+      "statistic": "59999600.483767994",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "4628789.526296295",
+       "4647119.881406461"
+      ],
+      "p_two_sided": "0.6441653106897526",
+      "shape": "4637949",
+      "statistic": "4636954.03155967",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "55330391.37828568",
+       "55393722.029417604"
+      ],
+      "p_two_sided": "0.9361797512781646",
+      "shape": "55362051",
+      "statistic": "55362646.45220832",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 1544912,
+      "events": 20000000
+     },
+     "250": {
+      "captures": 1545129,
+      "events": 20000000
+     },
+     "1000": {
+      "captures": 1547908,
+      "events": 20000000
+     }
+    }
+   },
+   "C-12:v11.5.0.beta:stopping": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "60000000",
+      "verdict": "pass",
+      "x2": "10.021755"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "4633671",
+      "verdict": "pass",
+      "x2": "15.343165"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "55366329",
+      "verdict": "pass",
+      "x2": "10.438174"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "4626316",
+       "4643919"
+      ],
+      "p_two_sided": "0.4850857507551784",
+      "statistic": "4633671",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "59967040.67220242",
+       "60032970.735500865"
+      ],
+      "p_two_sided": "0.20680151930647012",
+      "shape": "60000000",
+      "statistic": "59990221.61698462",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "4624515.754207161",
+       "4642837.653495594"
+      ],
+      "p_two_sided": "0.8878161636153814",
+      "shape": "4633671",
+      "statistic": "4633367.010690265",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "55334668.15486962",
+       "55398001.252833664"
+      ],
+      "p_two_sided": "0.2029039949798439",
+      "shape": "55366329",
+      "statistic": "55356854.60629436",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 1544372,
+      "events": 20000000
+     },
+     "250": {
+      "captures": 1544120,
+      "events": 20000000
+     },
+     "1000": {
+      "captures": 1545179,
+      "events": 20000000
+     }
+    }
+   },
+   "N-14:v11.4.2:atomic": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "24000000",
+      "verdict": "pass",
+      "x2": "37.528428"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "3157116",
+      "verdict": "pass",
+      "x2": "14.488725"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "20842884",
+      "verdict": "pass",
+      "x2": "31.332226"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "3149851",
+       "3163944"
+      ],
+      "p_two_sided": "0.8942227553814125",
+      "statistic": "3157116",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "23979156.787060518",
+       "24020854.620642707"
+      ],
+      "p_two_sided": "0.07166271131515801",
+      "shape": "24000000",
+      "statistic": "23991176.437362086",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "3149559.9387610205",
+       "3164683.4689414618"
+      ],
+      "p_two_sided": "0.7522012845219426",
+      "shape": "3157116",
+      "statistic": "3157676.7120533185",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "20823460.420507573",
+       "20862318.987195637"
+      ],
+      "p_two_sided": "0.03980603854935892",
+      "shape": "20842884",
+      "statistic": "20833499.72530877",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 1053841,
+      "events": 8000000
+     },
+     "250": {
+      "captures": 1051902,
+      "events": 8000000
+     },
+     "1000": {
+      "captures": 1051373,
+      "events": 8000000
+     }
+    }
+   },
+   "N-14:v11.4.2:stopping": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "24000000",
+      "verdict": "pass",
+      "x2": "11.084695"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "3153993",
+      "verdict": "pass",
+      "x2": "20.758122"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "20846007",
+      "verdict": "pass",
+      "x2": "12.124936"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "3149851",
+       "3163944"
+      ],
+      "p_two_sided": "0.07964206101017225",
+      "statistic": "3153993",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "23979156.787060518",
+       "24020854.620642707"
+      ],
+      "p_two_sided": "0.5892164698100523",
+      "shape": "24000000",
+      "statistic": "24002645.074681588",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "3146440.6797117325",
+       "3161556.727990749"
+      ],
+      "p_two_sided": "0.08653235353868081",
+      "shape": "3153993",
+      "statistic": "3157037.586414654",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "20826581.964965783",
+       "20865443.442737427"
+      ],
+      "p_two_sided": "0.9303300616011114",
+      "shape": "20846007",
+      "statistic": "20845607.488266934",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 1050616,
+      "events": 8000000
+     },
+     "250": {
+      "captures": 1050749,
+      "events": 8000000
+     },
+     "1000": {
+      "captures": 1052628,
+      "events": 8000000
+     }
+    }
+   },
+   "N-14:v11.5.0.beta:atomic": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "24000000",
+      "verdict": "pass",
+      "x2": "18.317915"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "3155977",
+      "verdict": "pass",
+      "x2": "16.208943"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "20844023",
+      "verdict": "pass",
+      "x2": "16.122113"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "3149851",
+       "3163944"
+      ],
+      "p_two_sided": "0.5793440077015067",
+      "statistic": "3155977",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "23979156.787060518",
+       "24020854.620642707"
+      ],
+      "p_two_sided": "0.06864755453960963",
+      "shape": "24000000",
+      "statistic": "24008920.502004813",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "3148422.3029214935",
+       "3163543.1047809883"
+      ],
+      "p_two_sided": "0.3555834027700972",
+      "shape": "3155977",
+      "statistic": "3157618.1122494778",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "20824598.88963932",
+       "20863458.518063888"
+      ],
+      "p_two_sided": "0.11086598597455151",
+      "shape": "20844023",
+      "statistic": "20851302.389755335",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 1053134,
+      "events": 8000000
+     },
+     "250": {
+      "captures": 1051796,
+      "events": 8000000
+     },
+     "1000": {
+      "captures": 1051047,
+      "events": 8000000
+     }
+    }
+   },
+   "N-14:v11.5.0.beta:stopping": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "24000000",
+      "verdict": "pass",
+      "x2": "19.460235"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "3153576",
+      "verdict": "pass",
+      "x2": "24.589299"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "20846424",
+      "verdict": "pass",
+      "x2": "16.858154"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "3149851",
+       "3163944"
+      ],
+      "p_two_sided": "0.04499724512578825",
+      "statistic": "3153576",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "23979156.787060518",
+       "24020854.620642707"
+      ],
+      "p_two_sided": "0.7352093999447009",
+      "shape": "24000000",
+      "statistic": "23998342.849947635",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "3146024.179364019",
+       "3161139.228338462"
+      ],
+      "p_two_sided": "0.1705196596021087",
+      "shape": "3153576",
+      "statistic": "3151142.452563379",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "20826998.770622153",
+       "20865860.637081057"
+      ],
+      "p_two_sided": "0.8649176338459038",
+      "shape": "20846424",
+      "statistic": "20847200.397384256",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 1049553,
+      "events": 8000000
+     },
+     "250": {
+      "captures": 1052381,
+      "events": 8000000
+     },
+     "1000": {
+      "captures": 1051642,
+      "events": 8000000
+     }
+    }
+   },
+   "O-16:v11.4.2:atomic": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "12000000",
+      "verdict": "pass",
+      "x2": "24.344860"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "2207392",
+      "verdict": "pass",
+      "x2": "27.421870"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "9792608",
+      "verdict": "pass",
+      "x2": "20.472493"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "2201563",
+       "2212987"
+      ],
+      "p_two_sided": "0.9296036870423691",
+      "statistic": "2207392",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "11985263.293218585",
+       "12014748.114484528"
+      ],
+      "p_two_sided": "0.19146553173333863",
+      "shape": "12000000",
+      "statistic": "12004525.238725109",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "2201074.7842080696",
+       "2213720.6234940444"
+      ],
+      "p_two_sided": "0.27835751643304074",
+      "shape": "2207392",
+      "statistic": "2205781.5033548707",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "9779296.07006621",
+       "9805931.337636853"
+      ],
+      "p_two_sided": "0.04994607352689274",
+      "shape": "9792608",
+      "statistic": "9798743.735370237",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 736470,
+      "events": 4000000
+     },
+     "250": {
+      "captures": 735095,
+      "events": 4000000
+     },
+     "1000": {
+      "captures": 735827,
+      "events": 4000000
+     }
+    }
+   },
+   "O-16:v11.4.2:stopping": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "12000000",
+      "verdict": "pass",
+      "x2": "14.705973"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "2206131",
+      "verdict": "pass",
+      "x2": "13.709820"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "9793869",
+      "verdict": "pass",
+      "x2": "16.496865"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "2201563",
+       "2212987"
+      ],
+      "p_two_sided": "0.39503020701498737",
+      "statistic": "2206131",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "11985263.293218585",
+       "12014748.114484528"
+      ],
+      "p_two_sided": "0.9239157030095129",
+      "shape": "12000000",
+      "statistic": "12000330.500073105",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "2199815.590488617",
+       "2212457.817213496"
+      ],
+      "p_two_sided": "0.5617365086177363",
+      "shape": "2206131",
+      "statistic": "2206992.648063728",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "9780556.212634025",
+       "9807193.195069037"
+      ],
+      "p_two_sided": "0.8653100503196169",
+      "shape": "9793869",
+      "statistic": "9793337.852009377",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 735318,
+      "events": 4000000
+     },
+     "250": {
+      "captures": 734843,
+      "events": 4000000
+     },
+     "1000": {
+      "captures": 735970,
+      "events": 4000000
+     }
+    }
+   },
+   "O-16:v11.5.0.beta:atomic": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "12000000",
+      "verdict": "pass",
+      "x2": "20.329343"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "2206693",
+      "verdict": "pass",
+      "x2": "21.225848"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "9793307",
+      "verdict": "pass",
+      "x2": "23.889937"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "2201563",
+       "2212987"
+      ],
+      "p_two_sided": "0.6659261723291527",
+      "statistic": "2206693",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "11985263.293218585",
+       "12014748.114484528"
+      ],
+      "p_two_sided": "0.7139280440769032",
+      "shape": "12000000",
+      "statistic": "11998729.821215982",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "2200376.7854053057",
+       "2213020.622296808"
+      ],
+      "p_two_sided": "0.3974681551373361",
+      "shape": "2206693",
+      "statistic": "2205435.952073027",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "9779994.594765896",
+       "9806630.812937167"
+      ],
+      "p_two_sided": "0.9967371259698921",
+      "shape": "9793307",
+      "statistic": "9793293.869142955",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 735370,
+      "events": 4000000
+     },
+     "250": {
+      "captures": 735564,
+      "events": 4000000
+     },
+     "1000": {
+      "captures": 735759,
+      "events": 4000000
+     }
+    }
+   },
+   "O-16:v11.5.0.beta:stopping": {
+    "distribution": {
+     "all": {
+      "critical_lo": "54.493685",
+      "n": "12000000",
+      "verdict": "pass",
+      "x2": "19.341897"
+     },
+     "capture": {
+      "critical_lo": "54.493685",
+      "n": "2206375",
+      "verdict": "pass",
+      "x2": "24.673791"
+     },
+     "decay": {
+      "critical_lo": "54.493685",
+      "n": "9793625",
+      "verdict": "pass",
+      "x2": "13.232232"
+     }
+    },
+    "primary": {
+     "capture_count": {
+      "interval": [
+       "2201563",
+       "2212987"
+      ],
+      "p_two_sided": "0.5036830346254264",
+      "statistic": "2206375",
+      "verdict": "pass"
+     },
+     "sum_all": {
+      "interval": [
+       "11985263.293218585",
+       "12014748.114484528"
+      ],
+      "p_two_sided": "0.46355215788078286",
+      "shape": "12000000",
+      "statistic": "12002539.067834059",
+      "verdict": "pass"
+     },
+     "sum_capture": {
+      "interval": [
+       "2200059.2409380726",
+       "2212702.166764041"
+      ],
+      "p_two_sided": "0.21650405962298933",
+      "shape": "2206375",
+      "statistic": "2208210.9324029232",
+      "verdict": "pass"
+     },
+     "sum_decay": {
+      "interval": [
+       "9780312.378540466",
+       "9806949.029162597"
+      ],
+      "p_two_sided": "0.8221484014834429",
+      "shape": "9793625",
+      "statistic": "9794328.135431137",
+      "verdict": "pass"
+     }
+    },
+    "strata": {
+     "0": {
+      "captures": 735709,
+      "events": 4000000
+     },
+     "250": {
+      "captures": 735868,
+      "events": 4000000
+     },
+     "1000": {
+      "captures": 734798,
+      "events": 4000000
+     }
+    }
+   }
+  },
+  "primary_rejections": [],
+  "roster_problems": [],
+  "status": "PASS"
+ }
+}

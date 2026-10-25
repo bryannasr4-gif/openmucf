@@ -1,0 +1,41 @@
+revision,route,check,expect,observed
+v11.4.2,stopping,"control: drill base vs pristine, switch off",same,True
+v11.4.2,stopping,"default_true vs drill base, switch off: records differ or the trace sees provider calls",differ_or_calls,True
+v11.4.2,stopping,control: drill base (trace): provider calls with the switch off,none,True
+v11.4.2,stopping,"extra_draw_off vs drill base, switch off",differ,True
+v11.4.2,stopping,"control: drill base vs previous overlay, parity, switch off",same,True
+v11.4.2,stopping,"old_switch vs previous overlay, parity, switch off",differ_or_calls,True
+v11.4.2,stopping,"control: drill base (trace), parity: provider calls with the switch off",none,True
+v11.4.2,stopping,harness extra draw vs unhooked,differ,True
+v11.4.2,stopping,harness early return: hook calls vs base calls,differ,True
+v11.4.2,atomic,"control: drill base vs pristine, switch off",same,True
+v11.4.2,atomic,"default_true vs drill base, switch off: records differ or the trace sees provider calls",differ_or_calls,True
+v11.4.2,atomic,control: drill base (trace): provider calls with the switch off,none,True
+v11.4.2,atomic,"extra_draw_off vs drill base, switch off",differ,False
+v11.4.2,atomic,"control: drill base vs previous overlay, parity, switch off",same,True
+v11.4.2,atomic,"old_switch vs previous overlay, parity, switch off",differ_or_calls,True
+v11.4.2,atomic,"control: drill base (trace), parity: provider calls with the switch off",none,True
+v11.4.2,atomic,harness extra draw vs unhooked,differ,True
+v11.4.2,atomic,harness early return: hook calls vs base calls,differ,True
+v11.5.0.beta,stopping,"control: drill base vs pristine, switch off",same,True
+v11.5.0.beta,stopping,"default_true vs drill base, switch off: records differ or the trace sees provider calls",differ_or_calls,True
+v11.5.0.beta,stopping,control: drill base (trace): provider calls with the switch off,none,True
+v11.5.0.beta,stopping,"extra_draw_off vs drill base, switch off",differ,True
+v11.5.0.beta,stopping,"control: drill base vs previous overlay, parity, switch off",same,True
+v11.5.0.beta,stopping,"old_switch vs previous overlay, parity, switch off",differ_or_calls,True
+v11.5.0.beta,stopping,"control: drill base (trace), parity: provider calls with the switch off",none,True
+v11.5.0.beta,stopping,harness extra draw vs unhooked,differ,True
+v11.5.0.beta,stopping,harness early return: hook calls vs base calls,differ,True
+v11.5.0.beta,atomic,"control: drill base vs pristine, switch off",same,True
+v11.5.0.beta,atomic,"default_true vs drill base, switch off: records differ or the trace sees provider calls",differ_or_calls,True
+v11.5.0.beta,atomic,control: drill base (trace): provider calls with the switch off,none,True
+v11.5.0.beta,atomic,"extra_draw_off vs drill base, switch off",differ,False
+v11.5.0.beta,atomic,"control: drill base vs previous overlay, parity, switch off",same,True
+v11.5.0.beta,atomic,"old_switch vs previous overlay, parity, switch off",differ_or_calls,True
+v11.5.0.beta,atomic,"control: drill base (trace), parity: provider calls with the switch off",none,True
+v11.5.0.beta,atomic,harness extra draw vs unhooked,differ,True
+v11.5.0.beta,atomic,harness early return: hook calls vs base calls,differ,True
+v11.4.2,atomic,"extra_draw_helper vs drill base, switch off",differ,True
+v11.4.2,stopping,"extra_draw_helper vs drill base, switch off (the route builds no muonic atom)",same,True
+v11.5.0.beta,atomic,"extra_draw_helper vs drill base, switch off",differ,True
+v11.5.0.beta,stopping,"extra_draw_helper vs drill base, switch off (the route builds no muonic atom)",same,True

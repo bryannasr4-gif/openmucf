@@ -1,18 +1,24 @@
 """Build ``harvest_mixture.cc`` against a Geant4 installation, run it on one cell, and summarize raw cells.
 
-  build      --install <dir> --kind pristine|patched --drill none|extra_draw|early_return --out <dir>
+  build      --install <dir> --kind pristine|patched|bound --drill none|extra_draw|early_return
+             [--trace on|off] --out <dir>
   run        --build <dir> --route stopping|atomic --symbol <El> --z <Z> --events <n> --seed-base <s>
              --data <GEANT4_DATA_DIR> --profile parity|<name>|pristine --hooks on|off --identity on|off
-             --out <dir> [--drill-a <A>]
+             --out <dir> [--drill-a <A>] [--isotope <A>] [--t0 <ns>] [--event-offset <i0>]
+             [--bound-rates on|off] [--bound-record on|off] [--rng-states on|off]
+             [--synthetic-capture-scale <s>]
   summarize  --root <repository> --cells <cells.json> --out <dir>
+  summarize-bound  --root <repository> --plan <plan.json> --out <dir> [--jobs <n>]
 
 ``build`` compiles the committed source with the flags it records in its own ``build.json`` (with the
 compiler, the Geant4 version, the source and binary SHA-256 and the SHA-256 of every library the binary
 loads); a summary reads each cell's flags from that record, never from a constant. ``run`` records the argv,
 the environment it sets, the return code, the wall time and the SHA-256 of what the binary wrote.
-``summarize`` turns raw cells into the committed CSV files through :mod:`openmucf.g4.d1_mixture`, imported
-from the repository without running the parent package's ``__init__`` (which needs packages a Geant4 host may
-lack). Standard library only.
+``summarize-bound`` turns the chunks of a bound-rate harvest into ``bound_rates_harvest.csv`` and
+``bound_rates_builds.csv`` through :mod:`openmucf.g4.d1_boundrates`, summarizing chunks in ``--jobs``
+processes first. ``summarize`` turns raw cells into the committed CSV files through
+:mod:`openmucf.g4.d1_mixture`, imported from the repository without running the parent package's ``__init__``
+(which needs packages a Geant4 host may lack). Standard library only.
 """
 
 from __future__ import annotations
@@ -24,6 +30,7 @@ import importlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -41,10 +48,27 @@ DRILL_DEFINES = {
     "extra_draw": ["-DHARVEST_MIXTURE_DRILL_EXTRA_DRAW"],
     "early_return": ["-DHARVEST_MIXTURE_DRILL_EARLY_RETURN"],
 }
+#: The defines of each build kind: an unpatched install, an install carrying the muonic-data patch, and an
+#: install carrying the patch with the bound-rate provider.
+KIND_DEFINES = {
+    "pristine": [],
+    "patched": ["-DHARVEST_MIXTURE_PATCHED"],
+    "bound": ["-DHARVEST_MIXTURE_PATCHED", "-DHARVEST_MIXTURE_BOUND_RATES"],
+}
+#: The functions a trace build defines and exports, so that the Geant4 libraries' calls bind to them.
+TRACED_SYMBOLS = (
+    "_ZN25G4MuonicBoundRateProvider5RatesEiiddR18G4MuonicBoundRates",
+    "_ZN18G4CascadeInterface13ApplyYourselfERK15G4HadProjectileR9G4Nucleus",
+    "_ZN27G4MuMinusCapturePrecompound13ApplyYourselfERK15G4HadProjectileR9G4Nucleus",
+)
 
 
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def output(argv: list[str], env: dict[str, str] | None = None) -> str:
@@ -65,14 +89,17 @@ def libraries(binary: Path, install: Path) -> list[dict[str, str]]:
     return out
 
 
-def build(install: Path, kind: str, drill: str, out: Path) -> None:
+def build(install: Path, kind: str, drill: str, out: Path, trace: bool = False) -> None:
     if out.exists() and any(out.iterdir()):
         raise RuntimeError(f"non-empty build directory {out}")
     out.mkdir(parents=True, exist_ok=True)
     config = install / "bin" / "geant4-config"
     cflags = output([str(config), "--cflags"]).split()
     libs = output([str(config), "--libs"]).split()
-    defines = (["-DHARVEST_MIXTURE_PATCHED"] if kind == "patched" else []) + DRILL_DEFINES[drill]
+    if trace and kind != "bound":
+        raise RuntimeError("a trace build needs the bound kind")
+    defines = KIND_DEFINES[kind] + DRILL_DEFINES[drill] + (["-DHARVEST_MIXTURE_TRACE"] if trace else [])
+    exports = [f"-Wl,--export-dynamic-symbol={name}" for name in TRACED_SYMBOLS] if trace else []
     binary = out / "harvest_mixture"
     argv = [
         "g++",
@@ -83,6 +110,7 @@ def build(install: Path, kind: str, drill: str, out: Path) -> None:
         str(binary),
         *cflags,
         *libs,
+        *exports,
         f"-Wl,-rpath,{install / 'lib'}",
     ]
     start = time.monotonic()
@@ -93,6 +121,7 @@ def build(install: Path, kind: str, drill: str, out: Path) -> None:
     record = {
         "kind": kind,
         "drill": drill,
+        "trace": trace,
         "install": str(install),
         "geant4_version": output([str(config), "--version"]).strip(),
         "gcc": output(["g++", "--version"]).splitlines()[0],
@@ -105,7 +134,7 @@ def build(install: Path, kind: str, drill: str, out: Path) -> None:
     }
     (out / "build.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(
-        f"BUILD {out} kind={kind} drill={drill} binary_sha256={record['binary_sha256']} "
+        f"BUILD {out} kind={kind} drill={drill} trace={trace} binary_sha256={record['binary_sha256']} "
         f"source_sha256={record['source_sha256']} flags={record['compile_flags']!r}",
         flush=True,
     )
@@ -126,7 +155,7 @@ def run(args: argparse.Namespace) -> None:
     }
     opt_in = "off"
     if args.profile != "pristine":
-        if info["kind"] != "patched":
+        if info["kind"] not in ("patched", "bound"):
             raise RuntimeError("a profile needs a patched build")
         opt_in = "on"
         if args.profile != "parity":
@@ -154,13 +183,26 @@ def run(args: argparse.Namespace) -> None:
     ]
     if args.drill_a:
         argv += ["--drill-a", str(args.drill_a)]
+    # The extended options, passed only when away from their defaults, so a default run's argv is unchanged.
+    for flag, value, default in (
+        ("--isotope", args.isotope, 0),
+        ("--t0", args.t0, "0"),
+        ("--event-offset", args.event_offset, 0),
+        ("--bound-rates", args.bound_rates, "off"),
+        ("--bound-record", args.bound_record, "off"),
+        ("--rng-states", args.rng_states, "off"),
+        ("--synthetic-capture-scale", args.synthetic_capture_scale, "0"),
+    ):
+        if value != default:
+            argv += [flag, str(value)]
     start = time.monotonic()
     with (out / "stdout.log").open("wb") as handle:
         rc = subprocess.call(argv, env=env, stdout=handle, stderr=subprocess.STDOUT)
     wall = time.monotonic() - start
     raw = out / "raw"
     files = {}
-    for name in ("stops.txt", "records.txt", "config.txt", "summary.txt"):
+    for name in ("stops.txt", "records.txt", "config.txt", "summary.txt", "bound.txt", "rng.txt",
+                 "extended.txt", "bound_summary.txt"):
         path = raw / name
         if path.is_file():
             files[name] = sha256(path)
@@ -177,14 +219,14 @@ def run(args: argparse.Namespace) -> None:
             json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
         raise RuntimeError(f"cell {out} failed rc={rc}; see stdout.log")
-    for name in ("stops.txt", "records.txt"):
+    for name in ("stops.txt", "records.txt", "bound.txt", "rng.txt"):
         path = raw / name
         if path.is_file():
             with (
                 path.open("rb") as src,
                 gzip.GzipFile(str(path) + ".gz", "wb", compresslevel=6, mtime=0) as dst,
             ):
-                dst.write(src.read())
+                shutil.copyfileobj(src, dst, 1 << 20)
             path.unlink()
     (out / "run.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"CELL {out} rc=0 wall_s={wall:.1f} events={args.events}", flush=True)
@@ -206,13 +248,39 @@ def summarize(root: Path, cells: Path, out: Path) -> None:
     mixture.summarize_cells(root, json.loads(cells.read_text(encoding="utf-8")), out)
 
 
+def _bound_chunk(job: tuple[str, dict[str, Any], bool]) -> str:
+    root, chunk, switch_on = job
+    bound: Any = repository_module(Path(root), "d1_boundrates")
+    policy = bound.load_policy(Path(root))
+    group = policy["groups"][int(chunk["group"])]
+    cell = Path(chunk["cell"])
+    stats = bound.summarize_chunk(cell / "raw", group["route"], bound.frozen_pair(policy, group["isotope"]),
+                                  float(chunk["t0_ns"]), int(chunk["first"]), int(chunk["count"]), switch_on)
+    (cell / "bound_stats.json").write_text(json.dumps(stats, sort_keys=True) + "\n", encoding="ascii")
+    return f"CHUNK {cell} events={stats['events']} malformed={stats['malformed']}"
+
+
+def summarize_bound(root: Path, plan_path: Path, out: Path, jobs: int) -> None:
+    import multiprocessing
+
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    work = [(str(root), chunk, bool(plan["switch_on"])) for chunk in plan["chunks"]]
+    with multiprocessing.Pool(jobs) as pool:
+        for line in pool.imap_unordered(_bound_chunk, work):
+            print(line, flush=True)
+    bound: Any = repository_module(root, "d1_boundrates")
+    bound.summarize_plan(root, {**plan, "reuse": True}, out)
+    print(f"SUMMARY {out} chunks={len(work)}", flush=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     b = sub.add_parser("build")
     b.add_argument("--install", type=Path, required=True)
-    b.add_argument("--kind", choices=("pristine", "patched"), required=True)
+    b.add_argument("--kind", choices=tuple(KIND_DEFINES), required=True)
     b.add_argument("--drill", choices=tuple(DRILL_DEFINES), default="none")
+    b.add_argument("--trace", choices=("on", "off"), default="off")
     b.add_argument("--out", type=Path, required=True)
     r = sub.add_parser("run")
     r.add_argument("--build", type=Path, required=True)
@@ -226,16 +294,30 @@ def main() -> None:
     r.add_argument("--hooks", choices=("on", "off"), default="on")
     r.add_argument("--identity", choices=("on", "off"), default="off")
     r.add_argument("--drill-a", type=int, default=0)
+    r.add_argument("--isotope", type=int, default=0)
+    r.add_argument("--t0", default="0")
+    r.add_argument("--event-offset", type=int, default=0)
+    r.add_argument("--bound-rates", choices=("on", "off"), default="off")
+    r.add_argument("--bound-record", choices=("on", "off"), default="off")
+    r.add_argument("--rng-states", choices=("on", "off"), default="off")
+    r.add_argument("--synthetic-capture-scale", default="0")
     r.add_argument("--out", type=Path, required=True)
     s = sub.add_parser("summarize")
     s.add_argument("--root", type=Path, default=ROOT)
     s.add_argument("--cells", type=Path, required=True)
     s.add_argument("--out", type=Path, required=True)
+    sb = sub.add_parser("summarize-bound")
+    sb.add_argument("--root", type=Path, default=ROOT)
+    sb.add_argument("--plan", type=Path, required=True)
+    sb.add_argument("--out", type=Path, required=True)
+    sb.add_argument("--jobs", type=int, default=1)
     args = parser.parse_args()
     if args.command == "build":
-        build(args.install, args.kind, args.drill, args.out)
+        build(args.install, args.kind, args.drill, args.out, args.trace == "on")
     elif args.command == "run":
         run(args)
+    elif args.command == "summarize-bound":
+        summarize_bound(args.root, args.plan, args.out, args.jobs)
     else:
         summarize(args.root, args.cells, args.out)
 

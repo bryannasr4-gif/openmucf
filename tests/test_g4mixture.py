@@ -488,9 +488,28 @@ def test_harvest_call_sites_agree_with_each_other_and_the_transport(harvest: dic
 
 
 def test_harvest_builds_record_the_committed_harness() -> None:
+    """The harvest's builds compiled one source; it is either the committed harness or the one the committed
+    harness reproduces with every option it gained since at its default: every identity digest of the
+    committed summary, rebuilt and rerun with the committed harness on the same installs, seeds and farms, is
+    the committed digest (``bound_rates_harness_defaults.csv``)."""
     builds = mixture.read_csv(ROOT / mixture.BUILDS_RELPATH, mixture.BUILD_COLUMNS)
     source = hashlib.sha256((ROOT / mixture.HARNESS_RELPATH).read_bytes()).hexdigest()
-    assert {b["source_sha256"] for b in builds} == {source}
+    (compiled,) = {b["source_sha256"] for b in builds}
+    assert compiled in mixture.accepted_harness_sources(ROOT)
+    if compiled != source:
+        columns = ("cell", "key", "committed", "reproduced")
+        rows = mixture.read_csv(ROOT / mixture.HARNESS_DEFAULTS_RELPATH, columns)
+        (head,) = [r for r in rows if r["cell"] == "harness"]
+        assert (head["committed"], head["reproduced"]) == (compiled, source)
+        harvest = mixture.load_harvest(ROOT)
+        digests = [r for r in rows if r["cell"] != "harness"]
+        kinds = ("rng", "transport", "stops")
+        committed = {(cell, key): value for cell, v in harvest.items() if cell.startswith("identity:")
+                     for key, value in v["identity"].items()
+                     if key.split("_", 1)[0] in kinds and not key.endswith("_identical")}
+        assert {(r["cell"], r["key"]) for r in digests} == set(committed)
+        for r in digests:
+            assert r["committed"] == r["reproduced"] == committed[(r["cell"], r["key"])], r
     assert {(b["revision"], b["kind"], b["drill"]) for b in builds} == {
         (r, k, "none") for r in mixture.REVISIONS for k in ("pristine", "patched")
     } | {(r, "patched", d) for r in mixture.REVISIONS for d in ("extra_draw", "early_return")}
@@ -853,11 +872,11 @@ def _screen_rows(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(mixture, "references", lambda root: [r for r in every if r.locator in SCREEN_ROWS])
 
 
-def _jittered_fit_rate(jitter_float: float, scale_decimal: str):  # type: ignore[no-untyped-def]
-    """``fit_rate`` with each binary64 fit scaled by 1 + u x jitter, u in [-1, 1] a fixed function of the
-    fit's specification and component rates (platforms' exp and log differ fit by fit, not uniformly), and
-    each decimal fit scaled by ``scale_decimal``."""
-    original = mixture.fit_rate
+def _jittered_fit_rate(original, jitter_float: float, scale_decimal: str):  # type: ignore[no-untyped-def]
+    """``original`` (the unwrapped ``fit_rate``) with each binary64 fit scaled by 1 + u x jitter, u in [-1, 1]
+    a fixed function of the fit's specification and component rates (platforms' exp and log differ fit by fit,
+    not uniformly), and each decimal fit scaled by ``scale_decimal``. Every perturbation wraps the original,
+    so two of them never compose."""
 
     def fit_rate(components, spec_, conv=float, start=1.0):  # type: ignore[no-untyped-def]
         value = original(components, spec_, conv, start)
@@ -878,10 +897,11 @@ def test_compare_does_not_depend_on_the_binary64_fits_last_digits(monkeypatch: p
     _screen_rows(monkeypatch)
     plain = mixture.comparison_rows(ROOT)
     assert len(plain) == 3 * len(SCREEN_ROWS) * len(mixture.ROUTES)
+    original = mixture.fit_rate
     for jitter in (3e-15, -3e-15):
-        monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(jitter, "1"))
+        monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(original, jitter, "1"))
         assert mixture.comparison_rows(ROOT) == plain, jitter
-    monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(0.0, "1.000000000000003"))
+    monkeypatch.setattr(mixture, "fit_rate", _jittered_fit_rate(original, 0.0, "1.000000000000003"))
     assert mixture.comparison_rows(ROOT) != plain
 
 
@@ -1083,7 +1103,7 @@ def document_pins(numeric: re.Pattern[str]) -> list[tuple[str, str, str, tuple[i
 def test_document_section_13_is_the_generated_text() -> None:
     text = (ROOT / DOCUMENT).read_text(encoding="utf-8").replace("\r\n", "\n")
     assert text.count("\n" + mixture.SECTION_HEADING + "\n") == 1
-    assert "## 13. " + text.split("\n## 13. ", 1)[1] == _section()
+    assert "## 13. " + text.split("\n## 13. ", 1)[1].split("\n## 14. ", 1)[0] == _section()
 
 
 def test_document_pointer_sentences_one_each() -> None:

@@ -127,6 +127,7 @@
 521f1316de0d06426c07f802045acdabef4d8ca4	CHANGELOG.md	REGISTERED: one -- 'one comparable reference basis'
 5360292c1962b75744e369dee723454affe96695	CHANGELOG.md	REGISTERED: 731, 596 -- the prototype's figure and the wrapped sentences at that tree: dated counts
 5412cb1b620b42564ec6fb8f9df33ec7471c8675	CHANGELOG.md	REGISTERED: 4 -- the digit of the seam variable `G4MUONICDATA_D1_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name, an identifier
+54e2bd38ffcf65221416dd9f25e801c1eb66b3f1	CHANGELOG.md	REGISTERED: one, one -- 'one bound-decay rate pair', the title of the section the entry points to, and 'the unpatched one', a pronoun for the build
 54f5be277a1d022f194fa476133b16c443b9c24d	CHANGELOG.md	REGISTERED: 10.4, 18.3, four -- the Kovach et al. (2017) efficiencies openmucf/data/muon_cost_chain.csv carries as 0.104 and 0.183, and the four subsystem draws the note read in that paper
 552405559eef6d18dcb1784ee8dc3752222d2516	CHANGELOG.md	REGISTERED: 30, 800, 300 -- the ±30% lambda_c(800 K)/lambda_c(300 K) clause, VALIDATION.md's V_yamashita_ratio row
 56434901b5bef7064b2a51d725a2e56eb542e2e0	CHANGELOG.md	REGISTERED: 2024 -- '2024 global supply', the year of the supply figure scripts/parisi_ac225.py cites
@@ -245,6 +246,7 @@ a2f02a20014865a980ada39b631b7cd70c99bf47	CHANGELOG.md	REGISTERED: 150, 284 -- th
 a3fe0377e98ca44a0160b42203d31afac8589856	CHANGELOG.md	REGISTERED: 6.10, 34.5 -- the worst cell's noise and the smallest relative constant that would cover it, as scripts/generate_design.py's preamble records them
 a402f82bc3eaff179b458396a8379d5d6860b7c2	CHANGELOG.md	REGISTERED: 0.18, 0.104, 0.183 -- the conversion factors in openmucf/data/muon_cost_chain.csv, as MUON_COST.md's edge table prints them
 a44029fc41b404096f3ec5135681af2644e6c80b	CHANGELOG.md	REGISTERED: three, 23, 2 -- 'three ways', the split the sentence enumerates; 23: rows the old rule under-called, as this dated entry recorded it (a released line, held by this row and not re-derived); 2: rows the primary flatly contradicts, as this dated entry recorded it (a released line, held by this row and not re-derived)
+a530a88266d3b49f3dcaea33a8f1050e79589a52	CHANGELOG.md	REGISTERED: one -- 'one capture and decay rate pair': the single pair both routes take with the option, not a count
 a5649e1af55aa3a32e631b65f8e65a5e496a21c2	CHANGELOG.md	REGISTERED: 0.77, 0.93, 0.12, 0.1 -- the reactivation floors and the rise of the floor per 0.1% of side-channel loss as FRONTIER.md states them; tests/test_correction_record.py binds each figure to its home
 a6f9c417976ed61107a58b6958da9cf2c8b078b9	CHANGELOG.md	REGISTERED: 82, two -- Z=82, the lead shell closure the effective-charge step sits near: a label, not a shipped value; 'the last two' of the findings this entry enumerates, F-1 to F-5 by the dataset document's numbering, as registered on the dated entry below
 a75c120a01e20a27d433f228a0b1396902d839ea	CHANGELOG.md	REGISTERED: three -- the three routes the named test drills
@@ -706,10 +708,15 @@ e8c6140271a87d224d031623162ae2c83169e9c4	README.md	REGISTERED: ³ -- the mass nu
 f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
 ff26f89f848d3a34d6d2227564f3fd18987804e0	README.md	REGISTERED: 0.5.1 -- the dataset version of the D3 tables release v1.3.0 holds, the topmost '`#VERSION` becomes 0.5.1' of the [1.3.0] section of CHANGELOG.md; tests/test_release_metadata.py binds this clause to that section
 21ffeec98e1eab90e7c9b55fc3e79d25073d0a52	cpp/patches/README.md	REGISTERED: one -- the single call the sentence quotes, SetEnableMuonicData(true)
+379e35c65a419a9751ba6e6ea3b1e3deec274a0b	cpp/patches/README.md	REGISTERED: 4, 002 -- the code of the fatal G4Exception cpp/src/G4MuonicBoundRateProvider.cc raises for a change of the frozen switch: an identifier
+3b477fec4567968479ac684b5b3411ded003898a	cpp/patches/README.md	REGISTERED: one -- 'one prescription': the single prescription the pair reproduces on both routes, not a count
 5037f1b272e701d700f2d7777c22812316bdf1e7	cpp/patches/README.md	REGISTERED: 4, 3 -- the digits of the seam variables `G4MUONICDATA_D1_PROFILE` and `G4MUONICDATA_D3_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells them: the `4` of the toolkit's name and the `3` of the muonic-transition seam, both identifiers
-7adbc79d41e9978fcb2c79814f8ae1f02434411b	cpp/patches/README.md	REGISTERED: one -- the boolean the patch adds to G4HadronicParameters
+6e518025c020db706b6406162ac88bb83504932f	cpp/patches/README.md	REGISTERED: 14 -- the threshold below which the stopping route uses this decay expression, 'if (Z<14)' in third_party/geant4/v11.4.2/G4MuonMinusBoundDecay.cc
 7ee0719af0f5827c237692000e8544b917c0d1d4	cpp/patches/README.md	REGISTERED: 3, 4 -- digits of the toolkit and seam profile variable names as cpp/src/G4MuonicDataOverlay.cc names them
+7f4729ef2d56e27417ffdbaab8a6083c806c5991	cpp/patches/README.md	REGISTERED: 4, 001 -- the code of the fatal G4Exception cpp/src/G4MuonicBoundRateProvider.cc raises for an input it refuses: an identifier
+9a7c0946f7c9e5e5e2f96eb914b175a33aa2e2a7	cpp/patches/README.md	REGISTERED: 2, 13 -- the bounds of the provider's domain, InDomain in cpp/src/G4MuonicBoundRateProvider.cc
 a58d13cc217e49285cbf137cb66b6f01cc48fcbc	cpp/patches/README.md	REGISTERED: one -- 'one falling order': a single order, a pronoun for it, not a count
+cdde858c3890add0bef6a65ee1014c091116e845	cpp/patches/README.md	REGISTERED: one -- the single pair both consumers take, the G4MuonicBoundRates struct cpp/include/G4MuonicBoundRateProvider.hh declares
 d5694c7e61886bf35034966d99d6e7e19650f4aa	cpp/patches/README.md	REGISTERED: two, one -- the pair of energy tables a profile declares, which FORMAT_SPEC.md names `k_shell_energy` and `level_energy`, and 'one profile', 'one set': a single profile and a single set, not counts of data
 e44bc318fe3fd480d04811689eea39b02f9fadd8	cpp/patches/README.md	REGISTERED: one -- the opt-in test each patched function makes
 ffc9ecfeb990967e9d6d644890750f0754208e1a	cpp/patches/README.md	REGISTERED: four, two -- the functions and files the sentence itself lists by name; T-72 pins the patch's path set

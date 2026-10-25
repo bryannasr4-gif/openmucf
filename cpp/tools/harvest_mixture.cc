@@ -43,6 +43,47 @@
 // start, every step end and the event end; summary.txt gives the hook and base call counts and, inside each
 // hook, whether the engine state at hook entry equals the state at base entry and the state at base return
 // equals the state at hook exit.
+//
+// Options added for single-isotope targets, nonzero start times and the bound-rate provider; each defaults to the
+// behaviour above, and with every one at its default the outputs above are unchanged and no other file is written:
+//
+//   --isotope <A>          a box of one isotope of the element (a G4Element of that one G4Isotope, at the density of
+//                          G4_<symbol>) instead of the natural composition; 0, the default, keeps G4_<symbol>
+//   --t0 <ns>              the muon's global start time (default 0)
+//   --event-offset <i0>    event k of this process is event i0 + k: seeded with seed-base + i0 + k and written with
+//                          that number (default 0)
+//   --bound-rates on|off   G4HadronicParameters::SetEnableMuonicBoundRates(true) before the physics list is built
+//                          (only in a build against a library that carries the bound-rate provider; default off)
+//   --bound-record on|off  write bound.txt, one line per event (needs --hooks on; default off)
+//   --rng-states on|off    write rng.txt: the engine's whole serialized state at the end of every event (default off)
+//   --synthetic-capture-scale <s>   trace builds only: multiply the capture rate the provider returns by s before
+//                          the consumer receives it -- a synthetic fixture that shows that the returned pair reaches
+//                          the consumer, never a physics configuration (default off)
+// Any of them away from its default also writes extended.txt, which records them and, in a trace build, where each
+// traced function resolves.
+//
+// bound.txt (hexadecimal floats; `x` where the build does not observe a field):
+//   stopping  S <event> <Z> <A> <t before> <t after> <outcome> P <calls> <other calls> <status> <capture> <decay>
+//               M <model calls> <k> <model-local time>*k N <n> <transported time>*n E <DIO electron time or ->
+//   atomic    A <event> <Z> <A> <atom creation time> <lifetime> <DIO lifetime> <NC lifetime> <counter> <delay>
+//               <atom time> <branch> <outcome> M <model calls> <k> <model-local time>*k N <n> <transported time>*n
+//               E <DIO electron time or ->
+//   provider  C <event> <caller> <Z> <A> <status> <capture> <decay>, before the event line, for each call the
+//               provider receives from the muonic-atom helper or from a caller other than the two consumers
+// With the bound record on, bound_summary.txt gives the sufficient statistics this process accumulated itself, a
+// second path to the ones a summary computes from bound.txt: the event count, the number of events the consumer
+// sent to nuclear capture (the stopping route's alive status, the atomic route's branch N), and the compensated
+// (Neumaier) sums of the elapsed time T over all events, the capture events and the decay events, where T is
+// <t after> - <t before> on the stopping route and <delay> on the atomic route.
+// P counts the calls G4MuonMinusBoundDecay::ApplyYourself makes to G4MuonicBoundRateProvider::Rates in the event,
+// with the status (0 common, 1 disabled, 2 unsupported, 3 refused) and the pair of the last one. M is the nuclear
+// capture model of the route (G4CascadeInterface on the stopping route, G4MuMinusCapturePrecompound on the atomic
+// route) called with a negative muon: the number of calls and the local time of each secondary its last call
+// returned, read before the caller adds any time. N lists the transported times of the capture products, in the
+// order the caller created them. The P, M and C fields come from a trace build (-DHARVEST_MIXTURE_TRACE), which
+// defines those three functions in this executable and exports them, so that the Geant4 libraries' own calls bind
+// to them; each calls the library's definition (dlsym RTLD_NEXT) once and returns its result unchanged, apart from
+// the synthetic fixture. They draw no random number.
 #include "G4Box.hh"
 #include "G4DecayTable.hh"
 #include "G4DynamicParticle.hh"
@@ -93,8 +134,24 @@
 #include "G4HadronicParameters.hh"
 #include "G4MuonicDataOverlay.hh"
 #endif
+#ifdef HARVEST_MIXTURE_BOUND_RATES
+#include "G4MuonicBoundRateProvider.hh"
+#endif
+#if defined(HARVEST_MIXTURE_TRACE) && !defined(HARVEST_MIXTURE_BOUND_RATES)
+#error "a trace build traces the bound-rate provider: define HARVEST_MIXTURE_BOUND_RATES as well"
+#endif
+#if defined(HARVEST_MIXTURE_BOUND_RATES) && !defined(HARVEST_MIXTURE_PATCHED)
+#error "the bound-rate provider comes with the muonic-data patch: define HARVEST_MIXTURE_PATCHED as well"
+#endif
+#ifdef HARVEST_MIXTURE_TRACE
+#include "G4CascadeInterface.hh"
+#include "G4MuMinusCapturePrecompound.hh"
+#include <dlfcn.h>
+#include <unistd.h>
+#endif
 
 #include <CLHEP/Random/MixMaxRng.h>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -118,6 +175,17 @@ struct Options {
   bool hooks = false;
   bool identity = false;
   int drill_a = 0;
+  int isotope = 0;
+  double t0 = 0.;
+  long event_offset = 0;
+  bool bound_rates = false;
+  bool bound_record = false;
+  bool rng_states = false;
+  double synthetic_capture_scale = 0.;
+  bool Extended() const {
+    return isotope != 0 || t0 != 0. || event_offset != 0 || bound_rates || bound_record || rng_states ||
+           synthetic_capture_scale != 0.;
+  }
 };
 
 Options Parse(int argc, char** argv) {
@@ -136,8 +204,26 @@ Options Parse(int argc, char** argv) {
     else if (key == "--hooks") o.hooks = value == "on";
     else if (key == "--identity") o.identity = value == "on";
     else if (key == "--drill-a") o.drill_a = std::stoi(value);
+    else if (key == "--isotope") o.isotope = std::stoi(value);
+    else if (key == "--t0") o.t0 = std::stod(value);
+    else if (key == "--event-offset") o.event_offset = std::stol(value);
+    else if (key == "--bound-rates") o.bound_rates = value == "on";
+    else if (key == "--bound-record") o.bound_record = value == "on";
+    else if (key == "--rng-states") o.rng_states = value == "on";
+    else if (key == "--synthetic-capture-scale") o.synthetic_capture_scale = std::stod(value);
     else throw std::runtime_error("unknown argument " + key);
   }
+  if (o.isotope < 0 || (o.isotope > 0 && o.isotope < o.z) || !std::isfinite(o.t0) || o.t0 < 0. ||
+      o.event_offset < 0 || (o.bound_record && !o.hooks) || !std::isfinite(o.synthetic_capture_scale) ||
+      o.synthetic_capture_scale < 0.) {
+    throw std::runtime_error("invalid isotope, start time, event offset, bound record or synthetic scale");
+  }
+#ifndef HARVEST_MIXTURE_BOUND_RATES
+  if (o.bound_rates) throw std::runtime_error("--bound-rates on requires a build with the bound-rate provider");
+#endif
+#ifndef HARVEST_MIXTURE_TRACE
+  if (o.synthetic_capture_scale != 0.) throw std::runtime_error("--synthetic-capture-scale requires a trace build");
+#endif
   if ((o.route != "stopping" && o.route != "atomic") || o.symbol.empty() || o.z <= 0 || o.events <= 0 ||
       o.seed_base <= 0 || o.out.empty() || (o.opt_in != "on" && o.opt_in != "off")) {
     throw std::runtime_error("invalid route, element, event count, seed, output or opt-in");
@@ -179,16 +265,46 @@ struct EventRecord {
   double electron_time = 0.;
   std::uint64_t rng = 1469598103934665603ULL;
   long rng_points = 0;
+  // the bound record
+  double atom_create = 0.;
+  bool atom_seen = false;
+  std::vector<double> products;  // transported times of the capture products, in creation order
+  int rate_calls = 0, rate_other = 0, rate_status = -1;
+  double pair_c = 0., pair_d = 0.;
+  int model_calls = 0;
+  std::vector<double> model_times;  // local times of the secondaries of the last model call
+  std::vector<std::string> provider_lines;
 };
 
 struct Counters {
   long hook_calls = 0, base_calls = 0, entry_mismatch = 0, exit_mismatch = 0, returned_other = 0;
 };
 
+// A Neumaier-compensated sum.
+struct CompensatedSum {
+  double sum = 0., carry = 0.;
+  void Add(double x) {
+    const double t = sum + x;
+    carry += std::fabs(sum) >= std::fabs(x) ? (sum - t) + x : (x - t) + sum;
+    sum = t;
+  }
+  double Value() const { return sum + carry; }
+};
+
+struct BoundTotals {
+  long events = 0, captures = 0;
+  CompensatedSum all, capture, decay;
+};
+
 EventRecord g_event;
 Counters g_count;
 bool g_identity = false;
 int g_drill_a = 0;
+long g_event_offset = 0;
+double g_synthetic_capture_scale = 0.;
+long g_current_event = -1;
+bool g_bound_record = false;
+BoundTotals g_totals;
 
 void Fold(std::uint64_t h) {
   for (int b = 0; b < 8; ++b) {
@@ -329,6 +445,39 @@ class SpyMuonicAtomDecay : public G4MuonicAtomDecay {
 
   G4ParticleChange drill_change;
 };
+
+#ifdef HARVEST_MIXTURE_TRACE
+// The library definition a traced function forwards to: the next definition after this executable's.
+void* NextDefinition(const char* name) {
+  void* next = dlsym(RTLD_NEXT, name);
+  if (next == nullptr) throw std::runtime_error(std::string("no library definition of ") + name);
+  return next;
+}
+
+const char* const kRatesSymbol = "_ZN25G4MuonicBoundRateProvider5RatesEiiddR18G4MuonicBoundRates";
+const char* const kBertiniSymbol = "_ZN18G4CascadeInterface13ApplyYourselfERK15G4HadProjectileR9G4Nucleus";
+const char* const kPrecoSymbol = "_ZN27G4MuMinusCapturePrecompound13ApplyYourselfERK15G4HadProjectileR9G4Nucleus";
+
+// Which consumer called: the nearest exported symbol before the return address.
+std::string Caller(void* address) {
+  Dl_info info;
+  if (dladdr(address, &info) == 0 || info.dli_sname == nullptr) return "unknown";
+  const std::string name(info.dli_sname);
+  if (name.find("G4MuonMinusBoundDecay") != std::string::npos) return "bound";
+  if (name.find("G4MuonicAtomHelper") != std::string::npos) return "helper";
+  return "other:" + name;
+}
+
+// The model-local times of the secondaries a capture model returned, before any caller adds a time.
+void RecordModel(const G4HadProjectile& projectile, const G4HadFinalState* result) {
+  if (projectile.GetDefinition() != G4MuonMinus::MuonMinus() || result == nullptr) return;
+  ++g_event.model_calls;
+  g_event.model_times.clear();
+  for (std::size_t i = 0; i < result->GetNumberOfSecondaries(); ++i) {
+    g_event.model_times.push_back(result->GetSecondary(static_cast<G4int>(i))->GetTime());
+  }
+}
+#endif
 // SPY-END
 
 class SpyMuonicAtomDecayPhysics : public G4VPhysicsConstructor {
@@ -371,6 +520,16 @@ class Detector : public G4VUserDetectorConstruction {
         material->GetElement(0)->GetZasInt() != o.z) {
       throw std::runtime_error("G4_" + o.symbol + " is not a single-element material of Z " + std::to_string(o.z));
     }
+    if (o.isotope > 0) {
+      const std::string name = o.symbol + std::to_string(o.isotope);
+      auto* isotope = new G4Isotope(name, o.z, o.isotope);
+      auto* element = new G4Element(name, o.symbol, 1);
+      element->AddIsotope(isotope, 1.);
+      auto* single = new G4Material("U_" + name, material->GetDensity(), 1, material->GetState(),
+                                    material->GetTemperature(), material->GetPressure());
+      single->AddElement(element, 1.);
+      material = single;
+    }
     auto* solid = new G4Box("world", 1. * m, 1. * m, 1. * m);
     auto* logical = new G4LogicalVolume(solid, material, "world");
     return new G4PVPlacement(nullptr, G4ThreeVector(), logical, "world", nullptr, false, 0);
@@ -384,7 +543,10 @@ class Detector : public G4VUserDetectorConstruction {
 struct Output {
   std::ofstream stops;
   std::ofstream records;
+  std::ofstream bound;
+  std::ofstream rng;
   int dio_model = -1;
+  int nc_model = -1;
 };
 
 class Primary : public G4VUserPrimaryGeneratorAction {
@@ -394,10 +556,10 @@ class Primary : public G4VUserPrimaryGeneratorAction {
     gun.SetParticleEnergy(0.);
     gun.SetParticlePosition(G4ThreeVector());
     gun.SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
-    gun.SetParticleTime(0.);
+    gun.SetParticleTime(o.t0 * ns);
   }
   void GeneratePrimaries(G4Event* event) override {
-    G4Random::setTheSeed(o.seed_base + event->GetEventID());
+    G4Random::setTheSeed(o.seed_base + o.event_offset + event->GetEventID());
     gun.GeneratePrimaryVertex(event);
   }
 
@@ -409,26 +571,29 @@ class Primary : public G4VUserPrimaryGeneratorAction {
 class Event : public G4UserEventAction {
  public:
   Event(const Options& options, Output& output) : o(options), out(output) {}
-  void BeginOfEventAction(const G4Event*) override { g_event = EventRecord(); }
+  void BeginOfEventAction(const G4Event* event) override {
+    g_event = EventRecord();
+    g_current_event = o.event_offset + event->GetEventID();
+  }
   void EndOfEventAction(const G4Event* event) override {
     const EventRecord& e = g_event;
+    const long id = o.event_offset + event->GetEventID();
     if (g_identity) {
       Fold(EngineHash());
-      out.records << "R " << event->GetEventID() << ' ' << e.rng_points << ' ' << std::hex << e.rng << std::dec
-                  << '\n';
+      out.records << "R " << id << ' ' << e.rng_points << ' ' << std::hex << e.rng << std::dec << '\n';
     }
     const bool hooked = o.hooks;
     if (hooked && (e.selector_calls != 1 || e.decay_calls != 1)) {
-      throw std::runtime_error("event " + std::to_string(event->GetEventID()) + ": " +
+      throw std::runtime_error("event " + std::to_string(id) + ": " +
                                std::to_string(e.selector_calls) + " selector and " +
                                std::to_string(e.decay_calls) + " decay calls");
     }
     if (e.dio_electrons > 1 || (e.outcome == 'D') != (e.dio_electrons == 1)) {
-      throw std::runtime_error("event " + std::to_string(event->GetEventID()) + ": transported DIO electrons " +
+      throw std::runtime_error("event " + std::to_string(id) + ": transported DIO electrons " +
                                std::to_string(e.dio_electrons) + " with outcome " + e.outcome);
     }
     auto& s = out.stops;
-    s << event->GetEventID();
+    s << id;
     if (hooked) {
       s << ' ' << e.sel_z << ' ' << e.sel_a << ' ' << e.z << ' ' << e.a;
       if (o.route == "stopping") {
@@ -444,6 +609,53 @@ class Event : public G4UserEventAction {
     }
     s << ' ' << (e.outcome == '-' ? 'N' : e.outcome) << ' '
       << (e.dio_electrons == 1 ? Hex(e.electron_time) : std::string("-")) << '\n';
+    if (o.bound_record) WriteBound(id, e);
+    if (o.rng_states) {
+      out.rng << "E " << id;
+      for (unsigned long w : G4Random::getTheEngine()->put()) out.rng << ' ' << w;
+      out.rng << '\n';
+    }
+  }
+
+  void WriteBound(long id, const EventRecord& e) {
+    const bool stopping = o.route == "stopping";
+    const double elapsed = stopping ? e.t_after - e.t_before : e.delay;
+    const bool captured = stopping ? e.status == 1 : e.branch == 'N';
+    ++g_totals.events;
+    g_totals.all.Add(elapsed);
+    if (captured) {
+      ++g_totals.captures;
+      g_totals.capture.Add(elapsed);
+    } else {
+      g_totals.decay.Add(elapsed);
+    }
+    auto& b = out.bound;
+    for (const auto& line : e.provider_lines) b << line << '\n';
+    const char outcome = e.outcome == '-' ? 'N' : e.outcome;
+    if (o.route == "stopping") {
+      b << "S " << id << ' ' << e.z << ' ' << e.a << ' ' << Hex(e.t_before) << ' ' << Hex(e.t_after) << ' '
+        << outcome;
+#ifdef HARVEST_MIXTURE_TRACE
+      const bool common = e.rate_status == 0;
+      b << " P " << e.rate_calls << ' ' << e.rate_other << ' ' << e.rate_status << ' '
+        << (common ? Hex(e.pair_c) : std::string("x")) << ' ' << (common ? Hex(e.pair_d) : std::string("x"));
+#else
+      b << " P x";
+#endif
+    } else {
+      b << "A " << id << ' ' << e.z << ' ' << e.a << ' ' << (e.atom_seen ? Hex(e.atom_create) : std::string("x"))
+        << ' ' << Hex(e.tau) << ' ' << Hex(e.tau_dio) << ' ' << Hex(e.tau_nc) << ' ' << Hex(e.counter) << ' '
+        << Hex(e.delay) << ' ' << Hex(e.atom_time) << ' ' << e.branch << ' ' << outcome;
+    }
+#ifdef HARVEST_MIXTURE_TRACE
+    b << " M " << e.model_calls << ' ' << e.model_times.size();
+    for (double t : e.model_times) b << ' ' << Hex(t);
+#else
+    b << " M x";
+#endif
+    b << " N " << e.products.size();
+    for (double t : e.products) b << ' ' << Hex(t);
+    b << " E " << (e.dio_electrons == 1 ? Hex(e.electron_time) : std::string("-")) << '\n';
   }
 
  private:
@@ -455,12 +667,15 @@ class Tracking : public G4UserTrackingAction {
  public:
   explicit Tracking(Output& output) : out(output) {}
   void PreUserTrackingAction(const G4Track* track) override {
+    if (g_bound_record && dynamic_cast<const G4MuonicAtom*>(track->GetParticleDefinition()) != nullptr) {
+      g_event.atom_create = track->GetGlobalTime();
+      g_event.atom_seen = true;
+    }
     if (!g_identity) return;
     Fold(EngineHash());
     const auto* creator = track->GetCreatorProcess();
     const int model = track->GetCreatorModelID();
-    out.records << "T " << G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID() << ' '
-                << track->GetTrackID() << ' ' << track->GetParentID() << ' '
+    out.records << "T " << g_current_event << ' ' << track->GetTrackID() << ' ' << track->GetParentID() << ' '
                 << track->GetParticleDefinition()->GetPDGEncoding() << ' '
                 << (creator == nullptr ? "-" : creator->GetProcessName()) << ' '
                 << (model < 0 ? std::string("-") : std::string(G4PhysicsModelCatalog::GetModelNameFromID(model)))
@@ -485,6 +700,9 @@ class Stepping : public G4UserSteppingAction {
     // the transported outcome of the stop, from the secondaries alone
     if (o.route == "stopping" && muon) {
       for (const auto* secondary : *secondaries) {
+        if (g_bound_record && secondary->GetCreatorModelID() == out.nc_model) {
+          g_event.products.push_back(secondary->GetGlobalTime());
+        }
         if (secondary->GetCreatorModelID() != out.dio_model) continue;
         g_event.outcome = 'D';
         if (secondary->GetParticleDefinition()->GetPDGEncoding() == 11) {
@@ -498,6 +716,9 @@ class Stepping : public G4UserSteppingAction {
         if (secondary->GetParticleDefinition()->GetPDGEncoding() == -12) dio = true;
       }
       g_event.outcome = dio ? 'D' : 'N';
+      if (!dio && g_bound_record) {
+        for (const auto* secondary : *secondaries) g_event.products.push_back(secondary->GetGlobalTime());
+      }
       if (dio) {
         for (const auto* secondary : *secondaries) {
           if (secondary->GetParticleDefinition()->GetPDGEncoding() != 11) continue;
@@ -509,7 +730,7 @@ class Stepping : public G4UserSteppingAction {
     if (!g_identity) return;
     const auto* post = step->GetPostStepPoint();
     const auto* process = post->GetProcessDefinedStep();
-    const int event = G4EventManager::GetEventManager()->GetConstCurrentEvent()->GetEventID();
+    const long event = g_current_event;
     out.records << "S " << event << ' ' << track->GetTrackID() << ' ' << track->GetCurrentStepNumber() << ' '
                 << (process == nullptr ? "-" : process->GetProcessName()) << ' ' << Hex(post->GetKineticEnergy())
                 << ' ' << Hex(post->GetGlobalTime()) << ' ' << secondaries->size() << '\n';
@@ -599,7 +820,107 @@ void WriteConfig(const Options& o, Detector* detector) {
        << g_count.entry_mismatch << " exit_mismatch " << g_count.exit_mismatch << '\n';
 }
 
+// The record of options away from their defaults and, in a trace build, where each traced function resolves.
+void WriteExtended(const Options& o) {
+  std::ofstream file(o.out + "/extended.txt");
+  if (!file) throw std::runtime_error("cannot open extended.txt");
+  file << "ISOTOPE " << o.isotope << '\n';
+  file << "T0_NS " << Hex(o.t0) << '\n';
+  file << "EVENT_OFFSET " << o.event_offset << '\n';
+  file << "BOUND_RATES " << (o.bound_rates ? "on" : "off") << '\n';
+  file << "BOUND_RECORD " << (o.bound_record ? "on" : "off") << '\n';
+  file << "RNG_STATES " << (o.rng_states ? "on" : "off") << '\n';
+  file << "SYNTHETIC_CAPTURE_SCALE " << (o.synthetic_capture_scale != 0. ? Hex(o.synthetic_capture_scale) : "off")
+       << '\n';
+#ifdef HARVEST_MIXTURE_BOUND_RATES
+  file << "PROVIDER enabled " << G4MuonicBoundRateProvider::IsEnabled() << " frozen "
+       << G4MuonicBoundRateProvider::IsFrozen() << " parameters "
+       << G4HadronicParameters::Instance()->EnableMuonicBoundRates() << '\n';
+#else
+  file << "PROVIDER none\n";
+#endif
+#ifdef HARVEST_MIXTURE_TRACE
+  file << "TRACE on\n";
+  for (const char* name : {kRatesSymbol, kBertiniSymbol, kPrecoSymbol}) {
+    Dl_info self{}, next{};
+    void* here = dlsym(RTLD_DEFAULT, name);
+    void* there = dlsym(RTLD_NEXT, name);
+    dladdr(here, &self);
+    dladdr(there, &next);
+    file << "INTERPOSE " << name << " default " << (self.dli_fname ? self.dli_fname : "?") << " next "
+         << (next.dli_fname ? next.dli_fname : "?") << '\n';
+  }
+#else
+  file << "TRACE off\n";
+#endif
+}
+
+#ifdef HARVEST_MIXTURE_TRACE
+// Every traced function must resolve to this executable, and its next definition to a Geant4 library.
+void CheckInterposition() {
+  char self[4096];
+  const ssize_t n = readlink("/proc/self/exe", self, sizeof(self) - 1);
+  if (n <= 0) throw std::runtime_error("cannot read /proc/self/exe");
+  self[n] = '\0';
+  for (const char* name : {kRatesSymbol, kBertiniSymbol, kPrecoSymbol}) {
+    Dl_info here{}, next{};
+    if (dladdr(dlsym(RTLD_DEFAULT, name), &here) == 0 || here.dli_fname == nullptr ||
+        std::string(here.dli_fname) != self) {
+      throw std::runtime_error(std::string("traced function does not resolve to this executable: ") + name);
+    }
+    if (dladdr(dlsym(RTLD_NEXT, name), &next) == 0 || next.dli_fname == nullptr ||
+        std::string(next.dli_fname).find("libG4") == std::string::npos) {
+      throw std::runtime_error(std::string("traced function has no Geant4 library definition: ") + name);
+    }
+  }
+}
+#endif
+
 }  // namespace
+
+#ifdef HARVEST_MIXTURE_TRACE
+// The three traced functions: exported from this executable (the build passes --export-dynamic-symbol for each),
+// so the libraries' calls bind here; each calls the library's definition once and returns its result.
+G4MuonicBoundRateProvider::Status G4MuonicBoundRateProvider::Rates(G4int Z, G4int A, G4double muonMass,
+                                                                   G4double nuclearMass, G4MuonicBoundRates& rates) {
+  using Fn = Status (*)(G4int, G4int, G4double, G4double, G4MuonicBoundRates&);
+  static const Fn next = reinterpret_cast<Fn>(NextDefinition(kRatesSymbol));
+  void* const address = __builtin_return_address(0);
+  const Status status = next(Z, A, muonMass, nuclearMass, rates);
+  if (status == Status::kCommon && g_synthetic_capture_scale != 0.) rates.capture *= g_synthetic_capture_scale;
+  const std::string caller = Caller(address);
+  const bool common = status == Status::kCommon;
+  if (caller == "bound") {
+    ++g_event.rate_calls;
+    g_event.rate_status = static_cast<int>(status);
+    g_event.pair_c = common ? rates.capture : 0.;
+    g_event.pair_d = common ? rates.decay : 0.;
+  } else {
+    if (caller != "helper") ++g_event.rate_other;
+    g_event.provider_lines.push_back("C " + std::to_string(g_current_event) + ' ' + caller + ' ' + std::to_string(Z) +
+                                     ' ' + std::to_string(A) + ' ' + std::to_string(static_cast<int>(status)) + ' ' +
+                                     (common ? Hex(rates.capture) : std::string("x")) + ' ' +
+                                     (common ? Hex(rates.decay) : std::string("x")));
+  }
+  return status;
+}
+
+G4HadFinalState* G4CascadeInterface::ApplyYourself(const G4HadProjectile& projectile, G4Nucleus& nucleus) {
+  using Fn = G4HadFinalState* (*)(G4CascadeInterface*, const G4HadProjectile&, G4Nucleus&);
+  static const Fn next = reinterpret_cast<Fn>(NextDefinition(kBertiniSymbol));
+  G4HadFinalState* result = next(this, projectile, nucleus);
+  RecordModel(projectile, result);
+  return result;
+}
+
+G4HadFinalState* G4MuMinusCapturePrecompound::ApplyYourself(const G4HadProjectile& projectile, G4Nucleus& nucleus) {
+  using Fn = G4HadFinalState* (*)(G4MuMinusCapturePrecompound*, const G4HadProjectile&, G4Nucleus&);
+  static const Fn next = reinterpret_cast<Fn>(NextDefinition(kPrecoSymbol));
+  G4HadFinalState* result = next(this, projectile, nucleus);
+  RecordModel(projectile, result);
+  return result;
+}
+#endif
 
 // Declared inline in G4MuonMinusAtomicCapture.hh and defined by no file of either revision; this is the
 // definition G4HadronStoppingProcess gives its own SetElementSelector.
@@ -615,15 +936,32 @@ int main(int argc, char** argv) {
     const Options options = Parse(argc, argv);
     g_identity = options.identity;
     g_drill_a = options.drill_a;
+    g_event_offset = options.event_offset;
+    g_synthetic_capture_scale = options.synthetic_capture_scale;
+    g_bound_record = options.bound_record;
+#ifdef HARVEST_MIXTURE_TRACE
+    CheckInterposition();
+#endif
     std::filesystem::create_directories(options.out);
     Output output;
     output.stops.open(options.out + "/stops.txt");
     if (options.identity) output.records.open(options.out + "/records.txt");
-    if (!output.stops || (options.identity && !output.records)) throw std::runtime_error("cannot open outputs");
+    if (options.bound_record) output.bound.open(options.out + "/bound.txt");
+    if (options.rng_states) output.rng.open(options.out + "/rng.txt");
+    if (!output.stops || (options.identity && !output.records) || (options.bound_record && !output.bound) ||
+        (options.rng_states && !output.rng)) {
+      throw std::runtime_error("cannot open outputs");
+    }
     G4Random::setTheEngine(new CLHEP::MixMaxRng);
     auto* manager = G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
 #ifdef HARVEST_MIXTURE_PATCHED
     if (options.opt_in == "on") G4HadronicParameters::Instance()->SetEnableMuonicData(true);
+#endif
+#ifdef HARVEST_MIXTURE_BOUND_RATES
+    if (options.bound_rates) {
+      G4HadronicParameters::Instance()->SetEnableMuonicBoundRates(true);
+      if (!G4MuonicBoundRateProvider::IsEnabled()) throw std::runtime_error("the bound-rate switch did not take");
+    }
 #endif
     auto* detector = new Detector(options);
     manager->SetUserInitialization(detector);
@@ -639,6 +977,10 @@ int main(int argc, char** argv) {
     manager->Initialize();
     output.dio_model = G4PhysicsModelCatalog::GetModelID("model_muMinusCaptureAtRest_DIO");
     if (options.route == "stopping" && output.dio_model < 0) throw std::runtime_error("no DIO model id");
+    output.nc_model = G4PhysicsModelCatalog::GetModelID("model_muMinusCaptureAtRest_NuclearCapture");
+    if (options.route == "stopping" && options.bound_record && output.nc_model < 0) {
+      throw std::runtime_error("no nuclear-capture model id");
+    }
     if (options.route == "stopping" && options.hooks) HookStoppingRoute();
     manager->BeamOn(options.events);
     output.stops.close();
@@ -648,6 +990,16 @@ int main(int argc, char** argv) {
               << g_count.entry_mismatch << "\nexit_mismatch " << g_count.exit_mismatch << '\n';
     }
     WriteConfig(options, detector);
+    if (options.Extended()) WriteExtended(options);
+    if (options.bound_record) {
+      output.bound.close();
+      std::ofstream totals(options.out + "/bound_summary.txt");
+      totals << "events " << g_totals.events << "\ncaptures " << g_totals.captures << "\nsum_all "
+             << Hex(g_totals.all.Value()) << "\nsum_capture " << Hex(g_totals.capture.Value()) << "\nsum_decay "
+             << Hex(g_totals.decay.Value()) << '\n';
+      if (!totals) throw std::runtime_error("cannot write bound_summary.txt");
+    }
+    if (options.rng_states) output.rng.close();
     delete manager;
     return 0;
   } catch (const std::exception& error) {

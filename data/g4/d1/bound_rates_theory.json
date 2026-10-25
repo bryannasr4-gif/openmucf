@@ -1,0 +1,100 @@
+{
+ "accuracy": "not established: the checked stopping equation has no bounded physical remainder in this record; binding-expansion, omitted recoil, finite-size, screening and bound/free radiative contributions have no admitted bound. The independent point-Coulomb reference omits physical corrections and its abstract was exposed before the budget was fixed. FINAL denotes the interpretation only, not physical-accuracy admission",
+ "helper_finding": "The legacy atomic helper's analytic branch uses 1 - 2.5 (Z_eff alpha)^2, with Geant4's effective charge Z_eff rather than nuclear charge Z. Its coefficient 2.5 is the phase-space-only approximation of Mukhopadhyay section 2.2, equation (2.9), stated there with nuclear Z. The complete point-Coulomb leading coefficient is 1/2 (von Baeyer and Leiter equation (27); Czarnecki et al. equation (1)). Thus the helper's phase-space-only coefficient is theoretically inconsistent with the complete leading term; replacing Z by Z_eff does not supply the omitted Coulomb contribution. This finding concerns the inclusive decay partial rate only and assigns no numerical experimental error to a real isotope.",
+ "interpretation": "The interpretation is final for this record; physical accuracy remains NOT_ESTABLISHED and no nuclide is admitted. The evaluated quantity is the inclusive decay partial rate d; no capture, total-lifetime, branching, timing or spectrum accuracy follows.",
+ "interpretation_status": "FINAL",
+ "qualified_roster": [],
+ "references": [
+  {
+   "arxiv": "2512.23023",
+   "citation": "A. Czarnecki, A. O. Davydov and M. Y. Kaygorodov, Total decay rate of a muon bound to a light nucleus, Phys. Rev. D 113, 036028 (2026)",
+   "comparison": "Table I, printed PW column, and equations (14)-(15). P1 is PASS for relative closeness only, not an accuracy bound or an asymptotic remainder theorem. Preserve literal P2 FAIL: the Geant4 ratio is to its measured free-rate parameter, while PW uses the massless-electron free width, so this mismatched-normalization score is not evidence against the stopping equation. Multiplication by the electron-mass factor (14) aligns tree-level ratios, not the measured free rate exactly; bound/free radiative cancellation is unbounded. Tree-level-aligned printed-PW P2 is UNDETERMINED: margin +6.27844476556e-5 versus radius 7.18518518519e-5. Both endpoint supports are included: at Z = 4 and Z = 9, each support is 5e-5 from rounding plus 1e-5 from the partial-wave tail, combined linearly as u4 + (16/81) u9. Rounding is assumed; truncation would widen the supports. This post-exposure sensitivity does not replace the registered literal score. Delta-column reconstruction uses the same PW calculation and is not independent evidence.",
+   "doi": "10.1103/38ly-8srx",
+   "exposed": true,
+   "exposure": "its abstract-level conclusion (the (alpha Z)^2/2 leading term is confirmed, and an earlier oxygen value is attributed to a partial-wave series that had not converged) was read before the budget was fixed; no tabulated value was",
+   "id": "czarnecki_davydov_kaygorodov_2026",
+   "independent": true,
+   "scope": "Gamma/Gamma0 for a 1s muon in a static point Coulomb potential, Z = 4 to 9, computed with its own partial-wave code; finite size, screening, radiative and recoil corrections are not included",
+   "url": "https://arxiv.org/html/2512.23023v1"
+  }
+ ],
+ "screen": "SCREEN_VACUOUS",
+ "sources": [
+  {
+   "citation": "H. C. von Baeyer and D. Leiter, Nuclear recoil corrections to the lifetime of bound muons, Phys. Rev. A 19, 1371 (1979)",
+   "doi": "10.1103/PhysRevA.19.1371",
+   "id": "vbl1979",
+   "read": true,
+   "role": "equation (30), pp. 1373-1374: the stopping expression through (Z alpha)^2 and (Z alpha)^2 m/M; point nucleus and massless electron; validity stated qualitatively"
+  },
+  {
+   "citation": "N. C. Mukhopadhyay, Nuclear muon capture, Phys. Rep. 30, 1 (1977)",
+   "doi": "10.1016/0370-1573(77)90073-4",
+   "id": "muk1977",
+   "read": true,
+   "role": "section 2.2, p. 9, equation (2.9): qualitative phase-space term with coefficient about 2.5 and nuclear charge Z; compare the complete leading coefficient in von Baeyer and Leiter, equation (27)"
+  },
+  {
+   "citation": "R. W. Huff, Decay rate of bound muons, Ann. Phys. 16, 288 (1961)",
+   "id": "huff1961",
+   "read": true,
+   "role": "Table II: computed total rates for Fe, Sb, Pb and U"
+  },
+  {
+   "citation": "P. Haenggi, R. D. Viollier, U. Raff and K. Alder, Muon decay in orbit, Phys. Lett. B 51, 119 (1974)",
+   "id": "hvra1974",
+   "read": true,
+   "role": "pp. 119-122: spectra including finite size and vacuum polarization"
+  },
+  {
+   "arxiv": "1406.3575",
+   "citation": "A. Czarnecki, M. Dowling, X. Garcia i Tormo, W. J. Marciano and R. Szafron, Michel decay spectrum for a muon bound to a nucleus, Phys. Rev. D 90, 093002 (2014)",
+   "doi": "10.1103/PhysRevD.90.093002",
+   "id": "cdgms2014",
+   "read": true,
+   "role": "context only: it describes the binding effects on the total decay rate as approximately cancelling, the difference from the free rate being mainly time dilation, and its convolution formula neither covers the high-energy end of the spectrum nor includes all corrections of order (Z alpha)^2, so it bounds no term of the total rate"
+  }
+ ],
+ "status": "NOT_ESTABLISHED",
+ "terms": {
+  "binding_expansion": {
+   "bound": null,
+   "note": "No bound is assigned in this record to terms beyond the orders retained in equation (30).",
+   "source": null,
+   "status": "UNBOUNDED"
+  },
+  "equation": {
+   "source": "vbl1979 eq. (30), pp. 1373-1374",
+   "statement": "Gamma_bound/Gamma_free = 1 - (1/2)(Z alpha)^2 - 0.06 (Z alpha)^2 m_mu/M, M the nuclear mass; Geant4's expression below Z = 14 is this equation",
+   "status": "VERIFIED"
+  },
+  "finite_size": {
+   "bound": null,
+   "note": "No bound is assigned in this record to the low-Z finite-size contribution to the inclusive total width.",
+   "source": null,
+   "status": "UNBOUNDED"
+  },
+  "nuclear_mass": {
+   "bound": 5e-06,
+   "source": "von Baeyer and Leiter (1979), equation (30): conditional propagation only, assuming relative nuclear-mass error at most 1/2; this assumption is not an uncertainty measurement",
+   "status": "BOUNDED"
+  },
+  "numerical": {
+   "bound": 1e-12,
+   "source": "closed-form binary64 evaluation checked by bound_rates_oracle in cpp/test/CMakeLists.txt, implemented in cpp/test/bound_rate_check.cc; implementation agreement only, not a bound on physical omitted terms",
+   "status": "BOUNDED"
+  },
+  "radiative": {
+   "bound": null,
+   "note": "No bound is assigned here to bound-state radiative corrections to the inclusive total width.",
+   "source": null,
+   "status": "UNBOUNDED"
+  },
+  "recoil": {
+   "bound": null,
+   "note": "Omitted recoil orders are unbounded in this record; only the term in equation (30) is included.",
+   "source": null,
+   "status": "UNBOUNDED"
+  }
+ }
+}

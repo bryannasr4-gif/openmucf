@@ -402,6 +402,19 @@ target_include_directories(g4muonicdata_overlay_check BEFORE PRIVATE g4stub ../i
 target_link_libraries(g4muonicdata_overlay_check PRIVATE g4muonicdatatable)
 g4muonicdata_target_options(g4muonicdata_overlay_check)
 
+# The bound-rate provider the patches add (cpp/src/G4MuonicBoundRateProvider.cc), compiled against the
+# same stand-in headers: its decay expression against every rate below Z = 14 of the compiled-Geant4
+# oracle, bit for bit; its switch, its freeze and its domain; and each input it refuses. One process per
+# mode, because the switch freezes at the first consultation.
+add_executable(g4muonicdata_bound_rate_check bound_rate_check.cc ../src/G4MuonicBoundRateProvider.cc)
+target_include_directories(g4muonicdata_bound_rate_check BEFORE PRIVATE g4stub ../include)
+g4muonicdata_target_options(g4muonicdata_bound_rate_check)
+add_test(NAME bound_rates_oracle
+         COMMAND g4muonicdata_bound_rate_check oracle "${G4MUONICDATA_D1_DIR}/d1_decay_rate.oracle")
+foreach(mode disabled enabled refuse)
+  add_test(NAME bound_rates_${mode} COMMAND g4muonicdata_bound_rate_check ${mode})
+endforeach()
+
 # Every key and token below is read from the shipped files at configure time.
 function(g4muonicdata_record_lines file out)
   file(STRINGS "${file}" lines REGEX "^ *[0-9]")

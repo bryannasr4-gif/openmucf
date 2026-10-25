@@ -1,0 +1,533 @@
+{
+ "chunk_events": 2000000,
+ "clock_predictions": {
+  "atom_capture": {
+   "0": "pass",
+   "250": "fail",
+   "1000": "fail"
+  },
+  "atom_creation": {
+   "0": "pass",
+   "250": "fail",
+   "1000": "fail"
+  },
+  "atom_dio": {
+   "0": "pass",
+   "250": "fail",
+   "1000": "fail"
+  },
+  "stop_capture": {
+   "0": "fail",
+   "250": "fail",
+   "1000": "fail"
+  },
+  "stop_dio": {
+   "0": "pass",
+   "250": "pass",
+   "1000": "pass"
+  }
+ },
+ "drills": {
+  "seed_first": 1900000000,
+  "seed_stride": 10000
+ },
+ "groups": [
+  {
+   "a": 12,
+   "events": 60000000,
+   "group": 0,
+   "isotope": "C-12",
+   "revision": "v11.4.2",
+   "route": "stopping",
+   "seed_base": 100000000,
+   "strata": [
+    {
+     "count": 20000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 20000000,
+     "first": 20000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 20000000,
+     "first": 40000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 6
+  },
+  {
+   "a": 12,
+   "events": 60000000,
+   "group": 1,
+   "isotope": "C-12",
+   "revision": "v11.4.2",
+   "route": "atomic",
+   "seed_base": 200000000,
+   "strata": [
+    {
+     "count": 20000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 20000000,
+     "first": 20000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 20000000,
+     "first": 40000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 6
+  },
+  {
+   "a": 12,
+   "events": 60000000,
+   "group": 2,
+   "isotope": "C-12",
+   "revision": "v11.5.0.beta",
+   "route": "stopping",
+   "seed_base": 300000000,
+   "strata": [
+    {
+     "count": 20000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 20000000,
+     "first": 20000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 20000000,
+     "first": 40000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 6
+  },
+  {
+   "a": 12,
+   "events": 60000000,
+   "group": 3,
+   "isotope": "C-12",
+   "revision": "v11.5.0.beta",
+   "route": "atomic",
+   "seed_base": 400000000,
+   "strata": [
+    {
+     "count": 20000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 20000000,
+     "first": 20000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 20000000,
+     "first": 40000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 6
+  },
+  {
+   "a": 14,
+   "events": 24000000,
+   "group": 4,
+   "isotope": "N-14",
+   "revision": "v11.4.2",
+   "route": "stopping",
+   "seed_base": 500000000,
+   "strata": [
+    {
+     "count": 8000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 8000000,
+     "first": 8000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 8000000,
+     "first": 16000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 7
+  },
+  {
+   "a": 14,
+   "events": 24000000,
+   "group": 5,
+   "isotope": "N-14",
+   "revision": "v11.4.2",
+   "route": "atomic",
+   "seed_base": 600000000,
+   "strata": [
+    {
+     "count": 8000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 8000000,
+     "first": 8000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 8000000,
+     "first": 16000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 7
+  },
+  {
+   "a": 14,
+   "events": 24000000,
+   "group": 6,
+   "isotope": "N-14",
+   "revision": "v11.5.0.beta",
+   "route": "stopping",
+   "seed_base": 700000000,
+   "strata": [
+    {
+     "count": 8000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 8000000,
+     "first": 8000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 8000000,
+     "first": 16000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 7
+  },
+  {
+   "a": 14,
+   "events": 24000000,
+   "group": 7,
+   "isotope": "N-14",
+   "revision": "v11.5.0.beta",
+   "route": "atomic",
+   "seed_base": 800000000,
+   "strata": [
+    {
+     "count": 8000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 8000000,
+     "first": 8000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 8000000,
+     "first": 16000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 7
+  },
+  {
+   "a": 16,
+   "events": 12000000,
+   "group": 8,
+   "isotope": "O-16",
+   "revision": "v11.4.2",
+   "route": "stopping",
+   "seed_base": 900000000,
+   "strata": [
+    {
+     "count": 4000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 4000000,
+     "first": 4000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 4000000,
+     "first": 8000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 8
+  },
+  {
+   "a": 16,
+   "events": 12000000,
+   "group": 9,
+   "isotope": "O-16",
+   "revision": "v11.4.2",
+   "route": "atomic",
+   "seed_base": 1000000000,
+   "strata": [
+    {
+     "count": 4000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 4000000,
+     "first": 4000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 4000000,
+     "first": 8000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 8
+  },
+  {
+   "a": 16,
+   "events": 12000000,
+   "group": 10,
+   "isotope": "O-16",
+   "revision": "v11.5.0.beta",
+   "route": "stopping",
+   "seed_base": 1100000000,
+   "strata": [
+    {
+     "count": 4000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 4000000,
+     "first": 4000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 4000000,
+     "first": 8000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 8
+  },
+  {
+   "a": 16,
+   "events": 12000000,
+   "group": 11,
+   "isotope": "O-16",
+   "revision": "v11.5.0.beta",
+   "route": "atomic",
+   "seed_base": 1200000000,
+   "strata": [
+    {
+     "count": 4000000,
+     "first": 0,
+     "t0_ns": 0
+    },
+    {
+     "count": 4000000,
+     "first": 4000000,
+     "t0_ns": 250
+    },
+    {
+     "count": 4000000,
+     "first": 8000000,
+     "t0_ns": 1000
+    }
+   ],
+   "z": 8
+  }
+ ],
+ "identity": {
+  "events": 2000,
+  "roster": [
+   "H-1",
+   "He-4",
+   "C-12",
+   "C-13",
+   "N-14",
+   "O-16",
+   "O-18",
+   "Al-27",
+   "Si-28",
+   "Pb-208"
+  ],
+  "seed_first": 1700000000,
+  "seed_stride": 10000,
+  "t0_ns": [
+   0,
+   250,
+   1000
+  ]
+ },
+ "inputs": {
+  "alpha": "0x1.de3d429d88bb3p-8",
+  "microsecond_ns": "0x1.f400000000000p+9",
+  "mu_mass_mev": "0x1.a6a22c2374795p+6",
+  "oracle": "data/g4/d1/d1_decay_rate.oracle",
+  "oracle_sha256": "b886255a6a207f76882182f7b56b4c95518cb3137ab2822a7e65a4f8034ec850"
+ },
+ "prescription": {
+  "capture": "G4MuonicAtomHelper::GetMuonCaptureRate(Z, A), the helper's resolver as it stands",
+  "decay": "(0.45517005 / microsecond) * [1 - (Z alpha)^2 (0.5 + 0.06 m_mu / M)], grouped as G4MuonMinusBoundDecay::GetMuonDecayRate groups it below Z = 14",
+  "domain": "2 <= Z <= 13 and A >= Z",
+  "physical_accuracy": "not established: the policy verifies the implementation of the prescription"
+ },
+ "references": {
+  "C-12": {
+   "a": 12,
+   "capture": "0x1.3f5ab3d5aff55p-15",
+   "decay": "0x1.dcd287ea32e12p-12",
+   "dio_lifetime": "0x1.12e2ec9701c75p+11",
+   "lifetime": "0x1.fb4d451558263p+10",
+   "mass_mev": "0x1.5d36e837f5a5bp+13",
+   "nc_lifetime": "0x1.9a6d9bce3d315p+14",
+   "p_capture": "0.07725192349146336",
+   "total": "0x1.025eef32746fep-11",
+   "z": 6
+  },
+  "N-14": {
+   "a": 14,
+   "capture": "0x1.20c71fe4a1d5ap-14",
+   "decay": "0x1.dca83784ac506p-12",
+   "dio_lifetime": "0x1.12fb53980166dp+11",
+   "lifetime": "0x1.dd9f6dde09976p+10",
+   "mass_mev": "0x1.9781a276718ccp+13",
+   "nc_lifetime": "0x1.c5e2a04170d93p+13",
+   "p_capture": "0.1315373109110068",
+   "total": "0x1.126cffbeea62ep-11",
+   "z": 7
+  },
+  "O-16": {
+   "a": 16,
+   "capture": "0x1.ad94a33aad251p-14",
+   "decay": "0x1.dc7765702b654p-12",
+   "dio_lifetime": "0x1.1317809396fe3p+11",
+   "lifetime": "0x1.c0fbb02ee2cd8p+10",
+   "mass_mev": "0x1.d178a6fba378bp+13",
+   "nc_lifetime": "0x1.311dbe83463c8p+13",
+   "p_capture": "0.1839394197972438",
+   "total": "0x1.23ee471f6b574p-11",
+   "z": 8
+  }
+ },
+ "statistics": {
+  "distribution": {
+   "bins": 20,
+   "count": 36,
+   "critical": [
+    "54.49368455560107491730740015",
+    "54.4936845556010749173147058"
+   ],
+   "dof": 19,
+   "per_test_alpha": "0.00002777777777777777777777777778",
+   "streams": [
+    "all",
+    "capture",
+    "decay"
+   ]
+  },
+  "family_alpha": "0.001",
+  "power": {
+   "alternative": "the atomic route's former decay rate with the capture rate unchanged",
+   "values": {
+    "C-12": {
+     "alternative_decay": "0x1.db339404e94a5p-12",
+     "branch": "0.9973790180742845",
+     "omitted_count_probability": "3.566401233502069e-33",
+     "sum_all": "1.0",
+     "sum_capture": "0.9941268580353592",
+     "sum_decay": "1.0"
+    },
+    "N-14": {
+     "alternative_decay": "0x1.da81141d83849p-12",
+     "branch": "0.9994150928185591",
+     "omitted_count_probability": "3.573708234017758e-33",
+     "sum_all": "1.0",
+     "sum_capture": "0.9969472979719335",
+     "sum_decay": "1.0"
+    },
+    "O-16": {
+     "alternative_decay": "0x1.d9b73f99d94d2p-12",
+     "branch": "0.9997851681733547",
+     "omitted_count_probability": "3.56483692232044e-33",
+     "sum_all": "1.0",
+     "sum_capture": "0.9972619632649289",
+     "sum_decay": "1.0"
+    }
+   }
+  },
+  "primary": {
+   "conditional": "sum_capture under Gamma(K, 1) and sum_decay under Gamma(N - K, 1), K the observed capture count; inclusive quantile interval at per_test_alpha / 2 in each tail; an empty branch fails",
+   "count": 48,
+   "limits": {
+    "C-12": {
+     "capture_count": [
+      4626316,
+      4643919
+     ],
+     "capture_count_null_size": "2.0804442660909893e-05",
+     "sum_all": [
+      "59967040.67220242",
+      "60032970.735500865"
+     ]
+    },
+    "N-14": {
+     "capture_count": [
+      3149851,
+      3163944
+     ],
+     "capture_count_null_size": "2.0814386420726266e-05",
+     "sum_all": [
+      "23979156.787060518",
+      "24020854.620642707"
+     ]
+    },
+    "O-16": {
+     "capture_count": [
+      2201563,
+      2212987
+     ],
+     "capture_count_null_size": "2.077938953603576e-05",
+     "sum_all": [
+      "11985263.293218585",
+      "12014748.114484528"
+     ]
+    }
+   },
+   "per_test_alpha": "0.00002083333333333333333333333333",
+   "tests": [
+    "capture_count",
+    "sum_all",
+    "sum_capture",
+    "sum_decay"
+   ],
+   "two_sided": true
+  }
+ },
+ "tolerances": {
+  "clock_absolute_ns": "1e-06",
+  "clock_eps_factor": 64,
+  "eps": "0x1.0000000000000p-52",
+  "rate_relative": "1e-09"
+ }
+}
