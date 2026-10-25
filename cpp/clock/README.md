@@ -1,14 +1,14 @@
 # Stopped negative-muon clock correction
 
-`../patches/g4-v11.4.2-stopped-muon-clock-v2.patch` and
-`../patches/g4-v11.5.0.beta-stopped-muon-clock-v2.patch` are separate patches against
+`../patches/g4-v11.4.2-stopped-muon-clock-v3.patch` and
+`../patches/g4-v11.5.0.beta-stopped-muon-clock-v3.patch` are separate patches against
 the named pristine Geant4 tags. Applying a patch explicitly changes that build's
 default timing. There is no runtime switch. Neither the dataset patch nor
 `SetEnableMuonicBoundRates` applies or enables this correction. The clock and
 dataset/rate patches apply in either order. Apply exactly one complete clock patch,
 matching the source revision.
 
-The correction changes three consumers:
+The correction changes four consumers:
 
 - `G4MuonMinusAtomicCapture::AtRestDoIt` gives the new muonic atom local time zero.
   Its common secondary loop adds the stopped muon's global time once. Previously,
@@ -23,15 +23,28 @@ The correction changes three consumers:
   interactions, including models with negative unset local times. Clamp that local
   time before adding the sampled atom waiting time. The verbose per-secondary
   diagnostic reports the resulting composed local time.
+- `G4MuMinusCapturePrecompound::ApplyYourself` consumes
+  `max(reaction_product.GetFormationTime(), 0)` before adding its projectile origin.
+  It previously read `GetTOF`, whose particle-taking constructors initialize its
+  legacy field by PDG sign. The default de-excitation return path writes fragment
+  creation times to `FormationTime`; normal `G4PreCompoundModel` uses that field too.
+  A valid zero formation time stays zero, with no TOF fallback. The light-target
+  bypasses retain their existing origin handling.
 
 Under the existing instantaneous atomic-formation approximation, the atom is
 created at `t_stop`. Bound-decay products arrive at `t_stop + waiting_time`;
 nuclear-capture products arrive at
 `t_stop + waiting_time + max(model_secondary_local_time, 0)`.
-The default atomic route's subsequent precompound-capture model retains its
-observed positive model-local times; the origin of the observed one-nanosecond
-values is outside this check. A supplied atomic-decay interaction with negative
-local times receives the same corrected composition as the stopping route.
+The default atomic route's precompound wrapper starts its initial fragment at
+creation time zero and receives projectile time zero from the atom-decay consumer.
+Formation times are therefore relative to capture; the enclosing consumer adds
+the sampled waiting time and atom origin. Positive modeled formation times are
+retained. The previous uniform one-nanosecond local values came from the legacy
+TOF field rather than formation metadata. Propagating the model's formation times
+does not establish their experimental accuracy. Generic `G4PreCompoundModel`
+origin handling is unchanged. Supplied dependencies must implement the
+FormationTime contract; arbitrary TOF-only custom dependencies are outside this
+correction's supported metadata contract.
 Positive formation-cascade secondary times are retained too;
 this is a check of secondary-time handling, not a model of delayed atom formation
 for arbitrary custom cascades.
@@ -70,6 +83,9 @@ cmake --build /absolute/path/to/probe-build --parallel 2
 /absolute/path/to/probe-build/clock_probe atomic 250 300
 /absolute/path/to/probe-build/clock_probe stopping 250 300
 /absolute/path/to/probe-build/clock_probe atom_decay 250 500
+/absolute/path/to/probe-build/formation_probe controlled 250 4
+/absolute/path/to/probe-build/formation_probe default 250 50
+/absolute/path/to/probe-build/formation_probe light 250 4
 /absolute/path/to/probe-build/clock_transport atomic spy 250 120 12345
 /absolute/path/to/probe-build/clock_transport stopping spy 250 500 12345
 ```
@@ -101,11 +117,11 @@ before claiming branch coverage; extend a fixed-seed prefix if necessary, retain
 the shorter record, and make no rate-distribution claim from that extension.
 
 For a small Linux validation without rebuilding all Geant4, CMake also accepts
-`CLOCK_PROCESS_SOURCES`, a semicolon-separated list of the three upstream process
+`CLOCK_PROCESS_SOURCES`, a semicolon-separated list of the four upstream process
 `.cc` files. Compile unmodified copies first and compare their records to the
 installed-library baseline. Then compile the copies with the clock patch applied.
 This is **application object-overlay validation**, not a rebuilt installation:
-only the three process definitions linked into these applications are replaced.
+only the four process definitions linked into these applications are replaced.
 The existing Geant4 shared libraries and data remain in use. Check the executable's
 exported `AtRestDoIt` symbols and record the source, patch and executable hashes.
 
@@ -138,6 +154,27 @@ complete correction. It also requires unchanged nonnegative-model/zero-wait/DIO
 clocks and unchanged default atomic transport observations, including comparison
 to the prior accepted transport records. This inheritance uses exact observed
 records and source hashes; it does not relabel earlier clock failures as passes.
+
+`formation_probe` calls the actual `G4MuMinusCapturePrecompound` wrapper. Its
+supplied controlled `DeExcite` dependency crosses independent TOF values
+`{-1, 0, 1, 7}` with formation times `{-2, 0, 0.125, 3}` ns. Nonzero origins test
+that only the local formation value is clamped. The `light` mode covers the four
+bypass target branches and verifies that the supplied dependency is not called.
+The `default` mode calls the unmodified standard de-excitation dynamics.
+
+`check_formation.py LOG_ROOT --controlled-calls 4 --default-calls 50
+--integrated-events 120` checks the supplied-field grid, real-default wrapper
+calls and integrated atomic products. Its fixture records additionally include
+passive `AUDIT_FRAGMENT`, `AUDIT_RP` and `AUDIT_PICK` observations immediately
+before/after the wrapper's getter, with full engine states. The logs use
+`<revision>/<old|new|zero>-<controlled|default|light>-<origin>.log` and
+`<revision>/<old|new|zero>-integrated-250.log`. The comparator restores the old TOF
+getter or removes every formation delay; both must fail. Corrected products must
+follow `t_stop + sampled_wait + max(raw_formation_time, 0)` on the integrated atomic
+route. Matched wrapper inputs require identical non-time final-state fields,
+metadata and complete RNG states. This getter correction intentionally changes
+default atomic product times; earlier default-transport records remain historical
+composition evidence, not a reference for the corrected formation contract.
 
 Finite checks on both named revisions cover these clocks and matched-input
 invariants. Corrected times can change downstream scheduling and therefore later
