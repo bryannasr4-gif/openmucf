@@ -1,0 +1,34 @@
+# Test-only passive observers under the Geant4 Software License.
+# License: ../../patches/LICENSE (also copied beside this patch as LICENSE).
+diff --git a/source/processes/hadronic/stopping/src/G4MuMinusCapturePrecompound.cc b/source/processes/hadronic/stopping/src/G4MuMinusCapturePrecompound.cc
+--- a/source/processes/hadronic/stopping/src/G4MuMinusCapturePrecompound.cc
++++ b/source/processes/hadronic/stopping/src/G4MuMinusCapturePrecompound.cc
+@@ -42,6 +42,8 @@
+ //-----------------------------------------------------------------------------
+ 
+ #include "G4MuMinusCapturePrecompound.hh"
++#include <cstdio>
++extern "C" int clock_audit_event();
+ #include <algorithm>
+ #include "Randomize.hh" 
+ #include "G4RandomDirection.hh"
+@@ -235,13 +237,19 @@
+     initialState.SetNumberOfHoles(1,1);
+ 
+     // decay time for pre-compound/de-excitation starts from zero
++    std::printf("AUDIT_FRAGMENT event %d creation %a\n",clock_audit_event(),initialState.GetCreationTime()/ns);
+     G4ReactionProductVector* rpv = fPreCompound->DeExcite(initialState);
+     size_t n = rpv->size();
+     for(size_t i=0; i<n; ++i) {
+       G4ReactionProduct* rp = (*rpv)[i];
+ 
+       // reaction time
++      std::printf("AUDIT_RP event %d index %zu name %s pdg %d tof %a formation %a origin %a energy %a px %a py %a pz %a\n",
++        clock_audit_event(),i,rp->GetDefinition()->GetParticleName().c_str(),rp->GetDefinition()->GetPDGEncoding(),
++        rp->GetTOF()/ns,rp->GetFormationTime()/ns,time0/ns,rp->GetKineticEnergy()/MeV,
++        rp->GetMomentum().x()/MeV,rp->GetMomentum().y()/MeV,rp->GetMomentum().z()/MeV);
+       fTime = time0 + std::max(rp->GetFormationTime(), 0.0);
++      std::printf("AUDIT_PICK event %d index %zu selected %a\n",clock_audit_event(),i,fTime/ns);
+       G4ThreeVector direction = rp->GetMomentum().unit();
+       AddNewParticle(rp->GetDefinition(), direction, rp->GetKineticEnergy());
+       delete rp;

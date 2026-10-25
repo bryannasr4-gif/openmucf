@@ -162,11 +162,49 @@ that only the local formation value is clamped. The `light` mode covers the four
 bypass target branches and verifies that the supplied dependency is not called.
 The `default` mode calls the unmodified standard de-excitation dynamics.
 
-`check_formation.py LOG_ROOT --controlled-calls 4 --default-calls 50
---integrated-events 120` checks the supplied-field grid, real-default wrapper
-calls and integrated atomic products. Its fixture records additionally include
-passive `AUDIT_FRAGMENT`, `AUDIT_RP` and `AUDIT_PICK` observations immediately
-before/after the wrapper's getter, with full engine states. The logs use
+The test-only [formation validation support](formation_validation/README.md)
+publishes the observer hooks, print-only trace patches, explicit old/zero comparator
+statements and the variant CMake build. It produces all inputs required by
+`check_formation.py`, including passive `AUDIT_FRAGMENT`, `AUDIT_RP`, `AUDIT_PICK`
+and complete `AUDIT_RNG` records. The bare `formation_probe` examples above are
+component probes; use the following complete flow for the checker. On Linux with
+Python 3.10+, Git, CMake, a C++17 compiler, both pristine source revisions and their
+matching existing Geant4 installations, run from the repository root:
+
+```sh
+# Configure the matching installed Geant4 datasets before each revision's run.
+# Supply fresh output paths: the script refuses to overwrite an earlier run.
+source /absolute/path/to/geant4-11.4.2-install/bin/geant4.sh
+python cpp/clock/formation_validation/run.py \
+  --revision v11.4.2 \
+  --geant4-source /absolute/path/to/pristine-geant4-11.4.2 \
+  --geant4-install /absolute/path/to/geant4-11.4.2-install \
+  --output-root /absolute/path/to/new-formation-validation
+
+source /absolute/path/to/geant4-beta-install/bin/geant4.sh
+python cpp/clock/formation_validation/run.py \
+  --revision v11.5.0.beta \
+  --geant4-source /absolute/path/to/pristine-geant4-beta \
+  --geant4-install /absolute/path/to/geant4-beta-install \
+  --output-root /absolute/path/to/new-formation-validation
+
+python cpp/clock/check_formation.py \
+  /absolute/path/to/new-formation-validation/logs \
+  --controlled-calls 4 --default-calls 50 --integrated-events 120 \
+  --output /absolute/path/to/new-formation-validation/result.json
+```
+
+The source trees and installations are read-only inputs. The script copies four
+source files, applies the complete production patch and then its test-only trace
+patch to those fresh copies, builds with two cores and runs the finite matrix.
+It inherits dataset environment settings. For a nonstandard installation layout,
+pass `--geant4-dir /absolute/path/to/Geant4Config-directory`. Source and install
+paths may contain spaces. Configure/build logs and exact prepared-model hashes
+are recorded under the output root. The generated source hashes must match the
+published tested bodies before compilation. No production installation changes.
+
+`check_formation.py` checks the supplied-field grid, real-default wrapper calls and
+integrated atomic products. The logs use
 `<revision>/<old|new|zero>-<controlled|default|light>-<origin>.log` and
 `<revision>/<old|new|zero>-integrated-250.log`. The comparator restores the old TOF
 getter or removes every formation delay; both must fail. Corrected products must
