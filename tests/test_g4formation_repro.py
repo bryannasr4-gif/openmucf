@@ -55,6 +55,21 @@ def test_comparator_statements_are_explicit_and_cannot_silently_miss_the_getter(
         prepare.variants(text + prepare.CORRECTED)
 
 
+def test_patch_application_isolated_from_enclosing_or_caller_git_context(tmp_path, monkeypatch):
+    monkeypatch.setenv("GIT_DIR", "wrong-repository/.git")
+    monkeypatch.setenv("GIT_WORK_TREE", "wrong-worktree")
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", "wrong-ceiling")
+    monkeypatch.setenv("D1D2_REPRO_MARKER", "preserved")
+    with patch.object(prepare.subprocess, "run") as run_git:
+        prepare.apply_patch_file(Path("trace.patch"), tmp_path / "kernel", tmp_path)
+    assert run_git.call_count == 2
+    for call in run_git.call_args_list:
+        env = call.kwargs["env"]
+        assert "GIT_DIR" not in env and "GIT_WORK_TREE" not in env
+        assert env["GIT_CEILING_DIRECTORIES"] == str(tmp_path.resolve())
+        assert env["D1D2_REPRO_MARKER"] == "preserved"
+
+
 def test_public_run_plan_produces_every_checker_input_with_declared_counts():
     plan = run.plan_runs(Path("objects"), Path("logs"))
     assert len(plan) == 30 and len({path for _, path in plan}) == 30

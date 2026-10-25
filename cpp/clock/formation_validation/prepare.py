@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -19,6 +20,19 @@ PROCESS_NAMES = (
     "G4MuMinusCapturePrecompound.cc",
 )
 CORRECTED = "fTime = time0 + std::max(rp->GetFormationTime(), 0.0);"
+
+
+def apply_patch_file(patch: Path, kernel: Path, ceiling: Path) -> None:
+    env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+    env["GIT_CEILING_DIRECTORIES"] = str(ceiling.resolve())
+    for operation in (("--check",), ()):
+        subprocess.run(
+            ["git", "-c", "core.autocrlf=false", "apply", *operation, str(patch)],
+            cwd=kernel,
+            env=env,
+            check=True,
+            timeout=60,
+        )
 
 
 def variants(traced: str) -> dict[str, str]:
@@ -47,13 +61,11 @@ def prepare(revision: str, source: Path, output: Path) -> Path:
     production = HERE.parents[1] / "patches" / f"g4-{revision}-stopped-muon-clock-v3.patch"
     trace = HERE / f"trace-g4-{revision}.patch"
     for patch in (production, trace):
-        for operation in (("--check",), ()):
-            subprocess.run(
-                ["git", "-c", "core.autocrlf=false", "apply", *operation, str(patch)],
-                cwd=kernel,
-                check=True,
-                timeout=60,
-            )
+        apply_patch_file(patch, kernel, output)
+        body = (kernel / PROCESS_DIR / PROCESS_NAMES[-1]).read_text(encoding="utf-8")
+        marker = CORRECTED if patch == production else "AUDIT_PICK"
+        if body.count(marker) != 1:
+            raise RuntimeError(f"patch {patch.name} was not applied")
     for name in PROCESS_NAMES:
         path = kernel / PROCESS_DIR / name
         path.write_bytes(path.read_text(encoding="utf-8").encode("utf-8"))
