@@ -1,13 +1,14 @@
 # Stopped negative-muon clock correction
 
-`../patches/g4-v11.4.2-stopped-muon-clock-v1.patch` and
-`../patches/g4-v11.5.0.beta-stopped-muon-clock-v1.patch` are separate patches against
+`../patches/g4-v11.4.2-stopped-muon-clock-v2.patch` and
+`../patches/g4-v11.5.0.beta-stopped-muon-clock-v2.patch` are separate patches against
 the named pristine Geant4 tags. Applying a patch explicitly changes that build's
 default timing. There is no runtime switch. Neither the dataset patch nor
 `SetEnableMuonicBoundRates` applies or enables this correction. The clock and
-dataset/rate patches apply in either order.
+dataset/rate patches apply in either order. Apply exactly one complete clock patch,
+matching the source revision.
 
-The correction changes two consumers:
+The correction changes three consumers:
 
 - `G4MuonMinusAtomicCapture::AtRestDoIt` gives the new muonic atom local time zero.
   Its common secondary loop adds the stopped muon's global time once. Previously,
@@ -17,13 +18,21 @@ The correction changes two consumers:
   Previously, the default `G4HadSecondary` sentinel of minus one nanosecond was
   added to that waiting time and the composed result was clamped afterward.
   A legitimate positive model delay is preserved.
+- `G4MuonicAtomDecay::DecayIt` applies the same ordering to nuclear-model times
+  before `FillResult` adds the atom origin. The constructor accepts supplied nuclear
+  interactions, including models with negative unset local times. Clamp that local
+  time before adding the sampled atom waiting time. The verbose per-secondary
+  diagnostic reports the resulting composed local time.
 
 Under the existing instantaneous atomic-formation approximation, the atom is
 created at `t_stop`. Bound-decay products arrive at `t_stop + waiting_time`;
 nuclear-capture products arrive at
 `t_stop + waiting_time + max(model_secondary_local_time, 0)`.
-The atomic route's subsequent precompound-capture model retains its own positive
-secondary delays. Positive formation-cascade secondary times are retained too;
+The default atomic route's subsequent precompound-capture model retains its
+observed positive model-local times; the origin of the observed one-nanosecond
+values is outside this check. A supplied atomic-decay interaction with negative
+local times receives the same corrected composition as the stopping route.
+Positive formation-cascade secondary times are retained too;
 this is a check of secondary-time handling, not a model of delayed atom formation
 for arbitrary custom cascades.
 
@@ -60,6 +69,7 @@ cmake --build /absolute/path/to/probe-build --parallel 2
 /absolute/path/to/probe-build/clock_probe fixture 250 160
 /absolute/path/to/probe-build/clock_probe atomic 250 300
 /absolute/path/to/probe-build/clock_probe stopping 250 300
+/absolute/path/to/probe-build/clock_probe atom_decay 250 500
 /absolute/path/to/probe-build/clock_transport atomic spy 250 120 12345
 /absolute/path/to/probe-build/clock_transport stopping spy 250 500 12345
 ```
@@ -73,6 +83,15 @@ a positive 0.375 ns formation-cascade secondary time; and generated finite cases
 The fixture intentionally disables energy-conservation checking for its synthetic
 interaction and makes no claim about those synthetic particles' nuclear physics.
 
+The `atom_decay` probe uses the actual `G4MuonicAtomDecay` class and a supplied
+controlled nuclear interaction. It tests 30 waiting/local-time combinations and
+then the requested number of actual GPIL-sampled waiting times. A small subclass
+sets the protected interaction-length counter only for the deterministic boundary
+cases; `AtRestGetPhysicalInteractionLength` observes each waiting time before the
+product-producing call. This independent observation is also used for the sampled
+cases. The atom's standard rates, lifetimes and DIO model are retained. Controlled
+model-local times are test inputs, not calibrated physical delays.
+
 `clock_transport` uses QBBC and the standard atomic or stopping route. Its `spy`
 mode delegates the stock bound-decay/precompound models unchanged and observes
 their times; `plain` omits those wrappers. Passive stepping records the delivered
@@ -82,11 +101,11 @@ before claiming branch coverage; extend a fixed-seed prefix if necessary, retain
 the shorter record, and make no rate-distribution claim from that extension.
 
 For a small Linux validation without rebuilding all Geant4, CMake also accepts
-`CLOCK_PROCESS_SOURCES`, a semicolon-separated list of the two upstream process
+`CLOCK_PROCESS_SOURCES`, a semicolon-separated list of the three upstream process
 `.cc` files. Compile unmodified copies first and compare their records to the
 installed-library baseline. Then compile the copies with the clock patch applied.
 This is **application object-overlay validation**, not a rebuilt installation:
-only the two process definitions linked into these applications are replaced.
+only the three process definitions linked into these applications are replaced.
 The existing Geant4 shared libraries and data remain in use. Check the executable's
 exported `AtRestDoIt` symbols and record the source, patch and executable hashes.
 
@@ -101,7 +120,24 @@ It requires installed/pristine-overlay equality and unchanged non-time records
 and full RNG state for matched process inputs. `check_transport.py LOG_ROOT`
 reads `<revision>/<installed|corrected>-<atomic|stopping>-<stop>-<spy|plain>.log`,
 checks downstream absolute times and requires identical observed spy/plain products.
+Supply exact invocation counts explicitly, for example
+`--atomic-events 120 --stopping-events 120 --stopping-250-events 500` for a run
+that extended only the stopping 250 ns cells. A shorter contiguous prefix fails
+even when it contains both branches. The process checker also requires exactly
+one rate-readout record and the complete declared deterministic fixture grid.
 Both checkers reject nonfinite observed times and empty/missing coverage.
+
+`check_atomic_decay.py NEW_LOG_ROOT PRIOR_TRANSPORT_ROOT --sampled-events 500
+--transport-events 120` checks the third consumer's controlled and sampled cases,
+rejects the old composition, and requires matched rates, branches, kinematics and
+complete random-engine state. Its logs use
+`<revision>/<installed|clock1|clock2>-atom_decay-<stop>.log` and
+`<revision>/<clock1|clock2>-atomic-<stop>-<spy|plain>.log`; `clock1` denotes the
+two-consumer comparator with the original atomic-decay class, and `clock2` the
+complete correction. It also requires unchanged nonnegative-model/zero-wait/DIO
+clocks and unchanged default atomic transport observations, including comparison
+to the prior accepted transport records. This inheritance uses exact observed
+records and source hashes; it does not relabel earlier clock failures as passes.
 
 Finite checks on both named revisions cover these clocks and matched-input
 invariants. Corrected times can change downstream scheduling and therefore later

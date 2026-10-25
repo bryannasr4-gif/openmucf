@@ -33,3 +33,28 @@ diff --git a/source/processes/hadronic/stopping/src/G4HadronStoppingProcess.cc b
      }
  
      nSecondaries += nnuc;
+diff --git a/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc b/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
+--- a/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
++++ b/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
+@@ -61,6 +61,7 @@
+ #include "G4RandomDirection.hh"
+ #include "G4PhysicalConstants.hh"
+ #include "G4SystemOfUnits.hh"
++#include <algorithm>
+ 
+ //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
+ 
+@@ -422,11 +423,11 @@
+     for(G4int i=0; i<nsec; ++i) {
+       G4HadSecondary* sec = result->GetSecondary(i);
+       G4double ctime = sec->GetTime();
+-      sec->SetTime(maDTime + ctime); // we add time0 in the next stage
++      sec->SetTime(maDTime + std::max(0., ctime)); // we add time0 in the next stage
+ #ifdef G4VERBOSE
+       if (GetVerboseLevel()>1) {
+         G4cout << "G4MuonicAtomDecay::DecayIt time set to: "
+-               << (maDTime + ctime)/ns << "[ns]" << G4endl;
++               << sec->GetTime()/ns << "[ns]" << G4endl;
+       }
+ #endif
+     }

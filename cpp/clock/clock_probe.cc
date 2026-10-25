@@ -15,8 +15,10 @@
 #include "G4MuonMinusAtomicCapture.hh"
 #include "G4MuonMinusBoundDecay.hh"
 #include "G4MuonicAtom.hh"
+#include "G4MuonicAtomDecay.hh"
 #include "G4MuonicAtomDecayPhysics.hh"
 #include "G4MuonicAtomHelper.hh"
+#include "G4IonTable.hh"
 #include "G4PhysicsModelCatalog.hh"
 #include "G4Nucleus.hh"
 #include "G4PVPlacement.hh"
@@ -101,31 +103,43 @@ struct Nuclear : G4HadronicInteraction {
   }
   G4HadFinalState* ApplyYourself(const G4HadProjectile&,G4Nucleus&) override {
     result.Clear(); result.SetStatusChange(stopAndKill);
+    decayBranch=false;
     result.AddSecondary(new G4DynamicParticle(G4Gamma::Gamma(),{0,0,1},0.03*MeV));
     result.GetSecondary(0)->SetTime(modelTime);
     return &result;
   }
 };
+struct ProbeAtomDecay : G4MuonicAtomDecay {
+  ProbeAtomDecay() : G4MuonicAtomDecay(new Nuclear) {}
+  void SetFixtureInteractionLengths(double value) { theNumberOfInteractionLengthLeft=value; }
+};
 }
 
 int main(int argc,char** argv) {
-  if(argc<4) { std::fprintf(stderr,"usage: clock_probe atomic|stopping|fixture t0_ns samples\n"); return 2; }
+  if(argc<4) { std::fprintf(stderr,"usage: clock_probe atomic|stopping|fixture|atom_decay t0_ns samples\n"); return 2; }
   const bool atomic=std::strcmp(argv[1],"atomic")==0;
   const bool fixture=std::strcmp(argv[1],"fixture")==0;
+  const bool atomDecay=std::strcmp(argv[1],"atom_decay")==0;
   const double t0=std::atof(argv[2])*ns;
   const int samples=std::atoi(argv[3]);
   G4Random::setTheSeed(12345);
   auto* rm=G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial);
   rm->SetUserInitialization(new Detector);
   auto* physics=new QBBC(0);
-  if(atomic) {
+  if(atomic || atomDecay) {
     physics->ReplacePhysics(new G4StoppingPhysics("stopping",0,false));
     physics->RegisterPhysics(new AtomicPhysics);
     physics->RegisterPhysics(new G4MuonicAtomDecayPhysics);
   }
   rm->SetUserInitialization(physics); rm->Initialize();
   G4VProcess* process=nullptr;
-  if(atomic) {
+  ProbeAtomDecay* decayProcess=nullptr;
+  G4ParticleDefinition* primary=G4MuonMinus::MuonMinus();
+  if(atomDecay) {
+    primary=G4IonTable::GetIonTable()->GetMuonicAtom(82,208);
+    decayProcess=new ProbeAtomDecay;
+    process=decayProcess;
+  } else if(atomic) {
     auto* list=G4MuonMinus::MuonMinus()->GetProcessManager()->GetProcessList();
     for(int i=0;i<list->size();++i)
       if(dynamic_cast<G4MuonMinusAtomicCapture*>((*list)[i])) process=(*list)[i];
@@ -144,7 +158,7 @@ int main(int argc,char** argv) {
   if(!process) return 3;
   // BeamOn normally performs this before transport. This probe calls DoIt
   // directly, so initialize the process model labels explicitly.
-  if(!fixture) process->PreparePhysicsTable(*G4MuonMinus::MuonMinus());
+  if(!fixture && !atomDecay) process->PreparePhysicsTable(*G4MuonMinus::MuonMinus());
   G4Nucleus rateNucleus;
   std::printf("RATES stopping_capture %a stopping_decay %a atomic_capture %a atomic_decay %a\n",
     G4MuonMinusBoundDecay::GetMuonCaptureRate(82,208),
@@ -154,7 +168,7 @@ int main(int argc,char** argv) {
   navigator->LocateGlobalPointAndSetup({});
   const double waits[]={0.,0.25,1.,2.,123.};
   const double locals[]={-3.,-1.,-0.1,0.,0.125,3.};
-  const int cases=fixture ? 2*5*6+100 : samples;
+  const int cases=atomDecay ? 5*6+samples : fixture ? 2*5*6+100 : samples;
   std::uint32_t generated=71819;
   // Reset after initialization: matched variants receive the same process inputs.
   G4Random::setTheSeed(12345);
@@ -169,11 +183,24 @@ int main(int argc,char** argv) {
       modelTime=(int(generated%60001u)-30000)/10000.*ns;
       decayBranch=(i%2)==0;
     }
-    G4Track track(new G4DynamicParticle(G4MuonMinus::MuonMinus(),{0,0,1},0.),t0,{});
+    G4Track track(new G4DynamicParticle(primary,{0,0,1},0.),t0,{});
     track.SetTrackID(1); track.SetTrackStatus(fStopButAlive);
     track.SetTouchableHandle(navigator->CreateTouchableHistoryHandle());
     G4Step step; step.SetTrack(&track); track.SetStep(&step);
     step.GetPreStepPoint()->SetMaterial(material);
+    if(atomDecay) {
+      G4ForceCondition condition=NotForced;
+      const double mean=decayProcess->GetMeanLifeTime(track,&condition);
+      const double declared=waitTime;
+      const bool controlled=i<30;
+      if(controlled) G4Random::setTheSeed(12345);
+      decayProcess->SetFixtureInteractionLengths(controlled ? declared/mean : -1.);
+      // Observe the actual process waiting time independently of its products.
+      waitTime=decayProcess->AtRestGetPhysicalInteractionLength(track,&condition);
+      std::printf("WAIT %d mode %s declared %a mean %a observed %a\n",i,
+        controlled ? "controlled" : "sampled",declared/ns,mean/ns,waitTime/ns);
+      decayBranch=true; // the supplied nuclear interaction clears this on capture
+    }
     auto* result=process->AtRestDoIt(track,step);
     std::printf("CASE %s %d t0 %a wait %a local %a branch %d count %d status %d edep %a\n",
       argv[1],i,t0/ns,waitTime/ns,modelTime/ns,decayBranch,result->GetNumberOfSecondaries(),
@@ -181,7 +208,8 @@ int main(int argc,char** argv) {
     for(int j=0;j<result->GetNumberOfSecondaries();++j) {
       auto* t=result->GetSecondary(j); const auto p=t->GetMomentum();
       const auto name=G4PhysicsModelCatalog::GetModelNameFromID(t->GetCreatorModelID());
-      const char* phase=dynamic_cast<const G4MuonicAtom*>(t->GetDefinition()) ? "atom" : atomic ? "em" :
+      const char* phase=atomDecay ? (decayBranch ? "decay" : "capture") :
+        dynamic_cast<const G4MuonicAtom*>(t->GetDefinition()) ? "atom" : atomic ? "em" :
         name.find("EMCascade")!=std::string::npos ? "em" :
         name.find("NuclearCapture")!=std::string::npos ? "capture" :
         name.find("DIO")!=std::string::npos ? "decay" : "other";
