@@ -1642,29 +1642,21 @@
   "status": "PASS"
  },
  "THEORY_STATUS": {
-  "accuracy": "not established: no term of the physical uncertainty budget is bounded, and no independent reference is registered",
+  "accuracy": "not established: the checked stopping equation has no bounded physical remainder in this record; binding-expansion, omitted recoil, finite-size and bound-state radiative contributions remain unbounded. The independent point-Coulomb reference omits physical corrections and its abstract was exposed before the budget was fixed; the interpretation remains provisional",
   "problems": [
-   "equation: no source",
-   "equation: status 'UNKNOWN', not VERIFIED",
-   "equation: no statement",
    "binding_expansion: no source",
    "binding_expansion: status 'UNBOUNDED', not BOUNDED",
    "binding_expansion: bound None is not a number",
    "recoil: no source",
    "recoil: status 'UNBOUNDED', not BOUNDED",
    "recoil: bound None is not a number",
-   "nuclear_mass: no source",
-   "nuclear_mass: status 'UNBOUNDED', not BOUNDED",
-   "nuclear_mass: bound None is not a number",
    "finite_size: no source",
    "finite_size: status 'UNBOUNDED', not BOUNDED",
    "finite_size: bound None is not a number",
    "radiative: no source",
    "radiative: status 'UNBOUNDED', not BOUNDED",
    "radiative: bound None is not a number",
-   "numerical: no source",
-   "numerical: status 'IMPLEMENTATION_ONLY', not BOUNDED",
-   "numerical: bound None is not a number"
+   "reference czarnecki_davydov_kaygorodov_2026: not stated unexposed before the manifest was frozen"
   ],
   "qualified_roster": [],
   "screen": "SCREEN_VACUOUS",

@@ -33,6 +33,7 @@ import gzip
 import hashlib
 import json
 import math
+import re
 import struct
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
@@ -1460,12 +1461,30 @@ def theory_admission(manifest: Mapping[str, Any]) -> dict[str, Any]:
         terms = {}
     for name in REQUIRED_TERMS:
         problems += _term_problems(name, terms.get(name))
-    roster = list(manifest.get("qualified_roster", []))
+    raw_roster = manifest.get("qualified_roster", [])
+    if not isinstance(raw_roster, list):
+        problems.append("qualified_roster: not a list")
+        raw_roster = []
+    roster = []
+    for label in raw_roster:
+        if not isinstance(label, str) or re.fullmatch(r"[1-9][0-9]*-[1-9][0-9]*", label) is None:
+            problems.append(f"{label!r}: not a canonical Z-A label")
+            continue
+        if label in roster:
+            problems.append(f"{label}: registered more than once")
+        roster.append(label)
     for label in roster:
         z, a = (int(x) for x in str(label).split("-"))
         if not in_domain(z, a):
             problems.append(f"{label}: outside the provider's domain")
-    for ref in manifest.get("references", []):
+    references = manifest.get("references", [])
+    if not isinstance(references, list):
+        problems.append("references: not a list")
+        references = []
+    for ref in references:
+        if not isinstance(ref, Mapping):
+            problems.append("reference: not an object")
+            continue
         if ref.get("independent") is not True:
             problems.append(f"reference {ref.get('id')}: not stated independent of the evaluated formula")
         if ref.get("exposed") is not False:
@@ -1479,6 +1498,22 @@ def theory_admission(manifest: Mapping[str, Any]) -> dict[str, Any]:
     else:
         status = "ADMITTED"
     return {"status": status, "problems": problems, "roster": roster}
+
+
+def theory_prediction(margin: float, uncertainty: float) -> str:
+    """Score a strict inequality from its signed margin, in rate units.
+
+    A positive margin supports the prediction. A deciding difference smaller than the stated
+    reference uncertainty is undetermined. An invalid difference or uncertainty cannot be scored.
+    This comparison does not establish a physical error budget or admit a nuclide.
+    """
+    if not math.isfinite(margin):
+        raise BoundRateError("prediction margin must be finite")
+    if not math.isfinite(uncertainty) or uncertainty < 0:
+        raise BoundRateError("prediction uncertainty must be finite and non-negative")
+    if abs(margin) < uncertainty:
+        return "UNDETERMINED"
+    return "PASS" if margin > 0 else "FAIL"
 
 
 # --------------------------------------------------------------------------------------------

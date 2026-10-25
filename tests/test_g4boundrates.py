@@ -1601,8 +1601,16 @@ def test_the_committed_theory_status_is_what_the_gate_gives() -> None:
     verdict = bound.theory_admission(manifest)
     assert verdict["status"] == manifest["status"] == "NOT_ESTABLISHED"
     assert manifest["screen"] == "SCREEN_VACUOUS" and manifest["qualified_roster"] == []
-    for name in bound.REQUIRED_TERMS:
+    for name in ("binding_expansion", "recoil", "finite_size", "radiative"):
         assert any(p.startswith(f"{name}: ") for p in verdict["problems"]), name
+    for name in ("equation", "nuclear_mass", "numerical"):
+        assert not any(p.startswith(f"{name}: ") for p in verdict["problems"]), name
+    assert manifest["terms"]["equation"]["status"] == "VERIFIED"
+    assert manifest["interpretation_status"] == "PROVISIONAL"
+    assert manifest["references"]
+    for reference in manifest["references"]:
+        assert reference["independent"] is True and reference["exposed"] is True
+        assert any(reference["id"] in p and "unexposed" in p for p in verdict["problems"])
 
 
 def _without(m: dict, term: str) -> dict:
@@ -1645,6 +1653,70 @@ def _without(m: dict, term: str) -> dict:
 ])
 def test_drill_the_theory_gate_refuses_each_defect(label: str, change, status: str) -> None:  # type: ignore[no-untyped-def]
     assert bound.theory_admission(change(_complete_manifest()))["status"] == status, label
+
+
+@pytest.mark.parametrize("field, value, problem", [
+    ("qualified_roster", None, "qualified_roster: not a list"),
+    ("qualified_roster", "6-12", "qualified_roster: not a list"),
+    ("qualified_roster", {}, "qualified_roster: not a list"),
+    ("qualified_roster", [None], "not a canonical Z-A label"),
+    ("qualified_roster", [612], "not a canonical Z-A label"),
+    ("qualified_roster", ["6.0-12"], "not a canonical Z-A label"),
+    ("qualified_roster", ["06-12"], "not a canonical Z-A label"),
+    ("qualified_roster", ["6-12-13"], "not a canonical Z-A label"),
+    ("qualified_roster", ["6-12", "6-12"], "registered more than once"),
+    ("references", None, "references: not a list"),
+    ("references", {"independent": True, "exposed": False}, "references: not a list"),
+    ("references", [None], "reference: not an object"),
+    ("references", ["independent"], "reference: not an object"),
+])
+def test_theory_hostile_containers_fail_closed(field: str, value: object, problem: str) -> None:
+    manifest = {**_complete_manifest(), field: value}
+    verdict = bound.theory_admission(manifest)
+    assert verdict["status"] == "NOT_ESTABLISHED"
+    assert any(problem in p for p in verdict["problems"])
+
+
+@pytest.mark.parametrize("name", bound.ERROR_TERMS)
+@pytest.mark.parametrize("value", [True, False, "1e-6", [], {}, float("nan"), float("inf"), -1e-6])
+def test_theory_hostile_bound_cannot_admit_any_term(name: str, value: object) -> None:
+    manifest = _term(name, bound=value)(_complete_manifest())
+    manifest["status"] = "ADMITTED"  # a claimed verdict never overrides the typed budget
+    assert bound.theory_admission(manifest)["status"] == "NOT_ESTABLISHED"
+
+
+@pytest.mark.parametrize("field", ["independent", "exposed"])
+@pytest.mark.parametrize("value", [None, 0, 1, "true", "false", [], {}])
+def test_theory_hostile_reference_flags_are_not_booleans(field: str, value: object) -> None:
+    manifest = _complete_manifest()
+    manifest["references"][0][field] = value
+    assert bound.theory_admission(manifest)["status"] == "NOT_ESTABLISHED"
+
+
+@pytest.mark.parametrize("margin, uncertainty, expected", [
+    (2e-4, 1e-5, "PASS"), (-2e-4, 1e-5, "FAIL"),
+    (5e-6, 1e-5, "UNDETERMINED"), (-5e-6, 1e-5, "UNDETERMINED"),
+    (1e-5, 1e-5, "PASS"), (-1e-5, 1e-5, "FAIL"), (0.0, 0.0, "FAIL"),
+])
+def test_theory_prediction_respects_the_signed_deciding_difference(
+    margin: float, uncertainty: float, expected: str,
+) -> None:
+    assert bound.theory_prediction(margin, uncertainty) == expected
+
+
+@pytest.mark.parametrize("margin, uncertainty, message", [
+    (float("nan"), 1e-5, "margin must be finite"),
+    (float("inf"), 1e-5, "margin must be finite"),
+    (float("-inf"), 1e-5, "margin must be finite"),
+    (1e-4, float("nan"), "uncertainty must be finite"),
+    (1e-4, float("inf"), "uncertainty must be finite"),
+    (1e-4, -1e-5, "uncertainty must be finite"),
+])
+def test_theory_prediction_hostile_inputs_cannot_be_scored(
+    margin: float, uncertainty: float, message: str,
+) -> None:
+    with pytest.raises(bound.BoundRateError, match=message):
+        bound.theory_prediction(margin, uncertainty)
 
 
 def test_the_running_sum_is_exactly_rounded() -> None:
