@@ -1642,7 +1642,7 @@
   "status": "PASS"
  },
  "THEORY_STATUS": {
-  "accuracy": "not established: the checked stopping equation has no bounded physical remainder in this record; binding-expansion, omitted recoil, finite-size and bound-state radiative contributions remain unbounded. The independent point-Coulomb reference omits physical corrections and its abstract was exposed before the budget was fixed; the interpretation remains provisional",
+  "accuracy": "not established: the checked stopping equation has no bounded physical remainder in this record; binding-expansion, omitted recoil, finite-size, screening and bound/free radiative contributions have no admitted bound. The independent point-Coulomb reference omits physical corrections and its abstract was exposed before the budget was fixed. FINAL denotes the interpretation only, not physical-accuracy admission",
   "problems": [
    "binding_expansion: no source",
    "binding_expansion: status 'UNBOUNDED', not BOUNDED",

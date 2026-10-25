@@ -1606,7 +1606,7 @@ def test_the_committed_theory_status_is_what_the_gate_gives() -> None:
     for name in ("equation", "nuclear_mass", "numerical"):
         assert not any(p.startswith(f"{name}: ") for p in verdict["problems"]), name
     assert manifest["terms"]["equation"]["status"] == "VERIFIED"
-    assert manifest["interpretation_status"] == "PROVISIONAL"
+    assert manifest["interpretation_status"] == "FINAL"
     assert manifest["references"]
     for reference in manifest["references"]:
         assert reference["independent"] is True and reference["exposed"] is True
