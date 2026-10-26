@@ -363,6 +363,10 @@ def render_section(root: Path) -> str:
         "`Q = 1 - (Z alpha)^2 * (1/2 - eta)`, `eta = muonMass/nuclearMass`, "
         "multiplying the unchanged free normalization `0.45517005 / microsecond`. Capture still comes "
         "from `G4MuonicAtomHelper::GetMuonCaptureRate`, and both consumers use their existing mass APIs.",
+        "With the existing option on, both routes, including the stopping route, now receive this "
+        "decay rate, which differs from the stopping getter's legacy value. The static getters remain "
+        "unchanged. The earlier opt-in changelog entry and the historical verification below describe "
+        "the former pair.",
         "This is leading binding and linear eta for the fully inclusive tree width of an unpolarized "
         "Coulomb 1s muon with a point spinless spectator. The guard requires finite positive masses "
         "and finite `eta < 1/2`, with `0 < decay <= free`; it is a consistency guard, not an accuracy "
