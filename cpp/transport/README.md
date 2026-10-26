@@ -20,7 +20,7 @@ It requires the K-shell energy looked up by element, `G4MuonicAtomHelper::GetKSh
 
 `transport.py cases` runs the profile-selection, discovery and refusal cases, among them a run that names the D3 profile the dataset no longer carries and must stop, and a build whose cascade does not call its level check, which shows that the refusal of a level array that does not fall comes from that call.
 
-`evidence/manifest.json` records the sha256 of each patch, of the CMake cache, of each executable and of each library it loads; `evidence/cells.csv` records the result of each check, `N/A` where the check compares nothing in that cell; and a test holds the manifest to the historical patch bytes, harness and dataset committed beside it. The two provider patches used by these builds are pinned in `evidence/source_snapshots/index.json`; the matching registration patches remain at their original paths. These historical results do not validate later provider changes. `transport.py build` uses the current patches under `cpp/patches/`.
+`evidence/manifest.json` records the sha256 of each patch, of the CMake cache, of each executable and of each library it loads; `evidence/cells.csv` records the result of each check, `N/A` where the check compares nothing in that cell; and a test holds the manifest to the historical patch bytes, harness and dataset committed beside it. The provider patches used by these builds are pinned in `evidence/source_snapshots/index.json`; the matching registration patches remain at their original paths. These historical results do not validate later provider changes. `transport.py build` uses the current patches under `cpp/patches/`.
 
 ```sh
 python cpp/transport/transport.py stage-dataset --out <dir>
