@@ -1,11 +1,10 @@
 """Verification of the common bound-rate pair of the two stopped-muon routes.
 
-With ``G4HadronicParameters::SetEnableMuonicBoundRates(true)``, a build carrying the patches under
-``cpp/patches/`` gives ``G4MuonMinusBoundDecay::ApplyYourself`` (the stopping route) and
-``G4MuonicAtomHelper::ConstructMuonicAtom`` (the atomic route) one rate pair for a negative muon in the 1s
-state of a nucleus with ``2 <= Z <= 13`` and ``A >= Z``: the capture rate of the helper's resolver and the
-stopping route's decay rate below Z = 14 (``cpp/include/G4MuonicBoundRateProvider.hh``). This module holds
-what the verification of that pair needs without Geant4:
+This module preserves the registered legacy model, policy and harvested results: helper capture
+and the stopping getter's old low-Z decay expression. Its Reference and verification schema retain
+that meaning. The current experimental provider instead uses the leading inclusive linear-recoil
+prescription in :mod:`openmucf.g4.d1_linear_recoil`; historical oracle equality and harvest outcomes
+below do not verify that newer prescription. This module holds the old verification without Geant4:
 
 * :func:`reference` -- the registered pair for one nuclide, evaluated here: the capture rate the helper's
   compiled resolver returns (:func:`openmucf.g4.sources.d1_nuclear_capture.capture_rate` with the helper's
@@ -156,7 +155,7 @@ class Pair:
 
 
 class Reference:
-    """The registered pair from the committed inputs: never from a harvest."""
+    """Historical legacy-model pair from committed inputs: never a current-model oracle."""
 
     def __init__(self, root: Path) -> None:
         self.oracle = lifetime.load_oracle(root / lifetime.ORACLE_RELPATH)

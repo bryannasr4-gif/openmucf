@@ -1,0 +1,17 @@
+{
+  "source_commit": "6959467ab214f446d824e9236506429b00c7eadd",
+  "patches": [
+    {
+      "path": "cpp/patches/g4-v11.4.2-muonicdata.patch",
+      "sha256": "db009ead9413d78c2175c1cda30522160dfe6fb967b992b743f0cb15ac67e62e",
+      "snapshot": "g4-v11.4.2-muonicdata.patch",
+      "git_blob": "5b801bcede5b566ca9c915a729899f576e5bc437"
+    },
+    {
+      "path": "cpp/patches/g4-v11.5.0.beta-muonicdata.patch",
+      "sha256": "acefe3e4b3c43595f4fd2981611941cdebd789ea47397cb50fa0e71ed5b8d6d3",
+      "snapshot": "g4-v11.5.0.beta-muonicdata.patch",
+      "git_blob": "5fde5b05012959427d76cf567df17cf66abed48d"
+    }
+  ]
+}

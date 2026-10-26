@@ -46,12 +46,18 @@ branch of a stopped negative muon) and the atomic route (`G4MuonicAtomHelper::Co
 which stores the muonic atom's lifetime, DIO lifetime and nuclear-capture lifetime) take one capture
 and decay rate pair from `G4MuonicBoundRateProvider`: the capture rate
 `G4MuonicAtomHelper::GetMuonCaptureRate` returns, called as it stands, with whatever the dataset
-opt-in gives it, and the stopping route's own decay rate below `Z = 14`, which
-`G4MuonMinusBoundDecay::GetMuonDecayRate` computes from the nuclear mass and its comment attributes
-to von Baeyer and Leiter, evaluated with the nuclear mass each consumer already uses. The provider
+opt-in gives it, and the current leading inclusive tree decay rate
+`free * [1 - (Z alpha)^2 * (1/2 - eta)]`, with `eta = muonMass/nuclearMass`,
+evaluated using each consumer's nuclear mass. Its stable identifier is
+`low-z-inclusive-tree-linear-recoil-v1`; the [derivation](../../docs/low-z-bound-muon-decay.md)
+states its point-scalar, unpolarized 1s, fully inclusive scope. This is a linear-eta,
+leading-binding prescription with unassigned higher-order and nuclear/radiative
+remainders. The consistency guard `eta < 1/2` supplies no accuracy bound; the
+physical expansion needs `eta << 1`. The provider
 answers for `2 <= Z <= 13` and `A >= Z`; for hydrogen, for higher `Z` and for a natural-composition
 request it answers unsupported and each consumer keeps the pair it formed itself, and inside that
-domain a nuclear mass, capture rate or decay rate it cannot use raises the fatal `G4Exception`
+domain nonpositive/nonfinite masses, nonfinite eta or eta >= 1/2, a negative/nonfinite
+capture rate, or decay outside `0 < decay <= free` raises the fatal `G4Exception`
 `G4MuonicBoundRates001` rather than being clipped. The boolean starts `false`, its setter is the
 only caller of `G4MuonicBoundRateProvider::Enable()`, and `SetEnableMuonicData` does not set it;
 with it off, each consumer runs its unpatched code and a test of the switch. The first time a
@@ -59,7 +65,9 @@ consumer forms a pair it freezes the switch, and a later change raises the fatal
 `G4MuonicBoundRates002`, because muonic atoms already built keep the lifetimes they were built with.
 The getters `G4MuonMinusBoundDecay::GetMuonDecayRate` and `G4MuonicAtomHelper::GetMuonDecayRate`
 are unchanged and keep reporting each route's own prescription, not the pair a consumer receives with
-the opt-in on. The pair reproduces one prescription on both routes; it is not a statement of physical
+the opt-in on. The former oracle equality and `bound_rates_*` harvests describe the historical
+legacy-getter model; the current deterministic checks are separate. The pair supplies one prescription
+on both routes; it is not a statement of physical
 accuracy, and it leaves the timing of the products both routes emit as it was.
 
 A [separate clock correction](../clock/README.md) is available for explicitly patched

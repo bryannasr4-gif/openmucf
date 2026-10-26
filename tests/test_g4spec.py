@@ -1085,6 +1085,7 @@ def test_t34_import_fence():
         "stopped_mu.py",
         "d1_mixture.py",
         "d1_boundrates.py",
+        "d1_linear_recoil.py",
         "capture_cascade.py",
         "sources/__init__.py",
         "sources/d1_nuclear_capture.py",
@@ -1111,6 +1112,23 @@ def test_t34_the_lazy_loader_names_every_top_level_module_of_the_package():
     assert len(package._SUBMODULES) == len(set(package._SUBMODULES))
     assert set(package._SUBMODULES) == modules
     assert package.__all__ == sorted(package._SUBMODULES)
+
+
+def test_t34_linear_recoil_loads_only_on_attribute_access():
+    result = subprocess.run(
+        [sys.executable, "-c", """
+import sys
+import openmucf.g4 as package
+name = "openmucf.g4.d1_linear_recoil"
+assert name not in sys.modules
+assert "d1_linear_recoil" in dir(package)
+module = package.d1_linear_recoil
+assert sys.modules[name] is module
+assert package.d1_linear_recoil is module
+"""],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 # --------------------------------------------------------------------------------------------

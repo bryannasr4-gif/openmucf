@@ -18,10 +18,10 @@ index fa725ef8f1..c4a04cccbe 100644
  #endif
 diff --git a/source/particles/management/include/G4MuonicBoundRateProvider.hh b/source/particles/management/include/G4MuonicBoundRateProvider.hh
 new file mode 100644
-index 0000000000..5dd4019000
+index 0000000..8aa4a23
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicBoundRateProvider.hh
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,99 @@
 +// G4MuonicBoundRateProvider -- one capture and decay rate pair for a negative muon in the 1s state of a
 +// muonic atom, given to both stopped-muon routes of Geant4 when an application asks for it.
 +//
@@ -44,15 +44,20 @@ index 0000000000..5dd4019000
 +//   capture  G4MuonicAtomHelper::GetMuonCaptureRate(Z, A), the helper's capture resolver as it stands
 +//            (its compiled-in table, its Goulard-Primakoff fallback and, when the G4MuonicData opt-in
 +//            is on, the dataset row it reads first), called, not copied;
-+//   decay    LowZDecayRate(Z, muMass, nuclearMass): the stopping route's expression below Z = 14, with
-+//            its literals and its order of operations.
++//   decay    LowZDecayRate(Z, muMass, nuclearMass): free * [1 - (Z alpha)^2 (1/2 - eta)],
++//            eta = muMass/nuclearMass. This is leading binding and linear eta in the fully inclusive
++//            tree width of an unpolarized Coulomb 1s muon and a point spinless spectator. The finite-M
++//            derivation and independent Born asymptotic check are in docs/low-z-bound-muon-decay.md.
++//            Higher recoil/binding, radiative, nuclear-size and spin effects have no assigned error.
++//            It is not an exact reduced-mass width or a physical-accuracy certificate.
 +//
 +// The domain is an implementation domain, not a statement of physical accuracy: 2 <= Z <= 13 and
 +// A >= Z. Hydrogen (whose atomic-route decay rate is a separate tabulated value), Z >= 14 (where the
 +// stopping route uses a different fit) and a natural-composition request (A = 0) are outside it:
 +// Rates returns kUnsupported and each consumer keeps the pair it formed itself. For a key inside the
 +// domain, a nuclear or muon mass that is not finite and positive, a capture rate that is negative or
-+// not finite, or a decay rate that is not finite and positive is refused with the fatal G4Exception
++// not finite, eta not finite or >= 1/2, or a decay rate outside 0 < decay <= free is refused with
++// the fatal G4Exception
 +// G4MuonicBoundRates001; nothing is clipped. (A finite capture rate >= 0 and a finite decay rate > 0,
 +// which never exceeds the free rate, then have a finite, positive sum.)
 +//
@@ -101,9 +106,11 @@ index 0000000000..5dd4019000
 +  // Whether (Z, A) lies in the implementation domain: 2 <= Z <= 13 and A >= Z.
 +  static G4bool InDomain(G4int Z, G4int A);
 +
-+  // The stopping route's decay rate below Z = 14, in ns^-1:
-+  //   free = 0.45517005 / microsecond; f = 1 - (Z alpha)^2 (0.5 + 0.06 muMass / nuclearMass); f * free,
-+  // grouped as G4MuonMinusBoundDecay::GetMuonDecayRate groups it. Standard library only.
++  // Checked current prescription in ns^-1, standard library only:
++  //   free = 0.45517005 / microsecond; Q = 1 - (Z alpha)^2 * (1/2 - eta).
++  // Unsupported Z, nonpositive/nonfinite masses, nonfinite eta or eta >= 1/2 return quiet_NaN.
++  // Underflow of a positive mass ratio to zero gives the static limit. The eta guard enforces
++  // suppression consistency only; the physical expansion requires eta << 1 and has no error bound here.
 +  static G4double LowZDecayRate(G4int Z, G4double muonMass, G4double nuclearMass);
 +
 +  // The pair for (Z, A): kCommon with `rates` set, or another status with `rates` untouched.
@@ -511,10 +518,10 @@ index 8c2c37a99c..f2f958c8e9 100644
                                            G4double Xuser)
 diff --git a/source/particles/management/src/G4MuonicBoundRateProvider.cc b/source/particles/management/src/G4MuonicBoundRateProvider.cc
 new file mode 100644
-index 0000000000..e7c911da70
+index 0000000..cb06b2a
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicBoundRateProvider.cc
-@@ -0,0 +1,99 @@
+@@ -0,0 +1,110 @@
 +// G4MuonicBoundRateProvider -- see the header for what the pair is, where it is used and its domain.
 +#include "G4MuonicBoundRateProvider.hh"
 +
@@ -525,6 +532,7 @@ index 0000000000..e7c911da70
 +
 +#include <atomic>
 +#include <cmath>
++#include <limits>
 +#include <sstream>
 +#include <string>
 +
@@ -566,10 +574,15 @@ index 0000000000..e7c911da70
 +G4bool G4MuonicBoundRateProvider::InDomain(G4int Z, G4int A) { return Z >= 2 && Z <= 13 && A >= Z; }
 +
 +G4double G4MuonicBoundRateProvider::LowZDecayRate(G4int Z, G4double muonMass, G4double nuclearMass) {
++  if (Z < 2 || Z > 13 || !PositiveFinite(muonMass) || !PositiveFinite(nuclearMass)) {
++    return std::numeric_limits<G4double>::quiet_NaN();
++  }
++  const G4double eta = muonMass / nuclearMass;
++  if (!std::isfinite(eta) || eta >= 0.5) return std::numeric_limits<G4double>::quiet_NaN();
 +  const G4double freeMuonDecayRate = 0.45517005 / microsecond;
 +  G4double lambda = 1.0;
 +  const G4double x = Z * fine_structure_const;
-+  lambda -= x * x * (0.5 + 0.06 * muonMass / nuclearMass);
++  lambda -= x * x * (0.5 - eta);
 +  lambda *= freeMuonDecayRate;
 +  return lambda;
 +}
@@ -586,13 +599,15 @@ index 0000000000..e7c911da70
 +    why = "the nuclear mass is not finite and positive";
 +  } else if (!PositiveFinite(muonMass)) {
 +    why = "the muon mass is not finite and positive";
++  } else if (!std::isfinite(muonMass / nuclearMass) || muonMass / nuclearMass >= 0.5) {
++    why = "the mass ratio eta is not finite or is >= 1/2";
 +  } else {
 +    capture = G4MuonicAtomHelper::GetMuonCaptureRate(Z, A);
 +    decay = LowZDecayRate(Z, muonMass, nuclearMass);
 +    if (!std::isfinite(capture) || capture < 0.) {
 +      why = "the capture rate is negative or not finite";
-+    } else if (!PositiveFinite(decay)) {
-+      why = "the decay rate is not finite and positive";
++    } else if (!PositiveFinite(decay) || decay > 0.45517005 / microsecond) {
++      why = "the decay rate is outside 0 < decay <= free";
 +    }
 +    // A finite capture >= 0 and a finite decay > 0 (at most the free rate) give a finite, positive sum.
 +  }
@@ -611,8 +626,11 @@ index 0000000000..e7c911da70
 +}
 +
 +const char* G4MuonicBoundRateProvider::Prescription() {
-+  return "capture: G4MuonicAtomHelper::GetMuonCaptureRate(Z, A); decay: the Z < 14 expression of "
-+         "G4MuonMinusBoundDecay::GetMuonDecayRate(Z, A, muMass, nuclMass); domain 2 <= Z <= 13, A >= Z";
++  return "low-z-inclusive-tree-linear-recoil-v1; "
++         "capture: G4MuonicAtomHelper::GetMuonCaptureRate(Z, A); "
++         "decay: free * [1 - (Z alpha)^2 * (1/2 - eta)], eta = muMass / nuclearMass; "
++         "domain 2 <= Z <= 13, A >= Z, finite positive masses, eta < 1/2; "
++         "leading binding, linear eta prescription; physical expansion eta << 1; no accuracy certificate";
 +}
 diff --git a/source/particles/management/src/G4MuonicDataOverlay.cc b/source/particles/management/src/G4MuonicDataOverlay.cc
 new file mode 100644

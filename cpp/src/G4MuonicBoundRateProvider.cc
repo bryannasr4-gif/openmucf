@@ -8,6 +8,7 @@
 
 #include <atomic>
 #include <cmath>
+#include <limits>
 #include <sstream>
 #include <string>
 
@@ -49,10 +50,15 @@ G4bool G4MuonicBoundRateProvider::Consult() {
 G4bool G4MuonicBoundRateProvider::InDomain(G4int Z, G4int A) { return Z >= 2 && Z <= 13 && A >= Z; }
 
 G4double G4MuonicBoundRateProvider::LowZDecayRate(G4int Z, G4double muonMass, G4double nuclearMass) {
+  if (Z < 2 || Z > 13 || !PositiveFinite(muonMass) || !PositiveFinite(nuclearMass)) {
+    return std::numeric_limits<G4double>::quiet_NaN();
+  }
+  const G4double eta = muonMass / nuclearMass;
+  if (!std::isfinite(eta) || eta >= 0.5) return std::numeric_limits<G4double>::quiet_NaN();
   const G4double freeMuonDecayRate = 0.45517005 / microsecond;
   G4double lambda = 1.0;
   const G4double x = Z * fine_structure_const;
-  lambda -= x * x * (0.5 + 0.06 * muonMass / nuclearMass);
+  lambda -= x * x * (0.5 - eta);
   lambda *= freeMuonDecayRate;
   return lambda;
 }
@@ -69,13 +75,15 @@ G4MuonicBoundRateProvider::Status G4MuonicBoundRateProvider::Rates(G4int Z, G4in
     why = "the nuclear mass is not finite and positive";
   } else if (!PositiveFinite(muonMass)) {
     why = "the muon mass is not finite and positive";
+  } else if (!std::isfinite(muonMass / nuclearMass) || muonMass / nuclearMass >= 0.5) {
+    why = "the mass ratio eta is not finite or is >= 1/2";
   } else {
     capture = G4MuonicAtomHelper::GetMuonCaptureRate(Z, A);
     decay = LowZDecayRate(Z, muonMass, nuclearMass);
     if (!std::isfinite(capture) || capture < 0.) {
       why = "the capture rate is negative or not finite";
-    } else if (!PositiveFinite(decay)) {
-      why = "the decay rate is not finite and positive";
+    } else if (!PositiveFinite(decay) || decay > 0.45517005 / microsecond) {
+      why = "the decay rate is outside 0 < decay <= free";
     }
     // A finite capture >= 0 and a finite decay > 0 (at most the free rate) give a finite, positive sum.
   }
@@ -94,6 +102,9 @@ G4MuonicBoundRateProvider::Status G4MuonicBoundRateProvider::Rates(G4int Z, G4in
 }
 
 const char* G4MuonicBoundRateProvider::Prescription() {
-  return "capture: G4MuonicAtomHelper::GetMuonCaptureRate(Z, A); decay: the Z < 14 expression of "
-         "G4MuonMinusBoundDecay::GetMuonDecayRate(Z, A, muMass, nuclMass); domain 2 <= Z <= 13, A >= Z";
+  return "low-z-inclusive-tree-linear-recoil-v1; "
+         "capture: G4MuonicAtomHelper::GetMuonCaptureRate(Z, A); "
+         "decay: free * [1 - (Z alpha)^2 * (1/2 - eta)], eta = muMass / nuclearMass; "
+         "domain 2 <= Z <= 13, A >= Z, finite positive masses, eta < 1/2; "
+         "leading binding, linear eta prescription; physical expansion eta << 1; no accuracy certificate";
 }

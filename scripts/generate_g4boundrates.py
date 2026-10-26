@@ -1,4 +1,8 @@
-"""Generate the verification policy of the common bound-rate pair, and its results from the committed summary.
+"""Preserve the historical common-pair policy/results and generate their scoped documentation.
+
+The policy and results retain the legacy getter model. The section renderer also
+describes the separate current experimental linear-recoil evaluator; it does not
+regenerate the historical records under that formula.
 
 ``policy`` writes ``data/g4/d1/bound_rates_policy.json``: the prescription and its inputs, the frozen
 reference pair of each production isotope, the 12 groups with their seeds and start-time strata, the limits of
@@ -354,16 +358,32 @@ def render_section(root: Path) -> str:
     lines = [
         SECTION_HEADING,
         "",
-        "Geant4 gives a negative muon in the ground state of a muonic atom a different decay rate on each of its "
-        "two stopped-muon routes (section 12).",
-        "With `G4HadronicParameters::SetEnableMuonicBoundRates(true)`, set before the physics list is built, a "
-        "build carrying the patches gives both routes one rate pair from `G4MuonicBoundRateProvider` "
-        "(`cpp/patches/README.md`): the capture rate `G4MuonicAtomHelper::GetMuonCaptureRate` returns, called as "
-        "it stands, and the decay rate `G4MuonMinusBoundDecay::GetMuonDecayRate` computes below Z = 14, "
-        "evaluated with the nuclear mass each route already uses.",
-        "The comment beside that expression in Geant4 attributes it to von Baeyer and Leiter (Phys. Rev. A "
-        "**19**, 1371 (1979)); that paper was not read for this record, and the pair is a prescription "
-        "reproduced on both routes, not a statement of physical accuracy.",
+        "The current default-off experimental common provider uses "
+        "`low-z-inclusive-tree-linear-recoil-v1`: "
+        "`Q = 1 - (Z alpha)^2 * (1/2 - eta)`, `eta = muonMass/nuclearMass`, "
+        "multiplying the unchanged free normalization `0.45517005 / microsecond`. Capture still comes "
+        "from `G4MuonicAtomHelper::GetMuonCaptureRate`, and both consumers use their existing mass APIs.",
+        "With the existing option on, both routes, including the stopping route, now receive this "
+        "decay rate, which differs from the stopping getter's legacy value. The static getters remain "
+        "unchanged. The earlier opt-in changelog entry and the historical verification below describe "
+        "the former pair.",
+        "This is leading binding and linear eta for the fully inclusive tree width of an unpolarized "
+        "Coulomb 1s muon with a point spinless spectator. The guard requires finite positive masses "
+        "and finite `eta < 1/2`, with `0 < decay <= free`; it is a consistency guard, not an accuracy "
+        "bound. Physical use needs `eta << 1`. Higher recoil/binding, radiative and nuclear corrections "
+        "have no assigned physical uncertainty. See [the derivation](docs/low-z-bound-muon-decay.md).",
+        "`openmucf/g4/d1_linear_recoil.py` and the standalone C++ checker test the current formula. "
+        "The legacy getters, `d1_lifetime.py`, `d1_boundrates.Reference`, frozen policy and all numerical "
+        "harvest/results below retain their historical meanings. No new physical-accuracy or transport "
+        "claim follows from those old records.",
+        "",
+        "The rest of this section records the historical common provider: the helper capture resolver "
+        "and the stopping getter's legacy low-Z decay expression "
+        "`Q_old = 1 - (Z alpha)^2 * (1/2 + 0.06*eta)`. Its code comment attributes that expression to "
+        "von Baeyer and Leiter (Phys. Rev. A **19**, 1371 (1979)). That source was not read for the "
+        "historical harvest. Its contrary coefficient and the scope of the new finite-M derivation "
+        "are discussed in the linked derivation. The current-minus-legacy difference "
+        "`1.06*(Z alpha)^2*eta` is a model difference, not an uncertainty estimate.",
         "The provider answers for 2 ≤ Z ≤ 13 and A ≥ Z. Hydrogen, whose atomic-route rate is a tabulated value, "
         "Z ≥ 14, where the stopping route uses a fit, and a natural-composition request keep each route's own "
         "pair.",
@@ -374,7 +394,7 @@ def render_section(root: Path) -> str:
         "The option is off by default, the dataset opt-in does not set it, and the getters `GetMuonDecayRate` of "
         "both classes are unchanged.",
         "",
-        "### 14.1 What the option changes",
+        "### 14.1 Historical option behavior and numerical rows",
         "",
         "On the stopping route it changes nothing: the pair is that route's own, bit for bit "
         "(`bound_rates_identity.csv`). On the atomic route the muonic atom's lifetimes come from the pair instead "
@@ -445,7 +465,7 @@ def render_section(root: Path) -> str:
                     if len(split_events) > 1 else ", ".join(str(e) for e in split_events))
     lines += [
         "",
-        "### 14.2 What was verified",
+        "### 14.2 What the historical harvest verified",
         "",
         f"`bound_rates_policy.json` fixed the harvest before it ran. With the option off, {n_cells} "
         "configurations (the roster of `bound_rates_identity.csv`, both routes, both revisions, start times of "
@@ -489,7 +509,7 @@ def render_section(root: Path) -> str:
         f"({len(ruled_checks)} checks, not applicable: that route never runs it), and one drawn in the atomic "
         "consumer's inserted block is detected on both revisions.",
         "",
-        "### 14.3 What it does not establish",
+        "### 14.3 What the historical harvest does not establish",
         "",
         "The option leaves both routes' product times as they were. Against the correct composition of the stop "
         "time, the sampled delay and any model delay, the harvest's clock check fails exactly where it was "

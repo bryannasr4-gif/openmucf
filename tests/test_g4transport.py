@@ -790,6 +790,42 @@ def test_t149_nonempty_target_is_refused(tmp_path):
         transport.fresh(target)
 
 
+def check_historical_patch(patch, snapshots):
+    """Resolve an explicit historical pin, then verify its bytes without fallback."""
+    entries = json.loads((snapshots / "index.json").read_text(encoding="utf-8"))["patches"]
+    indexed = {(entry["path"], entry["sha256"]): entry["snapshot"] for entry in entries}
+    assert len(indexed) == len(entries), "duplicate historical patch identity"
+    key = (patch["path"], patch["sha256"])
+    if key in indexed:
+        source = (snapshots / indexed[key]).resolve()
+        assert source.is_relative_to(snapshots.resolve()), "snapshot outside historical source directory"
+    else:
+        source = ROOT / patch["path"]
+    actual = hashlib.sha256(source.read_bytes()).hexdigest()
+    assert actual == patch["sha256"], f"historical patch sha256 mismatch: {source.name}"
+
+
+@pytest.mark.parametrize("damage", ["missing", "corrupt"])
+def test_t149_historical_patch_snapshot_damage_is_rejected(tmp_path, monkeypatch, damage):
+    snapshots = tmp_path / "snapshots"
+    shutil.copytree(EVIDENCE / "source_snapshots", snapshots)
+    entry = json.loads((snapshots / "index.json").read_text(encoding="utf-8"))["patches"][0]
+    archived = snapshots / entry["snapshot"]
+    # Even a matching file at the original path cannot rescue an indexed snapshot.
+    current = tmp_path / entry["path"]
+    current.parent.mkdir(parents=True)
+    current.write_bytes(archived.read_bytes())
+    monkeypatch.setattr(sys.modules[__name__], "ROOT", tmp_path)
+    if damage == "missing":
+        archived.unlink()
+        with pytest.raises(FileNotFoundError):
+            check_historical_patch(entry, snapshots)
+    else:
+        archived.write_bytes(archived.read_bytes() + b"corruption")
+        with pytest.raises(AssertionError, match="historical patch sha256 mismatch"):
+            check_historical_patch(entry, snapshots)
+
+
 def test_t149_committed_manifest_ties_builds_dataset_and_cells():
     manifest = json.loads((EVIDENCE / "manifest.json").read_text(encoding="utf-8"))
     raw = (EVIDENCE / "manifest.json").read_text(encoding="utf-8")
@@ -798,7 +834,7 @@ def test_t149_committed_manifest_ties_builds_dataset_and_cells():
         assert build["commit"] == MATRIX["revisions"][build["tag"]]
         assert build["compile_count"] == build["flag_count"]
         for patch in build["patches"]:
-            assert patch["sha256"] == hashlib.sha256((ROOT / patch["path"]).read_bytes()).hexdigest()
+            check_historical_patch(patch, EVIDENCE / "source_snapshots")
         assert all(row["sha256"] for row in build["ldd"] if row["path"].startswith(("$WORK", "$PRESERVED")))
     assert set(manifest["preserved"]) == set(MATRIX["revisions"])
     for item in manifest["preserved"].values():

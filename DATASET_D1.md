@@ -971,14 +971,17 @@ The call-site harvest verifies isotope selection, rates, branch probabilities an
 
 ## 14. One bound-decay rate pair for both stopped-muon routes
 
-Geant4 gives a negative muon in the ground state of a muonic atom a different decay rate on each of its two stopped-muon routes (section 12).
-With `G4HadronicParameters::SetEnableMuonicBoundRates(true)`, set before the physics list is built, a build carrying the patches gives both routes one rate pair from `G4MuonicBoundRateProvider` (`cpp/patches/README.md`): the capture rate `G4MuonicAtomHelper::GetMuonCaptureRate` returns, called as it stands, and the decay rate `G4MuonMinusBoundDecay::GetMuonDecayRate` computes below Z = 14, evaluated with the nuclear mass each route already uses.
-The comment beside that expression in Geant4 attributes it to von Baeyer and Leiter (Phys. Rev. A **19**, 1371 (1979)); that paper was not read for this record, and the pair is a prescription reproduced on both routes, not a statement of physical accuracy.
+The current default-off experimental common provider uses `low-z-inclusive-tree-linear-recoil-v1`: `Q = 1 - (Z alpha)^2 * (1/2 - eta)`, `eta = muonMass/nuclearMass`, multiplying the unchanged free normalization `0.45517005 / microsecond`. Capture still comes from `G4MuonicAtomHelper::GetMuonCaptureRate`, and both consumers use their existing mass APIs.
+With the existing option on, both routes, including the stopping route, now receive this decay rate, which differs from the stopping getter's legacy value. The static getters remain unchanged. The earlier opt-in changelog entry and the historical verification below describe the former pair.
+This is leading binding and linear eta for the fully inclusive tree width of an unpolarized Coulomb 1s muon with a point spinless spectator. The guard requires finite positive masses and finite `eta < 1/2`, with `0 < decay <= free`; it is a consistency guard, not an accuracy bound. Physical use needs `eta << 1`. Higher recoil/binding, radiative and nuclear corrections have no assigned physical uncertainty. See [the derivation](docs/low-z-bound-muon-decay.md).
+`openmucf/g4/d1_linear_recoil.py` and the standalone C++ checker test the current formula. The legacy getters, `d1_lifetime.py`, `d1_boundrates.Reference`, frozen policy and all numerical harvest/results below retain their historical meanings. No new physical-accuracy or transport claim follows from those old records.
+
+The rest of this section records the historical common provider: the helper capture resolver and the stopping getter's legacy low-Z decay expression `Q_old = 1 - (Z alpha)^2 * (1/2 + 0.06*eta)`. Its code comment attributes that expression to von Baeyer and Leiter (Phys. Rev. A **19**, 1371 (1979)). That source was not read for the historical harvest. Its contrary coefficient and the scope of the new finite-M derivation are discussed in the linked derivation. The current-minus-legacy difference `1.06*(Z alpha)^2*eta` is a model difference, not an uncertainty estimate.
 The provider answers for 2 ≤ Z ≤ 13 and A ≥ Z. Hydrogen, whose atomic-route rate is a tabulated value, Z ≥ 14, where the stopping route uses a fit, and a natural-composition request keep each route's own pair.
 Inside that domain a negative capture rate is refused with a fatal `G4Exception` rather than clipped: of the 192 keys with 2 ≤ Z ≤ 13 and Z ≤ A ≤ 3Z that the decay-rate oracle and the sweep below cover (not all of them bound nuclei), the compiled fallback gives one to 23, all neutron-rich (2-6, 3-8, 3-9, 4-11, 4-12, 5-14, 5-15, 6-17, 6-18, 7-20, 7-21, 8-23, 8-24, 9-26, 9-27, 10-29, 10-30, 11-32, 11-33, 12-35, 12-36, 13-38, 13-39).
 The option is off by default, the dataset opt-in does not set it, and the getters `GetMuonDecayRate` of both classes are unchanged.
 
-### 14.1 What the option changes
+### 14.1 Historical option behavior and numerical rows
 
 On the stopping route it changes nothing: the pair is that route's own, bit for bit (`bound_rates_identity.csv`). On the atomic route the muonic atom's lifetimes come from the pair instead of the helper's former decay rate:
 
@@ -988,7 +991,7 @@ On the stopping route it changes nothing: the pair is that route's own, bit for 
 | N-14 | 0.06885 | 0.454575631 | 0.452522481 | 1910.491 | 1918.015 | 0.131537 | 0.132055 |
 | O-16 | 0.10242 | 0.454393760 | 0.451770605 | 1795.933 | 1804.433 | 0.183939 | 0.184810 |
 
-### 14.2 What was verified
+### 14.2 What the historical harvest verified
 
 `bound_rates_policy.json` fixed the harvest before it ran. With the option off, 120 configurations (the roster of `bound_rates_identity.csv`, both routes, both revisions, start times of 0, 250 and 1000 ns) wrote the same stops, transported records and random-engine states in the patched build as in the unpatched one, traced or not, and the dataset opt-in under each capture profile wrote the same as the previous patches.
 Through the patched libraries, 12 sweeps of 225 keys each (`bound_rates_sweep.csv`) found the two routes' capture rates equal bit for bit, the provider's pair equal to the helper's capture rate and the stopping expression bit for bit, and the muonic atom storing 1/(c + d), 1/d and 1/c of that pair.
@@ -998,7 +1001,7 @@ The summary was recomputed from the same raw records with a stricter reader, whi
 32 runs with nonempty intended failure sets turned every intended family red; 4 runs on unaffected routes or isotopes and all 8 matched controls stayed green. Among the red runs (`bound_rates_drills.csv`) are a stopping route disconnected from the provider, which only the recorded calls reveal, and a constant delay with the correct mean, which only the distribution tests reveal. 4 further runs of 1,000,000 events, an atomic consumer given the former decay rate and one with a stale decay-in-orbit lifetime, turned the rate and call checks red but not the transport tests, which have little power against those defects at that size; their reruns at 10,000,000 and 60,000,000 events turned the transport tests red as well (`bound_rates_drill_rulings.csv`).
 38 identity checks (`bound_rates_identity_drills.csv`), drills and their controls, came out as expected. An extra random number drawn in the stopping consumer leaves the atomic route unchanged (2 checks, not applicable: that route never runs it), and one drawn in the atomic consumer's inserted block is detected on both revisions.
 
-### 14.3 What it does not establish
+### 14.3 What the historical harvest does not establish
 
 The option leaves both routes' product times as they were. Against the correct composition of the stop time, the sampled delay and any model delay, the harvest's clock check fails exactly where it was predicted to fail before the harvest ran:
 
