@@ -160,7 +160,7 @@ python3 cpp/tools/mixture_harvest.py run --build <build> --route stopping --symb
 python3 cpp/tools/mixture_harvest.py summarize --cells <plan.json> --out data/g4/d1
 ```
 
-The bound-rate option (`cpp/patches/README.md`) is verified with the same harness. Its further options all
+The historical bound-rate option (`cpp/patches/README.md`) was verified with the same harness. Its further options all
 have defaults, and with all of them at their defaults the harness reproduces every identity
 digest of the committed natural-target harvest (`data/g4/d1/bound_rates_harness_defaults.csv`):
 `--isotope <A>` (a target of a single isotope of the element), `--t0 <ns>` (the muon's start time),
@@ -188,11 +188,11 @@ the lifetime, DIO lifetime and nuclear-capture lifetime of the muonic atom `G4Io
 constructs; and the ratio each route's branch test compares a uniform number with. It carries no capture or
 decay formula of its own, and a test holds it to that.
 
-`openmucf/g4/d1_boundrates.py` evaluates a single rate pair for both routes, the helper's capture rate and the
+`openmucf/g4/d1_boundrates.py` preserves the historical pair for both routes, the helper's capture rate and the
 stopping route's decay rate below the threshold of `G4MuonMinusBoundDecay::GetMuonDecayRate`, from the
 committed decay-rate oracle and the vendored sources. `data/g4/d1/bound_rates_policy.json`, which
-`scripts/generate_g4boundrates.py` generates, registers how a harvest is to verify a build that gives both
-routes that pair: the groups, seeds and start times, the frozen pairs, the statistical limits and the
+`scripts/generate_g4boundrates.py` generates, registered how the historical harvest verified a build giving both
+routes that legacy pair: the groups, seeds and start times, the frozen pairs, the statistical limits and the
 tolerances. Agreement with that pair is agreement with a prescription given its inputs; it is not a statement
 of physical accuracy.
 
@@ -200,3 +200,16 @@ of physical accuracy.
 g++ -std=c++17 -O2 repro_bound_rates.cc -o repro_bound_rates $(geant4-config --cflags --libs)
 ./repro_bound_rates            # or: ./repro_bound_rates <Z> <A> ...
 ```
+
+The current experimental provider instead uses `low-z-inclusive-tree-linear-recoil-v1`,
+`Q = 1 - (Z alpha)^2 * (1/2 - muonMass/nuclearMass)`.
+`openmucf/g4/d1_linear_recoil.py` evaluates this formula and a current pair from
+archived mass inputs and the unchanged capture resolver. It does not reinterpret
+or regenerate the old policy/results. The standalone `cpp/test/bound_rate_check.cc`
+checks static limits, independent mass-ratio slopes, the `1.06*z^2*eta` delta from
+the old oracle, refusal boundaries and unchanged switch/forwarding behavior.
+Its CMake tests are `bound_rates_current`, `bound_rates_legacy_delta`,
+`bound_rates_disabled`, `bound_rates_enabled` and `bound_rates_refuse`.
+The [derivation](../../docs/low-z-bound-muon-decay.md) defines the inclusive tree
+observable and unassigned remainders; these deterministic checks establish no
+real-isotope accuracy or new transport-harvest result.

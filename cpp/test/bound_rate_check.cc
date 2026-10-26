@@ -1,32 +1,11 @@
-// bound_rate_check -- the bound-rate provider (G4MuonicBoundRateProvider) run without Geant4, against the
-// stand-in headers under g4stub/, in one of four modes, each its own process because the provider's switch
-// freezes at the first consultation:
-//
-//   g4muonicdata_bound_rate_check oracle <d1_decay_rate.oracle>
-//       LowZDecayRate(Z, mu_mass, mass) for every `B Z A mass rate` line of the oracle below Z = 14 equals
-//       the rate a compiled Geant4 build returned, bit for bit, with the oracle's muon mass; the stand-in's
-//       fine-structure constant and microsecond equal the oracle's `K alpha` and `K microsecond`.
-//   g4muonicdata_bound_rate_check disabled
-//       with the switch never set: Rates returns kDisabled and leaves its output alone, the capture
-//       resolver is not called, the first consultation freezes the switch and a later Enable raises
-//       G4MuonicBoundRates002 and changes nothing.
-//   g4muonicdata_bound_rate_check enabled
-//       with the switch set: the domain edges (Z = 1, 2, 13, 14; A = 0, Z - 1, Z), the pair for keys inside
-//       it -- capture exactly what the resolver returned, decay exactly LowZDecayRate -- and, once frozen,
-//       a Disable that raises G4MuonicBoundRates002 and a repeated Enable that raises nothing.
-//   g4muonicdata_bound_rate_check refuse
-//       with the switch set: each invalid input inside the domain raises G4MuonicBoundRates001, returns
-//       kRefused and leaves the output alone -- a negative, a NaN and an infinite capture rate, a zero, a
-//       negative, a NaN and an infinite nuclear mass, a zero muon mass, and a nuclear mass small enough to
-//       make the decay rate negative -- while a zero capture rate is accepted.
-//
-// The stand-ins are defined here: G4MuonicAtomHelper::GetMuonCaptureRate returns the value the check
-// planted for the key and counts its calls; G4Exception records each code (marked when its severity is not
-// FatalException) and returns, which is what an exception handler that suppresses the abort does. Every failed expectation prints `FAIL <detail>`; the
-// exit status is 1 if any did, else 0 after `OK <mode> <checks>`.
+// Standalone current-provider checks with g4stub headers. Each mode is a fresh process.
+// current checks static limit and independent linear slopes; oracle-delta compares the change from
+// the archived legacy getter, not equality to it. disabled/enabled/refuse check the unchanged switch,
+// domain, forwarding and fatal/untouched-output contracts. No Geant4 or physical-accuracy claim.
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <limits>
@@ -83,10 +62,10 @@ const char* Name(P::Status s) {
 constexpr double kMu = 105.6583715;
 double Mass(int A) { return 931.494 * A; }
 
-int Oracle(const char* path) {
+int OracleDelta(const char* path) {
   std::ifstream in(path);
   if (!in) {
-    std::printf("FAIL cannot open %s\n", path);
+    Expect(false, std::string("cannot open ") + path);
     return 1;
   }
   std::map<std::string, double> constants;
@@ -117,14 +96,52 @@ int Oracle(const char* path) {
   const double mu = constants["mu_mass"];
   int compared = 0;
   for (const auto& [z, a, mass, rate] : rows) {
-    if (z >= 14) continue;
+    if (z < 2 || z >= 14) continue;
     const double got = P::LowZDecayRate(z, mu, mass);
-    Expect(SameBits(got, rate), "Z=" + std::to_string(z) + " A=" + std::to_string(a) + " LowZDecayRate " + Hex(got) +
-                                    " != oracle " + Hex(rate));
+    const double z2 = std::pow(z * fine_structure_const, 2);
+    const double expected_delta = 1.06 * z2 * (mu / mass) * (0.45517005 / microsecond);
+    Expect(std::abs((got - rate) - expected_delta) < 2e-19,
+           "legacy-to-current delta Z=" + std::to_string(z) + " A=" + std::to_string(a));
     ++compared;
   }
-  std::printf("COMPARED %d oracle rates below Z = 14\n", compared);
-  Expect(compared > 0, "no oracle rate below Z = 14");
+  std::printf("COMPARED %d legacy oracle rates in current domain\n", compared);
+  Expect(compared > 0, "no legacy oracle key in current domain");
+  return 0;
+}
+
+int Current() {
+  const double free = 0.45517005 / microsecond;
+  const double tiny = std::numeric_limits<double>::denorm_min();
+  const double huge = std::numeric_limits<double>::max();
+  const double inf = std::numeric_limits<double>::infinity();
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  Expect(std::string(P::Prescription()).find("low-z-inclusive-tree-linear-recoil-v1") == 0,
+         "missing stable prescription identifier");
+  for (int z : {2, 6, 13}) {
+    const double z2 = std::pow(z * fine_structure_const, 2);
+    const double q0 = P::LowZDecayRate(z, tiny, huge) / free;
+    Expect(std::abs(q0 - (1. - z2 / 2.)) < 3e-16, "static limit");
+    double previous = q0;
+    for (double eta : {0.001, 0.01, 0.125, 0.375}) {
+      const double q = P::LowZDecayRate(z, 1., 1. / eta) / free;
+      // Affine slope from the static value distinguishes no-recoil, legacy and resummed mutants.
+      Expect(std::abs((q - q0) / (z2 * eta) - 1.) < 2e-9, "linear positive recoil slope");
+      Expect(q > previous && q <= 1., "monotone suppression");
+      previous = q;
+    }
+    Expect(std::isfinite(P::LowZDecayRate(z, std::nextafter(0.5, 0.), 1.)), "just below eta boundary");
+  }
+  for (int z : {-1, 0, 1, 14, 1000000})
+    Expect(std::isnan(P::LowZDecayRate(z, kMu, Mass(12))), "unsupported direct Z");
+  for (double bad : {0., -1., nan, inf, -inf}) {
+    Expect(std::isnan(P::LowZDecayRate(6, bad, Mass(12))), "invalid direct muon mass");
+    Expect(std::isnan(P::LowZDecayRate(6, kMu, bad)), "invalid direct nuclear mass");
+  }
+  for (const auto& masses : std::vector<std::pair<double, double>>{
+           {0.5, 1.}, {std::nextafter(0.5, 1.), 1.}, {1., 1.}, {huge, tiny}})
+    Expect(std::isnan(P::LowZDecayRate(6, masses.first, masses.second)), "invalid direct eta");
+  Expect(g_codes.empty() && g_resolver_calls == 0 && !P::IsFrozen(),
+         "direct evaluator has switch/capture/exception side effects");
   return 0;
 }
 
@@ -138,6 +155,10 @@ int Disabled() {
   Expect(s == P::Status::kDisabled, std::string("disabled Rates returned ") + Name(s));
   Expect(r.capture == -7. && r.decay == -8., "disabled Rates wrote its output");
   Expect(g_resolver_calls == 0, "disabled Rates called the capture resolver");
+  Expect(P::Rates(6, 12, std::numeric_limits<double>::quiet_NaN(), 0., r) == P::Status::kDisabled,
+         "disabled Rates did not bypass invalid inputs");
+  Expect(r.capture == -7. && r.decay == -8. && g_resolver_calls == 0 && g_codes.empty(),
+         "disabled invalid inputs had side effects");
   Expect(P::IsFrozen(), "the first consultation did not freeze the switch");
   Expect(!P::Consult(), "Consult reports the switch on");
   P::Enable();
@@ -207,21 +228,40 @@ int Refuse() {
       {"negative capture", -1.0e-6, kMu, Mass(12), true},
       {"NaN capture", nan, kMu, Mass(12), true},
       {"infinite capture", inf, kMu, Mass(12), true},
+      {"negative infinite capture", -inf, kMu, Mass(12), true},
       {"zero nuclear mass", 3.8e-5, kMu, 0., true},
       {"negative nuclear mass", 3.8e-5, kMu, -Mass(12), true},
       {"NaN nuclear mass", 3.8e-5, kMu, nan, true},
       {"infinite nuclear mass", 3.8e-5, kMu, inf, true},
       {"zero muon mass", 3.8e-5, 0., Mass(12), true},
-      {"negative decay rate", 3.8e-5, kMu, 1.0e-3, true},
+      {"negative muon mass", 3.8e-5, -kMu, Mass(12), true},
+      {"NaN muon mass", 3.8e-5, nan, Mass(12), true},
+      {"infinite muon mass", 3.8e-5, inf, Mass(12), true},
+      {"negative infinite muon mass", 3.8e-5, -inf, Mass(12), true},
+      {"negative infinite nuclear mass", 3.8e-5, kMu, -inf, true},
+      {"eta boundary", 3.8e-5, 0.5, 1., true},
+      {"eta just above", 3.8e-5, std::nextafter(0.5, 1.), 1., true},
+      {"eta overflow", 3.8e-5, std::numeric_limits<double>::max(),
+                       std::numeric_limits<double>::denorm_min(), true},
+      {"eta far above boundary", 3.8e-5, kMu, 1.0e-3, true},
       {"zero capture", 0., kMu, Mass(12), false},
+      {"eta just below", 3.8e-5, std::nextafter(0.5, 0.), 1., false},
+      {"static underflow", 3.8e-5, std::numeric_limits<double>::denorm_min(),
+                           std::numeric_limits<double>::max(), false},
   };
   for (const auto& c : cases) {
     g_planted[{6, 12}] = c.capture;
     g_codes.clear();
+    const int calls_before = g_resolver_calls;
     G4MuonicBoundRates r;
     r.capture = -1.;
     r.decay = -2.;
     const P::Status s = P::Rates(6, 12, c.muon, c.nuclear, r);
+    const bool valid_masses = std::isfinite(c.muon) && c.muon > 0. && std::isfinite(c.nuclear) &&
+                              c.nuclear > 0. && std::isfinite(c.muon / c.nuclear) &&
+                              c.muon / c.nuclear < 0.5;
+    Expect(g_resolver_calls == calls_before + (valid_masses ? 1 : 0),
+           std::string(c.label) + " unexpected capture resolver calls");
     if (c.refused) {
       Expect(s == P::Status::kRefused, std::string(c.label) + " returned " + Name(s));
       Expect(g_codes == std::vector<std::string>{"G4MuonicBoundRates001"}, std::string(c.label) + " raised " +
@@ -231,7 +271,8 @@ int Refuse() {
     } else {
       Expect(s == P::Status::kCommon, std::string(c.label) + " returned " + Name(s));
       Expect(g_codes.empty(), std::string(c.label) + " raised a code");
-      Expect(r.capture == 0. && r.decay > 0., std::string(c.label) + " did not give capture 0 and decay > 0");
+      Expect(r.capture == c.capture && r.decay > 0. && r.decay <= 0.45517005 / microsecond,
+             std::string(c.label) + " did not forward capture with 0 < decay <= free");
     }
   }
   return 0;
@@ -256,8 +297,10 @@ void G4Exception(const char* originOfException, const char* exceptionCode, G4Exc
 
 int main(int argc, char** argv) {
   const std::string mode = argc > 1 ? argv[1] : "";
-  if (mode == "oracle" && argc == 3) {
-    Oracle(argv[2]);
+  if (mode == "oracle-delta" && argc == 3) {
+    OracleDelta(argv[2]);
+  } else if (mode == "current") {
+    Current();
   } else if (mode == "disabled") {
     Disabled();
   } else if (mode == "enabled") {
@@ -265,7 +308,7 @@ int main(int argc, char** argv) {
   } else if (mode == "refuse") {
     Refuse();
   } else {
-    std::printf("usage: g4muonicdata_bound_rate_check oracle <file> | disabled | enabled | refuse\n");
+    std::printf("usage: g4muonicdata_bound_rate_check oracle-delta <file> | current | disabled | enabled | refuse\n");
     return 2;
   }
   if (g_failures > 0) return 1;
