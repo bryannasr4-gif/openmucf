@@ -71,3 +71,6 @@ tests/fixtures/d3_recipe/** -text
 # The MuDirac patch: `patch -p1` applies it to the release archive's LF sources, so a checkout must not rewrite its
 # line endings; its default-output inputs are MuDirac input files read as written.
 third_party/mudirac/** -text
+
+# Historical patch snapshots preserve their exact unified-diff context and source whitespace.
+cpp/transport/evidence/source_snapshots/*.patch -whitespace

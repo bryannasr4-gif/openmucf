@@ -1,0 +1,2390 @@
+diff --git a/source/particles/management/include/G4MuonicAtomHelper.hh b/source/particles/management/include/G4MuonicAtomHelper.hh
+index fa725ef8f1..c4a04cccbe 100644
+--- a/source/particles/management/include/G4MuonicAtomHelper.hh
++++ b/source/particles/management/include/G4MuonicAtomHelper.hh
+@@ -50,8 +50,13 @@ class G4MuonicAtomHelper
+ 
+     static G4double GetKShellEnergy(G4double A);
+ 
++    static G4double GetKShellEnergy(G4double Z, G4int A);
++
+     static G4double GetLinApprox(G4int N, const G4double* const X, const G4double* const Y,
+                                  G4double Xuser);
++
++  private:
++    static G4double GetCompiledKShellEnergy(G4double Z);
+ };
+ 
+ #endif
+diff --git a/source/particles/management/include/G4MuonicBoundRateProvider.hh b/source/particles/management/include/G4MuonicBoundRateProvider.hh
+new file mode 100644
+index 0000000000..5dd4019000
+--- /dev/null
++++ b/source/particles/management/include/G4MuonicBoundRateProvider.hh
+@@ -0,0 +1,92 @@
++// G4MuonicBoundRateProvider -- one capture and decay rate pair for a negative muon in the 1s state of a
++// muonic atom, given to both stopped-muon routes of Geant4 when an application asks for it.
++//
++// Geant4 forms the two rates of a bound negative muon in two places, with two decay prescriptions:
++//
++//   G4MuonMinusBoundDecay::ApplyYourself    draws the stopping route's delay and branch from
++//                                           GetMuonCaptureRate(Z, A) and
++//                                           GetMuonDecayRate(Z, A, muMass, nuclear mass);
++//   G4MuonicAtomHelper::ConstructMuonicAtom stores the atomic route's lifetime and its DIO and
++//                                           nuclear-capture lifetimes from GetMuonCaptureRate(Z, A)
++//                                           and GetMuonDecayRate(Z), which G4MuonicAtomDecay reads.
++//
++// The two decay rates differ: below Z = 14 the first is free * [1 - (Z alpha)^2 (0.5 + 0.06 m_mu / M)],
++// the comment beside it attributing the form to H. C. von Baeyer and D. Leiter, Phys. Rev. A 19, 1371
++// (1979); the second is free * [1 - 2.5 (Zeff alpha)^2] for every Z but hydrogen, its comment
++// attributing it to N. C. Mukhopadhyay, Phys. Rep. 30, 1 (1977). With the switch
++// G4HadronicParameters::SetEnableMuonicBoundRates(true), both consumers take the pair this class
++// returns instead, over the domain below:
++//
++//   capture  G4MuonicAtomHelper::GetMuonCaptureRate(Z, A), the helper's capture resolver as it stands
++//            (its compiled-in table, its Goulard-Primakoff fallback and, when the G4MuonicData opt-in
++//            is on, the dataset row it reads first), called, not copied;
++//   decay    LowZDecayRate(Z, muMass, nuclearMass): the stopping route's expression below Z = 14, with
++//            its literals and its order of operations.
++//
++// The domain is an implementation domain, not a statement of physical accuracy: 2 <= Z <= 13 and
++// A >= Z. Hydrogen (whose atomic-route decay rate is a separate tabulated value), Z >= 14 (where the
++// stopping route uses a different fit) and a natural-composition request (A = 0) are outside it:
++// Rates returns kUnsupported and each consumer keeps the pair it formed itself. For a key inside the
++// domain, a nuclear or muon mass that is not finite and positive, a capture rate that is negative or
++// not finite, or a decay rate that is not finite and positive is refused with the fatal G4Exception
++// G4MuonicBoundRates001; nothing is clipped. (A finite capture rate >= 0 and a finite decay rate > 0,
++// which never exceeds the free rate, then have a finite, positive sum.)
++//
++// The switch is off by default and the G4MuonicData opt-in (SetEnableMuonicData) does not set it.
++// With it off, Consult returns false and the consumers run their own code unchanged. The first
++// Consult -- the first time either consumer forms a rate pair -- freezes the switch: a later attempt to
++// change it raises the fatal G4Exception G4MuonicBoundRates002, because muonic atoms already
++// constructed keep the lifetimes they were built with. Set it on the master thread before the physics
++// list is built; worker threads only read it.
++//
++// The static legacy getters G4MuonMinusBoundDecay::GetMuonDecayRate and
++// G4MuonicAtomHelper::GetMuonDecayRate are unchanged and are not affected by the switch: they report
++// each route's own prescription, not the pair a consumer receives with the switch on.
++//
++// Rates are in Geant4's internal units (inverse time, ns^-1), masses in MeV.
++#ifndef G4MUONICBOUNDRATEPROVIDER_HH
++#define G4MUONICBOUNDRATEPROVIDER_HH
++
++#include "G4Types.hh"
++
++struct G4MuonicBoundRates {
++  G4double capture = 0.;  // nuclear capture rate, ns^-1
++  G4double decay = 0.;    // decay-in-orbit rate, ns^-1
++};
++
++class G4MuonicBoundRateProvider {
++ public:
++  enum class Status {
++    kCommon,       // the pair is the common pair; the consumer uses it
++    kDisabled,     // the switch is off; the consumer keeps its own pair
++    kUnsupported,  // outside the domain; the consumer keeps its own pair
++    kRefused       // a fatal G4MuonicBoundRates001 was raised; the consumer keeps its own pair
++  };
++
++  // The switch. Enable and Disable are called by G4HadronicParameters::SetEnableMuonicBoundRates
++  // only; once a consumer has consulted the provider, a call that would change the state raises the
++  // fatal G4MuonicBoundRates002 and leaves the state as it was.
++  static void Enable();
++  static void Disable();
++  static G4bool IsEnabled();
++  static G4bool IsFrozen();
++
++  // Called by each consumer before it uses its pair: freezes the switch and returns whether it is on.
++  static G4bool Consult();
++
++  // Whether (Z, A) lies in the implementation domain: 2 <= Z <= 13 and A >= Z.
++  static G4bool InDomain(G4int Z, G4int A);
++
++  // The stopping route's decay rate below Z = 14, in ns^-1:
++  //   free = 0.45517005 / microsecond; f = 1 - (Z alpha)^2 (0.5 + 0.06 muMass / nuclearMass); f * free,
++  // grouped as G4MuonMinusBoundDecay::GetMuonDecayRate groups it. Standard library only.
++  static G4double LowZDecayRate(G4int Z, G4double muonMass, G4double nuclearMass);
++
++  // The pair for (Z, A): kCommon with `rates` set, or another status with `rates` untouched.
++  static Status Rates(G4int Z, G4int A, G4double muonMass, G4double nuclearMass, G4MuonicBoundRates& rates);
++
++  // What the pair is made of, for a consumer or an application that reports it.
++  static const char* Prescription();
++};
++
++#endif
+diff --git a/source/particles/management/include/G4MuonicDataOverlay.hh b/source/particles/management/include/G4MuonicDataOverlay.hh
+new file mode 100644
+index 0000000000..c9eb032600
+--- /dev/null
++++ b/source/particles/management/include/G4MuonicDataOverlay.hh
+@@ -0,0 +1,103 @@
++// G4MuonicDataOverlay -- the Geant4-facing glue between the G4MuonicData dataset reader and the
++// compiled-in muon-capture and muonic-atom energy code paths.
++//
++// The reader (G4MuonicDataTable) knows nothing about Geant4. This class adds what a consumer inside
++// Geant4 needs: dataset discovery through G4FindDataDir, the semantic layer
++// (G4MuonicDataSemantics) applied to every loaded table before any of them is selected, a fatal
++// G4Exception when the opt-in was requested but the dataset is absent, invalid or does not mean
++// what a consumer may read, and keyed lookups that say which rung answered. With the opt-in off
++// (G4MuonicDataTable::Enable() not called) every entry point below returns without reading the
++// dataset or performing I/O; CheckComputedCaptureRate is the one the patched code calls even then.
++//
++// Two seams are selected independently. G4MUONICDATA_D1_PROFILE names the profile the nuclear
++// capture seam reads through and G4MUONICDATA_D3_PROFILE the one the muonic-transition seam reads
++// through; G4MUONICDATA_PROFILE names both where neither is set, and `parity` (D1) with the
++// compiled-in code (D3) is what an unset environment selects. `compiled` is a reserved token: a
++// seam that resolves to it has no tables and every request there falls through to the consumer's
++// own code. The environment is read once, when the opt-in is set, and not again.
++//
++// The legacy natural-composition rung -- a request for (Z, A) answered by the element's (Z, 0)
++// record -- is used exactly when the resolved profile for that seam is `parity`. Under any
++// evaluated profile a request with A > 0 is answered from that isotope or not at all, and the
++// (Z, 0) record is reachable only by asking for A = 0.
++#ifndef G4MUONICDATAOVERLAY_HH
++#define G4MUONICDATAOVERLAY_HH
++
++#include "G4MuonicDataTable.hh"
++#include "G4Types.hh"
++
++#include <string>
++
++class G4MuonicDataOverlay {
++ public:
++  // Which rung answered a request, or that none did.
++  enum class Origin {
++    Exact,                  // the record keyed by exactly the nuclide asked for
++    ExplicitNatural,        // the (Z, 0) record of a table under `A:natural_and_listed`, asked for
++    ExplicitRepresentative, // the (Z, 0) record of a table under `A:most_abundant_and_listed`, asked for
++    LegacyNaturalFallback,  // the (Z, 0) record reached from a request for (Z, A > 0), `parity` only
++    Compiled                // no record: the consumer's compiled-in code answers
++  };
++
++  // One answer. `values` points at `count` consecutive stored doubles, or is null with `count` 0
++  // and both resolved keys 0 when nothing matched -- that record, with the requested keys kept, is
++  // the whole of what "the dataset does not support this nuclide" means here.
++  struct Resolution {
++    const G4double* values = nullptr;
++    G4int count = 0;
++    G4int requestedZ = 0, requestedA = 0, resolvedZ = 0, resolvedA = 0;
++    Origin origin = Origin::Compiled;
++    std::string profile;
++  };
++
++  // What the environment selected, frozen when the opt-in was set. Both profiles are `compiled`
++  // and both strings empty with the opt-in off.
++  // `fallbackDeclarationExecuted` says
++  // whether a `#FALLBACK` declaration was evaluated: it is always false, because a declaration is
++  // documentary here and no expression of one is interpreted.
++  struct Configuration {
++    std::string datasetDirectory, datasetVersion, d1Profile, d3Profile;
++    bool fallbackDeclarationExecuted = false;
++  };
++
++  // Read the environment, discover and read the dataset, and freeze the configuration. Called once
++  // when the opt-in is set, in unlocked pre-initialisation on the master thread. Calling it again
++  // reuses the frozen configuration, as does a lookup made without it.
++  static void Initialize();
++  static const Configuration& Config();
++
++  // The dataset, or nullptr.
++  static const G4MuonicDataTable* Table();
++
++  // The `value` field of the nuclear_capture_rate record for this nuclide, in the dataset's own
++  // units as declared by its #UNITS line, or nullptr when nothing matched.
++  static const G4double* Rate(G4int Z, G4int A);
++  // The `value` field of the muon_zeff record keyed Z, or nullptr when nothing matched.
++  static const G4double* Zeff(G4int Z);
++  // The `value` field (keV) of the k_shell_energy record for this nuclide, or nullptr.
++  static const G4double* KShell(G4int Z, G4int A);
++  // The `e2` field (keV) of the level_energy record for this nuclide, with `count` set to the
++  // number of consecutive columns e2, e3, ... the table declares; nullptr and a count of zero when
++  // nothing matched.
++  static const G4double* Levels(G4int Z, G4int A, G4int& count);
++
++  // The same four lookups, with the rung that answered and the profile it was read through.
++  static Resolution ResolveRate(G4int Z, G4int A);
++  static Resolution ResolveZeff(G4int Z);
++  static Resolution ResolveKShell(G4int Z, G4int A);
++  static Resolution ResolveLevels(G4int Z, G4int A);
++
++  // A capture rate the consumer computed itself, once the dataset had no record for the nuclide.
++  // A no-op unless the effective D1 profile is an evaluated one: under `parity` and under the
++  // compiled-in seam the documented Goulard-Primakoff output, negative values included, stands.
++  // Under an evaluated profile a rate that is not finite is fatal (G4MuonicData005); a finite rate
++  // that is not positive stands as computed, and the first such rate in the process raises the
++  // warning G4MuonicData006.
++  static void CheckComputedCaptureRate(G4int Z, G4int A, G4double rate);
++  // The assembled muonic-cascade level array, after at least one lookup overlaid part of it: the
++  // whole array must be finite, positive and strictly falling, boundary between overlaid and
++  // hydrogen-like values included.
++  static void CheckCascadeLevels(G4int Z, G4int A, const G4double* levels, G4int count);
++};
++
++#endif
+diff --git a/source/particles/management/include/G4MuonicDataSemantics.hh b/source/particles/management/include/G4MuonicDataSemantics.hh
+new file mode 100644
+index 0000000000..9ca4ab0746
+--- /dev/null
++++ b/source/particles/management/include/G4MuonicDataSemantics.hh
+@@ -0,0 +1,46 @@
++// G4MuonicDataSemantics -- what a G4MuonicData dataset must mean, over and above what its grammar
++// allows.
++//
++// The reader (G4MuonicDataTable) enforces the Layer-1 grammar: E001-E016 say whether a file is a
++// well-formed `.g4dat` document. A file can be well-formed and still describe something no
++// consumer can use -- a binding energy below the level it sits above, a capture rate that is
++// negative, a `#TABLE` name nothing reads, a `#UNITS` assignment a lookup would misread, two files
++// of one profile that disagree about which nuclides they cover. Those are semantic rules, and they
++// live here so that the standalone validator and the Geant4-facing glue apply exactly the same
++// ones to exactly the same bytes.
++//
++// Nothing here depends on Geant4: standard library plus the reader. `double` and `int`, not
++// `G4double` and `G4int`, for that reason.
++//
++// The codes, and the one sentence each stands for:
++//   S001  identity and version: every table names this dataset, and one `#VERSION` spans the load.
++//   S002  shape: the `#TABLE` name, its `#SEAM`, its `#COLUMNS` sequence, and that it has records.
++//   S003  keys and validity: the key domain, and a `#VALIDITY` convention this layer knows.
++//   S004  units: the `#UNITS` assignment of every value column, as the lookups read it.
++//   S005  values: finite, and in the domain the quantity has (a rate and an energy are positive,
++//         an uncertainty is not negative, an effective charge does not exceed Z).
++//   S006  the D3 pair: one profile's two energy tables cover one key set, in one falling order.
++#ifndef G4MUONICDATASEMANTICS_HH
++#define G4MUONICDATASEMANTICS_HH
++
++#include "G4MuonicDataTable.hh"
++
++#include <string>
++#include <vector>
++
++class G4MuonicDataSemantics {
++ public:
++  // One violation: the code above, the file and the `#PROFILE` / `#TABLE` it was found in, and a
++  // sentence naming what is wrong. `file`, `profile` and `table` are empty for an issue that is
++  // about a profile rather than one table.
++  struct Issue {
++    std::string code, file, profile, table, text;
++  };
++
++  // Every issue in `dataset`, in loaded-file order and, within a file, in record order; the
++  // profile-level S006 issues follow the per-table ones, in bytewise profile order. An empty
++  // vector is the only acceptable result for a dataset a consumer may read.
++  static std::vector<Issue> Validate(const G4MuonicDataTable& dataset);
++};
++
++#endif
+diff --git a/source/particles/management/include/G4MuonicDataTable.hh b/source/particles/management/include/G4MuonicDataTable.hh
+new file mode 100644
+index 0000000000..4b7fce2d9f
+--- /dev/null
++++ b/source/particles/management/include/G4MuonicDataTable.hh
+@@ -0,0 +1,100 @@
++// G4MuonicDataTable -- a standard-library-only C++17 reader for the Layer-1 `.g4dat` grammar.
++//
++// This is the C++ counterpart of `openmucf/g4/spec.py`, the reference implementation of
++// FORMAT_SPEC.md sections 2 and 4. It implements the sixteen error codes E001-E016 with the
++// three-phase reporting order, and it parses numbers without consulting the process locale
++// (FORMAT_SPEC.md section 6). Layer 1 only: the Layer-2 digest (E009) is checked by the validator
++// in cpp/test, which has the sibling file; this reader never opens one.
++//
++// Nothing here depends on Geant4. The class name and the environment variable it resolves are the
++// provisional names the dataset documentation uses.
++#ifndef G4MUONICDATATABLE_HH
++#define G4MUONICDATATABLE_HH
++
++#include <string>
++#include <utility>
++#include <vector>
++
++class G4MuonicDataTable {
++ public:
++  // The profile a consumer reads through unless it names another; its files require `#SOURCESHA`
++  // (E013).
++  static constexpr const char* kParityProfile = "parity";
++
++  // A rejection. `code` is one of E001-E016 for a Layer-1 violation, or empty for a dataset-level
++  // problem that has no single line (no `.g4dat` file in the directory, a `#PROFILE` / `#TABLE`
++  // pair repeated across files, a directory that cannot be read, or an unset discovery variable).
++  struct Error {
++    std::string code;
++    int line = 0;
++    std::string text;
++    // "{code}: {text} (line {n})" when `code` is non-empty, else `text`.
++    std::string what() const;
++  };
++
++  struct Table {
++    struct Record {
++      // The integer columns `Z` and `A` -- whichever the table declares -- in that order
++      // (FORMAT_SPEC.md 2.3 rule 6); this is the primary key the records are sorted by.
++      std::vector<long> keys;
++      // Every other column, in `#COLUMNS` order.
++      std::vector<double> floats;
++    };
++    std::string profile;  // the `#PROFILE` value
++    std::string name;     // the `#TABLE` value
++    std::string file;     // the path the table was read from, or the name given to Parse()
++    std::vector<std::pair<std::string, std::string>> directives;  // in file order, no leading '#'
++    std::vector<std::string> columns;
++    std::vector<Record> records;  // ascending by `keys` (E015), unique (E008)
++    // The value of the directive with this keyword, or nullptr when the file does not carry it.
++    const std::string* Directive(const std::string& keyword) const;
++    // Binary search over the sorted records; nullptr when the key is absent.
++    const Record* Lookup(const std::vector<long>& key) const;
++    // Lookup(key), and when that misses on a two-key table, the natural-composition row a table
++    // under `A:natural_and_listed` or `A:most_abundant_and_listed` carries for the same `Z`
++    // (FORMAT_SPEC.md section 6); a single-key table is exact only.
++    const Record* LookupNatural(const std::vector<long>& key) const;
++  };
++
++  // Parse every regular file named `*.g4dat` in `directory`, in bytewise-sorted file-name order.
++  // Throws Error: with a code and line for a Layer-1 violation in one file, or code-less when the
++  // directory holds no such file, is not a directory, or two files declare the same `#PROFILE` and
++  // `#TABLE`.
++  static G4MuonicDataTable Load(const std::string& directory);
++
++  // Parse one document from its bytes. `name` is only used to label the resulting table.
++  // Throws Error with a code and a 1-based line number on the first violation, in the reporting
++  // order of FORMAT_SPEC.md section 4.
++  static G4MuonicDataTable Parse(const std::string& bytes, const std::string& name);
++
++  // The table whose `#PROFILE` and `#TABLE` values are these, or nullptr.
++  const Table* Find(const std::string& profile, const std::string& table_name) const;
++  // Every table, in load order (exactly one after Parse()).
++  const std::vector<Table>& Tables() const { return tables_; }
++  // The distinct `#PROFILE` values among the tables, bytewise sorted.
++  std::vector<std::string> Profiles() const;
++
++  // Overlay opt-in: a plain process-wide flag, set and cleared by a consumer. Nothing in this
++  // reader consults it; it exists so a consumer that falls through to compiled-in values can make
++  // that fall-through explicit. The flag is not synchronised: set or clear it before any thread
++  // that reads it starts, never while one runs. G4HadronicParameters::SetEnableMuonicData, which
++  // the patches add to Geant4, changes it only on the master thread in the PreInit state.
++  static void Enable();
++  static void Disable();
++  static bool IsEnabled();
++
++  // FORMAT_SPEC.md 2.3 rules 4-5 and section 6, for one float-column field. Returns "" and sets
++  // `out` on success; otherwise returns the code ("E007" or "E014") and, when `text` is given,
++  // stores the reason in it (without the field, which the caller names). Public because the
++  // validator parses `#FALLBACK` coefficients with the same rule the record fields obey.
++  static std::string ParseDouble(const std::string& field, double& out, std::string* text = nullptr);
++
++  // Which of the two compiled number-parsing paths this build uses, for the validator's report:
++  // "from_chars(__cpp_lib_to_chars=<value>)" or "istringstream(classic)".
++  static std::string ParserPath();
++
++ private:
++  std::vector<Table> tables_;
++};
++
++#endif
+diff --git a/source/particles/management/sources.cmake b/source/particles/management/sources.cmake
+index e292ef656b..8ca928ddac 100644
+--- a/source/particles/management/sources.cmake
++++ b/source/particles/management/sources.cmake
+@@ -17,6 +17,10 @@ geant4_add_module(G4partman
+     G4KL3DecayChannel.hh
+     G4MuonicAtom.hh
+     G4MuonicAtomHelper.hh
++    G4MuonicBoundRateProvider.hh
++    G4MuonicDataOverlay.hh
++    G4MuonicDataSemantics.hh
++    G4MuonicDataTable.hh
+     G4MuonDecayChannel.hh
+     G4MuonDecayChannelWithSpin.hh
+     G4MuonRadiativeDecayChannelWithSpin.hh
+@@ -65,6 +69,10 @@ geant4_add_module(G4partman
+     G4KL3DecayChannel.cc
+     G4MuonicAtom.cc
+     G4MuonicAtomHelper.cc
++    G4MuonicBoundRateProvider.cc
++    G4MuonicDataOverlay.cc
++    G4MuonicDataSemantics.cc
++    G4MuonicDataTable.cc
+     G4MuonDecayChannel.cc
+     G4MuonDecayChannelWithSpin.cc
+     G4MuonRadiativeDecayChannelWithSpin.cc
+diff --git a/source/particles/management/src/G4MuonicAtomHelper.cc b/source/particles/management/src/G4MuonicAtomHelper.cc
+index 8c2c37a99c..f2f958c8e9 100644
+--- a/source/particles/management/src/G4MuonicAtomHelper.cc
++++ b/source/particles/management/src/G4MuonicAtomHelper.cc
+@@ -38,6 +38,9 @@
+ #include "G4PhysicalConstants.hh"
+ #include "G4SystemOfUnits.hh"
+ #include "Randomize.hh"
++#include "G4MuonicDataOverlay.hh"
++#include "G4MuonicBoundRateProvider.hh"
++#include "G4NucleiProperties.hh"
+ 
+ G4MuonicAtom* G4MuonicAtomHelper::ConstructMuonicAtom(const G4String& name, G4int encoding,
+                                                       G4Ions const* baseion)
+@@ -54,11 +57,20 @@ G4MuonicAtom* G4MuonicAtomHelper::ConstructMuonicAtom(const G4String& name, G4in
+   G4int A = baseion->GetAtomicMass();
+   G4double lambdac = GetMuonCaptureRate(Z, A);
+   G4double lambdad = GetMuonDecayRate(Z);
++  if (G4MuonicBoundRateProvider::Consult()) {
++    G4MuonicBoundRates rates;
++    const G4double muonMass = (G4ParticleTable::GetParticleTable()->FindParticle("mu-"))->GetPDGMass();
++    if (G4MuonicBoundRateProvider::Rates(Z, A, muonMass, G4NucleiProperties::GetNuclearMass(A, Z), rates)
++        == G4MuonicBoundRateProvider::Status::kCommon) {
++      lambdac = rates.capture;
++      lambdad = rates.decay;
++    }
++  }
+   G4double lifetime = 1. / (lambdac + lambdad);
+   G4bool shortlived = false;
+ 
+   const G4double mass = (G4ParticleTable::GetParticleTable()->FindParticle("mu-"))->GetPDGMass()
+-                        + baseion->GetPDGMass() - GetKShellEnergy(G4double(Z));  // fixme check
++                        + baseion->GetPDGMass() - GetKShellEnergy(G4double(Z), A);  // fixme check
+ 
+   auto decayTable = new G4DecayTable();
+   // clang-format off
+@@ -214,6 +226,9 @@ G4double G4MuonicAtomHelper::GetMuonCaptureRate(G4int Z, G4int A)
+   // clang-format on
+ 
+   G4double lambda = -1.;
++  if (G4MuonicDataTable::IsEnabled()) {
++    if (const G4double* v = G4MuonicDataOverlay::Rate(Z, A)) return *v / microsecond;
++  }
+ 
+   std::size_t nCapRates = sizeof(capRates) / sizeof(capRates[0]);
+   for (std::size_t j = 0; j < nCapRates; ++j)
+@@ -250,6 +265,7 @@ G4double G4MuonicAtomHelper::GetMuonCaptureRate(G4int Z, G4int A)
+                 - G4double(2 * (A - Z) + std::abs(a2ze - 1.)) * b0c / G4double(A * 4));
+   }
+ 
++  G4MuonicDataOverlay::CheckComputedCaptureRate(Z, A, lambda);
+   return lambda;
+ }
+ 
+@@ -286,6 +302,9 @@ G4double G4MuonicAtomHelper::GetMuonZeff(G4int Z)
+     Z = maxZ;
+   }
+ 
++  if (G4MuonicDataTable::IsEnabled()) {
++    if (const G4double* v = G4MuonicDataOverlay::Zeff(Z)) return *v;
++  }
+   return zeff[Z];
+ }
+ 
+@@ -345,7 +364,7 @@ G4double G4MuonicAtomHelper::GetMuonDecayRate(G4int Z)
+ }
+ 
+ // From G4MuMinusCaptureCascade
+-G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z)
++G4double G4MuonicAtomHelper::GetCompiledKShellEnergy(G4double Z)
+ {
+   // Calculate the Energy of K Mesoatom Level for this Element using
+   // the Energy of Hydrogen Atom taken into account finite size of the
+@@ -371,6 +390,28 @@ G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z)
+   return KEnergy;
+ }
+ 
++G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z)
++{
++  if (G4MuonicDataTable::IsEnabled()) {
++    const G4int iz = static_cast<G4int>(Z);
++    if (static_cast<G4double>(iz) == Z) {
++      if (const G4double* v = G4MuonicDataOverlay::KShell(iz, 0)) return *v * keV;
++    }
++  }
++  return GetCompiledKShellEnergy(Z);
++}
++
++G4double G4MuonicAtomHelper::GetKShellEnergy(G4double Z, G4int A)
++{
++  if (G4MuonicDataTable::IsEnabled()) {
++    const G4int iz = static_cast<G4int>(Z);
++    if (static_cast<G4double>(iz) == Z) {
++      if (const G4double* v = G4MuonicDataOverlay::KShell(iz, A)) return *v * keV;
++    }
++  }
++  return GetCompiledKShellEnergy(Z);
++}
++
+ // From G4MuMinusCaptureCascade
+ G4double G4MuonicAtomHelper::GetLinApprox(G4int N, const G4double* const X, const G4double* const Y,
+                                           G4double Xuser)
+diff --git a/source/particles/management/src/G4MuonicBoundRateProvider.cc b/source/particles/management/src/G4MuonicBoundRateProvider.cc
+new file mode 100644
+index 0000000000..e7c911da70
+--- /dev/null
++++ b/source/particles/management/src/G4MuonicBoundRateProvider.cc
+@@ -0,0 +1,99 @@
++// G4MuonicBoundRateProvider -- see the header for what the pair is, where it is used and its domain.
++#include "G4MuonicBoundRateProvider.hh"
++
++#include "G4Exception.hh"
++#include "G4MuonicAtomHelper.hh"
++#include "G4PhysicalConstants.hh"
++#include "G4SystemOfUnits.hh"
++
++#include <atomic>
++#include <cmath>
++#include <sstream>
++#include <string>
++
++namespace {
++
++// Set on the master thread before any consumer runs; read by every thread afterwards.
++std::atomic<bool> g_enabled{false};
++// Set by the first Consult, on whichever thread forms the first rate pair.
++std::atomic<bool> g_frozen{false};
++
++void Change(bool value) {
++  if (g_frozen.load() && g_enabled.load() != value) {
++    G4Exception("G4MuonicBoundRateProvider::Change", "G4MuonicBoundRates002", FatalException,
++                "G4HadronicParameters::SetEnableMuonicBoundRates was called after a consumer had formed a "
++                "bound-muon rate pair; muonic atoms already constructed keep the lifetimes they were built "
++                "with, so the switch can be set only before the first one");
++    return;
++  }
++  g_enabled.store(value);
++}
++
++bool PositiveFinite(G4double x) { return std::isfinite(x) && x > 0.; }
++
++}  // namespace
++
++void G4MuonicBoundRateProvider::Enable() { Change(true); }
++
++void G4MuonicBoundRateProvider::Disable() { Change(false); }
++
++G4bool G4MuonicBoundRateProvider::IsEnabled() { return g_enabled.load(); }
++
++G4bool G4MuonicBoundRateProvider::IsFrozen() { return g_frozen.load(); }
++
++G4bool G4MuonicBoundRateProvider::Consult() {
++  g_frozen.store(true);
++  return g_enabled.load();
++}
++
++G4bool G4MuonicBoundRateProvider::InDomain(G4int Z, G4int A) { return Z >= 2 && Z <= 13 && A >= Z; }
++
++G4double G4MuonicBoundRateProvider::LowZDecayRate(G4int Z, G4double muonMass, G4double nuclearMass) {
++  const G4double freeMuonDecayRate = 0.45517005 / microsecond;
++  G4double lambda = 1.0;
++  const G4double x = Z * fine_structure_const;
++  lambda -= x * x * (0.5 + 0.06 * muonMass / nuclearMass);
++  lambda *= freeMuonDecayRate;
++  return lambda;
++}
++
++G4MuonicBoundRateProvider::Status G4MuonicBoundRateProvider::Rates(G4int Z, G4int A, G4double muonMass,
++                                                                   G4double nuclearMass,
++                                                                   G4MuonicBoundRates& rates) {
++  if (!Consult()) return Status::kDisabled;
++  if (!InDomain(Z, A)) return Status::kUnsupported;
++  G4double capture = 0.;
++  G4double decay = 0.;
++  const char* why = nullptr;
++  if (!PositiveFinite(nuclearMass)) {
++    why = "the nuclear mass is not finite and positive";
++  } else if (!PositiveFinite(muonMass)) {
++    why = "the muon mass is not finite and positive";
++  } else {
++    capture = G4MuonicAtomHelper::GetMuonCaptureRate(Z, A);
++    decay = LowZDecayRate(Z, muonMass, nuclearMass);
++    if (!std::isfinite(capture) || capture < 0.) {
++      why = "the capture rate is negative or not finite";
++    } else if (!PositiveFinite(decay)) {
++      why = "the decay rate is not finite and positive";
++    }
++    // A finite capture >= 0 and a finite decay > 0 (at most the free rate) give a finite, positive sum.
++  }
++  if (why != nullptr) {
++    std::ostringstream message;
++    message.precision(17);
++    message << "Z=" << Z << " A=" << A << ": " << why << " (nuclear mass " << nuclearMass << " MeV, muon mass "
++            << muonMass << " MeV, capture " << capture << " /ns, decay " << decay << " /ns)";
++    G4Exception("G4MuonicBoundRateProvider::Rates", "G4MuonicBoundRates001", FatalException,
++                message.str().c_str());
++    return Status::kRefused;
++  }
++  rates.capture = capture;
++  rates.decay = decay;
++  return Status::kCommon;
++}
++
++const char* G4MuonicBoundRateProvider::Prescription() {
++  return "capture: G4MuonicAtomHelper::GetMuonCaptureRate(Z, A); decay: the Z < 14 expression of "
++         "G4MuonMinusBoundDecay::GetMuonDecayRate(Z, A, muMass, nuclMass); domain 2 <= Z <= 13, A >= Z";
++}
+diff --git a/source/particles/management/src/G4MuonicDataOverlay.cc b/source/particles/management/src/G4MuonicDataOverlay.cc
+new file mode 100644
+index 0000000000..030ca9679a
+--- /dev/null
++++ b/source/particles/management/src/G4MuonicDataOverlay.cc
+@@ -0,0 +1,482 @@
++// G4MuonicDataOverlay -- implementation. See the header for what this class is for.
++#include "G4MuonicDataOverlay.hh"
++
++#include "G4EnvironmentUtils.hh"
++#include "G4Exception.hh"
++#include "G4MuonicDataSemantics.hh"
++
++#include <algorithm>
++#include <atomic>
++#include <cmath>
++#include <cstdlib>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++namespace {
++
++using Index = std::vector<double>::size_type;
++using Table = G4MuonicDataTable::Table;
++using Origin = G4MuonicDataOverlay::Origin;
++using Resolution = G4MuonicDataOverlay::Resolution;
++
++// The reserved token of a seam with no tables: every request there falls through to the consumer's
++// compiled-in code, and a configuration in which both seams carry it searches no directory.
++const char* const kCompiledProfile = "compiled";
++const char* const kCaptureTable = "nuclear_capture_rate";
++const char* const kZeffTable = "muon_zeff";
++const char* const kKShellTable = "k_shell_energy";
++const char* const kLevelTable = "level_energy";
++const char* const kRepresentative = "most_abundant_and_listed";
++// The number of consecutive muonic-cascade levels a patched build assembles.
++const G4int kCascadeLevels = 14;
++
++// One table a lookup reads, once it has been selected and checked.
++struct Selected {
++  const Table* table = nullptr;
++  // The position of the first value column inside Record::floats: #COLUMNS minus the key columns.
++  Index value = 0;
++  // How many consecutive doubles from that position the lookup hands back.
++  G4int count = 0;
++  // The table's `#VALIDITY` `A:` assignment, which names what its `A = 0` records mean.
++  std::string convention;
++};
++
++// Everything the environment selected, read once.
++struct State {
++  G4MuonicDataOverlay::Configuration config;
++  G4MuonicDataTable dataset;
++  bool loaded = false;
++  Selected capture, zeff, kshell, levels;
++  bool d1Evaluated = false;
++  // Non-empty when the semantic layer refused the dataset and an installed handler suppressed the
++  // abort: every entry point then throws instead of answering from a dataset no consumer may read.
++  std::string refusal;
++};
++
++// The index of `name` among the non-key columns, or false when the table declares no such column.
++bool FindColumn(const Table& table, const std::string& name, Index& index) {
++  Index position = 0;
++  for (const std::string& column : table.columns) {
++    if (column == name) {
++      index = position;
++      return true;
++    }
++    if (column != "Z" && column != "A") ++position;
++  }
++  return false;
++}
++
++// The space- and tab-separated tokens of a directive value.
++std::vector<std::string> Tokens(const std::string& text) {
++  std::vector<std::string> out;
++  std::string current;
++  for (char c : text) {
++    if (c == ' ' || c == '\t') {
++      if (!current.empty()) {
++        out.push_back(current);
++        current.clear();
++      }
++    } else {
++      current += c;
++    }
++  }
++  if (!current.empty()) out.push_back(current);
++  return out;
++}
++
++// The value a `name<delimiter>value` directive assigns to `name`, or "" when it assigns none.
++std::string Assigned(const Table& table, const char* keyword, const std::string& name, char delimiter) {
++  const std::string* value = table.Directive(keyword);
++  if (value == nullptr) return "";
++  const std::string prefix = name + delimiter;
++  for (const std::string& token : Tokens(*value)) {
++    if (token.size() > prefix.size() && token.compare(0, prefix.size(), prefix) == 0) {
++      return token.substr(prefix.size());
++    }
++  }
++  return "";
++}
++
++// True for a level column name: `e` followed by digits only.
++bool IsLevelColumn(const std::string& column) {
++  return column.size() > 1 && column[0] == 'e' &&
++         std::all_of(column.begin() + 1, column.end(), [](char c) { return c >= '0' && c <= '9'; });
++}
++
++void Fatal(const char* code, const std::string& text) {
++  G4Exception("G4MuonicDataOverlay", code, FatalException, text.c_str());
++}
++
++// The unit each value column a lookup reads must carry, by table.
++struct UnitRule {
++  const char* table;
++  const char* column;
++  const char* unit;
++};
++const UnitRule kUnitRules[] = {
++    {kCaptureTable, "value", "1e6/s"},
++    {kZeffTable, "value", "dimensionless"},
++    {kKShellTable, "value", "keV"},
++};
++const char* const kLevelUnit = "keV";
++
++// False, after a fatal exception naming the file, table, column and unit, when `column` of `table`
++// is absent or its #UNITS assignment is not `unit`.
++bool CheckUnit(const std::string& dir, const Table& table, const std::string& column, const std::string& unit) {
++  Index index = 0;
++  if (!FindColumn(table, column, index)) {
++    Fatal("G4MuonicData003", "dataset at " + dir + ": file " + table.file + ", #TABLE " + table.name +
++                                 " declares no column '" + column + "' (unit " + unit + ") in #COLUMNS");
++    return false;
++  }
++  const std::string declared = Assigned(table, "UNITS", column, '=');
++  if (declared != unit) {
++    Fatal("G4MuonicData003", "dataset at " + dir + ": file " + table.file + ", #TABLE " + table.name +
++                                 ", column '" + column + "' has unit '" + declared + "' in #UNITS; the lookup reads it as '" +
++                                 unit + "'");
++    return false;
++  }
++  return true;
++}
++
++// The value of an environment variable, or "" when it is unset or empty -- an empty variable is
++// unset, and nothing is trimmed or corrected.
++std::string Variable(const char* name) {
++  const char* value = std::getenv(name);
++  return value == nullptr ? std::string() : std::string(value);
++}
++
++// How a seam's profile was named, which decides what the dataset must carry for it.
++enum class Source { PerSeam, Legacy, Default };
++
++struct Choice {
++  std::string profile;
++  Source source = Source::Default;
++};
++
++Choice Choose(const char* variable, const std::string& legacy, const char* fallback) {
++  Choice choice;
++  const std::string named = Variable(variable);
++  if (!named.empty()) {
++    choice.profile = named;
++    choice.source = Source::PerSeam;
++  } else if (!legacy.empty()) {
++    choice.profile = legacy;
++    choice.source = Source::Legacy;
++  } else {
++    choice.profile = fallback;
++    choice.source = Source::Default;
++  }
++  return choice;
++}
++
++// Select one table of a profile, check the unit of every column a lookup reads, and record where
++// its values sit. False after a fatal exception.
++bool Select(const State& state, const std::string& dir, const std::string& profile, const char* name,
++            Selected& selected) {
++  const Table* table = state.dataset.Find(profile, name);
++  if (table == nullptr) return true;  // the caller decides whether that is admissible
++  Index index = 0;
++  const bool level = std::string(name) == kLevelTable;
++  if (level) {
++    for (const std::string& column : table->columns) {
++      if (IsLevelColumn(column) && !CheckUnit(dir, *table, column, kLevelUnit)) return false;
++    }
++    if (!CheckUnit(dir, *table, "e2", kLevelUnit)) return false;
++    FindColumn(*table, "e2", index);
++    G4int count = 0;
++    for (std::vector<std::string>::const_iterator it = std::find(table->columns.begin(), table->columns.end(), "e2");
++         it != table->columns.end(); ++it, ++count) {
++      if (*it != "e" + std::to_string(count + 2)) break;
++    }
++    selected.count = count;
++  } else {
++    if (!FindColumn(*table, "value", index)) {
++      Fatal("G4MuonicData003", "dataset at " + dir + " has no 'value' column in #TABLE " + name);
++      return false;
++    }
++    for (const UnitRule& rule : kUnitRules) {
++      if (std::string(rule.table) == name && !CheckUnit(dir, *table, rule.column, rule.unit)) return false;
++    }
++    selected.count = 1;
++  }
++  selected.table = table;
++  selected.value = index;
++  selected.convention = Assigned(*table, "VALIDITY", "A", ':');
++  return true;
++}
++
++// Read the environment, discover and read the dataset, apply the semantic layer, and select the
++// tables of each seam. Any refusal raises a FatalException; should an installed handler suppress
++// the abort, the state is left with no tables, and a semantic refusal is recorded so that every
++// entry point throws rather than answering from a dataset no consumer may read.
++void BuildOrRefuse(State& state) {
++  const std::string legacy = Variable("G4MUONICDATA_PROFILE");
++  const Choice d1 = Choose("G4MUONICDATA_D1_PROFILE", legacy, G4MuonicDataTable::kParityProfile);
++  const Choice d3 = Choose("G4MUONICDATA_D3_PROFILE", legacy, kCompiledProfile);
++  state.config.d1Profile = d1.profile;
++  state.config.d3Profile = d3.profile;
++  const bool d1Compiled = d1.profile == kCompiledProfile;
++  const bool d3Compiled = d3.profile == kCompiledProfile;
++  if (d1Compiled && d3Compiled) return;  // no discovery and no I/O
++
++  const char* found = G4FindDataDir("G4MUONICDATA");
++  if (found == nullptr) {
++    Fatal("G4MuonicData001",
++          "G4MuonicDataTable::Enable() was called but no dataset directory was found: G4MUONICDATA "
++          "is unset and GEANT4_DATA_DIR resolved none. Export G4MUONICDATA=<directory holding "
++          "the *.g4dat files>.");
++    return;
++  }
++  const std::string dir(found);
++  try {
++    state.dataset = G4MuonicDataTable::Load(dir);
++  } catch (const G4MuonicDataTable::Error& e) {
++    Fatal("G4MuonicData002", "dataset at " + dir + " rejected: " + e.what());
++    return;
++  }
++  state.loaded = true;
++  state.config.datasetDirectory = dir;
++  if (!state.dataset.Tables().empty()) {
++    const std::string* version = state.dataset.Tables().front().Directive("VERSION");
++    if (version != nullptr) state.config.datasetVersion = *version;
++  }
++
++  // Every loaded table, including the profiles this run does not read through, before any of them
++  // is selected: a dataset that does not mean what a consumer may read is refused whole.
++  const std::vector<G4MuonicDataSemantics::Issue> issues = G4MuonicDataSemantics::Validate(state.dataset);
++  if (!issues.empty()) {
++    const G4MuonicDataSemantics::Issue& first = issues.front();
++    const std::string text = "dataset at " + dir + " means what no consumer may read: " + first.code + " in " +
++                             (first.file.empty() ? "#PROFILE " + first.profile : "file " + first.file) +
++                             (first.table.empty() ? "" : ", #TABLE " + first.table) + ": " + first.text;
++    Fatal("G4MuonicData005", text);
++    state.refusal = text;
++    return;
++  }
++
++  const std::vector<std::string> profiles = state.dataset.Profiles();
++  std::string present;
++  for (const std::string& name : profiles) present += (present.empty() ? "" : ", ") + name;
++  // A profile named by the one variable that spans both seams must exist; a seam it carries no
++  // table for resolves to the compiled-in code for that seam.
++  if (legacy != kCompiledProfile && (d1.source == Source::Legacy || d3.source == Source::Legacy) &&
++      std::find(profiles.begin(), profiles.end(), legacy) == profiles.end()) {
++    Fatal("G4MuonicData004", "G4MUONICDATA_PROFILE names '" + legacy + "' but no file in the dataset at " +
++                                 dir + " declares that '#PROFILE'; the profiles present are: " + present);
++    return;
++  }
++
++  if (!d1Compiled) {
++    if (!Select(state, dir, d1.profile, kCaptureTable, state.capture)) return;
++    if (!Select(state, dir, d1.profile, kZeffTable, state.zeff)) return;
++    const bool parity = d1.profile == G4MuonicDataTable::kParityProfile;
++    if (d1.source == Source::PerSeam && state.capture.table == nullptr) {
++      Fatal("G4MuonicData004", "G4MUONICDATA_D1_PROFILE names '" + d1.profile + "' but the dataset at " + dir +
++                                   " carries no #TABLE " + kCaptureTable + " under that '#PROFILE'; the profiles present are: " +
++                                   present);
++      return;
++    }
++    if (parity) {
++      for (const Selected* selected : {&state.capture, &state.zeff}) {
++        if (selected->table == nullptr) {
++          const char* name = selected == &state.capture ? kCaptureTable : kZeffTable;
++          Fatal("G4MuonicData003", "dataset at " + dir + " lacks #TABLE " + name + " under #PROFILE " +
++                                       G4MuonicDataTable::kParityProfile);
++          return;
++        }
++      }
++    }
++    state.d1Evaluated = !parity;
++  }
++  if (!d3Compiled) {
++    if (!Select(state, dir, d3.profile, kKShellTable, state.kshell)) return;
++    if (!Select(state, dir, d3.profile, kLevelTable, state.levels)) return;
++    if (d3.source == Source::PerSeam && (state.kshell.table == nullptr || state.levels.table == nullptr)) {
++      Fatal("G4MuonicData004", "G4MUONICDATA_D3_PROFILE names '" + d3.profile + "' but the dataset at " + dir +
++                                   " carries no #TABLE " +
++                                   (state.kshell.table == nullptr ? kKShellTable : kLevelTable) +
++                                   " under that '#PROFILE'; the profiles present are: " + present);
++      return;
++    }
++  }
++}
++
++// A seam that ended with no table of its own -- because its profile carries none, or because the
++// configuration was refused before it could be selected -- is the compiled-in code for that seam.
++void Build(State& state) {
++  BuildOrRefuse(state);
++  if (state.capture.table == nullptr && state.zeff.table == nullptr) {
++    state.config.d1Profile = kCompiledProfile;
++    state.d1Evaluated = false;
++  }
++  if (state.kshell.table == nullptr && state.levels.table == nullptr) state.config.d3Profile = kCompiledProfile;
++}
++
++const State& Frozen() {
++  static const State* const state = [] {
++    State* built = new State;
++    Build(*built);
++    return built;
++  }();
++  return *state;
++}
++
++// The frozen state, or nullptr with the opt-in off. Throws when the semantic layer refused the
++// dataset and the abort was suppressed.
++const State* Access() {
++  if (!G4MuonicDataTable::IsEnabled()) return nullptr;
++  const State& state = Frozen();
++  if (!state.refusal.empty()) throw std::runtime_error(state.refusal);
++  return &state;
++}
++
++Resolution Resolve(const Selected& selected, const std::string& profile, G4int Z, G4int A) {
++  Resolution resolution;
++  resolution.requestedZ = Z;
++  resolution.requestedA = A;
++  resolution.profile = profile;
++  if (selected.table == nullptr) return resolution;
++  // The legacy natural rung is used exactly when the resolved profile for this seam is `parity`.
++  const bool legacy = profile == G4MuonicDataTable::kParityProfile;
++  const Table::Record* record = selected.table->Lookup({Z, A});
++  Origin origin = Origin::Exact;
++  G4int resolvedA = A;
++  if (record == nullptr) {
++    if (!legacy || A == 0) return resolution;
++    record = selected.table->Lookup({Z, 0});
++    if (record == nullptr) return resolution;
++    origin = Origin::LegacyNaturalFallback;
++    resolvedA = 0;
++  } else if (A == 0 && !legacy) {
++    origin = selected.convention == kRepresentative ? Origin::ExplicitRepresentative : Origin::ExplicitNatural;
++  }
++  resolution.values = &record->floats[selected.value];
++  resolution.count = selected.count;
++  resolution.resolvedZ = Z;
++  resolution.resolvedA = resolvedA;
++  resolution.origin = origin;
++  return resolution;
++}
++
++Resolution ResolveSingle(const Selected& selected, const std::string& profile, G4int Z) {
++  Resolution resolution;
++  resolution.requestedZ = Z;
++  resolution.profile = profile;
++  if (selected.table == nullptr) return resolution;
++  const Table::Record* record = selected.table->Lookup({Z});
++  if (record == nullptr) return resolution;
++  resolution.values = &record->floats[selected.value];
++  resolution.count = selected.count;
++  resolution.resolvedZ = Z;
++  resolution.origin = Origin::Exact;
++  return resolution;
++}
++
++Resolution Off(G4int Z, G4int A) {
++  Resolution resolution;
++  resolution.requestedZ = Z;
++  resolution.requestedA = A;
++  resolution.profile = kCompiledProfile;
++  return resolution;
++}
++
++}  // namespace
++
++void G4MuonicDataOverlay::Initialize() {
++  if (!G4MuonicDataTable::IsEnabled()) return;
++  const State& state = Frozen();
++  if (!state.refusal.empty()) throw std::runtime_error(state.refusal);
++}
++
++const G4MuonicDataOverlay::Configuration& G4MuonicDataOverlay::Config() {
++  static const Configuration off = [] {
++    Configuration configuration;
++    configuration.d1Profile = kCompiledProfile;
++    configuration.d3Profile = kCompiledProfile;
++    return configuration;
++  }();
++  if (!G4MuonicDataTable::IsEnabled()) return off;
++  return Frozen().config;
++}
++
++const G4MuonicDataTable* G4MuonicDataOverlay::Table() {
++  const State* state = Access();
++  return state == nullptr || !state->loaded ? nullptr : &state->dataset;
++}
++
++G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolveRate(G4int Z, G4int A) {
++  const State* state = Access();
++  return state == nullptr ? Off(Z, A) : Resolve(state->capture, state->config.d1Profile, Z, A);
++}
++
++G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolveZeff(G4int Z) {
++  const State* state = Access();
++  return state == nullptr ? Off(Z, 0) : ResolveSingle(state->zeff, state->config.d1Profile, Z);
++}
++
++G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolveKShell(G4int Z, G4int A) {
++  const State* state = Access();
++  return state == nullptr ? Off(Z, A) : Resolve(state->kshell, state->config.d3Profile, Z, A);
++}
++
++G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolveLevels(G4int Z, G4int A) {
++  const State* state = Access();
++  return state == nullptr ? Off(Z, A) : Resolve(state->levels, state->config.d3Profile, Z, A);
++}
++
++const G4double* G4MuonicDataOverlay::Rate(G4int Z, G4int A) { return ResolveRate(Z, A).values; }
++
++const G4double* G4MuonicDataOverlay::Zeff(G4int Z) { return ResolveZeff(Z).values; }
++
++const G4double* G4MuonicDataOverlay::KShell(G4int Z, G4int A) { return ResolveKShell(Z, A).values; }
++
++const G4double* G4MuonicDataOverlay::Levels(G4int Z, G4int A, G4int& count) {
++  const Resolution resolution = ResolveLevels(Z, A);
++  count = resolution.count;
++  return resolution.values;
++}
++
++void G4MuonicDataOverlay::CheckComputedCaptureRate(G4int Z, G4int A, G4double rate) {
++  const State* state = Access();
++  if (state == nullptr || !state->d1Evaluated) return;
++  if (!std::isfinite(rate)) {
++    Fatal("G4MuonicData005", "under #PROFILE " + state->config.d1Profile + " the dataset has no nuclear capture rate for (Z, A) = (" +
++                                 std::to_string(Z) + ", " + std::to_string(A) +
++                                 ") and the compiled-in model computed one that is not a finite rate");
++    return;
++  }
++  if (rate <= 0.) {
++    // Reported once per process, from whichever thread meets it first.
++    static std::atomic<bool> reported(false);
++    if (!reported.exchange(true)) {
++      const std::string text = "under #PROFILE " + state->config.d1Profile + " the dataset has no nuclear capture rate for (Z, A) = (" +
++                               std::to_string(Z) + ", " + std::to_string(A) +
++                               ") and the compiled-in model computed one that is not positive; it is used as computed, as under parity, "
++                               "and no later such rate is reported";
++      G4Exception("G4MuonicDataOverlay", "G4MuonicData006", JustWarning, text.c_str());
++    }
++  }
++}
++
++void G4MuonicDataOverlay::CheckCascadeLevels(G4int Z, G4int A, const G4double* levels, G4int count) {
++  const State* state = Access();
++  if (state == nullptr || levels == nullptr) return;
++  const std::string where = " for (Z, A) = (" + std::to_string(Z) + ", " + std::to_string(A) + ")";
++  if (count != kCascadeLevels) {
++    Fatal("G4MuonicData005", "the muonic cascade assembled " + std::to_string(count) + " level(s)" + where +
++                                 ", not " + std::to_string(kCascadeLevels));
++    return;
++  }
++  for (G4int i = 0; i < count; ++i) {
++    if (!std::isfinite(levels[i]) || levels[i] <= 0.) {
++      Fatal("G4MuonicData005", "the muonic cascade assembled a level that is not a positive finite energy" + where);
++      return;
++    }
++    if (i > 0 && !(levels[i - 1] > levels[i])) {
++      Fatal("G4MuonicData005", "the muonic cascade assembled levels that do not fall" + where);
++      return;
++    }
++  }
++}
+diff --git a/source/particles/management/src/G4MuonicDataSemantics.cc b/source/particles/management/src/G4MuonicDataSemantics.cc
+new file mode 100644
+index 0000000000..2398be99b4
+--- /dev/null
++++ b/source/particles/management/src/G4MuonicDataSemantics.cc
+@@ -0,0 +1,431 @@
++// G4MuonicDataSemantics -- implementation. See the header for what each code stands for.
++//
++// No value is ever rendered into a message: the reader parses numbers without consulting the
++// process locale, and `std::to_string(double)` would not. A message names keys, columns and
++// directives, which are integers and text.
++#include "G4MuonicDataSemantics.hh"
++
++#include <algorithm>
++#include <cmath>
++#include <cstddef>
++#include <iterator>
++#include <map>
++#include <set>
++#include <string>
++#include <vector>
++
++namespace {
++
++using Table = G4MuonicDataTable::Table;
++using Issue = G4MuonicDataSemantics::Issue;
++
++const char* const kDatasetName = "G4MuonicData";
++const char* const kCaptureTable = "nuclear_capture_rate";
++const char* const kZeffTable = "muon_zeff";
++const char* const kKShellTable = "k_shell_energy";
++const char* const kLevelTable = "level_energy";
++const char* const kD1Seam = "d1_nuclear_capture";
++const char* const kD3Seam = "d3_transitions";
++const char* const kRateUnit = "1e6/s";
++const char* const kZeffUnit = "dimensionless";
++const char* const kEnergyUnit = "keV";
++// The `#VALIDITY` `A:` conventions this layer knows (FORMAT_SPEC.md section 6).
++const char* const kListed = "listed";
++const char* const kNatural = "natural_and_listed";
++const char* const kRepresentative = "most_abundant_and_listed";
++// The key domain: every record is about a nuclide, or about an element under the `A = 0` rung.
++const long kMinZ = 1;
++const long kMaxZ = 120;
++const long kMaxA = 300;
++const long kMaxZeffZ = 100;
++// `level_energy` declares `e2 .. eN` and `u2 .. uN` with N in this inclusive range.
++const std::size_t kMinLevelIndex = 2;
++const std::size_t kMaxLevelIndex = 14;
++
++void Add(std::vector<Issue>& issues, const char* code, const Table& table, const std::string& text) {
++  Issue issue;
++  issue.code = code;
++  issue.file = table.file;
++  issue.profile = table.profile;
++  issue.table = table.name;
++  issue.text = text;
++  issues.push_back(issue);
++}
++
++void AddProfile(std::vector<Issue>& issues, const char* code, const std::string& profile, const std::string& text) {
++  Issue issue;
++  issue.code = code;
++  issue.profile = profile;
++  issue.text = text;
++  issues.push_back(issue);
++}
++
++std::string Value(const Table& table, const char* keyword) {
++  const std::string* value = table.Directive(keyword);
++  return value == nullptr ? std::string() : *value;
++}
++
++std::string Quote(const std::string& text) { return "'" + text + "'"; }
++
++std::string Join(const std::vector<std::string>& parts) {
++  std::string out;
++  for (const std::string& part : parts) out += (out.empty() ? "" : " ") + part;
++  return out;
++}
++
++std::string Key(const std::vector<long>& keys) {
++  std::string out;
++  for (long part : keys) out += (out.empty() ? "" : "-") + std::to_string(part);
++  return out;
++}
++
++// The space- and tab-separated tokens of a directive value.
++std::vector<std::string> Tokens(const std::string& text) {
++  std::vector<std::string> out;
++  std::string current;
++  for (char c : text) {
++    if (c == ' ' || c == '\t') {
++      if (!current.empty()) {
++        out.push_back(current);
++        current.clear();
++      }
++    } else {
++      current += c;
++    }
++  }
++  if (!current.empty()) out.push_back(current);
++  return out;
++}
++
++// The `name<delimiter>value` assignments of a directive value. Returns "" and fills `out`, or the
++// reason the value is not a set of assignments.
++std::string Assignments(const std::string& text, char delimiter, std::map<std::string, std::string>& out) {
++  out.clear();
++  for (const std::string& token : Tokens(text)) {
++    const std::string::size_type at = token.find(delimiter);
++    if (at == std::string::npos || at == 0 || at + 1 == token.size()) {
++      return "assignment " + Quote(token) + " is not NAME" + std::string(1, delimiter) + "VALUE";
++    }
++    const std::string name = token.substr(0, at);
++    if (out.find(name) != out.end()) return "assigns " + Quote(name) + " twice";
++    out[name] = token.substr(at + 1);
++  }
++  return "";
++}
++
++bool Integer(const std::string& text, long& out) {
++  if (text.empty() || text.size() > 9) return false;
++  long value = 0;
++  for (char c : text) {
++    if (c < '0' || c > '9') return false;
++    value = value * 10 + (c - '0');
++  }
++  out = value;
++  return true;
++}
++
++// `MIN-MAX`, inclusive, non-negative, MIN <= MAX.
++bool Range(const std::string& text, long& low, long& high) {
++  const std::string::size_type at = text.find('-');
++  if (at == std::string::npos) return false;
++  return Integer(text.substr(0, at), low) && Integer(text.substr(at + 1), high) && low <= high;
++}
++
++// The `#COLUMNS` sequence `level_energy` declares for N, and the N a given sequence implies.
++std::vector<std::string> LevelColumns(std::size_t n) {
++  std::vector<std::string> columns;
++  columns.push_back("Z");
++  columns.push_back("A");
++  for (std::size_t i = kMinLevelIndex; i <= n; ++i) columns.push_back("e" + std::to_string(i));
++  for (std::size_t i = kMinLevelIndex; i <= n; ++i) columns.push_back("u" + std::to_string(i));
++  return columns;
++}
++
++bool LevelShape(const Table& table, std::size_t& n) {
++  if (table.columns.size() < 4 || table.columns.size() % 2 != 0) return false;
++  n = (table.columns.size() - 2) / 2 + 1;
++  if (n < kMinLevelIndex || n > kMaxLevelIndex) return false;
++  return table.columns == LevelColumns(n);
++}
++
++// The `#COLUMNS` sequence of the fixed-shape tables, by `#TABLE` name; empty for `level_energy`,
++// whose sequence depends on the N it declares, and for a name no consumer reads.
++std::vector<std::string> FixedColumns(const std::string& name) {
++  std::vector<std::string> columns;
++  if (name == kCaptureTable || name == kKShellTable) {
++    columns.push_back("Z");
++    columns.push_back("A");
++    columns.push_back("value");
++    columns.push_back("unc");
++  } else if (name == kZeffTable) {
++    columns.push_back("Z");
++    columns.push_back("value");
++  }
++  return columns;
++}
++
++const char* SeamOf(const std::string& name) {
++  if (name == kCaptureTable || name == kZeffTable) return kD1Seam;
++  if (name == kKShellTable || name == kLevelTable) return kD3Seam;
++  return "";
++}
++
++const char* UnitOf(const std::string& name) {
++  if (name == kCaptureTable) return kRateUnit;
++  if (name == kZeffTable) return kZeffUnit;
++  return kEnergyUnit;
++}
++
++// S001, S002, S003, S004 and S005 over one table. `version` is the `#VERSION` the first loaded
++// file declares. Every rule reports its first offending row only, so one broken column does not
++// bury the rest.
++void CheckTable(const Table& table, const std::string& version, std::vector<Issue>& issues) {
++  // ---- S001: this dataset, one version.
++  const std::string dataset_name = Value(table, "DATASET");
++  if (dataset_name != kDatasetName) {
++    Add(issues, "S001", table, "#DATASET is " + Quote(dataset_name) + ", not " + Quote(kDatasetName));
++  }
++  const std::string declared = Value(table, "VERSION");
++  if (declared.empty()) {
++    Add(issues, "S001", table, "#VERSION is empty");
++  } else if (declared != version) {
++    Add(issues, "S001", table,
++        "#VERSION is " + Quote(declared) + "; the first loaded file declares " + Quote(version));
++  }
++
++  // ---- S002: a table name a consumer reads, in its seam, with the columns that name implies.
++  const char* const seam = SeamOf(table.name);
++  if (*seam == '\0') {
++    Add(issues, "S002", table, "'#TABLE " + table.name + "' is not a table this dataset defines");
++    return;
++  }
++  std::vector<std::string> expected = FixedColumns(table.name);
++  if (table.name == kLevelTable) {
++    std::size_t n = 0;
++    if (!LevelShape(table, n)) {
++      Add(issues, "S002", table,
++          "#COLUMNS " + Quote(Join(table.columns)) + "; " + kLevelTable + " declares Z A e2 .. eN u2 .. uN with N from " +
++              std::to_string(kMinLevelIndex) + " to " + std::to_string(kMaxLevelIndex));
++      return;
++    }
++    expected = LevelColumns(n);
++  }
++  const std::string declared_seam = Value(table, "SEAM");
++  if (declared_seam != seam) {
++    Add(issues, "S002", table, "#SEAM is " + Quote(declared_seam) + "; " + table.name + " sits in seam " + Quote(seam));
++  }
++  if (table.columns != expected) {
++    Add(issues, "S002", table, "#COLUMNS " + Quote(Join(table.columns)) + "; " + table.name + " declares " + Quote(Join(expected)));
++    return;
++  }
++  if (table.records.empty()) {
++    Add(issues, "S002", table, "declares no record");
++  }
++
++  const bool two_key = table.name != kZeffTable;
++  // The non-key columns, in `#COLUMNS` order, are the record's floats.
++  std::vector<std::string> values(expected.begin() + (two_key ? 2 : 1), expected.end());
++  const char* const unit = UnitOf(table.name);
++
++  // ---- S004: the unit of every value column, as the lookups read it.
++  std::map<std::string, std::string> units;
++  const std::string units_problem = Assignments(Value(table, "UNITS"), '=', units);
++  if (!units_problem.empty()) {
++    Add(issues, "S004", table, "#UNITS " + units_problem);
++  } else {
++    for (const std::string& column : values) {
++      const std::map<std::string, std::string>::const_iterator at = units.find(column);
++      const std::string assigned = at == units.end() ? std::string() : at->second;
++      if (assigned != unit) {
++        Add(issues, "S004", table,
++            "#UNITS assigns " + Quote(column) + " the unit " + Quote(assigned) + "; the lookup reads it as " + Quote(unit));
++        break;
++      }
++    }
++  }
++
++  // ---- S003: the key domain, and a `#VALIDITY` convention this layer knows.
++  std::map<std::string, std::string> validity;
++  const std::string validity_problem = Assignments(Value(table, "VALIDITY"), ':', validity);
++  std::string convention;
++  bool ranged = false;
++  long low = 0, high = 0;
++  if (!validity_problem.empty()) {
++    Add(issues, "S003", table, "#VALIDITY " + validity_problem);
++  } else {
++    for (std::map<std::string, std::string>::const_iterator it = validity.begin(); it != validity.end(); ++it) {
++      if (it->first != "Z" && it->first != "A") {
++        Add(issues, "S003", table, "#VALIDITY assigns " + Quote(it->first) + ", which this layer has no convention for");
++      }
++    }
++    const std::map<std::string, std::string>::const_iterator z = validity.find("Z");
++    if (z == validity.end()) {
++      Add(issues, "S003", table, "#VALIDITY assigns no 'Z'");
++    } else if (z->second != kListed) {
++      if (!Range(z->second, low, high)) {
++        Add(issues, "S003", table,
++            "#VALIDITY assigns 'Z:" + z->second + "', which is neither 'listed' nor an inclusive MIN-MAX");
++      } else {
++        ranged = true;
++      }
++    }
++    const std::map<std::string, std::string>::const_iterator a = validity.find("A");
++    if (!two_key) {
++      if (a != validity.end()) {
++        Add(issues, "S003", table, std::string(kZeffTable) + " has no mass-number column, and #VALIDITY assigns 'A:" + a->second + "'");
++      }
++    } else if (a == validity.end()) {
++      Add(issues, "S003", table, "#VALIDITY assigns no 'A'");
++    } else if (a->second != kListed && a->second != kNatural && a->second != kRepresentative) {
++      Add(issues, "S003", table,
++          "#VALIDITY assigns 'A:" + a->second + "', which is none of 'listed', '" + kNatural + "' and '" + kRepresentative + "'");
++    } else {
++      convention = a->second;
++    }
++  }
++  bool reported_z = false, reported_a = false, reported_range = false, reported_natural = false;
++  for (const Table::Record& record : table.records) {
++    if (record.keys.size() != (two_key ? 2u : 1u)) continue;
++    const long z = record.keys[0];
++    if (!reported_z && (two_key ? (z < kMinZ || z > kMaxZ) : (z < 0 || z > kMaxZeffZ))) {
++      Add(issues, "S003", table, "row " + Key(record.keys) + " has a Z outside the key domain");
++      reported_z = true;
++    }
++    if (!reported_range && ranged && (z < low || z > high)) {
++      Add(issues, "S003", table, "row " + Key(record.keys) + " has a Z outside '#VALIDITY Z:" + std::to_string(low) + "-" + std::to_string(high) + "'");
++      reported_range = true;
++    }
++    if (!two_key) continue;
++    const long a = record.keys[1];
++    if (!reported_a && a != 0 && (a < z || a > kMaxA)) {
++      Add(issues, "S003", table, "row " + Key(record.keys) + " has a mass number below its Z or above " + std::to_string(kMaxA));
++      reported_a = true;
++    }
++    if (!reported_natural && a == 0 && convention == kListed) {
++      Add(issues, "S003", table, "row " + Key(record.keys) + " carries A = 0 under 'A:" + kListed + "'");
++      reported_natural = true;
++    }
++  }
++
++  // ---- S005: the value domain of each quantity.
++  const std::size_t level_values = table.name == kLevelTable ? values.size() / 2 : 0;
++  bool reported_finite = false, reported_positive = false, reported_uncertainty = false, reported_zeff = false;
++  for (const Table::Record& record : table.records) {
++    if (record.floats.size() != values.size()) continue;
++    for (std::size_t i = 0; i < record.floats.size(); ++i) {
++      const double v = record.floats[i];
++      if (!reported_finite && !std::isfinite(v)) {
++        Add(issues, "S005", table, "row " + Key(record.keys) + " column " + Quote(values[i]) + " is not finite");
++        reported_finite = true;
++      }
++      const bool uncertainty = table.name == kLevelTable ? i >= level_values : values[i] == "unc";
++      if (uncertainty) {
++        if (!reported_uncertainty && !(v >= 0.)) {
++          Add(issues, "S005", table, "row " + Key(record.keys) + " column " + Quote(values[i]) + " is a negative uncertainty");
++          reported_uncertainty = true;
++        }
++        continue;
++      }
++      if (table.name == kZeffTable) {
++        const long z = record.keys.empty() ? 0 : record.keys[0];
++        const bool sentinel = z == 0 && table.profile == G4MuonicDataTable::kParityProfile;
++        const bool ok = sentinel ? v == 0. : (v > 0. && v <= static_cast<double>(z));
++        if (!reported_zeff && !ok) {
++          Add(issues, "S005", table,
++              sentinel ? "row " + Key(record.keys) + " is the Z = 0 sentinel and is not zero"
++                       : "row " + Key(record.keys) + " has an effective charge outside (0, Z]");
++          reported_zeff = true;
++        }
++        continue;
++      }
++      if (!reported_positive && !(v > 0.)) {
++        Add(issues, "S005", table, "row " + Key(record.keys) + " column " + Quote(values[i]) + " is not positive");
++        reported_positive = true;
++      }
++    }
++  }
++}
++
++// S006 over one profile's two energy tables.
++void CheckPair(const std::string& profile, const Table& kshell, const Table& levels, std::vector<Issue>& issues) {
++  std::size_t n = 0;
++  if (kshell.columns != FixedColumns(kKShellTable) || !LevelShape(levels, n)) return;  // S002 said so already
++  std::map<std::vector<long>, const Table::Record*> by_key;
++  std::set<std::vector<long>> kshell_keys, level_keys;
++  for (const Table::Record& record : levels.records) {
++    level_keys.insert(record.keys);
++    by_key[record.keys] = &record;
++  }
++  for (const Table::Record& record : kshell.records) kshell_keys.insert(record.keys);
++  if (kshell_keys != level_keys) {
++    std::vector<std::vector<long>> differing;
++    std::set_symmetric_difference(kshell_keys.begin(), kshell_keys.end(), level_keys.begin(), level_keys.end(),
++                                  std::back_inserter(differing));
++    AddProfile(issues, "S006", profile,
++               std::string(kKShellTable) + " and " + kLevelTable + " differ first at key " + Key(differing.front()) +
++                   ", carried by " + (kshell_keys.count(differing.front()) != 0 ? kKShellTable : kLevelTable) + " only");
++    return;
++  }
++  std::map<std::string, std::string> kshell_validity, level_validity;
++  if (Assignments(Value(kshell, "VALIDITY"), ':', kshell_validity).empty() &&
++      Assignments(Value(levels, "VALIDITY"), ':', level_validity).empty()) {
++    const std::map<std::string, std::string>::const_iterator k = kshell_validity.find("A");
++    const std::map<std::string, std::string>::const_iterator l = level_validity.find("A");
++    const std::string left = k == kshell_validity.end() ? std::string() : k->second;
++    const std::string right = l == level_validity.end() ? std::string() : l->second;
++    if (left != right) {
++      AddProfile(issues, "S006", profile,
++                 std::string(kKShellTable) + " assigns 'A:" + left + "' and " + kLevelTable + " assigns 'A:" + right + "'");
++    }
++  }
++  for (const Table::Record& record : kshell.records) {
++    const std::map<std::vector<long>, const Table::Record*>::const_iterator at = by_key.find(record.keys);
++    if (at == by_key.end() || record.floats.empty() || at->second->floats.size() < n - 1) continue;
++    double previous = record.floats[0];
++    const std::string* below = nullptr;
++    const std::string binding = "value";
++    for (std::size_t i = 0; i + 1 < n; ++i) {
++      const double e = at->second->floats[i];
++      if (!(previous > e)) {
++        below = &levels.columns[2 + i];
++        break;
++      }
++      previous = e;
++    }
++    if (below == nullptr && !(previous > 0.)) below = &levels.columns[n];
++    if (below != nullptr) {
++      AddProfile(issues, "S006", profile,
++                 "at key " + Key(record.keys) + " the energies do not fall from " + Quote(binding) + " through " + Quote(*below));
++      return;
++    }
++  }
++}
++
++}  // namespace
++
++std::vector<G4MuonicDataSemantics::Issue> G4MuonicDataSemantics::Validate(const G4MuonicDataTable& dataset) {
++  std::vector<Issue> issues;
++  std::string version;
++  for (const Table& table : dataset.Tables()) {
++    const std::string declared = Value(table, "VERSION");
++    if (!declared.empty()) {
++      version = declared;
++      break;
++    }
++  }
++  for (const Table& table : dataset.Tables()) CheckTable(table, version, issues);
++  const std::vector<std::string> profiles = dataset.Profiles();
++  for (const std::string& profile : profiles) {
++    const Table* kshell = dataset.Find(profile, kKShellTable);
++    const Table* levels = dataset.Find(profile, kLevelTable);
++    if (kshell == nullptr && levels == nullptr) continue;
++    if (kshell == nullptr || levels == nullptr) {
++      AddProfile(issues, "S006", profile,
++                 std::string("carries '#TABLE ") + (kshell != nullptr ? kKShellTable : kLevelTable) + "' but not '#TABLE " +
++                     (kshell != nullptr ? kLevelTable : kKShellTable) + "'");
++      continue;
++    }
++    CheckPair(profile, *kshell, *levels, issues);
++  }
++  return issues;
++}
+diff --git a/source/particles/management/src/G4MuonicDataTable.cc b/source/particles/management/src/G4MuonicDataTable.cc
+new file mode 100644
+index 0000000000..3ed962e43b
+--- /dev/null
++++ b/source/particles/management/src/G4MuonicDataTable.cc
+@@ -0,0 +1,651 @@
++// G4MuonicDataTable -- see the header. Every rule below is stated in FORMAT_SPEC.md and mirrored
++// from `openmucf/g4/spec.py`, whose verdicts the conformance corpus records; where the two can be
++// read differently, this file follows spec.py.
++
++#include "G4MuonicDataTable.hh"
++
++#include <algorithm>
++#include <cfloat>
++#include <charconv>
++#include <cmath>
++#include <cstdio>
++#include <cstdlib>
++#include <initializer_list>
++#include <filesystem>
++#include <fstream>
++#include <iterator>
++#include <locale>
++#include <map>
++#include <sstream>
++#include <string>
++#include <vector>
++
++// The two compiled number-parsing paths (FORMAT_SPEC.md section 6). `std::from_chars` for floating
++// point is a library feature, so its macro -- not the language standard -- decides; a build can
++// force the stream path to exercise it where `from_chars` exists.
++#if defined(__cpp_lib_to_chars) && !defined(G4MUONICDATA_FORCE_STREAM_PARSER)
++#define G4MUONICDATA_USE_FROM_CHARS 1
++#else
++#define G4MUONICDATA_USE_FROM_CHARS 0
++#endif
++
++namespace {
++
++// FORMAT_SPEC.md 2.2: the one legal directive order. `#END` is not a directive and is not here.
++const char* const kDirectiveOrder[] = {
++    "GRAMMAR", "DATASET", "VERSION", "PROFILE", "SEAM", "TABLE", "GENERATOR",
++    "SOURCEDIGEST", "SOURCESHA", "UNITS", "COLUMNS", "VALIDITY", "FALLBACK",
++};
++const int kDirectiveCount = static_cast<int>(sizeof(kDirectiveOrder) / sizeof(kDirectiveOrder[0]));
++const char* const kAllowedSeams[] = {
++    "d1_nuclear_capture", "d2_atomic_capture", "d3_transitions", "d4_mucf_cycle",
++};
++const char* const kEndMarker = "#END";
++const char* const kSupportedGrammarMajor = "1";
++const long kIntegerMin = 0;
++const long kIntegerMax = 9999;
++
++using Error = G4MuonicDataTable::Error;
++using Table = G4MuonicDataTable::Table;
++
++[[noreturn]] void Fail(const char* code, int line, const std::string& text) {
++  throw Error{code, line, text};
++}
++
++std::string Quote(const std::string& s) { return "'" + s + "'"; }
++
++int DirectiveIndex(const std::string& keyword) {
++  for (int i = 0; i < kDirectiveCount; ++i) {
++    if (keyword == kDirectiveOrder[i]) return i;
++  }
++  return -1;
++}
++
++// Required always: every directive except SOURCESHA (required iff parity, E013) and FALLBACK.
++bool IsAlwaysRequired(const std::string& keyword) {
++  return keyword != "SOURCESHA" && keyword != "FALLBACK";
++}
++
++bool IsDigit(char c) { return c >= '0' && c <= '9'; }
++bool IsUpper(char c) { return c >= 'A' && c <= 'Z'; }
++bool IsLower(char c) { return c >= 'a' && c <= 'z'; }
++bool IsLowerHex(char c) { return IsDigit(c) || (c >= 'a' && c <= 'f'); }
++bool IsSpaceOrTab(char c) { return c == ' ' || c == '\t'; }
++
++std::string StripSpacesTabs(const std::string& s) {
++  std::size_t b = 0, e = s.size();
++  while (b < e && IsSpaceOrTab(s[b])) ++b;
++  while (e > b && IsSpaceOrTab(s[e - 1])) --e;
++  return s.substr(b, e - b);
++}
++
++// FORMAT_SPEC.md 2.3 rule 1: strip both ends, then any run of spaces and tabs is one separator.
++std::vector<std::string> SplitFields(const std::string& text) {
++  std::vector<std::string> fields;
++  const std::string stripped = StripSpacesTabs(text);
++  std::size_t i = 0;
++  while (i < stripped.size()) {
++    std::size_t j = i;
++    while (j < stripped.size() && !IsSpaceOrTab(stripped[j])) ++j;
++    fields.push_back(stripped.substr(i, j - i));
++    while (j < stripped.size() && IsSpaceOrTab(stripped[j])) ++j;
++    i = j;
++  }
++  return fields;
++}
++
++// `^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$` -- MAJOR.MINOR without leading zeros (2.7). Returns the
++// major as text, or "" when the value does not match.
++std::string GrammarMajor(const std::string& value) {
++  const std::size_t dot = value.find('.');
++  if (dot == std::string::npos) return "";
++  const std::string major = value.substr(0, dot), minor = value.substr(dot + 1);
++  auto run = [](const std::string& part) {
++    if (part.empty()) return false;
++    if (part.size() > 1 && part[0] == '0') return false;
++    return std::all_of(part.begin(), part.end(), IsDigit);
++  };
++  return (run(major) && run(minor)) ? major : "";
++}
++
++// `^[a-z][a-z0-9_-]{2,31}$` (2.5).
++bool IsProfileToken(const std::string& s) {
++  if (s.size() < 3 || s.size() > 32 || !IsLower(s[0])) return false;
++  return std::all_of(s.begin() + 1, s.end(), [](char c) {
++    return IsLower(c) || IsDigit(c) || c == '_' || c == '-';
++  });
++}
++
++// `^[0-9a-f]{64}$` (2.2).
++bool IsDigestShape(const std::string& s) {
++  return s.size() == 64 && std::all_of(s.begin(), s.end(), IsLowerHex);
++}
++
++// `^[A-Za-z_][A-Za-z0-9_]*$` (2.2).
++bool IsColumnName(const std::string& s) {
++  if (s.empty() || !(IsUpper(s[0]) || IsLower(s[0]) || s[0] == '_')) return false;
++  return std::all_of(s.begin(), s.end(), [](char c) {
++    return IsUpper(c) || IsLower(c) || IsDigit(c) || c == '_';
++  });
++}
++
++// `^[+-]?([0-9]+\.?[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?$` -- the strict C-locale float (2.3 rule 4).
++bool MatchesFloatPattern(const std::string& s) {
++  std::size_t i = 0;
++  const std::size_t n = s.size();
++  if (i < n && (s[i] == '+' || s[i] == '-')) ++i;
++  std::size_t digits_before = 0;
++  while (i < n && IsDigit(s[i])) { ++i; ++digits_before; }
++  if (digits_before > 0) {
++    if (i < n && s[i] == '.') ++i;
++    while (i < n && IsDigit(s[i])) ++i;
++  } else {
++    if (i >= n || s[i] != '.') return false;
++    ++i;
++    std::size_t digits_after = 0;
++    while (i < n && IsDigit(s[i])) { ++i; ++digits_after; }
++    if (digits_after == 0) return false;
++  }
++  if (i < n && (s[i] == 'e' || s[i] == 'E')) {
++    ++i;
++    if (i < n && (s[i] == '+' || s[i] == '-')) ++i;
++    std::size_t exponent_digits = 0;
++    while (i < n && IsDigit(s[i])) { ++i; ++exponent_digits; }
++    if (exponent_digits == 0) return false;
++  }
++  return i == n;
++}
++
++std::string Lowercase(std::string s) {
++  for (char& c : s) {
++    if (IsUpper(c)) c = static_cast<char>(c - 'A' + 'a');
++  }
++  return s;
++}
++
++// 2.3 rule 5: `inf`, `infinity`, `nan`, any case, with one optional sign.
++bool IsNonFiniteToken(const std::string& field) {
++  const std::string bare = (!field.empty() && (field[0] == '+' || field[0] == '-')) ? field.substr(1) : field;
++  const std::string lower = Lowercase(bare);
++  return lower == "inf" || lower == "infinity" || lower == "nan";
++}
++
++// A digit 1-9 before the exponent makes the field lexically nonzero (2.3 rule 5).
++bool IsLexicallyNonzero(const std::string& field) {
++  for (char c : field) {
++    if (c == 'e' || c == 'E') break;
++    if (c >= '1' && c <= '9') return true;
++  }
++  return false;
++}
++
++// `^#([A-Z][A-Z0-9]*)(?:[ \t]+(.*))?$` -- true with keyword and stripped value on a match.
++bool MatchDirective(const std::string& line, std::string& keyword, std::string& value) {
++  if (line.empty() || line[0] != '#') return false;
++  std::size_t i = 1;
++  if (i >= line.size() || !IsUpper(line[i])) return false;
++  while (i < line.size() && (IsUpper(line[i]) || IsDigit(line[i]))) ++i;
++  keyword = line.substr(1, i - 1);
++  if (i == line.size()) {
++    value.clear();
++    return true;
++  }
++  if (!IsSpaceOrTab(line[i])) return false;
++  while (i < line.size() && IsSpaceOrTab(line[i])) ++i;
++  value = StripSpacesTabs(line.substr(i));
++  return true;
++}
++
++// `^[0-9]+$` within 0-9999 (2.3 rule 3), E007 otherwise; the width question is settled by the bound.
++long ParseIntegerField(const std::string& name, const std::string& field, int line) {
++  if (field.empty() || !std::all_of(field.begin(), field.end(), IsDigit)) {
++    Fail("E007", line, "unreadable unsigned integer in column " + Quote(name) + ": " + Quote(field));
++  }
++  long value = 0;
++  for (char c : field) {
++    value = value * 10 + (c - '0');
++    if (value > kIntegerMax) break;  // any longer run of digits is out of range as well
++  }
++  if (value < kIntegerMin || value > kIntegerMax) {
++    Fail("E007", line,
++         "integer out of range in column " + Quote(name) + ": " + Quote(field) + " is outside " +
++             std::to_string(kIntegerMin) + "-" + std::to_string(kIntegerMax));
++  }
++  return value;
++}
++
++std::string PrintedKey(const std::vector<std::string>& key_names, const std::vector<long>& key) {
++  std::string out;
++  for (std::size_t i = 0; i < key_names.size(); ++i) {
++    if (i) out += ", ";
++    out += key_names[i] + "=" + std::to_string(key[i]);
++  }
++  return out;
++}
++
++std::string JoinedKeyNames(const std::vector<std::string>& key_names) {
++  std::string out;
++  for (std::size_t i = 0; i < key_names.size(); ++i) {
++    if (i) out += "/";
++    out += key_names[i];
++  }
++  return out;
++}
++
++bool g_enabled = false;
++
++}  // namespace
++
++// --------------------------------------------------------------------------------------------
++// Error, Table
++// --------------------------------------------------------------------------------------------
++
++std::string G4MuonicDataTable::Error::what() const {
++  if (code.empty()) return text;
++  return code + ": " + text + " (line " + std::to_string(line) + ")";
++}
++
++const std::string* G4MuonicDataTable::Table::Directive(const std::string& keyword) const {
++  for (const auto& directive : directives) {
++    if (directive.first == keyword) return &directive.second;
++  }
++  return nullptr;
++}
++
++const G4MuonicDataTable::Table::Record* G4MuonicDataTable::Table::Lookup(
++    const std::vector<long>& key) const {
++  auto it = std::lower_bound(records.begin(), records.end(), key,
++                             [](const Record& r, const std::vector<long>& k) { return r.keys < k; });
++  if (it == records.end() || it->keys != key) return nullptr;
++  return &*it;
++}
++
++const G4MuonicDataTable::Table::Record* G4MuonicDataTable::Table::LookupNatural(
++    const std::vector<long>& key) const {
++  if (const Record* exact = Lookup(key)) return exact;
++  if (key.size() == 2) return Lookup({key[0], 0});
++  return nullptr;
++}
++
++void G4MuonicDataTable::Enable() { g_enabled = true; }
++void G4MuonicDataTable::Disable() { g_enabled = false; }
++bool G4MuonicDataTable::IsEnabled() { return g_enabled; }
++
++std::string G4MuonicDataTable::ParserPath() {
++#if G4MUONICDATA_USE_FROM_CHARS
++  return "from_chars(__cpp_lib_to_chars=" + std::to_string(__cpp_lib_to_chars) + ")";
++#else
++  return "istringstream(classic)";
++#endif
++}
++
++// --------------------------------------------------------------------------------------------
++// numbers -- one function, two compiled paths, the same post-checks (FORMAT_SPEC.md 2.3, 6)
++// --------------------------------------------------------------------------------------------
++
++std::string G4MuonicDataTable::ParseDouble(const std::string& field, double& out, std::string* text) {
++  auto reject = [&](const char* code, const std::string& why) -> std::string {
++    if (text) *text = why;
++    return code;
++  };
++  // Rule 5's non-finite literals are tested BEFORE the pattern: they do not match it, and a reader
++  // that applies the pattern first reports E007 where the format requires E014.
++  if (IsNonFiniteToken(field)) return reject("E014", "non-finite value");
++  if (!MatchesFloatPattern(field)) return reject("E007", "unreadable float");
++  // One leading `+` is stripped: the grammar allows it, `std::from_chars` does not.
++  const std::string digits = (field[0] == '+') ? field.substr(1) : field;
++  double value = 0.0;
++#if G4MUONICDATA_USE_FROM_CHARS
++  const char* first = digits.data();
++  const char* last = first + digits.size();
++  const std::from_chars_result result = std::from_chars(first, last, value);
++  if (result.ec == std::errc::invalid_argument) return reject("E007", "unreadable float");
++  if (result.ec == std::errc::result_out_of_range) {
++    // Both ends of the range: overflow to infinity and underflow to zero are E014 alike (2.3 rule
++    // 5), and the value is not modified on this outcome, so the code alone decides.
++    return reject("E014", "value outside the representable range (overflows to infinity or underflows to zero)");
++  }
++  if (result.ptr != last) return reject("E007", "unreadable float");
++#else
++  std::istringstream stream(digits);
++  stream.imbue(std::locale::classic());
++  stream >> value;
++  const bool consumed = stream.eof() || stream.peek() == std::char_traits<char>::eof();
++  if (!consumed) return reject("E007", "unreadable float");
++  if (stream.fail()) {
++    // A library signals overflow and underflow through failbit. Some also flag a SUBNORMAL result
++    // that way, and 2.6 guarantees subnormals round-trip, so a finite nonzero subnormal is accepted
++    // whatever the flag says; everything else failbit reports is out of range.
++    const bool subnormal = std::isfinite(value) && value != 0.0 && std::fabs(value) < DBL_MIN;
++    if (!subnormal) {
++      return reject("E014", "value outside the representable range (overflows to infinity or underflows to zero)");
++    }
++  }
++#endif
++  // Shared post-checks, whichever path produced the value.
++  if (std::isinf(value)) return reject("E014", "value overflows to infinity");
++  if (value == 0.0 && IsLexicallyNonzero(field)) return reject("E014", "value underflows to zero");
++  out = value;
++  return "";
++}
++
++// --------------------------------------------------------------------------------------------
++// Parse -- FORMAT_SPEC.md section 4's three phases, in spec.py's control flow
++// --------------------------------------------------------------------------------------------
++
++G4MuonicDataTable G4MuonicDataTable::Parse(const std::string& bytes, const std::string& name) {
++  // Phase 1: whole-file lexical. E005 over the bytes, then E006, before any line is looked at.
++  for (std::size_t i = 0; i < bytes.size(); ++i) {
++    const unsigned char c = static_cast<unsigned char>(bytes[i]);
++    if (c == '\t' || c == '\n' || c == '\r' || (c >= 0x20 && c <= 0x7E)) continue;
++    const int line = static_cast<int>(std::count(bytes.begin(), bytes.begin() + static_cast<std::ptrdiff_t>(i), '\n')) + 1;
++    char hex[8];
++    std::snprintf(hex, sizeof hex, "%02X", static_cast<unsigned>(c));
++    if (c < 0x80) Fail("E005", line, std::string("control character (0x") + hex + ")");
++    Fail("E005", line, std::string("non-ASCII character (U+00") + hex + ")");
++  }
++  {
++    const std::size_t cr = bytes.find('\r');
++    if (cr != std::string::npos) {
++      const int line = static_cast<int>(std::count(bytes.begin(), bytes.begin() + static_cast<std::ptrdiff_t>(cr), '\n')) + 1;
++      const bool crlf = cr + 1 < bytes.size() && bytes[cr + 1] == '\n';
++      Fail("E006", line, std::string(crlf ? "CRLF" : "CR") + " line ending; this format is LF-only");
++    }
++  }
++
++  // `text.split("\n")`: a trailing newline yields one empty last element.
++  std::vector<std::string> raw;
++  {
++    std::size_t start = 0;
++    while (true) {
++      const std::size_t nl = bytes.find('\n', start);
++      if (nl == std::string::npos) {
++        raw.push_back(bytes.substr(start));
++        break;
++      }
++      raw.push_back(bytes.substr(start, nl - start));
++      start = nl + 1;
++    }
++  }
++  const bool newline_terminated = !raw.empty() && raw.back().empty();
++  const int body_size = static_cast<int>(raw.size()) - (newline_terminated ? 1 : 0);
++
++  Table table;
++  table.file = name;
++  std::map<std::string, int> directive_lines;
++  auto has_directive = [&](const std::string& keyword) { return directive_lines.count(keyword) != 0; };
++  auto directive_value = [&](const std::string& keyword) -> const std::string& {
++    return *table.Directive(keyword);
++  };
++  std::vector<int> record_lines;
++  bool columns_fixed = false;
++  int order_index = -1;
++  int end_line = 0;
++
++  // A present directive is reported at its own line; a missing one at the line it would have
++  // occupied: the count of directives that precede it in the legal order and are present, plus one.
++  auto dline = [&](const std::string& keyword) -> int {
++    auto found = directive_lines.find(keyword);
++    if (found != directive_lines.end()) return found->second;
++    int preceding = 0;
++    for (int i = 0; i < DirectiveIndex(keyword); ++i) {
++      if (has_directive(kDirectiveOrder[i])) ++preceding;
++    }
++    return preceding + 1;
++  };
++
++  // Phase 3's block-close group: all E002 in directive order, then E016 for PROFILE, SEAM,
++  // SOURCEDIGEST, COLUMNS, then E013. (E010 cannot fire here: it was checked eagerly.)
++  auto close_header = [&]() {
++    for (int i = 0; i < kDirectiveCount; ++i) {
++      const std::string keyword = kDirectiveOrder[i];
++      if (!IsAlwaysRequired(keyword)) continue;
++      if (!has_directive(keyword)) {
++        Fail("E002", dline(keyword), "missing required directive '#" + keyword + "'");
++      }
++      if (directive_value(keyword).empty()) {
++        Fail("E002", dline(keyword),
++             "required directive '#" + keyword + "' has an empty value, which counts as absent");
++      }
++    }
++    const std::string& profile = directive_value("PROFILE");
++    if (!IsProfileToken(profile)) {
++      Fail("E016", dline("PROFILE"),
++           "'#PROFILE' value " + Quote(profile) + " is not a ^[a-z][a-z0-9_-]{2,31}$ token");
++    }
++    const std::string& seam = directive_value("SEAM");
++    if (std::find(std::begin(kAllowedSeams), std::end(kAllowedSeams), seam) == std::end(kAllowedSeams)) {
++      std::string allowed;
++      for (const char* s : kAllowedSeams) allowed += (allowed.empty() ? "" : ", ") + std::string(s);
++      Fail("E016", dline("SEAM"), "'#SEAM' value " + Quote(seam) + " is not one of " + allowed);
++    }
++    const std::string& digest = directive_value("SOURCEDIGEST");
++    if (!IsDigestShape(digest)) {
++      Fail("E016", dline("SOURCEDIGEST"),
++           "'#SOURCEDIGEST' value " + Quote(digest) + " is not 64 lowercase hex characters");
++    }
++    const std::vector<std::string> columns = SplitFields(directive_value("COLUMNS"));
++    for (const std::string& column : columns) {
++      if (!IsColumnName(column)) {
++        Fail("E016", dline("COLUMNS"),
++             "'#COLUMNS' name " + Quote(column) + " is not a ^[A-Za-z_][A-Za-z0-9_]*$ token");
++      }
++    }
++    {
++      std::vector<std::string> sorted = columns;
++      std::sort(sorted.begin(), sorted.end());
++      std::string duplicates;
++      for (std::size_t i = 1; i < sorted.size(); ++i) {
++        if (sorted[i] == sorted[i - 1] && (i < 2 || sorted[i] != sorted[i - 2])) {
++          duplicates += (duplicates.empty() ? "" : ", ") + sorted[i];
++        }
++      }
++      if (!duplicates.empty()) {
++        Fail("E016", dline("COLUMNS"), "'#COLUMNS' repeats the name(s) " + duplicates);
++      }
++    }
++    const bool parity = profile == kParityProfile;
++    const bool has_sha = has_directive("SOURCESHA") && !directive_value("SOURCESHA").empty();
++    if (parity && !has_sha) {
++      Fail("E013", dline("PROFILE"),
++           std::string("'#PROFILE ") + kParityProfile + "' requires a non-empty '#SOURCESHA'");
++    }
++    if (!parity && has_sha) {
++      Fail("E013", dline("SOURCESHA"),
++           std::string("'#SOURCESHA' is only allowed under '#PROFILE ") + kParityProfile + "', not " + Quote(profile));
++    }
++    table.columns = columns;
++    columns_fixed = true;
++  };
++
++  // Phase 2: the line scan, in file order.
++  for (int lineno = 1; lineno <= body_size; ++lineno) {
++    const std::string& line = raw[static_cast<std::size_t>(lineno - 1)];
++    if (end_line != 0) {
++      Fail("E011", lineno, std::string("content after '") + kEndMarker + "': " + Quote(StripSpacesTabs(line)));
++    }
++    {
++      // The terminator: `#END` with only spaces and tabs after it.
++      std::size_t e = line.size();
++      while (e > 0 && IsSpaceOrTab(line[e - 1])) --e;
++      if (line.substr(0, e) == kEndMarker) {
++        if (!columns_fixed) close_header();
++        end_line = lineno;
++        continue;
++      }
++    }
++    if (!line.empty() && line[0] == '#') {
++      std::string keyword, value;
++      const bool matched = MatchDirective(line, keyword, value);
++      // A terminator carrying content is E011 in every position; `END` is not a directive.
++      if (matched && keyword == "END") {
++        Fail("E011", lineno, std::string("the '") + kEndMarker + "' terminator line carries content: " + Quote(value));
++      }
++      if (columns_fixed) {
++        const std::vector<std::string> words = SplitFields(line);
++        Fail("E003", lineno, "directive " + Quote(words.empty() ? line : words[0]) + " appears after the record block began");
++      }
++      if (!matched) Fail("E001", lineno, "unreadable directive line " + Quote(StripSpacesTabs(line)));
++      const int index = DirectiveIndex(keyword);
++      if (index < 0) Fail("E001", lineno, "unknown directive '#" + keyword + "'");
++      if (index <= order_index) {
++        const std::string detail = has_directive(keyword)
++                                       ? "repeated"
++                                       : "must precede '#" + std::string(kDirectiveOrder[order_index]) + "'";
++        Fail("E003", lineno, "directive '#" + keyword + "' is out of order (" + detail + ")");
++      }
++      order_index = index;
++      table.directives.emplace_back(keyword, value);
++      directive_lines[keyword] = lineno;
++      if (keyword == "GRAMMAR") {
++        // Eagerly, at its own line: E002 for an empty value, E010 for a version this reader cannot
++        // read; either preempts everything after it (2.7).
++        if (value.empty()) {
++          Fail("E002", lineno, "required directive '#GRAMMAR' has an empty value, which counts as absent");
++        }
++        const std::string major = GrammarMajor(value);
++        if (major.empty()) {
++          Fail("E010", lineno, "unreadable '#GRAMMAR' version " + Quote(value) + "; expected MAJOR.MINOR without leading zeros");
++        }
++        if (major != kSupportedGrammarMajor) {
++          Fail("E010", lineno, "unsupported '#GRAMMAR' major version " + major + "; this reader implements major " + kSupportedGrammarMajor);
++        }
++      }
++      continue;
++    }
++
++    // A record line. The first one closes the directive block, and the block-close rules run at
++    // that line BEFORE it is read as a record (the same-line tie-break of section 4).
++    if (!columns_fixed) close_header();
++    const std::vector<std::string> fields = SplitFields(line);
++    if (fields.size() != table.columns.size()) {
++      Fail("E004", lineno,
++           "record has " + std::to_string(fields.size()) + " field(s), '#COLUMNS' declares " + std::to_string(table.columns.size()));
++    }
++    Table::Record record;
++    std::vector<long> z_a(2, 0);
++    bool has_z = false, has_a = false;
++    for (std::size_t i = 0; i < fields.size(); ++i) {
++      const std::string& column = table.columns[i];
++      if (column == "Z" || column == "A") {
++        const long integer = ParseIntegerField(column, fields[i], lineno);
++        if (column == "Z") { z_a[0] = integer; has_z = true; } else { z_a[1] = integer; has_a = true; }
++        continue;
++      }
++      double value = 0.0;
++      std::string reason;
++      const std::string code = ParseDouble(fields[i], value, &reason);
++      if (!code.empty()) {
++        Fail(code.c_str(), lineno, reason + " in column " + Quote(column) + ": " + Quote(fields[i]));
++      }
++      record.floats.push_back(value);
++    }
++    if (has_z) record.keys.push_back(z_a[0]);
++    if (has_a) record.keys.push_back(z_a[1]);
++    table.records.push_back(record);
++    record_lines.push_back(lineno);
++  }
++
++  if (end_line == 0) {
++    Fail("E012", std::max(body_size, 1), std::string("missing '") + kEndMarker + "' terminator");
++  }
++  if (!newline_terminated) {
++    Fail("E012", body_size, std::string("the '") + kEndMarker + "' line is not newline-terminated; the file must end with a newline");
++  }
++
++  // Phase 3, once all records are in hand: E008 across all records, then E015.
++  std::vector<std::string> key_names;
++  for (const char* k : {"Z", "A"}) {
++    if (std::find(table.columns.begin(), table.columns.end(), k) != table.columns.end()) key_names.push_back(k);
++  }
++  if (!key_names.empty()) {
++    std::map<std::vector<long>, int> first_seen;
++    for (std::size_t i = 0; i < table.records.size(); ++i) {
++      const std::vector<long>& key = table.records[i].keys;
++      auto seen = first_seen.find(key);
++      if (seen != first_seen.end()) {
++        Fail("E008", record_lines[i],
++             "duplicate key (" + PrintedKey(key_names, key) + "); first seen at line " + std::to_string(seen->second));
++      }
++      first_seen[key] = record_lines[i];
++    }
++    for (std::size_t i = 1; i < table.records.size(); ++i) {
++      if (table.records[i].keys < table.records[i - 1].keys) {
++        Fail("E015", record_lines[i],
++             "record (" + PrintedKey(key_names, table.records[i].keys) + ") is not in ascending " + JoinedKeyNames(key_names) + " order");
++      }
++    }
++  }
++
++  if (const std::string* profile_value = table.Directive("PROFILE")) table.profile = *profile_value;
++  if (const std::string* table_name = table.Directive("TABLE")) table.name = *table_name;
++  G4MuonicDataTable result;
++  result.tables_.push_back(std::move(table));
++  return result;
++}
++
++// --------------------------------------------------------------------------------------------
++// Load, Find
++// --------------------------------------------------------------------------------------------
++
++G4MuonicDataTable G4MuonicDataTable::Load(const std::string& directory) {
++  namespace fs = std::filesystem;
++  std::vector<fs::path> files;
++  std::error_code ec;
++  if (!fs::is_directory(directory, ec)) {
++    throw Error{"", 0, "dataset directory " + Quote(directory) + " is not a readable directory"};
++  }
++  for (fs::directory_iterator it(directory, ec), end; !ec && it != end; it.increment(ec)) {
++    const fs::path& path = it->path();
++    if (!fs::is_regular_file(path, ec)) continue;
++    const std::string filename = path.filename().string();
++    const std::string suffix = ".g4dat";
++    if (filename.size() > suffix.size() && filename.compare(filename.size() - suffix.size(), suffix.size(), suffix) == 0) {
++      files.push_back(path);
++    }
++  }
++  if (ec) {
++    throw Error{"", 0, "dataset directory " + Quote(directory) + " cannot be read: " + ec.message()};
++  }
++  if (files.empty()) {
++    throw Error{"", 0, "dataset directory " + Quote(directory) + " holds no *.g4dat file"};
++  }
++  std::sort(files.begin(), files.end(), [](const fs::path& a, const fs::path& b) {
++    return a.filename().string() < b.filename().string();
++  });
++  G4MuonicDataTable result;
++  // Keyed by the (`#PROFILE`, `#TABLE`) pair: a directory may hold one file per profile of a table.
++  std::map<std::pair<std::string, std::string>, std::string> table_files;
++  for (const fs::path& path : files) {
++    // Binary mode, always: text mode on Windows would strip CR before the E006 check sees it.
++    std::ifstream in(path, std::ios::binary);
++    if (!in) throw Error{"", 0, "cannot open " + Quote(path.string())};
++    const std::string bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
++    G4MuonicDataTable one = Parse(bytes, path.string());
++    Table& table = one.tables_.front();
++    const std::pair<std::string, std::string> pair{table.profile, table.name};
++    auto seen = table_files.find(pair);
++    if (seen != table_files.end()) {
++      throw Error{"", 0, "the pair '#PROFILE " + table.profile + "' / '#TABLE " + table.name + "' is declared by both " + Quote(seen->second) + " and " + Quote(path.string())};
++    }
++    table_files[pair] = path.string();
++    result.tables_.push_back(std::move(table));
++  }
++  return result;
++}
++
++const G4MuonicDataTable::Table* G4MuonicDataTable::Find(const std::string& profile, const std::string& table_name) const {
++  for (const Table& table : tables_) {
++    if (table.profile == profile && table.name == table_name) return &table;
++  }
++  return nullptr;
++}
++
++std::vector<std::string> G4MuonicDataTable::Profiles() const {
++  std::vector<std::string> profiles;
++  for (const Table& table : tables_) {
++    if (std::find(profiles.begin(), profiles.end(), table.profile) == profiles.end()) profiles.push_back(table.profile);
++  }
++  std::sort(profiles.begin(), profiles.end());
++  return profiles;
++}
+diff --git a/source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc b/source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc
+index c7f628d970..719053c170 100644
+--- a/source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc
++++ b/source/processes/hadronic/stopping/src/G4EmCaptureCascade.cc
+@@ -50,6 +50,7 @@
+ #include "G4PhysicalConstants.hh"
+ #include "G4SystemOfUnits.hh"
+ #include "Randomize.hh"
++#include "G4MuonicDataOverlay.hh"
+ 
+ //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
+ 
+@@ -122,6 +123,19 @@ G4HadFinalState* G4EmCaptureCascade::ApplyYourself(const G4HadProjectile& projec
+   {
+     fLevelEnergy[i] = e / (G4double)((i + 1) * (i + 1));
+   }
++  if (G4MuonicDataTable::IsEnabled()) {
++    G4bool overlaid = false;
++    if (const G4double* k = G4MuonicDataOverlay::KShell(Z, A)) {
++      fLevelEnergy[0] = *k * keV;
++      overlaid = true;
++    }
++    G4int count = 0;
++    if (const G4double* levels = G4MuonicDataOverlay::Levels(Z, A, count)) {
++      for (G4int i = 1; i <= count && i < 14; ++i) fLevelEnergy[i] = levels[i - 1] * keV;
++      overlaid = true;
++    }
++    if (overlaid) G4MuonicDataOverlay::CheckCascadeLevels(Z, A, fLevelEnergy, 14);
++  }
+ 
+   G4int nElec = Z;
+   G4int nAuger = 1;
+diff --git a/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc b/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
+index ff95c000f2..b40ef9d0d4 100644
+--- a/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
++++ b/source/processes/hadronic/stopping/src/G4MuonMinusBoundDecay.cc
+@@ -61,6 +61,8 @@
+ #include "G4SystemOfUnits.hh"
+ #include "G4ThreeVector.hh"
+ #include "Randomize.hh"
++#include "G4MuonicDataOverlay.hh"
++#include "G4MuonicBoundRateProvider.hh"
+ 
+ //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo....
+ 
+@@ -85,6 +87,14 @@ G4HadFinalState* G4MuonMinusBoundDecay::ApplyYourself(const G4HadProjectile& pro
+   // Decide on Decay or Capture, and doit.
+   G4double lambdac = GetMuonCaptureRate(Z, A);
+   G4double lambdad = GetMuonDecayRate(Z, A, fMuMass, targetNucleus.AtomicMass(A, Z));
++  if (G4MuonicBoundRateProvider::Consult()) {
++    G4MuonicBoundRates rates;
++    if (G4MuonicBoundRateProvider::Rates(Z, A, fMuMass, targetNucleus.AtomicMass(A, Z), rates)
++        == G4MuonicBoundRateProvider::Status::kCommon) {
++      lambdac = rates.capture;
++      lambdad = rates.decay;
++    }
++  }
+   G4double lambda = lambdac + lambdad;
+ 
+   // ===  sample capture  time and change time of projectile
+@@ -235,6 +245,9 @@ G4double G4MuonMinusBoundDecay::GetMuonCaptureRate(G4int Z, G4int A)
+     {93, 237, 13.58, 0.18},     {94, 239, 13.90, 0.20},    {94, 242, 12.86, 0.19}};
+ 
+   G4double lambda = -1.;
++  if (G4MuonicDataTable::IsEnabled()) {
++    if (const G4double* v = G4MuonicDataOverlay::Rate(Z, A)) return *v / microsecond;
++  }
+ 
+   size_t nCapRates = sizeof(capRates) / sizeof(capRates[0]);
+   for (size_t j = 0; j < nCapRates; ++j)
+@@ -271,6 +284,7 @@ G4double G4MuonMinusBoundDecay::GetMuonCaptureRate(G4int Z, G4int A)
+                 - G4double(2 * (A - Z) + std::abs(a2ze - 1.)) * b0c / G4double(A * 4));
+   }
+ 
++  G4MuonicDataOverlay::CheckComputedCaptureRate(Z, A, lambda);
+   return lambda;
+ }
+ 
+@@ -296,6 +310,9 @@ G4double G4MuonMinusBoundDecay::GetMuonZeff(G4int ZZ)
+     34.84, 34.94, 35.05, 35.16, 35.25, 35.36, 35.46, 35.57, 35.67, 35.78};
+ 
+   G4int Z = std::max(std::min(ZZ, maxZ), 1);
++  if (G4MuonicDataTable::IsEnabled()) {
++    if (const G4double* v = G4MuonicDataOverlay::Zeff(Z)) return *v;
++  }
+   return zeff[Z];
+ }
+ 
+diff --git a/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc b/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
+index 3393b87529..757f48cc05 100644
+--- a/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
++++ b/source/processes/hadronic/stopping/src/G4MuonicAtomDecay.cc
+@@ -167,7 +167,7 @@ G4VParticleChange* G4MuonicAtomDecay::DecayIt(const G4Track& aTrack, const G4Ste
+   G4Ions const* baseion = muatom->GetBaseIon();
+   G4int Z = baseion->GetAtomicNumber();
+   G4double Zd = Z;
+-  G4double KEnergy = G4MuonicAtomHelper::GetKShellEnergy(Zd);  // fixme check
++  G4double KEnergy = G4MuonicAtomHelper::GetKShellEnergy(Zd, baseion->GetAtomicMass());  // fixme check
+   G4HadProjectile thePro(aTrack);  // G4HadProjectile, here the muonic atom
+   thePro.SetBoundEnergy(KEnergy);
+ 
+diff --git a/source/processes/hadronic/util/include/G4HadronicParameters.hh b/source/processes/hadronic/util/include/G4HadronicParameters.hh
+index 2d051de924..ea605be352 100644
+--- a/source/processes/hadronic/util/include/G4HadronicParameters.hh
++++ b/source/processes/hadronic/util/include/G4HadronicParameters.hh
+@@ -159,6 +159,15 @@ class G4HadronicParameters
+     void SetEnableNUDEX(G4bool val);
+     // NUDEX gamma de-excitation is enabled/disabled.
+ 
++    inline G4bool EnableMuonicData() const;
++    void SetEnableMuonicData(G4bool val);
++    // Muonic-atom capture dataset (G4MuonicData) lookup is enabled/disabled.
++
++    inline G4bool EnableMuonicBoundRates() const;
++    void SetEnableMuonicBoundRates(G4bool val);
++    // One capture and decay rate pair for a negative muon bound in a muonic atom, given to both
++    // stopped-muon routes below Z = 14 (G4MuonicBoundRateProvider), is enabled/disabled.
++
+     inline const G4String& GetTypeTablePT() const;
+     void SetTypeTablePT(const G4String& typeTablePT);
+     // Specify the type of PT table - between  "calendf"  and  "njoy"  for
+@@ -253,6 +262,8 @@ class G4HadronicParameters
+     G4bool fEnableIntegralElasticXS = true;
+     G4bool fEnableDiffDissociationForBGreater10 = false;
+     G4bool fEnableNUDEX = false;
++    G4bool fEnableMuonicData = false;
++    G4bool fEnableMuonicBoundRates = false;
+     G4bool fNeutronGeneral = false;
+     G4bool fChargeExchange = false;
+     G4bool fBinaryDebug = false;
+@@ -389,6 +400,16 @@ inline G4bool G4HadronicParameters::EnableNUDEX() const
+   return fEnableNUDEX;
+ }
+ 
++inline G4bool G4HadronicParameters::EnableMuonicData() const
++{
++  return fEnableMuonicData;
++}
++
++inline G4bool G4HadronicParameters::EnableMuonicBoundRates() const
++{
++  return fEnableMuonicBoundRates;
++}
++
+ inline const G4String& G4HadronicParameters::GetTypeTablePT() const
+ {
+   return fTypeTablePT;
+diff --git a/source/processes/hadronic/util/src/G4HadronicParameters.cc b/source/processes/hadronic/util/src/G4HadronicParameters.cc
+index 5046e3461b..ab6121b5ce 100644
+--- a/source/processes/hadronic/util/src/G4HadronicParameters.cc
++++ b/source/processes/hadronic/util/src/G4HadronicParameters.cc
+@@ -37,6 +37,9 @@
+ //----------------------------------------------------------------------------
+ 
+ #include "G4HadronicParameters.hh"
++#include "G4MuonicDataOverlay.hh"
++#include "G4MuonicDataTable.hh"
++#include "G4MuonicBoundRateProvider.hh"
+ 
+ #include "G4ApplicationState.hh"
+ #include "G4AutoLock.hh"
+@@ -459,6 +462,30 @@ void G4HadronicParameters::SetEnableNUDEX(G4bool val)
+   if (!IsLocked()) fEnableNUDEX = val;
+ }
+ 
++void G4HadronicParameters::SetEnableMuonicData(G4bool val)
++{
++  if (!IsLocked()) {
++    fEnableMuonicData = val;
++    if (val) {
++      G4MuonicDataTable::Enable();
++      G4MuonicDataOverlay::Initialize();
++    }
++    else
++      G4MuonicDataTable::Disable();
++  }
++}
++
++void G4HadronicParameters::SetEnableMuonicBoundRates(G4bool val)
++{
++  if (!IsLocked()) {
++    if (val)
++      G4MuonicBoundRateProvider::Enable();
++    else
++      G4MuonicBoundRateProvider::Disable();
++    fEnableMuonicBoundRates = G4MuonicBoundRateProvider::IsEnabled();
++  }
++}
++
+ void G4HadronicParameters::SetTypeTablePT(const G4String& typeTablePT)
+ {
+   if (!IsLocked()) fTypeTablePT = typeTablePT;
