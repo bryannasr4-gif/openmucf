@@ -20,7 +20,7 @@
 //   S004  units: the `#UNITS` assignment of every value column, as the lookups read it.
 //   S005  values: finite, and in the domain the quantity has (a rate and an energy are positive,
 //         an uncertainty is not negative, an effective charge does not exceed Z, a pair tuple's q
-//         lies in (0, 1] and the capture rate 1/tau - q/free_tau it implies is not negative).
+//         lies in (0, 1] and every quantity a consumer forms from it is usable: BoundPairProblem).
 //   S006  the D3 pair: one profile's two energy tables cover one key set, in one falling order.
 #ifndef G4MUONICDATASEMANTICS_HH
 #define G4MUONICDATASEMANTICS_HH
@@ -43,6 +43,27 @@ class G4MuonicDataSemantics {
   // profile-level S006 issues follow the per-table ones, in bytewise profile order. An empty
   // vector is the only acceptable result for a dataset a consumer may read.
   static std::vector<Issue> Validate(const G4MuonicDataTable& dataset);
+
+  // The consumer transform of one bound-rate pair tuple (tau and free_tau in ns, q dimensionless), in the
+  // order the consumers evaluate it. A tuple is admitted only if every quantity a consumer forms from it is
+  // finite and in its domain; nothing is clipped:
+  //   tau and free_tau finite and positive, q finite in (0, 1];
+  //   the decay rate d = q / free_tau finite and in (0, 1/free_tau] (a quotient that underflows is refused);
+  //   1/tau finite, and the capture rate c = 1/tau - d finite and not negative (c = 0 is admitted);
+  //   the total rate c + d finite and positive. The consumer lifetime `1/(capture + decay)` must be finite
+  //   and positive;
+  //   the capture probability c / (c + d) in [0, 1];
+  //   the partial lifetimes the atomic route stores: 1/d finite, and 1/c finite when c > 0 (c = 0 stores an
+  //   infinite capture lifetime, read back as a zero capture rate, so capture is never chosen); the rates
+  //   read back from them, 1/(1/c) + 1/(1/d), finite and positive;
+  //   a sampled waiting time: kExponentialVariateMax times the lifetime, and over the total rate, finite.
+  // Returns nullptr and sets `capture` and `decay` for an admitted tuple, otherwise the reason. The semantic
+  // rule S005 and the Geant4 provider call this one function, so they cannot disagree.
+  static const char* BoundPairProblem(double tau, double q, double free_tau, double& capture, double& decay);
+
+  // An upper bound on the exponential variate -ln(u) a consumer scales a lifetime by when it samples a time:
+  // no double u in (0, 1) gives more than -ln(2^-1074) = 744.44...
+  static constexpr double kExponentialVariateMax = 745.;
 };
 
 #endif

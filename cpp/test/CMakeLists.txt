@@ -531,6 +531,46 @@ foreach(case IN ITEMS underflow overflow substituted moved removed_other missing
            $<TARGET_FILE:g4muonicdata_bound_rate_check> ${check} ${code})
 endforeach()
 
+# The consumer transform (G4MuonicDataSemantics::BoundPairProblem): all-normal primitives whose consumer lifetime
+# 1/(capture + decay) is infinite, a decay partial lifetime 1/decay that overflows, a positive capture rate whose
+# 1/capture overflows, and the first lifetime whose sampled waiting time can overflow are each refused, and every
+# later lookup throws; zero capture is admitted with capture exactly 0.
+foreach(case IN ITEMS consumer_lifetime decay_lifetime capture_lifetime waiting_time zero_capture)
+  set(dir "${CMAKE_BINARY_DIR}/pair_transform_${case}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  set(check pair-row-refused "G4MuonicData005,G4MuonicBoundRates001")
+  if(case STREQUAL "consumer_lifetime")
+    set(tuple "1.7976931348623157e+308 0.5 1.7976931348623157e+308")
+  elseif(case STREQUAL "decay_lifetime")
+    set(tuple "${pair_tau} 0.5 1.7976931348623157e+308")
+  elseif(case STREQUAL "capture_lifetime")
+    set(tuple "9.999999999999997e+292 1 1e+293")
+  elseif(case STREQUAL "waiting_time")
+    set(tuple "2.4130109192782763e+305 1 2.4130109192782763e+305")
+  else()
+    set(tuple "${pair_free} 1 ${pair_free}")
+    set(check pair-zero-capture)
+  endif()
+  string(REPLACE "${pair_record}" "\n13 27 ${tuple}\n" member "${pair_member}")
+  g4muonicdata_write_member("${dir}" "${G4MUONICDATA_PAIR_NAME}" "${member}")
+  add_test(NAME bound_rates_pair_transform_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}"
+           "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+           $<TARGET_FILE:g4muonicdata_bound_rate_check> ${check})
+endforeach()
+
+# A differential check against an independent statement, over a boundary and a seeded random corpus: the
+# compiled consumer transform against a simulation of what the consumers compute.
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+  add_test(NAME pair_transform_differential
+           COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/check_pair_transform.py"
+                   $<TARGET_FILE:g4muonicdata_bound_rate_check>)
+else()
+  # Registered as a failure, not omitted: a missing interpreter must not read as a passing check.
+  add_test(NAME pair_transform_differential_no_python COMMAND ${CMAKE_COMMAND} -E false)
+endif()
+
 # The provenance file re-sealed under a recomputed #SOURCEDIGEST, so that the reader of its rows object is drilled
 # behind the digest check: an empty, list-typed or absent rows record, a duplicated row key or rows object, an extra
 # row the table lacks, and a truncated file each refuse; a whitespace re-wrap of the same record is accepted.

@@ -49,9 +49,10 @@
 // from its one tuple (tau, q, free_tau): decay = q / free_tau, capture = 1/tau - decay, so the two rates of
 // both routes come from one realization and capture + decay = 1/tau. The row takes precedence over the
 // formula above and is not limited to its domain. Other keys retain the selected capture profile and the
-// existing route-specific formula or fallback. A row whose tuple is not finite and positive, has q outside
-// (0, 1], or whose decay rate, 1/tau or capture rate is not finite or out of domain (a decay rate that
-// underflows to zero, a negative capture rate) is refused with G4MuonicBoundRates001; the provider is then
+// existing route-specific formula or fallback. A row whose tuple fails the consumer transform of
+// G4MuonicDataSemantics::BoundPairProblem, which requires every rate, lifetime, probability and waiting time
+// a consumer forms from it to be finite and in its domain, is refused with G4MuonicBoundRates001. The
+// consumer lifetime `1/(capture + decay)` must be finite and positive. The provider is then
 // poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer
 // falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's
 // free normalization. A pair profile with the switch off is refused at the

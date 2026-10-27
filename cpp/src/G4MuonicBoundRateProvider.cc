@@ -4,6 +4,7 @@
 #include "G4Exception.hh"
 #include "G4MuonicAtomHelper.hh"
 #include "G4MuonicDataOverlay.hh"
+#include "G4MuonicDataSemantics.hh"
 #include "G4MuonicDataTable.hh"
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
@@ -72,17 +73,10 @@ void RefusePairWithoutSwitch(const std::string& profile) {
   throw std::runtime_error(text);
 }
 
-// Why a pair tuple cannot be used, or nullptr. Rates in ns^-1.
+// Why a pair tuple cannot be used, or nullptr: the one consumer transform the semantic rule S005 applies
+// too. Rates in ns^-1 (Geant4's time unit is the ns).
 const char* PairProblem(G4double tau, G4double q, G4double freeTau, G4double& capture, G4double& decay) {
-  if (!PositiveFinite(tau) || !PositiveFinite(freeTau)) return "tau or free_tau is not finite and positive";
-  if (!std::isfinite(q) || !(q > 0.) || q > 1.) return "q is outside (0, 1]";
-  decay = q / freeTau;
-  const G4double total = 1. / tau;
-  if (!PositiveFinite(decay) || decay > 1. / freeTau) return "the decay rate is outside 0 < decay <= 1/free_tau";
-  if (!std::isfinite(total)) return "the rate 1/tau is not finite";
-  capture = total - decay;
-  if (!std::isfinite(capture) || capture < 0.) return "the capture rate 1/tau - q/free_tau is negative or not finite";
-  return nullptr;
+  return G4MuonicDataSemantics::BoundPairProblem(tau, q, freeTau, capture, decay);
 }
 
 }  // namespace

@@ -260,17 +260,54 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
                 once("positive", f"row {z} column {values[index]!r} is not positive")
         if member.table == PAIR and len(floats) == 3:
             tau, q, free_tau = floats
+            # the primitives' finiteness and sign are the generic rules above
             if all(math.isfinite(v) for v in floats) and tau > 0 and free_tau > 0:
-                decay, total = q / free_tau, 1 / tau
-                if not 0 < q <= 1:
-                    once("pair", f"row {z} column 'q' is outside (0, 1]")
-                elif not (math.isfinite(decay) and 0 < decay <= 1 / free_tau):
-                    once("pair", f"row {z} gives a decay rate outside (0, 1/free_tau]")
-                elif not math.isfinite(total):
-                    once("pair", f"row {z} gives a rate 1/tau that is not finite")
-                elif not (math.isfinite(total - decay) and total - decay >= 0):
-                    once("pair", f"row {z} gives a negative or non-finite capture rate")
+                problem = pair_tuple_problem(tau, q, free_tau)
+                if problem is not None:
+                    once("pair", f"row {z} {problem}")
     return out
+
+
+#: The largest exponential variate -ln(u) of a binary64 u in (0, 1), rounded up: the factor by which a
+#: consumer may scale the lifetime when it samples a waiting time.
+VARIATE_MAX = 745.0
+
+
+def pair_tuple_problem(tau: float, q: float, free_tau: float) -> str | None:
+    """The semantic rule for one pair tuple, stated as the consumers evaluate it: every rate, lifetime and
+    probability they form from (tau, q, free_tau) is finite and in its domain. None when the tuple is
+    admitted."""
+    if not all(math.isfinite(v) for v in (tau, q, free_tau)) or not (tau > 0 and free_tau > 0):
+        return "has a primitive that is not finite and positive"
+    if not 0 < q <= 1:
+        return "column 'q' is outside (0, 1]"
+    decay = q / free_tau
+    if not (math.isfinite(decay) and 0 < decay <= 1 / free_tau):
+        return "gives a decay rate outside (0, 1/free_tau]"
+    total = 1 / tau
+    if not math.isfinite(total):
+        return "gives a rate 1/tau that is not finite"
+    capture = total - decay
+    if not (math.isfinite(capture) and capture >= 0):
+        return "gives a negative or non-finite capture rate"
+    rate = capture + decay
+    if not (math.isfinite(rate) and rate > 0):
+        return "gives a total rate that is not finite and positive"
+    lifetime = 1 / rate
+    if not (math.isfinite(lifetime) and lifetime > 0):
+        return "gives a consumer lifetime 1/(capture + decay) that is not finite and positive"
+    if not 0 <= capture / rate <= 1:
+        return "gives a capture probability outside [0, 1]"
+    if not math.isfinite(1 / decay):
+        return "gives a decay partial lifetime that is not finite"
+    if capture > 0 and not math.isfinite(1 / capture):
+        return "gives a capture partial lifetime that is not finite"
+    back = (1 / (1 / capture) if capture > 0 else 0.0) + 1 / (1 / decay)
+    if not (math.isfinite(back) and back > 0):
+        return "gives read-back rates that are not finite and positive"
+    if not (math.isfinite(VARIATE_MAX * lifetime) and math.isfinite(VARIATE_MAX / rate)):
+        return "gives a waiting time that can overflow"
+    return None
 
 
 def _pair_issues(members: list[Loaded]) -> list[Issue]:
@@ -548,3 +585,138 @@ def test_t121_drill_the_pair_table_rules(mutable: pathlib.Path, kind, old, new, 
         line = directive_line(member, kind)
         replace_once(member, line, line.replace(old, new))
     assert codes_of(mutable)[0] == code
+
+
+# T-122: one admissibility rule over the consumer transform. The production pair() and the semantic rule
+# above must each admit a tuple exactly when an independent simulation of what the consumers compute from it
+# (the stopping route, the atomic route's stored and read-back partial lifetimes, the sampled waiting times
+# and the Python delivery) yields only finite quantities in their domains.
+def _ieee_divide(a: float, b: float) -> float:
+    """a / b as binary64 hardware gives it (C++): a positive number over zero is +inf."""
+    if b == 0:
+        return math.copysign(math.inf, a) if a != 0 else math.nan
+    return a / b
+
+
+def consumer_quantities(tau: float, q: float, free_tau: float) -> dict[str, float]:
+    """What each consumer computes from one tuple, in its own order (ns, ns^-1)."""
+    decay = q / free_tau
+    capture = 1 / tau - decay
+    rate = capture + decay  # the stopping route's lambda, and the total the atomic route inverts
+    lifetime = _ieee_divide(1.0, rate)
+    # the atomic route's stored partial lifetimes
+    dio, nc = _ieee_divide(1.0, decay), _ieee_divide(1.0, capture)
+    read_dio, read_nc = _ieee_divide(1.0, dio), _ieee_divide(1.0, nc)  # what its decay step reads back
+    return {
+        "decay": decay, "ceiling": 1 / free_tau, "inverse_tau": 1 / tau, "capture": capture, "rate": rate,
+        "lifetime": lifetime, "probability": _ieee_divide(capture, rate), "dio": dio, "nc": nc,
+        "read_rate": read_dio + read_nc, "stop_wait": _ieee_divide(VARIATE_MAX, rate),
+        "atom_wait": VARIATE_MAX * lifetime,
+    }
+
+
+def consumer_admits(tau: float, q: float, free_tau: float) -> bool:
+    if not all(math.isfinite(v) for v in (tau, q, free_tau)) or not (tau > 0 and free_tau > 0 and 0 < q <= 1):
+        return False
+    x = consumer_quantities(tau, q, free_tau)
+    finite = all(math.isfinite(x[k]) for k in x if k not in ("nc", "ceiling"))
+    return (finite and 0 < x["decay"] <= x["ceiling"] and x["capture"] >= 0 and x["rate"] > 0
+            and x["lifetime"] > 0 and 0 <= x["probability"] <= 1 and x["dio"] > 0 and x["read_rate"] > 0
+            # zero capture stores an infinite capture lifetime, read back as a zero rate; any other must be
+            # finite
+            and (math.isfinite(x["nc"]) and x["nc"] > 0 or x["capture"] == 0 and x["nc"] == math.inf))
+
+
+DBL_MAX = 1.7976931348623157e308
+
+
+def _neighbours(x: float) -> list[float]:
+    return [math.nextafter(x, -math.inf), x, math.nextafter(x, math.inf)]
+
+
+def boundary_corpus() -> list[tuple[float, float, float]]:
+    scale = [5e-324, 2.2250738585072014e-308, 1 / DBL_MAX, 1e-300, 1e-200, 1e-3, 1.0, 863.7, 2196.9811, 1e100,
+             1e300, 1e306, DBL_MAX / VARIATE_MAX, DBL_MAX]
+    times = [v for s in scale for v in _neighbours(s)] + [0.0, -0.0, -1.0, math.nan, math.inf, -math.inf]
+    qs = [0.0, 5e-324, 1e-300, 0.5, 0.993598, *_neighbours(1.0), -0.5, math.nan, math.inf, -math.inf]
+    corpus = [(tau, q, free_tau) for tau in times for q in qs for free_tau in times]
+    # zero capture and its neighbours: q = 1 and tau = free_tau gives c = 0 exactly
+    for free_tau in times:
+        corpus += [(tau, 1.0, free_tau) for tau in _neighbours(free_tau)]
+    return corpus
+
+
+def random_corpus(seed: int, n: int) -> list[tuple[float, float, float]]:
+    import random
+
+    rng = random.Random(seed)
+
+    def time() -> float:
+        if rng.random() < 0.5:
+            return math.ldexp(rng.random(), rng.randint(-1074, 1024))
+        return rng.uniform(0, 1e4)
+
+    def factor() -> float:
+        tiny = math.ldexp(rng.random(), rng.randint(-1074, 0))
+        return rng.choice([rng.random(), 1.0, math.nextafter(1.0, 0), tiny])
+
+    corpus = []
+    for _ in range(n):
+        free_tau = time()
+        tau = rng.choice([time(), free_tau, math.nextafter(free_tau, 0), math.nextafter(free_tau, math.inf)])
+        corpus.append((tau, factor(), free_tau))
+    return corpus
+
+
+def _production_admits(tau: float, q: float, free_tau: float) -> bool:
+    from openmucf.g4 import d1_evaluated as ev
+
+    try:
+        ev.pair(tau, q, free_tau)
+    except ev.EvaluationError:
+        return False
+    return True
+
+
+@pytest.mark.parametrize("corpus", ["boundary", "random"])
+def test_t122_production_and_semantic_rules_admit_exactly_what_the_consumers_can_use(corpus):
+    tuples = boundary_corpus() if corpus == "boundary" else random_corpus(4172, 40000)
+    admitted = 0
+    for tau, q, free_tau in tuples:
+        expected = consumer_admits(tau, q, free_tau)
+        admitted += expected
+        assert _production_admits(tau, q, free_tau) == expected, (tau, q, free_tau)
+        assert (pair_tuple_problem(tau, q, free_tau) is None) == expected, (tau, q, free_tau)
+    assert 0 < admitted < len(tuples)
+
+
+@pytest.mark.parametrize("tau,q,free_tau,admitted", [
+    (DBL_MAX, 0.5, DBL_MAX, False),  # all-normal primitives whose consumer lifetime is infinite
+    (863.7, 0.5, DBL_MAX, False),  # a decay partial lifetime 1/d that overflows
+    (math.nextafter(1e293, 0), 1.0, 1e293, False),  # a positive capture rate whose 1/c overflows
+    (2196.9811, 1.0, 2196.9811, True),  # zero capture: admitted, capture is never chosen
+], ids=["consumer-lifetime-overflows", "decay-lifetime-overflows", "capture-lifetime-overflows",
+        "zero-capture"])
+def test_t122_witnesses_of_the_consumer_transform(tau, q, free_tau, admitted):
+    assert consumer_admits(tau, q, free_tau) == admitted
+    assert _production_admits(tau, q, free_tau) == admitted
+    assert (pair_tuple_problem(tau, q, free_tau) is None) == admitted
+    if admitted and q == 1.0 and tau == free_tau:
+        from openmucf.g4 import d1_evaluated as ev
+
+        assert ev.pair(tau, q, free_tau).capture == 0.0
+
+
+def test_t122_the_waiting_time_edge_is_one_step_wide():
+    """The largest zero-capture lifetime a sampled waiting time allows is admitted and the next double is not,
+    by all three statements; the edge is found from the simulation, not stated."""
+    edge = DBL_MAX / VARIATE_MAX
+    for _ in range(64):
+        if consumer_admits(edge, 1.0, edge):
+            break
+        edge = math.nextafter(edge, 0)
+    outside = math.nextafter(edge, math.inf)
+    assert consumer_admits(edge, 1.0, edge) and not consumer_admits(outside, 1.0, outside)
+    for value, admitted in ((edge, True), (outside, False)):
+        assert _production_admits(value, 1.0, value) == admitted
+        assert (pair_tuple_problem(value, 1.0, value) is None) == admitted

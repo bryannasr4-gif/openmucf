@@ -95,9 +95,11 @@ With the dataset opt-in and the common-rate option both on, `G4MuonicBoundRatePr
 holds from its tuple `(tau, q, free_tau)`, the decay rate `q/free_tau` and the capture rate the inverse of `tau`
 less it, on both stopped-muon routes. Other keys retain the selected capture profile and the existing route-specific formula or fallback. With the dataset option on, the loader parses and validates every table. Both switches and the pair-profile selection are required to use an evaluated row.
 `G4MuonicBoundRateProvider::Describe` names the answer per key. The selected pair table is bound to its
-provenance file: its records must be the rows that file admits, and that file's SHA-256 must be the table's
-`#SOURCEDIGEST`; otherwise, and for a tuple whose derived rates are out of domain, the load raises the fatal
-`G4Exception` `G4MuonicData005`. `G4MUONICDATA_PROFILE` naming a pair profile, and a pair profile that carries no pair table,
+provenance file: its records must be the rows
+that file admits, and that file's SHA-256 must be the table's `#SOURCEDIGEST`; otherwise, and for a tuple a
+consumer could not use (`G4MuonicDataSemantics::BoundPairProblem`: every rate, lifetime, probability and
+waiting time a consumer forms from it must be finite and in its domain), the load raises the fatal
+`G4Exception` `G4MuonicData005`. The consumer lifetime `1/(capture + decay)` must be finite and positive. `G4MUONICDATA_PROFILE` naming a pair profile, and a pair profile that carries no pair table,
 raise the fatal `G4Exception` `G4MuonicData004`; a pair profile selected with the common-rate option off raises a
 fatal `G4Exception` of the provider at the first stopped muon, whichever option was set first. Should a handler
 suppress any of these aborts, every later lookup throws rather than answer with another pair.

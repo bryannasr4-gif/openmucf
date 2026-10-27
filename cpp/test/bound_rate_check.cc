@@ -26,6 +26,7 @@
 #include "G4MuonicAtomHelper.hh"
 #include "G4MuonicBoundRateProvider.hh"
 #include "G4MuonicDataOverlay.hh"
+#include "G4MuonicDataSemantics.hh"
 #include "G4MuonicDataTable.hh"
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
@@ -412,6 +413,26 @@ int PairSwitchOff() {
   return 0;
 }
 
+// Zero capture (tau = free_tau, q = 1): admitted; the provider gives capture exactly 0 and decay 1/free_tau,
+// on every call.
+int PairZeroCapture() {
+  G4MuonicDataTable::Enable();
+  G4MuonicDataOverlay::Initialize();
+  P::Enable();
+  const G4MuonicDataOverlay::Resolution row = G4MuonicDataOverlay::ResolvePair(13, 27);
+  Expect(row.values != nullptr && row.values[1] == 1. && row.values[0] == row.values[2],
+         "the zero-capture row is not tau = free_tau, q = 1");
+  if (row.values == nullptr) return 0;
+  for (int attempt = 0; attempt < 2; ++attempt) {
+    G4MuonicBoundRates r;
+    const P::Status s = P::Rates(13, 27, kMu, Mass(27), r);
+    Expect(s == P::Status::kCommon && r.capture == 0. && r.decay == 1. / (row.values[2] * ns),
+           "zero capture is not answered as capture 0 and decay 1/free_tau");
+  }
+  Expect(g_codes.empty(), "zero capture raised an exception");
+  return 0;
+}
+
 // A refused pair configuration: its code is raised, and afterwards the provider answers nothing.
 int PairConfigRefused(const std::string& code) {
   G4MuonicDataTable::Enable();
@@ -465,6 +486,26 @@ int PairRowRefused(const std::string& codes) {
   return 0;
 }
 
+// The consumer transform over tuples read from stdin, `tau q free_tau` per line in any strtod spelling: one line
+// each, `ADMIT capture decay` (hexadecimal) or `REFUSE`.
+int PairTransform() {
+  char buffer[512];
+  while (std::fgets(buffer, sizeof buffer, stdin) != nullptr) {
+    char* end = buffer;
+    const double tau = std::strtod(end, &end);
+    const double q = std::strtod(end, &end);
+    const double free_tau = std::strtod(end, &end);
+    double capture = 0., decay = 0.;
+    if (G4MuonicDataSemantics::BoundPairProblem(tau, q, free_tau, capture, decay) == nullptr) {
+      std::printf("ADMIT %a %a\n", capture, decay);
+    } else {
+      std::printf("REFUSE\n");
+    }
+    ++g_checks;
+  }
+  return 0;
+}
+
 }  // namespace
 
 const char* G4FindDataDir(const char* name) { return std::getenv(name); }
@@ -508,9 +549,14 @@ int main(int argc, char** argv) {
     PairConfigRefused(argv[2]);
   } else if (mode == "pair-row-refused" && argc == 3) {
     PairRowRefused(argv[2]);
+  } else if (mode == "pair-zero-capture") {
+    PairZeroCapture();
+  } else if (mode == "pair-transform") {
+    PairTransform();
   } else {
     std::printf("usage: g4muonicdata_bound_rate_check oracle-delta <file> | current | disabled | enabled | refuse | "
-                "pair | pair-order | pair-compiled | pair-switch-off | pair-config-refused <code> | pair-row-refused <codes>\n");
+                "pair | pair-order | pair-compiled | pair-switch-off | pair-config-refused <code> | pair-row-refused <codes> | "
+                "pair-transform | pair-zero-capture\n");
     return 2;
   }
   if (g_failures > 0) return 1;

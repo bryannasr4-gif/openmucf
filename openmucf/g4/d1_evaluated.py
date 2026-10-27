@@ -814,26 +814,66 @@ def _finite_real(x: Any, where: str) -> float:
     return value
 
 
+#: An upper bound on the exponential variate ``-ln(u)`` a consumer scales a lifetime by when it samples a
+#: time: no binary64 ``u`` in (0, 1) gives more than ``-ln(2**-1074) = 744.44...``.
+EXPONENTIAL_VARIATE_MAX = 745.0
+
+
 def pair(tau: Any, q: Any, free_tau: Any) -> Pair:
-    """``d = q / free_tau``, ``c = 1/tau - d`` from one primitive tuple (ns, 1, ns). A non-finite or
-    non-real primitive, ``tau`` or ``free_tau`` not positive, ``q`` outside (0, 1], a decay rate that is not
-    finite or not in ``(0, 1/free_tau]`` (a quotient that underflows to zero included), a ``1/tau`` that
-    overflows, or a capture rate that is not finite or negative is refused; nothing is clipped. The same
-    contract holds in the semantic layer and the provider of the Geant4 glue."""
+    """``d = q / free_tau``, ``c = 1/tau - d`` from one primitive tuple (ns, 1, ns), admitted only if every
+    quantity a consumer forms from it is finite and in its domain; nothing is clipped. The consumer transform,
+    in the order the consumers evaluate it:
+
+    * the primitives: ``tau`` and ``free_tau`` finite and positive, ``q`` finite in (0, 1];
+    * the decay rate ``d = q/free_tau``: finite and in ``(0, 1/free_tau]`` (a quotient that underflows to
+      zero is refused);
+    * ``1/tau``: finite; the capture rate ``c = 1/tau - d``: finite and not negative (``c = 0`` is admitted);
+    * the total rate ``c + d``: finite and positive. The consumer lifetime `1/(capture + decay)` must be
+      finite and positive;
+    * the capture probability ``c/(c + d)``: in [0, 1];
+    * the partial lifetimes the atomic route stores: ``1/d`` finite; ``1/c`` finite when ``c > 0`` (``c = 0``
+      stores an infinite capture lifetime, whose reciprocal is a zero capture rate, so capture is never
+      chosen); the rates it reads back from them, ``1/(1/c) + 1/(1/d)``, finite and positive;
+    * a sampled waiting time: ``EXPONENTIAL_VARIATE_MAX`` times the lifetime, and divided by the total rate,
+      finite.
+
+    A non-real primitive is refused too. The same transform is checked by the semantic layer and the provider
+    of the Geant4 glue."""
     t, x, f = _finite_real(tau, "tau"), _finite_real(q, "q"), _finite_real(free_tau, "free_tau")
     if not (t > 0 and f > 0):
         raise EvaluationError("tau and free_tau must be positive")
     if not 0 < x <= 1:
         raise EvaluationError(f"q={x!r} is outside (0, 1]")
     decay = x / f
-    total = 1.0 / t
     if not (math.isfinite(decay) and decay > 0 and decay <= 1.0 / f):
         raise EvaluationError("the decay rate is outside 0 < d <= 1/free_tau")
+    total = 1.0 / t
     if not math.isfinite(total):
         raise EvaluationError("1/tau is not finite")
     capture = total - decay
     if not (math.isfinite(capture) and capture >= 0):
         raise EvaluationError(f"the capture rate {capture!r} is negative or not finite")
+    rate = capture + decay
+    if not (math.isfinite(rate) and rate > 0):
+        raise EvaluationError("the total rate c + d is not finite and positive")
+    lifetime = 1.0 / rate
+    if not (math.isfinite(lifetime) and lifetime > 0):
+        raise EvaluationError("the consumer lifetime 1/(capture + decay) is not finite and positive")
+    probability = capture / rate
+    if not 0 <= probability <= 1:
+        raise EvaluationError("the capture probability c/(c + d) is outside [0, 1]")
+    decay_lifetime = 1.0 / decay
+    if not math.isfinite(decay_lifetime):
+        raise EvaluationError("the decay partial lifetime 1/d is not finite")
+    capture_lifetime = 1.0 / capture if capture > 0 else math.inf
+    if capture > 0 and not math.isfinite(capture_lifetime):
+        raise EvaluationError("the capture partial lifetime 1/c of a positive capture rate is not finite")
+    read_back = 1.0 / capture_lifetime + 1.0 / decay_lifetime
+    if not (math.isfinite(read_back) and read_back > 0):
+        raise EvaluationError("the rates read back from the partial lifetimes are not finite and positive")
+    longest = EXPONENTIAL_VARIATE_MAX
+    if not (math.isfinite(longest * lifetime) and math.isfinite(longest / rate)):
+        raise EvaluationError("a sampled waiting time could overflow")
     return Pair(t, x, f, capture, decay)
 
 

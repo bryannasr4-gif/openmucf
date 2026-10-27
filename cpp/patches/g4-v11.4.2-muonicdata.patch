@@ -18,10 +18,10 @@ index e2973354eb..ffa2a0b56a 100644
  #endif
 diff --git a/source/particles/management/include/G4MuonicBoundRateProvider.hh b/source/particles/management/include/G4MuonicBoundRateProvider.hh
 new file mode 100644
-index 0000000..185c07f
+index 0000000..787e49b
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicBoundRateProvider.hh
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,122 @@
 +// G4MuonicBoundRateProvider -- one capture and decay rate pair for a negative muon in the 1s state of a
 +// muonic atom, given to both stopped-muon routes of Geant4 when an application asks for it.
 +//
@@ -73,9 +73,10 @@ index 0000000..185c07f
 +// from its one tuple (tau, q, free_tau): decay = q / free_tau, capture = 1/tau - decay, so the two rates of
 +// both routes come from one realization and capture + decay = 1/tau. The row takes precedence over the
 +// formula above and is not limited to its domain. Other keys retain the selected capture profile and the
-+// existing route-specific formula or fallback. A row whose tuple is not finite and positive, has q outside
-+// (0, 1], or whose decay rate, 1/tau or capture rate is not finite or out of domain (a decay rate that
-+// underflows to zero, a negative capture rate) is refused with G4MuonicBoundRates001; the provider is then
++// existing route-specific formula or fallback. A row whose tuple fails the consumer transform of
++// G4MuonicDataSemantics::BoundPairProblem, which requires every rate, lifetime, probability and waiting time
++// a consumer forms from it to be finite and in its domain, is refused with G4MuonicBoundRates001. The
++// consumer lifetime `1/(capture + decay)` must be finite and positive. The provider is then
 +// poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer
 +// falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's
 +// free normalization. A pair profile with the switch off is refused at the
@@ -267,10 +268,10 @@ index 0000000..d151435
 +#endif
 diff --git a/source/particles/management/include/G4MuonicDataSemantics.hh b/source/particles/management/include/G4MuonicDataSemantics.hh
 new file mode 100644
-index 0000000..d0a2303
+index 0000000..02c7171
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataSemantics.hh
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,69 @@
 +// G4MuonicDataSemantics -- what a G4MuonicData dataset must mean, over and above what its grammar
 +// allows.
 +//
@@ -293,7 +294,7 @@ index 0000000..d0a2303
 +//   S004  units: the `#UNITS` assignment of every value column, as the lookups read it.
 +//   S005  values: finite, and in the domain the quantity has (a rate and an energy are positive,
 +//         an uncertainty is not negative, an effective charge does not exceed Z, a pair tuple's q
-+//         lies in (0, 1] and the capture rate 1/tau - q/free_tau it implies is not negative).
++//         lies in (0, 1] and every quantity a consumer forms from it is usable: BoundPairProblem).
 +//   S006  the D3 pair: one profile's two energy tables cover one key set, in one falling order.
 +#ifndef G4MUONICDATASEMANTICS_HH
 +#define G4MUONICDATASEMANTICS_HH
@@ -316,6 +317,27 @@ index 0000000..d0a2303
 +  // profile-level S006 issues follow the per-table ones, in bytewise profile order. An empty
 +  // vector is the only acceptable result for a dataset a consumer may read.
 +  static std::vector<Issue> Validate(const G4MuonicDataTable& dataset);
++
++  // The consumer transform of one bound-rate pair tuple (tau and free_tau in ns, q dimensionless), in the
++  // order the consumers evaluate it. A tuple is admitted only if every quantity a consumer forms from it is
++  // finite and in its domain; nothing is clipped:
++  //   tau and free_tau finite and positive, q finite in (0, 1];
++  //   the decay rate d = q / free_tau finite and in (0, 1/free_tau] (a quotient that underflows is refused);
++  //   1/tau finite, and the capture rate c = 1/tau - d finite and not negative (c = 0 is admitted);
++  //   the total rate c + d finite and positive. The consumer lifetime `1/(capture + decay)` must be finite
++  //   and positive;
++  //   the capture probability c / (c + d) in [0, 1];
++  //   the partial lifetimes the atomic route stores: 1/d finite, and 1/c finite when c > 0 (c = 0 stores an
++  //   infinite capture lifetime, read back as a zero capture rate, so capture is never chosen); the rates
++  //   read back from them, 1/(1/c) + 1/(1/d), finite and positive;
++  //   a sampled waiting time: kExponentialVariateMax times the lifetime, and over the total rate, finite.
++  // Returns nullptr and sets `capture` and `decay` for an admitted tuple, otherwise the reason. The semantic
++  // rule S005 and the Geant4 provider call this one function, so they cannot disagree.
++  static const char* BoundPairProblem(double tau, double q, double free_tau, double& capture, double& decay);
++
++  // An upper bound on the exponential variate -ln(u) a consumer scales a lifetime by when it samples a time:
++  // no double u in (0, 1) gives more than -ln(2^-1074) = 744.44...
++  static constexpr double kExponentialVariateMax = 745.;
 +};
 +
 +#endif
@@ -555,16 +577,17 @@ index 9893519553..141bb816ea 100644
                                            G4double Xuser)
 diff --git a/source/particles/management/src/G4MuonicBoundRateProvider.cc b/source/particles/management/src/G4MuonicBoundRateProvider.cc
 new file mode 100644
-index 0000000..cd296d9
+index 0000000..7f4161a
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicBoundRateProvider.cc
-@@ -0,0 +1,217 @@
+@@ -0,0 +1,211 @@
 +// G4MuonicBoundRateProvider -- see the header for what the pair is, where it is used and its domain.
 +#include "G4MuonicBoundRateProvider.hh"
 +
 +#include "G4Exception.hh"
 +#include "G4MuonicAtomHelper.hh"
 +#include "G4MuonicDataOverlay.hh"
++#include "G4MuonicDataSemantics.hh"
 +#include "G4MuonicDataTable.hh"
 +#include "G4PhysicalConstants.hh"
 +#include "G4SystemOfUnits.hh"
@@ -633,17 +656,10 @@ index 0000000..cd296d9
 +  throw std::runtime_error(text);
 +}
 +
-+// Why a pair tuple cannot be used, or nullptr. Rates in ns^-1.
++// Why a pair tuple cannot be used, or nullptr: the one consumer transform the semantic rule S005 applies
++// too. Rates in ns^-1 (Geant4's time unit is the ns).
 +const char* PairProblem(G4double tau, G4double q, G4double freeTau, G4double& capture, G4double& decay) {
-+  if (!PositiveFinite(tau) || !PositiveFinite(freeTau)) return "tau or free_tau is not finite and positive";
-+  if (!std::isfinite(q) || !(q > 0.) || q > 1.) return "q is outside (0, 1]";
-+  decay = q / freeTau;
-+  const G4double total = 1. / tau;
-+  if (!PositiveFinite(decay) || decay > 1. / freeTau) return "the decay rate is outside 0 < decay <= 1/free_tau";
-+  if (!std::isfinite(total)) return "the rate 1/tau is not finite";
-+  capture = total - decay;
-+  if (!std::isfinite(capture) || capture < 0.) return "the capture rate 1/tau - q/free_tau is negative or not finite";
-+  return nullptr;
++  return G4MuonicDataSemantics::BoundPairProblem(tau, q, freeTau, capture, decay);
 +}
 +
 +}  // namespace
@@ -1568,10 +1584,10 @@ index 0000000..37c7a4e
 +}
 diff --git a/source/particles/management/src/G4MuonicDataSemantics.cc b/source/particles/management/src/G4MuonicDataSemantics.cc
 new file mode 100644
-index 0000000..1f58438
+index 0000000..57373ca
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicDataSemantics.cc
-@@ -0,0 +1,470 @@
+@@ -0,0 +1,500 @@
 +// G4MuonicDataSemantics -- implementation. See the header for what each code stands for.
 +//
 +// No value is ever rendered into a message: the reader parses numbers without consulting the
@@ -1583,6 +1599,7 @@ index 0000000..1f58438
 +#include <cmath>
 +#include <cstddef>
 +#include <iterator>
++#include <limits>
 +#include <map>
 +#include <set>
 +#include <string>
@@ -1933,25 +1950,14 @@ index 0000000..1f58438
 +        reported_positive = true;
 +      }
 +    }
-+    // The pair tuple's domain, on the rates a consumer forms: q in (0, 1]; the decay rate q/free_tau finite and
-+    // in (0, 1/free_tau], so a quotient that underflows to zero is refused; 1/tau finite; and the capture rate
-+    // 1/tau - q/free_tau finite and not negative.
++    // The pair tuple's domain is the consumer transform (BoundPairProblem); the primitives' finiteness and
++    // sign are the generic rules above.
 +    if (table.name == kPairTable && !reported_pair && record.floats.size() == 3) {
 +      const double tau = record.floats[0], q = record.floats[1], free_tau = record.floats[2];
 +      if (std::isfinite(tau) && std::isfinite(q) && std::isfinite(free_tau) && tau > 0. && free_tau > 0.) {
-+        const double decay = q / free_tau, total = 1. / tau, capture = total - decay;
-+        const char* why = nullptr;
-+        if (!(q > 0. && q <= 1.)) {
-+          why = " column 'q' is outside (0, 1]";
-+        } else if (!(std::isfinite(decay) && decay > 0. && decay <= 1. / free_tau)) {
-+          why = " gives a decay rate q/free_tau outside (0, 1/free_tau]";
-+        } else if (!std::isfinite(total)) {
-+          why = " gives a rate 1/tau that is not finite";
-+        } else if (!(std::isfinite(capture) && capture >= 0.)) {
-+          why = " gives a capture rate 1/tau - q/free_tau that is negative or not finite";
-+        }
-+        if (why != nullptr) {
-+          Add(issues, "S005", table, "row " + Key(record.keys) + why);
++        double capture = 0., decay = 0.;
++        if (const char* why = G4MuonicDataSemantics::BoundPairProblem(tau, q, free_tau, capture, decay)) {
++          Add(issues, "S005", table, "row " + Key(record.keys) + ": " + why);
 +          reported_pair = true;
 +        }
 +      }
@@ -2041,6 +2047,46 @@ index 0000000..1f58438
 +    CheckPair(profile, *kshell, *levels, issues);
 +  }
 +  return issues;
++}
++
++const char* G4MuonicDataSemantics::BoundPairProblem(double tau, double q, double free_tau, double& capture,
++                                                    double& decay) {
++  if (!(std::isfinite(tau) && tau > 0. && std::isfinite(free_tau) && free_tau > 0.)) {
++    return "tau or free_tau is not finite and positive";
++  }
++  if (!(std::isfinite(q) && q > 0. && q <= 1.)) return "q is outside (0, 1]";
++  const double d = q / free_tau;
++  if (!(std::isfinite(d) && d > 0. && d <= 1. / free_tau)) {
++    return "the decay rate q/free_tau is outside (0, 1/free_tau]";
++  }
++  const double total = 1. / tau;
++  if (!std::isfinite(total)) return "the rate 1/tau is not finite";
++  const double c = total - d;
++  if (!(std::isfinite(c) && c >= 0.)) return "the capture rate 1/tau - q/free_tau is negative or not finite";
++  const double rate = c + d;
++  if (!(std::isfinite(rate) && rate > 0.)) return "the total rate capture + decay is not finite and positive";
++  const double lifetime = 1. / rate;
++  if (!(std::isfinite(lifetime) && lifetime > 0.)) {
++    return "the consumer lifetime 1/(capture + decay) is not finite and positive";
++  }
++  const double probability = c / rate;
++  if (!(probability >= 0. && probability <= 1.)) return "the capture probability is outside [0, 1]";
++  const double decay_lifetime = 1. / d;
++  if (!std::isfinite(decay_lifetime)) return "the decay partial lifetime 1/decay is not finite";
++  const double capture_lifetime = c > 0. ? 1. / c : std::numeric_limits<double>::infinity();
++  if (c > 0. && !std::isfinite(capture_lifetime)) {
++    return "the capture partial lifetime 1/capture of a positive capture rate is not finite";
++  }
++  const double read_back = 1. / capture_lifetime + 1. / decay_lifetime;
++  if (!(std::isfinite(read_back) && read_back > 0.)) {
++    return "the rates read back from the partial lifetimes are not finite and positive";
++  }
++  if (!(std::isfinite(kExponentialVariateMax * lifetime) && std::isfinite(kExponentialVariateMax / rate))) {
++    return "a sampled waiting time can overflow";
++  }
++  capture = c;
++  decay = d;
++  return nullptr;
 +}
 diff --git a/source/particles/management/src/G4MuonicDataTable.cc b/source/particles/management/src/G4MuonicDataTable.cc
 new file mode 100644

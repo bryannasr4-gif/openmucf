@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstddef>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -359,25 +360,14 @@ void CheckTable(const Table& table, const std::string& version, std::vector<Issu
         reported_positive = true;
       }
     }
-    // The pair tuple's domain, on the rates a consumer forms: q in (0, 1]; the decay rate q/free_tau finite and
-    // in (0, 1/free_tau], so a quotient that underflows to zero is refused; 1/tau finite; and the capture rate
-    // 1/tau - q/free_tau finite and not negative.
+    // The pair tuple's domain is the consumer transform (BoundPairProblem); the primitives' finiteness and
+    // sign are the generic rules above.
     if (table.name == kPairTable && !reported_pair && record.floats.size() == 3) {
       const double tau = record.floats[0], q = record.floats[1], free_tau = record.floats[2];
       if (std::isfinite(tau) && std::isfinite(q) && std::isfinite(free_tau) && tau > 0. && free_tau > 0.) {
-        const double decay = q / free_tau, total = 1. / tau, capture = total - decay;
-        const char* why = nullptr;
-        if (!(q > 0. && q <= 1.)) {
-          why = " column 'q' is outside (0, 1]";
-        } else if (!(std::isfinite(decay) && decay > 0. && decay <= 1. / free_tau)) {
-          why = " gives a decay rate q/free_tau outside (0, 1/free_tau]";
-        } else if (!std::isfinite(total)) {
-          why = " gives a rate 1/tau that is not finite";
-        } else if (!(std::isfinite(capture) && capture >= 0.)) {
-          why = " gives a capture rate 1/tau - q/free_tau that is negative or not finite";
-        }
-        if (why != nullptr) {
-          Add(issues, "S005", table, "row " + Key(record.keys) + why);
+        double capture = 0., decay = 0.;
+        if (const char* why = G4MuonicDataSemantics::BoundPairProblem(tau, q, free_tau, capture, decay)) {
+          Add(issues, "S005", table, "row " + Key(record.keys) + ": " + why);
           reported_pair = true;
         }
       }
@@ -467,4 +457,44 @@ std::vector<G4MuonicDataSemantics::Issue> G4MuonicDataSemantics::Validate(const 
     CheckPair(profile, *kshell, *levels, issues);
   }
   return issues;
+}
+
+const char* G4MuonicDataSemantics::BoundPairProblem(double tau, double q, double free_tau, double& capture,
+                                                    double& decay) {
+  if (!(std::isfinite(tau) && tau > 0. && std::isfinite(free_tau) && free_tau > 0.)) {
+    return "tau or free_tau is not finite and positive";
+  }
+  if (!(std::isfinite(q) && q > 0. && q <= 1.)) return "q is outside (0, 1]";
+  const double d = q / free_tau;
+  if (!(std::isfinite(d) && d > 0. && d <= 1. / free_tau)) {
+    return "the decay rate q/free_tau is outside (0, 1/free_tau]";
+  }
+  const double total = 1. / tau;
+  if (!std::isfinite(total)) return "the rate 1/tau is not finite";
+  const double c = total - d;
+  if (!(std::isfinite(c) && c >= 0.)) return "the capture rate 1/tau - q/free_tau is negative or not finite";
+  const double rate = c + d;
+  if (!(std::isfinite(rate) && rate > 0.)) return "the total rate capture + decay is not finite and positive";
+  const double lifetime = 1. / rate;
+  if (!(std::isfinite(lifetime) && lifetime > 0.)) {
+    return "the consumer lifetime 1/(capture + decay) is not finite and positive";
+  }
+  const double probability = c / rate;
+  if (!(probability >= 0. && probability <= 1.)) return "the capture probability is outside [0, 1]";
+  const double decay_lifetime = 1. / d;
+  if (!std::isfinite(decay_lifetime)) return "the decay partial lifetime 1/decay is not finite";
+  const double capture_lifetime = c > 0. ? 1. / c : std::numeric_limits<double>::infinity();
+  if (c > 0. && !std::isfinite(capture_lifetime)) {
+    return "the capture partial lifetime 1/capture of a positive capture rate is not finite";
+  }
+  const double read_back = 1. / capture_lifetime + 1. / decay_lifetime;
+  if (!(std::isfinite(read_back) && read_back > 0.)) {
+    return "the rates read back from the partial lifetimes are not finite and positive";
+  }
+  if (!(std::isfinite(kExponentialVariateMax * lifetime) && std::isfinite(kExponentialVariateMax / rate))) {
+    return "a sampled waiting time can overflow";
+  }
+  capture = c;
+  decay = d;
+  return nullptr;
 }
