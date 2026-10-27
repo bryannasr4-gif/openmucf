@@ -662,8 +662,9 @@ def _missing(_: bytes) -> bytes:
     (lifetime.PAIR_LAYER1_RELPATH, lambda b: b.replace(b"0.99359799999999998", b"0.99359899999999998")),
     (lifetime.PAIR_LAYER1_RELPATH, lambda b: b.replace(b"Z A tau q free_tau", b"Z A q tau free_tau")),
     (lifetime.CONVENTION_RELPATH, lambda b: b.replace(b'"SOURCE_REPORTED_FROZEN"', b'"SOURCE_CONVERTED"')),
+    ("docs/evaluated-bound-rates.md", lambda b: b.replace(b"NOT_ESTABLISHED", b"MEETS", 1)),
 ], ids=["tampered-provenance", "missing-provenance", "tampered-tuple", "reordered-columns",
-        "tampered-convention"])
+        "tampered-convention", "tampered-page"])
 def test_drill_the_check_refuses_a_tampered_or_missing_artifact(monkeypatch, relpath, change):
     from openmucf.g4 import spec
 

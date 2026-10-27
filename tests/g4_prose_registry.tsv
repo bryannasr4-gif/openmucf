@@ -17,6 +17,7 @@
 0be561600f53acee69d6560c11be0c944b55e5a1	CHANGELOG.md	REGISTERED: 0.35, 0.94, two -- the R_col and total-R figures FINDINGS.md section 3 prints, two successive factors
 0c623f480581b5db8a3dffe517f16ddd50260e90	CHANGELOG.md	REGISTERED: 0.18 -- Kelly, Hart & Rose's adopted efficiency, `eta_acc_kelly_psi_minimal` in openmucf/data/muon_cost_chain.csv
 0ca95ff9772a0d413ebb86dc32368411e6eb6fb1	CHANGELOG.md	REGISTERED: 4.39, 07, 5.25, 05, 5, 3 -- the T3 median Q_net before and after, and the orders-of-magnitude fall retracted, as FINDINGS.md's section-2b amendment prints them
+0cd9f3bc2d98405342673ef746a7e1b0c5236701	CHANGELOG.md	REGISTERED: 4 -- the digit of the pair-profile variable `G4MUONICDATA_D1_PAIR_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name, an identifier
 0cf4f40d22f7b302db25b5cba1c83fe611c4d618	CHANGELOG.md	REGISTERED: 640 -- the wrapped sentences the layer enumerated at this entry's date, a count the sentence states 'at this head'
 0cfaf0c352c1750df8557d1ddf7d76aa02bb3626	CHANGELOG.md	REGISTERED: 1.6, 1.7, 0.011 -- the base chain's sd error and its shift of `ose_C1`, as openmucf/design.py's docstring and tests/test_design_audit.py's comment record them
 0e15f5d303b8c683836d4c3711595e48adafe2e5	CHANGELOG.md	REGISTERED: 5497.5, 4993, 1133.5, 1029.5 -- MUON_COST.md's T3 median and tier ratio before and after, as its own correction note prints them
@@ -709,6 +710,7 @@ e52326badfd61270409743256330b494a0f4e7ef	README.md	REGISTERED: 4.70, 10, ³ -- r
 e8c6140271a87d224d031623162ae2c83169e9c4	README.md	REGISTERED: ³ -- the mass number of ³He, a nuclide label
 f783688ed75f397b185cc663f6b24ce30a69232a	README.md	REGISTERED: 239 -- the nuclide label Pu-239
 ff26f89f848d3a34d6d2227564f3fd18987804e0	README.md	REGISTERED: 0.5.1 -- the dataset version of the D3 tables release v1.3.0 holds, the topmost '`#VERSION` becomes 0.5.1' of the [1.3.0] section of CHANGELOG.md; tests/test_release_metadata.py binds this clause to that section
+154ac71e0b80aa15a87c9b07855a7cb91ba073e1	cpp/patches/README.md	REGISTERED: 4 -- the digit of the pair-profile variable `G4MUONICDATA_D1_PAIR_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name, an identifier
 200707f6d7053b10a5e5f3b02c4448c9ff26bce7	cpp/patches/README.md	REGISTERED: one -- the common capture/decay pair that cpp/include/G4MuonicBoundRateProvider.hh defines for both consumers; historical oracle agreement is explicitly kept separate from the current checks
 21ffeec98e1eab90e7c9b55fc3e79d25073d0a52	cpp/patches/README.md	REGISTERED: one -- the single call the sentence quotes, SetEnableMuonicData(true)
 28c26f573211c080d723e9f2a6c026ba087cc3a3	cpp/patches/README.md	REGISTERED: 1, 2 -- the suppression-consistency boundary enforced by LowZDecayRate and Rates in cpp/src/G4MuonicBoundRateProvider.cc; docs/low-z-bound-muon-decay.md explicitly supplies no numerical physical error bound
