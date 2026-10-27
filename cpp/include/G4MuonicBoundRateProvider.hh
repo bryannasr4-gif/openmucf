@@ -44,22 +44,21 @@
 // constructed keep the lifetimes they were built with. Set it on the master thread before the physics
 // list is built; worker threads only read it.
 //
-// Evaluated pair rows. With the G4MuonicData opt-in on and G4MUONICDATA_D1_PAIR_PROFILE naming a profile
-// that carries a `bound_rate_primitives` table (G4MuonicDataOverlay), a key that table holds is answered
-// from its one tuple (tau, q, free_tau): decay = q / free_tau, capture = 1/tau - decay, so the two rates of
-// both routes come from one realization and capture + decay = 1/tau. The row takes precedence over the
-// formula above and is not limited to its domain. Other keys retain the selected capture profile and the
-// existing route-specific formula or fallback. A row whose tuple fails the consumer transform of
-// G4MuonicDataSemantics::BoundPairProblem, which requires every rate, lifetime, probability and waiting time
-// a consumer forms from it to be finite and in its domain, is refused with G4MuonicBoundRates001. The
-// consumer lifetime `1/(capture + decay)` must be finite and positive. The provider is then
+// Evaluated pair rows. With the G4MuonicData opt-in on and G4MUONICDATA_D1_PAIR_PROFILE naming a profile that
+// carries a `bound_rate_primitives` table (G4MuonicDataOverlay), a key that table holds is answered from its one
+// tuple (tau, q, free_tau): decay = q / free_tau, capture = 1/tau - decay, so the two rates of both routes come
+// from one realization and capture + decay = 1/tau. The row takes precedence over the formula above and is not
+// limited to its domain. Other keys retain the selected capture profile and the existing route-specific formula
+// or fallback. A row whose tuple fails the consumer transform of G4MuonicDataSemantics::BoundPairProblem is
+// refused with G4MuonicBoundRates001. Rates, probabilities and sampled waiting times must be finite and in their
+// domains. Lifetimes must be finite except that zero capture stores an infinite capture lifetime, which reads
+// back as zero. The consumer lifetime `1/(capture + decay)` must be finite and positive. The provider is then
 // poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer
-// falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's
-// free normalization. A pair profile with the switch off is refused at the
-// first consultation with the fatal G4MuonicBoundRates003, whichever of the two options was set first;
-// should a handler suppress the abort, every later consultation throws. Describe(Z, A) names, per key, the
-// capture profile, the pair profile, the answer (pair row, common formula or consumer fallback), and its
-// decay-factor convention where applicable.
+// falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's free
+// normalization. A pair profile with the switch off is refused at the first consultation with the fatal
+// G4MuonicBoundRates003, whichever of the two options was set first; should a handler suppress the abort, every
+// later consultation throws. Describe(Z, A) names, per key, the capture profile, the pair profile, the answer
+// (pair row, common formula or consumer fallback), and its decay-factor convention where applicable.
 //
 // The static legacy getters G4MuonMinusBoundDecay::GetMuonDecayRate and
 // G4MuonicAtomHelper::GetMuonDecayRate are unchanged and are not affected by the switch: they report

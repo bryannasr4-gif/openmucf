@@ -97,8 +97,9 @@ less it, on both stopped-muon routes. Other keys retain the selected capture pro
 `G4MuonicBoundRateProvider::Describe` names the answer per key. The selected pair table is bound to its
 provenance file: that file must be strict JSON whose object keys carry no escape, its records must be the rows
 that file admits, and that file's SHA-256 must be the table's `#SOURCEDIGEST`; otherwise, and for a tuple a
-consumer could not use (`G4MuonicDataSemantics::BoundPairProblem`: every rate, lifetime, probability and
-waiting time a consumer forms from it must be finite and in its domain), the load raises the fatal
+consumer could not use (`G4MuonicDataSemantics::BoundPairProblem`: rates, probabilities and sampled waiting
+times must be finite and in their domains; lifetimes must be finite except that zero capture stores an infinite
+capture lifetime, which reads back as zero), the load raises the fatal
 `G4Exception` `G4MuonicData005`. The consumer lifetime `1/(capture + decay)` must be finite and positive. `G4MUONICDATA_PROFILE` naming a pair profile, and a pair profile that carries no pair table,
 raise the fatal `G4Exception` `G4MuonicData004`; a pair profile selected with the common-rate option off raises a
 fatal `G4Exception` of the provider at the first stopped muon, whichever option was set first. Should a handler
