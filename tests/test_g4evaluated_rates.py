@@ -684,6 +684,80 @@ def test_drill_a_pair_table_with_rows_out_of_order_is_refused():
         spec.parse(swapped)
 
 
+# --------------------------------------------------------------------------------------------
+# a compensating wrong partition, and the declared tolerances held at their edges
+# --------------------------------------------------------------------------------------------
+
+
+#: The implementation tolerances the preregistration declares: 1e-12 relative for rates and per-draw
+#: closure, and
+#: 1e-9 ns for deterministic lifetimes. The edge probes are built from these, not from the module's
+#: constants, so a
+#: relaxed constant cannot move the probes with it.
+DECLARED_REL_TOL = 1e-12
+DECLARED_NS_TOL = 1e-9
+
+
+def test_the_implementation_tolerances_are_the_declared_ones():
+    assert ev.REL_TOL == DECLARED_REL_TOL and ev.NS_TOL == DECLARED_NS_TOL
+
+
+def _tuple(record) -> tuple[float, float, float]:
+    t = record["tuple"]
+    return float(t["tau_ns"]), float(t["q"]), float(t["free_tau_ns"])
+
+
+def test_drill_a_compensating_wrong_partition_fails_both_decay_gates(record):
+    """The q mutant's decay with the capture adjusted to keep the lifetime: c + d closes exactly, yet the
+    partition
+    is wrong. Both the delivery gate and the per-draw gate refuse it on their decay predicate alone."""
+    tau, q, ft = _tuple(record)
+    d_bad = 0.94 / ft
+    c_bad = 1.0 / tau - d_bad
+    assert abs((c_bad + d_bad) * tau - 1.0) <= 1e-15
+    with pytest.raises(ev.EvaluationError, match="q/free_tau"):
+        ev.check_delivered(c_bad, d_bad, record["tuple"])
+    with pytest.raises(ev.EvaluationError, match="q/free_tau"):
+        ev.check_draws([ev.Draw("wrong-partition", tau, q, ft, c_bad, d_bad)])
+    d_ok = q / ft
+    ev.check_delivered(1.0 / tau - d_ok, d_ok, record["tuple"])
+    ev.check_draws([ev.Draw("right-partition", tau, q, ft, 1.0 / tau - d_ok, d_ok)])
+
+
+@pytest.mark.parametrize("scale,accepted", [(0.5, True), (2.0, False)], ids=["inside", "outside"])
+def test_drill_the_decay_tolerance_edge(record, scale, accepted):
+    """A decay rate off by half the relative tolerance passes, by twice it is refused, in both gates."""
+    tau, q, ft = _tuple(record)
+    d = q / ft * (1.0 + scale * DECLARED_REL_TOL)
+    c = 1.0 / tau - d
+    for gate in (lambda: ev.check_delivered(c, d, record["tuple"]),
+                 lambda: ev.check_draws([ev.Draw("edge", tau, q, ft, c, d)])):
+        if accepted:
+            gate()
+        else:
+            with pytest.raises(ev.EvaluationError, match="q/free_tau"):
+                gate()
+
+
+@pytest.mark.parametrize("scale,accepted", [(0.5, True), (2.0, False)], ids=["inside", "outside"])
+def test_drill_the_lifetime_and_closure_tolerance_edges(record, scale, accepted):
+    """The delivered lifetime off by half the ns tolerance passes and by twice it is refused; a draw whose c
+    + d is
+    off 1/tau by half the relative tolerance passes and by twice it is refused."""
+    tau, q, ft = _tuple(record)
+    d = q / ft
+    c_life = 1.0 / (tau + scale * DECLARED_NS_TOL) - d
+    c_draw = (1.0 + scale * DECLARED_REL_TOL) / tau - d
+    if accepted:
+        ev.check_delivered(c_life, d, record["tuple"])
+        ev.check_draws([ev.Draw("edge", tau, q, ft, c_draw, d)])
+    else:
+        with pytest.raises(ev.EvaluationError, match="lifetime"):
+            ev.check_delivered(c_life, d, record["tuple"])
+        with pytest.raises(ev.EvaluationError, match=r"c \+ d"):
+            ev.check_draws([ev.Draw("edge", tau, q, ft, c_draw, d)])
+
+
 @pytest.mark.parametrize("tau,q,free_tau", [(863.7, 1e-300, 1e100), (1e-310, 0.993598, 2196.9811)],
                          ids=["decay-underflows", "inverse-lifetime-overflows"])
 def test_drill_the_pair_refuses_derived_rates_out_of_domain(tau, q, free_tau):
