@@ -95,7 +95,7 @@ With the dataset opt-in and the common-rate option both on, `G4MuonicBoundRatePr
 holds from its tuple `(tau, q, free_tau)`, the decay rate `q/free_tau` and the capture rate the inverse of `tau`
 less it, on both stopped-muon routes. Other keys retain the selected capture profile and the existing route-specific formula or fallback. With the dataset option on, the loader parses and validates every table. Both switches and the pair-profile selection are required to use an evaluated row.
 `G4MuonicBoundRateProvider::Describe` names the answer per key. The selected pair table is bound to its
-provenance file: its records must be the rows
+provenance file: that file must be strict JSON whose object keys carry no escape, its records must be the rows
 that file admits, and that file's SHA-256 must be the table's `#SOURCEDIGEST`; otherwise, and for a tuple a
 consumer could not use (`G4MuonicDataSemantics::BoundPairProblem`: every rate, lifetime, probability and
 waiting time a consumer forms from it must be finite and in its domain), the load raises the fatal

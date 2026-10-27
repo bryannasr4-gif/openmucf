@@ -486,6 +486,33 @@ int PairRowRefused(const std::string& codes) {
   return 0;
 }
 
+// The strict provenance reader over files: one line per file, `ACCEPT` and the admitted row keys in hex (so any
+// byte survives the line), or `REFUSE`.
+int ProvenanceRows(int count, char** files) {
+  static const char* const hex = "0123456789abcdef";
+  for (int k = 0; k < count; ++k) {
+    std::ifstream in(files[k], std::ios::binary);
+    std::ostringstream bytes;
+    bytes << in.rdbuf();
+    std::vector<std::string> keys;
+    if (!in || !G4MuonicDataOverlay::ProvenanceRowKeys(bytes.str(), keys)) {
+      std::printf("REFUSE\n");
+      continue;
+    }
+    std::string line = "ACCEPT";
+    for (const std::string& key : keys) {
+      line += " x";
+      for (const unsigned char c : key) {
+        line.push_back(hex[c >> 4]);
+        line.push_back(hex[c & 0xf]);
+      }
+    }
+    std::printf("%s\n", line.c_str());
+    ++g_checks;
+  }
+  return 0;
+}
+
 // The consumer transform over tuples read from stdin, `tau q free_tau` per line in any strtod spelling: one line
 // each, `ADMIT capture decay` (hexadecimal) or `REFUSE`.
 int PairTransform() {
@@ -551,12 +578,14 @@ int main(int argc, char** argv) {
     PairRowRefused(argv[2]);
   } else if (mode == "pair-zero-capture") {
     PairZeroCapture();
+  } else if (mode == "provenance-rows" && argc > 2) {
+    ProvenanceRows(argc - 2, argv + 2);
   } else if (mode == "pair-transform") {
     PairTransform();
   } else {
     std::printf("usage: g4muonicdata_bound_rate_check oracle-delta <file> | current | disabled | enabled | refuse | "
                 "pair | pair-order | pair-compiled | pair-switch-off | pair-config-refused <code> | pair-row-refused <codes> | "
-                "pair-transform | pair-zero-capture\n");
+                "provenance-rows <file>... | pair-transform | pair-zero-capture\n");
     return 2;
   }
   if (g_failures > 0) return 1;

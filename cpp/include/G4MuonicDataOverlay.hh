@@ -35,6 +35,7 @@
 #include "G4Types.hh"
 
 #include <string>
+#include <vector>
 
 class G4MuonicDataOverlay {
  public:
@@ -111,6 +112,13 @@ class G4MuonicDataOverlay {
   // whole array must be finite, positive and strictly falling, boundary between overlaid and
   // hydrogen-like values included.
   static void CheckCascadeLevels(G4int Z, G4int A, const G4double* levels, G4int count);
+
+  // The row keys a Layer-2 provenance document admits: the keys of its top-level "rows" object, in document
+  // order. The document must be strict JSON (RFC 8259) in UTF-8 -- every string, escape, number and literal
+  // valid, no trailing input, containers nested at most 64 deep -- and one object with exactly one "rows"
+  // member whose value is an object. An object key containing a backslash is refused, not decoded: the
+  // generator never escapes a key. False on refusal.
+  static G4bool ProvenanceRowKeys(const std::string& text, std::vector<std::string>& keys);
 };
 
 #endif

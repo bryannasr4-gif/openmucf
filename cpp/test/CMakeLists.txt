@@ -559,13 +559,19 @@ foreach(case IN ITEMS consumer_lifetime decay_lifetime capture_lifetime waiting_
            $<TARGET_FILE:g4muonicdata_bound_rate_check> ${check})
 endforeach()
 
-# A differential check against an independent statement, over a boundary and a seeded random corpus: the
-# compiled consumer transform against a simulation of what the consumers compute.
+# Differential checks against independent statements, each over a boundary and a seeded random corpus: the
+# compiled consumer transform against a simulation of what the consumers compute, and the compiled provenance
+# reader against Python's json module (its only permitted differences are documented intended refusals).
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
   add_test(NAME pair_transform_differential
            COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/check_pair_transform.py"
                    $<TARGET_FILE:g4muonicdata_bound_rate_check>)
+  add_test(NAME provenance_reader_differential
+           COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/check_provenance_reader.py"
+                   $<TARGET_FILE:g4muonicdata_bound_rate_check> "${G4MUONICDATA_PAIR_PROV}"
+                   "${G4MUONICDATA_REPO_ROOT}/tests/fixtures/provenance_reader"
+                   "${CMAKE_BINARY_DIR}/provenance_reader_corpus")
 else()
   # Registered as a failure, not omitted: a missing interpreter must not read as a passing check.
   add_test(NAME pair_transform_differential_no_python COMMAND ${CMAKE_COMMAND} -E false)
@@ -614,6 +620,40 @@ foreach(case IN ITEMS wrapping empty list absent duplicate_key duplicate_object 
   add_test(NAME bound_rates_pair_resealed_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}"
            "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
            $<TARGET_FILE:g4muonicdata_bound_rate_check> ${check})
+endforeach()
+
+# The same, for documents that are not strict JSON or spell a key with an escape: the exact fixtures that bound
+# another roster through decoded keys, an invalid escape and an invalid literal in a value, and an escaped
+# metadata key. Each is refused at load after its digest is recomputed, and every later lookup throws.
+set(G4MUONICDATA_READER_FIXTURES "${G4MUONICDATA_REPO_ROOT}/tests/fixtures/provenance_reader")
+foreach(case IN ITEMS escape_decoy metadata_decoy missing_actual_rows invalid_escape invalid_literal escaped_key)
+  set(dir "${CMAKE_BINARY_DIR}/pair_resealed_${case}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  if(case STREQUAL "escape_decoy")
+    file(READ "${G4MUONICDATA_READER_FIXTURES}/escape-decoy.prov.json" prov)
+  elseif(case STREQUAL "metadata_decoy")
+    file(READ "${G4MUONICDATA_READER_FIXTURES}/full-generated-metadata-decoy.prov.json" prov)
+  elseif(case STREQUAL "missing_actual_rows")
+    file(READ "${G4MUONICDATA_READER_FIXTURES}/missing-actual-rows.prov.json" prov)
+  elseif(case STREQUAL "invalid_escape")
+    string(REPLACE "\"G4MuonicData\"" "\"G4Muonic\\qData\"" prov "${pair_prov}")
+  elseif(case STREQUAL "invalid_literal")
+    string(REPLACE "\"G4MuonicData\"" "tru" prov "${pair_prov}")
+  else()
+    string(REPLACE "\"dataset\"" "\"d\\u0061taset\"" prov "${pair_prov}")
+  endif()
+  if(prov STREQUAL pair_prov OR prov STREQUAL "")
+    message(FATAL_ERROR "the re-sealed ${case} case did not change the provenance file")
+  endif()
+  set(prov_file "${dir}/d1_bound_rate.${G4MUONICDATA_PAIR_PROFILE}.prov.json")
+  file(WRITE "${prov_file}" "${prov}")
+  file(SHA256 "${prov_file}" digest)
+  string(REPLACE "${pair_digest_line}" "#SOURCEDIGEST ${digest}" member "${pair_member}")
+  g4muonicdata_write_member("${dir}" "${G4MUONICDATA_PAIR_NAME}" "${member}")
+  add_test(NAME bound_rates_pair_resealed_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}"
+           "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+           $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-row-refused G4MuonicData005)
 endforeach()
 
 # Every key and token below is read from the shipped files at configure time.

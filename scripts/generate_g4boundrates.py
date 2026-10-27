@@ -556,7 +556,8 @@ def render_section(root: Path) -> str:
         "`G4MUONICDATA_D1_PROFILE`, and with the dataset opt-in and the common-rate option above on a key the table "
         "holds takes the pair on both stopped-muon routes. Other keys retain the selected capture profile and the existing route-specific formula or fallback. The variable that spans both seams never "
         "selects it, and a pair profile with the common-rate option off, with no pair table, with a malformed or "
-        "empty pair table, or whose rows are not the rows its digest-checked provenance file admits is refused; "
+        "empty pair table, whose rows are not the rows its digest-checked provenance file admits, or whose "
+        "provenance file is not strict JSON or spells a key with an escape is refused; "
         "`cpp/patches/README.md` states how. The empty admitted roster above concerns "
         "the common formula, not the pair.",
         "",
