@@ -16,6 +16,14 @@
 // seam that resolves to it has no tables and every request there falls through to the consumer's
 // own code. The environment is read once, when the opt-in is set, and not again.
 //
+// A third selection is independent of both: G4MUONICDATA_D1_PAIR_PROFILE names the profile whose
+// `bound_rate_primitives` table carries evaluated bound-muon rate pairs, one tuple (tau, q, free_tau) per
+// isotope, which G4MuonicBoundRateProvider gives both stopped-muon routes in place of the common pair for the
+// keys it holds. Unset, it is `compiled` (no pair table). It does not replace the capture profile: keys the
+// pair table does not hold keep the D1 profile's capture rate. G4MUONICDATA_PROFILE never selects it, and a
+// G4MUONICDATA_PROFILE naming a pair profile is refused (G4MuonicData004), as is a pair profile that carries
+// no pair table. Pair lookups are by isotope only.
+//
 // The legacy natural-composition rung -- a request for (Z, A) answered by the element's (Z, 0)
 // record -- is used exactly when the resolved profile for that seam is `parity`. Under any
 // evaluated profile a request with A > 0 is answered from that isotope or not at all, and the
@@ -58,6 +66,8 @@ class G4MuonicDataOverlay {
   struct Configuration {
     std::string datasetDirectory, datasetVersion, d1Profile, d3Profile;
     bool fallbackDeclarationExecuted = false;
+    // The pair profile G4MUONICDATA_D1_PAIR_PROFILE selected, `compiled` when none.
+    std::string d1PairProfile;
   };
 
   // Read the environment, discover and read the dataset, and freeze the configuration. Called once
@@ -83,6 +93,9 @@ class G4MuonicDataOverlay {
 
   // The same four lookups, with the rung that answered and the profile it was read through.
   static Resolution ResolveRate(G4int Z, G4int A);
+  // The bound-rate pair tuple for this isotope under the pair profile: `values` points at tau (ns), q and
+  // free_tau (ns), `count` 3; null for A <= 0, for a key the table does not hold, and with no pair profile.
+  static Resolution ResolvePair(G4int Z, G4int A);
   static Resolution ResolveZeff(G4int Z);
   static Resolution ResolveKShell(G4int Z, G4int A);
   static Resolution ResolveLevels(G4int Z, G4int A);

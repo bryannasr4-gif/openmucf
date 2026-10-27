@@ -24,11 +24,16 @@ const char* const kCaptureTable = "nuclear_capture_rate";
 const char* const kZeffTable = "muon_zeff";
 const char* const kKShellTable = "k_shell_energy";
 const char* const kLevelTable = "level_energy";
+// The evaluated bound-rate pair table: one primitive tuple (tau, q, free_tau) per isotope, from which both
+// stopped-muon routes form their capture and decay rates together when a pair profile is selected.
+const char* const kPairTable = "bound_rate_primitives";
 const char* const kD1Seam = "d1_nuclear_capture";
 const char* const kD3Seam = "d3_transitions";
 const char* const kRateUnit = "1e6/s";
 const char* const kZeffUnit = "dimensionless";
 const char* const kEnergyUnit = "keV";
+const char* const kTimeUnit = "ns";
+const char* const kRatioUnit = "1";
 // The `#VALIDITY` `A:` conventions this layer knows (FORMAT_SPEC.md section 6).
 const char* const kListed = "listed";
 const char* const kNatural = "natural_and_listed";
@@ -160,19 +165,27 @@ std::vector<std::string> FixedColumns(const std::string& name) {
   } else if (name == kZeffTable) {
     columns.push_back("Z");
     columns.push_back("value");
+  } else if (name == kPairTable) {
+    columns.push_back("Z");
+    columns.push_back("A");
+    columns.push_back("tau");
+    columns.push_back("q");
+    columns.push_back("free_tau");
   }
   return columns;
 }
 
 const char* SeamOf(const std::string& name) {
-  if (name == kCaptureTable || name == kZeffTable) return kD1Seam;
+  if (name == kCaptureTable || name == kZeffTable || name == kPairTable) return kD1Seam;
   if (name == kKShellTable || name == kLevelTable) return kD3Seam;
   return "";
 }
 
-const char* UnitOf(const std::string& name) {
+// The unit of one value column, by table: every column of a table but the pair table's shares one unit.
+const char* UnitOf(const std::string& name, const std::string& column) {
   if (name == kCaptureTable) return kRateUnit;
   if (name == kZeffTable) return kZeffUnit;
+  if (name == kPairTable) return column == "q" ? kRatioUnit : kTimeUnit;
   return kEnergyUnit;
 }
 
@@ -225,8 +238,6 @@ void CheckTable(const Table& table, const std::string& version, std::vector<Issu
   const bool two_key = table.name != kZeffTable;
   // The non-key columns, in `#COLUMNS` order, are the record's floats.
   std::vector<std::string> values(expected.begin() + (two_key ? 2 : 1), expected.end());
-  const char* const unit = UnitOf(table.name);
-
   // ---- S004: the unit of every value column, as the lookups read it.
   std::map<std::string, std::string> units;
   const std::string units_problem = Assignments(Value(table, "UNITS"), '=', units);
@@ -236,6 +247,7 @@ void CheckTable(const Table& table, const std::string& version, std::vector<Issu
     for (const std::string& column : values) {
       const std::map<std::string, std::string>::const_iterator at = units.find(column);
       const std::string assigned = at == units.end() ? std::string() : at->second;
+      const char* const unit = UnitOf(table.name, column);
       if (assigned != unit) {
         Add(issues, "S004", table,
             "#UNITS assigns " + Quote(column) + " the unit " + Quote(assigned) + "; the lookup reads it as " + Quote(unit));
@@ -279,6 +291,9 @@ void CheckTable(const Table& table, const std::string& version, std::vector<Issu
     } else if (a->second != kListed && a->second != kNatural && a->second != kRepresentative) {
       Add(issues, "S003", table,
           "#VALIDITY assigns 'A:" + a->second + "', which is none of 'listed', '" + kNatural + "' and '" + kRepresentative + "'");
+    } else if (table.name == kPairTable && a->second != kListed) {
+      Add(issues, "S003", table,
+          "#VALIDITY assigns 'A:" + a->second + "'; " + kPairTable + " carries isotope keys only ('A:listed')");
     } else {
       convention = a->second;
     }
@@ -310,6 +325,7 @@ void CheckTable(const Table& table, const std::string& version, std::vector<Issu
   // ---- S005: the value domain of each quantity.
   const std::size_t level_values = table.name == kLevelTable ? values.size() / 2 : 0;
   bool reported_finite = false, reported_positive = false, reported_uncertainty = false, reported_zeff = false;
+  bool reported_pair = false;
   for (const Table::Record& record : table.records) {
     if (record.floats.size() != values.size()) continue;
     for (std::size_t i = 0; i < record.floats.size(); ++i) {
@@ -341,6 +357,19 @@ void CheckTable(const Table& table, const std::string& version, std::vector<Issu
       if (!reported_positive && !(v > 0.)) {
         Add(issues, "S005", table, "row " + Key(record.keys) + " column " + Quote(values[i]) + " is not positive");
         reported_positive = true;
+      }
+    }
+    // The pair tuple's domain: q in (0, 1], and the capture rate 1/tau - q/free_tau it implies not negative.
+    if (table.name == kPairTable && !reported_pair && record.floats.size() == 3) {
+      const double tau = record.floats[0], q = record.floats[1], free_tau = record.floats[2];
+      if (std::isfinite(tau) && std::isfinite(q) && std::isfinite(free_tau) && tau > 0. && free_tau > 0.) {
+        if (!(q > 0. && q <= 1.)) {
+          Add(issues, "S005", table, "row " + Key(record.keys) + " column 'q' is outside (0, 1]");
+          reported_pair = true;
+        } else if (!(1. / tau - q / free_tau >= 0.)) {
+          Add(issues, "S005", table, "row " + Key(record.keys) + " gives a negative capture rate 1/tau - q/free_tau");
+          reported_pair = true;
+        }
       }
     }
   }

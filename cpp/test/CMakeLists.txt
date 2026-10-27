@@ -406,13 +406,71 @@ g4muonicdata_target_options(g4muonicdata_overlay_check)
 # same stand-in headers: current static limit and recoil slope, change from the historical oracle;
 # its switch, its freeze and its domain; and each input it refuses. One process per
 # mode, because the switch freezes at the first consultation.
-add_executable(g4muonicdata_bound_rate_check bound_rate_check.cc ../src/G4MuonicBoundRateProvider.cc)
+add_executable(g4muonicdata_bound_rate_check bound_rate_check.cc ../src/G4MuonicBoundRateProvider.cc
+               ../src/G4MuonicDataOverlay.cc)
 target_include_directories(g4muonicdata_bound_rate_check BEFORE PRIVATE g4stub ../include)
+target_link_libraries(g4muonicdata_bound_rate_check PRIVATE g4muonicdatatable)
 g4muonicdata_target_options(g4muonicdata_bound_rate_check)
 add_test(NAME bound_rates_legacy_delta
          COMMAND g4muonicdata_bound_rate_check oracle-delta "${G4MUONICDATA_D1_DIR}/d1_decay_rate.oracle")
 foreach(mode current disabled enabled refuse)
   add_test(NAME bound_rates_${mode} COMMAND g4muonicdata_bound_rate_check ${mode})
+endforeach()
+
+# The evaluated pair table over the assembled dataset: the pair profile, read by its own variable, answers its
+# key in either option order and leaves the capture profile and other keys alone; selected with the D1 and D3
+# profiles both `compiled` it is still read (the no-I/O case includes the pair choice); at `compiled` the pair
+# is the formula pair; without the switch, or named by the legacy variable, or naming a profile with no pair
+# table, or over a malformed or empty pair table, it is refused and then answers nothing.
+file(GLOB G4MUONICDATA_PAIR_FILES "${G4MUONICDATA_D1_DIR}/d1_bound_rate.*.g4dat")
+list(LENGTH G4MUONICDATA_PAIR_FILES G4MUONICDATA_PAIR_COUNT)
+if(NOT G4MUONICDATA_PAIR_COUNT EQUAL 1)
+  message(FATAL_ERROR "the pair cases need exactly one d1_bound_rate.*.g4dat, found ${G4MUONICDATA_PAIR_COUNT}")
+endif()
+list(GET G4MUONICDATA_PAIR_FILES 0 G4MUONICDATA_PAIR_FILE)
+get_filename_component(G4MUONICDATA_PAIR_NAME "${G4MUONICDATA_PAIR_FILE}" NAME)
+file(STRINGS "${G4MUONICDATA_PAIR_FILE}" pair_header REGEX "^#PROFILE[ \t]+")
+string(REGEX REPLACE "^#PROFILE[ \t]+" "" G4MUONICDATA_PAIR_PROFILE "${pair_header}")
+set(PAIR_ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}")
+add_test(NAME bound_rates_pair COMMAND ${CMAKE_COMMAND} -E env ${PAIR_ENV}
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair)
+add_test(NAME bound_rates_pair_order COMMAND ${CMAKE_COMMAND} -E env ${PAIR_ENV}
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-order)
+add_test(NAME bound_rates_pair_short_circuit COMMAND ${CMAKE_COMMAND} -E env ${PAIR_ENV}
+         "G4MUONICDATA_D1_PROFILE=compiled" "G4MUONICDATA_D3_PROFILE=compiled"
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair)
+add_test(NAME bound_rates_pair_compiled COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}"
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-compiled)
+add_test(NAME bound_rates_pair_switch_off COMMAND ${CMAKE_COMMAND} -E env ${PAIR_ENV}
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-switch-off)
+add_test(NAME bound_rates_pair_legacy COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}"
+         "G4MUONICDATA_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-config-refused G4MuonicData004)
+add_test(NAME bound_rates_pair_without_table COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}"
+         "G4MUONICDATA_D1_PAIR_PROFILE=parity"
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-config-refused G4MuonicData004)
+file(READ "${G4MUONICDATA_PAIR_FILE}" pair_member)
+string(REGEX MATCH "\n[0-9][^\n]*\n" pair_record "${pair_member}")
+if(pair_record STREQUAL "")
+  message(FATAL_ERROR "${G4MUONICDATA_PAIR_NAME} has no record line")
+endif()
+string(REGEX REPLACE "^\n([0-9]+ +[0-9]+ +[^ ]+ +)[^ ]+( +[^ ]+\n)$" "\n\\11.5\\2" pair_bad_q "${pair_record}")
+foreach(case IN ITEMS bad_q no_row)
+  set(dir "${CMAKE_BINARY_DIR}/pair_${case}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  if(case STREQUAL "bad_q")
+    string(REPLACE "${pair_record}" "${pair_bad_q}" member "${pair_member}")
+  else()
+    string(REPLACE "${pair_record}" "\n" member "${pair_member}")
+  endif()
+  if(member STREQUAL pair_member)
+    message(FATAL_ERROR "the ${case} pair case did not change ${G4MUONICDATA_PAIR_NAME}")
+  endif()
+  g4muonicdata_write_member("${dir}" "${G4MUONICDATA_PAIR_NAME}" "${member}")
+  add_test(NAME bound_rates_pair_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}"
+           "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+           $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-config-refused G4MuonicData005)
 endforeach()
 
 # Every key and token below is read from the shipped files at configure time.

@@ -804,8 +804,9 @@ int Run(int argc, char** argv) {
 
   // V-14 -- the profile set: in every seam in which parity carries a table, every table any
   // profile carries is also carried by parity; a seam in which parity carries no table is not
-  // held. Exactly one line: the first offending table, else PASS naming the profiles and the
-  // (profile, table) pair count.
+  // held. The bound-rate pair table is exempt: a pair profile is selected on its own, beside the
+  // capture profile, and parity has no pair. Exactly one line: the first offending table, else PASS
+  // naming the profiles and the (profile, table) pair count.
   if (!loaded) {
     report.Fail("V-14", "dataset not loaded");
   } else {
@@ -820,6 +821,7 @@ int Run(int argc, char** argv) {
       const std::string* seam = t.Directive("SEAM");
       if (seam == nullptr || parity_seams.count(*seam) == 0) continue;
       if (tables.Find(G4MuonicDataTable::kParityProfile, t.name) != nullptr) continue;
+      if (t.name == "bound_rate_primitives") continue;
       report.Fail("V-14", "'#PROFILE " + t.profile + "' carries '#TABLE " + t.name + "' (" + FileName(t.file) + ") that parity does not");
       ok = false;
       break;

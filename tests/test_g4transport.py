@@ -849,10 +849,14 @@ def test_t149_committed_manifest_ties_builds_dataset_and_cells():
     generator = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = generator
     spec.loader.exec_module(generator)
-    _, archive = generator.build_dataset_artifacts()
+    # The evidence predates the evaluated pair table: its dataset is the current one without that table,
+    # and the shipped archive (the snippet's) is a different one.
+    _, archive = generator.build_dataset_artifacts(pair_table=False)
     assert hashlib.md5(archive).hexdigest() == manifest["dataset"]["md5"]
+    _, shipped = generator.build_dataset_artifacts()
     snippet = (ROOT / "data/g4/d1/geant4_add_dataset.snippet").read_text(encoding="utf-8")
-    assert manifest["dataset"]["md5"] in snippet
+    assert hashlib.md5(shipped).hexdigest() in snippet
+    assert manifest["dataset"]["md5"] not in snippet
     with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
         members = {member.name: hashlib.sha256(tar.extractfile(member).read()).hexdigest()
                    for member in tar.getmembers() if member.isfile()}

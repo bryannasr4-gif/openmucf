@@ -41,6 +41,9 @@ SOURCE = REPO / "cpp" / "src" / "G4MuonicDataSemantics.cc"
 
 DATASET_NAME = "G4MuonicData"
 CAPTURE, ZEFF, KSHELL, LEVELS = "nuclear_capture_rate", "muon_zeff", "k_shell_energy", "level_energy"
+#: The evaluated bound-rate pair table: (tau, q, free_tau) per isotope, mixed units, isotope keys only.
+PAIR = "bound_rate_primitives"
+PAIR_UNITS = {"tau": "ns", "q": "1", "free_tau": "ns"}
 D1_SEAM, D3_SEAM = "d1_nuclear_capture", "d3_transitions"
 RATE_UNIT, ZEFF_UNIT, ENERGY_UNIT = "1e6/s", "dimensionless", "keV"
 LISTED, NATURAL, REPRESENTATIVE = "listed", "natural_and_listed", "most_abundant_and_listed"
@@ -128,10 +131,12 @@ def fixed_columns(name: str) -> list[str] | None:
         return ["Z", "A", "value", "unc"]
     if name == ZEFF:
         return ["Z", "value"]
+    if name == PAIR:
+        return ["Z", "A", "tau", "q", "free_tau"]
     return None
 
 
-SEAM_OF = {CAPTURE: D1_SEAM, ZEFF: D1_SEAM, KSHELL: D3_SEAM, LEVELS: D3_SEAM}
+SEAM_OF = {CAPTURE: D1_SEAM, ZEFF: D1_SEAM, PAIR: D1_SEAM, KSHELL: D3_SEAM, LEVELS: D3_SEAM}
 UNIT_OF = {CAPTURE: RATE_UNIT, ZEFF: ZEFF_UNIT, KSHELL: ENERGY_UNIT, LEVELS: ENERGY_UNIT}
 
 
@@ -169,7 +174,6 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
 
     two_key = member.table != ZEFF
     values = expected[2:] if two_key else expected[1:]
-    unit = UNIT_OF[member.table]
 
     try:
         units = assignments(member.directives.get("UNITS", ""), "=")
@@ -177,6 +181,7 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
         add("S004", f"#UNITS {error}")
     else:
         for column in values:
+            unit = PAIR_UNITS[column] if member.table == PAIR else UNIT_OF[member.table]
             if units.get(column, "") != unit:
                 add("S004", f"#UNITS assigns {column!r} the unit {units.get(column, '')!r}")
                 break
@@ -206,6 +211,8 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
             add("S003", "#VALIDITY assigns no 'A'")
         elif validity["A"] not in (LISTED, NATURAL, REPRESENTATIVE):
             add("S003", f"#VALIDITY assigns 'A:{validity['A']}', which is no known convention")
+        elif member.table == PAIR and validity["A"] != LISTED:
+            add("S003", f"#VALIDITY assigns 'A:{validity['A']}'; {PAIR} carries isotope keys only")
         else:
             convention = validity["A"]
 
@@ -251,6 +258,13 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
                 continue
             if not value > 0:
                 once("positive", f"row {z} column {values[index]!r} is not positive")
+        if member.table == PAIR and len(floats) == 3:
+            tau, q, free_tau = floats
+            if all(math.isfinite(v) for v in floats) and tau > 0 and free_tau > 0:
+                if not 0 < q <= 1:
+                    once("pair", f"row {z} column 'q' is outside (0, 1]")
+                elif not 1 / tau - q / free_tau >= 0:
+                    once("pair", f"row {z} gives a negative capture rate")
     return out
 
 
@@ -488,5 +502,35 @@ def test_t119_the_production_source_declares_the_same_codes_and_bounds():
         assert match is not None, name
         assert int(match.group(1)) == value, (name, match.group(1))
     for token in (DATASET_NAME, CAPTURE, ZEFF, KSHELL, LEVELS, D1_SEAM, D3_SEAM, RATE_UNIT, ZEFF_UNIT,
-                  ENERGY_UNIT, LISTED, NATURAL, REPRESENTATIVE):
+                  ENERGY_UNIT, LISTED, NATURAL, REPRESENTATIVE, PAIR, *PAIR_UNITS.values()):
         assert f'"{token}"' in source, token
+
+
+# T-121: the evaluated pair table's own rules: mixed units, isotope keys only, the tuple's domain.
+def pair_member(directory: pathlib.Path) -> pathlib.Path:
+    (path,) = [p for p in sorted(directory.glob("*.g4dat")) if directive_line(p, "TABLE").split()[-1] == PAIR]
+    return path
+
+
+@pytest.mark.parametrize("kind,old,new,code", [
+    ("UNITS", "q=1", "q=dimensionless", "S004"),
+    ("VALIDITY", "A:listed", "A:natural_and_listed", "S003"),
+    ("field", 3, "1.0000001", "S005"),
+    ("field", 2, "3000", "S005"),
+    ("field", 2, "-863.7", "S005"),
+    ("row", None, None, "S002"),
+], ids=["unit", "natural-alias", "q-above-one", "negative-capture", "negative-tau", "no-row"])
+def test_t121_drill_the_pair_table_rules(mutable: pathlib.Path, kind, old, new, code):
+    member = pair_member(mutable)
+    assert codes_of(mutable) == []
+    record = first_record_line(member)
+    if kind == "field":
+        fields = record.split()
+        fields[old] = new
+        replace_once(member, record, " ".join(fields))
+    elif kind == "row":
+        replace_once(member, record + "\n", "")
+    else:
+        line = directive_line(member, kind)
+        replace_once(member, line, line.replace(old, new))
+    assert codes_of(mutable)[0] == code

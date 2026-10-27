@@ -3291,6 +3291,10 @@ def test_t92_mizuno2025_profile_layer2_invariants_hold_on_every_row():
         assert mizuno2025.TABLE1_CAPTION in row.conditions and mizuno2025.COPY in row.conditions, key
 
 
+#: The evaluated bound-rate pair table, exempt from the parity rule (V-14), as the validator exempts it.
+PAIR_TABLE = "bound_rate_primitives"
+
+
 def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_every_table():
     """The Python mirror of the reader's directory rule over the shipped dataset: every file is
     its own (profile, table) pair, `parity` carries every table any profile carries, and only
@@ -3299,6 +3303,9 @@ def test_t92_the_shipped_directory_keys_one_pair_per_file_and_parity_carries_eve
     files = sorted(path.name for path in D1DIR.glob("*.g4dat"))
     assert len(tables) == len(files), (sorted(tables), files)
     for profile, name in tables:
+        # the evaluated pair table is selected on its own, beside the capture profile: parity has no pair
+        if name == PAIR_TABLE:
+            continue
         assert (spec.PARITY_PROFILE, name) in tables, (profile, name)
     assert {profile for profile, _ in tables} == {
         spec.parse(path.read_text(encoding="ascii")).directives["PROFILE"]

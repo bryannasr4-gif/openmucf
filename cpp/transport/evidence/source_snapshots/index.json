@@ -12,6 +12,20 @@
       "sha256": "acefe3e4b3c43595f4fd2981611941cdebd789ea47397cb50fa0e71ed5b8d6d3",
       "snapshot": "g4-v11.5.0.beta-muonicdata.patch",
       "git_blob": "5fde5b05012959427d76cf567df17cf66abed48d"
+    },
+    {
+      "path": "cpp/patches/g4-v11.4.2-register-dataset.patch",
+      "sha256": "bfa0eb42887e7d6a7c38aed1dbf19199dec9208e5e7a5a6f84b0517b05291ff1",
+      "snapshot": "g4-v11.4.2-register-dataset.patch",
+      "git_blob": "e03952d98f5e1ee8a879e50ecafbbda9e7f7700d",
+      "source_commit": "f3560939fe305a8d5d3ce9f9b138d213d4a92ab8"
+    },
+    {
+      "path": "cpp/patches/g4-v11.5.0.beta-register-dataset.patch",
+      "sha256": "216504939856eba0ef8572367d36b624879c352905835bc0d3a9b814ad8cfcd9",
+      "snapshot": "g4-v11.5.0.beta-register-dataset.patch",
+      "git_blob": "5aee412e8d8607bc47bd3ca1e691535383d6c5ec",
+      "source_commit": "f3560939fe305a8d5d3ce9f9b138d213d4a92ab8"
     }
   ]
 }

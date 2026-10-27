@@ -15,10 +15,12 @@
 // The codes, and the one sentence each stands for:
 //   S001  identity and version: every table names this dataset, and one `#VERSION` spans the load.
 //   S002  shape: the `#TABLE` name, its `#SEAM`, its `#COLUMNS` sequence, and that it has records.
-//   S003  keys and validity: the key domain, and a `#VALIDITY` convention this layer knows.
+//   S003  keys and validity: the key domain, and a `#VALIDITY` convention this layer knows (the
+//         bound-rate pair table carries isotope keys only, `A:listed`).
 //   S004  units: the `#UNITS` assignment of every value column, as the lookups read it.
 //   S005  values: finite, and in the domain the quantity has (a rate and an energy are positive,
-//         an uncertainty is not negative, an effective charge does not exceed Z).
+//         an uncertainty is not negative, an effective charge does not exceed Z, a pair tuple's q
+//         lies in (0, 1] and the capture rate 1/tau - q/free_tau it implies is not negative).
 //   S006  the D3 pair: one profile's two energy tables cover one key set, in one falling order.
 #ifndef G4MUONICDATASEMANTICS_HH
 #define G4MUONICDATASEMANTICS_HH

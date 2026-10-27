@@ -4,8 +4,8 @@
 evaluated pair) and ``data/g4/d1/bound_decay_response_v1.json`` (the D1 roles of the shared D1/D2 convention
 record) from the committed primitives ``data/g4/d1/bound_rate_inputs.json``, the decay-rate oracle and the
 compendium rows. ``check`` recomputes both from the primitives and refuses a committed file whose fields differ
-(numbers to 1e-12 relative: the reference ranges come from a numerical search, so they are not byte-pinned).
-``make audit`` runs ``check``. The
+(numbers to 1e-12 relative: the reference ranges come from a numerical search, so they are not byte-pinned), and
+checks that the dataset's pair table carries exactly the production tuples. ``make audit`` runs ``check``. The
 work is delegated to :mod:`openmucf.g4.d1_lifetime`, which owns the measurement records this pair extends.
 """
 
@@ -17,6 +17,7 @@ from pathlib import Path
 
 from openmucf.g4 import d1_evaluated as evaluated
 from openmucf.g4 import d1_lifetime as lifetime
+from openmucf.g4 import provenance, spec
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -48,8 +49,17 @@ def check(root: Path) -> None:
         raise SystemExit("evaluated check FAILED: the convention record's payload digest does not match its payload")
     if evaluated.canonical_bytes(committed) != evaluated.canonical_bytes(convention):
         raise SystemExit("evaluated check FAILED: the convention record differs from its recomputation")
-    print(f"evaluated check OK: {lifetime.EVALUATION_RELPATH} and {lifetime.CONVENTION_RELPATH} equal their "
-          "recomputation")
+    table = spec.parse((root / lifetime.PAIR_LAYER1_RELPATH).read_bytes().decode("ascii"))
+    raw = (root / lifetime.PAIR_LAYER2_RELPATH).read_bytes()
+    provenance.check_canonical_bytes(raw)
+    provenance.check_source_digest(table, raw)
+    provenance.check_against_table(table, provenance.from_json_obj(evaluated.parse_json(raw)))
+    expected = [(z, a, float(tau), float(q), float(free_tau)) for z, a, tau, q, free_tau in
+                lifetime.evaluated_tuples(root)]
+    if [tuple(record) for record in table.records] != expected:
+        raise SystemExit("evaluated check FAILED: the pair table does not carry exactly the production tuples")
+    print(f"evaluated check OK: {lifetime.EVALUATION_RELPATH}, {lifetime.CONVENTION_RELPATH} and "
+          f"{lifetime.PAIR_LAYER1_RELPATH} equal their recomputation")
 
 
 def main(argv: list[str] | None = None) -> None:

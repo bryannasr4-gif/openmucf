@@ -788,11 +788,14 @@ def test_t105_the_widened_parity_rule_holds_over_the_assembled_dataset(tmp_path)
     parity_seams = {
         t.directives["SEAM"] for (profile, _), t in tables.items() if profile == spec.PARITY_PROFILE
     }
+    # the evaluated bound-rate pair table is selected on its own, beside the capture profile, and is exempt
+    pair = "bound_rate_primitives"
     for (profile, name), table in tables.items():
-        if table.directives["SEAM"] in parity_seams:
+        if table.directives["SEAM"] in parity_seams and name != pair:
             assert (spec.PARITY_PROFILE, name) in tables, (profile, name)
     unscoped = sorted(
-        (profile, name) for profile, name in tables if (spec.PARITY_PROFILE, name) not in tables
+        (profile, name) for profile, name in tables
+        if (spec.PARITY_PROFILE, name) not in tables and name != pair
     )
     assert unscoped == [(md.PROFILE, md.K_TABLE), (md.PROFILE, md.LEVEL_TABLE)]
     assert md.SEAM not in parity_seams

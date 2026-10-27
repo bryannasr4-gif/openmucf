@@ -1,0 +1,25 @@
+{
+  "dataset": "G4MuonicData",
+  "precedence": [
+    "openmucf"
+  ],
+  "profile": "evaluated-bound",
+  "rows": {
+    "13-27": {
+      "conditions": "tau = 863.7 ns, the source's fitted late-time electron lifetime with standard uncertainty 1.0 ns (stated components preserved, not added); q = 0.993598, the evaluated bound-to-free decay factor (finite-charge static value of Uesaka et al. 2026 plus adopted linear recoil and the signed point-Uehling kinetic term), rounded to 6 decimals; free_tau = 2196.9811 ns, empirical positive-muon lifetime 2.1969811(22) us as printed in Uesaka et al., Atomic Data and Nuclear Data Tables 171, 101809 (2026), arXiv:2602.07501v2, Eq. (3). The pair is d = q/free_tau, c = 1/tau - d",
+      "evaluation_id": "evaluated-bound-v1",
+      "evaluation_method": "one primitive tuple gives both rates (c + d = 1/tau exactly); evaluator-assessed regions and the budget decisions are in data/g4/d1/bound_rate_evaluation.json; the late-lifetime decision has no validation power, and the stopped mean and capture probability are not established",
+      "isotope_resolved": true,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": false,
+      "source_bibkey": "Mizuno2025",
+      "source_library": "openmucf",
+      "source_locator": "Table I, self-supported plate; uncertainty construction Table II and sections III-V; the journal version is unread [copy read: arXiv:2501.05897v2]",
+      "unc_type": "estimate",
+      "validity_range": "Z=13 A=27, a normal-composition target reaching this nucleus"
+    }
+  },
+  "seam": "d1_nuclear_capture",
+  "version": "0.6.0"
+}
