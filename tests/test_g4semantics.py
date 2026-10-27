@@ -261,10 +261,15 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
         if member.table == PAIR and len(floats) == 3:
             tau, q, free_tau = floats
             if all(math.isfinite(v) for v in floats) and tau > 0 and free_tau > 0:
+                decay, total = q / free_tau, 1 / tau
                 if not 0 < q <= 1:
                     once("pair", f"row {z} column 'q' is outside (0, 1]")
-                elif not 1 / tau - q / free_tau >= 0:
-                    once("pair", f"row {z} gives a negative capture rate")
+                elif not (math.isfinite(decay) and 0 < decay <= 1 / free_tau):
+                    once("pair", f"row {z} gives a decay rate outside (0, 1/free_tau]")
+                elif not math.isfinite(total):
+                    once("pair", f"row {z} gives a rate 1/tau that is not finite")
+                elif not (math.isfinite(total - decay) and total - decay >= 0):
+                    once("pair", f"row {z} gives a negative or non-finite capture rate")
     return out
 
 
@@ -519,7 +524,11 @@ def pair_member(directory: pathlib.Path) -> pathlib.Path:
     ("field", 2, "3000", "S005"),
     ("field", 2, "-863.7", "S005"),
     ("row", None, None, "S002"),
-], ids=["unit", "natural-alias", "q-above-one", "negative-capture", "negative-tau", "no-row"])
+    ("fields", {3: "1e-300", 4: "1e100"}, None, "S005"),
+    ("fields", {2: "1e-310"}, None, "S005"),
+], ids=["unit", "natural-alias", "q-above-one", "negative-capture", "negative-tau", "no-row",
+        "decay-underflows",
+        "inverse-lifetime-overflows"])
 def test_t121_drill_the_pair_table_rules(mutable: pathlib.Path, kind, old, new, code):
     member = pair_member(mutable)
     assert codes_of(mutable) == []
@@ -527,6 +536,11 @@ def test_t121_drill_the_pair_table_rules(mutable: pathlib.Path, kind, old, new, 
     if kind == "field":
         fields = record.split()
         fields[old] = new
+        replace_once(member, record, " ".join(fields))
+    elif kind == "fields":
+        fields = record.split()
+        for index, value in old.items():
+            fields[index] = value
         replace_once(member, record, " ".join(fields))
     elif kind == "row":
         replace_once(member, record + "\n", "")

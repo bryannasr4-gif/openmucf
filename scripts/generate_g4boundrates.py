@@ -556,8 +556,9 @@ def render_section(root: Path) -> str:
         "`G4MUONICDATA_D1_PROFILE`, and only with both the dataset opt-in and the common-rate option above on: then a "
         "key the table holds takes the pair on both stopped-muon routes, in place of the common formula, and every "
         "other key keeps its capture profile's rate and the common formula. The variable that spans both seams never "
-        "selects it, and a pair profile with the common-rate option off, with no pair table, or with a malformed or "
-        "empty pair table is refused; `cpp/patches/README.md` states how. The empty admitted roster above concerns "
+        "selects it, and a pair profile with the common-rate option off, with no pair table, with a malformed or "
+        "empty pair table, or whose rows are not the rows its digest-checked provenance file admits is refused; "
+        "`cpp/patches/README.md` states how. The empty admitted roster above concerns "
         "the common formula, not the pair.",
         "",
         "What the evaluation decides, under its evaluator-assessed regions: the late lifetime and the decay rate meet "

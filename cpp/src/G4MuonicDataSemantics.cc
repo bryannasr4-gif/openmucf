@@ -359,15 +359,25 @@ void CheckTable(const Table& table, const std::string& version, std::vector<Issu
         reported_positive = true;
       }
     }
-    // The pair tuple's domain: q in (0, 1], and the capture rate 1/tau - q/free_tau it implies not negative.
+    // The pair tuple's domain, on the rates a consumer forms: q in (0, 1]; the decay rate q/free_tau finite and
+    // in (0, 1/free_tau], so a quotient that underflows to zero is refused; 1/tau finite; and the capture rate
+    // 1/tau - q/free_tau finite and not negative.
     if (table.name == kPairTable && !reported_pair && record.floats.size() == 3) {
       const double tau = record.floats[0], q = record.floats[1], free_tau = record.floats[2];
       if (std::isfinite(tau) && std::isfinite(q) && std::isfinite(free_tau) && tau > 0. && free_tau > 0.) {
+        const double decay = q / free_tau, total = 1. / tau, capture = total - decay;
+        const char* why = nullptr;
         if (!(q > 0. && q <= 1.)) {
-          Add(issues, "S005", table, "row " + Key(record.keys) + " column 'q' is outside (0, 1]");
-          reported_pair = true;
-        } else if (!(1. / tau - q / free_tau >= 0.)) {
-          Add(issues, "S005", table, "row " + Key(record.keys) + " gives a negative capture rate 1/tau - q/free_tau");
+          why = " column 'q' is outside (0, 1]";
+        } else if (!(std::isfinite(decay) && decay > 0. && decay <= 1. / free_tau)) {
+          why = " gives a decay rate q/free_tau outside (0, 1/free_tau]";
+        } else if (!std::isfinite(total)) {
+          why = " gives a rate 1/tau that is not finite";
+        } else if (!(std::isfinite(capture) && capture >= 0.)) {
+          why = " gives a capture rate 1/tau - q/free_tau that is negative or not finite";
+        }
+        if (why != nullptr) {
+          Add(issues, "S005", table, "row " + Key(record.keys) + why);
           reported_pair = true;
         }
       }

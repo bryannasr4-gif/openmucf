@@ -52,7 +52,8 @@ while other elements use the leading formula.
 
 Refused, never silently replaced by another pair: the pair profile with the switch off (at the first stopped
 muon, whatever the option order), the legacy `G4MUONICDATA_PROFILE` naming the pair profile, a pair profile with
-no pair table, and a pair table whose tuple is malformed or that carries no row. With the fatal exception
+no pair table, a pair table whose tuple or whose derived rates are malformed or that carries no row, and a pair
+table whose rows are not the rows its digest-checked provenance file admits (a substituted, moved or removed row). With the fatal exception
 suppressed, every later lookup throws.
 
 ## The decay-factor region

@@ -21,6 +21,8 @@ namespace {
 std::atomic<bool> g_enabled{false};
 // Set by the first Consult, on whichever thread forms the first rate pair.
 std::atomic<bool> g_frozen{false};
+// Set when a selected evaluated pair row was refused: every later consultation throws.
+std::atomic<bool> g_poisoned{false};
 
 void Change(bool value) {
   if (g_frozen.load() && g_enabled.load() != value) {
@@ -36,6 +38,18 @@ void Change(bool value) {
 bool PositiveFinite(G4double x) { return std::isfinite(x) && x > 0.; }
 
 const char* const kCompiled = "compiled";
+
+// A selected evaluated pair row that cannot be used: fatal G4MuonicBoundRates001 the first time, and the provider
+// is poisoned, so that should an installed handler suppress the abort this call and every later consultation
+// throw. A consumer never falls back to the pair it formed itself for a key the selected pair profile answers.
+[[noreturn]] void RefuseRow(const std::string& text) {
+  g_poisoned.store(true);
+  static std::atomic<bool> reported{false};
+  if (!reported.exchange(true)) {
+    G4Exception("G4MuonicBoundRateProvider::Rates", "G4MuonicBoundRates001", FatalException, text.c_str());
+  }
+  throw std::runtime_error(text);
+}
 
 // The pair profile the frozen overlay selected, or "compiled" with the data option off or none selected.
 std::string PairProfile() {
@@ -63,8 +77,10 @@ const char* PairProblem(G4double tau, G4double q, G4double freeTau, G4double& ca
   if (!PositiveFinite(tau) || !PositiveFinite(freeTau)) return "tau or free_tau is not finite and positive";
   if (!std::isfinite(q) || !(q > 0.) || q > 1.) return "q is outside (0, 1]";
   decay = q / freeTau;
-  capture = 1. / tau - decay;
+  const G4double total = 1. / tau;
   if (!PositiveFinite(decay) || decay > 1. / freeTau) return "the decay rate is outside 0 < decay <= 1/free_tau";
+  if (!std::isfinite(total)) return "the rate 1/tau is not finite";
+  capture = total - decay;
   if (!std::isfinite(capture) || capture < 0.) return "the capture rate 1/tau - q/free_tau is negative or not finite";
   return nullptr;
 }
@@ -81,6 +97,9 @@ G4bool G4MuonicBoundRateProvider::IsFrozen() { return g_frozen.load(); }
 
 G4bool G4MuonicBoundRateProvider::Consult() {
   g_frozen.store(true);
+  if (g_poisoned.load()) {
+    throw std::runtime_error("a selected evaluated bound-rate pair row was refused (G4MuonicBoundRates001)");
+  }
   const bool enabled = g_enabled.load();
   if (!enabled) {
     const std::string profile = PairProfile();
@@ -115,19 +134,13 @@ G4MuonicBoundRateProvider::Status G4MuonicBoundRateProvider::Rates(G4int Z, G4in
     if (row.values != nullptr) {
       G4double capture = 0., decay = 0.;
       const G4double tau = row.values[0] * ns, q = row.values[1], freeTau = row.values[2] * ns;
-      if (row.count != 3) {
-        G4Exception("G4MuonicBoundRateProvider::Rates", "G4MuonicBoundRates001", FatalException,
-                    "the bound-rate pair row does not carry the three values tau q free_tau");
-        return Status::kRefused;
-      }
+      if (row.count != 3) RefuseRow("the bound-rate pair row does not carry the three values tau q free_tau");
       if (const char* why = PairProblem(tau, q, freeTau, capture, decay)) {
         std::ostringstream message;
         message.precision(17);
         message << "Z=" << Z << " A=" << A << " under pair profile " << row.profile << ": " << why << " (tau " << tau
                 << " ns, q " << q << ", free_tau " << freeTau << " ns)";
-        G4Exception("G4MuonicBoundRateProvider::Rates", "G4MuonicBoundRates001", FatalException,
-                    message.str().c_str());
-        return Status::kRefused;
+        RefuseRow(message.str());
       }
       rates.capture = capture;
       rates.decay = decay;

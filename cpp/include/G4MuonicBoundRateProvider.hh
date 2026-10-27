@@ -49,9 +49,12 @@
 // from its one tuple (tau, q, free_tau): decay = q / free_tau, capture = 1/tau - decay, so the two rates of
 // both routes come from one realization and capture + decay = 1/tau. The row takes precedence over the
 // formula above and is not limited to its domain; every other key keeps the formula pair and the capture
-// profile's capture rate. A row whose tuple is not finite and positive, has q outside (0, 1], or implies a
-// negative capture rate is refused with G4MuonicBoundRates001. The decay rate is checked against the row's
-// own 1/free_tau, not the formula's free normalization. A pair profile with the switch off is refused at the
+// profile's capture rate. A row whose tuple is not finite and positive, has q outside
+// (0, 1], or whose decay rate, 1/tau or capture rate is not finite or out of domain (a decay rate that
+// underflows to zero, a negative capture rate) is refused with G4MuonicBoundRates001; the provider is then
+// poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer
+// falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's
+// free normalization. A pair profile with the switch off is refused at the
 // first consultation with the fatal G4MuonicBoundRates003, whichever of the two options was set first;
 // should a handler suppress the abort, every later consultation throws. Describe(Z, A) names, per key, the
 // capture profile, the pair profile, the answering row or formula and its decay-factor convention.

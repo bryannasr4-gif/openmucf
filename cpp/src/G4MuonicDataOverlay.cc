@@ -8,7 +8,10 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -220,6 +223,212 @@ void RefusePairs(State& state, const char* code, const std::string& text) {
   state.refusal = text;
 }
 
+// ---- binding the selected pair table to its provenance ------------------------------------------------------
+// The selected evaluated profile's rows are a scientific roster, not merely well-formed records: before any
+// consumer can use the table, the live parsed record keys must be exactly the row keys of the table's Layer-2
+// provenance file, whose SHA-256 must be the table's `#SOURCEDIGEST`. A substituted, moved or removed row, a
+// missing or altered provenance file, or an altered digest is refused.
+
+// SHA-256 (FIPS 180-4) of `data`, lowercase hexadecimal.
+std::string Sha256Hex(const std::string& data) {
+  static const std::uint32_t k[64] = {
+      0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
+      0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
+      0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
+      0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
+      0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
+      0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
+      0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
+      0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u};
+  std::uint32_t h[8] = {0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,
+                        0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
+  std::string m = data;
+  const std::uint64_t bits = static_cast<std::uint64_t>(data.size()) * 8u;
+  m.push_back(static_cast<char>(0x80));
+  while (m.size() % 64 != 56) m.push_back('\0');
+  for (int i = 7; i >= 0; --i) m.push_back(static_cast<char>((bits >> (8 * i)) & 0xffu));
+  auto rotr = [](std::uint32_t x, int n) { return (x >> n) | (x << (32 - n)); };
+  for (std::size_t chunk = 0; chunk < m.size(); chunk += 64) {
+    std::uint32_t w[64];
+    for (int i = 0; i < 16; ++i) {
+      w[i] = 0;
+      for (int j = 0; j < 4; ++j) w[i] = (w[i] << 8) | static_cast<unsigned char>(m[chunk + 4 * i + j]);
+    }
+    for (int i = 16; i < 64; ++i) {
+      const std::uint32_t s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >> 3);
+      const std::uint32_t s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >> 10);
+      w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+    }
+    std::uint32_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+    for (int i = 0; i < 64; ++i) {
+      const std::uint32_t s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const std::uint32_t ch = (e & f) ^ (~e & g);
+      const std::uint32_t t1 = hh + s1 + ch + k[i] + w[i];
+      const std::uint32_t s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const std::uint32_t mj = (a & b) ^ (a & c) ^ (b & c);
+      const std::uint32_t t2 = s0 + mj;
+      hh = g;
+      g = f;
+      f = e;
+      e = d + t1;
+      d = c;
+      c = b;
+      b = a;
+      a = t1 + t2;
+    }
+    h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+  }
+  static const char* const hex = "0123456789abcdef";
+  std::string out;
+  for (std::uint32_t v : h) {
+    for (int i = 7; i >= 0; --i) out.push_back(hex[(v >> (4 * i)) & 0xfu]);
+  }
+  return out;
+}
+
+// A minimal reader of the canonical Layer-2 JSON: the keys of the top-level "rows" object, or false when the text
+// is not a JSON object carrying one.
+struct JsonCursor {
+  const std::string& s;
+  std::size_t i = 0;
+  void Space() {
+    while (i < s.size() && (s[i] == ' ' || s[i] == '\n' || s[i] == '\r' || s[i] == '\t')) ++i;
+  }
+  bool String(std::string* out) {
+    Space();
+    if (i >= s.size() || s[i] != '"') return false;
+    ++i;
+    std::string value;
+    while (i < s.size() && s[i] != '"') {
+      if (s[i] == '\\') {
+        if (i + 1 >= s.size()) return false;
+        value.push_back(s[i + 1]);
+        i += 2;
+        continue;
+      }
+      value.push_back(s[i++]);
+    }
+    if (i >= s.size()) return false;
+    ++i;
+    if (out != nullptr) *out = value;
+    return true;
+  }
+  bool Value(int depth, std::vector<std::string>* keys) {
+    Space();
+    if (depth > 64 || i >= s.size()) return false;
+    const char c = s[i];
+    if (c == '"') return String(nullptr);
+    if (c == '{' || c == '[') {
+      const char close = c == '{' ? '}' : ']';
+      ++i;
+      Space();
+      if (i < s.size() && s[i] == close) {
+        ++i;
+        return true;
+      }
+      while (true) {
+        if (c == '{') {
+          std::string key;
+          if (!String(&key)) return false;
+          Space();
+          if (i >= s.size() || s[i] != ':') return false;
+          ++i;
+          if (keys != nullptr) keys->push_back(key);
+          if (!Value(depth + 1, nullptr)) return false;
+        } else if (!Value(depth + 1, nullptr)) {
+          return false;
+        }
+        Space();
+        if (i < s.size() && s[i] == ',') {
+          ++i;
+          continue;
+        }
+        if (i < s.size() && s[i] == close) {
+          ++i;
+          return true;
+        }
+        return false;
+      }
+    }
+    const std::size_t start = i;
+    while (i < s.size() && s[i] != ',' && s[i] != '}' && s[i] != ']' && s[i] != ' ' && s[i] != '\n' &&
+           s[i] != '\r' && s[i] != '\t') {
+      ++i;
+    }
+    return i > start;
+  }
+};
+
+bool ProvenanceRowKeys(const std::string& text, std::vector<std::string>& keys) {
+  JsonCursor cursor{text};
+  cursor.Space();
+  if (cursor.i >= text.size() || text[cursor.i] != '{') return false;
+  ++cursor.i;
+  bool found = false;
+  while (true) {
+    std::string key;
+    if (!cursor.String(&key)) return false;
+    cursor.Space();
+    if (cursor.i >= text.size() || text[cursor.i] != ':') return false;
+    ++cursor.i;
+    if (key == "rows") {
+      cursor.Space();
+      if (cursor.i >= text.size() || text[cursor.i] != '{' || found) return false;
+      std::vector<std::string> rows;
+      // the keys of the rows object, read as the keys of its first level
+      JsonCursor inner{text, cursor.i};
+      if (!inner.Value(1, &rows)) return false;
+      cursor.i = inner.i;
+      keys = rows;
+      found = true;
+    } else if (!cursor.Value(1, nullptr)) {
+      return false;
+    }
+    cursor.Space();
+    if (cursor.i < text.size() && text[cursor.i] == ',') {
+      ++cursor.i;
+      continue;
+    }
+    if (cursor.i < text.size() && text[cursor.i] == '}') {
+      ++cursor.i;
+      cursor.Space();
+      return found && cursor.i == text.size();
+    }
+    return false;
+  }
+}
+
+// Why the selected pair table is not bound to its provenance, or "" when it is.
+std::string PairProvenanceProblem(const Table& table) {
+  const std::string suffix = ".g4dat";
+  if (table.file.size() <= suffix.size() || table.file.compare(table.file.size() - suffix.size(), suffix.size(), suffix) != 0) {
+    return "the table file is not a .g4dat file";
+  }
+  const std::string sibling = table.file.substr(0, table.file.size() - suffix.size()) + ".prov.json";
+  std::ifstream in(sibling, std::ios::binary);
+  if (!in) return "its provenance file " + sibling + " cannot be read";
+  std::ostringstream bytes;
+  bytes << in.rdbuf();
+  const std::string text = bytes.str();
+  const std::string* declared = table.Directive("SOURCEDIGEST");
+  if (declared == nullptr || *declared != Sha256Hex(text)) {
+    return "the SHA-256 of " + sibling + " is not the table's #SOURCEDIGEST";
+  }
+  std::vector<std::string> rows;
+  if (!ProvenanceRowKeys(text, rows)) return "the provenance file " + sibling + " carries no readable rows object";
+  std::vector<std::string> records;
+  for (const Table::Record& record : table.records) {
+    if (record.keys.size() != 2) return "a record does not carry the two keys Z and A";
+    records.push_back(std::to_string(record.keys[0]) + "-" + std::to_string(record.keys[1]));
+  }
+  std::sort(rows.begin(), rows.end());
+  std::sort(records.begin(), records.end());
+  if (rows != records || std::adjacent_find(rows.begin(), rows.end()) != rows.end()) {
+    return "its records are not the rows its provenance file admits";
+  }
+  return "";
+}
+
 // Select the bound-rate pair table of `profile`: it must exist, and its three value columns must be the
 // contiguous `tau q free_tau` with units `ns`, `1`, `ns`. False after a refusal.
 bool SelectPairs(State& state, const std::string& dir, const std::string& profile, const std::string& present) {
@@ -245,6 +454,13 @@ bool SelectPairs(State& state, const std::string& dir, const std::string& profil
                                                 " does not declare tau q free_tau as consecutive columns");
       return false;
     }
+  }
+  const std::string unbound = PairProvenanceProblem(*table);
+  if (!unbound.empty()) {
+    RefusePairs(state, "G4MuonicData005",
+                "dataset at " + dir + ": the bound-rate pair table " + table->file + " of the selected profile '" +
+                    profile + "' is refused: " + unbound);
+    return false;
   }
   state.pairs.table = table;
   state.pairs.value = first;
@@ -273,18 +489,24 @@ void BuildOrRefuse(State& state) {
   if (d1Compiled && d3Compiled && pairCompiled) return;  // no discovery and no I/O
 
   const char* found = G4FindDataDir("G4MUONICDATA");
+  // With a pair profile selected, a dataset that cannot be found or read is recorded as refused too, so that a
+  // suppressed abort never leaves the requested evaluated pairs replaced by the compiled-in code.
   if (found == nullptr) {
-    Fatal("G4MuonicData001",
-          "G4MuonicDataTable::Enable() was called but no dataset directory was found: G4MUONICDATA "
-          "is unset and GEANT4_DATA_DIR resolved none. Export G4MUONICDATA=<directory holding "
-          "the *.g4dat files>.");
+    const std::string text =
+        "G4MuonicDataTable::Enable() was called but no dataset directory was found: G4MUONICDATA "
+        "is unset and GEANT4_DATA_DIR resolved none. Export G4MUONICDATA=<directory holding "
+        "the *.g4dat files>.";
+    Fatal("G4MuonicData001", text);
+    if (!pairCompiled) state.refusal = text;
     return;
   }
   const std::string dir(found);
   try {
     state.dataset = G4MuonicDataTable::Load(dir);
   } catch (const G4MuonicDataTable::Error& e) {
-    Fatal("G4MuonicData002", "dataset at " + dir + " rejected: " + e.what());
+    const std::string text = "dataset at " + dir + " rejected: " + e.what();
+    Fatal("G4MuonicData002", text);
+    if (!pairCompiled) state.refusal = text;
     return;
   }
   state.loaded = true;

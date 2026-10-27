@@ -682,3 +682,13 @@ def test_drill_a_pair_table_with_rows_out_of_order_is_refused():
     swapped = text.replace(row + "\n", later + "\n" + row + "\n").replace("Z:13-13", "Z:13-13")
     with pytest.raises(spec.G4DatFormatError):
         spec.parse(swapped)
+
+
+@pytest.mark.parametrize("tau,q,free_tau", [(863.7, 1e-300, 1e100), (1e-310, 0.993598, 2196.9811)],
+                         ids=["decay-underflows", "inverse-lifetime-overflows"])
+def test_drill_the_pair_refuses_derived_rates_out_of_domain(tau, q, free_tau):
+    """Finite positive primitives whose derived rates are not usable: a decay quotient that underflows to
+    zero and a
+    reciprocal lifetime that overflows. The semantic layer refuses both too (tests/test_g4semantics.py)."""
+    with pytest.raises(ev.EvaluationError):
+        ev.pair(tau, q, free_tau)

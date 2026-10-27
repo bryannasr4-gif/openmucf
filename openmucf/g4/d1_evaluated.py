@@ -816,19 +816,24 @@ def _finite_real(x: Any, where: str) -> float:
 
 def pair(tau: Any, q: Any, free_tau: Any) -> Pair:
     """``d = q / free_tau``, ``c = 1/tau - d`` from one primitive tuple (ns, 1, ns). A non-finite or
-    non-real primitive, ``tau`` or ``free_tau`` not positive, ``q`` outside (0, 1], a negative capture or a
-    non-positive decay is refused; nothing is clipped. The decay is checked against its own ``1/free_tau``."""
+    non-real primitive, ``tau`` or ``free_tau`` not positive, ``q`` outside (0, 1], a decay rate that is not
+    finite or not in ``(0, 1/free_tau]`` (a quotient that underflows to zero included), a ``1/tau`` that
+    overflows, or a capture rate that is not finite or negative is refused; nothing is clipped. The same
+    contract holds in the semantic layer and the provider of the Geant4 glue."""
     t, x, f = _finite_real(tau, "tau"), _finite_real(q, "q"), _finite_real(free_tau, "free_tau")
     if not (t > 0 and f > 0):
         raise EvaluationError("tau and free_tau must be positive")
     if not 0 < x <= 1:
         raise EvaluationError(f"q={x!r} is outside (0, 1]")
     decay = x / f
-    capture = 1.0 / t - decay
-    if not decay > 0 or decay > 1.0 / f:
+    total = 1.0 / t
+    if not (math.isfinite(decay) and decay > 0 and decay <= 1.0 / f):
         raise EvaluationError("the decay rate is outside 0 < d <= 1/free_tau")
-    if not capture >= 0:
-        raise EvaluationError(f"the capture rate {capture!r} is negative")
+    if not math.isfinite(total):
+        raise EvaluationError("1/tau is not finite")
+    capture = total - decay
+    if not (math.isfinite(capture) and capture >= 0):
+        raise EvaluationError(f"the capture rate {capture!r} is negative or not finite")
     return Pair(t, x, f, capture, decay)
 
 

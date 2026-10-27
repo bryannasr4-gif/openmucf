@@ -437,6 +437,34 @@ int PairConfigRefused(const std::string& code) {
   return 0;
 }
 
+// A selected evaluated row that cannot be used, wherever it is refused (at load by the semantic layer, or by the
+// provider when it forms the rates): one of `codes` (comma-separated) is raised, and with the abort suppressed every
+// later consultation throws; no call returns a status that lets a consumer keep its own pair.
+int PairRowRefused(const std::string& codes) {
+  G4MuonicDataTable::Enable();
+  try {
+    G4MuonicDataOverlay::Initialize();
+  } catch (const std::runtime_error&) {
+  }
+  P::Enable();
+  for (int attempt = 0; attempt < 3; ++attempt) {
+    G4MuonicBoundRates r;
+    r.capture = -1.;
+    bool returned = false;
+    try {
+      const P::Status s = P::Rates(13, 27, kMu, Mass(27), r);
+      returned = true;
+      std::printf("RETURNED %s%s", Name(s), "\n");
+    } catch (const std::runtime_error&) {
+    }
+    Expect(!returned && r.capture == -1., "a refused selected row returned a status a consumer may fall back on");
+  }
+  bool known = !g_codes.empty();
+  for (const std::string& code : g_codes) known = known && ("," + codes + ",").find("," + code + ",") != std::string::npos;
+  Expect(known, "the refusal raised another code than " + codes);
+  return 0;
+}
+
 }  // namespace
 
 const char* G4FindDataDir(const char* name) { return std::getenv(name); }
@@ -478,9 +506,11 @@ int main(int argc, char** argv) {
     PairSwitchOff();
   } else if (mode == "pair-config-refused" && argc == 3) {
     PairConfigRefused(argv[2]);
+  } else if (mode == "pair-row-refused" && argc == 3) {
+    PairRowRefused(argv[2]);
   } else {
     std::printf("usage: g4muonicdata_bound_rate_check oracle-delta <file> | current | disabled | enabled | refuse | "
-                "pair | pair-order | pair-compiled | pair-switch-off | pair-config-refused <code>\n");
+                "pair | pair-order | pair-compiled | pair-switch-off | pair-config-refused <code> | pair-row-refused <codes>\n");
     return 2;
   }
   if (g_failures > 0) return 1;
