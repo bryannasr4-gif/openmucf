@@ -18,10 +18,10 @@ index fa725ef8f1..c4a04cccbe 100644
  #endif
 diff --git a/source/particles/management/include/G4MuonicBoundRateProvider.hh b/source/particles/management/include/G4MuonicBoundRateProvider.hh
 new file mode 100644
-index 0000000..787e49b
+index 0000000..a3988dd
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicBoundRateProvider.hh
-@@ -0,0 +1,122 @@
+@@ -0,0 +1,123 @@
 +// G4MuonicBoundRateProvider -- one capture and decay rate pair for a negative muon in the 1s state of a
 +// muonic atom, given to both stopped-muon routes of Geant4 when an application asks for it.
 +//
@@ -82,7 +82,8 @@ index 0000000..787e49b
 +// free normalization. A pair profile with the switch off is refused at the
 +// first consultation with the fatal G4MuonicBoundRates003, whichever of the two options was set first;
 +// should a handler suppress the abort, every later consultation throws. Describe(Z, A) names, per key, the
-+// capture profile, the pair profile, the answering row or formula and its decay-factor convention.
++// capture profile, the pair profile, the answer (pair row, common formula or consumer fallback), and its
++// decay-factor convention where applicable.
 +//
 +// The static legacy getters G4MuonMinusBoundDecay::GetMuonDecayRate and
 +// G4MuonicAtomHelper::GetMuonDecayRate are unchanged and are not affected by the switch: they report

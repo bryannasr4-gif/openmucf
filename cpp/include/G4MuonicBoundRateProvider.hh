@@ -58,7 +58,8 @@
 // free normalization. A pair profile with the switch off is refused at the
 // first consultation with the fatal G4MuonicBoundRates003, whichever of the two options was set first;
 // should a handler suppress the abort, every later consultation throws. Describe(Z, A) names, per key, the
-// capture profile, the pair profile, the answering row or formula and its decay-factor convention.
+// capture profile, the pair profile, the answer (pair row, common formula or consumer fallback), and its
+// decay-factor convention where applicable.
 //
 // The static legacy getters G4MuonMinusBoundDecay::GetMuonDecayRate and
 // G4MuonicAtomHelper::GetMuonDecayRate are unchanged and are not affected by the switch: they report
