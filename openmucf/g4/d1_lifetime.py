@@ -572,10 +572,12 @@ def pair_comparison_rows(
     isotopes: Mapping[int, Sequence[natural.Isotope]],
 ) -> list[dict[str, str]]:
     """The rows of the evaluated pair configuration (data and common rates on, pair profile selected): one per
-    measurement whose nucleus has a pair row. Both routes take the pair's capture and decay rates. A row is
-    compared when the measurement's source is the pair's lifetime source; its band uses the measured rate's
-    uncertainty alone, because the pair carries that lifetime as its own primitive. Keys the pair table does
-    not hold keep the selected capture profile and are not restated here."""
+    measurement whose nucleus has a pair row. Both routes take the pair's capture and decay rates. Rows
+    from the lifetime source are grouped as compared. Only the self-supported-plate row restates the input
+    lifetime; the plate-in-case row is a development comparison from the same campaign, not independent
+    validation and not true by construction. Bands use each measured rate's uncertainty alone; they are not
+    uncertainties of the difference. Keys the pair table does not hold keep the selected capture profile and
+    are not restated here."""
     pairs = {(z, a): p for z, a, p in evaluated_pairs(root)}
     rows: list[dict[str, str]] = []
     for m in measurements:

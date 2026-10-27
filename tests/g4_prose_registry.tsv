@@ -477,6 +477,7 @@ bc61cb2f9feff543f5c04f19bd25d1a46353d13a	DATASET_D1.md	REGISTERED: 0 -- `A = 0`,
 c140a5aa4dc7c5205b54dc62807188fc8dcd8a82	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of them')
 c4dda9d0a27fc91fce60f523df94edad8a426d94	DATASET_D1.md	REGISTERED: one -- a pronoun ('one of direct interest')
 c61c6838f360bf94b90121b25cc3a564c04facaa	DATASET_D1.md	EXERCISED: 4.5517, 04 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
+c79147fbd5f697d3d68785a16e31975d6d8d4d75	DATASET_D1.md	REGISTERED: 863.7 -- the input lifetime in ns, `tau_ns` of data/g4/d1/bound_rate_inputs.json and the self-supported-plate row of data/g4/d1/mizuno2025_table1.csv
 ca0a3fd783172dfc4917905a047d83e2dadf5812	DATASET_D1.md	REGISTERED: 24, 52, 35, 79 -- the keys remaining open in isotope_audit.csv that the old rule called resolved; the count on this line is checked by tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
 cc6b36664dd95368be6b8ba38fc625316a23110c	DATASET_D1.md	EXERCISED: 3, 1, 6, 2, 8 -- tests/test_g4parity.py::test_t63_the_documents_published_counts_are_the_shipped_datas_counts
 cd19a56336e994d5acf68db2ea9def9bdb659954	DATASET_D1.md	REGISTERED: 66, 163 -- the record key (66, 163), a row of isotope_audit.csv

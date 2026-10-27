@@ -1055,7 +1055,9 @@ def test_the_statements_about_each_profile_and_every_row_of_the_table_hold():
         assert count and first < count and second < count, name
     count, first, second = counts["suzuki1987"]
     assert count and first == count and second < count
-    # the evaluated pair's compared rows restate the lifetime it carries: no route leaves one outside the band
+    # under the pair profile no route leaves a compared row outside the band; only the self-supported-plate
+    # row is an input reconstruction
+    # (test_the_pair_rows_distinguish_the_input_measurement_from_the_comparison)
     count, first, second = counts[lifetime.evaluated.PAIR_PROFILE]
     assert count and first == count and second == count
     answered = [row for row in lifetime.compared(rows) if row["profile"] == "suzuki1987"
@@ -1080,3 +1082,41 @@ def test_drill_a_changed_cell_or_count_is_refused():
     count = pins[0]
     moved = re.sub(count[2], lambda m: m[0].replace(m[1], str(int(m[1]) + 1)), collapsed)
     assert int(re.findall(count[2], moved)[0]) != count[4]
+
+
+def test_the_pair_rows_distinguish_the_input_measurement_from_the_comparison():
+    """Under the pair profile both Mizuno aluminium rows are compared, but only the self-supported plate's
+    row is the
+    measurement whose lifetime the tuple carries; the plate-in-case row is a different measured lifetime, a
+    development comparison whose band is not met by construction: shifting its central value moves it out of
+    its
+    band without changing the primitive or the prediction."""
+    import dataclasses
+
+    inputs = lifetime.evaluated_inputs(REPO)
+    rows = [row for row in comparison() if row["profile"] == lifetime.evaluated.PAIR_PROFILE
+            and row["population"] == lifetime.COMPARED]
+    by_locator = {row["locator"]: row for row in rows}
+    isotopes = lifetime.natural.load_isotopes(REPO / lifetime.natural.ISOTOPES_RELPATH)
+    symbols = {members[0].symbol: z for z, members in isotopes.items()}
+    plates = [m for m in lifetime.mizuno_measurements(REPO / lifetime.MIZUNO_TABLE1_RELPATH, symbols)
+              if m.z == 13 and m.locator in by_locator]
+    assert len(plates) == len(rows) == 2
+    inputs_rows = [m for m in plates if m.mean_life == str(inputs.tau)]
+    others = [m for m in plates if m.mean_life != str(inputs.tau)]
+    assert len(inputs_rows) == 1 and len(others) == 1
+    (source,) = inputs_rows
+    (other,) = others
+    assert by_locator[source.locator]["mean_life_ns"] == str(inputs.tau)
+    assert by_locator[other.locator]["mean_life_ns"] != str(inputs.tau)
+    # the source row's measured rate is the tuple's own 1/tau; the comparison row's is not
+    pair_rate = by_locator[source.locator]["rate_bound"]
+    assert float(by_locator[source.locator]["measured_rate"]) == pytest.approx(float(pair_rate), rel=1e-15)
+    assert float(by_locator[other.locator]["measured_rate"]) != pytest.approx(float(pair_rate), rel=1e-6)
+    # a shifted plate-in-case central value leaves its band; the primitive and the prediction stay the same
+    shifted = float(other.mean_life) - 5 * float(other.mean_life_unc)
+    rate, unc = repr(1000.0 / shifted), repr(1000.0 * float(other.mean_life_unc) / shifted**2)
+    assert not lifetime.within(pair_rate, rate, (unc, "0.0"))
+    assert lifetime.within(pair_rate, by_locator[other.locator]["measured_rate"],
+                           (by_locator[other.locator]["measured_rate_unc"], "0.0"))
+    assert dataclasses.replace(other, mean_life=repr(shifted)).locator == other.locator
