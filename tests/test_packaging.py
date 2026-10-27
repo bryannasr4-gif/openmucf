@@ -304,6 +304,11 @@ RESTATED = (
 )
 #: The other files under `data/g4/`: what this project computed, harvested from Geant4 or MuDirac, or wrote.
 PROJECT_AUTHORED = (
+    # The evaluated pair: its primitives (third-party values only as inputs of this project's computation),
+    # the evaluation and the shared convention record.
+    "data/g4/d1/bound_rate_inputs.json",
+    "data/g4/d1/bound_rate_evaluation.json",
+    "data/g4/d1/bound_decay_response_v1.json",
     "data/g4/d1/bound_rates_builds.csv",
     "data/g4/d1/bound_rates_drill_rulings.csv",
     "data/g4/d1/bound_rates_drills.csv",

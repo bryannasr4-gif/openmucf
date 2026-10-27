@@ -748,6 +748,12 @@ The other rows of Tables III and IV give each experiment's capture rate as its a
 often with their own value of the positive muon's lifetime (p. 2216), so the comparison does not take them.
 For each profile of the capture table and each of those rows, the file gives the measured rate, the inverse
 of the mean life, and, when the row names a nucleus, each route's rate, capture plus decay, for it.
+It also gives, under the pair profile `evaluated-bound`, a row for each of those measurements whose nucleus the
+evaluated pair table holds (the section on the evaluated pair below): there both routes take the pair's capture
+and decay rates, a row is compared when its measurement is the measurement whose lifetime the pair carries, and
+its band
+uses the measured rate's uncertainty alone. Those compared rows restate the source's own lifetime and test no
+prediction.
 A row names the nucleus with the printed mass number, or, for a target printed with no mass number or as
 natural, with the mass number of the record the isotope audit of section 6 establishes rests on a
 measurement of the element printed with no mass number (for lead, a reconstructed combination with
@@ -772,10 +778,12 @@ For F-19 the tabulated mean life and capture rate describe the lower hyperfine s
 | `parity` | 51 | 47 | 43 |
 | `mizuno2025` | 54 | 51 | 48 |
 | `suzuki1987` | 51 | 51 | 47 |
+| `evaluated-bound` | 2 | 2 | 2 |
 
 Under `parity` and `mizuno2025` each route leaves a compared row outside the band, and under `suzuki1987`
 only `G4MuonicAtomHelper` does; where a row of `suzuki1987` answers a compared row, the lookup returns the
-capture rate the source prints beside the mean life.
+capture rate the source prints beside the mean life. Under `evaluated-bound` no route does, by construction:
+its compared rows restate the lifetime the pair carries.
 The next table gives those rows: the difference between the route's rate and the measured rate, and the part
 of it that comes from the capture rate, the rate the lookup returns less the rate the source prints beside
 the mean life, each in units of the band's standard deviation and rounded to a tenth.

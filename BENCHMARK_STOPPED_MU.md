@@ -428,8 +428,9 @@ A bound muon disappears from the ground state of the muonic atom by nuclear capt
 | `parity` | 51 | 47 | 43 |
 | `mizuno2025` | 54 | 51 | 48 |
 | `suzuki1987` | 51 | 51 | 47 |
+| `evaluated-bound` | 2 | 2 | 2 |
 
-Under `parity` and `mizuno2025` each route leaves a compared row outside the band; under `suzuki1987` only `G4MuonicAtomHelper` leaves a compared row outside the band.
+Under `parity` and `mizuno2025` each route leaves a compared row outside the band; under `suzuki1987` only `G4MuonicAtomHelper` leaves a compared row outside the band; under `evaluated-bound` no route leaves a compared row outside the band.
 
 The comparison is of the rates the code returns for a single nucleus, not of a transported simulation of a target; `DATASET_D1.md` compares the transported mixture of each natural target with its measured mean life.
 

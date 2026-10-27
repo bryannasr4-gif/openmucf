@@ -223,6 +223,9 @@ def test_oracle_single_isotope_rates_equal_the_mean_life_comparison(oracle: mixt
         z = int(row["z"])
         if not row["key_a"] or len(oracle.isotopes[z]) != 1:
             continue
+        if row["lookup"] == lifetime.PAIR_ROUTE:
+            # the evaluated pair's configuration (common rates on); tests/test_g4evaluated_rates.py checks it
+            continue
         stopping = oracle.components(row["profile"], mixture.STOPPING, z)[0]
         atomic = oracle.components(row["profile"], mixture.ATOMIC, z)[0]
         assert repr(stopping.total * d1.MICROSECOND) == row["rate_bound"], row["locator"]

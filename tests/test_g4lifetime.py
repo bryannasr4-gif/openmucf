@@ -733,6 +733,11 @@ def test_every_class_a_row_can_take_occurs_and_follows_from_the_row():
         z, a = int(row["z"]), int(row["key_a"])
         if row["lookup"] == lifetime.FORMULA_ROUTE:
             expected = lifetime.FORMULA
+        elif row["lookup"] == lifetime.PAIR_ROUTE:
+            # The evaluated pair carries one source's lifetime as its primitive: rows of that source are
+            # compared, the others are answered by another source.
+            assert row["profile"] == lifetime.evaluated.PAIR_PROFILE
+            expected = lifetime.COMPARED if row["source"] == lifetime.PAIR_SOURCE else lifetime.OTHER_SOURCE
         else:
             source = row["profile"] if row["lookup"] == lifetime.PROFILE_ROUTE else lifetime.TABLE_SOURCE
             natural_record = row["lookup"] == lifetime.TABLE_ROUTE and references.get(z) == a
@@ -1044,12 +1049,15 @@ def test_the_statements_about_each_profile_and_every_row_of_the_table_hold():
 
     rows = comparison()
     counts = {name: (count, first, second) for name, count, first, second in lifetime.summary(rows)}
-    assert set(counts) == {"parity", "mizuno2025", "suzuki1987"}
+    assert set(counts) == {"parity", "mizuno2025", "suzuki1987", lifetime.evaluated.PAIR_PROFILE}
     for name in ("parity", "mizuno2025"):
         count, first, second = counts[name]
         assert count and first < count and second < count, name
     count, first, second = counts["suzuki1987"]
     assert count and first == count and second < count
+    # the evaluated pair's compared rows restate the lifetime it carries: no route leaves one outside the band
+    count, first, second = counts[lifetime.evaluated.PAIR_PROFILE]
+    assert count and first == count and second == count
     answered = [row for row in lifetime.compared(rows) if row["profile"] == "suzuki1987"
                 and row["lookup"] == lifetime.PROFILE_ROUTE]
     assert answered

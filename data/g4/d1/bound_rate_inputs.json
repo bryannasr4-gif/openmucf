@@ -1,0 +1,136 @@
+{
+  "schema": "openmucf.bound-rate-inputs/1",
+  "evaluation_id": "evaluated-bound-v1",
+  "pair_profile": "evaluated-bound",
+  "constants": {
+    "oracle": "data/g4/d1/d1_decay_rate.oracle",
+    "uehling_alpha_inverse": "137.035999173",
+    "uehling_alpha_locator": "arXiv:1406.3575v2, text after Eq. (1); frozen central decimal of the point Uehling calculation",
+    "electron_muon_mass_ratio": "0.0048363",
+    "electron_muon_mass_ratio_locator": "Czarnecki, Davydov and Kaygorodov, Phys. Rev. D 113, 036028 (2026), arXiv:2512.23023v1, Eq. (14)",
+    "upper_state_weight": "7/12",
+    "upper_state_weight_locator": "27Al J=5/2, positive magnetic moment: upper hyperfine state F=3 carries (J+1)/(2J+1)=7/12 of the initial population; Suzuki, Measday and Roalsvig, Phys. Rev. C 35, 2212 (1987), Eq. (3) and Table I, p.2215"
+  },
+  "lifetime": {
+    "nucleus": "Al27",
+    "tau_ns": "863.7",
+    "standard_uncertainty_ns": "1.0",
+    "coverage_k": "2",
+    "components_ns": {
+      "fit": "0.94",
+      "cno": "0.04",
+      "background": "0.23",
+      "range": "0.10"
+    },
+    "components_note": "component breakdown preserved as metadata; neither their quadrature nor their sum is added to the reported total",
+    "source": "Mizuno et al., Phys. Rev. C 112, 024307 (2025)",
+    "copy_read": "arXiv:2501.05897v2",
+    "locator": "Table I, self-supported plate; uncertainty construction Table II and sections III-V; the journal version is unread",
+    "time_origin_ns": "40",
+    "time_origin_locator": "arXiv:2501.05897v2, section III: the time origin is about 40 ns after the end of the second beam pulse",
+    "window_upper_ns": "57000",
+    "development_comparisons": "Suzuki, Measday and Roalsvig 1987 Table IV 864.0 +/- 1.0 ns and Mizuno Table I plate-in-case 862.5 +/- 8.1 ns: exposed development comparisons, not pooled"
+  },
+  "free_lifetime": {
+    "tau_ns": "2196.9811",
+    "standard_uncertainty_ns": "0.0022",
+    "coverage_k": "2",
+    "locator": "empirical positive-muon lifetime 2.1969811(22) us as printed in Uesaka et al., Atomic Data and Nuclear Data Tables 171, 101809 (2026), arXiv:2602.07501v2, Eq. (3)"
+  },
+  "nuclei": {
+    "Al27": {
+      "Z": 13,
+      "A": 27,
+      "roster": "IN",
+      "static_q": "0.9936",
+      "static_q_locator": "Uesaka et al. 2026, arXiv:2602.07501v2, Tables 1-3 and isotope CSV (13,27); finite-charge static ratio already divided by the finite-electron-mass free tree width",
+      "prescriptions": [
+        {"id": "uesaka2026_finite_charge", "kind": "value", "value": "0.9936", "locator": "arXiv:2602.07501v2 isotope table (13,27)"},
+        {"id": "czarnecki2011_massless", "kind": "value", "value": "0.9934", "locator": "Czarnecki, Garcia i Tormo and Marciano, Phys. Rev. D 84, 013006 (2011), arXiv:1106.4756v2, Eqs. (8)-(11), (28): electron mass set to zero in both the bound width and the free width, so the ratio is kept as printed"},
+        {"id": "suzuki1987_huff", "kind": "value", "value": "0.993", "locator": "Suzuki, Measday and Roalsvig 1987, Table IV p.2218 Huff column, Al"},
+        {"id": "leading_formula", "kind": "leading_formula", "value": "", "locator": "1 - (Z alpha)^2 (1/2 - eta), the default-off common provider's low-z-inclusive-tree-linear-recoil-v1"}
+      ],
+      "excluded_prescriptions": [
+        {"id": "watanabe1987_al", "value": "0.992", "reason": "outside the frozen prescription set; the partial-wave convergence problem shown for older calculations was demonstrated for oxygen, not audited for Al"}
+      ]
+    },
+    "O16": {
+      "Z": 8,
+      "A": 16,
+      "roster": "DEFERRED_RUNTIME_SOURCE_MAPPING",
+      "static_q": "0.9979",
+      "static_q_locator": "Uesaka et al. 2026, arXiv:2602.07501v2, isotope table (8,16)",
+      "prescriptions": [
+        {"id": "uesaka2026_finite_charge", "kind": "value", "value": "0.9979", "locator": "arXiv:2602.07501v2 isotope table (8,16)"},
+        {"id": "czarnecki2026_point_f_normalized", "kind": "divide_by_f", "value": "0.9976", "locator": "arXiv:2512.23023v1 Table I and Eqs. (14)-(15): point-Coulomb continuum width printed relative to the massless-electron free width, so the ratio is divided by f(m_e/m_mu)"},
+        {"id": "suzuki1987_huff", "kind": "value", "value": "0.998", "locator": "Suzuki, Measday and Roalsvig 1987, Table III p.2217 Huff column, O"},
+        {"id": "leading_formula", "kind": "leading_formula", "value": "", "locator": "1 - (Z alpha)^2 (1/2 - eta)"}
+      ],
+      "excluded_prescriptions": []
+    },
+    "C12": {
+      "Z": 6,
+      "A": 12,
+      "roster": "DEFERRED_RUNTIME_MIXTURE_ESTIMAND",
+      "static_q": "0.9989",
+      "static_q_locator": "Uesaka et al. 2026, arXiv:2602.07501v2, isotope table (6,12)",
+      "prescriptions": [
+        {"id": "uesaka2026_finite_charge", "kind": "value", "value": "0.9989", "locator": "arXiv:2602.07501v2 isotope table (6,12)"},
+        {"id": "czarnecki2026_point_f_normalized", "kind": "divide_by_f", "value": "0.9987", "locator": "arXiv:2512.23023v1 Table I and Eqs. (14)-(15), divided by f(m_e/m_mu)"},
+        {"id": "suzuki1987_recovered_2197.03", "kind": "recovered_natc", "value": "2197.03", "locator": "recovered from Suzuki Table III p.2217 natural-carbon mean life and capture rate with free lifetime 2197.03 ns; the printed Huff entry 1.00 is not used"},
+        {"id": "suzuki1987_recovered_2197.0", "kind": "recovered_natc", "value": "2197.0", "locator": "recovered from Suzuki Table III p.2217 natural-carbon mean life and capture rate with free lifetime 2197.0 ns"},
+        {"id": "leading_formula", "kind": "leading_formula", "value": "", "locator": "1 - (Z alpha)^2 (1/2 - eta)"}
+      ],
+      "excluded_prescriptions": [
+        {"id": "suzuki1987_printed_1.00", "value": "1.00", "reason": "printed rounding of a recovered value below one; a decay factor above one is unphysical"}
+      ]
+    }
+  },
+  "q_ledger": {
+    "printing_half_unit": "0.00005",
+    "termination_fraction": "0.00002",
+    "binding_recoil_cubic": "1",
+    "recoil_quadratic": "1",
+    "kinetic_quadratic": "1.5",
+    "historical_recoil_contrast": "1.06",
+    "relativistic_uehling": "1",
+    "one_loop": "1",
+    "two_loop": "1"
+  },
+  "q_serialization_decimals": 6,
+  "hyperfine": {
+    "nucleus": "Al27",
+    "amplitude_center": "0.14",
+    "amplitude_standard_uncertainty": "0.08",
+    "amplitude_coverage_k": "2",
+    "amplitude_definition": "neutron time-spectrum amplitude a = n_plus(0) * Delta / c_minus with Delta = c_minus - c_plus; Delta/c_minus = a / upper_state_weight",
+    "amplitude_locator": "Measday, Physics Reports 354, 243 (2001), Table 3.8 p.281 (Al neutron experiment 0.14(8), errors doubled for non-F elements); T. J. Stocki, UBC PhD thesis (1998), Table 5.2 p.103 (Al 0.13 +/- 0.04)",
+    "transition_center_per_us": "41",
+    "transition_standard_uncertainty_per_us": "9",
+    "transition_coverage_k": "2",
+    "transition_locator": "Suzuki, Measday and Roalsvig 1987, Table I p.2215, Al hyperfine transition rate 41 +/- 9 per us",
+    "transition_crosscheck_per_us": [["41", "9"], ["36", "20"]],
+    "transition_crosscheck_locator": "41 +/- 9 (Suzuki 1987 Table I) and 36 +/- 20 (Stocki 1998 Table 5.1, 36 +/- 10 with Measday's doubled error)",
+    "registered_discrepancy": "Stocki et al., Phys. Rev. A 64, 042505 (2001), arXiv:nucl-ex/0102005, Tables III-V: Al amplitude 0.34 +/- 0.05 with transition rate about 72 +/- 9 per us, and a warning that neutron-selected and total-capture asymmetries can differ; unresolved, not substituted into the frozen region",
+    "mean_matched_amplitude": "0.14",
+    "mean_matched_transition_per_us": "41"
+  },
+  "budgets": {
+    "late_lifetime": "0.01",
+    "stopped_mean": "0.01",
+    "capture_probability": "0.005",
+    "decay_rate": "0.01"
+  },
+  "consequential_fraction": "0.1",
+  "mapping_outward_step": "0.000001",
+  "power": {
+    "q_mutant": "0.94",
+    "mean_mutant_factor": "1.03"
+  },
+  "census": {
+    "source": "data/g4/d1/suzuki1987_quantity_rows.csv",
+    "O16": {"Z": 8, "primary_ref": "a", "block_label": "O"},
+    "C12": {"Z": 6, "primary_ref": "a", "block_label": "C"},
+    "minor_isotope": {"C12": {"label": "13C", "fraction": "0.0107"}}
+  }
+}

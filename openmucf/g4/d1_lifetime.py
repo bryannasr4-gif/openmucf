@@ -17,6 +17,11 @@ the measured rate and, when the measurement names a nucleus, each route's rate f
 follows the lookup a patched build runs (:func:`openmucf.g4.d1_natural.lookup`).
 
 Rates are in ns^-1 internally, Geant4's unit, and in 1e6/s in the files.
+
+The evaluated pair (:mod:`openmucf.g4.d1_evaluated`) is read and checked through this module: it loads the
+committed primitives, the oracle's constants and masses and the compendium rows, and delegates the
+evaluation. Its rows enter the comparison under the pair profile, explicitly identified, beside the
+capture-profile rows, whose meaning is unchanged.
 """
 
 from __future__ import annotations
@@ -32,6 +37,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from openmucf.g4 import d1_evaluated as evaluated
 from openmucf.g4 import d1_natural as natural
 from openmucf.g4 import spec
 from openmucf.g4.sources import d1_nuclear_capture as d1
@@ -45,6 +51,13 @@ COMPARISON_RELPATH = "data/g4/d1/mean_life_comparison.csv"
 HARNESS_RELPATH = "cpp/tools/harvest_decay.cc"
 #: The committed transcription of Table 1 of Mizuno et al.
 MIZUNO_TABLE1_RELPATH = "data/g4/d1/mizuno2025_table1.csv"
+#: The evaluated pair: its committed primitives, the evaluation and shared convention record generated from
+#: them, and the dataset table that carries the production tuple under the pair profile.
+EVALUATED_INPUTS_RELPATH = "data/g4/d1/bound_rate_inputs.json"
+EVALUATION_RELPATH = "data/g4/d1/bound_rate_evaluation.json"
+CONVENTION_RELPATH = "data/g4/d1/bound_decay_response_v1.json"
+PAIR_LAYER1_RELPATH = f"data/g4/d1/d1_bound_rate.{evaluated.PAIR_PROFILE}.g4dat"
+PAIR_LAYER2_RELPATH = f"data/g4/d1/d1_bound_rate.{evaluated.PAIR_PROFILE}.prov.json"
 #: The builds the harvest runs on: one unpatched install per Geant4 revision the patches serve.
 BUILDS = (
     ("unpatched-v11.4.2", "v11.4.2"),
@@ -74,12 +87,16 @@ HELPER_Z = range(-1, 122)
 
 #: The measurement sources, named as the profiles their rows make.
 SUZUKI, MIZUNO = suzuki1987.PROFILE, mizuno2025.PROFILE
+#: The source of the lifetime each evaluated pair row carries as its primitive (Table I of Mizuno et al.).
+PAIR_SOURCE = MIZUNO
 #: The compiled-in capture table's source comment credits its data to Suzuki, Measday and Roalsvig, with
 #: hydrogen and helium carved out to other papers.
 TABLE_SOURCE, TABLE_SOURCE_MIN_Z = SUZUKI, 3
 
 #: The routes a capture lookup can take, and the classes of a comparison row.
 PROFILE_ROUTE, TABLE_ROUTE, FORMULA_ROUTE = natural.PROFILE_ROUTE, natural.TABLE_ROUTE, natural.FORMULA_ROUTE
+#: The lookup of a row answered by the evaluated pair table: both routes take its capture and decay rates.
+PAIR_ROUTE = "pair"
 COMPARED, OTHER_SOURCE, OTHER_BASIS = "compared", "other-source", "other-basis"
 FORMULA, NO_KEY = "formula", "no-key"
 POPULATIONS = (COMPARED, OTHER_SOURCE, OTHER_BASIS, FORMULA, NO_KEY)
@@ -546,7 +563,117 @@ def comparison_rows(root: Path) -> list[dict[str, str]]:
                     inside = within(row[f"rate_{suffix}"], measured, (measured_unc, row["capture_rate_unc"]))
                     row[f"within_{suffix}"] = "true" if inside else "false"
             rows.append(row)
+    rows += pair_comparison_rows(root, measurements, references, isotopes)
     return rows
+
+
+def pair_comparison_rows(
+    root: Path, measurements: Sequence[Measurement], references: Mapping[int, int],
+    isotopes: Mapping[int, Sequence[natural.Isotope]],
+) -> list[dict[str, str]]:
+    """The rows of the evaluated pair configuration (data and common rates on, pair profile selected): one per
+    measurement whose nucleus has a pair row. Both routes take the pair's capture and decay rates. A row is
+    compared when the measurement's source is the pair's lifetime source; its band uses the measured rate's
+    uncertainty alone, because the pair carries that lifetime as its own primitive. Keys the pair table does
+    not hold keep the selected capture profile and are not restated here."""
+    pairs = {(z, a): p for z, a, p in evaluated_pairs(root)}
+    rows: list[dict[str, str]] = []
+    for m in measurements:
+        a = key_mass_number(m, references, isotopes)
+        if a is None or (m.z, a) not in pairs:
+            continue
+        p = pairs[(m.z, a)]
+        tau, tau_unc = float(m.mean_life), float(m.mean_life_unc)
+        measured, measured_unc = repr(d1.MICROSECOND / tau), repr(d1.MICROSECOND * tau_unc / (tau * tau))
+        row = dict.fromkeys(COLUMNS, "")
+        row.update({
+            "source": m.source, "locator": m.locator, "label": m.label, "z": str(m.z), "basis": m.basis,
+            "measured_state": m.state, "key_a": str(a), "profile": evaluated.PAIR_PROFILE,
+            "lookup": PAIR_ROUTE,
+            "population": COMPARED if m.source == PAIR_SOURCE else OTHER_SOURCE,
+            "mean_life_ns": m.mean_life, "mean_life_unc_ns": m.mean_life_unc,
+            "measured_rate": measured, "measured_rate_unc": measured_unc,
+            "printed_capture_rate": format(m.printed_capture_rate, "f"),
+            "capture_rate": repr(p.capture * d1.MICROSECOND), "capture_rate_unc": repr(0.0),
+        })
+        for suffix, _ in ROUTES:
+            row[f"decay_rate_{suffix}"] = repr(p.decay * d1.MICROSECOND)
+            row[f"rate_{suffix}"] = repr((p.capture + p.decay) * d1.MICROSECOND)
+        for suffix, _ in ROUTES:
+            inside = within(row[f"rate_{suffix}"], measured, (measured_unc, row["capture_rate_unc"]))
+            row[f"within_{suffix}"] = "true" if inside else "false"
+        rows.append(row)
+    return rows
+
+
+# --------------------------------------------------------------------------------------------
+# the evaluated pair
+# --------------------------------------------------------------------------------------------
+
+
+def evaluated_inputs(root: Path) -> evaluated.Inputs:
+    """The committed primitives of the evaluated pair, typed."""
+    return evaluated.load_inputs((root / EVALUATED_INPUTS_RELPATH).read_bytes())
+
+
+def oracle_inputs(root: Path, inputs: evaluated.Inputs) -> evaluated.OracleInputs:
+    """The oracle's constants and nuclear masses, and Geant4's stock (13, 27) pair on each route with both
+    options off: the compiled capture table and each route's own decay rate."""
+    if inputs.raw["constants"]["oracle"] != ORACLE_RELPATH:
+        raise LifetimeError("the evaluated pair names another oracle")
+    oracle = load_oracle(root / ORACLE_RELPATH)
+    if oracle.constants.get("alpha") != ALPHA or oracle.constants.get("microsecond") != d1.MICROSECOND:
+        raise LifetimeError("the oracle's alpha or microsecond is not the one this module computes with")
+    helper = d1.load_helper(root / d1.HELPER_RELPATH)
+    model = natural.reference_model(helper)
+    return evaluated.OracleInputs(
+        alpha=oracle.constants["alpha"], mu_mass=oracle.constants["mu_mass"],
+        masses={key: mass for key, (mass, _) in oracle.light.items()},
+        stock_capture=d1.capture_rate(13, 27, helper.capture_records, model),
+        stock_decay_atomic=oracle.helper[13], stock_decay_stopping=oracle.light[(13, 27)][1],
+    )
+
+
+def compendium_rows(root: Path) -> list[dict[str, str]]:
+    """The committed quantity rows of the Suzuki, Measday and Roalsvig tables."""
+    with (root / suzuki1987.QUANTITY_ROWS_RELPATH).open(encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def evaluated_tuples(root: Path) -> list[tuple[int, int, decimal.Decimal, decimal.Decimal, decimal.Decimal]]:
+    """The production rows ``(Z, A, tau, q, free_tau)`` of the pair table: the admitted nuclei only."""
+    inputs = evaluated_inputs(root)
+    oracle = oracle_inputs(root, inputs)
+    out = []
+    for name, nucleus in inputs.nuclei.items():
+        if nucleus.roster != evaluated.ROSTER_IN:
+            continue
+        record = evaluated.q_record(inputs, oracle, name)
+        q = evaluated.serialize_q(record.assembly, inputs.q_decimals)
+        out.append((nucleus.z, nucleus.a, inputs.tau, q, inputs.free_tau))
+    if not out:
+        raise LifetimeError("the evaluated pair admits no row: an empty roster is vacuous, never a pass")
+    return sorted(out)
+
+
+def evaluated_pairs(root: Path) -> list[tuple[int, int, evaluated.Pair]]:
+    """The pair each admitted row gives a consumer, from its binary64 primitives."""
+    return [(z, a, evaluated.pair(float(tau), float(q), float(free_tau)))
+            for z, a, tau, q, free_tau in evaluated_tuples(root)]
+
+
+def evaluation(root: Path) -> dict[str, object]:
+    """Every derived quantity and decision of the evaluated pair, recomputed from the committed primitives."""
+    inputs = evaluated_inputs(root)
+    oracle = oracle_inputs(root, inputs)
+    stock = {z: float(value) for z, a, value, _ in d1.load(root / d1.VENDORED_RELPATH).capture_records
+             if (z, a) in ((12, 24), (13, 27), (14, 28), (15, 31))}
+    return evaluated.evaluate(inputs, oracle, compendium_rows(root), stock)
+
+
+def convention(root: Path, record: Mapping[str, object]) -> dict[str, object]:
+    """The D1 roles of the shared bound-decay response record."""
+    return evaluated.convention_record(evaluated_inputs(root), record)
 
 
 def render_csv(rows: Sequence[Mapping[str, str]]) -> bytes:

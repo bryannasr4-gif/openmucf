@@ -1,4 +1,4 @@
-.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics design g4conformance g4natural g4lifetime stoppedmu g4mixture audit all
+.PHONY: install test lint format findings calibration validate bench forecast twin-audit materiality mucost systems frontier neutronomics design g4conformance g4natural g4lifetime g4evaluated stoppedmu g4mixture audit all
 
 install:
 	pip install -e ".[dev]"
@@ -139,6 +139,14 @@ g4natural:
 g4lifetime:
 	python scripts/generate_g4lifetime.py compare
 
+# The evaluated bound-rate pair: every derived quantity and decision of data/g4/d1/bound_rate_evaluation.json and
+# the D1 roles of the shared convention record data/g4/d1/bound_decay_response_v1.json, recomputed from the
+# committed primitives data/g4/d1/bound_rate_inputs.json, the decay-rate oracle and the compendium rows. The
+# reference ranges come from a numerical search, so the evaluation is NOT byte-diffed: `check` holds every number
+# to a relative 1e-12 and every verdict exactly, and refuses any key it does not recompute.
+g4evaluated:
+	python scripts/generate_g4evaluated_rates.py check
+
 # The stopped-muon benchmark: the comparison of the committed cells with the measured yields, the verdict
 # of each row under the pre-registration's rule, the comparison of the stock muonic cascade with measured K-series
 # intensities, the decision on every count of the harvested cascades and BENCHMARK_STOPPED_MU.md, from
@@ -171,7 +179,7 @@ g4mixture:
 # IS exact-diffed; the slow twin coverage MCMC (tests/test_twin_coverage.py) is a `slow` test, never here.
 # MATERIALITY.md is deterministic (one-at-a-time channel toggles through the v1 ODE, no MCMC) and IS
 # exact-diffed; its forward-UQ CI-width scale reference is read from the byte-stable FINDINGS_MANIFEST.json.
-audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics g4data g4conformance g4d2 g4natural g4lifetime stoppedmu g4mixture
+audit: findings validate bench twin-audit materiality mucost systems frontier neutronomics g4data g4conformance g4d2 g4natural g4lifetime g4evaluated stoppedmu g4mixture
 	python scripts/generate_forecast.py --audit
 	python -m openmucf.provenance --check FINDINGS_MANIFEST.json TWIN_MANIFEST.json MATERIALITY_MANIFEST.json MUON_COST_MANIFEST.json SYSTEMS_MANIFEST.json FRONTIER_MANIFEST.json NEUTRONOMICS_MANIFEST.json DESIGN_MANIFEST.json
 	git diff --exit-code -- FINDINGS.md VALIDATION.md VALIDATION_CHANNELS.md FORECASTS.md FINDINGS_MANIFEST.json BENCHMARKS.md TWIN_AUDIT.md TWIN_MANIFEST.json MATERIALITY.md MATERIALITY_MANIFEST.json MUON_COST.md MUON_COST_MANIFEST.json SYSTEMS.md SYSTEMS_MANIFEST.json FRONTIER.md FRONTIER_MANIFEST.json NEUTRONOMICS.md NEUTRONOMICS_MANIFEST.json data/g4/example.g4dat data/g4/geant4_add_dataset.snippet data/g4/d1/d1_capture.g4dat data/g4/d1/d1_capture.prov.json data/g4/d1/d1_zeff.g4dat data/g4/d1/d1_zeff.prov.json data/g4/d1/d1_capture.mizuno2025.g4dat data/g4/d1/d1_capture.mizuno2025.prov.json data/g4/d1/mizuno2025_table1.csv data/g4/d1/mizuno2025_table3.csv data/g4/d1/suzuki1987_printed_rows.csv data/g4/d1/suzuki1987_quantity_rows.csv data/g4/d1/suzuki1987_parity_cells.csv data/g4/d1/suzuki1987_preprint_differences.csv data/g4/d1/d1_capture.suzuki1987.g4dat data/g4/d1/d1_capture.suzuki1987.prov.json data/g4/d1/zeff_audit.csv data/g4/d1/capture_rate_cells.csv data/g4/d1/geant4_add_dataset.snippet data/g4/d3 data/g4/d2/selector_vs_primary.csv data/g4/d2/selector_summary.csv data/g4/d1/natural_target_capture.csv data/g4/d1/mean_life_comparison.csv data/g4/d1/record_classes.csv data/g4/d1/natural_target_answers.csv data/g4/stopped_mu/comparison.csv data/g4/stopped_mu/verdicts.csv data/g4/stopped_mu/cascade_comparison.csv data/g4/stopped_mu/cascade_consumer.csv BENCHMARK_STOPPED_MU.md tests/fixtures/g4dat_conformance
