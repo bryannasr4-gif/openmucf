@@ -277,10 +277,10 @@ index 0000000..bbb9311
 +#endif
 diff --git a/source/particles/management/include/G4MuonicDataSemantics.hh b/source/particles/management/include/G4MuonicDataSemantics.hh
 new file mode 100644
-index 0000000..02c7171
+index 0000000..be02cf3
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataSemantics.hh
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,70 @@
 +// G4MuonicDataSemantics -- what a G4MuonicData dataset must mean, over and above what its grammar
 +// allows.
 +//
@@ -329,7 +329,8 @@ index 0000000..02c7171
 +
 +  // The consumer transform of one bound-rate pair tuple (tau and free_tau in ns, q dimensionless), in the
 +  // order the consumers evaluate it. A tuple is admitted only if every quantity a consumer forms from it is
-+  // finite and in its domain; nothing is clipped:
++  // finite and in its domain, except the infinite capture lifetime zero capture stores (below); nothing is
++  // clipped:
 +  //   tau and free_tau finite and positive, q finite in (0, 1];
 +  //   the decay rate d = q / free_tau finite and in (0, 1/free_tau] (a quotient that underflows is refused);
 +  //   1/tau finite, and the capture rate c = 1/tau - d finite and not negative (c = 0 is admitted);

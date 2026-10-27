@@ -46,7 +46,8 @@ class G4MuonicDataSemantics {
 
   // The consumer transform of one bound-rate pair tuple (tau and free_tau in ns, q dimensionless), in the
   // order the consumers evaluate it. A tuple is admitted only if every quantity a consumer forms from it is
-  // finite and in its domain; nothing is clipped:
+  // finite and in its domain, except the infinite capture lifetime zero capture stores (below); nothing is
+  // clipped:
   //   tau and free_tau finite and positive, q finite in (0, 1];
   //   the decay rate d = q / free_tau finite and in (0, 1/free_tau] (a quotient that underflows is refused);
   //   1/tau finite, and the capture rate c = 1/tau - d finite and not negative (c = 0 is admitted);

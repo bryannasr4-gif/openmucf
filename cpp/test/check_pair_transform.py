@@ -4,8 +4,9 @@ The compiled function is run over a boundary corpus (subnormals, the reciprocal-
 neighbours of every edge, zero capture, q = 1, DBL_MAX, NaN and both infinities in every primitive) and a
 seeded random corpus. Each tuple must be admitted exactly when an independent simulation of what the Geant4
 consumers compute from it -- the stopping route's total rate and sampled wait, the atomic route's lifetime,
-stored partial lifetimes and the rates its decay step reads back from them -- gives only finite quantities in
-their domains, and an admitted tuple's capture and decay rates must be the simulation's to the bit.
+stored partial lifetimes and the rates its decay step reads back from them -- gives only quantities in their
+domains, all finite except the infinite capture lifetime of zero capture (read back as a zero rate), and an
+admitted tuple's capture and decay rates must be the simulation's to the bit.
 
 usage: check_pair_transform.py <g4muonicdata_bound_rate_check>
 """
