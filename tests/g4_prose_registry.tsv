@@ -17,7 +17,6 @@
 0be561600f53acee69d6560c11be0c944b55e5a1	CHANGELOG.md	REGISTERED: 0.35, 0.94, two -- the R_col and total-R figures FINDINGS.md section 3 prints, two successive factors
 0c623f480581b5db8a3dffe517f16ddd50260e90	CHANGELOG.md	REGISTERED: 0.18 -- Kelly, Hart & Rose's adopted efficiency, `eta_acc_kelly_psi_minimal` in openmucf/data/muon_cost_chain.csv
 0ca95ff9772a0d413ebb86dc32368411e6eb6fb1	CHANGELOG.md	REGISTERED: 4.39, 07, 5.25, 05, 5, 3 -- the T3 median Q_net before and after, and the orders-of-magnitude fall retracted, as FINDINGS.md's section-2b amendment prints them
-0cd9f3bc2d98405342673ef746a7e1b0c5236701	CHANGELOG.md	REGISTERED: 4 -- the digit of the pair-profile variable `G4MUONICDATA_D1_PAIR_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name, an identifier
 0cf4f40d22f7b302db25b5cba1c83fe611c4d618	CHANGELOG.md	REGISTERED: 640 -- the wrapped sentences the layer enumerated at this entry's date, a count the sentence states 'at this head'
 0cfaf0c352c1750df8557d1ddf7d76aa02bb3626	CHANGELOG.md	REGISTERED: 1.6, 1.7, 0.011 -- the base chain's sd error and its shift of `ose_C1`, as openmucf/design.py's docstring and tests/test_design_audit.py's comment record them
 0e15f5d303b8c683836d4c3711595e48adafe2e5	CHANGELOG.md	REGISTERED: 5497.5, 4993, 1133.5, 1029.5 -- MUON_COST.md's T3 median and tier ratio before and after, as its own correction note prints them
@@ -178,6 +177,7 @@
 75222e5ff9c94f282f29a2a44a61e5f81a8d355e	CHANGELOG.md	REGISTERED: 0.3 -- the tritium fraction of Jones's target, as the `Jones1986` note in openmucf/data/references.bib and benchmarks/jones-1986.json record it
 7644298f40a5b9e8eb669af9e328faa3b03bcdd3	CHANGELOG.md	REGISTERED: two -- the two hand-written alternations the patterns used to be
 76f9c6701d2bb3b7b2ced64c70c3f9cad2bb1b6c	CHANGELOG.md	REGISTERED: 2, 10 -- the `E_mu_GeV` box of openmucf/data/uq_priors.csv, 2.0 to 10.0
+771cfe1431622db7b3a5485e89ced46d85e10573	CHANGELOG.md	REGISTERED: 4, 14.4 -- 14.4: the subsection of DATASET_D1.md the entry points to, a cross-reference; 4: the digit of the pair-profile variable `G4MUONICDATA_D1_PAIR_PROFILE`, as cpp/src/G4MuonicDataOverlay.cc spells it: the `4` of the toolkit's name, an identifier
 77f239846ecb65f7a3cdb6752a4d6e8ee6d24c6f	CHANGELOG.md	REGISTERED: 86, 45 -- 86: settled rows, as this dated entry recorded it (a released line, held by this row and not re-derived); 45: isotope_resolved true, as this dated entry recorded it (a released line, held by this row and not re-derived)
 78142cb643d865a2d6afe564de0c404e0eb97a0d	CHANGELOG.md	REGISTERED: 8, one -- the rows of openmucf/data/muon_cost_chain.csv, each moving one axis
 78895069380733dff7c73705e882f0477eb14b3a	CHANGELOG.md	REGISTERED: two -- the two docs pages the sentence names
