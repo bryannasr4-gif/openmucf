@@ -552,10 +552,9 @@ def render_section(root: Path) -> str:
         "`bound_rate_evaluation.json`, generated and checked by `scripts/generate_g4evaluated_rates.py`, and the page "
         "[`docs/evaluated-bound-rates.md`](docs/evaluated-bound-rates.md) renders them.",
         "",
-        "A build reads the table only when `G4MUONICDATA_D1_PAIR_PROFILE` names its profile, independently of "
-        "`G4MUONICDATA_D1_PROFILE`, and only with both the dataset opt-in and the common-rate option above on: then a "
-        "key the table holds takes the pair on both stopped-muon routes, in place of the common formula, and every "
-        "other key keeps its capture profile's rate and the common formula. The variable that spans both seams never "
+        "With the dataset option on, the loader parses and validates every table. Both switches and the pair-profile selection are required to use an evaluated row. `G4MUONICDATA_D1_PAIR_PROFILE` names the pair profile, independently of "
+        "`G4MUONICDATA_D1_PROFILE`, and with the dataset opt-in and the common-rate option above on a key the table "
+        "holds takes the pair on both stopped-muon routes. Other keys retain the selected capture profile and the existing route-specific formula or fallback. The variable that spans both seams never "
         "selects it, and a pair profile with the common-rate option off, with no pair table, with a malformed or "
         "empty pair table, or whose rows are not the rows its digest-checked provenance file admits is refused; "
         "`cpp/patches/README.md` states how. The empty admitted roster above concerns "

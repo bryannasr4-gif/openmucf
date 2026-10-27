@@ -48,8 +48,8 @@
 // that carries a `bound_rate_primitives` table (G4MuonicDataOverlay), a key that table holds is answered
 // from its one tuple (tau, q, free_tau): decay = q / free_tau, capture = 1/tau - decay, so the two rates of
 // both routes come from one realization and capture + decay = 1/tau. The row takes precedence over the
-// formula above and is not limited to its domain; every other key keeps the formula pair and the capture
-// profile's capture rate. A row whose tuple is not finite and positive, has q outside
+// formula above and is not limited to its domain. Other keys retain the selected capture profile and the
+// existing route-specific formula or fallback. A row whose tuple is not finite and positive, has q outside
 // (0, 1], or whose decay rate, 1/tau or capture rate is not finite or out of domain (a decay rate that
 // underflows to zero, a negative capture rate) is refused with G4MuonicBoundRates001; the provider is then
 // poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer

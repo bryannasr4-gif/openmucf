@@ -44,8 +44,7 @@ Both existing options are needed: the dataset option (`G4HadronicParameters::Set
 common-rate switch (`SetEnableMuonicBoundRates(true)`), in either order before the first stopped muon, and the
 variable `G4MUONICDATA_D1_PAIR_PROFILE=evaluated-bound`. The pair profile is selected independently of the
 capture profile (`G4MUONICDATA_D1_PROFILE`): the aluminium-27 key, which a normal aluminium target reaches, takes
-the pair on both stopped-muon routes; every other key keeps the selected capture profile's rate and the common
-formula. Natural-composition (`A = 0`) requests have no pair. Unset, the pair selector is `compiled` and nothing
+the pair on both stopped-muon routes. Other keys retain the selected capture profile and the existing route-specific formula or fallback. With the dataset option on, the loader parses and validates every table. Both switches and the pair-profile selection are required to use an evaluated row. Natural-composition (`A = 0`) requests have no pair. Unset, the pair selector is `compiled` and nothing
 changes. `G4MuonicBoundRateProvider::Describe(Z, A)` names, per key, the capture profile, the pair profile, the
 answer (pair row or formula) and its decay-factor convention; within one run aluminium uses the evaluated factor
 while other elements use the leading formula.

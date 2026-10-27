@@ -93,9 +93,8 @@ table carries evaluated bound-muon rate pairs; unset it is `compiled`, and it is
 capture profile, so a configuration that names it reads the directory even when both seams select `compiled`.
 With the dataset opt-in and the common-rate option both on, `G4MuonicBoundRateProvider` answers a key that table
 holds from its tuple `(tau, q, free_tau)`, the decay rate `q/free_tau` and the capture rate the inverse of `tau`
-less it, on both stopped-muon routes, and
-every other key keeps the capture profile and the common formula; `G4MuonicBoundRateProvider::Describe` names
-the answer per key. The selected pair table is bound to its
+less it, on both stopped-muon routes. Other keys retain the selected capture profile and the existing route-specific formula or fallback. With the dataset option on, the loader parses and validates every table. Both switches and the pair-profile selection are required to use an evaluated row.
+`G4MuonicBoundRateProvider::Describe` names the answer per key. The selected pair table is bound to its
 provenance file: its records must be the rows that file admits, and that file's SHA-256 must be the table's
 `#SOURCEDIGEST`; otherwise, and for a tuple whose derived rates are out of domain, the load raises the fatal
 `G4Exception` `G4MuonicData005`. `G4MUONICDATA_PROFILE` naming a pair profile, and a pair profile that carries no pair table,
