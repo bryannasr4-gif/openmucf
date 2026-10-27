@@ -630,3 +630,54 @@ def test_the_comparison_identifies_the_pair_rows_and_both_routes_take_the_pair()
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(pytest.main([__file__]))
+
+
+# --------------------------------------------------------------------------------------------
+# the written artifacts: tampered bytes, a lost sibling, reordered columns or rows
+# --------------------------------------------------------------------------------------------
+
+
+def _check_with(monkeypatch, relpath: str, change) -> None:
+    """Run the generator's check with one committed file's bytes changed (``change`` returns the new bytes, or
+    raises FileNotFoundError for a missing file)."""
+    target = (REPO / relpath).resolve()
+    original = pathlib.Path.read_bytes
+
+    def read_bytes(self: pathlib.Path) -> bytes:
+        if self.resolve() == target:
+            return change(original(self))
+        return original(self)
+
+    monkeypatch.setattr(pathlib.Path, "read_bytes", read_bytes)
+    _generator().check(REPO)
+
+
+def _missing(_: bytes) -> bytes:
+    raise FileNotFoundError("missing provenance sibling")
+
+
+@pytest.mark.parametrize("relpath,change", [
+    (lifetime.PAIR_LAYER2_RELPATH, lambda b: b.replace(b"Mizuno2025", b"Mizuno2024", 1)),
+    (lifetime.PAIR_LAYER2_RELPATH, _missing),
+    (lifetime.PAIR_LAYER1_RELPATH, lambda b: b.replace(b"0.99359799999999998", b"0.99359899999999998")),
+    (lifetime.PAIR_LAYER1_RELPATH, lambda b: b.replace(b"Z A tau q free_tau", b"Z A q tau free_tau")),
+    (lifetime.CONVENTION_RELPATH, lambda b: b.replace(b'"SOURCE_REPORTED_FROZEN"', b'"SOURCE_CONVERTED"')),
+], ids=["tampered-provenance", "missing-provenance", "tampered-tuple", "reordered-columns",
+        "tampered-convention"])
+def test_drill_the_check_refuses_a_tampered_or_missing_artifact(monkeypatch, relpath, change):
+    from openmucf.g4 import spec
+
+    refusals = (SystemExit, ValueError, FileNotFoundError, ev.EvaluationError, spec.G4DatFormatError)
+    with pytest.raises(refusals):
+        _check_with(monkeypatch, relpath, change)
+
+
+def test_drill_a_pair_table_with_rows_out_of_order_is_refused():
+    from openmucf.g4 import spec
+
+    text = (REPO / lifetime.PAIR_LAYER1_RELPATH).read_text(encoding="ascii")
+    row = next(line for line in text.splitlines() if line and not line.startswith("#"))
+    later = row.replace("13 27 ", "13 28 ", 1)
+    swapped = text.replace(row + "\n", later + "\n" + row + "\n").replace("Z:13-13", "Z:13-13")
+    with pytest.raises(spec.G4DatFormatError):
+        spec.parse(swapped)

@@ -56,6 +56,11 @@ def check(root: Path) -> None:
     provenance.check_against_table(table, provenance.from_json_obj(evaluated.parse_json(raw)))
     expected = [(z, a, float(tau), float(q), float(free_tau)) for z, a, tau, q, free_tau in
                 lifetime.evaluated_tuples(root)]
+    declared = {key: table.directives.get(key) for key in ("PROFILE", "TABLE", "UNITS", "COLUMNS", "SEAM")}
+    wanted = {"PROFILE": evaluated.PAIR_PROFILE, "TABLE": evaluated.PAIR_TABLE, "UNITS": evaluated.PAIR_UNITS,
+              "COLUMNS": " ".join(evaluated.PAIR_COLUMNS), "SEAM": "d1_nuclear_capture"}
+    if declared != wanted or not table.directives.get("VALIDITY", "").endswith(" A:listed"):
+        raise SystemExit(f"evaluated check FAILED: the pair table declares {declared}, not {wanted} with A:listed")
     if [tuple(record) for record in table.records] != expected:
         raise SystemExit("evaluated check FAILED: the pair table does not carry exactly the production tuples")
     print(f"evaluated check OK: {lifetime.EVALUATION_RELPATH}, {lifetime.CONVENTION_RELPATH} and "
