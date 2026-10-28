@@ -63,8 +63,6 @@ class G4MuonicDataSemantics {
   // rule S005 and the Geant4 provider call this one function, so they cannot disagree.
   static const char* BoundPairProblem(double tau, double q, double free_tau, double& capture, double& decay);
 
-  // An upper bound on the exponential variate -ln(u) a consumer scales a lifetime by when it samples a time:
-  // no double u in (0, 1) gives more than -ln(2^-1074) = 744.44...
   static constexpr double kExponentialVariateMax = 745.;
 };
 

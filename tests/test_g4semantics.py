@@ -268,14 +268,12 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
     return out
 
 
-#: The multiplier of the waiting-time checks (cpp/patches/README.md, pair-profile section).
 VARIATE_MAX = 745.0
 
 
 def pair_tuple_problem(tau: float, q: float, free_tau: float) -> str | None:
     """The semantic rule for one pair tuple, written independently in the order the consumers evaluate it:
-    None when the listed transform admits the tuple, else the first check it fails. The contract is stated in
-    cpp/patches/README.md (pair-profile section)."""
+    None when the listed transform admits the tuple, else the first check it fails."""
     if not all(math.isfinite(v) for v in (tau, q, free_tau)) or not (tau > 0 and free_tau > 0):
         return "has a primitive that is not finite and positive"
     if not 0 < q <= 1:

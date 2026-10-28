@@ -51,8 +51,9 @@
 // limited to its domain. Other keys retain the selected capture profile and the existing route-specific formula
 // or fallback. A row whose tuple fails the consumer transform of G4MuonicDataSemantics::BoundPairProblem is
 // refused with G4MuonicBoundRates001. Rates, probabilities and sampled waiting times must be finite and in their
-// domains. Lifetimes must be finite except that zero capture stores an infinite capture lifetime, which reads
-// back as zero. The consumer lifetime `1/(capture + decay)` must be finite and positive. The provider is then
+// domains, sampled waiting times for a uniform variate in (0, 1]. Lifetimes must be finite except that zero
+// capture stores an infinite capture lifetime, which reads back as zero. The consumer lifetime
+// `1/(capture + decay)` must be finite and positive. The provider is then
 // poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer
 // falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's free
 // normalization. A pair profile with the switch off is refused at the first consultation with the fatal

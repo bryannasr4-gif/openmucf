@@ -814,8 +814,6 @@ def _finite_real(x: Any, where: str) -> float:
     return value
 
 
-#: An upper bound on the exponential variate ``-ln(u)`` a consumer scales a lifetime by when it samples a
-#: time: no binary64 ``u`` in (0, 1) gives more than ``-ln(2**-1074) = 744.44...``.
 EXPONENTIAL_VARIATE_MAX = 745.0
 
 

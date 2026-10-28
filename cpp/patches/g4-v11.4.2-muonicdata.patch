@@ -18,10 +18,10 @@ index e2973354eb..ffa2a0b56a 100644
  #endif
 diff --git a/source/particles/management/include/G4MuonicBoundRateProvider.hh b/source/particles/management/include/G4MuonicBoundRateProvider.hh
 new file mode 100644
-index 0000000..4fb5cb7
+index 0000000..885fc6a
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicBoundRateProvider.hh
-@@ -0,0 +1,122 @@
+@@ -0,0 +1,123 @@
 +// G4MuonicBoundRateProvider -- one capture and decay rate pair for a negative muon in the 1s state of a
 +// muonic atom, given to both stopped-muon routes of Geant4 when an application asks for it.
 +//
@@ -75,8 +75,9 @@ index 0000000..4fb5cb7
 +// limited to its domain. Other keys retain the selected capture profile and the existing route-specific formula
 +// or fallback. A row whose tuple fails the consumer transform of G4MuonicDataSemantics::BoundPairProblem is
 +// refused with G4MuonicBoundRates001. Rates, probabilities and sampled waiting times must be finite and in their
-+// domains. Lifetimes must be finite except that zero capture stores an infinite capture lifetime, which reads
-+// back as zero. The consumer lifetime `1/(capture + decay)` must be finite and positive. The provider is then
++// domains, sampled waiting times for a uniform variate in (0, 1]. Lifetimes must be finite except that zero
++// capture stores an infinite capture lifetime, which reads back as zero. The consumer lifetime
++// `1/(capture + decay)` must be finite and positive. The provider is then
 +// poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer
 +// falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's free
 +// normalization. A pair profile with the switch off is refused at the first consultation with the fatal
@@ -277,10 +278,10 @@ index 0000000..bbb9311
 +#endif
 diff --git a/source/particles/management/include/G4MuonicDataSemantics.hh b/source/particles/management/include/G4MuonicDataSemantics.hh
 new file mode 100644
-index 0000000..aded563
+index 0000000..7440152
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataSemantics.hh
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,69 @@
 +// G4MuonicDataSemantics -- what a G4MuonicData dataset must mean, over and above what its grammar
 +// allows.
 +//
@@ -346,8 +347,6 @@ index 0000000..aded563
 +  // rule S005 and the Geant4 provider call this one function, so they cannot disagree.
 +  static const char* BoundPairProblem(double tau, double q, double free_tau, double& capture, double& decay);
 +
-+  // An upper bound on the exponential variate -ln(u) a consumer scales a lifetime by when it samples a time:
-+  // no double u in (0, 1) gives more than -ln(2^-1074) = 744.44...
 +  static constexpr double kExponentialVariateMax = 745.;
 +};
 +

@@ -18,7 +18,6 @@ import subprocess
 import sys
 
 DBL_MAX = sys.float_info.max
-#: The multiplier of the waiting-time checks (cpp/patches/README.md, pair-profile section).
 VARIATE_MAX = 745.0
 
 
