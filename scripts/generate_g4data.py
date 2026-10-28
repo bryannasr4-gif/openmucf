@@ -27,7 +27,9 @@ the same way from two committed transcriptions of a primary's printed tables
 It also carries the **evaluated bound-rate pair table**, ``bound_rate_primitives`` under the profile
 ``evaluated-bound``: one row ``(Z, A, tau, q, free_tau)`` per admitted nucleus, from the committed primitives
 ``data/g4/d1/bound_rate_inputs.json`` through ``openmucf.g4.d1_lifetime.evaluated_tuples``. A Geant4 build selects
-it with ``G4MUONICDATA_D1_PAIR_PROFILE``, independently of the capture profile, and ignores it otherwise.
+it with ``G4MUONICDATA_D1_PAIR_PROFILE``, independently of the capture profile. Whenever the enabled overlay loads a
+dataset, it parses and validates every table, including an unselected pair table. Both switches and the pair-profile
+selection are required to use an evaluated row.
 
 Audit wiring: every generated artifact below joins ``make audit``'s ``git diff --exit-code`` list.
 The ``.tar.gz`` archives are **not** committed -- they are build products whose determinism is
