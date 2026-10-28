@@ -1,0 +1,28 @@
+=== RUN bind
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE bind
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+CASE control result=BOUND exception=- bound_count=1
+CASE control_reversed_order result=BOUND exception=- bound_count=1
+CASE control_nist_lead_oxide result=BOUND exception=- bound_count=1
+CASE short_vector result=BIND_REFUSED exception=G4MuonicData101 bound_count=0
+CASE long_vector result=BIND_REFUSED exception=G4MuonicData101 bound_count=0
+CASE mismatched_formula result=BIND_REFUSED exception=G4MuonicData101 bound_count=0
+CASE wrong_atom_ratio result=BIND_REFUSED exception=G4MuonicData101 bound_count=0
+CASE weight_fraction_not_on_policy result=BIND_REFUSED exception=G4MuonicData101 bound_count=0
+CASE nist_on_another_entry result=BIND_REFUSED exception=G4MuonicData101 bound_count=0
+CASE not_acknowledged result=BIND_REFUSED exception=G4MuonicData101 bound_count=0
+CASE unknown_profile result=BIND_REFUSED exception=G4MuonicData101 bound_count=0
+CASE frozen result=BIND_REFUSED exception=G4MuonicData101 bound_count=0

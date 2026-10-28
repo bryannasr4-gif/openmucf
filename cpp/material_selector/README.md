@@ -50,3 +50,6 @@ enabled, and in reversed element order; the lead-oxide ladder for the NIST mater
 the default-off traces, with and without the muonic-data switch of an installation built with `cpp/patches/`;
 a disabled provider given a missing or malformed catalogue path; and repeated runs with teardown. The mutation
 drills are separate builds with one `G4MUONIC_DRILL_*` macro each; no build that delivers physics defines one.
+
+`evidence/` holds the outputs of those batches in builds of Geant4 11.4.2 and 11.5.0.beta, with the identities
+of each build, and `tests/test_g4_material_selector.py` checks them against `openmucf/g4/d2_material.py`.

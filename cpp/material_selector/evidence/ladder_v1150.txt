@@ -1,0 +1,880 @@
+=== RUN ladder_atomic_serial_absent
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 0 destroyed 0 live_before_teardown 0
+=== RUN ladder_atomic_serial_off
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE off
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_atomic_serial_off_bound
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE off_bound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_atomic_serial_on
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 644616
+SELECTED -1 13 27 403960
+ONWARD -1 8 16 644616
+ONWARD -1 13 27 403960
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_atomic_serial_on_rev
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL al2o3_rev
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 8 0x1.ebcc86b658554p+63
+ELEMENT 1 13 0x1.47ddaf243ae37p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 644616
+SELECTED -1 13 27 403960
+ONWARD -1 8 16 644616
+ONWARD -1 13 27 403960
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_atomic_serial_on_unbound
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE on_unbound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_atomic_serial_pbo_nist
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL pbo_nist
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 8 0x1.64d673199efbep+64
+ELEMENT 1 82 0x1.64cf06fa4c833p+64
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 197845
+SELECTED -1 82 208 850731
+ONWARD -1 8 16 197845
+ONWARD -1 82 208 850731
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_atomic_serial_pbo_rev
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL pbo_rev
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 82 0x1.2b86bfa40747ap+61
+ELEMENT 1 8 0x1.2b86bfa407479p+61
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 197845
+SELECTED -1 82 208 850731
+ONWARD -1 8 16 197845
+ONWARD -1 82 208 850731
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_atomic_tasking_absent
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 523264 calls 523264 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 179200
+SELECTED 0 13 27 344064
+ONWARD 0 8 16 179200
+ONWARD 0 13 27 344064
+WORKER 1 events 525312 calls 525312 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 178124
+SELECTED 1 13 27 347188
+ONWARD 1 8 16 178124
+ONWARD 1 13 27 347188
+SELECTORS constructed 0 destroyed 0 live_before_teardown 0
+=== RUN ladder_atomic_tasking_off
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE off
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 535552 calls 535552 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 184268
+SELECTED 0 13 27 351284
+ONWARD 0 8 16 184268
+ONWARD 0 13 27 351284
+WORKER 1 events 513024 calls 513024 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 173056
+SELECTED 1 13 27 339968
+ONWARD 1 8 16 173056
+ONWARD 1 13 27 339968
+SELECTORS constructed 3 destroyed 0 live_before_teardown 3
+=== RUN ladder_atomic_tasking_off_bound
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE off_bound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 505856 calls 505856 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 173004
+SELECTED 0 13 27 332852
+ONWARD 0 8 16 173004
+ONWARD 0 13 27 332852
+WORKER 1 events 542720 calls 542720 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 184320
+SELECTED 1 13 27 358400
+ONWARD 1 8 16 184320
+ONWARD 1 13 27 358400
+SELECTORS constructed 3 destroyed 0 live_before_teardown 3
+=== RUN ladder_atomic_tasking_on
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 521216 calls 521216 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 319488
+SELECTED 0 13 27 201728
+ONWARD 0 8 16 319488
+ONWARD 0 13 27 201728
+WORKER 1 events 527360 calls 527360 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 325128
+SELECTED 1 13 27 202232
+ONWARD 1 8 16 325128
+ONWARD 1 13 27 202232
+SELECTORS constructed 3 destroyed 0 live_before_teardown 3
+=== RUN ladder_atomic_tasking_on_rev
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3_rev
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 8 0x1.ebcc86b658554p+63
+ELEMENT 1 13 0x1.47ddaf243ae37p+63
+WORKER 0 events 523264 calls 523264 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 322056
+SELECTED 0 13 27 201208
+ONWARD 0 8 16 322056
+ONWARD 0 13 27 201208
+WORKER 1 events 525312 calls 525312 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 322560
+SELECTED 1 13 27 202752
+ONWARD 1 8 16 322560
+ONWARD 1 13 27 202752
+SELECTORS constructed 3 destroyed 0 live_before_teardown 3
+=== RUN ladder_atomic_tasking_on_unbound
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE on_unbound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 509952 calls 509952 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 173004
+SELECTED 0 13 27 336948
+ONWARD 0 8 16 173004
+ONWARD 0 13 27 336948
+WORKER 1 events 538624 calls 538624 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 184320
+SELECTED 1 13 27 354304
+ONWARD 1 8 16 184320
+ONWARD 1 13 27 354304
+SELECTORS constructed 3 destroyed 0 live_before_teardown 3
+=== RUN ladder_atomic_tasking_pbo_nist
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL pbo_nist
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 8 0x1.64d673199efbep+64
+ELEMENT 1 82 0x1.64cf06fa4c833p+64
+WORKER 0 events 527360 calls 527360 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 99328
+SELECTED 0 82 208 428032
+ONWARD 0 8 16 99328
+ONWARD 0 82 208 428032
+WORKER 1 events 521216 calls 521216 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 98517
+SELECTED 1 82 208 422699
+ONWARD 1 8 16 98517
+ONWARD 1 82 208 422699
+SELECTORS constructed 3 destroyed 0 live_before_teardown 3
+=== RUN ladder_atomic_tasking_pbo_rev
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL pbo_rev
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 82 0x1.2b86bfa40747ap+61
+ELEMENT 1 8 0x1.2b86bfa407479p+61
+WORKER 0 events 529408 calls 529408 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 101376
+SELECTED 0 82 208 428032
+ONWARD 0 8 16 101376
+ONWARD 0 82 208 428032
+WORKER 1 events 519168 calls 519168 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 96469
+SELECTED 1 82 208 422699
+ONWARD 1 8 16 96469
+ONWARD 1 82 208 422699
+SELECTORS constructed 3 destroyed 0 live_before_teardown 3
+=== RUN ladder_stopping_serial_absent
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 0 destroyed 0 live_before_teardown 0
+=== RUN ladder_stopping_serial_off
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE off
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_serial_off_bound
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE off_bound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_serial_on
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 644616
+SELECTED -1 13 27 403960
+ONWARD -1 8 16 644616
+ONWARD -1 13 27 403960
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_serial_on_rev
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3_rev
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 8 0x1.ebcc86b658554p+63
+ELEMENT 1 13 0x1.47ddaf243ae37p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 644616
+SELECTED -1 13 27 403960
+ONWARD -1 8 16 644616
+ONWARD -1 13 27 403960
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_serial_on_unbound
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE on_unbound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_serial_pbo_nist
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL pbo_nist
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 8 0x1.64d673199efbep+64
+ELEMENT 1 82 0x1.64cf06fa4c833p+64
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 197845
+SELECTED -1 82 208 850731
+ONWARD -1 8 16 197845
+ONWARD -1 82 208 850731
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_serial_pbo_rev
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL pbo_rev
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 82 0x1.2b86bfa40747ap+61
+ELEMENT 1 8 0x1.2b86bfa407479p+61
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 197845
+SELECTED -1 82 208 850731
+ONWARD -1 8 16 197845
+ONWARD -1 82 208 850731
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_tasking_absent
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 517120 calls 517120 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 174080
+SELECTED 0 13 27 343040
+ONWARD 0 8 16 174080
+ONWARD 0 13 27 343040
+WORKER 1 events 531456 calls 531456 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 183244
+SELECTED 1 13 27 348212
+ONWARD 1 8 16 183244
+ONWARD 1 13 27 348212
+SELECTORS constructed 0 destroyed 0 live_before_teardown 0
+=== RUN ladder_stopping_tasking_off
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE off
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 507904 calls 507904 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 174028
+SELECTED 0 13 27 333876
+ONWARD 0 8 16 174028
+ONWARD 0 13 27 333876
+WORKER 1 events 540672 calls 540672 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 183296
+SELECTED 1 13 27 357376
+ONWARD 1 8 16 183296
+ONWARD 1 13 27 357376
+SELECTORS constructed 3 destroyed 3 live_before_teardown 3
+=== RUN ladder_stopping_tasking_off_bound
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE off_bound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 512000 calls 512000 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 168908
+SELECTED 0 13 27 343092
+ONWARD 0 8 16 168908
+ONWARD 0 13 27 343092
+WORKER 1 events 536576 calls 536576 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 188416
+SELECTED 1 13 27 348160
+ONWARD 1 8 16 188416
+ONWARD 1 13 27 348160
+SELECTORS constructed 3 destroyed 3 live_before_teardown 3
+=== RUN ladder_stopping_tasking_on
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 525312 calls 525312 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 322560
+SELECTED 0 13 27 202752
+ONWARD 0 8 16 322560
+ONWARD 0 13 27 202752
+WORKER 1 events 523264 calls 523264 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 322056
+SELECTED 1 13 27 201208
+ONWARD 1 8 16 322056
+ONWARD 1 13 27 201208
+SELECTORS constructed 3 destroyed 3 live_before_teardown 3
+=== RUN ladder_stopping_tasking_on_rev
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3_rev
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 8 0x1.ebcc86b658554p+63
+ELEMENT 1 13 0x1.47ddaf243ae37p+63
+WORKER 0 events 525312 calls 525312 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 322560
+SELECTED 0 13 27 202752
+ONWARD 0 8 16 322560
+ONWARD 0 13 27 202752
+WORKER 1 events 523264 calls 523264 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 322056
+SELECTED 1 13 27 201208
+ONWARD 1 8 16 322056
+ONWARD 1 13 27 201208
+SELECTORS constructed 3 destroyed 3 live_before_teardown 3
+=== RUN ladder_stopping_tasking_on_unbound
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE on_unbound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER 0 events 526336 calls 526336 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 179200
+SELECTED 0 13 27 347136
+ONWARD 0 8 16 179200
+ONWARD 0 13 27 347136
+WORKER 1 events 522240 calls 522240 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 178124
+SELECTED 1 13 27 344116
+ONWARD 1 8 16 178124
+ONWARD 1 13 27 344116
+SELECTORS constructed 3 destroyed 3 live_before_teardown 3
+=== RUN ladder_stopping_tasking_pbo_nist
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL pbo_nist
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 8 0x1.64d673199efbep+64
+ELEMENT 1 82 0x1.64cf06fa4c833p+64
+WORKER 0 events 522240 calls 522240 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 98517
+SELECTED 0 82 208 423723
+ONWARD 0 8 16 98517
+ONWARD 0 82 208 423723
+WORKER 1 events 526336 calls 526336 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 99328
+SELECTED 1 82 208 427008
+ONWARD 1 8 16 99328
+ONWARD 1 82 208 427008
+SELECTORS constructed 3 destroyed 3 live_before_teardown 3
+=== RUN ladder_stopping_tasking_pbo_rev
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE ladder
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL pbo_rev
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+ELEMENT 0 82 0x1.2b86bfa40747ap+61
+ELEMENT 1 8 0x1.2b86bfa407479p+61
+WORKER 0 events 527360 calls 527360 draw_mismatch 0 onward_mismatch 0
+SELECTED 0 8 16 100352
+SELECTED 0 82 208 427008
+ONWARD 0 8 16 100352
+ONWARD 0 82 208 427008
+WORKER 1 events 521216 calls 521216 draw_mismatch 0 onward_mismatch 0
+SELECTED 1 8 16 97493
+SELECTED 1 82 208 423723
+ONWARD 1 8 16 97493
+ONWARD 1 82 208 423723
+SELECTORS constructed 3 destroyed 3 live_before_teardown 3

@@ -1,0 +1,3 @@
+case,rc,flags
+teardown_atomic,0,-
+teardown_stopping,1,asan

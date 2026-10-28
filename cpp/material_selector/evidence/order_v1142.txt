@@ -1,0 +1,34 @@
+=== RUN order_after
+VERSION $Name: geant4-11-04-patch-02 $
+VERSION_NUMBER 1142
+MODE order
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+INSTALL_ORDER after exceptions none
+=== RUN order_before
+VERSION $Name: geant4-11-04-patch-02 $
+VERSION_NUMBER 1142
+MODE order
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+INSTALL_ORDER before exceptions G4MuonicData103

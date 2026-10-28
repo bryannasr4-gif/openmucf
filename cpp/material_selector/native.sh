@@ -20,16 +20,19 @@ run_case() {  # name, then the harness arguments
   local start rc
   start=$(date +%s.%N)
   set +e
-  env -i PATH=/usr/bin:/bin HOME="$work" LD_LIBRARY_PATH="$install/lib" GEANT4_DATA_DIR="$data" \
+  # RUN_ENV: extra NAME=VALUE assignments for this case (the muonic-data profile selection)
+  # shellcheck disable=SC2086
+  env -i PATH=/usr/bin:/bin HOME="$work" LD_LIBRARY_PATH="$install/lib" GEANT4_DATA_DIR="$data" ${RUN_ENV:-} \
     ASAN_OPTIONS="${ASAN_OPTIONS:-detect_leaks=0}" "$binary" --out "$out" "$@" > "$out/stdout.log" 2>&1
   rc=$?
   set -e
-  log "CASE $name rc=$rc wall_s=$(awk -v a="$start" -v b="$(date +%s.%N)" 'BEGIN{printf "%.2f", b-a}') args=$*"
+  log "CASE $name rc=$rc wall_s=$(awk -v a="$start" -v b="$(date +%s.%N)" 'BEGIN{printf "%.2f", b-a}') env=${RUN_ENV:-} args=$*"
   echo "$rc" > "$out/rc"
 }
 
 if [ "$cmd" = build ]; then
   tag="$1"; install="$2"; work="$3"; drills="${4:-}"; asan="${5:-OFF}"
+  if [ "$drills" = - ]; then drills=""; fi  # "-": no drill macro (a placeholder before the sanitizer flag)
   mkdir -p "$work"
   : > "$work/commands.log"
   geant4_dir="$(dirname "$(find "$install" -name Geant4Config.cmake | head -1)")"
@@ -128,7 +131,8 @@ case "$batch" in
         done
       done
     done ;;
-  identity_data)
+  identity_data)  # the muonic-data switch on, with the D1 and D3 profiles the transport matrix's enabled mode selects
+    RUN_ENV="G4MUONICDATA_D1_PROFILE=mizuno2025 G4MUONICDATA_D3_PROFILE=mudirac130p1"
     for route in stopping atomic; do
       for manager in serial tasking; do
         for seed in 17 101 1009; do

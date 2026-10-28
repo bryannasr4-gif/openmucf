@@ -1,0 +1,272 @@
+=== RUN probe
+VERSION $Name: geant4-11-04-patch-02 $
+VERSION_NUMBER 1142
+MODE probe
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+ENTRY stanislaus1987-ag2o asc BOUND tolerance 0x1.12e0be826d695p-30 counts 117818 930758
+P stanislaus1987-ag2o asc 0 8 0x1.2083c34b8ad2dp+61 0x1.cc398730e61ccp-4 0x1.cc398730e61ccp-4
+P stanislaus1987-ag2o asc 1 47 0x1.2083c34b8ad2dp+62 0x1.c678cf19e33c6p-1 0x1p+0
+ENTRY stanislaus1987-ag2o desc BOUND tolerance 0x1.12e0be826d695p-30 counts 930758 117818
+P stanislaus1987-ag2o desc 0 47 0x1.2083c34b8ad2dp+62 0x1.c678cf19e33c6p-1 0x1.c678cf19e33c6p-1
+P stanislaus1987-ag2o desc 1 8 0x1.2083c34b8ad2dp+61 0x1.cc398730e61ccp-4 0x1p+0
+ENTRY stanislaus1987-al2o3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 644616 403960
+P stanislaus1987-al2o3 asc 0 8 0x1.ebcc86b658554p+63 0x1.3ac10c9714fbdp-1 0x1.3ac10c9714fbdp-1
+P stanislaus1987-al2o3 asc 1 13 0x1.47ddaf243ae37p+63 0x1.8a7de6d1d6086p-2 0x1p+0
+ENTRY stanislaus1987-al2o3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 403960 644616
+P stanislaus1987-al2o3 desc 0 13 0x1.47ddaf243ae37p+63 0x1.8a7de6d1d6086p-2 0x1.8a7de6d1d6086p-2
+P stanislaus1987-al2o3 desc 1 8 0x1.ebcc86b658554p+63 0x1.3ac10c9714fbdp-1 0x1p+0
+ENTRY stanislaus1987-bao2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 406425 642151
+P stanislaus1987-bao2 asc 0 8 0x1.8adb17fd60cfep+62 0x1.8ce63398ce634p-2 0x1.8ce63398ce634p-2
+P stanislaus1987-bao2 asc 1 56 0x1.8adb17fd60cfep+61 0x1.398ce63398ce6p-1 0x1p+0
+ENTRY stanislaus1987-bao2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 642151 406425
+P stanislaus1987-bao2 desc 0 56 0x1.8adb17fd60cfep+61 0x1.398ce63398ce6p-1 0x1.398ce63398ce6p-1
+P stanislaus1987-bao2 desc 1 8 0x1.8adb17fd60cfep+62 0x1.8ce63398ce634p-2 0x1p+0
+ENTRY stanislaus1987-bi2o3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 205603 842973
+P stanislaus1987-bi2o3 asc 0 8 0x1.ae766eec2502dp+61 0x1.9191919191919p-3 0x1.9191919191919p-3
+P stanislaus1987-bi2o3 asc 1 83 0x1.1ef99f4818ac9p+61 0x1.9b9b9b9b9b9bap-1 0x1p+0
+ENTRY stanislaus1987-bi2o3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 842973 205603
+P stanislaus1987-bi2o3 desc 0 83 0x1.1ef99f4818ac9p+61 0x1.9b9b9b9b9b9bap-1 0x1.9b9b9b9b9b9bap-1
+P stanislaus1987-bi2o3 desc 1 8 0x1.ae766eec2502dp+61 0x1.9191919191919p-3 0x1p+0
+ENTRY stanislaus1987-cao asc BOUND tolerance 0x1.12e0be826d695p-30 counts 389805 658771
+P stanislaus1987-cao asc 0 8 0x1.2a11031bf0ae9p+63 0x1.7cab4d15e3732p-2 0x1.7cab4d15e3732p-2
+P stanislaus1987-cao asc 1 20 0x1.2a11031bf0ae9p+63 0x1.41aa59750e467p-1 0x1p+0
+ENTRY stanislaus1987-cao desc BOUND tolerance 0x1.12e0be826d695p-30 counts 658771 389805
+P stanislaus1987-cao desc 0 20 0x1.2a11031bf0ae9p+63 0x1.41aa59750e467p-1 0x1.41aa59750e467p-1
+P stanislaus1987-cao desc 1 8 0x1.2a11031bf0ae9p+63 0x1.7cab4d15e3732p-2 0x1p+0
+ENTRY stanislaus1987-cdo asc BOUND tolerance 0x1.12e0be826d695p-30 counts 292082 756494
+P stanislaus1987-cdo asc 0 8 0x1.045548cf8c56dp+62 0x1.1d3c9ce15648cp-2 0x1.1d3c9ce15648cp-2
+P stanislaus1987-cdo asc 1 48 0x1.045548cf8c56cp+62 0x1.7161b18f54dbap-1 0x1p+0
+ENTRY stanislaus1987-cdo desc BOUND tolerance 0x1.12e0be826d695p-30 counts 756494 292082
+P stanislaus1987-cdo desc 0 48 0x1.045548cf8c56cp+62 0x1.7161b18f54dbap-1 0x1.7161b18f54dbap-1
+P stanislaus1987-cdo desc 1 8 0x1.045548cf8c56dp+62 0x1.1d3c9ce15648cp-2 0x1p+0
+ENTRY stanislaus1987-ceo2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 304376 744200
+P stanislaus1987-ceo2 asc 0 8 0x1.8475649d1510dp+62 0x1.293e0ca1ff41cp-2 0x1.293e0ca1ff41cp-2
+P stanislaus1987-ceo2 asc 1 58 0x1.8475649d1510dp+61 0x1.6b60f9af005f2p-1 0x1p+0
+ENTRY stanislaus1987-ceo2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 744200 304376
+P stanislaus1987-ceo2 desc 0 58 0x1.8475649d1510dp+61 0x1.6b60f9af005f2p-1 0x1.6b60f9af005f2p-1
+P stanislaus1987-ceo2 desc 1 8 0x1.8475649d1510dp+62 0x1.293e0ca1ff41cp-2 0x1p+0
+ENTRY stanislaus1987-coo asc BOUND tolerance 0x1.12e0be826d695p-30 counts 256376 792200
+P stanislaus1987-coo asc 0 8 0x1.be2101c99f24dp+62 0x1.f4bbc66a67e6fp-3 0x1.f4bbc66a67e6fp-3
+P stanislaus1987-coo asc 1 27 0x1.be2101c99f24ep+62 0x1.82d10e6566064p-1 0x1p+0
+ENTRY stanislaus1987-coo desc BOUND tolerance 0x1.12e0be826d695p-30 counts 792200 256376
+P stanislaus1987-coo desc 0 27 0x1.be2101c99f24ep+62 0x1.82d10e6566064p-1 0x1.82d10e6566064p-1
+P stanislaus1987-coo desc 1 8 0x1.be2101c99f24dp+62 0x1.f4bbc66a67e6fp-3 0x1p+0
+ENTRY stanislaus1987-cro3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 511500 537076
+P stanislaus1987-cro3 asc 0 8 0x1.f578f78385dd5p+63 0x1.f3831f3831f38p-2 0x1.f3831f3831f38p-2
+P stanislaus1987-cro3 asc 1 24 0x1.4e50a502593e2p+62 0x1.063e7063e7064p-1 0x1p+0
+ENTRY stanislaus1987-cro3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 537076 511500
+P stanislaus1987-cro3 desc 0 24 0x1.4e50a502593e2p+62 0x1.063e7063e7064p-1 0x1.063e7063e7064p-1
+P stanislaus1987-cro3 desc 1 8 0x1.f578f78385dd5p+63 0x1.f3831f3831f38p-2 0x1p+0
+ENTRY stanislaus1987-cu2o asc BOUND tolerance 0x1.12e0be826d695p-30 counts 194181 854395
+P stanislaus1987-cu2o asc 0 8 0x1.d340215971c5ap+61 0x1.7b425ed097b42p-3 0x1.7b425ed097b42p-3
+P stanislaus1987-cu2o asc 1 29 0x1.d340215971c59p+62 0x1.a12f684bda12fp-1 0x1p+0
+ENTRY stanislaus1987-cu2o desc BOUND tolerance 0x1.12e0be826d695p-30 counts 854395 194181
+P stanislaus1987-cu2o desc 0 29 0x1.d340215971c59p+62 0x1.a12f684bda12fp-1 0x1.a12f684bda12fp-1
+P stanislaus1987-cu2o desc 1 8 0x1.d340215971c5ap+61 0x1.7b425ed097b42p-3 0x1p+0
+ENTRY stanislaus1987-fe2o3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 315836 732740
+P stanislaus1987-fe2o3 asc 0 8 0x1.3a039723931f8p+63 0x1.346f0940c565dp-2 0x1.346f0940c565dp-2
+P stanislaus1987-fe2o3 asc 1 26 0x1.a2af742f6ed49p+62 0x1.65c87b5f9d4d2p-1 0x1p+0
+ENTRY stanislaus1987-fe2o3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 732740 315836
+P stanislaus1987-fe2o3 desc 0 26 0x1.a2af742f6ed49p+62 0x1.65c87b5f9d4d2p-1 0x1.65c87b5f9d4d2p-1
+P stanislaus1987-fe2o3 desc 1 8 0x1.3a039723931f8p+63 0x1.346f0940c565dp-2 0x1p+0
+ENTRY stanislaus1987-fe3o4 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 378547 670029
+P stanislaus1987-fe3o4 asc 0 8 0x1.20c4801052105p+63 0x1.71acd2b6fd3a4p-2 0x1.71acd2b6fd3a4p-2
+P stanislaus1987-fe3o4 asc 1 26 0x1.b126c0187b188p+62 0x1.472996a48162ep-1 0x1p+0
+ENTRY stanislaus1987-fe3o4 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 670029 378547
+P stanislaus1987-fe3o4 desc 0 26 0x1.b126c0187b188p+62 0x1.472996a48162ep-1 0x1.472996a48162ep-1
+P stanislaus1987-fe3o4 desc 1 8 0x1.20c4801052105p+63 0x1.71acd2b6fd3a4p-2 0x1p+0
+ENTRY stanislaus1987-hgo asc BOUND tolerance 0x1.12e0be826d695p-30 counts 178329 870247
+P stanislaus1987-hgo asc 0 8 0x1.34ad92bde2537p+61 0x1.5c4ca037ba571p-3 0x1.5c4ca037ba571p-3
+P stanislaus1987-hgo asc 1 80 0x1.34ad92bde2537p+61 0x1.a8ecd7f2116a4p-1 0x1p+0
+ENTRY stanislaus1987-hgo desc BOUND tolerance 0x1.12e0be826d695p-30 counts 870247 178329
+P stanislaus1987-hgo desc 0 80 0x1.34ad92bde2537p+61 0x1.a8ecd7f2116a4p-1 0x1.a8ecd7f2116a4p-1
+P stanislaus1987-hgo desc 1 8 0x1.34ad92bde2537p+61 0x1.5c4ca037ba571p-3 0x1p+0
+ENTRY stanislaus1987-mgo asc BOUND tolerance 0x1.12e0be826d695p-30 counts 543304 505272
+P stanislaus1987-mgo asc 0 8 0x1.9eb6c389838c8p+63 0x1.0948f40feac6fp-1 0x1.0948f40feac6fp-1
+P stanislaus1987-mgo asc 1 12 0x1.9eb6c389838c7p+63 0x1.ed6e17e02a721p-2 0x1p+0
+ENTRY stanislaus1987-mgo desc BOUND tolerance 0x1.12e0be826d695p-30 counts 505272 543304
+P stanislaus1987-mgo desc 0 12 0x1.9eb6c389838c7p+63 0x1.ed6e17e02a721p-2 0x1.ed6e17e02a721p-2
+P stanislaus1987-mgo desc 1 8 0x1.9eb6c389838c8p+63 0x1.0948f40feac6fp-1 0x1p+0
+ENTRY stanislaus1987-mno asc BOUND tolerance 0x1.12e0be826d695p-30 counts 269557 779019
+P stanislaus1987-mno asc 0 8 0x1.d74144a84c09ap+62 0x1.073d33fd5e1bap-2 0x1.073d33fd5e1bap-2
+P stanislaus1987-mno asc 1 25 0x1.d74144a84c098p+62 0x1.7c61660150f23p-1 0x1p+0
+ENTRY stanislaus1987-mno desc BOUND tolerance 0x1.12e0be826d695p-30 counts 779019 269557
+P stanislaus1987-mno desc 0 25 0x1.d74144a84c098p+62 0x1.7c61660150f23p-1 0x1.7c61660150f23p-1
+P stanislaus1987-mno desc 1 8 0x1.d74144a84c09ap+62 0x1.073d33fd5e1bap-2 0x1p+0
+ENTRY stanislaus1987-mno2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 397188 651388
+P stanislaus1987-mno2 asc 0 8 0x1.808714895bbecp+63 0x1.83e0f83e0f83ep-2 0x1.83e0f83e0f83ep-2
+P stanislaus1987-mno2 asc 1 25 0x1.808714895bbebp+62 0x1.3e0f83e0f83e1p-1 0x1p+0
+ENTRY stanislaus1987-mno2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 651388 397188
+P stanislaus1987-mno2 desc 0 25 0x1.808714895bbebp+62 0x1.3e0f83e0f83e1p-1 0x1.3e0f83e0f83e1p-1
+P stanislaus1987-mno2 desc 1 8 0x1.808714895bbecp+63 0x1.83e0f83e0f83ep-2 0x1p+0
+ENTRY stanislaus1987-moo2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 412825 635751
+P stanislaus1987-moo2 asc 0 8 0x1.054fbde293084p+63 0x1.93264c993264dp-2 0x1.93264c993264dp-2
+P stanislaus1987-moo2 asc 1 42 0x1.054fbde293083p+62 0x1.366cd9b366cdap-1 0x1p+0
+ENTRY stanislaus1987-moo2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 635751 412825
+P stanislaus1987-moo2 desc 0 42 0x1.054fbde293083p+62 0x1.366cd9b366cdap-1 0x1.366cd9b366cdap-1
+P stanislaus1987-moo2 desc 1 8 0x1.054fbde293084p+63 0x1.93264c993264dp-2 0x1p+0
+ENTRY stanislaus1987-moo3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 458561 590015
+P stanislaus1987-moo3 asc 0 8 0x1.5c654868acf58p+63 0x1.bfd03bb55d4b6p-2 0x1.bfd03bb55d4b6p-2
+P stanislaus1987-moo3 asc 1 42 0x1.d0870b363bf21p+61 0x1.2017e225515a5p-1 0x1p+0
+ENTRY stanislaus1987-moo3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 590015 458561
+P stanislaus1987-moo3 desc 0 42 0x1.d0870b363bf21p+61 0x1.2017e225515a5p-1 0x1.2017e225515a5p-1
+P stanislaus1987-moo3 desc 1 8 0x1.5c654868acf58p+63 0x1.bfd03bb55d4b6p-2 0x1p+0
+ENTRY stanislaus1987-na2o2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 524288 524288
+P stanislaus1987-na2o2 asc 0 8 0x1.acb411bcea187p+63 0x1p-1 0x1p-1
+P stanislaus1987-na2o2 asc 1 11 0x1.acb411bcea186p+63 0x1p-1 0x1p+0
+ENTRY stanislaus1987-na2o2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 524288 524288
+P stanislaus1987-na2o2 desc 0 11 0x1.acb411bcea186p+63 0x1p-1 0x1p-1
+P stanislaus1987-na2o2 desc 1 8 0x1.acb411bcea187p+63 0x1p-1 0x1p+0
+ENTRY stanislaus1987-nb2o5 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 431868 616708
+P stanislaus1987-nb2o5 asc 0 8 0x1.3a69ae0d10cc5p+63 0x1.a5bf0d12fa847p-2 0x1.a5bf0d12fa847p-2
+P stanislaus1987-nb2o5 asc 1 41 0x1.f70f7ce1b47a4p+61 0x1.2d20797682bddp-1 0x1p+0
+ENTRY stanislaus1987-nb2o5 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 616708 431868
+P stanislaus1987-nb2o5 desc 0 41 0x1.f70f7ce1b47a4p+61 0x1.2d20797682bddp-1 0x1.2d20797682bddp-1
+P stanislaus1987-nb2o5 desc 1 8 0x1.3a69ae0d10cc5p+63 0x1.a5bf0d12fa847p-2 0x1p+0
+ENTRY stanislaus1987-nbo asc BOUND tolerance 0x1.12e0be826d695p-30 counts 236166 812410
+P stanislaus1987-nbo asc 0 8 0x1.32f57778f8145p+62 0x1.cd42e2049cd43p-3 0x1.cd42e2049cd43p-3
+P stanislaus1987-nbo asc 1 41 0x1.32f57778f8145p+62 0x1.8caf477ed8cafp-1 0x1p+0
+ENTRY stanislaus1987-nbo desc BOUND tolerance 0x1.12e0be826d695p-30 counts 812410 236166
+P stanislaus1987-nbo desc 0 41 0x1.32f57778f8145p+62 0x1.8caf477ed8cafp-1 0x1.8caf477ed8cafp-1
+P stanislaus1987-nbo desc 1 8 0x1.32f57778f8145p+62 0x1.cd42e2049cd43p-3 0x1p+0
+ENTRY stanislaus1987-nio asc BOUND tolerance 0x1.12e0be826d695p-30 counts 313008 735568
+P stanislaus1987-nio asc 0 8 0x1.bf8fc9bdbef2ep+62 0x1.31abf0b7672ap-2 0x1.31abf0b7672ap-2
+P stanislaus1987-nio asc 1 28 0x1.bf8fc9bdbef2ep+62 0x1.672a07a44c6bp-1 0x1p+0
+ENTRY stanislaus1987-nio desc BOUND tolerance 0x1.12e0be826d695p-30 counts 735568 313008
+P stanislaus1987-nio desc 0 28 0x1.bf8fc9bdbef2ep+62 0x1.672a07a44c6bp-1 0x1.672a07a44c6bp-1
+P stanislaus1987-nio desc 1 8 0x1.bf8fc9bdbef2ep+62 0x1.31abf0b7672ap-2 0x1p+0
+ENTRY stanislaus1987-p2o5 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 755458 293118
+P stanislaus1987-p2o5 asc 0 8 0x1.2663baef81a58p+64 0x1.70e046d2ff432p-1 0x1.70e046d2ff432p-1
+P stanislaus1987-p2o5 asc 1 15 0x1.d705f7e59c3c1p+62 0x1.1e3f725a0179cp-2 0x1p+0
+ENTRY stanislaus1987-p2o5 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 293118 755458
+P stanislaus1987-p2o5 desc 0 15 0x1.d705f7e59c3c1p+62 0x1.1e3f725a0179cp-2 0x1.1e3f725a0179cp-2
+P stanislaus1987-p2o5 desc 1 8 0x1.2663baef81a58p+64 0x1.70e046d2ff432p-1 0x1p+0
+ENTRY stanislaus1987-pb3o4 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 253126 795450
+P stanislaus1987-pb3o4 asc 0 8 0x1.860ca1f358f84p+61 0x1.ee632fbd41f84p-3 0x1.ee632fbd41f84p-3
+P stanislaus1987-pb3o4 asc 1 82 0x1.2489797682ba3p+61 0x1.84673410af81fp-1 0x1p+0
+ENTRY stanislaus1987-pb3o4 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 795450 253126
+P stanislaus1987-pb3o4 desc 0 82 0x1.2489797682ba3p+61 0x1.84673410af81fp-1 0x1.84673410af81fp-1
+P stanislaus1987-pb3o4 desc 1 8 0x1.860ca1f358f84p+61 0x1.ee632fbd41f84p-3 0x1p+0
+ENTRY stanislaus1987-pbo asc BOUND tolerance 0x1.12e0be826d695p-30 counts 197845 850731
+P stanislaus1987-pbo asc 0 8 0x1.2b86bfa407479p+61 0x1.826a439f656f2p-3 0x1.826a439f656f2p-3
+P stanislaus1987-pbo asc 1 82 0x1.2b86bfa40747ap+61 0x1.9f656f1826a44p-1 0x1p+0
+ENTRY stanislaus1987-pbo desc BOUND tolerance 0x1.12e0be826d695p-30 counts 850731 197845
+P stanislaus1987-pbo desc 0 82 0x1.2b86bfa40747ap+61 0x1.9f656f1826a44p-1 0x1.9f656f1826a44p-1
+P stanislaus1987-pbo desc 1 8 0x1.2b86bfa407479p+61 0x1.826a439f656f2p-3 0x1p+0
+ENTRY stanislaus1987-pbo2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 315361 733215
+P stanislaus1987-pbo2 asc 0 8 0x1.177e44e1991dp+62 0x1.33f84cfe133f8p-2 0x1.33f84cfe133f8p-2
+P stanislaus1987-pbo2 asc 1 82 0x1.177e44e1991d1p+61 0x1.6603d980f6604p-1 0x1p+0
+ENTRY stanislaus1987-pbo2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 733215 315361
+P stanislaus1987-pbo2 desc 0 82 0x1.177e44e1991d1p+61 0x1.6603d980f6604p-1 0x1.6603d980f6604p-1
+P stanislaus1987-pbo2 desc 1 8 0x1.177e44e1991dp+62 0x1.33f84cfe133f8p-2 0x1p+0
+ENTRY stanislaus1987-pro2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 299593 748983
+P stanislaus1987-pro2 asc 0 8 0x1.82ad7c994cf37p+62 0x1.2492492492492p-2 0x1.2492492492492p-2
+P stanislaus1987-pro2 asc 1 59 0x1.82ad7c994cf36p+61 0x1.6db6db6db6db7p-1 0x1p+0
+ENTRY stanislaus1987-pro2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 748983 299593
+P stanislaus1987-pro2 desc 0 59 0x1.82ad7c994cf36p+61 0x1.6db6db6db6db7p-1 0x1.6db6db6db6db7p-1
+P stanislaus1987-pro2 desc 1 8 0x1.82ad7c994cf37p+62 0x1.2492492492492p-2 0x1p+0
+ENTRY stanislaus1987-sb2o3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 306005 742571
+P stanislaus1987-sb2o3 asc 0 8 0x1.5805dcf8c949p+62 0x1.2ad52ad52ad53p-2 0x1.2ad52ad52ad53p-2
+P stanislaus1987-sb2o3 asc 1 51 0x1.cab27bf661b6bp+61 0x1.6a956a956a957p-1 0x1p+0
+ENTRY stanislaus1987-sb2o3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 742571 306005
+P stanislaus1987-sb2o3 desc 0 51 0x1.cab27bf661b6bp+61 0x1.6a956a956a957p-1 0x1.6a956a956a957p-1
+P stanislaus1987-sb2o3 desc 1 8 0x1.5805dcf8c949p+62 0x1.2ad52ad52ad53p-2 0x1p+0
+ENTRY stanislaus1987-sc2o3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 421679 626897
+P stanislaus1987-sc2o3 asc 0 8 0x1.6b9a3625cb8d6p+63 0x1.9bcbd6d2041e3p-2 0x1.9bcbd6d2041e3p-2
+P stanislaus1987-sc2o3 asc 1 21 0x1.e4cd9d87ba11ep+62 0x1.321a1496fdf0ep-1 0x1p+0
+ENTRY stanislaus1987-sc2o3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 626897 421679
+P stanislaus1987-sc2o3 desc 0 21 0x1.e4cd9d87ba11ep+62 0x1.321a1496fdf0ep-1 0x1.321a1496fdf0ep-1
+P stanislaus1987-sc2o3 desc 1 8 0x1.6b9a3625cb8d6p+63 0x1.9bcbd6d2041e3p-2 0x1p+0
+ENTRY stanislaus1987-sio asc BOUND tolerance 0x1.12e0be826d695p-30 counts 529584 518992
+P stanislaus1987-sio asc 0 8 0x1.7b26c68339a82p+63 0x1.0295fad40a57fp-1 0x1.0295fad40a57fp-1
+P stanislaus1987-sio asc 1 14 0x1.7b26c68339a81p+63 0x1.fad40a57eb503p-2 0x1p+0
+ENTRY stanislaus1987-sio desc BOUND tolerance 0x1.12e0be826d695p-30 counts 518992 529584
+P stanislaus1987-sio desc 0 14 0x1.7b26c68339a81p+63 0x1.fad40a57eb503p-2 0x1.fad40a57eb503p-2
+P stanislaus1987-sio desc 1 8 0x1.7b26c68339a82p+63 0x1.0295fad40a57fp-1 0x1p+0
+ENTRY stanislaus1987-sio2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 723156 325420
+P stanislaus1987-sio2 asc 0 8 0x1.163099c96579p+64 0x1.611a7b9611a7cp-1 0x1.611a7b9611a7cp-1
+P stanislaus1987-sio2 asc 1 14 0x1.163099c96579p+63 0x1.3dcb08d3dcb09p-2 0x1p+0
+ENTRY stanislaus1987-sio2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 325420 723156
+P stanislaus1987-sio2 desc 0 14 0x1.163099c96579p+63 0x1.3dcb08d3dcb09p-2 0x1.3dcb08d3dcb09p-2
+P stanislaus1987-sio2 desc 1 8 0x1.163099c96579p+64 0x1.611a7b9611a7cp-1 0x1p+0
+ENTRY stanislaus1987-sm2o3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 203212 845364
+P stanislaus1987-sm2o3 asc 0 8 0x1.1f95098b48dp+62 0x1.8ce63398ce634p-3 0x1.8ce63398ce634p-3
+P stanislaus1987-sm2o3 asc 1 62 0x1.7f71620f0bcp+61 0x1.9cc67319cc673p-1 0x1p+0
+ENTRY stanislaus1987-sm2o3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 845364 203212
+P stanislaus1987-sm2o3 desc 0 62 0x1.7f71620f0bcp+61 0x1.9cc67319cc673p-1 0x1.9cc67319cc673p-1
+P stanislaus1987-sm2o3 desc 1 8 0x1.1f95098b48dp+62 0x1.8ce63398ce634p-3 0x1p+0
+ENTRY stanislaus1987-sno asc BOUND tolerance 0x1.12e0be826d695p-30 counts 280368 768208
+P stanislaus1987-sno asc 0 8 0x1.f0523d586775p+61 0x1.11cbfa862911dp-2 0x1.11cbfa862911dp-2
+P stanislaus1987-sno asc 1 50 0x1.f0523d586774fp+61 0x1.771a02bceb772p-1 0x1p+0
+ENTRY stanislaus1987-sno desc BOUND tolerance 0x1.12e0be826d695p-30 counts 768208 280368
+P stanislaus1987-sno desc 0 50 0x1.f0523d586774fp+61 0x1.771a02bceb772p-1 0x1.771a02bceb772p-1
+P stanislaus1987-sno desc 1 8 0x1.f0523d586775p+61 0x1.11cbfa862911dp-2 0x1p+0
+ENTRY stanislaus1987-sno2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 388361 660215
+P stanislaus1987-sno2 asc 0 8 0x1.bba19fe0b4108p+62 0x1.7b425ed097b42p-2 0x1.7b425ed097b42p-2
+P stanislaus1987-sno2 asc 1 50 0x1.bba19fe0b4108p+61 0x1.425ed097b425fp-1 0x1p+0
+ENTRY stanislaus1987-sno2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 660215 388361
+P stanislaus1987-sno2 desc 0 50 0x1.bba19fe0b4108p+61 0x1.425ed097b425fp-1 0x1.425ed097b425fp-1
+P stanislaus1987-sno2 desc 1 8 0x1.bba19fe0b4108p+62 0x1.7b425ed097b42p-2 0x1p+0
+ENTRY stanislaus1987-teo2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 395689 652887
+P stanislaus1987-teo2 asc 0 8 0x1.a2e9bd8e25ed2p+62 0x1.826a439f656f2p-2 0x1.826a439f656f2p-2
+P stanislaus1987-teo2 asc 1 52 0x1.a2e9bd8e25ed2p+61 0x1.3ecade304d487p-1 0x1p+0
+ENTRY stanislaus1987-teo2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 652887 395689
+P stanislaus1987-teo2 desc 0 52 0x1.a2e9bd8e25ed2p+61 0x1.3ecade304d487p-1 0x1.3ecade304d487p-1
+P stanislaus1987-teo2 desc 1 8 0x1.a2e9bd8e25ed2p+62 0x1.826a439f656f2p-2 0x1p+0
+ENTRY stanislaus1987-tio asc BOUND tolerance 0x1.12e0be826d695p-30 counts 287281 761295
+P stanislaus1987-tio asc 0 8 0x1.05b75c440e1f1p+63 0x1.188c46231188cp-2 0x1.188c46231188cp-2
+P stanislaus1987-tio asc 1 22 0x1.05b75c440e1f2p+63 0x1.73b9dcee773bap-1 0x1p+0
+ENTRY stanislaus1987-tio desc BOUND tolerance 0x1.12e0be826d695p-30 counts 761295 287281
+P stanislaus1987-tio desc 0 22 0x1.05b75c440e1f2p+63 0x1.73b9dcee773bap-1 0x1.73b9dcee773bap-1
+P stanislaus1987-tio desc 1 8 0x1.05b75c440e1f1p+63 0x1.188c46231188cp-2 0x1p+0
+ENTRY stanislaus1987-tio2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 445255 603321
+P stanislaus1987-tio2 asc 0 8 0x1.a292dda9231cfp+63 0x1.b2d1cce8a0e22p-2 0x1.b2d1cce8a0e22p-2
+P stanislaus1987-tio2 asc 1 22 0x1.a292dda9231cep+62 0x1.2697198baf8efp-1 0x1p+0
+ENTRY stanislaus1987-tio2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 603321 445255
+P stanislaus1987-tio2 desc 0 22 0x1.a292dda9231cep+62 0x1.2697198baf8efp-1 0x1.2697198baf8efp-1
+P stanislaus1987-tio2 desc 1 8 0x1.a292dda9231cfp+63 0x1.b2d1cce8a0e22p-2 0x1p+0
+ENTRY stanislaus1987-v2o5 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 473184 575392
+P stanislaus1987-v2o5 asc 0 8 0x1.cb8034b6b893dp+63 0x1.ce180764bc88cp-2 0x1.ce180764bc88cp-2
+P stanislaus1987-v2o5 asc 1 23 0x1.6f99c3c560766p+62 0x1.18f3fc4da1bbap-1 0x1p+0
+ENTRY stanislaus1987-v2o5 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 575392 473184
+P stanislaus1987-v2o5 desc 0 23 0x1.6f99c3c560766p+62 0x1.18f3fc4da1bbap-1 0x1.18f3fc4da1bbap-1
+P stanislaus1987-v2o5 desc 1 8 0x1.cb8034b6b893dp+63 0x1.ce180764bc88cp-2 0x1p+0
+ENTRY stanislaus1987-y2o3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 336802 711774
+P stanislaus1987-y2o3 asc 0 8 0x1.bc212991091ccp+62 0x1.48e86da2cf364p-2 0x1.48e86da2cf364p-2
+P stanislaus1987-y2o3 asc 1 39 0x1.28161bb606132p+62 0x1.5b8bc92e9864ep-1 0x1p+0
+ENTRY stanislaus1987-y2o3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 711774 336802
+P stanislaus1987-y2o3 desc 0 39 0x1.28161bb606132p+62 0x1.5b8bc92e9864ep-1 0x1.5b8bc92e9864ep-1
+P stanislaus1987-y2o3 desc 1 8 0x1.bc212991091ccp+62 0x1.48e86da2cf364p-2 0x1p+0
+ENTRY stanislaus1987-zno asc BOUND tolerance 0x1.12e0be826d695p-30 counts 251457 797119
+P stanislaus1987-zno asc 0 8 0x1.9ab56b5020dbfp+62 0x1.eb208983fd8b6p-3 0x1.eb208983fd8b6p-3
+P stanislaus1987-zno asc 1 30 0x1.9ab56b5020dbfp+62 0x1.8537dd9f009d3p-1 0x1p+0
+ENTRY stanislaus1987-zno desc BOUND tolerance 0x1.12e0be826d695p-30 counts 797119 251457
+P stanislaus1987-zno desc 0 30 0x1.9ab56b5020dbfp+62 0x1.8537dd9f009d3p-1 0x1.8537dd9f009d3p-1
+P stanislaus1987-zno desc 1 8 0x1.9ab56b5020dbfp+62 0x1.eb208983fd8b6p-3 0x1p+0
+ENTRY stanislaus1987-zro2 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 428865 619711
+P stanislaus1987-zro2 asc 0 8 0x1.0f4b7669aa731p+63 0x1.a2d05c239964p-2 0x1.a2d05c239964p-2
+P stanislaus1987-zro2 asc 1 40 0x1.0f4b7669aa732p+62 0x1.2e97d1ee334ep-1 0x1p+0
+ENTRY stanislaus1987-zro2 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 619711 428865
+P stanislaus1987-zro2 desc 0 40 0x1.0f4b7669aa732p+62 0x1.2e97d1ee334ep-1 0x1.2e97d1ee334ep-1
+P stanislaus1987-zro2 desc 1 8 0x1.0f4b7669aa731p+63 0x1.a2d05c239964p-2 0x1p+0
+NIST G4_ALUMINUM_OXIDE stanislaus1987-al2o3 BOUND - tolerance 0x1.a36e2eb1c432dp-14 13:0x1.45682e77cc5dep+65 8:0x1.e81c45b3b28cfp+65
+NIST G4_CALCIUM_OXIDE stanislaus1987-cao BOUND - tolerance 0x1.a36e2eb1c432dp-14 20:0x1.ebcf45214d1fdp+64 8:0x1.ebcf45214d1fep+64
+NIST G4_FERRIC_OXIDE stanislaus1987-fe2o3 BOUND - tolerance 0x1.a36e2eb1c432dp-14 26:0x1.10253eb86e709p+65 8:0x1.9837de14a5a8fp+65
+NIST G4_LEAD_OXIDE stanislaus1987-pbo BOUND - tolerance 0x1.a36e2eb1c432dp-14 8:0x1.64d673199efbep+64 82:0x1.64cf06fa4c833p+64
+NIST G4_MAGNESIUM_OXIDE stanislaus1987-mgo BOUND - tolerance 0x1.a36e2eb1c432dp-14 12:0x1.732b40ecfeb24p+65 8:0x1.732b40ecfeb24p+65
+NIST G4_SILICON_DIOXIDE stanislaus1987-sio2 BOUND - tolerance 0x1.a36e2eb1c432dp-14 14:0x1.42b341c0a8e87p+64 8:0x1.42b341c0a8e87p+65
+NIST G4_TITANIUM_DIOXIDE stanislaus1987-tio2 BOUND - tolerance 0x1.a36e2eb1c432dp-14 22:0x1.bdc7eea0ee5aep+64 8:0x1.bdc7eea0ee5aep+65
+ISOTOPES 8 16:0x1.fec17ebaf1023p-1 17:0x1.8e757928e0c9dp-12 18:0x1.0cb295e9e1b08p-9
+ISOTOPES 13 27:0x1p+0
+ISOTOPES 82 204:0x1.cac083126e978p-7 206:0x1.ed916872b020dp-3 207:0x1.c49ba5e353f7ep-3 208:0x1.0c49ba5e353f8p-1
