@@ -10,6 +10,7 @@ each loader and check with hostile input.
 from __future__ import annotations
 
 import copy
+import dataclasses
 import importlib.util
 import json
 import math
@@ -130,15 +131,105 @@ def test_precision_excludes_meets_on_every_row_and_decides_nothing(evaluation):
     assert evaluation["counts"]["precision_meets_excluded"] == len(rows)
 
 
+def _parts():
+    inputs = dm.load_inputs(INPUTS.read_bytes())
+    rows = dm.load_source_rows(MEASUREMENTS.read_bytes(), PRINTED.read_bytes())
+    return inputs, rows, dm.bind_source_identity(SHARED.read_bytes(), inputs)
+
+
+def unscored(inputs: dm.Inputs, **changes) -> dm.Inputs:
+    """An altered recipe under an identity no registration carries: evaluated by the numerical API only."""
+    return dataclasses.replace(inputs, decision_id=dm.UNSCORED_TEST_PREFIX + "drill", **changes)
+
+
 def test_the_precision_gate_can_return_its_other_outcome():
     """With a budget above the nested bounds, MEETS is no longer excluded on the rows below it: the exclusion
-    follows from the numbers, not from the code path."""
-    obj = inputs_obj()
-    obj["decision_record"]["budget_tv"] = "0.03"
-    ev2 = json.loads(generate(inputs=dumped(obj))[dm.EVALUATION_NAME])
+    follows from the numbers, not from the code path. The count the record carries is the recomputed one."""
+    inputs, rows, binding = _parts()
+    ev2 = dm.evaluate(rows, unscored(inputs, budget=Fraction(3, 100)), binding)
     excluded = [sd.MEETS_EXCLUDED in r["precision"]["excluded"] for r in ev2["rows"]]
     assert any(excluded) and not all(excluded)
+    assert ev2["counts"]["precision_meets_excluded"] == sum(excluded)
     assert all(r["precision"]["verdict"] == sd.NOT_ESTABLISHED for r in ev2["rows"])
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        lambda o: o["decision_record"].update(budget_tv="0.03"),
+        lambda o: o["decision_record"].update(budget_tv="0.010"),  # the same number is accepted: see below
+        lambda o: o["decision_record"]["statistics"].update(log_scale="0.002"),
+        lambda o: o["decision_record"]["statistics"].update(coverage_k=1),
+        lambda o: o["decision_record"].update(publication_resolution="0.0005"),
+        lambda o: o["hygroscopic"].update(formulas=["CaO", "Na2O2", "P2O5"]),
+        lambda o: o["hygroscopic"].update(formulas=["CaO", "CrO3", "MgO", "Na2O2", "P2O5"]),
+        lambda o: o["decision_record"].update(id="d2-measured-regions-v9"),
+    ],
+)
+def test_the_decision_identity_is_bound_to_its_frozen_recipe(edit):
+    """Any other budget, statistical scale, coverage, resolution or water roster under the registered
+    identity, and any unregistered identity, is refused by the loader with the registration refusal; the
+    same numbers written differently are the same recipe."""
+    obj = inputs_obj()
+    edit(obj)
+    if obj["decision_record"]["budget_tv"] == "0.010":
+        assert dm.load_inputs(dumped(obj)).budget == Fraction(1, 100)
+        return
+    with pytest.raises(dm.MeasuredError, match=dm.RECIPE_REFUSAL):
+        dm.load_inputs(dumped(obj))
+    with pytest.raises(dm.MeasuredError, match=dm.RECIPE_REFUSAL):
+        generate(inputs=dumped(obj))
+
+
+def test_an_altered_recipe_cannot_be_evaluated_under_the_registered_identity():
+    inputs, rows, binding = _parts()
+    with pytest.raises(dm.MeasuredError, match=dm.RECIPE_REFUSAL):
+        dm.evaluate(rows, dataclasses.replace(inputs, stat_log_scale=Fraction(2, 1000)), binding)
+
+
+def test_the_page_states_only_what_the_record_carries(evaluation):
+    """The generated precision sentence is the registered one at the frozen recipe; a record whose numbers or
+    identity are not the registered recipe, or that does not exclude MEETS on every row, renders nothing."""
+    page = _generator().render_document(evaluation).decode("utf-8")
+    required = (
+        "Under the registered Cartesian uncertainty construction, the assumed 2% statistical standard "
+        "scale at k=2 together with the published carbon sensitivity excludes a TV<=0.01 precision "
+        "certificate for every oxide in this table. The result does not establish that every central "
+        "estimate is wrong by more than 0.01."
+    )
+    assert required in " ".join(page.split())
+    inputs, rows, binding = _parts()
+    altered = dm.evaluate(rows, unscored(inputs, stat_log_scale=Fraction(2, 1000)), binding)
+    with pytest.raises(dm.MeasuredError, match=dm.RECIPE_REFUSAL):
+        _generator().render_document(altered)
+    relabelled = copy.deepcopy(altered)
+    relabelled["decision_record"] = evaluation["decision_record"]
+    with pytest.raises(dm.MeasuredError, match=dm.RECIPE_REFUSAL):
+        _generator().render_document(relabelled)
+    partial = copy.deepcopy(evaluation)
+    partial["rows"][0]["precision"]["excluded"] = [sd.DOES_NOT_MEET_EXCLUDED]
+    with pytest.raises(dm.MeasuredError, match="every oxide"):
+        _generator().render_document(partial)
+
+
+def test_the_generator_check_refuses_a_tampered_page(tmp_path):
+    """`check` (not `generate`) compares the committed page with its rendering, through the command line."""
+    import shutil
+
+    for rel in ("data/g4/reference/d2", "data/g4/d2/measured"):
+        shutil.copytree(REPO / rel, tmp_path / rel)
+    (tmp_path / "data/g4/d1").mkdir(parents=True)
+    shutil.copyfile(SHARED, tmp_path / "data/g4/d1" / SHARED.name)
+    (tmp_path / "docs").mkdir()
+    page = (REPO / "docs/measured-oxide-capture.md").read_bytes()
+    (tmp_path / "docs/measured-oxide-capture.md").write_bytes(page)
+    _generator().main(["check", "--root", str(tmp_path)])  # control
+    (tmp_path / "docs/measured-oxide-capture.md").write_bytes(
+        page.replace(b"NOT_ESTABLISHED", b"ESTABLISHED", 1)
+    )
+    with pytest.raises(SystemExit, match="not its rendering"):
+        _generator().main(["check", "--root", str(tmp_path)])
+    assert (tmp_path / "docs/measured-oxide-capture.md").read_bytes() != page  # check wrote nothing
 
 
 def test_improvement_is_not_established_on_any_row_and_names_what_is_missing(evaluation):
@@ -497,7 +588,190 @@ def test_duplicate_json_keys_are_refused():
 
 
 def test_a_hygroscopic_formula_off_the_roster_is_refused():
-    obj = inputs_obj()
-    obj["hygroscopic"]["formulas"] = sorted(obj["hygroscopic"]["formulas"] + ["Li2O"])
+    """The roster check at the numerical API (the loader would refuse the altered water roster first)."""
+    inputs, rows, binding = _parts()
     with pytest.raises(dm.MeasuredError, match="roster"):
+        dm.evaluate(rows, unscored(inputs, hygroscopic=(*inputs.hygroscopic, "Li2O")), binding)
+
+
+# --------------------------------------------------------------------------------------------
+# isolated controls, one guard each
+# --------------------------------------------------------------------------------------------
+
+
+def _edit_both(old: str, new: str) -> tuple[bytes, bytes]:
+    """The Al2O3 cell changed consistently in the measurement row and the printed cell."""
+    lines = _measurement_lines()
+    i = _al_line(lines)
+    assert old in lines[i]
+    lines[i] = lines[i].replace(old, new, 1)
+    printed = PRINTED.read_text(encoding="utf-8").replace("\r\n", "\n").split("\n")
+    (j,) = [k for k, line in enumerate(printed) if line.startswith("Stanislaus1987a,") and ",Al2O3," in line]
+    a, u = new.strip(",").split(",")
+    f = printed[j].split(",")
+    f[7], f[8] = a, u
+    printed[j] = ",".join(f)
+    return "\n".join(lines).encode("utf-8"), "\n".join(printed).encode("utf-8")
+
+
+@pytest.mark.parametrize(
+    ("new", "guard"),
+    [
+        (",0.94,0.00,", "u positive"),
+        (",0.03,0.03,", "core lower end"),
+    ],
+)
+def test_a_cell_changed_in_both_files_meets_its_own_guard(new, guard):
+    measurements, printed = _edit_both(",0.94,0.03,", new)
+    with pytest.raises(dm.MeasuredError):
+        generate(measurements=measurements, printed=printed)
+
+
+def _printed_lines() -> list[str]:
+    return PRINTED.read_text(encoding="utf-8").replace("\r\n", "\n").split("\n")
+
+
+def _al_printed(lines: list[str]) -> int:
+    (j,) = [k for k, line in enumerate(lines) if line.startswith("Stanislaus1987a,") and ",Al2O3," in line]
+    return j
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        lambda line: line.replace("Stanislaus1987a,", "Other1990,", 1),  # another source's cell
+        lambda line: line.replace(",data,", ",note,", 1),  # not a data row
+        lambda line: line.replace("Present measurement", "Egidy(81)", 1).replace(
+            ",0.94,", ",0.96,"
+        ),  # comparator
+    ],
+)
+def test_cells_outside_the_present_measurement_column_are_ignored(extra):
+    lines = _printed_lines()
+    lines.insert(_al_printed(lines) + 1, extra(lines[_al_printed(lines)]))
+    assert generate(printed="\n".join(lines).encode("utf-8")) == generate()
+
+
+def test_a_repeated_printed_cell_is_refused():
+    lines = _printed_lines()
+    lines.insert(_al_printed(lines) + 1, lines[_al_printed(lines)])
+    with pytest.raises(dm.MeasuredError, match="repeats"):
+        generate(printed="\n".join(lines).encode("utf-8"))
+
+
+def test_a_printed_cell_without_a_measurement_row_is_refused():
+    lines = _printed_lines()
+    lines.insert(_al_printed(lines) + 1, lines[_al_printed(lines)].replace(",Al2O3,", ",Li2O,"))
+    with pytest.raises(dm.MeasuredError, match="different formulas"):
+        generate(printed="\n".join(lines).encode("utf-8"))
+
+
+def test_an_empty_roster_in_both_files_is_refused():
+    m = [x for x in _measurement_lines() if not x.startswith("Stanislaus1987a")]
+    pr = [x for x in _printed_lines() if not x.startswith("Stanislaus1987a")]
+    with pytest.raises(dm.MeasuredError, match="empty"):
+        dm.load_source_rows("\n".join(m).encode("utf-8"), "\n".join(pr).encode("utf-8"))
+    inputs, rows, binding = _parts()
+    with pytest.raises(dm.MeasuredError, match="empty"):
+        dm.evaluate([], inputs, binding)
+
+
+def test_a_repeated_record_id_and_a_repeated_formula_are_each_refused():
+    lines = _measurement_lines()
+    i = _al_line(lines)
+    sio2 = next(k for k, x in enumerate(lines) if x.startswith("Stanislaus1987a-") and ",SiO2,solid," in x)
+    same_id = list(lines)
+    same_id[sio2] = lines[i].split(",", 1)[0] + "," + lines[sio2].split(",", 1)[1]
+    with pytest.raises(dm.MeasuredError, match="duplicate"):
+        generate(measurements="\n".join(same_id).encode("utf-8"))
+    same_formula = list(lines)
+    same_formula.insert(
+        i + 1, lines[i].replace("Stanislaus1987a-Table 1-17-5,", "Stanislaus1987a-Table 1-17-99,", 1)
+    )
+    with pytest.raises(dm.MeasuredError, match="duplicate"):
+        generate(measurements="\n".join(same_formula).encode("utf-8"))
+
+
+def test_a_short_measurement_record_and_a_liquid_phase_are_refused():
+    lines = _measurement_lines()
+    i = _al_line(lines)
+    short = list(lines)
+    short[i] = short[i].rsplit(",", 1)[0]
+    with pytest.raises(dm.MeasuredError, match="fields"):
+        generate(measurements="\n".join(short).encode("utf-8"))
+    liquid = list(lines)
+    liquid[i] = liquid[i].replace(",Al2O3,solid,", ",Al2O3,liquid,", 1)
+    with pytest.raises(dm.MeasuredError, match="solid"):
+        generate(measurements="\n".join(liquid).encode("utf-8"))
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        lambda o: o.update(schema="openmucf.d2-measured-inputs/0"),
+        lambda o: o.update(source_id="Other1990"),
+        lambda o: o["decision_record"]["statistics"].update(locator=" leading space"),
+        lambda o: o.update(conditional_sensitivities={}),
+        lambda o: o["conditional_sensitivities"][0].update(qualifications=[]),
+        lambda o: o["conditional_sensitivities"][0].update(rows=["Al2O3", "Li2O", "SiO2"]),
+        lambda o: o["hygroscopic"].update(formulas=["Al2Si3", "CaO"]),
+    ],
+)
+def test_more_hostile_inputs_are_refused(edit):
+    obj = inputs_obj()
+    edit(obj)
+    with pytest.raises(dm.MeasuredError):
         generate(inputs=dumped(obj))
+
+
+def test_inputs_with_cr_or_as_text_are_refused():
+    with pytest.raises(dm.MeasuredError, match="CR"):
+        dm.load_inputs(INPUTS.read_bytes().replace(b"\n", b"\r\n"))
+    with pytest.raises(dm.MeasuredError, match="bytes"):
+        dm.load_inputs(INPUTS.read_text(encoding="utf-8"))  # type: ignore[arg-type]
+    with pytest.raises(dm.MeasuredError, match="bytes"):
+        dm.load_source_rows(MEASUREMENTS.read_text(encoding="utf-8"), PRINTED.read_bytes())  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        lambda o: o.update(schema="openmucf.bound-decay-response/0"),
+        lambda o: o["payload"]["source_response"]["d2_response"].update(delivery_mode="EVALUATED"),
+        lambda o: o["payload"]["source_response"]["d2_response"].update(conversion_refusal="CONVERTED"),
+        lambda o: o["payload"]["source_response"][dm.SOURCE_IDENTITY].update(q_formula="1 - 0.5 (Z/137)^2"),
+        lambda o: o["payload"]["source_response"][dm.SOURCE_IDENTITY].update(
+            status="RESOLVED", assumption="a", discrepancy="b"
+        ),
+    ],
+)
+def test_a_shared_record_change_is_refused_with_its_digest_registered(edit):
+    """The record resealed and the inputs naming its new digest, so only the rule under test can refuse it."""
+    obj = shared_obj()
+    edit(obj)
+    inp, shared = _with_shared(obj)
+    with pytest.raises(dm.MeasuredError):
+        generate(inputs=inp, shared=shared)
+
+
+def test_a_stale_payload_digest_field_is_refused():
+    obj = shared_obj()
+    obj["payload_sha256"] = "0" * 64
+    with pytest.raises(dm.MeasuredError, match="digest"):
+        generate(shared=dumped(obj))
+
+
+def test_a_row_whose_entry_is_not_below_stock_is_refused():
+    inputs, rows, binding = _parts()
+    al = next(r for r in rows if r.formula == "Al2O3")
+    high = dataclasses.replace(al, a_text="99.00", u_text="0.03")
+    with pytest.raises(dm.MeasuredError, match="stock"):
+        dm.evaluate([high], unscored(inputs, hygroscopic=(), sensitivities=()), binding)
+
+
+def test_the_float_bound_is_the_largest_binary64_not_above_the_decimal():
+    from decimal import Decimal
+
+    for text in ("0.1", "0.0144081147435", "0.5"):
+        f = dm._float_at_most(text)
+        assert Decimal(f) <= Decimal(text) < Decimal(math.nextafter(f, math.inf))

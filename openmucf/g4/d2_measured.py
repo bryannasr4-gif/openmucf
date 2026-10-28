@@ -80,6 +80,36 @@ _FORMULA = re.compile(r"([A-Z][a-z]?)([0-9]*)")
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 
 
+@dataclass(frozen=True)
+class Recipe:
+    """The frozen inputs a registered decision record was decided with."""
+
+    budget: Fraction
+    stat_log_scale: Fraction
+    coverage_k: int
+    resolution: Fraction
+    hygroscopic: tuple[str, ...]
+
+
+#: Every decision record this module may produce, bound to its frozen recipe. A record with another identity,
+#: or this identity with other inputs, is not a registered decision: it is refused.
+REGISTERED_RECIPES = {
+    "d2-measured-regions-v2": Recipe(
+        budget=Fraction(1, 100),
+        stat_log_scale=Fraction(2, 100),
+        coverage_k=2,
+        resolution=Fraction(5, 1000),
+        hygroscopic=("CaO", "CrO3", "Na2O2", "P2O5"),
+    ),
+}
+RECIPE_REFUSAL = (
+    "registered decision recipe differs from its frozen inputs; a new attempt requires registration"
+)
+#: An identity no registration can carry: the test suite's numerical drills evaluate altered recipes under it,
+#: through :func:`evaluate` only; it never reaches the loader, the generator or the committed record.
+UNSCORED_TEST_PREFIX = "unscored-test-"
+
+
 class MeasuredError(ValueError):
     """An input, a record or a request this module refuses."""
 
@@ -357,7 +387,7 @@ def load_inputs(raw: bytes) -> Inputs:
     ids = [d["id"]] + [s.id for s in sens] + [i for i, _ in later]
     if len(set(ids)) != len(ids):
         raise MeasuredError("attempt identities repeat")
-    return Inputs(
+    inputs = Inputs(
         decision_id=_text(d["id"], "decision id"),
         budget=_decimal_text(d["budget_tv"], "budget"),
         stat_log_scale=_decimal_text(st["log_scale"], "log scale"),
@@ -373,6 +403,17 @@ def load_inputs(raw: bytes) -> Inputs:
         sensitivities=tuple(sens),
         later_attempts=tuple(later),
     )
+    check_recipe(inputs)
+    return inputs
+
+
+def check_recipe(inputs: Inputs) -> None:
+    """The decision identity must be registered, and its inputs must be its frozen recipe."""
+    recipe = REGISTERED_RECIPES.get(inputs.decision_id)
+    if recipe != Recipe(
+        inputs.budget, inputs.stat_log_scale, inputs.coverage_k, inputs.resolution, inputs.hygroscopic
+    ):
+        raise MeasuredError(f"{inputs.decision_id}: {RECIPE_REFUSAL}")
 
 
 @dataclass(frozen=True)
@@ -489,7 +530,11 @@ def nested_upper(row: SourceRow, inputs: Inputs, resolution: bool) -> Decimal:
 
 
 def evaluate(rows: Sequence[SourceRow], inputs: Inputs, binding: SourceBinding) -> dict[str, Any]:
-    """The evaluation record, every field derived from the rows, the inputs and the shared-record binding."""
+    """The evaluation record, every field derived from the rows, the inputs and the shared-record binding.
+    A registered identity is decided only with its frozen recipe; an identity with the unscored-test prefix
+    lets a drill evaluate an altered recipe, and no such record can be loaded, generated or committed."""
+    if not inputs.decision_id.startswith(UNSCORED_TEST_PREFIX):
+        check_recipe(inputs)
     if not rows:
         raise MeasuredError("the roster is empty")
     formulas = {r.formula for r in rows}
@@ -794,6 +839,35 @@ def check_committed(committed: Mapping[str, bytes], recomputed: Mapping[str, byt
     for a in ev["attempts"][1:]:
         if a["role"] not in (ROLE_SENSITIVITY, ROLE_LATER) or "verdict" in json.dumps(a):
             raise MeasuredError("an attempt other than the decision record carries a verdict")
+
+
+def precision_declaration(evaluation: Mapping[str, Any]) -> dict[str, str]:
+    """The values the generated page states about precision, read from the evaluated record and checked
+    against the registered recipe of its decision identity; the page's "every oxide" holds only if every row
+    excludes MEETS. Anything else refuses, so no page can state the frozen recipe for another one."""
+    recipe = REGISTERED_RECIPES.get(evaluation["decision_record"])
+    stats = evaluation["statistics"]
+    stated = Recipe(
+        Fraction(evaluation["budget_tv"]),
+        Fraction(stats["log_scale"]),
+        stats["coverage_k"],
+        Fraction(evaluation["publication_resolution"]),
+        tuple(sorted(r["formula"] for r in evaluation["rows"] if r["hygroscopic"])),
+    )
+    if recipe is None or stated != recipe:
+        raise MeasuredError(f"{evaluation['decision_record']}: {RECIPE_REFUSAL}")
+    rows = evaluation["rows"]
+    excluded = [r["formula"] for r in rows if MEETS_EXCLUDED_TOKEN in r["precision"]["excluded"]]
+    if len(excluded) != len(rows) or evaluation["counts"]["precision_meets_excluded"] != len(rows):
+        raise MeasuredError("the page states an exclusion for every oxide, which this record does not carry")
+    return {
+        "percent": _plain(recipe.stat_log_scale * 100),
+        "k": str(recipe.coverage_k),
+        "budget": _plain(recipe.budget),
+    }
+
+
+MEETS_EXCLUDED_TOKEN = decisions.MEETS_EXCLUDED
 
 
 def delivered_vector(
