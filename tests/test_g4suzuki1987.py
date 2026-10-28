@@ -418,7 +418,9 @@ def test_t160_the_fluorine_row_names_the_lower_hyperfine_state_its_note_prints()
     assert stated["9-19"].source_locator.startswith(f"{previous.locator} ")
     comparison = d1_lifetime.read_comparison(DATA.parents[3] / d1_lifetime.COMPARISON_RELPATH)
     fluorine = [row for row in comparison if row["locator"] == previous.locator]
-    assert sorted(row["profile"] for row in fluorine) == sorted({row["profile"] for row in comparison})
+    # every capture profile; the evaluated pair profile's rows are only the nuclei its table holds
+    capture_profiles = {row["profile"] for row in comparison if row["lookup"] != d1_lifetime.PAIR_ROUTE}
+    assert sorted(row["profile"] for row in fluorine) == sorted(capture_profiles)
     assert all(row["measured_state"] == state for row in fluorine)
     assert {row["locator"] for row in comparison if row["measured_state"]} == {previous.locator}
     root = DATA.parents[3]

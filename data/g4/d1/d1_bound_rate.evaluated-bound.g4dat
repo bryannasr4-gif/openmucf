@@ -1,0 +1,13 @@
+#GRAMMAR      1.0
+#DATASET      G4MuonicData
+#VERSION      0.6.0
+#PROFILE      evaluated-bound
+#SEAM         d1_nuclear_capture
+#TABLE        bound_rate_primitives
+#GENERATOR    openmucf-g4 1.3.0
+#SOURCEDIGEST 94d3bb43e9ace18106dc1824457ce7c2393158a1419f94870326261e52a901fb
+#UNITS        tau=ns q=1 free_tau=ns
+#COLUMNS      Z A tau q free_tau
+#VALIDITY     Z:13-13 A:listed
+13 27 863.70000000000005 0.99359799999999998 2196.9811
+#END

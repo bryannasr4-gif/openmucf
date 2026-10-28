@@ -74,3 +74,6 @@ third_party/mudirac/** -text
 
 # Historical patch snapshots preserve their exact unified-diff context and source whitespace.
 cpp/transport/evidence/source_snapshots/*.patch -whitespace
+# Provenance documents the strict reader is checked against: their exact bytes (line ends, escapes, the
+# absence of a final newline) are what the check reads, and a recomputed digest covers them.
+tests/fixtures/provenance_reader/* -text

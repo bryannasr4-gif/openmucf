@@ -18,10 +18,10 @@ index e2973354eb..ffa2a0b56a 100644
  #endif
 diff --git a/source/particles/management/include/G4MuonicBoundRateProvider.hh b/source/particles/management/include/G4MuonicBoundRateProvider.hh
 new file mode 100644
-index 0000000..8aa4a23
+index 0000000..885fc6a
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicBoundRateProvider.hh
-@@ -0,0 +1,99 @@
+@@ -0,0 +1,123 @@
 +// G4MuonicBoundRateProvider -- one capture and decay rate pair for a negative muon in the 1s state of a
 +// muonic atom, given to both stopped-muon routes of Geant4 when an application asks for it.
 +//
@@ -68,6 +68,23 @@ index 0000000..8aa4a23
 +// constructed keep the lifetimes they were built with. Set it on the master thread before the physics
 +// list is built; worker threads only read it.
 +//
++// Evaluated pair rows. With the G4MuonicData opt-in on and G4MUONICDATA_D1_PAIR_PROFILE naming a profile that
++// carries a `bound_rate_primitives` table (G4MuonicDataOverlay), a key that table holds is answered from its one
++// tuple (tau, q, free_tau): decay = q / free_tau, capture = 1/tau - decay, so the two rates of both routes come
++// from one realization and capture + decay = 1/tau. The row takes precedence over the formula above and is not
++// limited to its domain. Other keys retain the selected capture profile and the existing route-specific formula
++// or fallback. A row whose tuple fails the consumer transform of G4MuonicDataSemantics::BoundPairProblem is
++// refused with G4MuonicBoundRates001. Rates, probabilities and sampled waiting times must be finite and in their
++// domains, sampled waiting times for a uniform variate in (0, 1]. Lifetimes must be finite except that zero
++// capture stores an infinite capture lifetime, which reads back as zero. The consumer lifetime
++// `1/(capture + decay)` must be finite and positive. The provider is then
++// poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer
++// falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's free
++// normalization. A pair profile with the switch off is refused at the first consultation with the fatal
++// G4MuonicBoundRates003, whichever of the two options was set first; should a handler suppress the abort, every
++// later consultation throws. Describe(Z, A) names, per key, the capture profile, the pair profile, the answer
++// (pair row, common formula or consumer fallback), and its decay-factor convention where applicable.
++//
 +// The static legacy getters G4MuonMinusBoundDecay::GetMuonDecayRate and
 +// G4MuonicAtomHelper::GetMuonDecayRate are unchanged and are not affected by the switch: they report
 +// each route's own prescription, not the pair a consumer receives with the switch on.
@@ -78,6 +95,8 @@ index 0000000..8aa4a23
 +
 +#include "G4Types.hh"
 +
++#include <string>
++
 +struct G4MuonicBoundRates {
 +  G4double capture = 0.;  // nuclear capture rate, ns^-1
 +  G4double decay = 0.;    // decay-in-orbit rate, ns^-1
@@ -86,7 +105,7 @@ index 0000000..8aa4a23
 +class G4MuonicBoundRateProvider {
 + public:
 +  enum class Status {
-+    kCommon,       // the pair is the common pair; the consumer uses it
++    kCommon,       // the consumer uses `rates`: an evaluated pair row, or else the common formula pair
 +    kDisabled,     // the switch is off; the consumer keeps its own pair
 +    kUnsupported,  // outside the domain; the consumer keeps its own pair
 +    kRefused       // a fatal G4MuonicBoundRates001 was raised; the consumer keeps its own pair
@@ -100,7 +119,8 @@ index 0000000..8aa4a23
 +  static G4bool IsEnabled();
 +  static G4bool IsFrozen();
 +
-+  // Called by each consumer before it uses its pair: freezes the switch and returns whether it is on.
++  // Called by each consumer before it uses its pair: freezes the switch and returns whether it is on. With
++  // the switch off and a pair profile selected it refuses (G4MuonicBoundRates003).
 +  static G4bool Consult();
 +
 +  // Whether (Z, A) lies in the implementation domain: 2 <= Z <= 13 and A >= Z.
@@ -118,15 +138,19 @@ index 0000000..8aa4a23
 +
 +  // What the pair is made of, for a consumer or an application that reports it.
 +  static const char* Prescription();
++
++  // One line for (Z, A): switch, data option, capture profile, pair profile, and which answer a consumer
++  // receives (pair row, common formula or its own pair) with its decay-factor convention. Changes no state.
++  static std::string Describe(G4int Z, G4int A);
 +};
 +
 +#endif
 diff --git a/source/particles/management/include/G4MuonicDataOverlay.hh b/source/particles/management/include/G4MuonicDataOverlay.hh
 new file mode 100644
-index 0000000000..c9eb032600
+index 0000000..bbb9311
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataOverlay.hh
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,125 @@
 +// G4MuonicDataOverlay -- the Geant4-facing glue between the G4MuonicData dataset reader and the
 +// compiled-in muon-capture and muonic-atom energy code paths.
 +//
@@ -145,6 +169,15 @@ index 0000000000..c9eb032600
 +// seam that resolves to it has no tables and every request there falls through to the consumer's
 +// own code. The environment is read once, when the opt-in is set, and not again.
 +//
++// A third selection is independent of both: G4MUONICDATA_D1_PAIR_PROFILE names the profile whose
++// `bound_rate_primitives` table carries evaluated bound-muon rate pairs, one tuple (tau, q, free_tau) per
++// isotope, which G4MuonicBoundRateProvider gives both stopped-muon routes for the keys it holds, in place of
++// the common formula pair or, outside that formula's domain, of each consumer's own pair. Unset, it is
++// `compiled` (no pair table). It does not replace the capture profile: keys the pair table does not hold
++// keep the D1 profile's capture rate. G4MUONICDATA_PROFILE never selects it, and a G4MUONICDATA_PROFILE
++// naming a pair profile is refused (G4MuonicData004), as is a pair profile that carries no pair table. Pair
++// lookups are by isotope only.
++//
 +// The legacy natural-composition rung -- a request for (Z, A) answered by the element's (Z, 0)
 +// record -- is used exactly when the resolved profile for that seam is `parity`. Under any
 +// evaluated profile a request with A > 0 is answered from that isotope or not at all, and the
@@ -156,6 +189,7 @@ index 0000000000..c9eb032600
 +#include "G4Types.hh"
 +
 +#include <string>
++#include <vector>
 +
 +class G4MuonicDataOverlay {
 + public:
@@ -187,6 +221,8 @@ index 0000000000..c9eb032600
 +  struct Configuration {
 +    std::string datasetDirectory, datasetVersion, d1Profile, d3Profile;
 +    bool fallbackDeclarationExecuted = false;
++    // The pair profile G4MUONICDATA_D1_PAIR_PROFILE selected, `compiled` when none.
++    std::string d1PairProfile;
 +  };
 +
 +  // Read the environment, discover and read the dataset, and freeze the configuration. Called once
@@ -212,6 +248,9 @@ index 0000000000..c9eb032600
 +
 +  // The same four lookups, with the rung that answered and the profile it was read through.
 +  static Resolution ResolveRate(G4int Z, G4int A);
++  // The bound-rate pair tuple for this isotope under the pair profile: `values` points at tau (ns), q and
++  // free_tau (ns), `count` 3; null for A <= 0, for a key the table does not hold, and with no pair profile.
++  static Resolution ResolvePair(G4int Z, G4int A);
 +  static Resolution ResolveZeff(G4int Z);
 +  static Resolution ResolveKShell(G4int Z, G4int A);
 +  static Resolution ResolveLevels(G4int Z, G4int A);
@@ -227,15 +266,22 @@ index 0000000000..c9eb032600
 +  // whole array must be finite, positive and strictly falling, boundary between overlaid and
 +  // hydrogen-like values included.
 +  static void CheckCascadeLevels(G4int Z, G4int A, const G4double* levels, G4int count);
++
++  // The row keys a Layer-2 provenance document admits: the keys of its top-level "rows" object, in document
++  // order. The document must be strict JSON (RFC 8259) in UTF-8 -- every string, escape, number and literal
++  // valid, no trailing input, containers nested at most 64 deep -- and one object with exactly one "rows"
++  // member whose value is an object. An object key containing a backslash is refused, not decoded: the
++  // generator never escapes a key. False on refusal.
++  static G4bool ProvenanceRowKeys(const std::string& text, std::vector<std::string>& keys);
 +};
 +
 +#endif
 diff --git a/source/particles/management/include/G4MuonicDataSemantics.hh b/source/particles/management/include/G4MuonicDataSemantics.hh
 new file mode 100644
-index 0000000000..9ca4ab0746
+index 0000000..7440152
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataSemantics.hh
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,69 @@
 +// G4MuonicDataSemantics -- what a G4MuonicData dataset must mean, over and above what its grammar
 +// allows.
 +//
@@ -253,10 +299,12 @@ index 0000000000..9ca4ab0746
 +// The codes, and the one sentence each stands for:
 +//   S001  identity and version: every table names this dataset, and one `#VERSION` spans the load.
 +//   S002  shape: the `#TABLE` name, its `#SEAM`, its `#COLUMNS` sequence, and that it has records.
-+//   S003  keys and validity: the key domain, and a `#VALIDITY` convention this layer knows.
++//   S003  keys and validity: the key domain, and a `#VALIDITY` convention this layer knows (the
++//         bound-rate pair table carries isotope keys only, `A:listed`).
 +//   S004  units: the `#UNITS` assignment of every value column, as the lookups read it.
 +//   S005  values: finite, and in the domain the quantity has (a rate and an energy are positive,
-+//         an uncertainty is not negative, an effective charge does not exceed Z).
++//         an uncertainty is not negative, an effective charge does not exceed Z, a pair tuple's q
++//         lies in (0, 1] and its listed stopped-route transform satisfies BoundPairProblem).
 +//   S006  the D3 pair: one profile's two energy tables cover one key set, in one falling order.
 +#ifndef G4MUONICDATASEMANTICS_HH
 +#define G4MUONICDATASEMANTICS_HH
@@ -279,12 +327,33 @@ index 0000000000..9ca4ab0746
 +  // profile-level S006 issues follow the per-table ones, in bytewise profile order. An empty
 +  // vector is the only acceptable result for a dataset a consumer may read.
 +  static std::vector<Issue> Validate(const G4MuonicDataTable& dataset);
++
++  // The consumer transform of one bound-rate pair tuple (tau and free_tau in ns, q dimensionless), in the order
++  // the consumers evaluate it. The tuple checks below cover rates, lifetimes, probability, reciprocal read-back
++  // and waiting-time expressions with multiplier 745. All listed quantities must be finite and in their stated
++  // domains except the infinite capture lifetime stored for zero capture. Absolute track times and kinematic
++  // GetMeanFreePath returns are outside these checks; nothing is clipped.
++  //   tau and free_tau finite and positive, q finite in (0, 1];
++  //   the decay rate d = q / free_tau finite and in (0, 1/free_tau] (a quotient that underflows is refused);
++  //   1/tau finite, and the capture rate c = 1/tau - d finite and not negative (c = 0 is admitted);
++  //   the total rate c + d finite and positive. The consumer lifetime `1/(capture + decay)` must be finite
++  //   and positive;
++  //   the capture probability c / (c + d) in [0, 1];
++  //   the partial lifetimes the atomic route stores: 1/d finite, and 1/c finite when c > 0 (c = 0 stores an
++  //   infinite capture lifetime, read back as a zero capture rate, so capture is never chosen); the rates
++  //   read back from them, 1/(1/c) + 1/(1/d), finite and positive;
++  //   a sampled waiting time: kExponentialVariateMax times the lifetime, and over the total rate, finite.
++  // Returns nullptr and sets `capture` and `decay` for an admitted tuple, otherwise the reason. The semantic
++  // rule S005 and the Geant4 provider call this one function, so they cannot disagree.
++  static const char* BoundPairProblem(double tau, double q, double free_tau, double& capture, double& decay);
++
++  static constexpr double kExponentialVariateMax = 745.;
 +};
 +
 +#endif
 diff --git a/source/particles/management/include/G4MuonicDataTable.hh b/source/particles/management/include/G4MuonicDataTable.hh
 new file mode 100644
-index 0000000000..4b7fce2d9f
+index 0000000..4b7fce2
 --- /dev/null
 +++ b/source/particles/management/include/G4MuonicDataTable.hh
 @@ -0,0 +1,100 @@
@@ -518,15 +587,18 @@ index 9893519553..141bb816ea 100644
                                            G4double Xuser)
 diff --git a/source/particles/management/src/G4MuonicBoundRateProvider.cc b/source/particles/management/src/G4MuonicBoundRateProvider.cc
 new file mode 100644
-index 0000000..cb06b2a
+index 0000000..7f4161a
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicBoundRateProvider.cc
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,211 @@
 +// G4MuonicBoundRateProvider -- see the header for what the pair is, where it is used and its domain.
 +#include "G4MuonicBoundRateProvider.hh"
 +
 +#include "G4Exception.hh"
 +#include "G4MuonicAtomHelper.hh"
++#include "G4MuonicDataOverlay.hh"
++#include "G4MuonicDataSemantics.hh"
++#include "G4MuonicDataTable.hh"
 +#include "G4PhysicalConstants.hh"
 +#include "G4SystemOfUnits.hh"
 +
@@ -534,6 +606,7 @@ index 0000000..cb06b2a
 +#include <cmath>
 +#include <limits>
 +#include <sstream>
++#include <stdexcept>
 +#include <string>
 +
 +namespace {
@@ -542,6 +615,8 @@ index 0000000..cb06b2a
 +std::atomic<bool> g_enabled{false};
 +// Set by the first Consult, on whichever thread forms the first rate pair.
 +std::atomic<bool> g_frozen{false};
++// Set when a selected evaluated pair row was refused: every later consultation throws.
++std::atomic<bool> g_poisoned{false};
 +
 +void Change(bool value) {
 +  if (g_frozen.load() && g_enabled.load() != value) {
@@ -556,6 +631,47 @@ index 0000000..cb06b2a
 +
 +bool PositiveFinite(G4double x) { return std::isfinite(x) && x > 0.; }
 +
++const char* const kCompiled = "compiled";
++
++// A selected evaluated pair row that cannot be used: fatal G4MuonicBoundRates001 the first time, and the provider
++// is poisoned, so that should an installed handler suppress the abort this call and every later consultation
++// throw. A consumer never falls back to the pair it formed itself for a key the selected pair profile answers.
++[[noreturn]] void RefuseRow(const std::string& text) {
++  g_poisoned.store(true);
++  static std::atomic<bool> reported{false};
++  if (!reported.exchange(true)) {
++    G4Exception("G4MuonicBoundRateProvider::Rates", "G4MuonicBoundRates001", FatalException, text.c_str());
++  }
++  throw std::runtime_error(text);
++}
++
++// The pair profile the frozen overlay selected, or "compiled" with the data option off or none selected.
++std::string PairProfile() {
++  if (!G4MuonicDataTable::IsEnabled()) return kCompiled;
++  const std::string& profile = G4MuonicDataOverlay::Config().d1PairProfile;
++  return profile.empty() ? std::string(kCompiled) : profile;
++}
++
++// A pair profile selected with the common-rate switch off: the requested evaluated pairs would never reach a
++// consumer. Fatal G4MuonicBoundRates003 the first time; should an installed handler suppress the abort, every
++// later consultation throws rather than let a consumer run its own pair for the requested data.
++void RefusePairWithoutSwitch(const std::string& profile) {
++  const std::string text = "G4MUONICDATA_D1_PAIR_PROFILE selects the bound-rate pair profile '" + profile +
++                           "' but G4HadronicParameters::SetEnableMuonicBoundRates(true) was not called before the "
++                           "first consumer formed a rate pair; the evaluated pairs need both options";
++  static std::atomic<bool> reported{false};
++  if (!reported.exchange(true)) {
++    G4Exception("G4MuonicBoundRateProvider::Consult", "G4MuonicBoundRates003", FatalException, text.c_str());
++  }
++  throw std::runtime_error(text);
++}
++
++// Why a pair tuple cannot be used, or nullptr: the one consumer transform the semantic rule S005 applies
++// too. Rates in ns^-1 (Geant4's time unit is the ns).
++const char* PairProblem(G4double tau, G4double q, G4double freeTau, G4double& capture, G4double& decay) {
++  return G4MuonicDataSemantics::BoundPairProblem(tau, q, freeTau, capture, decay);
++}
++
 +}  // namespace
 +
 +void G4MuonicBoundRateProvider::Enable() { Change(true); }
@@ -568,7 +684,15 @@ index 0000000..cb06b2a
 +
 +G4bool G4MuonicBoundRateProvider::Consult() {
 +  g_frozen.store(true);
-+  return g_enabled.load();
++  if (g_poisoned.load()) {
++    throw std::runtime_error("a selected evaluated bound-rate pair row was refused (G4MuonicBoundRates001)");
++  }
++  const bool enabled = g_enabled.load();
++  if (!enabled) {
++    const std::string profile = PairProfile();
++    if (profile != kCompiled) RefusePairWithoutSwitch(profile);
++  }
++  return enabled;
 +}
 +
 +G4bool G4MuonicBoundRateProvider::InDomain(G4int Z, G4int A) { return Z >= 2 && Z <= 13 && A >= Z; }
@@ -591,6 +715,25 @@ index 0000000..cb06b2a
 +                                                                   G4double nuclearMass,
 +                                                                   G4MuonicBoundRates& rates) {
 +  if (!Consult()) return Status::kDisabled;
++  // An evaluated pair row takes precedence: both rates come from its one tuple.
++  if (G4MuonicDataTable::IsEnabled()) {
++    const G4MuonicDataOverlay::Resolution row = G4MuonicDataOverlay::ResolvePair(Z, A);
++    if (row.values != nullptr) {
++      G4double capture = 0., decay = 0.;
++      const G4double tau = row.values[0] * ns, q = row.values[1], freeTau = row.values[2] * ns;
++      if (row.count != 3) RefuseRow("the bound-rate pair row does not carry the three values tau q free_tau");
++      if (const char* why = PairProblem(tau, q, freeTau, capture, decay)) {
++        std::ostringstream message;
++        message.precision(17);
++        message << "Z=" << Z << " A=" << A << " under pair profile " << row.profile << ": " << why << " (tau " << tau
++                << " ns, q " << q << ", free_tau " << freeTau << " ns)";
++        RefuseRow(message.str());
++      }
++      rates.capture = capture;
++      rates.decay = decay;
++      return Status::kCommon;
++    }
++  }
 +  if (!InDomain(Z, A)) return Status::kUnsupported;
 +  G4double capture = 0.;
 +  G4double decay = 0.;
@@ -625,19 +768,46 @@ index 0000000..cb06b2a
 +  return Status::kCommon;
 +}
 +
++std::string G4MuonicBoundRateProvider::Describe(G4int Z, G4int A) {
++  std::ostringstream out;
++  const bool data = G4MuonicDataTable::IsEnabled();
++  const std::string pairProfile = PairProfile();
++  std::string captureProfile = kCompiled;
++  if (data) captureProfile = G4MuonicDataOverlay::Config().d1Profile;
++  out << "Z=" << Z << " A=" << A << " switch=" << (IsEnabled() ? "on" : "off") << " data=" << (data ? "on" : "off")
++      << " capture_profile=" << captureProfile << " pair_profile=" << pairProfile;
++  if (!IsEnabled()) {
++    out << " answer=consumer";
++    return out.str();
++  }
++  const G4MuonicDataOverlay::Resolution row =
++      data ? G4MuonicDataOverlay::ResolvePair(Z, A) : G4MuonicDataOverlay::Resolution();
++  if (row.values != nullptr) {
++    out << " answer=pair-row row=" << row.resolvedZ << "-" << row.resolvedA << " q_convention=evaluated:" << pairProfile
++        << " fallback=none";
++  } else if (InDomain(Z, A)) {
++    out << " answer=common-formula q_convention=leading:low-z-inclusive-tree-linear-recoil-v1 fallback="
++        << (pairProfile == kCompiled ? "none" : "formula-no-pair-row");
++  } else {
++    out << " answer=consumer fallback=outside-common-domain";
++  }
++  return out.str();
++}
++
 +const char* G4MuonicBoundRateProvider::Prescription() {
 +  return "low-z-inclusive-tree-linear-recoil-v1; "
 +         "capture: G4MuonicAtomHelper::GetMuonCaptureRate(Z, A); "
 +         "decay: free * [1 - (Z alpha)^2 * (1/2 - eta)], eta = muMass / nuclearMass; "
 +         "domain 2 <= Z <= 13, A >= Z, finite positive masses, eta < 1/2; "
-+         "leading binding, linear eta prescription; physical expansion eta << 1; no accuracy certificate";
++         "leading binding, linear eta prescription; physical expansion eta << 1; no accuracy certificate; "
++         "an evaluated pair row of a selected pair profile takes precedence: d = q/free_tau, c = 1/tau - d";
 +}
 diff --git a/source/particles/management/src/G4MuonicDataOverlay.cc b/source/particles/management/src/G4MuonicDataOverlay.cc
 new file mode 100644
-index 0000000000..030ca9679a
+index 0000000..f329a85
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicDataOverlay.cc
-@@ -0,0 +1,482 @@
+@@ -0,0 +1,922 @@
 +// G4MuonicDataOverlay -- implementation. See the header for what this class is for.
 +#include "G4MuonicDataOverlay.hh"
 +
@@ -648,7 +818,10 @@ index 0000000000..030ca9679a
 +#include <algorithm>
 +#include <atomic>
 +#include <cmath>
++#include <cstdint>
 +#include <cstdlib>
++#include <fstream>
++#include <sstream>
 +#include <stdexcept>
 +#include <string>
 +#include <vector>
@@ -667,6 +840,10 @@ index 0000000000..030ca9679a
 +const char* const kZeffTable = "muon_zeff";
 +const char* const kKShellTable = "k_shell_energy";
 +const char* const kLevelTable = "level_energy";
++// The evaluated bound-rate pair table and its three value columns, in the order the provider reads them.
++const char* const kPairTable = "bound_rate_primitives";
++const char* const kPairColumns[] = {"tau", "q", "free_tau"};
++const char* const kPairUnits[] = {"ns", "1", "ns"};
 +const char* const kRepresentative = "most_abundant_and_listed";
 +// The number of consecutive muonic-cascade levels a patched build assembles.
 +const G4int kCascadeLevels = 14;
@@ -688,6 +865,8 @@ index 0000000000..030ca9679a
 +  G4MuonicDataTable dataset;
 +  bool loaded = false;
 +  Selected capture, zeff, kshell, levels;
++  // The pair table selected by G4MUONICDATA_D1_PAIR_PROFILE, independently of the capture profile.
++  Selected pairs;
 +  bool d1Evaluated = false;
 +  // Non-empty when the semantic layer refused the dataset and an installed handler suppressed the
 +  // abort: every entry point then throws instead of answering from a dataset no consumer may read.
@@ -847,6 +1026,390 @@ index 0000000000..030ca9679a
 +  return true;
 +}
 +
++// A refused pair configuration: fatal, and, should an installed handler suppress the abort, recorded so that
++// every entry point throws -- requested evaluated pairs never silently become the compiled-in pair.
++void RefusePairs(State& state, const char* code, const std::string& text) {
++  Fatal(code, text);
++  state.refusal = text;
++}
++
++// ---- binding the selected pair table to its provenance ------------------------------------------------------
++// The selected evaluated profile's rows are a scientific roster, not merely well-formed records: before any
++// consumer can use the table, the live parsed record keys must be exactly the row keys of the table's Layer-2
++// provenance file, whose SHA-256 must be the table's `#SOURCEDIGEST`. A substituted, moved or removed row, a
++// missing or altered provenance file, or an altered digest is refused.
++
++// SHA-256 (FIPS 180-4) of `data`, lowercase hexadecimal.
++std::string Sha256Hex(const std::string& data) {
++  static const std::uint32_t k[64] = {
++      0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
++      0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
++      0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
++      0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
++      0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
++      0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
++      0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
++      0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u};
++  std::uint32_t h[8] = {0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,
++                        0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
++  std::string m = data;
++  const std::uint64_t bits = static_cast<std::uint64_t>(data.size()) * 8u;
++  m.push_back(static_cast<char>(0x80));
++  while (m.size() % 64 != 56) m.push_back('\0');
++  for (int i = 7; i >= 0; --i) m.push_back(static_cast<char>((bits >> (8 * i)) & 0xffu));
++  auto rotr = [](std::uint32_t x, int n) { return (x >> n) | (x << (32 - n)); };
++  for (std::size_t chunk = 0; chunk < m.size(); chunk += 64) {
++    std::uint32_t w[64];
++    for (int i = 0; i < 16; ++i) {
++      w[i] = 0;
++      for (int j = 0; j < 4; ++j) w[i] = (w[i] << 8) | static_cast<unsigned char>(m[chunk + 4 * i + j]);
++    }
++    for (int i = 16; i < 64; ++i) {
++      const std::uint32_t s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >> 3);
++      const std::uint32_t s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >> 10);
++      w[i] = w[i - 16] + s0 + w[i - 7] + s1;
++    }
++    std::uint32_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
++    for (int i = 0; i < 64; ++i) {
++      const std::uint32_t s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
++      const std::uint32_t ch = (e & f) ^ (~e & g);
++      const std::uint32_t t1 = hh + s1 + ch + k[i] + w[i];
++      const std::uint32_t s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
++      const std::uint32_t mj = (a & b) ^ (a & c) ^ (b & c);
++      const std::uint32_t t2 = s0 + mj;
++      hh = g;
++      g = f;
++      f = e;
++      e = d + t1;
++      d = c;
++      c = b;
++      b = a;
++      a = t1 + t2;
++    }
++    h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
++  }
++  static const char* const hex = "0123456789abcdef";
++  std::string out;
++  for (std::uint32_t v : h) {
++    for (int i = 7; i >= 0; --i) out.push_back(hex[(v >> (4 * i)) & 0xfu]);
++  }
++  return out;
++}
++
++// A strict reader of RFC 8259 JSON text in UTF-8, enough to bind a provenance roster. Every value is checked
++// against the JSON grammar: strings (escapes \" \\ \/ \b \f \n \r \t \uXXXX only, no raw control character,
++// well-formed UTF-8), numbers, the literals true, false and null, and containers nested at most kMaxDepth deep;
++// nothing may follow the document but whitespace. An object key that contains a backslash is refused rather
++// than decoded: the generator never escapes a key, and a decoded key must never stand for another one.
++class StrictJson {
++ public:
++  explicit StrictJson(const std::string& text) : s_(text) {}
++
++  // The keys of the top-level "rows" object, in document order; false unless the text is one JSON object
++  // carrying exactly one "rows" member whose value is an object.
++  bool Rows(std::vector<std::string>& keys) {
++    Space();
++    if (!Object(1, &keys)) return false;
++    Space();
++    return i_ == s_.size();
++  }
++
++ private:
++  static constexpr int kMaxDepth = 64;
++  const std::string& s_;
++  std::size_t i_ = 0;
++
++  unsigned char At(std::size_t k) const { return static_cast<unsigned char>(s_[k]); }
++  bool More() const { return i_ < s_.size(); }
++
++  void Space() {
++    while (More() && (s_[i_] == ' ' || s_[i_] == '\t' || s_[i_] == '\n' || s_[i_] == '\r')) ++i_;
++  }
++
++  // One well-formed UTF-8 sequence of two to four bytes at i_ (no overlong form, no surrogate, at most U+10FFFF).
++  bool Utf8() {
++    const unsigned char lead = At(i_);
++    int extra = 0;
++    unsigned char low = 0x80, high = 0xBF;
++    if (lead >= 0xC2 && lead <= 0xDF) {
++      extra = 1;
++    } else if (lead >= 0xE0 && lead <= 0xEF) {
++      extra = 2;
++      if (lead == 0xE0) low = 0xA0;
++      if (lead == 0xED) high = 0x9F;
++    } else if (lead >= 0xF0 && lead <= 0xF4) {
++      extra = 3;
++      if (lead == 0xF0) low = 0x90;
++      if (lead == 0xF4) high = 0x8F;
++    } else {
++      return false;
++    }
++    if (i_ + extra >= s_.size()) return false;
++    for (int k = 1; k <= extra; ++k) {
++      const unsigned char c = At(i_ + k);
++      if (k == 1 ? (c < low || c > high) : (c < 0x80 || c > 0xBF)) return false;
++    }
++    i_ += extra + 1;
++    return true;
++  }
++
++  static bool Hex(char c) {
++    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
++  }
++
++  // A string at i_. For a key (`key` not null) a backslash is refused and the raw bytes are the key.
++  bool String(std::string* key) {
++    if (!More() || s_[i_] != '"') return false;
++    const std::size_t start = ++i_;
++    while (More()) {
++      const unsigned char c = At(i_);
++      if (c == '"') {
++        if (key != nullptr) *key = s_.substr(start, i_ - start);
++        ++i_;
++        return true;
++      }
++      if (c < 0x20) return false;
++      if (c == '\\') {
++        if (key != nullptr || i_ + 1 >= s_.size()) return false;
++        const char e = s_[i_ + 1];
++        if (e == 'u') {
++          if (i_ + 5 >= s_.size()) return false;
++          for (int k = 2; k <= 5; ++k) {
++            if (!Hex(s_[i_ + k])) return false;
++          }
++          i_ += 6;
++        } else if (e == '"' || e == '\\' || e == '/' || e == 'b' || e == 'f' || e == 'n' || e == 'r' || e == 't') {
++          i_ += 2;
++        } else {
++          return false;
++        }
++      } else if (c >= 0x80) {
++        if (!Utf8()) return false;
++      } else {
++        ++i_;
++      }
++    }
++    return false;
++  }
++
++  bool Digits() {
++    const std::size_t start = i_;
++    while (More() && s_[i_] >= '0' && s_[i_] <= '9') ++i_;
++    return i_ > start;
++  }
++
++  // -?(0|[1-9][0-9]*)(.[0-9]+)?([eE][+-]?[0-9]+)?
++  bool Number() {
++    if (More() && s_[i_] == '-') ++i_;
++    if (!More()) return false;
++    if (s_[i_] == '0') {
++      ++i_;
++    } else if (s_[i_] >= '1' && s_[i_] <= '9') {
++      Digits();
++    } else {
++      return false;
++    }
++    if (More() && s_[i_] == '.') {
++      ++i_;
++      if (!Digits()) return false;
++    }
++    if (More() && (s_[i_] == 'e' || s_[i_] == 'E')) {
++      ++i_;
++      if (More() && (s_[i_] == '+' || s_[i_] == '-')) ++i_;
++      if (!Digits()) return false;
++    }
++    return true;
++  }
++
++  bool Literal(const char* word) {
++    const std::string w(word);
++    if (s_.compare(i_, w.size(), w) != 0) return false;
++    i_ += w.size();
++    return true;
++  }
++
++  // A value at i_; a container opened here sits at `depth`.
++  bool Value(int depth) {
++    if (!More()) return false;
++    const char c = s_[i_];
++    if (c == '{') return Object(depth, nullptr);
++    if (c == '[') return Array(depth);
++    if (c == '"') return String(nullptr);
++    if (c == 't') return Literal("true");
++    if (c == 'f') return Literal("false");
++    if (c == 'n') return Literal("null");
++    return Number();
++  }
++
++  bool Array(int depth) {
++    if (depth > kMaxDepth || !More() || s_[i_] != '[') return false;
++    ++i_;
++    Space();
++    if (More() && s_[i_] == ']') {
++      ++i_;
++      return true;
++    }
++    while (true) {
++      Space();
++      if (!Value(depth + 1)) return false;
++      Space();
++      if (More() && s_[i_] == ',') {
++        ++i_;
++        continue;
++      }
++      if (More() && s_[i_] == ']') {
++        ++i_;
++        return true;
++      }
++      return false;
++    }
++  }
++
++  // An object at i_. With `rows` set it is the top-level object: its one "rows" member must be an object, whose
++  // keys are collected.
++  bool Object(int depth, std::vector<std::string>* rows) {
++    if (depth > kMaxDepth || !More() || s_[i_] != '{') return false;
++    ++i_;
++    Space();
++    bool found = false;
++    if (More() && s_[i_] == '}') {
++      ++i_;
++      return rows == nullptr;
++    }
++    while (true) {
++      Space();
++      std::string key;
++      if (!String(&key)) return false;
++      Space();
++      if (!More() || s_[i_] != ':') return false;
++      ++i_;
++      Space();
++      if (rows != nullptr && key == "rows") {
++        if (found || !More() || s_[i_] != '{') return false;
++        found = true;
++        if (!Members(depth + 1, *rows)) return false;
++      } else if (!Value(depth + 1)) {
++        return false;
++      }
++      Space();
++      if (More() && s_[i_] == ',') {
++        ++i_;
++        continue;
++      }
++      if (More() && s_[i_] == '}') {
++        ++i_;
++        return rows == nullptr || found;
++      }
++      return false;
++    }
++  }
++
++  // The "rows" object: an object at `depth` whose keys are collected.
++  bool Members(int depth, std::vector<std::string>& keys) {
++    if (depth > kMaxDepth || !More() || s_[i_] != '{') return false;
++    ++i_;
++    Space();
++    if (More() && s_[i_] == '}') {
++      ++i_;
++      return true;
++    }
++    while (true) {
++      Space();
++      std::string key;
++      if (!String(&key)) return false;
++      Space();
++      if (!More() || s_[i_] != ':') return false;
++      ++i_;
++      Space();
++      if (!Value(depth + 1)) return false;
++      keys.push_back(key);
++      Space();
++      if (More() && s_[i_] == ',') {
++        ++i_;
++        continue;
++      }
++      if (More() && s_[i_] == '}') {
++        ++i_;
++        return true;
++      }
++      return false;
++    }
++  }
++};
++
++// Why the selected pair table is not bound to its provenance, or "" when it is.
++std::string PairProvenanceProblem(const Table& table) {
++  const std::string suffix = ".g4dat";
++  if (table.file.size() <= suffix.size() || table.file.compare(table.file.size() - suffix.size(), suffix.size(), suffix) != 0) {
++    return "the table file is not a .g4dat file";
++  }
++  const std::string sibling = table.file.substr(0, table.file.size() - suffix.size()) + ".prov.json";
++  std::ifstream in(sibling, std::ios::binary);
++  if (!in) return "its provenance file " + sibling + " cannot be read";
++  std::ostringstream bytes;
++  bytes << in.rdbuf();
++  const std::string text = bytes.str();
++  const std::string* declared = table.Directive("SOURCEDIGEST");
++  if (declared == nullptr || *declared != Sha256Hex(text)) {
++    return "the SHA-256 of " + sibling + " is not the table's #SOURCEDIGEST";
++  }
++  std::vector<std::string> rows;
++  if (!G4MuonicDataOverlay::ProvenanceRowKeys(text, rows)) {
++    return "the provenance file " + sibling + " is not strict JSON with one rows object and unescaped keys";
++  }
++  std::vector<std::string> records;
++  for (const Table::Record& record : table.records) {
++    if (record.keys.size() != 2) return "a record does not carry the two keys Z and A";
++    records.push_back(std::to_string(record.keys[0]) + "-" + std::to_string(record.keys[1]));
++  }
++  std::sort(rows.begin(), rows.end());
++  std::sort(records.begin(), records.end());
++  if (rows != records || std::adjacent_find(rows.begin(), rows.end()) != rows.end()) {
++    return "its records are not the rows its provenance file admits";
++  }
++  return "";
++}
++
++// Select the bound-rate pair table of `profile`: it must exist, and its three value columns must be the
++// contiguous `tau q free_tau` with units `ns`, `1`, `ns`. False after a refusal.
++bool SelectPairs(State& state, const std::string& dir, const std::string& profile, const std::string& present) {
++  const Table* table = state.dataset.Find(profile, kPairTable);
++  if (table == nullptr) {
++    RefusePairs(state, "G4MuonicData004",
++                "G4MUONICDATA_D1_PAIR_PROFILE names '" + profile + "' but the dataset at " + dir +
++                    " carries no #TABLE " + kPairTable + " under that '#PROFILE'; the profiles present are: " + present);
++    return false;
++  }
++  Index first = 0;
++  for (G4int i = 0; i < 3; ++i) {
++    if (!CheckUnit(dir, *table, kPairColumns[i], kPairUnits[i])) {
++      state.refusal = "the bound-rate pair table at " + dir + " does not carry tau q free_tau in ns, 1, ns";
++      return false;
++    }
++    Index index = 0;
++    FindColumn(*table, kPairColumns[i], index);
++    if (i == 0) {
++      first = index;
++    } else if (index != first + static_cast<Index>(i)) {
++      RefusePairs(state, "G4MuonicData003", "dataset at " + dir + ": file " + table->file + ", #TABLE " + kPairTable +
++                                                " does not declare tau q free_tau as consecutive columns");
++      return false;
++    }
++  }
++  const std::string unbound = PairProvenanceProblem(*table);
++  if (!unbound.empty()) {
++    RefusePairs(state, "G4MuonicData005",
++                "dataset at " + dir + ": the bound-rate pair table " + table->file + " of the selected profile '" +
++                    profile + "' is refused: " + unbound);
++    return false;
++  }
++  state.pairs.table = table;
++  state.pairs.value = first;
++  state.pairs.count = 3;
++  state.pairs.convention = Assigned(*table, "VALIDITY", "A", ':');
++  return true;
++}
++
 +// Read the environment, discover and read the dataset, apply the semantic layer, and select the
 +// tables of each seam. Any refusal raises a FatalException; should an installed handler suppress
 +// the abort, the state is left with no tables, and a semantic refusal is recorded so that every
@@ -855,25 +1418,36 @@ index 0000000000..030ca9679a
 +  const std::string legacy = Variable("G4MUONICDATA_PROFILE");
 +  const Choice d1 = Choose("G4MUONICDATA_D1_PROFILE", legacy, G4MuonicDataTable::kParityProfile);
 +  const Choice d3 = Choose("G4MUONICDATA_D3_PROFILE", legacy, kCompiledProfile);
++  // The pair profile has its own variable and no legacy or default source: unset is `compiled`.
++  const std::string pairNamed = Variable("G4MUONICDATA_D1_PAIR_PROFILE");
++  const std::string pairProfile = pairNamed.empty() ? std::string(kCompiledProfile) : pairNamed;
 +  state.config.d1Profile = d1.profile;
 +  state.config.d3Profile = d3.profile;
++  state.config.d1PairProfile = pairProfile;
 +  const bool d1Compiled = d1.profile == kCompiledProfile;
 +  const bool d3Compiled = d3.profile == kCompiledProfile;
-+  if (d1Compiled && d3Compiled) return;  // no discovery and no I/O
++  const bool pairCompiled = pairProfile == kCompiledProfile;
++  if (d1Compiled && d3Compiled && pairCompiled) return;  // no discovery and no I/O
 +
 +  const char* found = G4FindDataDir("G4MUONICDATA");
++  // With a pair profile selected, a dataset that cannot be found or read is recorded as refused too, so that a
++  // suppressed abort never leaves the requested evaluated pairs replaced by the compiled-in code.
 +  if (found == nullptr) {
-+    Fatal("G4MuonicData001",
-+          "G4MuonicDataTable::Enable() was called but no dataset directory was found: G4MUONICDATA "
-+          "is unset and GEANT4_DATA_DIR resolved none. Export G4MUONICDATA=<directory holding "
-+          "the *.g4dat files>.");
++    const std::string text =
++        "G4MuonicDataTable::Enable() was called but no dataset directory was found: G4MUONICDATA "
++        "is unset and GEANT4_DATA_DIR resolved none. Export G4MUONICDATA=<directory holding "
++        "the *.g4dat files>.";
++    Fatal("G4MuonicData001", text);
++    if (!pairCompiled) state.refusal = text;
 +    return;
 +  }
 +  const std::string dir(found);
 +  try {
 +    state.dataset = G4MuonicDataTable::Load(dir);
 +  } catch (const G4MuonicDataTable::Error& e) {
-+    Fatal("G4MuonicData002", "dataset at " + dir + " rejected: " + e.what());
++    const std::string text = "dataset at " + dir + " rejected: " + e.what();
++    Fatal("G4MuonicData002", text);
++    if (!pairCompiled) state.refusal = text;
 +    return;
 +  }
 +  state.loaded = true;
@@ -907,6 +1481,16 @@ index 0000000000..030ca9679a
 +                                 dir + " declares that '#PROFILE'; the profiles present are: " + present);
 +    return;
 +  }
++  // A bound-rate pair profile is selected by its own variable only. Named by the variable that spans both
++  // seams, it would resolve to a capture seam with no table and fall back to the compiled-in capture code with
++  // no pair at all; that configuration is refused rather than silently compiled.
++  if (!legacy.empty() && legacy != kCompiledProfile && state.dataset.Find(legacy, kPairTable) != nullptr) {
++    RefusePairs(state, "G4MuonicData004",
++                "G4MUONICDATA_PROFILE names '" + legacy + "', a bound-rate pair profile of the dataset at " + dir +
++                    "; a pair profile is selected only by G4MUONICDATA_D1_PAIR_PROFILE");
++    return;
++  }
++  if (!pairCompiled && !SelectPairs(state, dir, pairProfile, present)) return;
 +
 +  if (!d1Compiled) {
 +    if (!Select(state, dir, d1.profile, kCaptureTable, state.capture)) return;
@@ -944,7 +1528,9 @@ index 0000000000..030ca9679a
 +}
 +
 +// A seam that ended with no table of its own -- because its profile carries none, or because the
-+// configuration was refused before it could be selected -- is the compiled-in code for that seam.
++// configuration was refused before it could be selected -- is the compiled-in code for that seam. The pair
++// profile is its own selection: resetting the capture seam to compiled leaves it, and its table, alone; a pair
++// profile that ended with no table is `compiled` too.
 +void Build(State& state) {
 +  BuildOrRefuse(state);
 +  if (state.capture.table == nullptr && state.zeff.table == nullptr) {
@@ -952,6 +1538,7 @@ index 0000000000..030ca9679a
 +    state.d1Evaluated = false;
 +  }
 +  if (state.kshell.table == nullptr && state.levels.table == nullptr) state.config.d3Profile = kCompiledProfile;
++  if (state.pairs.table == nullptr) state.config.d1PairProfile = kCompiledProfile;
 +}
 +
 +const State& Frozen() {
@@ -1035,6 +1622,7 @@ index 0000000000..030ca9679a
 +    Configuration configuration;
 +    configuration.d1Profile = kCompiledProfile;
 +    configuration.d3Profile = kCompiledProfile;
++    configuration.d1PairProfile = kCompiledProfile;
 +    return configuration;
 +  }();
 +  if (!G4MuonicDataTable::IsEnabled()) return off;
@@ -1049,6 +1637,21 @@ index 0000000000..030ca9679a
 +G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolveRate(G4int Z, G4int A) {
 +  const State* state = Access();
 +  return state == nullptr ? Off(Z, A) : Resolve(state->capture, state->config.d1Profile, Z, A);
++}
++
++G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolvePair(G4int Z, G4int A) {
++  const State* state = Access();
++  if (state == nullptr) {
++    Resolution off = Off(Z, A);
++    return off;
++  }
++  // Isotope keys only: a natural-composition request has no pair, and no other rung is consulted.
++  if (A <= 0) {
++    Resolution none = Off(Z, A);
++    none.profile = state->config.d1PairProfile;
++    return none;
++  }
++  return Resolve(state->pairs, state->config.d1PairProfile, Z, A);
 +}
 +
 +G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolveZeff(G4int Z) {
@@ -1120,12 +1723,19 @@ index 0000000000..030ca9679a
 +    }
 +  }
 +}
++
++bool G4MuonicDataOverlay::ProvenanceRowKeys(const std::string& text, std::vector<std::string>& keys) {
++  std::vector<std::string> rows;
++  if (!StrictJson(text).Rows(rows)) return false;
++  keys = rows;
++  return true;
++}
 diff --git a/source/particles/management/src/G4MuonicDataSemantics.cc b/source/particles/management/src/G4MuonicDataSemantics.cc
 new file mode 100644
-index 0000000000..2398be99b4
+index 0000000..57373ca
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicDataSemantics.cc
-@@ -0,0 +1,431 @@
+@@ -0,0 +1,500 @@
 +// G4MuonicDataSemantics -- implementation. See the header for what each code stands for.
 +//
 +// No value is ever rendered into a message: the reader parses numbers without consulting the
@@ -1137,6 +1747,7 @@ index 0000000000..2398be99b4
 +#include <cmath>
 +#include <cstddef>
 +#include <iterator>
++#include <limits>
 +#include <map>
 +#include <set>
 +#include <string>
@@ -1152,11 +1763,16 @@ index 0000000000..2398be99b4
 +const char* const kZeffTable = "muon_zeff";
 +const char* const kKShellTable = "k_shell_energy";
 +const char* const kLevelTable = "level_energy";
++// The evaluated bound-rate pair table: one primitive tuple (tau, q, free_tau) per isotope, from which both
++// stopped-muon routes form their capture and decay rates together when a pair profile is selected.
++const char* const kPairTable = "bound_rate_primitives";
 +const char* const kD1Seam = "d1_nuclear_capture";
 +const char* const kD3Seam = "d3_transitions";
 +const char* const kRateUnit = "1e6/s";
 +const char* const kZeffUnit = "dimensionless";
 +const char* const kEnergyUnit = "keV";
++const char* const kTimeUnit = "ns";
++const char* const kRatioUnit = "1";
 +// The `#VALIDITY` `A:` conventions this layer knows (FORMAT_SPEC.md section 6).
 +const char* const kListed = "listed";
 +const char* const kNatural = "natural_and_listed";
@@ -1288,19 +1904,27 @@ index 0000000000..2398be99b4
 +  } else if (name == kZeffTable) {
 +    columns.push_back("Z");
 +    columns.push_back("value");
++  } else if (name == kPairTable) {
++    columns.push_back("Z");
++    columns.push_back("A");
++    columns.push_back("tau");
++    columns.push_back("q");
++    columns.push_back("free_tau");
 +  }
 +  return columns;
 +}
 +
 +const char* SeamOf(const std::string& name) {
-+  if (name == kCaptureTable || name == kZeffTable) return kD1Seam;
++  if (name == kCaptureTable || name == kZeffTable || name == kPairTable) return kD1Seam;
 +  if (name == kKShellTable || name == kLevelTable) return kD3Seam;
 +  return "";
 +}
 +
-+const char* UnitOf(const std::string& name) {
++// The unit of one value column, by table: every column of a table but the pair table's shares one unit.
++const char* UnitOf(const std::string& name, const std::string& column) {
 +  if (name == kCaptureTable) return kRateUnit;
 +  if (name == kZeffTable) return kZeffUnit;
++  if (name == kPairTable) return column == "q" ? kRatioUnit : kTimeUnit;
 +  return kEnergyUnit;
 +}
 +
@@ -1353,8 +1977,6 @@ index 0000000000..2398be99b4
 +  const bool two_key = table.name != kZeffTable;
 +  // The non-key columns, in `#COLUMNS` order, are the record's floats.
 +  std::vector<std::string> values(expected.begin() + (two_key ? 2 : 1), expected.end());
-+  const char* const unit = UnitOf(table.name);
-+
 +  // ---- S004: the unit of every value column, as the lookups read it.
 +  std::map<std::string, std::string> units;
 +  const std::string units_problem = Assignments(Value(table, "UNITS"), '=', units);
@@ -1364,6 +1986,7 @@ index 0000000000..2398be99b4
 +    for (const std::string& column : values) {
 +      const std::map<std::string, std::string>::const_iterator at = units.find(column);
 +      const std::string assigned = at == units.end() ? std::string() : at->second;
++      const char* const unit = UnitOf(table.name, column);
 +      if (assigned != unit) {
 +        Add(issues, "S004", table,
 +            "#UNITS assigns " + Quote(column) + " the unit " + Quote(assigned) + "; the lookup reads it as " + Quote(unit));
@@ -1407,6 +2030,9 @@ index 0000000000..2398be99b4
 +    } else if (a->second != kListed && a->second != kNatural && a->second != kRepresentative) {
 +      Add(issues, "S003", table,
 +          "#VALIDITY assigns 'A:" + a->second + "', which is none of 'listed', '" + kNatural + "' and '" + kRepresentative + "'");
++    } else if (table.name == kPairTable && a->second != kListed) {
++      Add(issues, "S003", table,
++          "#VALIDITY assigns 'A:" + a->second + "'; " + kPairTable + " carries isotope keys only ('A:listed')");
 +    } else {
 +      convention = a->second;
 +    }
@@ -1438,6 +2064,7 @@ index 0000000000..2398be99b4
 +  // ---- S005: the value domain of each quantity.
 +  const std::size_t level_values = table.name == kLevelTable ? values.size() / 2 : 0;
 +  bool reported_finite = false, reported_positive = false, reported_uncertainty = false, reported_zeff = false;
++  bool reported_pair = false;
 +  for (const Table::Record& record : table.records) {
 +    if (record.floats.size() != values.size()) continue;
 +    for (std::size_t i = 0; i < record.floats.size(); ++i) {
@@ -1469,6 +2096,18 @@ index 0000000000..2398be99b4
 +      if (!reported_positive && !(v > 0.)) {
 +        Add(issues, "S005", table, "row " + Key(record.keys) + " column " + Quote(values[i]) + " is not positive");
 +        reported_positive = true;
++      }
++    }
++    // The pair tuple's domain is the consumer transform (BoundPairProblem); the primitives' finiteness and
++    // sign are the generic rules above.
++    if (table.name == kPairTable && !reported_pair && record.floats.size() == 3) {
++      const double tau = record.floats[0], q = record.floats[1], free_tau = record.floats[2];
++      if (std::isfinite(tau) && std::isfinite(q) && std::isfinite(free_tau) && tau > 0. && free_tau > 0.) {
++        double capture = 0., decay = 0.;
++        if (const char* why = G4MuonicDataSemantics::BoundPairProblem(tau, q, free_tau, capture, decay)) {
++          Add(issues, "S005", table, "row " + Key(record.keys) + ": " + why);
++          reported_pair = true;
++        }
 +      }
 +    }
 +  }
@@ -1557,9 +2196,49 @@ index 0000000000..2398be99b4
 +  }
 +  return issues;
 +}
++
++const char* G4MuonicDataSemantics::BoundPairProblem(double tau, double q, double free_tau, double& capture,
++                                                    double& decay) {
++  if (!(std::isfinite(tau) && tau > 0. && std::isfinite(free_tau) && free_tau > 0.)) {
++    return "tau or free_tau is not finite and positive";
++  }
++  if (!(std::isfinite(q) && q > 0. && q <= 1.)) return "q is outside (0, 1]";
++  const double d = q / free_tau;
++  if (!(std::isfinite(d) && d > 0. && d <= 1. / free_tau)) {
++    return "the decay rate q/free_tau is outside (0, 1/free_tau]";
++  }
++  const double total = 1. / tau;
++  if (!std::isfinite(total)) return "the rate 1/tau is not finite";
++  const double c = total - d;
++  if (!(std::isfinite(c) && c >= 0.)) return "the capture rate 1/tau - q/free_tau is negative or not finite";
++  const double rate = c + d;
++  if (!(std::isfinite(rate) && rate > 0.)) return "the total rate capture + decay is not finite and positive";
++  const double lifetime = 1. / rate;
++  if (!(std::isfinite(lifetime) && lifetime > 0.)) {
++    return "the consumer lifetime 1/(capture + decay) is not finite and positive";
++  }
++  const double probability = c / rate;
++  if (!(probability >= 0. && probability <= 1.)) return "the capture probability is outside [0, 1]";
++  const double decay_lifetime = 1. / d;
++  if (!std::isfinite(decay_lifetime)) return "the decay partial lifetime 1/decay is not finite";
++  const double capture_lifetime = c > 0. ? 1. / c : std::numeric_limits<double>::infinity();
++  if (c > 0. && !std::isfinite(capture_lifetime)) {
++    return "the capture partial lifetime 1/capture of a positive capture rate is not finite";
++  }
++  const double read_back = 1. / capture_lifetime + 1. / decay_lifetime;
++  if (!(std::isfinite(read_back) && read_back > 0.)) {
++    return "the rates read back from the partial lifetimes are not finite and positive";
++  }
++  if (!(std::isfinite(kExponentialVariateMax * lifetime) && std::isfinite(kExponentialVariateMax / rate))) {
++    return "a sampled waiting time can overflow";
++  }
++  capture = c;
++  decay = d;
++  return nullptr;
++}
 diff --git a/source/particles/management/src/G4MuonicDataTable.cc b/source/particles/management/src/G4MuonicDataTable.cc
 new file mode 100644
-index 0000000000..3ed962e43b
+index 0000000..3ed962e
 --- /dev/null
 +++ b/source/particles/management/src/G4MuonicDataTable.cc
 @@ -0,0 +1,651 @@

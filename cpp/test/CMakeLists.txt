@@ -406,13 +406,254 @@ g4muonicdata_target_options(g4muonicdata_overlay_check)
 # same stand-in headers: current static limit and recoil slope, change from the historical oracle;
 # its switch, its freeze and its domain; and each input it refuses. One process per
 # mode, because the switch freezes at the first consultation.
-add_executable(g4muonicdata_bound_rate_check bound_rate_check.cc ../src/G4MuonicBoundRateProvider.cc)
+add_executable(g4muonicdata_bound_rate_check bound_rate_check.cc ../src/G4MuonicBoundRateProvider.cc
+               ../src/G4MuonicDataOverlay.cc)
 target_include_directories(g4muonicdata_bound_rate_check BEFORE PRIVATE g4stub ../include)
+target_link_libraries(g4muonicdata_bound_rate_check PRIVATE g4muonicdatatable)
 g4muonicdata_target_options(g4muonicdata_bound_rate_check)
 add_test(NAME bound_rates_legacy_delta
          COMMAND g4muonicdata_bound_rate_check oracle-delta "${G4MUONICDATA_D1_DIR}/d1_decay_rate.oracle")
 foreach(mode current disabled enabled refuse)
   add_test(NAME bound_rates_${mode} COMMAND g4muonicdata_bound_rate_check ${mode})
+endforeach()
+
+# The evaluated pair table over the assembled dataset: the pair profile, read by its own variable, answers its
+# key in either option order and leaves the capture profile and other keys alone; selected with the D1 and D3
+# profiles both `compiled` it is still read (the no-I/O case includes the pair choice); at `compiled` the pair
+# is the formula pair; without the switch, or named by the legacy variable, or naming a profile with no pair
+# table, or over a malformed or empty pair table, it is refused and then answers nothing.
+file(GLOB G4MUONICDATA_PAIR_FILES "${G4MUONICDATA_D1_DIR}/d1_bound_rate.*.g4dat")
+list(LENGTH G4MUONICDATA_PAIR_FILES G4MUONICDATA_PAIR_COUNT)
+if(NOT G4MUONICDATA_PAIR_COUNT EQUAL 1)
+  message(FATAL_ERROR "the pair cases need exactly one d1_bound_rate.*.g4dat, found ${G4MUONICDATA_PAIR_COUNT}")
+endif()
+list(GET G4MUONICDATA_PAIR_FILES 0 G4MUONICDATA_PAIR_FILE)
+get_filename_component(G4MUONICDATA_PAIR_NAME "${G4MUONICDATA_PAIR_FILE}" NAME)
+file(STRINGS "${G4MUONICDATA_PAIR_FILE}" pair_header REGEX "^#PROFILE[ \t]+")
+string(REGEX REPLACE "^#PROFILE[ \t]+" "" G4MUONICDATA_PAIR_PROFILE "${pair_header}")
+set(PAIR_ENV "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}" "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}")
+add_test(NAME bound_rates_pair COMMAND ${CMAKE_COMMAND} -E env ${PAIR_ENV}
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair)
+add_test(NAME bound_rates_pair_order COMMAND ${CMAKE_COMMAND} -E env ${PAIR_ENV}
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-order)
+add_test(NAME bound_rates_pair_short_circuit COMMAND ${CMAKE_COMMAND} -E env ${PAIR_ENV}
+         "G4MUONICDATA_D1_PROFILE=compiled" "G4MUONICDATA_D3_PROFILE=compiled"
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair)
+add_test(NAME bound_rates_pair_compiled COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}"
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-compiled)
+add_test(NAME bound_rates_pair_switch_off COMMAND ${CMAKE_COMMAND} -E env ${PAIR_ENV}
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-switch-off)
+add_test(NAME bound_rates_pair_legacy COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}"
+         "G4MUONICDATA_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-config-refused G4MuonicData004)
+add_test(NAME bound_rates_pair_without_table COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${G4MUONICDATA_DATASET_DIR}"
+         "G4MUONICDATA_D1_PAIR_PROFILE=parity"
+         $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-config-refused G4MuonicData004)
+file(READ "${G4MUONICDATA_PAIR_FILE}" pair_member)
+string(REGEX MATCH "\n[0-9][^\n]*\n" pair_record "${pair_member}")
+if(pair_record STREQUAL "")
+  message(FATAL_ERROR "${G4MUONICDATA_PAIR_NAME} has no record line")
+endif()
+string(REGEX REPLACE "^\n([0-9]+ +[0-9]+ +[^ ]+ +)[^ ]+( +[^ ]+\n)$" "\n\\11.5\\2" pair_bad_q "${pair_record}")
+foreach(case IN ITEMS bad_q no_row)
+  set(dir "${CMAKE_BINARY_DIR}/pair_${case}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  if(case STREQUAL "bad_q")
+    string(REPLACE "${pair_record}" "${pair_bad_q}" member "${pair_member}")
+  else()
+    string(REPLACE "${pair_record}" "\n" member "${pair_member}")
+  endif()
+  if(member STREQUAL pair_member)
+    message(FATAL_ERROR "the ${case} pair case did not change ${G4MUONICDATA_PAIR_NAME}")
+  endif()
+  g4muonicdata_write_member("${dir}" "${G4MUONICDATA_PAIR_NAME}" "${member}")
+  add_test(NAME bound_rates_pair_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}"
+           "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+           $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-config-refused G4MuonicData005)
+endforeach()
+
+# The rates a consumer forms are validated as well as the primitives: a decay rate that underflows to zero and a
+# reciprocal 1/tau that overflows are refused at load. The selected profile is bound to its provenance: a record
+# key substituted, moved to another valid key, or removed while another row remains, a missing or altered
+# provenance file, are each refused, and every later lookup throws. A dataset the reader rejects while a pair profile
+# is selected is recorded as refused too. An unselected malformed pair table still refuses the data-on load.
+string(REGEX REPLACE "^\n([0-9]+) +([0-9]+) +([^ ]+) +([^ ]+) +([^ ]+)\n$" "\\1;\\2;\\3;\\4;\\5" pair_fields "${pair_record}")
+list(GET pair_fields 2 pair_tau)
+list(GET pair_fields 3 pair_q)
+list(GET pair_fields 4 pair_free)
+set(G4MUONICDATA_PAIR_PROV "${G4MUONICDATA_D1_DIR}/d1_bound_rate.${G4MUONICDATA_PAIR_PROFILE}.prov.json")
+if(NOT EXISTS "${G4MUONICDATA_PAIR_PROV}")
+  message(FATAL_ERROR "the pair cases need ${G4MUONICDATA_PAIR_PROV}")
+endif()
+string(REGEX MATCH "#VALIDITY +Z:[0-9]+-[0-9]+" pair_validity "${pair_member}")
+foreach(case IN ITEMS underflow overflow substituted moved removed_other missing_provenance altered_provenance
+        unselected_bad_q unreadable)
+  set(dir "${CMAKE_BINARY_DIR}/pair_${case}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  set(member "${pair_member}")
+  set(code G4MuonicData005)
+  set(selector "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}")
+  set(check pair-config-refused)
+  if(case STREQUAL "underflow")
+    string(REPLACE "${pair_record}" "\n13 27 ${pair_tau} 1e-300 1e100\n" member "${pair_member}")
+    set(check pair-row-refused)
+    set(code "G4MuonicData005,G4MuonicBoundRates001")
+  elseif(case STREQUAL "overflow")
+    string(REPLACE "${pair_record}" "\n13 27 1e-310 ${pair_q} ${pair_free}\n" member "${pair_member}")
+  elseif(case STREQUAL "substituted")
+    string(REPLACE "${pair_record}" "\n13 28 ${pair_tau} ${pair_q} ${pair_free}\n" member "${pair_member}")
+  elseif(case STREQUAL "moved")
+    string(REPLACE "${pair_record}" "\n12 24 ${pair_tau} ${pair_q} ${pair_free}\n" member "${pair_member}")
+    string(REPLACE "${pair_validity}" "#VALIDITY     Z:12-12" member "${member}")
+  elseif(case STREQUAL "removed_other")
+    string(REPLACE "${pair_record}" "\n12 24 1065.5 0.9947 ${pair_free}\n" member "${pair_member}")
+    string(REPLACE "${pair_validity}" "#VALIDITY     Z:12-13" member "${member}")
+  elseif(case STREQUAL "missing_provenance")
+    file(REMOVE "${dir}/d1_bound_rate.${G4MUONICDATA_PAIR_PROFILE}.prov.json")
+  elseif(case STREQUAL "altered_provenance")
+    file(APPEND "${dir}/d1_bound_rate.${G4MUONICDATA_PAIR_PROFILE}.prov.json" " ")
+  elseif(case STREQUAL "unreadable")
+    string(REPLACE "${pair_record}" "\n13 27 ${pair_tau} not-a-number ${pair_free}\n" member "${pair_member}")
+    set(code G4MuonicData002)
+  elseif(case STREQUAL "unselected_bad_q")
+    string(REPLACE "${pair_record}" "${pair_bad_q}" member "${pair_member}")
+    set(selector "G4MUONICDATA_D1_PAIR_PROFILE=compiled")
+  endif()
+  if(NOT case MATCHES "provenance" AND member STREQUAL pair_member)
+    message(FATAL_ERROR "the ${case} pair case did not change ${G4MUONICDATA_PAIR_NAME}")
+  endif()
+  if(NOT case MATCHES "provenance")
+    g4muonicdata_write_member("${dir}" "${G4MUONICDATA_PAIR_NAME}" "${member}")
+  endif()
+  add_test(NAME bound_rates_pair_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}" "${selector}"
+           $<TARGET_FILE:g4muonicdata_bound_rate_check> ${check} ${code})
+endforeach()
+
+# The consumer transform (G4MuonicDataSemantics::BoundPairProblem): all-normal primitives whose consumer lifetime
+# 1/(capture + decay) is infinite, a decay partial lifetime 1/decay that overflows, a positive capture rate whose
+# 1/capture overflows, and the first lifetime whose sampled waiting time can overflow are each refused, and every
+# later lookup throws; zero capture is admitted with capture exactly 0.
+foreach(case IN ITEMS consumer_lifetime decay_lifetime capture_lifetime waiting_time zero_capture)
+  set(dir "${CMAKE_BINARY_DIR}/pair_transform_${case}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  set(check pair-row-refused "G4MuonicData005,G4MuonicBoundRates001")
+  if(case STREQUAL "consumer_lifetime")
+    set(tuple "1.7976931348623157e+308 0.5 1.7976931348623157e+308")
+  elseif(case STREQUAL "decay_lifetime")
+    set(tuple "${pair_tau} 0.5 1.7976931348623157e+308")
+  elseif(case STREQUAL "capture_lifetime")
+    set(tuple "9.999999999999997e+292 1 1e+293")
+  elseif(case STREQUAL "waiting_time")
+    set(tuple "2.4130109192782763e+305 1 2.4130109192782763e+305")
+  else()
+    set(tuple "${pair_free} 1 ${pair_free}")
+    set(check pair-zero-capture)
+  endif()
+  string(REPLACE "${pair_record}" "\n13 27 ${tuple}\n" member "${pair_member}")
+  g4muonicdata_write_member("${dir}" "${G4MUONICDATA_PAIR_NAME}" "${member}")
+  add_test(NAME bound_rates_pair_transform_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}"
+           "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+           $<TARGET_FILE:g4muonicdata_bound_rate_check> ${check})
+endforeach()
+
+# Differential checks against independent statements, each over a boundary and a seeded random corpus: the
+# compiled consumer transform against a simulation of what the consumers compute, and the compiled provenance
+# reader against Python's json module (its only permitted differences are documented intended refusals).
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_Interpreter_FOUND)
+  add_test(NAME pair_transform_differential
+           COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/check_pair_transform.py"
+                   $<TARGET_FILE:g4muonicdata_bound_rate_check>)
+  add_test(NAME provenance_reader_differential
+           COMMAND Python3::Interpreter "${CMAKE_CURRENT_SOURCE_DIR}/check_provenance_reader.py"
+                   $<TARGET_FILE:g4muonicdata_bound_rate_check> "${G4MUONICDATA_PAIR_PROV}"
+                   "${G4MUONICDATA_REPO_ROOT}/tests/fixtures/provenance_reader"
+                   "${CMAKE_BINARY_DIR}/provenance_reader_corpus")
+else()
+  # Registered as a failure, not omitted: a missing interpreter must not read as a passing check.
+  add_test(NAME pair_transform_differential_no_python COMMAND ${CMAKE_COMMAND} -E false)
+endif()
+
+# The provenance file re-sealed under a recomputed #SOURCEDIGEST, so that the reader of its rows object is drilled
+# behind the digest check: an empty, list-typed or absent rows record, a duplicated row key or rows object, an extra
+# row the table lacks, and a truncated file each refuse; a whitespace re-wrap of the same record is accepted.
+file(READ "${G4MUONICDATA_PAIR_PROV}" pair_prov)
+string(REGEX MATCH "#SOURCEDIGEST +[0-9a-f]+" pair_digest_line "${pair_member}")
+set(rows_open "\"rows\": {")
+foreach(case IN ITEMS wrapping empty list absent duplicate_key duplicate_object extra truncated)
+  set(dir "${CMAKE_BINARY_DIR}/pair_resealed_${case}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  set(prov "${pair_prov}")
+  set(check pair-config-refused G4MuonicData005)
+  if(case STREQUAL "wrapping")
+    set(prov "  ${pair_prov}\n")
+    set(check pair)
+  elseif(case STREQUAL "empty")
+    string(REPLACE "${rows_open}" "\"rows\": {}, \"withheld\": {" prov "${pair_prov}")
+  elseif(case STREQUAL "list")
+    string(REPLACE "${rows_open}" "\"rows\": [], \"withheld\": {" prov "${pair_prov}")
+  elseif(case STREQUAL "absent")
+    string(REPLACE "${rows_open}" "\"withheld\": {" prov "${pair_prov}")
+  elseif(case STREQUAL "duplicate_key")
+    string(REPLACE "${rows_open}" "${rows_open}\"13-27\": {}, " prov "${pair_prov}")
+  elseif(case STREQUAL "duplicate_object")
+    string(REPLACE "${rows_open}" "\"rows\": {\"13-27\": {}}, ${rows_open}" prov "${pair_prov}")
+  elseif(case STREQUAL "extra")
+    string(REPLACE "${rows_open}" "${rows_open}\"12-24\": {}, " prov "${pair_prov}")
+  elseif(case STREQUAL "truncated")
+    string(LENGTH "${pair_prov}" length)
+    math(EXPR length "${length} - 3")
+    string(SUBSTRING "${pair_prov}" 0 ${length} prov)
+  endif()
+  if(prov STREQUAL pair_prov OR pair_digest_line STREQUAL "")
+    message(FATAL_ERROR "the re-sealed ${case} case did not change the provenance file")
+  endif()
+  set(prov_file "${dir}/d1_bound_rate.${G4MUONICDATA_PAIR_PROFILE}.prov.json")
+  file(WRITE "${prov_file}" "${prov}")
+  file(SHA256 "${prov_file}" digest)
+  string(REPLACE "${pair_digest_line}" "#SOURCEDIGEST ${digest}" member "${pair_member}")
+  g4muonicdata_write_member("${dir}" "${G4MUONICDATA_PAIR_NAME}" "${member}")
+  add_test(NAME bound_rates_pair_resealed_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}"
+           "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+           $<TARGET_FILE:g4muonicdata_bound_rate_check> ${check})
+endforeach()
+
+# The same, for documents that are not strict JSON or spell a key with an escape: the exact fixtures that bound
+# another roster through decoded keys, an invalid escape and an invalid literal in a value, and an escaped
+# metadata key. Each is refused at load after its digest is recomputed, and every later lookup throws.
+set(G4MUONICDATA_READER_FIXTURES "${G4MUONICDATA_REPO_ROOT}/tests/fixtures/provenance_reader")
+foreach(case IN ITEMS escape_decoy metadata_decoy missing_actual_rows invalid_escape invalid_literal escaped_key)
+  set(dir "${CMAKE_BINARY_DIR}/pair_resealed_${case}")
+  file(REMOVE_RECURSE "${dir}")
+  file(COPY ${G4MUONICDATA_DATASET_MEMBERS} DESTINATION "${dir}")
+  if(case STREQUAL "escape_decoy")
+    file(READ "${G4MUONICDATA_READER_FIXTURES}/escape-decoy.prov.json" prov)
+  elseif(case STREQUAL "metadata_decoy")
+    file(READ "${G4MUONICDATA_READER_FIXTURES}/full-generated-metadata-decoy.prov.json" prov)
+  elseif(case STREQUAL "missing_actual_rows")
+    file(READ "${G4MUONICDATA_READER_FIXTURES}/missing-actual-rows.prov.json" prov)
+  elseif(case STREQUAL "invalid_escape")
+    string(REPLACE "\"G4MuonicData\"" "\"G4Muonic\\qData\"" prov "${pair_prov}")
+  elseif(case STREQUAL "invalid_literal")
+    string(REPLACE "\"G4MuonicData\"" "tru" prov "${pair_prov}")
+  else()
+    string(REPLACE "\"dataset\"" "\"d\\u0061taset\"" prov "${pair_prov}")
+  endif()
+  if(prov STREQUAL pair_prov OR prov STREQUAL "")
+    message(FATAL_ERROR "the re-sealed ${case} case did not change the provenance file")
+  endif()
+  set(prov_file "${dir}/d1_bound_rate.${G4MUONICDATA_PAIR_PROFILE}.prov.json")
+  file(WRITE "${prov_file}" "${prov}")
+  file(SHA256 "${prov_file}" digest)
+  string(REPLACE "${pair_digest_line}" "#SOURCEDIGEST ${digest}" member "${pair_member}")
+  g4muonicdata_write_member("${dir}" "${G4MUONICDATA_PAIR_NAME}" "${member}")
+  add_test(NAME bound_rates_pair_resealed_${case} COMMAND ${CMAKE_COMMAND} -E env "G4MUONICDATA=${dir}"
+           "G4MUONICDATA_D1_PAIR_PROFILE=${G4MUONICDATA_PAIR_PROFILE}"
+           $<TARGET_FILE:g4muonicdata_bound_rate_check> pair-row-refused G4MuonicData005)
 endforeach()
 
 # Every key and token below is read from the shipped files at configure time.

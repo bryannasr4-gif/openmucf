@@ -539,6 +539,31 @@ def render_section(root: Path) -> str:
         "local time the cascade model gives it, so it comes before the capture.",
         f"Physical accuracy: {theory['status']}; {theory['accuracy']}. The admitted roster is empty, so the "
         f"accuracy screen is {theory['screen']} (`bound_rates_theory.json`).",
+        "",
+        "### 14.4 Evaluated pair rows",
+        "",
+        "The dataset carries a third kind of table, `bound_rate_primitives`, under the profile `evaluated-bound` "
+        "(`d1_bound_rate.evaluated-bound.g4dat` and its provenance file): a tuple `(tau, q, free_tau)` for each "
+        "admitted isotope, `tau` and `free_tau` in ns and `q` dimensionless, from which a consumer forms both rates "
+        "together: the decay rate `q/free_tau`, and the capture rate, the inverse of `tau` less the decay rate. The "
+        "admitted roster is aluminium alone; oxygen and carbon are evaluated as decay factors only and get no row. "
+        "`tau` is the late-time lifetime Mizuno et al. (2025) fit for their self-supported plate (section 9) and `q` "
+        "the evaluated decay factor; the evaluation, its regions and its decisions are in "
+        "`bound_rate_evaluation.json`, generated and checked by `scripts/generate_g4evaluated_rates.py`, and the page "
+        "[`docs/evaluated-bound-rates.md`](docs/evaluated-bound-rates.md) renders them.",
+        "",
+        "With the dataset option on, the loader parses and validates every table. Both switches and the pair-profile selection are required to use an evaluated row. `G4MUONICDATA_D1_PAIR_PROFILE` names the pair profile, independently of "
+        "`G4MUONICDATA_D1_PROFILE`, and with the dataset opt-in and the common-rate option above on a key the table "
+        "holds takes the pair on both stopped-muon routes. Other keys retain the selected capture profile and the existing route-specific formula or fallback. "
+        "`cpp/patches/README.md` lists what is refused. The empty admitted roster above concerns "
+        "the common formula, not the pair.",
+        "",
+        "What the evaluation decides, under its evaluator-assessed regions: the late lifetime and the decay rate meet "
+        "provisional budgets (conditional; the late-lifetime decision has no validation power, because the delivered "
+        "lifetime is the source's own), and the stopped mean and the capture probability are not established: the "
+        "hyperfine capture contrast is unresolved. On the atomic route the pair robustly improves the late lifetime "
+        "over the stock pair; no other improvement over stock is established. The comparison of section 12 restates "
+        "the pair's rows under its profile. The pair is not an independent measurement of the capture branching.",
     ]
     return "\n".join(lines) + "\n"
 

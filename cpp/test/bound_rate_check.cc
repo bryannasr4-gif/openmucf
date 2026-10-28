@@ -1,7 +1,12 @@
 // Standalone current-provider checks with g4stub headers. Each mode is a fresh process.
 // current checks static limit and independent linear slopes; oracle-delta compares the change from
 // the archived legacy getter, not equality to it. disabled/enabled/refuse check the unchanged switch,
-// domain, forwarding and fatal/untouched-output contracts. No Geant4 or physical-accuracy claim.
+// domain, forwarding and fatal/untouched-output contracts. The pair modes run the real overlay over a
+// dataset directory (G4MUONICDATA): pair/pair-order check the evaluated row's precedence, its exact pair
+// and the untouched keys in either option order; pair-compiled checks the pair selector at `compiled`;
+// pair-switch-off checks the refusal of a pair profile without the switch; pair-config-refused checks that
+// a refused pair configuration raises its code and then answers nothing. The G4Exception stand-in records
+// a code and returns, as a handler that suppresses the abort would. No Geant4 or physical-accuracy claim.
 
 #include <cmath>
 #include <cstdio>
@@ -11,6 +16,7 @@
 #include <limits>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -19,6 +25,9 @@
 #include "G4Exception.hh"
 #include "G4MuonicAtomHelper.hh"
 #include "G4MuonicBoundRateProvider.hh"
+#include "G4MuonicDataOverlay.hh"
+#include "G4MuonicDataSemantics.hh"
+#include "G4MuonicDataTable.hh"
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
 
@@ -278,7 +287,255 @@ int Refuse() {
   return 0;
 }
 
+// The evaluated row of the dataset's pair table, read with the reader alone: (Z, A, tau, q, free_tau).
+struct Row {
+  int z = 0, a = 0;
+  double tau = 0., q = 0., free_tau = 0.;
+};
+
+Row PairRow() {
+  const char* dir = std::getenv("G4MUONICDATA");
+  const char* profile = std::getenv("G4MUONICDATA_D1_PAIR_PROFILE");
+  Row row;
+  if (dir == nullptr || profile == nullptr) {
+    Expect(false, "G4MUONICDATA and G4MUONICDATA_D1_PAIR_PROFILE must be set");
+    return row;
+  }
+  const G4MuonicDataTable dataset = G4MuonicDataTable::Load(dir);
+  const G4MuonicDataTable::Table* table = dataset.Find(profile, "bound_rate_primitives");
+  Expect(table != nullptr && !table->records.empty(), "the dataset carries no pair row");
+  if (table == nullptr || table->records.empty()) return row;
+  const auto& record = table->records.front();
+  row.z = static_cast<int>(record.keys[0]);
+  row.a = static_cast<int>(record.keys[1]);
+  row.tau = record.floats[0];
+  row.q = record.floats[1];
+  row.free_tau = record.floats[2];
+  return row;
+}
+
+bool Contains(const std::string& text, const std::string& part) { return text.find(part) != std::string::npos; }
+
+// The pair row answers both rates, exactly; another key keeps the formula pair and its capture resolver;
+// a natural-composition request has no pair; the capture profile's own table is still read.
+int Pair(bool dataFirst) {
+  if (dataFirst) {
+    G4MuonicDataTable::Enable();
+    G4MuonicDataOverlay::Initialize();
+    P::Enable();
+  } else {
+    P::Enable();
+    G4MuonicDataTable::Enable();
+    G4MuonicDataOverlay::Initialize();
+  }
+  const Row row = PairRow();
+  const std::string profile = std::getenv("G4MUONICDATA_D1_PAIR_PROFILE");
+  Expect(G4MuonicDataOverlay::Config().d1PairProfile == profile, "the overlay did not select the pair profile");
+  G4MuonicBoundRates r;
+  const int calls = g_resolver_calls;
+  const P::Status s = P::Rates(row.z, row.a, kMu, Mass(row.a), r);
+  Expect(s == P::Status::kCommon, std::string("the pair key returned ") + Name(s));
+  const double decay = row.q / row.free_tau;
+  const double capture = 1. / row.tau - decay;
+  Expect(SameBits(r.decay, decay), "pair decay " + Hex(r.decay) + " is not q/free_tau " + Hex(decay));
+  Expect(SameBits(r.capture, capture), "pair capture " + Hex(r.capture) + " is not 1/tau - q/free_tau " + Hex(capture));
+  Expect(std::fabs((r.capture + r.decay) * row.tau - 1.) <= 1e-15, "the pair does not sum to 1/tau");
+  Expect(g_resolver_calls == calls, "the pair key consulted the capture resolver");
+  const std::string described = P::Describe(row.z, row.a);
+  Expect(Contains(described, "answer=pair-row row=" + std::to_string(row.z) + "-" + std::to_string(row.a)) &&
+             Contains(described, "pair_profile=" + profile) && Contains(described, "q_convention=evaluated:"),
+         "readout of the pair key: " + described);
+  std::printf("DESCRIBE %s\n", described.c_str());
+  // another key in the formula domain keeps the formula pair
+  const int other_z = row.z == 12 ? 11 : 12, other_a = 2 * other_z;
+  g_planted[{other_z, other_a}] = 4.8e-4;
+  G4MuonicBoundRates o;
+  const int calls_other = g_resolver_calls;
+  Expect(P::Rates(other_z, other_a, kMu, Mass(other_a), o) == P::Status::kCommon, "the formula key was not answered");
+  Expect(g_resolver_calls == calls_other + 1 && SameBits(o.capture, 4.8e-4), "the formula key lost its capture");
+  Expect(SameBits(o.decay, P::LowZDecayRate(other_z, kMu, Mass(other_a))), "the formula key lost its decay");
+  const std::string other = P::Describe(other_z, other_a);
+  Expect(Contains(other, "answer=common-formula") && Contains(other, "fallback=formula-no-pair-row"),
+         "readout of the formula key: " + other);
+  std::printf("DESCRIBE %s\n", other.c_str());
+  // no natural-composition alias
+  G4MuonicBoundRates n;
+  n.capture = -1.;
+  Expect(P::Rates(row.z, 0, kMu, Mass(row.a), n) == P::Status::kUnsupported && n.capture == -1.,
+         "a natural-composition request reached the pair");
+  Expect(G4MuonicDataOverlay::ResolvePair(row.z, 0).values == nullptr, "ResolvePair answered A = 0");
+  // the capture profile is not replaced: its table still answers its own keys (a `compiled` capture seam
+  // has no table to answer from)
+  const std::string capture_profile = G4MuonicDataOverlay::Config().d1Profile;
+  const G4MuonicDataOverlay::Resolution capture_row = G4MuonicDataOverlay::ResolveRate(row.z, row.a);
+  if (capture_profile == "compiled") {
+    Expect(capture_row.values == nullptr, "a compiled capture seam answered from a table");
+  } else {
+    Expect(capture_row.values != nullptr && capture_row.profile == capture_profile,
+           "the capture profile's own row is no longer answered under the pair profile");
+  }
+  Expect(g_codes.empty(), "a valid pair configuration raised a code");
+  return 0;
+}
+
+// The pair selector at `compiled`: the formula pair, exactly as without the dataset's pair table.
+int PairCompiled() {
+  P::Enable();
+  G4MuonicDataTable::Enable();
+  G4MuonicDataOverlay::Initialize();
+  Expect(G4MuonicDataOverlay::Config().d1PairProfile == "compiled", "the pair selector is not compiled");
+  g_planted[{13, 27}] = 6.985e-4;
+  G4MuonicBoundRates r;
+  Expect(P::Rates(13, 27, kMu, Mass(27), r) == P::Status::kCommon, "the formula key was not answered");
+  Expect(SameBits(r.capture, 6.985e-4) && SameBits(r.decay, P::LowZDecayRate(13, kMu, Mass(27))),
+         "with the pair selector compiled the pair is not the formula pair");
+  const std::string described = P::Describe(13, 27);
+  Expect(Contains(described, "pair_profile=compiled") && Contains(described, "fallback=none"), described);
+  std::printf("DESCRIBE %s\n", described.c_str());
+  Expect(g_codes.empty(), "the compiled pair selector raised a code");
+  return 0;
+}
+
+// A pair profile with the switch off: refused at the first consultation, and every later one throws.
+int PairSwitchOff() {
+  G4MuonicDataTable::Enable();
+  G4MuonicDataOverlay::Initialize();
+  for (int attempt = 0; attempt < 2; ++attempt) {
+    bool threw = false;
+    try {
+      P::Consult();
+    } catch (const std::runtime_error&) {
+      threw = true;
+    }
+    Expect(threw, "a consultation with the switch off and a pair profile did not refuse");
+  }
+  Expect(g_codes == std::vector<std::string>{"G4MuonicBoundRates003"}, "the refusal did not raise 003 once");
+  return 0;
+}
+
+// Zero capture (tau = free_tau, q = 1): admitted; the provider gives capture exactly 0 and decay 1/free_tau,
+// on every call.
+int PairZeroCapture() {
+  G4MuonicDataTable::Enable();
+  G4MuonicDataOverlay::Initialize();
+  P::Enable();
+  const G4MuonicDataOverlay::Resolution row = G4MuonicDataOverlay::ResolvePair(13, 27);
+  Expect(row.values != nullptr && row.values[1] == 1. && row.values[0] == row.values[2],
+         "the zero-capture row is not tau = free_tau, q = 1");
+  if (row.values == nullptr) return 0;
+  for (int attempt = 0; attempt < 2; ++attempt) {
+    G4MuonicBoundRates r;
+    const P::Status s = P::Rates(13, 27, kMu, Mass(27), r);
+    Expect(s == P::Status::kCommon && r.capture == 0. && r.decay == 1. / (row.values[2] * ns),
+           "zero capture is not answered as capture 0 and decay 1/free_tau");
+  }
+  Expect(g_codes.empty(), "zero capture raised an exception");
+  return 0;
+}
+
+// A refused pair configuration: its code is raised, and afterwards the provider answers nothing.
+int PairConfigRefused(const std::string& code) {
+  G4MuonicDataTable::Enable();
+  bool threw = false;
+  try {
+    G4MuonicDataOverlay::Initialize();
+  } catch (const std::runtime_error&) {
+    threw = true;
+  }
+  Expect(threw, "the refused configuration did not throw after the suppressed abort");
+  Expect(!g_codes.empty() && g_codes.front() == code, "the refused configuration raised " +
+                                                          (g_codes.empty() ? std::string("nothing") : g_codes.front()));
+  P::Enable();
+  G4MuonicBoundRates r;
+  r.capture = -1.;
+  bool answered = false;
+  try {
+    P::Rates(13, 27, kMu, Mass(27), r);
+    answered = true;
+  } catch (const std::runtime_error&) {
+  }
+  Expect(!answered && r.capture == -1., "a refused pair configuration still answered a rate pair");
+  return 0;
+}
+
+// A selected evaluated row that cannot be used, wherever it is refused (at load by the semantic layer, or by the
+// provider when it forms the rates): one of `codes` (comma-separated) is raised, and with the abort suppressed every
+// later consultation throws; no call returns a status that lets a consumer keep its own pair.
+int PairRowRefused(const std::string& codes) {
+  G4MuonicDataTable::Enable();
+  try {
+    G4MuonicDataOverlay::Initialize();
+  } catch (const std::runtime_error&) {
+  }
+  P::Enable();
+  for (int attempt = 0; attempt < 3; ++attempt) {
+    G4MuonicBoundRates r;
+    r.capture = -1.;
+    bool returned = false;
+    try {
+      const P::Status s = P::Rates(13, 27, kMu, Mass(27), r);
+      returned = true;
+      std::printf("RETURNED %s%s", Name(s), "\n");
+    } catch (const std::runtime_error&) {
+    }
+    Expect(!returned && r.capture == -1., "a refused selected row returned a status a consumer may fall back on");
+  }
+  bool known = !g_codes.empty();
+  for (const std::string& code : g_codes) known = known && ("," + codes + ",").find("," + code + ",") != std::string::npos;
+  Expect(known, "the refusal raised another code than " + codes);
+  return 0;
+}
+
+// The strict provenance reader over files: one line per file, `ACCEPT` and the admitted row keys in hex (so any
+// byte survives the line), or `REFUSE`.
+int ProvenanceRows(int count, char** files) {
+  static const char* const hex = "0123456789abcdef";
+  for (int k = 0; k < count; ++k) {
+    std::ifstream in(files[k], std::ios::binary);
+    std::ostringstream bytes;
+    bytes << in.rdbuf();
+    std::vector<std::string> keys;
+    if (!in || !G4MuonicDataOverlay::ProvenanceRowKeys(bytes.str(), keys)) {
+      std::printf("REFUSE\n");
+      continue;
+    }
+    std::string line = "ACCEPT";
+    for (const std::string& key : keys) {
+      line += " x";
+      for (const unsigned char c : key) {
+        line.push_back(hex[c >> 4]);
+        line.push_back(hex[c & 0xf]);
+      }
+    }
+    std::printf("%s\n", line.c_str());
+    ++g_checks;
+  }
+  return 0;
+}
+
+// The consumer transform over tuples read from stdin, `tau q free_tau` per line in any strtod spelling: one line
+// each, `ADMIT capture decay` (hexadecimal) or `REFUSE`.
+int PairTransform() {
+  char buffer[512];
+  while (std::fgets(buffer, sizeof buffer, stdin) != nullptr) {
+    char* end = buffer;
+    const double tau = std::strtod(end, &end);
+    const double q = std::strtod(end, &end);
+    const double free_tau = std::strtod(end, &end);
+    double capture = 0., decay = 0.;
+    if (G4MuonicDataSemantics::BoundPairProblem(tau, q, free_tau, capture, decay) == nullptr) {
+      std::printf("ADMIT %a %a\n", capture, decay);
+    } else {
+      std::printf("REFUSE\n");
+    }
+    ++g_checks;
+  }
+  return 0;
+}
+
 }  // namespace
+
+const char* G4FindDataDir(const char* name) { return std::getenv(name); }
 
 G4double G4MuonicAtomHelper::GetMuonCaptureRate(G4int Z, G4int A) {
   ++g_resolver_calls;
@@ -307,8 +564,28 @@ int main(int argc, char** argv) {
     Enabled();
   } else if (mode == "refuse") {
     Refuse();
+  } else if (mode == "pair") {
+    Pair(false);
+  } else if (mode == "pair-order") {
+    Pair(true);
+  } else if (mode == "pair-compiled") {
+    PairCompiled();
+  } else if (mode == "pair-switch-off") {
+    PairSwitchOff();
+  } else if (mode == "pair-config-refused" && argc == 3) {
+    PairConfigRefused(argv[2]);
+  } else if (mode == "pair-row-refused" && argc == 3) {
+    PairRowRefused(argv[2]);
+  } else if (mode == "pair-zero-capture") {
+    PairZeroCapture();
+  } else if (mode == "provenance-rows" && argc > 2) {
+    ProvenanceRows(argc - 2, argv + 2);
+  } else if (mode == "pair-transform") {
+    PairTransform();
   } else {
-    std::printf("usage: g4muonicdata_bound_rate_check oracle-delta <file> | current | disabled | enabled | refuse\n");
+    std::printf("usage: g4muonicdata_bound_rate_check oracle-delta <file> | current | disabled | enabled | refuse | "
+                "pair | pair-order | pair-compiled | pair-switch-off | pair-config-refused <code> | pair-row-refused <codes> | "
+                "provenance-rows <file>... | pair-transform | pair-zero-capture\n");
     return 2;
   }
   if (g_failures > 0) return 1;

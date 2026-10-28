@@ -1,0 +1,88 @@
+{
+ "id": "bound-decay-response-v1",
+ "payload": {
+  "definitions": {
+   "Q": "Gamma_decay_bound / Gamma_free; d = Q / free_tau with the empirical free lifetime",
+   "d2_ratio": "A = (n/m)(a_M/a_O)(Q_O/Q_M)(E2_O/E2_M); an evaluated update changes Q and the E2/amplitude response together; absolute free normalization cancels",
+   "free_tau_ns": "2196.9811",
+   "units": "ns, ns^-1, dimensionless Q"
+  },
+  "evaluated_physics": {
+   "Al27": {
+    "A": 27,
+    "Z": 13,
+    "assembly": "0.993598247079",
+    "region": [
+     "0.991544239937",
+     "0.99565225422"
+    ],
+    "region_label": "EVALUATOR_TYPE_B",
+    "runtime_status": "IN",
+    "serialized_q": "0.993598"
+   },
+   "C12": {
+    "A": 12,
+    "Z": 6,
+    "assembly": "0.998911938688",
+    "region": [
+     "0.998690520069",
+     "0.999133357307"
+    ],
+    "region_label": "EVALUATOR_TYPE_B",
+    "runtime_status": "DEFERRED_RUNTIME_MIXTURE_ESTIMAND",
+    "serialized_q": null
+   },
+   "O16": {
+    "A": 16,
+    "Z": 8,
+    "assembly": "0.997911703002",
+    "region": [
+     "0.99741900543",
+     "0.998404400573"
+    ],
+    "region_label": "EVALUATOR_TYPE_B",
+    "runtime_status": "DEFERRED_RUNTIME_SOURCE_MAPPING",
+    "serialized_q": null
+   }
+  },
+  "historical_conversion": {
+   "free_tau_alternatives_ns": [
+    "2197.03",
+    "2197.0",
+    "2196.9811"
+   ],
+   "identity": "c_cons = c_src + Q_src g_src - Q_cons g_cons, only when the source normalization is established; a tau primitive is preferred whenever available",
+   "mizuno2025_al_q": "0.993",
+   "natc_recovered_q": {
+    "2197.0": "0.998998614874",
+    "2197.03": "0.999012256185"
+   },
+   "status": "source normalizations carried as alternatives; none chosen from rounded capture rates",
+   "suzuki1987_al_q": "0.993"
+  },
+  "source_response": {
+   "d2_response": {
+    "accepted_width_definition": "Gamma_acc,ij = sum over channels of the integral of R_ij dGamma_i; invisible channels have zero response",
+    "conversion_refusal": "CONVERSION_NOT_ESTABLISHED",
+    "delivery_mode": "SOURCE_REPORTED_FROZEN",
+    "e2_definition": "E2_ij = Gamma_acc,ij/Gamma_dec,i",
+    "k_definition": "K_ij = Q_i*E2_ij = Gamma_acc,ij/Gamma_free",
+    "q_definition": "Q_i = Gamma_dec,i/Gamma_free",
+    "spectrum_id": "UNRESOLVED"
+   },
+   "stanislaus1983_thesis": {
+    "locator": "MSc thesis, UBC (1983), Eq. (4) p.56",
+    "q_formula": "1 - 0.5 (Z/137)^2",
+    "status": "RESOLVED_FOR_THESIS"
+   },
+   "stanislaus1987_paper": {
+    "note": "the paper prints no Q formula and also cites another evaluation; equal published results do not establish equal conventions",
+    "q_formula": "UNRESOLVED",
+    "status": "UNRESOLVED"
+   }
+  }
+ },
+ "payload_sha256": "0bb824713a28b1a5e28062d9c366ef8f0c11ade8267235762ca43d48be5ddef8",
+ "schema": "openmucf.bound-decay-response/1",
+ "status": "DRAFT_D1_ROLES"
+}

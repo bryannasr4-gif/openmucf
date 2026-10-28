@@ -3,6 +3,9 @@
 
 #include "G4Exception.hh"
 #include "G4MuonicAtomHelper.hh"
+#include "G4MuonicDataOverlay.hh"
+#include "G4MuonicDataSemantics.hh"
+#include "G4MuonicDataTable.hh"
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
 
@@ -10,6 +13,7 @@
 #include <cmath>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 namespace {
@@ -18,6 +22,8 @@ namespace {
 std::atomic<bool> g_enabled{false};
 // Set by the first Consult, on whichever thread forms the first rate pair.
 std::atomic<bool> g_frozen{false};
+// Set when a selected evaluated pair row was refused: every later consultation throws.
+std::atomic<bool> g_poisoned{false};
 
 void Change(bool value) {
   if (g_frozen.load() && g_enabled.load() != value) {
@@ -32,6 +38,47 @@ void Change(bool value) {
 
 bool PositiveFinite(G4double x) { return std::isfinite(x) && x > 0.; }
 
+const char* const kCompiled = "compiled";
+
+// A selected evaluated pair row that cannot be used: fatal G4MuonicBoundRates001 the first time, and the provider
+// is poisoned, so that should an installed handler suppress the abort this call and every later consultation
+// throw. A consumer never falls back to the pair it formed itself for a key the selected pair profile answers.
+[[noreturn]] void RefuseRow(const std::string& text) {
+  g_poisoned.store(true);
+  static std::atomic<bool> reported{false};
+  if (!reported.exchange(true)) {
+    G4Exception("G4MuonicBoundRateProvider::Rates", "G4MuonicBoundRates001", FatalException, text.c_str());
+  }
+  throw std::runtime_error(text);
+}
+
+// The pair profile the frozen overlay selected, or "compiled" with the data option off or none selected.
+std::string PairProfile() {
+  if (!G4MuonicDataTable::IsEnabled()) return kCompiled;
+  const std::string& profile = G4MuonicDataOverlay::Config().d1PairProfile;
+  return profile.empty() ? std::string(kCompiled) : profile;
+}
+
+// A pair profile selected with the common-rate switch off: the requested evaluated pairs would never reach a
+// consumer. Fatal G4MuonicBoundRates003 the first time; should an installed handler suppress the abort, every
+// later consultation throws rather than let a consumer run its own pair for the requested data.
+void RefusePairWithoutSwitch(const std::string& profile) {
+  const std::string text = "G4MUONICDATA_D1_PAIR_PROFILE selects the bound-rate pair profile '" + profile +
+                           "' but G4HadronicParameters::SetEnableMuonicBoundRates(true) was not called before the "
+                           "first consumer formed a rate pair; the evaluated pairs need both options";
+  static std::atomic<bool> reported{false};
+  if (!reported.exchange(true)) {
+    G4Exception("G4MuonicBoundRateProvider::Consult", "G4MuonicBoundRates003", FatalException, text.c_str());
+  }
+  throw std::runtime_error(text);
+}
+
+// Why a pair tuple cannot be used, or nullptr: the one consumer transform the semantic rule S005 applies
+// too. Rates in ns^-1 (Geant4's time unit is the ns).
+const char* PairProblem(G4double tau, G4double q, G4double freeTau, G4double& capture, G4double& decay) {
+  return G4MuonicDataSemantics::BoundPairProblem(tau, q, freeTau, capture, decay);
+}
+
 }  // namespace
 
 void G4MuonicBoundRateProvider::Enable() { Change(true); }
@@ -44,7 +91,15 @@ G4bool G4MuonicBoundRateProvider::IsFrozen() { return g_frozen.load(); }
 
 G4bool G4MuonicBoundRateProvider::Consult() {
   g_frozen.store(true);
-  return g_enabled.load();
+  if (g_poisoned.load()) {
+    throw std::runtime_error("a selected evaluated bound-rate pair row was refused (G4MuonicBoundRates001)");
+  }
+  const bool enabled = g_enabled.load();
+  if (!enabled) {
+    const std::string profile = PairProfile();
+    if (profile != kCompiled) RefusePairWithoutSwitch(profile);
+  }
+  return enabled;
 }
 
 G4bool G4MuonicBoundRateProvider::InDomain(G4int Z, G4int A) { return Z >= 2 && Z <= 13 && A >= Z; }
@@ -67,6 +122,25 @@ G4MuonicBoundRateProvider::Status G4MuonicBoundRateProvider::Rates(G4int Z, G4in
                                                                    G4double nuclearMass,
                                                                    G4MuonicBoundRates& rates) {
   if (!Consult()) return Status::kDisabled;
+  // An evaluated pair row takes precedence: both rates come from its one tuple.
+  if (G4MuonicDataTable::IsEnabled()) {
+    const G4MuonicDataOverlay::Resolution row = G4MuonicDataOverlay::ResolvePair(Z, A);
+    if (row.values != nullptr) {
+      G4double capture = 0., decay = 0.;
+      const G4double tau = row.values[0] * ns, q = row.values[1], freeTau = row.values[2] * ns;
+      if (row.count != 3) RefuseRow("the bound-rate pair row does not carry the three values tau q free_tau");
+      if (const char* why = PairProblem(tau, q, freeTau, capture, decay)) {
+        std::ostringstream message;
+        message.precision(17);
+        message << "Z=" << Z << " A=" << A << " under pair profile " << row.profile << ": " << why << " (tau " << tau
+                << " ns, q " << q << ", free_tau " << freeTau << " ns)";
+        RefuseRow(message.str());
+      }
+      rates.capture = capture;
+      rates.decay = decay;
+      return Status::kCommon;
+    }
+  }
   if (!InDomain(Z, A)) return Status::kUnsupported;
   G4double capture = 0.;
   G4double decay = 0.;
@@ -101,10 +175,37 @@ G4MuonicBoundRateProvider::Status G4MuonicBoundRateProvider::Rates(G4int Z, G4in
   return Status::kCommon;
 }
 
+std::string G4MuonicBoundRateProvider::Describe(G4int Z, G4int A) {
+  std::ostringstream out;
+  const bool data = G4MuonicDataTable::IsEnabled();
+  const std::string pairProfile = PairProfile();
+  std::string captureProfile = kCompiled;
+  if (data) captureProfile = G4MuonicDataOverlay::Config().d1Profile;
+  out << "Z=" << Z << " A=" << A << " switch=" << (IsEnabled() ? "on" : "off") << " data=" << (data ? "on" : "off")
+      << " capture_profile=" << captureProfile << " pair_profile=" << pairProfile;
+  if (!IsEnabled()) {
+    out << " answer=consumer";
+    return out.str();
+  }
+  const G4MuonicDataOverlay::Resolution row =
+      data ? G4MuonicDataOverlay::ResolvePair(Z, A) : G4MuonicDataOverlay::Resolution();
+  if (row.values != nullptr) {
+    out << " answer=pair-row row=" << row.resolvedZ << "-" << row.resolvedA << " q_convention=evaluated:" << pairProfile
+        << " fallback=none";
+  } else if (InDomain(Z, A)) {
+    out << " answer=common-formula q_convention=leading:low-z-inclusive-tree-linear-recoil-v1 fallback="
+        << (pairProfile == kCompiled ? "none" : "formula-no-pair-row");
+  } else {
+    out << " answer=consumer fallback=outside-common-domain";
+  }
+  return out.str();
+}
+
 const char* G4MuonicBoundRateProvider::Prescription() {
   return "low-z-inclusive-tree-linear-recoil-v1; "
          "capture: G4MuonicAtomHelper::GetMuonCaptureRate(Z, A); "
          "decay: free * [1 - (Z alpha)^2 * (1/2 - eta)], eta = muMass / nuclearMass; "
          "domain 2 <= Z <= 13, A >= Z, finite positive masses, eta < 1/2; "
-         "leading binding, linear eta prescription; physical expansion eta << 1; no accuracy certificate";
+         "leading binding, linear eta prescription; physical expansion eta << 1; no accuracy certificate; "
+         "an evaluated pair row of a selected pair profile takes precedence: d = q/free_tau, c = 1/tau - d";
 }

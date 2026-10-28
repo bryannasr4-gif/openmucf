@@ -44,6 +44,23 @@
 // constructed keep the lifetimes they were built with. Set it on the master thread before the physics
 // list is built; worker threads only read it.
 //
+// Evaluated pair rows. With the G4MuonicData opt-in on and G4MUONICDATA_D1_PAIR_PROFILE naming a profile that
+// carries a `bound_rate_primitives` table (G4MuonicDataOverlay), a key that table holds is answered from its one
+// tuple (tau, q, free_tau): decay = q / free_tau, capture = 1/tau - decay, so the two rates of both routes come
+// from one realization and capture + decay = 1/tau. The row takes precedence over the formula above and is not
+// limited to its domain. Other keys retain the selected capture profile and the existing route-specific formula
+// or fallback. A row whose tuple fails the consumer transform of G4MuonicDataSemantics::BoundPairProblem is
+// refused with G4MuonicBoundRates001. Rates, probabilities and sampled waiting times must be finite and in their
+// domains, sampled waiting times for a uniform variate in (0, 1]. Lifetimes must be finite except that zero
+// capture stores an infinite capture lifetime, which reads back as zero. The consumer lifetime
+// `1/(capture + decay)` must be finite and positive. The provider is then
+// poisoned: should a handler suppress the abort, that call and every later consultation throw, so no consumer
+// falls back to its own pair. The decay rate is checked against the row's own 1/free_tau, not the formula's free
+// normalization. A pair profile with the switch off is refused at the first consultation with the fatal
+// G4MuonicBoundRates003, whichever of the two options was set first; should a handler suppress the abort, every
+// later consultation throws. Describe(Z, A) names, per key, the capture profile, the pair profile, the answer
+// (pair row, common formula or consumer fallback), and its decay-factor convention where applicable.
+//
 // The static legacy getters G4MuonMinusBoundDecay::GetMuonDecayRate and
 // G4MuonicAtomHelper::GetMuonDecayRate are unchanged and are not affected by the switch: they report
 // each route's own prescription, not the pair a consumer receives with the switch on.
@@ -54,6 +71,8 @@
 
 #include "G4Types.hh"
 
+#include <string>
+
 struct G4MuonicBoundRates {
   G4double capture = 0.;  // nuclear capture rate, ns^-1
   G4double decay = 0.;    // decay-in-orbit rate, ns^-1
@@ -62,7 +81,7 @@ struct G4MuonicBoundRates {
 class G4MuonicBoundRateProvider {
  public:
   enum class Status {
-    kCommon,       // the pair is the common pair; the consumer uses it
+    kCommon,       // the consumer uses `rates`: an evaluated pair row, or else the common formula pair
     kDisabled,     // the switch is off; the consumer keeps its own pair
     kUnsupported,  // outside the domain; the consumer keeps its own pair
     kRefused       // a fatal G4MuonicBoundRates001 was raised; the consumer keeps its own pair
@@ -76,7 +95,8 @@ class G4MuonicBoundRateProvider {
   static G4bool IsEnabled();
   static G4bool IsFrozen();
 
-  // Called by each consumer before it uses its pair: freezes the switch and returns whether it is on.
+  // Called by each consumer before it uses its pair: freezes the switch and returns whether it is on. With
+  // the switch off and a pair profile selected it refuses (G4MuonicBoundRates003).
   static G4bool Consult();
 
   // Whether (Z, A) lies in the implementation domain: 2 <= Z <= 13 and A >= Z.
@@ -94,6 +114,10 @@ class G4MuonicBoundRateProvider {
 
   // What the pair is made of, for a consumer or an application that reports it.
   static const char* Prescription();
+
+  // One line for (Z, A): switch, data option, capture profile, pair profile, and which answer a consumer
+  // receives (pair row, common formula or its own pair) with its decay-factor convention. Changes no state.
+  static std::string Describe(G4int Z, G4int A);
 };
 
 #endif

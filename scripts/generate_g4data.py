@@ -24,6 +24,13 @@ The D1 directory also carries a **second profile of the capture table**, ``mizun
 the same way from two committed transcriptions of a primary's printed tables
 (``openmucf.g4.sources.mizuno2025`` states what they hold and refuses what they must not).
 
+It also carries the **evaluated bound-rate pair table**, ``bound_rate_primitives`` under the profile
+``evaluated-bound``: one row ``(Z, A, tau, q, free_tau)`` per admitted nucleus, from the committed primitives
+``data/g4/d1/bound_rate_inputs.json`` through ``openmucf.g4.d1_lifetime.evaluated_tuples``. A Geant4 build selects
+it with ``G4MUONICDATA_D1_PAIR_PROFILE``, independently of the capture profile. Whenever the enabled overlay loads a
+dataset, it parses and validates every table, including an unselected pair table. Both switches and the pair-profile
+selection are required to use an evaluated row.
+
 Audit wiring: every generated artifact below joins ``make audit``'s ``git diff --exit-code`` list.
 The ``.tar.gz`` archives are **not** committed -- they are build products whose determinism is
 proven by test rather than by a stored copy -- but their MD5s are written into the snippets, because
@@ -47,6 +54,8 @@ import tempfile
 from pathlib import Path
 
 import openmucf
+from openmucf.g4 import d1_evaluated as evaluated
+from openmucf.g4 import d1_lifetime as lifetime
 from openmucf.g4 import d3_attribution as d3attr
 from openmucf.g4 import d3_contract as d3c
 from openmucf.g4 import emit, provenance, spec
@@ -97,6 +106,10 @@ MIZUNO_TABLE3_PATH = ROOT / mizsrc.TABLE3_RELPATH
 D1_SUZUKI_LAYER1 = D1DIR / f"d1_capture.{suzsrc.PROFILE}.g4dat"
 D1_SUZUKI_LAYER2 = D1DIR / f"d1_capture.{suzsrc.PROFILE}.prov.json"
 SUZUKI_PRINTED_PATH = ROOT / suzsrc.PRINTED_ROWS_RELPATH
+#: The evaluated pair table: the production tuple of each admitted nucleus, read by both stopped-muon routes
+#: when the pair profile is selected.
+D1_PAIR_LAYER1 = ROOT / lifetime.PAIR_LAYER1_RELPATH
+D1_PAIR_LAYER2 = ROOT / lifetime.PAIR_LAYER2_RELPATH
 SUZUKI_QUANTITY_PATH = ROOT / suzsrc.QUANTITY_ROWS_RELPATH
 SUZUKI_PARITY_CELLS = ROOT / suzsrc.PARITY_CELLS_RELPATH
 SUZUKI_PREPRINT_DIFF = ROOT / suzsrc.PREPRINT_DIFF_RELPATH
@@ -572,6 +585,68 @@ def build_mizuno_capture_table(found: mizsrc.Mizuno2025Extraction, digest: str) 
     return spec.G4DatTable(directives=directives, records=records)
 
 
+def build_pair_document(tuples: list[tuple[int, int, object, object, object]]) -> provenance.ProvDocument:
+    """Layer 2 for the evaluated pair table: one row per admitted nucleus. The rich record -- the decay-factor
+    assembly and region, the late-lifetime mapping, the decisions -- is ``bound_rate_evaluation.json``, named
+    by the row's evaluation id."""
+    inputs = lifetime.evaluated_inputs(ROOT)
+    rows = {}
+    for z, a, tau, q, free_tau in tuples:
+        rows[f"{z}-{a}"] = provenance.ProvRow(
+            source_bibkey="Mizuno2025",
+            source_locator=f"{inputs.raw['lifetime']['locator']} [copy read: {inputs.raw['lifetime']['copy_read']}]",
+            unc_type="estimate",
+            conditions=(
+                f"tau = {tau} ns, the source's fitted late-time electron lifetime with standard uncertainty "
+                f"{inputs.tau_u} ns (stated components preserved, not added); q = {q}, the evaluated bound-to-free "
+                f"decay factor (finite-charge static value of Uesaka et al. 2026 plus adopted linear recoil and the "
+                f"signed point-Uehling kinetic term), rounded to {inputs.q_decimals} decimals; free_tau = {free_tau} ns, "
+                f"{inputs.raw['free_lifetime']['locator']}. The pair is d = q/free_tau, c = 1/tau - d"
+            ),
+            validity_range=f"Z={z} A={a}, a normal-composition target reaching this nucleus",
+            evaluation_method=(
+                "one primitive tuple gives both rates (c + d = 1/tau exactly); evaluator-assessed regions and the "
+                "budget decisions are in data/g4/d1/bound_rate_evaluation.json; the late-lifetime decision has no "
+                "validation power, and the stopped mean and capture probability are not established"
+            ),
+            single_source=False,
+            needs_verification=False,
+            recommendation="",
+            evaluation_id=inputs.evaluation_id,
+            source_library="openmucf",
+            isotope_resolved=True,
+        )
+    return provenance.ProvDocument(
+        dataset=DATASET_NAME,
+        version=DATASET_VERSION,
+        profile=evaluated.PAIR_PROFILE,
+        seam=D1_SEAM,
+        precedence=("openmucf",),
+        rows=rows,
+    )
+
+
+def build_pair_table(tuples: list[tuple[int, int, object, object, object]], digest: str) -> spec.G4DatTable:
+    """Layer 1 for the evaluated pair table: ``Z A tau q free_tau`` with mixed units, isotope keys only
+    (``A:listed``: no natural-composition alias)."""
+    z_values = sorted(z for z, *_ in tuples)
+    directives = {
+        "GRAMMAR": spec.GRAMMAR_VERSION,
+        "DATASET": DATASET_NAME,
+        "VERSION": DATASET_VERSION,
+        "PROFILE": evaluated.PAIR_PROFILE,
+        "SEAM": D1_SEAM,
+        "TABLE": evaluated.PAIR_TABLE,
+        "GENERATOR": f"openmucf-g4 {openmucf.__version__}",
+        "SOURCEDIGEST": digest,
+        "UNITS": evaluated.PAIR_UNITS,
+        "COLUMNS": " ".join(evaluated.PAIR_COLUMNS),
+        "VALIDITY": f"Z:{z_values[0]}-{z_values[-1]} A:listed",
+    }
+    records = tuple((z, a, float(str(tau)), float(str(q)), float(str(free_tau))) for z, a, tau, q, free_tau in tuples)
+    return spec.G4DatTable(directives=directives, records=records)
+
+
 def build_suzuki_capture_document(
     selected: dict[tuple[int, int], dict[str, str]], clauses: dict[int, str] | None = None,
     states: dict[str, str] | None = None,
@@ -998,6 +1073,7 @@ PROFILE_LICENCES = {
     mizsrc.PROFILE: _RESTATED,
     suzsrc.PROFILE: _RESTATED,
     md.PROFILE: CC_BY + "; the input radii their .prov.json files repeat: MuDirac's MIT License",
+    evaluated.PAIR_PROFILE: CC_BY + "; the one lifetime each row cites is the primary's printed value",
 }
 
 
@@ -1011,9 +1087,10 @@ def _licence_statements(files: list[emit.TableEntry]) -> list[tuple[tuple[str, .
     return out
 
 
-def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
+def build_dataset_artifacts(pair_table: bool = True) -> tuple[dict[Path, bytes], bytes]:
     """The committed D1 and D3 artifacts keyed by path, plus the archive they describe (not
-    committed)."""
+    committed). ``pair_table=False`` builds the archive as it stood before the evaluated pair table joined
+    it: the dataset identity that earlier committed transport evidence records, never a shipped build."""
     from openmucf.g4 import d3_centroids as d3centroids
 
     bundle = d3c.load_bundle(ROOT)
@@ -1024,6 +1101,17 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
     suzuki_rows = suzsrc.normalize(suzuki_printed)
     suzuki_selected = suzsrc.selected(suzuki_rows, mononuclidic_keys())
     outputs = md.load_outputs(ROOT)
+    pair_tuples: list[tuple[int, int, object, object, object]] = list(lifetime.evaluated_tuples(ROOT))
+    pair_entries = (
+        [
+            (
+                D1_PAIR_LAYER1, D1_PAIR_LAYER2, build_pair_document(pair_tuples),
+                functools.partial(build_pair_table, pair_tuples),
+            )
+        ]
+        if pair_table
+        else []
+    )
 
     members: dict[str, bytes] = {}
     artifacts: dict[Path, bytes] = {}
@@ -1047,6 +1135,7 @@ def build_dataset_artifacts() -> tuple[dict[Path, bytes], bytes]:
                 suzuki_selected, mononuclidic_clauses(), suzsrc.measured_states(suzuki_printed)),
             functools.partial(build_suzuki_capture_table, suzuki_selected),
         ),
+        *pair_entries,
         (
             D3_KSHELL_LAYER1, D3_KSHELL_LAYER2, build_d3_document(outputs, md.K_TABLE),
             functools.partial(build_d3_kshell_table, outputs),
@@ -1255,6 +1344,7 @@ def audit() -> None:
         (D1_ZEFF_LAYER1, D1_ZEFF_LAYER2),
         (D1_MIZUNO_LAYER1, D1_MIZUNO_LAYER2),
         (D1_SUZUKI_LAYER1, D1_SUZUKI_LAYER2),
+        (D1_PAIR_LAYER1, D1_PAIR_LAYER2),
         (D3_KSHELL_LAYER1, D3_KSHELL_LAYER2),
         (D3_LEVELS_LAYER1, D3_LEVELS_LAYER2),
     )

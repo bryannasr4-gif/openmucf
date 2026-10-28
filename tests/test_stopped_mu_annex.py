@@ -815,9 +815,12 @@ def test_a_changed_selector_ratio_moves_the_section(tmp_path):
 
 
 def test_a_moved_route_count_moves_the_table_and_the_sentence():
-    profile, compared, first, second = committed_stages().summary[-1]
+    # the last profile with a compared row outside the band on the second route: moving its count changes it
+    summary = committed_stages().summary
+    profile, compared, first, second = next(row for row in reversed(summary) if row[3] < row[1])
     moved = dataclasses.replace(
-        committed_stages(), summary=(*committed_stages().summary[:-1], (profile, compared, first, compared))
+        committed_stages(),
+        summary=tuple((p, c, f, c) if p == profile else (p, c, f, s) for p, c, f, s in summary),
     )
     text = section(moved)
     assert f"| `{profile}` | {compared} | {first} | {compared} |" in text and text != section()

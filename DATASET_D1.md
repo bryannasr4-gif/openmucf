@@ -748,6 +748,12 @@ The other rows of Tables III and IV give each experiment's capture rate as its a
 often with their own value of the positive muon's lifetime (p. 2216), so the comparison does not take them.
 For each profile of the capture table and each of those rows, the file gives the measured rate, the inverse
 of the mean life, and, when the row names a nucleus, each route's rate, capture plus decay, for it.
+It also gives, under the pair profile `evaluated-bound`, a row for each of those measurements whose nucleus the
+evaluated pair table holds (the section on the evaluated pair below): there both routes take the pair's capture
+and decay rates. Under the pair profile, rows from the lifetime source are grouped as compared. Only the
+self-supported-plate row restates the 863.7 ns input lifetime. The plate-in-case row is a development comparison
+from the same campaign and is not independent validation. Bands use each measured rate's uncertainty alone; they
+are not uncertainties of the difference.
 A row names the nucleus with the printed mass number, or, for a target printed with no mass number or as
 natural, with the mass number of the record the isotope audit of section 6 establishes rests on a
 measurement of the element printed with no mass number (for lead, a reconstructed combination with
@@ -772,10 +778,13 @@ For F-19 the tabulated mean life and capture rate describe the lower hyperfine s
 | `parity` | 51 | 47 | 43 |
 | `mizuno2025` | 54 | 51 | 48 |
 | `suzuki1987` | 51 | 51 | 47 |
+| `evaluated-bound` | 2 | 2 | 2 |
 
 Under `parity` and `mizuno2025` each route leaves a compared row outside the band, and under `suzuki1987`
 only `G4MuonicAtomHelper` does; where a row of `suzuki1987` answers a compared row, the lookup returns the
-capture rate the source prints beside the mean life.
+capture rate the source prints beside the mean life. Under `evaluated-bound` neither route leaves a compared row
+outside the band. Only the self-supported-plate row is an input reconstruction; the plate-in-case comparison is
+not true by construction.
 The next table gives those rows: the difference between the route's rate and the measured rate, and the part
 of it that comes from the capture rate, the rate the lookup returns less the rate the source prints beside
 the mean life, each in units of the band's standard deviation and rounded to a tenth.
@@ -1017,3 +1026,11 @@ The option leaves both routes' product times as they were. Against the correct c
 
 The atomic route creates the muonic atom at twice the stop time, so every atomic product of a stop at a nonzero start time is late by that time; the stopping route lets a capture product keep the negative local time the cascade model gives it, so it comes before the capture.
 Physical accuracy: NOT_ESTABLISHED; not established: the checked stopping equation has no bounded physical remainder in this record; binding-expansion, omitted recoil, finite-size, screening and bound/free radiative contributions have no admitted bound. The independent point-Coulomb reference omits physical corrections and its abstract was exposed before the budget was fixed. FINAL denotes the interpretation only, not physical-accuracy admission. The admitted roster is empty, so the accuracy screen is SCREEN_VACUOUS (`bound_rates_theory.json`).
+
+### 14.4 Evaluated pair rows
+
+The dataset carries a third kind of table, `bound_rate_primitives`, under the profile `evaluated-bound` (`d1_bound_rate.evaluated-bound.g4dat` and its provenance file): a tuple `(tau, q, free_tau)` for each admitted isotope, `tau` and `free_tau` in ns and `q` dimensionless, from which a consumer forms both rates together: the decay rate `q/free_tau`, and the capture rate, the inverse of `tau` less the decay rate. The admitted roster is aluminium alone; oxygen and carbon are evaluated as decay factors only and get no row. `tau` is the late-time lifetime Mizuno et al. (2025) fit for their self-supported plate (section 9) and `q` the evaluated decay factor; the evaluation, its regions and its decisions are in `bound_rate_evaluation.json`, generated and checked by `scripts/generate_g4evaluated_rates.py`, and the page [`docs/evaluated-bound-rates.md`](docs/evaluated-bound-rates.md) renders them.
+
+With the dataset option on, the loader parses and validates every table. Both switches and the pair-profile selection are required to use an evaluated row. `G4MUONICDATA_D1_PAIR_PROFILE` names the pair profile, independently of `G4MUONICDATA_D1_PROFILE`, and with the dataset opt-in and the common-rate option above on a key the table holds takes the pair on both stopped-muon routes. Other keys retain the selected capture profile and the existing route-specific formula or fallback. `cpp/patches/README.md` lists what is refused. The empty admitted roster above concerns the common formula, not the pair.
+
+What the evaluation decides, under its evaluator-assessed regions: the late lifetime and the decay rate meet provisional budgets (conditional; the late-lifetime decision has no validation power, because the delivered lifetime is the source's own), and the stopped mean and the capture probability are not established: the hyperfine capture contrast is unresolved. On the atomic route the pair robustly improves the late lifetime over the stock pair; no other improvement over stock is established. The comparison of section 12 restates the pair's rows under its profile. The pair is not an independent measurement of the capture branching.

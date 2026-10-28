@@ -8,7 +8,10 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -27,6 +30,10 @@ const char* const kCaptureTable = "nuclear_capture_rate";
 const char* const kZeffTable = "muon_zeff";
 const char* const kKShellTable = "k_shell_energy";
 const char* const kLevelTable = "level_energy";
+// The evaluated bound-rate pair table and its three value columns, in the order the provider reads them.
+const char* const kPairTable = "bound_rate_primitives";
+const char* const kPairColumns[] = {"tau", "q", "free_tau"};
+const char* const kPairUnits[] = {"ns", "1", "ns"};
 const char* const kRepresentative = "most_abundant_and_listed";
 // The number of consecutive muonic-cascade levels a patched build assembles.
 const G4int kCascadeLevels = 14;
@@ -48,6 +55,8 @@ struct State {
   G4MuonicDataTable dataset;
   bool loaded = false;
   Selected capture, zeff, kshell, levels;
+  // The pair table selected by G4MUONICDATA_D1_PAIR_PROFILE, independently of the capture profile.
+  Selected pairs;
   bool d1Evaluated = false;
   // Non-empty when the semantic layer refused the dataset and an installed handler suppressed the
   // abort: every entry point then throws instead of answering from a dataset no consumer may read.
@@ -207,6 +216,390 @@ bool Select(const State& state, const std::string& dir, const std::string& profi
   return true;
 }
 
+// A refused pair configuration: fatal, and, should an installed handler suppress the abort, recorded so that
+// every entry point throws -- requested evaluated pairs never silently become the compiled-in pair.
+void RefusePairs(State& state, const char* code, const std::string& text) {
+  Fatal(code, text);
+  state.refusal = text;
+}
+
+// ---- binding the selected pair table to its provenance ------------------------------------------------------
+// The selected evaluated profile's rows are a scientific roster, not merely well-formed records: before any
+// consumer can use the table, the live parsed record keys must be exactly the row keys of the table's Layer-2
+// provenance file, whose SHA-256 must be the table's `#SOURCEDIGEST`. A substituted, moved or removed row, a
+// missing or altered provenance file, or an altered digest is refused.
+
+// SHA-256 (FIPS 180-4) of `data`, lowercase hexadecimal.
+std::string Sha256Hex(const std::string& data) {
+  static const std::uint32_t k[64] = {
+      0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
+      0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
+      0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
+      0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
+      0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
+      0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
+      0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
+      0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u};
+  std::uint32_t h[8] = {0x6a09e667u, 0xbb67ae85u, 0x3c6ef372u, 0xa54ff53au,
+                        0x510e527fu, 0x9b05688cu, 0x1f83d9abu, 0x5be0cd19u};
+  std::string m = data;
+  const std::uint64_t bits = static_cast<std::uint64_t>(data.size()) * 8u;
+  m.push_back(static_cast<char>(0x80));
+  while (m.size() % 64 != 56) m.push_back('\0');
+  for (int i = 7; i >= 0; --i) m.push_back(static_cast<char>((bits >> (8 * i)) & 0xffu));
+  auto rotr = [](std::uint32_t x, int n) { return (x >> n) | (x << (32 - n)); };
+  for (std::size_t chunk = 0; chunk < m.size(); chunk += 64) {
+    std::uint32_t w[64];
+    for (int i = 0; i < 16; ++i) {
+      w[i] = 0;
+      for (int j = 0; j < 4; ++j) w[i] = (w[i] << 8) | static_cast<unsigned char>(m[chunk + 4 * i + j]);
+    }
+    for (int i = 16; i < 64; ++i) {
+      const std::uint32_t s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >> 3);
+      const std::uint32_t s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >> 10);
+      w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+    }
+    std::uint32_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+    for (int i = 0; i < 64; ++i) {
+      const std::uint32_t s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const std::uint32_t ch = (e & f) ^ (~e & g);
+      const std::uint32_t t1 = hh + s1 + ch + k[i] + w[i];
+      const std::uint32_t s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const std::uint32_t mj = (a & b) ^ (a & c) ^ (b & c);
+      const std::uint32_t t2 = s0 + mj;
+      hh = g;
+      g = f;
+      f = e;
+      e = d + t1;
+      d = c;
+      c = b;
+      b = a;
+      a = t1 + t2;
+    }
+    h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+  }
+  static const char* const hex = "0123456789abcdef";
+  std::string out;
+  for (std::uint32_t v : h) {
+    for (int i = 7; i >= 0; --i) out.push_back(hex[(v >> (4 * i)) & 0xfu]);
+  }
+  return out;
+}
+
+// A strict reader of RFC 8259 JSON text in UTF-8, enough to bind a provenance roster. Every value is checked
+// against the JSON grammar: strings (escapes \" \\ \/ \b \f \n \r \t \uXXXX only, no raw control character,
+// well-formed UTF-8), numbers, the literals true, false and null, and containers nested at most kMaxDepth deep;
+// nothing may follow the document but whitespace. An object key that contains a backslash is refused rather
+// than decoded: the generator never escapes a key, and a decoded key must never stand for another one.
+class StrictJson {
+ public:
+  explicit StrictJson(const std::string& text) : s_(text) {}
+
+  // The keys of the top-level "rows" object, in document order; false unless the text is one JSON object
+  // carrying exactly one "rows" member whose value is an object.
+  bool Rows(std::vector<std::string>& keys) {
+    Space();
+    if (!Object(1, &keys)) return false;
+    Space();
+    return i_ == s_.size();
+  }
+
+ private:
+  static constexpr int kMaxDepth = 64;
+  const std::string& s_;
+  std::size_t i_ = 0;
+
+  unsigned char At(std::size_t k) const { return static_cast<unsigned char>(s_[k]); }
+  bool More() const { return i_ < s_.size(); }
+
+  void Space() {
+    while (More() && (s_[i_] == ' ' || s_[i_] == '\t' || s_[i_] == '\n' || s_[i_] == '\r')) ++i_;
+  }
+
+  // One well-formed UTF-8 sequence of two to four bytes at i_ (no overlong form, no surrogate, at most U+10FFFF).
+  bool Utf8() {
+    const unsigned char lead = At(i_);
+    int extra = 0;
+    unsigned char low = 0x80, high = 0xBF;
+    if (lead >= 0xC2 && lead <= 0xDF) {
+      extra = 1;
+    } else if (lead >= 0xE0 && lead <= 0xEF) {
+      extra = 2;
+      if (lead == 0xE0) low = 0xA0;
+      if (lead == 0xED) high = 0x9F;
+    } else if (lead >= 0xF0 && lead <= 0xF4) {
+      extra = 3;
+      if (lead == 0xF0) low = 0x90;
+      if (lead == 0xF4) high = 0x8F;
+    } else {
+      return false;
+    }
+    if (i_ + extra >= s_.size()) return false;
+    for (int k = 1; k <= extra; ++k) {
+      const unsigned char c = At(i_ + k);
+      if (k == 1 ? (c < low || c > high) : (c < 0x80 || c > 0xBF)) return false;
+    }
+    i_ += extra + 1;
+    return true;
+  }
+
+  static bool Hex(char c) {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+  }
+
+  // A string at i_. For a key (`key` not null) a backslash is refused and the raw bytes are the key.
+  bool String(std::string* key) {
+    if (!More() || s_[i_] != '"') return false;
+    const std::size_t start = ++i_;
+    while (More()) {
+      const unsigned char c = At(i_);
+      if (c == '"') {
+        if (key != nullptr) *key = s_.substr(start, i_ - start);
+        ++i_;
+        return true;
+      }
+      if (c < 0x20) return false;
+      if (c == '\\') {
+        if (key != nullptr || i_ + 1 >= s_.size()) return false;
+        const char e = s_[i_ + 1];
+        if (e == 'u') {
+          if (i_ + 5 >= s_.size()) return false;
+          for (int k = 2; k <= 5; ++k) {
+            if (!Hex(s_[i_ + k])) return false;
+          }
+          i_ += 6;
+        } else if (e == '"' || e == '\\' || e == '/' || e == 'b' || e == 'f' || e == 'n' || e == 'r' || e == 't') {
+          i_ += 2;
+        } else {
+          return false;
+        }
+      } else if (c >= 0x80) {
+        if (!Utf8()) return false;
+      } else {
+        ++i_;
+      }
+    }
+    return false;
+  }
+
+  bool Digits() {
+    const std::size_t start = i_;
+    while (More() && s_[i_] >= '0' && s_[i_] <= '9') ++i_;
+    return i_ > start;
+  }
+
+  // -?(0|[1-9][0-9]*)(.[0-9]+)?([eE][+-]?[0-9]+)?
+  bool Number() {
+    if (More() && s_[i_] == '-') ++i_;
+    if (!More()) return false;
+    if (s_[i_] == '0') {
+      ++i_;
+    } else if (s_[i_] >= '1' && s_[i_] <= '9') {
+      Digits();
+    } else {
+      return false;
+    }
+    if (More() && s_[i_] == '.') {
+      ++i_;
+      if (!Digits()) return false;
+    }
+    if (More() && (s_[i_] == 'e' || s_[i_] == 'E')) {
+      ++i_;
+      if (More() && (s_[i_] == '+' || s_[i_] == '-')) ++i_;
+      if (!Digits()) return false;
+    }
+    return true;
+  }
+
+  bool Literal(const char* word) {
+    const std::string w(word);
+    if (s_.compare(i_, w.size(), w) != 0) return false;
+    i_ += w.size();
+    return true;
+  }
+
+  // A value at i_; a container opened here sits at `depth`.
+  bool Value(int depth) {
+    if (!More()) return false;
+    const char c = s_[i_];
+    if (c == '{') return Object(depth, nullptr);
+    if (c == '[') return Array(depth);
+    if (c == '"') return String(nullptr);
+    if (c == 't') return Literal("true");
+    if (c == 'f') return Literal("false");
+    if (c == 'n') return Literal("null");
+    return Number();
+  }
+
+  bool Array(int depth) {
+    if (depth > kMaxDepth || !More() || s_[i_] != '[') return false;
+    ++i_;
+    Space();
+    if (More() && s_[i_] == ']') {
+      ++i_;
+      return true;
+    }
+    while (true) {
+      Space();
+      if (!Value(depth + 1)) return false;
+      Space();
+      if (More() && s_[i_] == ',') {
+        ++i_;
+        continue;
+      }
+      if (More() && s_[i_] == ']') {
+        ++i_;
+        return true;
+      }
+      return false;
+    }
+  }
+
+  // An object at i_. With `rows` set it is the top-level object: its one "rows" member must be an object, whose
+  // keys are collected.
+  bool Object(int depth, std::vector<std::string>* rows) {
+    if (depth > kMaxDepth || !More() || s_[i_] != '{') return false;
+    ++i_;
+    Space();
+    bool found = false;
+    if (More() && s_[i_] == '}') {
+      ++i_;
+      return rows == nullptr;
+    }
+    while (true) {
+      Space();
+      std::string key;
+      if (!String(&key)) return false;
+      Space();
+      if (!More() || s_[i_] != ':') return false;
+      ++i_;
+      Space();
+      if (rows != nullptr && key == "rows") {
+        if (found || !More() || s_[i_] != '{') return false;
+        found = true;
+        if (!Members(depth + 1, *rows)) return false;
+      } else if (!Value(depth + 1)) {
+        return false;
+      }
+      Space();
+      if (More() && s_[i_] == ',') {
+        ++i_;
+        continue;
+      }
+      if (More() && s_[i_] == '}') {
+        ++i_;
+        return rows == nullptr || found;
+      }
+      return false;
+    }
+  }
+
+  // The "rows" object: an object at `depth` whose keys are collected.
+  bool Members(int depth, std::vector<std::string>& keys) {
+    if (depth > kMaxDepth || !More() || s_[i_] != '{') return false;
+    ++i_;
+    Space();
+    if (More() && s_[i_] == '}') {
+      ++i_;
+      return true;
+    }
+    while (true) {
+      Space();
+      std::string key;
+      if (!String(&key)) return false;
+      Space();
+      if (!More() || s_[i_] != ':') return false;
+      ++i_;
+      Space();
+      if (!Value(depth + 1)) return false;
+      keys.push_back(key);
+      Space();
+      if (More() && s_[i_] == ',') {
+        ++i_;
+        continue;
+      }
+      if (More() && s_[i_] == '}') {
+        ++i_;
+        return true;
+      }
+      return false;
+    }
+  }
+};
+
+// Why the selected pair table is not bound to its provenance, or "" when it is.
+std::string PairProvenanceProblem(const Table& table) {
+  const std::string suffix = ".g4dat";
+  if (table.file.size() <= suffix.size() || table.file.compare(table.file.size() - suffix.size(), suffix.size(), suffix) != 0) {
+    return "the table file is not a .g4dat file";
+  }
+  const std::string sibling = table.file.substr(0, table.file.size() - suffix.size()) + ".prov.json";
+  std::ifstream in(sibling, std::ios::binary);
+  if (!in) return "its provenance file " + sibling + " cannot be read";
+  std::ostringstream bytes;
+  bytes << in.rdbuf();
+  const std::string text = bytes.str();
+  const std::string* declared = table.Directive("SOURCEDIGEST");
+  if (declared == nullptr || *declared != Sha256Hex(text)) {
+    return "the SHA-256 of " + sibling + " is not the table's #SOURCEDIGEST";
+  }
+  std::vector<std::string> rows;
+  if (!G4MuonicDataOverlay::ProvenanceRowKeys(text, rows)) {
+    return "the provenance file " + sibling + " is not strict JSON with one rows object and unescaped keys";
+  }
+  std::vector<std::string> records;
+  for (const Table::Record& record : table.records) {
+    if (record.keys.size() != 2) return "a record does not carry the two keys Z and A";
+    records.push_back(std::to_string(record.keys[0]) + "-" + std::to_string(record.keys[1]));
+  }
+  std::sort(rows.begin(), rows.end());
+  std::sort(records.begin(), records.end());
+  if (rows != records || std::adjacent_find(rows.begin(), rows.end()) != rows.end()) {
+    return "its records are not the rows its provenance file admits";
+  }
+  return "";
+}
+
+// Select the bound-rate pair table of `profile`: it must exist, and its three value columns must be the
+// contiguous `tau q free_tau` with units `ns`, `1`, `ns`. False after a refusal.
+bool SelectPairs(State& state, const std::string& dir, const std::string& profile, const std::string& present) {
+  const Table* table = state.dataset.Find(profile, kPairTable);
+  if (table == nullptr) {
+    RefusePairs(state, "G4MuonicData004",
+                "G4MUONICDATA_D1_PAIR_PROFILE names '" + profile + "' but the dataset at " + dir +
+                    " carries no #TABLE " + kPairTable + " under that '#PROFILE'; the profiles present are: " + present);
+    return false;
+  }
+  Index first = 0;
+  for (G4int i = 0; i < 3; ++i) {
+    if (!CheckUnit(dir, *table, kPairColumns[i], kPairUnits[i])) {
+      state.refusal = "the bound-rate pair table at " + dir + " does not carry tau q free_tau in ns, 1, ns";
+      return false;
+    }
+    Index index = 0;
+    FindColumn(*table, kPairColumns[i], index);
+    if (i == 0) {
+      first = index;
+    } else if (index != first + static_cast<Index>(i)) {
+      RefusePairs(state, "G4MuonicData003", "dataset at " + dir + ": file " + table->file + ", #TABLE " + kPairTable +
+                                                " does not declare tau q free_tau as consecutive columns");
+      return false;
+    }
+  }
+  const std::string unbound = PairProvenanceProblem(*table);
+  if (!unbound.empty()) {
+    RefusePairs(state, "G4MuonicData005",
+                "dataset at " + dir + ": the bound-rate pair table " + table->file + " of the selected profile '" +
+                    profile + "' is refused: " + unbound);
+    return false;
+  }
+  state.pairs.table = table;
+  state.pairs.value = first;
+  state.pairs.count = 3;
+  state.pairs.convention = Assigned(*table, "VALIDITY", "A", ':');
+  return true;
+}
+
 // Read the environment, discover and read the dataset, apply the semantic layer, and select the
 // tables of each seam. Any refusal raises a FatalException; should an installed handler suppress
 // the abort, the state is left with no tables, and a semantic refusal is recorded so that every
@@ -215,25 +608,36 @@ void BuildOrRefuse(State& state) {
   const std::string legacy = Variable("G4MUONICDATA_PROFILE");
   const Choice d1 = Choose("G4MUONICDATA_D1_PROFILE", legacy, G4MuonicDataTable::kParityProfile);
   const Choice d3 = Choose("G4MUONICDATA_D3_PROFILE", legacy, kCompiledProfile);
+  // The pair profile has its own variable and no legacy or default source: unset is `compiled`.
+  const std::string pairNamed = Variable("G4MUONICDATA_D1_PAIR_PROFILE");
+  const std::string pairProfile = pairNamed.empty() ? std::string(kCompiledProfile) : pairNamed;
   state.config.d1Profile = d1.profile;
   state.config.d3Profile = d3.profile;
+  state.config.d1PairProfile = pairProfile;
   const bool d1Compiled = d1.profile == kCompiledProfile;
   const bool d3Compiled = d3.profile == kCompiledProfile;
-  if (d1Compiled && d3Compiled) return;  // no discovery and no I/O
+  const bool pairCompiled = pairProfile == kCompiledProfile;
+  if (d1Compiled && d3Compiled && pairCompiled) return;  // no discovery and no I/O
 
   const char* found = G4FindDataDir("G4MUONICDATA");
+  // With a pair profile selected, a dataset that cannot be found or read is recorded as refused too, so that a
+  // suppressed abort never leaves the requested evaluated pairs replaced by the compiled-in code.
   if (found == nullptr) {
-    Fatal("G4MuonicData001",
-          "G4MuonicDataTable::Enable() was called but no dataset directory was found: G4MUONICDATA "
-          "is unset and GEANT4_DATA_DIR resolved none. Export G4MUONICDATA=<directory holding "
-          "the *.g4dat files>.");
+    const std::string text =
+        "G4MuonicDataTable::Enable() was called but no dataset directory was found: G4MUONICDATA "
+        "is unset and GEANT4_DATA_DIR resolved none. Export G4MUONICDATA=<directory holding "
+        "the *.g4dat files>.";
+    Fatal("G4MuonicData001", text);
+    if (!pairCompiled) state.refusal = text;
     return;
   }
   const std::string dir(found);
   try {
     state.dataset = G4MuonicDataTable::Load(dir);
   } catch (const G4MuonicDataTable::Error& e) {
-    Fatal("G4MuonicData002", "dataset at " + dir + " rejected: " + e.what());
+    const std::string text = "dataset at " + dir + " rejected: " + e.what();
+    Fatal("G4MuonicData002", text);
+    if (!pairCompiled) state.refusal = text;
     return;
   }
   state.loaded = true;
@@ -267,6 +671,16 @@ void BuildOrRefuse(State& state) {
                                  dir + " declares that '#PROFILE'; the profiles present are: " + present);
     return;
   }
+  // A bound-rate pair profile is selected by its own variable only. Named by the variable that spans both
+  // seams, it would resolve to a capture seam with no table and fall back to the compiled-in capture code with
+  // no pair at all; that configuration is refused rather than silently compiled.
+  if (!legacy.empty() && legacy != kCompiledProfile && state.dataset.Find(legacy, kPairTable) != nullptr) {
+    RefusePairs(state, "G4MuonicData004",
+                "G4MUONICDATA_PROFILE names '" + legacy + "', a bound-rate pair profile of the dataset at " + dir +
+                    "; a pair profile is selected only by G4MUONICDATA_D1_PAIR_PROFILE");
+    return;
+  }
+  if (!pairCompiled && !SelectPairs(state, dir, pairProfile, present)) return;
 
   if (!d1Compiled) {
     if (!Select(state, dir, d1.profile, kCaptureTable, state.capture)) return;
@@ -304,7 +718,9 @@ void BuildOrRefuse(State& state) {
 }
 
 // A seam that ended with no table of its own -- because its profile carries none, or because the
-// configuration was refused before it could be selected -- is the compiled-in code for that seam.
+// configuration was refused before it could be selected -- is the compiled-in code for that seam. The pair
+// profile is its own selection: resetting the capture seam to compiled leaves it, and its table, alone; a pair
+// profile that ended with no table is `compiled` too.
 void Build(State& state) {
   BuildOrRefuse(state);
   if (state.capture.table == nullptr && state.zeff.table == nullptr) {
@@ -312,6 +728,7 @@ void Build(State& state) {
     state.d1Evaluated = false;
   }
   if (state.kshell.table == nullptr && state.levels.table == nullptr) state.config.d3Profile = kCompiledProfile;
+  if (state.pairs.table == nullptr) state.config.d1PairProfile = kCompiledProfile;
 }
 
 const State& Frozen() {
@@ -395,6 +812,7 @@ const G4MuonicDataOverlay::Configuration& G4MuonicDataOverlay::Config() {
     Configuration configuration;
     configuration.d1Profile = kCompiledProfile;
     configuration.d3Profile = kCompiledProfile;
+    configuration.d1PairProfile = kCompiledProfile;
     return configuration;
   }();
   if (!G4MuonicDataTable::IsEnabled()) return off;
@@ -409,6 +827,21 @@ const G4MuonicDataTable* G4MuonicDataOverlay::Table() {
 G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolveRate(G4int Z, G4int A) {
   const State* state = Access();
   return state == nullptr ? Off(Z, A) : Resolve(state->capture, state->config.d1Profile, Z, A);
+}
+
+G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolvePair(G4int Z, G4int A) {
+  const State* state = Access();
+  if (state == nullptr) {
+    Resolution off = Off(Z, A);
+    return off;
+  }
+  // Isotope keys only: a natural-composition request has no pair, and no other rung is consulted.
+  if (A <= 0) {
+    Resolution none = Off(Z, A);
+    none.profile = state->config.d1PairProfile;
+    return none;
+  }
+  return Resolve(state->pairs, state->config.d1PairProfile, Z, A);
 }
 
 G4MuonicDataOverlay::Resolution G4MuonicDataOverlay::ResolveZeff(G4int Z) {
@@ -479,4 +912,11 @@ void G4MuonicDataOverlay::CheckCascadeLevels(G4int Z, G4int A, const G4double* l
       return;
     }
   }
+}
+
+bool G4MuonicDataOverlay::ProvenanceRowKeys(const std::string& text, std::vector<std::string>& keys) {
+  std::vector<std::string> rows;
+  if (!StrictJson(text).Rows(rows)) return false;
+  keys = rows;
+  return true;
 }

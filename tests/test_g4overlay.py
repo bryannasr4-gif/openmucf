@@ -804,6 +804,7 @@ def test_t72_the_glue_files_are_identical_across_families_and_read_the_profile_v
     named = sorted(set(re.findall(rb'[A-Za-z]\w*\("(G4MUONICDATA[A-Z0-9_]*)"', glue_cc)))
     assert named == [
         b"G4MUONICDATA",
+        b"G4MUONICDATA_D1_PAIR_PROFILE",
         b"G4MUONICDATA_D1_PROFILE",
         b"G4MUONICDATA_D3_PROFILE",
         b"G4MUONICDATA_PROFILE",
