@@ -1,0 +1,36 @@
+=== RUN teardown_atomic
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE teardown
+ROUTE atomic
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 50
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+SELECTORS constructed 3 destroyed 0 live_before_teardown 3
+=== RUN teardown_stopping
+VERSION $Name: geant4-11-05-beta-01 $
+VERSION_NUMBER 1150
+MODE teardown
+ROUTE stopping
+MANAGER tasking
+THREADS 2
+MATERIAL al2o3
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 50
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER worker-based
+SELECTORS constructed 3 destroyed 3 live_before_teardown 3

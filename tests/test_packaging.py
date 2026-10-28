@@ -236,6 +236,8 @@ LICENCE_BY_PATH: dict[str, str | None] = {
     "data/g4/reference/d2/printed_rows.csv": None,
     "data/g4/reference/d2/measurements.csv": None,
     "data/g4/d2/selector_vs_primary.csv": None,
+    "data/g4/d2/measured/stanislaus1987-*": None,
+    "data/g4/d2/measured/evaluation.json": None,
     "data/g4/d3/validation_cells.csv": None,
     "data/g4/d3/intensity_ratios.csv": None,
     "data/g4/d3/validation.csv": None,
@@ -270,6 +272,24 @@ GEANT4_COMPOSITIONS = ("data/g4/d1/geant4_natural_isotopes.csv",)
 #: `parity` tables do.
 GEANT4_DECAY_RATES = ("data/g4/d1/d1_decay_rate.oracle",)
 MUDIRAC = ("data/g4/d3/mudirac_inputs.csv", "data/g4/d3/LICENSE-MUDIRAC")
+
+
+def _measured_tables() -> tuple[str, ...]:
+    """The measured oxide vectors: one table and its Layer-2 file per source row, named after its profile, so
+    a table without a source row, or a stray file, is not classed by this list."""
+    from openmucf.g4 import d2_measured
+
+    rows = d2_measured.load_source_rows(
+        (REPO / "data/g4/reference/d2/measurements.csv").read_bytes(),
+        (REPO / "data/g4/reference/d2/printed_rows.csv").read_bytes(),
+    )
+    return tuple(
+        f"data/g4/d2/measured/{d2_measured.profile(row)}.{ext}"
+        for row in rows
+        for ext in ("g4dat", "prov.json")
+    )
+
+
 #: The files under `data/g4/` that restate cells of tables a third party publishes -- as printed, rescaled or
 #: normalized, whether alone, as the values of a table generated from them or beside this project's values in
 #: a comparison -- and so carry no licence of this repository. A file that repeats a third-party value only
@@ -289,6 +309,9 @@ RESTATED = (
     "data/g4/d1/suzuki1987_quantity_rows.csv",
     "data/g4/d1/zeff_audit.csv",
     "data/g4/d2/selector_vs_primary.csv",
+    # The measured oxide vectors and their evaluation, which carry the source's per-atom ratios rescaled.
+    *_measured_tables(),
+    "data/g4/d2/measured/evaluation.json",
     "data/g4/d3/consumer_centroids.csv",
     "data/g4/d3/history/validation.mudirac130.csv",
     "data/g4/d3/intensity_ratios.csv",
@@ -340,6 +363,10 @@ PROJECT_AUTHORED = (
     "data/g4/d1/natural_target_answers.csv",
     "data/g4/d1/natural_target_capture.csv",
     "data/g4/d1/record_classes.csv",
+    # The measured vectors' committed inputs (the source's flags, cited, and this project's registration) and
+    # the inventory of the directory's bytes.
+    "data/g4/d2/measured/inputs.json",
+    "data/g4/d2/measured/inventory.json",
     "data/g4/d2/harvest_builds.csv",
     "data/g4/d2/selector_bindings.csv",
     "data/g4/d2/selector_call_sites.csv",

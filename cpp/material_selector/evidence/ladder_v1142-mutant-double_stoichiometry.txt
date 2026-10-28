@@ -1,0 +1,100 @@
+=== RUN ladder_atomic_serial_off_bound
+VERSION $Name: geant4-11-04-patch-02 $
+VERSION_NUMBER 1142
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE off_bound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_atomic_serial_on
+VERSION $Name: geant4-11-04-patch-02 $
+VERSION_NUMBER 1142
+MODE ladder
+ROUTE atomic
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 739591
+SELECTED -1 13 27 308985
+ONWARD -1 8 16 739591
+ONWARD -1 13 27 308985
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_serial_off_bound
+VERSION $Name: geant4-11-04-patch-02 $
+VERSION_NUMBER 1142
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE off_bound
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 357324
+SELECTED -1 13 27 691252
+ONWARD -1 8 16 357324
+ONWARD -1 13 27 691252
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1
+=== RUN ladder_stopping_serial_on
+VERSION $Name: geant4-11-04-patch-02 $
+VERSION_NUMBER 1142
+MODE ladder
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE on
+DATA off
+PROFILE none
+DRAWS 1048576
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+RUN_MANAGER serial
+ELEMENT 0 13 0x1.47ddaf243ae37p+63
+ELEMENT 1 8 0x1.ebcc86b658554p+63
+WORKER -1 events 1048576 calls 1048576 draw_mismatch 0 onward_mismatch 0
+SELECTED -1 8 16 739591
+SELECTED -1 13 27 308985
+ONWARD -1 8 16 739591
+ONWARD -1 13 27 308985
+SELECTORS constructed 1 destroyed 0 live_before_teardown 1

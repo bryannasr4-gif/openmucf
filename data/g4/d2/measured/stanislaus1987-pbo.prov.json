@@ -1,0 +1,39 @@
+{
+  "dataset": "G4MuonicData",
+  "precedence": [
+    "openmucf"
+  ],
+  "profile": "stanislaus1987-pbo",
+  "rows": {
+    "8": {
+      "conditions": "nominal solid PbO, hydrogen-free; terminal element of a stopped negative muon",
+      "evaluation_id": "d2-measured-regions-v2",
+      "evaluation_method": "p_metal = m A / (n + m A), p_O = 1 - p_metal, from the source-reported per-atom ratio A (SOURCE_REPORTED_FROZEN); decisions in evaluation.json",
+      "isotope_resolved": false,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Stanislaus1987a",
+      "source_library": "openmucf",
+      "source_locator": "Nucl. Phys. A 475 (1987) 630, Table 1, row PbO (A = 4.30 +/- 0.24)",
+      "unc_type": "exp",
+      "validity_range": "a material whose elements are exactly PbO's, in its atom ratio"
+    },
+    "82": {
+      "conditions": "nominal solid PbO, hydrogen-free; terminal element of a stopped negative muon",
+      "evaluation_id": "d2-measured-regions-v2",
+      "evaluation_method": "p_metal = m A / (n + m A), p_O = 1 - p_metal, from the source-reported per-atom ratio A (SOURCE_REPORTED_FROZEN); decisions in evaluation.json",
+      "isotope_resolved": false,
+      "needs_verification": false,
+      "recommendation": "",
+      "single_source": true,
+      "source_bibkey": "Stanislaus1987a",
+      "source_library": "openmucf",
+      "source_locator": "Nucl. Phys. A 475 (1987) 630, Table 1, row PbO (A = 4.30 +/- 0.24)",
+      "unc_type": "exp",
+      "validity_range": "a material whose elements are exactly PbO's, in its atom ratio"
+    }
+  },
+  "seam": "d2_atomic_capture",
+  "version": "0.1.0"
+}
