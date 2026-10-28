@@ -42,6 +42,8 @@ from typing import Any
 
 import numpy as np
 
+from openmucf.g4 import science_decisions as decisions
+
 INPUTS_SCHEMA = "openmucf.bound-rate-inputs/1"
 EVALUATION_SCHEMA = "openmucf.bound-rate-evaluation/1"
 CONVENTION_SCHEMA = "openmucf.bound-decay-response/1"
@@ -51,8 +53,13 @@ PAIR_TABLE = "bound_rate_primitives"
 PAIR_COLUMNS = ("Z", "A", "tau", "q", "free_tau")
 PAIR_UNITS = "tau=ns q=1 free_tau=ns"
 #: The decision labels and the improvement labels.
-MEETS, DOES_NOT_MEET, NOT_ESTABLISHED, VACUOUS = "MEETS", "DOES_NOT_MEET", "NOT_ESTABLISHED", "VACUOUS"
-ESTABLISHED = "ESTABLISHED"
+MEETS, DOES_NOT_MEET, NOT_ESTABLISHED, VACUOUS = (
+    decisions.MEETS,
+    decisions.DOES_NOT_MEET,
+    decisions.NOT_ESTABLISHED,
+    decisions.VACUOUS,
+)
+ESTABLISHED = decisions.ESTABLISHED
 REGION_LABEL = "EVALUATOR_TYPE_B"
 #: The roster statuses the evaluation knows.
 ROSTER_IN = "IN"
@@ -1152,51 +1159,23 @@ def quantity_range(
 
 def decision(predicted: Any, low: Any, high: Any, budget: Any, norm: str) -> dict[str, Any]:
     """MEETS iff the largest error over the reference interval is within the budget, DOES_NOT_MEET iff the
-    smallest exceeds it, NOT_ESTABLISHED otherwise. Only the central prediction enters: a prediction
-    uncertainty cannot move a decision. An empty interval is VACUOUS; a relative reference that reaches zero
-    is non-informative."""
-    y = _finite_real(predicted, "prediction")
-    lo, hi, bud = (_finite_real(v, "reference") for v in (low, high, budget))
-    if not bud > 0:
-        raise EvaluationError("the budget must be positive")
-    if not lo <= hi:
-        return {"verdict": VACUOUS, "L": None, "U": None}
-    if norm == "relative":
-        if not lo > 0:
-            return {"verdict": NOT_ESTABLISHED, "L": None, "U": None, "note": "non-informative reference"}
-
-        def err(q: float) -> float:
-            return abs(y - q) / q
-    elif norm == "absolute":
-
-        def err(q: float) -> float:
-            return abs(y - q)
-    else:
-        raise EvaluationError(f"norm {norm!r}")
-    upper = max(err(lo), err(hi))
-    lower = 0.0 if lo <= y <= hi else min(err(lo), err(hi))
-    if upper <= bud:
-        verdict = MEETS
-    elif lower > bud:
-        verdict = DOES_NOT_MEET
-    else:
-        verdict = NOT_ESTABLISHED
-    return {"verdict": verdict, "L": lower, "U": upper}
+    smallest exceeds it, NOT_ESTABLISHED otherwise; the rule of :mod:`openmucf.g4.science_decisions`, which
+    takes the verdict. Only the central prediction enters: a prediction uncertainty cannot move a decision.
+    An empty interval is VACUOUS; a relative reference that reaches zero is non-informative."""
+    try:
+        return decisions.interval_decision(predicted, low, high, budget, norm)
+    except decisions.DecisionError as exc:
+        raise EvaluationError(str(exc)) from exc
 
 
 def improvement(entry: Any, stock: Any, low: Any, high: Any) -> dict[str, Any]:
-    """Robust improvement: ``|entry - q| < |stock - q|`` for every q in the interval. The advantage
-    ``|stock - q| - |entry - q|`` is monotone between the two predictions and constant outside them, so its
-    minimum over an interval is at an endpoint."""
-    e, s, lo, hi = (_finite_real(v, "improvement") for v in (entry, stock, low, high))
-    if not lo <= hi:
-        return {"verdict": VACUOUS, "min_advantage": None, "midpoint": None}
-    adv = min(abs(s - q) - abs(e - q) for q in (lo, hi))
-    return {
-        "verdict": ESTABLISHED if adv > 0 else NOT_ESTABLISHED,
-        "min_advantage": adv,
-        "midpoint": 0.5 * (e + s),
-    }
+    """Robust improvement: ``|entry - q| < |stock - q|`` for every q in the interval, decided by
+    :mod:`openmucf.g4.science_decisions`. The advantage ``|stock - q| - |entry - q|`` is monotone between the
+    two predictions and constant outside them, so its minimum over an interval is at an endpoint."""
+    try:
+        return decisions.interval_improvement(entry, stock, low, high)
+    except decisions.DecisionError as exc:
+        raise EvaluationError(str(exc)) from exc
 
 
 # --------------------------------------------------------------------------------------------
