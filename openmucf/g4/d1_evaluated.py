@@ -820,10 +820,12 @@ EXPONENTIAL_VARIATE_MAX = 745.0
 
 
 def pair(tau: Any, q: Any, free_tau: Any) -> Pair:
-    """``d = q / free_tau``, ``c = 1/tau - d`` from one primitive tuple (ns, 1, ns), admitted only if every
-    quantity a consumer forms from it is finite and in its domain, except the infinite capture lifetime zero
-    capture stores (below); nothing is clipped. The consumer transform, in the order the consumers evaluate
-    it:
+    """``d = q / free_tau``, ``c = 1/tau - d`` from one primitive tuple (ns, 1, ns). Admission checks the
+    rates, lifetimes, probability, reciprocal read-back sum and waiting-time expressions listed below. All
+    listed quantities must be finite and in their stated domains except the infinite capture lifetime
+    stored for zero capture. The waiting-time checks use the factor 745; they do not bound arbitrary
+    absolute track times or the kinematic return of GetMeanFreePath. Nothing is clipped. The consumer
+    transform, in the order the consumers evaluate it:
 
     * the primitives: ``tau`` and ``free_tau`` finite and positive, ``q`` finite in (0, 1];
     * the decay rate ``d = q/free_tau``: finite and in ``(0, 1/free_tau]`` (a quotient that underflows to

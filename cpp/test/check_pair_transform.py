@@ -2,10 +2,9 @@
 
 The compiled function is run over a boundary corpus (subnormals, the reciprocal-overflow edge, nextafter
 neighbours of every edge, zero capture, q = 1, DBL_MAX, NaN and both infinities in every primitive) and a
-seeded random corpus. Each tuple must be admitted exactly when an independent simulation of what the Geant4
-consumers compute from it -- the stopping route's total rate and sampled wait, the atomic route's lifetime,
-stored partial lifetimes and the rates its decay step reads back from them -- gives only quantities in their
-domains, all finite except the infinite capture lifetime of zero capture (read back as a zero rate), and an
+seeded random corpus. Each tuple must be admitted exactly when an independent simulation of the listed
+consumer expressions -- the stopping route's total rate and waiting-time expression, the atomic route's
+lifetime, stored partial lifetimes and the rates its decay step reads back from them -- admits it, and an
 admitted tuple's capture and decay rates must be the simulation's to the bit.
 
 usage: check_pair_transform.py <g4muonicdata_bound_rate_check>
@@ -19,8 +18,7 @@ import subprocess
 import sys
 
 DBL_MAX = sys.float_info.max
-#: -ln(u) of any double u in (0, 1) is at most -ln(2**-1074) = 744.44...; a consumer scales the lifetime
-#: by it.
+#: The multiplier of the waiting-time checks (cpp/patches/README.md, pair-profile section).
 VARIATE_MAX = 745.0
 
 
@@ -32,7 +30,7 @@ def divide(a: float, b: float) -> float:
 
 
 def simulate(tau: float, q: float, free_tau: float) -> tuple[float, float] | None:
-    """(capture, decay) when every consumer quantity is usable, else None."""
+    """(capture, decay) when the listed transform is admissible, else None."""
     if not all(math.isfinite(v) for v in (tau, q, free_tau)) or not (tau > 0 and free_tau > 0 and 0 < q <= 1):
         return None
     decay = q / free_tau

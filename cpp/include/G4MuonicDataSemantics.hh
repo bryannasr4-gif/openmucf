@@ -20,7 +20,7 @@
 //   S004  units: the `#UNITS` assignment of every value column, as the lookups read it.
 //   S005  values: finite, and in the domain the quantity has (a rate and an energy are positive,
 //         an uncertainty is not negative, an effective charge does not exceed Z, a pair tuple's q
-//         lies in (0, 1] and every quantity a consumer forms from it is usable: BoundPairProblem).
+//         lies in (0, 1] and its listed stopped-route transform satisfies BoundPairProblem).
 //   S006  the D3 pair: one profile's two energy tables cover one key set, in one falling order.
 #ifndef G4MUONICDATASEMANTICS_HH
 #define G4MUONICDATASEMANTICS_HH
@@ -44,10 +44,11 @@ class G4MuonicDataSemantics {
   // vector is the only acceptable result for a dataset a consumer may read.
   static std::vector<Issue> Validate(const G4MuonicDataTable& dataset);
 
-  // The consumer transform of one bound-rate pair tuple (tau and free_tau in ns, q dimensionless), in the
-  // order the consumers evaluate it. A tuple is admitted only if every quantity a consumer forms from it is
-  // finite and in its domain, except the infinite capture lifetime zero capture stores (below); nothing is
-  // clipped:
+  // The consumer transform of one bound-rate pair tuple (tau and free_tau in ns, q dimensionless), in the order
+  // the consumers evaluate it. The tuple checks below cover rates, lifetimes, probability, reciprocal read-back
+  // and waiting-time expressions with multiplier 745. All listed quantities must be finite and in their stated
+  // domains except the infinite capture lifetime stored for zero capture. Absolute track times and kinematic
+  // GetMeanFreePath returns are outside these checks; nothing is clipped.
   //   tau and free_tau finite and positive, q finite in (0, 1];
   //   the decay rate d = q / free_tau finite and in (0, 1/free_tau] (a quotient that underflows is refused);
   //   1/tau finite, and the capture rate c = 1/tau - d finite and not negative (c = 0 is admitted);

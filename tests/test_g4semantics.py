@@ -268,16 +268,14 @@ def _table_issues(member: Loaded, version: str) -> list[Issue]:
     return out
 
 
-#: The largest exponential variate -ln(u) of a binary64 u in (0, 1), rounded up: the factor by which a
-#: consumer may scale the lifetime when it samples a waiting time.
+#: The multiplier of the waiting-time checks (cpp/patches/README.md, pair-profile section).
 VARIATE_MAX = 745.0
 
 
 def pair_tuple_problem(tau: float, q: float, free_tau: float) -> str | None:
-    """The semantic rule for one pair tuple, stated as the consumers evaluate it: every rate, probability,
-    sampled waiting time and lifetime they form from (tau, q, free_tau) is finite and in its domain, except
-    the infinite capture lifetime of zero capture, which reads back as a zero rate. None when the tuple is
-    admitted."""
+    """The semantic rule for one pair tuple, written independently in the order the consumers evaluate it:
+    None when the listed transform admits the tuple, else the first check it fails. The contract is stated in
+    cpp/patches/README.md (pair-profile section)."""
     if not all(math.isfinite(v) for v in (tau, q, free_tau)) or not (tau > 0 and free_tau > 0):
         return "has a primitive that is not finite and positive"
     if not 0 < q <= 1:
@@ -589,10 +587,9 @@ def test_t121_drill_the_pair_table_rules(mutable: pathlib.Path, kind, old, new, 
 
 
 # T-122: one admissibility rule over the consumer transform. The production pair() and the semantic rule
-# above must each admit a tuple exactly when an independent simulation of what the consumers compute from it
-# (the stopping route, the atomic route's stored and read-back partial lifetimes, the sampled waiting times
-# and the Python delivery) yields only quantities in their domains: all finite, except the infinite capture
-# lifetime that zero capture stores and reads back as a zero rate.
+# above must each admit a tuple exactly when consumer_admits, an independent simulation of the listed
+# consumer expressions (the stopping route, the atomic route's stored and read-back partial lifetimes, the
+# waiting-time expressions and the Python delivery), admits it.
 def _ieee_divide(a: float, b: float) -> float:
     """a / b as binary64 hardware gives it (C++): a positive number over zero is +inf."""
     if b == 0:
