@@ -394,6 +394,27 @@ def cases(tag: str) -> dict[str, dict[str, str]]:
 
 
 @pytest.mark.parametrize("tag", sorted(BASE))
+def test_the_catalogue_refuses_each_table_outside_its_meaning(tag):
+    """The C++ catalogue reads the same one-field hostile tables the Python reader refuses
+    (`HOSTILE_TABLES` of tests/test_g4_d2_material.py): each stops the run with G4MuonicData100 before
+    anything binds; the unchanged table loads and binds."""
+    import test_g4_d2_material as material
+
+    c = cases(tag)
+    # the control's catalogue holds the one table, so the probe's NIST bindings to other entries refuse (101);
+    # the catalogue itself loads (no 100)
+    assert c["hostile_control"]["rc"] == "0" and "G4MuonicData100" not in c["hostile_control"]["flags"]
+    control = blocks("probe", tag)["hostile_control"]
+    assert any(line.startswith("ENTRY stanislaus1987-al2o3 asc BOUND") for line in control)
+    for name in material.HOSTILE_TABLES:
+        row = c[f"hostile_{name}"]
+        assert row["rc"] != "0" and "G4MuonicData100" in row["flags"], name
+        assert f"hostile_{name}" not in blocks("probe", tag) or not any(
+            line.startswith("ENTRY") for line in blocks("probe", tag)[f"hostile_{name}"]
+        ), name
+
+
+@pytest.mark.parametrize("tag", sorted(BASE))
 def test_a_disabled_provider_reads_no_file(tag):
     """Disabled, with the catalogue path missing or holding a malformed table, the traces are those of a run
     without the provider; enabled, the same paths stop the run."""

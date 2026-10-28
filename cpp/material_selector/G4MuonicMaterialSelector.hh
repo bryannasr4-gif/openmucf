@@ -63,7 +63,9 @@ class G4MuonicMaterialCatalogue {
     std::vector<double> p;   // probability per element, Z order
     std::vector<int> n;      // atoms per formula unit, Z order
   };
-  // Read every d2_atomic_capture material_vector table of the directory; a violation raises G4MuonicData100.
+  // Read every d2_atomic_capture material_vector table of the directory; a violation raises G4MuonicData100,
+  // and so does a table whose units are not the dimensionless P=1 n=1, whose scope is not
+  // hydrogen_free_nominal_solid or whose status is not SOURCE_REPORTED_PROVISIONAL.
   static G4MuonicMaterialCatalogue Load(const std::string& directory);
   const Entry* Find(const std::string& profile) const;
   const std::vector<Entry>& Entries() const { return entries_; }

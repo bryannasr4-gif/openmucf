@@ -110,6 +110,11 @@ case "$batch" in
       run_case "ladder_$1_$2_${suffix}" --mode ladder --route "$1" --manager "$2" --threads 2 --material "$3" \
         --enable "$4" --catalogue "$catalogue" --draws "$N"
     done ;;
+  hostile)  # each subdirectory of the catalogue holds one table with one field changed: it must not load
+    for dir in "$catalogue"/*/; do
+      name=$(basename "$dir")
+      run_case "hostile_$name" --mode probe --catalogue "$dir" --draws 16
+    done ;;
   noio)  # disabled, the provider reads nothing: a missing or malformed catalogue path changes nothing
     mkdir -p "$work/malformed" && printf '#GRAMMAR 9.0\n' > "$work/malformed/bad.g4dat"
     for path in /nonexistent-catalogue "$work/malformed"; do

@@ -44,7 +44,9 @@ cpp/material_selector/native.sh run <tag> <work> <catalogue> <physics data> <bat
 atomic route (`G4MuonMinusAtomicCapture` with the muonic-atom decay), under the Serial or the Tasking run
 manager. Its modes are listed at the top of the file. The batches of `native.sh` run: every table read back and
 bound in both element orders, with its running sums and the counts of the 2^20-draw midpoint ladder; the named
-NIST oxides; the refusal cases; the installation order; the aluminium-oxide ladder on both routes and both run
+NIST oxides; the refusal cases; tables with one field changed (units, scope, status, basis, table or column
+name, or entries outside the open unit interval), each of which the catalogue must refuse with
+`G4MuonicData100`; the installation order; the aluminium-oxide ladder on both routes and both run
 managers with the provider absent, disabled, disabled with bindings in place, enabled with nothing bound and
 enabled, and in reversed element order; the lead-oxide ladder for the NIST material and for the reversed order;
 the default-off traces, with and without the muonic-data switch of an installation built with `cpp/patches/`;

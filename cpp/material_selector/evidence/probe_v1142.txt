@@ -1,3 +1,35 @@
+=== RUN hostile_control
+VERSION $Name: geant4-11-04-patch-02 $
+VERSION_NUMBER 1142
+MODE probe
+ROUTE stopping
+MANAGER serial
+THREADS 2
+MATERIAL al2o3
+ENABLE absent
+DATA off
+PROFILE none
+DRAWS 16
+EVENTS 100
+SEED_BASE 17
+DRILLS none
+ATOMIC_SETTER shim
+ENTRY stanislaus1987-al2o3 asc BOUND tolerance 0x1.12e0be826d695p-30 counts 10 6
+P stanislaus1987-al2o3 asc 0 8 0x1.ebcc86b658554p+63 0x1.3ac10c9714fbdp-1 0x1.3ac10c9714fbdp-1
+P stanislaus1987-al2o3 asc 1 13 0x1.47ddaf243ae37p+63 0x1.8a7de6d1d6086p-2 0x1p+0
+ENTRY stanislaus1987-al2o3 desc BOUND tolerance 0x1.12e0be826d695p-30 counts 6 10
+P stanislaus1987-al2o3 desc 0 13 0x1.47ddaf243ae37p+63 0x1.8a7de6d1d6086p-2 0x1.8a7de6d1d6086p-2
+P stanislaus1987-al2o3 desc 1 8 0x1.ebcc86b658554p+63 0x1.3ac10c9714fbdp-1 0x1p+0
+NIST G4_ALUMINUM_OXIDE stanislaus1987-al2o3 BOUND - tolerance 0x1.a36e2eb1c432dp-14 13:0x1.45682e77cc5dep+65 8:0x1.e81c45b3b28cfp+65
+NIST G4_CALCIUM_OXIDE stanislaus1987-cao BIND_REFUSED G4MuonicData101 tolerance 0x1.a36e2eb1c432dp-14 20:0x1.ebcf45214d1fdp+64 8:0x1.ebcf45214d1fep+64
+NIST G4_FERRIC_OXIDE stanislaus1987-fe2o3 BIND_REFUSED G4MuonicData101 tolerance 0x1.a36e2eb1c432dp-14 26:0x1.10253eb86e709p+65 8:0x1.9837de14a5a8fp+65
+NIST G4_LEAD_OXIDE stanislaus1987-pbo BIND_REFUSED G4MuonicData101 tolerance 0x1.a36e2eb1c432dp-14 8:0x1.64d673199efbep+64 82:0x1.64cf06fa4c833p+64
+NIST G4_MAGNESIUM_OXIDE stanislaus1987-mgo BIND_REFUSED G4MuonicData101 tolerance 0x1.a36e2eb1c432dp-14 12:0x1.732b40ecfeb24p+65 8:0x1.732b40ecfeb24p+65
+NIST G4_SILICON_DIOXIDE stanislaus1987-sio2 BIND_REFUSED G4MuonicData101 tolerance 0x1.a36e2eb1c432dp-14 14:0x1.42b341c0a8e87p+64 8:0x1.42b341c0a8e87p+65
+NIST G4_TITANIUM_DIOXIDE stanislaus1987-tio2 BIND_REFUSED G4MuonicData101 tolerance 0x1.a36e2eb1c432dp-14 22:0x1.bdc7eea0ee5aep+64 8:0x1.bdc7eea0ee5aep+65
+ISOTOPES 8 16:0x1.fec17ebaf1023p-1 17:0x1.8e757928e0c9dp-12 18:0x1.0cb295e9e1b08p-9
+ISOTOPES 13 27:0x1p+0
+ISOTOPES 82 204:0x1.cac083126e978p-7 206:0x1.ed916872b020dp-3 207:0x1.c49ba5e353f7ep-3 208:0x1.0c49ba5e353f8p-1
 === RUN probe
 VERSION $Name: geant4-11-04-patch-02 $
 VERSION_NUMBER 1142

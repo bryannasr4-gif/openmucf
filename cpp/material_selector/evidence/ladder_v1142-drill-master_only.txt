@@ -92,6 +92,6 @@ ATOMIC_SETTER shim
 RUN_MANAGER worker-based
 ELEMENT 0 13 0x1.47ddaf243ae37p+63
 ELEMENT 1 8 0x1.ebcc86b658554p+63
-WORKER 0 events 505856 calls 0 draw_mismatch 0 onward_mismatch 505856
-WORKER 1 events 542720 calls 0 draw_mismatch 0 onward_mismatch 542720
+WORKER 0 events 525312 calls 0 draw_mismatch 0 onward_mismatch 525312
+WORKER 1 events 523264 calls 0 draw_mismatch 0 onward_mismatch 523264
 SELECTORS constructed 1 destroyed 1 live_before_teardown 1

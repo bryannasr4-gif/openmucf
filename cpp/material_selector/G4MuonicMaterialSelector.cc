@@ -110,6 +110,23 @@ G4MuonicMaterialCatalogue G4MuonicMaterialCatalogue::Load(const std::string& dir
     if (got != std::set<std::string>{"form", "basis", "scope", "status", "material"} || tok["form"] != "vector" ||
         tok["basis"] != "atom")
       CatalogueError(t.profile + ": #VALIDITY");
+    // The only meaning this provider reads: dimensionless P and n, for the hydrogen-free nominal solid, carried as
+    // reported and provisional. Any other table is refused before anything can bind to it.
+    const std::string* units = t.Directive("UNITS");
+    std::istringstream unit_items(units ? *units : "");
+    std::set<std::string> unit_set;
+    std::string unit_item;
+    std::size_t unit_count = 0;
+    while (unit_items >> unit_item) {
+      unit_set.insert(unit_item);
+      ++unit_count;
+    }
+    if (unit_count != 2 || unit_set != std::set<std::string>{"P=1", "n=1"})
+      CatalogueError(t.profile + ": #UNITS is not the dimensionless P=1 n=1");
+    if (tok["scope"] != "hydrogen_free_nominal_solid")
+      CatalogueError(t.profile + ": scope " + tok["scope"] + " is not hydrogen_free_nominal_solid");
+    if (tok["status"] != "SOURCE_REPORTED_PROVISIONAL")
+      CatalogueError(t.profile + ": status " + tok["status"] + " is not SOURCE_REPORTED_PROVISIONAL");
     Entry e;
     e.profile = t.profile;
     e.formula = tok["material"];
