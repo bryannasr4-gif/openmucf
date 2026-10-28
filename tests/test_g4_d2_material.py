@@ -248,3 +248,76 @@ def test_a_malformed_table_is_refused(edit):
     assert bad != text
     with pytest.raises(dmat.BindRefused):
         dmat.load_entry(bad)
+
+
+#: One field changed in the aluminium-oxide table, each refused by the reader; the same edits are run through
+#: the C++ catalogue on both Geant4 revisions (cpp/material_selector/evidence/hostile_*).
+HOSTILE_TABLES = {
+    "units_p_ns": lambda t: t.replace("#UNITS        P=1 n=1", "#UNITS        P=ns n=1"),
+    "units_n_mol": lambda t: t.replace("#UNITS        P=1 n=1", "#UNITS        P=1 n=mol"),
+    "units_extra": lambda t: t.replace("#UNITS        P=1 n=1", "#UNITS        P=1 n=1 Z=1"),
+    "units_repeated": lambda t: t.replace("#UNITS        P=1 n=1", "#UNITS        P=1 n=1 n=1"),
+    "units_missing_n": lambda t: t.replace("#UNITS        P=1 n=1", "#UNITS        P=1"),
+    "scope_hydrated": lambda t: t.replace("scope:hydrogen_free_nominal_solid", "scope:hydrated_solid"),
+    "status_retracted": lambda t: t.replace("status:SOURCE_REPORTED_PROVISIONAL", "status:RETRACTED"),
+    "basis_mass": lambda t: t.replace("basis:atom", "basis:mass"),
+    "table_law": lambda t: t.replace("#TABLE        material_vector", "#TABLE        weight_law"),
+    "columns_renamed": lambda t: t.replace("#COLUMNS      Z P n", "#COLUMNS      Z P m"),
+    "p_negative": lambda t: t.replace(" 8 0.61475409836065575 3", " 8 1.2 3").replace(
+        "13 0.38524590163934425 2", "13 -0.2 2"
+    ),
+    "p_zero": lambda t: t.replace(" 8 0.61475409836065575 3", " 8 1 3").replace(
+        "13 0.38524590163934425 2", "13 0 2"
+    ),
+    "p_one": lambda t: t.replace(" 8 0.61475409836065575 3", " 8 0 3").replace(
+        "13 0.38524590163934425 2", "13 1 2"
+    ),
+}
+
+
+@pytest.mark.parametrize("name", sorted(HOSTILE_TABLES))
+def test_a_table_outside_the_supported_meaning_is_refused(name):
+    """Units other than the dimensionless P=1 n=1, a scope other than the hydrogen-free nominal solid, a
+    status other than provisional source-reported, a mass basis, another table or column name, and a vector
+    whose entries sum to one but leave the open unit interval: each refused, one field at a time."""
+    text = (DIRECTORY / f"{AL}.g4dat").read_text(encoding="ascii")
+    bad = HOSTILE_TABLES[name](text)
+    assert bad != text
+    with pytest.raises(dmat.BindRefused) as exc:
+        dmat.load_entry(bad)
+    assert type(exc.value) is dmat.BindRefused
+
+
+def test_the_unchanged_table_still_loads():
+    e = dmat.load_entry((DIRECTORY / f"{AL}.g4dat").read_text(encoding="ascii"))
+    assert e.p == (1 - 47 / 122, 47 / 122)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"formula": "Al2O3x"},  # trailing text the parts do not cover
+        {"formula": "Al2Al2O3"},  # an element named twice, with the right total
+        {"formula": None},
+        {"counts": ((13, 2, 0), (8, 3))},
+        {"elements": ((13, 2.0e22, 0.0), (8, 3.0e22))},
+        {"elements": ((13, 2.0e22), (13, 2.0e22), (8, 3.0e22))},  # a repeated element beside the right set
+    ],
+)
+def test_more_requests_are_refused_by_type(kwargs):
+    with pytest.raises(dmat.BindRefused) as exc:
+        dmat.bind(entry(AL), request(**kwargs))
+    assert type(exc.value) is dmat.BindRefused
+
+
+def test_untyped_entry_or_request_is_refused():
+    with pytest.raises(dmat.BindRefused):
+        dmat.bind(entry(AL), {"name": "Al2O3"})  # type: ignore[arg-type]
+    with pytest.raises(dmat.BindRefused):
+        dmat.bind({"profile": AL}, request())  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("draws", [0, -1])
+def test_a_ladder_needs_draws(draws):
+    with pytest.raises(ValueError):
+        dmat.ladder_counts((0.5, 0.5), draws)

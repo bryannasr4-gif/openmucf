@@ -19,6 +19,9 @@ value. The binding is refused, by :class:`BindRefused` and nothing else, unless:
   :data:`NIST_POLICY` that are defined by weight fraction, bound to the entry of their own formula;
 * any optional metadata uses only the keys :data:`OPTIONAL_METADATA`, and a stated hydration is anhydrous.
 
+A table is read only if its units are the dimensionless ``P=1 n=1``, its scope the hydrogen-free nominal solid
+and its status the provisional, source-reported value; any other table is refused before it can be bound.
+
 **Selection.** A bound material is sampled with Geant4's own cumulative search, over the entry's probabilities
 in the material's element order: one uniform draw for the element, then the stock isotope draw, one draw iff
 the selected element has several isotopes. The element is never redrawn through the stock selector. The
@@ -60,6 +63,11 @@ OPTIONAL_METADATA = ("polymorph", "hydration", "bulk_density_g_cm3", "temperatur
 ANHYDROUS = ("anhydrous", "none")
 REFUSED = "ENTRY_REFUSED"
 _VALIDITY_TOKENS = ("form", "basis", "scope", "status", "material")
+#: The only meaning a reader accepts: dimensionless probabilities and counts, for the hydrogen-free nominal
+#: solid, carried as reported and provisional.
+SUPPORTED_UNITS = {"P": "1", "n": "1"}
+SUPPORTED_SCOPE = "hydrogen_free_nominal_solid"
+SUPPORTED_STATUS = "SOURCE_REPORTED_PROVISIONAL"
 #: The sum of a written vector may differ from one by rounding only.
 SUM_TOL = 4 * 2.0**-52
 
@@ -99,6 +107,13 @@ def load_entry(text: str) -> VectorEntry:
         "basis"
     ] != "atom":
         raise BindRefused("the table's validity tokens")
+    units = dict(item.split("=", 1) for item in d["UNITS"].split() if "=" in item)
+    if units != SUPPORTED_UNITS or len(d["UNITS"].split()) != len(SUPPORTED_UNITS):
+        raise BindRefused(f"the table's units {d['UNITS']!r} are not the dimensionless P and n")
+    if tokens["scope"] != SUPPORTED_SCOPE:
+        raise BindRefused(f"the table's scope {tokens['scope']!r} is not {SUPPORTED_SCOPE}")
+    if tokens["status"] != SUPPORTED_STATUS:
+        raise BindRefused(f"the table's status {tokens['status']!r} is not {SUPPORTED_STATUS}")
     zs = tuple(int(r[0]) for r in table.records)
     ps = tuple(float(r[1]) for r in table.records)
     counts = []
