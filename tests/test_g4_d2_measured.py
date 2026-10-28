@@ -157,8 +157,8 @@ def test_improvement_is_not_established_on_any_row_and_names_what_is_missing(eva
 
 
 def test_the_conditional_sensitivity_is_never_a_decision(evaluation):
-    """The one decision record comes first and owns every verdict; the conditional sensitivity carries
-    margins and its disclosure, no verdict, and changes no row."""
+    """The one decision record comes first and owns every verdict; the conditional sensitivity names its rows
+    and carries its disclosure, no verdict and no number, and changes no row."""
     attempts = evaluation["attempts"]
     assert attempts[0] == {
         "id": evaluation["decision_record"],
@@ -167,6 +167,7 @@ def test_the_conditional_sensitivity_is_never_a_decision(evaluation):
     }
     sens = [a for a in attempts if a["role"] == dm.ROLE_SENSITIVITY]
     assert len(sens) == 1 and "verdict" not in json.dumps(sens) and sd.ESTABLISHED not in json.dumps(sens)
+    assert set(sens[0]) == {"id", "role", "statement", "disclosure", "rows", "qualifications"}
     without = inputs_obj()
     without["conditional_sensitivities"] = []
     ev2 = json.loads(generate(inputs=dumped(without))[dm.EVALUATION_NAME])
@@ -470,8 +471,11 @@ def test_a_byte_order_mark_is_refused():
         lambda o: o["hygroscopic"].update(formulas=["CaO", "H2O"]),
         lambda o: o["shared_record"].update(source_identity="stanislaus1983_thesis"),
         lambda o: o["shared_record"].update(payload_sha256="0" * 64),
-        lambda o: o["conditional_sensitivities"][0]["conditional_min_margin_tv"].update(Al2O3="nan"),
-        lambda o: o["conditional_sensitivities"][0]["conditional_min_margin_tv"].update(XyO="0.1"),
+        lambda o: o["conditional_sensitivities"][0].update(conditional_min_margin_tv={"Al2O3": "0.0552"}),
+        lambda o: o["conditional_sensitivities"][0].update(rows=["SiO", "Al2O3"]),
+        lambda o: o["conditional_sensitivities"][0].update(rows=["Al2O3", "Al2O3"]),
+        lambda o: o["conditional_sensitivities"][0].update(rows=[]),
+        lambda o: o["conditional_sensitivities"][0].update(rows=["Al2O3", "XyO"]),
         lambda o: o["conditional_sensitivities"][0]["qualifications"].update(MgO="x"),
         lambda o: o["conditional_sensitivities"].append(copy.deepcopy(o["conditional_sensitivities"][0])),
         lambda o: o.update(later_attempts={}),

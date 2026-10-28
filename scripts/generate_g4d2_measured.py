@@ -42,7 +42,9 @@ def render_document(evaluation: dict) -> bytes:
     lines = []
     for r in rows:
         missing = "; ".join(r["improvement"]["missing"])
-        p, s = (Decimal(x).quantize(Decimal("0.000001")) for x in (r["delivery"]["p_metal"], r["stock_p_metal"]))
+        p, s = (
+            Decimal(x).quantize(Decimal("0.000001")) for x in (r["delivery"]["p_metal"], r["stock_p_metal"])
+        )
         u = Decimal(r["precision"]["U_at_least"]).quantize(Decimal("0.000001"), rounding=ROUND_DOWN)
         lines.append(
             f"| {r['formula']} | {r['A']} | {r['u']} | {p} | {s} | {u} | {r['precision']['verdict']} | "
@@ -50,7 +52,6 @@ def render_document(evaluation: dict) -> bytes:
         )
     table = "\n".join(lines)
     (sens,) = [a for a in evaluation["attempts"] if a["role"] == measured.ROLE_SENSITIVITY]
-    margins = ", ".join(f"{f} {v}" for f, v in sens["conditional_min_margin_tv"].items())
     quals = " ".join(f"{f}: {v}." for f, v in sens["qualifications"].items())
     minimum = evaluation["minimum_U_at_least"]
     text = f"""# Measured oxide capture vectors
@@ -75,19 +76,19 @@ together with the published carbon sensitivity excludes a TV<=0.01 precision cer
 this table. The result does not establish that every central estimate is wrong by more than 0.01. The source
 states the carbon origin of its quoted errors and the size of its statistical errors in section 5, p. 636. The
 smallest of the per-row lower bounds on the largest total-variation error, `U_at_least` below, is
-{minimum['U_at_least']} ({minimum['formula']}).
+{minimum["U_at_least"]} ({minimum["formula"]}).
 
 ## Improvement over the stock selector
 
 Improvement over the stock selector is not established for any row. The response of the source's
 decay-electron detection to the electron energy, which enters the source's correction of each ratio, is not
-validated, and for the {sum(r['hygroscopic'] for r in rows)} rows the source flags as hygroscopic no bound on
+validated, and for the {sum(r["hygroscopic"] for r in rows)} rows the source flags as hygroscopic no bound on
 water uptake is supported. The other components of the registered region -- the time origin, the run-to-run
 difference and the response of the fitted amplitudes to the fixed lifetimes -- are evaluated from inputs this
 repository does not redistribute, and are named here rather than distributed.
 
-A separately labelled conditional sensitivity, `{sens['id']}`, is not a decision: {sens['statement']}
-({margins}). {quals} It was {sens['disclosure']}.
+A separately labelled conditional sensitivity, `{sens["id"]}`, is not a decision: {sens["statement"]}.
+Its numerical margins are not distributed. {quals} It was {sens["disclosure"]}.
 
 These are development evaluations of exposed measurements, not independent validation.
 
@@ -108,10 +109,12 @@ def generate(root: Path) -> None:
     evaluation = json.loads(files[measured.EVALUATION_NAME])
     (root / DOCUMENT_RELPATH).write_bytes(render_document(evaluation))
     counts = evaluation["counts"]
-    print(f"measured out={DIRECTORY.as_posix()} files={len(files)} rows={counts['rows']} "
-          f"meets_excluded={counts['precision_meets_excluded']} "
-          f"improvement_established={counts['improvement_established']} "
-          f"minimum_U_at_least={evaluation['minimum_U_at_least']}")
+    print(
+        f"measured out={DIRECTORY.as_posix()} files={len(files)} rows={counts['rows']} "
+        f"meets_excluded={counts['precision_meets_excluded']} "
+        f"improvement_established={counts['improvement_established']} "
+        f"minimum_U_at_least={evaluation['minimum_U_at_least']}"
+    )
 
 
 def check(root: Path) -> None:

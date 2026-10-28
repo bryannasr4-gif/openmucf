@@ -257,7 +257,7 @@ class Sensitivity:
     id: str
     statement: str
     disclosure: str
-    margins: tuple[tuple[str, str], ...]
+    rows: tuple[str, ...]
     qualifications: tuple[tuple[str, str], ...]
 
 
@@ -292,7 +292,8 @@ _DECISION_KEYS = ("id", "budget_tv", "statistics", "carbon_locator", "publicatio
 _STAT_KEYS = ("log_scale", "coverage_k", "label", "locator")
 _HYGRO_KEYS = ("locator", "formulas")
 _SHARED_KEYS = ("path", "id", "payload_sha256", "source_identity")
-_SENS_KEYS = ("id", "statement", "disclosure", "conditional_min_margin_tv", "qualifications")
+#: A conditional sensitivity names its rows; it carries no number of its own here.
+_SENS_KEYS = ("id", "statement", "disclosure", "rows", "qualifications")
 
 
 def load_inputs(raw: bytes) -> Inputs:
@@ -318,14 +319,18 @@ def load_inputs(raw: bytes) -> Inputs:
         raise MeasuredError("conditional_sensitivities: a list")
     for i, s in enumerate(obj["conditional_sensitivities"]):
         s = _keys(s, _SENS_KEYS, f"conditional_sensitivities[{i}]")
-        margins = s["conditional_min_margin_tv"]
+        names = s["rows"]
         quals = s["qualifications"]
-        if not isinstance(margins, dict) or not margins or not isinstance(quals, dict):
-            raise MeasuredError("a sensitivity lists its rows")
-        for f, v in margins.items():
+        if (
+            not isinstance(names, list)
+            or not names
+            or names != sorted(set(names))
+            or not isinstance(quals, dict)
+        ):
+            raise MeasuredError("a sensitivity lists its rows, sorted and distinct")
+        for f in names:
             parse_oxide(f)
-            _decimal_text(v, f"sensitivity margin {f}")
-        if not set(quals) <= set(margins):
+        if not set(quals) <= set(names):
             raise MeasuredError("a qualification names a row the sensitivity lists")
         text = json.dumps(s)
         if decisions.ESTABLISHED in text or "verdict" in text:
@@ -335,7 +340,7 @@ def load_inputs(raw: bytes) -> Inputs:
                 _text(s["id"], "sensitivity id"),
                 _text(s["statement"], "statement"),
                 _text(s["disclosure"], "disclosure"),
-                tuple(sorted((f, v) for f, v in margins.items())),
+                tuple(names),
                 tuple(sorted((f, _text(v, "qualification")) for f, v in quals.items())),
             )
         )
@@ -491,7 +496,7 @@ def evaluate(rows: Sequence[SourceRow], inputs: Inputs, binding: SourceBinding) 
     if not set(inputs.hygroscopic) <= formulas:
         raise MeasuredError("a hygroscopic formula is not on the roster")
     for sens in inputs.sensitivities:
-        if not {f for f, _ in sens.margins} <= formulas:
+        if not set(sens.rows) <= formulas:
             raise MeasuredError("a sensitivity names a formula not on the roster")
     budget = float(inputs.budget)
     out_rows: list[dict[str, Any]] = []
@@ -561,7 +566,7 @@ def evaluate(rows: Sequence[SourceRow], inputs: Inputs, binding: SourceBinding) 
                 "role": ROLE_SENSITIVITY,
                 "statement": sens.statement,
                 "disclosure": sens.disclosure,
-                "conditional_min_margin_tv": dict(sens.margins),
+                "rows": list(sens.rows),
                 "qualifications": dict(sens.qualifications),
             }
         )
