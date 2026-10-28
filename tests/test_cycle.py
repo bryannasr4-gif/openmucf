@@ -96,8 +96,8 @@ def test_eta_threads_through_params():
     rt = load_rates()
     p1 = cycle.params_from_conditions(rt, 300.0, 1.2, 0.5, eta=1.0)
     p5 = cycle.params_from_conditions(rt, 300.0, 1.2, 0.5, eta=5.0)
-    assert p5["lambda_form1"] == pytest.approx(5.0 * p1["lambda_form1"], rel=1e-12)
-    assert p5["lambda_form0"] == pytest.approx(5.0 * p1["lambda_form0"], rel=1e-12)
+    assert float(p5["lambda_form1"]) == pytest.approx(5.0 * float(p1["lambda_form1"]), rel=1e-12)
+    assert float(p5["lambda_form0"]) == pytest.approx(5.0 * float(p1["lambda_form0"]), rel=1e-12)
 
 
 def test_wsn_norm_excludes_loss_accumulators_bit_exact():
