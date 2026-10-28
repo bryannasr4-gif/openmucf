@@ -1,0 +1,14 @@
+#GRAMMAR      1.0
+#DATASET      G4MuonicData
+#VERSION      0.1.0
+#PROFILE      stanislaus1987-bi2o3
+#SEAM         d2_atomic_capture
+#TABLE        material_vector
+#GENERATOR    openmucf-g4 1.3.0
+#SOURCEDIGEST 267502c33ebe46d47244339cd91fbb30bf71c3f6935958ff4718d10f8213e450
+#UNITS        P=1 n=1
+#COLUMNS      Z P n
+#VALIDITY     form:vector basis:atom scope:hydrogen_free_nominal_solid status:SOURCE_REPORTED_PROVISIONAL material:Bi2O3
+ 8 0.19607843137254902 3
+83 0.80392156862745101 2
+#END

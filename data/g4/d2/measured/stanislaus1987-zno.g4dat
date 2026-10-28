@@ -1,0 +1,14 @@
+#GRAMMAR      1.0
+#DATASET      G4MuonicData
+#VERSION      0.1.0
+#PROFILE      stanislaus1987-zno
+#SEAM         d2_atomic_capture
+#TABLE        material_vector
+#GENERATOR    openmucf-g4 1.3.0
+#SOURCEDIGEST 58c10f4a9c6987ab922ef2871030dcf44b53fe6cf2ed4d042601b5e235b8a9a8
+#UNITS        P=1 n=1
+#COLUMNS      Z P n
+#VALIDITY     form:vector basis:atom scope:hydrogen_free_nominal_solid status:SOURCE_REPORTED_PROVISIONAL material:ZnO
+ 8 0.23980815347721823 1
+30 0.76019184652278182 1
+#END

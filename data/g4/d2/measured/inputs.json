@@ -1,0 +1,47 @@
+{
+ "conditional_sensitivities": [
+  {
+   "conditional_min_margin_tv": {
+    "Al2O3": "0.0552",
+    "SiO": "0.0517",
+    "SiO2": "0.1103"
+   },
+   "disclosure": "adopted after the electron-detection response of the decision record failed its registered check against the source's two worked loss examples, and after the room each row leaves had been seen; the cover acts in one direction only and has not been validated independently",
+   "id": "d2-measured-v2-e2cover",
+   "qualifications": {
+    "SiO2": "holds only if the registered +/-50% threshold excursion is not applied on top of the rescaled threshold; with that excursion its threshold leaves the cover"
+   },
+   "statement": "under a conservative, not independently validated cover of the electron-detection response (a residual factor of at most 1.25 on the metal-to-oxygen detection ratio, for rows whose rescaled threshold is at most 17 MeV), improvement over the stock selector would hold for Al2O3, SiO and SiO2 throughout the remaining components, with the conditional minimum margins in total variation listed here; on every other row it would not, or the cover does not apply"
+  }
+ ],
+ "decision_record": {
+  "budget_tv": "0.01",
+  "carbon_locator": "Nucl. Phys. A 475 (1987) 630, sect. 5, p. 636: the quoted errors are systematic, from the sensitivity of the capture ratios to the carbon background",
+  "id": "d2-measured-regions-v2",
+  "publication_resolution": "0.005",
+  "statistics": {
+   "coverage_k": 2,
+   "label": "ASSUMED_K1",
+   "locator": "Nucl. Phys. A 475 (1987) 630, sect. 5, p. 636: statistical errors are not included, being only about 2%",
+   "log_scale": "0.02"
+  }
+ },
+ "hygroscopic": {
+  "formulas": [
+   "CaO",
+   "CrO3",
+   "Na2O2",
+   "P2O5"
+  ],
+  "locator": "Nucl. Phys. A 475 (1987) 630, Table 1, footnote b: very hygroscopic oxides, whose capture ratio would be higher if water were present"
+ },
+ "later_attempts": [],
+ "schema": "openmucf.d2-measured-inputs/1",
+ "shared_record": {
+  "id": "bound-decay-response-v1",
+  "path": "data/g4/d1/bound_decay_response_v1.json",
+  "payload_sha256": "0bb824713a28b1a5e28062d9c366ef8f0c11ade8267235762ca43d48be5ddef8",
+  "source_identity": "stanislaus1987_paper"
+ },
+ "source_id": "Stanislaus1987a"
+}

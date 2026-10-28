@@ -1,0 +1,14 @@
+#GRAMMAR      1.0
+#DATASET      G4MuonicData
+#VERSION      0.1.0
+#PROFILE      stanislaus1987-moo2
+#SEAM         d2_atomic_capture
+#TABLE        material_vector
+#GENERATOR    openmucf-g4 1.3.0
+#SOURCEDIGEST 1348ec4397e8d6ff74947fe117d3073e7a8cfacb6190a115b52078e37a98f811
+#UNITS        P=1 n=1
+#COLUMNS      Z P n
+#VALIDITY     form:vector basis:atom scope:hydrogen_free_nominal_solid status:SOURCE_REPORTED_PROVISIONAL material:MoO2
+ 8 0.39370078740157483 2
+42 0.60629921259842523 1
+#END

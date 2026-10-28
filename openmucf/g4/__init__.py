@@ -25,7 +25,8 @@ from types import ModuleType
 
 _SUBMODULES = ("spec", "provenance", "emit", "d3_contract", "d3_numerical", "d3_centroids",
                "d3_attribution", "d2", "d1_natural", "d1_lifetime", "stopped_mu", "d1_mixture",
-               "capture_cascade", "d1_boundrates", "d1_linear_recoil", "d1_evaluated", "science_decisions")
+               "capture_cascade", "d1_boundrates", "d1_linear_recoil", "d1_evaluated", "science_decisions",
+               "d2_measured", "d2_material")
 
 
 def __getattr__(name: str) -> ModuleType:
@@ -42,5 +43,5 @@ def __dir__() -> list[str]:
 
 
 __all__ = ["capture_cascade", "d1_boundrates", "d1_evaluated", "d1_lifetime", "d1_linear_recoil",
-           "d1_mixture", "d1_natural", "d2", "d3_attribution", "d3_centroids",
+           "d1_mixture", "d1_natural", "d2", "d2_material", "d2_measured", "d3_attribution", "d3_centroids",
            "d3_contract", "d3_numerical", "emit", "provenance", "science_decisions", "spec", "stopped_mu"]

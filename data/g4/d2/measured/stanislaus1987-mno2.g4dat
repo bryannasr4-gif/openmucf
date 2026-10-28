@@ -1,0 +1,14 @@
+#GRAMMAR      1.0
+#DATASET      G4MuonicData
+#VERSION      0.1.0
+#PROFILE      stanislaus1987-mno2
+#SEAM         d2_atomic_capture
+#TABLE        material_vector
+#GENERATOR    openmucf-g4 1.3.0
+#SOURCEDIGEST 855420ec8f25e2035d05826526597bdca8b321445bec5ffcb5970ffe9338e829
+#UNITS        P=1 n=1
+#COLUMNS      Z P n
+#VALIDITY     form:vector basis:atom scope:hydrogen_free_nominal_solid status:SOURCE_REPORTED_PROVISIONAL material:MnO2
+ 8 0.37878787878787878 2
+25 0.62121212121212122 1
+#END

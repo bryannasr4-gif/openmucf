@@ -1087,6 +1087,8 @@ def test_t34_import_fence():
         "d1_boundrates.py",
         "d1_linear_recoil.py",
         "d1_evaluated.py",
+        "d2_material.py",
+        "d2_measured.py",
         "science_decisions.py",
         "capture_cascade.py",
         "sources/__init__.py",

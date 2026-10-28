@@ -55,6 +55,10 @@ cpp/stopped_muon/** -text
 # tests/test_g4parity.py asserts each file carries no CR, so deleting this line names its own cause.
 third_party/geant4/** -text
 data/g4/d2/* -text
+# The measured vectors: each table's #SOURCEDIGEST is the sha256 of its Layer-2 file's bytes, and the
+# inventory pins every file's bytes, so a checkout must not rewrite them (data/g4/d2/* does not cross into it).
+data/g4/d2/measured/* -text
+docs/measured-oxide-capture.md text eol=lf
 # The stopped-muon benchmark's files: a test pins the pre-registration's sha256 and every reduced cell
 # records the sha256 of its chunks' compact text, so a checkout must not rewrite their bytes.
 data/g4/stopped_mu/* -text
