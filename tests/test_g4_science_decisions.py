@@ -181,6 +181,49 @@ def test_a_budget_must_be_finite_and_positive(budget):
 
 
 # --------------------------------------------------------------------------------------------
+# empty regions and exact edges
+# --------------------------------------------------------------------------------------------
+
+
+def test_an_empty_interval_is_vacuous_and_never_favourable():
+    """[0.505, 0.495] is empty: the delivered 0.5 is not MEETS against it and an entry at 0.5 is not
+    ESTABLISHED over a stock value at 0.8. The same functions on the nonempty interval decide."""
+    out = sd.interval_decision(0.5, 0.505, 0.495, 0.01, "absolute")
+    assert out == {"verdict": sd.VACUOUS, "L": None, "U": None}
+    imp = sd.interval_improvement(0.5, 0.8, 0.505, 0.495)
+    assert imp == {"verdict": sd.VACUOUS, "min_advantage": None, "midpoint": None}
+    assert sd.interval_decision(0.5, 0.495, 0.505, 0.01, "absolute")["verdict"] == sd.MEETS
+    assert sd.interval_improvement(0.5, 0.8, 0.495, 0.505)["verdict"] == sd.ESTABLISHED
+    assert sd.interval_decision(1.0, 1.02, 1.0, 0.01, "relative")["verdict"] == sd.VACUOUS
+
+
+def test_l_exactly_at_the_budget_does_not_decide_does_not_meet():
+    """DOES_NOT_MEET needs L strictly above the budget: L = budget < U is NOT_ESTABLISHED."""
+    assert sd.precision(sd.CompleteLoss(0.01, 0.02), 0.01)["verdict"] == sd.NOT_ESTABLISHED
+    assert sd.interval_decision(0.0, 0.01, 0.02, 0.01, "absolute")["verdict"] == sd.NOT_ESTABLISHED
+
+
+def test_a_point_loss_exactly_at_the_budget_excludes_does_not_meet():
+    out = sd.precision(sd.PartialLoss(point_loss=0.01, nested_upper=0.02), 0.01)
+    assert out["excluded"] == [sd.MEETS_EXCLUDED, sd.DOES_NOT_MEET_EXCLUDED]
+    only_point = sd.precision(sd.PartialLoss(point_loss=0.0, nested_upper=None), 0.01)
+    assert only_point["excluded"] == [sd.DOES_NOT_MEET_EXCLUDED] and only_point["U_at_least"] is None
+
+
+def test_an_incomplete_region_without_a_nested_bound():
+    out = sd.robust_improvement(sd.IncompleteMargin(("E2 response not validated",)))
+    assert out["verdict"] == sd.NOT_ESTABLISHED and out["nested_margin_lower"] is None
+
+
+def test_a_relative_reference_reaching_zero_and_an_unknown_norm():
+    out = sd.interval_decision(1.0, 0.0, 10.0, 0.01, "relative")
+    assert out["verdict"] == sd.NOT_ESTABLISHED and out["L"] is None
+    assert sd.interval_decision(1.0, -1.0, 10.0, 0.01, "relative")["verdict"] == sd.NOT_ESTABLISHED
+    with pytest.raises(sd.DecisionError, match="norm"):
+        sd.interval_decision(1.0, 0.9, 1.1, 0.01, "squared")
+
+
+# --------------------------------------------------------------------------------------------
 # the committed D1 record through the shared functions
 # --------------------------------------------------------------------------------------------
 
