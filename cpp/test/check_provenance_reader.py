@@ -30,6 +30,8 @@ import subprocess
 import sys
 
 MAX_DEPTH = 64
+#: Characters allowed on one reader command line; Windows refuses a command line longer than 32,767.
+COMMAND_LINE_BUDGET = 24_000
 STRING = re.compile(r'"(?:[^"\\]|\\.)*"', re.DOTALL)
 
 
@@ -197,6 +199,26 @@ def corpus(shipped: pathlib.Path, fixtures: pathlib.Path) -> dict[str, bytes]:
     return out
 
 
+def batches(head: list[str], paths: list[pathlib.Path], budget: int = COMMAND_LINE_BUDGET) -> list[list[str]]:
+    """Split ``paths`` into consecutive batches whose command line ``head + batch`` stays within ``budget``
+    characters, counting each argument with a separating space and two quotes. A batch holds at least one
+    path, so a single path longer than the budget still runs, alone."""
+    base = sum(len(arg) + 3 for arg in head)
+    out: list[list[str]] = []
+    batch: list[str] = []
+    size = base
+    for path in map(str, paths):
+        cost = len(path) + 3
+        if batch and size + cost > budget:
+            out.append(batch)
+            batch, size = [], base
+        batch.append(path)
+        size += cost
+    if batch:
+        out.append(batch)
+    return out
+
+
 def main() -> int:
     reader, shipped, fixtures, work = (pathlib.Path(a) for a in sys.argv[1:5])
     work.mkdir(parents=True, exist_ok=True)
@@ -207,9 +229,10 @@ def main() -> int:
         path.write_bytes(data)
         paths.append(path)
     answers: list[str] = []
-    for start in range(0, len(paths), 500):
+    head = [str(reader), "provenance-rows"]
+    for batch in batches(head, paths):
         run = subprocess.run(
-            [str(reader), "provenance-rows", *map(str, paths[start : start + 500])],
+            [*head, *batch],
             capture_output=True,
             text=True,
             check=False,
