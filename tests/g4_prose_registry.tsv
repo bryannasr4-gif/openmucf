@@ -78,6 +78,7 @@
 304d626a3f087236dfb730250780d6e437372983	CHANGELOG.md	REGISTERED: zero -- 'a misleading zero bracket', a description
 30953f446b4e7a6863377a45c1c5022150ac9618	CHANGELOG.md	REGISTERED: 92, 80, 94 -- the UNREVIEWED cap's path across this release; `LEDGER_CLAIMS_UNREVIEWED_CEILING` in tests/test_ledger_claims.py is its current value
 30af5fbcb12d734d1ee6bb8d481f14648f7e7e9d	CHANGELOG.md	REGISTERED: 1 -- 'η=1', FINDINGS.md's section-1c structural bracket
+31486d2198b9464e1f2456bd7507cea1cc120469	CHANGELOG.md	REGISTERED: two, 208, 2, 1 -- the two rows of data/g4/d3/validation_cells.csv whose label the entry fixes; 208: the mass number in the nuclide label 208Pb; 2 and 1: the principal quantum numbers of the 2p-1s transition
 315cc688e00666c2a04669cef514d095c2fb3772	CHANGELOG.md	REGISTERED: two -- the lower and upper edges of the lambda_c_liquid band in openmucf/data/rates.csv: the Yamashita-Kino digitization and the Breunlich liquid maximum
 3317fdd313ce213a9dc4752e957342e92a732203	CHANGELOG.md	REGISTERED: fifteen, seven -- `SENTENCE_PATHS` in tests/test_ledger_claims.py, fifteen entries, and the seven the second change read
 33b7b92435a6c112936ef5bd69688ae68e053790	CHANGELOG.md	REGISTERED: 300, 143822639.2, 1, 143577225.6, 0.171, two -- 300 K is the temperature of the liquid-density operating point openmucf/validate.py uses for V_breunlich_lambdac; the before figure is VALIDATION_CHANNELS.md's print at the base as CALIBRATION_CELLS.json's shipped record holds it, the after figure and the change are VALIDATION_CHANNELS.md's print and its ratio to the before figure; the 1 is the exponent of the unit s^-1; 'two hyperfine states' are the tmu F=1 and F=0 pools of openmucf/cycle.py; tests/test_calibration_record.py binds every figure of this line to its home
@@ -135,6 +136,7 @@
 5739358de1cfdb88d15182d4082de159c7a0a287	CHANGELOG.md	REGISTERED: 1.2, 2.0, 2.4 -- `PHI_GRID` in tests/test_forecast.py, the card's pre-registered density grid
 58520b4ea95051c21ba599c25fa22ac363c1a614	CHANGELOG.md	REGISTERED: 633 -- the sentence registry's row count after this pass, dated
 5875225109546ed6cc58eef5d45345c33e8aead8	CHANGELOG.md	REGISTERED: 1, 9, one -- 'atol 1e-9', the reduction gate in tests/test_cycle_channels.py; 'one-channel-one-home', docs/accounting.md's title
+58a55c1fc16bc2f0ee949a3396bb64175998ed84	CHANGELOG.md	REGISTERED: 208 -- the mass number in the nuclide label 208Pb
 58bd557531f9eddd075048e19c776ee86adf1c1d	CHANGELOG.md	REGISTERED: 113 -- the measured Petitjean yield NEUTRONOMICS.md prints as X_mu = 113
 597ffda7bc9fc9093a0b10e7cfff9121029990f8	CHANGELOG.md	REGISTERED: two -- the two facility denominators, `electrical_minimal` and `electrical_site`
 5988f26d58f7bcb18a5d1a35506c041ac3b4e005	CHANGELOG.md	REGISTERED: One -- 'One-at-a-time', MATERIALITY.md's toggle rule
@@ -509,6 +511,7 @@ ff83d36e1c390e35f3c6763ee4cdf8d3e8246540	DATASET_D1.md	REGISTERED: two -- 'the t
 234b84337edc0b858269d23ad9ffa6f8411d85c2	DATASET_D3.md	REGISTERED: two -- the estimates whose larger is b_num_eV in numerical_check.csv; this describes historical estimates, as DATASET_D3.md states
 24da4b83c0bd2f49839bb6d82c319b49ab53fd70	DATASET_D3.md	REGISTERED: one -- 'one energy per shell', the single shell energy a patched cascade takes (G4EmCaptureCascade's level array), a description
 2651db6c1279516bcfe33fc14e87d8fe3d7bc0df	DATASET_D3.md	REGISTERED: 2, 1 -- the principal quantum numbers in the orbital names 2p and 1s of the transition whose centre of gravity the explanation of Table IIIA names: a transition label, not a quantity
+2ad5ad399ab3254761c1cdbecbd6001734ff6172	DATASET_D3.md	REGISTERED: two, ²⁰⁸, 2, 1 -- the two rows keyed in UNC_LABELS_BY_PRIMARY (openmucf/g4/sources/mudirac130.py); ²⁰⁸: the mass number in the nuclide label ²⁰⁸Pb; 2 and 1: the principal quantum numbers of the 2p-1s transition
 3794b9d6bb93fe775c91043e06e0f136e4951d6b	DATASET_D3.md	REGISTERED: one -- 'more than one distinct gated line', a count threshold
 41440458c0a860403e1a50cb9d21d5a068bad02b	DATASET_D3.md	REGISTERED: one, one -- 'one numerical setting one step finer', a single setting by a single step (mudirac130.REFINEMENTS)
 418f5f3f8c407c0e73acc3523761d91dc8a0b5b8	DATASET_D3.md	REGISTERED: two -- 'the two shells' of a shell pair, a description

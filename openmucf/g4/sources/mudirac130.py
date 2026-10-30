@@ -102,6 +102,15 @@ UNC_LABELS = {
     ("Saito2025", "Table III"): "statistical and systematic",
     ("Saito2025", "Table IV"): "statistical and systematic",
 }
+#: Rows whose label is the one their primary measurement states, which overrides the label of the
+#: table that restates them, keyed by (source, Z, A, transition). The two 208Pb 2p-1s rows of
+#: Fricke's Table IIIA equal, in value and uncertainty, Table V of Bergem et al., Phys. Rev. C 37,
+#: 2821 (1988), which states on p. 2826 that "the quoted errors are total errors including
+#: statistical, calibration, and systematic uncertainties".
+UNC_LABELS_BY_PRIMARY = {
+    ("Fricke1995", 82, 208, "2p1/2-1s1/2"): "statistical, calibration and systematic",
+    ("Fricke1995", 82, 208, "2p3/2-1s1/2"): "statistical, calibration and systematic",
+}
 #: The table a locator leads with.
 _LOCATOR_TABLE = re.compile(r"Table (?:IIIA|IIIB|III|IV)(?![A-Za-z])")
 #: Where a validation nuclide's charge radius comes from, by the source's own tables.
@@ -259,7 +268,13 @@ def load_cells(path: Path) -> tuple[Cell, ...]:
             raise CellError(
                 f"{where}: locator {r['locator']!r} leads with no table of {r['source']} in UNC_LABELS"
             )
-        if r["unc_label"] != label:
+        primary = UNC_LABELS_BY_PRIMARY.get((r["source"], z, a, r["transition"]))
+        if primary is not None and r["unc_label"] != primary:
+            raise CellError(
+                f"{where}: unc_label {r['unc_label']!r} is not {primary!r}, the label its primary "
+                f"measurement states"
+            )
+        if primary is None and r["unc_label"] != label:
             raise CellError(
                 f"{where}: unc_label {r['unc_label']!r} is not {label!r}, the label of {table_name} "
                 f"of {r['source']}"

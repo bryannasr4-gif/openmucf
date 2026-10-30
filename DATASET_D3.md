@@ -105,6 +105,10 @@ to either side of this comparison.
 The Fricke values were read from page images of the journal copy.
 Each uncertainty carries its source's own label: `statistical` (Table IIIA), `statistical and fit`
 (Table IIIB) or `statistical and systematic` (Saito et al.).
+The two ²⁰⁸Pb 2p-1s rows of Table IIIA are the exception: their values and uncertainties equal those of
+Table V of Bergem et al., Phys. Rev. C 37, 2821 (1988), which states on p. 2826 that "the quoted errors
+are total errors including statistical, calibration, and systematic uncertainties", so they carry
+`statistical, calibration and systematic`.
 The tolerance is 3 times the printed standard uncertainty, and σ_calc, the model's own
 uncertainty, is set to 0 by decision.
 That is a decision, not a figure taken from either paper: Liborio et al. (2026) write on p. 2 that

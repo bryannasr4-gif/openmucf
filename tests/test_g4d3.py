@@ -73,6 +73,8 @@ def _drill(tmp_path, source: pathlib.Path, mutate, error, message, loader):
 
 _G = "Fricke1995,21,45,2p1/2-1s1/2,K1-L2,855.185,0.041,"
 _U = "Fricke1995,4,9,2p-1s centre of gravity,,33.402,0.010,statistical,0.001,false,centroid,"
+_PB = "Fricke1995,82,208,2p1/2-1s1/2,K1-L2,5778.058,0.100,"
+_PB_LABEL = "statistical, calibration and systematic"
 
 CELL_DRILLS = [
     ("a carriage return", lambda t: t.replace(NL, "\r" + NL, 1),
@@ -105,6 +107,12 @@ CELL_DRILLS = [
     ("a Table IIIA row relabelled",
      lambda t: _replace_once(t, _U, _U.replace(",statistical,", ",statistical and fit,")),
      md.CellError, "line 2: unc_label 'statistical and fit' is not 'statistical', the label of Table IIIA"),
+    ("a 208Pb 2p-1s row given its table's label",
+     lambda t: _replace_once(t, _PB + '"' + _PB_LABEL + '",', _PB + "statistical,"),
+     md.CellError, f"unc_label 'statistical' is not '{_PB_LABEL}', the label its primary measurement states"),
+    ("another Table IIIA row given the 208Pb primary label",
+     lambda t: _replace_once(t, _U, _U.replace(",statistical,", ',"' + _PB_LABEL + '",')),
+     md.CellError, f"line 2: unc_label '{_PB_LABEL}' is not 'statistical', the label of Table IIIA"),
     ("rows out of order", lambda t: _replace_once(t, NL + _U, NL + _U.replace(",4,9,", ",99,9,")),
      md.OrderError, "ordered by (source, Z, A)"),
     ("a duplicated key", lambda t: _repeat_line(t, 2),
@@ -134,6 +142,17 @@ def test_t106_the_transcriptions_load_and_the_origin_file_names_exactly_the_gate
     assert {cell.source for cell in cells} == set(md.VALIDATION_SOURCES)
     assert all(cell.reason in md.UNGATED_REASONS for cell in cells if not cell.gated)
     print(f"\nvalidation cells: rows {len(cells)} gated {len(gated)} nuclides {len(origins)}")
+
+
+def test_t106_the_208pb_2p_1s_rows_carry_the_label_their_primary_states():
+    """The two rows keyed in UNC_LABELS_BY_PRIMARY carry that label; every other row its table's."""
+    cells, _ = md.load_validation(CELLS, ORIGIN)
+    keyed = [c for c in cells if (c.source, c.z, c.a, c.transition) in md.UNC_LABELS_BY_PRIMARY]
+    assert len(keyed) == len(md.UNC_LABELS_BY_PRIMARY) == 2
+    assert {(c.z, c.a) for c in keyed} == {(82, 208)}
+    assert all(c.unc_label == md.UNC_LABELS_BY_PRIMARY[(c.source, c.z, c.a, c.transition)] for c in keyed)
+    others = [c for c in cells if (c.source, c.z, c.a, c.transition) not in md.UNC_LABELS_BY_PRIMARY]
+    assert others and all(c.unc_label in set(md.UNC_LABELS.values()) for c in others)
 
 
 @pytest.mark.parametrize("label, mutate, error, message", CELL_DRILLS, ids=[d[0] for d in CELL_DRILLS])
