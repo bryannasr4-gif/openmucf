@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed -- the uncertainty label of the two 208Pb 2p-1s comparison rows (2026-10-29)
+
+- `data/g4/d3/validation_cells.csv` and `validation.csv` now label the 208Pb K1-L2 and K1-L3 uncertainties `statistical, calibration and systematic`. Their values and uncertainties equal Table V of Bergem et al., Phys. Rev. C 37, 2821 (1988), which states on p. 2826 that its quoted errors are total errors including statistical, calibration and systematic uncertainties; they were labelled `statistical`, the label of the Fricke et al. table that restates them. Values, uncertainties and tolerances are unchanged. The loader keys such a label by row (`UNC_LABELS_BY_PRIMARY`).
+
 ### Added -- measured oxide capture vectors behind an opt-in material selector (2026-10-28)
 
 - **Measured vectors.** `data/g4/d2/measured/` carries, for each oxide row of Stanislaus et al. (1987) Table 1, the probability that a stopped negative muon ends on the metal or on oxygen of the nominal hydrogen-free solid, `p_M = m A / (n + m A)` from the reported per-atom ratio `A`, as a `material_vector` table of the seam `d2_atomic_capture`, with its Layer-2 file, the evaluation and an inventory of the directory's bytes; the generator's `check` holds every file to its recomputation from the committed source rows.
