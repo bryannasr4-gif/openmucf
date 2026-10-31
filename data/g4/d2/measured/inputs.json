@@ -1,6 +1,11 @@
 {
  "conditional_sensitivities": [
   {
+   "conditional_min_margin_tv": {
+    "Al2O3": "0.0552",
+    "SiO": "0.0517",
+    "SiO2": "0.1103"
+   },
    "disclosure": "adopted after the electron-detection response of the decision record failed its registered check against the source's two worked loss examples, and after the room each row leaves had been seen; the cover acts in one direction only and has not been validated independently",
    "id": "d2-measured-v2-e2cover",
    "qualifications": {
@@ -11,7 +16,7 @@
     "SiO",
     "SiO2"
    ],
-   "statement": "under a conservative, not independently validated cover of the electron-detection response (a residual factor of at most 1.25 on the metal-to-oxygen detection ratio, for rows whose rescaled threshold is at most 17 MeV), improvement over the stock selector would hold for Al2O3, SiO and SiO2 throughout the remaining components; on every other row it would not, or the cover does not apply"
+   "statement": "under a conservative, not independently validated cover of the electron-detection response (a residual factor of at most 1.25 on the metal-to-oxygen detection ratio, for rows whose rescaled threshold is at most 17 MeV), improvement over the stock selector would hold for Al2O3, SiO and SiO2 throughout the remaining components, with the conditional minimum margins in total variation listed here; on every other row it would not, or the cover does not apply"
   }
  ],
  "decision_record": {

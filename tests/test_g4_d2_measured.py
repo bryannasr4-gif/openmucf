@@ -249,7 +249,7 @@ def test_improvement_is_not_established_on_any_row_and_names_what_is_missing(eva
 
 def test_the_conditional_sensitivity_is_never_a_decision(evaluation):
     """The one decision record comes first and owns every verdict; the conditional sensitivity names its rows
-    and carries its disclosure, no verdict and no number, and changes no row."""
+    and carries their margins and its disclosure, no verdict, and changes no row."""
     attempts = evaluation["attempts"]
     assert attempts[0] == {
         "id": evaluation["decision_record"],
@@ -258,7 +258,10 @@ def test_the_conditional_sensitivity_is_never_a_decision(evaluation):
     }
     sens = [a for a in attempts if a["role"] == dm.ROLE_SENSITIVITY]
     assert len(sens) == 1 and "verdict" not in json.dumps(sens) and sd.ESTABLISHED not in json.dumps(sens)
-    assert set(sens[0]) == {"id", "role", "statement", "disclosure", "rows", "qualifications"}
+    keys = {"id", "role", "statement", "disclosure", "rows", "conditional_min_margin_tv", "qualifications"}
+    assert set(sens[0]) == keys
+    given = inputs_obj()["conditional_sensitivities"][0]["conditional_min_margin_tv"]
+    assert sens[0]["conditional_min_margin_tv"] == given and sorted(given) == sens[0]["rows"]
     without = inputs_obj()
     without["conditional_sensitivities"] = []
     ev2 = json.loads(generate(inputs=dumped(without))[dm.EVALUATION_NAME])
@@ -562,7 +565,10 @@ def test_a_byte_order_mark_is_refused():
         lambda o: o["hygroscopic"].update(formulas=["CaO", "H2O"]),
         lambda o: o["shared_record"].update(source_identity="stanislaus1983_thesis"),
         lambda o: o["shared_record"].update(payload_sha256="0" * 64),
-        lambda o: o["conditional_sensitivities"][0].update(conditional_min_margin_tv={"Al2O3": "0.0552"}),
+        lambda o: o["conditional_sensitivities"][0].pop("conditional_min_margin_tv"),
+        lambda o: o["conditional_sensitivities"][0]["conditional_min_margin_tv"].pop("SiO"),
+        lambda o: o["conditional_sensitivities"][0]["conditional_min_margin_tv"].update(Al2O3="nan"),
+        lambda o: o["conditional_sensitivities"][0]["conditional_min_margin_tv"].update(XyO="0.1"),
         lambda o: o["conditional_sensitivities"][0].update(rows=["SiO", "Al2O3"]),
         lambda o: o["conditional_sensitivities"][0].update(rows=["Al2O3", "Al2O3"]),
         lambda o: o["conditional_sensitivities"][0].update(rows=[]),
@@ -713,7 +719,10 @@ def test_a_short_measurement_record_and_a_liquid_phase_are_refused():
         lambda o: o["decision_record"]["statistics"].update(locator=" leading space"),
         lambda o: o.update(conditional_sensitivities={}),
         lambda o: o["conditional_sensitivities"][0].update(qualifications=[]),
-        lambda o: o["conditional_sensitivities"][0].update(rows=["Al2O3", "Li2O", "SiO2"]),
+        lambda o: o["conditional_sensitivities"][0].update(
+            rows=["Al2O3", "Li2O", "SiO2"],
+            conditional_min_margin_tv=dict.fromkeys(["Al2O3", "Li2O", "SiO2"], "0.1"),
+        ),
         lambda o: o["hygroscopic"].update(formulas=["Al2Si3", "CaO"]),
     ],
 )

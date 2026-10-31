@@ -288,6 +288,7 @@ class Sensitivity:
     statement: str
     disclosure: str
     rows: tuple[str, ...]
+    margins: tuple[tuple[str, str], ...]
     qualifications: tuple[tuple[str, str], ...]
 
 
@@ -322,8 +323,8 @@ _DECISION_KEYS = ("id", "budget_tv", "statistics", "carbon_locator", "publicatio
 _STAT_KEYS = ("log_scale", "coverage_k", "label", "locator")
 _HYGRO_KEYS = ("locator", "formulas")
 _SHARED_KEYS = ("path", "id", "payload_sha256", "source_identity")
-#: A conditional sensitivity names its rows; it carries no number of its own here.
-_SENS_KEYS = ("id", "statement", "disclosure", "rows", "qualifications")
+#: A conditional sensitivity names its rows and its conditional minimum margin in total variation on each.
+_SENS_KEYS = ("id", "statement", "disclosure", "rows", "conditional_min_margin_tv", "qualifications")
 
 
 def load_inputs(raw: bytes) -> Inputs:
@@ -360,6 +361,11 @@ def load_inputs(raw: bytes) -> Inputs:
             raise MeasuredError("a sensitivity lists its rows, sorted and distinct")
         for f in names:
             parse_oxide(f)
+        margins = s["conditional_min_margin_tv"]
+        if not isinstance(margins, dict) or set(margins) != set(names):
+            raise MeasuredError("a sensitivity gives one margin for each row it lists")
+        for f, v in margins.items():
+            _decimal_text(v, f"sensitivity margin {f}")
         if not set(quals) <= set(names):
             raise MeasuredError("a qualification names a row the sensitivity lists")
         text = json.dumps(s)
@@ -371,6 +377,7 @@ def load_inputs(raw: bytes) -> Inputs:
                 _text(s["statement"], "statement"),
                 _text(s["disclosure"], "disclosure"),
                 tuple(names),
+                tuple(sorted((f, v) for f, v in margins.items())),
                 tuple(sorted((f, _text(v, "qualification")) for f, v in quals.items())),
             )
         )
@@ -612,6 +619,7 @@ def evaluate(rows: Sequence[SourceRow], inputs: Inputs, binding: SourceBinding) 
                 "statement": sens.statement,
                 "disclosure": sens.disclosure,
                 "rows": list(sens.rows),
+                "conditional_min_margin_tv": dict(sens.margins),
                 "qualifications": dict(sens.qualifications),
             }
         )

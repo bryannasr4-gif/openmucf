@@ -52,6 +52,7 @@ def render_document(evaluation: dict) -> bytes:
         )
     table = "\n".join(lines)
     (sens,) = [a for a in evaluation["attempts"] if a["role"] == measured.ROLE_SENSITIVITY]
+    margins = ", ".join(f"{f} {v}" for f, v in sens["conditional_min_margin_tv"].items())
     quals = " ".join(f"{f}: {v}." for f, v in sens["qualifications"].items())
     minimum = evaluation["minimum_U_at_least"]
     declared = measured.precision_declaration(evaluation)
@@ -88,8 +89,8 @@ water uptake is supported. The other components of the registered region -- the 
 difference and the response of the fitted amplitudes to the fixed lifetimes -- are evaluated from inputs this
 repository does not redistribute, and are named here rather than distributed.
 
-A separately labelled conditional sensitivity, `{sens["id"]}`, is not a decision: {sens["statement"]}.
-Its numerical margins are not distributed. {quals} It was {sens["disclosure"]}.
+A separately labelled conditional sensitivity, `{sens["id"]}`, is not a decision: {sens["statement"]}
+({margins}). {quals} It was {sens["disclosure"]}.
 
 These are development evaluations of exposed measurements, not independent validation.
 
