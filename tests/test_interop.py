@@ -44,11 +44,11 @@ def test_export_lambda_form_eff_thermal_shape_and_positive():
             assert math.isclose(tab.values[i][j], float(formation.lambda_dtmu(t, p, 1, 1.0)), rel_tol=1e-9)
 
 
-def test_interop_rename_alias_warns():
-    """The old export_lambda_dtmu_thermal warns (DeprecationWarning) but returns the renamed table."""
-    with pytest.deprecated_call():
-        tab = interop.export_lambda_dtmu_thermal((300.0,), (1.2,), F=1)
-    assert tab.name == "lambda_form_eff_thermal"
+def test_interop_rename_alias_is_removed():
+    """The deprecated name export_lambda_dtmu_thermal, scheduled for removal in v2.0.0, is gone; the renamed
+    export stands."""
+    assert not hasattr(interop, "export_lambda_dtmu_thermal")
+    assert interop.export_lambda_form_eff_thermal((300.0,), (1.2,), F=1).name == "lambda_form_eff_thermal"
 
 
 def test_export_lambda_dtmu_energy_peaks_near_resonance():
@@ -95,14 +95,13 @@ def test_geant4_callables_are_plain_floats():
     assert energy > thermal
 
 
-def test_geant4_callables_both_keys():
-    """The canonical `lambda_form_eff` and the legacy `lambda_dtmu` keys are the same callable."""
+def test_geant4_callables_keys():
+    """The callables are `omega_s_eff` and `lambda_form_eff`; the legacy `lambda_dtmu` key, scheduled for
+    removal in v2.0.0, is gone."""
     api = interop.geant4_callables(RATES)
-    assert "lambda_form_eff" in api and "lambda_dtmu" in api
-    assert api["lambda_form_eff"] is api["lambda_dtmu"]
+    assert sorted(api) == ["lambda_form_eff", "omega_s_eff"]
     a = api["lambda_form_eff"](phi=1.2, T=300.0, F=1)
-    b = api["lambda_dtmu"](phi=1.2, T=300.0, F=1)
-    assert a == b and isinstance(a, float) and a > 0.0
+    assert isinstance(a, float) and a > 0.0
 
 
 def test_ingest_spectrum_roundtrip_and_normalization(tmp_path):

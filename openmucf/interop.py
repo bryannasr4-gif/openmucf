@@ -172,20 +172,6 @@ def export_lambda_form_eff_thermal(T_grid, phi_grid, F: int = 1, eta: float = 1.
     )
 
 
-def export_lambda_dtmu_thermal(T_grid, phi_grid, F: int = 1, eta: float = 1.0) -> RateTable:
-    """DEPRECATED alias for :func:`export_lambda_form_eff_thermal` (renamed; the exported quantity is an
-    effective cycle-scale rate, not bare lambda_dtmu). Alias removed in v2.0.0."""
-    import warnings
-
-    warnings.warn(
-        "renamed export_lambda_form_eff_thermal; the exported quantity is an effective cycle-scale "
-        "rate, not bare lambda_dtmu; alias removed in v2.0.0",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return export_lambda_form_eff_thermal(T_grid, phi_grid, F=F, eta=eta)
-
-
 def export_lambda_dtmu_energy(E_grid, F: int = 1) -> RateTable:
     """Energy-resolved lambda_dtmu(E) at fixed hyperfine F [s^-1] (the Vesman resonances)."""
     g0 = tuple(float(e) for e in E_grid)
@@ -244,8 +230,7 @@ def geant4_callables(rates, use_legacy_sticking: bool = False, eta: float = 1.0)
     the energy-resolved rate, omitting it gives the thermally-averaged effective cycle-scale rate
     (300 K-anchored placeholder, NOT bare lambda_dtmu; see formation.py). Values are host-side floats
     (not traced arrays), which is what an external C++/GEANT4 caller needs. The legacy key
-    ``lambda_dtmu`` is retained as a deprecated alias for ``lambda_form_eff`` (same callable), removed
-    in v2.0.0.
+    ``lambda_dtmu``, a deprecated alias for ``lambda_form_eff``, was removed in v2.0.0.
     """
     ose = _ledger_omega_s_eff(rates, use_legacy_sticking)
 
@@ -257,8 +242,7 @@ def geant4_callables(rates, use_legacy_sticking: bool = False, eta: float = 1.0)
             return float(formation.lambda_dtmu_energy(E, F))
         return float(formation.lambda_dtmu(T, phi, F, eta))
 
-    # canonical `lambda_form_eff`; legacy `lambda_dtmu` retained (same callable, deprecated -> v2.0.0).
-    return {"omega_s_eff": omega_s_eff, "lambda_form_eff": lambda_form_eff, "lambda_dtmu": lambda_form_eff}
+    return {"omega_s_eff": omega_s_eff, "lambda_form_eff": lambda_form_eff}
 
 
 # ---------------------------------------------------------------------------

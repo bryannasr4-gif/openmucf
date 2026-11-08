@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed -- the deprecated names of the thermal formation export, as scheduled for this major release (2026-11-07)
+
+- `openmucf.interop.export_lambda_dtmu_thermal` and the `lambda_dtmu` key of `openmucf.interop.geant4_callables`, deprecated aliases of `export_lambda_form_eff_thermal` and `lambda_form_eff` that `docs/api-overview.md`, `CONTRIBUTING.md` and the entry that renamed them scheduled for removal in v2.0.0, are removed; code that used them calls the renamed export and key, which return what the aliases returned.
+
 ### Fixed -- a single generator run after a version change, and the version every table is stamped with (2026-11-07)
 
 - `scripts/generate_g4data.py` digests the D3 tables it writes, not the copies on disk, in the header of `data/g4/d3/components.jsonl`, so that a single run after a version change reaches the fixed point `--audit` compares against, where a second run was needed. The measured oxide tables under `data/g4/d2/measured/` take the version of their `#GENERATOR` line from the package (`openmucf/g4/d2_measured.py`), where it was typed, and `tests/test_version_markers.py` holds every version marker of the repository to the package version.

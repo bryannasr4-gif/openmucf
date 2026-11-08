@@ -230,8 +230,8 @@ API, ingest external spectra as validation data, and never re-implement transpor
   ω_s^eff(φ,T) surface (flat in v1; the (φ,T,c_t) dependence is what Phase 3 fills in).
 - `export_lambda_form_eff_thermal(T_grid, phi_grid, F=1, eta=1.0) -> RateTable` (the thermal export,
   named `lambda_form_eff` because it is an effective cycle-scale rate, **not** the bare Faifman λ_dtμ —
-  see `formation.py`; the old name `export_lambda_dtmu_thermal` remains as a deprecated alias that
-  warns, removed in v2.0.0) and `export_lambda_dtmu_energy(E_grid, F=1) -> RateTable` (energy-resolved;
+  see `formation.py`; the old name `export_lambda_dtmu_thermal`, a deprecated alias, was removed in
+  v2.0.0) and `export_lambda_dtmu_energy(E_grid, F=1) -> RateTable` (energy-resolved;
   only the F=1 0.423 eV peak is a measured anchor) — the formation-rate surfaces.
 - `export_all(rates, outdir, ...) -> dict` — write the standard CSV/JSON bundle; returns `{name: [paths]}`.
 - `geant4_callables(rates, ...) -> dict` — plain-float callables `omega_s_eff(phi, T)` and
