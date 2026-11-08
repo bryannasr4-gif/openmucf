@@ -4,7 +4,7 @@
 #PROFILE      stanislaus1987-zro2
 #SEAM         d2_atomic_capture
 #TABLE        material_vector
-#GENERATOR    openmucf-g4 1.3.0
+#GENERATOR    openmucf-g4 2.0.0
 #SOURCEDIGEST c198388b739f446489c74d6d79b157419844d7464455d305eddeab3a52c17c97
 #UNITS        P=1 n=1
 #COLUMNS      Z P n

@@ -4,7 +4,7 @@
 #PROFILE      stanislaus1987-sio2
 #SEAM         d2_atomic_capture
 #TABLE        material_vector
-#GENERATOR    openmucf-g4 1.3.0
+#GENERATOR    openmucf-g4 2.0.0
 #SOURCEDIGEST b60e3b229845146ce5289f641f8bae194bc7458765644e11d6e35da1cf5965bc
 #UNITS        P=1 n=1
 #COLUMNS      Z P n

@@ -10,7 +10,7 @@
   },
   "stanislaus1987-ag2o.g4dat": {
    "bytes": 489,
-   "sha256": "f23c356f6074f2684331f38a60343ccb45e434fdacd1d89fb35ac224a2f57941"
+   "sha256": "52776499a06f6a669c6126522c3ec0632943901c5e9de496dd1f453d83766437"
   },
   "stanislaus1987-ag2o.prov.json": {
    "bytes": 1686,
@@ -18,7 +18,7 @@
   },
   "stanislaus1987-al2o3.g4dat": {
    "bytes": 491,
-   "sha256": "38523a51bd5f5ea688c1ad9c3babc95d5f48976e0583acf66d5f3585c1cafbcb"
+   "sha256": "8e52c6e93e44f77b71b5e053853c72104fa4286251e73f91d83ea80f99740ebe"
   },
   "stanislaus1987-al2o3.prov.json": {
    "bytes": 1693,
@@ -26,7 +26,7 @@
   },
   "stanislaus1987-bao2.g4dat": {
    "bytes": 489,
-   "sha256": "54a3a50a9cab18d5d5a422752c6e765477b71604dffb25d404cddadfbb403e2d"
+   "sha256": "ae73065e92350c0d86bf68e726d330b99d519e2fca9b26ac59cc227542c8becb"
   },
   "stanislaus1987-bao2.prov.json": {
    "bytes": 1686,
@@ -34,7 +34,7 @@
   },
   "stanislaus1987-bi2o3.g4dat": {
    "bytes": 491,
-   "sha256": "3b731bb03d1ccc87a3086a7329f6b21cd11d4db355fe6fb5b8d5e6026f38e834"
+   "sha256": "680c159806f048d31e1c785360d2ce2d0be3d19b29a0e7700222452e550d49ce"
   },
   "stanislaus1987-bi2o3.prov.json": {
    "bytes": 1693,
@@ -42,7 +42,7 @@
   },
   "stanislaus1987-cao.g4dat": {
    "bytes": 487,
-   "sha256": "4d1a6f698a8921b53833352e9186bde5a9163c535753d6a87fe61cca12e4a215"
+   "sha256": "2d2ce3271b20f07940a32bf6f7f9cc94e4c18d5b2046ed6ba9084da7a312e9ae"
   },
   "stanislaus1987-cao.prov.json": {
    "bytes": 1679,
@@ -50,7 +50,7 @@
   },
   "stanislaus1987-cdo.g4dat": {
    "bytes": 485,
-   "sha256": "160f851790c93a5d9047d5684deb91528197c13a758fbd3deab8496fccb27984"
+   "sha256": "e4b65403adc22b2f6411c0a2627773502f8aa86562f973a9664c435e998ad5df"
   },
   "stanislaus1987-cdo.prov.json": {
    "bytes": 1679,
@@ -58,7 +58,7 @@
   },
   "stanislaus1987-ceo2.g4dat": {
    "bytes": 489,
-   "sha256": "f85adc47a9feeb19f3e884a8ac08487d8270080120b0361b7370629fb09dd037"
+   "sha256": "8f31056fcce5d87f691edf84ca281a7bb671f52d1699fafc2a3e7bf91012779f"
   },
   "stanislaus1987-ceo2.prov.json": {
    "bytes": 1686,
@@ -66,7 +66,7 @@
   },
   "stanislaus1987-coo.g4dat": {
    "bytes": 487,
-   "sha256": "2614fdb3b9d8e3c55f28b5b3c0d14bdeffe37bb7501db9b1a5c9ccc37a0e598d"
+   "sha256": "7ec5cce7fa2d78f1f06a7e9a9e331059171db21adab5bf2d2df1fcde21781b6f"
   },
   "stanislaus1987-coo.prov.json": {
    "bytes": 1679,
@@ -74,7 +74,7 @@
   },
   "stanislaus1987-cro3.g4dat": {
    "bytes": 489,
-   "sha256": "b1d04369289151968fb662ff750fd2e48b4013b5c3e45847ba64231ab12722a4"
+   "sha256": "e910735912dac9f905b46989e083016ecfdf1df9f341dd81ba0c44341635d132"
   },
   "stanislaus1987-cro3.prov.json": {
    "bytes": 1686,
@@ -82,7 +82,7 @@
   },
   "stanislaus1987-cu2o.g4dat": {
    "bytes": 489,
-   "sha256": "8712440e94b9c78c3060eb415ccd3da5f560089b2f14d8f9d2a671ccb641f67c"
+   "sha256": "0155f27ba6705bc1ec46653c91ff9ca83fb8863122f4c6bfc0a9427aa8f86226"
   },
   "stanislaus1987-cu2o.prov.json": {
    "bytes": 1686,
@@ -90,7 +90,7 @@
   },
   "stanislaus1987-fe2o3.g4dat": {
    "bytes": 491,
-   "sha256": "bebc9e5bcf9a33b8dede1d1c9c010188d5613d65e9bb8e3b45de7a56ca200dfb"
+   "sha256": "81fc3adca318ca58e7b4039c0bbbbf293b296106e88c8ff38d9a8edf35430e6c"
   },
   "stanislaus1987-fe2o3.prov.json": {
    "bytes": 1693,
@@ -98,7 +98,7 @@
   },
   "stanislaus1987-fe3o4.g4dat": {
    "bytes": 491,
-   "sha256": "17b85e7ad18fd6b4b2175aec344b855bd5c9b46c07240e94a24d9fbad5718a03"
+   "sha256": "5f567b6f8c0e446b47616fb926febcb3bacd686ca7c0bca3a5a97bbafb024806"
   },
   "stanislaus1987-fe3o4.prov.json": {
    "bytes": 1693,
@@ -106,7 +106,7 @@
   },
   "stanislaus1987-hgo.g4dat": {
    "bytes": 487,
-   "sha256": "56cbf2ea0fde41e53776f8b4bcb933c1369cbbe8d99702cc5d2128d7f54a3cbc"
+   "sha256": "44852d41e5414799f4d4e392c1a504c093c0b28905774c0a76dc22bac3ce1d11"
   },
   "stanislaus1987-hgo.prov.json": {
    "bytes": 1679,
@@ -114,7 +114,7 @@
   },
   "stanislaus1987-mgo.g4dat": {
    "bytes": 487,
-   "sha256": "9deae956393e5081499ae90e87ffb5e467946460ec75094cbed97d3510cf9a92"
+   "sha256": "f1a6f77194906f3958cb6d66fc5594e897ebaceb421dc8e26f274ef96353728b"
   },
   "stanislaus1987-mgo.prov.json": {
    "bytes": 1679,
@@ -122,7 +122,7 @@
   },
   "stanislaus1987-mno.g4dat": {
    "bytes": 487,
-   "sha256": "6b36c83390df888905fe080b0ab01dcf3742bdb33e7bc820290d4786b8d87247"
+   "sha256": "1baa50f774ef702e78f2d75d297401b0fea28aef32d4395b70c1ec9db56622d0"
   },
   "stanislaus1987-mno.prov.json": {
    "bytes": 1679,
@@ -130,7 +130,7 @@
   },
   "stanislaus1987-mno2.g4dat": {
    "bytes": 489,
-   "sha256": "d70445c0534d3b07c5229c55be6ce2a18c63e882f4701e35b1b9019a94e2b198"
+   "sha256": "b53a7eac2df8b3560b7452da2a0afc0909c4c3dddf78726cca761e051ab61637"
   },
   "stanislaus1987-mno2.prov.json": {
    "bytes": 1686,
@@ -138,7 +138,7 @@
   },
   "stanislaus1987-moo2.g4dat": {
    "bytes": 489,
-   "sha256": "f39dcb809aba15a7056a79bf13209b952e821ceaf8da3d86531a7849a738535d"
+   "sha256": "ee6a5fa13ea4518441c45b4f88c67738c7fc62d77c1eaf5bbbb93f028ab79ccd"
   },
   "stanislaus1987-moo2.prov.json": {
    "bytes": 1686,
@@ -146,7 +146,7 @@
   },
   "stanislaus1987-moo3.g4dat": {
    "bytes": 489,
-   "sha256": "b5d6c9d3f46e2018489e697f6e9a5d6ec02930ff41b03fd63178a920ab467a3f"
+   "sha256": "53389dd5e193d2e9a0e52582f11f1591484eb95ce00169e9f472dc8ee24c319f"
   },
   "stanislaus1987-moo3.prov.json": {
    "bytes": 1686,
@@ -154,7 +154,7 @@
   },
   "stanislaus1987-na2o2.g4dat": {
    "bytes": 459,
-   "sha256": "c4b3ec073b6fac548638e8503005ce25a908cf01644230432c5897d8ee722b87"
+   "sha256": "368351df802be3c7559e5f7fd1b7df319b3f3f5e6ca362f4acc191f7f992ebeb"
   },
   "stanislaus1987-na2o2.prov.json": {
    "bytes": 1693,
@@ -162,7 +162,7 @@
   },
   "stanislaus1987-nb2o5.g4dat": {
    "bytes": 491,
-   "sha256": "7a3c8ecd4548cd7cc9d9bbbadf42a9201ce7bee9ae39f930d4e68c6495b3854a"
+   "sha256": "2e9c7775871caf5cdaaa8cff3d9a9deb80515909e5631e8ba1b09705e5b41e21"
   },
   "stanislaus1987-nb2o5.prov.json": {
    "bytes": 1693,
@@ -170,7 +170,7 @@
   },
   "stanislaus1987-nbo.g4dat": {
    "bytes": 487,
-   "sha256": "4b7bc06eed9bbde2c09c6e1db679a6cfda8d0a619c4e979479a93bbd79952872"
+   "sha256": "0a10aa59c37c76671dabc310e8cb86e39712835888a888da1ce4b369a84451a1"
   },
   "stanislaus1987-nbo.prov.json": {
    "bytes": 1679,
@@ -178,7 +178,7 @@
   },
   "stanislaus1987-nio.g4dat": {
    "bytes": 487,
-   "sha256": "6c26b7e0228406e83971306b90a6c48d8be2dcd8e16d20e2a49adeff808c6997"
+   "sha256": "521330999633e58a9080915581eb5a34fbb1812adf418a22dc917a8b2dc6cdf0"
   },
   "stanislaus1987-nio.prov.json": {
    "bytes": 1679,
@@ -186,7 +186,7 @@
   },
   "stanislaus1987-p2o5.g4dat": {
    "bytes": 489,
-   "sha256": "acf71f9eb350698b3cc6e532eefd7db4f702c718d9f2eb107c4ed254c6e32b4b"
+   "sha256": "87956913bdee3788c25c0297c08ff06886381fd7652084a3d7d52840eb5dff18"
   },
   "stanislaus1987-p2o5.prov.json": {
    "bytes": 1686,
@@ -194,7 +194,7 @@
   },
   "stanislaus1987-pb3o4.g4dat": {
    "bytes": 491,
-   "sha256": "df9f578dfeeac88bd1aef076ba7cbd4e6ed1568dd8e3688f910658e00f872ca0"
+   "sha256": "a158331f79e0f3d57aa8bd6f376068fd345c4a09e96b2f1dad0989e184023870"
   },
   "stanislaus1987-pb3o4.prov.json": {
    "bytes": 1693,
@@ -202,7 +202,7 @@
   },
   "stanislaus1987-pbo.g4dat": {
    "bytes": 487,
-   "sha256": "7adaf55582b57400e0167960d0141a0ed98c90cf11b93dce81e2ff3528deea81"
+   "sha256": "179ad9e0389968906f45e2800ca12d78be7c8baa66d63befe92f611906544342"
   },
   "stanislaus1987-pbo.prov.json": {
    "bytes": 1679,
@@ -210,7 +210,7 @@
   },
   "stanislaus1987-pbo2.g4dat": {
    "bytes": 487,
-   "sha256": "d7264787b7d41e5b7f6aaebe0e8c5506e93732b378782f013ff7e11daec89463"
+   "sha256": "c86215c00667e00e8a1cca46b74e9d96db57aff9f47159ad51bf58c25e7d5f25"
   },
   "stanislaus1987-pbo2.prov.json": {
    "bytes": 1686,
@@ -218,7 +218,7 @@
   },
   "stanislaus1987-pro2.g4dat": {
    "bytes": 487,
-   "sha256": "0e91c1c8840512ad50976d4100254e69bd31defd12d90a5e947a7393e150af61"
+   "sha256": "4ba51bcc43627bf7889b2b7443bb17a6aa89392bfca811bf0aa4b9c525ad30cd"
   },
   "stanislaus1987-pro2.prov.json": {
    "bytes": 1686,
@@ -226,7 +226,7 @@
   },
   "stanislaus1987-sb2o3.g4dat": {
    "bytes": 491,
-   "sha256": "1e6bd25bb9ff730d80e0767596634c676771867a9702973fbd143f07af854a0e"
+   "sha256": "7d3d7820ff62fb8e3e07e3cea7ec567491438fdedf6b176140861b24611d819b"
   },
   "stanislaus1987-sb2o3.prov.json": {
    "bytes": 1693,
@@ -234,7 +234,7 @@
   },
   "stanislaus1987-sc2o3.g4dat": {
    "bytes": 491,
-   "sha256": "338d252b61fb8e227aabb287f63515e1e92ed58e2ed1a307de2e0ba7acc9c888"
+   "sha256": "5d81cfd8d829db0d02e08443994926f13ee0662630ba4237f350e308b8596200"
   },
   "stanislaus1987-sc2o3.prov.json": {
    "bytes": 1693,
@@ -242,7 +242,7 @@
   },
   "stanislaus1987-sio.g4dat": {
    "bytes": 487,
-   "sha256": "c91893cf14974ca8755f496b12f0118d697170c258684fdb0fd78f696968e612"
+   "sha256": "a6a225da77dd613282f983a211f6f53448254639466b1a78bbf0972277fa0c83"
   },
   "stanislaus1987-sio.prov.json": {
    "bytes": 1679,
@@ -250,7 +250,7 @@
   },
   "stanislaus1987-sio2.g4dat": {
    "bytes": 489,
-   "sha256": "c2a9bb11332303414b8fa0c941046086024d88476f43dbd003503e4b17c9c4f5"
+   "sha256": "486ce6d7184052931e5962fc5c31ddc43f9a78ef08a9414a8032a0fee2e40b1d"
   },
   "stanislaus1987-sio2.prov.json": {
    "bytes": 1686,
@@ -258,7 +258,7 @@
   },
   "stanislaus1987-sm2o3.g4dat": {
    "bytes": 491,
-   "sha256": "1370589357d8a3fe1c3d89fced16026291c8b4b38ec9f14af5a7c035b6c593b7"
+   "sha256": "5591b6db19e27834378d3f2c5daf73aaa5d774e772145396151aaa7a3d01e5c3"
   },
   "stanislaus1987-sm2o3.prov.json": {
    "bytes": 1693,
@@ -266,7 +266,7 @@
   },
   "stanislaus1987-sno.g4dat": {
    "bytes": 487,
-   "sha256": "74f80d21e6cf4b7bfc0525889cbe8e0e709b4f751aa92683ea7494c6de855532"
+   "sha256": "277aab2f9edffd58f4dd9bd15371dfc325c11e3e8cd0cb1e5fca018ce4838a46"
   },
   "stanislaus1987-sno.prov.json": {
    "bytes": 1679,
@@ -274,7 +274,7 @@
   },
   "stanislaus1987-sno2.g4dat": {
    "bytes": 489,
-   "sha256": "9f459833bfe9402102710e86b117ba54868f9aaca39b04b7364990b2d479a2ab"
+   "sha256": "010318268fcccc41e547e708211e8d6b1ed04912390d02b3e79af84d1fcb833f"
   },
   "stanislaus1987-sno2.prov.json": {
    "bytes": 1686,
@@ -282,7 +282,7 @@
   },
   "stanislaus1987-teo2.g4dat": {
    "bytes": 489,
-   "sha256": "45808a89d335c83e6d09d5c261719498901d39123f867591ec7cdfbe23374bf8"
+   "sha256": "1ef48732e6dd7d6fa372a43d7f545f948aa5cadde1782058ada67c2616af6c1c"
   },
   "stanislaus1987-teo2.prov.json": {
    "bytes": 1686,
@@ -290,7 +290,7 @@
   },
   "stanislaus1987-tio.g4dat": {
    "bytes": 487,
-   "sha256": "880b96ca868333f200d94cc3e362e861d341699ad9fe673ac705cf7edd16309a"
+   "sha256": "670e5cd05d8b880c00463784f558885031a4a2e2de8438c5d4ee1288bf6db620"
   },
   "stanislaus1987-tio.prov.json": {
    "bytes": 1679,
@@ -298,7 +298,7 @@
   },
   "stanislaus1987-tio2.g4dat": {
    "bytes": 489,
-   "sha256": "cd509e445170dc55f9236ecaabaefc8a704c63e7340a68429bb8e506fecbe6fd"
+   "sha256": "08a9bef8d6592c05478c2651ed8f935b7c5fa3303401e566d45b12e3f3a5df65"
   },
   "stanislaus1987-tio2.prov.json": {
    "bytes": 1686,
@@ -306,7 +306,7 @@
   },
   "stanislaus1987-v2o5.g4dat": {
    "bytes": 489,
-   "sha256": "d909de2e5e6a74c649246c6381a7f7a1cc2327570874e8a99e038dd5763006e6"
+   "sha256": "f0b0db178093653172037000118bdb52697b8b42aa2ba21539fd10e3acca6e67"
   },
   "stanislaus1987-v2o5.prov.json": {
    "bytes": 1686,
@@ -314,7 +314,7 @@
   },
   "stanislaus1987-y2o3.g4dat": {
    "bytes": 489,
-   "sha256": "72aff295045b4ca5d71fff3fe05e374fe01935f5184621c6b7a2c6ad01e94e02"
+   "sha256": "4cc4c959da5067e68eaf6076515a4f6c9480445c3503ad26133b44b2075ee011"
   },
   "stanislaus1987-y2o3.prov.json": {
    "bytes": 1686,
@@ -322,7 +322,7 @@
   },
   "stanislaus1987-zno.g4dat": {
    "bytes": 487,
-   "sha256": "fdab925a659677713d11a5a67a7becf905e486f50e87d0e6580ea1b1a818523b"
+   "sha256": "2544638baf211d5b294f2fdaeefb74373b962dee6e18f5066ba84859a08a5e53"
   },
   "stanislaus1987-zno.prov.json": {
    "bytes": 1679,
@@ -330,7 +330,7 @@
   },
   "stanislaus1987-zro2.g4dat": {
    "bytes": 489,
-   "sha256": "ffea035e871597c0d836fdcba27206b6064498cf5aa76f6cb97a4610510ca390"
+   "sha256": "447d74253d3fde31d94f56a1731b343dff2103759a05d784fe425a360e7cde14"
   },
   "stanislaus1987-zro2.prov.json": {
    "bytes": 1686,
