@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed -- the transport evidence, re-run with this release's patches and dataset archive (2026-11-07)
+
+- `cpp/transport/evidence/manifest.json` and `cells.csv` record a new run of the transport workflow on both revisions, from the source archive of this release: its patches under `cpp/patches/`, its harness and the dataset archive `data/g4/d1/geant4_add_dataset.snippet` registers, which now carries the evaluated pair table. Every check result is byte-identical to the previous run's. `tests/test_g4transport.py` holds the manifest to the shipped archive, the current patches and the harness sources, and `evidence/source_snapshots/` keeps the patches of the earlier run.
+
 ### Removed -- the deprecated names of the thermal formation export, as scheduled for this major release (2026-11-07)
 
 - `openmucf.interop.export_lambda_dtmu_thermal` and the `lambda_dtmu` key of `openmucf.interop.geant4_callables`, deprecated aliases of `export_lambda_form_eff_thermal` and `lambda_form_eff` that `docs/api-overview.md`, `CONTRIBUTING.md` and the entry that renamed them scheduled for removal in v2.0.0, are removed; code that used them calls the renamed export and key, which return what the aliases returned.

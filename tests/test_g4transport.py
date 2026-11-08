@@ -8,6 +8,7 @@ import importlib.util
 import io
 import json
 import math
+import re
 import shutil
 import sys
 import tarfile
@@ -849,14 +850,17 @@ def test_t149_committed_manifest_ties_builds_dataset_and_cells():
     generator = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = generator
     spec.loader.exec_module(generator)
-    # The evidence predates the evaluated pair table: its dataset is the current one without that table,
-    # and the shipped archive (the snippet's) is a different one.
-    _, archive = generator.build_dataset_artifacts(pair_table=False)
-    assert hashlib.md5(archive).hexdigest() == manifest["dataset"]["md5"]
-    _, shipped = generator.build_dataset_artifacts()
+    # The evidence was produced with the shipped archive: the one the snippet registers, rebuilt here from
+    # the committed files, whose members are the manifest's.
+    _, archive = generator.build_dataset_artifacts()
     snippet = (ROOT / "data/g4/d1/geant4_add_dataset.snippet").read_text(encoding="utf-8")
-    assert hashlib.md5(shipped).hexdigest() in snippet
-    assert manifest["dataset"]["md5"] not in snippet
+    declared = re.findall(r"^\s*MD5SUM\s+([0-9a-f]{32})\s*$", snippet, re.M)
+    assert declared == [hashlib.md5(archive).hexdigest()] == [manifest["dataset"]["md5"]]
+    for build in manifest["builds"]:
+        for patch in build["patches"]:
+            assert hashlib.sha256((ROOT / patch["path"]).read_bytes()).hexdigest() == patch["sha256"], patch
+    for name, digest in manifest["sources"].items():
+        assert hashlib.sha256((ROOT / "cpp/transport" / name).read_bytes()).hexdigest() == digest, name
     with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
         members = {member.name: hashlib.sha256(tar.extractfile(member).read()).hexdigest()
                    for member in tar.getmembers() if member.isfile()}
