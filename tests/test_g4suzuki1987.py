@@ -434,8 +434,9 @@ def test_t160_the_fluorine_row_names_the_lower_hyperfine_state_its_note_prints()
         section = dataset.split(heading, 1)[1]
         section = section.split(following, 1)[0] if following else section
         assert section.count(sentence) == 1, heading
-    unreleased = (root / "CHANGELOG.md").read_text(encoding="utf-8").split("## [", 2)[1]
-    changelog = " ".join(unreleased.split())
+    # The entry moves from [Unreleased] into a release section when a release rolls; the change log as a whole
+    # must state it exactly once.
+    changelog = " ".join((root / "CHANGELOG.md").read_text(encoding="utf-8").split())
     assert changelog.count(STATE_SENTENCE) == 1
 
 
