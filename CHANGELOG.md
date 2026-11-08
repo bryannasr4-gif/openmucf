@@ -10,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-07
+
+**What this release is.** v2.0.0 adds to the muonic-atom data layer for Geant4 an evaluated aluminium bound-muon rate pair, measured oxide capture vectors behind an opt-in material selector, an opt-in common bound-decay rate pair for both stopped-muon routes, separate patches that correct the times of a stopped muon's products, the D3 tables of the `mudirac130p1` profile, a benchmark of stopped negative muons in Geant4 against measurement, and transport evidence re-run with this release's patches and dataset archive.
+
+- **Breaking changes.** The muon-cost ledger's schema changed: `openmucf/data/muon_cost_chain.schema.json` now requires `count_basis`, both muon-cost tables gained columns, and the loaders refuse files written to the schema of release v1.3.0. The deprecated names of the thermal formation export, `openmucf.interop.export_lambda_dtmu_thermal` and the `lambda_dtmu` key of `geant4_callables`, are removed, as their documentation scheduled for this release. Each is a breaking change under the versioning policy of `CONTRIBUTING.md` (section 8), so the major version moves.
+- **D1, the aluminium rate pair.** The late lifetime and the decay rate meet provisional budgets (conditional; the late-lifetime decision has no validation power); the stopped mean and the capture probability are not established; robust improvement over Geant4's stock pair is established only for the late lifetime on the atomic route.
+- **D2, the measured oxide vectors.** No row is decided for precision, and improvement over the stock selector is not established on any row; the material selector reads a vector only for a material an application binds to that vector.
+- **D3, the `mudirac130p1` tables.** They are a numerical and Hamiltonian repair, not a corrected resolved spectrum; the shell representation stays a registered failure; the status of the independent numerical check is `REPRODUCTION_FAILED`; and no bound on the model's own uncertainty is stated.
+- **The common bound-decay rate pair.** Its verification at the call sites verifies the implementation, not the physics.
+- **The stopped-muon clock patches.** They are separate from the dataset patches and change a build only when applied; their checks are application object-overlay validation, not a rebuilt installation.
+- **The stopped-muon benchmark.** It compares the capture products of a stopped negative muon, as unpatched Geant4 v11.4.2 and v11.5.0.beta return them, with measured yields.
+- **Compatibility.** Tested on Geant4 v11.4.2 and v11.5.0.beta; the material selector refuses other revisions at compile time.
+- **Names.** The dataset name `G4MuonicData` and the environment variable `G4MUONICDATA` are provisional placeholders, pending discussion with the Geant4 collaboration.
+
 ### Changed -- the transport evidence, re-run with this release's patches and dataset archive (2026-11-07)
 
 - `cpp/transport/evidence/manifest.json` and `cells.csv` record a new run of the transport workflow on both revisions, from the source archive of this release: its patches under `cpp/patches/`, its harness and the dataset archive `data/g4/d1/geant4_add_dataset.snippet` registers, which now carries the evaluated pair table. Every check result is byte-identical to the previous run's. `tests/test_g4transport.py` holds the manifest to the shipped archive, the current patches and the harness sources, and `evidence/source_snapshots/` keeps the patches of the earlier run.
@@ -1258,7 +1272,8 @@ provenance-clean and reproducible.
   ignorance-bound scenario B — **registered at this tag** (Zenodo DOI 10.5281/zenodo.21251512). Adds 20 forecast
   tests (**63 total**).
 
-[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.3.0...v2.0.0
 [1.3.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.1.0
