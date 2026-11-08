@@ -35,13 +35,20 @@ abstract: >-
   error-barred, falsifiable verdicts. It also ships Geant4 muonic-atom data
   as an external, versioned dataset, with provenance and uncertainty
   attached, that a patched Geant4 consults only after an explicit opt-in:
-  D1, nuclear capture, and the D3 energy tables of the mudirac130 profile, in
-  the G4MuonicData external-data format, with patches for Geant4 v11.4.2 and
-  v11.5.0.beta and a transport workflow that builds each revision the
-  patches name with and without them. D2 compares the element Geant4's
-  capturing-atom selector picks with an atomic-capture reference corpus; no
-  patched Geant4 reads it.
-# The `version` above pins this exact release. The `preferred-citation` below is the
+  D1, nuclear capture, with an evaluated aluminium bound-muon rate pair
+  whose stopped mean and capture probability are not established, and the D3
+  energy tables of the mudirac130p1 profile, a numerical and Hamiltonian
+  repair, not a corrected resolved spectrum, in the G4MuonicData
+  external-data format, with patches for Geant4 v11.4.2 and v11.5.0.beta and
+  a transport workflow that builds each revision the patches name with and
+  without them. D2 compares the element Geant4's capturing-atom selector
+  picks with an atomic-capture reference corpus and ships measured oxide
+  capture vectors, which a separate material selector reads only for a
+  material an application binds to one; neither precision at the registered
+  budget nor improvement over the stock selector is established for any of
+  them.
+# The `version` above pins this exact release, and the abstract describes it. The
+# `preferred-citation` below is the
 # version-independent software record (Zenodo concept DOI) -- cite it to always resolve to the
 # latest version. No `license` key is set: this repository's files carry different licences by
 # path, and CFF reads a list of licences as alternatives. The code is Apache-2.0 (LICENSE) apart
