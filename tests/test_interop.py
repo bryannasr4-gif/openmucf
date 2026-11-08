@@ -2,6 +2,8 @@
 
 import json
 import math
+import re
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +12,7 @@ from openmucf.analytic import effective_sticking
 from openmucf.rates import omega_fraction
 
 RATES = load_rates()
+REPO = Path(__file__).resolve().parents[1]
 
 
 def _expected_omega_s_eff(use_legacy=False):
@@ -93,6 +96,21 @@ def test_geant4_callables_are_plain_floats():
     assert isinstance(energy, float) and energy > 0.0
     # energy-resolved peak >> thermal average (resonance vs Maxwell tail)
     assert energy > thermal
+
+
+def test_geant4_callables_returns_every_key_the_api_overview_advertises():
+    """The `geant4_callables` bullet of docs/api-overview.md names its callables, and any key it calls a
+    key; each is a key of the mapping the function returns, so the guide advertises nothing a caller cannot
+    look up."""
+    text = (REPO / "docs" / "api-overview.md").read_text(encoding="utf-8")
+    bullet = re.search(r"^- `geant4_callables\(.*?(?=^- |\Z)", text, re.M | re.S)
+    assert bullet, "docs/api-overview.md has no geant4_callables bullet"
+    flat = " ".join(bullet.group(0).split())
+    called = set(re.findall(r"`(\w+)\(", flat)) - {"geant4_callables"}
+    advertised = called | set(re.findall(r"key `(\w+)`", flat))
+    api = interop.geant4_callables(RATES)
+    assert advertised, flat
+    assert advertised <= set(api), (sorted(advertised - set(api)), sorted(api))
 
 
 def test_geant4_callables_keys():

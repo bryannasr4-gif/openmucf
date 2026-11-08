@@ -235,7 +235,7 @@ API, ingest external spectra as validation data, and never re-implement transpor
   only the F=1 0.423 eV peak is a measured anchor) — the formation-rate surfaces.
 - `export_all(rates, outdir, ...) -> dict` — write the standard CSV/JSON bundle; returns `{name: [paths]}`.
 - `geant4_callables(rates, ...) -> dict` — plain-float callables `omega_s_eff(phi, T)` and
-  `lambda_form_eff(E=None, phi, T, F)` (legacy alias key `lambda_dtmu`, same callable, deprecated) for
+  `lambda_form_eff(E=None, phi, T, F)` for
   an in-process GEANT4 embedding.
 - `ingest_spectrum(path, kind="neutron_tof", ...) -> Spectrum` — parse a two-column validation
   spectrum; `Spectrum.area()` / `.normalized()` for shape comparison.
