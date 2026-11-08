@@ -1194,7 +1194,12 @@ def build_dataset_artifacts(pair_table: bool = True) -> tuple[dict[Path, bytes],
     artifacts[D3_VALIDATION] = md.build_validation(ROOT)
     artifacts[D3_PROJECTION] = d3c.render_projection(ROOT, bundle)
     artifacts[D3_GROUPS] = d3c.render_groups(ROOT, bundle)
-    artifacts[D3_COMPONENTS] = d3c.render_components(ROOT, bundle)
+    # The header digests the D3 tables this run writes, not the copies it replaces, so that one run that
+    # re-stamps them (a version bump) reaches the fixed point the audit compares against.
+    artifacts[D3_COMPONENTS] = d3c.render_components(
+        ROOT, bundle,
+        written={d3c.KSHELL_RELPATH: artifacts[D3_KSHELL_LAYER1], d3c.LEVELS_RELPATH: artifacts[D3_LEVELS_LAYER1]},
+    )
     artifacts[D3_CENTROIDS] = d3centroids.render_centroids(ROOT, bundle)
     artifacts[D3_MARGINS] = d3centroids.render_margins(ROOT, bundle)
     artifacts[D3_ATTRIBUTION] = d3attr.render_attribution(ROOT, outputs)
