@@ -213,6 +213,10 @@ def check_build_floor(requires: list[str]) -> None:
 
 #: The licence names a per-path statement may use, each matched as a whole word.
 LICENCES = ("Apache-2.0", "CC-BY-4.0", "Geant4 Software License", "MIT")
+#: The trace patches the stopped-muon clock's validation applies, and the copies of earlier patches the
+#: transport evidence pins: Geant4 source lines outside `cpp/patches/`, under the Geant4 Software License.
+TRACE_PATCHES = "cpp/clock/formation_validation/trace-g4-*.patch"
+PATCH_SNAPSHOTS = "cpp/transport/evidence/source_snapshots/*.patch"
 #: Each path token of the per-path statements, and the one licence of :data:`LICENCES` a clause naming that
 #: path must name -- or `None` for a path this repository offers under no licence of its own, beside which a
 #: clause names no licence. A token is a path, a directory ending in `/`, or a pattern whose `*` stands for
@@ -223,6 +227,8 @@ LICENCE_BY_PATH: dict[str, str | None] = {
     "(LICENSE-DATA)": "CC-BY-4.0",
     "openmucf/data": "CC-BY-4.0",
     "cpp/patches/": "Geant4 Software License",
+    TRACE_PATCHES: "Geant4 Software License",
+    PATCH_SNAPSHOTS: "Geant4 Software License",
     "third_party/geant4/": "Geant4 Software License",
     "third_party/mudirac/": "MIT",
     "data/g4/": "CC-BY-4.0",
@@ -419,7 +425,8 @@ G4_DATA: dict[str, str | None] = {
 #: The words in which a statement says that a path carries no licence of this repository.
 NO_LICENCE = "no licence of this repository"
 #: The paths the comment of `CITATION.cff` names; the README's License section names the rest.
-CITATION_PATHS = ("(LICENSE)", "(LICENSE-DATA)", "openmucf/data", "cpp/patches/", "third_party/geant4/")
+CITATION_PATHS = ("(LICENSE)", "(LICENSE-DATA)", "openmucf/data", "cpp/patches/", "third_party/geant4/",
+                  TRACE_PATCHES, PATCH_SNAPSHOTS)
 #: A `license` or `license-url` key at any level of a CFF file, quoted or not.
 CFF_LICENSE_KEY = re.compile(r"""^\s*["']?license(?:-url)?["']?\s*:""", re.MULTILINE)
 #: The SHA-256 of MuDirac 1.3.0's `LICENSE` as the release archive whose SHA-256
@@ -563,7 +570,7 @@ def licence_statements() -> dict[str, tuple[str, tuple[str, ...]]]:
         "README.md": (_section(read("README.md"), "## License"), tuple(LICENCE_BY_PATH)),
         "LICENSE": (
             _note(read("LICENSE"), "NOTE (not part of the Apache License)"),
-            ("third_party/geant4/", "cpp/patches/"),
+            ("third_party/geant4/", "cpp/patches/", TRACE_PATCHES, PATCH_SNAPSHOTS),
         ),
         "LICENSE-DATA": (
             _note(read("LICENSE-DATA"), "NOTE (not part of the Creative Commons licence)"),
@@ -581,7 +588,8 @@ def licence_statements() -> dict[str, tuple[str, tuple[str, ...]]]:
         "DATASET_D3.md": (_section(read("DATASET_D3.md"), "## 9. Licensing"), _tokens_under("data/g4/d3/")),
         "docs/index.md": (
             _section(read("docs/index.md"), "## License"),
-            ("openmucf/data", "cpp/patches/", "third_party/geant4/", "data/g4/",
+            ("openmucf/data", "cpp/patches/", TRACE_PATCHES, PATCH_SNAPSHOTS,
+             "third_party/geant4/", "data/g4/",
              *_licensed_otherwise("data/g4/")),
         ),
         "FORMAT_SPEC.md": (

@@ -47,8 +47,10 @@ abstract: >-
 # version-independent software record (Zenodo concept DOI) -- cite it to always resolve to the
 # latest version. No `license` key is set: this repository's files carry different licences by
 # path, and CFF reads a list of licences as alternatives. The code is Apache-2.0 (LICENSE) apart
-# from the Geant4 patches; the Geant4 patches (cpp/patches/*.patch) are offered under the Geant4
-# Software License (cpp/patches/LICENSE); the vendored Geant4 files under third_party/geant4/ are
+# from the Geant4 patches; the Geant4 patches (cpp/patches/*.patch), the trace patches
+# cpp/clock/formation_validation/trace-g4-*.patch and the patch copies
+# cpp/transport/evidence/source_snapshots/*.patch are offered under the Geant4 Software
+# License (cpp/patches/LICENSE); the vendored Geant4 files under third_party/geant4/ are
 # redistributed under the Geant4 Software License; the ledger data files (openmucf/data/*) are
 # CC-BY-4.0 (LICENSE-DATA). The License section of README.md names each path.
 preferred-citation:

@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed -- the licence of the trace patches and of the archived patch copies, stated by path (2026-11-07)
+
+- The trace patches `cpp/clock/formation_validation/trace-g4-*.patch` and the copies of earlier patches `cpp/transport/evidence/source_snapshots/*.patch` carry Geant4 source lines and are offered under the Geant4 Software License, as `cpp/clock/formation_validation/README.md` already offered the trace patches. The License section of `README.md`, the note in `LICENSE`, `docs/index.md`, the comment of `CITATION.cff` and the notes of `.zenodo.json` now name both, and the License section names the definition of `G4MuonMinusAtomicCapture::SetElementSelector` that `cpp/material_selector/G4MuonicMaterialSelector.hh` supplies, which is the definition Geant4's `G4HadronStoppingProcess` gives its own setter. `tests/test_packaging.py` holds each of those statements to both paths.
+
 ### Fixed -- the uncertainty label of the two 208Pb 2p-1s comparison rows (2026-10-29)
 
 - `data/g4/d3/validation_cells.csv` and `validation.csv` now label the 208Pb K1-L2 and K1-L3 uncertainties `statistical, calibration and systematic`. Their values and uncertainties equal Table V of Bergem et al., Phys. Rev. C 37, 2821 (1988), which states on p. 2826 that its quoted errors are total errors including statistical, calibration and systematic uncertainties; they were labelled `statistical`, the label of the Fricke et al. table that restates them. Values, uncertainties and tolerances are unchanged. The loader keys such a label by row (`UNC_LABELS_BY_PRIMARY`).
