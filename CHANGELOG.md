@@ -10,9 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed -- a single generator run after a version change, and the version every table is stamped with (2026-11-07)
+
+- `scripts/generate_g4data.py` digests the D3 tables it writes, not the copies on disk, in the header of `data/g4/d3/components.jsonl`, so that a single run after a version change reaches the fixed point `--audit` compares against, where a second run was needed. The measured oxide tables under `data/g4/d2/measured/` take the version of their `#GENERATOR` line from the package (`openmucf/g4/d2_measured.py`), where it was typed, and `tests/test_version_markers.py` holds every version marker of the repository to the package version.
+
 ### Changed -- the licence of the trace patches and of the archived patch copies, stated by path (2026-11-07)
 
 - The trace patches `cpp/clock/formation_validation/trace-g4-*.patch` and the copies of earlier patches `cpp/transport/evidence/source_snapshots/*.patch` carry Geant4 source lines and are offered under the Geant4 Software License, as `cpp/clock/formation_validation/README.md` already offered the trace patches. The License section of `README.md`, the note in `LICENSE`, `docs/index.md`, the comment of `CITATION.cff` and the notes of `.zenodo.json` now name both, and the License section names the definition of `G4MuonMinusAtomicCapture::SetElementSelector` that `cpp/material_selector/G4MuonicMaterialSelector.hh` supplies, which is the definition Geant4's `G4HadronStoppingProcess` gives its own setter. `tests/test_packaging.py` holds each of those statements to both paths.
+
+### Fixed -- the conditional minimum margins of the oxide sensitivity (2026-10-30)
+
+- The labelled conditional sensitivity of the measured oxide vectors, `d2-measured-v2-e2cover`, carries its conditional minimum margins in total variation on the rows it lists in `data/g4/d2/measured/inputs.json` and `data/g4/d2/measured/evaluation.json`, and `docs/measured-oxide-capture.md` states them, where the page had said that its numerical margins are not distributed. It remains a conditional sensitivity, not a decision, and no decision changes.
 
 ### Fixed -- the uncertainty label of the two 208Pb 2p-1s comparison rows (2026-10-29)
 
@@ -38,6 +46,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - With the existing option on, both routes, including the stopping route, now receive this decay rate, which differs from the stopping getter's legacy value. The static getters remain unchanged. The earlier opt-in entry below and its historical verification describe the former pair.
 - [The derivation](docs/low-z-bound-muon-decay.md) gives the fully inclusive point-scalar tree observable, finite-mass matching, complete cuts/endpoints and the independent first-/second-Born asymptotic check. The finite-parameter Born integral, higher recoil/binding and radiative/nuclear uncertainties remain unassigned. The new finite-M derivation is distinguished from the 1999 matching structure and the contrary 1979 coefficient, whose discrepancy is unlocalized.
 - Both patch copies carry the same current provider. Capture forwarding, switch lifecycle, legacy getters and historical oracle/policy/harvest/results retain their meanings. Separate current-formula C++ and Python checks cover static limits, positive linear slopes, legacy-model deltas and adverse inputs. Historical numerical rows are unchanged and explicitly scoped in `DATASET_D1.md`.
+
+### Fixed -- stopped-muon product times in explicitly patched builds (2026-10-25)
+
+- **Separate clock patches.** `cpp/patches/g4-v11.4.2-stopped-muon-clock-v3.patch` and `cpp/patches/g4-v11.5.0.beta-stopped-muon-clock-v3.patch` correct the times Geant4 gives the products of a stopped negative muon. Applying either explicitly changes that build's default timing: there is no runtime switch, and neither the dataset patch nor `SetEnableMuonicBoundRates` applies or enables the correction (`cpp/clock/README.md`).
+- **What changes.** The new muonic atom gets local time zero, so the stopped muon's global time is added once, where it was added twice; an unset negative nuclear-model secondary time is mapped to zero before the sampled waiting time is added, on the stopping route and in the atom's decay, where the sentinel was added and the sum clamped afterward; and the precompound wrapper consumes each fragment's formation time, where it read the legacy time-of-flight field. Bound-decay products then arrive at the stop time plus the waiting time, and nuclear-capture products at that time plus the model's local time, taken as zero where it is negative. Propagating the model's formation times does not establish their experimental accuracy. The stopping-process class is shared by other negatively charged hadrons, and its hunk changes the same composition for them.
+- **What was checked.** `cpp/clock/` holds the checks for both revisions. They are application object-overlay validation, not a rebuilt installation: only the process definitions linked into the check applications are replaced, and the existing Geant4 shared libraries and data remain in use.
 
 ### Added -- the other stages of a stopped muon in the stopped-muon benchmark, and the recorded flags of the decay-rate oracle (2026-10-23)
 
