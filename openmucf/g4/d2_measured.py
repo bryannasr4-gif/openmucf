@@ -47,6 +47,7 @@ from decimal import ROUND_DOWN, ROUND_HALF_EVEN, Decimal, localcontext
 from fractions import Fraction
 from typing import Any
 
+from openmucf import __version__
 from openmucf.g4 import d1_evaluated, provenance, spec
 from openmucf.g4 import d2 as selector
 from openmucf.g4 import science_decisions as decisions
@@ -61,7 +62,8 @@ COLUMNS = ("Z", "P", "n")
 PROFILE_PREFIX = "stanislaus1987-"
 DATASET = "G4MuonicData"
 DATASET_VERSION = "0.1.0"
-GENERATOR = "openmucf-g4 1.3.0"
+#: The producing tool and its version (FORMAT_SPEC.md), from the package that writes the tables.
+GENERATOR = f"openmucf-g4 {__version__}"
 VALIDITY = "form:vector basis:atom scope:hydrogen_free_nominal_solid status:SOURCE_REPORTED_PROVISIONAL"
 DELIVERY_MODE = "SOURCE_REPORTED_FROZEN"
 CONVERSION_REFUSAL = "CONVERSION_NOT_ESTABLISHED"
