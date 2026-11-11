@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "OpenMuCF: open FAIR rate ledger and auditor for muon-catalyzed fusion, and external muonic-atom data for Geant4"
 version: 2.0.0
-date-released: "2026-11-07"
+date-released: "2026-11-11"
 type: software
 authors:
   - given-names: "Bryan"

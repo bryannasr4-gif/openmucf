@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-11-07
+## [2.0.0] - 2026-11-11
 
 **What this release is.** v2.0.0 adds to the muonic-atom data layer for Geant4 an evaluated aluminium bound-muon rate pair, measured oxide capture vectors behind an opt-in material selector, an opt-in common bound-decay rate pair for both stopped-muon routes, separate patches that correct the times of a stopped muon's products, the D3 tables of the `mudirac130p1` profile, a benchmark of stopped negative muons in Geant4 against measurement, and transport evidence re-run with this release's patches and dataset archive.
 
