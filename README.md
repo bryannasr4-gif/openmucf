@@ -227,8 +227,8 @@ provenance, and the credibility-firewall policy. Release history is in [`CHANGEL
 
 ## How to cite
 If you use OpenMuCF, please cite it via [`CITATION.cff`](CITATION.cff) (GitHub renders a "Cite this
-repository" button from it). Archived on Zenodo — cite the exact release **v1.3.0** via DOI
-[10.5281/zenodo.22995079](https://doi.org/10.5281/zenodo.22995079), or the version-independent concept DOI
+repository" button from it). Archived on Zenodo — cite the exact release **v2.0.0** via DOI
+[10.5281/zenodo.24150274](https://doi.org/10.5281/zenodo.24150274), or the version-independent concept DOI
 [10.5281/zenodo.21251511](https://doi.org/10.5281/zenodo.21251511) to always resolve to the latest version.
 Release v2.0.0 holds the D3 tables of the `mudirac130p1` profile at dataset version 0.6.0. To cite a change
 that [`CHANGELOG.md`](CHANGELOG.md) lists under Unreleased, cite the latest release together with the commit

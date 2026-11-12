@@ -2,6 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "OpenMuCF: open FAIR rate ledger and auditor for muon-catalyzed fusion, and external muonic-atom data for Geant4"
 version: 2.0.0
+doi: "10.5281/zenodo.24150274"
 date-released: "2026-11-11"
 type: software
 authors:
@@ -47,7 +48,7 @@ abstract: >-
   material an application binds to one; neither precision at the registered
   budget nor improvement over the stock selector is established for any of
   them.
-# The `version` above pins this exact release, and the abstract describes it. The
+# The `version` and `doi` above pin this exact release, and the abstract describes it. The
 # `preferred-citation` below is the
 # version-independent software record (Zenodo concept DOI) -- cite it to always resolve to the
 # latest version. No `license` key is set: this repository's files carry different licences by
