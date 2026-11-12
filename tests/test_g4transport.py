@@ -8,6 +8,7 @@ import importlib.util
 import io
 import json
 import math
+import re
 import shutil
 import sys
 import tarfile
@@ -826,10 +827,81 @@ def test_t149_historical_patch_snapshot_damage_is_rejected(tmp_path, monkeypatch
             check_historical_patch(entry, snapshots)
 
 
+#: The revision the removed-call-site case (P13) runs on, and so the one revision the workflow also builds
+#: as the mutant whose cascade lacks the level check: the run plan `transport.py manifest` declares.
+MUTANT_TAG = "v11.4.2"
+#: That plan as `transport.py` states it, so a change of the plan there is a change here too.
+DECLARED_PLAN = '(("pristine", "patched", "mutant") if tag == "v11.4.2" else ("pristine", "patched"))'
+
+
+def expected_build_roster() -> list[tuple[str, str]]:
+    """Every (tag, kind) build of the run plan, once each: the unpatched and the patched build of each
+    revision matrix.json names, and the mutant of MUTANT_TAG."""
+    return sorted([(tag, kind) for tag in MATRIX["revisions"] for kind in ("pristine", "patched")]
+                  + [(MUTANT_TAG, "mutant")])
+
+
+def manifest_roster_problems(manifest: dict) -> list[str]:
+    """How the manifest's builds and harness sources depart from the run plan: a missing, repeated or
+    unplanned build, an empty build list, or a source set other than the one `transport.py` digests."""
+    builds = manifest.get("builds")
+    if not isinstance(builds, list):
+        return ["the manifest records no build list"]
+    problems = []
+    got = sorted((build.get("tag"), build.get("kind")) for build in builds)
+    if got != expected_build_roster():
+        problems.append(f"builds {got} are not the run plan {expected_build_roster()}")
+    sources = manifest.get("sources")
+    if not isinstance(sources, dict) or sorted(sources) != sorted(transport.SOURCES):
+        problems.append(f"sources {sorted(sources or {})} are not {sorted(transport.SOURCES)}")
+    return problems
+
+
+def _without(kind: str, tag: str | None = None):
+    def drill(m: dict) -> dict:
+        m["builds"] = [b for b in m["builds"] if not (b["kind"] == kind and (tag is None or b["tag"] == tag))]
+        return m
+    return drill
+
+
+#: (name, alteration of the committed manifest): each must be refused by the roster check.
+ROSTER_DRILLS = [
+    ("a patched build missing", _without("patched", "v11.5.0.beta")),
+    ("a revision missing", lambda m: dict(m, builds=[b for b in m["builds"] if b["tag"] != "v11.5.0.beta"])),
+    ("only one unpatched build kept", lambda m: dict(m, builds=[
+        b for b in m["builds"] if (b["tag"], b["kind"]) == ("v11.4.2", "pristine")])),
+    ("a build repeated", lambda m: dict(m, builds=m["builds"] + [m["builds"][1]])),
+    ("an unplanned kind", lambda m: dict(m, builds=[dict(b, kind="other") if b["kind"] == "mutant" else b
+                                                    for b in m["builds"]])),
+    ("the mutant missing", _without("mutant")),
+    ("an empty build list", lambda m: dict(m, builds=[])),
+    ("a harness source missing", lambda m: dict(m, sources={k: v for k, v in m["sources"].items()
+                                                           if k != "transport.py"})),
+    ("an extra harness source", lambda m: dict(m, sources=dict(m["sources"], **{"other.cc": "0" * 64}))),
+]
+
+
+def test_t149_the_build_roster_is_the_declared_run_plan():
+    """The plan the committed manifest is held to (in the test below) is the one `transport.py` declares, with
+    each planned build once."""
+    assert DECLARED_PLAN in (ROOT / "cpp/transport/transport.py").read_text(encoding="utf-8")
+    roster = expected_build_roster()
+    assert len(roster) == len(set(roster)) == 2 * len(MATRIX["revisions"]) + 1
+
+
+@pytest.mark.parametrize("name, drill", ROSTER_DRILLS, ids=[d[0] for d in ROSTER_DRILLS])
+def test_t149_drill_a_build_or_source_roster_off_the_plan_is_refused(name, drill):
+    manifest = json.loads((EVIDENCE / "manifest.json").read_text(encoding="utf-8"))
+    drilled = drill(json.loads(json.dumps(manifest)))
+    assert drilled != manifest, name
+    assert manifest_roster_problems(drilled), name
+
+
 def test_t149_committed_manifest_ties_builds_dataset_and_cells():
     manifest = json.loads((EVIDENCE / "manifest.json").read_text(encoding="utf-8"))
     raw = (EVIDENCE / "manifest.json").read_text(encoding="utf-8")
     assert not any(token in raw.lower() for token in ("/root/", "/mnt/", "/home/", "u020", "bryan"))
+    assert manifest_roster_problems(manifest) == [], manifest_roster_problems(manifest)
     for build in manifest["builds"]:
         assert build["commit"] == MATRIX["revisions"][build["tag"]]
         assert build["compile_count"] == build["flag_count"]
@@ -849,14 +921,17 @@ def test_t149_committed_manifest_ties_builds_dataset_and_cells():
     generator = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = generator
     spec.loader.exec_module(generator)
-    # The evidence predates the evaluated pair table: its dataset is the current one without that table,
-    # and the shipped archive (the snippet's) is a different one.
-    _, archive = generator.build_dataset_artifacts(pair_table=False)
-    assert hashlib.md5(archive).hexdigest() == manifest["dataset"]["md5"]
-    _, shipped = generator.build_dataset_artifacts()
+    # The evidence was produced with the shipped archive: the one the snippet registers, rebuilt here from
+    # the committed files, whose members are the manifest's.
+    _, archive = generator.build_dataset_artifacts()
     snippet = (ROOT / "data/g4/d1/geant4_add_dataset.snippet").read_text(encoding="utf-8")
-    assert hashlib.md5(shipped).hexdigest() in snippet
-    assert manifest["dataset"]["md5"] not in snippet
+    declared = re.findall(r"^\s*MD5SUM\s+([0-9a-f]{32})\s*$", snippet, re.M)
+    assert declared == [hashlib.md5(archive).hexdigest()] == [manifest["dataset"]["md5"]]
+    for build in manifest["builds"]:
+        for patch in build["patches"]:
+            assert hashlib.sha256((ROOT / patch["path"]).read_bytes()).hexdigest() == patch["sha256"], patch
+    for name, digest in manifest["sources"].items():
+        assert hashlib.sha256((ROOT / "cpp/transport" / name).read_bytes()).hexdigest() == digest, name
     with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as tar:
         members = {member.name: hashlib.sha256(tar.extractfile(member).read()).hexdigest()
                    for member in tar.getmembers() if member.isfile()}
@@ -873,7 +948,7 @@ def test_t149_committed_manifest_ties_builds_dataset_and_cells():
                             expected_rows.add((tag, mode, route, str(target["Z"]), str(target["A"]),
                                                str(thread), check))
         for case in MATRIX["cases"]:
-            if case != "P13" or tag == "v11.4.2":
+            if case != "P13" or tag == MUTANT_TAG:
                 expected_rows.add((tag, "case", "bound_decay", "", "", "", case))
     actual_rows = {(row["tag"], row["mode"], row["route"], row["Z"], row["A"],
                     row["threads"], row["check"]) for row in rows}

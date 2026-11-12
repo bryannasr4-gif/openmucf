@@ -19,6 +19,7 @@ import csv
 import hashlib
 import io
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from decimal import Decimal, localcontext
 from pathlib import Path
@@ -782,15 +783,31 @@ COMPONENT_INPUTS = (
 )
 
 
-def inputs_sha256(root: Path) -> str:
-    """One digest over the sorted digests of COMPONENT_INPUTS, one per line, LF."""
+#: The inputs the dataset generator itself writes, in the same run that writes the component records.
+WRITTEN_INPUTS = (KSHELL_RELPATH, LEVELS_RELPATH)
+
+
+def inputs_sha256(root: Path, written: Mapping[str, bytes] | None = None) -> str:
+    """One digest over the sorted digests of COMPONENT_INPUTS, one per line, LF.
+
+    ``written`` holds, by relative path, the bytes about to be written for inputs of WRITTEN_INPUTS: those
+    bytes are digested instead of the copy on disk, so that the run writing both the tables and the records
+    digests the tables it writes, not the ones it replaces. Every other input is read from ``root``."""
     root = Path(root)
-    digests = sorted(hashlib.sha256((root / relpath).read_bytes()).hexdigest()
+    written = dict(written or {})
+    stray = sorted(set(written) - set(WRITTEN_INPUTS))
+    if stray:
+        raise ValueError(f"component inputs: {stray} are not inputs the dataset generator writes")
+    if not all(type(payload) is bytes for payload in written.values()):
+        raise TypeError("component inputs: written payloads must be bytes")
+    digests = sorted(hashlib.sha256(written[relpath] if relpath in written
+                                    else (root / relpath).read_bytes()).hexdigest()
                      for relpath in COMPONENT_INPUTS)
     return hashlib.sha256(("\n".join(digests) + "\n").encode("ascii")).hexdigest()
 
 
-def header_record(root: Path, bundle: Bundle | None = None) -> dict[str, object]:
+def header_record(root: Path, bundle: Bundle | None = None,
+                  written: Mapping[str, bytes] | None = None) -> dict[str, object]:
     bundle = _bundle(root, bundle)
     return {
         "record": "header", "profile": md.PROFILE, "radius_perturbation": RADIUS_PERTURBATION,
@@ -798,7 +815,7 @@ def header_record(root: Path, bundle: Bundle | None = None) -> dict[str, object]
         "not_computed": dict(NOT_COMPUTED_REASONS),
         "refinement_limits": {k: str(v) for k, v in REFINEMENT_LIMITS.items()},
         "omitted_components": list(OMITTED_COMPONENTS), "total_sigma_keV": None,
-        "model_uncertainty": "unknown", "inputs_sha256": inputs_sha256(root),
+        "model_uncertainty": "unknown", "inputs_sha256": inputs_sha256(root, written),
         "numerical_check_status": bundle.numerical_check_status["status"],
     }
 
@@ -832,7 +849,8 @@ def anchor_rounding_kev(bundle: Bundle, key: tuple[int, int]) -> Decimal:
         return (md.header_half_unit(header) + floor + md.line_rounding_ev(bundle.outputs, run)) / 1000
 
 
-def components(root: Path, bundle: Bundle | None = None) -> list[dict[str, object]]:
+def components(root: Path, bundle: Bundle | None = None,
+               written: Mapping[str, bytes] | None = None) -> list[dict[str, object]]:
     """The header record; per kept (Z, A), in order, one member record -- the pairing of its anchor run
     with its Uehling-free twin (both runs and their input digests, and the probed (c, t) where the
     independent check was made), its radius uncertainty, whether its rminus run was made, its correlation
@@ -840,7 +858,7 @@ def components(root: Path, bundle: Bundle | None = None) -> list[dict[str, objec
     isotope it carries."""
     root = Path(root)
     bundle = _bundle(root, bundle)
-    out: list[dict[str, object]] = [header_record(root, bundle)]
+    out: list[dict[str, object]] = [header_record(root, bundle, written)]
     for row in bundle.kept:
         key = row.nuclide
         on_run, off_run = md.recipe_run_id(row, "anchor", True), md.recipe_run_id(row, "anchor", False)
@@ -904,10 +922,12 @@ def components(root: Path, bundle: Bundle | None = None) -> list[dict[str, objec
     return out
 
 
-def render_components(root: Path, bundle: Bundle | None = None) -> bytes:
-    """``components.jsonl``: one compact ASCII JSON record per line, LF."""
+def render_components(root: Path, bundle: Bundle | None = None,
+                      written: Mapping[str, bytes] | None = None) -> bytes:
+    """``components.jsonl``: one compact ASCII JSON record per line, LF. ``written``: see
+    :func:`inputs_sha256`."""
     lines = [json.dumps(record, separators=(",", ":"), ensure_ascii=True)
-             for record in components(root, bundle)]
+             for record in components(root, bundle, written)]
     return ("\n".join(lines) + "\n").encode("ascii")
 
 

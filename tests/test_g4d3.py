@@ -2339,6 +2339,41 @@ def test_t126_every_component_field_is_rederived_from_the_committed_files():
           "one-step verdicts " + ", ".join(f"{k} {v}" for k, v in sorted(histogram.items())))
 
 
+def test_t126_the_component_header_digests_the_tables_the_generator_writes(monkeypatch, tmp_path):
+    """One generator run that re-stamps the D3 tables (a version bump moves their ``#GENERATOR`` line)
+    writes a component header whose inputs digest is the digest of a root holding exactly the bytes that
+    run writes, not of the copies it replaces: so one run reaches the fixed point the audit compares
+    against."""
+    import openmucf
+
+    generator = parity.generator_module()
+    monkeypatch.setattr(openmucf, "__version__", "9.9.9")
+    artifacts, _archive = generator.build_dataset_artifacts()
+    written = {rel: artifacts[REPO / rel] for rel in d3c.WRITTEN_INPUTS}
+    assert all(written[rel] != (REPO / rel).read_bytes() for rel in written), "the probe moved no table byte"
+    root = tmp_path / "written"
+    for rel in d3c.COMPONENT_INPUTS:
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel).write_bytes(written.get(rel, (REPO / rel).read_bytes()))
+    digests = sorted(hashlib.sha256((root / rel).read_bytes()).hexdigest() for rel in d3c.COMPONENT_INPUTS)
+    expected = hashlib.sha256((NL.join(digests) + NL).encode("ascii")).hexdigest()
+    header = json.loads(artifacts[COMPONENTS].split(b"\n", 1)[0])
+    assert header["inputs_sha256"] == expected
+    assert header["inputs_sha256"] != d3c.inputs_sha256(REPO), "the disk copies would give the same digest"
+
+
+def test_t126_the_component_digest_refuses_a_written_payload_it_cannot_take():
+    """Only the inputs the generator writes may be given as bytes, and only as bytes; the same bytes as
+    on disk give the disk digest."""
+    with pytest.raises(ValueError, match="not inputs the dataset generator writes"):
+        d3c.inputs_sha256(REPO, {md.RUNS_RELPATH: (REPO / md.RUNS_RELPATH).read_bytes()})
+    for payload in ("text", bytearray(b"x"), None):
+        with pytest.raises(TypeError, match="must be bytes"):
+            d3c.inputs_sha256(REPO, {d3c.KSHELL_RELPATH: payload})  # type: ignore[dict-item]
+    same = {rel: (REPO / rel).read_bytes() for rel in d3c.WRITTEN_INPUTS}
+    assert d3c.inputs_sha256(REPO, same) == d3c.inputs_sha256(REPO, {}) == d3c.inputs_sha256(REPO)
+
+
 def test_t126_the_anchor_moves_every_absolute_binding_by_its_coefficient_and_cancels_in_every_difference():
     """A moved anchor header moves every derived binding, K and each (2j+1) mean alike, by exactly
     its shift (the weights sum to one); the anchor-subtracted values, and every difference of two

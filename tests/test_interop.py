@@ -2,6 +2,8 @@
 
 import json
 import math
+import re
+from pathlib import Path
 
 import pytest
 
@@ -10,6 +12,7 @@ from openmucf.analytic import effective_sticking
 from openmucf.rates import omega_fraction
 
 RATES = load_rates()
+REPO = Path(__file__).resolve().parents[1]
 
 
 def _expected_omega_s_eff(use_legacy=False):
@@ -44,11 +47,11 @@ def test_export_lambda_form_eff_thermal_shape_and_positive():
             assert math.isclose(tab.values[i][j], float(formation.lambda_dtmu(t, p, 1, 1.0)), rel_tol=1e-9)
 
 
-def test_interop_rename_alias_warns():
-    """The old export_lambda_dtmu_thermal warns (DeprecationWarning) but returns the renamed table."""
-    with pytest.deprecated_call():
-        tab = interop.export_lambda_dtmu_thermal((300.0,), (1.2,), F=1)
-    assert tab.name == "lambda_form_eff_thermal"
+def test_interop_rename_alias_is_removed():
+    """The deprecated name export_lambda_dtmu_thermal, scheduled for removal in v2.0.0, is gone; the renamed
+    export stands."""
+    assert not hasattr(interop, "export_lambda_dtmu_thermal")
+    assert interop.export_lambda_form_eff_thermal((300.0,), (1.2,), F=1).name == "lambda_form_eff_thermal"
 
 
 def test_export_lambda_dtmu_energy_peaks_near_resonance():
@@ -95,14 +98,28 @@ def test_geant4_callables_are_plain_floats():
     assert energy > thermal
 
 
-def test_geant4_callables_both_keys():
-    """The canonical `lambda_form_eff` and the legacy `lambda_dtmu` keys are the same callable."""
+def test_geant4_callables_returns_every_key_the_api_overview_advertises():
+    """The `geant4_callables` bullet of docs/api-overview.md names its callables, and any key it calls a
+    key; each is a key of the mapping the function returns, so the guide advertises nothing a caller cannot
+    look up."""
+    text = (REPO / "docs" / "api-overview.md").read_text(encoding="utf-8")
+    bullet = re.search(r"^- `geant4_callables\(.*?(?=^- |\Z)", text, re.M | re.S)
+    assert bullet, "docs/api-overview.md has no geant4_callables bullet"
+    flat = " ".join(bullet.group(0).split())
+    called = set(re.findall(r"`(\w+)\(", flat)) - {"geant4_callables"}
+    advertised = called | set(re.findall(r"key `(\w+)`", flat))
     api = interop.geant4_callables(RATES)
-    assert "lambda_form_eff" in api and "lambda_dtmu" in api
-    assert api["lambda_form_eff"] is api["lambda_dtmu"]
+    assert advertised, flat
+    assert advertised <= set(api), (sorted(advertised - set(api)), sorted(api))
+
+
+def test_geant4_callables_keys():
+    """The callables are `omega_s_eff` and `lambda_form_eff`; the legacy `lambda_dtmu` key, scheduled for
+    removal in v2.0.0, is gone."""
+    api = interop.geant4_callables(RATES)
+    assert sorted(api) == ["lambda_form_eff", "omega_s_eff"]
     a = api["lambda_form_eff"](phi=1.2, T=300.0, F=1)
-    b = api["lambda_dtmu"](phi=1.2, T=300.0, F=1)
-    assert a == b and isinstance(a, float) and a > 0.0
+    assert isinstance(a, float) and a > 0.0
 
 
 def test_ingest_spectrum_roundtrip_and_normalization(tmp_path):

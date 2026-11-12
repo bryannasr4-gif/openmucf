@@ -10,6 +10,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-11
+
+**What this release is.** v2.0.0 adds to the muonic-atom data layer for Geant4 an evaluated aluminium bound-muon rate pair, measured oxide capture vectors behind an opt-in material selector, an opt-in common bound-decay rate pair for both stopped-muon routes, separate patches that correct the times of a stopped muon's products, the D3 tables of the `mudirac130p1` profile, a benchmark of stopped negative muons in Geant4 against measurement, and transport evidence re-run with this release's patches and dataset archive.
+
+- **Breaking changes.** The muon-cost ledger's schema changed: `openmucf/data/muon_cost_chain.schema.json` now requires `count_basis`, both muon-cost tables gained columns, and the loaders refuse files written to the schema of release v1.3.0. The deprecated names of the thermal formation export, `openmucf.interop.export_lambda_dtmu_thermal` and the `lambda_dtmu` key of `geant4_callables`, are removed, as their documentation scheduled for this release. Each is a breaking change under the versioning policy of `CONTRIBUTING.md` (section 8), so the major version moves.
+- **D1, the aluminium rate pair.** The late lifetime and the decay rate meet provisional budgets (conditional; the late-lifetime decision has no validation power); the stopped mean and the capture probability are not established; robust improvement over Geant4's stock pair is established only for the late lifetime on the atomic route.
+- **D2, the measured oxide vectors.** No row is decided for precision, and improvement over the stock selector is not established on any row; the material selector reads a vector only for a material an application binds to that vector.
+- **D3, the `mudirac130p1` tables.** They are a numerical and Hamiltonian repair, not a corrected resolved spectrum; the shell representation stays a registered failure; the status of the independent numerical check is `REPRODUCTION_FAILED`; and no bound on the model's own uncertainty is stated.
+- **The common bound-decay rate pair.** Its verification at the call sites verifies the implementation, not the physics.
+- **The stopped-muon clock patches.** They are separate from the dataset patches and change a build only when applied; their checks are application object-overlay validation, not a rebuilt installation.
+- **The stopped-muon benchmark.** It compares the capture products of a stopped negative muon, as unpatched Geant4 v11.4.2 and v11.5.0.beta return them, with measured yields.
+- **Compatibility.** Tested on Geant4 v11.4.2 and v11.5.0.beta; the material selector refuses other revisions at compile time.
+- **Names.** The dataset name `G4MuonicData` and the environment variable `G4MUONICDATA` are provisional placeholders, pending discussion with the Geant4 collaboration.
+
+### Changed -- the transport evidence, re-run with this release's patches and dataset archive (2026-11-07)
+
+- `cpp/transport/evidence/manifest.json` and `cells.csv` record a new run of the transport workflow on both revisions, from the source archive of this release: its patches under `cpp/patches/`, its harness and the dataset archive `data/g4/d1/geant4_add_dataset.snippet` registers, which now carries the evaluated pair table. Every check result is byte-identical to the previous run's. `tests/test_g4transport.py` holds the manifest to the shipped archive, the current patches and the harness sources, and `evidence/source_snapshots/` keeps the patches of the earlier run.
+
+### Removed -- the deprecated names of the thermal formation export, as scheduled for this major release (2026-11-07)
+
+- `openmucf.interop.export_lambda_dtmu_thermal` and the `lambda_dtmu` key of `openmucf.interop.geant4_callables`, deprecated aliases of `export_lambda_form_eff_thermal` and `lambda_form_eff` that `docs/api-overview.md`, `CONTRIBUTING.md` and the entry that renamed them scheduled for removal in v2.0.0, are removed; code that used them calls the renamed export and key, which return what the aliases returned.
+
+### Fixed -- a single generator run after a version change, and the version every table is stamped with (2026-11-07)
+
+- `scripts/generate_g4data.py` digests the D3 tables it writes, not the copies on disk, in the header of `data/g4/d3/components.jsonl`, so that a single run after a version change reaches the fixed point `--audit` compares against, where a second run was needed. The measured oxide tables under `data/g4/d2/measured/` take the version of their `#GENERATOR` line from the package (`openmucf/g4/d2_measured.py`), where it was typed, and `tests/test_version_markers.py` holds every version marker of the repository to the package version.
+
+### Changed -- the licence of the trace patches and of the archived patch copies, stated by path (2026-11-07)
+
+- The trace patches `cpp/clock/formation_validation/trace-g4-*.patch` and the copies of earlier patches `cpp/transport/evidence/source_snapshots/*.patch` carry Geant4 source lines and are offered under the Geant4 Software License, as `cpp/clock/formation_validation/README.md` already offered the trace patches. The License section of `README.md`, the note in `LICENSE`, `docs/index.md`, the comment of `CITATION.cff` and the notes of `.zenodo.json` now name both, and the License section names the definition of `G4MuonMinusAtomicCapture::SetElementSelector` that `cpp/material_selector/G4MuonicMaterialSelector.hh` supplies, which is the definition Geant4's `G4HadronStoppingProcess` gives its own setter. `tests/test_packaging.py` holds each of those statements to both paths.
+
+### Fixed -- the conditional minimum margins of the oxide sensitivity (2026-10-30)
+
+- The labelled conditional sensitivity of the measured oxide vectors, `d2-measured-v2-e2cover`, carries its conditional minimum margins in total variation on the rows it lists in `data/g4/d2/measured/inputs.json` and `data/g4/d2/measured/evaluation.json`, and `docs/measured-oxide-capture.md` states them, where the page had said that its numerical margins are not distributed. It remains a conditional sensitivity, not a decision, and no decision changes.
+
 ### Fixed -- the uncertainty label of the two 208Pb 2p-1s comparison rows (2026-10-29)
 
 - `data/g4/d3/validation_cells.csv` and `validation.csv` now label the 208Pb K1-L2 and K1-L3 uncertainties `statistical, calibration and systematic`. Their values and uncertainties equal Table V of Bergem et al., Phys. Rev. C 37, 2821 (1988), which states on p. 2826 that its quoted errors are total errors including statistical, calibration and systematic uncertainties; they were labelled `statistical`, the label of the Fricke et al. table that restates them. Values, uncertainties and tolerances are unchanged. The loader keys such a label by row (`UNC_LABELS_BY_PRIMARY`).
@@ -34,6 +68,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - With the existing option on, both routes, including the stopping route, now receive this decay rate, which differs from the stopping getter's legacy value. The static getters remain unchanged. The earlier opt-in entry below and its historical verification describe the former pair.
 - [The derivation](docs/low-z-bound-muon-decay.md) gives the fully inclusive point-scalar tree observable, finite-mass matching, complete cuts/endpoints and the independent first-/second-Born asymptotic check. The finite-parameter Born integral, higher recoil/binding and radiative/nuclear uncertainties remain unassigned. The new finite-M derivation is distinguished from the 1999 matching structure and the contrary 1979 coefficient, whose discrepancy is unlocalized.
 - Both patch copies carry the same current provider. Capture forwarding, switch lifecycle, legacy getters and historical oracle/policy/harvest/results retain their meanings. Separate current-formula C++ and Python checks cover static limits, positive linear slopes, legacy-model deltas and adverse inputs. Historical numerical rows are unchanged and explicitly scoped in `DATASET_D1.md`.
+
+### Fixed -- stopped-muon product times in explicitly patched builds (2026-10-25)
+
+- **Separate clock patches.** `cpp/patches/g4-v11.4.2-stopped-muon-clock-v3.patch` and `cpp/patches/g4-v11.5.0.beta-stopped-muon-clock-v3.patch` correct the times Geant4 gives the products of a stopped negative muon. Applying either explicitly changes that build's default timing: there is no runtime switch, and neither the dataset patch nor `SetEnableMuonicBoundRates` applies or enables the correction (`cpp/clock/README.md`).
+- **What changes.** The new muonic atom gets local time zero, so the stopped muon's global time is added once, where it was added twice; an unset negative nuclear-model secondary time is mapped to zero before the sampled waiting time is added, on the stopping route and in the atom's decay, where the sentinel was added and the sum clamped afterward; and the precompound wrapper consumes each fragment's formation time, where it read the legacy time-of-flight field. Bound-decay products then arrive at the stop time plus the waiting time, and nuclear-capture products at that time plus the model's local time, taken as zero where it is negative. Propagating the model's formation times does not establish their experimental accuracy. The stopping-process class is shared by other negatively charged hadrons, and its hunk changes the same composition for them.
+- **What was checked.** `cpp/clock/` holds the checks for both revisions. They are application object-overlay validation, not a rebuilt installation: only the process definitions linked into the check applications are replaced, and the existing Geant4 shared libraries and data remain in use.
 
 ### Added -- the other stages of a stopped muon in the stopped-muon benchmark, and the recorded flags of the decay-rate oracle (2026-10-23)
 
@@ -1232,7 +1272,8 @@ provenance-clean and reproducible.
   ignorance-bound scenario B — **registered at this tag** (Zenodo DOI 10.5281/zenodo.21251512). Adds 20 forecast
   tests (**63 total**).
 
-[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/bryannasr4-gif/openmucf/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.3.0...v2.0.0
 [1.3.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/bryannasr4-gif/openmucf/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/bryannasr4-gif/openmucf/releases/tag/v1.1.0

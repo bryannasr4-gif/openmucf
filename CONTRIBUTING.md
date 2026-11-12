@@ -242,7 +242,7 @@ A public name is **not removed or renamed without a deprecation period of at lea
 which the old name keeps working and emits a `DeprecationWarning` that points to the replacement. The pattern to
 follow is the thermal-export rename in `openmucf/interop.py`: `export_lambda_dtmu_thermal` was renamed to
 `export_lambda_form_eff_thermal` (the exported quantity is an effective formation rate, not bare λ_dtμ), and the
-old name is kept as a working alias that emits a `DeprecationWarning` (scheduled for removal in v2.0.0). Ledger-schema
+old name was kept as a working alias that emitted a `DeprecationWarning` until v2.0.0, which removed it. Ledger-schema
 changes and validation-scoreboard tier changes are treated as
 API changes for versioning purposes, because downstream users depend on them exactly as they depend on function
 signatures.
